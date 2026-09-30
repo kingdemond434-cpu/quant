@@ -305,12 +305,18 @@ def publish_state() -> dict:
     publish; that is reported as a skip, never as a failure, so it cannot become noise that
     trains a reader to ignore this leg.
     """
+    # STEP 1 -- THE GATE VERDICT DIGEST, written just before the publisher runs so the push
+    # carries this hour's reasons (2026-09-30). The ledger and the sweep report it digests are
+    # gitignored; the digest is the small committed answer to "which gate killed what, and why".
+    digest = _gate_verdict_digest()
     script = BASE / "scripts" / "sync_shadow_to_git.ps1"
     if not script.exists():
-        return {"skipped": "sync_shadow_to_git.ps1 is absent on this host"}
+        return {"skipped": "sync_shadow_to_git.ps1 is absent on this host",
+                "gate_verdict_digest": digest}
     powershell = shutil.which("powershell") or shutil.which("pwsh")
     if not powershell:
-        return {"skipped": "no PowerShell on this host -- publishing is the trading box's job"}
+        return {"skipped": "no PowerShell on this host -- publishing is the trading box's job",
+                "gate_verdict_digest": digest}
     try:
         r = subprocess.run([powershell, "-NoProfile", "-NonInteractive",
                             "-ExecutionPolicy", "Bypass", "-File", str(script)],
@@ -318,14 +324,50 @@ def publish_state() -> dict:
                            timeout=600, check=False)
     except Exception as exc:
         print(f"publish_state FAILED to start: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
+        return {"error": f"{type(exc).__name__}: {exc}", "gate_verdict_digest": digest,
+                "state_flow": _state_flow()}
     tail = (r.stdout or r.stderr or "").strip().splitlines()[-3:]
     if r.returncode != 0:
         # LOUD, because this is the leg that decides whether anybody can SEE the desk. A silent
         # publisher failure is the one that costs eleven days.
         print(f"publish_state FAILED rc={r.returncode}: {' | '.join(tail)}", flush=True)
+    # STEP 3 -- did the state actually leave the box? Measured on origin, not on the exit code.
     return {"exit_code": r.returncode, "tail": tail,
-            "at": datetime.now(UTC).isoformat(timespec="seconds")}
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "gate_verdict_digest": digest, "state_flow": _state_flow()}
+
+
+def _gate_verdict_digest() -> dict:
+    """Write desks/mt5/reports/GATE_VERDICT_DIGEST.json; report its shape. Never raises."""
+    try:
+        import gate_verdict_digest
+        doc = gate_verdict_digest.build()
+        gate_verdict_digest.write(doc)
+        return {"status": doc.get("status"),
+                "ledger_rows": (doc.get("ledger") or {}).get("rows"),
+                "sweep_verdicts": (doc.get("latest_sweep") or {}).get("verdicts")}
+    except Exception as exc:
+        print(f"gate verdict digest FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def _state_flow() -> dict:
+    """DID THE STATE ACTUALLY LEAVE THE BOX? (2026-09-30).
+
+    The publisher's exit code is not the answer: the last box state sync reached origin on
+    2026-09-12 and the box went on committing locally and exiting for two weeks. This measures
+    the outcome on origin itself, writes desks/mt5/reports/BOX_STATE_FLOW.json (read by
+    stall_watch every ten minutes) and emits STATE_FLOW_STALLED when local state is fresh and
+    origin's copy is not. Never raises.
+    """
+    try:
+        from libs.ops import state_publication
+        doc = state_publication.publish_flow(REPO)
+        return {k: doc.get(k) for k in ("verdict", "why", "published_age_h",
+                                        "local_commits_not_on_origin")}
+    except Exception as exc:
+        print(f"state flow meter FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
 
 
 def _tape_main() -> int:
@@ -886,6 +928,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
+    "decay_monitor", "fill_markout",
 })
 
 
@@ -934,7 +978,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage", "orthogonality_yield", "effective_trials"), "data"),
+                     "judge_coverage", "orthogonality_yield", "effective_trials",
+                     # point-in-time SEC fundamentals for the share CFDs (quantamental books)
+                     "sec_fundamentals"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -1726,6 +1772,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
+    # The SEC refresh stops itself at --budget-s 600 (stalest first, resumable); cap above it.
+    "sec_fundamentals": 700,
     "event_surprise": 400,
     # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
     "alpha_capture": 420,
@@ -3592,15 +3640,22 @@ def main() -> None:
     # crisis-only defensive, lead-lag catch-up -- mt5desk/families_cross_sectional.py) whose
     # lower-bound trade days clear the gauntlet's 60-day floor, through the one proposer door,
     # and writes reports/CROSS_SECTIONAL_BREADTH.json. Additive: no other miner is touched.
+    # POINT-IN-TIME FUNDAMENTALS (2026-09-30): SEC EDGAR companyfacts + submissions for every
+    # share CFD, each value stamped with its ACCEPTANCE time, into data/lake/fundamentals, with
+    # reports/FUNDAMENTALS_COVERAGE.json and reports/SECTOR_VALUATION_STATE.json. Runs BEFORE the
+    # class-book seeder, which ranks the quantamental books and the regime operator on it.
+    secf = _costed("sec_fundamentals", lambda: _producer(
+        "sec_fundamentals", "research/sec_fundamentals.py", "--once", "--budget-s", "600"))
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
     # THE ALT-PROXIES EQUITY HAND-OFF'S CONSUMER (2026-09-30). alt_proxies writes the share CFDs
     # each free alt-data series bears on (data/digests/alt_proxies_equity_handoff.json) and mints
-    # nothing on them (two-lane order). This mints them in the two lanes a share may use: the
-    # news lane's alt_release_drift, and every class-book family conditioned on the series as a
-    # ranking input; measures firing, charges every measured cell, donates through the one door
-    # and writes reports/ALT_EQUITY_HANDOFF.json.
+    # nothing on them (two-lane order). This mints them as legs of TRUE cross-sectional books
+    # (mt5desk/families_alt_exposure.py: each mapped share ranked on its prior-signed alt-data
+    # reading across the equity class on the same date); measures firing, charges each cell once
+    # ever (data/alt_equity_handoff_charged.json ratchets up), donates through the one door and
+    # writes reports/ALT_EQUITY_HANDOFF.json.
     aeh = _costed("alt_equity_handoff", lambda: _producer(
         "alt_equity_handoff", "research/alt_equity_handoff.py", "--once", "--budget-s", "240"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
@@ -4705,6 +4760,14 @@ def main() -> None:
     # admission law, no streak, no threshold: it makes the readings hourly, which is the cadence
     # the allocator's own artifact expiry (`decision_core._ALLOC_MAX_AGE_S` = 3600) assumes.
     pr = _costed("promoter", lambda: _producer("promoter", "research/promoter.py"))
+    # THE DEMOTION HALF, ON THE PROMOTION HALF'S CLOCK (2026-09-30). `decay_monitor` had exactly
+    # one clock, `daily_cycle.STEPS`, where it sits behind research steps measured at 9,056 s
+    # under a 900 s hourly budget: `data/decay_live.json` still read 2026-09-04 ("sleeves.json does
+    # not exist") with 40 LIVE rows on the book. It reads the ledger and the roster, applies the
+    # same FADE / RETIRE thresholds it always did, and runs straight after the promoter so the two
+    # writers of `data/sleeves.json` never overlap. No threshold moves; the readings get fresh.
+    dmo = _costed("decay_monitor", lambda: _producer(
+        "decay_monitor", "research/decay_monitor.py"))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
@@ -4794,6 +4857,12 @@ def main() -> None:
     wse = _costed("weak_signals", weak_signal_ensembles)
     rfx = _costed("residual_factors", residual_factors)
     mko = _costed("markout", markout)
+    # THE FILL JOIN, HOURLY (2026-09-30). `reports/markout.json` -- intents joined to live deals,
+    # n_matched, slippage against the ENTRY -- and `reports/attribution_chain.json` had one
+    # writer, `daily_cycle._markout`, behind the same 900 s-starved chain: n_matched=0 at
+    # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
+    fmk = _costed("fill_markout", lambda: _producer(
+        "fill_markout", "research/daily_cycle.py", "--step", "markout"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -5216,6 +5285,7 @@ def main() -> None:
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "alt_equity_handoff": aeh,
+                    "sec_fundamentals": secf,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
@@ -5343,6 +5413,7 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
+                    "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,

@@ -39,7 +39,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import itertools
 import json
 import sys
 import time
@@ -55,6 +54,7 @@ for _p in (str(BASE), str(ROOT)):
         sys.path.insert(0, _p)
 
 import pandas as pd  # noqa: E402
+from mt5desk import class_books as books  # noqa: E402
 from mt5desk import families_cross_sectional as xs  # noqa: E402
 
 SOURCE = "cross_sectional_breadth"
@@ -64,6 +64,10 @@ BREADTH = BASE / "reports" / "EFFECTIVE_BREADTH.json"
 BREADTH_LEDGER = ROOT / "web" / "breadth_ledger.json"
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 VERDICTS = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+#: Screened cells a pass did NOT charge through a discovery file's `tests_run` (a null pass, or
+#: one whose rows the door refused). `libs/research/experiment_ledger` reads it into the lifetime
+#: trial census, so a screen that found nothing still pays for what it looked at.
+TRIALS_LEDGER = BASE / "data" / "screen_trials.jsonl"
 UNMEASURED = "UNMEASURED"
 
 #: The sealed gauntlet's own floor: a daily series under 60 days is dropped before any gate.
@@ -91,11 +95,10 @@ def identity(symbol: str, family: str, params: dict[str, Any]) -> str:
                                      default=str).encode()).hexdigest()[:20]
 
 
-def grid(family: str) -> list[dict[str, Any]]:
-    spec = xs.PARAM_GRID.get(family) or {}
-    keys = sorted(spec)
-    return [dict(zip(keys, combo, strict=True))
-            for combo in itertools.product(*(spec[k] for k in keys))]
+def grid(family: str, klass: str | None = None) -> list[dict[str, Any]]:
+    """The family's cells over a class's members (`class_books.grid`; the regime operator's grid
+    depends on the class it runs in)."""
+    return books.grid(family, klass)
 
 
 def firing(sigs: list, d: pd.DataFrame) -> dict[str, int]:
@@ -143,8 +146,88 @@ def _save_state(state: dict[str, Any]) -> None:
     tmp.replace(STATE)
 
 
+# ------------------------------------------------------------------- culture provenance ---
+# PRINCIPAL 2026-09-30 14:18: every cell or donation row carries `source_culture`,
+# `participant_structure` and `failure_mode_hypothesis` (plain keys until the schema module
+# libs/research/cell_culture.py lands). A class-book leg's culture is its INSTRUMENT's: the
+# jurisdiction whose participants set that price, read from the symbol, never guessed -- a symbol
+# none of the rules below recognises is UNMEASURED.
+_CCY_JURISDICTION = {
+    "EUR": "EU", "JPY": "JP", "GBP": "GB", "CHF": "CH", "AUD": "AU", "NZD": "NZ", "CAD": "CA",
+    "CNH": "CN", "CNY": "CN", "HKD": "HK", "SGD": "SG", "KRW": "KR", "INR": "IN", "IDR": "ID",
+    "THB": "TH", "MXN": "MX", "BRL": "BR", "ZAR": "ZA", "TRY": "TR", "PLN": "PL", "HUF": "HU",
+    "CZK": "CZ", "NOK": "NO", "SEK": "SE", "DKK": "DK", "ILS": "IL", "RUB": "RU", "AED": "AE",
+    "SAR": "SA", "CLP": "CL", "COP": "CO", "PHP": "PH", "TWD": "TW", "MYR": "MY", "USD": "US",
+}
+#: Currencies whose price a central bank or a peg manages: their legs break on policy dates.
+_MANAGED = frozenset({"CNH", "CNY", "HKD", "SGD", "KRW", "INR", "IDR", "THB", "TRY", "RUB",
+                      "DKK", "CZK", "SAR", "AED", "TWD", "MYR", "PHP"})
+_INDEX_JURISDICTION = {
+    "JPN225": "JP", "HK50": "HK", "CHINAH": "CN", "CHINA50": "CN", "US500": "US", "US30": "US",
+    "NAS100": "US", "US2000": "US", "GER40": "DE", "UK100": "GB", "FRA40": "FR", "EU50": "EU",
+    "EUSTX50": "EU", "AUS200": "AU", "ESP35": "ES", "ITA40": "IT", "SWI20": "CH", "NETH25": "NL",
+    "SGP30": "SG", "IND50": "IN", "TWN": "TW", "KOR200": "KR", "CA60": "CA", "SA40": "ZA",
+}
+#: Share CFDs on issuers whose home market is not the US (their ADR/listing culture).
+_ISSUER_JURISDICTION = {
+    "TSMC": "TW", "Toyota": "JP", "AlibabaGroup": "CN", "Baidu": "CN", "NIO": "CN",
+    "TMEGroup": "CN", "Spotify": "SE", "Shopify": "CA", "Atlassian": "AU",
+}
+_FAILURE = {
+    "policy_driven": ("a managed price breaks on its authority's own calendar (fixings, "
+                      "intervention, capital-flow rules), not on the Western macro cycle"),
+    "institutional": ("the standard institutional version: it fails in crowded unwinds and "
+                      "benchmark-rebalance flows"),
+    "physical_flow": ("a physical market fails on inventory, harvest and delivery shocks that "
+                      "no financial-flow version of the signal sees"),
+    "retail_heavy": ("a retail-heavy book fails on attention and leverage cycles that peak "
+                     "and break at different times from institutional flows"),
+    "mixed": ("a mixed local book fails when domestic retail or policy flows dominate the "
+              "foreign institutional ones the standard version assumes"),
+}
+
+
+def culture(symbol: str, klass: str, family: str) -> dict[str, str]:
+    """{source_culture, participant_structure, failure_mode_hypothesis} for one cell."""
+    s = str(symbol)
+    try:
+        spec = xs._policy().SECTOR_BOOKS.get(klass)
+    except Exception:
+        spec = None
+    if isinstance(spec, dict):
+        tag = (spec.get("cultures") or {}).get(s) or spec.get("default_culture")
+        if tag:
+            return {"source_culture": tag[0], "participant_structure": tag[1],
+                    "failure_mode_hypothesis": tag[2]}
+    code, structure = "UNMEASURED", "UNMEASURED"
+    u = s.upper()
+    if klass in ("fx_usd", "fx_cross") and len(u) == 6:
+        legs = (u[:3], u[3:])
+        ccy = legs[1] if legs[0] == "USD" else legs[0]
+        code = _CCY_JURISDICTION.get(ccy, "UNMEASURED")
+        structure = "policy_driven" if set(legs) & _MANAGED else "institutional"
+    elif klass == "equity":
+        code = _ISSUER_JURISDICTION.get(s, "US")
+        structure = "mixed" if code == "CN" else "institutional"
+    elif klass == "index":
+        code = _INDEX_JURISDICTION.get(u, "UNMEASURED")
+        structure = "mixed"
+    elif klass == "commodity":
+        code, structure = "GLOBAL", "physical_flow"
+    elif klass == "crypto":
+        code, structure = "GLOBAL", "retail_heavy"
+    elif klass == "bond":
+        code = "US" if u.startswith("UST") else "UNMEASURED"
+        structure = "institutional"
+    if family in books.SCOPED and klass == "equity" and code != "US":
+        # a quantamental or regime leg on a foreign issuer reads US-GAAP facts it rarely files
+        structure = "mixed"
+    return {"source_culture": code, "participant_structure": structure,
+            "failure_mode_hypothesis": _FAILURE.get(structure, "UNMEASURED")}
+
+
 def _mechanism(family: str, symbol: str, klass: str) -> str:
-    t = xs.TARGETS.get(family, {})
+    t = books.TARGETS.get(family, {})
     return (f"{family} on {symbol} ranked within its {klass} class: {t.get('prior', '')}. "
             f"Built for the {t.get('cluster', '?')} alpha cluster; one market-neutral leg of a "
             "class book, long the top of the class and short the bottom")
@@ -163,12 +246,22 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
     state = _load_state()
     cells_state: dict[str, Any] = state["cells"]
     cands: list[dict[str, Any]] = []
-    by_family: dict[str, Counter] = {f: Counter() for f in xs.CROSS_SECTIONAL_FAMILIES}
+    # Keyed as families are enumerated: a family scoped to a class that has no member here
+    # (the semis book, the quantamental books) has no row rather than a row of zeros.
+    by_family: dict[str, Counter] = {}
     by_class: dict[str, Counter] = {}
     no_bars: list[str] = []
     errors: Counter = Counter()
     stopped = "grid exhausted"
-    for klass, members in sorted(classes.items()):
+    # ROTATED BY THE HOUR. The equity class alone carries ~106 members x (class books +
+    # quantamental + regime operator), so a fixed alphabetical order would spend the first hours
+    # of every day on it while fx, index and the semis book waited. Each hour starts one class
+    # further on; a class measured today is skipped cheaply, so the day still completes.
+    ordered = sorted(classes.items())
+    if ordered:
+        k = datetime.now(tz=UTC).hour % len(ordered)
+        ordered = ordered[k:] + ordered[:k]
+    for klass, members in ordered:
         row = by_class.setdefault(klass, Counter())
         row["members_in_registry"] = len(members)
         for sym in members:
@@ -178,7 +271,9 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
                 stopped = f"time budget {budget_s:g}s reached; resumes next pass"
                 break
             plan = [(fam, fn, {"symbol": sym, **params})
-                    for fam, fn in xs.CROSS_SECTIONAL_FAMILIES.items() for params in grid(fam)]
+                    for fam, fn in books.families_for(klass).items() for params in grid(fam, klass)]
+            for fam, _fn, _c in plan:
+                by_family.setdefault(fam, Counter())
             stale = any((cells_state.get(identity(sym, f, c)) or {}).get("day") != today
                         for f, _fn, c in plan)
             d = _bars(sym) if stale else None
@@ -217,13 +312,14 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
     donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_NEW"}
     if cands and not dry_run:
         from research import proposer_common as pc
-        rows = [pc.candidate(
+        rows = [{**pc.candidate(
             SOURCE, c["symbol"], c["family"], c["params"],
             _mechanism(c["family"], c["symbol"], c["klass"]),
             f"{c['symbol']} {c['family']} (class {c['klass']})",
             {"firing": c["firing"], "seed_floor": SEED_FLOOR, "gauntlet_floor": FIRE_FLOOR,
-             "target_cluster": xs.TARGETS.get(c["family"], {}).get("cluster"),
-             "peer_class": c["klass"]}) for c in cands]
+             "target_cluster": books.TARGETS.get(c["family"], {}).get("cluster"),
+             "peer_class": c["klass"]}),
+            **culture(c["symbol"], c["klass"], c["family"])} for c in cands]
         path = pc.donate(SOURCE, rows, sum(int(v["measured_this_pass"])
                                            for v in by_family.values()) or len(rows))
         counts = pc.donation_counts()
@@ -238,6 +334,7 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
             for c in cands:
                 cells_state[c["ident"]]["donated_at"] = at
                 by_family[c["family"]]["seeded_this_pass"] += 1
+    trials = _charge_trials(by_family, donation, dry_run)
     if not dry_run:
         _save_state(state)
     seeded_total = Counter(str(v.get("family")) for v in cells_state.values()
@@ -257,6 +354,7 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
         "cells_by_class": {k: dict(v) for k, v in sorted(by_class.items())},
         "candidates_this_pass": len(cands), "donated_this_pass": donated,
         "donation": donation,
+        "trials_charged": trials,
         "symbols_without_bars": sorted(set(no_bars)),
         "errors": dict(errors),
         "firing_of_seeded": _firing_summary([v for v in measured if v.get("donated_at")]),
@@ -265,6 +363,43 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
         "firing_of_held_back": _firing_summary(
             [v for v in measured if int(v.get("trade_days_lb") or 0) < SEED_FLOOR]),
     }
+
+
+def _charge_trials(by_family: dict[str, Counter], donation: dict[str, Any],
+                   dry_run: bool) -> dict[str, Any]:
+    """Charge every cell this pass SCREENED to the trial census, hit or no hit.
+
+    A NULL PASS IS NOT FREE. The census (`libs/research/experiment_ledger`) counts screened cells
+    from each discovery file's `tests_run`, and a pass with no candidate writes no file -- so a
+    pass that screened thousands of cells and found nothing charged ZERO trials, and every later
+    survivor was deflated as if those looks had never happened. When a donation file carried the
+    width (`tests_run`), it is already charged; otherwise the full screened width goes to
+    TRIALS_LEDGER, per family. A dry run screens nothing it keeps, and charges nothing."""
+    width = {f: int(c.get("measured_this_pass", 0)) for f, c in by_family.items()
+             if int(c.get("measured_this_pass", 0)) > 0}
+    total = sum(width.values())
+    if dry_run:
+        return {"screened": total, "charged_via": "none (dry run)"}
+    if not total:
+        return {"screened": 0, "charged_via": "nothing screened this pass"}
+    if donation.get("status") == "DONATED":
+        return {"screened": total, "charged_via": "discovery file tests_run"}
+    row = {"at": _now(), "source": SOURCE, "screened": total, "by_family": width,
+           "why": f"no discovery file carried tests_run ({donation.get('status')})"}
+    try:
+        TRIALS_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with TRIALS_LEDGER.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True) + "\n")
+    except OSError as exc:
+        return {"screened": total, "charged_via": f"UNMEASURED: ledger write failed ({exc})"}
+    return {"screened": total, "charged_via": _rel_ledger()}
+
+
+def _rel_ledger() -> str:
+    try:
+        return str(TRIALS_LEDGER.relative_to(ROOT))
+    except ValueError:
+        return str(TRIALS_LEDGER)
 
 
 def _firing_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -283,8 +418,13 @@ def _cluster_occupancy() -> dict[str, Any]:
         return {"status": UNMEASURED, "why": f"{BREADTH.name} absent or has no clusters block"}
     from libs.research.alpha_clusters import CLUSTERS
     occ = set(doc["clusters"].get("occupied_either") or [])
+    # `empty` IS THE TRACKED AGENDA: the principal's original fifteen, the same set alpha_breadth
+    # publishes as `empty_in_both` (ruling 2026-09-30). The two clusters appended that day are
+    # reported beside it in `empty_added`, never counted into it, so an empty-target flag here
+    # and the breadth report's empty set are one count.
     return {"status": "MEASURED", "occupied": sorted(occ),
-            "empty": [c.key for c in CLUSTERS if c.key not in occ],
+            "empty": [c.key for c in CLUSTERS if c.key not in occ and c.added is None],
+            "empty_added": [c.key for c in CLUSTERS if c.key not in occ and c.added is not None],
             "measured_at": doc.get("generated_at") or doc.get("at")}
 
 
@@ -299,7 +439,8 @@ def _vacant_classes() -> dict[str, Any]:
 
 def _verdicts() -> dict[str, Any]:
     """Verdicts the sealed gauntlet recorded on these families, by family and terminal gate."""
-    fams = set(xs.CROSS_SECTIONAL_FAMILIES)
+    fams = set(books.FAMILIES)
+    needles = tuple(f.encode() for f in fams)
     try:
         size = VERDICTS.stat().st_size
         with VERDICTS.open("rb") as fh:
@@ -311,7 +452,7 @@ def _verdicts() -> dict[str, Any]:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__} reading {VERDICTS.name}"}
     out: dict[str, Counter] = {}
     for line in blob.splitlines():
-        if not line.strip() or b"class_" not in line:
+        if not line.strip() or not any(n in line for n in needles):
             continue
         try:
             row = json.loads(line)
@@ -345,10 +486,10 @@ def _certificates(verdicts: dict[str, Any]) -> dict[str, Any]:
             continue
         fam = str((cert.get("shadow_spec") or {}).get("family") or cert.get("family") or "")
         if not fam:
-            fam = next((f for f in xs.CROSS_SECTIONAL_FAMILIES if f in str(key)), "")
-        if fam not in xs.CROSS_SECTIONAL_FAMILIES:
+            fam = next((f for f in books.FAMILIES if f in str(key)), "")
+        if fam not in books.FAMILIES:
             continue
-        cl = xs.TARGETS[fam]["cluster"]
+        cl = books.TARGETS[fam]["cluster"]
         by_cluster[cl] += 1
         by_family[fam] += 1
         symbols.setdefault(cl, set()).add(str(cert.get("sym") or ""))
@@ -362,23 +503,40 @@ def _families(occupancy: dict[str, Any], vacant: dict[str, Any]) -> list[dict[st
     from libs.research.mechanism_census import CONSTRUCTION_CLASS
     from libs.validation.family_multiplicity import family_of
     rows = []
-    for fam in xs.CROSS_SECTIONAL_FAMILIES:
-        target = xs.TARGETS[fam]["cluster"]
+    for fam in books.FAMILIES:
+        target = books.TARGETS[fam]["cluster"]
         census = family_of(fam)
         census_class = CONSTRUCTION_CLASS.get(fam)
         rows.append({
-            "family": fam, "prior": xs.TARGETS[fam]["prior"],
+            "family": fam, "prior": books.TARGETS[fam]["prior"],
             "target_cluster": target, "classified_cluster": classify_family(fam),
+            # Empty on the TRACKED agenda (the original fifteen). A family aimed at one of the
+            # two appended clusters reads False here and True/False in the `_added_` field.
             "target_cluster_empty_now": (target in occupancy.get("empty", [])
                                          if occupancy.get("status") == "MEASURED"
                                          else UNMEASURED),
+            "target_cluster_added_empty_now": (target in occupancy.get("empty_added", [])
+                                               if occupancy.get("status") == "MEASURED"
+                                               else UNMEASURED),
             "census_class": census_class, "multiplicity_family": census,
             "census_class_vacant_now": (census_class in vacant.get("vacant", [])
                                         if vacant.get("status") == "MEASURED" else UNMEASURED),
-            "grid_per_symbol": len(grid(fam)), "param_grid": xs.PARAM_GRID[fam],
+            "grid_per_symbol": len(grid(fam)),
+            "param_grid": books.PARAM_GRID.get(fam, "class-dependent (class_books.grid)"),
+            "classes": list(books.SCOPED.get(fam) or ("every primary peer class",)),
             "registered_in": "mt5desk.families_orthogonal.ORTHOGONAL_FAMILIES",
         })
     return rows
+
+
+def _sector_books() -> dict[str, Any]:
+    """Each sector book's registry resolution: members found, and issuers the broker does not
+    quote -- reported, never faked."""
+    try:
+        pol = xs._policy()
+        return {book: pol.sector_resolution(book) for book in pol.SECTOR_BOOKS}
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"sector books unreadable: {type(exc).__name__}"}
 
 
 def report(seeded: dict[str, Any]) -> dict[str, Any]:
@@ -398,6 +556,7 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
         "families": _families(occupancy, vacant),
         "peer_classes": {k: {"members": len(v),
                              "rankable": len(v) >= xs.MIN_MEMBERS} for k, v in classes.items()},
+        "sector_books": _sector_books(),
         "cluster_occupancy_now": occupancy,
         "vacant_census_classes_now": vacant,
         "seeding": seeded,

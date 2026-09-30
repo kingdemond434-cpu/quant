@@ -1191,6 +1191,63 @@ def family_drawdown_conditional(
     return signals
 
 
+def family_regime_split(
+    df: pd.DataFrame,
+    *,
+    base_family: str = "",
+    vol: str = "",
+    trend: str = "",
+    liq: str = "",
+    **base_params: object,
+) -> list[Signal]:
+    """A price-only family traded ONLY inside one market regime of its own instrument.
+
+    THE REGIME-SPLIT PIPELINE, AS A FAMILY THE GAUNTLET CAN EXECUTE (2026-09-30). Reverse-
+    engineered from a solo operator's autonomous research loop: label every bar by regime, split
+    the dataset by regime, never fit on blended regimes, generate candidates per regime, kill
+    them with purged walk-forward, and send only survivors on. "Most strategies fail not because
+    the logic is wrong but because they are optimised across mixed regimes where the edge
+    disappears." `research/regime_split_miner.py` does the search; this is the executable half,
+    so a regime-conditioned survivor reaches the ten gates through the one existing door.
+
+    THE REGIME is `libs.regime.control_room`'s label of the LAST COMPLETED DAY before the
+    signal -- realised-vol tercile, efficiency-ratio trend/range and spread/activity liquidity,
+    each ranked against the instrument's own trailing year. Causal by construction: no fitted
+    parameters, so no label can carry information from after the bar it gates. An empty axis
+    means "any". An unknown base family, or bars too short to label, return NO SIGNALS.
+    """
+    fn = getattr(_families_mod(), f"family_{base_family}", None) or \
+        ORTHOGONAL_FAMILIES.get(str(base_family))
+    if fn is None or base_family == "regime_split":
+        return []
+    want = {"vol": vol, "trend": trend, "liq": liq}
+    want = {k: v for k, v in want.items() if v}
+    try:
+        from libs.regime.control_room import daily_frame, label_days
+        lab = label_days(daily_frame(df))
+    except Exception:
+        return []
+    lab = lab[lab["vol"] != ""]
+    if lab.empty:
+        return []
+    days = lab.index.to_numpy(dtype=str)
+    cols = {k: lab[k].to_numpy(dtype=object) for k in want}
+    out: list[Signal] = []
+    for s in fn(df, **base_params):
+        day = str(pd.Timestamp(s.time).date())
+        k = int(np.searchsorted(days, day, side="left")) - 1
+        if k < 0:
+            continue
+        if all(cols[a][k] == v for a, v in want.items()):
+            out.append(s)
+    return out
+
+
+def _families_mod():
+    from mt5desk import families as _fam
+    return _fam
+
+
 ORTHOGONAL_FAMILIES.update({
     "turn_of_month": family_turn_of_month,
     "calendar_month": family_calendar_month,
@@ -1202,6 +1259,7 @@ ORTHOGONAL_FAMILIES.update({
     "macro_conditional": family_macro_conditional,
     "event_reaction": family_event_reaction,
     "drawdown_conditional": family_drawdown_conditional,
+    "regime_split": family_regime_split,
 })
 
 #: What each family NEEDS. The router uses this to route a discovery to a family that can
@@ -1226,6 +1284,7 @@ FAMILY_INPUTS = {
     "calendar_month": ("source-specified calendar month and direction", None),
     "overnight_gap_decay": ("price only", None),
     "drawdown_conditional": ("price only", None),
+    "regime_split": ("price only (its base family's own inputs, which must be price only)", None),
 }
 
 
@@ -2271,13 +2330,14 @@ FAMILY_INPUTS["exogenous_conditioner"] = (
 # gauntlet builds them through its ordinary `fn(h1, **params)` call. Registered here because this
 # dict is the door `external_gauntlet.build_cell`, `executables.resolve_family`,
 # `families.get_family_func` and `miner_candidate_compiler._registered_family` all read.
-from mt5desk.families_cross_sectional import CROSS_SECTIONAL_FAMILIES  # noqa: E402
+# Extended the same day by the SEMIS sector book and the QUANTAMENTAL books (point-in-time SEC
+# fundamentals); `mt5desk.class_books` is the one list of every class-book family.
+from mt5desk.class_books import FAMILIES as CLASS_BOOK_FAMILIES  # noqa: E402
+from mt5desk.class_books import INPUTS as CLASS_BOOK_INPUTS  # noqa: E402
 
-ORTHOGONAL_FAMILIES.update(CROSS_SECTIONAL_FAMILIES)
-for _xs_name in CROSS_SECTIONAL_FAMILIES:
-    FAMILY_INPUTS[_xs_name] = ("the symbol's peer class (research.universe_policy.peer_class), "
-                               "read as of each decision bar from the bar store",
-                               "data/universe/*_H1.parquet")
+ORTHOGONAL_FAMILIES.update(CLASS_BOOK_FAMILIES)
+for _xs_name in CLASS_BOOK_FAMILIES:
+    FAMILY_INPUTS[_xs_name] = CLASS_BOOK_INPUTS[_xs_name]
     FAMILY_TIMEFRAMES[_xs_name] = (
         ("H1",),
         "ranks the class once a day at a broker decision HOUR from the H1 store; on a four-hour "
@@ -2307,20 +2367,3 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
-
-# ALT-DATA RELEASE DRIFT (2026-09-30): the event lane's executor for the alt_proxies equity
-# hand-off. A free alt-data release (Korean 20-day exports, TSA throughput, GDELT country tone)
-# bearing on a share with a declared prior sign; the family loads the lake series itself and
-# fires only on each release's first vintage, placed on the broker clock (New York + 7h). Its
-# `source` and `prior_sign` are REQUIRED, so the sweep names it unsuppliable.
-from mt5desk.family_alt_release import family_alt_release_drift  # noqa: E402
-
-ORTHOGONAL_FAMILIES["alt_release_drift"] = family_alt_release_drift
-FAMILY_INPUTS["alt_release_drift"] = (
-    "a point-in-time alt-data lake series named by the alt_proxies equity hand-off, placed at "
-    "each release's first available_time (research/alt_equity_handoff.py)",
-    "desks/mt5/data/lake/series/<source>.csv")
-FAMILY_TIMEFRAMES["alt_release_drift"] = (
-    ("H1",),
-    "a release is a daily-or-slower event whose hold is counted in H1 bars per trading day; "
-    "entry is the first H1 bar opening after the release instant on the broker clock")

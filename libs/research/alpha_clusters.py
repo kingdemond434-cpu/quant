@@ -1,4 +1,5 @@
-"""THE FIFTEEN PHENOMENA A BOOK CAN EARN FROM, and which of them this desk actually occupies.
+"""THE PHENOMENA A BOOK CAN EARN FROM (the principal's fifteen, plus two single-name payers
+added 2026-09-30), and which of them this desk actually occupies.
 
 WHY A DECLARED TAXONOMY AND NOT ANOTHER CLUSTERING. `desks/mt5/research/alpha_genome.py` already
 clusters certificates by their STRUCTURE -- same mechanism class, same direction bias, same entry
@@ -40,6 +41,7 @@ from typing import Any
 __all__ = [
     "CLUSTERS",
     "FAMILY_CLUSTER",
+    "ORIGINAL_CLUSTER_KEYS",
     "SESSION_SELECTORS",
     "TARGET_MAX",
     "TARGET_MIN",
@@ -71,10 +73,18 @@ class AlphaCluster:
     payer: str
     #: What a hunter would go and look for. Concrete enough to become a research task.
     hunt: str
+    #: None for the principal's original fifteen; the date for a cluster appended later. Anything
+    #: dated is reported beside the original fifteen, never folded into their occupancy count,
+    #: and is never an empty-cluster research target (the coordinator's ruling, 2026-09-30).
+    added: str | None = None
 
 
-#: THE FIFTEEN. Ordered as the principal listed them, because the order is his and reordering a
-#: declared list makes diffs lie about what changed.
+#: THE PRINCIPAL'S FIFTEEN, in his order (reordering a declared list makes diffs lie about what
+#: changed), then TWO SINGLE-NAME PAYERS appended 2026-09-30 when the share CFDs got class books
+#: and point-in-time fundamentals. Filing a semis within-industry spread or a quality rank under
+#: `cross_sectional_fx` named the wrong payer: breadth and k_eff then read an equity book as one
+#: more FX cross-section, so the equity legs looked like a crowded cluster and earned no
+#: empty-cluster credit. The TARGET band (8-15 OCCUPIED clusters) is unchanged.
 CLUSTERS: tuple[AlphaCluster, ...] = (
     AlphaCluster(
         "session_liquidity", "Session and liquidity structure",
@@ -165,7 +175,27 @@ CLUSTERS: tuple[AlphaCluster, ...] = (
         "already has no bid, and the liquidation itself is the opportunity.",
         "Mechanisms with POSITIVE expectancy specifically inside the book's own worst periods. "
         "Standalone Sharpe is not the bar here -- the bar is the sign, in that state."),
+    AlphaCluster(
+        "cross_sectional_equity", "Cross-sectional equity selection",
+        "Slow diffusers of firm- and industry-specific news in single names, and the liquidity "
+        "demander who pushes one share away from its industry peers for a few days.",
+        "Rank shares within their equity peer class or sector book (semis) on price "
+        "characteristics, with the industry move demeaned out -- never against a currency or "
+        "an index, which are proxy legs and conditioners, not peers.",
+        added="2026-09-30"),
+    AlphaCluster(
+        "quantamental", "Fundamental (quantamental) mispricing",
+        "The extrapolator who overprices glamour and junk against what the firm has DISCLOSED, "
+        "and the lottery-seeking holder who pays for it.",
+        "Point-in-time SEC fundamentals (value, quality, earnings yield), stamped at acceptance, "
+        "ranked within the equity class -- delisted issuers included in the ranking history.",
+        added="2026-09-30"),
 )
+
+#: The principal's fifteen. The TRACKED TARGET is their empty set: a relabel that moves a family
+#: into an appended cluster must never read as a newly occupied original, and an appended cluster
+#: that is empty is not a research target. Headline breadth is P&L-based k_eff, never this count.
+ORIGINAL_CLUSTER_KEYS: frozenset[str] = frozenset(c.key for c in CLUSTERS if c.added is None)
 
 #: key -> cluster, built once. A tuple keeps the declared order; this makes lookup cheap.
 _BY_KEY: dict[str, AlphaCluster] = {c.key: c for c in CLUSTERS}
@@ -243,7 +273,6 @@ FAMILY_CLUSTER: dict[str, str] = {
     "cb_tone": "news_reaction",
     "news_reaction": "news_reaction",
     "analyst_revision_drift": "news_reaction",
-    "alt_release_drift": "news_reaction",
     # -- cross-sectional selection
     "cross_sectional": "cross_sectional_fx",
     "style_premia": "cross_sectional_fx",
@@ -258,6 +287,22 @@ FAMILY_CLUSTER: dict[str, str] = {
     "lead_lag_class_catchup": "cross_asset_lead_lag",
     # Fires ONLY in a lagged class-stress regime and is idle otherwise: forced deleveraging.
     "crisis_only_class_defensive": "crisis_drawdown",
+    # The semis sector book (2026-09-30): issuers ranked against their equity peers.
+    "semis_sector_momentum": "cross_sectional_equity",
+    "semis_sector_reversal": "cross_sectional_equity",
+    "semis_sector_value": "cross_sectional_equity",
+    "semis_leader_catchup": "cross_asset_lead_lag",
+    # The quantamental books: disclosed fundamentals ranked within the equity class.
+    "quantamental_value": "quantamental",
+    "quantamental_quality": "quantamental",
+    "quantamental_earnings_yield": "quantamental",
+    # a class-book leg gated by a fundamental valuation regime: its payer is the same mispricing
+    # of disclosed value, not finite arbitrage capacity (relative_value's payer)
+    "valuation_regime_conditioned": "quantamental",
+    # The alt-data exposure books (2026-09-30): the alt_proxies equity hand-off's prior-signed
+    # readings ranked across the equity class on one date -- equity selection on outside data.
+    "alt_exposure_pace_book": "cross_sectional_equity",
+    "alt_exposure_release_book": "cross_sectional_equity",
     # -- crisis and drawdown alpha
     "drawdown_conditional": "crisis_drawdown",
     "crisis_only": "crisis_drawdown",
@@ -380,6 +425,7 @@ def occupancy(labels: Iterable[str], weights: Mapping[str, float] | None = None)
         counts[key] = counts.get(key, 0) + 1
     occupied = [c.key for c in CLUSTERS if counts.get(c.key, 0) > 0]
     empty = [c.key for c in CLUSTERS if counts.get(c.key, 0) == 0]
+    occupied_original = [k for k in occupied if k in ORIGINAL_CLUSTER_KEYS]
     n_sleeves = sum(counts.values())
     largest = max((counts.get(c.key, 0) for c in CLUSTERS), default=0)
     w = {k: float(v) for k, v in (weights or {}).items()}
@@ -387,6 +433,10 @@ def occupancy(labels: Iterable[str], weights: Mapping[str, float] | None = None)
         "n_clusters_declared": len(CLUSTERS),
         "n_occupied": len(occupied),
         "n_empty": len(empty),
+        # Occupancy two ways (ruling 2026-09-30): the principal's fifteen, and all declared. A
+        # LABEL count, reported beside P&L-based k_eff and never as the headline.
+        "occupied_of_15_original": len(occupied_original),
+        "occupied_of_17": len(occupied),
         "n_sleeves": n_sleeves,
         "n_unclassified": counts.get(UNCLASSIFIED, 0),
         "counts": {k: v for k, v in counts.items() if v > 0},
@@ -395,7 +445,8 @@ def occupancy(labels: Iterable[str], weights: Mapping[str, float] | None = None)
         "weights": w,
         "largest_cluster_share": (largest / n_sleeves) if n_sleeves else 0.0,
         "target_band": [TARGET_MIN, TARGET_MAX],
-        "meets_target": TARGET_MIN <= len(occupied) <= TARGET_MAX,
+        # judged on the original fifteen, so the two appended labels cannot meet it by relabelling
+        "meets_target": TARGET_MIN <= len(occupied_original) <= TARGET_MAX,
         "empty_detail": [
             {"cluster": c.key, "title": c.title, "payer": c.payer, "hunt": c.hunt}
             for c in CLUSTERS if counts.get(c.key, 0) == 0

@@ -188,13 +188,18 @@ def screen(rows: list[Any], meta: dict[str, Any]) -> dict[str, Any]:
     # family-wise error budget the FX and metals cells have to clear.
     t0 = time.time()
     admissible: list[dict[str, Any]] = []
+    # AMENDED 2026-09-30: a share CFD is admissible in the cross-sectional class-book families
+    # (universe_policy.CROSS_SECTIONAL_FAMILIES, ranked against the `equity` peer class) and in
+    # no other statistical family -- `may_hypothesise(symbol, family)` is the one spelling of
+    # that rule. Reading `lane()` alone refused every semis, quantamental and valuation-regime
+    # cell as "never passable" when the sealed judge rebuilds and judges them.
     try:
-        from universe_policy import HYPOTHESIS, lane
+        from universe_policy import may_hypothesise
     except ImportError:                                  # pragma: no cover - import-context dep
-        from research.universe_policy import HYPOTHESIS, lane  # type: ignore[no-redef]
+        from research.universe_policy import may_hypothesise  # type: ignore[no-redef]
     for spec in eligible:
         sym = str(spec.get("sym") or "")
-        if lane(sym) != HYPOTHESIS:
+        if not may_hypothesise(sym, spec.get("family")):
             refused["off_hypothesis_lane"] += 1
             refused_symbols["off_hypothesis_lane"][sym] += 1
             continue

@@ -161,7 +161,10 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                    " london_close_momentum",
     "fx_fixing_flow price_only market": "fx_fixing_reversal",
     "forced_flow event market": "forced_flow",
-    "macro_release macro market": "macro_conditional macro_gold_yield",
+    # + the alt-data exposure books (2026-09-30, `mt5desk.families_alt_exposure`): a free macro
+    # alt-data release (exports, TSA, country tone) ranked across the equity names it bears on.
+    "macro_release macro market": "macro_conditional macro_gold_yield alt_exposure_pace_book"
+                                  " alt_exposure_release_book",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",
     "carry_rollover carry market": "carry",
@@ -173,18 +176,30 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
                                                      " cross_sectional_class_value"
-                                                     " cross_sectional_class_low_vol",
+                                                     " cross_sectional_class_low_vol"
+                                                     " semis_sector_value",
     "relative_value_dislocation microstructure limit": "triangle",
-    "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup",
+    "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
+                                            " semis_leader_catchup",
     # The Alpha Capture substitute (2026-09-30): a dated public view ABOUT the instrument drifts
     # because holders under-react (trend_persistence's payer); another market's view leads the
     # instrument because the slow venue reprices late (cross_market_lead's payer).
-    "trend_persistence event market": "analyst_revision_drift alt_release_drift",
+    "trend_persistence event market": "analyst_revision_drift",
     "cross_market_lead event market": "analyst_cross_market_lead",
     # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
     # against its own peer class on the same date.
-    "trend_persistence cross_asset market": "cross_sectional_class_momentum",
-    "range_reversion cross_asset market": "cross_sectional_class_reversal",
+    "trend_persistence cross_asset market": "cross_sectional_class_momentum"
+                                            " semis_sector_momentum",
+    "range_reversion cross_asset market": "cross_sectional_class_reversal"
+                                          " semis_sector_reversal",
+    # The quantamental books (2026-09-30, `mt5desk.families_quantamental`): a share ranked
+    # within the equity class on SEC fundamentals as accepted -- a dislocation between price and
+    # a disclosed fundamental, read from an outside dataset rather than from the tape.
+    "relative_value_dislocation event market": "quantamental_value quantamental_quality"
+                                               " quantamental_earnings_yield",
+    # An OPERATOR over a class-book leg: the base leg's signals kept only in a lagged valuation or
+    # quality regime read from SEC fundamentals (`mt5desk.valuation_regime`).
+    "regime_transition event market": "valuation_regime_conditioned",
     "forced_liquidation cross_asset market": "crisis_only_class_defensive",
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
                                         " mean_reversion_rsi range_reversion",
@@ -195,8 +210,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     "breakout_liquidity price_only limit": "failed_breakout",
     "volatility_shock price_only market": "jump vol_mean_reversion",
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
-    "regime_transition price_only market": "drawdown_conditional regime_transition"
-                                           " vol_transition",
+    "regime_transition price_only market": "drawdown_conditional regime_split"
+                                           " regime_transition vol_transition",
     "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance",
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",

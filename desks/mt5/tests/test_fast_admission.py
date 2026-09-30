@@ -130,3 +130,37 @@ def test_the_leg_is_on_a_clock_and_belongs_to_a_layer() -> None:
     # It must run BEFORE the judge it describes.
     assert cycle.index('"fast_admission", "research/fast_admission.py"') < \
         cycle.index('"external_gauntlet", "scripts/external_gauntlet.py"')
+
+
+def test_equity_class_book_cells_are_admissible_and_others_are_not(monkeypatch) -> None:
+    """Principal 2026-09-30: a share CFD may mint in the cross-sectional class-book families
+    (semis, quantamental, valuation regime, the equity class books) and in nothing else. The
+    screen may not call those cells never-passable -- the sealed judge rebuilds and judges them."""
+    import pytest
+
+    from research import universe_policy as up
+    if not up.is_equity("Apple"):
+        pytest.skip("registry absent on this host -- UNMEASURED, not a pass")
+
+    class _Stub:
+        @staticmethod
+        def timeframe_of(params, family=""):
+            return "H1"
+
+        @staticmethod
+        def partition_at_economic_prior(specs, meta):
+            return list(specs), []
+
+    monkeypatch.setitem(sys.modules, "external_gauntlet", _Stub)
+    rows = [{"symbol": "Apple", "family": f, "params": {}} for f in (
+        "quantamental_value", "valuation_regime_conditioned", "cross_sectional_class_momentum",
+        "session_range_breakout")]
+    rows.append({"symbol": "NVIDIA", "family": "semis_sector_momentum", "params": {}})
+    rows.append({"symbol": "Xilinx", "family": "quantamental_quality", "params": {}})
+    out = fa.screen(rows, {"Apple": {}, "NVIDIA": {}, "Xilinx": {}})
+    kept = {(s["sym"], s["family"]) for s in out["admissible"]}
+    assert kept == {("Apple", "quantamental_value"), ("Apple", "valuation_regime_conditioned"),
+                    ("Apple", "cross_sectional_class_momentum"),
+                    ("NVIDIA", "semis_sector_momentum")}
+    # a single-name time-series family, and a delisted issuer, are still off the lane
+    assert out["refused_by_reason"]["off_hypothesis_lane"] == 2

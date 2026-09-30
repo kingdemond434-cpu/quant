@@ -494,6 +494,10 @@ def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
 #: this organ's to resolve -- not that the family is dead. Anything NOT listed and not wired is a
 #: defect, and `test_every_family_needing_an_input_is_wired_to_one` fails on it.
 NOT_SOURCED_HERE = {
+    "regime_split": "the base family and the regime are named by regime_split_miner, which "
+                    "deflates over every family x regime cell it tried and kills with purged "
+                    "walk-forward; a sweep that enumerated the split here would be a second "
+                    "uncharged search over the same cells",
     "discovered": "the primitive is named by edge_search at search time; this sweep enumerates "
                   "families, it does not run the search that would name one",
     "ensemble": "its members are named on the candidate by weak_signal_compiler, which chooses "
@@ -535,10 +539,6 @@ NOT_SOURCED_HERE = {
                              "clock; a sweep enumerating them over bars would be inventing which "
                              "pack series conditions which instrument. Called blind it has no "
                              "source and returns [] on every symbol",
-    "alt_release_drift": "its lake series and prior sign are named by the alt_proxies equity "
-                         "hand-off (research/alt_equity_handoff.py), which mints and charges "
-                         "each (series, share) cell; called blind it has no series and returns "
-                         "[] on every symbol",
     # The within-class rank legs (mt5desk/families_cross_sectional.py). Each loads its own class
     # panel from `symbol`, so nothing is unsuppliable -- but the grid is (class member x family x
     # params) and research/cross_sectional_breadth enumerates it, measures every cell's firing
@@ -546,10 +546,17 @@ NOT_SOURCED_HERE = {
     # same trials twice.
     **dict.fromkeys(("cross_sectional_class_momentum", "cross_sectional_class_reversal",
                      "cross_sectional_class_value", "cross_sectional_class_low_vol",
-                     "crisis_only_class_defensive", "lead_lag_class_catchup"),
+                     "crisis_only_class_defensive", "lead_lag_class_catchup",
+                     "semis_sector_momentum", "semis_sector_reversal", "semis_sector_value",
+                     "semis_leader_catchup", "quantamental_value", "quantamental_quality",
+                     "quantamental_earnings_yield", "valuation_regime_conditioned"),
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),
+    **dict.fromkeys(("alt_exposure_pace_book", "alt_exposure_release_book"),
+                    "research/alt_equity_handoff enumerates the hand-off's mapped shares, "
+                    "measures each leg and charges each cell id once in its charged ledger; "
+                    "sweeping it here would charge them twice"),
 }
 
 

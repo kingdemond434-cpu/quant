@@ -215,6 +215,7 @@ LEG_LAYER: dict[str, str] = {
     # redundancy organ and the forward-evidence series measure the machine itself: meta.
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
     "kelly_survival": "sizing",
+    "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "forward_evidence_tracker": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
@@ -242,6 +243,8 @@ LEG_LAYER: dict[str, str] = {
     "cross_sectional_breadth": "prediction",
     # share-CFD cells from the alt hand-off (event lane + conditioned class books): prediction
     "alt_equity_handoff": "prediction",
+    # point-in-time SEC fundamentals: a dataset, so information
+    "sec_fundamentals": "information",
     "event_surprise": "information",
     # public analyst views collected and stamped at first sighting: information
     "alpha_capture": "information",

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""THE CONSUMER OF THE ALT-PROXIES EQUITY HAND-OFF: share-CFD cells in both lanes the order allows.
+"""THE CONSUMER OF THE ALT-PROXIES EQUITY HAND-OFF: share-CFD legs of true cross-sectional books.
 
     python desks/mt5/research/alt_equity_handoff.py --once --budget-s 240
-    python desks/mt5/research/alt_equity_handoff.py --once --dry-run     # measure, donate nothing
+    python desks/mt5/research/alt_equity_handoff.py --once --dry-run     # measure, charge nothing
 
 WHY (law III.16, unwired is a defect). `research/alt_proxies.py` writes
 `data/digests/alt_proxies_equity_handoff.json` every hour: for each free alt-data series (Korea's
@@ -10,36 +10,39 @@ WHY (law III.16, unwired is a defect). `research/alt_proxies.py` writes
 prior sign. Share CFDs never mint alt-proxy cells there -- the two-lane order -- and until this
 organ nothing read the file, so the equity half of that data fed nothing.
 
-THE TWO LANES, AND NOTHING ELSE (principal 2026-09-06, amended 2026-09-30). A share CFD may mint
-only in the cross-sectional class books (`universe_policy.CROSS_SECTIONAL_FAMILIES`) or the news
-lane's own families (`universe_policy.NEWS_LANE_FAMILIES`). Every cell here is one of those two,
-and `proposer_common.donate` re-checks it at the door.
+ONE LANE, THE CLASS BOOKS (principal 2026-09-30 11:29, and the coordinator's ruling the same day).
+A macro alt-data release is not company news, so it is NOT the news lane's (`alt_release_drift`
+was taken off `universe_policy.NEWS_LANE_FAMILIES` and retired). Its reaction is traded the way
+the order admits for a share: RANKED ACROSS THE EQUITY PEER CLASS ON THE SAME DATE
+(`mt5desk.families_alt_exposure`, in `universe_policy.CROSS_SECTIONAL_FAMILIES`). Each cell is one
+share's LEG of a long-top / short-bottom book -- the class-book pattern of #136 -- so the union of
+the legs is a market-neutral book on the DIFFERENCE between names' alt-data news, never a
+single-name bet on a single series.
 
-  (a) EVENT LANE -- `alt_release_drift` (mt5desk/family_alt_release.py). One cell per (series,
-      share): follow each release whose |surprise_z| >= 1 in the direction sign(z) x declared
-      prior, entered at the first bar opening after the release's first `available_time` on the
-      broker clock, held five trading days.
-  (b) CLASS BOOKS -- every class-book family the registry holds (`mt5desk.class_books` when #136
-      is in the tree, else `families_cross_sectional`), at its first grid point, on each share,
-      CONDITIONED on the hand-off series as a ranking input: the leg the prior favours is kept
-      while the series' `pace` is on the prior's side, via the `alt:` conditioner and `side_mode`
-      that `mt5desk.cell_modifiers` applies identically in the gauntlet, the clock and the
-      executor. Two cells per (series, share, family): pace > 0 keeps the prior's side, pace < 0
-      keeps the other.
+  alt_exposure_pace_book     each mapped share's prior-signed, self-standardised series pace
+  alt_exposure_release_book  each mapped share's prior-signed latest release surprise_z
 
-WHAT IS DONATED, AND WHAT IS CHARGED. A cell is MEASURED (the family run on the share's own bars,
-its firing counted exactly as `cross_sectional_breadth` counts it) at most once a day, and every
-measured cell is a trial charged to the census: a pass that donates carries the count as the
-discovery file's `tests_run`; a pass that donates nothing appends it to `null_pass_trials.jsonl`
-(`alt_proxies._donate`, which `experiment_ledger` reads either way). A cell whose firing clears
-the gauntlet's floor is donated once, through `proposer_common.donate` into
-`data/intelligence/alt_equity_handoff/`. A cell that cannot be measured names what is missing
-(the lake series, the share's bars) and is held, never donated to come back UNKNOWN.
+Cells: every share the hand-off's USABLE rows map, in the equity class, x each family x each point
+of that family's grid (one point each today). A share the hand-off does not map is not a leg.
+
+TRIALS ARE CHARGED ONCE PER CELL, EVER. A cell is MEASURED (its firing, counted exactly as
+`cross_sectional_breadth` counts it) at most once a day, but it is CHARGED to the trial census only
+the first time: `data/alt_equity_handoff_charged.json` is a persisted ledger of charged cell keys
+that only ratchets up (never shrinks, never rewritten from a smaller set). Re-measuring a known
+cell daily used to charge it daily -- ~66k trials a year from 182 hypotheses -- which is a false
+multiple-testing bill paid by every other cell on the desk. A cell's charge key is its identity
+PLUS the book's fingerprint (the sorted (share, series, sign) map), because a book whose
+membership changed is a different hypothesis and is charged again. The charge lands as the
+discovery file's `tests_run` when the pass donates, else in `null_pass_trials.jsonl`
+(`experiment_ledger` reads both); keys enter the ledger only after their charge landed.
+
+A cell whose firing clears the gauntlet's floor is donated once, through
+`proposer_common.donate` into `data/intelligence/alt_equity_handoff/`. A cell that cannot be
+measured names what is missing (the lake series, the share's bars) and is held.
 
 THE DATASET IS REGISTERED. The hand-off is upserted into `data/data_registry.json` as
 `alt_proxies_equity_handoff` (lifecycle INGESTED), so the D18 dataset-exploitation census (#155)
-enrols it, and every donated row names it in `required_data` / `lineage`, which that census reads
-to credit the cells to the dataset.
+enrols it, and every donated row names it in `required_data` / `lineage`.
 
 Artifact: `reports/ALT_EQUITY_HANDOFF.json`. UNMEASURED is an answer (L1.28a): an absent hand-off
 is reported as absent, never as zero cells.
@@ -48,9 +51,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import itertools
 import json
-import math
 import os
 import sys
 import time
@@ -70,17 +71,12 @@ DATASET_KEY = "alt_proxies_equity_handoff"
 HANDOFF = BASE / "data" / "digests" / "alt_proxies_equity_handoff.json"
 REPORT = BASE / "reports" / "ALT_EQUITY_HANDOFF.json"
 STATE = BASE / "data" / "alt_equity_handoff_state.json"
+#: The ratchet: every cell key ever charged to the trial census. Only grows.
+CHARGED = BASE / "data" / "alt_equity_handoff_charged.json"
 DATA_REGISTRY = BASE / "data" / "data_registry.json"
 SERIES_DIR = BASE / "data" / "lake" / "series"
 UNMEASURED = "UNMEASURED"
-
-EVENT_FAMILY = "alt_release_drift"
-#: The event cell's recipe. |surprise_z| >= 1 is the same extreme `alt_proxies` direct cells use.
-EVENT_PARAMS: dict[str, Any] = {"column": "surprise_z", "threshold": 1.0, "side": 1,
-                                "hold_days": 5, "atr_n": 20, "stop_atr": 3.0, "rr": 1.5}
-#: The conditioner column: `pace` is the series' own signed momentum (alt_proxies' lake envelope),
-#: the same axis its indirect cells condition certified parents on.
-PACE = "pace"
+LANE = "class_book"
 #: The sealed gauntlet drops a daily series under 60 days; `cross_sectional_breadth.SEED_FLOOR`
 #: (66) is that floor plus a margin, and it is the class-book floor here too.
 SEED_FLOOR = 66
@@ -109,48 +105,37 @@ def identity(symbol: str, family: str, params: dict[str, Any]) -> str:
                                      default=str).encode()).hexdigest()[:20]
 
 
-# ------------------------------------------------------------------ the class-book registry
-def class_book_registry() -> dict[str, Any]:
-    """{families, grid, scoped, operator} from `mt5desk.class_books` (#136) when it is in the
-    tree, else from `families_cross_sectional`, restricted to the families the two-lane order
-    admits for a share CFD. The operator family (a conditioner over a base cell) is not a base."""
+# ------------------------------------------------------------------ the books
+def book_registry() -> dict[str, Any]:
+    """{families, grid, basis}: the alt-exposure class books, restricted to the families the
+    two-lane order admits for a share CFD (every one of them, by the pin test)."""
+    from mt5desk import class_books as cb
+    from mt5desk import families_alt_exposure as alt
+
+    from research import universe_policy as up
+    fams = {f: fn for f, fn in alt.ALT_EXPOSURE_FAMILIES.items()
+            if f in up.CROSS_SECTIONAL_FAMILIES and cb.DEDICATED.get(f) == alt.SEEDED_BY}
+    return {"families": fams, "grid": {f: cb.grid(f, alt.KLASS) for f in fams},
+            "klass": alt.KLASS, "basis": "mt5desk.families_alt_exposure"}
+
+
+def applies(symbol: str, klass: str) -> bool:
+    """True when `symbol` is ranked in `klass` (the equity peer class)."""
     from research import universe_policy as up
     try:
-        from mt5desk import class_books as cb  # type: ignore[attr-defined,unused-ignore]
-        fams, grid = dict(cb.FAMILIES), dict(cb.PARAM_GRID)
-        scoped = dict(getattr(cb, "SCOPED", {}) or {})
-        operator = str(getattr(cb, "OPERATOR", "") or "")
-        basis = "mt5desk.class_books"
-    except ImportError:
-        from mt5desk import families_cross_sectional as xs
-        fams, grid, scoped, operator = dict(xs.CROSS_SECTIONAL_FAMILIES), dict(xs.PARAM_GRID), \
-            {}, ""
-        basis = "mt5desk.families_cross_sectional"
-    keep = {f: fn for f, fn in fams.items()
-            if f in up.CROSS_SECTIONAL_FAMILIES and f != operator and grid.get(f)}
-    return {"families": keep, "grid": grid, "scoped": scoped, "basis": basis}
-
-
-def base_params(grid: dict[str, list[Any]]) -> dict[str, Any]:
-    """The family's FIRST grid point (sorted keys): one base per family, not a search over it."""
-    keys = sorted(grid)
-    first = next(itertools.product(*(grid[k] for k in keys)), ())
-    return dict(zip(keys, first, strict=True))
-
-
-def applies(family: str, symbol: str, scoped: dict[str, Any]) -> bool:
-    """True when `symbol` is a member of a class the family ranks within."""
-    from research import universe_policy as up
-    classes = scoped.get(family)
-    try:
-        if not classes:
-            return up.peer_class(symbol) is not None
-        return any(symbol in up.class_members(str(k)) for k in classes)
+        return up.peer_class(symbol) == klass
     except Exception:
         return False
 
 
-# ------------------------------------------------------------------ minting
+def fingerprint(legs: dict[str, list[dict[str, Any]]]) -> str:
+    """The book's membership: sorted (share, lake series, prior sign). A different map is a
+    different book, hence a different hypothesis and a fresh charge."""
+    flat = sorted((s, str(l["lake_file"]), int(l["prior_sign"]))
+                  for s, ls in legs.items() for l in ls)
+    return hashlib.sha256(json.dumps(flat).encode()).hexdigest()[:16]
+
+
 def _meta(source_id: str) -> dict[str, Any]:
     """The source's mechanism and culture fields from alt_proxies' own roster, UNMEASURED when
     the roster does not know the id (never invented here)."""
@@ -175,11 +160,11 @@ def _meta(source_id: str) -> dict[str, Any]:
 def mint(handoff: dict[str, Any], registry: dict[str, Any] | None = None
          ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Every cell the hand-off's CURRENT contents imply, before any measurement: (cells, census).
-    A row that is not `usable` (DEAD source, terms not confirmed) mints nothing and is counted."""
-    reg = registry or class_book_registry()
-    cells: list[dict[str, Any]] = []
+    A row that is not `usable` (DEAD source, terms not confirmed) maps nothing and is counted."""
+    reg = registry or book_registry()
     held: Counter = Counter()
     rows = handoff.get("rows") if isinstance(handoff.get("rows"), list) else []
+    legs: dict[str, list[dict[str, Any]]] = {}
     for r in rows:
         if not isinstance(r, dict):
             continue
@@ -187,39 +172,112 @@ def mint(handoff: dict[str, Any], registry: dict[str, Any] | None = None
             why = "DEAD" if r.get("dead") else f"TERMS_{str(r.get('terms') or '?').upper()}"
             held[why] += len(r.get("shares") or {})
             continue
-        lake = str(r.get("lake_file") or "")
         sid, series = str(r.get("source") or ""), str(r.get("series") or "")
-        meta = _meta(sid)
         for sym, sign in sorted((r.get("shares") or {}).items()):
-            sign = 1 if int(sign) > 0 else -1
-            common = {"handoff_row": f"{sid}|{series}", "source_id": sid, "series": series,
-                      "lake_file": lake, "prior_sign": sign, "meta": meta}
-            ev = {"source": lake, "prior_sign": sign, **EVENT_PARAMS}
-            cells.append({**common, "symbol": sym, "family": EVENT_FAMILY, "params": ev,
-                          "lane": "event", "base": None, "mods": {}})
-            for fam in sorted(reg["families"]):
-                if not applies(fam, sym, reg["scoped"]):
-                    held["CLASS_BOOK_SCOPE"] += 2
-                    continue
-                base = {"symbol": sym, **base_params(reg["grid"][fam])}
-                for op, keep in (("gt", sign), ("lt", -sign)):
-                    mods = {"conditioner": f"alt:{lake}:{PACE}:{op}:0",
-                            "side_mode": "long" if keep > 0 else "short"}
-                    cells.append({**common, "symbol": sym, "family": fam,
-                                  "params": {**base, **mods}, "lane": "class_book",
-                                  "base": base, "mods": mods})
-    for c in cells:
-        c["ident"] = identity(c["symbol"], c["family"], c["params"])
+            legs.setdefault(str(sym), []).append(
+                {"source_id": sid, "series": series, "lake_file": str(r.get("lake_file") or ""),
+                 "prior_sign": 1 if int(sign) > 0 else -1, "handoff_row": f"{sid}|{series}"})
+    book = fingerprint(legs)
+    cells: list[dict[str, Any]] = []
+    for sym in sorted(legs):
+        if not applies(sym, reg["klass"]):
+            held["NOT_IN_EQUITY_CLASS"] += len(reg["families"])
+            continue
+        first = legs[sym][0]
+        for fam in sorted(reg["families"]):
+            for point in reg["grid"][fam]:
+                params = {"symbol": sym, **point}
+                ident = identity(sym, fam, params)
+                cells.append({"symbol": sym, "family": fam, "params": params, "lane": LANE,
+                              "legs": legs[sym], "source_id": first["source_id"],
+                              "series": first["series"], "lake_file": first["lake_file"],
+                              "prior_sign": first["prior_sign"], "meta": _meta(first["source_id"]),
+                              "ident": ident, "charge_key": f"{ident}:{book}"})
     census = {"handoff_rows": len(rows),
               "usable_rows": sum(1 for r in rows if isinstance(r, dict) and r.get("usable")),
-              "cells": len(cells),
+              "cells": len(cells), "book_fingerprint": book,
+              "book_members": sorted(legs),
               "by_lane": dict(Counter(c["lane"] for c in cells)),
               "by_family": dict(sorted(Counter(c["family"] for c in cells).items())),
-              "by_source": dict(sorted(Counter(c["source_id"] for c in cells).items())),
               "share_symbols": sorted({c["symbol"] for c in cells}),
               "not_minted": dict(held), "class_book_basis": reg["basis"],
               "class_book_families": sorted(reg["families"])}
     return cells, census
+
+
+# ------------------------------------------------------------------ the charge ratchet
+def load_charged(path: Path | None = None) -> tuple[dict[str, Any], str]:
+    """(ledger, status). An unreadable ledger is set aside, never overwritten by a smaller one:
+    every cell then charges again, which over-charges (the conservative side) rather than
+    losing a charge."""
+    p = path or CHARGED
+    if not p.exists():
+        return {"charged": {}}, "ABSENT (first pass)"
+    doc = _read(p)
+    if isinstance(doc, dict) and isinstance(doc.get("charged"), dict):
+        return doc, "OK"
+    aside = p.with_name(f"{p.name}.unreadable-{int(time.time())}")
+    try:
+        os.replace(p, aside)
+    except OSError:
+        pass
+    return {"charged": {}}, f"UNREADABLE: set aside as {aside.name}; every cell charges again"
+
+
+def save_charged(ledger: dict[str, Any], new: dict[str, dict[str, Any]],
+                 path: Path | None = None) -> dict[str, Any]:
+    """Union `new` into the ledger and write it. The written set is a SUPERSET of the one on
+    disk, checked just before the write -- the ledger only ratchets up."""
+    p = path or CHARGED
+    on_disk = _read(p)
+    have = dict(on_disk.get("charged") or {}) if isinstance(on_disk, dict) and \
+        isinstance(on_disk.get("charged"), dict) else {}
+    merged = {**have, **dict(ledger.get("charged") or {})}
+    for k, v in new.items():
+        merged.setdefault(k, v)
+    if not set(have) <= set(merged):                          # pragma: no cover - by build
+        raise RuntimeError("charged ledger would shrink; refusing to write")
+    doc = {"rule": ("every alt_equity_handoff cell key ever charged to the trial census; a key "
+                    "is charged once, and this set only grows"),
+           "count": len(merged), "charged": dict(sorted(merged.items()))}
+    _atomic(p, doc)
+    return doc
+
+
+def charge(new_trials: int, by_family: dict[str, int], cands: list[dict[str, Any]],
+           now: datetime) -> dict[str, Any]:
+    """Donate the candidates with `tests_run` = the cells charged for the FIRST time this pass
+    (0 when every candidate was charged in an earlier pass), or, with nothing donated, append
+    the new trials to the null-pass ledger. Exactly one carries them."""
+    from research import alt_proxies as ap
+    res: dict[str, Any] = {"donated": 0, "path": None, "status": "NOTHING_TO_CHARGE"}
+    if cands:
+        try:
+            from research import proposer_common as pc
+            path = pc.donate(SOURCE, cands, int(new_trials))
+            res = {**pc.donation_counts(), "path": str(path) if path else None,
+                   "status": "DONATED" if path else "REFUSED_AT_DOOR"}
+            if path:
+                res["trials_charged_via"] = "discovery file tests_run"
+        except Exception as exc:
+            res = {"donated": 0, "path": None, "status": "ERROR",
+                   "error": f"{type(exc).__name__}: {str(exc)[:160]}"}
+    if new_trials > 0 and not res.get("path"):
+        row = {"at": now.isoformat(timespec="seconds"), "source": SOURCE,
+               "tests_run": int(new_trials),
+               "by_family": {k: int(v) for k, v in sorted(by_family.items()) if v},
+               "why": "first-time cells charged once; no discovery file carried them this pass"}
+        try:
+            null = ap.DEFAULT_PATHS.null_trials
+            null.parent.mkdir(parents=True, exist_ok=True)
+            with null.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(row, sort_keys=True) + "\n")
+            res["null_trials_charged"] = int(new_trials)
+            res["trials_charged_via"] = "null_pass_trials.jsonl"
+        except OSError as exc:
+            res["null_trials_error"] = f"{type(exc).__name__}: {str(exc)[:160]}"
+    res["landed"] = bool(res.get("path") or res.get("null_trials_charged") or new_trials == 0)
+    return res
 
 
 # ------------------------------------------------------------------ measurement
@@ -233,23 +291,13 @@ def _series_present(lake: str) -> bool:
 
 
 def measure(cell: dict[str, Any], d: Any, reg: dict[str, Any]) -> dict[str, int]:
-    """The cell's firing on the share's own bars, through the SAME calls the gauntlet makes: the
-    family, then `cell_modifiers.apply` for the conditioner and side."""
+    """The leg's firing on the share's own bars, through the SAME call the gauntlet makes."""
     from research import cross_sectional_breadth as xsb
-    if cell["lane"] == "event":
-        from mt5desk.family_alt_release import family_alt_release_drift
-        sigs = family_alt_release_drift(d, **cell["params"])
-    else:
-        from mt5desk import cell_modifiers as cm
-        sigs = list(reg["families"][cell["family"]](d, **cell["base"]) or [])
-        sigs = cm.apply(sigs, d, cell["mods"])
-    return xsb.firing(list(sigs or []), d)
+    sigs = list(reg["families"][cell["family"]](d, **cell["params"]) or [])
+    return xsb.firing(sigs, d)
 
 
 def floor_for(cell: dict[str, Any]) -> int:
-    """Class books: SEED_FLOOR trade days. Events: enough holds to fill SEED_FLOOR daily rows."""
-    if cell["lane"] == "event":
-        return math.ceil(SEED_FLOOR / max(1, int(cell["params"]["hold_days"])))
     return SEED_FLOOR
 
 
@@ -258,25 +306,16 @@ def candidate(cell: dict[str, Any], firing: dict[str, int], handoff_sha: str,
     m = cell["meta"]
     culture = {k: m.get(k) for k in ("source_culture", "participant_structure",
                                      "failure_mode_hypothesis", "crowding_prior")}
-    arrow = "+" if cell["prior_sign"] > 0 else "-"
-    if cell["lane"] == "event":
-        mech = (f"{m.get('mechanism')}. Each release of {cell['series']} ({cell['source_id']}) "
-                f"with |surprise_z|>=1 moves {cell['symbol']} in the direction of the surprise x "
-                f"the declared prior ({arrow}); the payer is the holder who does not read the "
-                "release, entered after its first available_time on the broker clock")
-        title = f"{EVENT_FAMILY} {cell['symbol']} <- {cell['source_id']}/{cell['series']}"
-        falsifier = ("the post-release drift on shifted (placebo) release dates is as large as "
-                     "on the real ones, or the realised sign contradicts the declared prior")
-    else:
-        mech = (f"{cell['family']} leg on {cell['symbol']}, kept only on the side the "
-                f"{cell['series']} ({cell['source_id']}) prior favours while its pace is "
-                f"{'rising' if ':gt:' in cell['mods']['conditioner'] else 'falling'}: "
-                f"{m.get('mechanism')}")
-        title = (f"{cell['family']} {cell['symbol']} | {cell['source_id']}/{cell['series']} "
-                 f"{cell['mods']['conditioner'].rsplit(':', 3)[1]} {cell['mods']['side_mode']}")
-        falsifier = ("the conditioned leg earns no more than the unconditioned class-book leg "
-                     "on the same share over the same dates")
-    lake_rel = f"desks/mt5/data/lake/series/{cell['lake_file']}.csv"
+    series = ", ".join(f"{l['source_id']}/{l['series']} ({'+' if l['prior_sign'] > 0 else '-'})"
+                       for l in cell["legs"])
+    what = ("pace" if cell["family"] == "alt_exposure_pace_book" else "release surprise")
+    mech = (f"{cell['symbol']}'s leg of the equity-class book ranked on prior-signed alt-data "
+            f"{what} ({series}): long while it ranks in the class's top, short in its bottom, "
+            f"on the same date. {m.get('mechanism')}")
+    title = f"{cell['family']} {cell['symbol']} <- {series}"
+    falsifier = ("the long-top / short-bottom book earns nothing over the same dates, or the "
+                 "leg's realised sign contradicts the rank on shifted (placebo) release dates")
+    lakes = [f"desks/mt5/data/lake/series/{l['lake_file']}.csv" for l in cell["legs"]]
     return {
         "source": SOURCE, "kind": "hypothesis", "symbol": cell["symbol"],
         "symbols": [cell["symbol"]], "family": cell["family"], "params": cell["params"],
@@ -285,13 +324,14 @@ def candidate(cell: dict[str, Any], firing: dict[str, int], handoff_sha: str,
         "prior_sign": cell["prior_sign"], "falsifier": falsifier,
         "available_time": now.isoformat(timespec="seconds"),
         "event_time": now.isoformat(timespec="seconds"),
-        "required_data": [DATASET_KEY, lake_rel],
+        "required_data": [DATASET_KEY, *lakes],
         "lineage": {"dataset": DATASET_KEY, "source": cell["source_id"],
                     "series": cell["series"], "lake_file": cell["lake_file"],
-                    "lane": cell["lane"]},
+                    "lane": cell["lane"], "legs": cell["legs"]},
         "provenance": {"organ": "research/alt_equity_handoff.py", "use": cell["lane"],
                        "handoff": "desks/mt5/data/digests/alt_proxies_equity_handoff.json",
-                       "handoff_sha256": handoff_sha, "handoff_row": cell["handoff_row"],
+                       "handoff_sha256": handoff_sha, "handoff_row": cell["legs"][0]["handoff_row"],
+                       "charge_key": cell["charge_key"],
                        "source_id": cell["source_id"], "series": cell["series"],
                        "prior_sign_basis": "declared prior, untested",
                        "substitutes_for": m.get("substitutes_for"),
@@ -311,7 +351,7 @@ def registry_row(handoff: dict[str, Any], ingested: str) -> dict[str, Any]:
                        "(PIT lake series) mapped to the share CFDs they bear on"),
             "format": "json", "path": "data/digests/alt_proxies_equity_handoff.json",
             "ingested": ingested, "series": series,
-            "consumer": "research/alt_equity_handoff.py (event lane + class books)",
+            "consumer": "research/alt_equity_handoff.py (cross-sectional alt-exposure class books)",
             "provenance": "desks/mt5/research/alt_proxies.py equity_handoff()"}
 
 
@@ -373,15 +413,18 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False, now: datetime | None 
             _atomic(REPORT, rep)
         return rep
     sha = hashlib.sha256(raw).hexdigest()
-    reg = class_book_registry()
+    reg = book_registry()
     cells, census = mint(handoff, reg)
     state = _read(STATE)
     state = state if isinstance(state, dict) and isinstance(state.get("cells"), dict) \
         else {"cells": {}}
+    ledger, ledger_status = load_charged()
+    charged_before = len(ledger["charged"])
     today = now.date().isoformat()
     held: Counter = Counter()
-    by_family: Counter = Counter()
     measured = 0
+    new_charges: dict[str, dict[str, Any]] = {}
+    new_by_family: Counter = Counter()
     cands: list[dict[str, Any]] = []
     bars_cache: dict[str, Any] = {}
     stopped = "all cells visited"
@@ -395,7 +438,8 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False, now: datetime | None 
                 stopped = f"time budget {budget_s:g}s reached; resumes next pass"
                 held["BUDGET"] += 1
                 continue
-            if not _series_present(cell["lake_file"]):
+            absent = [l["lake_file"] for l in cell["legs"] if not _series_present(l["lake_file"])]
+            if len(absent) == len(cell["legs"]):
                 held["SERIES_ABSENT"] += 1
                 continue
             if cell["symbol"] not in bars_cache:
@@ -412,7 +456,11 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False, now: datetime | None 
             prior = {**got, "day": today, "family": cell["family"], "symbol": cell["symbol"]}
             state["cells"][cell["ident"]] = prior
             measured += 1
-            by_family[cell["family"]] += 1
+            key = cell["charge_key"]
+            if key not in ledger["charged"] and key not in new_charges:
+                new_charges[key] = {"at": now.isoformat(timespec="seconds"),
+                                    "family": cell["family"], "symbol": cell["symbol"]}
+                new_by_family[cell["family"]] += 1
         if int(prior.get("trade_days_lb") or 0) >= floor_for(cell):
             cands.append(candidate(cell, {k: int(prior.get(k) or 0)
                                           for k in ("signal_days", "trade_days_lb")}, sha, now))
@@ -420,16 +468,18 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False, now: datetime | None 
             held["UNDER_FLOOR"] += 1
     donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_TO_CHARGE"}
     registration: dict[str, Any] = {"status": "DRY_RUN"}
+    charged_now = 0
     if not dry_run:
         registration = register_dataset(handoff, now)
-        if cands or measured:
-            from research import alt_proxies as ap
-            donation = ap._donate(ap.DEFAULT_PATHS, SOURCE, cands, measured, dict(by_family),
-                                  now)
+        if cands or new_charges:
+            donation = charge(len(new_charges), dict(new_by_family), cands, now)
             if donation.get("path"):
                 at = now.isoformat(timespec="seconds")
                 for c in cands:
                     state["cells"].setdefault(str(c["cell"]), {})["donated_at"] = at
+            if donation.get("landed") and new_charges:
+                ledger = save_charged(ledger, new_charges)
+                charged_now = len(new_charges)
         _atomic(STATE, state)
     donated_total = sum(1 for v in state["cells"].values() if v.get("donated_at"))
     rep = {
@@ -440,16 +490,23 @@ def run(*, budget_s: float = 240.0, dry_run: bool = False, now: datetime | None 
                     "sha256": sha, "rows": census["handoff_rows"],
                     "usable_rows": census["usable_rows"]},
         "minted": census,
-        "measured_this_pass": measured, "trials_charged_this_pass": 0 if dry_run else measured,
+        "measured_this_pass": measured,
+        "trials_charged_this_pass": charged_now,
+        "trials": {"ledger": "desks/mt5/data/alt_equity_handoff_charged.json",
+                   "ledger_status": ledger_status, "charged_before": charged_before,
+                   "charged_after": len(ledger["charged"]) if not dry_run else charged_before,
+                   "first_time_this_pass": len(new_charges),
+                   "remeasured_not_recharged": measured - len(new_charges),
+                   "rule": "each cell key is charged once, ever; the ledger only grows"},
         "candidates_this_pass": len(cands),
         "donated_this_pass": int(donation.get("donated") or 0),
         "donated_total": donated_total,
         "held": dict(held),
         "donation": donation, "dataset_registration": registration,
-        "rule": ("share CFDs mint only in CROSS_SECTIONAL_FAMILIES (conditioned class-book legs) "
-                 "or the news lane (alt_release_drift); every measured cell is charged to the "
-                 "census, a cell is donated once when its firing clears the floor, and a cell "
-                 "that cannot be measured names the missing input"),
+        "rule": ("share CFDs mint only in CROSS_SECTIONAL_FAMILIES: each cell is one leg of an "
+                 "equity-class book ranked on the hand-off's prior-signed alt-data reading on the "
+                 "same date; a cell is charged to the census once, donated once when its firing "
+                 "clears the floor, and a cell that cannot be measured names the missing input"),
     }
     if not dry_run:
         _atomic(REPORT, rep)
@@ -468,9 +525,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     m = rep["minted"]
     print(f"alt_equity_handoff: {m['cells']} cells minted from {m['usable_rows']}/"
-          f"{m['handoff_rows']} usable rows {m['by_lane']}; measured {rep['measured_this_pass']},"
-          f" donated {rep['donated_this_pass']} (total {rep['donated_total']}); held "
-          f"{rep['held']}")
+          f"{m['handoff_rows']} usable rows {m['by_family']}; measured "
+          f"{rep['measured_this_pass']}, charged {rep['trials_charged_this_pass']} new, donated "
+          f"{rep['donated_this_pass']} (total {rep['donated_total']}); held {rep['held']}")
     return 0
 
 

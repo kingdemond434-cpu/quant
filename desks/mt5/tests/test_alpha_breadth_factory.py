@@ -47,8 +47,11 @@ from research import survivor_neighbourhood as sn  # noqa: E402
 # --------------------------------------------------------------------------------- the taxonomy
 def test_taxonomy_is_declared_and_sized_for_the_target_band() -> None:
     keys = [c.key for c in ac.CLUSTERS]
-    assert len(keys) == len(set(keys)) == 15
-    assert ac.TARGET_MIN <= len(keys) <= ac.TARGET_MAX
+    # the principal's fifteen, in his order, then the two single-name payers (2026-09-30)
+    assert len(keys) == len(set(keys)) == 17
+    assert keys[-2:] == ["cross_sectional_equity", "quantamental"]
+    # the band bounds OCCUPIED clusters; the declared list must at least reach its top
+    assert len(keys) >= ac.TARGET_MAX >= ac.TARGET_MIN
     # Every cluster names a PAYER and a hunt; a cluster without one is a label, not a phenomenon.
     for c in ac.CLUSTERS:
         assert c.payer.strip() and c.hunt.strip() and c.title.strip()
@@ -90,11 +93,41 @@ def test_occupancy_names_the_empty_clusters_and_keeps_unclassified_separate() ->
     o = ac.occupancy(["session_liquidity", "session_liquidity", "mean_reversion",
                       ac.UNCLASSIFIED])
     assert o["n_occupied"] == 2
-    assert o["n_empty"] == 13
+    assert o["n_empty"] == 15          # seventeen declared, two occupied
     assert o["n_unclassified"] == 1
     # UNCLASSIFIED is NOT distributed over the real clusters -- it is its own count.
     assert ac.UNCLASSIFIED not in o["occupied"]
     assert "crisis_drawdown" in o["empty"]
+
+
+def test_occupancy_is_reported_of_the_original_fifteen_and_of_seventeen(monkeypatch) -> None:
+    """Ruling 2026-09-30: the two appended clusters are dated, counted two ways, never targeted,
+    and cannot move the original fifteen's occupancy or meet the band by relabelling."""
+    added = [c.key for c in ac.CLUSTERS if c.added is not None]
+    assert added == ["cross_sectional_equity", "quantamental"]
+    assert all(c.added == "2026-09-30" for c in ac.CLUSTERS if c.key in added)
+    assert len(ac.ORIGINAL_CLUSTER_KEYS) == 15 and not set(added) & ac.ORIGINAL_CLUSTER_KEYS
+    o = ac.occupancy(["session_liquidity", "mean_reversion", "cross_sectional_equity",
+                      "quantamental", "quantamental"])
+    assert (o["occupied_of_15_original"], o["occupied_of_17"]) == (2, 4)
+    # a book in seven originals plus both appended clusters is 9 of 17 but NOT in the band
+    seven = sorted(ac.ORIGINAL_CLUSTER_KEYS)[:7]
+    o = ac.occupancy([*seven, *added])
+    assert (o["occupied_of_15_original"], o["occupied_of_17"]) == (7, 9)
+    assert o["meets_target"] is False
+
+    # EFFECTIVE_BREADTH: both counts, the tracked target is the original fifteen's empty set,
+    # and the headline stays the P&L-based k_eff
+    monkeypatch.setattr(ab, "_ledger_rows", lambda: ["USDJPY_asia", "EURGBP_mean_reversion"])
+    monkeypatch.setattr(ab, "CANON", Path("/nonexistent/canon.json"))
+    view = ab.cluster_view()
+    assert not set(added) & set(view["empty_in_both"])
+    assert view["empty_in_both_added"] == added
+    assert len(view["empty_in_both"]) == 15 - len(
+        [k for k in view["occupied_either"] if k in ac.ORIGINAL_CLUSTER_KEYS])
+    src = Path(ab.__file__).read_text("utf-8")
+    assert '"occupied_of_15_original": len(' in src and '"occupied_of_17": len(' in src
+    assert '"effective": head' in src
     # Every empty cluster arrives with the payer a hunter would go and find.
     assert {d["cluster"] for d in o["empty_detail"]} == set(o["empty"])
     assert all(d["payer"] for d in o["empty_detail"])
@@ -606,3 +639,16 @@ def test_the_breadth_lane_names_no_crypto_exchange() -> None:
         src = Path(mod.__file__ or "").read_text("utf-8").lower()
         for name in banned:
             assert name not in src, f"{mod.__name__} names {name}"
+
+
+def test_task_text_prints_the_same_original_fifteen_count_as_the_report():
+    """`occupied_of_15_original` in the report is traded OR certified; the task text said the same
+    words over the traded-only count (audit 2026-09-30, alpha_breadth :430 vs :528)."""
+    originals = sorted(ac.ORIGINAL_CLUSTER_KEYS)
+    traded_only, certified_only = originals[:1], originals[1:3]
+    empty = [k for k in originals if k not in traded_only + certified_only]
+    clusters = {"traded": {"occupied_of_15_original": len(traded_only)},
+                "occupied_either": traded_only + certified_only}
+    tasks = ab._tasks(empty, {"effective_breadth": 2.0, "n_nominal": 5}, clusters)
+    assert tasks and all("3 of the principal's 15" in t["description"] for t in tasks)
+    assert not any("1 of the principal's 15" in t["description"] for t in tasks)

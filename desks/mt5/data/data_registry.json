@@ -132,6 +132,64 @@
       "priority": "low",
       "notes": "Translated news 100+ languages, 15-min updates; quarantined research input"
     },
+    "sec_fundamentals_pit": {
+      "lifecycle": "DISCOVERED",
+      "source": "SEC EDGAR XBRL companyfacts + submissions (keyless; fair-access User-Agent, <=10 req/s)",
+      "format": "parquet",
+      "path": "data/lake/fundamentals/sec_pit.parquet",
+      "symbols": "every registry share CFD mapped to a US ticker (103 declared); USD filers covered, foreign-currency filers reported uncovered",
+      "coverage": "per filing since XBRL (2009+); one snapshot per SEC acceptance",
+      "provenance": "data.sec.gov",
+      "notes": "POINT-IN-TIME: every value stamped with the SEC acceptance time of the filing that carried it (Eastern read at +5h), never the period end; restatements replace only from their own acceptance. TTM revenue/GP/OI/NI/EPS, margins, book value, shares, debt, cash, ROE; P/E, P/B, EV/Sales, E/P derived at the bar store's close at each decision bar.",
+      "collector": "desks/mt5/research/sec_fundamentals.py (hourly_cycle leg sec_fundamentals)",
+      "coverage_artifact": "reports/FUNDAMENTALS_COVERAGE.json",
+      "uses": {
+        "direct": [
+          "quantamental_value",
+          "quantamental_quality",
+          "quantamental_earnings_yield"
+        ],
+        "indirect": [
+          "valuation_regime_conditioned (market_value, value_spread, market_quality over equity and index class-book legs; semis_value over the semis book)"
+        ],
+        "allocation": [
+          "reports/SECTOR_VALUATION_STATE.json"
+        ]
+      },
+      "consumers": {
+        "direct": "desks/mt5/mt5desk/families_quantamental.py -> research/cross_sectional_breadth.py -> docket -> scripts/external_gauntlet.py",
+        "indirect": "desks/mt5/mt5desk/valuation_regime.py -> research/cross_sectional_breadth.py -> docket -> scripts/external_gauntlet.py",
+        "allocation": "reports/SECTOR_VALUATION_STATE.json <- research/sec_fundamentals.py; allocator hook (libs/portfolio/macro_state.py) is money path: patch at /mnt/project-files/patches/sector_valuation_state/"
+      }
+    },
+    "semis_sector_book": {
+      "lifecycle": "DISCOVERED",
+      "source": "broker registry (Fusion share CFDs) resolved by research/universe_policy.SECTOR_BOOKS['semis'] + USDKRW Korea proxy leg",
+      "format": "parquet",
+      "path": "data/universe/{NVIDIA,AMD,Intel,MicronTechnology,TSMC,Qualcomm,Broadcom,TexasInstruments,AppliedMaterials,USDKRW}_H1.parquet",
+      "symbols": 10,
+      "provenance": "MT5 copy_rates_from_pos",
+      "notes": "A sector PEER CLASS, not a new feed: absent issuers are reported by sector_resolution, never faked. Leaders (SOXX-like): NVIDIA, Broadcom, TSMC.",
+      "uses": {
+        "direct": [
+          "semis_sector_momentum",
+          "semis_sector_reversal",
+          "semis_sector_value",
+          "semis_leader_catchup"
+        ],
+        "indirect": [
+          "valuation_regime_conditioned regime semis_value (semis book median earnings yield) over the semis legs"
+        ],
+        "allocation": [
+          "reports/SECTOR_VALUATION_STATE.json regimes.semis_value"
+        ]
+      },
+      "consumers": {
+        "direct": "desks/mt5/mt5desk/families_sector.py -> research/cross_sectional_breadth.py -> docket -> scripts/external_gauntlet.py",
+        "indirect": "desks/mt5/mt5desk/valuation_regime.py",
+        "allocation": "reports/SECTOR_VALUATION_STATE.json"
+      }
+    },
     "alt_proxies_equity_handoff": {
       "lifecycle": "INGESTED",
       "source": "research/alt_proxies.py equity hand-off: free alt-data substitutes (PIT lake series) mapped to the share CFDs they bear on",
@@ -153,7 +211,7 @@
         "alt_us_oi_google_mobility__transit_stations",
         "alt_us_tsa_throughput__travelers"
       ],
-      "consumer": "research/alt_equity_handoff.py (event lane + class books)",
+      "consumer": "research/alt_equity_handoff.py (cross-sectional alt-exposure class books)",
       "provenance": "desks/mt5/research/alt_proxies.py equity_handoff()"
     }
   }
