@@ -437,9 +437,14 @@ def test_gateway_binds_the_guarded_module_and_reconciles_before_managing() -> No
     # The raw import stays (other fences read it); the module-level rebinding is what routes
     # every call site, and it must be the LAST module-level binding of `mt5`.
     tree = ast.parse(src)
-    binds = [n for n in tree.body if isinstance(n, (ast.Assign, ast.Import))
-             and any((isinstance(t, ast.Name) and t.id == "mt5") for t in getattr(n, "targets", []))
-             or (isinstance(n, ast.Import) and any((a.asname or a.name) == "mt5" for a in n.names))]
+    def _binds_mt5(n: ast.stmt) -> bool:
+        if isinstance(n, ast.Assign):
+            return any(isinstance(t, ast.Name) and t.id == "mt5" for t in n.targets)
+        if isinstance(n, ast.Import):
+            return any((a.asname or a.name) == "mt5" for a in n.names)
+        return False
+    binds = [n for n in tree.body if _binds_mt5(n)]
+    assert len(binds) >= 2
     last = binds[-1]
     assert isinstance(last, ast.Assign), "the raw module is bound as `mt5` after the door"
     assert ast.get_source_segment(src, last.value).startswith("_door.guard(mt5")
