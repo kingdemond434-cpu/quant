@@ -23622,6 +23622,31 @@
    "summary": {},
    "progress_metric": "leg_completions",
    "consumer": "desks/mt5/research/pf_allocator.py apply_culture_labels; desks/mt5/research/docket_keff.py"
+  },
+  {
+   "organ": "executable:desks/mt5/scripts/unknown_share_census.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/scripts/unknown_share_census.py"
+   ],
+   "clock": "daily_cycle:unknown_census",
+   "cadence_s": 86400,
+   "max_silence_s": 172800,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+   "artifact_declared": "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "docs/cro/CRO_CYCLE.md D3 (UNKNOWN share of judged cells)"
   }
  ],
  "ratchet": {

@@ -625,6 +625,17 @@ def _probation() -> None:
         raise RuntimeError(f"probation_runner returned {rc}")
 
 
+def _unknown_census() -> None:
+    """The UNKNOWN share of JUDGED cells, measured daily on a fixed-seed docket sample down the
+    judge's own path (the 43% bottleneck, principal 2026-09-30). Read-only; CRO D3 reads it."""
+    sys.path.insert(0, str(BASE / "scripts"))
+    import unknown_share_census
+    rc = unknown_share_census.main(["--complete-inputs", "--budget-s", "900", "--label", "daily",
+                                    "--out", str(BASE / "reports" / "UNKNOWN_SHARE_CENSUS.json")])
+    if rc != 0:
+        raise RuntimeError(f"unknown_share_census returned {rc}")
+
+
 def _zentech() -> None:
     root = BASE.parent.parent
     sys.path.insert(0, str(root / "scripts"))
@@ -655,7 +666,8 @@ STEPS = (("research_gap_map", _research_gap_map),
          ("wiring_ceo", _wiring_ceo), ("probation", _probation),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
          ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
-         ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
+         ("export_aurum", _export_aurum), ("unknown_census", _unknown_census),
+         ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
