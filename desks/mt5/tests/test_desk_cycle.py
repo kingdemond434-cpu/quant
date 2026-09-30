@@ -226,3 +226,31 @@ def test_a_fresh_pass_starts_only_at_the_slot_later_firings_only_resume() -> Non
     src = LAUNCHER.read_text("utf-8")
     assert "$DublinNow.Hour -ne $WindowStart" in src
     assert "$unfinishedToday" in src
+
+
+def test_every_pass_runs_the_tier1_breadth_review() -> None:
+    cycle_text = (CRO / "CRO_CYCLE.md").read_text("utf-8")
+    step = cycle_text[cycle_text.index("## STEP 4B"):cycle_text.index("## STEP 5")]
+    for needle in (
+        "What tier is the quant today?", "maxed out", "Never assume the machinery is at its peak",
+        "Never cut mining", "TIER1_BREADTH_REVIEW.json", "k_eff", "Asian",
+    ):
+        assert needle in step, needle
+    assert "6b. **Tier verdict" in cycle_text
+    assert "EVERY PASS IS THE LAST CHANCE" in cycle_text
+    assert "GET PAST TECHNICAL BLOCKS ALONE" in cycle_text
+    assert "is NOT a technical error" in cycle_text
+    assert "NEVER ASK THE PRINCIPAL" in cycle_text
+    for n, duty in enumerate((
+        "Read desktop over git", "Tier verdict", "Judging throughput to maximum",
+        "Permanent backlog guard", "Same-day certificate and clock",
+        "Conversions per stage to maximum", "Dataset hunting at world scale",
+        "Hypothesis volume", "Breadth of the book", "Machinery gaps to tier-1",
+        "Fully wired or it does not count", "No forced or fake work",
+        "Every item fully completed this pass",
+    ), start=1):
+        assert f"| D{n} | **{duty}** |" in step, duty
+    for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
+                "Cert to forward", "Deep-forest vectors", "Judged", "Live"):
+        assert f"| {row} |" in step, row
+    assert "STEP 4B" in LAUNCHER.read_text("utf-8")
