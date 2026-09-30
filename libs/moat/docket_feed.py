@@ -144,11 +144,13 @@ def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | N
     except sqlite3.Error:
         has_sources = False
     # a module literal, never input: the source's URL from the registry's own `sources` table
+    # the provenance columns, like the culture ones, only when this registry has migrated them
+    prov = "".join(f", {k}" for k in ("source_id", "discovery_id") if k in have)
     url_col = (", (SELECT s.url FROM sources s WHERE s.source_id = research_candidates.source_id)"
-               " AS url" if has_sources else "")
+               " AS url" if has_sources and "source_id" in have else "")
     cur = conn.execute(
         "SELECT id, symbol, family, params_json, chart, origin, mechanism, grid_cell, score,"  # noqa: S608
-        f" created_at, content_hash, source_id, discovery_id{extra}{url_col} "
+        f" created_at, content_hash{prov}{extra}{url_col} "
         "FROM research_candidates "
         "WHERE symbol IS NOT NULL AND symbol != '' AND family IS NOT NULL AND family != '' "
         "AND judged_at IS NULL AND COALESCE(status,'') != 'survived' ORDER BY score DESC, seq")
