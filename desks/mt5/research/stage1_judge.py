@@ -283,6 +283,7 @@ _CAUSES = (
     (re.compile(r"unsupported family parameter|unexpected keyword argument"),
      "PARAM_SIGNATURE_MISMATCH"),
     (re.compile(r"factor basket incomplete"), "FACTOR_BASKET_INCOMPLETE"),
+    (re.compile(r"driver", re.IGNORECASE), "MISSING_DRIVER"),
     (re.compile(r"^no [A-Z0-9]+ bars for|has no .*\.parquet|chart this cell was hunted on"),
      "NO_CHART_BARS"),
     (re.compile(r"no implementation of family"), "NO_FAMILY_IMPLEMENTATION"),
@@ -291,6 +292,32 @@ _CAUSES = (
     (re.compile(r"CLOSE_ONLY"), "CLOSE_ONLY_SYMBOL"),
     (re.compile(r" raised "), "FAMILY_RAISED"),
 )
+
+
+#: The sealed judge's UNKNOWN / NOT_RUN share (43% of a week's verdicts on the box), taken apart
+#: by what stage 1 found: every fine cause maps to one class, so the share is measured before the
+#: build-side fixes land and after.
+UNKNOWN_CLASS = {
+    "NEVER_FIRES_IN_SESSION": "NEVER_FIRES_IN_SESSION", "MISSING_DRIVER": "MISSING_DRIVER",
+    "NO_CHART_BARS": "DATA_MISSING", "FACTOR_BASKET_INCOMPLETE": "DATA_MISSING",
+    "INPUT_LOAD_FAILED": "DATA_MISSING", "UNTRADEABLE_SYMBOL": "DATA_MISSING",
+    "SYMBOL_NOT_IN_REGISTRY": "DATA_MISSING",
+    "MODIFIER_REFUSED": "BUILD_FAILED", "PARAM_SIGNATURE_MISMATCH": "BUILD_FAILED",
+    "FAMILY_RAISED": "BUILD_FAILED", "NO_FAMILY_IMPLEMENTATION": "BUILD_FAILED",
+    "BUILD_FAILED_UNNAMED": "BUILD_FAILED", "BUILD_FAILED_OTHER": "BUILD_FAILED",
+    "EVALUATOR_ERROR": "BUILD_FAILED",
+    "CLOSE_ONLY_SYMBOL": "NOT_JUDGEABLE", "BANNED_FAMILY": "NOT_JUDGEABLE",
+    "R_UNDER_60_DAYS": "TOO_FEW_DAYS", "R_NO_SIGNALS": "NO_SIGNALS",
+}
+
+
+def unknown_class(row: dict[str, Any]) -> str | None:
+    """The UNKNOWN class a ruled cell would have cost the sealed judge, or None (a real test)."""
+    if row.get("verdict") == REC.UNBUILDABLE:
+        return UNKNOWN_CLASS.get(str(row.get("cause")), "BUILD_FAILED")
+    if row.get("verdict") == REC.REJECT:
+        return UNKNOWN_CLASS.get(str(row.get("reason")))
+    return None
 
 
 def unbuildable_cause(why: str | None) -> str:
@@ -360,6 +387,13 @@ def evaluate_engine(spec: dict[str, Any]) -> dict[str, Any]:
     try:
         sigs = list(obj.get("sigs") or [])
         if not sigs:
+            if fam == "lead_lag" and params.get("driver_symbol"):
+                # The sealed build_cell has no lead_lag branch, so the family gets driver=None
+                # and returns [] whatever the market did (gauntlet_build_cell_lead_lag.patch
+                # fixes it). Not a verdict on the edge: a missing input, named.
+                return {"verdict": REC.UNBUILDABLE, "cause": "MISSING_DRIVER",
+                        "reason": f"0 signals: driver {params.get('driver_symbol')!r} bars "
+                                  "not reached by the build"}
             if session_bound(params):
                 # A SESSION VARIANT OF A FAMILY THAT NEVER FIRES IN THAT SESSION (Tier S,
                 # 2026-09-30: 21% of the judge's UNKNOWN verdicts). Named, counted, never
@@ -635,7 +669,9 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
     census: dict[str, Any] = {"rows": 0, "stamped": 0, "unstamped": 0, "cells": 0,
                               "sealed_judged": 0, "backlog": 0, "oldest_first_seen": None,
                               "tiers": dict.fromkeys(REC.TIER_NAMES.values(), 0),
-                              "due_rescreen": 0}
+                              "due_rescreen": 0, "created_24h": 0, "created_7d": 0}
+    cut24 = (now - timedelta(hours=24)).isoformat(timespec="seconds")
+    cut7d = (now - timedelta(days=7)).isoformat(timespec="seconds")
     from libs.data.pit import is_stamped
     dedup: set[int] = set()
     cands: list[tuple[int, str, int, dict[str, Any]]] = []
@@ -692,6 +728,12 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
             continue
         dedup.add(hh)
         census["cells"] += 1
+        # THE CREATION RATE, from the docket's own clock: distinct cells first seen in the window.
+        fs0 = str(h.get("first_seen") or "")
+        if fs0 >= cut7d:
+            census["created_7d"] += 1
+            if fs0 >= cut24:
+                census["created_24h"] += 1
         if hh in seen:
             census["sealed_judged"] += 1
             continue
@@ -890,16 +932,24 @@ def throughput_fence(doc: dict[str, Any]) -> dict[str, Any]:
     proj = s1.get("projected_per_day_18c_50pct")
     target = s1.get("target_per_day")
     backlog = (doc.get("backlog") or {}).get("cells")
+    net = (doc.get("net_backlog_change_per_day") or {}).get("projected_18c_50pct")
     if not isinstance(proj, (int, float)) or not isinstance(target, (int, float)) or \
-            not isinstance(backlog, int):
-        return {"status": UNMEASURED, "why": "projected rate, target or backlog unmeasured"}
+            not isinstance(backlog, int) or not isinstance(net, (int, float)):
+        return {"status": UNMEASURED,
+                "why": "projected rate, target, creation rate or backlog unmeasured"}
     if backlog <= 0:
         return {"status": "PASS", "why": "backlog is empty"}
-    ok = proj >= target
-    return {"status": "PASS" if ok else "FAIL", "projected_per_day": int(proj),
-            "target_per_day": int(target), "backlog": backlog,
-            "why": (f"stage 1 projects {int(proj):,}/day from its measured rate against a "
-                    f"{int(target):,}/day target with {backlog:,} cells waiting")}
+    fails = []
+    if proj < target:
+        fails.append(f"stage 1 projects {int(proj):,}/day against a {int(target):,}/day target")
+    if net >= 0:
+        fails.append(f"the backlog does not shrink: net {int(net):+,}/day")
+    return {"status": "FAIL" if fails else "PASS", "projected_per_day": int(proj),
+            "target_per_day": int(target), "net_backlog_change_per_day": int(net),
+            "backlog": backlog,
+            "why": ("; ".join(fails) + f" with {backlog:,} cells waiting") if fails else (
+                f"stage 1 projects {int(proj):,}/day (target {int(target):,}); the backlog of "
+                f"{backlog:,} shrinks {int(-net):,}/day")}
 
 
 def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None = None,
@@ -1224,6 +1274,35 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
     with contextlib.suppress(Exception):
         age_d = round((now - datetime.fromisoformat(str(oldest))).total_seconds() / 86400, 2)
     measured_per_day = ruled_24h if day_runs else UNMEASURED
+    # THE CREATION RATE: distinct docket cells first seen in the window (the docket's own clock),
+    # the larger of the last 24h and the 7-day daily mean -- the conservative side for "shrinking".
+    c24, c7 = int(census.get("created_24h") or 0), int(census.get("created_7d") or 0)
+    creation = max(c24, round(c7 / 7.0)) if census.get("cells") else UNMEASURED
+    bd_in = ((bd.get("inflow") or {}).get("created_per_hour") or {}) if isinstance(bd, dict) \
+        else {}
+
+    def _net(rate_: Any) -> Any:
+        if isinstance(rate_, (int, float)) and isinstance(creation, int):
+            return int(creation - rate_)
+        return UNMEASURED
+
+    def _clear(rate_: Any) -> Any:
+        n = _net(rate_)
+        if not isinstance(n, int):
+            return UNMEASURED
+        if backlog == 0:
+            return 0.0
+        return round(backlog / -n, 2) if n < 0 else "GROWING"
+
+    net = {"measured_trailing_24h": _net(measured_per_day), "scheduled_pace": _net(scheduled),
+           "projected_18c_50pct": _net(proj18)}
+    ucls: dict[str, int] = {}
+    for r in results:
+        k = unknown_class(r)
+        if k:
+            ucls[k] = ucls.get(k, 0) + 1
+    n_r = sum(1 for r in results if r.get("verdict") in REC.VERDICTS)
+    fwd_unknown = sum(1 for r in results if r.get("verdict") == REC.PASS and unknown_class(r))
     doc: dict[str, Any] = {
         "at": _iso(now), "status": "MEASURED" if results else UNMEASURED,
         "dry_run": bool(dry_run),
@@ -1235,7 +1314,29 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
                 "a reject is re-screenable and never deleted; stage 1 has no promotion authority"),
         "run": run_row,
         "stage1_per_day": measured_per_day,
+        "stage1_per_day_projected_18c_50pct": proj18,
+        "stage1_per_day_scheduled": scheduled,
         "stage2_per_day": s2.get("judged_24h", UNMEASURED) if isinstance(s2, dict) else UNMEASURED,
+        "creation_per_day": creation,
+        "creation": {"created_24h": c24, "created_7d": c7, "basis": (
+            "distinct docket cells by first_seen; the larger of the last 24h and the 7-day mean"),
+            "burndown_inflow_per_hour": bd_in or UNMEASURED},
+        "net_backlog_change_per_day": net,
+        "backlog_cells": backlog,
+        "days_to_clear": {"measured_trailing_24h": _clear(measured_per_day),
+                          "scheduled_pace": _clear(scheduled),
+                          "projected_18c_50pct": _clear(proj18),
+                          "rule": "backlog / (stage-1 per day - creation per day); GROWING when "
+                                  "creation is not outrun"},
+        "unknown_causes": {
+            "this_run": dict(sorted(ucls.items(), key=lambda kv: -kv[1])),
+            "share_of_ruled_that_the_sealed_judge_would_rule_unknown": (
+                round(sum(ucls.values()) / n_r, 4) if n_r else UNMEASURED),
+            "forwarded_to_stage2_with_an_unknown_class": fwd_unknown,
+            "rule": ("before: the share of ruled cells the sealed judge would have spent a slot "
+                     "on and returned UNKNOWN/NOT_RUN (no data, no driver, never fires in its "
+                     "session, build failure, under 60 days, no signals); after: forwarded "
+                     "cells in those classes, 0 by construction")},
         "stage1": {
             "measured_per_day_trailing_24h": measured_per_day,
             "scheduled_pace_per_day": scheduled,
@@ -1293,6 +1394,10 @@ def summary(path: Path | None = None) -> dict[str, Any]:
     s1, s2, bl = d.get("stage1") or {}, d.get("stage2") or {}, d.get("backlog") or {}
     return {"status": d.get("status"), "at": d.get("at"), "source": REPORT.name,
             "stage1_per_day": d.get("stage1_per_day"), "stage2_per_day": d.get("stage2_per_day"),
+            "creation_per_day": d.get("creation_per_day"),
+            "net_backlog_change_per_day": d.get("net_backlog_change_per_day"),
+            "days_to_clear": d.get("days_to_clear"),
+            "unknown_causes": (d.get("unknown_causes") or {}).get("this_run"),
             "stage1_projected_per_day_18c_50pct": s1.get("projected_per_day_18c_50pct"),
             "stage1_target_per_day": s1.get("target_per_day"),
             "stage2_projected_capacity_per_day": s2.get("projected_capacity_per_day"),

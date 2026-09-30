@@ -149,16 +149,38 @@ def test_a_session_variant_that_never_fires_is_its_own_unbuildable_cause(monkeyp
 
 
 # ------------------------------------------------------------------------ the fence
-def _doc(proj, target, backlog):
+def _doc(proj, target, backlog, creation=8_300):
+    net = proj - creation if isinstance(proj, int) else "UNMEASURED"
     return {"stage1": {"projected_per_day_18c_50pct": proj, "target_per_day": target},
-            "backlog": {"cells": backlog}}
+            "backlog": {"cells": backlog},
+            "net_backlog_change_per_day": {"projected_18c_50pct": -net if isinstance(net, int)
+                                           else net}}
 
 
-def test_fence_fails_when_the_projection_misses_the_target_with_a_backlog() -> None:
+def test_fence_fails_when_the_projection_misses_the_target_or_the_backlog_grows() -> None:
     assert S.throughput_fence(_doc(60_000, 100_000, 1_400_000))["status"] == "FAIL"
     assert S.throughput_fence(_doc(160_000, 100_000, 1_400_000))["status"] == "PASS"
+    grow = S.throughput_fence(_doc(160_000, 100_000, 1_400_000, creation=170_000))
+    assert grow["status"] == "FAIL" and "does not shrink" in grow["why"]
+    even = S.throughput_fence(_doc(160_000, 100_000, 1_400_000, creation=160_000))
+    assert even["status"] == "FAIL"
     assert S.throughput_fence(_doc(1, 100_000, 0))["status"] == "PASS"
     assert S.throughput_fence(_doc("UNMEASURED", 100_000, 5))["status"] == "UNMEASURED"
+
+
+def test_unknown_classes_cover_the_sealed_judges_unknown_share() -> None:
+    assert S.unknown_class({"verdict": REC.UNBUILDABLE, "cause": "NO_CHART_BARS"}) == \
+        "DATA_MISSING"
+    assert S.unknown_class({"verdict": REC.UNBUILDABLE, "cause": "MISSING_DRIVER"}) == \
+        "MISSING_DRIVER"
+    assert S.unknown_class({"verdict": REC.UNBUILDABLE,
+                            "cause": S.NEVER_FIRES_IN_SESSION}) == "NEVER_FIRES_IN_SESSION"
+    assert S.unknown_class({"verdict": REC.UNBUILDABLE, "cause": "MODIFIER_REFUSED"}) == \
+        "BUILD_FAILED"
+    assert S.unknown_class({"verdict": REC.REJECT, "reason": "R_UNDER_60_DAYS"}) == \
+        "TOO_FEW_DAYS"
+    assert S.unknown_class({"verdict": REC.REJECT, "reason": "R_BH_NOT_SIGNIFICANT"}) is None
+    assert S.unbuildable_cause("lead_lag: driver 'EURUSD' has no H1 bars") == "MISSING_DRIVER"
 
 
 def test_target_ramps_from_100k_to_500k() -> None:
@@ -249,6 +271,10 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
     assert all(t["fdr_q"] == S.FDR_Q for t in trials)
     assert (out / S.PRIORITY.name).exists()
     assert doc["fence"]["status"] in ("PASS", "FAIL", "UNMEASURED")
+    for k in ("stage1_per_day", "stage2_per_day", "creation_per_day",
+              "net_backlog_change_per_day", "backlog_cells", "days_to_clear", "unknown_causes"):
+        assert k in doc
+    assert doc["unknown_causes"]["forwarded_to_stage2_with_an_unknown_class"] == 0
     # a second run rules nothing new: every cell is stage-1 ruled and not due
     doc2 = S.run(budget_s=120, workers=1, cap=100, docket=docket,
                  seen_path=tmp_path / "none.json", out_dir=out, db=db)
