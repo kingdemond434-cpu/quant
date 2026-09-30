@@ -62,8 +62,7 @@ def test_absent_is_blocked_auth_never_zero() -> None:
 
 
 def test_canonical_name_is_set() -> None:
-    st = cred.status(cred.BY_ENV["EIA_API_KEY"], environ={"EIA_API_KEY": SENTINEL},
-                     root=Path("/nonexistent"))
+    st = cred.status(cred.BY_ENV["EIA_API_KEY"], environ={"EIA_API_KEY": SENTINEL})
     assert st == {"status": cred.SET, "present_as": ["EIA_API_KEY"], "dark_consumers": [],
                   "resolved_on_merge": []}
 
