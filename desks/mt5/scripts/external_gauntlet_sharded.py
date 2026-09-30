@@ -94,23 +94,25 @@ def decide(eg: Any, requested: int | None = None) -> dict[str, Any]:
     elif env_n:
         n, basis = int(float(env_n)), "GAUNTLET_SHARDS"
     else:
-        by_cores = max(1, total_workers // 2)
+        # The pre-warm pool runs in the merging process BEFORE any shard starts, so shards and
+        # pool never overlap: the judge's own core ceiling (WORKERS) bounds N directly.
+        by_cores = max(1, total_workers)
         by_mem = (int(SHARD_MEMORY_SHARE * free // PER_SHARD_MB) if free is not None else 1)
         n = max(1, min(by_cores, by_mem, MAX_SHARDS))
-        basis = (f"auto: min(workers {total_workers}//2={by_cores}, "
+        basis = (f"auto: min(workers {by_cores}, "
                  f"{SHARD_MEMORY_SHARE:.0%} of {free if free is None else round(free)} MB free "
                  f"/ {PER_SHARD_MB:.0f} MB = {by_mem}, cap {MAX_SHARDS})")
     n = max(1, n)
-    per_workers = max(1, total_workers // n)
     return {"n_shards": n, "basis": basis, "free_mb": None if free is None else round(free),
-            "workers_total": total_workers, "workers_per_shard": per_workers,
+            "workers_total": total_workers, "workers_per_shard": 1,
             "per_shard_budget_mb": int(PER_SHARD_MB),
             "need_mb": int(float(getattr(eg, "MEMORY_BUDGET_MB", 1200)) + n * PER_SHARD_MB)}
 
 
 def _shard_env(decision: dict[str, Any]) -> dict[str, str]:
     env = dict(os.environ)
-    env["GAUNTLET_WORKERS"] = str(decision["workers_per_shard"])
+    # One process per shard: the pool already ran in the parent, over the whole plan.
+    env["GAUNTLET_WORKERS"] = "1"
     env["GAUNTLET_MEMORY_BUDGET_MB"] = str(decision["per_shard_budget_mb"])
     env["PYTHONUNBUFFERED"] = "1"
     return env

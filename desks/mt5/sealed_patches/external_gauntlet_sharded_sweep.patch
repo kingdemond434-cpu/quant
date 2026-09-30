@@ -1,5 +1,5 @@
 diff --git a/desks/mt5/scripts/external_gauntlet.py b/desks/mt5/scripts/external_gauntlet.py
-index 10e44e5..9db8797 100644
+index 10e44e5..c98d888 100644
 --- a/desks/mt5/scripts/external_gauntlet.py
 +++ b/desks/mt5/scripts/external_gauntlet.py
 @@ -2296,15 +2296,22 @@ def certificate_annotations(v: dict, cell: dict | None, meta: dict, *, priors: d
@@ -310,8 +310,111 @@ index 10e44e5..9db8797 100644
  
          passed = all(s["passed"] for s in stages.values())
          # WHICH GATE ACTUALLY STOPPED IT, AND WITHOUT THIS THE FUNNEL IS INVISIBLE.
-@@ -2764,6 +2822,380 @@ def iter_json_array(path: Path, chunk_chars: int = 1 << 20):
-             yield value
+@@ -3129,71 +3187,28 @@ def main():
+     # append-only ledger carry the decisions. Fresh builds are counted as unjudged-before-build.
+     _stage0 = stage0_new_summary()
+     _stage0_verdicts: dict[str, dict] = {}
+-    for spec in eligible_specs:
+-        key = f"{spec['sym']}.{spec['family']}.{json.dumps(spec['params'], sort_keys=True)}"
+-        spec_tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
+-        # THE CELL'S OWN CHART DECIDES ITS DATA-DAY. `last_day` is both the cache key's rollover
+-        # and the boundary `_series_trim_partial` drops the partial day at; taking it from H1 for
+-        # an M5 cell would key the cell to a day its own tape may not have reached and trim its
+-        # series at a boundary from a different feed.
+-        frame = _bars_for(spec["sym"], spec_tf)
+-        if frame is None or len(frame) == 0:
+-            print(f"  SKIP {key}: {spec_tf} parquet missing")
+-            blocked_build.append({**spec, "downstream_status": "NOT_RUN_DATA_MISSING",
+-                                  "why": f"point-in-time {spec_tf} parquet is missing or empty"})
+-            continue
+-        last_day = frame.index[-1].normalize()
+-        ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()),
+-                          spec_tf)
+-        cached = cache_load(ckey)
+-        if cached is not None:
+-            ds1, ds3 = cached
+-            stage0_record(_stage0, _stage0_verdicts, spec, spec_tf, ds1)
+-            cell_objs.append({
+-                "sym": spec["sym"], "family": spec["family"], "params": spec["params"],
+-                "timeframe": spec_tf,
+-                "df": None, "sigs": None, "costs": None,
+-                "_cached_ds": ds1, "_cached_ds3": ds3, "_ckey": ckey, "_last_day": last_day,
+-                "mechanism_status": spec.get("mechanism_status"),
+-                "mechanism_note": spec.get("mechanism_note"),
+-            })
+-            cache_hits += 1
+-            continue
+-        if time.time() - _build_t0 > FRESH_BUILD_BUDGET_SEC:
+-            # Out of build budget: defer, never drop. The next sweep finds everything this run
+-            # cached and starts from here, so the docket converges instead of restarting.
+-            deferred.append(spec)
+-            continue
+-        _rss = _rss_mb()
+-        if _rss and _rss > MEMORY_BUDGET_MB:
+-            # Out of MEMORY budget, and the same rule applies: defer, never drop. Building one
+-            # more cell here is what took the box to 280MB free and stopped every other leg.
+-            if not _mem_deferred:
+-                print(f"MEMORY BUDGET reached at {_rss:.0f}MB (cap {MEMORY_BUDGET_MB:.0f}MB) "
+-                      f"after {built_fresh} fresh cell(s): the rest of the docket is DEFERRED to "
+-                      f"the next sweep. The cache is cumulative, so they are computed next hour "
+-                      f"rather than recomputed -- and edge_search and orthogonal_sweep get the "
+-                      f"room they need to run at all.")
+-            _mem_deferred += 1
+-            deferred.append(spec)
+-            continue
+-        _built_syms.add(str(spec["sym"]))
+-        obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
+-        if obj:
+-            obj["mechanism_status"] = spec.get("mechanism_status")
+-            obj["mechanism_note"] = spec.get("mechanism_note")
+-            obj["_ckey"], obj["_last_day"] = ckey, last_day
+-            cell_objs.append(obj)
+-            built_fresh += 1
+-            _stage0["unjudged_no_series_before_build"] += 1
+-        else:
+-            _why = LAST_BUILD_FAILURE or "parquet missing or build failed"
+-            print(f"  SKIP {key}: {_why}")
+-            blocked_build.append({**spec, "downstream_status": (
+-                                      "NOT_RUN_MODIFIER" if _why.startswith("NOT_RUN_MODIFIER")
+-                                      else "NOT_RUN_BUILD_FAILED"),
+-                                  "why": LAST_BUILD_FAILURE
+-                                  or "signal construction returned no executable cell"})
++    _sharding = None
++    if _SHARD is not None:
++        # THE SHARDED SWEEP (`run_sharded`). The pool above has warmed the docket exactly as it
++        # always does; the docket -- ordered, allocated, final -- is then written as ONE plan,
++        # and N shards each run the loop below and the cell-local gates on their stable-hash
++        # share of it. This process verifies every planned cell came back from exactly one
++        # shard and restores the plan's order. No shard computes a program-level number:
++        # `run_gauntlet` below does, once, on the union.
++        _sh = _run_shards(eligible_specs, meta, _build_t0)
++        cell_objs, deferred = _sh["cell_objs"], _sh["deferred"]
++        blocked_build.extend(_sh["blocked"])
++        cache_hits, built_fresh = _sh["cache_hits"], _sh["built_fresh"]
++        _mem_deferred = _sh["mem_deferred"]
++        _built_syms |= _sh["built_syms"]
++        _sharding = _sh["report"]
++        _stage0_fold(_stage0, _stage0_verdicts, _sh["stage0_parts"])
++    else:
++        _b = _build_specs(eligible_specs, meta, _build_t0, _stage0, _stage0_verdicts,
++                          _built_syms, blocked_build)
++        cell_objs, deferred = _b["cell_objs"], _b["deferred"]
++        cache_hits, built_fresh, _mem_deferred = (_b["cache_hits"], _b["built_fresh"],
++                                                  _b["mem_deferred"])
+     if cache_hits:
+         print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
+               f"{len(eligible_specs) - cache_hits} to compute")
+@@ -3252,6 +3267,8 @@ def main():
+     # be read against "N workers warmed M cells" rather than guessed at from wall time.
+     result["workers"] = WORKERS
+     result["prewarm"] = _prewarm
++    if _sharding is not None:
++        result["sharding"] = _sharding
+     result["peak_rss_mb"] = round(_rss_mb(), 1)
+     _save_build_cursor(_cursor, _built_syms)
+     # A CELL COUNTS AS SEEN ONLY WHEN IT WAS JUDGED, never when it was deferred or blocked.
+@@ -3773,5 +3790,368 @@ def _cli_main() -> int:
+             return 0
  
  
 +# ------------------------------------------------------------------------ the sharded sweep
@@ -331,6 +434,11 @@ index 10e44e5..9db8797 100644
 +#: A cell passes only when its cell-local gates (computed in its shard) AND the union's
 +#: program-level gates pass, which is the unsharded rule verbatim: the verdict row is assembled by
 +#: the same code in the same stage order either way.
++#:
++#: THE POOL IS NOT SHARDED. `main` runs the pre-warm pool over the whole plan first, exactly as
++#: the unsharded sweep does (same order, same deadline, same deferrals); the shards then split the
++#: serial work that followed it: loading each cached pair, any fresh build the pool did not reach,
++#: both cost arms and the cell-local gates.
 +#:
 +#: ONE PEN. Shards write the content-addressed series cache (atomic, as the pre-warm pool already
 +#: does) and their own intermediate file, nothing else. The plan, the merge and every write the
@@ -388,10 +496,10 @@ index 10e44e5..9db8797 100644
 +def shard_worker(shard_dir: Path | str, k: int) -> dict:
 +    """Build and rule shard `k` of the plan in `shard_dir`; write `shard_<k>.pkl`. No lock.
 +
-+    Runs the SAME code the unsharded sweep runs, on its share of the plan and in the plan's
-+    order: the pre-warm pool, `_build_specs` (one spec at a time, so the outcome of each is
-+    known), `_cell_series`, `_cell_series_x3` and `_cell_local_stages`. It computes NO
-+    program-level quantity and writes no shared record; the merging `main` does both, once.
++    Runs the SAME code the unsharded sweep runs after its pre-warm pool, on its share of the plan
++    and in the plan's order: `_build_specs` (one spec at a time, so the outcome of each is known),
++    `_cell_series`, `_cell_series_x3` and `_cell_local_stages`. It computes NO program-level
++    quantity and writes no shared record; the merging `main` does both, once.
 +    """
 +    shard_dir = Path(shard_dir)
 +    t0 = time.time()
@@ -405,11 +513,11 @@ index 10e44e5..9db8797 100644
 +    meta = plan["meta"]
 +    build_t0 = float(plan["build_t0"])
 +    mine = [(i, sp) for i, sp in enumerate(plan["specs"]) if shard_of(sp, n) == k]
++    # NO POOL HERE. The merging process ran the pre-warm pool over the WHOLE plan before any shard
++    # started, in the plan's order and against the same deadline, exactly as the unsharded sweep
++    # does -- so a shard finds the pool's cells cached and defers what the pool did not reach, for
++    # the same reason and with the same status. Only the per-cell work after the pool is split.
 +    built_syms: set[str] = set()
-+    prewarm = None
-+    if WORKERS > 1 and len(mine) > 1:
-+        prewarm = _prewarm_cache([sp for _, sp in mine], meta, build_t0 + FRESH_BUILD_BUDGET_SEC)
-+        built_syms |= set(prewarm.get("built_symbols") or ())
 +    acc: dict = {"cell_objs": [], "deferred": [], "cache_hits": 0, "built_fresh": 0,
 +                 "mem_deferred": 0}
 +    blocked: list[dict] = []
@@ -451,8 +559,8 @@ index 10e44e5..9db8797 100644
 +        c.pop("_cached_ds3", None)
 +        c.pop("_fresh_ds3", None)
 +    out = {"protocol": SHARD_PROTOCOL, "token": plan["token"], "k": k, "n": n, "pid": os.getpid(),
-+           "rows": rows, "built_syms": sorted(built_syms), "prewarm": prewarm,
-+           "workers": WORKERS, "cells_ruled": n_local, "seconds": round(time.time() - t0, 3),
++           "rows": rows, "built_syms": sorted(built_syms), "cells_ruled": n_local,
++           "seconds": round(time.time() - t0, 3),
 +           "peak_rss_mb": round(_rss_mb(), 1)}
 +    _pickle_atomic(shard_dir / f"shard_{k}.pkl", out)
 +    print(f"SHARD {k}/{n}: {len(rows)} planned cell(s), {len(cells)} built, {n_local} ruled "
@@ -485,7 +593,6 @@ index 10e44e5..9db8797 100644
 +    rows_by_idx: dict[int, dict] = {}
 +    reports: list[dict] = []
 +    built_syms: set[str] = set()
-+    prewarms: list[dict] = []
 +    for k in range(n):
 +        f = shard_dir / f"shard_{k}.pkl"
 +        if not f.exists():
@@ -506,11 +613,8 @@ index 10e44e5..9db8797 100644
 +                raise ShardMergeError(f"cell {i} came back as a different cell")
 +            rows_by_idx[i] = row
 +        built_syms |= set(out.get("built_syms") or ())
-+        if out.get("prewarm"):
-+            prewarms.append(out["prewarm"])
 +        reports.append({"k": k, "planned": len(out["rows"]), "ruled": out.get("cells_ruled"),
-+                        "seconds": out.get("seconds"), "workers": out.get("workers"),
-+                        "peak_rss_mb": out.get("peak_rss_mb")})
++                        "seconds": out.get("seconds"), "peak_rss_mb": out.get("peak_rss_mb")})
 +    missing = len(specs) - len(rows_by_idx)
 +    if missing:
 +        raise ShardMergeError(f"{missing} planned cell(s) came back from no shard")
@@ -527,21 +631,9 @@ index 10e44e5..9db8797 100644
 +        hits += int(row["cache_hits"])
 +        fresh += int(row["built_fresh"])
 +        mem += int(row["mem_deferred"])
-+    prewarm = None
-+    if prewarms:
-+        prewarm = {"workers": 0, "submitted": 0, "warmed": 0, "hit": 0, "failed": 0,
-+                   "unreached": 0, "seconds": 0.0, "failures": {}, "built_symbols": set(),
-+                   "shards": len(prewarms)}
-+        for pw in prewarms:
-+            for key in ("workers", "submitted", "warmed", "hit", "failed", "unreached"):
-+                prewarm[key] += int(pw.get(key) or 0)
-+            prewarm["seconds"] = max(prewarm["seconds"], float(pw.get("seconds") or 0.0))
-+            for st, cnt in (pw.get("failures") or {}).items():
-+                prewarm["failures"][st] = prewarm["failures"].get(st, 0) + cnt
-+            prewarm["built_symbols"] |= set(pw.get("built_symbols") or ())
 +    return {"cell_objs": cell_objs, "deferred": deferred, "blocked": blocked,
 +            "stage0_parts": parts, "cache_hits": hits, "built_fresh": fresh,
-+            "mem_deferred": mem, "built_syms": built_syms, "prewarm": prewarm,
++            "mem_deferred": mem, "built_syms": built_syms,
 +            "report": {"protocol": SHARD_PROTOCOL, "n_shards": n, "planned_cells": len(specs),
 +                       "each_cell_ruled_once": True,
 +                       "program_level": "computed once on the union matrix by the merge",
@@ -688,117 +780,5 @@ index 10e44e5..9db8797 100644
 +            "built_fresh": built_fresh, "mem_deferred": _mem_deferred}
 +
 +
- def main():
-     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
- 
-@@ -3117,7 +3549,7 @@ def main():
-     # one budget rather than stacking to ninety minutes and breaking the hourly cadence.
-     # With WORKERS == 1 this block is skipped and the sweep is byte-for-byte what it was.
-     _prewarm = None
--    if WORKERS > 1 and len(eligible_specs) > 1:
-+    if _SHARD is None and WORKERS > 1 and len(eligible_specs) > 1:
-         _prewarm = _prewarm_cache(eligible_specs, meta, _build_t0 + FRESH_BUILD_BUDGET_SEC)
-         # THE POOL'S BUILDS COUNT AS BUILDS. Without this the cursor never advances and the
-         # docket never rotates -- see `_prewarm_cache.summary["built_symbols"]`.
-@@ -3129,71 +3561,27 @@ def main():
-     # append-only ledger carry the decisions. Fresh builds are counted as unjudged-before-build.
-     _stage0 = stage0_new_summary()
-     _stage0_verdicts: dict[str, dict] = {}
--    for spec in eligible_specs:
--        key = f"{spec['sym']}.{spec['family']}.{json.dumps(spec['params'], sort_keys=True)}"
--        spec_tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
--        # THE CELL'S OWN CHART DECIDES ITS DATA-DAY. `last_day` is both the cache key's rollover
--        # and the boundary `_series_trim_partial` drops the partial day at; taking it from H1 for
--        # an M5 cell would key the cell to a day its own tape may not have reached and trim its
--        # series at a boundary from a different feed.
--        frame = _bars_for(spec["sym"], spec_tf)
--        if frame is None or len(frame) == 0:
--            print(f"  SKIP {key}: {spec_tf} parquet missing")
--            blocked_build.append({**spec, "downstream_status": "NOT_RUN_DATA_MISSING",
--                                  "why": f"point-in-time {spec_tf} parquet is missing or empty"})
--            continue
--        last_day = frame.index[-1].normalize()
--        ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()),
--                          spec_tf)
--        cached = cache_load(ckey)
--        if cached is not None:
--            ds1, ds3 = cached
--            stage0_record(_stage0, _stage0_verdicts, spec, spec_tf, ds1)
--            cell_objs.append({
--                "sym": spec["sym"], "family": spec["family"], "params": spec["params"],
--                "timeframe": spec_tf,
--                "df": None, "sigs": None, "costs": None,
--                "_cached_ds": ds1, "_cached_ds3": ds3, "_ckey": ckey, "_last_day": last_day,
--                "mechanism_status": spec.get("mechanism_status"),
--                "mechanism_note": spec.get("mechanism_note"),
--            })
--            cache_hits += 1
--            continue
--        if time.time() - _build_t0 > FRESH_BUILD_BUDGET_SEC:
--            # Out of build budget: defer, never drop. The next sweep finds everything this run
--            # cached and starts from here, so the docket converges instead of restarting.
--            deferred.append(spec)
--            continue
--        _rss = _rss_mb()
--        if _rss and _rss > MEMORY_BUDGET_MB:
--            # Out of MEMORY budget, and the same rule applies: defer, never drop. Building one
--            # more cell here is what took the box to 280MB free and stopped every other leg.
--            if not _mem_deferred:
--                print(f"MEMORY BUDGET reached at {_rss:.0f}MB (cap {MEMORY_BUDGET_MB:.0f}MB) "
--                      f"after {built_fresh} fresh cell(s): the rest of the docket is DEFERRED to "
--                      f"the next sweep. The cache is cumulative, so they are computed next hour "
--                      f"rather than recomputed -- and edge_search and orthogonal_sweep get the "
--                      f"room they need to run at all.")
--            _mem_deferred += 1
--            deferred.append(spec)
--            continue
--        _built_syms.add(str(spec["sym"]))
--        obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
--        if obj:
--            obj["mechanism_status"] = spec.get("mechanism_status")
--            obj["mechanism_note"] = spec.get("mechanism_note")
--            obj["_ckey"], obj["_last_day"] = ckey, last_day
--            cell_objs.append(obj)
--            built_fresh += 1
--            _stage0["unjudged_no_series_before_build"] += 1
--        else:
--            _why = LAST_BUILD_FAILURE or "parquet missing or build failed"
--            print(f"  SKIP {key}: {_why}")
--            blocked_build.append({**spec, "downstream_status": (
--                                      "NOT_RUN_MODIFIER" if _why.startswith("NOT_RUN_MODIFIER")
--                                      else "NOT_RUN_BUILD_FAILED"),
--                                  "why": LAST_BUILD_FAILURE
--                                  or "signal construction returned no executable cell"})
-+    _sharding = None
-+    if _SHARD is not None:
-+        # THE SHARDED SWEEP (`run_sharded`). The docket above -- ordered, allocated, final -- is
-+        # written as ONE plan; N shards each build and rule their stable-hash share of it with
-+        # `_build_specs`, `_cell_series` and `_cell_local_stages`; this process then verifies
-+        # every planned cell came back from exactly one shard and restores the plan's order. No
-+        # shard computes a program-level number: `run_gauntlet` below does, once, on the union.
-+        _sh = _run_shards(eligible_specs, meta, _build_t0)
-+        cell_objs, deferred = _sh["cell_objs"], _sh["deferred"]
-+        blocked_build.extend(_sh["blocked"])
-+        cache_hits, built_fresh = _sh["cache_hits"], _sh["built_fresh"]
-+        _mem_deferred = _sh["mem_deferred"]
-+        _built_syms |= _sh["built_syms"]
-+        _prewarm, _sharding = _sh["prewarm"], _sh["report"]
-+        _stage0_fold(_stage0, _stage0_verdicts, _sh["stage0_parts"])
-+    else:
-+        _b = _build_specs(eligible_specs, meta, _build_t0, _stage0, _stage0_verdicts,
-+                          _built_syms, blocked_build)
-+        cell_objs, deferred = _b["cell_objs"], _b["deferred"]
-+        cache_hits, built_fresh, _mem_deferred = (_b["cache_hits"], _b["built_fresh"],
-+                                                  _b["mem_deferred"])
-     if cache_hits:
-         print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
-               f"{len(eligible_specs) - cache_hits} to compute")
-@@ -3252,6 +3640,8 @@ def main():
-     # be read against "N workers warmed M cells" rather than guessed at from wall time.
-     result["workers"] = WORKERS
-     result["prewarm"] = _prewarm
-+    if _sharding is not None:
-+        result["sharding"] = _sharding
-     result["peak_rss_mb"] = round(_rss_mb(), 1)
-     _save_build_cursor(_cursor, _built_syms)
-     # A CELL COUNTS AS SEEN ONLY WHEN IT WAS JUDGED, never when it was deferred or blocked.
+ if __name__ == "__main__":
+     raise SystemExit(_cli_main())
