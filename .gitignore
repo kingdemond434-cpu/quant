@@ -421,3 +421,10 @@ desks/mt5/data/import_stems_cache.json
 !desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
 !desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
 !desks/mt5/reports/shadow/precert_shadow_state.json
+
+# institutional_footprint leg: fetch cursor, watch state, emitted-cell keys and culture log are
+# the box's own working state (the coverage report is published under reports/).
+desks/mt5/data/institutional/
+# ...and its two small summaries cross the wire like the research measurements above (CRO D37).
+!desks/mt5/reports/INSTITUTIONAL_COVERAGE.json
+!desks/mt5/reports/INSTITUTIONAL_STATE.json
