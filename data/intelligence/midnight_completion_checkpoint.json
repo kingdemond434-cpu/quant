@@ -57,15 +57,10 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-desk-pull.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-30T13:08:43.793947+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-30T15:00:21.105612+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   },
   "mechanism_independence": {
    "finished_at": "2026-09-30T09:52:13.999640+00:00",
@@ -86,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-30T13:08:43.793947+00:00"
+ "updated_at": "2026-09-30T15:00:21.105612+00:00"
 }
