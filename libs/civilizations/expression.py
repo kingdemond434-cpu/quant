@@ -756,7 +756,9 @@ def grammar_valid(expr: Any) -> tuple[bool, str]:
     try:
         from libs.research import alpha_grammar as g
     except Exception as exc:                                   # pragma: no cover - env
-        return True, f"grammar not importable ({type(exc).__name__}); structural only"
+        # FAIL CLOSED: an expression the executor's own grammar was not asked about is not
+        # executable, whatever the reason the grammar could not be asked
+        return False, f"grammar not importable ({type(exc).__name__})"
     try:
         return bool(g.is_valid(expr)), ""
     except Exception as exc:

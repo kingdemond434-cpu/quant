@@ -81,6 +81,18 @@ def culture_of(meta: Mapping[str, Any]) -> dict[str, Any]:
     return row
 
 
+def _dsl_transpile(pid: str, text: str) -> Any:
+    """libs.research.alpha_dsl.transpile, or None where it cannot be imported (no numpy)."""
+    try:
+        from libs.research import alpha_dsl
+    except Exception:
+        return None
+    try:
+        return alpha_dsl.transpile(pid, text)
+    except Exception:
+        return None
+
+
 def load_meta(root: Path) -> dict[str, dict[str, Any]]:
     """source id -> civilization metadata, from the roster and the frontier file."""
     out: dict[str, dict[str, Any]] = {}
@@ -277,6 +289,27 @@ class Resident:
                 self.pass_stats[sid]["expr_duplicate"] += 1
                 info.append(row)
                 continue
+            # 1. THE DESK'S OWN EXACT TRANSPILER (libs.research.alpha_dsl) -> the expression
+            #    factory. Cross-sectional rank stays a basket rank (`xrank`), neutralisation a
+            #    basket z-score; nothing is approximated there. A paper Alpha101 is already one
+            #    of the factory's parents, so it is recorded as lineage and never re-minted.
+            pid = f"civ:{g.genome[:20]}"
+            pg = _dsl_transpile(pid, text)
+            if pg is not None:
+                row["dsl_status"], row["dsl_missing"] = pg.status, list(pg.missing)
+                if self._is_paper_alpha(label, g):
+                    row["factory"] = "existing alpha101 parent"
+                    self.pass_stats[sid]["expr_factory_existing"] += 1
+                elif pg.status in ("TESTABLE", "TOO_DEEP"):
+                    self._factory_parent(pid, pg, text, rec, meta)
+                    row["factory"] = "donated parent"
+                    self.pass_stats[sid]["expr_factory_donated"] += 1
+                else:
+                    for m in pg.missing:
+                        self.untranslated.append({"reason": f"dsl:{m}", "expr": g.canonical,
+                                                  "needs": [], "source_id": sid})
+            # 2. A TIME-SERIES VARIANT: rank over the series' own history instead of the basket.
+            #    A NEW rule with no Alpha101 lineage, only minted when the grammar executes it.
             try:
                 tr = E.to_mt5(node)
             except E.Untranslatable as u:
@@ -292,25 +325,47 @@ class Resident:
             why = BP.cheap_falsify(tr.expr)
             ok, gwhy = E.grammar_valid(tr.expr)
             if why or not ok:
-                row["falsified"] = why or gwhy
+                row["falsified"] = why or gwhy or "grammar refuses it"
                 self.pass_stats[sid]["expr_falsified"] += 1
                 info.append(row)
                 continue
             base = {"indicators": {}, "patterns": [], "regimes": [], "hours": [],
                     "lookahead": [], "timeframe": "H1", "symbols": [],
-                    "mechanism_family": "formulaic_alpha",
-                    "expr_subtype": f"formula:{g.skeleton[:12]}",
-                    "claim": f"{label}: {text}"[:480],
+                    "mechanism_family": "formulaic_ts_variant",
+                    "expr_subtype": f"ts_variant:{g.skeleton[:12]}",
+                    "claim": f"time-series variant of {label} (not the published alpha): "
+                             f"{text}"[:480],
+                    "variant_of_genome": g.genome, "alpha101_lineage": False,
                     "approximations": tr.approximations, "genome": g.genome,
                     "skeleton": g.skeleton, "novel_skeleton": novel_skel}
-            rules.append({**base, "expr": tr.expr, "expr_published": not tr.approximations})
+            rules.append({**base, "expr": tr.expr, "expr_published": False})
             for tag_, child in WQ.descendants(tr.expr):
-                rules.append({**base, "expr": child, "expr_published": False,
-                              "descendant": tag_, "novel_skeleton": False})
-            row["translated"] = tr.expr
-            self.pass_stats[sid]["expr_translated"] += 1
+                if E.grammar_valid(child)[0]:
+                    rules.append({**base, "expr": child, "expr_published": False,
+                                  "descendant": tag_, "novel_skeleton": False})
+            row["ts_variant"] = tr.expr
+            self.pass_stats[sid]["expr_ts_variant"] += 1
             info.append(row)
         return rules, info
+
+    def _is_paper_alpha(self, label: str, g: Any) -> bool:
+        if not label.startswith("alpha#"):
+            return False
+        try:
+            ref = WQ.canonical_alpha101().get(int(label[6:]))
+            return ref is not None and E.genome_of(ref).skeleton == g.skeleton
+        except (ValueError, E.ParseError, RecursionError):
+            return False
+
+    def _factory_parent(self, pid: str, pg: Any, text: str, rec: Mapping[str, Any],
+                        meta: Mapping[str, Any]) -> None:
+        row = {"at": _iso(_now()), "parent_id": pid, "status": pg.status, "tree": pg.tree,
+               "formula": text[:2000], "missing": list(pg.missing),
+               "source_id": rec.get("source_id"), "source_uri": rec.get("source_uri"),
+               "record_id": rec.get("record_id"), "civilization": meta.get("civilization"),
+               **{k: meta.get(k) for k in CULTURE_FIELDS}}
+        with (self.data / "formula_parents.jsonl").open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str, ensure_ascii=False) + "\n")
 
     # --------------------------------------------------------------------------- parking
     def deepen(self, rec: Mapping[str, Any], route: Any) -> None:
