@@ -48,12 +48,14 @@ def test_budget_scales_by_share_and_clips(monkeypatch, tmp_path):
     rb.BANDIT.write_text(json.dumps({"shares": shares}), encoding="utf-8")
     s, rec = rb.budget_s("alpha_evolution", 240)
     assert rec["applied"] is True and 1.4 < rec["factor"] < 1.6 and s == round(240 * rec["factor"])
-    # a share of zero floors at 0.5x, never starves the leg
+    # a share of zero floors at PAR (2026-09-29, Tier-1 #10): the leg keeps its whole base
+    # budget -- a price may fund a miner above its share and never throttle it below
     shares = dict.fromkeys(ARMS, 0.0)
     shares["model_architecture"] = 1.0
     rb.BANDIT.write_text(json.dumps({"shares": shares}), encoding="utf-8")
     s, rec = rb.budget_s("alpha_evolution", 240)
-    assert rec["factor"] == rb.FLOOR and s == 120
+    assert rb.FLOOR == 1.0
+    assert rec["factor"] == rb.FLOOR and s == 240
     # a runaway share caps at 2x
     shares = dict.fromkeys(ARMS, 0.0)
     shares["mutate_survivor"] = 1.0

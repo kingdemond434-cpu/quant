@@ -52,7 +52,23 @@ def _add(**over) -> int:
     return learn.cmd_add(argparse.Namespace(**args))
 
 
-def _full(ledger, n: int = 40, cost: str = "capital", recurrence: int = 16) -> None:
+def _full(ledger, n: int | None = None, cost: str = "capital", recurrence: int = 16) -> None:
+    """Fill the ledger PAST the live injected budget.
+
+    Forty rows overflowed the old 12,000-char budget; the budget is now sized to the whole corpus
+    (desk_memory._FULL_CORPUS_CHARS, raised 2026-09-06 and again 2026-09-15), so a fixed row count
+    stopped overflowing it and the forcing function was never exercised. The count is derived
+    from the budget in force, with forty rows of margin, so the test tracks the real ceiling.
+    """
+    if n is None:
+        # Per-row cost measured through the REAL renderer, not the raw JSON length (the rendered
+        # form is shorter, so sizing off the JSON under-filled the budget).
+        probe = ledger.parent / "_size_probe.jsonl"
+        probe.write_text("\n".join(_row(i, cost, recurrence) for i in range(1, 11)) + "\n",
+                         "utf-8")
+        per_row = max(len(desk_memory.corpus(path=probe)[0]) // 10, 1)
+        probe.unlink()
+        n = desk_memory.BUDGET_CHARS // per_row + 40
     ledger.write_text("\n".join(_row(i, cost, recurrence) for i in range(1, n + 1)) + "\n",
                       "utf-8")
 
@@ -107,7 +123,7 @@ def test_displacement_is_named_because_the_pack_is_strict_rank(ledger, capsys):
     """Adding a lesson can push ANOTHER one out. That victim is now the wish, so it is named."""
     # Low-scoring fillers overflow the budget; a capital-class lesson outranks the whole tail,
     # takes its slice at the top of the pack, and the last filler that used to fit no longer does.
-    _full(ledger, n=40, cost="hygiene", recurrence=1)
+    _full(ledger, cost="hygiene", recurrence=1)
     # The candidate is deliberately LONGER than one filler block, so the eviction is arithmetic
     # rather than a coin flip on however much headroom the last filler happened to leave.
     assert _add(cost="capital",

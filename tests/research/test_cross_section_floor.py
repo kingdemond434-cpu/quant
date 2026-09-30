@@ -241,28 +241,45 @@ def test_fence_counts_unreadable_files_in_its_denominator(monkeypatch, tmp_path)
 # ------------------------------------------------- the locked-mirror invariant (the live repair)
 
 
-def test_shadow_and_backfill_share_one_cross_section_floor() -> None:
-    """scripts/backfill_oi_ls_oos.py declares itself the LOCKED MIRROR of the shadow's
-    construction. Until 2026-08-13 only the backfill floored thin dates, so the OOS evidence was
-    earned on a construction the live forward clock does not run (L1.61).
-    """
-    shadow = (ROOT / "scripts/run_derivative_shadow.py").read_text("utf-8")
-    backfill = (ROOT / "scripts/backfill_oi_ls_oos.py").read_text("utf-8")
+#: BOTH LOCKED MIRRORS ARE RETIRED. `scripts/run_derivative_shadow.py` (the OI/long-short forward
+#: clock) and `scripts/backfill_oi_ls_oos.py` (its OOS backfill) were crypto-exchange organs deleted
+#: in the 2026-09-05 MT5 purge. The invariant these two tests pinned -- one construction, one
+#: floor -- now has no pair to hold it between; what survives is the shared floor itself, which
+#: every remaining caller imports from `libs/research/cross_section_floor.py`.
+_RETIRED_MIRRORS = ("scripts/run_derivative_shadow.py", "scripts/backfill_oi_ls_oos.py")
 
-    import re
-    s = re.search(r"^_MIN_SYMBOLS\s*=\s*(\d+)", shadow, re.M)
-    b = re.search(r"^MIN_SYMBOLS\s*=\s*(\d+)", backfill, re.M)
-    assert s and b, "both mirrors must declare a cross-section floor constant"
-    assert int(s.group(1)) == int(b.group(1)), (
-        "the locked mirrors' cross-section floors have drifted apart")
+
+def _live_invokers(rel: str) -> list[str]:
+    name = rel.rsplit("/", 1)[-1]
+    hits = []
+    for p in list((ROOT / "ops").glob("*")) + list((ROOT / "deploy").glob("*")):
+        if not p.is_file():
+            continue
+        for ln in p.read_text("utf-8", errors="ignore").splitlines():
+            if name in ln and not ln.lstrip().startswith("#"):
+                hits.append(f"{p.name}: {ln.strip()[:80]}")
+    return hits
+
+
+def test_shadow_and_backfill_share_one_cross_section_floor() -> None:
+    """scripts/backfill_oi_ls_oos.py declared itself the LOCKED MIRROR of the shadow's
+    construction (L1.61). Both are retired; neither may come back unscheduled-but-present, and
+    no scheduler may still name them.
+    """
+    for rel in _RETIRED_MIRRORS:
+        assert not (ROOT / rel).exists(), f"{rel} was retired 2026-09-05"
+        assert not _live_invokers(rel), _live_invokers(rel)
 
 
 def test_shadow_forward_returns_applies_the_floor() -> None:
-    """Fails if the wiring is removed from the live clock."""
-    import ast
-    src = (ROOT / "scripts/run_derivative_shadow.py").read_text("utf-8")
-    fn = next(n for n in ast.walk(ast.parse(src))
-              if isinstance(n, ast.FunctionDef) and n.name == "_forward_returns")
-    code = ast.unparse(fn)
-    assert "measure_cross_section" in code, "the live forward clock lost its cross-section floor"
-    assert "_keep.mask" in code, "the measured mask must actually be applied"
+    """The floor the live clock applied is the library's: it still measures and masks."""
+    import pandas as pd
+
+    from libs.research.cross_section_floor import DEFAULT_MIN_SYMBOLS, measure_cross_section
+    assert not (ROOT / "scripts/run_derivative_shadow.py").exists()
+    idx = pd.date_range("2026-01-01", periods=3, freq="D")
+    wide = {f"S{i}": [1.0, 1.0, 1.0] for i in range(DEFAULT_MIN_SYMBOLS)}
+    panel = pd.DataFrame(wide, index=idx)
+    panel.iloc[1, 1:] = float("nan")                  # date 1 is thin: one symbol reports
+    keep = measure_cross_section(panel)
+    assert list(keep.mask) == [True, False, True]

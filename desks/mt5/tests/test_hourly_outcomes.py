@@ -31,10 +31,13 @@ def test_returned_verdict_is_recorded(cycle, result, expected):
 
 
 def test_failed_leg_does_not_prevent_next_leg(cycle):
+    # A leg's own exception is its failure. SystemExit is NOT one any more: `_costed` re-raises it
+    # as someone stopping the pass (merged 2026-09-08, see the comment in `_costed`), so this
+    # uses a real crash, and the returned status is the cycle's own `LEG_FAILED`.
     def fail():
-        raise SystemExit(2)
+        raise RuntimeError("leg crashed")
 
-    assert cycle._costed("failed", fail)["status"] == "FAILED"
+    assert cycle._costed("failed", fail)["status"] == "LEG_FAILED"
     assert cycle._costed("next", lambda: {"exit_code": 0}) == {"exit_code": 0}
     assert [r["run"] for r in compute_ledger.rows()] == ["failed", "next"]
 
@@ -55,4 +58,14 @@ def test_keyboard_interrupt_still_stops_controller(cycle):
 
     with pytest.raises(KeyboardInterrupt):
         cycle._costed("interrupted", interrupt)
-    assert compute_ledger.rows()[-1]["outcome"] == "KeyboardInterrupt"
+    # Recorded as the pass being stopped, not as a leg failure (`_costed`, 2026-09-08).
+    assert compute_ledger.rows()[-1]["outcome"] == "interrupted"
+
+
+def test_system_exit_stops_the_controller_too(cycle):
+    def stop():
+        raise SystemExit(2)
+
+    with pytest.raises(SystemExit):
+        cycle._costed("stopped", stop)
+    assert compute_ledger.rows()[-1]["outcome"] == "interrupted"

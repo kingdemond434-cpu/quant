@@ -32,12 +32,15 @@ from __future__ import annotations
 from typing import Any
 
 import pandas as pd
+from mt5desk.build_memo import Memo, args_key, copy_signals, frame_fingerprint
 from mt5desk.exit_operators import anchor_direction, apply_exit_operators
 from mt5desk.families import Signal, _h1, get_family_func, register_family
 
 #: Families whose signals cannot be rebuilt from `(bars, params)` alone -- they need a runtime
 #: input that `external_gauntlet.build_cell` injects for THEM and not for a wrapper around them.
 #: Mirrors the branches of `mt5desk.family_inputs.resolve`.
+_BASE_MEMO = Memo(copier=copy_signals)
+
 _UNWRAPPABLE: frozenset[str] = frozenset({
     "carry", "ensemble", "formula", "lead_lag", "style_premia", "relative_value",
     "cross_asset_residual", "pca_residual", "execution_state", "liquidity_regime",
@@ -93,16 +96,26 @@ def family_exit_operated(
     for k in ("timeframe", "session"):
         params.pop(k, None)
     d = _h1(df)
-    try:
-        sigs = fn(d, side=1, **params)
-    except TypeError:
+
+    def _base() -> list[Signal] | None:
         try:
-            sigs = fn(d, **params)
+            raw = fn(d, side=1, **params)
+        except TypeError:
+            try:
+                raw = fn(d, **params)
+            except Exception:
+                return None
         except Exception:
-            return []
-    except Exception:
-        return []
-    sigs = [s for s in (sigs or []) if isinstance(s, Signal)]
+            return None
+        return [s for s in (raw or []) if isinstance(s, Signal)]
+
+    # ONE BASE BUILD PER (bars, base family, base params), not one per exit variant: the ~12 cells
+    # of a wrapped base differ only in the operator applied below, and every one of them used to
+    # rebuild the identical base signals (for `regime_transition`, a stack of HMM fits). The key is
+    # a content hash of the bars and the exact base arguments, so the value is the one the call
+    # returns; `mt5desk.build_memo` says why it is bounded and copies what it hands out.
+    sigs = _BASE_MEMO.get_or_compute(
+        (frame_fingerprint(d), args_key(base_family, params)), _base)
     if not sigs:
         return []
     anchor = None

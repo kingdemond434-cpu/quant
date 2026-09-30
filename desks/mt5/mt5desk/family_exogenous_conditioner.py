@@ -158,15 +158,18 @@ def family_exogenous_conditioner(
     atr = _atr(d, atr_n)
     thr = abs(float(threshold))
     signals: list[Signal] = []
+    _a_m = m.to_numpy()
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(atr_n, len(d) - 1):
-        mv = m.iloc[i]
+        mv = _a_m[i]
         if mv is None or not np.isfinite(mv) or abs(float(mv)) < thr:
             continue
         side = side_when_high if float(mv) > 0 else -side_when_high
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        px = float(d["close"].iloc[i])
+        px = float(_a_d_close[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
                               tag="exogenous_conditioner", trigger=None, wait_bars=1))

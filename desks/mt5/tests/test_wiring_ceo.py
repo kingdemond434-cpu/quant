@@ -298,7 +298,9 @@ def test_an_auto_clocked_organ_counts_as_scheduled_so_the_ratchet_can_fall(monke
 def test_run_auto_legs_runs_only_the_current_plan(monkeypatch, tmp_path):
     import hourly_cycle as hc
     ran: list[str] = []
-    monkeypatch.setattr(hc, "_auto_leg", lambda e: ran.append(e["organ"]) or {"exit_code": 0})
+    # `_auto_leg(entry, leg_name)`: the leg's costed name now rides along for its ledger row.
+    monkeypatch.setattr(hc, "_auto_leg",
+                        lambda e, name=None: ran.append(e["organ"]) or {"exit_code": 0})
     monkeypatch.setattr(hc, "_costed", lambda name, fn: fn())
     f = tmp_path / "auto_legs.json"
     f.write_text(json.dumps({"legs": [

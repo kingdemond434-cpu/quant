@@ -3169,6 +3169,20 @@ SYSTEMD unit="quant-cot-fetch.timer" on="Fri *-*-* 20:30:00" exec="scripts/fetch
 # defaulting to gold), and the first post-fix run reads OK over 22 priced symbols / 6 call sites.
 59 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_risk_units.py >> data/cro_ai_logs/risk_units.log 2>&1
 
+# --- L1.65 DATA RECOVERABILITY + L1.66 FROZEN VALUES (R0643) -----------------------------------
+# Both fences ran on the box's fences battery (desks/mt5/research/batteries.py) and on no VPS
+# clock, while the two things they measure live HERE: data/ is gitignored and VPS-only (the
+# recoverability fence reports NOT-READABLE-HERE anywhere else) and the long-lived daemons whose
+# frozen values L1.66 checks are this host's systemd units. R0643 found both laws cited by their
+# fences and absent from the constitution, the enforcement matrix and this manifest.
+# CADENCE: daily. Span high-water marks move on data arrival and daemon values on commit/restart,
+# so both are INFORMATION-ARRIVAL bound (L1.28c); phased to 07:02 / 07:04, after the 06:59 fence.
+# EVIDENCE: scripts/check_data_recoverability.py -> data/recoverability.json; CONSTITUTION L1.65
+# EVIDENCE: scripts/check_frozen_values.py -> data/value_staleness.json; CONSTITUTION L1.66
+# CONFIDENCE: committed-script (both fences pre-existing, tested; scheduled here 2026-09-29)
+2 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_data_recoverability.py >> data/cro_ai_logs/data_recoverability.log 2>&1
+4 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_frozen_values.py >> data/cro_ai_logs/frozen_values.log 2>&1
+
 # --- ONE DRAWDOWN SOLVER, NOT FIVE (GAP 117) ---------------------------------------------------
 # `if max_dd(q) > target: hi = q else: lo = q` reads RUIN as a passed check: past the point where
 # some day has 1 + q*x <= 0 the account is gone, cumprod goes negative, the drawdown expression is

@@ -101,8 +101,13 @@ class FXTriangleModel:
         return residuals
 
     def get_tradeable_residuals(self, residuals: dict[str, pd.Series],
-                                 z_threshold: float = 2.0) -> list[SyntheticResidual]:
+                                 z_threshold: float = 2.0,
+                                 prices: dict[str, pd.Series] | None = None,
+                                 synthetic: dict[str, pd.Series] | None = None,
+                                 ) -> list[SyntheticResidual]:
         """Find residuals exceeding z-score threshold."""
+        prices = prices or {}
+        synthetic = synthetic or {}
         trades = []
         for target, res in residuals.items():
             if len(res) < 100:
@@ -348,7 +353,8 @@ class SyntheticResidualMiner:
         # FX Triangles
         synthetic_fx = self.fx_triangle.compute_synthetic(data)
         residuals_fx = self.fx_triangle.compute_residuals(data, synthetic_fx)
-        all_residuals.extend(self.fx_triangle.get_tradeable_residuals(residuals_fx))
+        all_residuals.extend(self.fx_triangle.get_tradeable_residuals(
+            residuals_fx, prices=data, synthetic=synthetic_fx))
 
         # Metals
         if all(k in data for k in ["XAUUSD", "REAL_YIELD_10Y", "DXY", "VIX", "XAGUSD", "US500"]):
@@ -357,6 +363,8 @@ class SyntheticResidualMiner:
                 rolling_mean = gold_res.rolling(200).mean()
                 rolling_std = gold_res.rolling(200).std()
                 z = (gold_res - rolling_mean) / (rolling_std + 1e-12)
+                actual = data["XAUUSD"].loc[gold_res.index]
+                synthetic = actual - gold_res
                 extreme = z[abs(z) > 2.0]
                 for ts, z_val in extreme.items():
                     if pd.isna(z_val):

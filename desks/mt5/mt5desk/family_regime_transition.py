@@ -33,10 +33,14 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from mt5desk.build_memo import Memo, args_key, frame_fingerprint
 from mt5desk.families import Signal, _atr, _h1, bars_per_day
 
 #: Trailing days each fit sees. Long enough for the hazard to have runs to count, short enough
 #: that the vocabulary describes the recent market and that eight fits cover a full history.
+#: Per-worker LRU of hazard paths (`mt5desk.build_memo`): three per-day series per entry.
+_HAZARD_MEMO = Memo()
+
 DEFAULT_WINDOW = 750
 #: Days between refits. The parameters, not the filter, are what would leak.
 DEFAULT_REFIT = 250
@@ -144,7 +148,11 @@ def family_regime_transition(
     if daily.size < window + refit_days or float(daily.std()) <= 0:
         return []
 
-    p_leave, age, move = _hazard_path(daily, window, refit_days, horizon_days)
+    # The hazard path is a function of the daily closes and (window, refit, horizon) alone, so
+    # cells differing only in entry threshold, age, side or stop/target share one set of HMM fits.
+    p_leave, age, move = _HAZARD_MEMO.get_or_compute(
+        (frame_fingerprint(daily), args_key(window, refit_days, horizon_days)),
+        lambda: _hazard_path(daily, window, refit_days, horizon_days))
     if not np.isfinite(p_leave.to_numpy(dtype=float)).any():
         return []
 

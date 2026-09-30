@@ -18,7 +18,15 @@ CONTRACT = Path("docs/research/OVERNIGHT_FRONTIER_CONTRACT.json")
 
 def test_midnight_is_a_vps_controller_cycle_not_an_app_automation() -> None:
     assert "00:00:00 Europe/Dublin" in TIMER.read_text("utf-8")
-    assert "run_midnight_frontier.sh" in SERVICE.read_text("utf-8")
+    # EXEC MOVED 2026-09-12 (ops/crontab.manifest "EXEC ROTTED" note): the committed unit runs
+    # the controller directly, and the manifest's SYSTEMD line names that script so a
+    # reconstitution installs what actually runs. The wrapper stays on disk with its ordering.
+    service = SERVICE.read_text("utf-8")
+    assert ("ExecStart=/bin/bash /home/quant/quant-platform/ops/"
+            "run_midnight_codex_controller.sh") in service
+    manifest = Path("ops/crontab.manifest").read_text("utf-8")
+    assert ('SYSTEMD unit="quant-midnight-frontier.timer" on="*-*-* 00:00:00 Europe/Dublin" '
+            'exec="ops/run_midnight_codex_controller.sh"') in manifest
     wrapper = WRAPPER.read_text("utf-8")
     # A pre-run status publication is allowed, but the fresh MT5 snapshot must finish
     # before the actual reasoning-controller invocation.
@@ -94,7 +102,9 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     service = SERVICE.read_text("utf-8")
     assert "CODEX_NIGHTLY_MODEL=gpt-5.6-terra" in service
     assert "CODEX_NIGHTLY_REASONING_EFFORT=medium" in service
-    for resource_control in ("MemoryHigh=1200M", "MemoryMax=1500M", "CPUWeight=25",
+    # 4277867f (2026-09-14): the hard-coded 1200M/1500M killed the stage against 2251 MB free;
+    # the limits are now DERIVED from the host's physical memory.
+    for resource_control in ("MemoryHigh=50%", "MemoryMax=75%", "CPUWeight=25",
                              "IOSchedulingClass=idle", "OOMPolicy=stop"):
         assert resource_control in Path("ops/quant-external-pipeline.service").read_text("utf-8")
     assert "CODEX_GLOBAL_ARGS=(--dangerously-bypass-approvals-and-sandbox)" in source
@@ -113,9 +123,15 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
 
 
 def test_shadow_forward_service_can_import_certified_enrolment_modules() -> None:
+    # The unit now RUNS THE FILE rather than a `-c` import string (a unit naming no script is
+    # invisible to the scheduler-manifest fence); the file puts desks/mt5 and research/ on
+    # sys.path itself, which is what makes the certified-enrolment imports resolve.
     service = Path("ops/shadow-forward.service").read_text("utf-8")
-    assert "sys.path.insert(0,'research')" in service
-    assert "from research.shadow_forward import main" in service
+    assert "desks/mt5/research/shadow_forward.py" in service
+    assert "WorkingDirectory=/home/quant/quant-platform/desks/mt5" in service
+    src = Path("desks/mt5/research/shadow_forward.py").read_text("utf-8")
+    assert 'sys.path.insert(0, str(BASE / "research"))' in src
+    assert "sys.path.insert(0, str(Path(__file__).resolve().parent.parent))" in src
 
 
 def test_midnight_builds_mt5_state_before_reasoning() -> None:
@@ -128,62 +144,64 @@ def test_midnight_builds_mt5_state_before_reasoning() -> None:
     assert "legacy crypto-wide study registry" in wrapper
 
 
+#: THE AGENDA WAS REPLACED, TWICE, ON PURPOSE: 5ac09b59 (2026-09-08, principal) made midnight a
+#: repair-only controller, and 4277867f (2026-09-14) rewrote it as the STANDING AGENDA after the
+#: adopt-chain repair ("Replace the previous ... agenda"). The three tests below pinned phrases of
+#: the pre-09-08 brief; they now pin the invariants the current brief actually carries.
+
+
 def test_controller_prompt_is_one_compact_mt5_only_operating_brief() -> None:
-    prompt = PROMPT.read_text("utf-8")
+    raw = PROMPT.read_text("utf-8")
+    prompt = " ".join(raw.split())          # the brief is hard-wrapped
     # Keep the nightly controller implementation-first and prevent mandate duplication
     # from silently consuming the reasoning budget again.
-    assert len(prompt) <= 10_000
+    assert len(raw) <= 10_000
     for required in (
-        "MASTER_QUANT_CONSTITUTION.md",
-        "continuation cycle",
-        "Never reset",
-        "MT5/Fusion only",
-        "Convert, do not summarize",
-        "IMPLEMENTED+TESTED",
-        "checkpoint",
-        "scripts/run_deadman_switch.py",
-        "implementation ledger of at most 300 words",
-        "never a replacement, reduction or amendment",
-        "preserve every master obligation",
-        "TIER1_CONTROLLER_MANDATE.md",
-        "tier-1 institutions",
+        "STANDING AGENDA",
+        "Preserve always-on miners",
+        "Do not reset state",
+        "do not replay completed tests or reset forward clocks",
+        "Checkpoint after each completed unit",
+        "DELIVER TO ORIGIN, NEVER TO A BOX",
+        "Verify by content, not by SHA",
+        "Do not reduce aggressiveness anywhere",
     ):
-        assert required.casefold() in prompt.casefold()
+        assert required.casefold() in prompt.casefold(), required
     assert MANDATE.exists() and len(MANDATE.read_text("utf-8")) > 20_000
     assert "controller_continuity.py" in AGENTS.read_text("utf-8")
-    for excluded_venue in ("Binance", "Bybit", "OKX", "Hyperliquid"):
-        assert "Do not hunt" in prompt and excluded_venue in prompt
     controller = CONTROLLER.read_text("utf-8")
     assert controller.count("cat ops/midnight_codex_prompt.txt") == 1
     assert "cat ops/shared_conversion_controller.txt" not in controller
+    # The MT5-only scope and the sealed constitution reach the controller through the wrapper
+    # text it prints around the brief, not the brief itself.
+    assert "SINGLE MT5-ONLY MIDNIGHT OPERATING BRIEF" in controller
+    assert "MASTER_QUANT_CONSTITUTION.md passed scripts/check_constitution_core.py" in controller
 
 
 def test_midnight_aggressively_converts_real_orphans_end_to_end() -> None:
-    prompt = PROMPT.read_text("utf-8")
+    raw = PROMPT.read_text("utf-8")
+    prompt = " ".join(raw.split())          # the brief is hard-wrapped
     for required in (
-        "ORPHAN",
-        "INERT",
-        "CONVERSION_FAILURE",
-        "WIRE+TEST, ARCHIVE, DELETE, or BLOCK",
-        "producer -> durable output -> consumer -> decision/research",
+        "CANDIDATE CONSERVATION",
+        "discovered = tested + queued + rejected + blocked",
+        "lost must be zero",
+        "STANDING FIXER and is scheduled NOWHERE. Wire it.",
+        "done means it RUNS on a schedule and leaves an artifact",
     ):
-        assert required in prompt
+        assert required in prompt, required
 
 
 def test_midnight_routes_mt5_data_and_every_conversion_family() -> None:
-    prompt = PROMPT.read_text("utf-8")
+    raw = PROMPT.read_text("utf-8")
+    prompt = " ".join(raw.split())          # the brief is hard-wrapped
     for required in (
-        "broker bars/ticks/DOM",
-        "preregistered hypothesis",
-        "near-survivor/survivor",
-        "zero-capital forward shadow",
-        "multiplicity/PBO/SPA",
-        "failure and near-survivor recycling",
-        "real-fill attribution",
-        "Claude, Codex, OpenCode",
-        "No hardcoded output quota",
+        "FORWARD LANE",
+        "Make every rebase leave a record and refuse a silent one",
+        "An absence is a verdict (UNMEASURED), never a zero and never a",
+        "Do not fabricate one",
+        "The 20% heat floor, the 0.02-lot gold floor",
     ):
-        assert required in prompt
+        assert required in prompt, required
     controller = Path("ops/run_midnight_codex_controller.sh").read_text("utf-8")
     assert "SINGLE MT5-ONLY MIDNIGHT OPERATING BRIEF" in controller
     assert "shared_conversion_controller.txt" not in controller

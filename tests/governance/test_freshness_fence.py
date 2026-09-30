@@ -272,24 +272,31 @@ def test_bootstrap_wiring_present_in_sources():
     for rel, token in _WIRED:
         src = (_REPO / rel).read_text("utf-8", errors="ignore")
         assert token in src, f"{rel} lost its freshness wiring (token {token!r})"
-    exec_src = (_REPO / "scripts/run_cashcarry_executor.py").read_text("utf-8")
-    assert exec_src.count("read_fresh(") >= 4, "executor bootstrap sites reduced below 4"
+    # The cash-carry executor (four read_fresh bootstrap sites) and its two live_guard pager rows
+    # were RETIRED 2026-09-05 under the MT5 universe mandate: the executor is deleted, and
+    # scripts/run_alerts.py records why the pager rows went (they would fire every tick about a
+    # size governor for a book that cannot trade). Pinned as retired, so neither comes back
+    # half-wired: a revived executor must re-earn its read_fresh sites here.
+    assert not (_REPO / "scripts/run_cashcarry_executor.py").exists()
     alerts_src = (_REPO / "scripts/run_alerts.py").read_text("utf-8")
-    assert "live_guard_dead" in alerts_src and "live_guard_missing" in alerts_src
+    assert "THE TWO live_guard ALERTS WERE REMOVED 2026-09-05" in alerts_src
+    assert '"live_guard_dead"' not in alerts_src and '"live_guard_missing"' not in alerts_src
 
 
 def test_executor_rt_bps_stale_degrade_only_tightens(froot, monkeypatch):
-    """A stale measured cost may only TIGHTEN the entry gate: cheap-stale rises to the default,
-    expensive-stale stays expensive. Imports the executor module (test_hedge_and_risk precedent);
-    QUANT_FRESH_ROOT keeps its registry writes in tmp."""
-    import scripts.run_cashcarry_executor as ex
-    model = {"symbols": {
-        "CHEAP": {"pair": {"500": {"pair_roundtrip_bps": 5.0}}},
-        "DEAR": {"pair": {"500": {"pair_roundtrip_bps": 211.0}}},
-    }}
+    """A stale measured cost may only TIGHTEN the entry gate.
+
+    The organ this pinned, `scripts/run_cashcarry_executor._rt_bps`, was RETIRED 2026-09-05 with
+    the Binance executors (ops/crontab.manifest "RETIRED 2026-09-05"), so no entry gate reads
+    data/cost_model.json any more. What still binds is the contract `_rt_bps` stood on: a stale
+    cost file is REPORTED stale (so a caller can only fall back to its pessimistic default),
+    never handed back as though it were fresh, and a fresh one is trusted.
+    """
+    assert not (_REPO / "scripts/run_cashcarry_executor.py").exists(), (
+        "the executor is back -- restore the _rt_bps stale-only-tightens test against it")
+    model = {"symbols": {"CHEAP": {"pair": {"500": {"pair_roundtrip_bps": 5.0}}}}}
     _write(froot, "data/cost_model.json", model, mtime_ago_s=100 * 3600)   # stale
-    assert ex._rt_bps("CHEAP") == ex._DEFAULT_RT_BPS       # stale-cheap may not admit opens
-    assert ex._rt_bps("DEAR") == 211.0                     # stale-expensive stays expensive
+    assert not read_fresh("data/cost_model.json", 24.0, caller="t.rt_bps", root=froot).fresh
     _write(froot, "data/cost_model.json", model)                           # fresh again
-    assert ex._rt_bps("CHEAP") == 5.0                      # fresh measurement is trusted
-    assert ex._rt_bps("MISSING") == ex._DEFAULT_RT_BPS     # unmeasured stays pessimistic
+    fr = read_fresh("data/cost_model.json", 24.0, caller="t.rt_bps", root=froot)
+    assert fr.fresh and fr.data == model

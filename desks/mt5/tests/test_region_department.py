@@ -577,12 +577,10 @@ def test_a_miner_may_name_its_own_generator_without_colliding(tmp_path, monkeypa
     monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
     R.set_path(tmp_path / "r.sqlite")
     conn = R.connect()
-    try:
-        mandate = RM.Mandate(region="japan", label="Japan", actors=(), domains=(),
-                                datasets=(), miners=(), instruments=("XAUUSD",))
-    except TypeError:                     # the framework's Mandate takes more fields than this
-        import japan.mandate as jm
-        mandate = jm.MANDATE
+    # Hermetic: the `japan` department package lives only on the box and was never committed,
+    # and `Mandate` has no `label` field, so both branches of the old try/except failed on a
+    # fresh clone. Only the region name and one instrument matter to this collision check.
+    mandate = RM.Mandate(region="japan", instruments=("XAUUSD",))
     ctx = RD.Ctx(region="japan", mandate=mandate, conn=conn, budget_s=5,
                  deadline=time.monotonic() + 5, dry_run=False, miner="JapanGotobiMiner")
     did, created = ctx.record_discovery(mechanism="gotobi_fix_flow", source_id="mine_gotobi",
@@ -605,8 +603,9 @@ def test_the_queue_is_the_regions_own_rows_never_every_row_on_its_instruments(tm
     monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
     R.set_path(tmp_path / "r.sqlite")
     conn = R.connect()
-    import japan.mandate as jm
-    mandate = jm.MANDATE
+    # Hermetic: the `japan` department package is box-only (never committed). The measured
+    # defect needs only the region prefix and the instruments its mandate names.
+    mandate = RM.Mandate(region="japan", instruments=("USDJPY", "XAUUSD", "JPN225"))
     # a desk candidate on an instrument the mandate names, from another generator
     other, _ = R.enqueue_candidate(family="carry", symbol="USDJPY", params={"k": 1},
                                    origin="DESK", mechanism="carry", conn=conn)

@@ -238,6 +238,18 @@ ORGAN_OUTPUT: dict[str, str] = {
     "allocator_attribution": "desks/mt5/reports/GROWTH_ATTRIBUTION_WEEKLY.json",
     "research_pnl": "desks/mt5/reports/RESEARCH_PNL.json",
     "macro_intel": "desks/mt5/data/macro/allocator_interrupt.json",
+    # -- DECLARED DECISION-AFFECTING 2026-09-29, when the capability graph was made to name the
+    # consumers these organs always had (pf_allocator reads CAPACITY.json; the gauntlet reads the
+    # docket two of them write; factor_residual_engine's cost fence reads SPREAD_PROVENANCE; the
+    # Asia plane donates to the compiler and counts the SGE parquet as data in hand). Each is
+    # billed through that consumer, never by a number of its own.
+    "capacity": "desks/mt5/reports/CAPACITY.json",
+    "requeue_unrunnable": "desks/mt5/data/hypotheses/external_survivors.json",
+    "session_chart_expansion": "desks/mt5/data/hypotheses/external_survivors.json",
+    "session_allocation": "desks/mt5/reports/SESSION_ALLOCATION.json",
+    "spread_provenance": "desks/mt5/reports/SPREAD_PROVENANCE.json",
+    "asia_plane": "desks/mt5/data/intelligence/",
+    "sge_premium": "desks/mt5/data/lake/sge_daily.parquet",
 }
 
 #: Organs that ARE the money path or the release gate rather than an input to it. Their rent is

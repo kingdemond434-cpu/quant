@@ -56,12 +56,15 @@ def test_unknown_unit_is_not_assumed_restartable() -> None:
     assert rep["verdict"] == "REFUSED-UNKNOWN-UNIT"
 
 
+#: The TIER_RESTART unit these tests ship. They named quant-cashcarry.service until its entry was
+#: dropped from deploy_plan._OWNED on 2026-09-29 (the executor was retired 2026-09-05), after which
+#: ship() rightly calls it REFUSED-UNKNOWN-UNIT; the dashboard is the restartable unit that remains.
 def test_refuses_sigterm_when_the_unit_will_not_come_back(
         monkeypatch: pytest.MonkeyPatch) -> None:
     """THE LOAD-BEARING GUARD. Restart!=always => SIGTERM stops the daemon; refuse instead."""
     killed: list[int] = []
     _wire(monkeypatch, props={"Restart": "on-failure"}, restart_rc=1, pids=[4242], killed=killed)
-    rep = ship_restart.ship("quant-cashcarry.service")
+    rep = ship_restart.ship("quant-dashboard.service")
     assert rep["verdict"] == "REFUSED-NO-AUTORESTART"
     assert killed == [], "a daemon that will not respawn must never be signalled"
     assert "STOP this daemon" in rep["detail"]
@@ -73,7 +76,7 @@ def test_sigterm_fallback_ships_when_autorestart_is_guaranteed(
     # MainPID: 4242 (before) -> 4242 (still dying) -> 5150 (respawned)
     _wire(monkeypatch, props={"Restart": "always"}, restart_rc=1,
           pids=[4242, 4242, 5150, 5150], killed=killed)
-    rep = ship_restart.ship("quant-cashcarry.service", timeout_s=5)
+    rep = ship_restart.ship("quant-dashboard.service", timeout_s=5)
     assert rep["verdict"] == "RESTARTED"
     assert rep["method"] == "sigterm+autorestart"
     assert killed == [4242]
@@ -85,7 +88,7 @@ def test_systemctl_is_preferred_and_suppresses_the_fallback(
     killed: list[int] = []
     _wire(monkeypatch, props={"Restart": "always"}, restart_rc=0,
           pids=[4242, 5150, 5150], killed=killed)
-    rep = ship_restart.ship("quant-cashcarry.service")
+    rep = ship_restart.ship("quant-dashboard.service")
     assert rep["verdict"] == "RESTARTED"
     assert rep["method"] == "systemctl"
     assert killed == [], "no signal is sent when the sanctioned path works"
@@ -94,7 +97,7 @@ def test_systemctl_is_preferred_and_suppresses_the_fallback(
 def test_not_running_is_a_refusal_not_a_start(monkeypatch: pytest.MonkeyPatch) -> None:
     _wire(monkeypatch, props={}, restart_rc=0, pids=[0], killed=[])
     monkeypatch.setattr(ship_restart.Path, "exists", lambda self: False)
-    rep = ship_restart.ship("quant-cashcarry.service")
+    rep = ship_restart.ship("quant-dashboard.service")
     assert rep["verdict"] == "REFUSED-NOT-RUNNING"
 
 

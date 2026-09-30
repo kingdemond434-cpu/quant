@@ -124,33 +124,39 @@ class TestTheLadderNeverWritesTheRealRegistry:
 
 
 class TestItReachesStageB:
+    """The Stage-B reader these tests drove, `scripts/run_axis_shadows.py`, was a crypto axis
+    runner retired in the 2026-09-05 MT5 purge. The registry's surviving reader is
+    `scripts/diagnose_forward_slots.py`, which is where an owed clock must still be VISIBLE."""
+
     def test_a_registered_survivor_lists_as_UNTRACKED_rather_than_vanishing(
             self, tmp_path: Path, monkeypatch) -> None:
-        """END TO END, and the point of the whole wire: the ladder writes, Stage-B reads, and the
-        survivor appears -- unscoreable but VISIBLE, which is the difference between an owed clock
-        and a forgotten one."""
-        import scripts.run_axis_shadows as ras
+        """END TO END: the ladder writes, the slot diagnosis reads, and the survivor appears --
+        registered and owed, never an ORPHAN, which is the difference between an owed clock and a
+        forgotten one."""
+        import scripts.diagnose_forward_slots as dfs
 
+        assert not (Path(__file__).resolve().parents[2] / "scripts/run_axis_shadows.py").exists()
         reg = tmp_path / "reg.json"
         register_owed(["stranded|survivor"], source="run_live_ladder", registry=reg)
-        monkeypatch.setattr(ras, "_REGISTRY", reg)
-        tracked, untracked = ras._all_axes()
+        blob = json.loads(reg.read_text("utf-8"))
+        assert blob["axes"]["stranded|survivor"]["tracked"] is False      # UNTRACKED, on purpose
+        monkeypatch.setattr(dfs, "_read", lambda rel: blob if rel.endswith(
+            "axis_clock_registry.json") else None)
 
-        assert "stranded|survivor" not in tracked, "no target symbol -- must not be scored"
-        names = [u["axis"] for u in untracked]
-        assert "stranded|survivor" in names
-        row = next(u for u in untracked if u["axis"] == "stranded|survivor")
-        assert row["verdict"] == "UNTRACKED"
-        assert "invisible candidate" in str(row["note"])
+        row = dfs.diagnose({"name": "stranded|survivor", "evidence": "UNMEASURED"})
+        assert row["registered_in_clock_registry"] is True
+        assert row["state"] != "ORPHAN", "a registered owed clock must not read as forgotten"
+        stray = dfs.diagnose({"name": "never|registered", "evidence": "UNMEASURED"})
+        assert stray["state"] == "ORPHAN"
 
     def test_curated_axes_still_win_a_name_collision(self, tmp_path: Path, monkeypatch) -> None:
-        """A considered decision in _AXES outranks anything auto-registered, so a re-registration
-        can never redirect a live clock's target."""
-        import scripts.run_axis_shadows as ras
-
-        curated = next(iter(ras._AXES))
+        """A considered entry outranks anything auto-registered, so a re-registration can never
+        redirect a live clock's target: first write wins."""
         reg = tmp_path / "reg.json"
-        register_owed([curated], source="t", registry=reg)
-        monkeypatch.setattr(ras, "_REGISTRY", reg)
-        tracked, _ = ras._all_axes()
-        assert tracked[curated] == ras._AXES[curated], "the curated tuple must survive intact"
+        curated = {"clock": "data/curated.jsonl", "target_symbol": "XAUUSD", "method": "z20",
+                   "sign": 1, "tracked": True}
+        reg.write_text(json.dumps({"axes": {"curated|axis": curated}}), "utf-8")
+        added, _ = register_owed(["curated|axis"], source="t", registry=reg)
+        assert added == 0
+        after = json.loads(reg.read_text("utf-8"))["axes"]["curated|axis"]
+        assert after == curated, "the curated entry must survive intact"

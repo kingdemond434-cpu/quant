@@ -128,9 +128,14 @@ def test_untested_is_framed_as_an_unpriced_option_not_a_negative():
 
 
 def test_third_party_agent_tooling_is_mine_not_install():
-    # Supply-chain rule: AI-quant structures are read as text, never executed on desk hardware.
-    law = Path("docs/LAWS.md").read_text("utf-8").lower()
+    # Supply-chain rule. The blanket "never install or run third-party agent tooling on desk
+    # hardware" was SUPERSEDED by LAWS §5h (principal 2026-09-17): third-party research code runs
+    # in sandboxes and never gets live authority. The law must carry the replacement AND name the
+    # old text as superseded, so the prohibition cannot be silently revived or silently dropped.
+    law = " ".join(Path("docs/LAWS.md").read_text("utf-8").lower().split())
+    assert "run research code aggressively in sandboxes; never give it live authority" in law
     assert "never install or run third-party agent tooling on desk hardware" in law
+    assert "superseded by §5h" in law
     # and the seats that act on it must carry it too, or the law binds nobody who is reading
     assert "third-party agent tooling on desk hardware" in (
         Path("ops/frontier_common.txt").read_text("utf-8").lower())

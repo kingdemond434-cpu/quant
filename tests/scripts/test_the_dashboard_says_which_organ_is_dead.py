@@ -204,5 +204,15 @@ def test_the_organ_block_reaches_the_published_payload(bzs, tmp_path, monkeypatc
         "gateway_state.json": timedelta(days=23),
     })
     monkeypatch.setattr(bzs, "_mt5_snapshot", lambda: {})
+    # build() reads the wall clock, and the fixture ages are anchored to NOW (2026-09-09): once
+    # real time passed NOW + 22h the "2h old" artifact read 21 days old and DEAD, so the test
+    # measured the calendar. The builder's clock is pinned to the fixture's.
+
+    class _AtNow(datetime):
+        @classmethod
+        def now(cls, tz=None):  # type: ignore[override]
+            return NOW if tz is not None else NOW.replace(tzinfo=None)
+
+    monkeypatch.setattr(bzs, "datetime", _AtNow)
     organs = bzs.build()["organs"]
     assert organs["worst"] == "DEAD" and organs["down"] == ["gateway_state.json"]

@@ -79,6 +79,11 @@ GOVERNED = {
     "check_risk_units.py",
     "harvest_rfb_vintages.py",
     "run_cadence.py",
+    # TWO ADDED 2026-09-29 (R0643): the L1.65 / L1.66 fences were registered in `_GOVERNED`
+    # alongside their constitution text, matrix rows and manifest lines; their wiring tests
+    # (test_recoverability_wiring / test_frozen_values_wiring) require the registration.
+    "check_data_recoverability.py",
+    "check_frozen_values.py",
 }
 
 

@@ -963,6 +963,40 @@ def realised_credit() -> dict[str, Any]:
     return out
 
 
+def calibration_credit() -> dict[str, Any]:
+    """Per-arm factor from the LIVE/BACKTEST CALIBRATION posterior (Tier-1 audit #17).
+
+    `realised_credit` pays an arm for the R its certificates earned; this pays it for whether its
+    certificates' CLAIMS held up. research/live_calibration_posterior.py publishes a Normal
+    posterior on kappa = realised Sharpe / claimed Sharpe per arm (prior N(1, 0.5^2), so an arm
+    with no evidence reads exactly 1.0) and its factor clip(E[kappa], 0.5, 2.0). An arm whose
+    priors overstate live loses budget share automatically; one that understates gains it. Only
+    arms with at least one evidence row are carried: absence moves nothing.
+    """
+    out: dict[str, Any] = {"applied": False, "by_arm": {},
+                           "why": "no LIVE_CALIBRATION_POSTERIOR.json: worth unchanged"}
+    try:
+        doc = json.loads((DESK / "reports" / "LIVE_CALIBRATION_POSTERIOR.json")
+                         .read_text("utf-8-sig"))
+    except (OSError, ValueError):
+        return out
+    raw = ((doc.get("credit") or {}).get("by_arm") or {}) if isinstance(doc, dict) else {}
+    by_arm: dict[str, float] = {}
+    for a, f in raw.items():
+        try:
+            v = float(f)
+        except (TypeError, ValueError):
+            continue
+        if a in ARMS and math.isfinite(v):
+            by_arm[a] = float(min(CREDIT_CLIP[1], max(CREDIT_CLIP[0], v)))
+    out.update({"applied": bool(by_arm), "by_arm": by_arm, "at": doc.get("at"),
+                "pooled_kappa": (doc.get("pooled") or {}).get("kappa_mean"),
+                "why": (f"{len(by_arm)} arm(s) carry a calibration factor clip(E[kappa], "
+                        f"{CREDIT_CLIP[0]}, {CREDIT_CLIP[1]})" if by_arm else
+                        "the calibration posterior has no arm with evidence yet: worth unchanged")})
+    return out
+
+
 def _marginal_by_arm() -> dict[str, float]:
     """Mean allocator marginal dElogW of certified sleeves, grouped by the arm that found them;
     arms without a funded sleeve fall back to the research P&L's lifetime worth."""
@@ -1264,7 +1298,13 @@ def run(seed: int = 0, write: bool = True,
     mc = (measured_cost(ct) if ct is not None else
           {"_why": {"status": "UNMEASURED", "why": ct_why}})
     rcred = realised_credit()
-    ev = evidence(rows, marginal, measured=mc, credit=rcred.get("by_arm") or None)
+    ccred = calibration_credit()
+    # THE TWO LIVE-TRUTH FACTORS MULTIPLY: what an arm's certificates EARNED (realised R) and
+    # whether their CLAIMS held (the calibration posterior). An arm absent from both keeps 1.0.
+    credit = {a: float((rcred.get("by_arm") or {}).get(a, 1.0))
+              * float((ccred.get("by_arm") or {}).get(a, 1.0))
+              for a in set(rcred.get("by_arm") or {}) | set(ccred.get("by_arm") or {})}
+    ev = evidence(rows, marginal, measured=mc, credit=credit or None)
     bc = breadth_credit()
     audit: dict[str, Any] = {}
     shares = allocate({a: v for a, v in ev.items() if a in ARMS}, np.random.default_rng(seed),
@@ -1296,6 +1336,7 @@ def run(seed: int = 0, write: bool = True,
                                                                    if a not in marginal]),
            "breadth_credit": bc,
            "realised_credit": rcred,
+           "calibration_credit": ccred,
            # THE JOINT ARMS (Tier-1 D3). `shares` above prices research VERBS; this prices the
            # five-tuple (data axis, factor, model, regime representation, portfolio use) from the
            # co-evolution grid's measured marginal OOS log score. Additive: no existing consumer

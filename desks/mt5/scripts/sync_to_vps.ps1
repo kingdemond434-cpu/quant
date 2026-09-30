@@ -147,5 +147,8 @@ Write-SyncLog "synced complete Fusion artifacts to VPS"
 # 5. Record. Only after a run that actually succeeded -- stamping the marker on a failed sync
 #    buys an hour of silence before the next attempt, which is an hour of believing a broken
 #    sync is a working one.
-@{ last_sync = $now.ToString("o") } | ConvertTo-Json | Set-Content $last -Encoding utf8
+# Windows PowerShell 5.1's `Set-Content -Encoding utf8` writes a BOM, and a BOM makes this tracked
+# JSON unparseable to every strict reader (tests/governance/test_tracked_json_integrity.py).
+[System.IO.File]::WriteAllText($last, (@{ last_sync = $now.ToString("o") } | ConvertTo-Json),
+    (New-Object System.Text.UTF8Encoding $false))
 exit 0

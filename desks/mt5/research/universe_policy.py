@@ -106,13 +106,38 @@ HYPOTHESIS_CLASSES = _norm_set({
 })
 
 
-@lru_cache(maxsize=1)
-def _registry() -> dict[str, dict]:
+@lru_cache(maxsize=4)
+def _registry_at(path: str, mtime_ns: int) -> dict[str, dict]:
     try:
-        data = json.loads(UNIVERSE.read_text("utf-8"))
+        data = json.loads(Path(path).read_text("utf-8"))
     except (OSError, ValueError):
         return {}
+    if not isinstance(data, dict):
+        return {}
     return {str(k).upper(): v for k, v in data.items() if isinstance(v, dict)}
+
+
+def _registry() -> dict[str, dict]:
+    """The broker registry at `UNIVERSE`, parsed once per (path, mtime).
+
+    KEYED ON THE FILE, NOT ON NOTHING. This was a bare `lru_cache(maxsize=1)` with no key, so the
+    first registry any caller in the process read was the registry for the life of the process:
+    a rewritten universe.json was never seen, and a caller that pointed `UNIVERSE` elsewhere (a
+    tmp registry in a test) left that registry cached for every later caller once `UNIVERSE`
+    was restored. Measured 2026-09-29 under `pytest -n auto --dist loadfile`: a 9-symbol tmp
+    registry from test_axis_proposer / test_graveyard_resurrection answered the real-registry
+    routing test on the same worker -- "no equities were set aside, 1 > 50". A stat per call is
+    the price of the answer being about the file that is actually there.
+    """
+    try:
+        mtime = UNIVERSE.stat().st_mtime_ns
+    except OSError:
+        mtime = -1
+    return _registry_at(str(UNIVERSE), mtime)
+
+
+#: Kept so every caller that clears the cache after rewriting a registry in place still works.
+_registry.cache_clear = _registry_at.cache_clear  # type: ignore[attr-defined]
 
 
 def asset_class_of(symbol: str) -> str:
