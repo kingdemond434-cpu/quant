@@ -203,6 +203,11 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
             tcol = None
         raw = frame[tcol] if tcol is not None else frame.index.to_series()
         stamps = pd.to_datetime(raw, utc=True, errors="coerce")
+        # EPOCH-NANOSECONDS, WHATEVER UNIT THE FILE WAS WRITTEN IN. pandas 2 keeps a parquet's
+        # own resolution (ms, us), and `astype("int64")` below then returns THOSE units: every
+        # hour and day this lane derives was off by 1000x or 1e6x and `minutes` read 1 on an H1
+        # file. Normalising the unit first makes the int64 the nanoseconds `Bars` is defined in.
+        stamps = stamps.astype("datetime64[ns, UTC]")
         keep = ~stamps.isna().to_numpy()
         t_ns = stamps[keep].astype("int64").to_numpy() if hasattr(stamps, "astype") else None
         if t_ns is None:
