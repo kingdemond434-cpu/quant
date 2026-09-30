@@ -64,29 +64,97 @@ RESULT_MEANING: dict[int, str] = {
 }
 
 
-def _tasks() -> list[dict[str, str]]:
-    """Every scheduled task the box knows about, from schtasks' own CSV.
+#: Where Windows keeps one file per registered task, named by the task. Listing it is the SECOND
+#: opinion on "which tasks exist" when `schtasks` itself cannot answer -- it carries no run
+#: results, only existence, which is exactly the fact NOT_SCHEDULED asserts.
+TASKS_DIR = Path(r"C:\Windows\System32\Tasks")
+
+#: How long one `schtasks /query /v` may take. The box has measured `schtasks /Change` timing out
+#: at 60 s (CRO noon 2026-09-30) and CIM hanging outright, so a slow scheduler is a real state of
+#: this machine, not a hypothetical; the bound is what turns it into a named reading.
+SCHTASKS_TIMEOUT_S = 180
+
+
+def _scheduler_read() -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Every scheduled task the box knows about, AND whether that answer was actually read.
 
     `schtasks /query /v /fo CSV` is used rather than the PowerShell cmdlets because it needs no
     module import, returns one flat table, and is the same source the operator sees in the GUI.
-    A machine with no scheduler (a Linux box running this for a merged view) yields an empty list
-    rather than an error: absence of a scheduler is not a failed desk.
+
+    THE DEFECT THIS SPLIT ENDS (CRO noon 2026-09-30: "101 silent scheduled failures, 71
+    NOT_SCHEDULED"). The old reader returned `[]` for a timeout, a non-zero exit and an empty
+    table alike, and `build()` then reported EVERY contracted organ as NOT_SCHEDULED -- "it cannot
+    run at all" -- because none of them appeared in a list nobody had read. The contract table
+    held exactly 71 organs that day, and exactly 71 were reported NOT_SCHEDULED, including the
+    hourly cycle that was writing the very ledger the review read. A failed read is UNMEASURED
+    (L1.28a), never a verdict about the organs, so the read's own outcome now rides beside the
+    rows and the join refuses to convert its absence into 71 defects.
+
+    When `schtasks` cannot answer, the task directory is listed as a second opinion: it proves
+    which tasks EXIST (enough to rule NOT_SCHEDULED in or out) while run results stay UNMEASURED.
     """
+    meta: dict[str, Any] = {"source": "schtasks", "read": False, "why": ""}
+    rows: list[dict[str, str]] = []
     try:
         proc = subprocess.run(["schtasks", "/query", "/v", "/fo", "CSV"],
-                              capture_output=True, text=True, timeout=120)
-    except (OSError, subprocess.SubprocessError):
-        return []
-    if proc.returncode != 0 or not proc.stdout.strip():
-        return []
-    rows: list[dict[str, str]] = []
-    for row in csv.DictReader(io.StringIO(proc.stdout)):
-        name = (row.get("TaskName") or "").strip()
-        # schtasks repeats the header row per folder; skip those and the Microsoft tree.
-        if not name or name == "TaskName" or name.startswith("\\Microsoft"):
-            continue
-        rows.append(row)
-    return rows
+                              capture_output=True, text=True, timeout=SCHTASKS_TIMEOUT_S)
+    except FileNotFoundError:
+        meta["why"] = "no schtasks on this host (not a Windows box): nothing to join against"
+        proc = None
+    except subprocess.TimeoutExpired:
+        meta["why"] = f"schtasks /query did not answer within {SCHTASKS_TIMEOUT_S}s"
+        proc = None
+    except (OSError, subprocess.SubprocessError) as exc:
+        meta["why"] = f"schtasks /query could not start: {type(exc).__name__}: {exc}"
+        proc = None
+    if proc is not None:
+        if proc.returncode != 0:
+            meta["why"] = (f"schtasks /query exited {proc.returncode}: "
+                           f"{(proc.stderr or proc.stdout or '').strip()[:200]}")
+        elif not proc.stdout.strip():
+            meta["why"] = "schtasks /query returned an empty table"
+        else:
+            for row in csv.DictReader(io.StringIO(proc.stdout)):
+                name = (row.get("TaskName") or "").strip()
+                # schtasks repeats the header row per folder; skip those and the Microsoft tree.
+                if not name or name == "TaskName" or name.startswith("\\Microsoft"):
+                    continue
+                rows.append(row)
+            if rows:
+                meta["read"] = True
+            else:
+                meta["why"] = ("schtasks /query answered but no row carried a TaskName column -- "
+                               "a localised or changed CSV header")
+    if meta["read"]:
+        return rows, meta
+    # THE SECOND OPINION: existence only. A row built from a file name has no result and no
+    # state, so it can prove "scheduled" and can never prove "healthy".
+    try:
+        names = sorted(e.name for e in TASKS_DIR.iterdir() if e.is_file())
+    except OSError:
+        names = []
+    if names:
+        meta.update({"source": "tasks_dir", "existence_only": True,
+                     "why": meta["why"] + f"; existence read from {TASKS_DIR} instead"})
+        rows = [{"TaskName": "\\" + n, "_existence_only": "1"} for n in names]
+    return rows, meta
+
+
+def _tasks() -> list[dict[str, str]]:
+    """The task rows alone (kept for callers that only want the table)."""
+    return _scheduler_read()[0]
+
+
+def owner_task(organ: str) -> str:
+    """The scheduled task that OWNS a contract row.
+
+    A contract named `MT5-FrontierAudit (orthogonality)` is one artifact of the MT5-FrontierAudit
+    task, not a task of its own -- `organ_contract.py` says so of its own suffix convention. The
+    join compared the whole string to the scheduler's names, so all 31 suffixed rows read
+    NOT_SCHEDULED on every pass even when the scheduler read succeeded: the `MT5-Gauntlet-Rotation`
+    scar that file records, repeated thirty-one times by the convention written to cure it.
+    """
+    return organ.split(" (", 1)[0].strip()
 
 
 def _normalise_code(raw: Any) -> int:
@@ -132,12 +200,18 @@ def build() -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
 
-    for t in _tasks():
+    tasks, sched = _scheduler_read()
+    existence_only = bool(sched.get("existence_only"))
+    for t in tasks:
         name = (t.get("TaskName") or "").strip().lstrip("\\")
         seen.add(name)
         code = _normalise_code(t.get("Last Result"))
         artifact, max_age, purpose = contracts.get(name, ("", 0, ""))
         age = _age_min(ROOT / artifact) if artifact else None
+        if existence_only and not artifact:
+            # A file name proves the task exists and nothing else; without a contract there is
+            # no second fact to judge it by, so it is not a row worth a verdict.
+            continue
 
         # THE VERDICT IS THE WORST OF THE THREE FACTS, never an average of them. A task that is
         # Disabled is not "half healthy" because its artifact happens to be fresh; a task that
@@ -149,6 +223,13 @@ def build() -> dict[str, Any]:
             verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
         elif artifact and max_age and age is not None and age > max_age:
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+        elif existence_only:
+            # A file name proves the task exists; it says nothing about how its last run ended.
+            # A fresh artifact is one fact of three, and the verdict is the worst of the facts it
+            # has, so the run result stays UNMEASURED rather than being read as OK (audit R-ph).
+            verdict, why = ("UNMEASURED",
+                            "scheduled (task file present), artifact current; run result "
+                            "UNMEASURED -- " + str(sched.get("why") or ""))
         elif code not in (0, 267009, 267011):
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
         elif not artifact:
@@ -180,21 +261,57 @@ def build() -> dict[str, Any]:
     for organ, (artifact, max_age, purpose) in contracts.items():
         if organ in seen:
             continue
+        owner = owner_task(organ)
         age = _age_min(ROOT / artifact)
+        stale = age is None or (max_age and age > max_age)
+        if not sched.get("read") and not existence_only:
+            # NO SCHEDULER READING, SO NO SCHEDULING VERDICT. The artifact clock is still a fact
+            # and is still judged: an organ whose artifact is fresh is working whatever the
+            # scheduler said, and one whose artifact is stale is STALE on its own evidence.
+            if age is None:
+                verdict, why = "NO_ARTIFACT", f"{artifact} does not exist"
+            elif stale:
+                verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
+            else:
+                verdict, why = "UNMEASURED", ("artifact current; scheduler unreadable -- "
+                                              + str(sched.get("why") or ""))
+        elif owner != organ and owner in seen and existence_only:
+            verdict, why = (("NO_ARTIFACT", f"{artifact} does not exist") if age is None else
+                            ("STALE", f"{age:.0f} min old against a {max_age} min contract")
+                            if stale else
+                            ("UNMEASURED", f"owned by {owner}, which is scheduled; its run "
+                                           "result is UNMEASURED -- "
+                                           + str(sched.get("why") or "")))
+        elif owner != organ and owner in seen:
+            # An ASPECT of a task that is scheduled: judged on its own artifact only.
+            if age is None:
+                verdict, why = "NO_ARTIFACT", (f"{artifact} does not exist; owned by {owner}, "
+                                               "which is scheduled")
+            elif stale:
+                verdict, why = "STALE", (f"{age:.0f} min old against a {max_age} min contract; "
+                                         f"owned by {owner}")
+            else:
+                verdict, why = "OK", f"owned by {owner}, which is scheduled"
+        else:
+            verdict, why = "NOT_SCHEDULED", (
+                f"this organ has a contract but no scheduled task named {owner} on this box -- "
+                "it cannot run at all")
         rows.append({
             "name": organ,
-            "verdict": "NOT_SCHEDULED",
-            "why": ("this organ has a contract but no scheduled task on this box -- it cannot "
-                    "run at all"),
-            "state": "ABSENT", "last_run": "", "next_run": "",
-            "last_result_code": None, "last_result": "never run on this box",
+            "task": owner,
+            "verdict": verdict,
+            "why": why,
+            "state": "ABSENT" if verdict == "NOT_SCHEDULED" else "",
+            "last_run": "", "next_run": "",
+            "last_result_code": None,
+            "last_result": "never run on this box" if verdict == "NOT_SCHEDULED" else "",
             "artifact": artifact,
             "artifact_age_min": None if age is None else round(age, 1),
             "contract_max_age_min": max_age, "purpose": purpose,
         })
 
     order = {"NOT_SCHEDULED": 0, "FAILING": 1, "NO_ARTIFACT": 2, "STALE": 3,
-             "DISABLED": 4, "UNCONTRACTED": 5, "OK": 6}
+             "UNMEASURED": 4, "DISABLED": 5, "UNCONTRACTED": 6, "OK": 7}
     rows.sort(key=lambda r: (order.get(str(r["verdict"]), 9), str(r["name"])))
     counts: dict[str, int] = {}
     for r in rows:
@@ -205,10 +322,13 @@ def build() -> dict[str, Any]:
         "at": now.isoformat(timespec="seconds"),
         "host": __import__("socket").gethostname(),
         "n_processes": len(rows),
+        # WHETHER THE SCHEDULER WAS READ AT ALL. `read: false` means no row below carries a
+        # scheduling verdict, and a reader must say UNMEASURED rather than count absences.
+        "scheduler": sched,
         "counts": counts,
         # The headline is the WORST row, never the proportion that are fine. "38 of 41 healthy"
         # is how a dead gateway hides behind a green majority.
-        "status": "OK" if not bad else "ATTENTION",
+        "status": ("ATTENTION" if bad else "UNMEASURED" if not sched.get("read") else "OK"),
         "n_needing_attention": len(bad),
         "processes": rows,
     }

@@ -21,6 +21,28 @@ STALE_SECONDS = 45 * 60
 #: Bounded well under the hourly trigger so a waiting job can never overlap its own next run.
 ADMIT_PATIENCE_SECONDS = 12 * 60
 ADMIT_RECHECK_SECONDS = 45
+#: The share of the hourly cycle's leg cap a waiting job may spend waiting. See `admit_patience_s`.
+ADMIT_CAP_SHARE = 0.25
+
+
+def admit_patience_s() -> float:
+    """How long THIS process may wait for room: the standing patience, bounded by its leg cap.
+
+    WHY (the silent-organ census, 2026-09-30). The hourly cycle runs most legs under a 720 s cap
+    and exports it as QUANT_LEG_BUDGET_S. A job that waited the full twelve minutes for memory
+    used the WHOLE cap before its first unit of work, so the room it found was worthless: the
+    cycle killed it seconds later and it was recorded as a TIMEOUT that moved nothing --
+    indistinguishable from a hang. Waiting at most a quarter of the cap leaves the job the rest
+    of it to work and write; if no room appears, it stands down loudly and the next trigger
+    retries, which is the behaviour this lock already chose for a box that cannot fit the job.
+    """
+    try:
+        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    if cap > 0:
+        return min(float(ADMIT_PATIENCE_SECONDS), ADMIT_CAP_SHARE * cap)
+    return float(ADMIT_PATIENCE_SECONDS)
 
 #: How many past runs of a job are kept when correcting its declared need. Enough to outlast one
 #: unusually small docket, short enough that a job which genuinely got lighter is believed within
@@ -417,9 +439,10 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
         # whenever it happens to win a coin flip.
         avail = _median_free()
         if avail is not None and avail < need_mb:
-            deadline = time.monotonic() + ADMIT_PATIENCE_SECONDS
+            patience = admit_patience_s()
+            deadline = time.monotonic() + patience
             print(f"{name}: waiting for room -- needs ~{need_mb}MB, box has {avail}MB; "
-                  f"holding up to {ADMIT_PATIENCE_SECONDS // 60}min for a neighbour to exit "
+                  f"holding up to {patience / 60:.1f}min for a neighbour to exit "
                   f"rather than giving up this trigger.")
             while time.monotonic() < deadline:
                 time.sleep(ADMIT_RECHECK_SECONDS)
@@ -431,7 +454,7 @@ def exclusive_job(name: str, need_mb: int = 0, *, cpu: int | None = None,
                 avail = _median_free()
         if avail is not None and avail < need_mb:
             print(f"{name}: STOOD DOWN -- needs ~{need_mb}MB, box has {avail}MB available "
-                  f"after waiting {ADMIT_PATIENCE_SECONDS // 60}min. "
+                  f"after waiting {admit_patience_s() / 60:.1f}min. "
                   f"Not started (a job that does not fit thrashes the box and the live "
                   f"terminal); the next scheduled trigger retries and the cache makes it resume.")
             yield False

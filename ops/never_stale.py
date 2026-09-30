@@ -251,6 +251,12 @@ def run(apply: bool) -> dict:
         name = str(row.get("name") or "")
         if not name or verdict in ("OK", "RUNNING", "DISABLED"):
             continue
+        # UNMEASURED IS NOT A BREAKAGE TO ACT ON: the scheduler could not be read, so there is no
+        # fact here to restart against. The read failure itself is escalated ONCE below, rather
+        # than as one NEEDS_HUMAN row per contracted organ -- which is how a single slow
+        # `schtasks` became "71 NOT_SCHEDULED" on 2026-09-30.
+        if verdict == "UNMEASURED":
+            continue
         # UNCONTRACTED IS A BOOKKEEPING GAP, NOT A BREAKAGE. The organ runs fine; nobody wrote it
         # an artifact contract, so nothing would notice if it stopped. That is worth fixing and
         # worth listing, but escalating it as NEEDS_HUMAN beside a dead gateway is precisely the
@@ -264,7 +270,9 @@ def run(apply: bool) -> dict:
                 acted.append({"task": name, "verdict": verdict, "action": "would start",
                               "why": row.get("why")})
                 continue
-            ok, msg = _start(name)
+            # A contract row may be an ASPECT of a task ("MT5-FrontierAudit (orthogonality)");
+            # the scheduler only knows the owning task, so that is what is started.
+            ok, msg = _start(str(row.get("task") or name))
             acted.append({"task": name, "verdict": verdict,
                           "action": "started" if ok else "start FAILED",
                           "detail": msg, "why": row.get("why")})
@@ -284,6 +292,17 @@ def run(apply: bool) -> dict:
             "diagnosis": diag or ("no standing remedy for this shape -- inspect the task's own "
                                   "log. If a remedy is found, add it to DIAGNOSIS so the next "
                                   "occurrence arrives with its answer."),
+            "needs_human": True,
+        })
+
+    sched = doc.get("scheduler") if isinstance(doc.get("scheduler"), dict) else {}
+    if sched and not sched.get("read") and not sched.get("existence_only"):
+        escalated.append({
+            "task": "(scheduler)", "verdict": "UNMEASURED", "code": None,
+            "why": str(sched.get("why") or "the scheduler could not be read"),
+            "diagnosis": ("process_health could not enumerate scheduled tasks, so no organ has a "
+                          "scheduling verdict this pass. Check `schtasks /query` responds on the "
+                          "box; a hung Task Scheduler service is the usual cause."),
             "needs_human": True,
         })
 

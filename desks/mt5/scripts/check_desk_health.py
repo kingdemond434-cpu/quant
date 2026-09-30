@@ -37,7 +37,8 @@ ROOT = DESK.parent.parent
 
 #: task name -> what it drives, and how stale its evidence may be before it is a finding.
 TASKS: tuple[tuple[str, str], ...] = (
-    ("MT5-Gateway", "places and manages orders -- the money path"),
+    # The resident task; MT5-Gateway is the superseded registration, Disabled since 2026-09-16.
+    ("MT5-GatewayResident", "places and manages orders -- the money path"),
     ("MT5-Hourly", "the hourly chain: health, mining, sync"),
     ("MT5-Shadow", "forward evidence for candidate sleeves"),
     ("MT5-Gauntlet", "judges the docket and mints certificates"),

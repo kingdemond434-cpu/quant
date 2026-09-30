@@ -745,3 +745,14 @@ def test_every_debt_component_names_the_organ_that_drains_it(desk) -> None:
     for name in ("silent_discoveries", "unreasoned_blocks"):
         assert "NOT this organ" in debt["component_owner"][name]
         assert "discovery_compiler" in debt["component_owner"][name]
+
+
+def test_the_tail_reserve_is_derived_from_the_last_measured_tail() -> None:
+    """Silent-organ census: the loop ran to 5 s before its budget and the unbudgeted tail
+    (trial charge, after-measures, the artifact write) was killed by the cycle cap."""
+    r, why = cm.tail_reserve_s({}, 900)
+    assert r == 180 and "no measured tail" in why
+    r, _ = cm.tail_reserve_s({"tail_s": 100}, 900)
+    assert r == 150
+    r, why = cm.tail_reserve_s({"tail_s": 1000}, 900)
+    assert r == cm.TAIL_MAX_SHARE * 900 and "capped" in why

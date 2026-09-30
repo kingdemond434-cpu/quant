@@ -1098,7 +1098,46 @@ def previous_pass(path: Path | None = None) -> dict[str, Any]:
     if not isinstance(doc, Mapping):
         return {}
     after = (doc.get("debt_after") or {}) if isinstance(doc.get("debt_after"), Mapping) else {}
-    return {"at": doc.get("generated_utc"), "debt_after": after.get("total_debt")}
+    out = {"at": doc.get("generated_utc"), "debt_after": after.get("total_debt")}
+    if doc.get("tail_s") is not None:
+        out["tail_s"] = doc.get("tail_s")
+    return out
+
+
+#: The floor and the fraction of the pass held back for everything AFTER the convert loop.
+TAIL_FLOOR_S = 60.0
+TAIL_MAX_SHARE = 0.4
+
+
+def tail_reserve_s(prior: Mapping[str, Any], budget_s: float) -> tuple[float, str]:
+    """Seconds the convert loop must leave for the tail, and how that number was derived.
+
+    WHY (CRO noon 2026-09-30: this leg timed out and moved 0 artifacts). The convert loop ran to
+    5 s before its budget, and then the TAIL ran unbudgeted: the effective-trials charge (one
+    eigen-decomposition of an up-to-2,500-square similarity matrix per family -- 53 s for five
+    families measured on a 1.5M-row synthetic registry, and the box holds ~86 families), the
+    after-measures over the whole registry, and the artifact write, which is LAST. The cycle kills
+    this leg ~100 s past its budget, so every pass that used its budget -- the normal case under
+    "no queues" -- was killed inside the tail and wrote nothing, carry included.
+
+    The reserve is the PREVIOUS pass's measured tail x1.5, floored, and capped at a share of the
+    budget so conversion always keeps most of the hour. No conversion is lost to it: a killed
+    pass converts rows and then discards the record of having done so.
+    """
+    cap = TAIL_MAX_SHARE * float(budget_s)
+    try:
+        prev = float(prior.get("tail_s")) if prior.get("tail_s") is not None else None
+    except (TypeError, ValueError):
+        prev = None
+    if prev is None:
+        want = max(TAIL_FLOOR_S, 0.2 * float(budget_s))
+        why = f"no measured tail yet: max({TAIL_FLOOR_S:g}s, 20% of the budget)"
+    else:
+        want = max(TAIL_FLOOR_S, 1.5 * prev)
+        why = f"1.5 x the previous pass's measured tail ({prev:g}s), floor {TAIL_FLOOR_S:g}s"
+    if want > cap:
+        return cap, why + f"; capped at {TAIL_MAX_SHARE:.0%} of the budget"
+    return want, why
 
 
 def _read_carry(path: Path | None = None) -> list[str]:
@@ -1409,6 +1448,7 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
     # Read the last pass's debt BEFORE this one overwrites the artifact: the gap trend is measured
     # against it, and it is the only number that says whether the desk is catching up.
     prior_pass = previous_pass(out_path)
+    tail_reserve, tail_basis = tail_reserve_s(prior_pass, budget.seconds)
     debt_before = measure_debt(conn, grace_days=grace_days)
     breadth_before = measure_breadth(conn)
     counts = cell_counts(conn)
@@ -1505,7 +1545,7 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
             row = supply.next_row()
             if row is None:
                 break
-            if examined >= max_rows or not budget.ok("convert", reserve=5.0):
+            if examined >= max_rows or not budget.ok("convert", reserve=tail_reserve):
                 leftover = [str(row.get("id") or ""), *supply.remaining()]
                 break
             examined += 1
@@ -1654,6 +1694,7 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
 
     # EFFECTIVE TRIALS, not raw count: re-enqueued work pays the multiple-testing bill it owes,
     # and 500 mutations of one rule are not 500 independent looks at the tape.
+    tail_t0 = time.monotonic()
     charge = _charge_trials(repaired, conn, dry_run=dry_run)
     naming_path = "" if dry_run else _naming_requests(naming, seat_dir)
     acq_path = "" if dry_run else _acquisition_tasks(acquisitions, seat_dir)
@@ -1678,7 +1719,10 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
     debt_after = measure_debt(conn, grace_days=grace_days)
     breadth_after = measure_breadth(conn)
     arrivals = arrival_rate(conn)
+    jvd, oldest = judged_vs_docket(), oldest_unconverted(conn)
+    tail_s = round(time.monotonic() - tail_t0, 2)
     return {
+        "tail_s": tail_s, "tail_reserve_s": round(tail_reserve, 1), "tail_basis": tail_basis,
         "examined": examined, "pool": supply.drawn, "waves": supply.waves,
         "max_rows": max_rows, "max_rows_basis": max_rows_basis(),
         "arrival_rate": arrivals,
@@ -1694,8 +1738,8 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
         "repairs": repaired[:60], "refusals": refusals[:60], "still_blocked_rows": parked[:60],
         "bar_coverage": coverage,
         "refusal_policy": REFUSAL_POLICY,
-        "judged_vs_docket": judged_vs_docket(),
-        "oldest_unconverted": oldest_unconverted(conn),
+        "judged_vs_docket": jvd,
+        "oldest_unconverted": oldest,
         "carried_in": len(carried), "carried_out": len(leftover),
         "carry_rule": "no queues: this pass's leftover is the FIRST work of the next pass, and "
                       "the oldest waiting row's age is published every pass",
