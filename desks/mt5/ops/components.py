@@ -689,6 +689,22 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule=f"invoked:{VPS_DAILY}", artifact_class="daily",
             notes=("step breadth_ledger of the VPS daily cycle (ops/crontab.manifest 02:00 and "
                    "quant-cro.timer 08:01), run with cwd at the repo root")),
+        ComponentSpec(
+            component_id="resident:gateway",
+            kind="task", host="box",
+            code_paths=("desks/mt5/research/gateway_resident.py",),
+            inputs=("desks/mt5/data/sleeves.json",),
+            # The resident's work is the gateway pass it drives; every pass that reaches the
+            # venue publishes the desk-staleness verdict, so that file's age IS the resident's
+            # heartbeat (and the one MT5-BoxHeartbeat watches from outside).
+            outputs=("desks/mt5/reports/DESK_STALE.json",),
+            consumers=("desks/mt5/scripts/box_heartbeat.py",),
+            cadence_s=600, timeout_s=None, progress_metric="gateway_passes",
+            expected_artifact_schema="desks/mt5/reports/DESK_STALE.json",
+            owner="lane:ops", restart_action="restart:task:MT5-GatewayResident",
+            criticality="required", resource_budget={},
+            schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
+            notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
     ]
 
 
