@@ -260,9 +260,14 @@ def test_every_timeframe_restriction_is_a_real_chart_and_carries_its_reason() ->
 def test_most_families_run_on_every_chart() -> None:
     """The default is ALL SEVEN. A restriction is an exception with a reason, never the norm --
     if this ever inverts, the ladder has been narrowed one family at a time."""
+    # The class books (mt5desk.class_books) rank a DAILY cross-section at one broker hour: they
+    # are H1-only by construction, not a chart family narrowed one at a time, so they are
+    # counted on neither side of this ratio.
+    from mt5desk.class_books import FAMILIES as CLASS_BOOKS
     unrestricted = [f for f in families_orthogonal.ORTHOGONAL_FAMILIES
                     if f not in families_orthogonal.FAMILY_TIMEFRAMES]
-    assert len(unrestricted) > len(families_orthogonal.FAMILY_TIMEFRAMES)
+    restricted = [f for f in families_orthogonal.FAMILY_TIMEFRAMES if f not in CLASS_BOOKS]
+    assert len(unrestricted) > len(restricted)
     assert families_orthogonal.timeframe_domain("vol_transition") == TIMEFRAMES
     assert families_orthogonal.timeframe_refusal("vol_transition", "M1") is None
     refusal = families_orthogonal.timeframe_refusal("hedging_demand_close", "D1")
