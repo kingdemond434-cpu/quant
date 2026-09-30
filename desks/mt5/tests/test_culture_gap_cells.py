@@ -109,12 +109,14 @@ def test_a_conditioner_without_its_pack_series_is_unmeasured(tmp_path: Path,
 def _isolate_door(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Point the donation door (intake dir, pre-registration ledger, registry backup) at tmp."""
     from libs.moat import registry as R
+    from libs.ops import throughput as TP
     from libs.research import preregistration as PR
     from research import proposer_common as PC
     intel = tmp_path / "intel"
     monkeypatch.setattr(PC, "INTEL", intel)
     monkeypatch.setattr(PR, "LEDGER", tmp_path / "prereg.jsonl")
     monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
+    monkeypatch.setattr(TP, "SAMPLES", tmp_path / "throughput_samples.jsonl")
     monkeypatch.setattr(G, "SERIES_DIR", tmp_path / "series")
     return intel
 
