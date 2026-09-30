@@ -187,6 +187,12 @@ def recover(key: str, row: dict, registry: dict[str, dict]) -> dict[str, Any]:
             "gated_at": row.get("gated_at")}
     if not sym or not fam:
         return {**base, "ok": False, "why": "no symbol/family on the certificate"}
+    try:
+        from family_policy import family_banned
+        if family_banned(fam):
+            return {**base, "ok": False, "why": f"family {fam!r} is banned; never re-judged"}
+    except ImportError:                                           # pragma: no cover - path only
+        pass
     if fam == "session_range_breakout":
         windows = _windows()
         if selector not in windows:

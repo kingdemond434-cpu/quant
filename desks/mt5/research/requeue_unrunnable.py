@@ -136,8 +136,25 @@ def _candidate(row: dict, why: str) -> dict:
     }
 
 
+def _hygiene_first() -> dict:
+    """Run `certificate_hygiene --apply` BEFORE reading the canon, every hour.
+
+    Its own task is daily (MT5-FrontierAudit 05:10), which left a banned-family certificate
+    COUNTED for up to a day after a ban and an unrecorded-params certificate un-evicted for as
+    long. The hygiene pass is idempotent and only moves rows out, so running it on this hourly
+    leg makes both evictions land the hour they become true -- and this organ, and the re-judge
+    below, then read the registry it leaves behind. Never raises into the leg."""
+    try:
+        import certificate_hygiene
+        rc = certificate_hygiene.main(["--apply"])
+        return {"rc": rc, "report": str(certificate_hygiene.OUT)}
+    except Exception as exc:                                            # noqa: BLE001
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
 def main(argv: list[str] | None = None) -> int:
     apply = "--apply" in (argv if argv is not None else sys.argv[1:])
+    hygiene = _hygiene_first() if apply else {"status": "SKIPPED (dry run)"}
     try:
         rows, source = _canon_rows()
     except Exception as exc:                                            # noqa: BLE001
@@ -168,6 +185,7 @@ def main(argv: list[str] | None = None) -> int:
         "reasons": sorted({why for _, why in stuck}),
         "cells": usable,
         "applied": apply,
+        "certificate_hygiene": hygiene,
     }
 
     if apply and usable:
