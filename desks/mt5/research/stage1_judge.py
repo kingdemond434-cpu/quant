@@ -1286,6 +1286,7 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     watch = {r[0] for r in con.execute("SELECT cid FROM cells WHERE verdict=?", (REC.PASS,))}
     seen, seen_hit, seen_status = stream_seen(seen_path, watch, "")
     t_sel = time.monotonic()
+    cpu_parent0 = time.process_time()
     bank, bank_status = load_bank_hashes(bank_path)
     d_gid, d_ident, dead_status = load_dead_sidecar(dead_path)
     from research import rollover_rejudge as RR
@@ -1333,6 +1334,10 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
         else:
             pre.update(cid=sp["cid"], cost_s=0.0)
             results.append(pre)
+
+    # the parent's CPU for the docket stream and the no-build preflight: part of what a RULED
+    # cell costs (the re-judge queues' own measurement is excluded -- it runs in its own pool)
+    parent_cpu_s = time.process_time() - cpu_parent0
 
     # ---- the build pool ---------------------------------------------------------------------
     peak_mb = 0.0
@@ -1519,7 +1524,9 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
                "cells_per_core_sec": round(cps_core, 3),
                "tested": n_tested,
                "tested_per_core_sec": round(n_tested / worker_s, 4) if worker_s > 0 else 0.0,
-               "ruled_per_core_sec": round(n_ruled / worker_s, 4) if worker_s > 0 else 0.0,
+               "parent_cpu_s": round(parent_cpu_s, 2),
+               "ruled_per_core_sec": (round(n_ruled / (worker_s + parent_cpu_s), 4)
+                                      if worker_s + parent_cpu_s > 0 else 0.0),
                "cells_per_wall_sec": round(n_ruled / wall, 3) if wall > 0 else 0.0,
                "worker_peak_mb": round(peak_mb, 1),
                "stage2_build_s_per_cell": (round(float(np.median(s2_costs)), 4)
