@@ -400,3 +400,28 @@ desks/mt5/data/import_stems_cache.json
 # cursors and sealed preregistrations live on the box; the dated metrics under
 # desks/mt5/reports/mining/ are the published artifact.
 desks/mt5/data/mining/
+# THE GATE VERDICT DIGEST AND THE STATE-FLOW METER (2026-09-30), published by
+# sync_shadow_to_git.ps1's $relPaths. `**/reports/*` above ignores both; the digest is the small
+# committed summary of the gitignored gate_verdict_ledger.jsonl and universal_gates_external.json.
+!desks/mt5/reports/GATE_VERDICT_DIGEST.json
+!desks/mt5/reports/BOX_STATE_FLOW.json
+# THE RESEARCH MEASUREMENTS THE BOX PUBLISHES (2026-09-30). `sync_shadow_to_git.ps1` lists these
+# in $reportPaths; each is a small JSON summary the CRO cycle, the audits and the breadth review
+# read from the branch, and none had ever crossed the wire -- `**/reports/*` above ignored them,
+# so every reader off the box saw UNMEASURED or a stale copy. Last match wins, so they sit here.
+!desks/mt5/reports/RESEARCH_BUDGET.json
+!desks/mt5/data/research_budget.json
+!desks/mt5/reports/JUDGING_RATE.json
+!desks/mt5/reports/JUDGING_THROUGHPUT.json
+!desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
+!desks/mt5/reports/JUDGE_COVERAGE.json
+!desks/mt5/reports/EFFECTIVE_BREADTH.json
+!desks/mt5/reports/BREADTH_MANDATE.json
+!desks/mt5/reports/TIER1_SCORECARD.json
+!desks/mt5/reports/ALT_DATA_YIELD.json
+!desks/mt5/reports/PRODUCER_YIELD.json
+!desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
+!desks/mt5/reports/FORWARD_ENROLMENT.json
+!desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
+!desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
+!desks/mt5/reports/shadow/precert_shadow_state.json
