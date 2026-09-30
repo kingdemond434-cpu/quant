@@ -91,4 +91,7 @@ rem desk survived has returned; this asks whether a property that must NEVER hol
 rem started holding. Different questions, and a desk needs both.
 "%PY%" -u "desks\mt5\research\formal_invariants.py" --apply >>"%LOG%" 2>&1
 "%PY%" -u "desks\mt5\research\quantbench.py" --apply >>"%LOG%" 2>&1
+rem DR DRILL (audit item 19): journal replay, restore from the off-box copy and the duplicate-position
+rem guard, daily, against the committed stores -- never the live terminal.
+"%PY%" -u "desks\mt5\scripts\dr_drill.py" >>"%LOG%" 2>&1
 exit /b 0

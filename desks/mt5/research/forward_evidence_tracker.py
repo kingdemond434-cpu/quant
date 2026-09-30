@@ -37,7 +37,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-REPORTS, DATA = DESK / "reports", DESK / "data"
+REPORTS = DESK / "reports"
+DATA = DESK / "data"
 SHADOW = (REPORTS / "shadow" / "shadow_state.json", REPORTS / "shadow" / "qquant_shadow_state.json",
           REPORTS / "shadow" / "scalp_shadow_state.json",
           REPORTS / "shadow" / "external_shadow_state.json")
