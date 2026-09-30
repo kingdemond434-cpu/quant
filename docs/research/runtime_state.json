@@ -26,11 +26,11 @@
   "LIVE": 125,
   "STALE": 1,
   "MISSING": 48,
-  "NEVER": 712,
+  "NEVER": 713,
   "UNMEASURED": 34
  },
  "scope": {
-  "attested": 920,
+  "attested": 921,
   "excluded": 421,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1341,
@@ -38,7 +38,16 @@
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
   "wall_s": 0.55,
-  "summaries_trimmed": 0
+  "summaries_trimmed": 0,
+  "only_missing_appended": [
+   {
+    "at": "2026-09-30T20:01:36+00:00",
+    "host": "vm",
+    "organs": [
+     "leg:attention_substitutes"
+    ]
+   }
+  ]
  },
  "states": {
   "LIVE": "artifact present and newer than the organ's derived max silence",
@@ -23396,6 +23405,31 @@
    "artifact_sha256": "7acc04b9cfddf89308b6e212ad003ca0134f1d00b8991ee37c86770b9a9c38d2",
    "summary": {},
    "progress_metric": "timer_runs",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:attention_substitutes",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/attention_substitutes.py"
+   ],
+   "clock": "hourly_cycle:attention_substitutes",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/ATTENTION_SUBSTITUTES.json",
+   "artifact_declared": "desks/mt5/reports/ATTENTION_SUBSTITUTES.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
    "consumer": "UNMEASURED"
   }
  ],
