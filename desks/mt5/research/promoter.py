@@ -286,11 +286,74 @@ def _apply_live_policy(rows: list[dict]) -> int:
     return n
 
 
+UNIVERSE_FILE = BASE / "data" / "universe" / "universe.json"
+#: Registry fields the engine prices a symbol's round trip and financing from.
+_COST_FIELDS = ("median_spread_pts", "tick_size", "tick_value", "contract_size",
+                "swap_long", "swap_short")
+
+
+def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None, str]:
+    """(cost_hash, source) for a sleeve row, or (None, why) when its cost is UNMEASURED.
+
+    THE ARTIFACT SAID "no cost basis" ON 40/40 LIVE ROWS (external audit, 2026-09-29) because it
+    read `row["cost_hash"]`, a field no writer ever put on a sleeve row -- the hash lives on the
+    forward clock's frozen identity. Sources, in order: the row's own field, the clock's frozen
+    identity, then the universe registry's cost fields for the symbol (the numbers the engine
+    charged). None of the three is UNMEASURED, and unknown cost is unknown edge.
+    """
+    if row.get("cost_hash"):
+        return str(row["cost_hash"]), "row"
+    for key in (row.get("certificate"), row.get("name")):
+        if not key:
+            continue
+        ident = registry_row(str(key)).get("identity")
+        if isinstance(ident, dict) and ident.get("cost_hash"):
+            return str(ident["cost_hash"]), f"clock identity {key}"
+    sym = str(row.get("symbol") or "").upper()
+    if universe is None:
+        try:
+            universe = json.loads(UNIVERSE_FILE.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            universe = {}
+    meta = (universe or {}).get(sym) if isinstance(universe, dict) else None
+    if isinstance(meta, dict):
+        vals = [meta.get(f) for f in _COST_FIELDS]
+        ok = all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals) and all(
+            float(meta[f]) > 0 for f in ("median_spread_pts", "tick_size", "tick_value",
+                                         "contract_size"))
+        if ok:
+            import hashlib
+            blob = json.dumps({f: meta[f] for f in _COST_FIELDS}, sort_keys=True).encode()
+            return hashlib.sha256(blob).hexdigest()[:16], f"universe registry {sym}"
+        return None, f"{sym} registry cost fields incomplete"
+    return None, f"{sym or 'row'} has no clock identity and no registry cost fields"
+
+
 def save_sleeves(sleeves: list[dict]) -> None:
     SLEEVES_FILE.parent.mkdir(parents=True, exist_ok=True)
     _apply_live_policy(sleeves)
     kept: list[dict] = []
+    _universe: dict | None = None
+    try:
+        _universe = json.loads(UNIVERSE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        _universe = {}
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
     for row in sleeves:
+        if str(row.get("status") or "").upper() == "LIVE":
+            _ch, _src = cost_basis_of(row, _universe)
+            if _ch:
+                row["cost_hash"], row["cost_basis_source"] = _ch, _src
+            else:
+                # UNKNOWN COST IS UNKNOWN EDGE (principal, 2026-09-29). Reversible: STANDBY,
+                # never RETIRED, so the row returns the pass its cost is measured.
+                row.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                            "demoted_at": stamp,
+                            "demote_reason": f"UNMEASURED cost basis ({_src}): unknown cost is "
+                                             f"unknown edge, so it holds no capital"})
+                plog(f"{row.get('name')}: LIVE -> STANDBY, no cost basis ({_src})")
+                kept.append(row)
+                continue
         if str(row.get("status") or "").upper() == "LIVE":
             art = artifact_of(row)
             row["artifact"] = art

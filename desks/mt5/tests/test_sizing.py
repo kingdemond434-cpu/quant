@@ -10,6 +10,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk.sizing import (  # noqa: E402
@@ -45,6 +47,7 @@ def test_ramp_scales_risk_not_just_lots() -> None:
     assert authority_ramp(0) == 0.25 and authority_ramp(199) == 0.5 and authority_ramp(200) == 1.0
 
 
+@pytest.mark.usefixtures("legacy_floors")
 def test_the_venue_minimum_overrides_the_risk_target() -> None:
     """REVERSED BY THE PRINCIPAL, 2026-09-12: "all sleeves must trade at least 0.01 lots
     overriding the risk per trade cuz thats broker minimum no matter what".
@@ -64,6 +67,7 @@ def test_the_venue_minimum_overrides_the_risk_target() -> None:
     assert lot == 0.01
 
 
+@pytest.mark.usefixtures("legacy_floors")
 def test_volume_min_tolerated_within_2x_target() -> None:
     # min lot risks between 1x and 2x target -> allowed at volume_min, not silently skipped
     lot = risk_lot(equity=10_000, sl_dist_price=0.005, tick_value=1.0, tick_size=0.0001,
@@ -86,3 +90,11 @@ def test_degenerate_inputs_never_trade() -> None:
                   volume_min=0.01, volume_step=0.01, volume_max=100.0)
         kw.update(bad)
         assert risk_lot(**kw) == 0.0
+
+
+@pytest.fixture
+def legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pins the PRE-2026-09-29 venue-minimum floor (the documented revert path)."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")
