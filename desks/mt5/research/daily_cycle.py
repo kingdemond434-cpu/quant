@@ -632,6 +632,17 @@ def _zentech() -> None:
     build_zentech_state.main()
 
 
+def _six_event_trace() -> None:
+    """Is the system real? The principal's six-event test (2026-09-30), re-derived from recorded
+    artifacts: a source mined into a cell, a preregistered cell, a logged REJECT, a survivor
+    forward-observed, a reconciled live fill, a decay retirement. Read-only; writes
+    reports/six_event_trace.json for the CRO pass (STEP 4C) to route every non-PROVEN event."""
+    from libs.ops import six_event_trace
+    rc = six_event_trace.main([])
+    if rc != 0:
+        raise RuntimeError(f"six_event_trace returned {rc}")
+
+
 #: ORDER IS LOAD-BEARING. The promoter reads the state shadow has just written, so running it
 #: first would decide today on yesterday's evidence. Markout runs last-but-one and
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
@@ -655,10 +666,24 @@ STEPS = (("research_gap_map", _research_gap_map),
          ("wiring_ceo", _wiring_ceo), ("probation", _probation),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
          ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
+         ("six_event_trace", _six_event_trace),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    # ONE STEP ON ITS OWN CLOCK (2026-09-30). `markout` sits behind research steps this box has
+    # measured at 9,056 s, under a 900 s hourly budget, so `reports/markout.json` stood at
+    # 2026-09-08 with n_matched=0 while the live book kept filling. `--step NAME` runs that one
+    # step now, through the same `run_step`, and leaves the day's stamp alone: the chain still
+    # runs it in order, and an hourly leg can give a live-truth step the cadence it needs.
+    if "--step" in argv:
+        i = argv.index("--step")
+        want = argv[i + 1] if i + 1 < len(argv) else ""
+        fns = dict(STEPS)
+        if want not in fns:
+            dlog(f"--step {want!r}: no such step; known: {', '.join(fns)}")
+            return 2
+        return 0 if run_step(want, fns[want])["ok"] else 1
     force = "--force" in argv
     today = datetime.now(UTC).date().isoformat()
     stamp = _load_stamp()
