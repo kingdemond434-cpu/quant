@@ -249,9 +249,14 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
         "Fully wired or it does not count", "No forced or fake work",
         "Every item fully completed this pass",
         "Every producer maximally broad, unknown-unknowns mined",
+        "Judging rate on target", "UNKNOWN verdicts by cause", "Box state is fresh in git",
+        "No unfed datasets", "Paid-substitute coverage", "Cross-culture orthogonality",
+        "No live code drift", "Decay and markout ran", "Confident kills per day",
+        "Credential coverage", "Desktop pass-2 queue age", "Six-event trend",
     ), start=1):
         assert f"| D{n} | **{duty}** |" in step, duty
     for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
                 "Cert to forward", "Deep-forest vectors", "Judged", "Live"):
         assert f"| {row} |" in step, row
     assert "STEP 4B" in LAUNCHER.read_text("utf-8")
+    assert "D15-D26" in LAUNCHER.read_text("utf-8")
