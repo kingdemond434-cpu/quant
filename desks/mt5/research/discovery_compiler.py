@@ -756,6 +756,42 @@ PEER_KEY_BY_FAMILY: dict[str, str] = {"relative_value": "peer_symbol",
                                       "correlation_regime": "peer_symbol",
                                       "lead_lag": "driver_symbol"}
 FACTOR_FAMILIES = frozenset({"cross_asset_residual", "pca_residual"})
+#: THE TRIANGLE NAMES TWO INSTRUMENTS, and the same defect struck it (measured 2026-09-30 on the
+#: same docket): 1,720 of 1,796 `triangle` rows came from this compiler with no `leg_b_symbol` /
+#: `leg_c_symbol`, and `family_triangle` returns [] without both legs -- so every one reached the
+#: judge as UNKNOWN / "never fires" (18 of 430 UNKNOWN verdicts in a 6,000-cell census; not one
+#: triangle cell was judgeable). The legs are NOT searched: a triangle is a fact about the quote
+#: set (`triangle_miner`), so the target's two currencies are joined through the first pivot
+#: currency whose two connecting pairs this desk holds on the child's chart, and
+#: `triangle_miner.orient` derives the signs from the symbols' names. Keyed by the first leg.
+LEG_FAMILIES: dict[str, tuple[str, str]] = {"triangle": ("leg_b_symbol", "leg_c_symbol")}
+#: Pivot currencies in order of preference -- the deepest books first. Any other currency the pool
+#: quotes is tried after these, alphabetically, so the choice is deterministic.
+TRIANGLE_PIVOTS = ("USD", "EUR", "JPY", "GBP", "CHF")
+
+
+def _triangle_legs(sym: str, pool: list[str],
+                   meta: Mapping[str, Any]) -> tuple[str, str, int, int] | None:
+    """(leg_b, leg_c, sign_b, sign_c) closing `sym` through a pivot currency, or None."""
+    from research.triangle_miner import fx_pairs, orient
+    legs = fx_pairs(dict(meta))
+    if sym not in legs:
+        return None
+    a, c = legs[sym]
+    by_ccy: dict[frozenset[str], str] = {}
+    for s in sorted(pool):
+        if s in legs:
+            by_ccy.setdefault(frozenset(legs[s]), s)
+    ccys = sorted({x for s in pool if s in legs for x in legs[s]} - {a, c})
+    for b in [*[p for p in TRIANGLE_PIVOTS if p in ccys],
+              *[x for x in ccys if x not in TRIANGLE_PIVOTS]]:
+        ab, bc = by_ccy.get(frozenset((a, b))), by_ccy.get(frozenset((b, c)))
+        if not (ab and bc):
+            continue
+        tri = orient(sym, ab, bc, legs)
+        if tri is not None:
+            return tri.leg_b, tri.leg_c, tri.sign_b, tri.sign_c
+    return None
 
 
 def _universe_meta() -> dict[str, Any]:
@@ -765,13 +801,16 @@ def _universe_meta() -> dict[str, Any]:
 
 def complete_inputs(child: dict[str, Any], ctx: TM.Context,
                     meta: Mapping[str, Any] | None = None) -> dict[str, Any]:
-    """Name the second instrument a peer/driver/factor family needs, when the child names none."""
+    """Name the other instrument(s) a peer/driver/factor/triangle family needs, when the child
+    names none."""
     fam = str(child.get("family") or "")
     key = PEER_KEY_BY_FAMILY.get(fam)
+    legs_keys = LEG_FAMILIES.get(fam)
     params = dict(child.get("params") or {})
-    if key is None and fam not in FACTOR_FAMILIES:
+    if key is None and fam not in FACTOR_FAMILIES and legs_keys is None:
         return child
-    if (key and params.get(key)) or (fam in FACTOR_FAMILIES and params.get("factor_symbols")):
+    if (key and params.get(key)) or (fam in FACTOR_FAMILIES and params.get("factor_symbols")) \
+            or (legs_keys and all(params.get(k) for k in legs_keys)):
         return child
     sym = str(child.get("symbol") or "")
     chart = str(child.get("chart") or params.get("timeframe") or "H1").upper()
@@ -786,7 +825,16 @@ def complete_inputs(child: dict[str, Any], ctx: TM.Context,
         return child
     info = dict(meta) if meta is not None else _universe_meta()
     added: str | None = None
-    if key:
+    if legs_keys:
+        try:
+            tri = _triangle_legs(sym, pool, info)
+        except Exception:
+            tri = None
+        if tri:
+            params[legs_keys[0]], params[legs_keys[1]] = tri[0], tri[1]
+            params["sign_b"], params["sign_c"] = tri[2], tri[3]
+            added = legs_keys[0]
+    elif key:
         peer = _peer_symbol(sym, [sym, *pool], info)
         if peer:
             params[key] = peer
