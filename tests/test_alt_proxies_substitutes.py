@@ -232,12 +232,16 @@ def test_dated_requests_carry_the_key_only_in_the_live_url_and_backfill_commits_
 
 
 def test_keyed_substitutes_block_without_their_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    for env in ("ECOS_API_KEY", "KOBIS_API_KEY", "SEOUL_API_KEY"):
+    for env in ("ECOS_API_KEY", "KOBIS_API_KEY", "SEOUL_API_KEY", "ESTAT_APP_ID", "INEGI_TOKEN",
+                "DATA_GO_KR_KEY"):
         monkeypatch.delenv(env, raising=False)
     got = {s.id: A.status_of(s) for s in A.SUBSTITUTE_SOURCES if s.key_env}
     assert got == {"kr_bok_card_spend": "BLOCKED_ON_KEY:ECOS_API_KEY",
                    "kr_kobis_box_office": "BLOCKED_ON_KEY:KOBIS_API_KEY",
-                   "kr_seoul_subway": "BLOCKED_ON_KEY:SEOUL_API_KEY"}
+                   "kr_seoul_subway": "BLOCKED_ON_KEY:SEOUL_API_KEY",
+                   "jp_estat_immigration": "BLOCKED_ON_KEY:ESTAT_APP_ID",
+                   "mx_inegi_emec": "BLOCKED_ON_KEY:INEGI_TOKEN",
+                   "kr_mof_container_teu": "BLOCKED_ON_KEY:DATA_GO_KR_KEY"}
     assert A.status_of(A.BY_ID["us_oi_card_spend"]) == "DEAD:2024-06"
     assert A.status_of(A.BY_ID["us_oi_google_mobility"]) == "DEAD:2022-10"
 
