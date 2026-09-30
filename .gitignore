@@ -303,6 +303,14 @@ desks/mt5/data/features/
 desks/mt5/data/memory/
 desks/mt5/data/deep_forest_seen.json
 
+# Raw text stores of the NLP / blog-mood organs (post titles and snippets, the first-seen cursor,
+# the LLM tag cache): box-local working state. Kept OUT of data/intelligence/, which the
+# candidate compiler globs as seat output, and never committed (2026-09-30).
+desks/mt5/data/text_store/
+# The committed Asian/alt-data digest's writer lock and temp file (the digest itself is tracked).
+desks/mt5/data/digests/*.lock
+desks/mt5/data/digests/*.tmp
+
 # THE BOX'S OWN REPORT, ALLOWLISTED LAST SO IT WINS (2026-09-06). `sync_shadow_to_git.ps1` lists
 # every path here in $relPaths and its header warns that an ignored path makes `git add` a SILENT
 # no-op -- success on screen, nothing published. That is exactly what had happened: sleeves.json

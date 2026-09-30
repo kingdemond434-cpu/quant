@@ -69,7 +69,8 @@ def test_nlp_organ_publishes_the_axis_door_with_the_knowable_date(tmp_path: Path
         1997, 2, 11, tzinfo=UTC)
     paths = {"store": tmp_path / "store", "axis": tmp_path / "axes" / "nlp_events.json",
              "series": tmp_path / "series", "report": tmp_path / "r.json",
-             "intel": tmp_path / "intel.json", "cb": cb, "bis": bis}
+             "intel": tmp_path / "intel.json", "cb": cb, "bis": bis,
+             "digest": tmp_path / "digest.json"}
     rep = nef.run(NOW, news=False, llm_max=0, paths=paths)
     assert rep["docs_by_source"] == {"cb_press": 39, "bis_review": 1}
     axis = json.loads(paths["axis"].read_text("utf-8"))
@@ -82,6 +83,9 @@ def test_nlp_organ_publishes_the_axis_door_with_the_knowable_date(tmp_path: Path
     intel = json.loads(paths["intel"].read_text("utf-8"))
     usdjpy = intel["instruments"]["USDJPY"]["factors"]["monetary_tone"][0]
     assert usdjpy["orientation"] == -1 and usdjpy["drift_on_instrument"] == -usdjpy["drift"]
+    dig = json.loads((tmp_path / "digest.json").read_text("utf-8"))["organs"][nef.SOURCE]
+    assert dig["status"] == "MEASURED" and dig["measured"] == ["bis_review", "cb_press"]
+    assert dig["rows"] == rep["panel_rows"]["lexicon"]
 
 
 def _lake(series: Path, name: str, col: str, n: int, seed: int) -> None:
@@ -108,14 +112,22 @@ def test_the_exogenous_conditioner_executes_a_published_lake_frame(tmp_path: Pat
     assert sig, "a published frame the family cannot read is a direct cell nothing executes"
 
 
-def test_cells_carry_the_full_schema_and_go_through_the_donor_door(
-        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def _closes(index_seed: int, beta: float, seed: int) -> pd.Series:
+    """Daily closes on the lake's business days. With beta != 0 the index on day d drives the
+    return from the first close AFTER d (the one `nlp_gain_test.align` trades) -- a planted
+    signal; with beta == 0 the closes are a null random walk."""
+    days = pd.bdate_range("2025-06-02", periods=260)
+    x = np.random.default_rng(index_seed).normal(size=200)
+    r = np.random.default_rng(seed).normal(0, 0.005, 260)
+    r[2:202] += beta * x
+    return pd.Series(150 * np.exp(np.cumsum(r)), index=days)
+
+
+def _run_cells(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, close: pd.Series
+               ) -> tuple[dict[str, Any], dict[str, Any]]:
     series = tmp_path / "series"
     _lake(series, "nlp_events_JP", "monetary_tone_drift", 200, 3)
     _lake(series, "blog_social_USDJPY", "attention_shock_signed", 30, 4)   # too short yet
-    days = pd.bdate_range("2025-06-02", periods=260)
-    close = pd.Series(150 * np.exp(np.cumsum(np.random.default_rng(5).normal(0, 0.005, 260))),
-                      index=days)
     monkeypatch.setattr(nsc, "daily_closes", lambda sym: close if sym in ("USDJPY",
                                                                           "JPN225") else None)
     donated: dict[str, Any] = {}
@@ -127,8 +139,14 @@ def test_cells_carry_the_full_schema_and_go_through_the_donor_door(
     from research import proposer_common as pc
     monkeypatch.setattr(pc, "donate", fake_donate)
     rep = nsc.run(dry_run=False, refresh=False, series_dir=series, out=tmp_path / "r.json",
-                  n_placebo=50, n_boot=50)
-    assert rep["admission"]["verdict"] in ("GAIN", "NO_GAIN_SHOWN")
+                  n_placebo=50, n_boot=50, digest_path=tmp_path / "digest.json")
+    return rep, donated
+
+
+def test_cells_with_a_planted_signal_pass_the_placebo_and_go_through_the_donor_door(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rep, donated = _run_cells(tmp_path, monkeypatch, _closes(3, 0.004, 5))
+    assert rep["admission"]["verdict"] == "GAIN"
     assert rep["admission"]["n_trials"] >= 2
     assert rep["cells_proposed"] == 2                          # JP policy drift on USDJPY, JPN225
     waiting = {(w["cell"], w["symbol"]) for w in rep["cells_waiting_for_history"]}
@@ -143,9 +161,34 @@ def test_cells_carry_the_full_schema_and_go_through_the_donor_door(
                     "falsifier", "required_data"):
             assert c[key], key
         assert c["provenance"]["source_culture"] == "JP/ja"
-        assert c["evidence"]["gain_test"], "the admission evidence rides on the cell"
+        assert any(t["gain"] for t in c["evidence"]["gain_test"]), "the gate rides on the cell"
     assert {c["symbol"]: c["params"]["side_when_high"] for c in donated["cands"]} == {
         "USDJPY": -1, "JPN225": -1}
+    dig = json.loads((tmp_path / "digest.json").read_text("utf-8"))["organs"][nsc.SOURCE]
+    assert dig["status"] == "GAIN" and dig["cells_proposed"] == 2
+    assert dig["gain"]["nlp:JP.monetary_tone_drift|USDJPY|h1"] == "GAIN"
+
+
+def test_cells_with_history_but_no_gain_are_never_donated(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rep, donated = _run_cells(tmp_path, monkeypatch, _closes(3, 0.0, 5))
+    assert rep["admission"]["verdict"] == "NO_GAIN_SHOWN"
+    assert rep["cells_proposed"] == 0 and not donated
+    failed = {(w["cell"], w["symbol"]) for w in rep["cells_failed_gain"]}
+    assert failed == {("policy_tone_drift", "USDJPY"), ("policy_tone_drift", "JPN225")}
+    dig = json.loads((tmp_path / "digest.json").read_text("utf-8"))["organs"][nsc.SOURCE]
+    assert dig["status"] == "NO_GAIN_SHOWN" and dig["cells_failed_gain"] == 2
+
+
+def test_raw_text_stores_live_outside_the_compiled_tree_and_are_gitignored() -> None:
+    import subprocess
+    for store in (bsm.STORE, nef.STORE):
+        rel = store.relative_to(ROOT).as_posix()
+        assert "/intelligence/" not in f"/{rel}/", rel     # the compiler globs data/intelligence
+        assert rel.startswith("desks/mt5/data/text_store/"), rel
+        probe = f"{rel}/posts.jsonl"
+        got = subprocess.run(["git", "check-ignore", "-q", probe], cwd=ROOT, check=False)
+        assert got.returncode == 0, f"{probe} is not gitignored"
 
 
 def test_share_cfds_are_never_direct_cells() -> None:

@@ -97,6 +97,8 @@ HORIZON_BARS = 120
 #: Conditioned variants minted per pass. The cursor rotates, so every (parent, series) pair is
 #: reached across passes; this is a per-pass compute share, and what it leaves is owed, not refused.
 INDIRECT_PER_PASS = 24
+#: Forward window (H1 bars) each parent signal's return is read over in the conditioned test.
+CHILD_HORIZON_BARS = 24
 #: Parents per instrument read from the certified survivors.
 PARENTS_PER_SYMBOL = 3
 #: A component older than this (days since its release) no longer describes "now" in the
@@ -139,6 +141,11 @@ class Paths:
     @property
     def allocation_intel(self) -> Path:
         return self.desk / "reports" / "ALT_PROXIES_ALLOCATION_INTEL.json"
+
+    @property
+    def digest(self) -> Path:
+        """The small COMMITTED digest (reports/ is gitignored)."""
+        return self.desk / "data" / "digests" / "asia_alt_data_digest.json"
 
     @property
     def survivors(self) -> Path:
@@ -2466,15 +2473,74 @@ def _parents(paths: Paths) -> dict[str, list[dict[str, Any]]]:
     return out
 
 
+def _parent_signal_returns(paths: Paths, par: dict[str, Any]) -> Any:
+    """(bar index, parent signal bar positions, side-signed forward log returns) for a certified
+    parent, replayed through the desk's one call shape (`mt5desk.family_call.signals`) on this
+    box's H1 bars -- or a string naming why it could not be replayed (the child is then
+    UNMEASURED and not donated)."""
+    import numpy as np
+    import pandas as pd
+    sym = str(par.get("symbol") or "")
+    path = paths.universe / f"{sym}_H1.parquet"
+    if not path.exists():
+        return f"no {sym}_H1 bars on this box"
+    try:
+        from mt5desk.executables import resolve_family
+        from mt5desk.family_call import signals as family_signals
+        fn = resolve_family(str(par.get("family") or ""))
+        if fn is None:
+            return f"no code on this tree answers to family {par.get('family')!r}"
+        bars = pd.read_parquet(path)
+        bars.index = pd.DatetimeIndex(pd.to_datetime(bars.index, utc=True, errors="coerce"))
+        bars = bars[bars.index.notna()].sort_index()
+        params = dict(par.get("params") or {})
+        if par.get("selector") and "session" not in params:
+            params["session"] = str(par["selector"])
+        side = -1 if str(par.get("side") or "").strip().upper() in {"SHORT", "-1"} else 1
+        sigs = list(family_signals(fn, bars, side=side, params=params))
+    except Exception as exc:
+        return f"parent replay raised {type(exc).__name__}: {str(exc)[:100]}"
+    idx = pd.DatetimeIndex(bars.index)
+    close = bars["close"].to_numpy(dtype=float)
+    pos = idx.get_indexer(pd.DatetimeIndex([pd.Timestamp(s.time) for s in sigs]
+                                           ).tz_convert("UTC")) if sigs else np.array([], int)
+    sides = np.asarray([int(s.side) for s in sigs], dtype=float)
+    keep = (pos >= 0) & (pos + CHILD_HORIZON_BARS < close.size)
+    pos, sides = pos[keep], sides[keep]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ret = sides * np.log(close[pos + CHILD_HORIZON_BARS] / close[pos])
+    return idx, pos, ret
+
+
+def _regime_mask(paths: Paths, src: Source, series: str, op: str, idx: Any) -> Any:
+    """The child's regime on every bar, exactly as `cell_modifiers._alt_filter` applies it."""
+    from mt5desk import cell_modifiers as cm
+    s = cm._alt_series(lake_file(src, series), "pace", root=paths.series)
+    if s is None or len(s) == 0:
+        return None
+    known = s.reindex(s.index.union(idx)).ffill().reindex(idx)
+    return cm.ALT_OPS[op](known.astype(float), 0.0).to_numpy(dtype=bool)
+
+
 def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str, Any]]]],
                    state: dict[str, Any], now: datetime,
-                   limit: int = INDIRECT_PER_PASS) -> tuple[list[dict[str, Any]], int]:
+                   limit: int = INDIRECT_PER_PASS,
+                   replay: Callable[[Paths, dict[str, Any]], Any] | None = None,
+                   ) -> tuple[list[dict[str, Any]], int, list[dict[str, Any]]]:
     """Certified parents on each mapped instrument, conditioned on the series' pace sign.
 
     Two children per (parent, series): pace > 0 and pace < 0 -- the two halves of one split, so
     neither is chosen after seeing which paid. Only series with live-yield points (not a fixture,
     at least 24 released points) mint; a rotating cursor spreads the per-pass share so every
-    pair is reached. Returns (candidates, pairs owed to later passes)."""
+    pair is reached.
+
+    THE PLACEBO-CONDITIONED GATE. A child is donated only when the parent's signals inside its
+    regime beat the same signals inside random regimes of the same duty cycle
+    (`release_gain.regime_placebo`, circular shifts of the regime mask), Bonferroni-charged over
+    every child tested this pass. A child whose parent cannot be replayed here, or whose regime
+    holds too few signals, is UNMEASURED and not donated.
+
+    Returns (passing candidates, pairs owed to later passes, one gate row per minted child)."""
     parents = _parents(paths)
     pairs: list[tuple[str, str, dict[str, Any]]] = []
     for sid, per in sorted(points_by_source.items()):
@@ -2487,11 +2553,12 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
                 for par in parents.get(sym, [])[:PARENTS_PER_SYMBOL]:
                     pairs.append((sid, series, par))
     if not pairs:
-        return [], 0
+        return [], 0, []
     start = int(state.get("indirect_cursor") or 0) % len(pairs)
     take = (pairs[start:] + pairs[:start])[: max(0, limit // 2)]
     state["indirect_cursor"] = (start + len(take)) % len(pairs)
     out: list[dict[str, Any]] = []
+    minted: list[tuple[dict[str, Any], dict[str, Any], Source, str, str]] = []
     for sid, series, par in take:
         src = BY_ID[sid]
         for op in ("gt", "lt"):
@@ -2514,7 +2581,46 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
                 "parent": par["name"],
                 "provenance": {"organ": "alt_proxies", "use": "indirect_cells",
                                "source_id": sid, "series": series, **_meta(src)}})
-    return out, max(0, len(pairs) - len(take))
+            minted.append((out[-1], par, src, series, op))
+    passed, gates = _gate_children(paths, minted, replay or _parent_signal_returns)
+    return passed, max(0, len(pairs) - len(take)), gates
+
+
+def _gate_children(paths: Paths,
+                   minted: list[tuple[dict[str, Any], dict[str, Any], Source, str, str]],
+                   replay: Callable[[Paths, dict[str, Any]], Any],
+                   ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    from libs.research.release_gain import regime_placebo
+    replays: dict[str, Any] = {}
+    inputs: list[tuple[dict[str, Any], Any]] = []
+    for cand, par, src, series, op in minted:
+        name = str(par.get("name") or cand["parent"])
+        if name not in replays:
+            replays[name] = replay(paths, par)
+        got = replays[name]
+        if isinstance(got, str):
+            inputs.append((cand, got))
+            continue
+        idx, pos, ret = got
+        mask = _regime_mask(paths, src, series, op, idx)
+        inputs.append((cand, "no conditioning series in the lake on this box" if mask is None
+                       else (pos, ret, mask)))
+    n_trials = max(1, sum(1 for _c, x in inputs if not isinstance(x, str)))
+    passed: list[dict[str, Any]] = []
+    gates: list[dict[str, Any]] = []
+    for cand, x in inputs:
+        if isinstance(x, str):
+            res: dict[str, Any] = {"verdict": UNMEASURED, "why": x}
+        else:
+            seed = int(hashlib.sha256(cand["cell"].encode()).hexdigest()[:8], 16)
+            res = regime_placebo(x[0], x[1], x[2], n_trials=n_trials, seed=seed)
+        gates.append({"cell": cand["cell"], "parent": cand["parent"], **res})
+        if res.get("verdict") == "PASS":
+            cand["evidence"] = {k: res.get(k) for k in (
+                "n_in", "n_signals", "duty_cycle", "mean_in", "placebo_mean", "placebo_p95",
+                "p_placebo", "p_charged", "n_trials", "n_masks", "why")}
+            passed.append(cand)
+    return passed, gates
 
 
 def _donate(source: str, cands: list[dict[str, Any]], tests_run: int) -> dict[str, Any]:
@@ -2784,12 +2890,13 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
     gains = gain_tests(paths, points_by_source) if points_by_source else {}
     live = dict(points_by_source) if fixtures is None else {}
     direct = direct_cells(gains, now) if fixtures is None else []
-    indirect, owed = indirect_cells(paths, live, state, now)
+    indirect, owed, child_gates = indirect_cells(paths, live, state, now)
+    n_children_tested = sum(1 for g in child_gates if g.get("verdict") in ("PASS", "FAIL"))
     n_tested = sum(1 for g in gains.values() if g.get("verdict") in ("PASS", "FAIL"))
     donations: dict[str, Any] = {"direct": {"donated": 0}, "indirect": {"donated": 0}}
     if donate and not dry_run:
         donations["direct"] = _donate(SOURCE, direct, max(1, n_tested))
-        donations["indirect"] = _donate(INDIRECT_SOURCE, indirect, max(1, len(indirect)))
+        donations["indirect"] = _donate(INDIRECT_SOURCE, indirect, max(1, n_children_tested))
     intel = allocation_intel(points_by_source, gains, now)
     report = {
         "at": now.isoformat(timespec="seconds"), "organ": "alt_proxies",
@@ -2801,9 +2908,14 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                          "rule": ("an exogenous_conditioner cell is donated only after its gain "
                                   "test PASSED on this box; every tested cell is charged")},
         "indirect_cells": {"n": len(indirect), "owed_to_later_passes": owed,
+                           "n_minted": len(child_gates), "n_tested": n_children_tested,
+                           "gates": child_gates[:48],
                            "donation": donations["indirect"],
                            "rule": ("certified parents conditioned on pace>0 / pace<0 via "
-                                    "params.conditioner, applied by mt5desk.cell_modifiers")},
+                                    "params.conditioner, applied by mt5desk.cell_modifiers; a "
+                                    "child is donated only when its in-regime parent return "
+                                    "beats circularly shifted regimes of the same duty cycle, "
+                                    "Bonferroni over every child tested")},
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
         "substitute_agreement": substitute_agreement(paths, points_by_source),
@@ -2816,7 +2928,34 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
         _atomic(paths.state, state)
         _atomic(paths.allocation_intel, intel)
         _atomic(paths.report, report)
+        from libs.research import asia_alt_digest
+        asia_alt_digest.publish(SOURCE, digest_section(report), paths.digest)
     return report
+
+
+def digest_section(report: dict[str, Any]) -> dict[str, Any]:
+    """This organ's section of the committed digest: points per source, gain verdicts per cell,
+    and what the direct and indirect gates let through."""
+    from libs.research import asia_alt_digest
+    recs = report.get("sources") or {}
+    pts = {sid: sum((r.get("series") or {}).values()) for sid, r in recs.items()}
+    measured = [sid for sid, n in pts.items() if n > 0]
+    live = report.get("mode") == "fetch" and any(int(r.get("parsed") or 0) > 0
+                                                 for r in recs.values())
+    ind = report.get("indirect_cells") or {}
+    return asia_alt_digest.section(
+        at=str(report.get("at")),
+        status=("LIVE" if live else "FIXTURES" if report.get("mode") == "fixtures"
+                else "UNMEASURED_LIVE_YIELD"),
+        rows=sum(pts.values()), measured=measured,
+        unmeasured=[sid for sid in recs if sid not in measured],
+        gain={k: (g or {}).get("verdict", UNMEASURED)
+              for k, g in (report.get("gain_tests") or {}).items()},
+        source_status={sid: str(r.get("status")) for sid, r in sorted(recs.items())},
+        direct_cells=int((report.get("direct_cells") or {}).get("n") or 0),
+        indirect_cells={"minted": int(ind.get("n_minted") or 0),
+                        "tested": int(ind.get("n_tested") or 0),
+                        "passed": int(ind.get("n") or 0)})
 
 
 def _cursor(s: Source) -> str:

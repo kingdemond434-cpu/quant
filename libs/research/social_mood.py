@@ -18,8 +18,14 @@ BOT FILTERING, BEFORE ANYTHING IS COUNTED:
   duplicate_text   the same normalised text twice (URLs, digits, punctuation stripped) -- kept once
   near_duplicate   character-shingle Jaccard >= NEAR_DUP_JACCARD to a post already kept (MinHash
                    banding finds the candidates; the exact Jaccard decides)
-  burst_account    an author posting more than BURST_MAX times inside BURST_WINDOW -- every post
-                   in the burst is dropped, because a burst IS the account's signature
+  burst_account    an author posting more than BURST_MAX times inside BURST_WINDOW OF THE POSTS'
+                   OWN PUBLISHED TIMES -- every post in the burst is dropped, because a burst IS
+                   the account's signature. Keyed on `published_at`, never on the fetch instant:
+                   one fetch returns a whole feed at once, and keying on it dropped any author
+                   with more than BURST_MAX items per fetch (every per-blog feed). A post with no
+                   published time falls back to `first_seen_at`. Single-author blog feeds
+                   (SINGLE_AUTHOR_FEED_SOURCES: one configured blog per feed id) are exempt --
+                   the feed IS one author by construction, so a burst test measures nothing.
 
 POINT-IN-TIME: a post counts on the UTC day of `first_seen_at` (when the desk first fetched it),
 never its claimed publication time, which a feed can back-date. `daily_index(posts, asof=t)`
@@ -113,6 +119,9 @@ MINHASH_K = 16
 BANDS = 8
 BURST_MAX = 5
 BURST_WINDOW = timedelta(hours=1)
+#: Sources whose every feed is ONE configured blog (`{id}` in the source URL of
+#: `libs.data.blog_social_sources`): exempt from the burst test.
+SINGLE_AUTHOR_FEED_SOURCES: frozenset[str] = frozenset({"ameblo_user_rss", "livedoor_user_rss"})
 TRAIL_DAYS = 28
 TRAIL_MIN = 7
 
@@ -196,19 +205,28 @@ class BotReport:
     dropped: Mapping[str, int]
 
 
-def bot_filter(posts: Sequence[Post]) -> tuple[list[Post], BotReport]:
+def _posted_at(p: Post) -> datetime:
+    """The post's own time: its published time, else (no stamp in the feed) its first sighting."""
+    return _utc(p.published_at) if p.published_at is not None else _utc(p.first_seen_at)
+
+
+def bot_filter(posts: Sequence[Post], *,
+               single_author_sources: Iterable[str] = SINGLE_AUTHOR_FEED_SOURCES
+               ) -> tuple[list[Post], BotReport]:
     """Drop duplicate text, near-identical posts and burst accounts. Order = first_seen_at."""
     ordered = sorted(posts, key=lambda p: (_utc(p.first_seen_at), p.source, p.ident))
     dropped = {"duplicate_text": 0, "near_duplicate": 0, "burst_account": 0}
+    exempt = frozenset(single_author_sources)
     # BURSTS FIRST: an account whose posts are all dropped as a burst must not seed the
     # duplicate index and take an honest author's identical-looking post down with it.
     by_author: dict[str, list[int]] = {}
     for i, p in enumerate(ordered):
-        if p.author:
+        if p.author and p.source not in exempt:
             by_author.setdefault(f"{p.source}:{p.author}", []).append(i)
     burst: set[int] = set()
-    for idxs in by_author.values():
-        times = [_utc(ordered[i].first_seen_at) for i in idxs]
+    for members in by_author.values():
+        idxs = sorted(members, key=lambda i: _posted_at(ordered[i]))
+        times = [_posted_at(ordered[i]) for i in idxs]
         lo = 0
         for hi in range(len(idxs)):
             while times[hi] - times[lo] > BURST_WINDOW:

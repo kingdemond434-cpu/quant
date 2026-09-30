@@ -357,8 +357,7 @@ def test_direct_cell_series_is_readable_by_the_family_that_judges_it(tmp_path: P
     assert s.index.min() >= first_avail                          # lagged, never early
 
 
-def test_indirect_cells_condition_certified_parents_and_the_conditioner_applies(
-        tmp_path: Path) -> None:
+def _indirect_desk(tmp_path: Path) -> tuple[A.Paths, A.Source, dict[str, Any]]:
     paths = _tmp_desk(tmp_path)
     src = A.BY_ID["kr_exports_early"]
     vals = list(np.random.default_rng(8).normal(0, 3, 60))
@@ -370,29 +369,85 @@ def test_indirect_cells_condition_certified_parents_and_the_conditioner_applies(
         "external.AUDUSD.session_range_breakout": {"shadow_spec": {
             "symbol": "AUDUSD", "family": "session_range_breakout", "selector": "asia",
             "params": {"rr": 2.0}}}}}), "utf-8")
+    return paths, src, pts
+
+
+def _replay(paths: A.Paths, src: A.Source, edge: float, seed: int) -> Any:
+    """A fake parent replay: one signal every 7 bars, whose forward return carries `edge` ONLY
+    while the series' pace > 0 (a planted conditioned edge), plus noise."""
+    idx = pd.date_range("2025-01-01", "2026-09-01", freq="h", tz="UTC")
+    pos = np.arange(0, idx.size - 30, 7)
+    in_gt = A._regime_mask(paths, src, "daily_avg_yoy", "gt", idx)
+    assert in_gt is not None and 0.1 < in_gt.mean() < 0.9
+    ret = np.where(in_gt[pos], edge, -edge) + np.random.default_rng(seed).normal(0, 0.004,
+                                                                                  pos.size)
+    return lambda _paths, _par: (idx, pos, ret)
+
+
+def test_indirect_child_with_a_planted_regime_edge_passes_and_its_mirror_does_not(
+        tmp_path: Path) -> None:
+    paths, src, pts = _indirect_desk(tmp_path)
     state: dict[str, Any] = {}
-    cells, owed = A.indirect_cells(paths, {src.id: pts}, state, NOW)
-    assert len(cells) == 2 and owed >= 0
-    ops = sorted(c["params"]["conditioner"].split(":")[3] for c in cells)
-    assert ops == ["gt", "lt"]
-    for c in cells:
-        assert c["family"] == "session_range_breakout" and c["params"]["rr"] == 2.0
-        assert c["params"]["session"] == "asia"
-        for k in REQUIRED_META:
-            assert c[k], k
-        spec = cm.alt_conditioner(c["params"]["conditioner"])
-        assert spec is not None and spec[0] == A.lake_file(src, "daily_avg_yoy")
+    cells, owed, gates = A.indirect_cells(paths, {src.id: pts}, state, NOW,
+                                          replay=_replay(paths, src, 0.002, 1))
+    assert owed >= 0 and len(gates) == 2                       # both halves were tested
+    verdicts = {g["cell"].rsplit(":", 2)[1]: g["verdict"] for g in gates}
+    assert verdicts == {"gt": "PASS", "lt": "FAIL"}, gates
+    assert all(g["n_trials"] == 2 for g in gates)               # both charged
+    assert len(cells) == 1
+    c = cells[0]
+    assert c["family"] == "session_range_breakout" and c["params"]["rr"] == 2.0
+    assert c["params"]["session"] == "asia"
+    assert c["evidence"]["p_charged"] <= 0.05 and c["evidence"]["n_in"] >= 20
+    for k in REQUIRED_META:
+        assert c[k], k
+    spec = cm.alt_conditioner(c["params"]["conditioner"])
+    assert spec is not None and spec[0] == A.lake_file(src, "daily_avg_yoy") and spec[2] == "gt"
     # The modifier applies the SAME series the organ wrote, causally.
     bars_idx = pd.date_range("2025-01-01", "2026-09-01", freq="h", tz="UTC")
     bars = pd.DataFrame({"close": np.linspace(1, 2, bars_idx.size)}, index=bars_idx)
     sigs = [Signal(time=t, side=1, stop=0.0, target=3.0, ttl_bars=5, tag="t")
             for t in bars_idx[::97]]
-    spec_gt = cm.alt_conditioner(cells[0]["params"]["conditioner"])
-    assert spec_gt is not None
-    kept = cm._alt_filter(sigs, bars, spec_gt, root=paths.series)
+    kept = cm._alt_filter(sigs, bars, spec, root=paths.series)
     assert 0 < len(kept) < len(sigs)
     first = pd.Timestamp(pts["daily_avg_yoy"][0]["available_time"]) + pd.Timedelta(hours=24)
     assert all(s.time >= first for s in kept)                    # nothing before availability
+
+
+def test_indirect_children_of_a_null_parent_are_never_donated(tmp_path: Path) -> None:
+    paths, src, pts = _indirect_desk(tmp_path)
+    for seed in range(4):
+        cells, _owed, gates = A.indirect_cells(paths, {src.id: pts}, {}, NOW,
+                                               replay=_replay(paths, src, 0.0, seed))
+        assert not cells and len(gates) == 2
+        assert all(g["verdict"] in ("FAIL", "UNMEASURED") for g in gates)
+
+
+def test_an_unreplayable_parent_is_unmeasured_not_donated(tmp_path: Path) -> None:
+    paths, src, pts = _indirect_desk(tmp_path)                 # no AUDUSD bars on this desk
+    cells, _owed, gates = A.indirect_cells(paths, {src.id: pts}, {}, NOW)
+    assert not cells and gates
+    assert all(g["verdict"] == "UNMEASURED" and "AUDUSD_H1" in g["why"] for g in gates)
+
+
+def test_regime_placebo_passes_a_planted_regime_and_fails_a_null() -> None:
+    from libs.research.release_gain import regime_placebo
+    rng = np.random.default_rng(3)
+    T = 12000
+    mask = np.repeat(rng.random(T // 300) < 0.4, 300)[:T]      # slow regime, duty ~0.4
+    pos = np.sort(rng.choice(T, 1500, replace=False))
+    noise = rng.normal(0, 0.004, pos.size)
+    planted = regime_placebo(pos, noise + np.where(mask[pos], 0.0015, 0.0), mask, n_trials=24)
+    assert planted["verdict"] == "PASS", planted
+    assert planted["p_charged"] <= 0.05 and planted["n_trials"] == 24
+    fails = 0
+    for seed in range(8):
+        r = np.random.default_rng(100 + seed).normal(0, 0.004, pos.size)
+        fails += regime_placebo(pos, r, mask, n_trials=24, seed=seed)["verdict"] != "PASS"
+    assert fails == 8
+    # a regime that is never on, or holds too few signals, is UNMEASURED -- never a verdict
+    assert regime_placebo(pos, noise, np.zeros(T, bool))["verdict"] == "UNMEASURED"
+    assert regime_placebo(pos[:10], noise[:10], mask)["verdict"] == "UNMEASURED"
 
 
 def test_cell_modifiers_still_refuse_every_non_alt_conditioner() -> None:
@@ -472,6 +527,22 @@ def test_fixture_pass_publishes_axis_lake_and_allocation_intel(tmp_path: Path) -
     assert intel["use"] == "allocation_intel" and "instruments" in intel
 
 
+def test_a_pass_publishes_a_small_deterministic_committed_digest(tmp_path: Path) -> None:
+    paths = _tmp_desk(tmp_path)
+    assert paths.digest.relative_to(paths.desk).as_posix() == \
+        "data/digests/asia_alt_data_digest.json"
+    A.run(paths, fixtures=FIX, donate=False, now=NOW)
+    first = paths.digest.read_bytes()
+    sec = json.loads(first)["organs"]["alt_proxies"]
+    assert sec["status"] == "FIXTURES" and sec["at"] == NOW.isoformat(timespec="seconds")
+    assert sec["rows"] > 0 and "kr_exports_early" in sec["measured"]
+    assert set(sec["measured"]).isdisjoint(sec["unmeasured"])
+    assert sec["indirect_cells"] == {"minted": 0, "tested": 0, "passed": 0}
+    assert len(first) < 20_000
+    A.run(paths, fixtures=FIX, donate=False, now=NOW)
+    assert paths.digest.read_bytes() == first                  # same inputs, same bytes
+
+
 def test_allocation_intel_is_point_in_time() -> None:
     src = A.BY_ID["kr_exports_early"]
     vals = list(np.random.default_rng(9).normal(0, 3, 40))
@@ -491,3 +562,26 @@ def test_allocation_intel_is_point_in_time() -> None:
                                  - timedelta(days=1), days=1)
     comps = earlier["instruments"].get("USDKRW", {}).get("components", [])
     assert all(c["period"] != last["d"] for c in comps)          # not visible before release
+
+
+def test_the_digest_keeps_every_organs_section_and_stays_bounded(tmp_path: Path) -> None:
+    from libs.research import asia_alt_digest as dg
+    path = tmp_path / "digest.json"
+    assert dg.DIGEST.relative_to(ROOT).as_posix() == \
+        "desks/mt5/data/digests/asia_alt_data_digest.json"
+    big = dg.section(at="t0", status="LIVE", rows=5, measured=[f"s{i:03d}" for i in range(500)],
+                     unmeasured=["b", "a", "a"], gain={f"k{i}": "PASS" for i in range(500)})
+    dg.publish("organ_one", big, path)
+    dg.publish("organ_two", dg.section(at="t1", status="UNMEASURED", rows=None, measured=[],
+                                       unmeasured=[], gain={}), path)
+    doc = json.loads(path.read_text("utf-8"))
+    assert set(doc["organs"]) == {"organ_one", "organ_two"}      # a run replaces only its own
+    one = doc["organs"]["organ_one"]
+    assert len(one["measured"]) == dg.MAX_LIST and one["unmeasured"] == ["a", "b"]
+    assert len(one["gain"]) == dg.MAX_LIST and one["gain_counts"] == {"PASS": 500}
+    assert doc["organs"]["organ_two"]["rows"] == "UNMEASURED"
+    assert not list(tmp_path.glob("*.lock")) and not list(tmp_path.glob("*.tmp"))
+    import subprocess
+    got = subprocess.run(["git", "check-ignore", "-q",
+                          dg.DIGEST.relative_to(ROOT).as_posix()], cwd=ROOT, check=False)
+    assert got.returncode == 1, "the digest must be committable"
