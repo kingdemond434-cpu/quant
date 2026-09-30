@@ -47,7 +47,10 @@ WHERE THE DECISION IS WRITTEN (the launchers, all of which the desk already had)
     deep and headroom exists.
 
 Clock: leg `judging_throughput` in `research/hourly_cycle.py` (department validate,
-`--once --budget-s 300`). Artifact: `desks/mt5/reports/JUDGING_THROUGHPUT.json`. Consumers: the
+`--once --budget-s 300`). Artifacts: `desks/mt5/reports/JUDGING_THROUGHPUT.json` and (2026-09-30)
+`desks/mt5/reports/JUDGING_RATE.json` -- verdicts/hour from the judge's own ledger, the backlog,
+the registry's creation rate and the ETA to drain (GROWING when creation outruns judging). Free
+cores are MEASURED with psutil (`measure_cpu`) and may only ever raise the worker count. Consumers: the
 env file above (read by the launcher and by the hourly cycle) and `GAUNTLET_BACKPRESSURE.json`'s
 next `capacity.measured.workers`, which is how the raise is verified rather than asserted.
 """
@@ -57,9 +60,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -70,6 +74,12 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 OUT = BASE / "reports" / "JUDGING_THROUGHPUT.json"
+#: The judge's RATE against its BACKLOG, hourly: verdicts/hour, backlog, creation rate, ETA.
+RATE_OUT = BASE / "reports" / "JUDGING_RATE.json"
+#: One row per judged cell, stamped `at` -- the sealed judge's own output. Read, never written.
+GATE_LEDGER = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+#: The canonical registry; `research_candidates.created_at` is the creation clock. Read-only.
+REGISTRY = ROOT / "data" / "alpha_registry.sqlite"
 ENV_FILE = BASE / "data" / "judging_throughput.env.json"
 BACKPRESSURE = BASE / "reports" / "GAUNTLET_BACKPRESSURE.json"
 
@@ -222,10 +232,98 @@ def measure_terminal() -> dict[str, Any]:
     return out
 
 
-def measure_box(now: datetime | None = None) -> dict[str, Any]:
+#: Seconds psutil samples per-process CPU over. One second is long enough to see a busy
+#: terminal and short enough to be noise in a 300 s leg budget.
+CPU_SAMPLE_S = 1.0
+#: Safety multiple on the cores OTHER processes were measured to use. A one-second sample can
+#: miss a spike, so the judge leaves half as much again, and never less than one whole core.
+CPU_RESERVE_MULTIPLE = 1.5
+CPU_RESERVE_MIN_CORES = 1
+
+
+def _is_judge(cmd: str) -> bool:
+    return "external_gauntlet" in cmd or "rungauntlet" in cmd
+
+
+def measure_cpu(sample_s: float = CPU_SAMPLE_S) -> dict[str, Any]:
+    """FREE CORES, MEASURED (2026-09-30): how many cores everything EXCEPT the judge is using.
+
+    `plan()` used to reserve a fixed SESSION_RESERVED_CORES=3 whatever the box was doing. This
+    samples every process's CPU over `sample_s` with psutil, attributes the gauntlet and its
+    worker children to the judge, and publishes what the rest of the machine (terminal, gateway,
+    hourly cycle, miners) actually consumed. The plan may then reserve that measured load x
+    CPU_RESERVE_MULTIPLE instead of the fixed three -- ONLY ever to raise workers: the fixed
+    reservation stays the floor, so a busy box changes nothing and an idle one gains cores.
+    psutil absent or any error is UNMEASURED and the fixed reservation stands.
+    """
+    out: dict[str, Any] = {"cpu_source": UNMEASURED, "busy_other_cores": UNMEASURED,
+                           "busy_judge_cores": UNMEASURED}
+    try:
+        import time as _time
+
+        import psutil
+    except Exception:
+        out["cpu_why"] = "psutil absent: free cores are UNMEASURED; the fixed reservation stands"
+        return out
+    try:
+        procs = []
+        for pr in psutil.process_iter(["pid", "ppid", "cmdline"]):
+            try:
+                pr.cpu_percent(None)
+                procs.append(pr)
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        _time.sleep(max(0.1, float(sample_s)))
+        ppid: dict[int, int] = {}
+        judge_roots: set[int] = set()
+        usage: dict[int, float] = {}
+        for pr in procs:
+            try:
+                usage[pr.pid] = float(pr.cpu_percent(None))
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+            ppid[pr.pid] = int(pr.info.get("ppid") or 0)
+            if _is_judge(" ".join(pr.info.get("cmdline") or []).lower()):
+                judge_roots.add(pr.pid)
+
+        def _in_judge(pid: int) -> bool:
+            seen = 0
+            while pid and seen < 16:
+                if pid in judge_roots:
+                    return True
+                pid, seen = ppid.get(pid, 0), seen + 1
+            return False
+
+        judge = sum(v for pid, v in usage.items() if _in_judge(pid)) / 100.0
+        other = sum(v for pid, v in usage.items()
+                    if not _in_judge(pid) and pid != os.getpid()) / 100.0
+        out.update(cpu_source="psutil", busy_other_cores=round(other, 2),
+                   busy_judge_cores=round(judge, 2), cpu_sample_s=float(sample_s))
+    except Exception as exc:
+        out["cpu_why"] = f"{type(exc).__name__}: {exc}"
+    return out
+
+
+def _psutil_memory() -> dict[str, Any]:
+    """psutil's reading, used when the platform call above could not measure (CLAUDE.md: USE
+    psutil for the machine the code runs on)."""
+    try:
+        import psutil
+        vm = psutil.virtual_memory()
+        return {"source": "psutil", "total_phys_mb": int(vm.total // 1048576),
+                "free_phys_mb": int(vm.available // 1048576)}
+    except Exception:
+        return {}
+
+
+def measure_box(now: datetime | None = None, *, sample_cpu: bool = True) -> dict[str, Any]:
     """Everything the plan is allowed to be sized from, all of it read off this machine."""
     box: dict[str, Any] = {"cores": int(os.cpu_count() or 1), "market_closed": market_closed(now)}
     box.update(measure_memory())
+    if box.get("free_phys_mb") == UNMEASURED:
+        box.update(_psutil_memory())
+    if sample_cpu:
+        box.update(measure_cpu())
     box.update(measure_terminal())
     phys = box.get("total_phys_mb")
     box["is_judging_box"] = bool(box["cores"] >= JUDGING_BOX_MIN_CORES
@@ -380,6 +478,18 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
     closed = bool(box.get("market_closed"))
     reserved = 0 if closed else SEALED_SESSION_RESERVED_CORES
     by_cores = max(1, cores - reserved)
+    # FREE CORES, MEASURED -- AND ONLY EVER UPWARD. When psutil measured what the rest of the box
+    # uses, the in-session reservation becomes that load x CPU_RESERVE_MULTIPLE (at least one
+    # core). It replaces the fixed three only when it leaves MORE cores to the judge, so today's
+    # count is the floor and a busy terminal can never cost the judge a worker it had.
+    other = box.get("busy_other_cores")
+    cores_basis = "fixed_reservation"
+    if not closed and isinstance(other, (int, float)):
+        measured_reserve = max(CPU_RESERVE_MIN_CORES,
+                               int(-(-float(other) * CPU_RESERVE_MULTIPLE // 1)))
+        if cores - measured_reserve > by_cores:
+            by_cores, reserved = cores - measured_reserve, measured_reserve
+            cores_basis = "measured_free_cores"
 
     free, commit = box.get("free_phys_mb"), box.get("commit_free_mb")
     by_mem = int((HEADROOM_SHARE * float(free)) // per) if isinstance(free, int) and per > 0 else 0
@@ -466,6 +576,8 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
             f"cores {by_cores} (reserved {reserved}), memory {by_mem}, commit {by_commit} at "
             f"{per:.0f}MB a worker; the binding one is {limiting}"),
         "baseline": base,
+        "cores_basis": cores_basis,
+        "reserved_cores": reserved,
         "raised_by": int(workers) - int(base["workers"]),
         "queue_deep": bool(deep),
         "clock_breach_cells": queue.get("clock_breach_cells", UNMEASURED),
@@ -748,7 +860,15 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
                  "judge; the live terminal always wins and standing down means returning to that "
                  "baseline, not below it"),
     }
+    try:
+        payload["rate"] = measure_rate(queue, decision, now)
+    except Exception as exc:     # a broken rate read must never cost the sizing decision
+        payload["rate"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     if write:
+        RATE_OUT.parent.mkdir(parents=True, exist_ok=True)
+        rtmp = RATE_OUT.with_suffix(".json.tmp")
+        rtmp.write_text(json.dumps(payload["rate"], indent=1, default=str), encoding="utf-8")
+        os.replace(rtmp, RATE_OUT)
         OUT.parent.mkdir(parents=True, exist_ok=True)
         tmp = OUT.with_suffix(".json.tmp")
         tmp.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
@@ -762,8 +882,117 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     return payload
 
 
+_AT = re.compile(r'"at"\s*:\s*"([^"]+)"')
+
+
+def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
+    """Verdict rows the judge appended in the last 1h / 24h / 7d, from its own ledger.
+
+    Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
+    one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts."""
+    p = GATE_LEDGER if path is None else path
+    if not p.exists():
+        return {"status": UNMEASURED, "why": f"{p.name} absent: verdicts/hour is UNMEASURED"}
+    cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
+            for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
+    counts = dict.fromkeys(cuts, 0)
+    total, unstamped, last = 0, 0, ""
+    try:
+        with p.open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if not line.strip():
+                    continue
+                total += 1
+                m = _AT.search(line)
+                if not m:
+                    unstamped += 1
+                    continue
+                at = m.group(1)
+                last = max(last, at)
+                for w, cut in cuts.items():
+                    if at >= cut:
+                        counts[w] += 1
+    except OSError as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    return {"status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
+            "last_verdict_at": last or None, "counts": counts,
+            "per_hour": {"1h": float(counts["1h"]), "24h": round(counts["24h"] / 24.0, 3),
+                         "7d": round(counts["7d"] / 168.0, 3)}}
+
+
+def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
+    """Cells the desk CREATED in the last 24h / 7d, from the registry's own created_at."""
+    import sqlite3
+
+    p = REGISTRY if path is None else path
+    if not p.exists():
+        return {"status": UNMEASURED, "why": f"{p.name} absent: creation rate is UNMEASURED"}
+    try:
+        c = sqlite3.connect(f"file:{p.as_posix()}?mode=ro", uri=True, timeout=30)
+    except sqlite3.Error as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    try:
+        out: dict[str, int] = {}
+        for w, h in (("24h", 24), ("7d", 168)):
+            cut = (now - timedelta(hours=h)).isoformat(timespec="seconds")
+            out[w] = int(c.execute("SELECT COUNT(*) FROM research_candidates "
+                                   "WHERE created_at >= ?", (cut,)).fetchone()[0])
+    except sqlite3.Error as exc:
+        return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    finally:
+        c.close()
+    return {"status": "MEASURED", "counts": out,
+            "per_hour": {"24h": round(out["24h"] / 24.0, 3), "7d": round(out["7d"] / 168.0, 3)}}
+
+
+def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
+                 now: datetime | None = None, *, ledger: Path | None = None,
+                 registry: Path | None = None) -> dict[str, Any]:
+    """VERDICTS/HOUR AGAINST THE BACKLOG, and how long the backlog takes to drain.
+
+    ETA = backlog / (verdicts/hour - created/hour), both over the same 24 h window. A judge that
+    judges slower than the desk creates never drains: that is reported as GROWING with the net
+    growth per day, not as a large finite number. Any missing input makes the ETA UNMEASURED."""
+    t = _now(now)
+    ver = _verdict_counts(t, ledger)
+    cre = _creation_counts(t, registry)
+    backlog = queue.get("depth")
+    vph = ((ver.get("per_hour") or {}).get("24h") if ver.get("status") == "MEASURED" else None)
+    cph = ((cre.get("per_hour") or {}).get("24h") if cre.get("status") == "MEASURED" else None)
+    eta: dict[str, Any] = {"status": UNMEASURED}
+    if isinstance(backlog, int) and isinstance(vph, float) and isinstance(cph, float):
+        net = vph - cph
+        if backlog == 0:
+            eta = {"status": "DRAINED", "hours": 0.0}
+        elif net > 0:
+            eta = {"status": "DRAINING", "hours": round(backlog / net, 1),
+                   "days": round(backlog / net / 24.0, 2), "net_per_hour": round(net, 3)}
+        else:
+            eta = {"status": "GROWING", "hours": None, "net_per_day": round(net * 24.0, 1),
+                   "why": ("the judge returns fewer verdicts an hour than the desk creates cells; "
+                           "the backlog cannot drain at this rate")}
+    elif not isinstance(backlog, int):
+        eta["why"] = "backlog UNMEASURED (GAUNTLET_BACKPRESSURE.json absent)"
+    else:
+        eta["why"] = "verdict or creation rate UNMEASURED"
+    return {
+        "at": t.isoformat(timespec="seconds"),
+        "verdicts": ver, "created": cre,
+        "verdicts_per_hour": vph if vph is not None else UNMEASURED,
+        "verdicts_per_day": round(vph * 24.0, 1) if vph is not None else UNMEASURED,
+        "created_per_day": round(cph * 24.0, 1) if cph is not None else UNMEASURED,
+        "backlog": backlog if backlog is not None else UNMEASURED,
+        "backlog_source": queue.get("source", UNMEASURED),
+        "eta_to_drain": eta,
+        "workers_planned": decision.get("workers"),
+        "workers_last_sweep": queue.get("workers_last_sweep", UNMEASURED),
+        "cores_basis": decision.get("cores_basis", UNMEASURED),
+    }
+
+
 def render(payload: dict[str, Any]) -> str:
     d, q, b = payload["decision"], payload["queue"], payload["box"]
+    r = payload.get("rate") or {}
     return "\n".join([
         f"JUDGING THROUGHPUT  cores={b.get('cores')} free_phys={b.get('free_phys_mb')}MB "
         f"commit_free={b.get('commit_free_mb')}MB closed={b.get('market_closed')}",
@@ -775,6 +1004,8 @@ def render(payload: dict[str, Any]) -> str:
         + (" STOOD-DOWN" if d["stood_down"] else ""),
         f"  gates/h {d['gates_per_hour_before']} -> {d['gates_per_hour_projected']} "
         f"days_to_drain={d['days_to_drain_queue']}",
+        f"  verdicts/h={r.get('verdicts_per_hour')} created/day={r.get('created_per_day')} "
+        f"backlog={r.get('backlog')} eta={(r.get('eta_to_drain') or {}).get('status')}",
     ])
 
 
