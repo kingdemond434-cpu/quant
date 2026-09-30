@@ -1,24 +1,29 @@
-"""EXOGENOUS GATE -- an existing price family, taken only inside an information regime.
+"""EXOGENOUS GATE: an existing price-only cell, taken only while a published series is in a band.
 
-THE PRINCIPAL'S ORDER (2026-09-30): every dataset feeds INDIRECT cells too -- a regime feature
-used as a CONDITION on existing families. `exogenous_conditioner` bets on the series directly
-(side from the sign of its extreme); nothing let a series decide WHEN an already-registered
-mechanism is allowed to fire. This operator does: it rebuilds `base_family`'s own signals from
-bars and params, exactly as `family_exit_operated` does, and keeps only those whose bar sits in
-the gated state of a lake series -- the disclosure flow in a burst, a revision balance at a low.
+WHY THIS EXISTS NEXT TO `family_exogenous_conditioner`. The conditioner is the DIRECT use of a
+dataset: the series alone decides the side. Most of what the world publishes is weaker than that.
+Weather over Iowa does not tell corn which way to go tomorrow, but a breakout on corn may be a
+different trade when the growing-season temperature is two standard deviations high. That is a
+CONDITIONING claim about an entry the desk already owns, and until this family existed it had no
+cell shape: `macro_conditional` reads one fixed FRED file, and `exit_operated` operates on exits.
+Every alt, macro-vintage and intelligence series therefore fed at most the direct family and was
+never used as a regime filter on the ~40 price-only families that hold most of the docket.
 
-THE QUESTION IS DIFFERENT FROM THE BASE CELL'S, which is why it earns its own trial. The base
-cell asks "does this mechanism pay"; the gated cell asks "does it pay DIFFERENTLY when this
-country's primary disclosures are unusually heavy". The un-gated base is the control arm and is
-already an ordinary candidate in the docket.
+WHAT A CELL IS. `(base_family, base_params)` names an ordinary price-only cell; `(source, signal,
+transform, threshold, band)` names the gate. The base cell ungated is already an ordinary
+candidate, so the control arm exists without this family manufacturing one, and the gated cell is
+charged to the census like any other trial. Identity is the whole tuple.
 
-POINT IN TIME is `family_exogenous_conditioner.conditioner`'s: the series is read on its own
-`available_time` clock and held back `lag_hours` before any alignment, so the broker clock's two-
-to-three-hour offset from UTC cannot produce a look-ahead join. Nothing is reimplemented here.
+THE JOIN IS THE CONDITIONER'S OWN, never a second implementation: the series is read through
+`family_exogenous_conditioner.conditioner`, which lags it a publication day on its `available_time`
+clock before any alignment, so the broker-clock offset cannot produce a lookahead gate.
 
-REFUSES -- returns [] -- when the base family cannot be rebuilt from bars and params alone
-(`family_exit_operated._UNWRAPPABLE`), when the series, its column or its stamp is absent, when
-the history is thinner than the conditioner's own minimum, or when the gate is unknown.
+WHAT IT REFUSES, loudly rather than as a silent zero:
+  * a base family that cannot be rebuilt from bars and params alone (`family_exit_operated.
+    wrappable`), or one of the operator families themselves;
+  * a series that is absent, unstamped or too short -- UNMEASURED, never "no signal";
+  * a gate that removes NOTHING -- that cell is the base cell again, a second multiplicity charge
+    for no new question, so it returns [] exactly as `exit_operated` does for its identity case.
 """
 from __future__ import annotations
 
@@ -27,24 +32,49 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from mt5desk.build_memo import args_key, frame_fingerprint
 from mt5desk.families import Signal, _h1, get_family_func
+from mt5desk.family_exit_operated import _BASE_MEMO, wrappable
+from mt5desk.family_exogenous_conditioner import (
+    DEFAULT_LAG_HOURS,
+    DEFAULT_Z_WINDOW,
+    MIN_OBSERVATIONS,
+    conditioner,
+)
 
-GATES: tuple[str, ...] = ("high", "low", "extreme", "calm")
+#: The four gates. `high`/`low` are one-sided extremes of the transformed series, `extreme` either
+#: side, `calm` the middle -- the regime a mean-reversion base may only work in.
+BANDS: tuple[str, ...] = ("high", "low", "extreme", "calm")
+
+#: Families this wrapper never wraps: the operators (wrapping one would be an operator over an
+#: operator whose identity nobody declared) and the direct family (gating a series on itself).
+_NOT_A_BASE: frozenset[str] = frozenset({
+    "exogenous_gate", "exogenous_conditioner", "exit_operated"})
 
 
-def _in_gate(value: float, gate: str, threshold: float) -> bool:
+def gateable(name: str) -> bool:
+    """Can `name` be gated? Producers ask before minting, so no cell is minted to return []."""
+    return bool(name) and name not in _NOT_A_BASE and wrappable(name)
+
+
+def in_band(value: float, band: str, threshold: float) -> bool:
+    thr = abs(float(threshold))
     if not np.isfinite(value):
         return False
-    t = abs(float(threshold))
-    if gate == "high":
-        return value >= t
-    if gate == "low":
-        return value <= -t
-    if gate == "extreme":
-        return abs(value) >= t
-    return abs(value) < t                                   # calm
+    if band == "high":
+        return value > thr
+    if band == "low":
+        return value < -thr
+    if band == "extreme":
+        return abs(value) > thr
+    if band == "calm":
+        return abs(value) <= thr
+    return False
 
 
+# NOT decorated with `register_family`, like `family_exogenous_conditioner`: a blind grid sweep has
+# no base cell and no series to name, so it could only ever mint cells that return []. The cells
+# are named by `research/world_cells.py`, which reads the published series and the base families.
 def family_exogenous_gate(
     df: pd.DataFrame,
     *,
@@ -53,42 +83,56 @@ def family_exogenous_gate(
     source: str = "",
     signal: str = "",
     transform: str = "level_z",
-    gate: str = "high",
     threshold: float = 1.0,
-    lag_hours: int = 24,
-    z_window: int = 250,
+    band: str = "high",
+    lag_hours: int = DEFAULT_LAG_HOURS,
+    z_window: int = DEFAULT_Z_WINDOW,
     series_root: Path | None = None,
 ) -> list[Signal]:
-    """`base_family`'s signals on the bars where the exogenous series is in `gate`."""
-    from mt5desk.family_exit_operated import _UNWRAPPABLE
-    from mt5desk.family_exogenous_conditioner import MIN_OBSERVATIONS, conditioner
-
-    if gate not in GATES or not base_family or base_family in _UNWRAPPABLE \
-            or base_family in ("exogenous_gate", "exogenous_conditioner", "exit_operated"):
-        return []
-    fn = get_family_func(base_family)
-    if fn is None:
+    """`base_family`'s own signals, kept only where the lagged series sits in `band`."""
+    if not gateable(base_family) or band not in BANDS:
         return []
     cond = conditioner(source, signal, transform, lag_hours=lag_hours, z_window=z_window,
                        root=series_root)
     if cond is None or len(cond) < MIN_OBSERVATIONS:
         return []
+    fn = get_family_func(base_family)
+    if fn is None:
+        return []
+    params = dict(base_params or {})
+    for k in ("timeframe", "session"):
+        params.pop(k, None)
     d = _h1(df)
     if d.empty:
         return []
-    params = {k: v for k, v in dict(base_params or {}).items() if k not in ("timeframe", "session")}
-    try:
-        raw = fn(d, **params)
-    except Exception:
-        return []
-    sigs = [s for s in (raw or []) if isinstance(s, Signal)]
+
+    def _base() -> list[Signal] | None:
+        try:
+            raw = fn(d, **params)
+        except Exception:
+            return None
+        return [s for s in (raw or []) if isinstance(s, Signal)]
+
+    sigs = _BASE_MEMO.get_or_compute(
+        (frame_fingerprint(d), args_key(base_family, params)), _base)
     if not sigs:
         return []
     try:
         m = cond.reindex(cond.index.union(d.index)).ffill().reindex(d.index)
     except (TypeError, ValueError):
         return []
-    vals = m.to_numpy(dtype=float)
-    pos = d.index.get_indexer([s.time for s in sigs])
-    return [s for s, i in zip(sigs, pos, strict=True)
-            if i >= 0 and _in_gate(float(vals[i]), gate, threshold)]
+    kept: list[Signal] = []
+    for s in sigs:
+        try:
+            v = m.get(s.time)
+        except Exception:
+            v = None
+        if isinstance(v, pd.Series):
+            v = v.iloc[-1] if len(v) else None
+        if v is None:
+            continue
+        if in_band(float(v), band, threshold):
+            kept.append(s)
+    if len(kept) == len(sigs):
+        return []          # the gate removed nothing: this is the base cell, already a candidate
+    return kept

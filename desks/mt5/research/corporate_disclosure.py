@@ -120,7 +120,8 @@ DONATE_PER_PASS = int(os.environ.get("DISCLOSURE_DONATE_PER_PASS", "400"))
 #: vocabulary, every one wrappable from bars and params alone).
 GATE_BASES: tuple[str, ...] = ("session_range_breakout", "overnight_gap_decay", "trend_ma_cross",
                                "mean_reversion_bollinger", "volatility_squeeze")
-GATES: tuple[str, ...] = ("high", "low")
+#: Bands of `family_exogenous_gate.BANDS` minted per (series, base): the one-sided extremes.
+GATE_BANDS: tuple[str, ...] = ("high", "low")
 
 #: Local offset of each country's publication day. None of JP/KR/CN keeps summer time; the US
 #: figure is EST, which makes an end-of-day stamp an hour LATE in summer -- conservative.
@@ -1223,6 +1224,7 @@ def _event_days(spec: str, symbol: str) -> int:
 def enumerate_specs(res: Resolver, frames: Mapping[str, int]) -> list[dict[str, Any]]:
     """Every hypothesis the stream now has the history to support, as compiler EXACT_RECIPE rows."""
     from mt5desk.disclosure_events import make_spec
+    from mt5desk.family_exogenous_gate import gateable
     rows: list[dict[str, Any]] = []
     stats: dict[tuple[str, str, str, int], set[str]] = defaultdict(set)
     for src in SOURCES:
@@ -1272,16 +1274,18 @@ def enumerate_specs(res: Resolver, frames: Mapping[str, int]) -> list[dict[str, 
                              "mechanism": (f"the {cc.upper()} disclosure-flow statistic {sig} at "
                                            f"an extreme conditions {sym}")})
                 for base in GATE_BASES:
-                    for gate in GATES:
+                    if not gateable(base):
+                        continue
+                    for band in GATE_BANDS:
                         rows.append({"kind": "hypothesis", "family": "exogenous_gate",
                                      "symbols": [sym], "uses": "indirect", "country": cc,
                                      "params": {"base_family": base, "base_params": {},
                                                 "source": sid, "signal": sig,
-                                                "transform": "level_z", "gate": gate},
-                                     "spec_key": f"exogenous_gate|{sym}|{sid}|{sig}|{base}|{gate}",
+                                                "transform": "level_z", "band": band},
+                                     "spec_key": f"exogenous_gate|{sym}|{sid}|{sig}|{base}|{band}",
                                      "mechanism": (f"{base} on {sym} taken only while the "
                                                    f"{cc.upper()} disclosure flow {sig} is "
-                                                   f"{gate}: the same price mechanism under a "
+                                                   f"{band}: the same price mechanism under a "
                                                    f"different information regime")})
     return rows
 

@@ -469,6 +469,467 @@
    ],
    "market": "US",
    "grounds": 41
+  },
+  "qa": {
+   "name": "Qatar",
+   "cluster": "mena",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "QA",
+   "grounds": 2
+  },
+  "kw": {
+   "name": "Kuwait",
+   "cluster": "mena",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "KW",
+   "grounds": 2
+  },
+  "om": {
+   "name": "Oman",
+   "cluster": "mena",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "OM",
+   "grounds": 2
+  },
+  "bh": {
+   "name": "Bahrain",
+   "cluster": "mena",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "BH",
+   "grounds": 2
+  },
+  "gh": {
+   "name": "Ghana",
+   "cluster": "africa",
+   "languages": [
+    "en"
+   ],
+   "market": "GH",
+   "grounds": 2
+  },
+  "et": {
+   "name": "Ethiopia",
+   "cluster": "africa",
+   "languages": [
+    "en"
+   ],
+   "market": "ET",
+   "grounds": 2
+  },
+  "tz": {
+   "name": "Tanzania",
+   "cluster": "africa",
+   "languages": [
+    "sw",
+    "en"
+   ],
+   "market": "TZ",
+   "grounds": 2
+  },
+  "ug": {
+   "name": "Uganda",
+   "cluster": "africa",
+   "languages": [
+    "en",
+    "sw"
+   ],
+   "market": "UG",
+   "grounds": 2
+  },
+  "ci": {
+   "name": "Cote d'Ivoire",
+   "cluster": "africa",
+   "languages": [
+    "fr"
+   ],
+   "market": "CI",
+   "grounds": 2
+  },
+  "zm": {
+   "name": "Zambia",
+   "cluster": "africa",
+   "languages": [
+    "en"
+   ],
+   "market": "ZM",
+   "grounds": 2
+  },
+  "kz": {
+   "name": "Kazakhstan",
+   "cluster": "ru",
+   "languages": [
+    "ru",
+    "en"
+   ],
+   "market": "KZ",
+   "grounds": 2
+  },
+  "uz": {
+   "name": "Uzbekistan",
+   "cluster": "ru",
+   "languages": [
+    "ru",
+    "en"
+   ],
+   "market": "UZ",
+   "grounds": 2
+  },
+  "az": {
+   "name": "Azerbaijan",
+   "cluster": "ru",
+   "languages": [
+    "en",
+    "ru"
+   ],
+   "market": "AZ",
+   "grounds": 2
+  },
+  "ge": {
+   "name": "Georgia",
+   "cluster": "ru",
+   "languages": [
+    "en",
+    "ru"
+   ],
+   "market": "GE",
+   "grounds": 2
+  },
+  "np": {
+   "name": "Nepal",
+   "cluster": "south_asia",
+   "languages": [
+    "en",
+    "hi"
+   ],
+   "market": "NP",
+   "grounds": 2
+  },
+  "kh": {
+   "name": "Cambodia",
+   "cluster": "sea",
+   "languages": [
+    "en"
+   ],
+   "market": "KH",
+   "grounds": 2
+  },
+  "mm": {
+   "name": "Myanmar",
+   "cluster": "sea",
+   "languages": [
+    "en"
+   ],
+   "market": "MM",
+   "grounds": 2
+  },
+  "la": {
+   "name": "Laos",
+   "cluster": "sea",
+   "languages": [
+    "en"
+   ],
+   "market": "LA",
+   "grounds": 2
+  },
+  "bo": {
+   "name": "Bolivia",
+   "cluster": "latam",
+   "languages": [
+    "es"
+   ],
+   "market": "BO",
+   "grounds": 2
+  },
+  "pg": {
+   "name": "Papua New Guinea",
+   "cluster": "anz",
+   "languages": [
+    "en"
+   ],
+   "market": "PG",
+   "grounds": 2
+  },
+  "fj": {
+   "name": "Fiji",
+   "cluster": "anz",
+   "languages": [
+    "en"
+   ],
+   "market": "FJ",
+   "grounds": 2
+  },
+  "ro": {
+   "name": "Romania",
+   "cluster": "east_eu",
+   "languages": [
+    "en"
+   ],
+   "market": "RO",
+   "grounds": 2
+  },
+  "bg": {
+   "name": "Bulgaria",
+   "cluster": "east_eu",
+   "languages": [
+    "en"
+   ],
+   "market": "BG",
+   "grounds": 2
+  },
+  "rs": {
+   "name": "Serbia",
+   "cluster": "east_eu",
+   "languages": [
+    "en"
+   ],
+   "market": "RS",
+   "grounds": 2
+  },
+  "mn": {
+   "name": "Mongolia",
+   "cluster": "cn",
+   "languages": [
+    "en"
+   ],
+   "market": "MN",
+   "grounds": 2
+  },
+  "mo": {
+   "name": "Macao",
+   "cluster": "tw_hk",
+   "languages": [
+    "en",
+    "zh-Hant"
+   ],
+   "market": "MO",
+   "grounds": 2
+  },
+  "ch": {
+   "name": "Switzerland",
+   "cluster": "eu",
+   "languages": [
+    "de",
+    "fr",
+    "en"
+   ],
+   "market": "CH",
+   "grounds": 2
+  },
+  "at": {
+   "name": "Austria",
+   "cluster": "eu",
+   "languages": [
+    "de"
+   ],
+   "market": "AT",
+   "grounds": 2
+  },
+  "be": {
+   "name": "Belgium",
+   "cluster": "eu",
+   "languages": [
+    "fr",
+    "nl"
+   ],
+   "market": "BE",
+   "grounds": 2
+  },
+  "gr": {
+   "name": "Greece",
+   "cluster": "eu",
+   "languages": [
+    "en"
+   ],
+   "market": "GR",
+   "grounds": 2
+  },
+  "ie": {
+   "name": "Ireland",
+   "cluster": "eu",
+   "languages": [
+    "en"
+   ],
+   "market": "IE",
+   "grounds": 2
+  },
+  "pt": {
+   "name": "Portugal",
+   "cluster": "eu",
+   "languages": [
+    "pt"
+   ],
+   "market": "PT",
+   "grounds": 2
+  },
+  "is": {
+   "name": "Iceland",
+   "cluster": "nordics",
+   "languages": [
+    "en"
+   ],
+   "market": "IS",
+   "grounds": 2
+  },
+  "ec": {
+   "name": "Ecuador",
+   "cluster": "latam",
+   "languages": [
+    "es"
+   ],
+   "market": "EC",
+   "grounds": 2
+  },
+  "cr": {
+   "name": "Costa Rica",
+   "cluster": "latam",
+   "languages": [
+    "es"
+   ],
+   "market": "CR",
+   "grounds": 2
+  },
+  "tt": {
+   "name": "Trinidad and Tobago",
+   "cluster": "latam",
+   "languages": [
+    "en"
+   ],
+   "market": "TT",
+   "grounds": 2
+  },
+  "gy": {
+   "name": "Guyana",
+   "cluster": "latam",
+   "languages": [
+    "en"
+   ],
+   "market": "GY",
+   "grounds": 2
+  },
+  "jo": {
+   "name": "Jordan",
+   "cluster": "mena",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "JO",
+   "grounds": 2
+  },
+  "tn": {
+   "name": "Tunisia",
+   "cluster": "africa",
+   "languages": [
+    "fr",
+    "ar"
+   ],
+   "market": "TN",
+   "grounds": 2
+  },
+  "dz": {
+   "name": "Algeria",
+   "cluster": "africa",
+   "languages": [
+    "fr",
+    "ar"
+   ],
+   "market": "DZ",
+   "grounds": 2
+  },
+  "iq": {
+   "name": "Iraq",
+   "cluster": "mena",
+   "languages": [
+    "ar",
+    "en"
+   ],
+   "market": "IQ",
+   "grounds": 2
+  },
+  "ao": {
+   "name": "Angola",
+   "cluster": "africa",
+   "languages": [
+    "pt"
+   ],
+   "market": "AO",
+   "grounds": 2
+  },
+  "bw": {
+   "name": "Botswana",
+   "cluster": "africa",
+   "languages": [
+    "en"
+   ],
+   "market": "BW",
+   "grounds": 2
+  },
+  "na": {
+   "name": "Namibia",
+   "cluster": "africa",
+   "languages": [
+    "en"
+   ],
+   "market": "NA",
+   "grounds": 2
+  },
+  "mz": {
+   "name": "Mozambique",
+   "cluster": "africa",
+   "languages": [
+    "pt"
+   ],
+   "market": "MZ",
+   "grounds": 2
+  },
+  "sn": {
+   "name": "Senegal",
+   "cluster": "africa",
+   "languages": [
+    "fr"
+   ],
+   "market": "SN",
+   "grounds": 2
+  },
+  "zw": {
+   "name": "Zimbabwe",
+   "cluster": "africa",
+   "languages": [
+    "en"
+   ],
+   "market": "ZW",
+   "grounds": 2
+  },
+  "am": {
+   "name": "Armenia",
+   "cluster": "ru",
+   "languages": [
+    "ru",
+    "en"
+   ],
+   "market": "AM",
+   "grounds": 2
+  },
+  "by": {
+   "name": "Belarus",
+   "cluster": "ru",
+   "languages": [
+    "ru"
+   ],
+   "market": "BY",
+   "grounds": 2
   }
  },
  "grounds": [
@@ -7011,6 +7472,1574 @@
    "kind": "research_process", "weight": 1.4,
    "why": "Allocation, ensembles, timing, retirement, resurrection, AutoResearch, scientific agents and search optimizers improve the alpha factory itself",
    "site": "github.com", "queries": ["autonomous scientific research agent hypothesis evaluation", "strategy ensemble allocation decay resurrection framework"]
+  },
+  {
+   "name": "Qatar Central Bank communications",
+   "region": "qa",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy-rate and reserves communications -> USD peg stress, LNG revenue",
+   "url": "https://www.qcb.gov.qa/en/",
+   "cluster": "mena",
+   "market": "QA",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "The Peninsula business",
+   "region": "qa",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Gulf LNG economy press -> oil/gas CFDs",
+   "site": "thepeninsulaqatar.com",
+   "queries": [
+    "Qatar Stock Exchange foreign investors flows",
+    "QCB interest rate decision market"
+   ],
+   "cluster": "mena",
+   "market": "QA",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Kuwait communications",
+   "region": "kw",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "basket peg and rate decisions -> USD, oil",
+   "url": "https://www.cbk.gov.kw/en",
+   "cluster": "mena",
+   "market": "KW",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Arab Times business",
+   "region": "kw",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Kuwaiti market press",
+   "site": "arabtimesonline.com",
+   "queries": [
+    "Boursa Kuwait foreign flows",
+    "Kuwait oil output OPEC decision"
+   ],
+   "cluster": "mena",
+   "market": "KW",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Oman communications",
+   "region": "om",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "rial peg and liquidity communications -> oil",
+   "url": "https://cbo.gov.om",
+   "cluster": "mena",
+   "market": "OM",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Times of Oman business",
+   "region": "om",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Omani market press",
+   "site": "timesofoman.com",
+   "queries": [
+    "Muscat bourse trading foreign investors",
+    "Oman crude price budget"
+   ],
+   "cluster": "mena",
+   "market": "OM",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Bahrain communications",
+   "region": "bh",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "dinar peg, sukuk and liquidity -> Gulf funding stress",
+   "url": "https://www.cbb.gov.bh",
+   "cluster": "mena",
+   "market": "BH",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Gulf Daily News business",
+   "region": "bh",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Bahraini market press",
+   "site": "gdnonline.com",
+   "queries": [
+    "Bahrain bourse trading",
+    "Bahrain sukuk yields oil price"
+   ],
+   "cluster": "mena",
+   "market": "BH",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Ghana communications",
+   "region": "gh",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "MPC decisions, cedi and gold/cocoa receipts -> XAU, cocoa",
+   "url": "https://www.bog.gov.gh",
+   "cluster": "africa",
+   "market": "GH",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "MyJoyOnline business",
+   "region": "gh",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Ghanaian business press: cocoa and gold",
+   "site": "myjoyonline.com",
+   "queries": [
+    "cedi dollar exchange rate traders",
+    "Ghana cocoa exports gold price"
+   ],
+   "cluster": "africa",
+   "market": "GH",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "National Bank of Ethiopia communications",
+   "region": "et",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "birr float and coffee receipts -> coffee CFD",
+   "url": "https://nbe.gov.et",
+   "cluster": "africa",
+   "market": "ET",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Addis Fortune",
+   "region": "et",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Ethiopian business weekly: coffee",
+   "site": "addisfortune.news",
+   "queries": [
+    "birr exchange rate parallel market",
+    "Ethiopia coffee exports price"
+   ],
+   "cluster": "africa",
+   "market": "ET",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Tanzania communications",
+   "region": "tz",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy rate, shilling and gold reserves -> XAU",
+   "url": "https://www.bot.go.tz",
+   "cluster": "africa",
+   "market": "TZ",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Mwananchi biashara",
+   "region": "tz",
+   "language": "sw",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Swahili-language business press",
+   "site": "mwananchi.co.tz",
+   "queries": [
+    "bei ya dhahabu soko la dunia",
+    "shilingi dhidi ya dola biashara"
+   ],
+   "cluster": "africa",
+   "market": "TZ",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Uganda communications",
+   "region": "ug",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "CBR decisions, shilling and gold exports -> XAU, coffee",
+   "url": "https://www.bou.or.ug",
+   "cluster": "africa",
+   "market": "UG",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Daily Monitor business",
+   "region": "ug",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Ugandan business press",
+   "site": "monitor.co.ug",
+   "queries": [
+    "Uganda shilling dollar traders",
+    "Uganda coffee gold exports"
+   ],
+   "cluster": "africa",
+   "market": "UG",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "BCEAO communications",
+   "region": "ci",
+   "language": "fr",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "WAEMU policy rate and reserves -> cocoa, EUR peg",
+   "url": "https://www.bceao.int",
+   "cluster": "africa",
+   "market": "CI",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Fraternite Matin economie",
+   "region": "ci",
+   "language": "fr",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "French-language West African press: cocoa",
+   "site": "fratmat.info",
+   "queries": [
+    "prix du cacao exportations Cote d'Ivoire",
+    "BRVM tendance marche"
+   ],
+   "cluster": "africa",
+   "market": "CI",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Zambia communications",
+   "region": "zm",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "MPC decisions and kwacha -> copper",
+   "url": "https://www.boz.zm",
+   "cluster": "africa",
+   "market": "ZM",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Lusaka Times business",
+   "region": "zm",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Zambian press: copper",
+   "site": "lusakatimes.com",
+   "queries": [
+    "kwacha dollar exchange rate",
+    "Zambia copper output price"
+   ],
+   "cluster": "africa",
+   "market": "ZM",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "National Bank of Kazakhstan communications",
+   "region": "kz",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "base rate, tenge and oil-fund sales -> oil, RUB crosses",
+   "url": "https://nationalbank.kz",
+   "cluster": "ru",
+   "market": "KZ",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Kursiv",
+   "region": "kz",
+   "language": "ru",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Russian-language Kazakh business press",
+   "site": "kursiv.media",
+   "queries": [
+    "курс тенге нефть продажи нацфонда",
+    "KASE торговая стратегия"
+   ],
+   "cluster": "ru",
+   "market": "KZ",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Uzbekistan communications",
+   "region": "uz",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy rate, sum and gold sales -> XAU",
+   "url": "https://cbu.uz",
+   "cluster": "ru",
+   "market": "UZ",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Gazeta.uz economy",
+   "region": "uz",
+   "language": "ru",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Russian-language Uzbek press: gold",
+   "site": "gazeta.uz",
+   "queries": [
+    "курс сума доллар",
+    "продажа золота Узбекистан резервы"
+   ],
+   "cluster": "ru",
+   "market": "UZ",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Azerbaijan communications",
+   "region": "az",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "manat peg and oil-fund conversions -> oil",
+   "url": "https://www.cbar.az",
+   "cluster": "ru",
+   "market": "AZ",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Report.az business",
+   "region": "az",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Azerbaijani business news",
+   "site": "report.az",
+   "queries": [
+    "manat oil price exchange",
+    "Azerbaijan oil export Brent"
+   ],
+   "cluster": "ru",
+   "market": "AZ",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "National Bank of Georgia communications",
+   "region": "ge",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "refinancing rate and lari -> remittance flows",
+   "url": "https://nbg.gov.ge",
+   "cluster": "ru",
+   "market": "GE",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "BM.ge business",
+   "region": "ge",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Georgian business press",
+   "site": "bm.ge",
+   "queries": [
+    "lari exchange rate remittances",
+    "Georgia inflation refinancing rate"
+   ],
+   "cluster": "ru",
+   "market": "GE",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Nepal Rastra Bank communications",
+   "region": "np",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "INR peg, remittances and gold import rules -> XAU",
+   "url": "https://www.nrb.org.np",
+   "cluster": "south_asia",
+   "market": "NP",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Kathmandu Post money",
+   "region": "np",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Nepali business press",
+   "site": "kathmandupost.com",
+   "queries": [
+    "NEPSE trading turnover",
+    "Nepal gold import remittance inflow"
+   ],
+   "cluster": "south_asia",
+   "market": "NP",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "National Bank of Cambodia communications",
+   "region": "kh",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "riel and dollarisation -> USD liquidity",
+   "url": "https://www.nbc.gov.kh",
+   "cluster": "sea",
+   "market": "KH",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Khmer Times business",
+   "region": "kh",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Cambodian business press",
+   "site": "khmertimeskh.com",
+   "queries": [
+    "riel dollar exchange rate",
+    "Cambodia rice rubber exports price"
+   ],
+   "cluster": "sea",
+   "market": "KH",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Myanmar communications",
+   "region": "mm",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "kyat reference rate and gold -> XAU",
+   "url": "https://www.cbm.gov.mm",
+   "cluster": "sea",
+   "market": "MM",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "The Irrawaddy business",
+   "region": "mm",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Myanmar gold and FX press",
+   "site": "irrawaddy.com",
+   "queries": [
+    "kyat gold price market Yangon",
+    "Myanmar kyat dollar rate"
+   ],
+   "cluster": "sea",
+   "market": "MM",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of the Lao PDR communications",
+   "region": "la",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "kip and reserves -> CNH, THB spillover",
+   "url": "https://www.bol.gov.la",
+   "cluster": "sea",
+   "market": "LA",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Vientiane Times business",
+   "region": "la",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Lao business press",
+   "site": "vientianetimes.org.la",
+   "queries": [
+    "kip exchange rate inflation",
+    "Laos electricity exports Thailand"
+   ],
+   "cluster": "sea",
+   "market": "LA",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Banco Central de Bolivia communications",
+   "region": "bo",
+   "language": "es",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "boliviano peg, reserves and gas receipts -> gas, lithium",
+   "url": "https://www.bcb.gob.bo",
+   "cluster": "latam",
+   "market": "BO",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "El Deber economia",
+   "region": "bo",
+   "language": "es",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Bolivian economic press",
+   "site": "eldeber.com.bo",
+   "queries": [
+    "dolar paralelo Bolivia reservas",
+    "exportaciones gas Bolivia precio"
+   ],
+   "cluster": "latam",
+   "market": "BO",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Papua New Guinea communications",
+   "region": "pg",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "kina and LNG/gold receipts -> XAU, gas",
+   "url": "https://www.bankpng.gov.pg",
+   "cluster": "anz",
+   "market": "PG",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Post-Courier business",
+   "region": "pg",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "PNG business press",
+   "site": "postcourier.com.pg",
+   "queries": [
+    "kina exchange rate foreign currency",
+    "PNG gold LNG exports"
+   ],
+   "cluster": "anz",
+   "market": "PG",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Reserve Bank of Fiji communications",
+   "region": "fj",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy rate and basket peg -> AUD/NZD",
+   "url": "https://www.rbf.gov.fj",
+   "cluster": "anz",
+   "market": "FJ",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Fiji Times business",
+   "region": "fj",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Fijian business press",
+   "site": "fijitimes.com.fj",
+   "queries": [
+    "Fiji dollar exchange rate tourism",
+    "Reserve Bank of Fiji overnight policy rate"
+   ],
+   "cluster": "anz",
+   "market": "FJ",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "National Bank of Romania communications",
+   "region": "ro",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy rate and managed leu -> EUR crosses",
+   "url": "https://www.bnr.ro",
+   "cluster": "east_eu",
+   "market": "RO",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Romania Insider business",
+   "region": "ro",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "English-language Romanian business press",
+   "site": "romania-insider.com",
+   "queries": [
+    "leu euro exchange rate NBR",
+    "Bucharest Stock Exchange BET trading"
+   ],
+   "cluster": "east_eu",
+   "market": "RO",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bulgarian National Bank communications",
+   "region": "bg",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "currency board and euro adoption -> EUR",
+   "url": "https://www.bnb.bg",
+   "cluster": "east_eu",
+   "market": "BG",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Novinite business",
+   "region": "bg",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "English-language Bulgarian press",
+   "site": "novinite.com",
+   "queries": [
+    "Bulgaria euro adoption lev",
+    "Sofia stock exchange trading"
+   ],
+   "cluster": "east_eu",
+   "market": "BG",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "National Bank of Serbia communications",
+   "region": "rs",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "key policy rate and dinar management -> EUR crosses",
+   "url": "https://www.nbs.rs",
+   "cluster": "east_eu",
+   "market": "RS",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "SeeNews Serbia",
+   "region": "rs",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "South-east Europe business wire",
+   "site": "seenews.com",
+   "queries": [
+    "dinar euro exchange rate NBS",
+    "Belgrade stock exchange trading"
+   ],
+   "cluster": "east_eu",
+   "market": "RS",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Mongolia communications",
+   "region": "mn",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy rate, togrog and coal/copper receipts -> copper, CNH",
+   "url": "https://www.mongolbank.mn",
+   "cluster": "cn",
+   "market": "MN",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Montsame business",
+   "region": "mn",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Mongolian state news agency, English",
+   "site": "montsame.mn",
+   "queries": [
+    "togrog exchange rate",
+    "Mongolia coal copper exports China"
+   ],
+   "cluster": "cn",
+   "market": "MN",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Monetary Authority of Macao communications",
+   "region": "mo",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "pataca/HKD peg and liquidity -> HKD",
+   "url": "https://www.amcm.gov.mo",
+   "cluster": "tw_hk",
+   "market": "MO",
+   "licence": "public-sector publication (central bank); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Macau Business",
+   "region": "mo",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Macau business press",
+   "site": "macaubusiness.com",
+   "queries": [
+    "Macau gaming revenue monthly",
+    "pataca HKD liquidity"
+   ],
+   "cluster": "tw_hk",
+   "market": "MO",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Swiss National Bank communications",
+   "region": "ch",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy rate, FX intervention and sight deposits -> CHF crosses, gold",
+   "url": "https://www.snb.ch/en/",
+   "cluster": "eu",
+   "market": "CH",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "finews.ch",
+   "region": "ch",
+   "language": "de",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Swiss financial press: CHF and gold refining",
+   "site": "finews.ch",
+   "queries": [
+    "Franken Stärke SNB Intervention Devisenhändler",
+    "Goldexporte Schweiz Raffinerien"
+   ],
+   "cluster": "eu",
+   "market": "CH",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Oesterreichische Nationalbank communications",
+   "region": "at",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "euro-area rate transmission, CEE bank exposure -> EUR crosses",
+   "url": "https://www.oenb.at/en/",
+   "cluster": "eu",
+   "market": "AT",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Der Standard Wirtschaft",
+   "region": "at",
+   "language": "de",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Austrian business press",
+   "site": "derstandard.at",
+   "queries": [
+    "ATX Börse Wien Handel Strategie",
+    "Osteuropa Banken Risiko Euro"
+   ],
+   "cluster": "eu",
+   "market": "AT",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "National Bank of Belgium communications",
+   "region": "be",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "euro-area statistics and sovereign spreads -> EUR",
+   "url": "https://www.nbb.be/en",
+   "cluster": "eu",
+   "market": "BE",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "L'Echo marches",
+   "region": "be",
+   "language": "fr",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Belgian French-language business press",
+   "site": "lecho.be",
+   "queries": [
+    "Bourse de Bruxelles BEL 20 tendance",
+    "spread OLO Bund taux"
+   ],
+   "cluster": "eu",
+   "market": "BE",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Greece communications",
+   "region": "gr",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "sovereign spread and banking liquidity -> EUR",
+   "url": "https://www.bankofgreece.gr/en",
+   "cluster": "eu",
+   "market": "GR",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Kathimerini business",
+   "region": "gr",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Greek business press, English",
+   "site": "ekathimerini.com",
+   "queries": [
+    "Athens stock exchange foreign investors",
+    "Greek bond spread ECB"
+   ],
+   "cluster": "eu",
+   "market": "GR",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Ireland communications",
+   "region": "ie",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "fund-domicile flows and euro-area rates -> EUR",
+   "url": "https://www.centralbank.ie",
+   "cluster": "eu",
+   "market": "IE",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Business Post markets",
+   "region": "ie",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Irish business press",
+   "site": "businesspost.ie",
+   "queries": [
+    "Irish funds ETF flows Dublin",
+    "ISEQ Euronext Dublin trading"
+   ],
+   "cluster": "eu",
+   "market": "IE",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Banco de Portugal communications",
+   "region": "pt",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "sovereign spread and credit -> EUR",
+   "url": "https://www.bportugal.pt/en",
+   "cluster": "eu",
+   "market": "PT",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Jornal de Negocios mercados",
+   "region": "pt",
+   "language": "pt",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Portuguese business press",
+   "site": "jornaldenegocios.pt",
+   "queries": [
+    "PSI bolsa de Lisboa tendência",
+    "juros dívida portuguesa BCE"
+   ],
+   "cluster": "eu",
+   "market": "PT",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Iceland communications",
+   "region": "is",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy rate and krona -> carry, EUR crosses",
+   "url": "https://www.cb.is",
+   "cluster": "nordics",
+   "market": "IS",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Iceland Monitor business",
+   "region": "is",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Icelandic news, English",
+   "site": "icelandmonitor.mbl.is",
+   "queries": [
+    "krona exchange rate tourism",
+    "Iceland interest rate decision"
+   ],
+   "cluster": "nordics",
+   "market": "IS",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Banco Central del Ecuador communications",
+   "region": "ec",
+   "language": "es",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "dollarised reserves and oil receipts -> oil",
+   "url": "https://www.bce.fin.ec",
+   "cluster": "latam",
+   "market": "EC",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Primicias economia",
+   "region": "ec",
+   "language": "es",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Ecuadorian economic press",
+   "site": "primicias.ec",
+   "queries": [
+    "precio del petróleo Ecuador exportaciones",
+    "riesgo país Ecuador bonos"
+   ],
+   "cluster": "latam",
+   "market": "EC",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Banco Central de Costa Rica communications",
+   "region": "cr",
+   "language": "es",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy rate and colon -> coffee, USD",
+   "url": "https://www.bccr.fi.cr",
+   "cluster": "latam",
+   "market": "CR",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "La Republica economia",
+   "region": "cr",
+   "language": "es",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Costa Rican business press",
+   "site": "larepublica.net",
+   "queries": [
+    "tipo de cambio colón dólar",
+    "exportaciones café Costa Rica precio"
+   ],
+   "cluster": "latam",
+   "market": "CR",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Trinidad and Tobago communications",
+   "region": "tt",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "forex allocation and energy receipts -> gas, oil",
+   "url": "https://www.central-bank.org.tt",
+   "cluster": "latam",
+   "market": "TT",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Newsday business",
+   "region": "tt",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Trinidadian business press",
+   "site": "newsday.co.tt",
+   "queries": [
+    "forex shortage Trinidad banks",
+    "Trinidad natural gas LNG output"
+   ],
+   "cluster": "latam",
+   "market": "TT",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Guyana communications",
+   "region": "gy",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "reserves and oil receipts -> oil",
+   "url": "https://www.bankofguyana.org.gy",
+   "cluster": "latam",
+   "market": "GY",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Stabroek News business",
+   "region": "gy",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Guyanese press: new oil producer",
+   "site": "stabroeknews.com",
+   "queries": [
+    "Guyana oil production Stabroek block",
+    "Guyana dollar exchange rate"
+   ],
+   "cluster": "latam",
+   "market": "GY",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Jordan communications",
+   "region": "jo",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "dinar peg and reserves -> USD, gold demand",
+   "url": "https://www.cbj.gov.jo",
+   "cluster": "mena",
+   "market": "JO",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Al Ghad iqtisad",
+   "region": "jo",
+   "language": "ar",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Jordanian Arabic-language press",
+   "site": "alghad.com",
+   "queries": [
+    "سعر الذهب الأردن اليوم",
+    "بورصة عمان تداول"
+   ],
+   "cluster": "mena",
+   "market": "JO",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Banque Centrale de Tunisie communications",
+   "region": "tn",
+   "language": "fr",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "policy rate and dinar basket -> EUR",
+   "url": "https://www.bct.gov.tn",
+   "cluster": "africa",
+   "market": "TN",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "ilBoursa",
+   "region": "tn",
+   "language": "fr",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Tunisian French-language market press",
+   "site": "ilboursa.com",
+   "queries": [
+    "Bourse de Tunis Tunindex tendance",
+    "dinar tunisien euro change"
+   ],
+   "cluster": "africa",
+   "market": "TN",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Banque d'Algerie communications",
+   "region": "dz",
+   "language": "fr",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "dinar and hydrocarbon receipts -> oil, gas",
+   "url": "https://www.bank-of-algeria.dz",
+   "cluster": "africa",
+   "market": "DZ",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "TSA Algerie economie",
+   "region": "dz",
+   "language": "fr",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Algerian French-language press",
+   "site": "tsa-algerie.com",
+   "queries": [
+    "prix du pétrole Algérie recettes",
+    "dinar algérien marché parallèle"
+   ],
+   "cluster": "africa",
+   "market": "DZ",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Iraq communications",
+   "region": "iq",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "dollar auction and dinar -> oil, USD",
+   "url": "https://cbi.iq",
+   "cluster": "mena",
+   "market": "IQ",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Iraq Oil Report",
+   "region": "iq",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Iraqi oil trade press",
+   "site": "iraqoilreport.com",
+   "queries": [
+    "Iraq oil exports Basra",
+    "Iraq dinar dollar auction"
+   ],
+   "cluster": "mena",
+   "market": "IQ",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Banco Nacional de Angola communications",
+   "region": "ao",
+   "language": "pt",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "kwanza and oil receipts -> oil",
+   "url": "https://www.bna.ao",
+   "cluster": "africa",
+   "market": "AO",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Expansao",
+   "region": "ao",
+   "language": "pt",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Angolan business press, Portuguese",
+   "site": "expansao.co.ao",
+   "queries": [
+    "kwanza dólar câmbio",
+    "produção de petróleo Angola"
+   ],
+   "cluster": "africa",
+   "market": "AO",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Botswana communications",
+   "region": "bw",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "pula basket and diamond receipts -> ZAR",
+   "url": "https://www.bankofbotswana.bw",
+   "cluster": "africa",
+   "market": "BW",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Mmegi business",
+   "region": "bw",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Botswanan business press",
+   "site": "mmegi.bw",
+   "queries": [
+    "pula exchange rate",
+    "Botswana diamond sales De Beers"
+   ],
+   "cluster": "africa",
+   "market": "BW",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Bank of Namibia communications",
+   "region": "na",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "rand peg and uranium/diamond receipts -> ZAR",
+   "url": "https://www.bon.com.na",
+   "cluster": "africa",
+   "market": "NA",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Namibian Observer business",
+   "region": "na",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Namibian business press",
+   "site": "observer24.com.na",
+   "queries": [
+    "Namibia uranium exports",
+    "Namibia dollar rand repo rate"
+   ],
+   "cluster": "africa",
+   "market": "NA",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Banco de Mocambique communications",
+   "region": "mz",
+   "language": "pt",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "metical and LNG/coal receipts -> gas, coal",
+   "url": "https://www.bancomoc.mz",
+   "cluster": "africa",
+   "market": "MZ",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "O Pais economia",
+   "region": "mz",
+   "language": "pt",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Mozambican business press, Portuguese",
+   "site": "opais.co.mz",
+   "queries": [
+    "metical câmbio dólar",
+    "exportações carvão gás Moçambique"
+   ],
+   "cluster": "africa",
+   "market": "MZ",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "ANSD Senegal statistics communications",
+   "region": "sn",
+   "language": "fr",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "national statistics releases -> WAEMU, oil",
+   "url": "https://www.ansd.sn",
+   "cluster": "africa",
+   "market": "SN",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Le Soleil economie",
+   "region": "sn",
+   "language": "fr",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Senegalese French-language press",
+   "site": "lesoleil.sn",
+   "queries": [
+    "prix de l'arachide exportations Sénégal",
+    "pétrole Sangomar production"
+   ],
+   "cluster": "africa",
+   "market": "SN",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Reserve Bank of Zimbabwe communications",
+   "region": "zw",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "gold-backed currency and gold deliveries -> XAU",
+   "url": "https://www.rbz.co.zw",
+   "cluster": "africa",
+   "market": "ZW",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "NewsDay business",
+   "region": "zw",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Zimbabwean press: gold",
+   "site": "newsday.co.zw",
+   "queries": [
+    "ZiG gold-backed currency exchange rate",
+    "Zimbabwe gold deliveries Fidelity"
+   ],
+   "cluster": "africa",
+   "market": "ZW",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Central Bank of Armenia communications",
+   "region": "am",
+   "language": "en",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "refinancing rate and dram -> gold re-exports, RUB",
+   "url": "https://www.cba.am",
+   "cluster": "ru",
+   "market": "AM",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "ARKA news agency",
+   "region": "am",
+   "language": "en",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Armenian business wire, English",
+   "site": "arka.am",
+   "queries": [
+    "dram exchange rate Armenia",
+    "Armenia gold re-exports Russia"
+   ],
+   "cluster": "ru",
+   "market": "AM",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "National Bank of Belarus communications",
+   "region": "by",
+   "language": "ru",
+   "route": "http",
+   "kind": "macro",
+   "weight": 0.9,
+   "why": "refinancing rate and rouble -> RUB, potash",
+   "url": "https://www.nbrb.by",
+   "cluster": "ru",
+   "market": "BY",
+   "licence": "public-sector publication (central bank / statistics office); open for automated retrieval under its site terms",
+   "added": "2026-09-30 world_factory: forest country with no ground"
+  },
+  {
+   "name": "Myfin.by",
+   "region": "by",
+   "language": "ru",
+   "route": "search",
+   "kind": "column",
+   "weight": 0.6,
+   "why": "Belarusian Russian-language finance portal",
+   "site": "myfin.by",
+   "queries": [
+    "курс белорусского рубля",
+    "НБРБ ставка рефинансирования"
+   ],
+   "cluster": "ru",
+   "market": "BY",
+   "licence": "publisher's public web terms; claim extraction only, no redistribution",
+   "added": "2026-09-30 world_factory: forest country with no ground"
   }
  ],
  "engines": [

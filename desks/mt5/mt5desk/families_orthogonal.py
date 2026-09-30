@@ -2267,20 +2267,15 @@ FAMILY_INPUTS["exogenous_conditioner"] = (
 # trades an UNSCHEDULED corporate headline (guidance revision, buyback, M&A, halt, regulator
 # inquiry) from TDnet/EDINET/DART/cninfo/SSE/SZSE/EDGAR, loading its own dated events from the
 # stream its params name -- the `news_reaction` cluster's missing artifact that
-# `empty_cluster_forcer.MISSING_ARTIFACT` named. `exogenous_gate` is the INDIRECT use of any lake
-# series: an existing price family's own signals kept only inside a regime of that series. Both
-# load their own inputs, so the sealed gauntlet builds them through its ordinary call.
-from mt5desk.family_exogenous_gate import family_exogenous_gate  # noqa: E402
+# `empty_cluster_forcer.MISSING_ARTIFACT` named. It loads its own inputs, so the sealed gauntlet
+# builds it through its ordinary call. (Its indirect cells use `exogenous_gate`, registered below
+# with the world factory's single implementation.)
 from mt5desk.family_news_reaction import family_news_reaction  # noqa: E402
 
 ORTHOGONAL_FAMILIES["news_reaction"] = family_news_reaction
 FAMILY_INPUTS["news_reaction"] = (
     "dated primary disclosures, named by the cell's event_stream spec",
     "data/lake/events/corporate_disclosure/*.jsonl")
-ORTHOGONAL_FAMILIES["exogenous_gate"] = family_exogenous_gate
-FAMILY_INPUTS["exogenous_gate"] = (
-    "a base price family plus a lake series on its own available_time clock",
-    "data/lake/series/<source>.csv|parquet")
 
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a
@@ -2303,3 +2298,15 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# THE INDIRECT USE OF A DATASET (2026-09-30, world factory). `exogenous_conditioner` is a
+# dataset's DIRECT cell: the series alone picks the side. `exogenous_gate` is its INDIRECT cell: an
+# existing price-only base cell, kept only while the same lagged series sits in a band. Its cells
+# are named by `research/world_cells.py` from published lake series and wrappable base families;
+# the ungated base is already an ordinary candidate, so the control arm exists.
+from mt5desk.family_exogenous_gate import family_exogenous_gate  # noqa: E402
+
+ORTHOGONAL_FAMILIES["exogenous_gate"] = family_exogenous_gate
+FAMILY_INPUTS["exogenous_gate"] = (
+    "a published series on its own available_time clock, gating a price-only base family",
+    "data/lake/series/<source>.parquet")

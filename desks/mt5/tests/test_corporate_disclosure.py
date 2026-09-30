@@ -265,13 +265,29 @@ def test_exogenous_gate_keeps_only_the_base_signals_inside_the_regime(tmp_path) 
     (tmp_path / "s.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
     base = get_family_func("trend_ma_cross")(d)
     hi = family_exogenous_gate(d, base_family="trend_ma_cross", source="s", signal="n_total",
-                               gate="high", threshold=0.5, series_root=tmp_path)
+                               band="high", threshold=0.5, series_root=tmp_path)
     lo = family_exogenous_gate(d, base_family="trend_ma_cross", source="s", signal="n_total",
-                               gate="low", threshold=0.5, series_root=tmp_path)
+                               band="low", threshold=0.5, series_root=tmp_path)
     assert base and len(hi) < len(base) and len(lo) < len(base)
     assert {s.time for s in hi}.isdisjoint({s.time for s in lo})
     assert family_exogenous_gate(d, base_family="carry", source="s", signal="n_total",
                                  series_root=tmp_path) == []
+
+
+def test_the_indirect_cells_speak_the_gate_operators_own_params() -> None:
+    """Every exogenous_gate row this organ donates must build through #123's single gate."""
+    import inspect
+
+    from mt5desk.family_exogenous_gate import BANDS, family_exogenous_gate, gateable
+    res = CD.Resolver({})
+    res.targets = {"jp": ["USDJPY"]}
+    rows = [r for r in CD.enumerate_specs(res, {f"{CD.SOURCE}_jp": CD.MIN_SERIES_ROWS})
+            if r["family"] == "exogenous_gate"]
+    assert rows
+    accepted = set(inspect.signature(family_exogenous_gate).parameters) - {"df"}
+    for r in rows:
+        assert set(r["params"]) <= accepted, set(r["params"]) - accepted
+        assert r["params"]["band"] in BANDS and gateable(r["params"]["base_family"])
 
 
 # ------------------------------------------------------------------ the lane door

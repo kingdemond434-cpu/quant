@@ -209,12 +209,12 @@ _FAMILY_GROUPS: dict[str, str] = {
     # them. `exogenous_conditioner` bets on a data pack's own published series (a market-order
     # entry, `trigger=None`); each cell names its series, not a payer, so the mechanism is UNKNOWN
     # and counted rather than guessed.
-    f"{UNKNOWN} macro market": "exogenous_conditioner",
+    # `exogenous_gate` (2026-09-30) is the same series used INDIRECTLY, as a band filter on a
+    # price-only base cell; its mechanism is its base's gated by the series, so it is UNKNOWN too.
+    f"{UNKNOWN} macro market": "exogenous_conditioner exogenous_gate",
     # 2026-09-30 (`research/corporate_disclosure.py`): an unscheduled corporate headline read
-    # from the issuer's own filing; and the gate operator, whose mechanism and style are its
-    # base family's (like `exit_operated`), so no single row names them.
+    # from the issuer's own filing, traded on the reaction to it.
     "corporate_disclosure event market": "news_reaction",
-    f"{UNKNOWN} macro {UNKNOWN}": "exogenous_gate",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():
