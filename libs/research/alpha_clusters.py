@@ -255,6 +255,16 @@ FAMILY_CLUSTER: dict[str, str] = {
     "lead_lag_class_catchup": "cross_asset_lead_lag",
     # Fires ONLY in a lagged class-stress regime and is idle otherwise: forced deleveraging.
     "crisis_only_class_defensive": "crisis_drawdown",
+    # The semis sector book and the quantamental books (2026-09-30): within-class rank legs.
+    "semis_sector_momentum": "cross_sectional_fx",
+    "semis_sector_reversal": "cross_sectional_fx",
+    "semis_sector_value": "cross_sectional_fx",
+    "semis_leader_catchup": "cross_asset_lead_lag",
+    "quantamental_value": "cross_sectional_fx",
+    "quantamental_quality": "cross_sectional_fx",
+    "quantamental_earnings_yield": "cross_sectional_fx",
+    # a class-book leg gated by a fundamental valuation regime: price against a disclosed value
+    "valuation_regime_conditioned": "relative_value",
     # -- crisis and drawdown alpha
     "drawdown_conditional": "crisis_drawdown",
     "crisis_only": "crisis_drawdown",

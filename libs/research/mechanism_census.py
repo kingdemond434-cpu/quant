@@ -1060,6 +1060,18 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "cross_sectional_class_reversal": "liquidity_provision_immediacy",
     "lead_lag_class_catchup": "relative_value_convergence",
     "crisis_only_class_defensive": "positioning_crowding_unwind",
+    # The semis sector book and the quantamental books (2026-09-30), by the same construction
+    # rule: ranked characteristics are the cross-sectional premium, the within-industry reversal
+    # pays for immediacy, and the leader catch-up is a lead-lag residual.
+    "semis_sector_momentum": "cross_sectional_risk_premium",
+    "semis_sector_value": "cross_sectional_risk_premium",
+    "semis_sector_reversal": "liquidity_provision_immediacy",
+    "semis_leader_catchup": "relative_value_convergence",
+    "quantamental_value": "cross_sectional_risk_premium",
+    "quantamental_quality": "cross_sectional_risk_premium",
+    "quantamental_earnings_yield": "cross_sectional_risk_premium",
+    # valuation predicts the premium a leg earns (Campbell & Shiller 1988): market risk premium
+    "valuation_regime_conditioned": "market_risk_premium",
 }
 
 

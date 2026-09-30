@@ -328,7 +328,10 @@ def test_real_registry_ranks_share_cfds_only_in_their_own_class():
     2026-09-30); every other class is hypothesis-lane only, and indices are ranked too."""
     from research import universe_policy as up
     classes = up.peer_classes()
-    ranked = {s for k, v in classes.items() if k != "equity" for s in v}
+    # a SECTOR book (semis) mixes its share-CFD issuers with a hypothesis-lane proxy leg by
+    # design; its own pins live in test_semis_and_fundamentals.py
+    ranked = {s for k, v in classes.items() if k != "equity" and k not in up.SECTOR_BOOKS
+              for s in v}
     if not ranked:
         pytest.skip("registry absent on this host -- UNMEASURED, not a pass")
     assert all(up.lane(s) == up.HYPOTHESIS for s in ranked)
@@ -337,10 +340,12 @@ def test_real_registry_ranks_share_cfds_only_in_their_own_class():
 
 
 def test_equity_admission_is_pinned_to_the_class_book_families():
+    from mt5desk.class_books import FAMILIES
     from mt5desk.families_cross_sectional import CROSS_SECTIONAL_FAMILIES
 
     from research import universe_policy as up
-    assert set(CROSS_SECTIONAL_FAMILIES) == set(up.CROSS_SECTIONAL_FAMILIES)
+    assert set(FAMILIES) == set(up.CROSS_SECTIONAL_FAMILIES)
+    assert set(CROSS_SECTIONAL_FAMILIES) <= set(up.CROSS_SECTIONAL_FAMILIES)
 
 def test_merge_door_admits_a_share_cfd_only_in_a_class_book(tmp_path, monkeypatch):
     """The docket door passes the row's family, so AAPL momentum reaches the judge and AAPL

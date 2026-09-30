@@ -135,8 +135,13 @@ def class_symbols(klass: str) -> list[str]:
 
 
 def orientation(symbol: str, klass: str | None) -> int:
-    """-1 when the pair must be inverted to read as a currency's dollar value (USDXXX in fx_usd)."""
-    if klass != "fx_usd":
+    """-1 when the pair must be inverted to read as a currency's dollar value (USDXXX in fx_usd,
+    or a USDXXX proxy leg of a sector book such as USDKRW in `semis`)."""
+    try:
+        oriented = _policy().ORIENTED_CLASSES
+    except Exception:
+        oriented = frozenset({"fx_usd"})
+    if klass not in oriented:
         return 1
     try:
         return int(_policy().usd_orientation(symbol))
@@ -215,17 +220,26 @@ def _decision_rows(d: pd.DataFrame, decision_hour: int,
 
 
 def class_panel(d: pd.DataFrame, symbol: str, *, decision_hour: int = 22,
-                max_stale_h: float = 12.0) -> dict | None:
+                max_stale_h: float = 12.0, klass: str | None = None) -> dict | None:
     """The class cross-section on `symbol`'s own decision bars, or None when there is none.
 
     Returns {"klass", "members", "own", "pos", "logv" (rows x members, oriented log values),
     "orient"}. `own` is the column holding `symbol`, read from `d` itself (the bars the caller
     handed in), never from the store, so the gauntlet's override and the live frame are honoured.
+
+    `klass` names a SECTOR book (e.g. `semis`) to rank within instead of the symbol's primary
+    peer class; `symbol` must then be a member of that book, or there is no panel.
     """
-    klass = class_of(symbol)
-    if not klass:
-        return None
-    members = [s for s in class_symbols(klass) if s.upper() != symbol.upper()]
+    if klass is None:
+        klass = class_of(symbol)
+        if not klass:
+            return None
+        roster = class_symbols(klass)
+    else:
+        roster = class_symbols(klass)
+        if symbol.upper() not in {s.upper() for s in roster}:
+            return None
+    members = [s for s in roster if s.upper() != symbol.upper()]
     pos, stamps = _decision_rows(d, decision_hour, max_stale_h)
     if pos.size == 0:
         return None
@@ -254,7 +268,8 @@ def class_panel(d: pd.DataFrame, symbol: str, *, decision_hour: int = 22,
         own = np.where(own_close > 0, np.log(own_close), np.nan) * orientation(symbol, klass)
     logv = np.column_stack([own, *cols])
     return {"klass": klass, "members": [symbol, *names], "own": 0, "pos": pos,
-            "logv": logv, "orient": orientation(symbol, klass), "close": own_close}
+            "logv": logv, "orient": orientation(symbol, klass), "close": own_close,
+            "stamps": stamps}
 
 
 # ------------------------------------------------------------------------------ primitives ---
@@ -373,13 +388,14 @@ def _signals(d: pd.DataFrame, panel: dict, side: np.ndarray, *, hold_d: int, sto
 
 
 def _prepare(df: pd.DataFrame, symbol: str, decision_hour: int,
-             max_stale_h: float) -> tuple[pd.DataFrame, dict] | None:
+             max_stale_h: float, klass: str | None = None) -> tuple[pd.DataFrame, dict] | None:
     if not symbol or df is None or len(df) == 0:
         return None
     d = _h1(df)
     if "close" not in d.columns:
         return None
-    panel = class_panel(d, symbol, decision_hour=decision_hour, max_stale_h=max_stale_h)
+    panel = class_panel(d, symbol, decision_hour=decision_hour, max_stale_h=max_stale_h,
+                        klass=klass)
     if panel is None:
         return None
     return d, panel

@@ -2271,13 +2271,14 @@ FAMILY_INPUTS["exogenous_conditioner"] = (
 # gauntlet builds them through its ordinary `fn(h1, **params)` call. Registered here because this
 # dict is the door `external_gauntlet.build_cell`, `executables.resolve_family`,
 # `families.get_family_func` and `miner_candidate_compiler._registered_family` all read.
-from mt5desk.families_cross_sectional import CROSS_SECTIONAL_FAMILIES  # noqa: E402
+# Extended the same day by the SEMIS sector book and the QUANTAMENTAL books (point-in-time SEC
+# fundamentals); `mt5desk.class_books` is the one list of every class-book family.
+from mt5desk.class_books import FAMILIES as CLASS_BOOK_FAMILIES  # noqa: E402
+from mt5desk.class_books import INPUTS as CLASS_BOOK_INPUTS  # noqa: E402
 
-ORTHOGONAL_FAMILIES.update(CROSS_SECTIONAL_FAMILIES)
-for _xs_name in CROSS_SECTIONAL_FAMILIES:
-    FAMILY_INPUTS[_xs_name] = ("the symbol's peer class (research.universe_policy.peer_class), "
-                               "read as of each decision bar from the bar store",
-                               "data/universe/*_H1.parquet")
+ORTHOGONAL_FAMILIES.update(CLASS_BOOK_FAMILIES)
+for _xs_name in CLASS_BOOK_FAMILIES:
+    FAMILY_INPUTS[_xs_name] = CLASS_BOOK_INPUTS[_xs_name]
     FAMILY_TIMEFRAMES[_xs_name] = (
         ("H1",),
         "ranks the class once a day at a broker decision HOUR from the H1 store; on a four-hour "

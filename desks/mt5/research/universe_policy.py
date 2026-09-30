@@ -200,10 +200,22 @@ def lane(symbol: str) -> str:
 #: bet: it ranks a share against its peers on the same date, so each name's own disclosures are
 #: the idiosyncratic noise the class book diversifies, not the signal.
 #: Pinned to `mt5desk.families_cross_sectional.CROSS_SECTIONAL_FAMILIES` by a test.
+#:
+#: EXTENDED 2026-09-30 by the SECTOR book (the semiconductor peer class, `mt5desk.families_sector`)
+#: and the QUANTAMENTAL books (point-in-time SEC fundamentals ranked within the equity class,
+#: `mt5desk.families_quantamental`). Both are cross-sectional by construction -- every leg is
+#: ranked against its peers on the same date -- so they are admitted on the same terms.
 CROSS_SECTIONAL_FAMILIES = frozenset({
     "cross_sectional_class_momentum", "cross_sectional_class_reversal",
     "cross_sectional_class_value", "cross_sectional_class_low_vol",
     "crisis_only_class_defensive", "lead_lag_class_catchup",
+    # the semiconductor sector book
+    "semis_sector_momentum", "semis_sector_reversal", "semis_sector_value",
+    "semis_leader_catchup",
+    # the quantamental books
+    "quantamental_value", "quantamental_quality", "quantamental_earnings_yield",
+    # the INDIRECT use of fundamentals: a class-book leg gated by a valuation/quality regime
+    "valuation_regime_conditioned",
 })
 
 
@@ -271,9 +283,10 @@ _COMMODITY_CLASSES = _norm_set({"commodity", "commodities", "soft commodity", "s
 _BOND_CLASSES = _norm_set({"bond", "bonds"})
 _CRYPTO_CLASSES = _norm_set({"crypto", "cryptocurrency"})
 
-#: The peer classes, in the order reports list them.
+#: The peer classes, in the order reports list them. `semis` is a SECTOR book (below): a second,
+#: narrower class its members belong to beside their primary one.
 PEER_CLASSES: tuple[str, ...] = ("fx_usd", "fx_cross", "index", "commodity", "bond", "crypto",
-                                 "equity")
+                                 "equity", "semis")
 
 
 def _pair_legs(symbol: str) -> tuple[str, str] | None:
@@ -316,6 +329,107 @@ def peer_class(symbol: str) -> str | None:
     return None
 
 
+# =============================================================================================
+# SECTOR BOOKS (2026-09-30): a narrower peer class a member belongs to BESIDE its primary one.
+#
+# The broker registry carries no sector field (every share CFD row has `sector: None`), so a
+# sector's membership cannot be derived the way an asset class is. It is declared here by ISSUER
+# -- the company, with the spellings a broker uses for it -- and RESOLVED against the registry on
+# every read: a name the broker does not quote is reported ABSENT by `sector_resolution`, never
+# faked, and a registry row that is not a share CFD never joins as an issuer. A PROXY leg is a
+# hypothesis-lane instrument whose economics are the sector's (USDKRW: Korea's exports are
+# dominated by memory and foundry, so the won is read as the sector's Korean leg, in dollars).
+# =============================================================================================
+
+#: book -> {"issuers": {issuer: (broker spellings, first match wins)}, "proxies": {symbol: why},
+#:          "leaders": (issuers the lead-lag leg treats as the SOXX-like leader basket)}
+SECTOR_BOOKS: dict[str, dict[str, Any]] = {
+    "semis": {
+        "issuers": {
+            "NVIDIA": ("NVIDIA", "NVDA"),
+            "AMD": ("AMD", "AdvancedMicroDevices"),
+            "Intel": ("Intel", "INTC"),
+            "Micron": ("MicronTechnology", "Micron", "MU"),
+            "TSMC": ("TSMC", "TaiwanSemiconductor", "TSM"),
+            "Qualcomm": ("Qualcomm", "QCOM"),
+            "Broadcom": ("Broadcom", "AVGO"),
+            "Texas Instruments": ("TexasInstruments", "TXN"),
+            "Applied Materials": ("AppliedMaterials", "AMAT"),
+        },
+        "proxies": {"USDKRW": "Korea proxy leg: memory and foundry dominate Korean exports, "
+                              "so the won (read in dollars) carries the sector's Korean leg",
+                    "JPN225": "Japan proxy leg: the Nikkei 225 is price-weighted and Advantest, "
+                              "Tokyo Electron, Disco and Screen are among its heaviest members, "
+                              "so it carries the sector's Japanese equipment leg"},
+        "leaders": ("NVIDIA", "Broadcom", "TSMC"),
+        # CULTURE PROVENANCE (principal 2026-09-30 14:18): the supply-chain culture each LOCAL
+        # member speaks for, who trades it, and why its version fails at different times from
+        # the US-listed names. Members not named here are US-listed US issuers.
+        "cultures": {
+            "TSMC": ("TW", "mixed",
+                     "the ADR trades against a Taipei line under foreign-ownership limits and TWD "
+                     "capital-flow rules, so it breaks on Taiwan flow and cross-strait shocks "
+                     "that leave the US-listed names untouched"),
+            "USDKRW": ("KR", "policy_driven",
+                       "the won's memory-cycle leg fails when Bank of Korea smoothing or National "
+                       "Pension Service FX hedging overrides the export signal, which happens on "
+                       "Korean policy dates, not US ones"),
+            "JPN225": ("JP", "mixed",
+                       "the Nikkei's equipment leg is diluted by price-weighted non-semis giants "
+                       "and by BoJ and NISA retail flows, so it fails on yen and domestic-flow "
+                       "regimes rather than on the US semis cycle"),
+        },
+        "default_culture": ("US", "institutional",
+                            "the US-listed semis leg is the standard version: it fails in "
+                            "crowded AI-capex unwinds and index-rebalance flows"),
+    },
+}
+
+#: Classes whose USDXXX members are inverted to read as the non-USD currency in dollars.
+ORIENTED_CLASSES = frozenset({"fx_usd", *SECTOR_BOOKS})
+
+
+def sector_resolution(book: str) -> dict[str, Any]:
+    """{"issuers": {issuer: symbol}, "proxies": [symbols], "absent": [issuers or proxies],
+    "leaders": [symbols]} for `book`, resolved against the broker registry now. Never raises."""
+    spec = SECTOR_BOOKS.get(str(book)) or {}
+    reg = _registry()
+    issuers: dict[str, str] = {}
+    absent: list[str] = []
+    for issuer, spellings in (spec.get("issuers") or {}).items():
+        hit = None
+        for name in spellings:
+            row = reg.get(str(name).upper())
+            if isinstance(row, dict) and is_equity(name):
+                hit = str(row.get("symbol") or name)
+                break
+        if hit is None:
+            absent.append(issuer)
+        else:
+            issuers[issuer] = hit
+    proxies: list[str] = []
+    for sym in spec.get("proxies") or {}:
+        row = reg.get(str(sym).upper())
+        if isinstance(row, dict) and lane(sym) == HYPOTHESIS:
+            proxies.append(str(row.get("symbol") or sym))
+        else:
+            absent.append(str(sym))
+    leaders = [issuers[i] for i in spec.get("leaders") or () if i in issuers]
+    return {"book": str(book), "issuers": issuers, "proxies": proxies, "absent": absent,
+            "leaders": leaders}
+
+
+def sector_books_of(symbol: str) -> list[str]:
+    """Every sector book `symbol` resolves into."""
+    s = str(symbol).strip().upper()
+    out = []
+    for book in SECTOR_BOOKS:
+        res = sector_resolution(book)
+        if s in {m.upper() for m in [*res["issuers"].values(), *res["proxies"]]}:
+            out.append(book)
+    return out
+
+
 def usd_orientation(symbol: str) -> int:
     """+1 when the pair's price IS the non-USD currency in dollars (XXXUSD), -1 when it must be
     inverted to read that way (USDXXX), +1 for anything that is not a USD pair."""
@@ -332,6 +446,9 @@ def peer_classes() -> dict[str, list[str]]:
         c = peer_class(k)
         if c is not None:
             out.setdefault(c, []).append(str(v.get("symbol") or k))
+    for book in SECTOR_BOOKS:
+        res = sector_resolution(book)
+        out[book] = [*res["issuers"].values(), *res["proxies"]]
     return {k: sorted(set(v)) for k, v in out.items()}
 
 
