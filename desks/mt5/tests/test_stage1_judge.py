@@ -266,7 +266,8 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
     out = tmp_path / "out"
     db = out / "rec.sqlite"
     doc = S.run(budget_s=240, workers=1, cap=100, docket=docket,
-                seen_path=tmp_path / "none.json", out_dir=out, db=db)
+                seen_path=tmp_path / "none.json", out_dir=out, db=db,
+                bank_path=tmp_path / "no_bank.json")
     ruled = doc["run"]["ruled"]
     assert ruled == len({(r["symbol"], r["family"], json.dumps(r["params"], sort_keys=True))
                          for r in rows})
@@ -283,12 +284,16 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
     assert (out / S.PRIORITY.name).exists()
     assert doc["fence"]["status"] in ("PASS", "FAIL", "UNMEASURED")
     for k in ("stage1_per_day", "stage2_per_day", "creation_per_day",
-              "net_backlog_change_per_day", "backlog_cells", "days_to_clear", "unknown_causes"):
+              "net_backlog_change_per_day", "backlog_cells", "days_to_clear", "unknown_causes",
+              "backlog_total", "backlog_excluding_wrong_space", "wrong_space"):
         assert k in doc
     assert doc["unknown_causes"]["forwarded_to_stage2_with_an_unknown_class"] == 0
+    assert doc["backlog_excluding_wrong_space"] == doc["backlog_total"] - doc["wrong_space"]["rows"]
+    assert "share_including_wrong_space" in doc["unknown_causes"]
     # a second run rules nothing new: every cell is stage-1 ruled and not due
     doc2 = S.run(budget_s=120, workers=1, cap=100, docket=docket,
-                 seen_path=tmp_path / "none.json", out_dir=out, db=db)
+                 seen_path=tmp_path / "none.json", out_dir=out, db=db,
+                bank_path=tmp_path / "no_bank.json")
     assert doc2["run"]["ruled"] == 0
     # a family code change re-opens its cells; nothing was ever deleted
     con.execute("UPDATE cells SET family_ver='old' WHERE family='session_range_breakout'")
@@ -296,7 +301,8 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
     n_srb = con.execute("SELECT COUNT(*) FROM cells WHERE family='session_range_breakout'"
                         ).fetchone()[0]
     doc3 = S.run(budget_s=240, workers=1, cap=100, docket=docket,
-                 seen_path=tmp_path / "none.json", out_dir=out, db=db)
+                 seen_path=tmp_path / "none.json", out_dir=out, db=db,
+                bank_path=tmp_path / "no_bank.json")
     assert doc3["run"]["ruled"] == n_srb
     assert con.execute("SELECT COUNT(*) FROM cells").fetchone()[0] == ruled
     assert con.execute("SELECT MAX(times_ruled) FROM cells").fetchone()[0] == 2
@@ -320,6 +326,39 @@ def test_sealed_judged_cells_are_not_backlog(tmp_path: Path) -> None:
                                       docket=docket, seen=hashes)
     assert census["sealed_judged"] == 1 and cid not in {c["cid"] for c in chosen}
     con.close()
+
+
+def test_wrong_space_rows_are_counted_apart_never_screened_never_dropped(tmp_path: Path) -> None:
+    """A row carrying its chart on the ROW only is named differently by judge_coverage's key
+    (chart beside params) and the judge's (chart folded into params). Banked in the judge's
+    space, coverage misses it: it is WRONG_SPACE until sealed pass 2 lands, counted in its own
+    bucket and not screened as a real cell."""
+    import external_gauntlet as G
+    rows = _real_rows(3)[:2]
+    ws = json.loads(json.dumps(rows[0]))
+    ws["params"] = {k: v for k, v in ws["params"].items() if k != "timeframe"}
+    ws["timeframe"] = "M15"
+    docket = tmp_path / "docket.json"
+    docket.write_text(json.dumps([*rows, ws]))
+    meta = json.loads((G.UNI / "universe.json").read_text())
+    judge_key = G.cell_id({"sym": G.canonical_symbol(ws["symbol"], meta), "family": ws["family"],
+                           "params": {**ws["params"], "timeframe": "M15"}})
+    cov_key = S.coverage_space_id(G, ws)
+    assert cov_key and cov_key != judge_key
+    bank_p = tmp_path / "bank.json"
+    bank_p.write_text(json.dumps({judge_key: {"reason": "build_failed"}}))
+    bank, status = S.load_bank_hashes(bank_p)
+    assert status.startswith("MEASURED")
+    con = REC.connect(tmp_path / "r.sqlite")
+    chosen, census = S.select_backlog(G, meta, con, cap=10, now=datetime.now(tz=UTC),
+                                      docket=docket, seen=set(), bank=bank)
+    assert census["wrong_space"] == 1 and census["key_space_mismatch_rows"] >= 1
+    assert census["backlog"] == census["cells"] == 3        # counted in the total, never dropped
+    assert judge_key not in {c["cid"] for c in chosen}       # never screened as a real cell
+    assert len(chosen) == 2
+    con.close()
+    # absent bank: UNMEASURED, an empty set, never a guess
+    assert S.load_bank_hashes(tmp_path / "nope.json")[1].startswith(S.UNMEASURED)
 
 
 def test_the_vectorised_path_agrees_with_the_engine_path() -> None:

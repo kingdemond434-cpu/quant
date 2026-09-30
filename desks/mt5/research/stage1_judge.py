@@ -116,7 +116,18 @@ BURNDOWN = DESK / "reports" / "JUDGING_BURNDOWN.json"
 TRIALS = DATA / "STAGE1_TRIALS.jsonl"
 RUNS = DATA / "stage1" / "stage1_runs.jsonl"
 PRIORITY = HYP / "priority_stage1.json"
+#: judge_coverage's build-failure bank, keyed in the JUDGE's cell-id space.
+UNRUNNABLE_BANK = HYP / "unrunnable_specs.json"
 UNMEASURED = "UNMEASURED"
+#: THE WRONG-SPACE BUCKET (2026-09-30). `judge_coverage._cell_id` names a docket row with the chart
+#: as a separate `timeframe` key; the judge folds a non-H1 row chart into `params` first
+#: (`frontier_identity.docket_cell`). Its build-failure bank is keyed in the judge's space, so the
+#: coverage filter matches none of it (measured on the box 2026-09-24/25: 78,771 docket rows whose
+#: judge key is banked, 0 matched by coverage's key). The hunk that fixes it (`docket_cell_id` in
+#: judge_coverage) was stripped from PR #104 and waits for sealed pass 2. Until then those rows
+#: inflate the backlog and the UNKNOWN share. Stage 1 COUNTS them in their own bucket, does NOT
+#: screen them as real cells and does NOT drop them; they clear when pass 2 lands.
+WRONG_SPACE = "WRONG_SPACE"
 #: Bumped when stage 1's own evaluator changes, so every cell is re-screened under the new one.
 STAGE1_VERSION = 1
 
@@ -697,15 +708,45 @@ def _due(state: dict[str, Any], bars: tuple[int, str], fam_ver: str, now: dateti
     return False
 
 
+def load_bank_hashes(path: Path | None = None) -> tuple[set[int], str]:
+    """8-byte hashes of the build-failure bank's keys (judge space), and a status string. An
+    absent or unreadable bank is an EMPTY set with an UNMEASURED status, never a guess."""
+    p = Path(path or UNRUNNABLE_BANK)
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        return set(), f"{UNMEASURED}: {p.name} absent on this host"
+    except (OSError, ValueError) as exc:
+        return set(), f"{UNMEASURED}: {p.name} unreadable ({type(exc).__name__})"
+    if not isinstance(doc, dict):
+        return set(), f"{UNMEASURED}: {p.name} is not a map"
+    out = {h64(str(k)) for k, v in doc.items() if isinstance(v, dict)}
+    return out, f"MEASURED: {len(out)} banked cell(s)"
+
+
+def coverage_space_id(G: Any, h: dict[str, Any]) -> str | None:
+    """The id `judge_coverage._cell_id` gives a docket row TODAY (chart beside params, raw row
+    symbol) -- the wrong key space, reproduced only to count the rows it misses."""
+    try:
+        return str(G.cell_id({"sym": h.get("symbol") or h.get("sym"), "family": h.get("family"),
+                              "params": h.get("params") or {},
+                              "timeframe": h.get("timeframe")}))
+    except Exception:
+        return None
+
+
 def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
-                   docket: Path, seen: set[int]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+                   docket: Path, seen: set[int], bank: set[int] | None = None
+                   ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """One streaming pass over the docket. Returns (the `cap` highest-priority cells to rule this
     run, the backlog census). Priority: never stage-1-ruled first, then due re-screens; oldest
     `first_seen` first within each. Memory: `cap` candidates plus 8 bytes per docket cell."""
     census: dict[str, Any] = {"rows": 0, "stamped": 0, "unstamped": 0, "cells": 0,
                               "sealed_judged": 0, "backlog": 0, "oldest_first_seen": None,
                               "tiers": dict.fromkeys(REC.TIER_NAMES.values(), 0),
-                              "due_rescreen": 0, "created_24h": 0, "created_7d": 0}
+                              "due_rescreen": 0, "created_24h": 0, "created_7d": 0,
+                              "wrong_space": 0, "key_space_mismatch_rows": 0}
+    bank = bank or set()
     cut24 = (now - timedelta(hours=24)).isoformat(timespec="seconds")
     cut7d = (now - timedelta(days=7)).isoformat(timespec="seconds")
     from libs.data.pit import is_stamped
@@ -774,6 +815,14 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
             census["sealed_judged"] += 1
             continue
         census["backlog"] += 1
+        # WRONG SPACE: banked in the judge's key space, missed by coverage's key. Counted, kept
+        # on the docket, not screened as a real cell (see WRONG_SPACE above).
+        cov = coverage_space_id(G, h)
+        if cov is not None and cov != cid:
+            census["key_space_mismatch_rows"] += 1
+        if hh in bank and (cov is None or h64(cov) not in bank):
+            census["wrong_space"] += 1
+            continue
         fs = str(h.get("first_seen") or "")
         if fs and (oldest[0] is None or fs < oldest[0]):
             oldest[0] = fs
@@ -991,7 +1040,7 @@ def throughput_fence(doc: dict[str, Any]) -> dict[str, Any]:
 def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None = None,
         q: float = FDR_Q, dry_run: bool = False, out_dir: Path | None = None,
         docket: Path | None = None, seen_path: Path | None = None,
-        db: Path | None = None) -> dict[str, Any]:
+        db: Path | None = None, bank_path: Path | None = None) -> dict[str, Any]:
     started = time.monotonic()
     now = _now()
     run_id = f"s1_{now.strftime('%Y%m%dT%H%M%S')}_{uuid.uuid4().hex[:6]}"
@@ -1025,7 +1074,11 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     watch = {r[0] for r in con.execute("SELECT cid FROM cells WHERE verdict=?", (REC.PASS,))}
     seen, seen_hit, seen_status = stream_seen(seen_path, watch, "")
     t_sel = time.monotonic()
-    chosen, census = select_backlog(G, meta, con, cap=cap, now=now, docket=docket, seen=seen)
+    bank, bank_status = load_bank_hashes(bank_path)
+    chosen, census = select_backlog(G, meta, con, cap=cap, now=now, docket=docket, seen=seen,
+                                    bank=bank)
+    census["bank_status"] = bank_status
+    del bank
     select_s = time.monotonic() - t_sel
     seen_s = t_sel - t_seen
     earliest = universe_earliest(G.UNI) or date(2000, 1, 1)
@@ -1264,7 +1317,11 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
     per_run = [int(r.get("ruled") or 0) for r in runs[-6:] if not r.get("dry_run")]
     scheduled = int(np.median(per_run) * 24) if per_run else UNMEASURED
     target = target_for(first_run, now)
-    backlog = int(census.get("backlog") or 0)
+    backlog_total = int(census.get("backlog") or 0)
+    wrong_space = int(census.get("wrong_space") or 0)
+    # Days to clear are counted on the REAL backlog: the wrong-space rows clear when sealed
+    # pass 2 lands, not by stage-1 work. Both sizes are published.
+    backlog = backlog_total - wrong_space
     s2_build = [float(r["stage2_build_s_per_cell"]) for r in runs
                 if r.get("stage2_build_s_per_cell")]
     s2_b = float(np.median(s2_build)) if s2_build else None
@@ -1322,13 +1379,14 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
             return int(creation - rate_)
         return UNMEASURED
 
-    def _clear(rate_: Any) -> Any:
+    def _clear(rate_: Any, size: int | None = None) -> Any:
         n = _net(rate_)
+        b = backlog if size is None else size
         if not isinstance(n, int):
             return UNMEASURED
-        if backlog == 0:
+        if b == 0:
             return 0.0
-        return round(backlog / -n, 2) if n < 0 else "GROWING"
+        return round(b / -n, 2) if n < 0 else "GROWING"
 
     net = {"measured_trailing_24h": _net(measured_per_day), "scheduled_pace": _net(scheduled),
            "projected_18c_50pct": _net(proj18)}
@@ -1339,6 +1397,12 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
             ucls[k] = ucls.get(k, 0) + 1
     n_r = sum(1 for r in results if r.get("verdict") in REC.VERDICTS)
     fwd_unknown = sum(1 for r in results if r.get("verdict") == REC.PASS and unknown_class(r))
+    n_unknown = sum(ucls.values())
+    # Every wrong-space row is a banked build failure the sealed judge re-submits and rules
+    # UNKNOWN/NOT_RUN, so WITH them the share adds them to both sides.
+    share_without = round(n_unknown / n_r, 4) if n_r else UNMEASURED
+    share_with = (round((n_unknown + wrong_space) / (n_r + wrong_space), 4)
+                  if (n_r + wrong_space) else UNMEASURED)
     doc: dict[str, Any] = {
         "at": _iso(now), "status": "MEASURED" if results else UNMEASURED,
         "dry_run": bool(dry_run),
@@ -1358,16 +1422,30 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
             "distinct docket cells by first_seen; the larger of the last 24h and the 7-day mean"),
             "burndown_inflow_per_hour": bd_in or UNMEASURED},
         "net_backlog_change_per_day": net,
-        "backlog_cells": backlog,
+        "backlog_cells": backlog_total,
+        "backlog_total": backlog_total,
+        "backlog_excluding_wrong_space": backlog,
+        "wrong_space": {
+            "rows": wrong_space, "bucket": WRONG_SPACE,
+            "key_space_mismatch_rows": census.get("key_space_mismatch_rows"),
+            "bank": census.get("bank_status", UNMEASURED),
+            "rule": ("docket rows whose judge-space cell id is in judge_coverage's build-failure "
+                     "bank while judge_coverage's own key (chart beside params) misses it; "
+                     "counted, kept on the docket, NOT screened as real cells; they clear when "
+                     "sealed pass 2 lands the stripped judge_coverage docket_cell_id hunk")},
         "days_to_clear": {"measured_trailing_24h": _clear(measured_per_day),
                           "scheduled_pace": _clear(scheduled),
                           "projected_18c_50pct": _clear(proj18),
-                          "rule": "backlog / (stage-1 per day - creation per day); GROWING when "
-                                  "creation is not outrun"},
+                          "projected_18c_50pct_including_wrong_space":
+                              _clear(proj18, backlog_total),
+                          "rule": "backlog_excluding_wrong_space / (stage-1 per day - creation "
+                                  "per day); GROWING when creation is not outrun"},
         "unknown_causes": {
             "this_run": dict(sorted(ucls.items(), key=lambda kv: -kv[1])),
-            "share_of_ruled_that_the_sealed_judge_would_rule_unknown": (
-                round(sum(ucls.values()) / n_r, 4) if n_r else UNMEASURED),
+            "share_of_ruled_that_the_sealed_judge_would_rule_unknown": share_without,
+            "share_excluding_wrong_space": share_without,
+            "share_including_wrong_space": share_with,
+            "wrong_space_rows": wrong_space,
             "forwarded_to_stage2_with_an_unknown_class": fwd_unknown,
             "rule": ("before: the share of ruled cells the sealed judge would have spent a slot "
                      "on and returned UNKNOWN/NOT_RUN (no data, no driver, never fires in its "
@@ -1396,7 +1474,8 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
             "projected_capacity_per_day": stage2_proj,
             "projection_basis": stage2_why,
         },
-        "backlog": {"cells": backlog, "docket_cells": census.get("cells"),
+        "backlog": {"cells": backlog_total, "excluding_wrong_space": backlog,
+                    "wrong_space": wrong_space, "docket_cells": census.get("cells"),
                     "sealed_judged": census.get("sealed_judged"),
                     "oldest_first_seen": oldest, "oldest_age_days": age_d,
                     "tiers": census.get("tiers"), "due_rescreen": census.get("due_rescreen"),
@@ -1406,6 +1485,7 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
         "unbuildable_by_family_and_cause": unb_fam,
         "record_census": record,
         "days_to_clear_backlog": {
+            "basis": "backlog_excluding_wrong_space",
             "at_measured_pace": (round(backlog / ruled_24h, 2)
                                  if day_runs and ruled_24h else UNMEASURED),
             "at_scheduled_pace": (round(backlog / scheduled, 2)
@@ -1438,7 +1518,12 @@ def summary(path: Path | None = None) -> dict[str, Any]:
             "stage1_target_per_day": s1.get("target_per_day"),
             "stage2_projected_capacity_per_day": s2.get("projected_capacity_per_day"),
             "survivors_forwarded_per_day": s2.get("forwarded_per_day_trailing_24h"),
-            "backlog": bl.get("cells"), "oldest_age_days": bl.get("oldest_age_days"),
+            "backlog": bl.get("cells"), "backlog_total": d.get("backlog_total"),
+            "backlog_excluding_wrong_space": d.get("backlog_excluding_wrong_space"),
+            "wrong_space": d.get("wrong_space"),
+            "unknown_share": {k: (d.get("unknown_causes") or {}).get(k) for k in (
+                "share_excluding_wrong_space", "share_including_wrong_space")},
+            "oldest_age_days": bl.get("oldest_age_days"),
             "unbuildable_by_cause": d.get("unbuildable_by_cause_this_run"),
             "days_to_clear_backlog": d.get("days_to_clear_backlog"),
             "fence": d.get("fence")}
