@@ -270,7 +270,7 @@ def test_a_dbnomics_series_is_resolved_by_name_and_stamped_point_in_time(tmp_pat
 
 def test_an_ambiguous_name_is_unresolved_never_guessed(tmp_path) -> None:
     sub = {"id": "d", "provider": "NBS", "series": [
-        {"key": "k", "search": "pmi", "must": ["pmi"], "revises": False},
+        {"key": "k", "search": "pmi", "must": ["manufacturing"], "revises": False},
         {"key": "rev", "search": "cpi", "must": ["cpi"], "revises": True}]}
     res = SUB.fetch_source(sub, NOW, _dbn, tmp_path)
     assert res["k"]["status"] == "UNRESOLVED" and res["rev"]["status"] == "SKIPPED"
