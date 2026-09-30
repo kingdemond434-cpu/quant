@@ -22,6 +22,7 @@ from __future__ import annotations
 import base64
 import json
 import math
+import os
 import re
 import urllib.parse
 from collections.abc import Callable, Iterable, Mapping
@@ -316,13 +317,24 @@ def count_mentions(items: Iterable[tuple[datetime, str]], row: Mapping[str, Any]
 
 REDDIT_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"  # noqa: S105 -- a URL
 REDDIT_API = "https://oauth.reddit.com"
-REDDIT_UA = "windows:quant-desk-keyed-sources:1.0 (research; contact via app owner)"
+#: Reddit's required form: `<platform>:<app id>:<version> (by /u/<username>)`. The username is
+#: the app owner's, read from REDDIT_USERNAME (a name, not a credential); unset -> a placeholder.
+#: For completeness only: the roster row is fenced by machine_use_allowed=false (Reddit's Data
+#: API terms bar commercial use without an agreement), so no request is ever built in a pass.
+REDDIT_APP = "windows:quant-desk-keyed-sources:1.0"
 
 
-def reddit_token_request(client_id: str, secret: str) -> Request:
+def reddit_user_agent(environ: Mapping[str, str] | None = None) -> str:
+    env = os.environ if environ is None else environ
+    user = str(env.get("REDDIT_USERNAME", "")).strip() or "<username>"
+    return f"{REDDIT_APP} (by /u/{user})"
+
+
+def reddit_token_request(client_id: str, secret: str, user_agent: str | None = None) -> Request:
     auth = base64.b64encode(f"{client_id}:{secret}".encode()).decode("ascii")
     return Request(REDDIT_TOKEN_URL, "POST",
-                   {"Authorization": f"Basic {auth}", "User-Agent": REDDIT_UA,
+                   {"Authorization": f"Basic {auth}",
+                    "User-Agent": user_agent or reddit_user_agent(),
                     "Content-Type": "application/x-www-form-urlencoded"},
                    b"grant_type=client_credentials")
 
@@ -333,8 +345,9 @@ def parse_reddit_token(body: bytes) -> str | None:
     return str(tok) if tok else None
 
 
-def reddit_listing_requests(row: Mapping[str, Any], token: str) -> list[Request]:
-    h = {"Authorization": f"bearer {token}", "User-Agent": REDDIT_UA}
+def reddit_listing_requests(row: Mapping[str, Any], token: str,
+                            user_agent: str | None = None) -> list[Request]:
+    h = {"Authorization": f"bearer {token}", "User-Agent": user_agent or reddit_user_agent()}
     return [Request(f"{REDDIT_API}/r/{sub}/new?limit=100&raw_json=1", headers=dict(h), part=sub)
             for sub in row.get("subreddits") or []]
 

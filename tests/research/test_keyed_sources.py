@@ -118,9 +118,12 @@ def test_every_keyed_source_is_blocked_auth_without_its_key(tmp_path: Path) -> N
         raise OSError("offline in tests")
 
     doc = K.run(paths, environ={}, get=get, donate=don, now=NOW)
-    keyed = [sid for sid in doc["sources"] if _row(sid)["key_env"]]
+    keyed = [sid for sid in doc["sources"]
+             if _row(sid)["key_env"] and _row(sid)["machine_use_allowed"] is True]
     keyless = [sid for sid in doc["sources"] if not _row(sid)["key_env"]]
-    assert len(keyed) >= 9 and {"bis_policy_rates", "bis_reer", "oecd_cli_bci",
+    assert doc["registry_error"] is None
+    assert doc["sources"]["reddit_oauth"]["status"] == "BLOCKED_TERMS"   # fenced before keys
+    assert len(keyed) >= 8 and {"bis_policy_rates", "bis_reer", "oecd_cli_bci",
                                 "imf_reserves"} <= set(keyless)
     for sid in keyed:
         assert doc["sources"][sid]["status"] == f"BLOCKED_AUTH:{_row(sid)['key_env'][0]}", sid
@@ -269,10 +272,18 @@ def test_telegram_is_blocked_without_telethon_or_session_and_counts_when_authori
     assert got["mentions_XTIUSD"] == n and got["mentions_USDJPY"] == 0
 
 
-def test_reddit_oauth_end_to_end_on_fixtures() -> None:
-    row = _row("reddit_oauth")
+def test_reddit_oauth_end_to_end_on_fixtures(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fetcher's mechanics on fixtures, with the terms fence lifted IN THE TEST ONLY: the
+    roster row itself is machine_use_allowed=false and never reaches a request."""
+    with pytest.raises(K.Blocked, match="BLOCKED_TERMS"):
+        K.collect(_row("reddit_oauth"), get=lambda r: b"", now=NOW, paths=K.Paths(), start=None,
+                  environ={"REDDIT_CLIENT_ID": "id", "REDDIT_CLIENT_SECRET": SENTINEL})
+    row = {**_row("reddit_oauth"), "machine_use_allowed": True}
+    monkeypatch.setenv("REDDIT_USERNAME", "placeholder_user")
 
     def get(req: ks.Request) -> bytes:
+        assert req.headers["User-Agent"] == (
+            "windows:quant-desk-keyed-sources:1.0 (by /u/placeholder_user)")
         if req.url == ks.REDDIT_TOKEN_URL:
             assert req.method == "POST" and req.headers["Authorization"].startswith("Basic ")
             return (FX / "reddit_token.json").read_bytes()
@@ -376,3 +387,107 @@ def test_keyless_bis_door_stores_pit_and_mints_all_three_uses(
     assert all(t == len(cs) for _, cs, t in don.calls)       # every minted cell charged
     alloc = json.loads(paths.allocation.read_text("utf-8"))["instruments"]
     assert any(x["source"] == "bis_policy_rates" for x in alloc["EURUSD"])
+
+
+# ------------------------------------------------------------------- fences (audit) -------
+def test_reddit_user_agent_has_the_required_form_with_a_placeholder() -> None:
+    import re
+    ua = ks.reddit_user_agent({})
+    assert re.fullmatch(r"[^:\s]+:[^:\s]+:[^:\s]+ \(by /u/[^)]+\)", ua), ua
+    assert ua.endswith("(by /u/<username>)")
+    assert ks.reddit_user_agent({"REDDIT_USERNAME": "someone"}).endswith("(by /u/someone)")
+
+
+def test_a_source_without_machine_use_feeds_nothing(tmp_path: Path,
+                                                    monkeypatch: pytest.MonkeyPatch) -> None:
+    """machine_use_allowed=false: never fetched, no store, no lake series, no cell of either arm,
+    no allocation intel -- even when its keys are set and its store already holds points."""
+    from mt5desk import cell_modifiers
+    monkeypatch.setattr(cell_modifiers, "alt_conditioner", lambda v: None, raising=False)
+    paths = _paths(tmp_path)
+    doc = json.loads(paths.roster.read_text("utf-8"))
+    for r in doc["sources"]:
+        if r["id"] == "bis_policy_rates":
+            r["machine_use_allowed"] = False
+            r["terms_ruling"] = "test ruling"
+    paths.roster.write_text(json.dumps(doc), "utf-8")
+    asked: list[str] = []
+
+    def get(req: ks.Request) -> bytes:
+        asked.append(req.url)
+        if "WS_CBPOL/M.US/" in req.url:
+            return _monthly_csv(40, date(2026, 8, 1), 4.0)
+        raise OSError("offline")
+
+    don = Donations()
+    out = K.run(paths, environ={"REDDIT_CLIENT_ID": "id", "REDDIT_SECRET": SENTINEL},
+                get=get, donate=don, now=NOW)
+    for sid in ("bis_policy_rates", "reddit_oauth"):
+        assert out["sources"][sid]["status"] == "BLOCKED_TERMS", sid
+    assert out["sources"]["bis_policy_rates"]["why"] == "test ruling"
+    assert not any("WS_CBPOL" in u or "reddit.com" in u for u in asked)
+    lake = sorted(p.name for p in paths.series.glob("ks_*")) if paths.series.exists() else []
+    assert not any(n.startswith(("ks_bis_policy_rates__", "ks_reddit_oauth__")) for n in lake)
+    assert not (paths.obs / "reddit_oauth.json").exists()
+    cells = [c for _, cs, _ in don.calls for c in cs]
+    assert not any("ks_bis_policy_rates" in json.dumps(c) or "ks_reddit" in json.dumps(c)
+                   for c in cells)
+    alloc = json.loads(paths.allocation.read_text("utf-8"))["instruments"]
+    assert not any(x["source"] in ("bis_policy_rates", "reddit_oauth")
+                   for xs in alloc.values() for x in xs)
+    # Even a row with points already in its PIT store is fenced from the grid and allocation.
+    row = {**_row("bis_policy_rates"), "machine_use_allowed": False}
+    pts = {"bis_policy_rates": {"policy_rate_US": [
+        {"available_time": "2026-01-01T00:00:00+00:00", "event_time": "2025-12-31", "z": 1.0,
+         "chg_z": 1.0}] * 40}}
+    d, i, meta = K.build_grid(paths, [row], pts, NOW)
+    assert d == [] and i == [] and "machine_use_allowed" in meta["skipped"]["bis_policy_rates"]
+    assert K.allocation_intel([row], pts, NOW)["instruments"] == {}
+
+
+def test_a_row_that_does_not_declare_machine_use_is_refused_by_the_roster(tmp_path: Path) -> None:
+    paths = _paths(tmp_path)
+    doc = json.loads(paths.roster.read_text("utf-8"))
+    del doc["sources"][0]["machine_use_allowed"]
+    paths.roster.write_text(json.dumps(doc), "utf-8")
+    rows, bad = K.load_roster(paths.roster)
+    assert doc["sources"][0]["id"] not in {r["id"] for r in rows}
+    assert any("machine_use_allowed" in b for b in bad)
+
+
+def test_no_universe_policy_means_no_cells(tmp_path: Path,
+                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail closed: without the two-lane policy the grid cannot keep single names out of the
+    statistical lane, so it mints nothing and names the blocker."""
+    import builtins
+    real = builtins.__import__
+
+    def fake(name: str, *a: Any, **k: Any) -> Any:
+        if name == "research.universe_policy":
+            raise ImportError("simulated")
+        return real(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", fake)
+    paths = _paths(tmp_path)
+    pts = {"bis_policy_rates": {"policy_rate_US": [
+        {"available_time": "2026-01-01T00:00:00+00:00", "event_time": "2025-12-31", "z": 1.0,
+         "chg_z": 1.0}] * 40}}
+    d, i, meta = K.build_grid(paths, [_row("bis_policy_rates")], pts, NOW)
+    assert d == [] and i == []
+    assert meta["universe_policy_blocker"].startswith("BLOCKED_DEPENDENCY:research.universe_policy")
+
+
+def test_a_bad_registry_file_is_reported_not_raised(tmp_path: Path) -> None:
+    from libs.data import credentials as cred
+    bad = tmp_path / "credential_registry.json"
+    bad.write_text("{not json", "utf-8")
+    try:
+        cred.reload(bad)
+        assert cred.registry() == () and cred.load_error().startswith("REGISTRY_LOAD_ERROR:")
+        assert cred.accepted_names("EIA_API_KEY") == ("EIA_API_KEY",)   # canonical fallback
+        doc = K.run(_paths(tmp_path), environ={}, get=lambda r: b"", donate=Donations(), now=NOW,
+                    fetch=False)
+        assert doc["registry_error"].startswith("REGISTRY_LOAD_ERROR:")
+    finally:
+        cred.reload()
+    assert cred.load_error() is None and cred.registry()

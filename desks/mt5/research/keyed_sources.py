@@ -36,6 +36,13 @@ ONE PASS, inside `--budget-s`:
      PIT-available z / chg_z of every mapped series; read-only, sizes nothing) and
      `reports/KEYED_SOURCES.json` (per source status and yield, cells by arm and by credential).
 
+TWO FENCES, BOTH FAIL CLOSED. (a) A row whose `machine_use_allowed` is not literally true
+(Reddit: its Data API terms bar commercial use without an agreement) is BLOCKED_TERMS: never
+fetched, never stored, never in the lake, the grid or the allocation intel. (b) With no
+`research.universe_policy` to import, the grid mints NOTHING and says BLOCKED_DEPENDENCY -- the
+two-lane order cannot be enforced without it. A broken credential registry file is reported as
+`registry_error` and the pass continues on canonical names.
+
 NO KEY IS EVER PRINTED, LOGGED OR WRITTEN. Values are read here through
 `libs.data.credentials.accepted_names` and go into the request only; every error string is passed
 through `redact` before it is stored.
@@ -160,7 +167,13 @@ def _t(s: Any) -> datetime | None:
 
 # ---------------------------------------------------------------------------- roster ------
 REQUIRED = ("id", "kind", "cadence", "auth", "licence", "region", "lang", "url", "key_env",
-            "series", "rule", "uses", *CULTURE_KEYS)
+            "series", "rule", "uses", "machine_use_allowed", *CULTURE_KEYS)
+
+
+def machine_use_allowed(row: Mapping[str, Any]) -> bool:
+    """Only a literal True admits a source. False, absent or anything else: the row is fetched
+    by nothing and feeds no cell, no lake series and no allocation intel (fail closed)."""
+    return row.get("machine_use_allowed") is True
 
 
 def load_roster(path: Path) -> tuple[list[dict[str, Any]], list[str]]:
@@ -249,12 +262,13 @@ def fetch_estat(row: Mapping[str, Any], keys: Mapping[str, str], get: Getter
 
 def fetch_reddit(row: Mapping[str, Any], keys: Mapping[str, str], get: Getter,
                  now: datetime) -> list[ks.Obs]:
+    ua = ks.reddit_user_agent()
     tok = ks.parse_reddit_token(get(ks.reddit_token_request(keys["REDDIT_CLIENT_ID"],
-                                                            keys["REDDIT_SECRET"])))
+                                                            keys["REDDIT_SECRET"], ua)))
     if not tok:
         raise Blocked("BLOCKED_AUTH:REDDIT_CLIENT_ID (the token endpoint refused the pair)")
     items: list[tuple[datetime, str]] = []
-    for req in ks.reddit_listing_requests(row, tok):
+    for req in ks.reddit_listing_requests(row, tok, ua):
         items += ks.parse_reddit_listing(get(req))
     return ks.count_mentions(items, row, now.date())
 
@@ -331,6 +345,8 @@ PARTIAL_ERRORS: list[str] = []
 def collect(row: Mapping[str, Any], *, get: Getter, now: datetime, paths: Paths,
             start: str | None, environ: Mapping[str, str] | None = None,
             telegram_factory: Callable[[], Any] | None = None) -> list[ks.Obs]:
+    if not machine_use_allowed(row):
+        raise Blocked("BLOCKED_TERMS:machine_use_allowed is not true")
     keys = resolve_keys(row, environ)
     kind = str(row["kind"])
     try:
@@ -445,14 +461,23 @@ def write_lake(paths: Paths, sid: str, pts: Mapping[str, list[dict[str, Any]]]) 
 
 
 # ----------------------------------------------------------------------------- cells ------
-def _hypothesis_symbols(paths: Paths, syms: list[str]) -> list[str]:
-    uni = _read(paths.universe, {}) or {}
+def universe_gate() -> tuple[Callable[[str], bool] | None, str | None]:
+    """The two-lane universe policy, or the named reason it is unavailable. FAILS CLOSED: with
+    no policy there is no way to keep single-name equities out of the statistical lane, so the
+    grid mints nothing rather than everything."""
     try:
         from research.universe_policy import may_hypothesise
-    except Exception:
-        def may_hypothesise(symbol: str, family: object = None) -> bool:
-            return True
-    return [s for s in syms if s in uni and may_hypothesise(s)]
+    except Exception as exc:
+        return None, f"BLOCKED_DEPENDENCY:research.universe_policy ({type(exc).__name__})"
+    return may_hypothesise, None
+
+
+def _hypothesis_symbols(paths: Paths, syms: list[str],
+                        gate: Callable[[str], bool] | None) -> list[str]:
+    if gate is None:
+        return []
+    uni = _read(paths.universe, {}) or {}
+    return [s for s in syms if s in uni and gate(s)]
 
 
 def indirect_ready() -> str | None:
@@ -498,16 +523,20 @@ def build_grid(paths: Paths, roster: list[dict[str, Any]], pts_by: Mapping[str, 
     indirect: list[dict[str, Any]] = []
     blocker = indirect_ready()
     parents = {} if blocker else _parents(paths)
+    gate, policy_blocker = universe_gate()
     skipped: dict[str, str] = {}
     for row in roster:
         sid = str(row["id"])
+        if not machine_use_allowed(row):
+            skipped[sid] = "machine_use_allowed is not true: no cells"
+            continue
         per = pts_by.get(sid) or {}
         for series, spec in sorted((row.get("series") or {}).items()):
             pts = per.get(series) or []
             if len(pts) < MIN_POINTS:
                 skipped[f"{sid}.{series}"] = f"{len(pts)} points < {MIN_POINTS}"
                 continue
-            syms = _hypothesis_symbols(paths, sorted((spec or {}).get("instruments") or {}))
+            syms = _hypothesis_symbols(paths, sorted((spec or {}).get("instruments") or {}), gate)
             src = lake_name(sid, series)
             for sym in syms:
                 mech = f"{row.get('mechanism', sid)}; {series} conditions {sym}"
@@ -536,7 +565,8 @@ def build_grid(paths: Paths, roster: list[dict[str, Any]], pts_by: Mapping[str, 
                         c["falsifier"] = ("the conditioned child is no better than its certified "
                                           "parent on the same window")
                         indirect.append(c)
-    return direct, indirect, {"indirect_blocker": blocker, "skipped": skipped}
+    return direct, indirect, {"indirect_blocker": blocker, "universe_policy_blocker":
+                              policy_blocker, "skipped": skipped}
 
 
 def _ring(grid: list[dict[str, Any]], at: int, n: int) -> tuple[list[dict[str, Any]], int]:
@@ -563,6 +593,8 @@ def allocation_intel(roster: list[dict[str, Any]], pts_by: Mapping[str, Any],
                      now: datetime) -> dict[str, Any]:
     inst: dict[str, list[dict[str, Any]]] = {}
     for row in roster:
+        if not machine_use_allowed(row):
+            continue
         for series, spec in (row.get("series") or {}).items():
             known = [p for p in (pts_by.get(row["id"]) or {}).get(series) or []
                      if (_t(p["available_time"]) or now) <= now]
@@ -602,6 +634,12 @@ def run(paths: Paths = Paths(), *, budget_s: float = 300.0, fetch: bool = True,
         rec: dict[str, Any] = {"kind": row["kind"],
                                "credential_vars": row.get("key_env") or [credential_of(row)],
                                "store_rows": len(store)}
+        if not machine_use_allowed(row):
+            # Not fetched, not stored, not in the lake: the terms fence is upstream of all three.
+            rec["status"] = "BLOCKED_TERMS"
+            rec["why"] = str(row.get("terms_ruling") or "machine_use_allowed is not true")
+            recs[sid] = rec
+            continue
         try:
             resolve_keys(row, environ)
             due = _t(st.get("next_due"))
@@ -662,6 +700,7 @@ def run(paths: Paths = Paths(), *, budget_s: float = 300.0, fetch: bool = True,
            # CRO duty D18 (#121): every dataset feeds direct, indirect and allocation uses.
            "cro_duty": "D18",
            "roster_complaints": bad, "sources": recs,
+           "registry_error": cred.load_error(),
            "status_counts": _counts(recs),
            "cells": {"grid_direct": len(direct), "grid_indirect": len(indirect),
                      "built_direct": len(take_d), "built_indirect": len(take_i),

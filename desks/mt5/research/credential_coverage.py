@@ -1,7 +1,7 @@
 """CREDENTIAL COVERAGE -- the hourly answer to "which keys should the principal register, and did
 the ones already set turn into cells?"
 
-For every environment credential in `libs/data/credentials.REGISTRY` this writes, to
+For every environment credential in `libs/data/credentials.registry()` this writes, to
 `reports/CREDENTIAL_COVERAGE.json`:
 
   * whether it is present ON THIS HOST (SET / MISMATCHED_NAME / BLOCKED_AUTH) and under which
@@ -123,7 +123,7 @@ def build(now: datetime | None = None, environ: Mapping[str, str] | None = None,
     now = now or datetime.now(tz=UTC)
     clocks = clock_files(root)
     rows: list[dict[str, Any]] = []
-    for v in cred.REGISTRY:
+    for v in cred.registry():
         st = cred.status(v, environ, root)
         est = cred.estimate_for(v)
         cons = []
@@ -145,6 +145,11 @@ def build(now: datetime | None = None, environ: Mapping[str, str] | None = None,
             "unlocks": v.unlocks, "instruments": list(v.instruments),
             "families": list(v.families), "kind": v.kind, "group": v.group or None,
             "principal_list": v.principal_list, "built": v.built,
+            # Actionable = someone consumes it AND the provider's terms allow this desk's machine
+            # use. A var failing either is listed under "considered and not built", never ranked
+            # among the keys to register.
+            "machine_use_allowed": v.machine_use_allowed, "terms": v.terms or None,
+            "actionable": bool(v.consumers) and v.machine_use_allowed,
             "status": st["status"], "present_as": st["present_as"],
             "dark_consumers": st["dark_consumers"],
             "resolved_on_merge": st.get("resolved_on_merge", []), "consumers": cons,
@@ -161,14 +166,14 @@ def build(now: datetime | None = None, environ: Mapping[str, str] | None = None,
             group_best[r["group"]] = max(group_best.get(r["group"], 0),
                                          r["estimate"]["cells_per_day"] or 0)
     ranked = sorted(rows, key=lambda r: (
-        not r["consumers"],
+        not r["actionable"],
         -(group_best.get(r["group"], 0) if r["group"] else r["estimate"]["cells_per_day"] or 0),
         str(r["group"] or r["env"]), r["estimate"]["cells_per_day"] is None,
         not r["principal_list"], r["env"]))
     for i, r in enumerate(ranked, 1):
         r["rank"] = i
     keyless = []
-    for k in cred.KEYLESS:
+    for k in cred.keyless():
         present = [p for p in k.get("wired_in") or () if (root / p).exists()]
         row = {**k, "wired_in": list(k.get("wired_in") or ()),
                "status": "WIRED" if present else "NOT_WIRED"}
@@ -198,6 +203,8 @@ def build(now: datetime | None = None, environ: Mapping[str, str] | None = None,
                      "(declared series x symbols x cells per pair, bounded by the per-pass cap "
                      "x 24)"),
             "status_counts": counts, "vars": ranked,
+            # A registry file that fails to load is NAMED here; the leg still writes its report.
+            "registry_error": cred.load_error(),
             "name_mismatches": cred.name_mismatches(root),
             "status_words_mapped_to_BLOCKED_AUTH": sorted(cred.BLOCKED_SYNONYMS),
             "keyless": keyless}
@@ -205,6 +212,8 @@ def build(now: datetime | None = None, environ: Mapping[str, str] | None = None,
 
 def markdown(doc: Mapping[str, Any]) -> str:
     lines = ["# Keys to register", "",
+             *([f"**{doc['registry_error']}** -- the registry did not load; this list is "
+                "empty until it does.", ""] if doc.get("registry_error") else []),
              f"Generated {doc['generated_at']} by `desks/mt5/research/credential_coverage.py` "
              "(the hourly `credential_coverage` leg rewrites `desks/mt5/reports/"
              "CREDENTIAL_COVERAGE.json`). Cells/day is an **ESTIMATE**: declared series x "
@@ -213,7 +222,7 @@ def markdown(doc: Mapping[str, Any]) -> str:
              "| Rank | Key | Env var | Signup | Unlocks | Est. cells/day | Consumer | Status |",
              "|---:|---|---|---|---|---:|---|---|"]
     for r in doc["vars"]:
-        if not r["consumers"]:
+        if not r["actionable"]:
             continue
         cons = "; ".join(f"`{c['path']}` ({c['branch']})" for c in r["consumers"])
         est = r["estimate"]["cells_per_day"]
@@ -224,11 +233,11 @@ def markdown(doc: Mapping[str, Any]) -> str:
                      f"{r['status']} |")
     lines += ["", "## Set commands (placeholders only; run on the trading box, then restart the "
               "service so the new environment is inherited)", "", "```"]
-    lines += [r["setx"] for r in doc["vars"] if r["consumers"]]
+    lines += [r["setx"] for r in doc["vars"] if r["actionable"]]
     lines += ["```", "", "## Considered and not built", "",
               "| Env var | Provider | Signup | Why not |", "|---|---|---|---|"]
     for r in doc["vars"]:
-        if not r["consumers"]:
+        if not r["actionable"]:
             lines.append(f"| `{r['env']}` | {r['provider']} | {r['signup_url']} | "
                          f"{r['built'].removeprefix('NOT_BUILT: ')} |")
     lines += ["", "## Readers that use a different name", "",

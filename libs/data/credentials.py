@@ -115,6 +115,11 @@ class CredentialVar:
     principal_list: bool = False          #: on the principal's 2026-09-30 setx list
     built: str = "BUILT"                  #: BUILT | NOT_BUILT: <why>
     estimate: Estimate = field(default_factory=Estimate)
+    #: False when the provider's terms bar this desk's machine use (commercial, automated) without
+    #: an agreement. Such a var is never on the actionable key list, and every roster row it
+    #: feeds is fenced out of cells, the lake and allocation intel.
+    machine_use_allowed: bool = True
+    terms: str = ""                       #: the ruling behind machine_use_allowed=False
 
     @property
     def accepted(self) -> tuple[str, ...]:
@@ -155,8 +160,65 @@ def _load(path: Path = REGISTRY_FILE
     return tuple(out), keyless
 
 
-REGISTRY, KEYLESS = _load()
-BY_ENV: dict[str, CredentialVar] = {v.env: v for v in REGISTRY}
+class _Lazy:
+    """The registry, loaded on first use. A bad registry file must not crash every importer (two
+    hourly legs and every fetcher that asks `accepted_names`): the load error is kept, reported
+    by `load_error()`, and the registry reads as EMPTY until the file is fixed -- so fetchers fall
+    back to the canonical name and each leg writes the error into its own artifact."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self.vars: tuple[CredentialVar, ...] | None = None
+        self.keyless: tuple[dict[str, Any], ...] = ()
+        self.error: str | None = None
+
+    def get(self) -> tuple[tuple[CredentialVar, ...], tuple[dict[str, Any], ...]]:
+        if self.vars is None:
+            try:
+                self.vars, self.keyless = _load(self.path)
+                self.error = None
+            except Exception as exc:  # any malformed file: named, never raised into a leg
+                self.vars, self.keyless = (), ()
+                self.error = f"{type(exc).__name__}: {str(exc)[:200]}"
+        return self.vars, self.keyless
+
+
+_REG = _Lazy(REGISTRY_FILE)
+
+
+def registry() -> tuple[CredentialVar, ...]:
+    return _REG.get()[0]
+
+
+def keyless() -> tuple[dict[str, Any], ...]:
+    return _REG.get()[1]
+
+
+def by_env() -> dict[str, CredentialVar]:
+    return {v.env: v for v in registry()}
+
+
+def load_error() -> str | None:
+    """None when the registry loaded; else `REGISTRY_LOAD_ERROR` text for a leg to report."""
+    _REG.get()
+    return f"REGISTRY_LOAD_ERROR:{_REG.error}" if _REG.error else None
+
+
+def reload(path: Path = REGISTRY_FILE) -> None:
+    """Drop the cached registry (tests, or a leg that wants to re-read after a fix)."""
+    global _REG
+    _REG = _Lazy(path)
+
+
+def __getattr__(name: str) -> Any:
+    # Back-compat names, resolved lazily so importing this module never reads the file.
+    if name == "REGISTRY":
+        return registry()
+    if name == "KEYLESS":
+        return keyless()
+    if name == "BY_ENV":
+        return by_env()
+    raise AttributeError(name)
 
 
 # --------------------------------------------------------------------------- presence -------
@@ -192,7 +254,7 @@ def env_present(name: str, environ: Mapping[str, str] | None = None) -> bool:
 def accepted_names(var: str) -> tuple[str, ...]:
     """Every environment NAME some reader accepts for `var`, canonical first. A fetcher reads the
     value itself through these names; this module never does."""
-    v = BY_ENV.get(var)
+    v = by_env().get(var)
     return v.accepted if v else (var,)
 
 
@@ -266,7 +328,7 @@ def name_mismatches(root: Path = ROOT) -> list[dict[str, Any]]:
     """Every consumer that does NOT accept the canonical (principal's) name -- read from the
     file where it is on this checkout, from the declared branch reads where it is not."""
     out: list[dict[str, Any]] = []
-    for v in REGISTRY:
+    for v in registry():
         for c in v.consumers:
             here, reads = effective_reads(c, v, root)
             if v.env not in reads:
@@ -284,6 +346,8 @@ def estimate_for(v: CredentialVar, roster: Path = KS_ROSTER) -> Estimate:
     """The ESTIMATE behind a var's rank. For the keyed_sources leg it is DERIVED from the roster
     (mapped (series, instrument) pairs x cells per pair, bounded by the per-pass cap x 24), so it
     cannot drift from what the leg will actually mint; for other lanes it is the declared shape."""
+    if not v.machine_use_allowed:
+        return Estimate(basis=f"machine use not allowed: {v.terms or 'provider terms'}")
     if not any(c.leg == KS_LEG for c in v.consumers) or v.kind in ("secret",):
         return v.estimate
     try:
@@ -292,7 +356,8 @@ def estimate_for(v: CredentialVar, roster: Path = KS_ROSTER) -> Estimate:
         return v.estimate
     series = pairs = 0
     for r in rows:
-        if isinstance(r, dict) and (r.get("key_env") or [None])[0] == v.env:
+        if (isinstance(r, dict) and (r.get("key_env") or [None])[0] == v.env
+                and r.get("machine_use_allowed") is True):
             for spec in (r.get("series") or {}).values():
                 series += 1
                 pairs += len((spec or {}).get("instruments") or {})
@@ -314,7 +379,8 @@ def setx_line(v: CredentialVar) -> str:
     return f'setx {v.env} "<{v.kind}>"'
 
 
-__all__ = ["BLOCKED_AUTH", "BY_ENV", "KEYLESS", "MISMATCHED_NAME", "REGISTRY", "RESOLVED_ON_MERGE",
-           "SET", "UNMEASURED", "Consumer", "CredentialVar", "Estimate", "accepted_names",
-           "consumer_states", "effective_reads", "env_present", "estimate_for", "name_mismatches",
-           "normalise_status", "present_names", "secret_present", "setx_line", "status"]
+__all__ = ["BLOCKED_AUTH", "MISMATCHED_NAME", "RESOLVED_ON_MERGE", "SET", "UNMEASURED",
+           "Consumer", "CredentialVar", "Estimate", "accepted_names", "by_env",
+           "consumer_states", "effective_reads", "env_present", "estimate_for", "keyless",
+           "load_error", "name_mismatches", "normalise_status", "present_names", "registry",
+           "reload", "secret_present", "setx_line", "status"]

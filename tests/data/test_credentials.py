@@ -214,3 +214,62 @@ def test_coverage_names_its_cro_duty_and_measures_the_keyless_doors(tmp_path: Pa
         assert by[prov]["status"] == "WIRED", prov
         assert "desks/mt5/research/hourly_cycle.py" in by[prov]["clocks"]
     assert by["BIS"]["cells_24h"] == 5 and by["OECD"]["cells_24h"] == 0
+
+
+# ------------------------------------------------------------------- audit fixes ----------
+def test_reddit_is_fenced_by_its_terms_and_off_the_actionable_list() -> None:
+    """Reddit's Data API terms bar commercial use without an agreement: machine_use_allowed is
+    false in the registry and the roster, no cells are estimated, and the key is listed only
+    under "considered and not built" with that reason -- no setx line."""
+    for name in ("REDDIT_CLIENT_ID", "REDDIT_SECRET"):
+        v = cred.by_env()[name]
+        assert v.machine_use_allowed is False and "commercial" in v.terms
+        assert cred.estimate_for(v).cells_per_day is None
+    roster = json.loads(cred.KS_ROSTER.read_text("utf-8"))["sources"]
+    assert next(r for r in roster if r["id"] == "reddit_oauth")["machine_use_allowed"] is False
+    cc = _cc()
+    doc = cc.build(environ={}, now=datetime(2026, 9, 30, tzinfo=UTC))
+    rows = {r["env"]: r for r in doc["vars"]}
+    assert rows["REDDIT_CLIENT_ID"]["actionable"] is False
+    assert rows["EIA_API_KEY"]["actionable"] is True
+    assert max(r["rank"] for r in doc["vars"] if r["actionable"]) < rows["REDDIT_CLIENT_ID"]["rank"]
+    md = cc.markdown(doc)
+    ranked, rest = md.split("## Considered and not built", 1)
+    assert "REDDIT" not in ranked
+    assert "`REDDIT_CLIENT_ID`" in rest and "commercial use" in rest
+
+
+def test_a_bad_registry_file_does_not_crash_the_coverage_leg(tmp_path: Path) -> None:
+    bad = tmp_path / "credential_registry.json"
+    bad.write_text("[1, 2", "utf-8")
+    try:
+        cred.reload(bad)
+        doc = _cc().build(environ={}, now=datetime(2026, 9, 30, tzinfo=UTC))
+        assert doc["registry_error"].startswith("REGISTRY_LOAD_ERROR:JSONDecodeError")
+        assert doc["vars"] == [] and "REGISTRY_LOAD_ERROR" in _cc().markdown(doc)
+    finally:
+        cred.reload()
+    assert _cc().build(environ={})["registry_error"] is None
+
+
+def test_the_file_inventory_imports_the_env_registry_one_source_each() -> None:
+    """scripts/check_credentials.py owns the secrets FILES and imports this registry for the
+    environment half; neither restates the other. Every data/secrets file the registry names is
+    a file the inventory declares, and the inventory's cross-reference is derived from it."""
+    from scripts import check_credentials as cc_files
+    assert cc_files.registry is cred
+    declared = {c.name for c in cc_files.CREDENTIALS}
+    named = set()
+    for v in cred.registry():
+        for spec in (*v.secrets, *(r for c in v.consumers for r in c.reads)):
+            path = spec[5:].partition("#")[0] if spec.startswith("file:") else ""
+            if path.startswith("data/secrets/"):
+                named.add(path.removeprefix("data/secrets/"))
+    assert named and named <= declared, named - declared
+    rep = cc_files.build()
+    by_file = {r["file"]: r for r in rep["credentials"]}
+    assert "FRED_API_KEY" in by_file["data/secrets/fred.json"]["env_vars"]
+    assert {e["env"] for e in rep["environment"]} == {v.env for v in cred.registry()}
+    assert rep["registry_error"] is None
+    src = Path(cc_files.__file__).read_text("utf-8")
+    assert "EIA_API_KEY" not in src          # the env half is never restated in the script

@@ -534,7 +534,7 @@
     "REDDIT_CLIENT_ID",
     "REDDIT_SECRET"
    ],
-   "licence": "Reddit Data API terms (free, non-commercial research, OAuth app)",
+   "licence": "Reddit Data API terms: commercial use requires a separate agreement",
    "region": "US",
    "lang": "en",
    "url": "https://oauth.reddit.com/r/<sub>/new",
@@ -651,7 +651,8 @@
      "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
     }
    },
-   "machine_use_allowed": true
+   "machine_use_allowed": false,
+   "terms_ruling": "Reddit's Data API terms bar commercial use without a separate agreement with Reddit; this desk is commercial, so no Reddit data may feed cells, the lake, trading or allocation"
   },
   {
    "id": "telegram_mtproto",
