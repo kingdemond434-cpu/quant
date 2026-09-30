@@ -256,7 +256,12 @@ def test_the_file_inventory_imports_the_env_registry_one_source_each() -> None:
     """scripts/check_credentials.py owns the secrets FILES and imports this registry for the
     environment half; neither restates the other. Every data/secrets file the registry names is
     a file the inventory declares, and the inventory's cross-reference is derived from it."""
-    from scripts import check_credentials as cc_files
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_check_credentials_under_test", ROOT / "scripts" / "check_credentials.py")
+    assert spec and spec.loader
+    cc_files = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cc_files)
     assert cc_files.registry is cred
     declared = {c.name for c in cc_files.CREDENTIALS}
     named = set()
