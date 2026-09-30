@@ -9,6 +9,7 @@ compute theatre and prevents fresh candidates from reaching the same machinery.
 from __future__ import annotations
 
 import hashlib
+import inspect
 import json
 import math
 import os
@@ -736,10 +737,33 @@ def modifier_preflight(spec: dict) -> str | None:
     if fn is None:
         return None
     params = dict(spec.get("params") or {})
-    params.pop("timeframe", None)
-    params.pop("session", None)
-    _kwargs, mods = cell_modifiers.split(fn, params)
-    return cell_modifiers.refusal(mods)
+    try:
+        from mt5desk.family_inputs import strip_identity_keys
+        params = strip_identity_keys(family, params)
+    except ImportError:
+        params.pop("timeframe", None)
+        params.pop("session", None)
+    kwargs, mods = cell_modifiers.split(fn, params)
+    refused = cell_modifiers.refusal(mods)
+    if refused:
+        return refused
+    # Plain unsupported kwargs are just as deterministic as unsupported modifiers.  Previously
+    # they loaded bars, occupied a pre-warm worker, and only then raised TypeError.  Conserving
+    # them here as an explicit NOT_RUN disposition frees the expensive workers for cells that can
+    # still reach the ten gates; silently dropping a key would test a different strategy.
+    try:
+        signature = inspect.signature(fn)
+        accepts_kwargs = any(
+            p.kind is inspect.Parameter.VAR_KEYWORD for p in signature.parameters.values()
+        )
+        if not accepts_kwargs:
+            unknown = sorted(set(kwargs).difference(signature.parameters))
+            if unknown:
+                return ("unsupported family parameter(s): " + ", ".join(unknown)
+                        + "; refusing rather than testing a different rule")
+    except (TypeError, ValueError):
+        pass
+    return None
 
 
 _LIVE_H1_AVAILABLE: dict[str, bool] = {}
