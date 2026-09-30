@@ -1375,16 +1375,20 @@ def update_registry(cat: dict[str, Any], exposure: dict[str, Any], now: datetime
         return {"status": "REGISTRY_UNREADABLE"}
     ds = reg.setdefault("datasets", {})
     used = set(exposure.get("datasets_in_research_use") or [])
-    for key in [k for k in ds if k.startswith("world:")]:
-        del ds[key]
+    # UPSERT, NEVER REMOVE. A row once registered stays; one that falls out of the capped
+    # DISCOVERED set keeps its last written state (nothing is retired on an absence, LAWS 7).
     fetched = [(k, r) for k, r in cat["datasets"].items() if _rank(r.get("lifecycle", "")) >= 1]
     discovered = sorted(((k, r) for k, r in cat["datasets"].items()
                          if _rank(r.get("lifecycle", "")) == 0),
                         key=lambda kv: -float(kv[1].get("score") or 0.0))
     withheld = max(0, len(discovered) - REGISTRY_DISCOVERED_CAP)
     for key, r in fetched + discovered[:REGISTRY_DISCOVERED_CAP]:
+        prior = ds.get(f"world:{key}") if isinstance(ds.get(f"world:{key}"), dict) else {}
+        lifecycle = r.get("lifecycle", "DISCOVERED")
+        if _rank(str(prior.get("lifecycle"))) > _rank(lifecycle):
+            lifecycle = str(prior["lifecycle"])      # a later stage set by another organ stands
         ds[f"world:{key}"] = {
-            "lifecycle": r.get("lifecycle", "DISCOVERED"),
+            **prior, "lifecycle": lifecycle,
             "source": f"{r.get('source', 'dbnomics')}:{r.get('provider')}",
             "name": r.get("name"), "path": r.get("path"),
             "discovered": (r.get("discovered_at") or "")[:10] or None,
@@ -1401,8 +1405,7 @@ def update_registry(cat: dict[str, Any], exposure: dict[str, Any], now: datetime
         if rec.get("status") in ("INGESTED", "QUALITY-PASSED"):
             _promote(hand, rec["status"])
     reg["world_dataset_hunter"] = {"updated_at": _iso(now),
-                                   "registered": len(fetched) + min(len(discovered),
-                                                                    REGISTRY_DISCOVERED_CAP),
+                                   "registered": sum(1 for k in ds if k.startswith("world:")),
                                    "discovered_withheld_from_registry": withheld,
                                    "catalog": _rel(CATALOG)}
     write_json(REGISTRY, reg)
