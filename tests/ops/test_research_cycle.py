@@ -22,7 +22,9 @@ TIMER = Path("ops/quant-midnight-frontier.timer")
 def test_THE_MIDNIGHT_CONTROLLER_SNAPSHOTS_THE_MT5_FACTORY() -> None:
     """The legacy research cycle remains testable, but the midnight venue is MT5/Fusion only."""
     assert CYCLE.exists() and SERVICE.exists() and TIMER.exists()
-    assert "run_midnight_frontier.sh" in SERVICE.read_text("utf-8")
+    # The unit runs the controller directly since 2026-09-12 (ops/crontab.manifest "EXEC
+    # ROTTED" note); the wrapper keeps the MT5-snapshot ordering pinned below.
+    assert "ops/run_midnight_codex_controller.sh" in SERVICE.read_text("utf-8")
     midnight = Path("ops/run_midnight_frontier.sh").read_text("utf-8")
     assert "build_mt5_midnight_state.py" in midnight
     assert "run_sweep_then_cycle.sh" not in midnight
