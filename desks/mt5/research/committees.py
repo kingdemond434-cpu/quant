@@ -295,7 +295,7 @@ def scientific_subjects(bank: Path | None = None) -> list[Subject]:
         if not isinstance(r, dict):
             continue
         sym, fam = str(r.get("symbol") or r.get("sym") or ""), str(r.get("family") or "")
-        params = r.get("params") if isinstance(r.get("params"), dict) else {}
+        params: dict[str, Any] = r["params"] if isinstance(r.get("params"), dict) else {}
         out.append(Subject(SCIENTIFIC, str(r.get("genome_id") or _sha([sym, fam, params])),
                            sym, fam, dict(params),
                            str(r.get("mechanism_note") or r.get("mechanism") or ""),
@@ -317,7 +317,7 @@ def forensic_subjects(sares_dir: Path | None = None,
             if not isinstance(r, dict):
                 continue
             syms = [str(s) for s in r.get("symbols") or [] if s]
-            params = r.get("params") if isinstance(r.get("params"), dict) else {}
+            params: dict[str, Any] = r["params"] if isinstance(r.get("params"), dict) else {}
             out.append(Subject(FORENSIC, str(r.get("url") or _sha(r)),
                                syms[0] if syms else "", str(r.get("family") or ""),
                                dict(params),
@@ -420,7 +420,7 @@ def deliberate(s: Subject, *, calls_left: int, branches: Sequence[str] = (),
     """Every role of the subject's committee speaks once, in order, seeing the earlier ones."""
     ps = _seat()
     ask = ask or (ps.ask if ps is not None else None)
-    meter = {"calls": 0, "trials_charged": 0.0, "discarded": 0, "reasons": [],
+    meter: dict[str, Any] = {"calls": 0, "trials_charged": 0.0, "discarded": 0, "reasons": [],
              "roles_unmeasured": 0}
     said: list[dict[str, Any]] = []
     if ask is None:
