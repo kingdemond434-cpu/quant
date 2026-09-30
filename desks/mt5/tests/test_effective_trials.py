@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
 
 BASE = Path(__file__).resolve().parent.parent
@@ -202,7 +203,8 @@ def test_build_publishes_nominal_effective_ratio_and_the_judge_proof(
     docket.write_text(json.dumps(rows), encoding="utf-8")
     spec = tmp_path / "gate_spec.yaml"
     spec.write_text(_SPEC, encoding="utf-8")
-    doc = et.build(docket=docket, spec=spec, apply=True, budget_s=30.0)
+    dsr = _measured_dsr_inputs(tmp_path)
+    doc = et.build(docket=docket, spec=spec, apply=True, budget_s=30.0, dsr_inputs_path=dsr)
     assert doc["verdict"] == "MEASURED"
     assert doc["nominal"] == 36
     assert doc["effective"] < 36
@@ -216,6 +218,34 @@ def test_build_publishes_nominal_effective_ratio_and_the_judge_proof(
     out = tmp_path / "EFFECTIVE_TRIALS.json"
     et.write(doc, report=out)
     assert json.loads(out.read_text("utf-8"))["nominal"] == 36
+
+
+def _measured_dsr_inputs(tmp_path: Path) -> Path:
+    """A verified DSR_INPUTS.json measured from a synthetic sweep of 150 judged cells."""
+    from libs.research import dsr_inputs
+    rng = np.random.default_rng(7)
+    report = {"hunt": "t", "swept_at": dsr_inputs._iso(dsr_inputs._now()),
+              "verdicts": [{"cell": f"EURUSD.carry.p={i}", "family": "carry", "sym": "EURUSD",
+                            "days": 300, "stages": {"in_sample_screen": {
+                                "sharpe": float(rng.normal(0.0, 0.05))}}} for i in range(150)]}
+    rp = tmp_path / "sweep.json"
+    rp.write_text(json.dumps(report), encoding="utf-8")
+    out = tmp_path / "DSR_INPUTS.json"
+    doc = dsr_inputs.run(report_path=rp, ledger_path=tmp_path / "ledger.jsonl", out=out)
+    assert doc["status"] == "MEASURED"
+    return out
+
+
+def test_no_measured_variance_means_no_sr0_and_no_constant(tmp_path: Path) -> None:
+    """The 0.014863 fallback is gone: without a verified DSR_INPUTS the sr0 fields are None."""
+    spec = tmp_path / "gate_spec.yaml"
+    spec.write_text(_SPEC, encoding="utf-8")
+    doc = et.build(docket=tmp_path / "nope.json", spec=spec, apply=False, budget_s=5.0,
+                   dsr_inputs_path=tmp_path / "absent.json")
+    cam = doc["campaign"]
+    assert cam["variance_of_sharpes"] is None
+    assert cam["sr0_before"] is None and cam["sr0_after"] is None
+    assert "dsr_inputs_unmeasured" in cam["variance_basis"]
 
 
 def test_absent_docket_is_unmeasured_and_changes_no_policy(tmp_path: Path) -> None:

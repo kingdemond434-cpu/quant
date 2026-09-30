@@ -840,6 +840,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # The deflated-Sharpe inputs the judge fails closed without (4 h staleness limit): the
+    # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
+    # ledger append; it must run every hour, so it is core.
+    "dsr_inputs",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -950,7 +954,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "orthogonality_yield", "effective_trials",
-                     "occupancy_map"), "data"),
+                     "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -1784,6 +1788,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # per grid cell, and grid cells are small (the live docket's largest holds ~470 rows). The cap
     # sits above its own budget for the reason every other leg's does.
     "effective_trials": 700,
+    # DSR inputs reads one sweep report and the trial-Sharpe ledger and writes one JSON; seconds
+    # on the build box. The cap is protection against a damaged file, not a budget.
+    "dsr_inputs": 300,
     # The net-edge spine stops itself at --budget-s 600 and writes NET_EDGE.json plus the
     # intake join file; the cap sits above it so the hour is never cut at the same prefix.
     "net_edge": 700,
@@ -3987,6 +3994,14 @@ def main() -> None:
     eft = _costed("effective_trials", lambda: _producer("effective_trials",
                                                         "research/effective_trials.py",
                                                         "--once", "--budget-s", "300"))
+    # DSR INPUTS, MEASURED: harvests the last sweep's judged trial Sharpes into an append-only
+    # ledger and publishes the cross-trial Sharpe variance per family (trailing window) and the
+    # lifetime effective trials per family, with provenance and a content hash, to
+    # reports/DSR_INPUTS.json. The sealed judge (once its patch lands) reads it and fails closed
+    # with `dsr_inputs_unmeasured` when it is absent, stale or does not verify. Data department,
+    # information layer.
+    dsi = _costed("dsr_inputs", lambda: _producer("dsr_inputs", "scripts/measure_dsr_inputs.py",
+                                                  "--once"))
     # GAUNTLET BACKPRESSURE (M23) and MINER SPECIALISATION (M24): the gauntlet talks back and
     # the organisation routes work by measured value per miner per domain. Meta.
     gbp = _costed("gauntlet_backpressure", lambda: _producer("gauntlet_backpressure",
@@ -5292,6 +5307,7 @@ def main() -> None:
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
                     "orthogonality_yield": oyz, "effective_trials": eft,
+                    "dsr_inputs": dsi,
                     "occupancy_map": ocm,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "portfolio_bounty": pbt, "research_auction": rau,

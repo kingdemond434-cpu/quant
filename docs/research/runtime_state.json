@@ -23647,6 +23647,32 @@
    "summary": {},
    "progress_metric": "leg_completions",
    "consumer": "docs/cro/CRO_CYCLE.md D3 (UNKNOWN share of judged cells)"
+  },
+  {
+   "organ": "leg:dsr_inputs",
+   "kind": "leg",
+   "code": [
+    "libs/research/dsr_inputs.py",
+    "desks/mt5/scripts/measure_dsr_inputs.py"
+   ],
+   "clock": "hourly_cycle:dsr_inputs",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DSR_INPUTS.json",
+   "artifact_declared": "desks/mt5/reports/DSR_INPUTS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/scripts/external_gauntlet.py (SEALED; patches/tier_s_dsr_measured_variance.patch) deflated_sharpe via libs.research.dsr_inputs.load_verified; effective_trials.py and alpha_fitness sr0 reports"
   }
  ],
  "ratchet": {
