@@ -358,6 +358,10 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_scheduler_manifest.py", ()),       # L1.28c state half -- live crontab drift (rc=1)
     ("check_mechanism_attribution.py", ()),    # L1.6 -- no survival on unexplained P&L
     ("check_organ_liveness.py", ()),           # L1.28c -- every organ actually produces
+    # THE PUBLISHED TERMS AGAINST THE DECLARED ONES -- prop limits and commission read off the
+    # mining pipeline's broker/prop page snapshots vs account_profile and engine.Costs. State,
+    # not law: the facts file is box-written. Read-only; UNMEASURED facts pass and say so.
+    ("check_mechanics_drift.py", ()),
     # L1.28c, THE SEAT HALF -- every configured intelligence seat donates on ITS OWN cadence.
     # A seat with no clock is UNMEASURED and counted, never a silent pass; a seat clocked on the
     # other host is UNMEASURED_HERE and named; the overdue debt is DECLARED by seat name and may
