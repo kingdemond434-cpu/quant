@@ -83,6 +83,45 @@ def kill_tree(pid: int, *, include_parent: bool = True) -> dict[str, Any]:
     return out
 
 
+#: CPU seconds of every child `run()` has waited for, on WINDOWS ONLY. `os.times()` reports
+#: `children_user`/`children_system` as 0 there (documented), so the compute ledger booked every
+#: subprocess leg on the trading box at ~0 CPU -- measured 2026-09-30, the forest_* legs read
+#: 40-48k s of wall a day "at near-zero CPU", which was the counter, not the legs. POSIX already
+#: counts reaped children in `os.times()`, so this stays 0 there and nothing is counted twice.
+_CHILD_CPU_S = [0.0]
+
+
+def children_cpu_seconds() -> float:
+    """Cumulative CPU of children this process waited for via `run()` (Windows; 0 elsewhere)."""
+    return float(_CHILD_CPU_S[0])
+
+
+def _windows_process_cpu(proc: subprocess.Popen[Any]) -> float:
+    """User+kernel seconds of an EXITED child, from its still-open handle. Never raises."""
+    if sys.platform != "win32":
+        return 0.0
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        handle = getattr(proc, "_handle", None)
+        if handle is None:
+            return 0.0
+        c, e, k, u = (wintypes.FILETIME() for _ in range(4))
+        ok = ctypes.windll.kernel32.GetProcessTimes(  # type: ignore[attr-defined,unused-ignore]
+            wintypes.HANDLE(int(handle)), ctypes.byref(c), ctypes.byref(e), ctypes.byref(k),
+            ctypes.byref(u))
+        if not ok:
+            return 0.0
+
+        def _s(ft: Any) -> float:
+            return ((int(ft.dwHighDateTime) << 32) | int(ft.dwLowDateTime)) / 1e7
+
+        return _s(k) + _s(u)
+    except Exception:
+        return 0.0
+
+
 def run(argv: Sequence[str], *, timeout: float | None, capture_output: bool = False,
         text: bool = False, cwd: str | os.PathLike[str] | None = None,
         env: Mapping[str, str] | None = None, check: bool = False,
@@ -105,9 +144,11 @@ def run(argv: Sequence[str], *, timeout: float | None, capture_output: bool = Fa
                 out, err = proc.communicate(timeout=10)
             except subprocess.TimeoutExpired:  # pragma: no cover - tree already killed
                 out, err = None, None
+            _CHILD_CPU_S[0] += _windows_process_cpu(proc)
             raise subprocess.TimeoutExpired(list(argv), timeout or 0.0, output=out,
                                             stderr=err) from None
         rc = proc.returncode
+        _CHILD_CPU_S[0] += _windows_process_cpu(proc)
     done = subprocess.CompletedProcess(list(argv), rc, out, err)
     if check:
         done.check_returncode()
