@@ -201,6 +201,10 @@ def _rev(spec: str, root: Path) -> str | None:
 def _norm(b: bytes) -> bytes:
     """CRLF-insensitive. The Windows box checks out with autocrlf, so a byte-exact digest of a
     working file would differ from the LF blob the seal hashed and refuse every release."""
+    # A file copied through two Windows text layers can contain CRCRLF. Treat that as the same
+    # single logical newline too; otherwise an unchanged release is refused solely by transport.
+    while b"\r\r\n" in b:
+        b = b.replace(b"\r\r\n", b"\r\n")
     return b.replace(b"\r\n", b"\n")
 
 

@@ -224,15 +224,26 @@ def head_from_refs(root: Path) -> str | None:
 
 def running_sha(root: Path) -> tuple[str | None, str]:
     """(sha, source). git first; the ref files when git is not there; (None, 'none') otherwise."""
-    out = _git(["rev-parse", "HEAD"], root)
-    if out and _is_sha(out):
-        return out.strip(), "git"
+    # `git -C child rev-parse HEAD` walks upward. A missing checkout nested anywhere below a
+    # different repository would otherwise inherit that parent's SHA and appear measured.
+    top = _git(["rev-parse", "--show-toplevel"], root)
+    try:
+        is_this_checkout = bool(top and Path(top.strip()).resolve() == root.resolve())
+    except OSError:
+        is_this_checkout = False
+    if is_this_checkout:
+        out = _git(["rev-parse", "HEAD"], root)
+        if out and _is_sha(out):
+            return out.strip(), "git"
     sha = head_from_refs(root)
     return (sha, "refs") if sha else (None, "none")
 
 
 # ------------------------------------------------------------------------------------- hashes
 def _norm(b: bytes) -> bytes:
+    # Mirror libs.ops.release._norm: repeated Windows text conversion can yield CRCRLF.
+    while b"\r\r\n" in b:
+        b = b.replace(b"\r\r\n", b"\r\n")
     return b.replace(b"\r\n", b"\n")
 
 
