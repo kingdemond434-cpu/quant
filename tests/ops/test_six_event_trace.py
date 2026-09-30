@@ -38,3 +38,33 @@ def test_freshness_is_measured_against_now(tmp_path: Path) -> None:
             assert f["verdict"] == "MISSING"
         else:
             assert f["verdict"] == "PROVEN"
+
+
+def test_the_mining_digest_proves_events_one_to_three(tmp_path: Path) -> None:
+    digest = tmp_path / "desks" / "mt5" / "data" / "mining_digest.json"
+    digest.parent.mkdir(parents=True)
+    chain = {
+        "source_id": "boj_minutes",
+        "source_url": "https://www.boj.or.jp/en/mopo/mpmsche_minu/",
+        "collected_at": "2026-09-29T01:00:00Z",
+        "cell_id": "mc_1",
+        "prereg_sha256": "ab" * 32,
+        "prereg_sealed_at": "2026-09-29T02:00:00Z",
+        "gauntlet_cell": "USDJPY.x.asia",
+        "verdict_at": "2026-09-29T03:00:00Z",
+        "passed": False,
+        "terminal_gate": "walk_forward",
+        "reason": "UNSTABLE_OOS",
+    }
+    late = dict(chain, cell_id="mc_2", prereg_sealed_at="2026-09-29T04:00:00Z")
+    rej = {"subject_id": "mc_1", "reason": "UNSTABLE_OOS", "stage": "gauntlet",
+           "at": "2026-09-29T03:00:00Z"}
+    digest.write_text(json.dumps({"chains": [chain, late], "rejections_latest": [rej]}))
+    doc = _run(tmp_path)
+    by = {e["event"][0]: e for e in doc["events"]}
+    assert by["1"]["verdict"] == "PROVEN"
+    assert by["1"]["latest"]["source_url"] == chain["source_url"]
+    assert by["2"]["verdict"] == "PROVEN"
+    assert by["2"]["n_instances"] == 1  # a contract sealed after its verdict never counts
+    assert by["3"]["verdict"] == "PROVEN"
+    assert by["3"]["n_instances"] == 2

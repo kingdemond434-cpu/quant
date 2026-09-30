@@ -106,9 +106,33 @@ def ev(
     }
 
 
+#: The global mining leg's committed digest: every chain is source URL -> mining cell ->
+#: sealed prereg -> docket cell -> verdict, and its rejections name the killing gate.
+DIGEST = f"{DATA}/mining_digest.json"
+
+
+def _chains(root: str) -> list[dict[str, Any]]:
+    doc = load(root, DIGEST)
+    rows = doc.get("chains") if isinstance(doc, dict) else None
+    return [r for r in rows or [] if isinstance(r, dict)]
+
+
 def e1_source_to_cell(root: str) -> dict[str, Any]:
     """Named external source (URL) -> hypothesis card -> docket cell id with a gauntlet verdict."""
     out = []
+    for c in _chains(root):
+        if c.get("source_url") and c.get("gauntlet_cell") and c.get("verdict_at"):
+            out.append(
+                {
+                    "at": c["verdict_at"],
+                    "source_id": c.get("source_id"),
+                    "source_url": c["source_url"],
+                    "collected_at": c.get("collected_at"),
+                    "cell": c.get("cell_id"),
+                    "gauntlet_cell": c["gauntlet_cell"],
+                    "passed": c.get("passed"),
+                }
+            )
     for p in sorted(glob.glob(os.path.join(root, "data/intelligence/hypotheses/H-*.yaml"))):
         with open(p, encoding="utf-8", errors="replace") as fh:
             txt = fh.read()
@@ -152,6 +176,7 @@ def e1_source_to_cell(root: str) -> dict[str, Any]:
         "1 source mined end-to-end into a cell",
         out,
         [
+            DIGEST,
             "data/intelligence/hypotheses/H-*.yaml",
             f"{REP}/gauntlet_*.json",
             f"{DATA}/research_queue.json",
@@ -195,11 +220,23 @@ def e2_prereg_before_verdict(root: str) -> dict[str, Any]:
                     "cell": r.get("canonical_cell"),
                 }
             )
+    for c in _chains(root):
+        if c.get("prereg_sha256") and _before(c.get("prereg_sealed_at"), c.get("verdict_at")):
+            out.append(
+                {
+                    "at": c["verdict_at"],
+                    "prereg_hash": c["prereg_sha256"],
+                    "registered_utc": c["prereg_sealed_at"],
+                    "cell": c.get("cell_id"),
+                    "gauntlet_cell": c.get("gauntlet_cell"),
+                }
+            )
     last = max(cards.values(), key=lambda c: c.get("registered_utc") or "", default=None)
     return ev(
         "2 cell preregistered with a sealed contract",
         out,
         [
+            DIGEST,
             f"{DATA}/preregistrations.jsonl",
             f"{DATA}/hypothesis_graph.jsonl",
             f"{DATA}/research_queue.json",
@@ -242,10 +279,33 @@ def e3_reject_with_gate(root: str) -> dict[str, Any]:
                     "artifact": f"{REP}/QQUANT_GATES.json",
                 }
             )
+    for c in _chains(root):
+        if c.get("passed") is False and c.get("terminal_gate") and c.get("reason"):
+            out.append(
+                {
+                    "at": c.get("verdict_at"),
+                    "cell": c.get("gauntlet_cell"),
+                    "failed_gates": [c["terminal_gate"]],
+                    "reason": c["reason"],
+                    "artifact": DIGEST,
+                }
+            )
+    doc = load(root, DIGEST)
+    for r in (doc.get("rejections_latest") if isinstance(doc, dict) else None) or []:
+        if isinstance(r, dict) and r.get("stage") == "gauntlet" and r.get("reason"):
+            out.append(
+                {
+                    "at": r.get("at"),
+                    "cell": r.get("subject_id"),
+                    "reason": r["reason"],
+                    "kill_class": r.get("kill_class"),
+                    "artifact": DIGEST,
+                }
+            )
     return ev(
         "3 gauntlet REJECT with logged gate",
         out,
-        [f"{REP}/gauntlet_*.json", f"{REP}/QQUANT_GATES.json"],
+        [DIGEST, f"{REP}/gauntlet_*.json", f"{REP}/QQUANT_GATES.json"],
         "research_queue GAUNTLET_REJECTED rows carry no gate; the gate ledger "
         "(data/hypotheses/gate_verdict_ledger.jsonl, reports/universal_gates_external.json) "
         "is not committed",
