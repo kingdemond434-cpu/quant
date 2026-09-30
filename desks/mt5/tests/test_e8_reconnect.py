@@ -22,7 +22,18 @@ from mt5desk.decision_core import CANCEL_HOUR  # noqa: E402
 from prop import e8_gold as g  # noqa: E402
 
 LEG = {"price": 4340.0, "sl": 4320.0, "tp": 4380.0, "lot": 0.5, "attempts": 1,
-       "why": "VenueError: html", "first_at": "2026-09-28T07:00:05+00:00"}
+       "why": "VenueError: html", "first_at": "2026-09-28T07:00:05+00:00", "risk_usd": 1000.0}
+IID = 316
+SENT_MS = g._iso_ms(LEG["first_at"])
+
+
+def _order(oid: int, side: str, level: float, **kw: Any) -> dict:
+    """A venue order row carrying every field the matcher requires, landed just after the send."""
+    return {"id": oid, "side": side, "stopPrice": level, "tradableInstrumentId": IID,
+            "qty": 0.5, "createdDate": SENT_MS + 2_000, **kw}
+
+
+MATCH = {"lot": 0.5, "instrument_id": IID, "since_ms": SENT_MS}
 
 
 def _state(**window: Any) -> dict:
@@ -136,13 +147,40 @@ def test_a_leg_against_an_open_position_is_held_not_abandoned() -> None:
 
 
 def test_a_send_that_landed_is_adopted_not_doubled() -> None:
-    book = [{"id": 11, "side": "sell", "stopPrice": 4300.0},
-            {"id": 77, "side": "sell", "stopPrice": 4340.0},
-            {"id": 78, "side": "buy", "stopPrice": 4340.02}]
-    assert g.matching_resting_order(book, "buy_stop", 4340.0, known_ids={11}) == 78
+    book = [_order(11, "sell", 4300.0), _order(77, "sell", 4340.0), _order(78, "buy", 4340.02)]
+    assert g.matching_resting_order(book, "buy_stop", 4340.0, {11}, **MATCH) == 78
     # An id the lane already owns is never claimed a second time.
-    assert g.matching_resting_order(book, "buy_stop", 4340.0, known_ids={11, 78}) is None
-    assert g.matching_resting_order(book, "buy_stop", 4341.0, known_ids={11}) is None
+    assert g.matching_resting_order(book, "buy_stop", 4340.0, {11, 78}, **MATCH) is None
+    assert g.matching_resting_order(book, "buy_stop", 4341.0, {11}, **MATCH) is None
+
+
+# The audit's probe (2026-09-30): a 40-hour-old 7-lot fill on another instrument at the leg's
+# side and level was adopted as the leg, and management then cancelled the live twin.
+@pytest.mark.parametrize(("change", "why"), [
+    ({"tradableInstrumentId": 999}, "another instrument"),
+    ({"tradableInstrumentId": None}, "no instrument on the row"),
+    ({"qty": 7.0}, "another quantity"),
+    ({"qty": None}, "no quantity on the row"),
+    ({"createdDate": SENT_MS - 40 * 3_600_000}, "a fill from 40 hours before the send"),
+    ({"createdDate": None}, "no creation time on the row"),
+])
+def test_an_order_that_is_not_this_leg_is_never_adopted(change, why) -> None:
+    row = _order(78, "buy", 4340.0, **change)
+    if change.get("createdDate", 0) is None:
+        row.pop("createdDate")
+    assert g.matching_resting_order([row], "buy_stop", 4340.0, set(), **MATCH) is None, why
+
+
+def test_no_instrument_id_matches_nothing() -> None:
+    kw = {**MATCH, "instrument_id": 0}
+    row = _order(78, "buy", 4340.0, tradableInstrumentId=0)
+    assert g.matching_resting_order([row], "buy_stop", 4340.0, set(), **kw) is None
+
+
+def test_an_unreadable_send_time_adopts_nothing() -> None:
+    kw = {**MATCH, "since_ms": g._iso_ms("not a time")}
+    assert g.matching_resting_order([_order(78, "buy", 4340.0)], "buy_stop", 4340.0, set(),
+                                    **kw) is None
 
 
 # ----------------------------------------------------------------- the pass itself
@@ -166,7 +204,7 @@ def _retry(venue: _Venue, st: dict, *, hour: float = 8.0, **kw: Any) -> dict:
     doc: dict = {"actions": []}
     args = {"open_orders": list(venue.book), "orders_ok": True, "filled": {},
             "xau_positions": [], "positions_ok": True, "stood_down": False, "armed": True,
-            "hist_rows": [], "history_ok": True, **kw}
+            "hist_rows": [], "history_ok": True, "instrument_id": IID, **kw}
     g._retry_failed_legs(venue, st, doc, hour=hour, now=datetime.now(UTC), **args)
     return doc
 
@@ -187,7 +225,7 @@ def test_the_pass_re_sends_the_leg_and_moves_it_into_the_bracket() -> None:
 
 
 def test_the_pass_adopts_a_landed_send_without_sending_again() -> None:
-    v, st = _Venue(book=[{"id": 42, "side": "buy", "stopPrice": 4340.0}]), _state()
+    v, st = _Venue(book=[_order(42, "buy", 4340.0)]), _state()
     _retry(v, st)
     assert v.sent == [] and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 42
 
@@ -200,11 +238,13 @@ def test_a_second_failure_counts_the_attempt_and_keeps_the_leg() -> None:
 
 @pytest.mark.parametrize("kw", [{"stood_down": True}, {"orders_ok": False},
                                 {"positions_ok": False}, {"armed": False},
-                                {"history_ok": False}])
-def test_nothing_is_re_sent_blind(kw) -> None:
+                                {"history_ok": False}, {"instrument_id": 0}])
+def test_nothing_is_re_sent_blind_and_the_skip_says_why(kw) -> None:
     v, st = _Venue(), _state()
-    _retry(v, st, **kw)
+    doc = _retry(v, st, **kw)
     assert v.sent == [] and "buy_stop" in st["windows"]["asia"]["failed"]
+    assert doc["retry_skipped"]["legs"] == ["asia/buy_stop"] and doc["retry_skipped"]["why"]
+    assert "not re-sent this pass" in g.LOG.read_text()
 
 
 def test_an_abandoned_leg_leaves_the_retry_queue_with_its_reason() -> None:
@@ -217,7 +257,7 @@ def test_an_abandoned_leg_leaves_the_retry_queue_with_its_reason() -> None:
 
 def test_a_send_that_landed_and_filled_is_adopted_from_history_not_doubled() -> None:
     v, st = _Venue(), _state()
-    hist = [{"id": 55, "side": "buy", "stopPrice": 4340.0, "status": "Filled", "positionId": 9}]
+    hist = [_order(55, "buy", 4340.0, status="Filled", positionId=9)]
     _retry(v, st, hist_rows=hist, filled={55: 9})
     assert v.sent == [] and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 55
 
@@ -229,6 +269,20 @@ def test_an_unowned_position_on_the_leg_side_since_the_failure_stops_the_resend(
     w = st["windows"]["asia"]
     assert v.sent == [] and "failed" not in w and "buy_stop" in w["abandoned"]
     assert doc["actions"][0]["act"] == "leg_abandon"
+    # The veto's cost is on the record: the leg's whole certified risk goes undeployed.
+    assert doc["actions"][0]["missed_growth_risk_usd"] == 1000.0
+    assert "MISSED GROWTH" in g.LOG.read_text()
+
+
+def test_yesterdays_own_leg_in_the_history_is_not_adopted_as_todays(monkeypatch) -> None:
+    """The likely real trigger: after the rollover empties the windows, yesterday's own filled
+    leg (same side, same level, same size) still sits in the two-day history."""
+    v, st = _Venue(), _state()
+    hist = [_order(55, "buy", 4340.0, status="Filled", positionId=9)]
+    monkeypatch.setattr(g, "_journal_rows",
+                        lambda: [{"status": "SENT", "order_id": 55, "window": "asia"}])
+    _retry(v, st, hist_rows=hist, filled={55: 9})
+    assert st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 901 and len(v.sent) == 1
 
 
 def test_a_position_that_predates_the_failure_or_is_ours_does_not_block() -> None:

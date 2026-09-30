@@ -91,6 +91,11 @@ MAX_LEG_RETRIES = 12
 # How close a resting venue order must sit to a failed leg's level to be that leg: the send that
 # "failed" may have reached the venue before the reply broke, and sending again would double it.
 LEG_MATCH_TOL = 0.05
+#: How far BEFORE the failed send an order's own timestamp may sit and still be that send. The
+#: venue stamps orders on the broker clock (UTC+2/+3), so a real UTC send time sits up to three
+#: hours earlier than the stamp of the order it created; anything older is some other order.
+LEG_MATCH_WINDOW_MS = 10 * 60 * 1000
+XAU_OZ_PER_LOT = 100.0  # fallback for a leg journalled before risk_usd was kept on it
 # Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
 # drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
 MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
@@ -195,26 +200,61 @@ def retry_decisions(state: dict, hour: float, bid: float, ask: float, filled: di
     return out
 
 
-def matching_resting_order(open_orders: list[dict], side: str, price: float,
-                           known_ids: set[int]) -> int | None:
-    """The id of a resting venue stop order that IS this leg, if the failed send landed anyway.
+def _order_ms(o: dict) -> int | None:
+    for k in ("createdDate", "created", "lastModified", "openDate", "time"):
+        v = o.get(k)
+        try:
+            if v is not None and int(v) > 0:
+                return int(v)
+        except (TypeError, ValueError):
+            continue
+    return None
 
-    Matched on direction and trigger level within LEG_MATCH_TOL, and never an id the lane
-    already owns, so a sibling window's leg at a nearby level is not claimed twice.
+
+def _iso_ms(at: Any) -> int:
+    """Milliseconds since the epoch of an ISO stamp; an unreadable stamp reads as NOW-FAR-FUTURE
+    so nothing older can match it (fail closed: no adoption without a known send time)."""
+    try:
+        return int(datetime.fromisoformat(str(at)).timestamp() * 1000)
+    except (TypeError, ValueError):
+        return 2**62
+
+
+def matching_resting_order(orders: list[dict], side: str, price: float, known_ids: set[int],
+                           *, lot: float, instrument_id: int, since_ms: int) -> int | None:
+    """The id of a venue order that IS this leg, if the failed send landed anyway.
+
+    EVERY FIELD MUST AGREE, because a wrong match is worse than none (audit 2026-09-30: matching
+    on side and level alone adopted a 40-hour-old 7-lot fill on ANOTHER instrument as this leg,
+    and management then cancelled the live twin). So an order matches only when it is on this
+    instrument, on this side, at this trigger level within LEG_MATCH_TOL, for this quantity, was
+    created no earlier than LEG_MATCH_WINDOW_MS before the failed send, and is not an id the lane
+    already owns -- today's legs AND every id in the intents journal, so yesterday's own leg
+    cannot come back as today's after the rollover empties the windows. A row missing any of
+    those fields does not match.
     """
     want = "buy" if side == "buy_stop" else "sell"
-    for o in open_orders:
+    for o in orders:
         oid = o.get("id")
         if oid is None or int(oid) in known_ids:
             continue
         if str(o.get("side") or "").lower() != want:
             continue
-        level = o.get("stopPrice") or o.get("price")
         try:
-            if level is not None and abs(float(level) - float(price)) <= LEG_MATCH_TOL:
-                return int(oid)
+            if int(o.get("tradableInstrumentId") or 0) != int(instrument_id) or not instrument_id:
+                continue
+            qty = o.get("qty", o.get("quantity"))
+            if qty is None or abs(float(qty) - float(lot)) > max(0.005, 0.01 * float(lot)):
+                continue
+            level = o.get("stopPrice") or o.get("price")
+            if level is None or abs(float(level) - float(price)) > LEG_MATCH_TOL:
+                continue
         except (TypeError, ValueError):
             continue
+        made = _order_ms(o)
+        if made is None or made < since_ms - LEG_MATCH_WINDOW_MS:
+            continue
+        return int(oid)
     return None
 
 
@@ -603,7 +643,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             except Exception as exc:
                 row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
                 log(f"[{name}] REJECTED {side}: {row['why']} (will retry while the window holds)")
-                failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot")},
+                failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot", "risk_usd")},
                                 "attempts": 1, "why": row["why"],
                                 "first_at": row["at"]}
             _record(row)
@@ -649,7 +689,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                            orders_ok="orders_unreadable" not in doc, filled=filled,
                            xau_positions=xau_positions, positions_ok=positions_ok,
                            stood_down=stood_down, armed=armed, hist_rows=hist_rows,
-                           history_ok="history_unreadable" not in doc)
+                           history_ok="history_unreadable" not in doc, instrument_id=iid)
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
@@ -785,7 +825,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
 def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: datetime,
                        open_orders: list[dict], orders_ok: bool, filled: dict[int, int],
                        xau_positions: list[dict], positions_ok: bool, stood_down: bool,
-                       armed: bool, hist_rows: list[dict], history_ok: bool) -> None:
+                       armed: bool, hist_rows: list[dict], history_ok: bool,
+                       instrument_id: int) -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
 
@@ -796,7 +837,18 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
     resting order, then as a filled order in the history, then as a position on its side opened
     since the failed send.
     """
-    if not armed or stood_down or not orders_ok or not positions_ok or not history_ok:
+    blind = [why for why, bad in (("the pass is disarmed", not armed),
+                                  ("the guard stands down", stood_down),
+                                  ("the order book is unreadable", not orders_ok),
+                                  ("the position book is unreadable", not positions_ok),
+                                  ("the order history is unreadable", not history_ok),
+                                  ("the gold instrument id is unknown", not instrument_id))
+             if bad]
+    if blind:
+        waiting = [f"{n}/{side}" for n, w in (state.get("windows") or {}).items()
+                   for side in (w.get("failed") or {})]
+        doc["retry_skipped"] = {"why": blind, "legs": waiting}
+        log(f"dropped legs {waiting} not re-sent this pass: {'; '.join(blind)}")
         return
     try:
         bid, ask = venue.quote(SYMBOL)
@@ -810,6 +862,9 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
     known = {int(leg["id"]) for bucket in ("windows", "carried")
              for w in (state.get(bucket) or {}).values()
              for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
+    # Every id the intents journal says this lane sent -- yesterday's legs included, which have
+    # left the state at the rollover but still sit in the venue's two-day history.
+    known |= set(own_entry_orders(_journal_rows(), state))
     for dec in retry_decisions(state, hour, float(bid), float(ask), filled, blocked):
         name, side, leg = dec["window"], dec["side"], dec["leg"]
         w = state["windows"][name]
@@ -825,18 +880,29 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             doc["actions"].append(act)
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
-        oid = matching_resting_order(open_orders, side, float(leg["price"]), known)
-        if oid is None:
-            done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
-            oid = matching_resting_order(done, side, float(leg["price"]), known)
+        done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
+        oid = None
+        for book in (open_orders, done):
+            oid = oid or matching_resting_order(book, side, float(leg["price"]), known,
+                                                lot=float(leg["lot"]),
+                                                instrument_id=int(instrument_id),
+                                                since_ms=_iso_ms(leg.get("first_at")))
         if oid is None and position_since_failure(xau_positions, side, leg.get("first_at"),
                                                   state, filled):
             why = ("a position on this side opened after the failed send and no window owns it: "
                    "it may be that send, so the leg is not sent again")
+            # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1): if that position is NOT our send, this
+            # veto forgoes the leg's whole certified risk. Record what it costs every time.
+            missed = leg.get("risk_usd")
+            if missed is None:
+                stop = abs(float(leg["price"]) - float(leg["sl"]))
+                missed = float(leg["lot"]) * stop * XAU_OZ_PER_LOT
             w["failed"].pop(side, None)
             w.setdefault("abandoned", {})[side] = {**leg, "why": why}
-            doc["actions"].append({**act, "act": "leg_abandon", "why": why})
-            log(f"[{name}] {side} dropped leg abandoned: {why}")
+            doc["actions"].append({**act, "act": "leg_abandon", "why": why,
+                                   "missed_growth_risk_usd": round(float(missed), 2)})
+            log(f"[{name}] {side} dropped leg abandoned: {why}; MISSED GROWTH: the leg's "
+                f"{float(missed):.0f} USD of certified risk is not deployed")
             continue
         row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                **levels, "armed": True, "retry_of": leg.get("first_at")}
