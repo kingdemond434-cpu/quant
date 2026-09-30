@@ -47,19 +47,44 @@ ROUTING LABEL (`terms_note`) carried on every claim the ground produces: it says
 REDISTRIBUTE, never what it may read and test. The open surface of a paywalled domain is mined and
 the wall itself is never bypassed -- that is hard-boundary act 2 and it is the only thing here
 that still says no. Machine-translated and forum ground is FIRST CLASS.
+
+WHY 467 OF 502 GROUNDS WERE STILL NAMED_ONLY (measured 2026-09-30, fixed here).
+* THE LEG KILLED THE MINER BEFORE IT WROTE ANYTHING. The hourly leg ran this file with its
+  900 s default budget under the cycle's 720 s default cap (`deep_forest_miner` had no entry in
+  `LEG_BUDGET_SEC`), and every ledger -- claims, seen, cursor, frontier -- was written only at
+  the END of a run. Most hours were SIGKILLed at 720 s with nothing written, so the next hour
+  started from the same cursor and re-hit the same head of the list. Now: the leg carries a cap
+  above the organ's own budget and exports it (`QUANT_LEG_BUDGET_S`), the miner self-stops
+  inside it, and every ground's claims, datasets and frontier outcome are CHECKPOINTED the
+  moment that ground finishes, so a kill costs at most the grounds in flight.
+* ONE GROUND AT A TIME, MOSTLY WAITING. Grounds are now worked by `WORKERS` threads; politeness
+  is per HOST (`libs.data.polite_fetch.GATE`), so a search engine shared by 177 grounds sees
+  the same rate it saw sequentially while distinct hosts proceed in parallel. Every fetch has a
+  hard timeout and bounded retries on 429/5xx, TLS uses certifi on top of the system store, and
+  GBK / Shift_JIS pages are decoded by their declared charset instead of as UTF-8 soup.
+* LEAST-RECENTLY-ATTEMPTED FIRST. Inside each frontier bucket the scheduler orders by the
+  vector's last attempt, oldest first, so a budget always reaches the untried tail.
+* THE FOREST LEGS NOW MINE. `forest_runner`'s practitioner role runs this miner over ITS
+  forest's grounds with the leg's idle seconds (`--mine-grounds`), so eleven regional legs that
+  opened no socket each work their own slice of the 502 in parallel.
 """
 from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
+import copy
 import hashlib
 import html as _html
 import json
+import os
 import re
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -71,6 +96,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from libs.data import polite_fetch as pf  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 
 SOURCE = "deep_forest"
@@ -96,6 +122,18 @@ MIN_PAGE_TEXT = 1500
 #: cursor carries the rotation across runs. Never below MIN_GROUND_S: one fetch takes that long.
 SPREAD = 6.0
 MIN_GROUND_S = 20.0
+#: Grounds worked at once. Per-HOST spacing (polite_fetch.GATE) keeps every host's rate where
+#: the sequential miner had it; this only stops the run waiting on one host at a time.
+WORKERS = 8
+#: Seconds kept back from the cycle's cap for the end-of-run writes (report, queue, frontier).
+WRITE_RESERVE_S = 90.0
+#: The fetch-rate ledger `research/alt_data_yield.py` reads (one line per run).
+RUNS = _DESK / "data" / "alt_fetch_runs.jsonl"
+LEG = "deep_forest_miner"
+#: Cross-process locks live where the desk keeps its job locks (gitignored, per machine).
+LOCKS = _DESK / "data" / ".job_locks"
+#: Per-vector attempts / successes / rows / last error, beside the frontier file.
+VECTOR_STATS_NAME = "deep_forest_vector_stats.json"
 _UA = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
        "Accept": ("text/html,application/xhtml+xml,application/json,application/xml;q=0.9,"
@@ -229,13 +267,46 @@ def accept_language(lang: str) -> str:
 
 # ------------------------------------------------------------------------------- fetching
 def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
+    """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
+    charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
+    on a transport one, exactly the two shapes `_Run.page` and the route helpers expect."""
     hdr = {**_UA, "Accept-Language": accept_language(lang)}
     if referer:
         hdr["Referer"] = referer
-    req = urllib.request.Request(url, headers=hdr)
-    with urllib.request.urlopen(req, timeout=timeout) as fh:
-        body: str = fh.read(2_000_000).decode("utf-8", errors="replace")
-    return body
+    r = pf.get(url, headers=hdr, timeout=timeout, retries=1, leg=LEG, max_bytes=2_000_000)
+    if r.ok:
+        return r.text
+    if r.status is not None and r.status >= 400:
+        raise urllib.error.HTTPError(url, r.status, r.error or f"HTTP {r.status}",
+                                     None, None)  # type: ignore[arg-type]
+    raise OSError(r.error or "fetch failed")
+
+
+@contextlib.contextmanager
+def _xlock(name: str, timeout_s: float = 30.0) -> Iterator[bool]:
+    """Cross-process AND cross-thread exclusive lock on `LOCKS/<name>.lock`. Several forest legs
+    run this miner at once over one frontier, one seen-set and one claims ledger; a read-modify-
+    write without this loses the other process's attempts. Yields whether it was held -- a lock
+    that cannot be taken in time degrades to an unlocked write rather than a lost ground."""
+    from libs.research import artifact_chain as _ac
+    with _THREAD_LOCKS.setdefault(name, threading.Lock()):
+        locks = SEEN.with_name(LOCKS.name)          # beside the ledgers it guards
+        with contextlib.suppress(OSError):
+            locks.mkdir(parents=True, exist_ok=True)
+        with _ac._locked(locks / f"{name}", timeout_s=timeout_s) as held:
+            yield bool(held)
+
+
+_THREAD_LOCKS: dict[str, threading.Lock] = {}
+
+
+def _env_budget_cap() -> float | None:
+    """The cycle cap the leg was actually given this hour (hourly_cycle exports it), or None."""
+    try:
+        cap = float(os.environ.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        return None
+    return cap if cap > 0 else None
 
 
 def html_text(page: str) -> str:
@@ -535,12 +606,38 @@ def _load_seen() -> dict[str, Any]:
 
 
 def _save_seen(seen: dict[str, Any]) -> None:
+    """MERGE, never overwrite: several forest legs mine at once, and a plain write would drop
+    the claims another process banked since this one loaded -- which re-mints them next run."""
     SEEN.parent.mkdir(parents=True, exist_ok=True)
-    SEEN.write_text(json.dumps({"claims": sorted(set(seen.get("claims") or []))[-50_000:],
-                                "urls": sorted(set(seen.get("urls") or []))[-50_000:],
-                                "cursor": int(seen.get("cursor") or 0),
-                                "runs": int(seen.get("runs") or 0),
-                                "updated_utc": datetime.now(tz=UTC).isoformat()}), "utf-8")
+    with _xlock("deep_forest_seen"):
+        disk = _load_seen()
+        claims = set(disk.get("claims") or []) | set(seen.get("claims") or [])
+        urls = set(disk.get("urls") or []) | set(seen.get("urls") or [])
+        _atomic_text(SEEN, json.dumps({"claims": sorted(claims)[-50_000:],
+                                       "urls": sorted(urls)[-50_000:],
+                                       "cursor": int(seen.get("cursor") or 0),
+                                       "runs": int(seen.get("runs") or 0),
+                                       "updated_utc": datetime.now(tz=UTC).isoformat()}))
+
+
+def _atomic_text(path: Path, text: str) -> None:
+    """Write-then-replace, Windows-safe (a held or read-only destination is retried)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    tmp.write_text(text, "utf-8")
+    for i in range(6):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            with contextlib.suppress(OSError):
+                os.chmod(path, 0o666)
+            time.sleep(0.2 * (i + 1))
+    try:
+        path.write_text(text, "utf-8")
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
 
 
 def _claims_rows() -> list[dict[str, Any]]:
@@ -609,13 +706,27 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     now = datetime.now(tz=UTC)
     for g in picked:
         buckets[_frontier_bucket(g, frontier_state, now)].append(g)
+    # LEAST-RECENTLY-ATTEMPTED FIRST (2026-09-30). Inside a bucket the fair, cursor-rotated
+    # order is then sorted -- stably -- by the vector's last attempt, oldest first. Never-tried
+    # ground has no attempt and sorts first; ground tried an hour ago sorts behind ground tried a
+    # week ago. The cursor alone could not do this: it only advanced when a run finished, and a
+    # run the cycle killed left it where it was, so every hour re-hit the same head.
     out: list[dict[str, Any]] = []
     for bucket in buckets:
         ordered = _fair_order(bucket)
         if ordered:
             start = cursor % len(ordered)
-            out.extend(ordered[start:] + ordered[:start])
+            rotated = ordered[start:] + ordered[:start]
+            out.extend(sorted(rotated, key=lambda g: _last_attempt(g, frontier_state)))
     return out
+
+
+def _last_attempt(g: dict[str, Any], frontier_state: Any | None) -> str:
+    """The vector's last attempt stamp ('' = never), the least-recently-attempted sort key."""
+    if frontier_state is None:
+        return ""
+    v = getattr(frontier_state, "vectors", {}).get(str(g.get("name") or ""))
+    return str(getattr(v, "last_attempt", "") or "") if v is not None else ""
 
 
 # ------------------------------------------------------------------------------- the run
@@ -637,11 +748,45 @@ class _Run:
                        "dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0,
                        "claims_seen_before": 0, "net_failures": 0, "dataset_pages": 0,
                        "dataset_endpoints": 0, "feeds": 0}
-        self.network: bool | None = None
+        #: Shared by every fork of this run: the network verdict and its failure streak.
+        self._shared: dict[str, Any] = {"network": None, "fails": 0}
+        self._lock = threading.RLock()
         self.render_used = 0
         self.ground: dict[str, Any] = {}
         self.ground_claims: list[dict[str, Any]] = []
         self.mech_keys: set[str] = set()
+
+    @property
+    def network(self) -> bool | None:
+        return self._shared["network"]
+
+    @network.setter
+    def network(self, value: bool | None) -> None:
+        self._shared["network"] = value
+
+    def fork(self) -> _Run:
+        """A worker's view of this run: its OWN ground, deadline and result lists, the run's
+        SHARED dedup sets, universe, network verdict and lock. One fork works one ground; the
+        parent merges it back, so the per-ground state the routes keep on `self` can never be
+        crossed between threads."""
+        f = copy.copy(self)
+        f.new, f.datasets, f.status, f.frontier = [], [], [], []
+        f.counts = dict.fromkeys(self.counts, 0)
+        f.ground, f.ground_claims = {}, []
+        f.render_used = 0
+        return f
+
+    def merge(self, f: _Run) -> None:
+        with self._lock:
+            self.new.extend(f.new)
+            self.datasets.extend(f.datasets)
+            self.status.extend(f.status)
+            self.frontier.extend(f.frontier)
+            for k, v in f.counts.items():
+                if k != "net_failures":
+                    self.counts[k] = self.counts.get(k, 0) + v
+            self.counts["net_failures"] = self._shared["fails"]
+            self.render_used += f.render_used
 
     def over(self) -> bool:
         return time.monotonic() > min(self.g_end, self.started + self.budget_s)
@@ -651,13 +796,17 @@ class _Run:
         return self.fetch and self.network is not False
 
     def _note_net(self, ok: bool) -> None:
-        if ok:
-            self.network = True
-            self.counts["net_failures"] = 0
-        else:
-            self.counts["net_failures"] += 1
-            if self.network is None and self.counts["net_failures"] >= 3:
-                self.network = False
+        with self._lock:
+            sh = self._shared
+            if ok:
+                sh["network"] = True
+                sh["fails"] = 0
+                self.counts["net_failures"] = 0
+            else:
+                sh["fails"] += 1
+                self.counts["net_failures"] += 1
+                if sh["network"] is None and sh["fails"] >= 3:
+                    sh["network"] = False
 
     @property
     def lang(self) -> str:
@@ -705,10 +854,16 @@ class _Run:
         src_hash = hashlib.sha256((text or "").encode("utf-8")).hexdigest()
         n = 0
         for c in r["claims"]:
-            if c["claim_hash"] in self.seen_claims:
+            with self._lock:                 # the seen-set is shared by every worker thread
+                fresh = c["claim_hash"] not in self.seen_claims
+                if fresh:
+                    self.seen_claims.add(c["claim_hash"])
+                    dup_key = c.get("mechanism_key") in self.mech_keys
+                    if not dup_key:
+                        self.mech_keys.add(str(c.get("mechanism_key")))
+            if not fresh:
                 self.counts["claims_seen_before"] += 1
                 continue
-            self.seen_claims.add(c["claim_hash"])
             row = {**c, "kind": KIND, "ground": ground.get("name"),
                    "ground_kind": ground.get("kind"),
                    "region": ground.get("region"), "language": ground.get("language"),
@@ -723,11 +878,9 @@ class _Run:
                    # claim so redistribution can be routed later. It never gates the claim.
                    "terms_note": terms_label(ground),
                    "fetched_utc": now, "score": mc.claim_score(c), **(extra or {})}
-            if c.get("mechanism_key") in self.mech_keys:
+            if dup_key:
                 self.counts["duplicate_mechanisms"] += 1
                 row["duplicate_of_key"] = c["mechanism_key"]
-            else:
-                self.mech_keys.add(str(c.get("mechanism_key")))
             self.new.append(row)
             self.ground_claims.append(row)
             n += 1
@@ -737,13 +890,14 @@ class _Run:
     def _provenance(self, row: dict[str, Any]) -> None:
         try:
             from libs.data.datahub import record_mined_source
-            record_mined_source(repo=str(row.get("ground")), url=str(row.get("url")),
-                                commit=f"{row.get('available_time')} sha256:"
-                                       f"{str(row.get('source_hash'))[:16]}",
-                                license_=str(row.get("license") or "WEB-PUBLIC"),
-                                file=str(row.get("route")), mechanism=str(row["claim"])[:200],
-                                code_copied=False, commercial_restriction=True,
-                                path=PROVENANCE)
+            with self._lock:                 # one appender at a time into the shared ledger
+                record_mined_source(repo=str(row.get("ground")), url=str(row.get("url")),
+                    commit=f"{row.get('available_time')} sha256:"
+                           f"{str(row.get('source_hash'))[:16]}",
+                    license_=str(row.get("license") or "WEB-PUBLIC"),
+                    file=str(row.get("route")), mechanism=str(row["claim"])[:200],
+                    code_copied=False, commercial_restriction=True,
+                    path=PROVENANCE)
         except Exception:
             pass
 
@@ -773,10 +927,13 @@ class _Run:
         return len(eps)
 
     def follow(self, url: str, anchor: str, via: str) -> None:
-        if url in self.seen_urls or not url.startswith(("http://", "https://")):
+        if not url.startswith(("http://", "https://")):
             return
+        with self._lock:
+            if url in self.seen_urls:
+                return
+            self.seen_urls.add(url)
         self.frontier.append((url, via, self.lang))
-        self.seen_urls.add(url)
 
     # ---------------------------------------------------------------- routes per ground
     def _read_page(self, g: dict[str, Any], page: str, url: str, title: str, route: str) -> int:
@@ -1442,7 +1599,17 @@ LEDGER_SCHEMA: dict[str, list[str]] = {
 
 
 def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = None,
-        write: bool = True, region: str | None = None) -> dict[str, Any]:
+        write: bool = True, region: str | None = None, *, workers: int | None = None,
+        report_path: Path | None = None, leg: str = LEG) -> dict[str, Any]:
+    # SELF-STOP INSIDE THE CAP THE CYCLE ACTUALLY GAVE. A budget above the cap is a run that is
+    # SIGKILLed before it writes, at the same prefix every hour -- the reason 467 grounds stayed
+    # NAMED_ONLY. The cap is exported by hourly_cycle; a missing export changes nothing.
+    requested_s = float(budget_s)
+    cap = _env_budget_cap()
+    if cap is not None:
+        budget_s = max(MIN_GROUND_S, min(float(budget_s), cap - WRITE_RESERVE_S))
+    n_workers = max(1, int(workers if workers is not None else WORKERS))
+    pf.reset_stats(LEG)
     cfg = _load_sources()
     grounds = list(cfg.get("grounds") or [])
     # THE CRAWL BUDGET IS THE SOURCE REGISTRY'S SHARES (Tier-1 W17). `schedule()` sorts on
@@ -1488,30 +1655,60 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
             seat_order = sorted(order,
                                 key=lambda g: _rank.get(str(g.get("name") or ""), 10 ** 6))
             now = datetime.now(tz=UTC)
+            # frontier bucket first, then least-recently-attempted, the seat's rank breaking ties
             order = sorted(seat_order,
-                           key=lambda g: _frontier_bucket(g, frontier_state, now))
+                           key=lambda g: (_frontier_bucket(g, frontier_state, now),
+                                          _last_attempt(g, frontier_state)))
     except Exception as _exc:                             # pragma: no cover - optional seat
         seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
     total_w = sum(float(g.get("weight") or 1.0) for g in order) or 1.0
-    worked = 0
-    for g in order:
-        if r.over() or time.monotonic() - r.started > budget_s:
-            r.status.append({"ground": g.get("name"), "region": g.get("region"),
-                             "cluster": cluster_of(g), "status": "BUDGET_EXHAUSTED",
-                             "why": "the cursor resumes here next run"})
-            continue
-        share = max(MIN_GROUND_S, budget_s * float(g.get("weight") or 1.0) / total_w * SPREAD)
-        r.work(g, share_s=share)
-        worked += 1
-    if write and r.new:
-        CLAIMS.parent.mkdir(parents=True, exist_ok=True)
-        with CLAIMS.open("a", encoding="utf-8") as fh:
-            for row in r.new:
-                fh.write(json.dumps(row, ensure_ascii=False) + "\n")
-    if write and r.datasets:
-        with DATASETS.open("a", encoding="utf-8") as fh:
-            for row in r.datasets:
-                fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    # THE WORK QUEUE: `n_workers` threads pull the next ground in schedule order, each on its
+    # own fork of the run, and every finished ground is CHECKPOINTED at once (claims, datasets,
+    # frontier outcome, vector stats) -- so a kill costs the grounds in flight, never the hour.
+    queue_lock = threading.Lock()
+    cursor_at = [0]
+    worked_n = [0]
+    ckpt = {"last_seen_save": time.monotonic()}
+
+    def _next_ground() -> dict[str, Any] | None:
+        with queue_lock:
+            if cursor_at[0] >= len(order):
+                return None
+            g = order[cursor_at[0]]
+            cursor_at[0] += 1
+            return g
+
+    def _worker() -> None:
+        while True:
+            g = _next_ground()
+            if g is None:
+                return
+            if r.over() or time.monotonic() - r.started > budget_s:
+                with r._lock:
+                    r.status.append({"ground": g.get("name"), "region": g.get("region"),
+                                     "cluster": cluster_of(g), "status": "BUDGET_EXHAUSTED",
+                                     "why": "least-recently-attempted order resumes here"})
+                continue
+            share = max(MIN_GROUND_S,
+                        budget_s * float(g.get("weight") or 1.0) / total_w * SPREAD)
+            f = r.fork()
+            f.work(g, share_s=share)
+            r.merge(f)
+            with queue_lock:
+                worked_n[0] += 1
+            if write:
+                _checkpoint(r, f, ckpt)
+
+    if n_workers == 1 or len(order) <= 1:
+        _worker()
+    else:
+        threads = [threading.Thread(target=_worker, name=f"deep-forest-{i}", daemon=True)
+                   for i in range(min(n_workers, len(order)))]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+    worked = worked_n[0]
     discoveries = _write_discoveries(r.datasets) if write else None
     frontier_added = _feed_frontier(r.frontier) if write else 0
     # SOURCE EXPANSION: a ground whose ROI share ROSE has the links it actually served promoted
@@ -1548,9 +1745,11 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                 by_src: dict[str, list[dict[str, Any]]] = {}
                 for t in tasks:
                     by_src.setdefault(str(t.get("source")), []).append(t)
-                # ONE SOURCE PER REGION CLUSTER: each replaces only its own rows.
-                for src, ts in by_src.items():
-                    _merge_into_queue(ts, source=src)
+                # ONE SOURCE PER REGION CLUSTER: each replaces only its own rows. Serialised
+                # across the forest legs that now run this miner concurrently.
+                with _xlock("deepening_queue", timeout_s=120.0):
+                    for src, ts in by_src.items():
+                        _merge_into_queue(ts, source=src)
             except Exception:
                 pass
     grounds_status = [s for s in r.status if "ground" in s]
@@ -1585,7 +1784,11 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
     frontier: dict[str, Any]
     if write:
         try:
-            frontier = _record_frontier(grounds_status, grounds)
+            done = ckpt.get("done") or set()
+            rest = [s for s in grounds_status
+                    if str(s.get("ground") or "") not in done and s.get("status") != "NO_NETWORK"]
+            with _xlock("deep_forest_frontier"):
+                frontier = _record_frontier(rest, grounds)
         except Exception as exc:
             frontier = {"status": "UNMEASURED",
                         "why": f"frontier accounting failed: {type(exc).__name__}: {exc}"}
@@ -1606,8 +1809,16 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "languages": sorted({str(g.get("language")) for g in grounds if g.get("language")}),
            "frontier": frontier,
            "scheduler": {"policy": ("NAMED_ONLY -> retry-due BLOCKED -> cooldown-due covered "
-                                    "-> picked-over; regional round-robin inside each bucket"),
-                         "frontier_state_loaded": frontier_state is not None},
+                                    "-> picked-over; inside each bucket least-recently-"
+                                    "attempted first over a regional round-robin"),
+                         "frontier_state_loaded": frontier_state is not None,
+                         "workers": n_workers, "requested_budget_s": requested_s,
+                         "cycle_cap_s": cap,
+                         "checkpointed_grounds": len(ckpt.get("done") or ()),
+                         "checkpoint_errors": ckpt.get("errors") or []},
+           "fetch_stats": {**pf.stats(LEG), "leg": leg,
+                     "fetches_per_s": _rate(pf.stats(LEG)["fetches"],
+                                            time.monotonic() - r.started)},
            "counts": r.counts, "claims_new": len(r.new), "claims_total": len(all_rows),
            "claims_by_channel": {ch: sum(1 for c in r.new if c.get("channel") == ch)
                                  for ch in ("direct", "indirect")},
@@ -1635,9 +1846,125 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
                     "allocator; URLs feed the world crawler frontier; dataset pages feed "
                     "acquire_datasets")}
     if write:
-        REPORT.parent.mkdir(parents=True, exist_ok=True)
-        REPORT.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str), "utf-8")
+        out = report_path or REPORT
+        _atomic_text(out, json.dumps(doc, indent=1, ensure_ascii=False, default=str))
+        if fetch:
+            _append_run({"at": doc["generated_utc"], "leg": leg, "region_filter": region,
+                         "only": len(only or []), "seconds": doc["elapsed_s"],
+                         "workers": n_workers, "grounds_worked": worked,
+                         "grounds_scheduled": len(order), "claims_new": len(r.new),
+                         "datasets_new": len(r.datasets), **doc["fetch_stats"]})
+        # THE YIELD ARTIFACT IS WRITTEN BY THE LEG THAT MOVES IT: every scheduled pass of this
+        # miner (the deep_forest leg and every forest_* leg's practitioner role) republishes it.
+        with contextlib.suppress(Exception):
+            from research import alt_data_yield
+            alt_data_yield.write(out=REPORT.with_name(alt_data_yield.ARTIFACT_NAME),
+                                 frontier=_frontier_path(), vector_stats=_vector_stats_path(),
+                                 runs=_runs_path())
     return doc
+
+
+def _rate(n: float, seconds: float) -> float | None:
+    return round(n / seconds, 4) if seconds > 0 else None
+
+
+def _runs_path() -> Path:
+    """Beside the cursor file, so a test that redirects SEEN redirects this too."""
+    return SEEN.with_name(RUNS.name)
+
+
+def _vector_stats_path() -> Path:
+    return SEEN.with_name(VECTOR_STATS_NAME)
+
+
+def _append_run(row: dict[str, Any]) -> None:
+    with contextlib.suppress(OSError), _xlock("alt_fetch_runs"):
+        p = _runs_path()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+
+
+def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
+    """Cumulative per-vector attempts / successes / rows / last error. The frontier keeps the
+    outcome; this keeps the COUNTS the yield artifact needs (a success is a ground that
+    produced at least one claim or dataset)."""
+    p = _vector_stats_path()
+    with _xlock("deep_forest_vector_stats"):
+        try:
+            doc = json.loads(p.read_text("utf-8"))
+            vec = doc.get("vectors") if isinstance(doc, dict) else None
+        except (OSError, ValueError):
+            vec = None
+        vec = vec if isinstance(vec, dict) else {}
+        now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        for s in statuses:
+            name = str(s.get("ground") or "")
+            if not name:
+                continue
+            e = vec.setdefault(name, {"attempts": 0, "successes": 0, "rows": 0,
+                                      "datasets": 0, "counted_since": now})
+            rows = int(s.get("claims") or 0)
+            dsets = int(s.get("datasets") or 0)
+            e["attempts"] = int(e.get("attempts") or 0) + 1
+            e["successes"] = int(e.get("successes") or 0) + (1 if rows or dsets else 0)
+            e["rows"] = int(e.get("rows") or 0) + rows
+            e["datasets"] = int(e.get("datasets") or 0) + dsets
+            e["last_status"] = s.get("status")
+            e["last_attempt"] = now
+            e["last_elapsed_s"] = s.get("elapsed_s")
+            e["region"] = s.get("region")
+            e["language"] = s.get("language")
+            e["route"] = s.get("route")
+            err = s.get("error") or "; ".join(str(x) for x in (s.get("errors") or [])[:2]) \
+                or (s.get("why") if s.get("status") not in ("PRODUCTIVE",
+                                                            "REACHED_NO_CLAIMS") else "")
+            if rows or dsets:
+                e["last_success"] = now
+            if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE"):
+                e["last_error"] = str(err or s.get("status"))[:200]
+        _atomic_text(p, json.dumps({"updated": now, "vectors": vec,
+                                    "note": "per-vector cumulative counts since counted_since; "
+                                            "written by deep_forest_miner at each ground's "
+                                            "checkpoint"}, ensure_ascii=False, indent=0))
+
+
+def _checkpoint(r: _Run, f: _Run, ckpt: dict[str, Any]) -> None:
+    """Persist ONE finished ground now: its claims and datasets (appended), its frontier
+    outcome and its vector counts, and -- at most once a minute -- the merged seen-set. Never
+    raises: a failed checkpoint is recorded on the report and the end-of-run write retries."""
+    try:
+        if f.new:
+            with _xlock("deep_forest_claims"):
+                CLAIMS.parent.mkdir(parents=True, exist_ok=True)
+                with CLAIMS.open("a", encoding="utf-8") as fh:
+                    for row in f.new:
+                        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+        if f.datasets:
+            with _xlock("deep_forest_datasets"):
+                DATASETS.parent.mkdir(parents=True, exist_ok=True)
+                with DATASETS.open("a", encoding="utf-8") as fh:
+                    for row in f.datasets:
+                        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+        # A ground the box could not reach because the BOX had no network was not attempted;
+        # recording it BLOCKED would move it out of NAMED_ONLY without anyone having tried it.
+        sts = [s for s in f.status if "ground" in s and s.get("status") != "NO_NETWORK"]
+        if sts:
+            with _xlock("deep_forest_frontier"):
+                _record_frontier(sts, [])
+            _record_vector_stats(sts)
+        with r._lock:
+            ckpt.setdefault("done", set()).update(str(s.get("ground") or "")
+                                                  for s in f.status if "ground" in s)
+            due = time.monotonic() - ckpt["last_seen_save"] > 60.0
+            if due:
+                ckpt["last_seen_save"] = time.monotonic()
+                snap = {**r.seen, "claims": list(r.seen_claims), "urls": list(r.seen_urls)}
+        if due:
+            _save_seen(snap)
+    except Exception as exc:
+        with r._lock:
+            ckpt.setdefault("errors", []).append(f"{type(exc).__name__}: {str(exc)[:160]}")
 
 
 def main() -> int:
@@ -1647,8 +1974,11 @@ def main() -> int:
     ap.add_argument("--only", action="append", default=None,
                     help="ground name, route, region or cluster to work (repeatable)")
     ap.add_argument("--region", default=None, help="work one region (or cluster) this pass")
+    ap.add_argument("--workers", type=int, default=WORKERS,
+                    help="grounds worked at once (politeness stays per host)")
     a = ap.parse_args()
-    d = run(budget_s=a.budget_s, fetch=not a.no_fetch, only=a.only, region=a.region)
+    d = run(budget_s=a.budget_s, fetch=not a.no_fetch, only=a.only, region=a.region,
+            workers=a.workers)
     print(f"DEEP FOREST  network={d['network']} grounds={d['grounds_worked']}/{d['grounds_total']} "
           f"productive={d['productive']} claims_new={d['claims_new']} total={d['claims_total']} "
           f"datasets={d['datasets_new']} tasks={d['tasks_queued']} "
