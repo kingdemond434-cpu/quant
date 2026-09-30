@@ -250,7 +250,7 @@ def test_a_concurrent_run_reaches_every_ground_and_checkpoints_each_one(monkeypa
         with lock:
             active["now"] += 1
             active["peak"] = max(active["peak"], active["now"])
-        time.sleep(0.05)
+        threading.Event().wait(0.05)     # time.sleep is patched out by _isolate
         with lock:
             active["now"] -= 1
         return _PAGE
@@ -311,7 +311,7 @@ def test_a_forest_leg_mines_its_own_grounds_with_its_idle_seconds(monkeypatch) -
 
     monkeypatch.setattr(dfm, "run", fake_run)
     import libs.research.forests as F
-    run = fr.Run(forest="latam", allocation=F.Allocation(workers=4, budget_s=3000),
+    run = fr.Run(forest="latam", allocation=F.Allocation(forest="latam", workers=4, budget_s=3000),
                  mine_grounds=True)
     res = fr.RoleResult(role="practitioner")
     fr._mine_grounds(run, res, 360.0)

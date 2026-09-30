@@ -441,6 +441,12 @@ _NUM_RE = re.compile("[-+" + _MINUS + r"]?\d[\d\s," + _NBSP + r"]*\.?\d*")
 _PCT_RE = re.compile("([-+" + _MINUS + r"]?\d[\d.,]*)\s*%")
 
 
+def _is_num(text: str) -> bool:
+    """A cell that IS a number (a stat), as opposed to a name that contains a digit."""
+    t = text.strip().replace(_MINUS, "-").replace(_NBSP, " ")
+    return bool(re.fullmatch(r"[-+$€£]?\s*[-+]?\d[\d\s,.]*\s*(?:%|pips?|[kKmM])?", t))
+
+
 def _num(text: str) -> float | None:
     m = _NUM_RE.search(text)
     if not m:
@@ -480,7 +486,7 @@ def parse_tables(source: str, html: str, base_url: str, region: str) -> list[dic
                 continue
             texts = [_cell_text(c) for c in cells]
             name_i = next((i for i, t in enumerate(texts)
-                           if t and _num(t) is None and 2 <= len(t) <= 80), None)
+                           if t and not _is_num(t) and 2 <= len(t) <= 80), None)
             if name_i is None:
                 continue
             stats: dict[str, float] = {}
@@ -530,11 +536,12 @@ def parse_repeated_cards(source: str, html: str, base_url: str, region: str,
             text = _cell_text("<x " + block)
             if "%" not in text:
                 continue
-            name = next((tok for tok in re.split(r"\s{2,}|\s[|/•·]\s", text)
-                         if tok and _num(tok) is None and 2 <= len(tok) <= 60), None)
-            if not name:
-                name = next((w for w in text.split(" ")
-                             if len(w) >= 3 and _num(w) is None), None)
+            # the card's own text nodes, in order: the first that is neither a number nor a
+            # stat label (in any language) is the account's name
+            tokens = [t for t in (_cell_text(x) for x in re.split(r"<[^>]*>", "<x " + block))
+                      if t]
+            name = next((t for t in tokens if not _is_num(t) and 2 <= len(t) <= 60
+                         and _stat_key(t) is None), None)
             if not name:
                 continue
             pcts = [p for p in (_num(x) for x in _PCT_RE.findall(text))
