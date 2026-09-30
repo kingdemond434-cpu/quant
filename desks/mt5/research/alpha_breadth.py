@@ -528,7 +528,7 @@ def run(write_queue: bool = True) -> dict[str, Any]:
             "occupied_of_15_original": len([k for k in clusters["occupied_either"]
                                             if k in ORIGINAL_CLUSTER_KEYS]),
             "occupied_of_17": len(clusters["occupied_either"]),
-            "empty_in_both_added": clusters["empty_in_both_added"],
+            "empty_in_both_added": clusters.get("empty_in_both_added", []),
             "occupied_traded": clusters["traded"]["occupied"],
             "occupied_certified": clusters["certified"]["occupied"],
             "occupied_either": clusters["occupied_either"],
@@ -577,7 +577,7 @@ def _append_history(doc: dict[str, Any]) -> None:
         "effective_breadth": doc["effective"]["effective_breadth"],
         "binding_reading": doc["effective"]["binding_reading"],
         "n_clusters_occupied": len(doc["clusters"]["occupied_either"]),
-        "occupied_of_15_original": doc["clusters"]["occupied_of_15_original"],
+        "occupied_of_15_original": doc["clusters"].get("occupied_of_15_original"),
         "n_clusters_empty": len(doc["clusters"]["empty_in_both"]),
         "n_eff_time": (doc.get("timestamp_overlap") or {}).get("n_eff"),
     }
