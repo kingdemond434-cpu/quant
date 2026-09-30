@@ -702,6 +702,13 @@ def test_fixture_trace_runs_the_real_sealed_gauntlet(tmp_path: Path) -> None:
     assert tr["preregistration_sha256"]
     assert tr["verdict"]["terminal_gate"] not in ("", "UNKNOWN", None)
     assert tr["outcome"] == "SURVIVOR" or tr["outcome"] in rejection.REASON_CODES
+    # the gauntlet's own cell id IS the mining cell's sealed gauntlet_cell: the ledger row
+    # carries the judged id, and a mismatch would have read FAILS_PREREG
+    assert tr["outcome"] != "FAILS_PREREG"
+    assert tr["verdict"]["gauntlet_cell"] == tr["gauntlet_cell"]
+    ledger = [json.loads(x) for x in
+              (tmp_path / "fx" / "fixture_gate_ledger.jsonl").read_text("utf-8").splitlines()]
+    assert ledger and all(r["cell"] == r["judged_cell"] for r in ledger)
     digest = json.loads((tmp_path / "fx" / "mining_digest.json").read_text("utf-8"))
     ch = digest["chains"]
     assert ch and all(c["source_url"].startswith("fixture://") for c in ch)
@@ -742,3 +749,23 @@ def test_join_follows_the_docket_axis_expansion(tmp_path: Path) -> None:
     assert m["cells_survived_24h"] == 1
     kills = [r for r in pipe.ledger.rows() if r["stage"] == "gauntlet"]
     assert [r["kill_class"] for r in kills] == ["confident_kill"]
+
+
+def test_digest_is_written_even_when_acquire_raises(tmp_path: Path) -> None:
+    pipe = _pipe(tmp_path)
+
+    def boom(*a: Any, **k: Any) -> Any:
+        raise RuntimeError("network stack gone")
+    pipe.acquire = boom
+    m = pipe.run_pass(60, fetch=True, now=T0)
+    assert any(e.startswith("acquire: RuntimeError") for e in m["last_pass"]["errors"])
+    assert json.loads((tmp_path / "mining_digest.json").read_text("utf-8"))["generated_at"]
+
+    def metrics_boom(t: Any) -> Any:
+        raise ValueError("metrics broke")
+    pipe.metrics = metrics_boom
+    with pytest.raises(ValueError):
+        pipe.run_pass(60, fetch=False, now=T0 + timedelta(hours=1))
+    d = json.loads((tmp_path / "mining_digest.json").read_text("utf-8"))
+    assert d["generated_at"] == iso(T0 + timedelta(hours=1))
+    assert d["metrics"]["publish"] == "FAILED before metrics"

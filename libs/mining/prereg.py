@@ -12,8 +12,9 @@ which is what keeps the multiplicity count honest: the evaluator never judges a 
 moved under it.
 
 TRIAL LINEAGE. Every contract carries `trial_family_id` and `parent_cell_id`. A descendant (an
-amendment, a symbol transfer of the same rule) inherits its parent's family, so multiplicity
-accounting counts FAMILIES, not the number of variants a family spawned.
+amendment, a symbol transfer, a regime child of the same rule) inherits its parent's family.
+This is LINEAGE, recorded for the reader; no organ charges multiplicity by it yet. The
+multiple-testing charge is the gauntlet's own deflated-Sharpe trial count.
 """
 from __future__ import annotations
 

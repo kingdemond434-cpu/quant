@@ -12,10 +12,10 @@
 #             absent, so a source another lane already fetches is never fetched twice.
 #   immutable_time  the source's own timestamp can be used as availability (it cannot be
 #             silently edited). Anything editable is available from acquisition only.
-#   feeds_to  consumers beyond the gauntlet docket (mechanics feed for risk and cost models).
+#   feeds_to  consumers beyond the gauntlet docket (the mechanics feed; no reader yet).
 #   uses      direct_cells (a rule compiled onto a registered family), indirect_cells (existing
 #             families multiplied by a regime condition, or conditioning/regime features), and
-#             allocation_intel (mechanics and intelligence for sizing, risk and cost). A source
+#             allocation_intel (mechanics facts published to the mechanics feed). A source
 #             serving no use is COLD whatever it fetched.
 #   robots    page crawls (html_listing, page_snapshot, telegram_preview) obey robots.txt;
 #             a disallowed path is BLOCKED_ROBOTS, recorded every run.

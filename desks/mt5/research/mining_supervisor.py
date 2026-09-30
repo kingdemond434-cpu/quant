@@ -20,7 +20,9 @@ WHAT ONE PASS DOES
    (a mutated or mismatched contract is FAILS_PREREG) and mapped to a rejection code or a
    survivor.
 5. Publish: `reports/mining/metrics_<date>.json` (and MINING_METRICS.json, the latest), the
-   end-to-end trace, and the mechanics feed for risk and cost models.
+   end-to-end trace, and the mechanics feed (`data/mining/mechanics_feed.jsonl`). NOTHING READS
+   THE FEED YET: breadth wires it into exogenous_gate as a conditioner series when that hook
+   exists; risk and cost consumers are money-path work queued for the desktop pass.
 
 NOTHING HERE HAS CAPITAL AUTHORITY. A survivor is a gauntlet survivor like any other; the
 promoter and allocator decide what happens to it, through their own sealed paths.
@@ -790,20 +792,27 @@ class Pipeline:
 
     def publish(self, report: PassReport, now: datetime | None = None) -> dict[str, Any]:
         t = now or utcnow()
-        m = self.metrics(t)
-        m["last_pass"] = {"started": report.started, "records_processed":
-                          report.records_processed, "cells_created": report.cells_created,
-                          "donated": report.donated, "verdicts_joined": report.verdicts_joined,
-                          "handed_off": report.handed_off, "errors": report.errors[:20],
-                          "fetch": report.sources}
-        m["trace"] = self.trace()
-        self.reports.mkdir(parents=True, exist_ok=True)
-        text = json.dumps(m, indent=1, ensure_ascii=False, default=str)
-        (self.reports / f"metrics_{t:%Y-%m-%d}.json").write_text(text, "utf-8")
-        (self.reports / "MINING_METRICS.json").write_text(text, "utf-8")
-        (self.reports / "MINING_TRACE.json").write_text(
-            json.dumps(m["trace"], indent=1, ensure_ascii=False, default=str), "utf-8")
-        self.write_digest(m, t)
+        m: dict[str, Any] = {}
+        try:
+            m = self.metrics(t)
+            m["last_pass"] = {"started": report.started,
+                              "records_processed": report.records_processed,
+                              "cells_created": report.cells_created,
+                              "donated": report.donated,
+                              "verdicts_joined": report.verdicts_joined,
+                              "handed_off": report.handed_off, "errors": report.errors[:20],
+                              "fetch": report.sources}
+            m["trace"] = self.trace()
+            self.reports.mkdir(parents=True, exist_ok=True)
+            text = json.dumps(m, indent=1, ensure_ascii=False, default=str)
+            (self.reports / f"metrics_{t:%Y-%m-%d}.json").write_text(text, "utf-8")
+            (self.reports / "MINING_METRICS.json").write_text(text, "utf-8")
+            (self.reports / "MINING_TRACE.json").write_text(
+                json.dumps(m["trace"], indent=1, ensure_ascii=False, default=str), "utf-8")
+        finally:
+            # The committed digest is written whatever failed above, carrying the errors.
+            self.write_digest(m or {"errors": report.errors[:20],
+                                    "publish": "FAILED before metrics"}, t)
         return m
 
     def chains(self, now: datetime, limit: int = DIGEST_CHAINS) -> list[dict[str, Any]]:
@@ -838,7 +847,11 @@ class Pipeline:
 
     def write_digest(self, m: Mapping[str, Any], now: datetime) -> None:
         """The committed digest (DIGEST): bounded, scalars and short rows only."""
-        rej = list(self.ledger.rows())[-DIGEST_REJECTIONS:]
+        try:
+            rej = list(self.ledger.rows())[-DIGEST_REJECTIONS:]
+            chains = self.chains(now)
+        except Exception as exc:                          # the digest still lands, saying why
+            rej, chains = [], [{"error": f"{type(exc).__name__}: {exc}"[:300]}]
         doc = {"schema": "mining_digest/1", "generated_at": iso(now),
                "metrics": {k: v for k, v in m.items() if k not in ("trace", "last_pass",
                                                                    "sources")},
@@ -846,7 +859,7 @@ class Pipeline:
                                                         "last_outcome", "evaluated_cells_30d")}
                            for sid, v in (m.get("sources") or {}).items()},
                "trace": m.get("trace"),
-               "chains": self.chains(now),
+               "chains": chains,
                "rejections_latest": rej}
         self.digest.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.digest.with_suffix(".tmp")
@@ -862,9 +875,13 @@ class Pipeline:
         t0 = time.monotonic()
         rep = PassReport(started=iso(now or utcnow()))
         if fetch:
-            for r in self.acquire(budget_s * 0.6, http_get, now=now):
-                rep.sources.append({"id": r.source_id, "outcome": r.outcome,
-                                    "fetched": r.fetched, "new": r.new, "detail": r.detail})
+            try:
+                for r in self.acquire(budget_s * 0.6, http_get, now=now):
+                    rep.sources.append({"id": r.source_id, "outcome": r.outcome,
+                                        "fetched": r.fetched, "new": r.new,
+                                        "detail": r.detail})
+            except Exception as exc:                      # the rest of the pass still runs
+                rep.errors.append(f"acquire: {type(exc).__name__}: {exc}"[:300])
         for step in ("process", "retry", "donate", "join", "handoff"):
             if time.monotonic() - t0 > budget_s * 0.95:
                 rep.errors.append(f"budget exhausted before {step}")
@@ -939,7 +956,9 @@ def fixture_trace(data_dir: Path) -> dict[str, Any]:
         built.setdefault("params", dict(spec.get("params") or {}))
         out = eg.run_gauntlet([built], "global-mining-fixture-trace", meta)
         for v in out.get("verdicts") or []:
-            rows.append({"at": utcnow().isoformat(), "cell": c.gauntlet_cell,
+            # The ledger row carries the id the GAUNTLET judged, never ours: if the two ever
+            # disagree the join reads FAILS_PREREG and the fixture test fails on it.
+            rows.append({"at": utcnow().isoformat(), "cell": v.get("cell") or "UNKNOWN",
                          "sym": v.get("sym"), "family": v.get("family"),
                          "passed": bool(v.get("passed")),
                          "terminal_gate": v.get("terminal_gate") or "UNKNOWN",
