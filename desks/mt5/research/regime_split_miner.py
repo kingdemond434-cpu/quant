@@ -73,6 +73,61 @@ EMBARGO = 24
 MIN_FOLD_TRADES = 5
 CORE = ("EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD", "USDCHF", "NZDUSD", "EURJPY",
         "GBPJPY", "AUDJPY", "XAUUSD", "XAGUSD")
+FAMILY = "regime_split"
+#: THE LIFETIME UNION (producer-swarm follow-up, 2026-09-30). Every (symbol, base, regime) cell
+#: this miner has ever screened, charged ONCE: a re-screen of a charged cell costs nothing new, a
+#: first screen is charged to the trial census (REGIME_SPLIT_TRIALS.jsonl, summed by
+#: libs.research.experiment_ledger) whether or not anything survives, and the deflation charges
+#: every row the WHOLE union, not the pass.
+CHARGED = _DESK / "data" / "regime_split_charged.json"
+TRIALS = _DESK / "data" / "REGIME_SPLIT_TRIALS.jsonl"
+
+
+def lane() -> list[str]:
+    """EVERY HYPOTHESIS-LANE SYMBOL, least-judged first -- not the twelve CORE names.
+
+    Every symbol with H1 bars that `universe_policy.may_hypothesise(sym, "regime_split")` admits
+    (single-name equities only reach cross-sectional families, and this is not one), ordered by
+    `breadth_rotation.orthogonal_ring` so a pass whose budget runs out spends it on the symbols
+    the judge has seen least, and the next pass reaches the ones this one did not."""
+    from research.universe_policy import may_hypothesise
+    have = sorted(p.stem.removesuffix("_H1") for p in pc.UNI.glob("*_H1.parquet"))
+    ok = [s for s in have if may_hypothesise(s, FAMILY)]
+    try:
+        # The rotation lands with the producer swarm; until then the lane runs alphabetically,
+        # which still covers every admitted symbol, just not least-judged first.
+        from research.breadth_rotation import judged_counts, orthogonal_ring
+        return list(orthogonal_ring(ok, FAMILY, counts=judged_counts()))
+    except Exception:
+        return ok
+
+
+def _charged() -> dict[str, str]:
+    try:
+        got = json.loads(CHARGED.read_text("utf-8"))
+        return {str(k): str(v) for k, v in got.items()} if isinstance(got, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def charge(rows: list[dict]) -> tuple[int, int]:
+    """(cells newly charged this pass, the lifetime union's size). Writes both files."""
+    union = _charged()
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    new = [str(r["cell"]) for r in rows if str(r["cell"]) not in union]
+    for c in new:
+        union[c] = now
+    CHARGED.parent.mkdir(parents=True, exist_ok=True)
+    tmp = CHARGED.with_suffix(".tmp")
+    tmp.write_text(json.dumps(union, sort_keys=True), "utf-8")
+    tmp.replace(CHARGED)
+    if new:
+        with TRIALS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"ts": now, "family": FAMILY, "cells_screened": len(new),
+                                 "source": SOURCE, "dry_run": False,
+                                 "rule": "each (symbol, base, regime) cell charged once over "
+                                         "the lifetime union"}) + "\n")
+    return len(new), len(union)
 
 
 def _base_fn(name: str) -> Any:
@@ -133,7 +188,7 @@ def sweep_symbol(sym: str, meta: dict, deadline: float) -> tuple[list[dict], str
 def run(symbols: list[str] | None = None, budget_s: float = 1800.0) -> dict[str, Any]:
     meta = pc.universe_meta()
     have = {p.stem.removesuffix("_H1") for p in pc.UNI.glob("*_H1.parquet")}
-    todo = sorted(s for s in (symbols or CORE) if s in have)
+    todo = [s for s in symbols if s in have] if symbols else lane()
     deadline = time.monotonic() + budget_s
     rows: list[dict] = []
     skipped: dict[str, str] = {}
@@ -146,6 +201,15 @@ def run(symbols: list[str] | None = None, budget_s: float = 1800.0) -> dict[str,
             skipped[sym] = why
         rows.extend(got)
     rows = pc.deflate(rows)
+    new_cells, union_n = charge(rows)
+    from research.multiplicity import deflate_t
+    for r in rows:
+        # Each cell pays for the WHOLE union ever tried, never only this pass's width.
+        n = max(int(r.get("n_tests_sweep") or 0), union_n)
+        r["n_tests_sweep"] = n
+        r["t_deflated_sweep"] = round(deflate_t(float(r["t_gross"]), n), 3)
+        r["proposed"] = bool(r.get("clears_cost") and r["t_deflated_sweep"] > pc.PROPOSE_T
+                             and int(r.get("n_independent", 0)) >= pc.MIN_TRADES)
     for r in rows:
         # The walk-forward is a KILL, never a rescue: a row the deflated screen proposed is
         # withdrawn when any measured fold loses; nothing the screen refused is revived by it.
@@ -165,7 +229,9 @@ def run(symbols: list[str] | None = None, budget_s: float = 1800.0) -> dict[str,
     ) for r in proposals]
     killed_by_wf = sum(1 for r in rows if r.get("clears_cost") and not r["walk_forward"]["passed"])
     report = {"generated_at": datetime.now(tz=UTC).isoformat(), "symbols_swept": len(todo),
-              "tests_run": len(rows), "cells_proposed": len(proposals),
+              "lane": "every hypothesis-lane symbol (may_hypothesise), least-judged first",
+              "tests_run": len(rows), "cells_newly_charged": new_cells,
+              "lifetime_union_cells": union_n, "cells_proposed": len(proposals),
               "killed_by_walk_forward": killed_by_wf, "skipped": skipped,
               "design": {"base_families": list(BASE_FAMILIES), "regimes": [f"{v}_{t}" for v in
                                                                          VOLS for t in TRENDS],
@@ -175,7 +241,8 @@ def run(symbols: list[str] | None = None, budget_s: float = 1800.0) -> dict[str,
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(report, indent=1, default=str), "utf-8")
     if cands:
-        report["donated"] = str(pc.donate(SOURCE, cands, len(rows)))
+        # tests_run is the NEW charge: the union's cells were charged once, in TRIALS.
+        report["donated"] = str(pc.donate(SOURCE, cands, new_cells))
     return report
 
 

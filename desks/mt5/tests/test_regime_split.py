@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
@@ -84,3 +85,20 @@ def test_walk_forward_purges_trades_at_fold_boundaries() -> None:
     n = 1000
     wf = rsm.purged_walk_forward([1.0], [200], n, cost=0.0, folds=5, embargo=24)
     assert sum(f["n"] for f in wf["folds"]) == 0
+
+
+def test_union_is_charged_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+    monkeypatch.setattr(rsm, "CHARGED", tmp_path / "charged.json")
+    monkeypatch.setattr(rsm, "TRIALS", tmp_path / "trials.jsonl")
+    rows = [{"cell": "A.regime_split.x.low_trend"}, {"cell": "B.regime_split.x.low_trend"}]
+    assert rsm.charge(rows) == (2, 2)
+    assert rsm.charge([*rows, {"cell": "C.regime_split.x.low_trend"}]) == (1, 3)
+    assert rsm.charge(rows) == (0, 3)
+    lines = (tmp_path / "trials.jsonl").read_text().splitlines()
+    assert [json.loads(x)["cells_screened"] for x in lines] == [2, 1]
+
+
+def test_lane_never_admits_single_name_equities() -> None:
+    from research.universe_policy import may_hypothesise
+    assert all(may_hypothesise(s, rsm.FAMILY) for s in rsm.lane())
