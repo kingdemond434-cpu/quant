@@ -59,9 +59,11 @@ def test_live_filter_only_is_kept_and_never_remapped() -> None:
     fam = "overnight_gap_decay"
     cache = _cache({ff.key(fam, {}): _rec({0: 269}, {})})
     slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache)
-    by = {s: (p, n) for s, p, n in slots}
-    assert by["asia"] == ({"session": "asia"}, None)      # minted exactly as proposed, no mark
-    assert by["london"][1] and by["london"][1]["cause"] == ff.NEVER_FIRES
+    assert len(slots) == 4
+    assert slots[1] == ("asia", {"session": "asia"}, None)  # minted exactly as proposed, no mark
+    for _s, _p, note in slots[2:]:                        # london / ny: neither clock -> DEAD
+        assert note and note["dead_session"] in ("london", "ny")
+        assert note["cause"] == ff.NEVER_FIRES
     assert ff.replacements(fam, {}, "asia", cache=cache) == []
     assert ff.standin(fam, {}, "asia", cache=cache) == ({"session": "asia"}, None)
 
