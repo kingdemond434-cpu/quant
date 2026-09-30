@@ -201,3 +201,11 @@ def test_formula_accepts_its_provenance_key_and_its_rendered_tree() -> None:
     assert as_list, "the fixture must fire for the comparison to mean anything"
     assert [(s.time, s.side) for s in as_text] == [(s.time, s.side) for s in as_list]
     assert family_formula(df, expr="not(a valid", norm=120) == []
+
+
+
+def test_a_short_history_after_the_cut_is_named_not_never_fires(tmp_path) -> None:
+    """T5 names a cell that traded only after the lockbox cut; it is not a spec that never fires."""
+    rows = [_unknown("d.f.p=9", unknown_reason="short_history_after_cut", days=0)]
+    named = jc.name_unknowns(_gates(tmp_path, rows))
+    assert named["d.f.p=9"]["reason"] == "short_history_after_cut"

@@ -817,6 +817,10 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
             reason, route = "lockbox_consumed_history", (
                 "the cell fires, but its chart's history begins after the campaign lockbox cut, "
                 "so the carve left under 60 development days: re-admitted as history grows")
+        elif declared == "short_history_after_cut":
+            reason, route = "short_history_after_cut", (
+                "the cell traded, but on under 60 days, all of them after the lockbox cut, so the "
+                "carve left no development window: re-admitted as history grows")
         elif days == 0 and bars == 0:
             reason, route = "missing_bars", ("no H1 bar file for this symbol: the conversion "
                                              "organ's bar supply (research/local_converter.py) "
