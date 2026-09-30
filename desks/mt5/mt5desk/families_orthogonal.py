@@ -2263,6 +2263,20 @@ FAMILY_INPUTS["exogenous_conditioner"] = (
     "a data pack's own published series, on its own available_time clock",
     "data/lake/series/<pack_id>.parquet")
 
+# THE MASS SCREEN'S GRAMMARS (2026-09-30). `research/mass_screen.py` generates and cheaply screens
+# rule cells in bulk and forwards only the FDR-controlled, cluster-deduplicated survivors through
+# the registry door; this is the constructor the sealed gauntlet rebuilds each one with. The five
+# names are grammars of one executable rule (`mt5desk.mass_screen_rules`), kept distinct so the
+# multiplicity ledger charges each grammar its own screened width. Price-only (the lead grammar
+# also reads its leader's parquet); every argument that defines the rule is required, so a
+# default-parameter sweep sets these aside instead of minting an unscreened rule.
+from mt5desk.mass_screen_rules import MASS_SCREEN_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(MASS_SCREEN_FAMILIES)
+for _ms_name in MASS_SCREEN_FAMILIES:
+    FAMILY_INPUTS[_ms_name] = ("price only (lead: the named leader's bars too)",
+                               "data/universe/*_H1.parquet")
+
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a
 # certificate: `family_cross_sectional` takes its peers as an argument and the sealed gauntlet's
@@ -2284,3 +2298,41 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# THE UNKNOWN-UNKNOWN GRAMMARS (2026-09-30). `research/unknown_unknown.py` enumerates and evolves
+# expressions over bar primitives nobody named (`mt5desk.uu_grammar`), screens them cheaply,
+# controls FDR over the FULL screened width and donates only novel survivors; this is the
+# constructor the sealed gauntlet rebuilds each one with. Five names, one executable rule, so the
+# multiplicity ledger charges each grammar its own width. A cross-asset leaf is loaded by the
+# family itself from the bar store, so `build_cell`'s ordinary `fn(h1, **params)` call suffices.
+# Every argument that defines the rule is required: a default-parameter sweep sets them aside.
+from mt5desk.uu_grammar import UU_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(UU_FAMILIES)
+for _uu_name in UU_FAMILIES:
+    FAMILY_INPUTS[_uu_name] = ("price, volume and calendar only (uu_cross: the named reference "
+                               "symbol's bars too)", "data/universe/*_H1.parquet")
+    FAMILY_TIMEFRAMES[_uu_name] = (
+        ("H1",),
+        "the expression's windows are counted in H1 bars and a cross-asset leaf is read from the "
+        "reference's H1 store; on another chart every window would change meaning and the "
+        "reference would be joined to a clock it does not carry")
+del _uu_name
+
+# DATASET-CONDITIONED (2026-09-30): the INDIRECT use of every dataset the desk holds. An existing,
+# rebuildable family's own entries kept only while a dataset's point-in-time reading is in a named
+# state (`mt5desk.family_dataset_conditioned`), read through ONE loader for the lake, the CFTC files
+# and the intelligence snapshots (`mt5desk.dataset_series`, lagged a publication day). It loads its
+# own input, so `build_cell`'s ordinary call builds it; the base family, the dataset and the field
+# are required, so a default-parameter sweep sets it aside and only `producer_swarm`'s dataset
+# producers mint it. H1 only: the base is rebuilt on H1 bars, as `exit_operated` rebuilds its own.
+from mt5desk.family_dataset_conditioned import family_dataset_conditioned  # noqa: E402
+
+ORTHOGONAL_FAMILIES["dataset_conditioned"] = family_dataset_conditioned
+FAMILY_INPUTS["dataset_conditioned"] = (
+    "a base family's price inputs, filtered by a dataset's own series on its availability clock",
+    "data/lake/series/*, data/cot*/*.parquet, data/intelligence/<seat>/")
+FAMILY_TIMEFRAMES["dataset_conditioned"] = (
+    ("H1",),
+    "the base family is rebuilt on H1 bars and the dataset is joined to the H1 clock a "
+    "publication day late; on another chart the base would change meaning")

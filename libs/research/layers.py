@@ -87,6 +87,12 @@ LEG_LAYER: dict[str, str] = {
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
     "producer_census": "meta", "productivity_census": "meta",
+    # Every producer's reach against what it minted, and the share the sealed judge can build:
+    # the machine measuring its own breadth, which is meta.
+    "producer_breadth": "meta",
+    # The video-derived anchor/exit grid mints claims about returns: prediction, like
+    # `empty_cluster_forcer`, which it runs beside.
+    "htf_anchor": "prediction",
     # The north star over certified edges and the per-producer contracts that price spare compute
     # (Tier-1 #9/#11): the machine measuring what its research bought, which is meta.
     "alpha_rank": "meta", "factory_contracts": "meta",
@@ -182,6 +188,14 @@ LEG_LAYER: dict[str, str] = {
     # The breadth sweep mints cells for every unbanned family on every chart the desk holds bars
     # for -- a predictor search, scheduled hourly since the discovery hunt was banned (2026-09-16).
     "breadth_sweep": "prediction",
+    # The mass screen generates and screens rule cells by the million and forwards the FDR
+    # survivors to the judge -- a predictor search at scale: prediction.
+    "mass_screen": "prediction",
+    # The producer swarm mints breadth cells for every buildable family on every class, chart,
+    # session and transform, and the unknown-unknown miner searches expressions nobody named:
+    # both are predictor searches.
+    "producer_swarm": "prediction",
+    "unknown_unknown": "prediction",
     # Whether the allocator's book reaches the sleeves it funds is a measurement of the desk's
     # own wiring, like `wiring_audit`: meta.
     "allocator_join": "meta",

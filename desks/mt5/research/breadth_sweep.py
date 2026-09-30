@@ -286,10 +286,65 @@ def _targets(fam: str, spec: dict, syms: list[str]) -> list[tuple[str, dict]]:
     return [(s, {}) for s in pool]
 
 
+#: What the last `cells()` call set aside as UNTESTABLE, by `family|chart|verdict`, and why. A
+#: count the report publishes -- a refusal only the sweep knows about is one nobody acts on.
+LAST_SET_ASIDE: dict[str, dict[str, Any]] = {}
+REPORT = DESK / "reports" / "BREADTH_SWEEP.json"
+
+
+def _testable(fam: str, p: dict) -> bool:
+    """TESTABLE BY THE SEALED GAUNTLET, or set aside by name (principal 2026-09-30: "testable").
+
+    Two things made a cell here untestable while it still spent a docket row and a judge slot:
+    a chart the family DECLARES it cannot express (`families_orthogonal.FAMILY_TIMEFRAMES` --
+    `relative_value` on M5 measures quoting hours, `clock_transition` on D1 has no stamp hour to
+    gate on), and a family whose data input the sealed `build_cell` never loads or hands in a
+    shape the family cannot read (`research/gauntlet_buildability`, measured by building real
+    cells). Either way the family returns no signals and the judge files a market "no" that the
+    market never gave. This file's own rule already says it: a cell built without its input is a
+    test of the fallback, not of the mechanism.
+
+    Refusal is counted per (family, chart, verdict) with the reason, never silent, and an
+    unimportable probe refuses NOTHING (L1.28a: a missing measurement is not a verdict).
+    """
+    try:
+        from research.gauntlet_buildability import BUILDABLE, cell_verdict
+    except Exception:
+        return True
+    verdict, why = cell_verdict(fam, p)
+    if verdict == BUILDABLE:
+        return True
+    key = f"{fam}|{p.get('timeframe') or 'H1'}|{verdict}"
+    row = LAST_SET_ASIDE.setdefault(key, {"family": fam, "chart": p.get("timeframe") or "H1",
+                                          "verdict": verdict, "why": why, "cells": 0})
+    row["cells"] += 1
+    return False
+
+
+def _orthogonal_key() -> Any:
+    """Sort key: most-intraday chart first (the principal's ranking, unchanged), then the
+    (symbol, family) pairs the sealed gauntlet has judged FEWEST cells on, then name. A capped
+    merge used to take the alphabetically-first symbols on every family; it now takes the least
+    covered ground first. `breadth_rotation.judged_counts` reads the judge's own seen-cells file,
+    and an unreadable one leaves the old name order."""
+    try:
+        from research.breadth_rotation import judged_counts
+        _by_sym, by_pair = judged_counts()
+    except Exception:
+        by_pair = {}
+
+    def key(r: dict) -> tuple:
+        tf = str((r.get("params") or {}).get("timeframe") or "H1")
+        return (_tf_rank(tf), by_pair.get((str(r["symbol"]).upper(), str(r["family"])), 0),
+                r["symbol"], r["family"])
+    return key
+
+
 def cells(only: str | None = None) -> list[dict]:
     now = datetime.now(tz=UTC).isoformat()
     syms = _with_bars()
     out: list[dict] = []
+    LAST_SET_ASIDE.clear()
     for fam, spec in READY.items():
         if only and fam != only:
             continue
@@ -305,24 +360,33 @@ def cells(only: str | None = None) -> list[dict]:
                             p["timeframe"] = tf
                         if sess != "all":
                             p["session"] = sess
-                        out.append(_cell(sym, fam, p, spec, now))
+                        if _testable(fam, p):
+                            out.append(_cell(sym, fam, p, spec, now))
     sweepable, _blocked = default_families()
     for fam, why in sweepable.items():
         if only and fam != only:
             continue
         spec = {"why": f"every family, {why}"}
+        try:
+            from research.gauntlet_buildability import symbol_required
+            needs_symbol = symbol_required(fam)
+        except Exception:
+            needs_symbol = False
         for sym in syms:
             for tf in _charts_for(sym) or ["H1"]:
                 for sess in _sessions_for(tf):
-                    p: dict = {}
+                    # A class book reads its peer class from `symbol`, which the sealed
+                    # build_cell never supplies: the cell carries its own, or builds nothing.
+                    p: dict = {"symbol": sym} if needs_symbol else {}
                     if tf != "H1":
                         p["timeframe"] = tf
                     if sess != "all":
                         p["session"] = sess
-                    out.append(_cell(sym, fam, p, spec, now))
-    # Most intraday first, so a capped merge reaches the charts the principal ranked highest.
-    out.sort(key=lambda r: (_tf_rank(str((r.get("params") or {}).get("timeframe") or "H1")),
-                            r["symbol"], r["family"]))
+                    if _testable(fam, p):
+                        out.append(_cell(sym, fam, p, spec, now))
+    # Most intraday first, so a capped merge reaches the charts the principal ranked highest; then
+    # least-judged (symbol, family) first, so the cap spends itself on orthogonal ground.
+    out.sort(key=_orthogonal_key())
     # THEN THE FAILURE MEMORY (Tier S S13): inside each chart tier, cells in a neighbourhood the
     # memory has already mapped as dead go LAST and carry the theorem that maps it.
     out, stats = order_by_failure_memory(out)
@@ -382,6 +446,43 @@ def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tup
                 "selector": str((r.get("params") or {}).get("session") or "?")}
 
     return fm.prioritise(rows, mem, desc_of, rank=_cell_tf_rank)
+
+
+def write_report(new: list[dict], syms: list[str], added: int | None, total: int | None) -> dict:
+    """reports/BREADTH_SWEEP.json: what this pass minted, over what, and what it set aside.
+
+    The sweep writes the docket directly rather than donating through the intake, so without
+    this file no reader (`producer_breadth` first) could say which symbols, charts, sessions and
+    families it covered -- a producer whose breadth cannot be read is UNMEASURED, not wide."""
+    from collections import Counter
+    doc = {
+        "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "producer": "desks/mt5/research/breadth_sweep.py",
+        "instruments_with_bars": len(syms),
+        "cells_built": len(new),
+        "cells_merged": added, "docket_rows": total, "max_new_per_run": MAX_NEW_PER_RUN,
+        "symbols": sorted({str(r["symbol"]) for r in new}),
+        "families": dict(sorted(Counter(str(r["family"]) for r in new).items())),
+        "charts": dict(sorted(Counter(str((r.get("params") or {}).get("timeframe") or "H1")
+                                      for r in new).items())),
+        "sessions": dict(sorted(Counter(str((r.get("params") or {}).get("session") or "all")
+                                        for r in new).items())),
+        "set_aside_untestable": sorted(LAST_SET_ASIDE.values(),
+                                       key=lambda r: (-int(r["cells"]), r["family"])),
+        "set_aside_cells": sum(int(r["cells"]) for r in LAST_SET_ASIDE.values()),
+        "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its "
+                 "family "
+                 "declares it cannot express, is set aside BY NAME and counted here -- never "
+                 "minted to be judged as a market 'no' the market never gave"),
+    }
+    try:
+        REPORT.parent.mkdir(parents=True, exist_ok=True)
+        tmp = REPORT.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
+        tmp.replace(REPORT)
+    except OSError as exc:
+        doc["write_error"] = f"{type(exc).__name__}: {exc}"
+    return doc
 
 
 def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
@@ -458,10 +559,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  BLOCKED {fam:<22} {why[:96]}")
     if not BLOCKED:
         print("  BLOCKED (none) -- every loader the gauntlet uses was measured and returned data")
+    if LAST_SET_ASIDE:
+        n_aside = sum(int(r["cells"]) for r in LAST_SET_ASIDE.values())
+        print(f"  SET ASIDE UNTESTABLE {n_aside} cell(s) over {len(LAST_SET_ASIDE)} "
+              f"(family, chart) pair(s) -- see {REPORT.name}")
     if not a.apply:
-        print("  --apply not given; nothing written")
+        write_report(new, syms, None, None)
+        print("  --apply not given; nothing written to the docket")
         return 0
     added, total = apply(new)
+    write_report(new, syms, added, total)
     print(f"  merged {added} new cell(s); docket now {total} row(s)")
     if not added:
         print("  (all already present -- the sweep is idempotent on the executable spec)")

@@ -208,7 +208,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (712)
+## NEVER (719)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -608,6 +608,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:committees` | `hourly_cycle:committees` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:compute_economics` | `hourly_cycle:compute_economics` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMPUTE_ECONOMICS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:constrained_book` | `hourly_cycle:constrained_book` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONSTRAINED_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:kelly_survival` | `hourly_cycle:kelly_survival` | UNMEASURED UNMEASURED | `desks/mt5/reports/KELLY_SURVIVAL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:control_plane` | `hourly_cycle:control_plane` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_PLANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:conversion_maximiser` | `hourly_cycle:conversion_maximiser` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONVERSION_MAXIMISER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cost_surfaces` | `hourly_cycle:cost_surfaces` | UNMEASURED UNMEASURED | `desks/mt5/reports/COST_SURFACES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -924,6 +925,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `timer:quant-prompt-prefix` | `quant-prompt-prefix` | UNMEASURED UNMEASURED | `data/prompt_prefix.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-sameday-fence` | `quant-sameday-fence` | UNMEASURED UNMEASURED | `data/sameday_pipeline.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-unit-parity` | `quant-unit-parity` | UNMEASURED UNMEASURED | `data/unit_parity.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:breadth_sweep` | `hourly_cycle:breadth_sweep` | UNMEASURED UNMEASURED | `desks/mt5/reports/BREADTH_SWEEP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:empty_cluster_forcer` | `hourly_cycle:empty_cluster_forcer` | UNMEASURED UNMEASURED | `desks/mt5/reports/EMPTY_CLUSTER_FORCER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:mass_screen` | `hourly_cycle:mass_screen` | UNMEASURED UNMEASURED | `desks/mt5/reports/MASS_SCREEN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:producer_breadth` | `hourly_cycle:producer_breadth` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_BREADTH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:producer_swarm` | `hourly_cycle:producer_swarm` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_SWARM.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:unknown_unknown` | `hourly_cycle:unknown_unknown` | UNMEASURED UNMEASURED | `desks/mt5/reports/UNKNOWN_UNKNOWN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (34)
 

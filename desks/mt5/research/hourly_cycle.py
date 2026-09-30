@@ -837,7 +837,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
-    "producer_census", "productivity_census", "preregistration",
+    "producer_census", "productivity_census", "producer_breadth", "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
@@ -953,7 +953,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "session_structure"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
-    **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
+    **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "producer_swarm",
+                     "unknown_unknown", "compile_candidates",
+                     "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
@@ -961,6 +963,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
                      "conversion_maximiser", "trend_core",
+                     # the anchor/exit grid and the empty-cluster forcer: both mint cells
+                     "htf_anchor", "empty_cluster_forcer",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth"),
@@ -1020,6 +1024,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
+                     # PRODUCER BREADTH: every producer's reach against what it minted -- the
+                     # machine measuring its own breadth, beside the census it complements.
+                     "producer_breadth",
                      # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
                      # failure prior and the unified EVIG acquisition are all the machine
                      # measuring and scheduling itself.
@@ -1630,6 +1637,16 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
     "duty_cycle": 480,
     "forward_enrolment": 400,
+    # THE MASS SCREEN stops starting symbols at its own --budget-s (MASS_SCREEN_BUDGET_S) and
+    # always writes its artifact; the cap sits above it for the reason `enrol_clocks` was raised.
+    "mass_screen": 1_080,
+    # THE UNKNOWN-UNKNOWN MINER stops starting symbols at its own --budget-s 900 and always
+    # writes; the cap sits above it (the mass screen's contract, and its reason).
+    "unknown_unknown": 1_080,
+    # THE PRODUCER SWARM builds its roster (seconds), reads the docket once for dedup (~76 MB
+    # measured 2026-09-30) and writes at most `hourly_cell_ceiling` (2,000) rows through the
+    # registry in 1,000-row chunks; measured 3.6 s for a dry pass of 8,060 producers here.
+    "producer_swarm": 600,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
@@ -1779,6 +1796,15 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # compute ledger; it finishes in seconds and its own --budget-s 300 bounds a pathological
     # registry, so the cap only has to sit above that.
     "productivity_census": 400,
+    # PRODUCER BREADTH reads the registry with one grouped query and at most 384 MB of seat files
+    # (its own MAX_SEAT_BYTES_TOTAL); measured 0.6 s on a tree without the registry. Generous.
+    "producer_breadth": 300,
+    # THE ANCHOR/EXIT PROPOSER measures its bind census under 240 s and then registers a
+    # 1,200-row slice, which the first pass measured at roughly four rows a second; the cap sits
+    # above census + registration so the slice lands rather than being cut at the same prefix.
+    "htf_anchor": 900,
+    # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
+    "empty_cluster_forcer": 180,
     # The north star reads ~60 certificates and their instruments' daily bars (measured ~1 s
     # here); the contracts join three JSON artifacts. Both caps are generous and never bind.
     "alpha_rank": 240,
@@ -2614,6 +2640,46 @@ def breadth_sweep() -> dict:
     return _producer("breadth_sweep", "research/breadth_sweep.py", "--apply")
 
 
+#: The mass screen's own stopping point: it stops STARTING symbols once this is spent and always
+#: writes MASS_SCREEN.json; `LEG_BUDGET_SEC["mass_screen"]` sits above it so the cycle never kills
+#: it mid-write. Its workers are derived inside the organ from MEASURED free cores (psutil).
+MASS_SCREEN_BUDGET_S = 900
+
+
+def mass_screen() -> dict:
+    """`mass_screen`: generate and cheaply screen rule cells in bulk (grammar x symbol x horizon x
+    threshold x side) on the TRAINING window only, charge every screened cell to
+    MASS_SCREEN_TRIALS.jsonl, and forward the BH-FDR, 3x-cost-stressed, day-deduplicated survivors
+    through the registry door into the judge's docket. Artifact: reports/MASS_SCREEN.json."""
+    return _producer("mass_screen", "research/mass_screen.py", "--once",
+                     "--budget-s", "900")  # == MASS_SCREEN_BUDGET_S, literal so the
+    # component registry can read the production args statically (pinned by test_mass_screen)
+
+
+#: The unknown-unknown miner's own stopping point (same contract as the mass screen's).
+UNKNOWN_UNKNOWN_BUDGET_S = 900
+
+
+def unknown_unknown() -> dict:
+    """`unknown_unknown`: open-ended search over expressions nobody named (typed grammar over
+    price/volume/calendar/cross-asset primitives, enumerated, conditioned and evolved), screened
+    by the mass screen's own cheap screen on the TRAINING window, BH-FDR over the FULL screened
+    width (charged to UNKNOWN_UNKNOWN_TRIALS.jsonl), novelty-scored against the named features,
+    and only novel survivors donated as `uu_<grammar>` cells the sealed gauntlet rebuilds.
+    Artifact: reports/UNKNOWN_UNKNOWN.json."""
+    return _producer("unknown_unknown", "research/unknown_unknown.py", "--once",
+                     "--budget-s", "900")  # == UNKNOWN_UNKNOWN_BUDGET_S, literal (see above)
+
+
+def producer_swarm() -> dict:
+    """`producer_swarm`: thousands of individual producers, one per (family x asset class x
+    chart x session x transform) from data/producer_swarm_registry.json, each minting only cells
+    the sealed gauntlet can build, least-judged first, never a judged or docketed duplicate; the
+    producers aimed at the holes PRODUCER_BREADTH.json names go first, then a cursor lap that
+    visits the whole roster every day. Artifact: reports/PRODUCER_SWARM.json."""
+    return _producer("producer_swarm", "research/producer_swarm.py", "--once")
+
+
 def search() -> dict:
     """`edge_search`: the family-free hypothesis search. NOT SCHEDULED ANYWHERE BEFORE THIS.
 
@@ -3431,6 +3497,15 @@ def main() -> None:
     m = _costed("mine", mine)
     se = _costed("search", search)
     bs = _costed("breadth_sweep", breadth_sweep)
+    # THE MASS SCREEN (2026-09-30): millions of rule cells a day screened on the training window
+    # only, every one charged as a trial, and only the FDR survivors forwarded to the judge. It
+    # runs BEFORE `merge_docket` so the survivors it enqueues reach the docket the same pass.
+    msc = _costed("mass_screen", mass_screen)
+    # THE PRODUCER SWARM and UNKNOWN-UNKNOWN MINING (principal 2026-09-30: "all individual
+    # producers, tons thousands of them ... breadth and unknown unknown minings all"). Both write
+    # through the registry door, so they run BEFORE `merge_docket` for the same reason as above.
+    psw = _costed("producer_swarm", producer_swarm)
+    uuk = _costed("unknown_unknown", unknown_unknown)
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     myd = _costed("mutation_yield", mutation_yield)
@@ -3715,6 +3790,16 @@ def main() -> None:
     # (instrument, session, horizon, exit, state, cross-market); coverage of the axes measured.
     dsc = _costed("descendants", lambda: _producer("descendants", "research/descendants.py",
                                                     "--max-per-root", "4", "--budget-s", "240"))
+    # THE VIDEO-DERIVED ANCHOR/EXIT MECHANISM, ON A CLOCK AT LAST (2026-09-30). The proposer was
+    # written to rotate a 1,200-row slice of its grid per pass and resume where it stopped -- and
+    # nothing ever ran it, so the grid (every hypothesis-lane instrument x H1/H4/D1, plus M15/M30
+    # wherever those bars exist) sat at its first slice: III.16. Discovery, beside descendants.
+    htf = _costed("htf_anchor", lambda: _producer("htf_anchor", "research/htf_anchor_proposer.py"))
+    # THE EMPTY-CLUSTER FORCER (2026-09-30): mints a rotating, least-judged window of cells for a
+    # cluster that a buildable family reaches and nobody mints, and names the sealed-gauntlet
+    # branch a cluster needs when every family it has is unbuildable. It had no caller either.
+    ecf = _costed("empty_cluster_forcer", lambda: _producer(
+        "empty_cluster_forcer", "research/empty_cluster_forcer.py", "--donate"))
     # THE FORWARD SLOT RANKER (C15/W10): slots ranked by P(certify) x dElogW x diversification
     # / time to maturity; REPLACEABLE clocks reported with their missed-growth line, never acted.
     fsr = _costed("forward_slot_ranker", lambda: _producer("forward_slot_ranker",
@@ -5126,6 +5211,13 @@ def main() -> None:
     # of producers that burned compute for no unique cell, ranked by compute.
     prodc = _costed("productivity_census", lambda: _producer(
         "productivity_census", "research/productivity_census.py", "--once", "--budget-s", "300"))
+    # PRODUCER BREADTH (principal 2026-09-30: every producer at worldwide orthogonal breadth,
+    # every cell testable). Per producer: its clock, last production, cells in 24h/7d, the
+    # symbols/charts/sessions/families covered against what it could reach, the share the SEALED
+    # gauntlet can build, and the clusters fed; totals name the clusters still unfed and why. A
+    # reader of the registry, the seats and the producers' own reports -- seconds, core clock.
+    pbr = _costed("producer_breadth", lambda: _producer(
+        "producer_breadth", "research/producer_breadth.py"))
     # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
     # eight-channel independence graph over every CERTIFIED edge and publishes the effective
     # independent alpha rank with each certificate's marginal contribution, credited to the
@@ -5159,7 +5251,9 @@ def main() -> None:
                     "health": h, "tape": t, "state_vector": s, "daily": d,
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
-                    "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
+                    "search": se, "breadth_sweep": bs, "mass_screen": msc,
+                    "producer_swarm": psw, "unknown_unknown": uuk,
+                    "candidate_conservation": ccv,
                     "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
@@ -5192,6 +5286,7 @@ def main() -> None:
                     "program_alpha_lane": pal, "trajectory_evolution": tev,
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
+                    "htf_anchor": htf, "empty_cluster_forcer": ecf,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
@@ -5310,7 +5405,8 @@ def main() -> None:
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
-                    "productivity_census": prodc, "input_identity": iid,
+                    "productivity_census": prodc, "producer_breadth": pbr,
+                    "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
