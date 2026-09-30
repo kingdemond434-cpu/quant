@@ -31,9 +31,10 @@ THE FOUR READINGS, and each is a different question:
 CLUSTER OCCUPANCY IS THE OTHER HALF, and the half that names research targets. `libs/research/
 alpha_clusters.py` declares seventeen phenomena (the principal's fifteen plus two single-name
 payers) from OUTSIDE the book -- who pays, and why they cannot stop -- and every sleeve is
-filed against them. The empty ones are written into the deepening queue as research tasks, keyed on this source, because an empty cluster is where the
-marginal sleeve buys the most breadth available anywhere: k_eff = n/(1+(n-1)rho) is concave in n,
-so the twelfth correlated sleeve buys almost nothing and the first uncorrelated one buys the most.
+filed against them. The empty ones are written into the deepening queue as research tasks,
+keyed on this source, because an empty cluster is where the marginal sleeve buys the most
+breadth available anywhere: k_eff = n/(1+(n-1)rho) is concave in n, so the twelfth
+correlated sleeve buys almost nothing and the first uncorrelated one buys the most.
 
 NOT `breadth_ledger`, AND THE NAME WAS CHANGED FOR A REASON. `scripts/daily_research_cycle.py`
 already runs a step called `breadth_ledger` -- the PLATFORM's rho-curve report from
