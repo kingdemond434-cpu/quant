@@ -9,10 +9,12 @@ WHAT RUNS HERE
   1. TEN FAMILIES, each with a factor's discipline -- lineage (`parent`), a novelty key so the
      same family is never re-tested under a new name, a declared falsifier (its tax), and a
      verdict that is allowed to be UNMEASURED. `libs/research/model_families.py` owns them.
-  2. SIX REPRESENTATIONS of the SAME underlying information -- raw, z-scored, ranked,
-     volatility-scaled, range/state, and path-shape. Same bars, same target, different
-     coordinates, so a difference in verdict is a statement about the coordinates and nothing
-     else.
+  2. EIGHT REPRESENTATIONS of the SAME underlying information -- raw, z-scored, ranked,
+     volatility-scaled, range/state, path-shape, intelligent-trading-bot's rolling aggregations
+     and Deep-Trading's normalised window -- and, on a few of them, THREE MORE TARGETS than the
+     return's sign (ITB's top and bottom labels, Deep-Trading's volatility rise). Same bars,
+     same target within a row, different coordinates, so a difference in verdict along a
+     target's rows is a statement about the coordinates and nothing else.
   3. THE WHOLE GRID. Every (R_k, M_j) is scored on the same folds and published as a matrix. A
      representation is declared DEAD only when EVERY learner tried on it failed; with fewer than
      two learners its verdict is UNMEASURED, which is why nothing here can be buried by one
@@ -64,11 +66,21 @@ HORIZON = 6
 TOP = 3
 UNMEASURED = CL.UNMEASURED
 
-#: The six coordinate systems, each a function of the SAME bars and the SAME target. The point
+#: The coordinate systems, each a function of the SAME bars and the SAME target. The point
 #: of holding them fixed is that a verdict difference across a row of the matrix is a statement
 #: about the coordinates, never about a different dataset.
 REPRESENTATIONS: tuple[str, ...] = ("raw", "zscore", "rank", "vol_scaled", "range_state",
-                                    "path_shape")
+                                    "path_shape", "itb", "dt_window")
+
+#: Targets besides the sign of the h-bar return, and the representations each is judged on.
+#: `top` / `bot` are intelligent-trading-bot's extremum labels (bounded to +-h bars in
+#: `libs/features/itb.py`); `vol_up` is Deep-Trading's volatility-forecasting target (will the
+#: next h bars move more than the last day did, per bar). Every (representation, target, learner)
+#: is a trial charged through the ledger like any other cell, and a winner leaves only as a
+#: CONDITIONING model -- no entry, no stop, no size -- so nothing trades on a model's output alone.
+EXTRA_TARGETS: dict[str, tuple[str, ...]] = {"top": ("itb",), "bot": ("itb",),
+                                             "vol_up": ("itb", "dt_window", "raw")}
+TARGETS: tuple[str, ...] = ("sign", *EXTRA_TARGETS)
 
 
 def _roll_z(s: pd.Series, w: int) -> pd.Series:
@@ -119,24 +131,55 @@ def representation(df: pd.DataFrame, kind: str) -> pd.DataFrame:
                    if a.size > 2 and np.std(a[:-1]) > 0 and np.std(a[1:]) > 0 else 0.0,
                    raw=True),
                "dd": (c / c.rolling(120, min_periods=60).max() - 1.0)}
+    elif kind == "itb":
+        # intelligent-trading-bot's rolling-aggregation generators (MIT): area ratio, linear
+        # trend, mean and tick-volume-weighted mean relative to close, argmax position, longest
+        # strike below the mean. Every column is a past window ending at the current bar.
+        from libs.features import itb
+        return itb.features(df)
+    elif kind == "dt_window":
+        # Deep-Trading's input (ideas only: the repo carries no licence): the last six bars'
+        # returns normalised by their own trailing window, plus the calendar it feeds alongside.
+        sd = ret.rolling(24, min_periods=12).std().replace(0.0, np.nan)
+        out = {f"w{k}": ret.shift(k) / sd for k in range(6)}
+        out["dow"] = pd.Series(df.index.dayofweek.astype(float), index=df.index)
+        out["hour"] = pd.Series(df.index.hour.astype(float), index=df.index)
     else:
         raise ValueError(f"unknown representation {kind!r}; known: {REPRESENTATIONS}")
     return pd.DataFrame(out, index=df.index)
 
 
-def _target(df: pd.DataFrame, horizon: int) -> np.ndarray:
+def _target(df: pd.DataFrame, horizon: int, target: str = "sign") -> np.ndarray:
+    """The target, centred so that > 0 is the positive class; NaN where it is not defined."""
     c = df["close"].to_numpy(dtype=float)
     fwd = np.full(c.size, np.nan)
-    with np.errstate(all="ignore"):
-        fwd[:-horizon] = np.log(c[horizon:] / c[:-horizon])
-    return fwd
+    if target == "sign":
+        with np.errstate(all="ignore"):
+            fwd[:-horizon] = np.log(c[horizon:] / c[:-horizon])
+        return fwd
+    if target in ("top", "bot"):
+        from libs.features import itb
+        lab = itb.extremum_labels(df["close"], is_max=target == "top", horizon=horizon)
+        return lab.to_numpy(dtype=float) - 0.5
+    if target == "vol_up":
+        r2 = np.log(df["close"].astype(float)).diff() ** 2
+        past = r2.rolling(24, min_periods=24).mean().to_numpy()
+        with np.errstate(all="ignore"):
+            nxt = r2.rolling(horizon, min_periods=horizon).mean().shift(-horizon).to_numpy()
+            return np.where(np.isfinite(nxt) & np.isfinite(past), nxt - past, np.nan)
+    raise ValueError(f"unknown target {target!r}; known: {TARGETS}")
 
 
-def design(df: pd.DataFrame, kind: str, horizon: int = HORIZON
+def cell_name(rep: str, target: str) -> str:
+    """The row name in the matrix: a representation judged on another target is its own row."""
+    return rep if target == "sign" else f"{rep}@{target}"
+
+
+def design(df: pd.DataFrame, kind: str, horizon: int = HORIZON, target: str = "sign"
            ) -> tuple[list[list[float]], list[float], list[str]] | None:
     """(rows, labels, column names) on non-overlapping targets, or None when unusable."""
     rep = representation(df, kind)
-    y_raw = _target(df, horizon)
+    y_raw = _target(df, horizon, target)
     mat = rep.to_numpy(dtype=float)
     ok = np.isfinite(mat).all(axis=1) & np.isfinite(y_raw)
     rows = np.where(ok)[0][::horizon]
@@ -185,6 +228,7 @@ def _enqueue(cell: dict[str, Any], sym: str, n_eff: float) -> dict[str, Any]:
     fam = MF.FAMILIES[str(cell["model"])]
     params = {"representation": cell["representation"], "columns": cell.get("columns"),
               "model_family": cell["model"], "horizon": HORIZON,
+              "target": cell.get("target", "sign"),
               "net_gain": cell.get("net_gain"), "backend": cell.get("backend")}
     mech = (f"{cell['model']} on the {cell['representation']} representation of {sym}: net "
             f"{float(cell.get('net_gain') or 0):+.6f} nats/prediction after the family's "
@@ -277,20 +321,23 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S,
             continue
         d = d.tail(n_bars)
         sym_cells: list[dict[str, Any]] = []
-        for rep in reps:
+        grid = [(rep, tgt) for rep in reps for tgt in TARGETS
+                if tgt == "sign" or rep in EXTRA_TARGETS[tgt]]
+        for base, tgt in grid:
+            rep = cell_name(base, tgt)
             if time.monotonic() > deadline:
                 break
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 try:
-                    des = design(d, rep)
+                    des = design(d, base, target=tgt)
                 except Exception as exc:
                     per_symbol.setdefault(sym, {}).setdefault("representation_errors", {})[
                         rep] = f"{type(exc).__name__}: {exc}"
                     continue
             if des is None:
-                sym_cells.append({"symbol": sym, "representation": rep, "model": None,
-                                  "verdict": UNMEASURED,
+                sym_cells.append({"symbol": sym, "representation": rep, "target": tgt,
+                                  "model": None, "verdict": UNMEASURED,
                                   "why": "too few finite non-overlapping rows in this "
                                          "representation"})
                 continue
@@ -305,7 +352,8 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S,
                     except Exception as exc:
                         r = {"family": fam, "verdict": "FAILED", "net_gain": None,
                              "why": f"{type(exc).__name__}: {exc}"}
-                cell = {"symbol": sym, "representation": rep, "model": fam, "columns": cols,
+                cell = {"symbol": sym, "representation": rep, "target": tgt, "model": fam,
+                        "columns": cols,
                         **{k: r.get(k) for k in ("n", "folds", "gain", "net_gain", "tax",
                                                  "brier", "verdict", "backend",
                                                  "heavy_verdict", "why")}}
@@ -313,7 +361,7 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S,
                 trials.append(TL.Trial(
                     trial_id=f"{sym}:{rep}:{fam}", family=f"model_search:{fam}",
                     descriptors={"symbol": sym, "representation": rep, "model_family": fam,
-                                 "horizon": str(HORIZON)},
+                                 "horizon": str(HORIZON), "target": tgt},
                     params={"n_columns": len(cols)}, declared_width=1))
         scored = [c for c in sym_cells if c.get("net_gain") is not None]
         scored.sort(key=lambda c: -float(c["net_gain"]))
@@ -348,7 +396,8 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S,
     doc = {
         "generated_utc": datetime.now(tz=UTC).isoformat(),
         "symbols": {**chosen, "n": len(todo), "swept": todo},
-        "representations": list(reps), "families": list(fams),
+        "representations": list(reps), "targets": dict(EXTRA_TARGETS, sign=list(reps)),
+        "families": list(fams),
         "proposer_seat": seat_hint,
         "allow_heavy": allow_heavy, "budget_s": budget_s, "horizon": HORIZON,
         "cells_tested": len([c for c in cells if c.get("model")]),

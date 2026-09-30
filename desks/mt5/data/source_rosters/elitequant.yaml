@@ -1,0 +1,1549 @@
+# EliteQuant map (github.com/EliteQuant/EliteQuant, Apache-2.0), absorbed 2026-09-30.
+#
+# Every blog, forum, code repository and free data source the list links that no roster held.
+# Read by libs/mining/acquirer.load_roster through its `desks/mt5/data/source_rosters/*.yaml`
+# glob (#133); an id already defined elsewhere keeps its first definition. Dead links on the list
+# (IEX market data, Quandl WIKI, Quantopian, cryptrader, KloudTrader) and paid-only feeds (OneTick,
+# IQFeed, QuantQuote, AlgoSeek, Intrinio, Bloomberg) are not rostered: the gap table in
+# /mnt/project-files/reports/elitequant_mining_2026-09-30.md says why for each.
+# Feeds were not reachable from the cloud container (proxy); the box's acquirer is the judge of
+# liveness and records UNREACHED per source.
+sources:
+- id: eq_quantocracy
+  name: Quantocracy quant blog aggregator (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://quantocracy.com/feed/
+- id: eq_epchan
+  name: Ernie Chan's blog (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://epchan.blogspot.com/feeds/posts/default
+- id: eq_qoppac
+  name: Rob Carver, Investment Idiocy (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://qoppac.blogspot.com/feeds/posts/default
+- id: eq_quantstart
+  name: QuantStart (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://www.quantstart.com/articles/rss/
+- id: eq_alphaarchitect
+  name: Alpha Architect (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://alphaarchitect.com/feed/
+- id: eq_cssanalytics
+  name: CSSA (David Varadi) (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://cssanalytics.wordpress.com/feed/
+- id: eq_quantifiableedges
+  name: Quantifiable Edges (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://quantifiableedges.com/feed/
+- id: eq_vixandmore
+  name: VIX and More (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://vixandmore.blogspot.com/feeds/posts/default
+- id: eq_jonathankinlay
+  name: Jonathan Kinlay (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://jonathankinlay.com/feed/
+- id: eq_tr8dr
+  name: tr8dr (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://tr8dr.github.io/feed.xml
+- id: eq_letianzj
+  name: Letian Wang quant blog (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://letianzj.github.io/feed.xml
+- id: eq_mebfaber
+  name: Meb Faber research (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://mebfaber.com/feed/
+- id: eq_quantivity
+  name: Quantivity (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://quantivity.wordpress.com/feed/
+- id: eq_tradingtheodds
+  name: Trading the Odds (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - http://www.tradingtheodds.com/feed/
+- id: eq_quantatrisk
+  name: Quant at Risk (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - http://www.quantatrisk.com/feed/
+- id: eq_mechanicalmarkets
+  name: Mechanical Markets (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://mechanicalmarkets.wordpress.com/feed/
+- id: eq_humblestudent
+  name: Humble Student of the Markets (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://humblestudentofthemarkets.blogspot.com/feeds/posts/default
+- id: eq_physicsoffinance
+  name: Physics of Finance (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://physicsoffinance.blogspot.com/feeds/posts/default
+- id: eq_qusma
+  name: Qusma (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://qusma.com/feed/
+- id: eq_returnandrisk
+  name: Return and Risk (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - http://www.returnandrisk.com/feeds/posts/default
+- id: eq_quantumfinancier
+  name: Quantum Financier (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://quantumfinancier.wordpress.com/feed/
+- id: eq_practicalquant
+  name: The Practical Quant (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://practicalquant.blogspot.com/feeds/posts/default
+- id: eq_denizstij
+  name: Deniz's Note (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://denizstij.blogspot.com/feeds/posts/default
+- id: eq_thertrader
+  name: The R Trader (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://www.thertrader.com/feed/
+- id: eq_rbresearch
+  name: rbresearch (FX and equity R ideas) (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://rbresearch.wordpress.com/feed/
+- id: eq_quantlife
+  name: NaN Quantivity (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://quantlife.wordpress.com/feed/
+- id: eq_factorinvesting
+  name: Factor Investing tutorial (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://factorinvestingtutorial.wordpress.com/feed/
+- id: eq_timelyportfolio
+  name: Timely Portfolio (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://timelyportfolio.blogspot.com/feeds/posts/default
+- id: eq_gekkoquant
+  name: Gekko Quant (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - http://gekkoquant.com/feed/
+- id: eq_fosstrading
+  name: Foss Trading (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - http://blog.fosstrading.com/feeds/posts/default
+- id: eq_quantstrattrader
+  name: QuantStrat TradeR (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://quantstrattrader.wordpress.com/feed/
+- id: eq_thequantmba
+  name: The Quant MBA (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://thequantmba.wordpress.com/feed/
+- id: eq_quantcorner
+  name: Quant Corner (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://quantcorner.wordpress.com/feed/
+- id: eq_hpcquantlib
+  name: HPC QuantLib (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://hpcquantlib.wordpress.com/feed/
+- id: eq_mysimplequant
+  name: My Simple Quant (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - http://mysimplequant.blogspot.com/feeds/posts/default
+- id: eq_tradingwithpython
+  name: Trading with Python (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://tradingwithpython.blogspot.com/feeds/posts/default
+- id: eq_pythonforfinance
+  name: Python for Finance (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://www.pythonforfinance.net/feed/
+- id: eq_systematicinvestor
+  name: Systematic Investor (Kapler) (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://systematicinvestor.wordpress.com/feed/
+- id: eq_blackarbs
+  name: BlackArbs (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - http://www.blackarbs.com/blog?format=rss
+- id: eq_algotrading101
+  name: AlgoTrading101 (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://algotrading101.com/learn/feed/
+- id: eq_quantinsti
+  name: QuantInsti blog (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://blog.quantinsti.com/rss/
+- id: eq_lilianweng
+  name: Lil'Log (ML) (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://lilianweng.github.io/index.xml
+- id: eq_quantpedia
+  name: Quantpedia strategy encyclopedia (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://quantpedia.com/feed/
+- id: eq_seekingalpha_forex
+  name: Seeking Alpha forex tag (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://seekingalpha.com/tag/forex.xml
+- id: eq_elitetrader
+  name: Elite Trader forum (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 240
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://www.elitetrader.com/et/forums/-/index.rss
+- id: eq_wilmott
+  name: Wilmott forum (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 240
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://forum.wilmott.com/app.php/feed
+- id: eq_nuclearphynance
+  name: NuclearPhynance forum (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 240
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: html_listing
+  config:
+    url: https://www.nuclearphynance.com/
+    item_regex: /Forum/viewtopic\.aspx
+- id: eq_investopedia
+  name: Investopedia headlines (EliteQuant map)
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: public web page; mechanism claims only, text never republished
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  fetcher: rss
+  config:
+    feeds:
+    - https://www.investopedia.com/feedbuilder/feed/getfeed?feedName=rss_headline
+- id: eq_gh_pysystemtrade
+  name: 'robcarver17/pysystemtrade: Carver''s rules: ewmac, breakout, carry, accel, skew, relative momentum, mr-in-asset
+    (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: GPL-3.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:robcarver17/pysystemtrade
+- id: eq_gh_qstrader
+  name: 'mhallsmoore/qstrader: QuantStart backtester and example strategies (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: MIT; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:mhallsmoore/qstrader
+- id: eq_gh_qsforex
+  name: 'mhallsmoore/qsforex: QuantStart FX backtester and strategies (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: MIT; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:mhallsmoore/qsforex
+- id: eq_gh_finmarketpy
+  name: 'cuemacro/finmarketpy: Cuemacro FX trend/carry and event-study strategies (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:cuemacro/finmarketpy
+- id: eq_gh_quantresearch
+  name: 'letianzj/QuantResearch: Letian Wang notebooks: pairs, ML, FX, commodities (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: MIT; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:letianzj/QuantResearch
+- id: eq_gh_adv_fin_ml
+  name: 'BlackArbsCEO/Adv_Fin_ML_Exercises: de Prado AFML exercises: FFD, CUSUM, triple barrier, meta-labels (EliteQuant
+    map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: unknown; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:BlackArbsCEO/Adv_Fin_ML_Exercises
+- id: eq_gh_sit
+  name: 'systematicinvestor/SIT: Systematic Investor Toolkit: min-correlation, risk parity, tactical allocation
+    (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: MIT; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:systematicinvestor/SIT
+- id: eq_gh_quantstrat
+  name: 'R-Finance/quantstrat: R quantstrat demo strategies (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: GPL-3.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:R-Finance/quantstrat
+- id: eq_gh_performanceanalytics
+  name: 'R-Finance/PerformanceAnalytics: risk/return analytics reference (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: GPL-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:R-Finance/PerformanceAnalytics
+- id: eq_gh_ml4t
+  name: 'stefan-jansen/machine-learning-for-trading: ML for trading: alpha factors, 101 formulaic alphas, NLP (EliteQuant
+    map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: MIT; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:stefan-jansen/machine-learning-for-trading
+- id: eq_gh_alphalens
+  name: 'quantopian/alphalens: factor tearsheets: quantile spreads, IC decay, turnover (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:quantopian/alphalens
+- id: eq_gh_pyfolio
+  name: 'quantopian/pyfolio: performance and risk tearsheets (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:quantopian/pyfolio
+- id: eq_gh_zipline
+  name: 'quantopian/zipline: Quantopian example algorithms (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:quantopian/zipline
+- id: eq_gh_lean
+  name: 'QuantConnect/Lean: QuantConnect algorithm library (Python and C# examples) (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:QuantConnect/Lean
+- id: eq_gh_backtrader
+  name: 'backtrader/backtrader: backtrader samples (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: GPL-3.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:backtrader/backtrader
+- id: eq_gh_vnpy
+  name: 'vnpy/vnpy: vn.py CN futures CTA canon (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: MIT; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:vnpy/vnpy
+- id: eq_gh_rqalpha
+  name: 'ricequant/rqalpha: Ricequant CN strategy examples (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0 (non-commercial clause); concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:ricequant/rqalpha
+- id: eq_gh_pyalgotrade
+  name: 'gbeced/pyalgotrade: pyalgotrade sample strategies (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:gbeced/pyalgotrade
+- id: eq_gh_bt
+  name: 'pmorissette/bt: bt allocation algos (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: MIT; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:pmorissette/bt
+- id: eq_gh_deepdow
+  name: 'jankrepl/deepdow: deep portfolio optimisation layers (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:jankrepl/deepdow
+- id: eq_gh_pgportfolio
+  name: 'ZhengyaoJiang/PGPortfolio: EIIE online portfolio RL (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: GPL-3.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:ZhengyaoJiang/PGPortfolio
+- id: eq_gh_tensortrade
+  name: 'tensortrade-org/tensortrade: RL trading environments (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:tensortrade-org/tensortrade
+- id: eq_gh_hummingbot
+  name: 'hummingbot/hummingbot: Avellaneda-Stoikov market making (execution ideas only; crypto venue never hunted)
+    (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: Apache-2.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:hummingbot/hummingbot
+- id: eq_gh_freqtrade
+  name: 'freqtrade/freqtrade: freqtrade strategies (Fusion crypto CFDs only) (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: GPL-3.0; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:freqtrade/freqtrade
+- id: eq_gh_quantecon
+  name: 'QuantEcon/QuantEcon.py: economic modelling toolkit (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: BSD-3; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:QuantEcon/QuantEcon.py
+- id: eq_gh_arch
+  name: 'bashtage/arch: ARCH/GARCH and bootstrap reference (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: NCSA; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:bashtage/arch
+- id: eq_gh_awesome_quant
+  name: 'wilsonfreitas/awesome-quant: seed list: recurse every linked repo (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: CC; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:wilsonfreitas/awesome-quant
+- id: eq_gh_awesome_deep_trading
+  name: 'cbailes/awesome-deep-trading: seed list: recurse every linked repo and paper (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: CC; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:cbailes/awesome-deep-trading
+- id: eq_gh_awesome_ml_trading
+  name: 'grananqvist/Awesome-Quant-Machine-Learning-Trading: seed list: recurse (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: CC; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:grananqvist/Awesome-Quant-Machine-Learning-Trading
+- id: eq_gh_awesome_ai_finance
+  name: 'georgezouq/awesome-ai-in-finance: seed list: recurse (strong CN coverage) (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: MIT; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:georgezouq/awesome-ai-in-finance
+- id: eq_gh_firmai_mlam
+  name: 'firmai/machine-learning-asset-management: ML asset management notebooks (EliteQuant map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: unknown; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:firmai/machine-learning-asset-management
+- id: eq_gh_conlan
+  name: 'chrisconlan/algorithmic-trading-with-python: Conlan book code: simulation and portfolio rules (EliteQuant
+    map)'
+  priority: 4
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: global
+  language: python
+  licence: MIT; concept reimplemented, code never copied
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+  config:
+    search: repositories
+    queries:
+    - repo:chrisconlan/algorithmic-trading-with-python
+- id: eq_nasdaq_data_link_free
+  name: 'Nasdaq Data Link (ex-Quandl) free datasets: CFTC, LBMA, ODA, FRED mirrors, BCHAIN'
+  priority: 3
+  kind: mechanics
+  uses:
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: key
+  auth_env: NASDAQ_DATA_LINK_API_KEY
+  cadence_minutes: 1440
+  licence: free tier with a free key; per-dataset terms
+  config:
+    url: https://data.nasdaq.com/api/v3/datasets.json?database_code=ODA&per_page=100
+  note: free key the desk can register itself (counts as licensed access per the 2026-09-30 data-access ruling once
+    the user confirms it in the Breadth thread)
+  region: global
+  language: en
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+- id: eq_sec_edgar_frames
+  name: SEC EDGAR XBRL frames and submissions (the free source behind sec-api.io)
+  priority: 3
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  immutable_time: true
+  licence: US public domain; SEC fair-access policy (10 req/s, declared User-Agent)
+  config:
+    url: https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2025Q2I.json
+  mode: fallback
+  owner_feed: desks/mt5/data/intelligence/earnings/*.json
+  region: global
+  language: en
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+- id: eq_eodhd_free
+  name: 'EOD Historical Data free tier (20 calls/day): non-Western exchange EOD bars'
+  priority: 5
+  kind: mechanics
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: key
+  auth_env: EODHD_API_KEY
+  cadence_minutes: 1440
+  licence: free tier, personal use
+  config:
+    url: https://eodhd.com/api/exchanges-list/?fmt=json
+  region: global
+  language: en
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant
+- id: eq_binance_funding_for_crypto_cfd
+  name: Binance public perp funding and basis as a CONDITIONER for Fusion's crypto CFDs only
+  priority: 5
+  kind: mechanics
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 480
+  immutable_time: true
+  licence: public market data API
+  config:
+    url: https://fapi.binance.com/fapi/v1/fundingRate?symbol=BTCUSDT&limit=1000
+  note: reference data informing an MT5 instrument (BTCUSD/ETHUSD CFD); never a hunted venue (CLAUDE.md MT5 mandate)
+  region: global
+  language: en
+  owner: elitequant_thread
+  origin: github.com/EliteQuant/EliteQuant

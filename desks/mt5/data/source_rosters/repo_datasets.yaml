@@ -1,0 +1,310 @@
+# Every dataset and price source the repos mined on 2026-09-30 use or cite, that no roster held
+# (TradingAgents, Vibe-Trading, TradingAgents-CN, StockSharp, quant-trading,
+# awesome-systematic-trading, tradingeconomics, Deep-Trading, intelligent-trading-bot).
+# The first three rows are FED HOURLY by desks/mt5/research/acquire_datasets.py through
+# libs/data/repo_mined_feeds.py; the rest wait on the roster acquirer (#133) or a Breadth shaper.
+# Not rostered, with the reason, in /mnt/project-files/mining/repo_datasets_census.json:
+# keyed-only vendors, paid feeds (their free replicas are logged there), crypto venues, Reddit,
+# StockTwits and X (fenced), and the repos' bundled static CSVs.
+sources:
+- id: rm_gpr_daily
+  name: Caldara-Iacoviello Geopolitical Risk index, daily (GPRD, acts, threats)
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  fed_by: acquire_datasets
+  auth: none
+  cadence_minutes: 60
+  region: global
+  language: en
+  licence: academic data, free with citation (Caldara and Iacoviello 2022)
+  config:
+    url: https://www.matteoiacoviello.com/gpr_files/data_gpr_daily_recent.xls
+  note: FED HOURLY by acquire_datasets via libs/data/repo_mined_feeds.py (first-print vintage, 14-day
+    settle for pre-ledger history). ext_gpr_daily_* conditions XAUUSD, XAGUSD, USDJPY, USDCHF, oil and
+    indices
+  owner: elitequant_thread
+  origin: github.com/je-suis-tm/quant-trading; github.com/HKUDS/Vibe-Trading
+- id: rm_epu_us_daily
+  name: Baker-Bloom-Davis daily news-based Economic Policy Uncertainty, US
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  fed_by: acquire_datasets
+  auth: none
+  cadence_minutes: 60
+  region: us
+  language: en
+  licence: academic data, free with citation (Baker, Bloom and Davis 2016)
+  config:
+    url: https://www.policyuncertainty.com/media/All_Daily_Policy_Data.csv
+  note: FED HOURLY by acquire_datasets via libs/data/repo_mined_feeds.py (first-print vintage, 30-day
+    settle). Conditions US indices, USD crosses and gold
+  owner: elitequant_thread
+  origin: policyuncertainty.com, linked from the GPR page the repos cite
+- id: rm_crypto_fear_greed
+  name: alternative.me crypto Fear & Greed index, daily since 2018
+  priority: 2
+  kind: mechanics
+  uses: &id001
+  - direct_cells
+  - indirect_cells
+  fetcher: json_api
+  fed_by: acquire_datasets
+  auth: none
+  cadence_minutes: 60
+  region: global
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://api.alternative.me/fng/?limit=0
+  note: FED HOURLY by acquire_datasets. A SENSOR for Fusion crypto CFDs only; no crypto venue is hunted
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading
+- id: rm_em_push2his_kline
+  name: 'Eastmoney push2his history klines: SHFE, INE, DCE, CZCE futures and CN/HK indices, daily and
+    minute'
+  priority: 1
+  kind: mechanics
+  uses: *id001
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://push2his.eastmoney.com/api/qt/stock/kline/get
+  note: 'History behind the push2 quote row: Shanghai gold, copper, silver and INE crude night sessions
+    as lead-lag inputs to XAUUSD, XCUUSD, XAGUSD, XTIUSD; CSI300 and HSI futures for China50/HK50. Needs
+    a json_api shaper (data.klines strings); build ask to Breadth'
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading; github.com/hsliuping/TradingAgents-CN
+- id: rm_em_margin_balance
+  name: 'Eastmoney datacenter: A-share margin financing balance (融资融券), daily'
+  priority: 2
+  kind: mechanics
+  uses: &id002
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://datacenter-web.eastmoney.com/api/data/v1/get
+  note: Retail leverage in China as a China50/HK50/USDCNH risk-appetite conditioner (reportName RPTA_RZRQ_LSDB)
+  owner: elitequant_thread
+  origin: github.com/hsliuping/TradingAgents-CN
+- id: rm_em_money_flow
+  name: Eastmoney main-force money flow by index and sector (资金流向), daily
+  priority: 2
+  kind: mechanics
+  uses: *id002
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get
+  note: Large-order vs small-order net flow on the CSI300 and SSE Composite as a China50 conditioner
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading; github.com/hsliuping/TradingAgents-CN
+- id: rm_em_research_reports
+  name: Eastmoney broker research report list with ratings (研报)
+  priority: 3
+  kind: text
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://reportapi.eastmoney.com/report/list
+  note: Industry and macro report counts and rating changes as event stamps for China-exposed instruments
+    (copper, AUD, China50)
+  owner: elitequant_thread
+  origin: github.com/hsliuping/TradingAgents-CN
+- id: rm_cninfo_announcements
+  name: CNINFO 巨潮 exchange disclosure search (announcements, audit reports)
+  priority: 3
+  kind: text
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: http://www.cninfo.com.cn/new/disclosure
+  note: Disclosure-count shocks for China50 constituents; event lane only
+  owner: elitequant_thread
+  origin: github.com/hsliuping/TradingAgents-CN
+- id: rm_sina_us_daily_k
+  name: Sina Finance US equity daily K-line (keyless JSONP)
+  priority: 3
+  kind: mechanics
+  uses:
+  - direct_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: us
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://stock.finance.sina.com.cn/usstock/api/jsonp_v2.php/var%20x=/US_MinKService.getDailyK
+  note: Independent daily bars for the US share CFD class books; a cross-check on broker history and a
+    longer back history
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading
+- id: rm_sodir_production
+  name: 'Norwegian Offshore Directorate factpages: oil and gas production by field, monthly CSV'
+  priority: 2
+  kind: mechanics
+  uses: *id002
+  fetcher: page_snapshot
+  auth: none
+  cadence_minutes: 1440
+  region: 'no'
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://factpages.sodir.no/
+  note: Norwegian output (norskpetroleum.no, cited by Oil Money) as a NOK and Brent supply conditioner
+    for commodity_fx_residual
+  owner: elitequant_thread
+  origin: github.com/je-suis-tm/quant-trading
+- id: rm_usda_wasde
+  name: USDA WASDE monthly supply and demand estimates (Cornell ESMIS archive)
+  priority: 2
+  kind: text
+  uses: *id002
+  fetcher: page_snapshot
+  auth: none
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://usda.library.cornell.edu/concern/publications/3t945q76s
+  note: Report-day stamps and stock-to-use surprises for the soft and grain CFDs
+  owner: elitequant_thread
+  origin: github.com/je-suis-tm/quant-trading
+- id: rm_oec_trade
+  name: OEC Observatory of Economic Complexity trade flows by country and product
+  priority: 3
+  kind: mechanics
+  uses:
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 10080
+  region: global
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://oec.world/api/
+  note: Export-basket weights that tell which commodity drives each commodity currency (NOK, CAD, AUD,
+    NZD, ZAR, CLP, BRL, MXN)
+  owner: elitequant_thread
+  origin: github.com/je-suis-tm/quant-trading
+- id: rm_bp_energy_review
+  name: Energy Institute Statistical Review of World Energy (was BP), annual workbook
+  priority: 3
+  kind: mechanics
+  uses:
+  - allocation_intel
+  fetcher: page_snapshot
+  auth: none
+  cadence_minutes: 43200
+  region: global
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://www.energyinst.org/statistical-review
+  note: Producer and consumer shares for the oil-currency map
+  owner: elitequant_thread
+  origin: github.com/je-suis-tm/quant-trading
+- id: rm_fxhistoricaldata
+  name: fxhistoricaldata.com FX history (hourly and daily)
+  priority: 3
+  kind: mechanics
+  uses:
+  - direct_cells
+  fetcher: page_snapshot
+  auth: none
+  cadence_minutes: 60
+  region: global
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://fxhistoricaldata.com/
+  note: Second opinion on broker FX history for back-extension; histdata.com is already on the desk
+  owner: elitequant_thread
+  origin: github.com/HKUDS/Vibe-Trading
+- id: rm_sipri_milex
+  name: SIPRI military expenditure and arms transfers databases, annual
+  priority: 3
+  kind: mechanics
+  uses:
+  - allocation_intel
+  fetcher: page_snapshot
+  auth: none
+  cadence_minutes: 43200
+  region: global
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://www.sipri.org/databases
+  note: Slow geopolitical state beside GPR for the defence-exposed index and gold regime maps
+  owner: elitequant_thread
+  origin: github.com/je-suis-tm/quant-trading
+- id: rm_quantpedia_catalogue
+  name: Quantpedia free strategy catalogue (screener pages)
+  priority: 2
+  kind: text
+  uses:
+  - indirect_cells
+  fetcher: html_listing
+  auth: none
+  cadence_minutes: 60
+  region: global
+  language: en
+  licence: public page / keyless API; terms confirmed by the owner thread before fetch (terms gate fails
+    closed)
+  config:
+    url: https://quantpedia.com/screener/
+  note: 'Mechanism source, not data: each strategy page becomes a hypothesis for the pwb conversion path'
+  owner: elitequant_thread
+  origin: github.com/je-suis-tm/quant-trading; github.com/paperswithbacktest/awesome-systematic-trading
