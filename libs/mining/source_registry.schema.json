@@ -1,0 +1,50 @@
+{
+ "schema": "source_registry/1",
+ "what": "THE ONE SOURCE REGISTRY. Every source any lane reads is a row here, under one canonical id with one durable cursor, and is ACTIVE only when a cell of it was EVALUATED by the gauntlet within 30 days. Built by libs/mining/acquirer.load_roster from libs/mining/sources.yaml and every table its external_rosters name; published hourly by the global_mining leg.",
+ "how_to_register": [
+  "Write your rows to a file under desks/mt5/data/source_rosters/ (*.json, *.jsonl or *.yaml; a document's 'sources', 'rows' or 'grounds' list, or a bare list). It is picked up on the next hourly pass; no code change.",
+  "Or, for a table that already exists elsewhere, add one entry to external_rosters in libs/mining/sources.yaml: {path: <glob>, rows: <list key>, id_style: <prefix for unnamed rows>, defaults: {...}}.",
+  "fetcher: owned means YOUR organ fetches and consumes the source; the mining pipeline never fetches it twice, it only registers and accounts it.",
+  "The first definition of an id wins, so no lane can redefine another's row. A row from another roster naming the same page (canonical_url) AND the same thing (slug of name) becomes an alias of the first; same page, different thing stays two sources linked by shares_page."
+ ],
+ "roster_row": {
+  "id": "string, required unless the entry declares id_style; alias: source_id. Stable forever: it keys the cursor.",
+  "name": "string, human label",
+  "url": "string; aliases rss, link, page1, or the first of urls/roots/feeds/alt. The cross-roster join key (canonical_url: host + path + sorted query, lower-case).",
+  "fetcher": "owned | html_listing | rss | reddit_json | github_search | telegram_preview | json_api | search_route | page_snapshot | external_feed",
+  "owner": "string, the lane accountable for it (e.g. breadth/free_stack, country_pack/jp)",
+  "consumer": "repo path of the organ that consumes it",
+  "kind": "code | text | broker_specs | prop_rules | ... (DEFAULT_USES keys)",
+  "uses": "list of direct_cells | indirect_cells | allocation_intel; defaults by kind",
+  "region": "string, country or cluster code; default global",
+  "language": "string; alias lang",
+  "licence": "string; alias license",
+  "auth": "none | optional | key | login; auth_env names the env var holding the key (never the key)",
+  "cadence": "cadence_minutes | cadence_s | cadence_hours | cadence (hourly, daily, weekly, 6h, 2d)",
+  "priority": "int 1 (highest) .. 9",
+  "enabled": "bool, default true",
+  "config": "fetcher-specific; url/urls/listing/feeds/queries/subs/channels/pages/paths/item_regex may sit on the row"
+ },
+ "registry_row": {
+  "id": "canonical id",
+  "status": "ACTIVE | COLD",
+  "cold_reason": "'' | 'serves no use' | 'no cell EVALUATED in 30 days'",
+  "evaluated_cells_30d": "int = evaluated_via.mining + evaluated_via.docket",
+  "evaluated_via": "{mining: mining-pipeline cells EVALUATED in 30 days, docket: docket cells judged in 30 days attributed to this source through miner_candidates.json (source_url longest path prefix on the same host, a host with one registered source, or the seat named in source) x judged_cells}",
+  "origin": "the roster file the row came from",
+  "owner": "as registered",
+  "consumer": "as registered",
+  "uses": "as registered",
+  "url_key": "canonical_url of the row's URL",
+  "aliases": "ids other rosters gave this same source",
+  "shares_page": "ids of distinct sources declared on the same page",
+  "last_outcome": "the pipeline's last fetch outcome for sources it fetches; NEVER_RUN for owned rows",
+  "records_total": "records stored in the PIT store",
+  "cursor": "desks/mt5/data/mining/cursors/<id>.json on the box: {registered: {canonical_id, origin, owner, url_key, aliases, shares_page, first_seen}, ...fetch state}"
+ },
+ "where": {
+  "rows_box": "desks/mt5/reports/mining/MINING_METRICS.json -> sources (every row)",
+  "summary_committed": "desks/mt5/data/mining_digest.json -> registry (per owner: sources, active, cold by reason; the attribution basis) and sources (ACTIVE rows and the pipeline's own fetchers)"
+ },
+ "limits": "Attribution reads the compiler's CURRENT docket snapshot, so a judged candidate that has since left it is not credited (an undercount, never an overcount). A lane whose cells never reach the compiler (a conditioner series, an allocator input) stays COLD until its cells reach the gauntlet: that is the rule, not a defect of it."
+}

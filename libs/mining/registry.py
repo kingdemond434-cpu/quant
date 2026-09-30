@@ -133,6 +133,12 @@ CREATE TABLE IF NOT EXISTS axis_verdicts (
     reason TEXT NOT NULL DEFAULT '', PRIMARY KEY (cell_id, gauntlet_cell)
 );
 CREATE INDEX IF NOT EXISTS axis_verdicts_at ON axis_verdicts(at);
+-- EVERY docket cell the gauntlet judged, whoever minted it: the join that lets a source owned by
+-- another lane prove an EVALUATED cell (the gauntlet ledger carries no source column).
+CREATE TABLE IF NOT EXISTS judged_cells (
+    gauntlet_cell TEXT PRIMARY KEY, at TEXT NOT NULL, passed INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS judged_cells_at ON judged_cells(at);
 """
 
 
@@ -247,6 +253,20 @@ class CellRegistry:
             rows = c.execute("SELECT * FROM axis_verdicts WHERE at >= ?",
                              (iso(since),)).fetchall()
         return [dict(r) for r in rows]
+
+    def record_judged(self, rows: list[tuple[str, str, bool]]) -> None:
+        """(gauntlet_cell, at, passed); the latest verdict per docket cell wins, a pass sticks."""
+        with self._conn() as c:
+            c.executemany(
+                "INSERT INTO judged_cells VALUES (?,?,?) ON CONFLICT(gauntlet_cell) DO UPDATE "
+                "SET at=max(at, excluded.at), passed=max(passed, excluded.passed)",
+                [(g, at, int(p)) for g, at, p in rows])
+
+    def judged_since(self, since: datetime) -> dict[str, bool]:
+        with self._conn() as c:
+            rows = c.execute("SELECT gauntlet_cell, passed FROM judged_cells WHERE at >= ?",
+                             (iso(since),)).fetchall()
+        return {str(r[0]): bool(r[1]) for r in rows}
 
     # ---------------------------------------------------------------------------- reads
     def by_alias(self, gauntlet_cell: str) -> list[tuple[Cell, str]]:

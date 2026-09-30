@@ -45,6 +45,43 @@ external_rosters:
   - path: desks/mt5/data/alt_dataset_sources.json               # breadth alt datasets (#123)
     defaults: {fetcher: owned, owner: breadth/alt_datasets, kind: text,
                uses: [indirect_cells, allocation_intel]}
+  # ---- the remaining parallel source universes, folded in 2026-09-30 (coverage order, item 2).
+  # Unnamed rows get a durable id (`id_style`); deep-forest grounds take the W1 registry's own
+  # `ground:<region>:<slug>` so desks/mt5/research/source_registry.py and this roster agree.
+  - path: desks/mt5/data/deep_forest_sources.json               # deep forest, 500+ grounds
+    rows: grounds
+    id_style: ground
+    defaults: {fetcher: owned, owner: deep_forest, kind: text,
+               consumer: desks/mt5/research/deep_forest_miner.py}
+  - path: desks/mt5/data/asia_sources.json                      # Asia hard/aggregator planes
+    rows: sources
+    defaults: {fetcher: owned, owner: asia_desk, kind: text,
+               consumer: desks/mt5/research/source_fixer.py,
+               uses: [indirect_cells, allocation_intel]}
+  - path: desks/mt5/data/event_consensus_sources.json           # event surprise consensus
+    rows: sources
+    defaults: {fetcher: owned, owner: event_surprise, kind: text,
+               consumer: desks/mt5/research/event_surprise.py,
+               uses: [indirect_cells, allocation_intel]}
+  - path: desks/mt5/data/free_stack_sources.json                # breadth free stack (#129)
+    rows: sources
+    defaults: {fetcher: owned, owner: breadth/free_stack, kind: text,
+               consumer: desks/mt5/research/free_stack_hunter.py,
+               uses: [indirect_cells, allocation_intel]}
+  - path: docs/research/firm_mining/sources.json                # firm and literature mining
+    id_style: firm
+    defaults: {fetcher: owned, owner: firm_mining, kind: text,
+               consumer: desks/mt5/side_channels/regional_survivor_hunters.py}
+  - path: docs/research/firm_mining/data_sources.json           # free datasets named by firm mining
+    id_style: dataset
+    defaults: {fetcher: owned, owner: firm_mining, kind: text,
+               uses: [indirect_cells, allocation_intel]}
+  - path: docs/research/GPT_HUNTER_SOURCES.json                 # video/channel hunter
+    rows: sources
+    id_style: hunter
+    defaults: {fetcher: owned, owner: gpt_hunter, kind: text, consumer: scripts/gpt_hunter.py}
+  - packs: desks/mt5/research/countries                         # every country department
+    defaults: {fetcher: owned, kind: text, uses: [indirect_cells, allocation_intel]}
 
 sources:
   # ============================================================ PRIORITY 1: MT5 native

@@ -852,3 +852,79 @@ def test_experiment_ledger_reads_mining_trial_families(tmp_path: Path,
     assert got["trial_families"] == len(fams)
     monkeypatch.setattr(el, "DESK", tmp_path / "absent")
     assert el._mining_trial_families()["status"].startswith("UNMEASURED")
+
+
+def test_one_registry_names_every_lane_once(tmp_path: Path) -> None:
+    """Unnamed rows get durable ids (the W1 `ground:` form for grounds), the same thing on the
+    same page from two rosters is one source with an alias, and a different thing on the same
+    page stays a second source linked by shares_page."""
+    d = tmp_path / "desks" / "mt5" / "data"
+    d.mkdir(parents=True)
+    (d / "grounds.json").write_text(json.dumps({"grounds": [
+        {"name": "七禾网 专访", "region": "cn", "url": "https://www.7hcn.com/list"},
+        {"name": "Stats Portal", "region": "cn", "url": "https://stats.example.cn/sj/"}]}),
+        "utf-8")
+    (d / "lane.json").write_text(json.dumps({"sources": [
+        {"id": "hcn_interviews", "name": "七禾网 专访", "url": "http://7hcn.com/list/"},
+        {"id": "cn_rail", "name": "rail freight", "url": "https://stats.example.cn/sj"},
+        {"id": "shfe_kx", "name": "a", "url": "https://s.cn/d.html?paramid=kx"},
+        {"id": "shfe_pm", "name": "b", "url": "https://s.cn/d.html?paramid=pm"}]}), "utf-8")
+    roster = tmp_path / "sources.yaml"
+    roster.write_text(textwrap.dedent("""
+        external_rosters:
+          - path: desks/mt5/data/grounds.json
+            rows: grounds
+            id_style: ground
+            defaults: {fetcher: owned, owner: deep_forest}
+          - path: desks/mt5/data/lane.json
+            rows: sources
+            defaults: {fetcher: owned, owner: lane}
+        sources: []
+        """), "utf-8")
+    got = {s.id: s for s in acq.load_roster(roster, root=tmp_path)}
+    ground = got["ground:cn:七禾网_专访"]
+    assert ground.owner == "deep_forest" and ground.aliases == ["hcn_interviews"]
+    assert "hcn_interviews" not in got
+    portal, rail = got["ground:cn:stats_portal"], got["cn_rail"]
+    assert portal.shares_page == ["cn_rail"] and rail.shares_page == [portal.id]
+    assert {"shfe_kx", "shfe_pm"} <= got.keys()          # the query separates two datasets
+
+
+def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_path: Path) -> None:
+    owned = [acq.Source(id="ground:ru:smart_lab", fetcher="owned", kind="text",
+                        uses=["direct_cells"], url_key="smart-lab.ru/blog"),
+             acq.Source(id="other", fetcher="owned", kind="text", uses=["direct_cells"],
+                        url_key="smart-lab.ru/forum")]
+    pipe = _pipe(tmp_path, sources=owned)
+    spec = {"symbol": "EURUSD", "family": "session_range_breakout", "params": {"rr": 2}}
+    judged_id = pipe._expanded(spec)["M15/london"]
+    pipe.candidates.write_text(json.dumps({"hypotheses": [
+        {**spec, "source": "miner:deep_forest_ru",
+         "source_url": "https://smart-lab.ru/blog/123.php"}]}), "utf-8")
+    st = pipe.source_status(T0)
+    assert st["ground:ru:smart_lab"]["status"] == "COLD"  # nothing judged yet
+    pipe.gate_ledger.write_text(json.dumps(
+        {"cell": judged_id, "passed": False, "terminal_gate": "deflated_sharpe",
+         "at": iso(T0 - timedelta(days=2))}) + "\n", "utf-8")
+    pipe.index_judged(now=T0)
+    st = pipe.source_status(T0)
+    row = st["ground:ru:smart_lab"]
+    assert row["status"] == "ACTIVE" and row["evaluated_via"] == {"mining": 0, "docket": 1}
+    assert st["other"]["status"] == "COLD"               # longest path prefix, not the host
+    assert pipe.source_status(T0 + timedelta(days=40))["ground:ru:smart_lab"]["status"] == "COLD"
+    assert pipe.register_cursors(now=T0) == 2 and pipe.register_cursors(now=T0) == 0
+    assert pipe.cursors.get("other")["registered"]["canonical_id"] == "other"
+    summary = pipe.registry_summary(st)
+    assert summary["active"] == 1 and summary["schema"].endswith("source_registry.schema.json")
+
+
+def test_the_live_roster_is_one_registry() -> None:
+    got = acq.load_roster(root=ROOT)
+    ids = [s.id for s in got]
+    assert len(ids) == len(set(ids))
+    owners = {s.owner.split("/")[0] for s in got}
+    assert {"deep_forest", "asia_desk", "firm_mining", "country_pack",
+            "global_mining"} <= owners
+    schema = json.loads((ROOT / "libs" / "mining" / "source_registry.schema.json")
+                        .read_text("utf-8"))
+    assert schema["schema"] == "source_registry/1"
