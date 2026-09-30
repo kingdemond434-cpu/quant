@@ -1,0 +1,67 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Query-optimal unitary channel tomography in diamond distance with parallel access",
+    "summary": "In the study of quantum process tomography, it has remained open how to learn a unitary channel in diamond distance with strictly parallel queries as efficiently as with sequential queries. Sequential",
+    "url": "https://arxiv.org/abs/2609.38145v1",
+    "published": "2026-09-29T17:57:11Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Cropland PAtteRNS: Parallel Dimensional Attention Networks and Attention to Dataset Disparity for Crop Segmentation in Satellite Imagery Time Series Data",
+    "summary": "The landscape of satellite imagery time series datasets and boundary-pushing architectures for cropland segmentation has never been richer. However, in this gold rush, important truths are being misse",
+    "url": "https://arxiv.org/abs/2609.38165v1",
+    "published": "2026-09-29T17:59:29Z",
+    "trading_terms": [
+      "gold"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Conservation-Syndrome Quantum Error Correction for Lattice-Boltzmann Quantum Algorithms",
+    "summary": "Reliable multistep quantum lattice-Boltzmann evolution requires controlling computational faults. When ideal collision preserves encoded mass and momentum exactly, changes in those charges can provide",
+    "url": "https://arxiv.org/abs/2609.38129v1",
+    "published": "2026-09-29T17:52:39Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Query-optimal unitary channel tomography in diamond distance with parallel access",
+    "summary": "In the study of quantum process tomography, it has remained open how to learn a unitary channel in diamond distance with strictly parallel queries as efficiently as with sequential queries. Sequential",
+    "url": "https://arxiv.org/abs/2609.38145v1",
+    "published": "2026-09-29T17:57:11Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Conservation-Syndrome Quantum Error Correction for Lattice-Boltzmann Quantum Algorithms",
+    "summary": "Reliable multistep quantum lattice-Boltzmann evolution requires controlling computational faults. When ideal collision preserves encoded mass and momentum exactly, changes in those charges can provide",
+    "url": "https://arxiv.org/abs/2609.38129v1",
+    "published": "2026-09-29T17:52:39Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

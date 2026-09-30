@@ -1,0 +1,1709 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "D\u00edas festivos del mercado financiero 2026 - calendario de festivos y d\u00edas bancarios - RoboForex",
+  "url": "https://roboforex.com/es/beginners/info/national-holidays/",
+  "published": "2026-09-30T05:13:35+00:00",
+  "symbols": [
+   "NAS100",
+   "CA60"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e6384adc816b6eabbe2a",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "El hecho es que los d\u00edas festivos suelen provocar una baja volatilidad en los mercados financieros;",
+    "lang": "es",
+    "quantities": [
+     "volatilidad"
+    ],
+    "direction": [
+     "baja"
+    ],
+    "horizon": [
+     "d\u00eda"
+    ],
+    "instruments": {
+     "analogues": [
+      "NAS100",
+      "CA60"
+     ],
+     "mentioned": [
+      "nasdaq",
+      "tsx"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b74ec836e63b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Horario de trading del mercado 2026 - horarios de sesiones por regi\u00f3n - RoboForex",
+  "url": "https://roboforex.com/es/beginners/info/forex-trading-hours/",
+  "published": "2026-09-30T05:13:36+00:00",
+  "symbols": [
+   "EURJPY",
+   "EURUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b337c4f033fc8c328d34",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Webinarios y podcast - RoboForex",
+  "url": "https://roboforex.com/es/beginners/start/webinars-podcasts/",
+  "published": "2026-09-30T05:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e52b2b6aea8dd1728958",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Calendario econ\u00f3mico 2026: noticias y eventos financieros - RoboForex",
+  "url": "https://roboforex.com/es/beginners/analytics/economic-calendar/",
+  "published": "2026-09-30T05:13:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "fbf3d1a604b6fdba7e89",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Preguntas frecuentes | RoboForex Help Center",
+  "url": "https://roboforex.com/es/help/",
+  "published": "2026-09-30T05:13:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "es-ES",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f06e00383d60deaf070d",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Programa de socios financieros Infinity - RoboForex",
+  "url": "https://roboforex.com/es/partner-program/",
+  "published": "2026-09-30T05:13:44+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "US500",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "policy",
+   "session"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "578d22950a5439e90e5b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Fidelidad de socios - RoboForex",
+  "url": "https://roboforex.com/es/promo/loyalty-program/",
+  "published": "2026-09-30T05:13:46+00:00",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.95,
+  "lang": "es",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://my.roboforex.com/es/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "990931544ab7d94e98cc",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e09\u0e31\u0e19\u0e08\u0e30\u0e1d\u0e32\u0e01\u0e41\u0e25\u0e30\u0e16\u0e2d\u0e19\u0e40\u0e07\u0e34\u0e19\u0e44\u0e14\u0e49\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e44\u0e23? | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/how-do-i-deposit-and-withdraw-funds/",
+  "published": "2026-09-30T05:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "ac04e5ac7e1ed686cb0f",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e17\u0e33\u0e44\u0e21\u0e16\u0e36\u0e07\u0e04\u0e27\u0e23\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e43\u0e0a\u0e49\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 Copy Trading? | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/why-choose-copy-trading-service/",
+  "published": "2026-09-30T05:13:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2ed2469a09e9a24c0fdd",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e28\u0e31\u0e1e\u0e17\u0e4c\u0e40\u0e09\u0e1e\u0e32\u0e30\u0e02\u0e2d\u0e07\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23 Copy Trading | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/faq/copy-trading-general/copy-trading-service-glossary/",
+  "published": "2026-09-30T05:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "686f094d47a2dc58c120",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e42\u0e1b\u0e23\u0e42\u0e21\u0e0a\u0e31\u0e48\u0e19\u0e41\u0e25\u0e30\u0e42\u0e1a\u0e19\u0e31\u0e2a - \u0e02\u0e49\u0e2d\u0e40\u0e2a\u0e19\u0e2d\u0e41\u0e25\u0e30\u0e1a\u0e23\u0e34\u0e01\u0e32\u0e23\u0e1b\u0e31\u0e08\u0e08\u0e38\u0e1a\u0e31\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/clients/promotions/promotion-offers/",
+  "published": "2026-09-30T05:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "2122626cf746c3f2c419",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e23\u0e31\u0e1a\u0e40\u0e07\u0e34\u0e19\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14 10% \u0e1a\u0e19\u0e22\u0e2d\u0e14\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d\u0e1a\u0e31\u0e0d\u0e0a\u0e35 - \u0e40\u0e07\u0e37\u0e48\u0e2d\u0e19\u0e44\u0e02\u0e02\u0e2d\u0e07\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21 - RoboForex",
+  "url": "https://th.roboforex.com/clients/services/up-to-10-percents-on-account-balance/rules/",
+  "published": "2026-09-30T05:13:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c7672f7a08d790463e15",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex: \u0e40\u0e02\u0e49\u0e32\u0e16\u0e36\u0e07\u0e15\u0e25\u0e32\u0e14\u0e01\u0e32\u0e23\u0e40\u0e07\u0e34\u0e19\u0e41\u0e25\u0e30\u0e40\u0e23\u0e34\u0e48\u0e21\u0e40\u0e17\u0e23\u0e14\u0e17\u0e31\u0e19\u0e17\u0e35 - RoboForex",
+  "url": "https://th.roboforex.com/?a=crgt",
+  "published": "2026-09-30T05:13:58+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.75,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://th.roboforex.com/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "3d7c64ef1674235d0a49",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e01\u0e32\u0e23\u0e15\u0e34\u0e14\u0e15\u0e48\u0e2d - RoboForex",
+  "url": "https://th.roboforex.com/about/company/contacts/",
+  "published": "2026-09-30T05:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790681355",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6d8f95fa07f5822b4202",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/AUXAUD",
+  "published": "2026-09-30T05:14:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/auxaud/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "f8032003751657e7894a",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/EURHUF",
+  "published": "2026-09-30T05:14:02+00:00",
+  "symbols": [
+   "EURHUF"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "endpoints": [
+   "https://www.histdata.com/download-free-forex-historical-data/feed/",
+   "https://www.histdata.com/download-free-forex-historical-data/",
+   "https://www.histdata.com/download-free-forex-data/",
+   "https://www.histdata.com/download-by-ftp/",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2026/9",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2026/8",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2026/7",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2026/6",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2026/5",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2026/4",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2026/3",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2026/2",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2026/1",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2025",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2024",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2023",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2022",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2021",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2020",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2019",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2018",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2017",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2016",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2015",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2014",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2013",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2012",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2011",
+   "https://www.histdata.com/download-free-forex-historical-data/?/excel/1-minute-bar-quotes/eurhuf/2010"
+  ],
+  "n_endpoints": 29,
+  "vault_sha": "c48b3d46197a0cf9e5f2",
+  "host": "www.histdata.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.fr.html",
+  "published": "2026-09-30T05:14:13+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "376c6ed57dde82bf9f17",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.ga.html",
+  "published": "2026-09-30T05:14:15+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "456640248836c29ddfef",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.hr.html",
+  "published": "2026-09-30T05:14:17+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "cc9d1de535476b98f258",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.hu.html",
+  "published": "2026-09-30T05:14:19+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0106226b34238aaf851c",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.it.html",
+  "published": "2026-09-30T05:14:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "it",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.it.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "67f171c01e7bfcd34951",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "bce: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.lt.html",
+  "published": "2026-09-30T05:14:23+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "basis",
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "lt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "348cc641fb625cf5e932",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Monetary policy strategy",
+  "url": "https://www.ecb.europa.eu/mopo/strategy/html/index.lv.html",
+  "published": "2026-09-30T05:14:26+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "basis",
+   "carry",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "lv",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lv.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2dfbeb155154c9c21e2b",
+  "host": "www.ecb.europa.eu",
+  "claims": [
+   {
+    "claim": "When the economy is operating close to the lower bound on nominal interest rates, it requires especially forceful or persistent monetary policy action to prevent negative deviations from the inflation target from becoming entrenched.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "lower",
+     "negative"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "EURUSD"
+     ],
+     "channels": [
+      "ecb: policy: ECB -> EUR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "b6f9232745a5"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/57746",
+  "published": "2026-09-30T05:14:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f724034fae8fb624f143",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/49571",
+  "published": "2026-09-30T05:14:29+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.cftc.gov/media/12806/Polymarket US Amended Order of Designation/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "efdb3366bda865c09005",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/50090",
+  "published": "2026-09-30T05:14:31+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5de28edcd1d4aa96138c",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/50639",
+  "published": "2026-09-30T05:14:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "503a8df4d90fff62b951",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/48213",
+  "published": "2026-09-30T05:14:35+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5ae59b9b5a9b9e751db8",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/48926",
+  "published": "2026-09-30T05:14:36+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "68cf502a5bbc7a508667",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Industry Filings: Designated Contract Markets (DCM) Filing | CFTC",
+  "url": "https://www.cftc.gov/IndustryOversight/IndustryFilings/TradingOrganizations/34537",
+  "published": "2026-09-30T05:14:39+00:00",
+  "symbols": [],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "cfb3d691140df273e9ee",
+  "host": "www.cftc.gov",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Advanced Backtesting Software - Forex Tester Online",
+  "url": "https://forextester.com/?utm_source=Blog_FT_site&utm_medium=referral&utm_campaign=Blog_FT_site_PricingHeaderEN&gc=Blog_FT_site_PricingHeaderEN",
+  "published": "2026-09-30T05:14:43+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY",
+   "M1"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d0c2227f2e4d5748968b",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Advanced Backtesting Software - Forex Tester Online",
+  "url": "https://forextester.com/?utm_source=Blog_FT_site&utm_medium=referral&utm_campaign=Blog_FTO_site_SymbolsHeaderEN&gc=Blog_FTO_site_SymbolsHeaderEN",
+  "published": "2026-09-30T05:14:50+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY",
+   "M1"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "flow",
+   "gap",
+   "inventory",
+   "mean_reversion",
+   "momentum",
+   "orderflow",
+   "policy",
+   "positioning",
+   "seasonality",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "e328986f200425bae035",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/de/",
+  "published": "2026-09-30T05:14:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "de-DE",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadDE&amp;gc=Blog_FooterDownloadDE"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "5d1028e7b8b5419a97cc",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/it/",
+  "published": "2026-09-30T05:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "it-IT",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadIT&amp;gc=Blog_FooterDownloadIT"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "26a683bab1e5febbb1e6",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/fr/",
+  "published": "2026-09-30T05:14:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "fr-FR",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadFR&amp;gc=Blog_FooterDownloadFR"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0a7b55af418533f32100",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/pt/",
+  "published": "2026-09-30T05:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "pt-PT",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadPT&amp;gc=Blog_FooterDownloadPT"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "713c008c7ff3c516b953",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Blog - Your Guide to Mastering Market Simulations",
+  "url": "https://forextester.com/blog/th/",
+  "published": "2026-09-30T05:14:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://desktop.forextester.com/download?utm_source=Blog_FT_site&amp;utm_medium=referral&amp;utm_campaign=Blog_FooterDownloadTH&amp;gc=Blog_FooterDownloadTH"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1d634ab86a7a0276a1c3",
+  "host": "forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7f8e\u5143 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aUSD.html",
+  "published": "2026-09-30T05:15:02+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "002781d831cddc42645a",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4eba\u6c11\u5e01 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aCNY.html",
+  "published": "2026-09-30T05:15:06+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fb496d9173279a4c8b4c",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6b27\u5143 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aEUR.html",
+  "published": "2026-09-30T05:15:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d825343311466b82ac1b",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u82f1\u9551 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aGBP.html",
+  "published": "2026-09-30T05:15:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c768593f5213706e8860",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u65e5\u5143 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aJPY.html",
+  "published": "2026-09-30T05:15:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3488da3dbf3ed0d1d238",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6fb3\u5143 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aAUD.html",
+  "published": "2026-09-30T05:15:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c04d1f9b91d6601c20cb",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u52a0\u5143 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/a/aCAD.html",
+  "published": "2026-09-30T05:15:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9160236bfdb5bd6160c3",
+  "host": "forex.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://twitter.com/intent/tweet?text=Exports%20%7C%20FXMacroData%20https%3A//fxmacrodata.com/ar/indicators/exports",
+  "url": "https://twitter.com/intent/tweet?text=Exports%20%7C%20FXMacroData%20https%3A//fxmacrodata.com/ar/indicators/exports",
+  "published": "2026-09-30T05:15:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://twitter.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a132609e74cc4f87bd3b",
+  "host": "twitter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://twitter.com/intent/tweet?text=Exports%20%7C%20FXMacroData%20https%3A//fxmacrodata.com/hi/indicators/exports",
+  "url": "https://twitter.com/intent/tweet?text=Exports%20%7C%20FXMacroData%20https%3A//fxmacrodata.com/hi/indicators/exports",
+  "published": "2026-09-30T05:15:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://twitter.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "58e62c18db420c6e7b20",
+  "host": "twitter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://twitter.com/intent/tweet?text=Exports%20%7C%20FXMacroData%20https%3A//fxmacrodata.com/zh/indicators/exports",
+  "url": "https://twitter.com/intent/tweet?text=Exports%20%7C%20FXMacroData%20https%3A//fxmacrodata.com/zh/indicators/exports",
+  "published": "2026-09-30T05:15:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://twitter.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e929fa078427884cdeae",
+  "host": "twitter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://twitter.com/intent/tweet?text=Exports%20%7C%20FXMacroData%20https%3A//fxmacrodata.com/ja/indicators/exports",
+  "url": "https://twitter.com/intent/tweet?text=Exports%20%7C%20FXMacroData%20https%3A//fxmacrodata.com/ja/indicators/exports",
+  "published": "2026-09-30T05:15:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://twitter.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "65fc5fb46a2c20299e76",
+  "host": "twitter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://twitter.com/intent/tweet?url=https://archive.org/details/adventofalgorith0000berl&via=internetarchive&text=The+a",
+  "url": "https://twitter.com/intent/tweet?url=https://archive.org/details/adventofalgorith0000berl&via=internetarchive&text=The+advent+of+the+algorithm+%3A+the+300-year+journey+from+an+idea+to+the+computer+%3A+Berlinski%2C+David%2C+1942-+%3A+Free+Download%2C+Borrow%2C+and+Streaming+%3A+Internet+Archive",
+  "published": "2026-09-30T05:15:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://twitter.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4ea869a2aa15af54b344",
+  "host": "twitter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://twitter.com/intent/tweet?url=https://archive.org/details/isbn_0116404090940&via=internetarchive&text=A+history+o",
+  "url": "https://twitter.com/intent/tweet?url=https://archive.org/details/isbn_0116404090940&via=internetarchive&text=A+history+of+algorithms+%3A+from+the+pebble+to+the+microchip+%3A+Free+Download%2C+Borrow%2C+and+Streaming+%3A+Internet+Archive",
+  "published": "2026-09-30T05:15:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://twitter.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6a8e7c186b36b7bc740a",
+  "host": "twitter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://twitter.com/intent/tweet?url=https://archive.org/details/superrecursiveal0000burg&via=internetarchive&text=Super",
+  "url": "https://twitter.com/intent/tweet?url=https://archive.org/details/superrecursiveal0000burg&via=internetarchive&text=Super-recursive+algorithms+%3A+Burgin%2C+M.+S.+%28Mark+Semenovich%29+%3A+Free+Download%2C+Borrow%2C+and+Streaming+%3A+Internet+Archive",
+  "published": "2026-09-30T05:15:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://twitter.com/manifest.json"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "772d8a7b5a7cf928b18d",
+  "host": "twitter.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6570\u636e\u5e73\u53f0-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/home",
+  "published": "2026-09-30T05:15:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "122d7d54883e278285f4",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u901a\u7528\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u901a\u7528\u6570\u636e",
+  "published": "2026-09-30T05:15:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c1d9f3b4d5b2c8ec6e1f",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e",
+  "published": "2026-09-30T05:15:50+00:00",
+  "symbols": [
+   "JPN225"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "night_session",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a314577c1d0b54e7a75b",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "793749+08:00 \u4f5c\u8005\uff1abigquantdatabuilder1 \u80a1\u7968\u672a\u590d\u6743\u65e5\u884c\u60c5(cn_stock_real_bar1d) \u6570\u636e\u63cf\u8ff0\uff1a\u8be5\u8868\u63d0\u4f9b\u4e86\u80a1\u7968\u5e02\u573a\u7684\u672a\u590d\u6743\u65e5\u884c\u60c5\u6570\u636e\uff0c\u5305\u62ec\u80a1\u7968\u7684\u5f00\u9ad8\u4f4e\u6536\u3001\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u7b14\u6570\u3001\u6210\u4ea4\u91d1\u989d\u3001\u6da8\u8dcc\u5e45\u3001\u6362\u624b\u7387\u3001\u6da8/\u8dcc\u505c\u4ef7\u7b49\u5173\u952e\u6307\u6807\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1dc481a54efd"
+   },
+   {
+    "claim": "\u5305\u62ec\uff1a\u5f53\u65e5\u80a1\u7968\u7684\u505c\u590d\u724c\u72b6\u6001\u3001\u590d\u6743\u540e\u7684\u524d\u6536\u76d8\u4ef7\u3001\u6da8\u8dcc\u505c\u4ef7\u3001\u590d\u6743\u56e0\u5b50\uff0c\uff08*\uff09ST\u72b6\u6001\u3001\u662f\u5426\u9664\u6743\u9664\u606f\u3001\u662f\u5426\u5904\u4e8e\u9000\u5e02\u6574\u7406\u671f\u3001\u4ef7\u683c\u6863\u4f4d\u3001\u662f\u5426\u4e3a\u878d\u8d44\u6807\u7684\u3001\u662f\u5426\u4e3a\u878d\u5238\u6807\u7684\u3001\u662f\u5426\u4e3a\u56de\u8f6c\u4ea4\u6613\u3001\u6d41\u901a\u80a1\u672c\u7b49\u6570\u636e\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5f53\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u80a1",
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5e811da1c8da"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u80a1\u7968\u6570\u636e-\u80a1\u7968\u884c\u60c5-\u91cf\u5316\u4ea4\u6613\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/categories/-\u80a1\u7968\u6570\u636e-\u80a1\u7968\u884c\u60c5",
+  "published": "2026-09-30T05:15:52+00:00",
+  "symbols": [
+   "JPN225"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "night_session",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "92dd4240f1ad06f0d0b9",
+  "host": "bigquant.com",
+  "claims": [
+   {
+    "claim": "793749+08:00 \u4f5c\u8005\uff1abigquantdatabuilder1 \u80a1\u7968\u672a\u590d\u6743\u65e5\u884c\u60c5(cn_stock_real_bar1d) \u6570\u636e\u63cf\u8ff0\uff1a\u8be5\u8868\u63d0\u4f9b\u4e86\u80a1\u7968\u5e02\u573a\u7684\u672a\u590d\u6743\u65e5\u884c\u60c5\u6570\u636e\uff0c\u5305\u62ec\u80a1\u7968\u7684\u5f00\u9ad8\u4f4e\u6536\u3001\u6210\u4ea4\u91cf\u3001\u6210\u4ea4\u7b14\u6570\u3001\u6210\u4ea4\u91d1\u989d\u3001\u6da8\u8dcc\u5e45\u3001\u6362\u624b\u7387\u3001\u6da8/\u8dcc\u505c\u4ef7\u7b49\u5173\u952e\u6307\u6807\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6210\u4ea4\u91cf"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "bar"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "1dc481a54efd"
+   },
+   {
+    "claim": "\u5305\u62ec\uff1a\u5f53\u65e5\u80a1\u7968\u7684\u505c\u590d\u724c\u72b6\u6001\u3001\u590d\u6743\u540e\u7684\u524d\u6536\u76d8\u4ef7\u3001\u6da8\u8dcc\u505c\u4ef7\u3001\u590d\u6743\u56e0\u5b50\uff0c\uff08*\uff09ST\u72b6\u6001\u3001\u662f\u5426\u9664\u6743\u9664\u606f\u3001\u662f\u5426\u5904\u4e8e\u9000\u5e02\u6574\u7406\u671f\u3001\u4ef7\u683c\u6863\u4f4d\u3001\u662f\u5426\u4e3a\u878d\u8d44\u6807\u7684\u3001\u662f\u5426\u4e3a\u878d\u5238\u6807\u7684\u3001\u662f\u5426\u4e3a\u56de\u8f6c\u4ea4\u6613\u3001\u6d41\u901a\u80a1\u672c\u7b49\u6570\u636e\u3002",
+    "lang": "zh",
+    "quantities": [
+     "\u6536\u76d8"
+    ],
+    "direction": [
+     "\u6da8",
+     "\u8dcc"
+    ],
+    "horizon": [
+     "\u5f53\u65e5"
+    ],
+    "instruments": {
+     "analogues": [
+      "JPN225"
+     ],
+     "mentioned": [
+      "\u65e5\u80a1",
+      "\u8dcc\u505c"
+     ],
+     "transfer_only": [
+      "\u8dcc\u505c->cn-equities-only"
+     ],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5e811da1c8da"
+   }
+  ],
+  "n_claims": 2
+ }
+]
