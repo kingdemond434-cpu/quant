@@ -26,8 +26,8 @@ import argparse
 import json
 import math
 import sys
-from datetime import UTC, datetime, timedelta
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
