@@ -45,10 +45,11 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
     sys.path.insert(0, _p)
 
 #: THE PROOF A PASS RAN: every gateway pass rewrites this (mt5desk.gateway.STATE). Declared here
-#: so the component registry binds it to task:MT5-GatewayResident and the runtime attestation
-#: carries a row for this organ of its own -- until 2026-09-30 it passed the birth fence only
-#: because another organ's row happened to name it as a clock, which any change to the reach
-#: walk's order could (and did) take away. Read by nothing in this module.
+#: so the runtime attestation carries a row for this organ of its own (the organ is
+#: `resident:gateway`, its one canonical id since 2026-09-30 -- components.TASK_CANONICAL).
+#: Until 2026-09-30 it passed the birth fence only because another organ's row happened to
+#: name it as a clock, which any change to the reach walk's order could (and did) take away.
+#: Read by nothing in this module.
 ARTIFACT = DESK / "data" / "gateway_state.json"
 
 #: Seconds after a minute boundary at which a pass starts, so the pass that follows a bar close
