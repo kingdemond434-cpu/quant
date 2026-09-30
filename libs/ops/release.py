@@ -40,6 +40,7 @@ import json
 import os
 import subprocess
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -208,6 +209,24 @@ def _norm(b: bytes) -> bytes:
     return b.replace(b"\r\n", b"\n")
 
 
+@lru_cache(maxsize=512)
+def _read_commit(rel: str, root_text: str, commit: str) -> bytes | None:
+    """Return one immutable commit blob, reusing it within later hash calculations.
+
+    `_describe` hashes the same money-path blobs once as a set and again per file. On the
+    Windows trading box each `git show` costs seconds against the large repository, turning a
+    22-file seal into a multi-minute mutex hold. A commit's blob cannot change, so this removes
+    only duplicate reads without changing the release hash contract.
+    """
+    root = Path(root_text)
+    try:
+        result = subprocess.run([_git_exe(), "show", f"{commit}:{rel}"], cwd=root,
+                                capture_output=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result.stdout if result.returncode == 0 else None
+
+
 def _read(rel: str, root: Path, commit: str | None) -> bytes | None:
     """File bytes from the working tree (commit None) or from git's objects at `commit`."""
     if commit is None:
@@ -215,12 +234,7 @@ def _read(rel: str, root: Path, commit: str | None) -> bytes | None:
             return (root / Path(*rel.split("/"))).read_bytes()
         except OSError:
             return None
-    try:
-        r = subprocess.run([_git_exe(), "show", f"{commit}:{rel}"], cwd=root, capture_output=True,
-                           timeout=10)
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return r.stdout if r.returncode == 0 else None
+    return _read_commit(rel, str(root.resolve()), commit)
 
 
 def hash_paths(paths: tuple[str, ...] | list[str], root: Path | None = None,
