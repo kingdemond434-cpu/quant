@@ -303,31 +303,56 @@ def candidate(cell: dict[str, Any], firing: dict[str, int], handoff_sha: str,
 
 
 # ------------------------------------------------------------------ registry row
-def register_dataset(handoff: dict[str, Any], now: datetime, path: Path | None = None
-                     ) -> dict[str, Any]:
-    """UPSERT the hand-off's row in data_registry.json so the D18 census enrols it. `ingested`
-    is written once (first registration) and never moved; the series list follows the file."""
-    p = path or DATA_REGISTRY
-    doc = _read(p)
-    if not isinstance(doc, dict) or not isinstance(doc.get("datasets"), dict):
-        return {"status": UNMEASURED, "why": f"{p.name} absent or unreadable: not registered"}
+def registry_row(handoff: dict[str, Any], ingested: str) -> dict[str, Any]:
     series = sorted({str(r.get("lake_file")) for r in handoff.get("rows") or []
                      if isinstance(r, dict) and r.get("lake_file")})
-    prior = doc["datasets"].get(DATASET_KEY)
-    row = dict(prior) if isinstance(prior, dict) else {}
-    want = {"lifecycle": row.get("lifecycle") or "INGESTED",
+    return {"lifecycle": "INGESTED",
             "source": ("research/alt_proxies.py equity hand-off: free alt-data substitutes "
                        "(PIT lake series) mapped to the share CFDs they bear on"),
             "format": "json", "path": "data/digests/alt_proxies_equity_handoff.json",
-            "ingested": row.get("ingested") or now.date().isoformat(),
-            "series": series,
+            "ingested": ingested, "series": series,
             "consumer": "research/alt_equity_handoff.py (event lane + class books)",
             "provenance": "desks/mt5/research/alt_proxies.py equity_handoff()"}
-    if row == {**row, **want} and prior is not None:
-        return {"status": "REGISTERED", "changed": False, "key": DATASET_KEY}
-    row.update(want)
-    doc["datasets"][DATASET_KEY] = row
-    _atomic(p, doc)
+
+
+def register_dataset(handoff: dict[str, Any], now: datetime, path: Path | None = None
+                     ) -> dict[str, Any]:
+    """Make sure data_registry.json carries the hand-off so the D18 census enrols it.
+
+    The registry is a HAND-KEPT file, so this organ never reformats it: when the row is present
+    it is only READ (a series list that no longer matches the hand-off is reported as drift,
+    never rewritten); when it is absent the row is INSERTED as text before the `datasets`
+    object closes, leaving every other byte as it was."""
+    p = path or DATA_REGISTRY
+    try:
+        text = p.read_text("utf-8")
+        doc = json.loads(text)
+    except (OSError, ValueError):
+        doc, text = None, ""
+    if not isinstance(doc, dict) or not isinstance(doc.get("datasets"), dict):
+        return {"status": UNMEASURED, "why": f"{p.name} absent or unreadable: not registered"}
+    prior = doc["datasets"].get(DATASET_KEY)
+    if isinstance(prior, dict):
+        want = registry_row(handoff, str(prior.get("ingested") or ""))["series"]
+        missing = sorted(set(want) - set(prior.get("series") or []))
+        return {"status": "REGISTERED", "changed": False, "key": DATASET_KEY,
+                "series_not_in_registry_row": missing}
+    body = json.dumps({DATASET_KEY: registry_row(handoff, now.date().isoformat())}, indent=2)
+    inner = "\n".join("  " + ln for ln in body.splitlines()[1:-1])
+    stripped = text.rstrip()
+    cut = stripped.rstrip("}").rstrip()        # the file ends `...}\n  }\n}`: datasets, then root
+    if not stripped.endswith("}") or not cut.endswith("}"):
+        return {"status": UNMEASURED, "why": f"{p.name} does not end with the datasets object"}
+    head = cut[:-1].rstrip()
+    sep = "," if not head.endswith("{") else ""
+    out = f"{head}{sep}\n{inner}\n  }}\n}}\n"
+    try:
+        json.loads(out)
+    except ValueError:
+        return {"status": UNMEASURED, "why": "inserting the row would not parse; not written"}
+    tmp = p.with_name(p.name + ".tmp")
+    tmp.write_text(out, "utf-8")
+    os.replace(tmp, p)
     return {"status": "REGISTERED", "changed": True, "key": DATASET_KEY}
 
 

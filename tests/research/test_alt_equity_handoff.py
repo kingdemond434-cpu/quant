@@ -155,7 +155,9 @@ def test_the_handoff_runs_through_to_donated_charged_cells(tmp_path: Path,
     # the dataset is registered for the D18 census, and a second pass re-donates nothing
     row = json.loads(reg.read_text("utf-8"))["datasets"][aeh.DATASET_KEY]
     assert row["lifecycle"] == "INGESTED" and LAKE in row["series"]
+    before = reg.read_bytes()
     again = aeh.run(handoff_path=hp)
+    assert reg.read_bytes() == before                    # a present row is never rewritten
     assert again["donated_this_pass"] == 0 and again["measured_this_pass"] == 0
     assert again["held"].get("ALREADY_DONATED") == rep["donated_this_pass"]
 

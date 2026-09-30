@@ -131,6 +131,30 @@
       "status": "not yet fetched",
       "priority": "low",
       "notes": "Translated news 100+ languages, 15-min updates; quarantined research input"
+    },
+    "alt_proxies_equity_handoff": {
+      "lifecycle": "INGESTED",
+      "source": "research/alt_proxies.py equity hand-off: free alt-data substitutes (PIT lake series) mapped to the share CFDs they bear on",
+      "format": "json",
+      "path": "data/digests/alt_proxies_equity_handoff.json",
+      "ingested": "2026-09-30",
+      "series": [
+        "alt_cn_holiday_spend__spend_per_trip_yoy",
+        "alt_cn_holiday_spend__spend_yoy",
+        "alt_gdelt_events_country__TW_conflict_share",
+        "alt_gdelt_events_country__TW_tone",
+        "alt_kr_exports_early__daily_avg_yoy",
+        "alt_kr_exports_early__semis_yoy",
+        "alt_mx_antad_sss__same_store_sales_yoy",
+        "alt_us_oi_card_spend__spend_all",
+        "alt_us_oi_card_spend__spend_food_accommodation",
+        "alt_us_oi_card_spend__spend_retail_no_grocery",
+        "alt_us_oi_google_mobility__retail_and_recreation",
+        "alt_us_oi_google_mobility__transit_stations",
+        "alt_us_tsa_throughput__travelers"
+      ],
+      "consumer": "research/alt_equity_handoff.py (event lane + class books)",
+      "provenance": "desks/mt5/research/alt_proxies.py equity_handoff()"
     }
   }
 }
