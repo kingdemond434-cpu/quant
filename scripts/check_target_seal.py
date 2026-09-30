@@ -24,11 +24,15 @@ import hashlib
 import json
 import subprocess
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EVALUATOR = "scripts/check_immutable_evaluator.py"
 MANIFEST = "desks/mt5/data/IMMUTABLE_MANIFEST.json"
+#: The last verdict, for whoever asks off the adopter's console why a release was not taken.
+#: Best-effort: an unwritable report never changes the exit code the adopter acts on.
+OUT = ROOT / "desks" / "mt5" / "reports" / "TARGET_SEAL.json"
 
 
 def _show(rev: str, rel: str) -> bytes | None:
@@ -97,6 +101,15 @@ def main(argv: list[str]) -> int:
     print(f"target seal {rev[:12]}: {verdict}")
     for why in reasons:
         print(f"  {why}")
+    try:
+        OUT.parent.mkdir(parents=True, exist_ok=True)
+        OUT.write_text(json.dumps({"measured_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                                   "target": rev, "verdict": verdict, "rc": rc,
+                                   "reasons": reasons,
+                                   "consumer": "desks/mt5/scripts/Adopt-Release.ps1"},
+                                  indent=1), "utf-8")
+    except OSError:
+        pass
     return rc
 
 
