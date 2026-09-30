@@ -983,7 +983,10 @@ def replay_blocked(wanted: set[str], universe: set[str], budget_s: float, *,
                     "title": str(row.get("title") or row.get("description") or "")[:300],
                     "url": row.get("url") or row.get("link") or ""}
             with contextlib.suppress(OSError):
-                rel = path.relative_to(ROOT).as_posix()
+                try:
+                    rel = path.relative_to(ROOT).as_posix()
+                except ValueError:  # a path outside the repo (a test root, an override)
+                    rel = path.as_posix()
                 prov = sp.extract(row, artifact=rel, row_index=idx,
                                   artifact_mtime=path.stat().st_mtime)
                 task.update({k2: v for k2, v in prov.items() if v and k2 in sp.FIELDS})

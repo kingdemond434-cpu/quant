@@ -136,7 +136,7 @@ def test_provenance_block_measures_new_candidates_against_the_last_pass(tmp_path
     ("ドル円は東京時間のレンジブレイクで上昇しやすい", "session_range_breakout", "JP/ja"),
     ("Золото: пробой азиатского диапазона часто продолжается в течение дня",
      "session_range_breakout", "RU/ru"),
-    ("금 가격은 갭 메우기 이후 반등한다", "overnight_gap_decay", "KR/ko"),
+    ("금값은 갭 메우기 이후 반등한다", "overnight_gap_decay", "KR/ko"),
 ])
 def test_multilingual_claims_map_to_registered_families_with_culture(text, family,
                                                                      culture) -> None:
