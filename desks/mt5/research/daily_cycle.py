@@ -586,11 +586,6 @@ def _zentech() -> None:
     build_zentech_state.main()
 
 
-#: ORDER IS LOAD-BEARING. The promoter reads the state shadow has just written, so running it
-#: first would decide today on yesterday's evidence. Markout runs last-but-one and
-#: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
-#: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
-#: anything today's cycle produced.
 def _six_event_trace() -> None:
     """Is the system real? The principal's six-event test (2026-09-30), re-derived from recorded
     artifacts: a source mined into a cell, a preregistered cell, a logged REJECT, a survivor
@@ -602,6 +597,11 @@ def _six_event_trace() -> None:
         raise RuntimeError(f"six_event_trace returned {rc}")
 
 
+#: ORDER IS LOAD-BEARING. The promoter reads the state shadow has just written, so running it
+#: first would decide today on yesterday's evidence. Markout runs last-but-one and
+#: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
+#: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
+#: anything today's cycle produced.
 STEPS = (("research_gap_map", _research_gap_map),
          ("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
