@@ -50,7 +50,7 @@ What stops rows reaching DONE, in order of how many rows each blocks:
 5. **Committed state contradicts the rules.** 24 LIVE rows are the banned `discovered` family. 31 are admission UNMEASURED and kept indefinitely. The promoter never reads `principal_override`. `certificate_truth --apply` has never run. `research_budget` is `authoritative:false`. The Tier-1 ledger's P1 and P13 rows still say those refusals are pinned, while #53 dropped the 0.02 gold floor under sovereignty and arms the margin clause by default. `check_tier1_program.py` exits 1.
 6. **Still missing everywhere:** CS5, D7 and D9 (UNMEASURED and override sleeves keep their risk) and DP2 (dormant components removed).
 
-**Capital event to watch at the first box pass.** #53's cost-basis demotion is wired into `save_sleeves`, and 0 of 40 committed LIVE rows carry `cost_hash`. Read-only runs show 12 to 40 LIVE rows moving to STANDBY on the next promoter pass. Separately, the Tier S door withholds every new LIVE row as DOOR_ERROR until the box has run both `tier_s` and `replication_civilization` once. Both are now always-run legs.
+**Capital event to watch at the first box pass.** #53's cost-basis demotion is wired into `save_sleeves`. With `universe.json` present, 27 LIVE rows pass on the universe and 1 on clock identity, so 12 demote to STANDBY on the next promoter pass. All 12 are banned `discovered` rows on zero-spread FX majors, so the demotion is intended. A checkout without `universe.json` would show all 40 demoting. Separately, the Tier S door withholds every new LIVE row as DOOR_ERROR until the box has run both `tier_s` and `replication_civilization` once. Both are now always-run legs.
 
 ## Routing
 
