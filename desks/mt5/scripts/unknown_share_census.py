@@ -52,6 +52,8 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 BASE = DESK.parents[1]
+#: What the daily step `unknown_census` publishes (CRO D3 reads it).
+OUT = DESK / "reports" / "UNKNOWN_SHARE_CENSUS.json"
 for _p in (str(BASE), str(DESK), str(DESK / "scripts")):
     if _p not in sys.path:
         sys.path.insert(0, _p)

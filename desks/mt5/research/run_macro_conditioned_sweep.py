@@ -88,6 +88,7 @@ def pit_conditioned(sigs: list, fav: pd.Series, col: str) -> tuple[list, dict]:
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
+OUT = BASE / "reports" / "macro_conditioned_sweep.json"
 
 SCREEN_BAR = 1.96
 
@@ -189,7 +190,7 @@ def main() -> int:
         print("Nothing ranks. Under the two-stage law that is a screening outcome, "
               "not a verdict on the mechanism -- no forward evidence has been spent.")
 
-    out = BASE / "reports" / "macro_conditioned_sweep.json"
+    out = OUT
     out.parent.mkdir(parents=True, exist_ok=True)
     lag = data_os.declared_lag(MACRO_SOURCE) or {}
     out.write_text(json.dumps({

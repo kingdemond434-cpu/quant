@@ -631,7 +631,7 @@ def _unknown_census() -> None:
     sys.path.insert(0, str(BASE / "scripts"))
     import unknown_share_census
     rc = unknown_share_census.main(["--complete-inputs", "--budget-s", "900", "--label", "daily",
-                                    "--out", str(BASE / "reports" / "UNKNOWN_SHARE_CENSUS.json")])
+                                    "--out", str(unknown_share_census.OUT)])
     if rc != 0:
         raise RuntimeError(f"unknown_share_census returned {rc}")
 
