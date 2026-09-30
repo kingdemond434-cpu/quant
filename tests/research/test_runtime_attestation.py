@@ -295,3 +295,60 @@ def test_only_missing_is_idempotent(tmp_path: Path, monkeypatch) -> None:
 def test_only_missing_refuses_without_a_committed_attestation(tmp_path: Path) -> None:
     assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 1
     assert not ra.Paths.at(tmp_path).out_json.exists()
+
+
+def test_only_missing_stamps_rows_and_off_host_never_trusts_local_mtimes(
+        tmp_path: Path, monkeypatch) -> None:
+    path = _committed(tmp_path)
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc["host"]["hostname"] = doc["attests_to_host"] = "the-box"
+    path.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    fresh = [_row("new_live", "LIVE"), _row("new_stale", "STALE"),
+             _row("new_missing", "MISSING"), _row("new_never", "NEVER")]
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    after = json.loads(path.read_text(encoding="utf-8"))
+    new = {r["organ"]: r for r in after["organs"][2:]}
+    assert {k: r["state"] for k, r in new.items()} == {
+        "new_live": ra.UNMEASURED, "new_stale": ra.UNMEASURED,
+        "new_missing": ra.UNMEASURED, "new_never": "NEVER"}
+    assert all(r["measured_on"] == socket.gethostname() and r["measured_at"]
+               for r in new.values())
+    assert after["census"][ra.UNMEASURED] == 3 and after["census"]["NEVER"] == 1
+    assert after["census"]["LIVE"] == 1 and after["census"]["STALE"] == 1  # untouched
+    assert after["scope"]["only_missing_appended"][-1]["on_attesting_host"] is False
+    # the fence still reads it as a report about the box, with no host drift
+    assert not any("host drift" in f for f in fence.measure(tmp_path)["failures"])
+
+
+def test_only_missing_on_the_attesting_host_keeps_its_measured_state(
+        tmp_path: Path, monkeypatch) -> None:
+    path = _committed(tmp_path)
+    monkeypatch.setattr(ra, "organ_rows",
+                        lambda paths, budget_s: ([_row("new_live", "LIVE")], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    row = json.loads(path.read_text(encoding="utf-8"))["organs"][-1]
+    assert row["state"] == "LIVE" and row["measured_on"] == socket.gethostname()
+
+
+def test_only_missing_trims_only_the_appended_rows(tmp_path: Path, monkeypatch) -> None:
+    path = _committed(tmp_path)
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    for r in doc["organs"]:
+        r["summary"] = {"status": "keep-me"}
+    doc["scope"]["summaries_trimmed"] = 2
+    path.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    raw_before = [json.dumps(r, indent=1) for r in doc["organs"]]
+    base = len(json.dumps(doc, default=str))
+    monkeypatch.setattr(ra, "MAX_JSON_BYTES", base + 600)
+    fresh = []
+    for i in range(6):
+        r = _row(f"new_{i}", "LIVE")
+        r["summary"] = {"status": "x" * 40, "rows": 10 ** 9 + i, "verdict": "y" * 40}
+        fresh.append(r)
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    after = json.loads(path.read_text(encoding="utf-8"))
+    assert [json.dumps(r, indent=1) for r in after["organs"][:2]] == raw_before
+    trimmed = [r for r in after["organs"][2:] if "trimmed" in str(r["summary"].get("_", ""))]
+    assert trimmed and after["scope"]["summaries_trimmed"] == 2 + len(trimmed)
