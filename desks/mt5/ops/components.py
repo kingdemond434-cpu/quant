@@ -419,7 +419,80 @@ REQUIRED_TASKS: frozenset[str] = frozenset(
 #: census counted the gateway resident twice and the attestation carried two rows for one clock.
 #: The canonical id keeps the task as its `schedule` and its restart action; the manifest row is
 #: skipped here instead of being registered beside it.
-TASK_CANONICAL: dict[str, str] = {"MT5-GatewayResident": "resident:gateway"}
+#:
+#: EVERY RESIDENT, NOT ONLY THE GATEWAY (2026-09-30). The same double entry held for the control
+#: plane (`task:MT5-ClockFixer` beside `component:control_plane`) and for every department,
+#: forest and moat-swarm resident, whose keep-alive task was registered a second time as
+#: `task:<name>` running the very script the resident spec already owns. The list is written out
+#: because the registry must be readable without importing the swarm or forest runtimes, and
+#: `task_canonical_gaps()` -- pinned by `tests/ops/test_organ_dedupe.py` -- fails the suite the
+#: day a new resident's task is added without its line here.
+TASK_CANONICAL: dict[str, str] = {
+    "MT5-GatewayResident": "resident:gateway",
+    "MT5-ClockFixer": "component:control_plane",
+    # the departments (discovery rides MT5-Hourly -- see department_task)
+    "MT5-Hourly": "resident:dept_discovery",
+    "MT5-Dept-Data": "resident:dept_data",
+    "MT5-Dept-Execution": "resident:dept_execution",
+    "MT5-Dept-Forward": "resident:dept_forward",
+    "MT5-Dept-Intel": "resident:dept_intel",
+    "MT5-Dept-Japan": "resident:dept_japan",
+    "MT5-Dept-Macro": "resident:dept_macro",
+    "MT5-Dept-Mathlab": "resident:dept_mathlab",
+    "MT5-Dept-Meta": "resident:dept_meta",
+    "MT5-Dept-Regions": "resident:dept_regions",
+    "MT5-Dept-Rest": "resident:dept_rest",
+    "MT5-Dept-Validate": "resident:dept_validate",
+    # the forests with a resident of their own
+    "MT5-Forest-Africa": "resident:dept_africa",
+    "MT5-Forest-Asean": "resident:dept_asean",
+    "MT5-Forest-China": "resident:dept_china",
+    "MT5-Forest-Europe": "resident:dept_europe",
+    "MT5-Forest-Korea": "resident:dept_korea",
+    "MT5-Forest-Latam": "resident:dept_latam",
+    "MT5-Forest-Mena": "resident:dept_mena",
+    "MT5-Forest-NorthAmerica": "resident:dept_north_america",
+    "MT5-Forest-Oceania": "resident:dept_oceania",
+    "MT5-Forest-RussiaCis": "resident:dept_russia_cis",
+    "MT5-Forest-SouthAsia": "resident:dept_south_asia",
+    # the moat swarms
+    "MT5-Moat-Exploit": "resident:moat_exploit",
+    "MT5-Moat-Explore": "resident:moat_explore",
+    "MT5-Moat-Resurrect": "resident:moat_resurrect",
+}
+
+
+def task_canonical_gaps(path: Path | None = None) -> dict[str, list[str]]:
+    """Every way the one-organ-one-id rule can be broken, measured from the specs themselves.
+
+    `unlisted`   a manifest task that a resident or explicit organ keeps alive (its `schedule`
+                 and its `restart:task:` action both name the task) with no TASK_CANONICAL line,
+                 so the manifest task would be registered as a second organ beside it.
+    `dangling`   a TASK_CANONICAL line whose organ does not exist or does not name the task as
+                 its schedule, so the skip would drop an organ instead of deduplicating one.
+    `unclaimed`  a script the skipped task runs that its canonical organ does not own, so the
+                 dedupe would turn a clocked file into an undeclared executable.
+    """
+    runs: dict[str, set[str]] = {}
+    for row in manifest_rows(path):
+        name = row.get("name") or ""
+        r = row.get("runs") or ""
+        if name:
+            runs.setdefault(name, set())
+            if r and r != "UNKNOWN" and (ROOT / r).exists():
+                runs[name].add(r)
+    organs = {s.component_id: s for s in (*explicit_specs(), *resident_specs())}
+    unlisted = sorted(
+        f"{s.schedule} -> {cid}" for cid, s in organs.items()
+        if s.schedule in runs and s.restart_action == f"restart:task:{s.schedule}"
+        and TASK_CANONICAL.get(s.schedule) != cid)
+    dangling = sorted(
+        f"{task} -> {cid}" for task, cid in TASK_CANONICAL.items()
+        if cid not in organs or organs[cid].schedule != task)
+    unclaimed = sorted(
+        f"{task}: {script}" for task, cid in TASK_CANONICAL.items() if cid in organs
+        for script in runs.get(task, ()) if script not in organs[cid].code_paths)
+    return {"unlisted": unlisted, "dangling": dangling, "unclaimed": unclaimed}
 
 
 def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
@@ -730,8 +803,11 @@ def explicit_specs() -> list[ComponentSpec]:
         ComponentSpec(
             component_id="component:control_plane",
             kind="task", host="box",
+            # clock_fixer.py is what MT5-ClockFixer runs, and this is that task's one organ id
+            # (TASK_CANONICAL), so the organ owns the script the task invokes.
             code_paths=("desks/mt5/research/control_plane.py",
-                        "libs/ops/control_plane/reconciler.py"),
+                        "libs/ops/control_plane/reconciler.py",
+                        "desks/mt5/research/clock_fixer.py"),
             inputs=("desks/mt5/data/watermarks/", "desks/mt5/data/lineage.sqlite"),
             outputs=("desks/mt5/reports/CONTROL_PLANE.json",),
             consumers=("scripts/check_closed_loop.py", "desks/mt5/research/clock_fixer.py"),
