@@ -2336,3 +2336,21 @@ FAMILY_TIMEFRAMES["dataset_conditioned"] = (
     ("H1",),
     "the base family is rebuilt on H1 bars and the dataset is joined to the H1 clock a "
     "publication day late; on another chart the base would change meaning")
+
+# DATASET STANCE (2026-09-30): the DIRECT use of every dataset kind. `exogenous_conditioner` reads a
+# lake pack only, so a CFTC file or an intelligence seat could condition another family's entry and
+# could never take a stance of its own -- two of the three uses the principal ordered were missing
+# for most datasets. `mt5desk.family_dataset_stance` reads the same one loader as
+# `dataset_conditioned` (lagged a publication day) and takes a side while the reading is extreme.
+# The dataset and field are required, so a default-parameter sweep sets it aside and only the
+# swarm's feed-first direct producers mint it. H1 only, like its indirect sibling.
+from mt5desk.family_dataset_stance import family_dataset_stance  # noqa: E402
+
+ORTHOGONAL_FAMILIES["dataset_stance"] = family_dataset_stance
+FAMILY_INPUTS["dataset_stance"] = (
+    "a dataset's own series on its availability clock; price only to place and size the order",
+    "data/lake/series/*, data/cot*/*.parquet, data/intelligence/<seat>/")
+FAMILY_TIMEFRAMES["dataset_stance"] = (
+    ("H1",),
+    "the dataset is joined to the H1 clock a publication day late and the hold is counted in H1 "
+    "bars; on another chart the hold would change meaning")

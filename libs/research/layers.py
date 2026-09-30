@@ -90,6 +90,10 @@ LEG_LAYER: dict[str, str] = {
     # Every producer's reach against what it minted, and the share the sealed judge can build:
     # the machine measuring its own breadth, which is meta.
     "producer_breadth": "meta",
+    # CRO D18: every enrolled dataset's three uses measured and the unfed ranked feed-first for
+    # the swarm -- the machine measuring what it does with its data, which is meta (its world-state
+    # entries are advisory inputs, never a sizing decision).
+    "dataset_exploitation": "meta",
     # The video-derived anchor/exit grid mints claims about returns: prediction, like
     # `empty_cluster_forcer`, which it runs beside.
     "htf_anchor": "prediction",

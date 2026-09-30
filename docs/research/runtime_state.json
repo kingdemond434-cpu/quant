@@ -26,11 +26,11 @@
   "LIVE": 123,
   "STALE": 0,
   "MISSING": 47,
-  "NEVER": 681,
+  "NEVER": 682,
   "UNMEASURED": 29
  },
  "scope": {
-  "attested": 877,
+  "attested": 878,
   "excluded": 454,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1328,
@@ -22310,6 +22310,31 @@
    "summary": {},
    "progress_metric": "leg_completions",
    "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:dataset_exploitation",
+   "kind": "leg",
+   "code": [
+    "libs/research/dataset_exploitation.py"
+   ],
+   "clock": "hourly_cycle:dataset_exploitation",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DATASET_EXPLOITATION.json",
+   "artifact_declared": "desks/mt5/reports/DATASET_EXPLOITATION.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/research/producer_swarm.py feed-first slice; scripts/check_dataset_e"
   }
  ],
  "ratchet": {

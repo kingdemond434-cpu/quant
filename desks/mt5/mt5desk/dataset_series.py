@@ -70,6 +70,14 @@ NON_SIGNAL_KEYS: frozenset[str] = frozenset({
     "confidence", "month", "year", "day", "hour", "minute", "weekday", "dow", "rank", "priority",
     "version", "page", "n", "count", "index", "idx", "score_version"})
 
+#: THE ACTIVITY FIELD. A text-only intelligence seat (claims, posts, filings) carries no numeric
+#: reading, and before this it could feed no conditioner and no state input: stored, never used.
+#: Every name-stamped snapshot still says HOW MUCH the seat saw at the moment the desk knew it, so
+#: `_rows` is the count of rows (matching `match`, when given) in each stamped snapshot -- an
+#: attention/activity series on the same honest clock as every other intelligence field. A
+#: snapshot with no matching row reads 0, which is a measurement, not an absence.
+ROW_COUNT_FIELD = "_rows"
+
 _STAMPED = re.compile(r"(20\d{2})(\d{2})(\d{2})(?:[_T-](\d{2})(\d{2})(\d{2})?)?")
 _SNAPSHOT_SUFFIXES = (".json", ".jsonl", ".jsonl.gz", ".json.gz")
 
@@ -269,6 +277,10 @@ def _intel_raw(key: tuple[str, ...], field: str, match: str, mtimes: tuple[int, 
     stamps: list[datetime] = []
     vals: list[float] = []
     for t, p in snapshot_files(dirs, limit):
+        if field == ROW_COUNT_FIELD:
+            stamps.append(t)
+            vals.append(float(sum(1 for r in rows_in(p) if _matches(r, match))))
+            continue
         got = [v for r in rows_in(p) if _matches(r, match)
                for v in [_reading(r, field)] if v is not None]
         if got:

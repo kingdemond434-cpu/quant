@@ -73,6 +73,9 @@ DOCKET = BASE / "data" / "hypotheses" / "external_survivors.json"
 REPORT = BASE / "reports" / "PRODUCER_SWARM.json"
 VISITS = BASE / "reports" / "swarm" / "producer_swarm_visits.jsonl"
 BREADTH = BASE / "reports" / "PRODUCER_BREADTH.json"
+#: THE FEED-FIRST HOOK (libs/research/dataset_exploitation): the enrolled datasets that do not yet
+#: feed all three uses, ranked longest-unfed first, each with the uses it is missing.
+FEED_PRIORITY = BASE / "data" / "hypotheses" / "dataset_feed_priority.json"
 SOURCE = "producer_swarm"
 UNMEASURED = "UNMEASURED"
 #: A docket larger than this is not parsed for dedup (the registry's content hash still dedups);
@@ -219,6 +222,9 @@ class Producer:
     dataset: str = ""
     #: Explicit parameter moves (a conditioned producer's states); empty = the family's own.
     moves: tuple[tuple[tuple[str, Any], ...], ...] = ()
+    #: Which of a dataset's three uses this producer mints: "direct" (`dataset_stance`) or
+    #: "conditioner" (`dataset_conditioned`); "" for every non-dataset producer.
+    use: str = ""
 
 
 def base_params(chart: str, session: str, mods: dict[str, Any]) -> dict[str, Any]:
@@ -388,7 +394,8 @@ def _dataset_producers(reg: dict[str, Any], fams: list[str], bars: dict[str, set
                        quota: int, skipped: Counter[str], datasets: list[dict[str, Any]] | None,
                        census: dict[str, Any]) -> list[Producer]:
     """One producer per (usable dataset x field x base family), minting `dataset_conditioned`:
-    the INDIRECT use of every dataset with a usable point-in-time series."""
+    the INDIRECT use of every dataset with a usable point-in-time series -- and one per (usable
+    dataset x field) minting the registry's `direct_family` (`dataset_stance`): its DIRECT use."""
     dc = dict(reg.get("dataset_conditioning") or {})
     fam = str(dc.get("family") or "")
     if not fam:
@@ -451,10 +458,58 @@ def _dataset_producers(reg: dict[str, Any], fams: list[str], bars: dict[str, set
                     chart=chart, session="all", transform="conditioned", mods=(), lane=lane,
                     cluster=cluster_of(base), quota=quota, base=p, culture=tag,
                     participant=part,
-                    failure_mode=why, dataset=ds,
+                    failure_mode=why, dataset=ds, use="conditioner",
                     moves=tuple((("state", st),) for st in states)))
+    out += _direct_producers(dc, usable, on_chart, quota, skipped, cults, chart)
     census["producers"] = len(out)
+    census["direct_producers"] = sum(1 for p in out if p.use == "direct")
     census["datasets_wired"] = len({p.dataset for p in out})
+    return out
+
+
+def _direct_producers(dc: dict[str, Any], usable: list[dict[str, Any]], on_chart: set[str],
+                      quota: int, skipped: Counter[str], cults: dict[str, dict[str, Any]],
+                      chart: str) -> list[Producer]:
+    """The DIRECT use: the dataset's reading alone picks the side (`direct_family`), on every
+    hypothesis-lane symbol the chart holds bars for, both orientations as the producer's moves."""
+    fam = str(dc.get("direct_family") or "")
+    if not fam:
+        return []
+    from research.gauntlet_buildability import BUILDABLE, cell_verdict
+    from research.universe_policy import may_hypothesise
+    nf = max(1, int(dc.get("max_fields_per_dataset") or 3))
+    lane = tuple(sorted(s for s in on_chart if may_hypothesise(s, fam)))
+    if not lane:
+        skipped["direct_producer_without_a_lane"] += 1
+        return []
+    out: list[Producer] = []
+    for d in usable:
+        ds = str(d["id"])
+        tag = str(d.get("source_culture") or UNMEASURED)
+        c = cults.get(tag) or {}
+        part = str(c.get("participant_structure") or
+                   ("institutional" if d.get("kind") == "cot" else UNMEASURED))
+        for fdef in (d.get("fields") or [])[:nf]:
+            fld, match = str(fdef.get("field") or ""), str(fdef.get("match") or "")
+            if not fld:
+                continue
+            p = {"dataset": ds, "field": fld, "transform": str(dc.get("transform") or "level_z"),
+                 "threshold": float(dc.get("threshold") or 1.0)}
+            if match:
+                p["match"] = match
+            if cell_verdict(fam, p)[0] != BUILDABLE:
+                skipped["direct_producer_unbuildable"] += 1
+                continue
+            key = f"{fld}|{match}" if match else fld
+            out.append(Producer(
+                pid=f"{fam}.{ds}.{key}", family=fam, klass="dataset", chart=chart,
+                session="all", transform="direct", mods=(), lane=lane,
+                cluster=cluster_of(fam), quota=quota, base=p, culture=tag, participant=part,
+                failure_mode=(f"{ds}.{fld}{' [' + match + ']' if match else ''} alone decides "
+                              f"the side, so it fails when that {tag} reading stops leading "
+                              "price, not when a price pattern breaks"),
+                dataset=ds, use="direct",
+                moves=((("side_when_high", 1),), (("side_when_high", -1),))))
     return out
 
 
@@ -573,9 +628,52 @@ def unfed_datasets(doc: dict[str, Any] | None) -> set[str] | None:
     return {str(x) for x in ds["unfed"]}
 
 
+def feed_priority(path: Path | None = None) -> dict[str, dict[str, Any]] | None:
+    """{dataset id: {"rank", "missing"}} from dataset_feed_priority.json; None when absent."""
+    doc = _read(path or FEED_PRIORITY, None)
+    if not isinstance(doc, dict) or not isinstance(doc.get("datasets"), list):
+        return None
+    out: dict[str, dict[str, Any]] = {}
+    for i, r in enumerate(doc["datasets"]):
+        if isinstance(r, dict) and r.get("id"):
+            out[str(r["id"])] = {"rank": int(r.get("rank") or i + 1),
+                                 "missing": [str(m) for m in r.get("missing") or []]}
+    return out
+
+
+def priority_order(pool: list[Producer], prio: dict[str, dict[str, Any]]) -> list[Producer]:
+    """The pool ordered by the feed-first file, BREADTH BEFORE DEPTH: round r takes the r-th
+    producer of every ranked dataset in rank order, and within a dataset the uses it is MISSING
+    come first, alternating between them -- so one hour's slice feeds the direct AND conditioner
+    use of as many unfed datasets as it can reach, instead of every base family of the first one.
+    Nothing is dropped, only the order changes; datasets the file does not rank follow."""
+    groups: dict[str, list[Producer]] = {}
+    for p in pool:
+        groups.setdefault(p.dataset, []).append(p)
+
+    def within(ds: str, ps: list[Producer]) -> list[Producer]:
+        miss = (prio.get(ds) or {}).get("missing") or []
+        lanes: dict[str, list[Producer]] = {}
+        for p in ps:
+            lanes.setdefault(p.use, []).append(p)
+        uses = sorted(lanes, key=lambda u: (u not in miss, u))
+        out: list[Producer] = []
+        for i in range(max((len(v) for v in lanes.values()), default=0)):
+            out += [lanes[u][i] for u in uses if i < len(lanes[u])]
+        return out
+
+    ranked = sorted(groups, key=lambda d: (int((prio.get(d) or {}).get("rank") or 1 << 30), d))
+    queues = [within(d, groups[d]) for d in ranked]
+    out: list[Producer] = []
+    for i in range(max((len(q) for q in queues), default=0)):
+        out += [q[i] for q in queues if i < len(q)]
+    return out
+
+
 def plan(roster: list[Producer], reg: dict[str, Any], cursor: dict[str, Any],
          hole_axes: dict[str, list[str]], turn: int,
-         unfed: set[str] | None = None) -> dict[str, Any]:
+         unfed: set[str] | None = None,
+         priority: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """The hour's visits: the priority slices first (unfed datasets, then the non-Western
     culture producers, then the breadth holes -- each rotating over its pool), then the lap from
     the cursor.
@@ -595,7 +693,8 @@ def plan(roster: list[Producer], reg: dict[str, Any], cursor: dict[str, Any],
     taken = {p.pid for p in ring}
     pools: dict[str, list[Producer]] = {
         "dataset": [p for p in roster if p.dataset and p.pid not in taken
-                    and (unfed is None or p.dataset in unfed)],
+                    and (unfed is None or p.dataset in unfed
+                         or (priority is not None and p.dataset in priority))],
         "culture": [p for p in roster if not p.dataset and p.culture not in ("GLOBAL", "")
                     and p.pid not in taken],
         "hole": [p for p in roster if in_hole(p, hole_axes) and p.pid not in taken],
@@ -621,7 +720,12 @@ def plan(roster: list[Producer], reg: dict[str, Any], cursor: dict[str, Any],
         pool = [p for p in pools[k] if p.pid not in taken]
         kk = min(max(1, want[k] // quota) if want[k] else 0, room // quota)
         room -= kk * quota
-        slices[k] = rotating_window(pool, kk, turn=turn) if kk and pool else []
+        if k == "dataset" and priority:
+            # FEED FIRST: the datasets the exploitation fence ranks worst, their missing use
+            # first -- in rank order, not a rotating window, until each one is fed.
+            slices[k] = priority_order(pool, priority)[:kk] if kk else []
+        else:
+            slices[k] = rotating_window(pool, kk, turn=turn) if kk and pool else []
         taken |= {p.pid for p in slices[k]}
     return {"dataset": slices["dataset"], "culture": slices["culture"], "hole": slices["hole"],
             "ring": ring, "quota": quota, "ceiling": ceiling, "ring_k": ring_k, "pos": pos,
@@ -677,6 +781,15 @@ def culture_fields(p: Producer) -> dict[str, str]:
 
 
 def mechanism(p: Producer, cell: dict[str, Any]) -> str:
+    if p.dataset and p.use == "direct":
+        b = p.base
+        tag = f" [{b['match']}]" if b.get("match") else ""
+        return (f"{cell['symbol']} takes side {cell['params'].get('side_when_high')} while "
+                f"{p.dataset}.{b.get('field')}{tag}"
+                f" ({b.get('transform')}) is high beyond {b.get('threshold')} and the opposite "
+                f"while it is low: the dataset's DIRECT use, minted by swarm producer {p.pid} "
+                f"(culture {p.culture}). No performance is claimed -- the gauntlet attaches the "
+                f"only numbers that attach.")
     if p.dataset:
         b = p.base
         return (f"{b.get('base_family')} on {cell['symbol']}, taken only while {p.dataset}."
@@ -758,7 +871,8 @@ def _trim_visits(path: Path, now: datetime) -> None:
 def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, Any] | None = None,
         bars: dict[str, set[str]] | None = None, conn=None, out_dir: Path | None = None,
         known: set[str] | None = None, datasets: list[dict[str, Any]] | None = None,
-        breadth: dict[str, Any] | None = None) -> dict[str, Any]:
+        breadth: dict[str, Any] | None = None,
+        priority_path: Path | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     now = now or datetime.now(UTC)
     reg = reg or load_registry()
@@ -778,7 +892,8 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
     bdoc = breadth if breadth is not None else (_read(BREADTH, {}) if out_dir is None else {})
     hole_axes = holes(bdoc)
     unfed = unfed_datasets(bdoc)
-    hplan = plan(roster, reg, cursor, hole_axes, hour_turn(now), unfed)
+    prio = feed_priority(priority_path) if priority_path is not None or out_dir is None else None
+    hplan = plan(roster, reg, cursor, hole_axes, hour_turn(now), unfed, prio)
     fams = {p.family for p in roster}
     if known is None:
         known, kinfo = known_cells(fams)
@@ -853,6 +968,12 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
         "holes_targeted": hole_axes,
         "unfed_datasets_targeted": (sorted(unfed)[:200] if unfed is not None else
                                     "every dataset producer: no dataset census read yet"),
+        "feed_first": ({"datasets_ranked": len(prio),
+                        "by_use": dict(Counter(p.use for p in hplan["dataset"])),
+                        "first": [p.pid for p in hplan["dataset"][:10]],
+                        "source": "data/hypotheses/dataset_feed_priority.json"}
+                       if prio is not None else
+                       {"status": UNMEASURED, "why": "no dataset_feed_priority.json read"}),
         "culture_rule": ("every cell carries source_culture, participant_structure and "
                          "failure_mode_hypothesis (registry lineage_json); culture producers "
                          "take culture_visit_share of the ceiling before the breadth holes"),

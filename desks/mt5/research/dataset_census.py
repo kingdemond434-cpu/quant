@@ -55,6 +55,8 @@ SWARM_REGISTRY = DATA / "producer_swarm_registry.json"
 MIN_OBSERVATIONS = 30
 #: Newest snapshot files sampled to learn an intelligence dataset's numeric fields.
 FIELD_SAMPLE_FILES = 3
+#: Newest files walked back through to find FIELD_SAMPLE_FILES that are not empty.
+FIELD_SAMPLE_SCAN = 120
 FIELD_SAMPLE_ROWS = 400
 #: Distinct `symbol` values an intelligence field is split into, most frequent first.
 MAX_MATCHES = 12
@@ -220,7 +222,16 @@ def cot_datasets(data: Path | None = None) -> list[dict[str, Any]]:
 def intel_fields(dirs: list[Path]) -> tuple[list[dict[str, str]], set[str]]:
     """Numeric fields (split by `symbol` where rows carry one) and the rows' own source names."""
     from mt5desk import dataset_series as DS
-    files = DS.snapshot_files(dirs, 0)[-FIELD_SAMPLE_FILES:]
+    stamped = DS.snapshot_files(dirs, 0)
+    # The newest FIELD_SAMPLE_FILES files that carry ANY row: a seat whose last rollups are empty
+    # (measured 2026-09-30: `china`, `google_trends` and 13 more end in 94-byte empty gzips) is
+    # still a seat with readings, and sampling only its empty tail called it "no row at all".
+    files: list[tuple[Any, Path]] = []
+    for t_p in reversed(stamped[-FIELD_SAMPLE_SCAN:]):
+        if next(iter(DS.rows_in(t_p[1])), None) is not None:
+            files.insert(0, t_p)
+            if len(files) >= FIELD_SAMPLE_FILES:
+                break
     keys: Counter[str] = Counter()
     per_symbol: Counter[str] = Counter()
     sources: set[str] = set()
@@ -247,6 +258,10 @@ def intel_fields(dirs: list[Path]) -> tuple[list[dict[str, str]], set[str]]:
     if has_symbol:
         out = [{"field": f, "match": f"symbol={s}"} for s, _ in per_symbol.most_common(MAX_MATCHES)
                for f in names]
+    # THE ACTIVITY FIELD, always last: a text-only seat is conditionable on how much it saw, and a
+    # numeric seat keeps its own readings first (so its producer ids do not move).
+    if n:
+        out.append({"field": DS.ROW_COUNT_FIELD, "match": ""})
     return out, sources
 
 
@@ -264,11 +279,21 @@ def intel_datasets(roots: tuple[Path, ...] | None = None) -> list[dict[str, Any]
         if not stamped:
             why = "no snapshot file carries a time in its name: no availability stamp"
         elif not fields:
-            why = "its rows carry no numeric reading (text/claims only): a direct-cell source"
+            why = "its snapshots carry no row at all: nothing to read"
         else:
             f0 = fields[0]
             facts.update(_series_facts(DS.intel_raw(seat, f0["field"], match=f0["match"],
                                                     roots=roots)))
+            if facts.get("points", 0) < MIN_OBSERVATIONS and len(fields) > 1 and \
+                    fields[-1]["field"] == DS.ROW_COUNT_FIELD:
+                # The seat's first numeric key is too sparse to read, and its activity count is
+                # read from EVERY stamped snapshot: lead with it, so the producers that take the
+                # first fields build signals instead of minting cells that return nothing.
+                rows_f = _series_facts(DS.intel_raw(seat, DS.ROW_COUNT_FIELD, roots=roots))
+                if rows_f.get("points", 0) > facts.get("points", 0):
+                    fields = [fields[-1], *fields[:-1]]
+                    f0 = fields[0]
+                    facts.update(rows_f)
             why = ("" if facts.get("points", 0) >= MIN_OBSERVATIONS else
                    f"{facts.get('points', 0)} stamped reading(s) of {f0['field']}, under "
                    f"{MIN_OBSERVATIONS}")

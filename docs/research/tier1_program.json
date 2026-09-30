@@ -9016,6 +9016,29 @@
    "landed": [
     "mass screen 2026-09-30"
    ]
+  },
+  {
+   "id": "DX1",
+   "item": "Dataset exploitation (CRO D18): every enrolled dataset feeds direct cells, conditioner cells and a WORLD_STATE_INPUTS entry within 24h of enrolment and produces judged cells daily; the unfed are ranked feed-first for the producer swarm; unfed_count published hourly with target 0",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "libs/research/dataset_exploitation.py",
+    "scripts/check_dataset_exploitation.py",
+    "desks/mt5/mt5desk/family_dataset_stance.py",
+    "desks/mt5/research/producer_swarm.py",
+    "desks/mt5/tests/test_dataset_exploitation.py"
+   ],
+   "scheduled_by": "hourly_cycle:dataset_exploitation",
+   "artifact": "desks/mt5/reports/DATASET_EXPLOITATION.json",
+   "consumer": "desks/mt5/data/hypotheses/dataset_feed_priority.json -> desks/mt5/research/producer_swarm.py plan() dataset slice (dataset_stance direct + dataset_conditioned conditioner cells) -> libs/moat/registry.py enqueue_candidate -> docket -> sealed gauntlet; desks/mt5/reports/WORLD_STATE_INPUTS_DATASETS.json (advisory allocation state); desks/mt5/research/producer_breadth.py PRODUCER_BREADTH.json[dataset_exploitation]; scripts/run_law_gate.py state fence check_dataset_exploitation.py --require-state",
+   "gap": "LANDED 2026-09-30: measured on the container (data frozen at 2026-09-12, no judge): 348 enrolled datasets, 0 FULL. Only datasets with a point-in-time series can take direct/conditioner cells and a world-state entry; 242 lake packs are registered in asia_sources.json with no series file collected, and 57 intelligence seats are ACCUMULATING (under the 28-day span) here. FULL also requires judged cells in 24h, which only the box's judge produces.",
+   "next_step": "Land the 242 registered lake packs' series (data/lake/series with available_time) so they become conditionable; fold WORLD_STATE_INPUTS_DATASETS.json into world_cells' WORLD_STATE_INPUTS.json when #123 lands (patch at /mnt/project-files/patches/dataset_exploitation/); apply the cell_emitter feed-first patch when #116 lands.",
+   "landed": [
+    "dataset exploitation fence 2026-09-30"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

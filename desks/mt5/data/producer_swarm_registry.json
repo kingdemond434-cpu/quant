@@ -301,8 +301,9 @@
   "google_trends": "GLOBAL"
  },
  "dataset_conditioning": {
-  "_rule": "THE INDIRECT USE OF EVERY DATASET. One producer per (usable dataset x field x base family), minting `dataset_conditioned` cells: the base family's own entries kept while the dataset's point-in-time reading is in a state. Datasets come from research/dataset_census (a usable series only); base families are the swarm's own families that `family_dataset_conditioned.base_ok` admits. The datasets PRODUCER_BREADTH.json names as feeding no producer are visited first, up to `unfed_visit_share` of the hour's ceiling.",
+  "_rule": "THE INDIRECT USE OF EVERY DATASET. One producer per (usable dataset x field x base family), minting `dataset_conditioned` cells: the base family's own entries kept while the dataset's point-in-time reading is in a state. Datasets come from research/dataset_census (a usable series only); base families are the swarm's own families that `family_dataset_conditioned.base_ok` admits. The datasets PRODUCER_BREADTH.json names as feeding no producer are visited first, up to `unfed_visit_share` of the hour's ceiling. THE DIRECT USE beside it: one producer per (usable dataset x field) minting `direct_family` (`dataset_stance`: the reading alone picks the side). When desks/mt5/data/hypotheses/dataset_feed_priority.json exists (libs/research/dataset_exploitation), the dataset slice is taken in ITS order -- the longest-unfed dataset first, its missing use first -- instead of a rotating window.",
   "family": "dataset_conditioned",
+  "direct_family": "dataset_stance",
   "chart": "H1",
   "states": [
    "high",

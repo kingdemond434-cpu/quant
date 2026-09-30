@@ -837,7 +837,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
-    "producer_census", "productivity_census", "producer_breadth", "preregistration",
+    "producer_census", "productivity_census", "producer_breadth", "dataset_exploitation",
+    "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
     "alpha_rank", "factory_contracts",
@@ -1015,6 +1016,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # PRODUCER BREADTH: every producer's reach against what it minted -- the
                      # machine measuring its own breadth, beside the census it complements.
                      "producer_breadth",
+                     # DATASET EXPLOITATION (CRO D18): every enrolled dataset's three uses
+                     # measured, its world-state entry written, the unfed ranked feed-first.
+                     "dataset_exploitation",
                      # Tier-1 B1/B7/B10/B11: the release bit, the scientists' league table, the
                      # failure prior and the unified EVIG acquisition are all the machine
                      # measuring and scheduling itself.
@@ -1624,6 +1628,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # measured 2026-09-30) and writes at most `hourly_cell_ceiling` (2,000) rows through the
     # registry in 1,000-row chunks; measured 3.6 s for a dry pass of 8,060 producers here.
     "producer_swarm": 600,
+    # DATASET EXPLOITATION reads the registry once (every research_candidates row, three small
+    # JSON columns each), the verdict ledger's 64 MB tail and each dataset's series once for its
+    # world-state z (~350 datasets, 3 fields). Measured 2026-09-30 on the 4-core container:
+    # see DATASET_EXPLOITATION.json `wall_s`; the cap sits well above a million-row registry.
+    "dataset_exploitation": 900,
     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
@@ -2602,6 +2611,16 @@ def unknown_unknown() -> dict:
                      "--budget-s", "900")  # == UNKNOWN_UNKNOWN_BUDGET_S, literal (see above)
 
 
+def dataset_exploitation() -> dict:
+    """`dataset_exploitation` (CRO D18): every enrolled dataset -- on disk, in data_registry.json,
+    in the world factory's rosters -- measured on its three uses (direct cells, conditioner cells,
+    a WORLD_STATE_INPUTS entry) and on judged cells in 24h; writes the WORLD_STATE_INPUTS entries
+    for every dataset with a point-in-time series, then ranks the not-FULL datasets longest-unfed
+    first into data/hypotheses/dataset_feed_priority.json, which `producer_swarm` reads next.
+    Artifacts: reports/DATASET_EXPLOITATION.json/.md, reports/WORLD_STATE_INPUTS_DATASETS.json."""
+    return _producer("dataset_exploitation", "libs/research/dataset_exploitation.py", "--once")
+
+
 def producer_swarm() -> dict:
     """`producer_swarm`: thousands of individual producers, one per (family x asset class x
     chart x session x transform) from data/producer_swarm_registry.json, each minting only cells
@@ -3426,6 +3445,10 @@ def main() -> None:
     # THE PRODUCER SWARM and UNKNOWN-UNKNOWN MINING (principal 2026-09-30: "all individual
     # producers, tons thousands of them ... breadth and unknown unknown minings all"). Both write
     # through the registry door, so they run BEFORE `merge_docket` for the same reason as above.
+    # DATASET EXPLOITATION FIRST (CRO D18, principal 2026-09-30: "all datasets must be exploited
+    # ... not just stored like museum items"): it ranks the datasets that do not yet feed all three
+    # uses into the feed-first file the swarm reads on the very next line.
+    dxp = _costed("dataset_exploitation", dataset_exploitation)
     psw = _costed("producer_swarm", producer_swarm)
     uuk = _costed("unknown_unknown", unknown_unknown)
     ccv = _costed("candidate_conservation", candidate_conservation)
@@ -5149,6 +5172,7 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "mass_screen": msc,
+                    "dataset_exploitation": dxp,
                     "producer_swarm": psw, "unknown_unknown": uuk,
                     "candidate_conservation": ccv,
                     "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,

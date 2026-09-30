@@ -967,6 +967,7 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         by_cluster[c]["buildable" if v["verdict"] == "BUILDABLE" else "unbuildable"].append(fam)
     swarm_row = rows.get("producer_swarm") or {}
     ds_list, datasets = dataset_section(now, db)
+    exploitation = exploitation_section()
     swarm = swarm_section(now, db, scheduled=bool(swarm_row.get("scheduled")),
                           clocks=list(swarm_row.get("clocks") or []),
                           n_families=len(buildable_fams), n_clusters=len(reachable_clusters),
@@ -1020,7 +1021,7 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "thresholds": {"narrow_symbol_share": NARROW_SYMBOL_SHARE,
                        "narrow_min_asset_classes": NARROW_MIN_CLASSES,
                        "untestable_buildable_share_below": UNTESTABLE_BELOW},
-        "headline": headline(rows, swarm, unfed, holes, datasets),
+        "headline": headline(rows, swarm, unfed, holes, datasets, exploitation),
         "registry": reg_why,
         "seat_bytes_read": MAX_SEAT_BYTES_TOTAL - budget["left"],
         "wall_s": round(time.monotonic() - t0, 2),
@@ -1028,6 +1029,9 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "producers": rows,
         "swarm": swarm,
         "datasets": datasets,
+        # CRO D18: every enrolled dataset's three uses (direct, conditioner, allocation) and judged
+        # cells in 24h, read from the hourly dataset_exploitation leg's artifact, never recomputed.
+        "dataset_exploitation": exploitation,
     }
 
 
@@ -1088,8 +1092,19 @@ def dataset_section(now: datetime, db: Path | None) -> tuple[list[dict[str, Any]
                       "datasets": {}, "unfed": [], "totals": {}}
 
 
+def exploitation_section() -> dict[str, Any]:
+    """The D18 block: DATASET_EXPLOITATION.json's counts, unfed_count and top gaps."""
+    try:
+        from libs.research.dataset_exploitation import read_summary
+        return read_summary()
+    except Exception as exc:
+        return {"status": UNMEASURED, "why": f"dataset_exploitation unreadable "
+                                             f"({type(exc).__name__}: {exc})"}
+
+
 def headline(rows: dict[str, Any], swarm: dict[str, Any], unfed: list[dict[str, Any]],
-             holes: dict[str, Any], datasets: dict[str, Any] | None = None) -> dict[str, Any]:
+             holes: dict[str, Any], datasets: dict[str, Any] | None = None,
+             exploitation: dict[str, Any] | None = None) -> dict[str, Any]:
     """The first thing the daily CRO duty reads."""
     srows = swarm.get("producers") or {}
 
@@ -1131,6 +1146,8 @@ def headline(rows: dict[str, Any], swarm: dict[str, Any], unfed: list[dict[str, 
     # leads the list the CRO duty reads rather than being cut off at its tail.
     gaps = [f"dataset {k} feeds no producer: {rows_ds.get(k, {}).get('why', '')}"
             for k in (ds.get("unfed_conditionable") or [])[:5]] + gaps
+    # D18 LEADS: a dataset that does not feed all three uses is the first gap named.
+    gaps = [f"D18 dataset {g}" for g in ((exploitation or {}).get("top_gaps") or [])[:5]] + gaps
     return {"producers_total": total["producers"], "active": total["active"],
             "idle": total["idle"], "narrow": total["narrow"],
             "untestable": total["untestable"], "unmeasured": total["unmeasured"],
@@ -1146,6 +1163,10 @@ def headline(rows: dict[str, Any], swarm: dict[str, Any], unfed: list[dict[str, 
                             (swarm.get("by_culture") or {}).items()},
                         "non_global_share_of_swarm_cells_24h":
                             swarm.get("non_global_share_of_cells_24h", UNMEASURED)},
+            "dataset_exploitation": {
+                k: (exploitation or {}).get(k) for k in ("cro_duty", "unfed_count", "target",
+                                                         "counts", "status", "why")
+                if (exploitation or {}).get(k) is not None},
             "top_gaps": gaps[:25]}
 
 

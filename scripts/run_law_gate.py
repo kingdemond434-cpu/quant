@@ -439,6 +439,13 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # defined downstream state. A STATE fence: on a clean checkout the ingestion artifact is
     # absent and the verdict is UNMEASURED, which is a real answer and not a pass.
     ("check_ingestion_exploitation.py", ()),
+    # CRO D18 -- NO DATASET IS JUST STORED (principal 2026-09-30: "all datasets must be exploited
+    # ... not just stored like museum items always"). Every enrolled dataset feeds direct cells,
+    # conditioner cells and a WORLD_STATE_INPUTS entry within 24h of enrolment and produces judged
+    # cells daily; fails naming every dataset past 24h that is not FULL. A STATE fence: it reads the
+    # hourly leg's DATASET_EXPLOITATION.json, which only the box writes, so on the box an absent or
+    # stale artifact is the leg not running and fails too.
+    ("check_dataset_exploitation.py", ("--require-state",)),
     # LAWS 5b -- every mined row ends as a testable cell or a recorded, reasoned refusal. The
     # CONVERSION DEBT (rows that are neither) ratchets DOWN and may never be raised, including
     # by hand: the enforced ceiling is min(ceiling, lowest_ever). A STATE fence for the same
