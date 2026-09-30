@@ -83,6 +83,14 @@ def candidate_families(rule: Mapping[str, Any]) -> list[tuple[str, str, dict[str
     """(subtype, registered family, params, all-params-published) for every mapping hit."""
     pats = {str(p) for p in (rule.get("patterns") or [])}
     out: list[tuple[str, str, dict[str, Any], bool]] = []
+    if rule.get("expr") is not None:
+        # A public formulaic alpha already rewritten into libs.research.alpha_grammar form by
+        # libs/civilizations/expression.to_mt5: executed by the desk's own `formula` family.
+        # The subtype is the expression SKELETON, so window/sign descendants share one trial
+        # family (charged once over the union, never per variant).
+        out.append((str(rule.get("expr_subtype") or "formula"), "formula",
+                    {"expr": rule["expr"], "side_mode": str(rule.get("side_mode") or "follow")},
+                    bool(rule.get("expr_published"))))
     rsi, ma, bb = _pick(rule, "rsi"), _pick(rule, "ma"), _pick(rule, "bb")
     if rsi:
         out.append(_entry("rsi_reversion", "mean_reversion_rsi",

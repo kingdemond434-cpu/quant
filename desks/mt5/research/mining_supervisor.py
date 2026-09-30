@@ -55,6 +55,14 @@ from libs.mining import compiler, dedup, extractor, prereg, rejection  # noqa: E
 from libs.mining.pit_store import PitStore, iso, parse_time, utcnow  # noqa: E402
 from libs.mining.registry import Cell, CellRegistry  # noqa: E402
 
+try:                                                         # research civilizations (lanes)
+    from libs.civilizations.resident import Resident
+except Exception as _civ_exc:
+    Resident = None  # type: ignore[assignment,misc]
+    CIV_IMPORT_ERROR = f"{type(_civ_exc).__name__}: {_civ_exc}"
+else:
+    CIV_IMPORT_ERROR = ""
+
 SOURCE = "global_mining"
 DATA = _DESK / "data" / "mining"
 REPORTS = _DESK / "reports" / "mining"
@@ -155,11 +163,25 @@ def desk_hooks() -> Hooks:
     except (OSError, ValueError):
         h.universe = None
     try:
-        from mt5desk.families import FAMILY_REGISTRY
+        import inspect
+
+        from mt5desk.families import FAMILY_REGISTRY, get_family_func
 
         def family_params(name: str) -> set[str] | None:
             row = FAMILY_REGISTRY.get(name)
-            return set((row or {}).get("defaults") or {}) if row else None
+            if row:
+                return set(row.get("defaults") or {})
+            # the orthogonal / hunt16 populations carry no decorator but are real code the
+            # forward engine resolves (families.get_family_func); their keyword parameters are
+            # what they accept. Reading only the registry dropped every `formula` cell.
+            fn = get_family_func(name)
+            if fn is None:
+                return None
+            try:
+                return {k for k, p in inspect.signature(fn).parameters.items()
+                        if p.kind is inspect.Parameter.KEYWORD_ONLY}
+            except (TypeError, ValueError):
+                return None
         h.family_params = family_params
     except Exception:
         h.family_params = None
@@ -218,7 +240,8 @@ class Pipeline:
     def __init__(self, data_dir: Path = DATA, reports_dir: Path = REPORTS, *,
                  roster: list[acq.Source] | None = None, hooks: Hooks | None = None,
                  gate_ledger: Path = GATE_LEDGER, root: Path = _ROOT,
-                 digest: Path | None = None, lake: Path | None = None) -> None:
+                 digest: Path | None = None, lake: Path | None = None,
+                 civ_mode: str = "all") -> None:
         self.data = Path(data_dir)
         # beside data_dir: desks/mt5/data/mining -> desks/mt5/data/lake/series (the family's own)
         self.lake = Path(lake) if lake is not None else self.data.parent / "lake" / "series"
@@ -239,6 +262,18 @@ class Pipeline:
         self.roster = roster if roster is not None else acq.load_roster(root=root)
         self.by_id = {s.id: s for s in self.roster}
         self.hooks = hooks or Hooks()
+        # RESEARCH CIVILIZATIONS: "all" (the hourly leg, default), "skip" (the hourly leg while
+        # civilization_resident.py --loop holds the heartbeat) or "only" (that loop itself).
+        self.civ_mode = civ_mode
+        self.acquire_seconds: dict[str, float] = {}
+        self.civ: Any = None
+        self.civ_error = CIV_IMPORT_ERROR
+        if Resident is not None:
+            try:
+                self.civ = Resident(data_dir=self.data.parent / "civilizations",
+                                    reports_dir=self.reports.parent / "civilizations", root=root)
+            except Exception as exc:
+                self.civ_error = f"{type(exc).__name__}: {exc}"[:300]
 
     # --------------------------------------------------------------------- 1. acquire
     def acquire(self, budget_s: float, http_get: acq.HttpGet | None = None, *,
@@ -249,12 +284,21 @@ class Pipeline:
         get = http_get or acq.polite_http(deadline)
         t = now or utcnow()
         due = sorted(self.roster, key=lambda s: (s.priority, s.id))
+        if self.civ is not None and self.civ_mode in ("skip", "only"):
+            civ_ids = self.civ.civ_ids()
+            due = [s for s in due if (s.id in civ_ids) == (self.civ_mode == "only")]
         robots = acq.RobotsCache()
 
         def one(src: acq.Source) -> acq.AcquireReport:
             ctx = acq.FetchContext(http_get=get, deadline=deadline, now=t, root=self.root,
                                    robots=robots)
-            return acq.acquire(src, self.store, self.cursors, ctx, root=self.root, force=force)
+            t_src = time.monotonic()
+            try:
+                return acq.acquire(src, self.store, self.cursors, ctx, root=self.root,
+                                   force=force)
+            finally:
+                self.acquire_seconds[src.id] = (self.acquire_seconds.get(src.id, 0.0)
+                                                + time.monotonic() - t_src)
         out: list[acq.AcquireReport] = []
         for src, rep, err in run_concurrently(due, one, workers=workers):
             if rep is None:
@@ -298,8 +342,29 @@ class Pipeline:
     def _process_one(self, rec: dict[str, Any], now: datetime | None = None) -> int:
         src = self.by_id.get(str(rec["source_id"]))
         kind = str((rec.get("meta") or {}).get("kind") or (src.kind if src else "text"))
-        ex = extractor.extract(rec, kind=kind, universe=self.hooks.universe)
         rid = str(rec["record_id"])
+        civ = self.civ.route(rec) if self.civ is not None and self.civ.is_civ(
+            str(rec["source_id"])) else None
+        if civ is not None and not civ.alpha:
+            # a civilization record with no alpha outcome went to its consumer ledgers
+            self.store.set_state(rid, "ROUTED", reason=civ.reason[:200], stage="ontology",
+                                 n_cells=0)
+            return 0
+        ex = extractor.extract(rec, kind=kind, universe=self.hooks.universe)
+        if civ is not None:
+            # every alpha rule waits in the PARKED queue; the civilizations step releases them
+            # at the judge's drain rate (backpressure), so none is judged ahead of its turn
+            parked = self.civ.park(rec, [*ex.rules, *civ.rules])
+            ex.rules = []
+            if parked and not ex.claims:
+                self.store.set_state(rid, "ROUTED", reason=f"parked {parked}",
+                                     stage="backpressure", n_cells=0)
+                return 0
+            if not parked and not ex.claims and kind != "mechanics":
+                self.civ.deepen(rec, civ)
+                self.store.set_state(rid, "ROUTED", reason="llm_deepening (no rule)",
+                                     stage="ontology", n_cells=0)
+                return 0
         if kind == "mechanics":
             self._publish_mechanics(rec, ex.facts)
             self.store.set_state(rid, "FEED_PUBLISHED", n_cells=0)
@@ -1097,13 +1162,23 @@ class Pipeline:
                                         "detail": r.detail})
             except Exception as exc:                      # the rest of the pass still runs
                 rep.errors.append(f"acquire: {type(exc).__name__}: {exc}"[:300])
-        for step in ("process", "conditioners", "retry", "donate", "join", "handoff"):
+        for step in ("process", "civilizations", "conditioners", "retry", "donate", "join",
+                     "handoff"):
             if time.monotonic() - t0 > budget_s * 0.95:
                 rep.errors.append(f"budget exhausted before {step}")
                 break
             try:
                 if step == "process":
                     rep.records_processed, rep.cells_created = self.process(now=now)
+                elif step == "civilizations":
+                    if self.civ is not None:
+                        civ_out = self.civ.after_pass(
+                            self, now=now,
+                            budget_s=max(30.0, budget_s * 0.95 - (time.monotonic() - t0)) * 0.5)
+                        rel = civ_out.get("release") or {}
+                        rep.cells_created += int(rel.get("cells_made") or 0)
+                    elif self.civ_error:
+                        rep.errors.append(f"civilizations: {self.civ_error}")
                 elif step == "conditioners":
                     rep.cells_created += int(self.conditioners(now=now)["cells_minted"])
                 elif step == "retry":
@@ -1201,7 +1276,10 @@ def main(argv: list[str] | None = None) -> int:
         m = fixture_trace(args.fixture_trace)
         print(json.dumps(m["trace"], indent=1, default=str))
         return 0
-    pipe = Pipeline(hooks=desk_hooks())
+    # the civilization lanes belong to civilization_resident.py --loop while it is alive;
+    # the hourly leg takes them back the moment its heartbeat goes stale (never idle)
+    live = Resident is not None and Resident.loop_is_live(DATA.parent / "civilizations")
+    pipe = Pipeline(hooks=desk_hooks(), civ_mode="skip" if live else "all")
     m = pipe.run_pass(args.budget_s, fetch=not args.no_fetch)
     print(json.dumps({k: m[k] for k in ("sources_active", "sources_total",
                                         "cells_acquired_24h", "cells_evaluated_24h",
