@@ -416,6 +416,11 @@ def _tasks(empty: list[str], head: dict[str, Any], clusters: dict[str, Any]) -> 
     by_key = {c.key: c for c in CLUSTERS}
     k_eff = head.get("effective_breadth")
     nominal = head.get("n_nominal")
+    # One count, one label: the report's `occupied_of_15_original` is the original fifteen
+    # occupied in EITHER book (traded or certified), so the task text reads the same number
+    # rather than the traded-only one it used to print under the same words.
+    occupied_15 = len([k for k in clusters.get("occupied_either") or []
+                       if k in ORIGINAL_CLUSTER_KEYS])
     tasks: list[dict] = []
     for key in empty:
         c = by_key.get(key)
@@ -427,8 +432,8 @@ def _tasks(empty: list[str], head: dict[str, Any], clusters: dict[str, Any]) -> 
             "description": (
                 f"The book holds {nominal} nominal sleeves at an effective breadth of "
                 f"{k_eff if k_eff is not None else 'UNMEASURED'} "
-                f"({clusters['traded']['occupied_of_15_original']} of the principal's 15 "
-                "phenomena occupied). "
+                f"({occupied_15} of the principal's 15 phenomena occupied, traded or "
+                "certified). "
                 f"{c.title} is EMPTY. Who pays: {c.payer} What to hunt: {c.hunt} "
                 "Because k_eff = n/(1+(n-1)rho) is concave in n, the FIRST sleeve of an "
                 "unoccupied phenomenon buys more breadth than the next five inside an occupied "

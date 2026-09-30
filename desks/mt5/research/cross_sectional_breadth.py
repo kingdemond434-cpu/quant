@@ -418,8 +418,13 @@ def _cluster_occupancy() -> dict[str, Any]:
         return {"status": UNMEASURED, "why": f"{BREADTH.name} absent or has no clusters block"}
     from libs.research.alpha_clusters import CLUSTERS
     occ = set(doc["clusters"].get("occupied_either") or [])
+    # `empty` IS THE TRACKED AGENDA: the principal's original fifteen, the same set alpha_breadth
+    # publishes as `empty_in_both` (ruling 2026-09-30). The two clusters appended that day are
+    # reported beside it in `empty_added`, never counted into it, so an empty-target flag here
+    # and the breadth report's empty set are one count.
     return {"status": "MEASURED", "occupied": sorted(occ),
-            "empty": [c.key for c in CLUSTERS if c.key not in occ],
+            "empty": [c.key for c in CLUSTERS if c.key not in occ and c.added is None],
+            "empty_added": [c.key for c in CLUSTERS if c.key not in occ and c.added is not None],
             "measured_at": doc.get("generated_at") or doc.get("at")}
 
 
@@ -505,9 +510,14 @@ def _families(occupancy: dict[str, Any], vacant: dict[str, Any]) -> list[dict[st
         rows.append({
             "family": fam, "prior": books.TARGETS[fam]["prior"],
             "target_cluster": target, "classified_cluster": classify_family(fam),
+            # Empty on the TRACKED agenda (the original fifteen). A family aimed at one of the
+            # two appended clusters reads False here and True/False in the `_added_` field.
             "target_cluster_empty_now": (target in occupancy.get("empty", [])
                                          if occupancy.get("status") == "MEASURED"
                                          else UNMEASURED),
+            "target_cluster_added_empty_now": (target in occupancy.get("empty_added", [])
+                                               if occupancy.get("status") == "MEASURED"
+                                               else UNMEASURED),
             "census_class": census_class, "multiplicity_family": census,
             "census_class_vacant_now": (census_class in vacant.get("vacant", [])
                                         if vacant.get("status") == "MEASURED" else UNMEASURED),

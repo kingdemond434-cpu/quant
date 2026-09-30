@@ -294,6 +294,27 @@ def test_report_reads_occupancy_verdicts_and_certificates(universe, tmp_path, mo
     assert doc["certificates"]["total"] == 1
 
 
+def test_empty_target_flag_tracks_the_original_fifteen_and_reports_the_added_apart(
+        tmp_path, monkeypatch):
+    """The two clusters appended 2026-09-30 are reported, never counted into the tracked empty
+    set (audit: cross_sectional_breadth :422 counted them)."""
+    from libs.research.alpha_clusters import CLUSTERS, ORIGINAL_CLUSTER_KEYS
+    from research import cross_sectional_breadth as csb
+    (tmp_path / "eb.json").write_text(json.dumps({"clusters": {
+        "occupied_either": ["session_liquidity"]}}), "utf-8")
+    monkeypatch.setattr(csb, "BREADTH", tmp_path / "eb.json")
+    occ = csb._cluster_occupancy()
+    added = {c.key for c in CLUSTERS if c.added is not None}
+    assert added and not added & set(occ["empty"])
+    assert set(occ["empty"]) <= ORIGINAL_CLUSTER_KEYS
+    assert set(occ["empty_added"]) == added
+    fams = {f["family"]: f for f in csb._families(occ, {"status": "UNMEASURED"})}
+    assert fams["semis_sector_momentum"]["target_cluster_empty_now"] is False
+    assert fams["semis_sector_momentum"]["target_cluster_added_empty_now"] is True
+    assert fams["cross_sectional_class_momentum"]["target_cluster_empty_now"] is True
+    assert fams["cross_sectional_class_momentum"]["target_cluster_added_empty_now"] is False
+
+
 def test_hourly_leg_is_wired():
     """The seeder is a costed leg of the hourly cycle, in a department and a layer."""
     text = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")

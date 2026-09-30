@@ -639,3 +639,16 @@ def test_the_breadth_lane_names_no_crypto_exchange() -> None:
         src = Path(mod.__file__ or "").read_text("utf-8").lower()
         for name in banned:
             assert name not in src, f"{mod.__name__} names {name}"
+
+
+def test_task_text_prints_the_same_original_fifteen_count_as_the_report():
+    """`occupied_of_15_original` in the report is traded OR certified; the task text said the same
+    words over the traded-only count (audit 2026-09-30, alpha_breadth :430 vs :528)."""
+    originals = sorted(ac.ORIGINAL_CLUSTER_KEYS)
+    traded_only, certified_only = originals[:1], originals[1:3]
+    empty = [k for k in originals if k not in traded_only + certified_only]
+    clusters = {"traded": {"occupied_of_15_original": len(traded_only)},
+                "occupied_either": traded_only + certified_only}
+    tasks = ab._tasks(empty, {"effective_breadth": 2.0, "n_nominal": 5}, clusters)
+    assert tasks and all("3 of the principal's 15" in t["description"] for t in tasks)
+    assert not any("1 of the principal's 15" in t["description"] for t in tasks)
