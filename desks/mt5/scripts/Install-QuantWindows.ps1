@@ -573,10 +573,10 @@ if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
         $adoptSettings = New-ScheduledTaskSettingsSet `
             -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
             -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 2) `
+            # A cold adoption of the large evidence tree can exceed twenty minutes.  Keep this
+            # identical to install_adopt_release_task.ps1 so a full reinstall cannot restore the
+            # timeout/IgnoreNew starvation loop that left the box hundreds of commits behind.
             -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
-        # TWO HOURS, matching install_adopt_release_task.ps1 (2026-09-24) and the PT2H the
-        # trading box actually carries: twenty minutes killed cold adoptions (267014) and
-        # re-registering from here would have restored that outage.
         # SYSTEM, ServiceAccount: the box's tasks run as SYSTEM (an Interactive principal only
         # fires while that user holds a desktop session, and the adoption then dies with it).
         $adoptPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `

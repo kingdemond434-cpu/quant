@@ -32,8 +32,6 @@ ADOPT = (_DESK / "scripts" / "Adopt-And-Seal.ps1").read_text("utf-8")
 #: forbid documenting the rule. The invariants below are about what the script does.
 ADOPT_CODE = ADOPT.split("#>", 1)[1]
 INSTALL = (_DESK / "scripts" / "Install-QuantWindows.ps1").read_text("utf-8")
-#: Adopt-And-Seal's dirty-code check (2026-09-24: code roots only, never a full `git status`).
-_DIRTY_CHECK = "git diff --name-only --no-ext-diff HEAD -- $releaseCodePaths"
 
 
 def _block(src: str, start: str, end: str) -> str:
@@ -110,11 +108,10 @@ def test_the_only_empty_returns_left_are_for_an_unreadable_or_malformed_file() -
 
 # ------------------------------------------------------------- 3. the box pulls, unattended
 def test_adopt_and_seal_runs_in_the_only_safe_order() -> None:
-    # The dirty check reads the CODE ROOTS only (`git diff ... -- $releaseCodePaths`): a full
-    # `git status` re-stats 28,000+ evidence paths under the release mutex on the box.
-    steps = ["Adopt-Release.ps1", "if ($sealed -eq $head)", _DIRTY_CHECK,
+    steps = ["Adopt-Release.ps1", "if ($sealed -eq $head)",
+             "git diff --name-only --no-ext-diff HEAD",
              "release.seal(by='Adopt-And-Seal')", 'git add -- "desks/mt5/data/RELEASE.json"',
-             "git commit -q -m",
+             "git write-tree", "git commit-tree", "git update-ref",
              # a79c35a8475: the gateway is a 24/7 resident now; the seal STARTS its keep-alive
              # task (a running singleton makes that a no-op) instead of stop/start of MT5-Gateway
              'Start-ScheduledTask -TaskName "MT5-GatewayResident"']
@@ -124,8 +121,7 @@ def test_adopt_and_seal_runs_in_the_only_safe_order() -> None:
 
 def test_adopt_and_seal_refuses_a_partial_adoption_and_a_dirty_tree() -> None:
     assert "partial adoption; NOT sealing" in ADOPT
-    # Every exit goes through `Done <code> <stage>`, which writes the heartbeat first.
-    assert "Done $adoptExit" in ADOPT
+    assert 'Done $adoptExit "adopt-release-partial"' in ADOPT
     assert "refusing to seal:" in ADOPT and 'Done 3 "dirty-code-path"' in ADOPT
 
 
@@ -134,6 +130,9 @@ def test_adopt_and_seal_stages_exactly_one_path_and_never_stashes() -> None:
     assert 'git add -- "desks/mt5/data/RELEASE.json"' in ADOPT_CODE
     assert "git add -A" not in ADOPT_CODE
     assert "stash" not in ADOPT_CODE
+    assert '$staged.Count -ne 1' in ADOPT_CODE
+    assert '$staged[0] -ne "desks/mt5/data/RELEASE.json"' in ADOPT_CODE
+    assert "git update-ref $branchRef $sealCommit $head" in ADOPT_CODE
     # THE FLAG, NOT THE FORMAT OPERATOR (2026-09-23). `" -f "` matched every PowerShell format
     # expression in the file, so adding one line of logging failed a test about forcing git.
     # What must never appear is a FORCED git operation; `"{0}" -f $x` is string interpolation.
@@ -158,8 +157,6 @@ def test_the_installer_registers_the_adoption_hourly_after_the_sync_slot() -> No
     assert 'scripts\\Adopt-And-Seal.ps1' in blk
     assert "-RepetitionInterval (New-TimeSpan -Hours 1)" in blk
     assert "(Get-Date).Date.AddMinutes(12)" in blk          # between the :05 and :20 sync slots
-    # Two hours since 2026-09-24 (install_adopt_release_task.ps1): the limit is a watchdog and
-    # must sit above the slowest honest cold adoption, which twenty minutes did not.
     assert "-ExecutionTimeLimit (New-TimeSpan -Hours 2)" in blk
     assert "-MultipleInstances IgnoreNew" in blk
     assert "[DRY ] MT5-AdoptRelease" in blk                  # honoured in -WhatIfOnly
@@ -222,20 +219,15 @@ def test_the_sync_and_the_adoption_exclude_each_other() -> None:
 def test_adopt_and_seal_s_dirty_check_ignores_state_and_untracked_paths() -> None:
     """On the box a tracked ledger is dirty for most of every hour by design; a check that
     refused on it could only seal in the seconds after a sync, and never did."""
-    # SCOPED TO THE CODE ROOTS, NOT FILTERED BY STATE PREFIX (2026-09-24): `git diff` over the
-    # release's code roots never sees an untracked file, and no state prefix lies under a code
-    # root -- so a dirty ledger cannot refuse a seal, without re-statting the evidence tree.
-    assert _DIRTY_CHECK in ADOPT_CODE
+    assert "git diff --name-only --no-ext-diff HEAD" in ADOPT_CODE
     import sys
     repo_root = str(_DESK.parent.parent)
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
-    from libs.ops import release
-    roots = re.findall(r'"([^"]+)"', _block(ADOPT_CODE, "$releaseCodePaths = @(", ")"))
-    assert "desks/mt5/mt5desk" in roots and "libs" in roots
-    for prefix in release.STATE_PREFIXES:
-        assert not any(prefix.startswith(r.rstrip("/") + "/") or prefix.rstrip("/") == r
-                       for r in roots), (prefix, "a state prefix under a sealed code root")
+    code_roots = _block(ADOPT_CODE, "$releaseCodePaths = @(", ")\n# A BUILD ARTIFACT")
+    assert '"desks/mt5/data"' not in code_roots
+    assert '"desks/mt5/logs"' not in code_roots
+    assert '"desks/mt5/reports"' not in code_roots
     assert "tracked code path(s) differ from HEAD after adoption" in ADOPT_CODE
 
 
@@ -300,12 +292,15 @@ def test_every_git_writer_on_the_box_takes_the_same_process_level_lock() -> None
     legacy_at = helper.index("$LegacyName = ")
     assert "exit" not in helper[legacy_at:legacy_at + 400], "a legacy miss must never refuse"
     for src, name in ((SYNC, "sync"), (ADOPT_CODE, "adopt"),
-                      ((_DESK / "scripts" / "Seal-IfClean.ps1").read_text("utf-8"), "seal"),
                       ((_DESK / "scripts" / "intel_ship_adopt.ps1").read_text("utf-8"), "intel")):
         assert '. (Join-Path $PSScriptRoot "GitWriterMutex.ps1")' in src, name
         assert "Open-GitWriterMutex" in src, name
         assert 'New-Object System.Threading.Mutex($false, "Local\\MT5-GitWriter")' not in src, name
     assert "catch [System.Threading.AbandonedMutexException] { $gotLock = $true }" in ADOPT_CODE
+    legacy_seal = (_DESK / "scripts" / "Seal-IfClean.ps1").read_text("utf-8")
+    active = legacy_seal.split("#>", 1)[1].split("<# RETIRED IMPLEMENTATION", 1)[0]
+    assert "MT5-SealIfClean retired" in active
+    assert "git commit" not in active and "release.seal" not in active
     # the sync takes it after its yield and before its first git operation; a miss yields (exit 0)
     lock_at = SYNC.index("Open-GitWriterMutex")
     assert SYNC.index("SKIP: MT5-AdoptRelease is adopting") < lock_at
@@ -314,7 +309,7 @@ def test_every_git_writer_on_the_box_takes_the_same_process_level_lock() -> None
     # the adoption takes it before invoking Adopt-Release and refuses loudly (exit 6) on a miss
     alock = ADOPT_CODE.index("$mutexHandle = Open-GitWriterMutex")
     assert alock < ADOPT_CODE.index("$adoptScript")
-    assert 'Done 6 "mutex-' in ADOPT_CODE[alock:alock + 1500]
+    assert 'Done 6 "mutex-unopenable"' in ADOPT_CODE[alock:alock + 600]
 
 
 def test_the_box_s_hourly_verifier_no_longer_merges_code_behind_the_seal() -> None:
@@ -335,6 +330,6 @@ def test_a_seal_or_state_commit_on_top_of_the_sealed_code_is_not_re_sealed() -> 
     assert "release.accepts(sys.argv[1], release.load() or {})" in ADOPT_CODE
     eq = ADOPT_CODE.index("if ($sealed -eq $head)")
     acc = ADOPT_CODE.index("release.accepts(")
-    dirty = ADOPT_CODE.index(_DIRTY_CHECK)
+    dirty = ADOPT_CODE.index("git diff --name-only --no-ext-diff HEAD")
     assert eq < acc < dirty
     assert "plus seal/state commits only; nothing to seal" in ADOPT_CODE

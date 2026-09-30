@@ -293,6 +293,23 @@ def test_the_box_side_mirror_hashes_and_allowlists_identically(tmp_path: Path) -
     assert release._norm(b"x\r\ny\r\n") == b"x\ny\n"
 
 
+def test_commit_blob_reads_are_reused_across_release_hashes(tmp_path: Path, monkeypatch) -> None:
+    """A sealed commit is immutable; set and per-file hashes must not spawn duplicate git shows."""
+    from types import SimpleNamespace
+
+    calls: list[list[str]] = []
+
+    def fake_run(args, **_kwargs):
+        calls.append(args)
+        return SimpleNamespace(returncode=0, stdout=b"same immutable blob")
+
+    release._read_commit.cache_clear()
+    monkeypatch.setattr(release.subprocess, "run", fake_run)
+    assert release._read("a.py", tmp_path, "a" * 40) == b"same immutable blob"
+    assert release._read("a.py", tmp_path, "a" * 40) == b"same immutable blob"
+    assert len(calls) == 1
+
+
 # ---------------------------------------------------------------- the rollback target
 def test_a_seal_names_the_record_it_replaces(repo: Path) -> None:
     """MEASURED 2026-09-08: no script restores a previous seal and no record said which seal
