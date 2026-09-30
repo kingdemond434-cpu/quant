@@ -14,8 +14,11 @@ gateway's own family executor calls, hashing it with `sleeve_registry.code_hash`
 `behaviour_hash`, the functions the forward clock froze it with.
 
 READ-ONLY. It writes one report, `reports/RESEARCH_LIVE_IDENTITY.json`. A MISMATCH row is a named
-defect there, and the Tier S door (`libs/tiers/promotion_authority.review_live`) lists that LIVE
-row in `data/tier_s/live_door.json`, which the promoter's automatic retirement reads.
+defect there. Its ONE reader is `libs/tiers/promotion_authority._identity_mismatches`, called by
+`review_live`, which the hourly `door` organ (`research/tier_s.py`) runs over the live book and
+publishes as `data/tier_s/live_door.json`. NOTHING ACTS ON THAT FILE YET: the promoter's reader
+(`retire_tier_s_live`) is the sealed desktop patch `tier_s_promoter_live_door_retirement.patch`
+(T4), and until it lands a MISMATCH is published, never retired.
 """
 from __future__ import annotations
 
@@ -113,8 +116,10 @@ def run(dry_run: bool = False) -> dict[str, Any]:
                       "survivors": surv_src, "survivor_rows": len(surv),
                       "registry_rows": len(registry), "docket_cells": len(idx)},
            "fields": list(rli.FIELDS), **res,
-           "consumer": ("libs/tiers/promotion_authority.review_live -> data/tier_s/"
-                        "live_door.json (the promoter's automatic retirement reads it)")}
+           "consumer": ("libs/tiers/promotion_authority._identity_mismatches (via review_live, "
+                        "run by research/tier_s.py door -> data/tier_s/live_door.json; that "
+                        "file's reader, promoter.retire_tier_s_live, is the unapplied sealed "
+                        "patch T4)")}
     if not dry_run:
         REPORT.parent.mkdir(parents=True, exist_ok=True)
         tmp = REPORT.with_suffix(".json.tmp")
