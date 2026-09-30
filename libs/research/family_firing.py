@@ -594,7 +594,7 @@ def gauntlet_cell_id(symbol: Any, family: Any, params: dict[str, Any] | None) ->
     """The judge's own cell id (`frontier_identity.cell_id`), the key its verdict ledger uses."""
     try:
         _ensure_path()
-        from research.frontier_identity import cell_id
+        from research.frontier_identity import cell_id  # type: ignore[import-not-found]
         return str(cell_id({"sym": str(symbol), "family": str(family),
                             "params": dict(params or {})}))
     except Exception:
@@ -613,7 +613,8 @@ def load_guard(canon: Path | None = None, ledger: Path | None = None) -> dict[st
         for name, row in survivors.items():
             if not isinstance(row, dict):
                 continue
-            spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+            raw_spec = row.get("shadow_spec")
+            spec: dict[str, Any] = raw_spec if isinstance(raw_spec, dict) else {}
             sym = spec.get("symbol") or row.get("sym")
             fam = spec.get("family")
             sel = str(spec.get("selector") or "all").lower()
@@ -686,7 +687,8 @@ def current_guard() -> dict[str, Any]:
             stamp.append(-1.0)
     if _GUARD_MEMO.get("stamp") != stamp:
         _GUARD_MEMO.update(stamp=stamp, guard=load_guard())
-    return _GUARD_MEMO["guard"]
+    got: dict[str, Any] = _GUARD_MEMO["guard"]
+    return got
 
 
 def guarded_verdict(rec: dict[str, Any] | None, session: str, *, symbol: Any = None,
