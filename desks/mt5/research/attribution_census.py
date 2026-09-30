@@ -348,13 +348,22 @@ def _survivors() -> dict[str, Any] | None:
     return surv if isinstance(surv, dict) else None
 
 
-def certificates(conn: sqlite3.Connection) -> dict[str, Any]:
-    """Certificates attributed by JOIN to the stamped candidates -- never by writing to the
-    sealed authority file, which this module reads and never touches.
+def certificates(conn: sqlite3.Connection, *, budget_s: float = 120.0) -> dict[str, Any]:
+    """Certificates attributed by EXACT JOIN, delegated to the module that owns the rule.
 
-    The join keys the gauntlet itself leaves: the certificate's cell key against the candidate's
-    id, its `donated_cell` and its `grid_cell`, then the certificate's symbol and family against
-    the candidate's own columns. A certificate no key reaches is UNATTRIBUTABLE by name.
+    THE JOIN THAT USED TO LIVE HERE WAS A GUESS AND IT PUBLISHED ITSELF AS A MEASUREMENT
+    (measured 2026-09-24). It tried the certificate's cell key against the candidate's `id`,
+    `donated_cell` and `grid_cell`, and then FELL BACK to `symbol|family` -- an index built with
+    `setdefault` over rowid order. All 52 certificates it reported took that fallback, and between
+    105 and 437 candidates share each (symbol, family) pair across six or more distinct producers,
+    so `coverage 1.0` was 52 arbitrary picks. A wrong attribution is worse than none: it
+    misdirects compute, which is the one thing this measurement exists to steer.
+
+    `research/certificate_provenance.py` does the join on the desk's ONE cell identity
+    (`frontier_identity.cell_id`, the rule the sealed gauntlet itself names cells with) over four
+    independent exact routes, and records UNMEASURED by name where none of them reaches. Calling
+    it here is what puts it on this leg's clock; its own artifacts are the authority and this
+    block is the summary a reader of the census sees.
     """
     surv = _survivors()
     if surv is None:
@@ -362,49 +371,30 @@ def certificates(conn: sqlite3.Connection) -> dict[str, Any]:
                 "why": f"{A.UNMEASURED}: {SURVIVORS.name} absent or carries no survivors map"}
     if not _has_columns(conn, "research_candidates"):
         return {"available": False, "why": f"{A.UNMEASURED}: no attribution columns"}
-    by_key: dict[str, tuple[str, str]] = {}
-    by_sym_fam: dict[str, tuple[str, str]] = {}
-    for r in conn.execute(
-            f"select id, donated_cell, grid_cell, symbol, family, "  # noqa: S608
-            f"{A.PRODUCER_FIELD}, {A.REGION_FIELD} from research_candidates "
-            f"where coalesce({A.PRODUCER_FIELD},'') not in ('','{A.UNATTRIBUTABLE}')"):
-        pair = (str(r[5]), str(r[6] or A.UNATTRIBUTABLE))
-        for k in (r[0], r[1], r[2]):
-            if k:
-                by_key.setdefault(str(k).strip().lower(), pair)
-        if r[3] and r[4]:
-            by_sym_fam.setdefault(f"{str(r[3]).lower()}|{str(r[4]).lower()}", pair)
-    out: dict[str, Any] = {"available": True, "n": len(surv), "attributed": 0,
-                           "unattributable": 0, "by_region": {}, "by_producer": {},
-                           "routes": {}, "unattributable_keys": []}
-    for key, row in surv.items():
-        row = row if isinstance(row, dict) else {}
-        raw_spec = row.get("shadow_spec")
-        spec: dict[str, Any] = raw_spec if isinstance(raw_spec, dict) else {}
-        hit = None
-        route = ""
-        for cand in (str(key), str(row.get("cell") or ""), str(row.get("hunt") or "")):
-            if cand and cand.strip().lower() in by_key:
-                hit, route = by_key[cand.strip().lower()], "cell key -> candidate"
-                break
-        if hit is None:
-            sym = str(spec.get("symbol") or row.get("sym") or "").lower()
-            fam = str(spec.get("family") or "").lower()
-            if sym and fam and f"{sym}|{fam}" in by_sym_fam:
-                hit, route = by_sym_fam[f"{sym}|{fam}"], "symbol|family -> candidate"
-        if hit is None:
-            out["unattributable"] += 1
-            out["routes"]["no candidate reaches this certificate"] = out["routes"].get(
-                "no candidate reaches this certificate", 0) + 1
-            if len(out["unattributable_keys"]) < 40:
-                out["unattributable_keys"].append(str(key))
-            continue
-        out["attributed"] += 1
-        out["routes"][route] = out["routes"].get(route, 0) + 1
-        out["by_producer"][hit[0]] = out["by_producer"].get(hit[0], 0) + 1
-        out["by_region"][hit[1]] = out["by_region"].get(hit[1], 0) + 1
-    out["coverage"] = round(out["attributed"] / len(surv), 4) if surv else A.UNMEASURED
-    return out
+    try:
+        from certificate_provenance import (  # type: ignore[import-not-found]
+            RECORD,
+            TABLE,
+            refresh,
+        )
+        from certificate_provenance import write as write_provenance
+    except ImportError as exc:                                           # pragma: no cover
+        return {"available": False,
+                "why": f"{A.UNMEASURED}: certificate_provenance unimportable ({exc})"}
+    doc = refresh(budget_s=budget_s, conn=conn)
+    if not doc.get("records"):
+        return {"available": False, "why": doc.get("why")
+                or f"{A.UNMEASURED}: no certificate birth record could be built"}
+    table = write_provenance(doc, budget_s=budget_s)
+    cov = doc.get("coverage") or {}
+    return {"available": True, "n": cov.get("n"), "attributed": cov.get("named"),
+            "unattributable": cov.get("unnamed"), "coverage": cov.get("coverage"),
+            "by_producer": cov.get("by_producer"), "by_verdict": cov.get("by_verdict"),
+            "pending": doc.get("pending"), "routes": doc.get("routes"),
+            "rule": "EXACT cell identity only -- a symbol|family match is not an attribution",
+            "record": RECORD.as_posix(), "table": TABLE.as_posix(),
+            "producers_with_a_certificate":
+                (table.get("totals") or {}).get("producers_with_a_certificate")}
 
 
 # ----------------------------------------------------------------------------- the backfill
@@ -533,7 +523,11 @@ def run(*, budget_s: float = 240.0, do_backfill: bool = True,
                            "stamped_at_birth_by": ["libs/moat/registry.enqueue_candidate",
                                                    "libs/moat/registry.record_discovery"],
                            "consumers": ["desks/mt5/research/productivity_census.py",
-                                         "scripts/check_birth_obligations.py (axis attribution)"]}
+                                         "scripts/check_birth_obligations.py (axis attribution)",
+                                         "scripts/check_birth_obligations.py "
+                                         "(axis certificate_birth)"],
+                           "certificate_record":
+                               "desks/mt5/research/certificate_provenance.py -- this leg's clock"}
     if not path.exists():
         doc["available"] = False
         doc["why"] = f"{A.UNMEASURED}: no registry at {path}"
@@ -570,7 +564,12 @@ def run(*, budget_s: float = 240.0, do_backfill: bool = True,
         doc["unique_cells_by_region"] = unique_cells_by_region(ro)
         doc["judged_cells_by_region"] = judged_by_region(ro)
         doc["producer_region"] = producer_region(ro)
-        doc["certificates"] = certificates(ro)
+        # THE CERTIFICATE BIRTH RECORD RIDES THIS LEG'S REMAINING BUDGET, never a fixed slice of
+        # it: the first pass pays for a 448 MB docket and a 4.2M-row graph, and every pass after
+        # that is incremental because a certificate is immutable once minted. At least 15s so a
+        # leg that arrives here already over budget still advances the record by something.
+        doc["certificates"] = certificates(
+            ro, budget_s=max(15.0, budget_s - (time.monotonic() - t0)))
     finally:
         ro.close()
     cells = (doc["unique_cells_by_region"] or {}).get("by_region") or {}

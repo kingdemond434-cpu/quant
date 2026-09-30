@@ -886,6 +886,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
     "ops_redundancy", "forward_evidence_tracker",
+    # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
+    # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
+    "kelly_survival",
 })
 
 
@@ -978,7 +981,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
-                     "fast_admission", "canon_publication", "placebo_audit", "judging_burndown"),
+                     "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "committees"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1624,6 +1628,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # above that: a cap BELOW an organ's own budget is the truncated-job defect that cost this
     # desk eighty-four forward clocks.
     "control_plane": 660,
+    # The committees stop themselves at --budget-s 600 (experiments included); the cap sits above.
+    "committees": 720,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
@@ -4900,6 +4906,13 @@ def main() -> None:
     # UNMEASURED and every factory runs exactly as it does today.
     prs = _costed("proposer_seat", lambda: _producer(
         "proposer_seat", "libs/research/proposer_seat.py", "--once", "--budget-s", "300"))
+    # THE TWO ADVERSARIAL COMMITTEES (2026-09-25 brief, landed 2026-09-30). Seat roles argue
+    # competing explanations; the deterministic judge picks the cheapest separating falsifiers
+    # and runs them on the gauntlet's own cell. Contracts and kills are defect reports: nothing
+    # is certified, promoted, sized or vetoed. Metered, settled against the graph, and
+    # self-scrapping when its kills stop paying for its calls. Dark seat -> UNMEASURED.
+    cmt = _costed("committees", lambda: _producer(
+        "committees", "research/committees.py", "--once", "--budget-s", "600"))
     # KIMI'S ONLY CLOCK WAS A VPS TIMER (measured 2026-09-23). `quant-kimi-hunter.timer` fires
     # hourly on the VPS; the box that holds the credentials ran it never, so
     # `data/intelligence/kimi` was 240 hours stale on the trading box while deepseek -- whose
@@ -5110,6 +5123,12 @@ def main() -> None:
         "live_calibration_posterior", "research/live_calibration_posterior.py"))
     cbk = _costed("constrained_book", lambda: _producer(
         "constrained_book", "research/constrained_book.py"))
+    # MAXIMUM AGGRESSION INSIDE SURVIVAL (principal 2026-09-30): per gold window, the Fusion lot
+    # and the E8 risk fraction with the highest ruin-counted growth (Fusion) or fastest pass (E8)
+    # whose P(death) stays under EPS_STOP. Read by prop/e8_gold.py; absent or stale -> today's
+    # sizing, unchanged.
+    kls = _costed("kelly_survival", lambda: _producer(
+        "kelly_survival", "research/kelly_survival.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
@@ -5309,7 +5328,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "proposer_seat": prs, "kimi_hunt": kh,
+                    "proposer_seat": prs, "committees": cmt, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
@@ -5326,6 +5345,7 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
+                    "kelly_survival": kls,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
