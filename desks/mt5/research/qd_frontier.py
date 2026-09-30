@@ -135,6 +135,10 @@ MECHANISM_CONSTRAINT = {
     "hedging_demand_close_flow": "must_rebalance_at_the_close",
     "inventory_shock": "must_offload_inventory_it_did_not_want",
     "forced_liquidation": "must_close_on_a_margin_call",
+    # the late reader of the issuer's own filing (axis_registry.MECHANISM_ACTOR, #140). Both
+    # scheduled (earnings -> event_reaction) and unscheduled (news_reaction) filings, so the
+    # constraint is the late read of the primary filing, not whether it was calendared.
+    "corporate_disclosure": "must_reprice_on_a_primary_filing_it_read_late",
     UNKNOWN: UNKNOWN,
 }
 
