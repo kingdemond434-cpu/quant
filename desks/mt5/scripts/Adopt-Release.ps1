@@ -609,7 +609,12 @@ if (-not $NoFetch) {
         # held by another process and a permission fault on .git all look exactly the same, and
         # each has a different remedy. A deployment path that cannot say why it failed is the
         # same defect this desk keeps finding one level up: activity reported, outcome withheld.
-        try { $out = & git -C $RepoRoot fetch origin $Branch 2>&1 | Out-String }
+        # `--refmap=` (EMPTY) WRITES FETCH_HEAD ONLY. Without it git also "opportunistically"
+        # updates refs/remotes/origin/<branch>, and when another process fetched the same branch a
+        # moment earlier that ref update fails the WHOLE fetch. MEASURED ON THE BOX 2026-09-30
+        # 11:21 and 11:27: "cannot lock ref 'refs/remotes/origin/...': is at 193faaea but expected
+        # 846ce9de" -- a partial adoption, and no seal, over a ref this script never reads.
+        try { $out = & git -C $RepoRoot fetch --refmap= origin $Branch 2>&1 | Out-String }
         finally { $ErrorActionPreference = $prev }
         if ($LASTEXITCODE -eq 0) { $ok = $true; break }
         Write-Host ("  fetch attempt {0} failed (exit {1}) -- retrying in {2}s"    `

@@ -213,7 +213,9 @@ def main(argv: list[str] | None = None) -> int:
     OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     print(f"release authority: may_create_exposure={doc['may_create_exposure']} -- {doc['why']}")
     for name, c in doc["clauses"].items():
-        print(f"  {name:<10} {c['ok']!s:<5} {str(c['why'])[:140]}")
+        # Untruncated: Adopt-And-Seal logs these lines, and a 140-character cut once hid which
+        # money-path file had drifted ("...'desks/mt5/mt5desk/decis", 2026-09-30).
+        print(f"  {name:<10} {c['ok']!s:<5} {c['why']}")
     print(f"-> {OUT}")
     return 0
 
