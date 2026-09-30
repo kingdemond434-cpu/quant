@@ -342,9 +342,12 @@ def parse_reddit_listing(body: bytes) -> list[tuple[datetime, str]]:
     out: list[tuple[datetime, str]] = []
     for k in kids or []:
         d = (k or {}).get("data") or {}
+        stamp = _num(d.get("created_utc"))
+        if stamp is None:
+            continue
         try:
-            ts = datetime.fromtimestamp(float(d.get("created_utc")), tz=UTC)
-        except (TypeError, ValueError, OSError):
+            ts = datetime.fromtimestamp(stamp, tz=UTC)
+        except (ValueError, OSError, OverflowError):
             continue
         out.append((ts, f"{d.get('title') or ''} {d.get('selftext') or ''}"))
     return out
