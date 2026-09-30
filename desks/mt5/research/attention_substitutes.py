@@ -67,6 +67,9 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 
 from libs.data import terms_fence as tf  # noqa: E402
 
+#: This organ's own artifact (the component registry reads it from here).
+REPORT = DESK / "reports" / "ATTENTION_SUBSTITUTES.json"
+
 SEAT = "attention_substitutes"
 UNMEASURED = "UNMEASURED"
 #: Days of history requested per series on a pass. The z-window of the conditioner is 250 bars
@@ -136,7 +139,7 @@ class Paths:
         self.series = desk / "data" / "lake" / "series"
         self.state = desk / "data" / "attention_substitutes" / "state.json"
         self.obs = desk / "data" / "attention_substitutes" / "obs"
-        self.report = desk / "reports" / "ATTENTION_SUBSTITUTES.json"
+        self.report = desk / "reports" / REPORT.name
         self.universe = desk / "data" / "universe" / "universe.json"
         self.intel = desk / "data" / "intelligence"
 
