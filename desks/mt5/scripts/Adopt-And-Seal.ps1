@@ -134,10 +134,6 @@ function Log([string] $m) {
 $script:Heartbeat = Join-Path $desk "reports\ADOPTION_HEARTBEAT.json"
 $script:StartedAt = (Get-Date).ToUniversalTime().ToString('o')
 $script:HeadBefore = ""
-#: Non-zero when Adopt-Release could not land the branch. The seal proceeds regardless (the
-#: blocker check proves the tree on its own evidence) and every later exit carries this code
-#: out, so a delivery failure stays visible to the task history and check_adoption_freshness.
-$script:DeliveryFailed = 0
 try { $script:HeadBefore = (git -C $RepoRoot rev-parse HEAD 2>$null | Out-String).Trim() } catch { }
 
 function Write-Heartbeat([hashtable] $fields) {
@@ -282,25 +278,7 @@ if ($adoptConsole) {
 }
 $adoptExit = $LASTEXITCODE
 if ($adoptExit -ne 0) {
-    # A FAILED DELIVERY IS NOT A REASON TO STOP THE BOOK (recovered box commit fe09b89b,
-    # 2026-09-24). This used to `Done` here, so a delivery that failed for ANY reason -- a lost
-    # index.lock race with another writer, a path .gitignore now covers, a HEAD that moved under
-    # us -- left the release unsealed, and an unsealed release makes `release_identity` refuse
-    # NEW risk on every gateway pass for the rest of the day. Measured that day: gold_london_am
-    # (10:00Z) and gold_afternoon (14:00Z) placed nothing, and the 16:45Z adoption had failed on
-    # `cannot lock ref 'HEAD'` -- a race, with nothing wrong with the tree at all. This is step
-    # 5's own argument applied one stage earlier: a halt bought from an unrelated failure
-    # "reduces the book by fiat, which the principal's standing order (2026-09-08) forbids."
-    #
-    # IT IS NOT A WEAKENING, BECAUSE THE SEAL STILL PROVES THE TREE ITSELF. A half-written
-    # adoption leaves modified CODE paths uncommitted, and the dirty-code check in step 2 (and
-    # `release.seal_blocking_paths()` inside `release.seal`) refuses on exactly those -- so the
-    # dangerous case is caught by the check that measures it rather than inferred from an exit
-    # code that is just as often a lock race. The delivery failure is still logged here and
-    # carried out in the exit code of every later `Done`, so the task history and
-    # `check_adoption_freshness` see it unchanged.
-    $script:DeliveryFailed = $adoptExit
-    Log "Adopt-Release exited $adoptExit -- partial adoption; the tree is NOT current with the branch"
+    Log "Adopt-Release exited $adoptExit -- partial adoption; NOT sealing a tree that only half-matches the branch"
     # THE PATHS, IN THIS LOG, NOW. `desks/mt5/reports/ADOPTION_STATE.json` carries the full list
     # for plumbing_watchdog; the operator reading this file gets the first dozen without having
     # to know the artifact exists.
@@ -316,8 +294,7 @@ if ($adoptExit -ne 0) {
         Log ("    " + $line.Trim())
     }
     Log "full console: desks/mt5/logs/adopt_release_console.log; paths: desks/mt5/reports/ADOPTION_STATE.json"
-    Log "continuing to the seal anyway: an undelivered tree is a stale box, an UNSEALED tree is a"
-    Log "box that refuses every order -- and the seal below proves the tree on its own evidence"
+    Done $adoptExit "adopt-release-partial"
 }
 
 # ------------------------------------- 1b. TASKS THE ADOPTED TREE DECLARES BUT THE BOX LACKS
@@ -376,7 +353,7 @@ if (Test-Path $release) {
 if ($sealed -eq $head) {
     Log "HEAD $($head.Substring(0,12)) is already the sealed code; nothing to do"
     Ensure-Signed
-    Done $script:DeliveryFailed "already-sealed"
+    Done 0 "already-sealed"
 }
 # A SEAL COMMIT OR A STATE-SYNC COMMIT ON TOP OF THE SEALED CODE IS THE SAME RELEASE. After the
 # first seal HEAD is the seal commit itself, and every quarter-hour sync moves it again, so
@@ -388,7 +365,7 @@ if ($sealed) {
     if ("$acc" -match '^OK') {
         Log "HEAD $($head.Substring(0,12)) is the sealed release $($sealed.Substring(0,12)) plus seal/state commits only; nothing to seal"
         Ensure-Signed
-        Done $script:DeliveryFailed "accepts-nothing-to-seal"
+        Done 0 "accepts-nothing-to-seal"
     }
 }
 # `release.seal` refuses a tree with a dirty CODE path. Say so HERE, with the paths, rather than
@@ -483,8 +460,4 @@ Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
 # into a veto is the principal's call, not this script's.
 & $py @pyArgs (Join-Path $desk "research\release_authority.py") --once 2>&1 | ForEach-Object { Log "  $_" }
 Log "sealed $($head.Substring(0,12)) from $Branch; resident asked to recycle; gate attestation triggered"
-# THE SEAL SUCCEEDED AND THE DELIVERY DID NOT: both facts are carried. The book trades on the
-# tree this box verifiably runs; the task history still shows the delivery failure so
-# `check_adoption_freshness` reddens and somebody fixes the reason the branch did not land.
-if ($script:DeliveryFailed) { Done $script:DeliveryFailed "sealed-after-failed-delivery" }
 Done 0 "sealed"
