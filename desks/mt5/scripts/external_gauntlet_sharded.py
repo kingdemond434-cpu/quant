@@ -20,10 +20,14 @@ IT NEVER CHANGES A VERDICT AND IT NEVER BLOCKS THE JUDGE.
     sealed merge fails closed -- and this launcher then runs the unsharded sweep in the same slot,
     so a broken shard costs latency, never the hour's verdicts.
 
-    python scripts/sharded_gauntlet.py                 # the MT5-Gauntlet entry point
-    python scripts/sharded_gauntlet.py --shards 6      # force N
-    python scripts/sharded_gauntlet.py --plan          # print the decision, run nothing
-    python scripts/sharded_gauntlet.py --worker DIR K  # one shard (spawned by the launcher)
+    python scripts/external_gauntlet_sharded.py              # the MT5-Gauntlet entry point
+    python scripts/external_gauntlet_sharded.py --shards 6   # force N
+    python scripts/external_gauntlet_sharded.py --plan       # print the decision, run nothing
+    python scripts/external_gauntlet_sharded.py --worker DIR K   # one shard (the launcher's)
+
+THE NAME CARRIES `external_gauntlet` ON PURPOSE. `judging_throughput._is_judge` and
+`stall_watch.ps1` find the judge by that substring in a process's command line; a launcher (or a
+shard) named anything else would read as foreign load to the first and be invisible to the second.
 
 ARTIFACT: `desks/mt5/reports/SHARDED_SWEEP.json` -- mode (sharded / unsharded), why, N, the
 per-shard environment, wall-clock, return code, and the sealed merge's own `sharding` block

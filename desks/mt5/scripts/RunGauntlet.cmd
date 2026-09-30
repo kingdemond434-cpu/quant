@@ -20,4 +20,10 @@ rem derives its own worker count exactly as before, and the sweep runs. An absen
 rem never be able to stop the judge.
 cd /d C:\opt\quant\desks\mt5
 for /f "usebackq delims=" %%L in (`py -3 -c "import json,pathlib;d=json.loads(pathlib.Path('data/judging_throughput.env.json').read_text('utf-8')).get('env',{});print('\n'.join(f'{k}={v}' for k,v in d.items()))" 2^>nul`) do set "%%L"
-py -3 scripts\external_gauntlet.py %*
+rem
+rem SHARDED WHEN THE JUDGE CAN BE (2026-09-30). `external_gauntlet_sharded.py` feature-detects the
+rem sealed judge's SHARD_PROTOCOL: with the signed patch it runs N shards and ONE merge under the
+rem certification lane (verdict-identical to the single sweep); without it, or with N=1, or on
+rem --only, it calls the sealed `_cli_main()` exactly as this line used to. GAUNTLET_SHARDS in
+rem the env file overrides the measured N. Writes reports\SHARDED_SWEEP.json either way.
+py -3 scripts\external_gauntlet_sharded.py %*

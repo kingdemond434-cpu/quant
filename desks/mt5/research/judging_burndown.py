@@ -307,6 +307,31 @@ def sweep_anatomy() -> dict[str, Any]:
                     "cached docket is what the sweep's length is made of")}
 
 
+SHARDED = DESK / "reports" / "SHARDED_SWEEP.json"
+
+
+def sharding() -> dict[str, Any]:
+    """How the last sweep was run -- sharded N ways or as the single sweep, and why -- from the
+    launcher's own record (`scripts/external_gauntlet_sharded.py`). The per-shard seconds are the
+    sealed merge's `sharding` block, so a slow shard is named rather than averaged away."""
+    doc = _read(SHARDED)
+    if not doc:
+        return {"status": UNMEASURED, "why": f"{SHARDED.name} absent: the launcher has not run"}
+    merge = doc.get("merge") if isinstance(doc.get("merge"), dict) else {}
+    shards = merge.get("shards") if isinstance(merge.get("shards"), list) else []
+    secs = [float(s["seconds"]) for s in shards
+            if isinstance(s, dict) and isinstance(s.get("seconds"), (int, float))]
+    dec = doc.get("decision") if isinstance(doc.get("decision"), dict) else {}
+    return {"status": "MEASURED", "at": doc.get("at"), "mode": doc.get("mode"),
+            "why": doc.get("why"), "n_shards": dec.get("n_shards", 1),
+            "wall_seconds": doc.get("wall_seconds"),
+            "dispatch_seconds": merge.get("dispatch_seconds"),
+            "slowest_shard_seconds": max(secs) if secs else None,
+            "fastest_shard_seconds": min(secs) if secs else None,
+            "sharded_failure": doc.get("sharded_failure"),
+            "sealed_protocol": doc.get("sealed_protocol")}
+
+
 def capacity(d: dict[str, Any], w: dict[str, Any], s: dict[str, Any]) -> dict[str, Any]:
     """The warm side's projected contribution per day, at its last measured rate.
 
@@ -363,7 +388,8 @@ def build(now: datetime | None = None) -> dict[str, Any]:
     b, d, i, w = backlog(), drain(t), inflow(t), warm_side()
     s = sweep_anatomy()
     return {"at": t.isoformat(timespec="seconds"), "backlog": b, "drain": d, "inflow": i,
-            "warm_side": w, "sweep": s, "capacity": capacity(d, w, s),
+            "warm_side": w, "sweep": s, "sharding": sharding(),
+            "capacity": capacity(d, w, s),
             "burn_down": verdict(b, d, i, "7d"),
             "burn_down_24h": verdict(b, d, i, "24h"),
             "rule": ("drain = cells whose FIRST real verdict landed in the window (UNKNOWN and "

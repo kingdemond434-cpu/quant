@@ -363,7 +363,7 @@ def test_the_launcher_falls_back_to_the_unsharded_sweep_without_the_patch(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     sys.path.insert(0, str(_DESK / "scripts"))
     try:
-        import sharded_gauntlet as sg
+        import external_gauntlet_sharded as sg
     finally:
         sys.path.remove(str(_DESK / "scripts"))
     calls: list[str] = []
@@ -397,3 +397,18 @@ def test_the_launcher_falls_back_to_the_unsharded_sweep_without_the_patch(
     assert calls[-1] == "unsharded"
     doc = json.loads((tmp_path / "SHARDED_SWEEP.json").read_text("utf-8"))
     assert "FAILED CLOSED" in doc["why"] and "shard 2" in doc["sharded_failure"]
+
+
+def test_the_burndown_reads_how_the_last_sweep_ran(monkeypatch: pytest.MonkeyPatch,
+                                                   tmp_path: Path) -> None:
+    import judging_burndown as jb
+    monkeypatch.setattr(jb, "SHARDED", tmp_path / "SHARDED_SWEEP.json")
+    assert jb.sharding()["status"] == "UNMEASURED"
+    (tmp_path / "SHARDED_SWEEP.json").write_text(json.dumps({
+        "at": "2026-09-30T12:00:00+00:00", "mode": "sharded", "why": "sharded sweep ran",
+        "decision": {"n_shards": 3}, "wall_seconds": 90.0, "sealed_protocol": 1,
+        "merge": {"dispatch_seconds": 60.0, "shards": [{"k": 0, "seconds": 40.0},
+                                                       {"k": 1, "seconds": 58.5}]}}), "utf-8")
+    got = jb.sharding()
+    assert got["status"] == "MEASURED" and got["n_shards"] == 3
+    assert got["slowest_shard_seconds"] == 58.5 and got["fastest_shard_seconds"] == 40.0
