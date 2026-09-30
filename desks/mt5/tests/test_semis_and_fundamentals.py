@@ -697,7 +697,9 @@ def test_delisted_issuers_join_the_ranking_history_and_are_never_placed(equity, 
     life_end = (start + pd.Timedelta(days=91 * 2 - 40 + 200)).value
     assert [k for k in base if k[0] >= life_end + 86_400e9 * 2] == \
         [k for k in got if k[0] >= life_end + 86_400e9 * 2]
-    early = [k for k in got if k[0] < (start + pd.Timedelta(days=150)).value]
-    assert [k for k in base if k[0] < (start + pd.Timedelta(days=150)).value] and not early
+    # from the day all six live names file (EQF is first known at start + 5d) to 150 days on
+    lo, hi = (start + pd.Timedelta(days=6)).value, (start + pd.Timedelta(days=150)).value
+    assert [k for k in base if lo <= k[0] < hi]
+    assert not [k for k in got if lo <= k[0] < hi]
     assert xs.class_panel(d, "Xilinx", klass="equity", fundamentals_history=True) is None
     assert qm.family_quantamental_quality(frames["EQE"], symbol="Xilinx") == []
