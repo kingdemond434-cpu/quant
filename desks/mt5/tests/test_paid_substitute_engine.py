@@ -131,6 +131,21 @@ def test_region_and_class_gate_a_match() -> None:
     assert not pse.is_match(cand) and not pse.enrolable(cand)
 
 
+def test_an_ended_archive_is_never_enrolled() -> None:
+    paid = {"class": "macro", "region": "US", "frequency": "daily"}
+    base = {"classes": ["macro"], "region": "US", "frequency": "daily", "history_start": 2000}
+
+    def cand(lat: int) -> dict:
+        c = pse.coverage(paid, {**base, "latency_days": lat}, now=NOW)
+        return {"coverage": c["score"], "components": c["components"],
+                "unmeasured": c["unmeasured"], "usable": True, "machine_route": True,
+                "correlation": pse.UNMEASURED}
+
+    assert pse.enrolable(cand(1))
+    ended = cand(9999)
+    assert ended["components"]["latency"] == 0.0 and not pse.enrolable(ended)
+
+
 def test_correlation_unmeasured_without_both_series_and_measured_with_them(tmp_path: Path) -> None:
     pd = pytest.importorskip("pandas")
     np = pytest.importorskip("numpy")

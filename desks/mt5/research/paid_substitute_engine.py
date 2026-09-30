@@ -485,6 +485,11 @@ def _robots_ok(
     return bool(rp is not None and rp.can_fetch(USER_AGENT, url))
 
 
+def _robots_unreachable(url: str, cache: Mapping[str, Any]) -> bool:
+    p = urllib.parse.urlparse(url)
+    return f"{p.scheme}://{p.netloc}" in cache and cache[f"{p.scheme}://{p.netloc}"] is None
+
+
 #: Link shapes on public catalogue pages that NAME a vendor or product, and how to read the name.
 _LINK_RE = re.compile(r"""<a[^>]+href=["']([^"'#]+)["'][^>]*>(.*?)</a>""", re.I | re.S)
 _LISTING_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
@@ -594,6 +599,7 @@ def crawl_catalogue(
         "pages_tried": 0,
         "pages_ok": 0,
         "robots_refused": 0,
+        "host_unreachable": 0,
         "new_entries": 0,
         "errors": [],
         "listings": len(listings),
@@ -619,7 +625,10 @@ def crawl_catalogue(
         stats["pages_tried"] += 1
         try:
             if not _robots_ok(url, get, robots):
-                stats["robots_refused"] += 1
+                # an unreachable robots.txt is not fetched either -- counted apart, because it is a
+                # network verdict about this host, not the site's refusal
+                key = "host_unreachable" if _robots_unreachable(url, robots) else "robots_refused"
+                stats[key] += 1
                 continue
             status, body = get(url)
         except Exception as exc:
@@ -1089,8 +1098,10 @@ def enrolable(c: Mapping[str, Any]) -> bool:
     by a measured correlation. Page-only matches stay hunted (crawl seeds, roster) until an
     endpoint is found; they are never enrolled on a landing page."""
     corr = c.get("correlation")
+    live = (c.get("components") or {}).get("latency") != 0.0  # an ended archive: never enrolled
     return (
         is_match(c)
+        and live
         and bool(c.get("usable"))
         and bool(c.get("machine_route"))
         and len(WEIGHTS) - len(c.get("unmeasured") or []) >= MIN_MEASURED_COMPONENTS

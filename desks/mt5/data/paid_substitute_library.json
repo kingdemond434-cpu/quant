@@ -2956,7 +2956,7 @@
   },
   {
    "id": "oi_econ_tracker",
-   "name": "Opportunity Insights Economic Tracker (Affinity card spending, Womply, jobs)",
+   "name": "Opportunity Insights Economic Tracker (Affinity card spending, Womply, jobs; archive, ended 2024-06)",
    "publisher_type": "github",
    "url": "https://github.com/OpportunityInsights/EconomicTracker",
    "endpoint": "https://raw.githubusercontent.com/OpportunityInsights/EconomicTracker/main/data/Affinity%20-%20National%20-%20Daily.csv",
@@ -2968,7 +2968,7 @@
    "region": "US",
    "frequency": "weekly",
    "history_start": 2020,
-   "latency_days": 14,
+   "latency_days": 9999,
    "auth": "none",
    "auth_env": "",
    "languages": [
