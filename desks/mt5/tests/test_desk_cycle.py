@@ -237,4 +237,7 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
     ):
         assert needle in step, needle
     assert "6b. **Tier verdict" in cycle_text
+    for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
+                "Cert to forward", "Deep-forest vectors", "Judged", "Live"):
+        assert f"| {row} |" in step, row
     assert "STEP 4B" in LAUNCHER.read_text("utf-8")

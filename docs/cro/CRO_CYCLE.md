@@ -185,6 +185,28 @@ Measure at least, with day-over-day change:
 
 Baseline (2026-09-30, `/mnt/project-files/reports/tier1_breadth_gap_2026-09-30.md`): 249 instruments; 4 datasets; 0 of 14 alt platforms yielding; ~8.3k cells/day mined, ~5.3k/day judged; 43% UNKNOWN; 69% build/data failures; backlog ~1.4M growing ~3k/day; 837 certs from 10 families (41% cross_asset_residual); k_eff 2.53 against ~7 needed; 6 of 15 risk clusters empty; 9% cert-to-forward. Verdict: tier 3 overall.
 
+**Minimum table, reproduced every pass with fresh numbers** (columns: Measure | Us, live box | Yesterday | Tier-1, public estimate | Gap). The 2026-09-30 baseline is shown; add any row that limits breadth:
+
+| Measure | Baseline 2026-09-30 | Tier-1 (estimate) | Gap |
+|---|---|---|---|
+| Tradable universe | 249 symbols, one broker, 238/239 timeframes fresh | tens of thousands of instruments | ~100x |
+| Datasets in use | 4 of 15 registered (10 only DISCOVERED) | thousands of datasets (Two Sigma cites >10k sources) | ~1000x |
+| Alt-data platforms yielding | 0 of 14 | hundreds of vendor feeds | total |
+| Deep-forest vectors | 502 named, 10 yielded (2%), 467 never attempted | — | 98% unyielded |
+| Ingestion | 9,716 ledger rows/24h; 152,777/7d | — | — |
+| Raw cells mined | 1,583,193 total, ~8,303/day, 86 families mined, 10 unmined | millions of hypotheses/day | ~10-100x |
+| Judged | 5,266-5,915 verdicts/day (219/h), 18 cores | 10k-100k+ cores | ~1000x compute |
+| Wasted verdicts | 43% UNKNOWN (53,460 of 124,342, 7d) | — | fixable |
+| Never judged | 69% of prewarms fail build/data (20,247 of 29,466) | — | fixable |
+| Unjudged backlog | 1,398,253, oldest 747h, growing ~3k/day | cleared continuously | growing |
+| Certified | 837 certs, 10 families, 56 symbols, judged-to-cert 2.9% | — | — |
+| Cert concentration | cross_asset_residual 344 (41%), macro_conditional 152, carry 144, formula 92, other 6 families 105 | — | concentrated |
+| Effective breadth | k_eff 2.53 on 453 nominal; 6 of 15 risk clusters empty | hundreds to thousands of independent bets | ~100-1000x |
+| Cert to forward | 9.1%; forward ledgers updated in 7d: 0 | — | stalled |
+| Live | 21 LIVE sleeves (6 UNMEASURED); 249 trades/30d on 13 symbols; one symbol on 11 of 15 days | thousands of positions/day | — |
+
+**Targets driven every day, none ever treated as exhausted:** dataset hunting and ingestion at the scale of thousands of valuable world datasets, not ten; every alt platform and forest vector attempted and yielding; judging yield toward 100% (UNKNOWN and build/data failures toward zero); judging capacity above creation so the backlog shrinks; mining toward millions of hypotheses a day; certificates spread into empty risk clusters so k_eff rises; every certificate reaching forward; live breadth across many symbols; tier-1 machinery architecture reverse-engineered and its biggest gaps closed.
+
 Then:
 
 - Rank what holds breadth down, biggest first.
