@@ -79,19 +79,21 @@
    "title": "Researcher civilization: heterogeneous cohorts priced by independent discoveries",
    "files": [
     "libs/tiers/researcher_market.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/blinding.py",
+    "libs/tiers/firewall.py",
+    "desks/mt5/tests/test_tier_s_adversarial.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/MARKET.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_researchers",
     "better": "up",
     "organ": "market"
-   },
-   "remaining": "enforced blinding: a firewall role that forbids one cohort's seat reading another's data/intelligence output"
+   }
   },
   {
    "id": "S05",
@@ -180,19 +182,19 @@
    "files": [
     "libs/tiers/red_queen.py",
     "desks/mt5/research/adversary_evolution.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "desks/mt5/tests/test_tier_s_adversarial.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.defender_balanced",
     "better": "up",
     "organ": "red_queen"
-   },
-   "remaining": "attacks attributed per researcher; attack kinds for hidden factor exposure, overlapping strategies and false causality"
+   }
   },
   {
    "id": "S10",
@@ -243,7 +245,8 @@
    "title": "Epistemic firewall: per-role static audit with ratchet",
    "files": [
     "libs/tiers/firewall.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "desks/mt5/tests/test_tier_s_adversarial.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
@@ -255,7 +258,7 @@
     "better": "down",
     "organ": "firewall"
    },
-   "remaining": "developer->evaluator and lockbox-accepts-frozen-candidates roles; runtime may() checks are money-path"
+   "remaining": "runtime may()/lockbox_accepts calls at money-path sites (universal_gate, external_gauntlet, the autodiscovery orchestrator's lockbox open): signed judge files, routed to the desktop session"
   },
   {
    "id": "S13",
@@ -419,19 +422,19 @@
    "title": "Auto-invented tests: proposed on one suite, confirmed on another",
    "files": [
     "libs/tiers/test_invention.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "desks/mt5/tests/test_tier_s_adversarial.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TEST_INVENTION.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.candidate_gates",
     "better": "up",
     "organ": "test_invention"
-   },
-   "remaining": "a labelled real suite from certificates x forward outcome and a gate redundancy matrix"
+   }
   },
   {
    "id": "S22",
@@ -639,19 +642,20 @@
    "title": "Independent evaluator civilization: evaluators challenged by the panel",
    "files": [
     "libs/tiers/review_panel.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/firewall.py",
+    "desks/mt5/tests/test_tier_s_adversarial.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/REVIEW.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.challenged",
     "better": "up",
     "organ": "review"
-   },
-   "remaining": "firewall flag for evaluators sharing a reward artifact with the thing they judge"
+   }
   },
   {
    "id": "S33",

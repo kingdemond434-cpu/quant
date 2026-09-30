@@ -151,12 +151,34 @@ def allocate(researchers: Sequence[Researcher], headroom_s: float, *, seed: int 
 
 
 def independent_discoveries(sightings: Iterable[tuple[str, str]],
-                            cohorts: Mapping[str, str]) -> dict[str, Any]:
-    """sightings: (researcher, mechanism_species). A species found by >= 2 blind cohorts."""
+                            cohorts: Mapping[str, str],
+                            contaminated: Iterable[Iterable[str]] = ()) -> dict[str, Any]:
+    """sightings: (researcher, mechanism_species). A species found by >= 2 BLIND cohorts.
+
+    `contaminated` holds the cohort pairs the blinding audit (libs/tiers/blinding.py) found able
+    to read each other's output ("*" pairs a cohort with every other): a species whose only
+    cohort pairs are contaminated is a copy, not an independent rediscovery, and is withheld."""
+    bad = {frozenset(p) for p in contaminated}
+
+    def blind(a: str, b: str) -> bool:
+        return frozenset((a, b)) not in bad and frozenset((a, "*")) not in bad \
+            and frozenset((b, "*")) not in bad
+
     by_species: dict[str, set[str]] = {}
     for researcher, species in sightings:
         c = cohorts.get(researcher, researcher)
         by_species.setdefault(species, set()).add(c)
-    multi = {s: sorted(c) for s, c in by_species.items() if len(c) >= 2}
+    multi: dict[str, list[str]] = {}
+    withheld: dict[str, list[str]] = {}
+    for s, cs in by_species.items():
+        if len(cs) < 2:
+            continue
+        srt = sorted(cs)
+        if any(blind(a, b) for i, a in enumerate(srt) for b in srt[i + 1:]):
+            multi[s] = srt
+        else:
+            withheld[s] = srt
     return {"n_species": len(by_species), "independently_discovered": len(multi),
-            "examples": dict(sorted(multi.items())[:20])}
+            "withheld_by_blinding": len(withheld),
+            "examples": dict(sorted(multi.items())[:20]),
+            "withheld_examples": dict(sorted(withheld.items())[:10])}
