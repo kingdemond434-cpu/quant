@@ -104,3 +104,31 @@ def test_routing_is_reported_not_silent(policy) -> None:
     assert info["routed_event"] >= 1
     assert info.get("symbols_event"), "the report does not name what it set aside"
     assert info.get("policy", "").endswith("universe_policy.py")
+
+
+def test_route_by_lane_admits_equity_only_in_the_class_books(policy) -> None:
+    """Principal 2026-09-30: single names are routable ONLY via CROSS_SECTIONAL_FAMILIES (ranked
+    against the `equity` peer class). A semis, quantamental or valuation-regime cell on a share
+    CFD reaches the judge; the same share in a time-series family, and a delisted issuer in any
+    family, do not."""
+    runner = pytest.importorskip("run_external_backtest")
+    if not policy.is_equity("NVIDIA"):
+        pytest.skip("registry absent on this host -- UNMEASURED, not a pass")
+    grid = [
+        {"symbol": "NVIDIA", "family": "semis_sector_momentum", "params": {}},
+        {"symbol": "Apple", "family": "quantamental_value", "params": {}},
+        {"symbol": "Apple", "family": "valuation_regime_conditioned", "params": {}},
+        {"symbol": "NVIDIA", "family": "session_range_breakout", "params": {}},
+        {"symbol": "Xilinx", "family": "quantamental_quality", "params": {}},
+        {"symbol": "EURUSD", "family": "session_range_breakout", "params": {}},
+    ]
+    kept, info = runner.route_by_lane(grid)
+    if info.get("status") != "MEASURED":
+        pytest.skip(f"routing unavailable here: {info.get('status')}")
+    got = {(c["symbol"], c["family"]) for c in kept}
+    assert got == {("NVIDIA", "semis_sector_momentum"), ("Apple", "quantamental_value"),
+                   ("Apple", "valuation_regime_conditioned"), ("EURUSD", "session_range_breakout")}
+    assert info["kept_equity_class_books"] == {"quantamental_value": 1,
+                                               "semis_sector_momentum": 1,
+                                               "valuation_regime_conditioned": 1}
+    assert "NVIDIA" in info["symbols_event"]
