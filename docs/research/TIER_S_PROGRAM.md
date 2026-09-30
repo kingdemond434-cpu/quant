@@ -49,7 +49,7 @@ Every layer runs hourly (leg `tier_s` unless named). The verdict column is the c
 | S39 | Architecture-level counterfactual failure search: protocol knob ablations | PARTIAL | OPERATIONAL_RISK | `formal.metric.knobs_evidenced` (up) | - | - | world-search over architecture failure worlds beyond knob ablations |
 | S40 | Compute OS: researcher prices published for cycle pricing | DONE | INFO_PER_COMPUTE | `market.metric.independently_discovered` (up) | - | - |  |
 | S41 | Global state replay: ledgers re-derived from streams | DONE | OPERATIONAL_RISK | `replay.metric.reconstructible_share` (up) | - | - |  |
-| S42 | Continual recovery experiments: chaos campaigns and corruption drills on copies | BLOCKED_ON_BOX | OPERATIONAL_RISK | `chaos.metric.drills_failing` (down) | - | - | recovery experiments against a sandbox gateway with a faulty MT5 double; never the live terminal |
+| S42 | Continual recovery experiments: chaos campaigns and corruption drills on copies | PARTIAL | OPERATIONAL_RISK | `chaos.metric.drills_failing` (down) | - | - | the gateway itself under a faulty MT5 double in a sandbox; a real journal-writer process is SIGKILLed and restarted hourly in a temp directory (chaos.process_kill_drill), never the live terminal |
 | S43 | Mechanisms from other sciences | PARTIAL | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - | operations-research and motif labs on the row stream |
 | S44 | Abstraction discovery: library learning over winning genomes | DONE | PRODUCTIVITY | `grammar.metric.n_primitives` (up) | - | - |  |
 | S45 | Scientific memory compression: failure theorems with provenance | DONE | PRODUCTIVITY | `failure_memory.metric.rows_per_statement` (up) | - | - |  |

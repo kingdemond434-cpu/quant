@@ -554,3 +554,10 @@ def test_suspended_immune_and_fdr_withhold_nothing(monkeypatch: Any, tmp_path: P
     assert (pa.block("X.y") or "").startswith("IMMUNE_FREEZE")
     monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: True)
     assert pa.block("X.y") is None
+
+
+def test_process_kill_drill_kills_a_real_child_in_a_sandbox() -> None:
+    from libs.tiers import chaos
+    r = chaos.process_kill_drill(ROOT, orders=150, kills=2, seed=1, step_s=0.01)
+    assert r["sandbox"] == "tempdir" and r["kills"] >= 1 and r["restarts"] >= r["kills"]
+    assert r["status"] == "PASS" and r["journalled"] == 150 and r["duplicates"] == 0

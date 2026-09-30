@@ -2075,10 +2075,18 @@ def organ_chaos() -> dict[str, Any]:
                               lambda p: truth_kernel.Journal(p).verify(),
                               lambda out: not bool(out.get("ok")) or int(out.get("n", 0)) == 0,
                               corruptions=("truncate", "garbage")))
+    # A REAL PROCESS KILLED: a journal writer SIGKILLed mid-stream in a temp directory and
+    # restarted, never the live terminal (`chaos.process_kill_drill`)
+    try:
+        kill = chaos.process_kill_drill(ROOT, seed=NOW.hour)
+    except Exception as exc:                        # pragma: no cover - host dependent
+        kill = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    drills.append({"drill": "SIGKILL journal writer -> restart", **kill})
     failing = [d for d in drills if d.get("status") == "FAIL"]
-    return {"campaign": camp, "drills": drills,
+    return {"campaign": camp, "drills": drills, "process_kill": kill,
             "metric": {"breaches": sum(camp["breaches"].values()),
-                       "drills_failing": len(failing)}}
+                       "drills_failing": len(failing),
+                       "processes_killed": int(kill.get("kills") or 0)}}
 
 
 def organ_replay() -> dict[str, Any]:

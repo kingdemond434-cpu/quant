@@ -826,14 +826,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/CHAOS.json",
-   "status": "BLOCKED_ON_BOX",
+   "status": "PARTIAL",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.drills_failing",
     "better": "down",
     "organ": "chaos"
    },
-   "remaining": "recovery experiments against a sandbox gateway with a faulty MT5 double; never the live terminal"
+   "remaining": "the gateway itself under a faulty MT5 double in a sandbox; a real journal-writer process is SIGKILLed and restarted hourly in a temp directory (chaos.process_kill_drill), never the live terminal"
   },
   {
    "id": "S43",
