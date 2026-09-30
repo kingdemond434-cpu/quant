@@ -245,6 +245,16 @@ FAMILY_CLUSTER: dict[str, str] = {
     "cross_sectional": "cross_sectional_fx",
     "style_premia": "cross_sectional_fx",
     "rank_ic": "cross_sectional_fx",
+    # The class-book legs (desks/mt5/mt5desk/families_cross_sectional.py, 2026-09-30), declared
+    # EXACTLY so `classify_family` places a certificate by its registry key, not by a substring.
+    "cross_sectional_class_momentum": "cross_sectional_fx",
+    "cross_sectional_class_reversal": "cross_sectional_fx",
+    "cross_sectional_class_value": "cross_sectional_fx",
+    "cross_sectional_class_low_vol": "cross_sectional_fx",
+    # Slow updaters within a class: the payer is the late repricer, which is this cluster's.
+    "lead_lag_class_catchup": "cross_asset_lead_lag",
+    # Fires ONLY in a lagged class-stress regime and is idle otherwise: forced deleveraging.
+    "crisis_only_class_defensive": "crisis_drawdown",
     # -- crisis and drawdown alpha
     "drawdown_conditional": "crisis_drawdown",
     "crisis_only": "crisis_drawdown",
