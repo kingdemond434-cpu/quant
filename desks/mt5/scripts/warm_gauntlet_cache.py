@@ -407,6 +407,162 @@ def publish_deferrals(rows: dict, held: list[dict], now: float, extra: dict) -> 
     return census
 
 
+def never_judged_flags(G, specs: list[dict]) -> int:
+    """Stamp each spec `_never_judged`, by the SEALED SWEEP'S OWN RULE, and return how many are.
+
+    `external_gauntlet.main._is_new` sorts a cell first when its id is absent from the seen-cells
+    record, or present there with no stages behind it (`_stamped_but_unjudged`). The same two
+    readers are called here, never restated, so the warmer and the judge agree on which cells
+    are the backlog. An unreadable record reads as EMPTY -- every cell looks new, which spends one
+    rotation and never hides a cell (the sweep's own fail-open direction).
+    """
+    try:
+        seen = G._seen_cells()
+    except Exception:
+        seen = {}
+    try:
+        unjudged = G._stamped_but_unjudged()
+    except Exception:
+        unjudged = set()
+    n = 0
+    for sp in specs:
+        try:
+            cid = G.cell_id({"sym": sp.get("sym"), "family": sp.get("family"),
+                             "params": sp.get("params") or {}})
+        except Exception:
+            cid = ""
+        flag = (not cid) or (cid not in seen) or (cid in unjudged)
+        sp["_never_judged"] = bool(flag)
+        n += int(flag)
+    return n
+
+
+def backlog_first(specs: list[dict]) -> list[dict]:
+    """THE BACKLOG IS WARMED BEFORE ANY RE-JUDGE. A PERMUTATION -- same cells, same multiset.
+
+    WHY, MEASURED 2026-09-30. The judge rules on what is WARM: a cached cell costs the sweep no
+    build, so warmth decides what a sweep contains. `cell_priority` ranks by the measured rate at
+    which a family reaches a certificate -- which is, by construction, a rate only JUDGED families
+    have -- so its head was the already-judged cells of the families with the best record, re-
+    warmed every data day, while the never-judged frontier (1,398,253 cells on the trading box,
+    growing ~3,000 a day) ranked on the house prior behind them. Every one of those re-warms is a
+    cell the sweep then re-judges at a superlinear gate cost (measured locally on the sealed
+    `run_gauntlet`: 0.022 s/cell at 200 cached cells, 0.048 at 2,000, 0.058 at 5,000) for a
+    verdict the ledger already holds -- `_append_gate_ledger` writes a row only when the terminal
+    gate CHANGES.
+
+    The sealed sweep already puts never-judged cells first (`_is_new` is its primary sort key);
+    this makes the one process that decides warmth agree with it. `cell_priority`'s order is kept
+    INSIDE each tier, so within the backlog the most promising cell is still warmed first, and a
+    re-judge is delayed until the backlog is warm, never dropped.
+    """
+    return sorted(specs, key=lambda sp: 0 if sp.get("_never_judged", True) else 1)
+
+
+def modifier_refusals(G, specs: list[dict]) -> tuple[list[dict], int]:
+    """(buildable specs, count set aside) -- cells the SEALED preflight refuses before any build.
+
+    `external_gauntlet.modifier_preflight` names a variant key it cannot apply honestly (a
+    `conditioner` with no series behind it, a `residual` on a family that does not residualise).
+    The sweep conserves those as NOT_RUN_MODIFIER without building them; this job used to send
+    each one to a worker, watch it fail, and park it in the deferral ledger for six hours before
+    failing it again. Measured on the committed docket 2026-09-30: 9,558 of 19,260 gate-0-eligible
+    cells carry such a key. The sweep still records every one of them; this only stops a warm
+    worker spending a slot to learn what the preflight already knows.
+    """
+    pre = getattr(G, "modifier_preflight", None)
+    if pre is None:
+        return specs, 0
+    keep: list[dict] = []
+    n = 0
+    for sp in specs:
+        try:
+            why = pre(sp)
+        except Exception:
+            why = None
+        if why:
+            n += 1
+        else:
+            keep.append(sp)
+    return keep, n
+
+
+def fan_out(G, src_key: str, dst_keys: list[str]) -> int:
+    """Copy one warmed cell's series file under the cache keys of its exact equivalents.
+
+    ATOMIC per destination, as `cache_save` is: a temp file in the same directory, then
+    `os.replace`, so a reader never sees a torn `.npz`. Returns how many destinations landed.
+    """
+    import shutil
+
+    src = G.CACHE_DIR / f"{src_key}.npz"
+    if not src.exists():
+        return 0
+    n = 0
+    for k in dst_keys:
+        if not k or k == src_key:
+            continue
+        dst = G.CACHE_DIR / f"{k}.npz"
+        tmp = G.CACHE_DIR / f"{k}.{os.getpid()}.fan.tmp"
+        try:
+            shutil.copyfile(src, tmp)
+            os.replace(tmp, dst)
+            n += 1
+        except OSError:
+            with contextlib.suppress(OSError):
+                tmp.unlink()
+    return n
+
+
+def plan_equivalents(G, keyed: list[dict], warm: set[str], order_: list[dict],
+                     held: list[dict] | None = None
+                     ) -> tuple[list[dict], dict[str, list[str]], int]:
+    """Collapse exact spellings of one rule to ONE build, and serve the rest from its output.
+
+    Returns (specs to send, {sent key: follower keys}, followers served from disk now).
+
+    A follower is never judged by proxy: it gets its OWN cache entry holding its twin's series,
+    and the sealed sweep judges it under its own id through every gate. What is shared is the
+    build, and only across groups `cell_equivalence` proves identical (see that module). A group
+    whose member is HELD in the deferral ledger (its build failed, bars unchanged) sends nothing
+    this round: the twins would fail the identical build, and the held member is retried -- for
+    the whole group -- the moment its bars move.
+    """
+    try:
+        import cell_equivalence as E
+    except Exception:
+        return order_, {}, 0
+    by_key = E.groups(keyed)
+    group_of: dict[str, str] = {}
+    for gk, members in by_key.items():
+        for sp in members:
+            group_of[str(sp.get("ckey") or "")] = gk
+    served_now = 0
+    followers: dict[str, list[str]] = {}
+    chosen: dict[str, str] = {}
+    send: list[dict] = []
+    held_groups = {group_of.get(str(h.get("ckey") or "")) for h in (held or [])} - {None}
+    for sp in order_:
+        ck = str(sp.get("ckey") or "")
+        gk = group_of.get(ck)
+        members = by_key.get(gk or "", [sp])
+        if len(members) <= 1:
+            send.append(sp)
+            continue
+        if gk in held_groups:
+            continue
+        if gk in chosen:
+            followers.setdefault(chosen[gk], []).append(ck)
+            continue
+        hot = next((str(m.get("ckey")) for m in members if str(m.get("ckey") or "") in warm), "")
+        if hot:
+            served_now += fan_out(G, hot, [ck])
+            continue
+        chosen[gk or ck] = ck
+        send.append(sp)
+    return send, followers, served_now
+
+
 def run_round(G, meta: dict, priors, deadline: float) -> dict:
     """One full pass over the docket. Returns the round's census."""
     from research.job_lock import free_mb
@@ -415,6 +571,10 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
     specs = docket_specs(G, meta)
     if not specs:
         return {"eligible": 0, "note": "no docket to warm"}
+    specs, n_modifier = modifier_refusals(G, specs)
+    if n_modifier:
+        print(f"  modifier preflight: {n_modifier} cell(s) the sealed preflight refuses are left "
+              f"to the sweep, which conserves each as NOT_RUN_MODIFIER; no worker is spent on them")
 
     try:
         import cell_priority as CP
@@ -423,15 +583,20 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
     except Exception as exc:
         ordered_by = f"UNORDERED ({type(exc).__name__}: {exc})"
         print(f"  cell priority unavailable ({exc}); warming in docket order")
-    print(f"  order: {ordered_by}")
+    n_never = never_judged_flags(G, specs)
+    specs = backlog_first(specs)
+    ordered_by = f"backlog_first, then {ordered_by}"
+    print(f"  order: {ordered_by} ({n_never} of {len(specs)} cell(s) never judged)")
 
     keyed, stamps, no_bars = resolve_keys(G, specs)
     warm = on_disk_keys(G)
     cold = [sp for sp in keyed if sp["ckey"] not in warm]
     n_warm_already = len(keyed) - len(cold)
     share = (n_warm_already / len(keyed)) if keyed else 0.0
+    never_cold = sum(1 for sp in cold if sp.get("_never_judged"))
     print(f"  keyed {len(keyed)} of {len(specs)} cell(s) ({no_bars} with no bars on their own "
-          f"chart); {n_warm_already} already warm ({share:.1%}), {len(cold)} cold")
+          f"chart); {n_warm_already} already warm ({share:.1%}), {len(cold)} cold "
+          f"({never_cold} of them never judged)")
 
     now = time.time()
     order_, held, rows = split_deferred(cold, stamps, now)
@@ -439,8 +604,16 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
         print(f"  deferred: {len(held)} cell(s) held this round (build failed before, bars "
               f"unchanged, retry in under {RETRY_SEC / 3600:.0f}h) -- ages in "
               f"{DEFERRALS.name}, none dropped")
+    n_before_eq = len(order_)
+    order_, followers, served_now = plan_equivalents(G, keyed, warm, order_, held)
+    n_followers = sum(len(v) for v in followers.values())
+    if served_now or n_followers:
+        print(f"  equivalents: {served_now} cell(s) served from a twin already warm, "
+              f"{n_followers} more ride on a twin being built this round -- "
+              f"{n_before_eq - len(order_)} build(s) saved; each is still judged under its own id")
 
-    counts = {"warmed": 0, "missing": 0, "failed": 0}
+    counts = {"warmed": 0, "missing": 0, "failed": 0, "fanned_out": served_now,
+              "never_judged_warmed": 0}
     stopped = ""
     workers = _workers()
     print(f"  {workers} worker(s) on {len(order_)} cold cell(s)")
@@ -458,6 +631,10 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
                 sp = by_key.get(ck) or {}
                 if outcome == "warmed":
                     rows.pop(ck, None)
+                    if sp.get("_never_judged"):
+                        counts["never_judged_warmed"] += 1
+                    if followers.get(ck):
+                        counts["fanned_out"] += fan_out(G, ck, followers[ck])
                 elif ck:
                     prev = rows.get(ck) if isinstance(rows.get(ck), dict) else {}
                     rows[ck] = {
@@ -499,6 +676,13 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
         "warm_before": n_warm_already, "warm_share_before": round(share, 4),
         "cold": len(cold), "sent": len(order_), "held": len(held),
         "warmed": counts["warmed"], "failed": counts["failed"], "missing": counts["missing"],
+        # THE BACKLOG'S SHARE OF THIS ROUND, and the builds equivalence saved. These are what
+        # `research/judging_burndown.py` reads as the warm side of the drain: a cell warmed here
+        # is a cell the next sweep judges without spending its own build budget.
+        "never_judged": n_never, "never_judged_cold": never_cold,
+        "never_judged_warmed": counts["never_judged_warmed"],
+        "fanned_out": counts["fanned_out"], "equivalent_followers": n_followers,
+        "modifier_refused_not_sent": n_modifier,
         "seconds": round(time.time() - t0, 1),
         "cells_per_min": round(sum(counts.values()) / max(1e-9, time.time() - t0) * 60.0, 1),
         "workers": workers, "ordered_by": ordered_by, "stopped": stopped,
