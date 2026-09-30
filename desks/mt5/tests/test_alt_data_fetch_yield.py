@@ -346,8 +346,13 @@ def test_the_cycle_exports_its_cap_to_the_child(monkeypatch) -> None:
 
     monkeypatch.setattr(hc, "_run_tree", fake_tree)
     monkeypatch.setattr(hc, "_priced_budget", lambda name, base: (base, {}))
-    hc._producer_impl("deep_forest_miner", "research/deep_forest_miner.py", ("--budget-s", "900"))
-    assert seen["env"]["QUANT_LEG_BUDGET_S"] == "1020" and seen["timeout"] == 1020
+    args = ("--budget-s", "900")
+    hc._producer_impl("deep_forest_miner", "research/deep_forest_miner.py", args)
+    # The cap is the leg's own cap, raised to the organ's self-stop floor (its budget plus the
+    # write margin) when that is higher -- and the child is told exactly the cap it runs under.
+    cap = max(hc.LEG_BUDGET_SEC["deep_forest_miner"], hc._self_stop_floor_s(args))
+    assert cap == 1035
+    assert seen["env"]["QUANT_LEG_BUDGET_S"] == str(cap) and seen["timeout"] == cap
 
 
 def test_child_cpu_is_counted_where_os_times_cannot() -> None:
