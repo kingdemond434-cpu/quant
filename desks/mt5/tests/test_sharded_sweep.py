@@ -309,10 +309,20 @@ def test_every_cell_is_charged_once_and_the_family_is_the_union(
     sh = rep["sharding"]
     assert sh["n_shards"] == 3 and sh["each_cell_ruled_once"] is True
     assert sum(s["planned"] for s in sh["shards"]) == sh["planned_cells"]
-    ns = {v["stages"]["deflated_sharpe"]["n_trials"] for v in rep["verdicts"]
-          if v.get("stages", {}).get("deflated_sharpe")}
-    assert ns == {rep["n_trials"]}
-    ids = [v["cell"] for v in rep["verdicts"] if v.get("stages", {}).get("deflated_sharpe")]
+    judged = [v for v in rep["verdicts"] if v.get("stages", {}).get("deflated_sharpe")]
+    dsr = [v["stages"]["deflated_sharpe"] for v in judged]
+    # the campaign charge every cell carries is the UNION's census, not its shard's
+    assert {d["campaign_trials"] for d in dsr} == {rep["n_trials"]}
+    # and the per-cell (lifetime) charge is never below it; with no lifetime ledger in a test
+    # tree it fails closed to the raw burden of the UNION's width (x7), never a shard's width
+    assert all(d["n_trials"] >= rep["n_trials"] for d in dsr)
+    for d in dsr:
+        if "UNMEASURED" in d["lifetime_basis"]:
+            assert d["n_trials"] == 7 * len(judged)
+    assert max(s["planned"] for s in sh["shards"]) < len(judged)
+    # the lockbox cut the shards carved at is the one the union implies
+    assert sh["lockbox_cut"] not in (None, "None")
+    ids = [v["cell"] for v in judged]
     assert len(ids) == len(set(ids))
 
 
