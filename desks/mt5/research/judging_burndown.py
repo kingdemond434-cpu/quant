@@ -25,9 +25,13 @@ PUBLISHED: `reports/JUDGING_BURNDOWN.json` -- per window (24h, 7d): first ruling
 kind; the backlog (read from `JUDGE_COVERAGE.json`, which owns that count); the net drain per day;
 days to zero, or GROWING with the net growth per day; and the first-rulings-per-hour needed to
 clear the backlog inside `TARGET_DAYS` while still absorbing the inflow. Every missing input is
-UNMEASURED with its reason, never a zero (L1.28a).
+UNMEASURED with its reason, never a zero (L1.28a). Also `sweep` -- where the judge's last sweep
+spent its wall clock (build pool vs the load-and-gate phase, per cell, and which stage binds) --
+and `capacity`, the warm side's projected first rulings per day at its last measured rate.
 
 Clock: leg `judging_burndown` in `research/hourly_cycle.py` (department validate). It only reads.
+Consumers: `research/judging_throughput.py` (`_burndown`: GROWING is demand, raising cadence) and
+`scripts/warm_gauntlet_cache.py` (`gate_room` sizes the warm set by `sweep_anatomy`).
 
     python desks/mt5/research/judging_burndown.py [--dry-run]
 """
@@ -206,9 +210,123 @@ def warm_side() -> dict[str, Any]:
         return {"status": UNMEASURED, "why": f"{WARM.name} absent or carries no round"}
     last = rounds[-1] if isinstance(rounds[-1], dict) else {}
     keys = ("never_judged", "never_judged_cold", "never_judged_warmed", "fanned_out",
-            "equivalent_followers", "warmed", "failed", "cells_per_min", "workers", "seconds")
-    return {"status": "MEASURED", "at": doc.get("at"),
-            **{k: last.get(k, UNMEASURED) for k in keys}}
+            "equivalent_followers", "warmed", "failed", "hit_since_scan", "cells_per_min",
+            "workers", "seconds", "held_for_gate_room")
+    out: dict[str, Any] = {"status": "MEASURED", "at": doc.get("at"),
+                           **{k: last.get(k, UNMEASURED) for k in keys}}
+    cap = last.get("capacity") if isinstance(last.get("capacity"), dict) else {}
+    out["idle_cores_at_start"] = cap.get("idle_cores", UNMEASURED)
+    oc = last.get("order_census") if isinstance(last.get("order_census"), dict) else {}
+    out["next_sweep_docket"] = oc.get("keep", UNMEASURED)
+    out["next_sweep_never_judged"] = oc.get("keep_never_judged", UNMEASURED)
+    return out
+
+
+# ------------------------------------------------------------------ the sweep, taken apart
+GATES_REPORT = DESK / "reports" / "universal_gates_external.json"
+GAUNTLET_ORDER = DESK / "reports" / "GAUNTLET_ORDER.json"
+_SCALARS = ("swept_at", "n_cells_advanced_beyond_economic_prior",
+            "n_cells_deferred_build_budget", "n_cells_blocked_build_or_data", "workers")
+_PREWARM_KEYS = ("submitted", "warmed", "hit", "failed", "unreached", "seconds")
+
+
+def tail_scalars(path: Path, keys: tuple[str, ...] = _SCALARS,
+                 chunk: int = 1 << 22) -> dict[str, str]:
+    """The LAST value of each scalar `key` (and the `prewarm` block's counts) in a JSON file,
+    streamed in chunks. The judge's report carries its per-cell verdict list FIRST and its census
+    after it; on the trading box the list is a million rows, and decoding it whole to read a
+    dozen numbers is the cost this avoids."""
+    pats = {k: re.compile(r'"' + re.escape(k) + r'"\s*:\s*("([^"]*)"|[-0-9.eE+]+)') for k in keys}
+    pre = re.compile(r'"prewarm"\s*:\s*\{([^{}]*)')
+    out: dict[str, str] = {}
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
+            tail = ""
+            while True:
+                part = fh.read(chunk)
+                if not part:
+                    break
+                buf = tail + part
+                for k, p in pats.items():
+                    for m in p.finditer(buf):
+                        out[k] = m.group(2) if m.group(2) is not None else m.group(1)
+                for m in pre.finditer(buf):
+                    for pk in _PREWARM_KEYS:
+                        mm = re.search(r'"' + pk + r'"\s*:\s*([-0-9.eE+]+)', m.group(1))
+                        if mm:
+                            out[f"prewarm.{pk}"] = mm.group(1)
+                tail = buf[-4096:]
+    except OSError:
+        return {}
+    return out
+
+
+def _ts(v: Any) -> float | None:
+    try:
+        return datetime.fromisoformat(str(v).replace("Z", "+00:00")).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def sweep_anatomy() -> dict[str, Any]:
+    """WHERE THE LAST SWEEP'S WALL CLOCK WENT, from the sealed judge's own two artifacts.
+
+    `GAUNTLET_ORDER.json` is written when the sweep has ordered its docket and
+    `universal_gates_external.json` when it has ruled, so their stamps bracket the sweep's build
+    and gate phases; the report's `prewarm` block says how long the pool built and what it built.
+    What is left is the loop that loads every cached cell plus the gate phase, per cell advanced.
+    That per-cell figure is what `warm_gauntlet_cache.gate_room` sizes the warm set by, and the
+    split says which stage binds: BUILD (cells deferred for the build budget) or GATE.
+    """
+    sc = tail_scalars(GATES_REPORT)
+    order_at = _ts(_read(GAUNTLET_ORDER).get("at"))
+    swept = _ts(sc.get("swept_at"))
+
+    def _f(k: str) -> float | None:
+        try:
+            return float(sc[k])
+        except (KeyError, ValueError):
+            return None
+
+    adv, pre_s = _f("n_cells_advanced_beyond_economic_prior"), _f("prewarm.seconds")
+    if swept is None or order_at is None or swept <= order_at or not adv:
+        return {"status": UNMEASURED,
+                "why": "the last sweep's order/report pair is unreadable or out of step"}
+    total = swept - order_at
+    post = max(0.0, total - (pre_s or 0.0))
+    deferred = _f("n_cells_deferred_build_budget")
+    return {"status": "MEASURED", "swept_at": sc.get("swept_at"),
+            "seconds_after_order": round(total, 1), "prewarm_seconds": pre_s,
+            "post_build_seconds": round(post, 1), "cells_advanced": int(adv),
+            "post_build_s_per_cell": round(post / adv, 5),
+            "prewarm": {k: _f(f"prewarm.{k}") for k in _PREWARM_KEYS},
+            "deferred_build_budget": deferred, "workers": _f("workers"),
+            "binding_stage": ("BUILD" if deferred and deferred > 0 else "GATE"),
+            "why": ("BUILD: cells were deferred for the build budget, so more warm cells mean "
+                    "more verdicts; GATE: nothing was deferred, so the gate phase over the "
+                    "cached docket is what the sweep's length is made of")}
+
+
+def capacity(d: dict[str, Any], w: dict[str, Any], s: dict[str, Any]) -> dict[str, Any]:
+    """The warm side's projected contribution per day, at its last measured rate.
+
+    A PROJECTION, labelled as one: the warmer's last-round build rate held for a day, times the
+    share of its builds that were first rulings. The measured drain beside it is what actually
+    happened; the two together say whether the warm side is keeping up.
+    """
+    rate = w.get("cells_per_min")
+    warmed, never = w.get("warmed"), w.get("never_judged_warmed")
+    if not isinstance(rate, (int, float)) or not isinstance(warmed, int) or \
+            not isinstance(never, int):
+        return {"status": UNMEASURED, "why": "no measured warm round"}
+    share = (never / warmed) if warmed else 0.0
+    return {"status": "PROJECTED", "warm_builds_per_day": round(float(rate) * 1440.0),
+            "never_judged_share_of_builds": round(share, 4),
+            "first_rulings_per_day_from_warm_side": round(float(rate) * 1440.0 * share),
+            "measured_first_rulings_per_day": (
+                round(float(d["first_rulings_per_hour"]["24h"]) * 24.0, 1)
+                if d.get("status") == "MEASURED" else UNMEASURED),
+            "binding_stage": s.get("binding_stage", UNMEASURED)}
 
 
 def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],
@@ -243,8 +361,10 @@ def verdict(b: dict[str, Any], d: dict[str, Any], i: dict[str, Any],
 def build(now: datetime | None = None) -> dict[str, Any]:
     t = now or datetime.now(tz=UTC)
     b, d, i, w = backlog(), drain(t), inflow(t), warm_side()
+    s = sweep_anatomy()
     return {"at": t.isoformat(timespec="seconds"), "backlog": b, "drain": d, "inflow": i,
-            "warm_side": w, "burn_down": verdict(b, d, i, "7d"),
+            "warm_side": w, "sweep": s, "capacity": capacity(d, w, s),
+            "burn_down": verdict(b, d, i, "7d"),
             "burn_down_24h": verdict(b, d, i, "24h"),
             "rule": ("drain = cells whose FIRST real verdict landed in the window (UNKNOWN and "
                      "NOT_RUN rows are not rulings; a re-judge is not a drain); inflow = docket "

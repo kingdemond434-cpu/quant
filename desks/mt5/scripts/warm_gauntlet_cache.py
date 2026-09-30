@@ -662,81 +662,39 @@ def plan_equivalents(G, keyed: list[dict], warm: set[str], order_: list[dict],
 #: 0.048 at 2,000, 0.058 at 5,000) and a linear extrapolation from a smaller sweep under-reads it.
 GATE_SAFETY = float(os.environ.get("WARM_GATE_SAFETY", "0.8"))
 JUDGING_THROUGHPUT = DESK / "reports" / "JUDGING_THROUGHPUT.json"
-GAUNTLET_ORDER = DESK / "reports" / "GAUNTLET_ORDER.json"
-GATES_REPORT = DESK / "reports" / "universal_gates_external.json"
 SEALED_FRESH_BUDGET_SEC = 2700.0
 
 
-def _tail_scalars(path: Path, keys: tuple[str, ...], chunk: int = 1 << 22) -> dict[str, str]:
-    """The LAST value of each top-level scalar `key` in a JSON file, streamed in chunks.
-
-    The judge's report carries its per-cell verdict list first and its scalar census after it, and
-    on the trading box that list runs to a million rows; decoding it whole to read four numbers is
-    the cost this avoids. A value split across two chunks is caught by the overlap.
-    """
-    import re
-
-    pats = {k: re.compile(r'"' + re.escape(k) + r'"\s*:\s*("([^"]*)"|[-0-9.eE+]+)') for k in keys}
-    pre = re.compile(r'"prewarm"\s*:\s*\{[^{}]*?"seconds"\s*:\s*([-0-9.eE+]+)')
-    out: dict[str, str] = {}
-    try:
-        with path.open("r", encoding="utf-8", errors="replace") as fh:
-            tail = ""
-            while True:
-                part = fh.read(chunk)
-                if not part:
-                    break
-                buf = tail + part
-                for k, p in pats.items():
-                    for m in p.finditer(buf):
-                        out[k] = m.group(2) if m.group(2) is not None else m.group(1)
-                for m in pre.finditer(buf):
-                    out["prewarm.seconds"] = m.group(1)
-                tail = buf[-4096:]
-    except OSError:
-        return {}
-    return out
-
-
-def _iso(ts: str | None) -> float | None:
-    from datetime import datetime
-    try:
-        return datetime.fromisoformat(str(ts).replace("Z", "+00:00")).timestamp()
-    except (TypeError, ValueError):
-        return None
-
-
-def gate_room() -> dict:
+def gate_room(anatomy: dict | None = None) -> dict:
     """How many cached cells the judge's LAST sweep says it can rule inside its task limit.
 
-    Post-build seconds per cell = (report `swept_at` - order `at` - pre-warm seconds) / cells
-    advanced, all from the judge's own artifacts; the room is `GATE_SAFETY x (task limit - build
-    budget) / that`, with the limit and budget read from `JUDGING_THROUGHPUT.json`. Any missing
-    input is UNMEASURED and bounds nothing (L1.28a) -- the warmer then behaves as it did before.
+    Post-build seconds per cell come from `judging_burndown.sweep_anatomy` (the judge's own order
+    and report stamps, less its pre-warm seconds, per cell advanced); the room is
+    `GATE_SAFETY x (task limit - build budget) / that`, the limit and budget read from
+    `JUDGING_THROUGHPUT.json`. Any missing input is UNMEASURED and bounds nothing (L1.28a) -- the
+    warmer then warms as it did before this guard existed.
     """
-    sc = _tail_scalars(GATES_REPORT, ("swept_at", "n_cells_advanced_beyond_economic_prior"))
-    order_at = _iso((_read_json(GAUNTLET_ORDER, {}) or {}).get("at"))
-    swept = _iso(sc.get("swept_at"))
-    try:
-        n_adv = int(float(sc.get("n_cells_advanced_beyond_economic_prior") or 0))
-        pre_s = float(sc.get("prewarm.seconds") or 0.0)
-    except ValueError:
-        n_adv, pre_s = 0, 0.0
+    if anatomy is None:
+        try:
+            import judging_burndown as JB
+            anatomy = JB.sweep_anatomy()
+        except Exception as exc:
+            anatomy = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     dec = ((_read_json(JUDGING_THROUGHPUT, {}) or {}).get("decision") or {})
     limit = dec.get("task_time_limit_s")
     fresh = dec.get("fresh_budget_s") or float(
         os.environ.get("GAUNTLET_FRESH_BUDGET_SEC", SEALED_FRESH_BUDGET_SEC))
-    base = {"status": "UNMEASURED", "cells": None, "swept_at": sc.get("swept_at"),
-            "cells_advanced": n_adv, "prewarm_seconds": pre_s, "task_limit_s": limit,
-            "build_budget_s": fresh, "safety": GATE_SAFETY}
-    if swept is None or order_at is None or swept <= order_at or n_adv <= 0:
-        return {**base, "why": "last sweep's order/report pair unreadable or out of step"}
+    base = {"status": "UNMEASURED", "cells": None, "task_limit_s": limit,
+            "build_budget_s": fresh, "safety": GATE_SAFETY,
+            "anatomy_status": anatomy.get("status")}
+    per_cell = anatomy.get("post_build_s_per_cell")
+    if anatomy.get("status") != "MEASURED" or not isinstance(per_cell, (int, float)) \
+            or per_cell <= 0:
+        return {**base, "why": str(anatomy.get("why") or "sweep anatomy UNMEASURED")}
     if not isinstance(limit, (int, float)) or float(limit) <= float(fresh):
         return {**base, "why": "judge task limit UNMEASURED (JUDGING_THROUGHPUT.json)"}
-    per_cell = max(1e-6, (swept - order_at - pre_s) / n_adv)
-    room = int(GATE_SAFETY * (float(limit) - float(fresh)) / per_cell)
-    return {**base, "status": "MEASURED", "cells": room,
-            "post_build_s_per_cell": round(per_cell, 5)}
+    room = int(GATE_SAFETY * (float(limit) - float(fresh)) / float(per_cell))
+    return {**base, "status": "MEASURED", "cells": room, "post_build_s_per_cell": per_cell}
 
 
 def run_round(G, meta: dict, priors, deadline: float) -> dict:
