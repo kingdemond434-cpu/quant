@@ -147,9 +147,13 @@ def test_a_session_variant_that_never_fires_is_its_own_unbuildable_cause(monkeyp
             "params": {"session": "london"}}
     r = S.evaluate_engine(spec)
     assert r["verdict"] == REC.UNBUILDABLE and r["cause"] == S.NEVER_FIRES_IN_SESSION
-    # the family fires at broker 18:00 = 15:00/16:00 UTC -- inside london (8-16 UTC) on the UTC
-    # clock, outside it on the broker clock the sealed filter reads: a clock defect, named
-    unfiltered.append(types.SimpleNamespace(time=pd.Timestamp("2024-06-03 18:00")))
+    # a broker-02:00 signal (venue clock NY+7: 19:00 New York, 00:00 London) is outside London's
+    # session on any clock: still NEVER_FIRES
+    unfiltered.append(types.SimpleNamespace(time=pd.Timestamp("2024-06-03 02:00")))
+    assert S.evaluate_engine(spec)["cause"] == S.NEVER_FIRES_IN_SESSION
+    # broker 12:00 in June = 05:00 New York = 10:00 London (session_clock, #134): inside London's
+    # own session, yet the filter returned nothing -- a clock defect, named
+    unfiltered.append(types.SimpleNamespace(time=pd.Timestamp("2024-06-03 12:00")))
     r = S.evaluate_engine(spec)
     assert r["cause"] == S.SESSION_CLOCK_MISMATCH
     assert S.unknown_class(r) == "SESSION_CLOCK_MISMATCH"

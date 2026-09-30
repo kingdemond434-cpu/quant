@@ -98,6 +98,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pandas as pd
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
@@ -464,29 +465,27 @@ NEVER_FIRES_IN_SESSION = "NEVER_FIRES_IN_SESSION"
 
 
 SESSION_CLOCK_MISMATCH = "SESSION_CLOCK_MISMATCH"
-#: The broker's offsets from UTC (winter, summer): bars are stamped in broker time.
-BROKER_UTC_OFFSETS_H = (2, 3)
 
 
 def session_probe(G: Any, meta: dict, sym: str, fam: str, params: dict[str, Any]) -> str:
     """NEVER_FIRES_IN_SESSION, or SESSION_CLOCK_MISMATCH when the family's UNFILTERED signals do
-    land in the session's window once their broker-time hours are read as UTC (h - 2 or h - 3).
-    Only called for a session cell with zero signals; one extra build, never a verdict change."""
+    land inside the market's own session once their broker stamps are read on the venue clock.
+
+    The conversion is `libs.regime.session_clock` (PR #134): the stamp clock is New York + 7 h,
+    DST from US dates, and each session is its market's 08:00-16:00 local time. Never a fixed
+    offset and never the box's offset files. Only called for a session cell with zero signals;
+    one extra build, never a verdict change. An unknown session reads NEVER_FIRES_IN_SESSION."""
     try:
-        from mt5desk.family_call import session_window
-        win = session_window(params.get("session"))
-        if win is None:
-            return NEVER_FIRES_IN_SESSION
+        from libs.regime.session_clock import in_session
         base = {k: v for k, v in params.items() if k != "session"}
         obj = G.build_cell(sym, fam, base, meta)
-        sigs = list((obj or {}).get("sigs") or [])
-        lo, hi = win
-        for g in sigs:
-            h = getattr(getattr(g, "time", None), "hour", None)
-            if h is None:
-                continue
-            if any(lo <= (int(h) - off) % 24 < hi for off in BROKER_UTC_OFFSETS_H):
-                return SESSION_CLOCK_MISMATCH
+        times = [getattr(g, "time", None) for g in list((obj or {}).get("sigs") or [])]
+        times = [t for t in times if t is not None]
+        if not times:
+            return NEVER_FIRES_IN_SESSION
+        mask = in_session(pd.DatetimeIndex(times), str(params.get("session")))
+        if mask is not None and bool(np.asarray(mask).any()):
+            return SESSION_CLOCK_MISMATCH
     except Exception:
         return NEVER_FIRES_IN_SESSION
     return NEVER_FIRES_IN_SESSION
@@ -1167,8 +1166,6 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
                                     bank=bank, dead=(d_gid, d_ident))
     census["bank_status"] = bank_status
     census["dead_sidecar_status"] = dead_status
-    del d_gid, d_ident
-    del bank
     select_s = time.monotonic() - t_sel
     seen_s = t_sel - t_seen
     earliest = universe_earliest(G.UNI) or date(2000, 1, 1)
@@ -1221,7 +1218,7 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
                 if not fin:
                     break
                 for f in fin:
-                    t0 = live.pop(f)
+                    t0 = live[f]
                     try:
                         rows, rss = f.result()
                     except Exception:
@@ -1234,6 +1231,8 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
                         nxt = next(it, None)
                         if nxt is not None:
                             live[ex.submit(evaluate_batch, nxt)] = time.monotonic()
+                # finished futures leave the in-flight map (a rebuild, not a removal of records)
+                live = {k: v for k, v in live.items() if k not in fin}
         finally:
             # THE BUDGET IS A WALL, NOT A SUGGESTION: a batch still running at the deadline is
             # killed rather than joined (its cells stay unruled and head the next run). The
