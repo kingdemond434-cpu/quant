@@ -454,3 +454,28 @@ def defects(registry: dict[str, Any], *, parquet_bars: dict[str, int] | None = N
         out.append(f"cost: {len(uncosted)}/{len(rows)} symbol(s) cannot be costed in "
                    f"{ACCOUNT_CCY} at all (e.g. {', '.join(uncosted[:5])})")
     return out
+
+
+def publish_frame(frame: Any, path: Any) -> bool:
+    """Publish a bar frame to `path` atomically: write a sibling temp file, then `os.replace`.
+
+    A reader never sees a torn parquet -- `fetch_universe` once wrote straight onto the
+    destination and a read landing mid-rewrite raised `ArrowInvalid` out of the judge, killing 19
+    passes. On Windows a destination held open by a reader refuses the rename; that is returned as
+    False (a reported miss the next pass retries), never raised and never a half-written file.
+    """
+    import contextlib
+    import os
+    from pathlib import Path
+
+    dest = Path(path)
+    tmp = dest.with_name(f"{dest.name}.{os.getpid()}.tmp")
+    try:
+        frame.to_parquet(tmp)
+        os.replace(tmp, dest)
+        return True
+    except PermissionError:
+        return False
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)

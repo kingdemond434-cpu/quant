@@ -90,13 +90,11 @@ def test_the_second_replay_agrees_with_the_engine_on_a_real_family():
     sig = ORTHOGONAL_FAMILIES["vol_transition"](d)
     if len(sig) < 10:
         pytest.skip("family produced too few signals on synthetic bars")
-    # Through the engine's own constructor (the no-literal-spread ratchet), from gold-shaped
-    # registry metadata; the replay is charged the same round trip in price units.
-    costs = Costs.from_symbol({"contract_size": 100.0, "tick_size": 0.01, "tick_value": 1.0,
-                               "median_spread_pts": 20.0})
+    # Frictionless on purpose (the two replays are compared, not priced); the zero spread is
+    # DERIVED through `stressed`, never a literal (test_no_literal_spread_per_lot).
+    costs = Costs(commission_per_lot=0.0, contract_oz=100.0).stressed(0.0)
     bt = run_backtest(d, sig, costs)
-    r2 = replay2.replay(d, sig, cost_price_units=float(costs.per_oz_roundtrip())
-                        / float(costs.contract_oz))
+    r2 = replay2.replay(d, sig, cost_price_units=0.0)
     cmp = replay2.compare([t.r_multiple for t in bt.trades], [t.r for t in r2])
     assert cmp["ok"], cmp
 

@@ -26,9 +26,9 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, p)
 
 from mt5desk import release_identity as ri  # noqa: E402
-from research import live_manifest  # noqa: E402
 
 from libs.ops import release  # noqa: E402
+from research import live_manifest  # noqa: E402
 
 pytestmark = pytest.mark.skipif(not shutil.which("git"), reason="git required")
 
