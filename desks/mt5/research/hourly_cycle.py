@@ -3407,7 +3407,7 @@ def main() -> None:
                                                         "--budget-s", str(_aev_s)))
     # The closed-loop attestation: every flag derived from another organ's artifact.
     clp = _costed("closed_loop", lambda: _producer("closed_loop", "scripts/check_closed_loop.py"))
-    rc = _costed("regime_coverage", regime_coverage)
+    rcov = _costed("regime_coverage", regime_coverage)
     pt = _costed("alpha_periodic_table", periodic_table)
     mx = _costed("microstructure_census", microstructure_census)
     sp = _costed("spread_provenance", spread_provenance)
@@ -3534,7 +3534,7 @@ def main() -> None:
                                                      "--limit", "3000"))
     hze = _costed("hazard_engine", lambda: _producer("hazard_engine",
                                                       "research/hazard_engine.py"))
-    pal = _costed("posterior_alpha", lambda: _producer("posterior_alpha",
+    pstal = _costed("posterior_alpha", lambda: _producer("posterior_alpha",
                                                         "research/posterior_alpha.py"))
     smm = _costed("semantic_memory", lambda: _producer("semantic_memory",
                                                         "research/semantic_memory.py", "build"))
@@ -3888,7 +3888,7 @@ def main() -> None:
         "ingestion_exploitation", "scripts/check_ingestion_exploitation.py"))
     # THE FOREST-ATTEMPT FENCE: attempted / never-attempted / yielded / retired / overdue per
     # deep-forest ground, one history line an hour, RED when never-attempted does not fall.
-    fat = _costed("forest_attempts", lambda: _producer(
+    foa = _costed("forest_attempts", lambda: _producer(
         "forest_attempts", "scripts/check_forest_attempts.py"))
     # THE MINING OBJECTIVE (M17/M18): the five sovereign KPIs, the miner reward and the
     # separation-of-powers check, from the registry. Meta.
@@ -4021,7 +4021,7 @@ def main() -> None:
                                                        "research/netting_report.py"))
     # THE EXECUTION-TAPE ALPHA ENGINE (M5 #5): P(adverse | spread, state, time) and delayed-vs-
     # immediate entry from the tape and the fills; discoveries for the compiler. Execution.
-    exa = _costed("execution_alpha", lambda: _producer("execution_alpha",
+    exal = _costed("execution_alpha", lambda: _producer("execution_alpha",
                                                         "research/execution_alpha_miner.py",
                                                         "--budget-s", "240"))
     # THE PARADIGM ROUTER (M14): every lead meets every discovery paradigm; disagreement recorded.
@@ -4050,7 +4050,7 @@ def main() -> None:
     # the VPS. This leg takes the OPEN rows in priority order and drives each to implemented,
     # scheduled, rejected -- or an exactly NAMED blocker with an owner, on a row that stays open
     # and visible. Meta department, meta layer; fenced by scripts/check_recommendation_flow.py.
-    imp = _costed("implementer", lambda: _producer("implementer",
+    impl_ = _costed("implementer", lambda: _producer("implementer",
                                                    "research/implementer.py",
                                                    "--once", "--budget-s", "600"))
     # THE META-EVOLUTION LAYER (LAWS 5m, U33): the research machinery evolved under the immutable
@@ -4798,7 +4798,7 @@ def main() -> None:
     asp = _costed("asia_plane", asia_plane)
     sge = _costed("sge_premium", sge_premium)
     aco = _costed("asia_collector", asia_collector)
-    apr = _costed("asia_parser", asia_parser)
+    aspr = _costed("asia_parser", asia_parser)
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -5235,7 +5235,7 @@ def main() -> None:
                     "research_tree": rtr, "representation_discovery": rpd,
                     "evig_acquisition": eva,
                     "axis_registry": axr, "breadth_ladder": bld, "forced_flow_calendar": ffc,
-                    "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
+                    "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pstal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
                     "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
                     "queue_census": qcn,
@@ -5267,7 +5267,7 @@ def main() -> None:
                     "unused_information": mui, "discovery_compiler": dcp,
                     "conversion_maximiser": cvm, "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
-                    "forest_attempts": fat,
+                    "forest_attempts": foa,
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
@@ -5280,9 +5280,9 @@ def main() -> None:
                     "alpha_replenishment": arp, "research_dashboard": rdh,
                     "moat_collectors": mcl, "source_frontier": sfr, "scout_swarm": ssw,
                     "actor_atlas": aat, "understanding_seat": usd,
-                    "netting_report": ntr, "execution_alpha": exa,
+                    "netting_report": ntr, "execution_alpha": exal,
                     "paradigm_router": prr, "meta_controller": mtc, "lead_replication": lrp,
-                    "experiment_spine": exs, "implementer": imp,
+                    "experiment_spine": exs, "implementer": impl_,
                     "research_evolution": rev, "compute_economics": cec,
                     "missed_trade_archaeologist": mta,
                     "replication_civilization": rpc,
@@ -5333,7 +5333,7 @@ def main() -> None:
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,
-                    "asia_parser": apr,
+                    "asia_parser": aspr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
                     "synthetic_usdx": usx,
@@ -5402,7 +5402,7 @@ def main() -> None:
                     "fred_macro": fm,
                     "fusion_cost": fzc, "cost_construction": cxc,
                     "edges_macro_fusion_sweep": emf,
-                    "recertify_canon": rc, "hunt12": h12,
+                    "recertify_canon": rc, "regime_coverage": rcov, "hunt12": h12,
                     "state_admission": sad,
                     "pf_allocator": pa, "allocator_liveness": alv, "allocator_trigger": atg,
                     "promoter": pr,

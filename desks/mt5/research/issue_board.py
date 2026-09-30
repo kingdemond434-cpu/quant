@@ -390,8 +390,50 @@ def desk_state_issues(root: Path | None = None) -> list[Issue]:
     return out
 
 
+#: FENCE LEGS WHOSE RED IS AN ISSUE, read from the cycle's own record of what each leg returned.
+#: A fence that exits 1 inside the hourly cycle is a leg result in `data/sync_marker.json` and
+#: nothing else -- the cycle carries on, by design -- so without this read a RED fence reached no
+#: surface at all. `forest_attempts` is the case that proved it (PR #158 audit): its result was
+#: overwritten in the marker by `fill_attribution`'s, which had borrowed the same local name, so a
+#: forest RED was recorded as fill attribution's exit code and never seen. The board reads the
+#: marker the LAST completed pass wrote (this leg runs before the pass writes its own), so a RED
+#: surfaces within one hour of the pass that measured it.
+FENCE_LEGS: tuple[str, ...] = ("forest_attempts", "ingestion_exploitation")
+
+
+def red_fence_legs(root: Path | None = None) -> list[Issue]:
+    """Every fence leg the last completed pass recorded with a non-zero exit code.
+
+    An absent marker, or a leg the marker does not carry, raises nothing here: the cycle's
+    absence is `desk_state_issues`' subject, and a leg that did not run has no verdict to read.
+    """
+    r = root or ROOT
+    try:
+        marker = json.loads((r / "desks" / "mt5" / "data" / "sync_marker.json")
+                            .read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(marker, dict):
+        return []
+    out: list[Issue] = []
+    for name in FENCE_LEGS:
+        leg = marker.get(name)
+        if not isinstance(leg, dict):
+            continue
+        rc = leg.get("exit_code")
+        if isinstance(rc, int) and rc != 0:
+            out.append(Issue(
+                f"fence:{name}", "DEGRADED",
+                f"the {name} fence is RED (exit {rc}) in the last hourly pass",
+                (str(leg.get("tail") or "")[-300:]
+                 or f"sync_marker.json records {name} with exit_code {rc}"),
+                repair=None, auto=False))
+    return out
+
+
 def collect(root: Path | None = None) -> list[Issue]:
-    return stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
+    return (stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
+            + red_fence_legs(root))
 
 
 def repair(issues: list[Issue], apply: bool = False,
