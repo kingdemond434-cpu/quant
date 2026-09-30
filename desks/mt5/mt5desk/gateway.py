@@ -752,6 +752,16 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
     # UNAVAILABLE IS NOT REJECTED (see `decision_core.placement_verdict`): a bracket the desk
     # declined to send because price sat inside the broker's freeze band is the strategy having
     # nothing to do today, not the venue refusing us.
+    # A DOOR REFUSAL IS NOT A FAILED PLACEMENT (2026-09-30). When the order door holds back a
+    # send on its own account (a duplicate of an in-doubt order that landed, or an in-doubt key
+    # it could not settle), nothing reached the venue and nothing was rejected; counting it
+    # would let two such refusals auto-pause the desk. Logged here, then left out of the streak.
+    # A refusal carrying the broker's own check retcode is not the door's and still counts.
+    for o in orders:
+        if o.get("door_refused"):
+            log(f"ORDER DOOR REFUSED [{sleeve}] {o.get('side')}: {o.get('door_reason')} -- "
+                f"not counted as a failed placement")
+    orders = [o for o in orders if not o.get("door_refused")]
     attempted, ok, diags = placement_verdict(orders)
     hist = st.setdefault("placement_health", {"consecutive_total_rejections": 0,
                                               "last_ok": None, "last_error": None})
@@ -1316,7 +1326,11 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
             point=_point, stops_level=_lvl, order_type="pending_stop", latency_ms=_lat_ms,
             **_sleeve_identity(sleeve_row))
         sent.append({"side": side, "retcode": code,
-                     "comment": res.comment if res else None})
+                     "comment": res.comment if res else None,
+                     # the door's OWN refusals only (duplicate / unsettled in-doubt), which
+                     # `note_placement` leaves out of the pause streak; see order_door
+                     "door_refused": getattr(res, "door_own", False) is True,
+                     "door_reason": getattr(res, "door_reason", None)})
         _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
                          price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
                          taken=(not why), reason=("placed" if not why else "broker_rejected"),

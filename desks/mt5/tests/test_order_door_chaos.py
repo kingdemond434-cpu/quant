@@ -229,6 +229,36 @@ def test_an_unavailable_check_is_unmeasured_and_the_send_proceeds() -> None:
     assert _rows()[-1]["check"] == "unmeasured"
 
 
+class _RaisingCheck(FakeMT5):
+    def order_check(self, req: dict):
+        self.checked.append(dict(req))
+        raise RuntimeError("IPC check failed")
+
+
+@pytest.mark.parametrize("mt5_factory", [lambda: FakeMT5(check_retcode=None), _RaisingCheck],
+                         ids=["check_returns_none", "check_raises"])
+@pytest.mark.parametrize("req", [_open(), _close()], ids=["open", "close"])
+def test_a_broken_check_fails_open_is_logged_and_ledgered_every_time(mt5_factory, req) -> None:
+    """FAIL-OPEN IS DELIBERATE (order_door.CHECK_FAIL_OPEN): a broken pre-check must not strand
+    the book. The order is sent once, the log says FAIL-OPEN, and the ledger row says so."""
+    assert door.CHECK_FAIL_OPEN is True
+    mt5 = mt5_factory()
+    lines: list[str] = []
+    for _ in range(2):
+        door._MEMORY_IN_DOUBT.clear()
+        door.send(mt5, dict(req), caller="t", log=lines.append)
+    assert len(mt5.sent) == 2, "a broken pre-check stopped an order"
+    rows = _rows()
+    assert len(rows) == 2 and all(r["check"] == "unmeasured" for r in rows)
+    assert all(r["check_fail_open"] is True and r["door"] == "sent" for r in rows)
+    assert sum("FAIL-OPEN" in ln for ln in lines) == 2
+
+
+def test_a_healthy_check_does_not_mark_fail_open() -> None:
+    door.send(FakeMT5(), _open())
+    assert "check_fail_open" not in _rows()[-1]
+
+
 # ------------------------------------------------------------------ timeout
 def test_a_timeout_propagates_is_logged_and_is_never_sent_twice() -> None:
     mt5 = FakeMT5(send_plan=[TimeoutError("IPC send timed out")], lands_anyway=True)

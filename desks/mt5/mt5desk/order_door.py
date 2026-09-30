@@ -96,6 +96,15 @@ RISK_REDUCING = frozenset({CLOSE, STOP, CANCEL})
 #: later is judged by the lane's own logic, not by an old timeout.
 IN_DOUBT_TTL = timedelta(minutes=45)
 
+#: FAIL-OPEN ON A BROKEN PRE-CHECK, ON PURPOSE. When `order_check` is missing, raises or returns
+#: None, the door has no broker verdict to act on, and it SENDS: the venue's own answer to
+#: `order_send` is then the verdict, validated and ledgered like any other. The reason is the
+#: book. A door that refused on a broken pre-check would strand every close, stop move and cancel
+#: the desk needs exactly when the terminal is misbehaving, and would stop new entries on a fault
+#: that says nothing about the order itself. A fail-open is never quiet: each one is logged, and
+#: its ledger row carries `check_fail_open: true` with the reason. The chaos lab pins this value.
+CHECK_FAIL_OPEN = True
+
 LEDGER_NAME = "order_door_ledger.jsonl"
 IN_DOUBT_NAME = "order_door_in_doubt.json"
 
@@ -109,6 +118,22 @@ class DoorRefused(SimpleNamespace):
     gateway's rejection diagnostics and its escalation counter see the code the send would have
     returned. A duplicate refusal carries retcode None: nothing was sent and nothing was
     rejected, which is the truth."""
+
+
+#: The refusals that are the DOOR'S OWN decision, not the broker's: nothing reached the venue and
+#: nothing was rejected by it. The gateway's consecutive-failure pause (`note_placement`) must not
+#: count these -- a duplicate guard holding back a second copy of a landed order is the door
+#: working, and two of them must never auto-pause the desk. `broker_check_rejected` is NOT here:
+#: it carries the broker's own retcode, the send would have failed with the same code, and it
+#: keeps counting, so a venue refusing everything still pauses the desk as it always did.
+DOOR_OWN_REFUSALS = frozenset({"duplicate_of_in_doubt", "in_doubt_venue_unreadable"})
+
+
+def is_door_own_refusal(res: Any) -> bool:
+    """True for a `DoorRefused` whose reason is the door's own (see DOOR_OWN_REFUSALS). The
+    refusal also carries `door_own`, so a caller can read it without importing this module."""
+    return bool(getattr(res, "door_refused", False)) \
+        and getattr(res, "door_reason", None) in DOOR_OWN_REFUSALS
 
 
 # ------------------------------------------------------------------ paths and the log sink
@@ -457,7 +482,7 @@ def send(mt5: Any, request: Mapping[str, Any], *, caller: str = "",
                 append_ledger(row, log=log)
                 return DoorRefused(retcode=None, comment=f"order_door: duplicate ({seen})",
                                    order=0, deal=0, volume=0.0, price=0.0, door_refused=True,
-                                   door_reason="duplicate_of_in_doubt")
+                                   door_reason="duplicate_of_in_doubt", door_own=True)
             if not readable:
                 row.update({"door": "refused", "reason": "in_doubt_venue_unreadable",
                             "retcode": None})
@@ -467,7 +492,7 @@ def send(mt5: Any, request: Mapping[str, Any], *, caller: str = "",
                 return DoorRefused(retcode=None,
                                    comment="order_door: in doubt, venue unreadable",
                                    order=0, deal=0, volume=0.0, price=0.0, door_refused=True,
-                                   door_reason="in_doubt_venue_unreadable")
+                                   door_reason="in_doubt_venue_unreadable", door_own=True)
             _clear_in_doubt(key, log)
             row["in_doubt_resolved"] = "venue shows nothing; the earlier attempt did not land"
 
@@ -480,10 +505,17 @@ def send(mt5: Any, request: Mapping[str, Any], *, caller: str = "",
         append_ledger(row, log=log)
         return DoorRefused(retcode=crc, comment=f"order_check: {ccomment}", order=0, deal=0,
                            volume=0.0, price=0.0, door_refused=True,
-                           door_reason="broker_check_rejected")
+                           door_reason="broker_check_rejected", door_own=False)
     if verdict == "reject":
         _emit(log, f"{where}: order_check says retcode {crc} ({ccomment}); a {kind} is never "
                    f"blocked by a pre-check, sending")
+    if verdict == "unmeasured" and CHECK_FAIL_OPEN:
+        # THE FAIL-OPEN BRANCH (see CHECK_FAIL_OPEN): a broken pre-check must not strand the
+        # book, so the order goes on the venue's own answer. Logged and ledgered every time, so a
+        # terminal whose check has died is visible in the ledger, never silent.
+        row["check_fail_open"] = True
+        _emit(log, f"{where}: FAIL-OPEN -- {ccomment}; the pre-check is UNMEASURED and the "
+                   f"order is sent on the venue's own answer")
 
     t0 = time.perf_counter()
     try:
