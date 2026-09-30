@@ -138,7 +138,11 @@ FIRM_WORDS: dict[str, re.Pattern[str]] = {
     "two_sigma": re.compile(r"Two Sigma", re.I),
     "deshaw": re.compile(r"D\.?\s?E\.? Shaw", re.I),
     "winton": re.compile(r"\bWinton\b|David Harding", re.I),
-    "market_makers": re.compile(r"Jane Street|\bXTX\b|Citadel Securities|\bVirtu\b", re.I),
+    "market_makers": re.compile(r"Jane Street|\bXTX\b|Citadel Securities|\bVirtu\b|Optiver",
+                               re.I),
+    "ubiquant": re.compile(r"Ubiquant|九坤", re.I),
+    "jpx": re.compile(r"\bJPX\b|Japan Exchange Group", re.I),
+    "g_research": re.compile(r"G-Research", re.I),
     "worldquant": re.compile(r"WorldQuant|\bBRAIN\b|Alpha\s?#?101|101 Formulaic", re.I),
     "quantconnect": re.compile(r"QuantConnect|\bLEAN\b", re.I),
 }

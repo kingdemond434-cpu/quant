@@ -57,6 +57,9 @@ EXPECTED: dict[str, tuple[str, ...]] = {
     "winton": ("horizon", "ontology"),
     "market_makers": ("ontology",),
     "renaissance": ("ontology",),
+    "ubiquant": ("validation_method", "ontology"),
+    "jpx": ("validation_method", "ontology"),
+    "g_research": ("validation_method", "ontology"),
 }
 #: values a civilization cannot be expected to hold (nobody publishes Bridgewater GP code).
 NOT_EXPECTED: dict[str, frozenset[str]] = {
@@ -65,7 +68,7 @@ NOT_EXPECTED: dict[str, frozenset[str]] = {
     "deshaw": frozenset({"INFRASTRUCTURE_PATTERN", "UNIVERSE_IDEA"}),
     "winton": frozenset({"INFRASTRUCTURE_PATTERN", "UNIVERSE_IDEA"}),
     "man_ahl": frozenset({"UNIVERSE_IDEA"}),
-    "market_makers": frozenset({"UNIVERSE_IDEA", "FEATURE_PRIMITIVE"}),
+    "market_makers": frozenset({"UNIVERSE_IDEA"}),
 }
 
 

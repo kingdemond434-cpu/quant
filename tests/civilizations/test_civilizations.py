@@ -349,6 +349,10 @@ def test_end_to_end_git_lane_routes_parks_releases_and_publishes(tmp_path: Path)
     assert culture and all(r["source_culture"] == "US/en" for r in culture)
     assert (rep / "COVERAGE_TENSOR.json").exists() and (rep / "MISSIONS.json").exists()
     assert json.loads((rep / "CIV_FEED_FENCE.json").read_text())["unfed_count"] == 0
+    lanes = json.loads((tmp_path / "reports" / "CIVILIZATION_LANES.json").read_text())
+    row = next(x for x in lanes["lanes"] if x["id"] == "lean_test")
+    assert row["status"] in ("ACTIVE", "COLD") and row["last_evaluated_at"] == "NEVER"
+    assert row["last_fetch_outcome"] != "NEVER_RUN"
     # a second pass on an unchanged repo is a no-op delta (durable cursor)
     pipe2 = MS.Pipeline(data, tmp_path / "reports" / "mining", roster=[src], hooks=hooks,
                         root=root, gate_ledger=tmp_path / "gl.jsonl",
@@ -374,3 +378,24 @@ def test_rule_less_alpha_record_goes_to_llm_lane(tmp_path: Path) -> None:
              RouteResult(alpha=True, outcomes=[]))
     rows = (tmp_path / "d" / "llm_deepening.jsonl").read_text("utf-8").splitlines()
     assert len(rows) == 1 and '"x1"' in rows[0]
+
+
+def test_methods_only_lane_keeps_methods_and_drops_alpha(tmp_path: Path) -> None:
+    from libs.civilizations.resident import Resident
+    r = Resident(data_dir=tmp_path / "d", reports_dir=tmp_path / "r", root=tmp_path)
+    r.meta["k"] = {"id": "k", "civilization": "g_research", "lane": "kaggle",
+                   "methods_only": True, "ontology_hint": ["RESEARCH_METHOD"]}
+    rec = {"record_id": "r1", "source_id": "k", "source_uri": "https://x/binance-solution",
+           "title": "1st place: purged group time-series CV, online learning",
+           "body": "Buy when rsi(14) < 30 on Binance; alpha = ts_rank(close, 10)"}
+    got = r.route(rec)
+    assert not got.alpha and not got.rules
+    assert "RESEARCH_METHOD" in {o.kind for o in got.outcomes}
+
+
+def test_git_mirror_never_reads_data_files() -> None:
+    from libs.civilizations import fetchers as F
+    ex = list(F.DATA_EXCLUDE)
+    assert not F._match("comp/train.parquet", ["*"], ex)
+    assert not F._match("comp/data/prices.csv", ["*"], ex)
+    assert F._match("comp/solution.py", ["*"], ex)

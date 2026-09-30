@@ -106,8 +106,18 @@ def run(days: int = DEFAULT_DAYS, write: bool = True,
         # a single number as though it were exact.
         peaks = sorted({int(v["offset_by_peak"]) for v in doc["per_symbol"].values()
                         if isinstance(v, dict) and "offset_by_peak" in v})
+        # THE AMBIGUITY IS RESOLVED BY THE CLOCK (2026-09-30): a trough at stamp 00:00 is a venue
+        # on New York + 7 h, whose rollover is stamp midnight in EVERY season. The offset is then
+        # the one in force now, and readers derive it per instant from `clock`, not the number.
+        trough_off = doc["utc_offset_hours"]
+        troughs = {int(v["trough_hour"]) for v in doc["per_symbol"].values()
+                   if isinstance(v, dict) and "trough_hour" in v}
+        if troughs == {0}:
+            from libs.regime.session_clock import utc_offset_h
+            doc["clock"] = "America/New_York+7"
+            doc["utc_offset_hours"] = int(utc_offset_h())
         doc["dst_ambiguity"] = {
-            "offset_by_trough": doc["utc_offset_hours"], "offset_by_peak": peaks,
+            "offset_by_trough": trough_off, "offset_by_peak": peaks,
             "why": ("the rollover anchor is the WINTER cutoff (22:00 UTC); inside summer time it "
                     "reads one hour low. Both anchors are published so a reader can see the "
                     "ambiguity rather than inherit it."),

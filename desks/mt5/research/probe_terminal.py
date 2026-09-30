@@ -2,15 +2,24 @@
 Prints account, trade mode, algo toggle. If allow_send=1, sends a far-OTM
 0.01 pending order and deletes it immediately (zero market risk) to prove
 end-to-end order routing. Exit 0 = order routing works.
+
+Both sends go through `mt5desk.order_door` (2026-09-30), so the probe is on the same ledger as
+every other order. The removal used `mt5.order_delete`, which the MetaTrader5 package does not
+have (see `gateway.cancel_pending`): every successful probe raised AttributeError and left its
+0.01 buy stop resting GTC. It now removes with TRADE_ACTION_REMOVE and confirms the ticket is
+gone from `orders_get`.
 """
 
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from mt5desk import order_door
 from mt5desk.config import terminal_path
 
-import MetaTrader5 as mt5
+import MetaTrader5 as _mt5_venue
+
+mt5 = order_door.guard(_mt5_venue, caller="probe_terminal")
 
 allow_send = "allow_send=1" in " ".join(sys.argv[1:])
 
@@ -36,11 +45,17 @@ if allow_send:
            "deviation": 20, "comment": "PROBE", "magic": 999999}
     res = mt5.order_send(req)
     print("probe retcode:", res.retcode if res else None, res.comment if res else None)
-    if res and res.retcode == 10009:
+    if res and res.retcode in (10008, 10009):
+        left = []
         for o in mt5.orders_get(symbol="XAUUSD") or []:
             if o.magic == 999999:
-                mt5.order_delete(o.ticket)
-                print("probe deleted:", o.ticket)
-        sys.exit(0)
+                rm = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+                gone = not any(x.ticket == o.ticket
+                               for x in (mt5.orders_get(symbol="XAUUSD") or []))
+                print("probe removed:" if gone else "probe NOT removed:", o.ticket,
+                      "retcode", getattr(rm, "retcode", None))
+                if not gone:
+                    left.append(o.ticket)
+        sys.exit(0 if not left else 4)
     sys.exit(1)
 mt5.shutdown()

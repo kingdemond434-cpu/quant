@@ -30,6 +30,11 @@ from libs.mining import acquirer as acq
 MIRRORS = Path("desks/mt5/data/civilizations/git_mirrors")
 GIT_TIMEOUT_S = 600
 MAX_FILE_BYTES = 400_000
+#: data files are never read from a mirror: a competition's or vendor's dataset is licensed for
+#: its own use, and only the code and prose around it (method, features, validation) are mined
+DATA_EXCLUDE: tuple[str, ...] = ("*.csv", "*.parquet", "*.feather", "*.h5", "*.hdf5", "*.zip",
+                                 "*.gz", "*.pkl", "*.pickle", "*.npy", "*.npz", "*.arrow",
+                                 "*.xlsx", "*.db", "*.sqlite")
 
 
 def _git(args: list[str], cwd: Path | None, timeout: float) -> tuple[int, str]:
@@ -84,7 +89,7 @@ def _fetch_git_mirror(src: acq.Source, cursor: dict[str, Any], ctx: acq.FetchCon
         return
     web = repo[:-4] if repo.endswith(".git") else repo
     globs = [str(g) for g in (cfg.get("paths") or [])]
-    excl = [str(g) for g in (cfg.get("exclude") or [])]
+    excl = [str(g) for g in (cfg.get("exclude") or [])] + list(DATA_EXCLUDE)
     per_run = int(cfg.get("files_per_run") or 150)
     d = mirror_dir(src, ctx)
     if not (d / ".git").exists():

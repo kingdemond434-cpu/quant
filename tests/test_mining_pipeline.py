@@ -852,3 +852,127 @@ def test_experiment_ledger_reads_mining_trial_families(tmp_path: Path,
     assert got["trial_families"] == len(fams)
     monkeypatch.setattr(el, "DESK", tmp_path / "absent")
     assert el._mining_trial_families()["status"].startswith("UNMEASURED")
+
+
+def test_one_registry_names_every_lane_once(tmp_path: Path) -> None:
+    """Unnamed rows get durable ids (the W1 `ground:` form for grounds), the same thing on the
+    same page from two rosters is one source with an alias, and a different thing on the same
+    page stays a second source linked by shares_page."""
+    d = tmp_path / "desks" / "mt5" / "data"
+    d.mkdir(parents=True)
+    (d / "grounds.json").write_text(json.dumps({"grounds": [
+        {"name": "七禾网 专访", "region": "cn", "url": "https://www.7hcn.com/list"},
+        {"name": "Stats Portal", "region": "cn", "url": "https://stats.example.cn/sj/"}]}),
+        "utf-8")
+    (d / "lane.json").write_text(json.dumps({"sources": [
+        {"id": "hcn_interviews", "name": "七禾网 专访", "region": "cn",
+         "url": "http://7hcn.com/list/"},
+        {"id": "cn_rail", "name": "rail freight", "url": "https://stats.example.cn/sj"},
+        {"id": "shfe_kx", "name": "a", "url": "https://s.cn/d.html?paramid=kx"},
+        {"id": "shfe_pm", "name": "b", "url": "https://s.cn/d.html?paramid=pm"}]}), "utf-8")
+    roster = tmp_path / "sources.yaml"
+    roster.write_text(textwrap.dedent("""
+        external_rosters:
+          - path: desks/mt5/data/grounds.json
+            rows: grounds
+            id_style: ground
+            defaults: {fetcher: owned, owner: deep_forest}
+          - path: desks/mt5/data/lane.json
+            rows: sources
+            defaults: {fetcher: owned, owner: lane}
+        sources: []
+        """), "utf-8")
+    got = {s.id: s for s in acq.load_roster(roster, root=tmp_path)}
+    ground = got["ground:cn:七禾网_专访"]
+    assert ground.owner == "deep_forest" and ground.aliases == ["hcn_interviews"]
+    assert "hcn_interviews" not in got
+    portal, rail = got["ground:cn:stats_portal"], got["cn_rail"]
+    assert portal.shares_page == ["cn_rail"] and rail.shares_page == [portal.id]
+    assert {"shfe_kx", "shfe_pm"} <= got.keys()          # the query separates two datasets
+
+
+def test_two_countries_naming_one_vendor_page_stay_two_sources(tmp_path: Path) -> None:
+    d = tmp_path / "r"
+    d.mkdir()
+    (d / "bo.json").write_text(json.dumps({"sources": [
+        {"id": "pack_bo_la", "name": "licensed assessments", "region": "bo",
+         "url": "https://vendor.com/assess"}]}), "utf-8")
+    (d / "pe.json").write_text(json.dumps({"sources": [
+        {"id": "pack_pe_la", "name": "licensed assessments", "region": "pe",
+         "url": "https://vendor.com/assess"}]}), "utf-8")
+    roster = tmp_path / "sources.yaml"
+    roster.write_text("external_rosters:\n  - path: r/*.json\n    defaults: {fetcher: owned}\n"
+                      "  - path: r/absent.json\n  - path: r/later.json\n"
+                      "    pending: branch not merged\nsources: []\n", "utf-8")
+    got = {s.id: s for s in acq.load_roster(roster, root=tmp_path)}
+    assert {"pack_bo_la", "pack_pe_la"} <= got.keys() and not got["pack_bo_la"].aliases
+    states = {r["path"]: r["state"] for r in acq.roster_files(roster, root=tmp_path)}
+    assert states == {"r/*.json": "OK", "r/absent.json": "MISSING", "r/later.json": "PENDING"}
+
+
+def test_the_live_roster_names_no_missing_file() -> None:
+    bad = [r for r in acq.roster_files(root=ROOT) if r["state"] == "MISSING"]
+    assert not bad, bad
+
+
+def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_path: Path) -> None:
+    """Credit comes from a DECLARED seat or the longest proper URL prefix; a host-only registry
+    URL never captures other pages, a tie credits nobody, and an undeclared seat is nobody's."""
+    owned = [acq.Source(id="rbnz_series", fetcher="owned", kind="text", uses=["direct_cells"],
+                        url_key="rbnz.govt.nz/statistics", seats=["miner:asia:rbnz_series"]),
+             acq.Source(id="smart_lab_blog", fetcher="owned", kind="text", uses=["direct_cells"],
+                        url_key="smart-lab.ru/blog"),
+             acq.Source(id="smart_lab_home", fetcher="owned", kind="text", uses=["direct_cells"],
+                        url_key="smart-lab.ru"),
+             acq.Source(id="twin_a", fetcher="owned", kind="text", uses=["direct_cells"],
+                        url_key="x.org/p"),
+             acq.Source(id="twin_b", fetcher="owned", kind="text", uses=["direct_cells"],
+                        url_key="x.org/p")]
+    pipe = _pipe(tmp_path, sources=owned)
+    rows = [
+        {"symbol": "NZDUSD", "family": "carry", "params": {"k": 1},
+         "source": "miner:asia:rbnz_series", "source_url": "https://www.rbnz.govt.nz/x"},
+        {"symbol": "EURUSD", "family": "carry", "params": {"k": 2},
+         "source": "miner:world_crawler", "source_url": "https://smart-lab.ru/blog/123.php"},
+        {"symbol": "EURUSD", "family": "carry", "params": {"k": 3},
+         "source": "miner:world_crawler", "source_url": "https://smart-lab.ru/forum/9"},
+        {"symbol": "EURUSD", "family": "carry", "params": {"k": 4},
+         "source": "miner:discovery_compiler", "source_url": "https://x.org/p/1"},
+        {"symbol": "EURUSD", "family": "carry", "params": {"k": 5},
+         "source": "miner:smart_lab_blog", "source_url": ""}]
+    pipe.docket.write_text(json.dumps(rows), "utf-8")
+    assert pipe.source_status(T0)["rbnz_series"]["status"] == "COLD"   # nothing judged yet
+    pipe.gate_ledger.write_text("".join(json.dumps(
+        {"cell": pipe.hooks.gauntlet_cell(r), "passed": False, "terminal_gate": "pbo",
+         "at": iso(T0 - timedelta(days=2))}) + "\n" for r in rows), "utf-8")
+    pipe.index_judged(now=T0)
+    st = pipe.source_status(T0)
+    assert st["rbnz_series"]["evaluated_via"] == {"mining": 0, "docket": 1}   # by its seat
+    assert st["smart_lab_blog"]["evaluated_cells_30d"] == 1   # the URL; not the undeclared seat
+    assert st["smart_lab_home"]["status"] == "COLD"           # host-only is not a wildcard
+    assert st["twin_a"]["status"] == st["twin_b"]["status"] == "COLD"      # a tie credits nobody
+    att = pipe._attribution
+    assert att["credited_by"] == {"seat": 1, "url": 1}
+    assert att["unattributed_judged_rows"] == 3
+    assert att["unattributed_top_producers"] == {"miner:world_crawler": 1,
+                                                 "miner:discovery_compiler": 1,
+                                                 "miner:smart_lab_blog": 1}
+    assert pipe.source_status(T0 + timedelta(days=40))["rbnz_series"]["status"] == "COLD"
+    assert pipe.register_cursors(now=T0) == 5 and pipe.register_cursors(now=T0) == 0
+    assert pipe.cursors.get("twin_a")["registered"]["canonical_id"] == "twin_a"
+    summary = pipe.registry_summary(st)
+    assert summary["active"] == 2 and summary["schema"].endswith("source_registry.schema.json")
+    assert summary["cold_by_reason"]["no cell EVALUATED in 30 days"] == [
+        "smart_lab_home", "twin_a", "twin_b"]
+
+
+def test_the_live_roster_is_one_registry() -> None:
+    got = acq.load_roster(root=ROOT)
+    ids = [s.id for s in got]
+    assert len(ids) == len(set(ids))
+    owners = {s.owner.split("/")[0] for s in got}
+    assert {"deep_forest", "asia_desk", "firm_mining", "country_pack",
+            "global_mining"} <= owners
+    schema = json.loads((ROOT / "libs" / "mining" / "source_registry.schema.json")
+                        .read_text("utf-8"))
+    assert schema["schema"] == "source_registry/1"

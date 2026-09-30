@@ -174,7 +174,8 @@ class Resident:
         hints = tuple(meta.get("ontology_hint") or ())
         st = self.pass_stats[sid]
         st["records"] += 1
-        if CRYPTO_VENUE.search(f"{uri}\n{title}\n{rmeta.get('path') or ''}"):
+        methods_only = bool(meta.get("methods_only"))
+        if not methods_only and CRYPTO_VENUE.search(f"{uri}\n{title}\n{rmeta.get('path') or ''}"):
             outs = [O.Outcome(O.NO_VALUE, 0.0, ["crypto venue (MT5 mandate 2026-08-18)"])]
             self._ledger(rec, meta, outs, {"excluded": "crypto_venue"})
             return RouteResult(False, outs, reason="crypto venue excluded")
@@ -230,6 +231,13 @@ class Resident:
             extra["formulas"] = expr_info
             if expr_rules and not O.is_alpha(outs):
                 outs.insert(0, O.Outcome(O.ALPHA_MECHANISM, O.THRESHOLD, ["translated_expr"]))
+        if methods_only:
+            # a methods-only lane (a competition whose data or venue is outside the mandate):
+            # its features, validation and online-learning know-how are kept, its alpha is not
+            rules = []
+            outs = [o for o in outs if o.kind != O.ALPHA_MECHANISM] or [
+                O.Outcome(O.RESEARCH_METHOD, O.THRESHOLD, ["methods_only lane"])]
+            extra["methods_only"] = True
         outs = [o for o in outs if o.kind != O.NO_VALUE] or outs
         self._ledger(rec, meta, outs, extra)
         self._tensor_add(civ, meta, rec, outs, extra)
@@ -485,10 +493,11 @@ class Resident:
                  ("culture", lambda: self.culture_rows(pipeline, since=started)),
                  ("roi", lambda: self.source_roi(pipeline)),
                  ("coverage", self.coverage),
-                 ("fence", lambda: self.feed_fence(pipeline)))
+                 ("fence", lambda: self.feed_fence(pipeline)),
+                 ("lanes", lambda: self.lane_status(pipeline, now=now)))
         for name, fn in steps:
             if time.monotonic() - t0 > budget_s and name not in ("culture", "roi", "coverage",
-                                                                 "fence"):
+                                                                 "fence", "lanes"):
                 out[name] = {"skipped": "budget"}
                 continue
             try:
@@ -611,6 +620,60 @@ class Resident:
             return {"unchanged": True}
         self._write("ALPHA101_LINEAGE.json", {"generated_at": _iso(_now()), **lin})
         return {k: v for k, v in lin.items() if k != "per_alpha"}
+
+    def lane_status(self, pipeline: Any, *, now: datetime | None = None) -> dict[str, Any]:
+        """desks/mt5/reports/CIVILIZATION_LANES.json (CRO D36): every civilization lane with the
+        spine's own ACTIVE/COLD verdict (a cell EVALUATED within 30 days) and the last time one
+        of its cells was EVALUATED. A lane never evaluated reads NEVER, not a date."""
+        t = now or _now()
+        status = pipeline.source_status(t)
+        try:
+            last_eval = pipeline.cells.last_evaluated_by_source()
+        except Exception:
+            last_eval = {}
+        runs: dict[str, Any] = {}
+        try:
+            runs = pipeline.store.last_runs()
+        except Exception:
+            runs = {}
+        roi_rows: dict[str, Any] = {}
+        try:
+            roi_rows = json.loads((self.reports / "SOURCE_ROI.json").read_text("utf-8")
+                                  ).get("sources") or {}
+        except (OSError, ValueError):
+            roi_rows = {}
+        lanes = []
+        for sid in sorted(self.meta):
+            m = self.meta[sid]
+            st = status.get(sid) or {}
+            r = runs.get(sid) or {}
+            fun = roi_rows.get(sid) or {}
+            lanes.append({
+                "id": sid, "civilization": m.get("civilization"), "lane": m.get("lane"),
+                "status": st.get("status") or ("DISABLED" if m.get("enabled") is False
+                                               else "UNREGISTERED"),
+                "cold_reason": st.get("cold_reason", ""),
+                "last_evaluated_at": last_eval.get(sid) or "NEVER",
+                "evaluated_cells_30d": st.get("evaluated_cells_30d", 0),
+                "evaluated_via": st.get("evaluated_via") or {},
+                "last_fetch_at": r.get("at") or "NEVER",
+                "last_fetch_outcome": r.get("outcome") or "NEVER_RUN",
+                "cells_emitted": fun.get("cells_emitted", 0),
+                "coverage_depth": fun.get("coverage_depth", "UNMEASURED"),
+                "cadence_class": m.get("cadence_class"),
+                "methods_only": bool(m.get("methods_only")),
+                "source_culture": m.get("source_culture")})
+        by: Counter[str] = Counter(str(x["status"]) for x in lanes)
+        doc = {"generated_at": _iso(_now()), "rule": "ACTIVE = a cell EVALUATED within 30 days "
+               "(libs/mining source_status); last_evaluated_at is all-time",
+               "lanes_total": len(lanes), "by_status": dict(by),
+               "never_evaluated": sum(1 for x in lanes if x["last_evaluated_at"] == "NEVER"),
+               "lanes": lanes}
+        p = self.reports.parent / "CIVILIZATION_LANES.json"
+        tmp = p.with_suffix(".tmp")
+        tmp.write_text(json.dumps(doc, indent=1, default=str, ensure_ascii=False), "utf-8")
+        tmp.replace(p)
+        return {k: v for k, v in doc.items() if k != "lanes"}
 
     def source_roi(self, pipeline: Any) -> dict[str, Any]:
         since = _now() - timedelta(days=30)

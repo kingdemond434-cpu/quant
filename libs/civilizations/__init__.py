@@ -12,7 +12,10 @@
     two_sigma    data / ML / research engineering
     deshaw       papers, patents, interviews, research-process archaeology
     winton       systematic / CTA research
-    market_makers  Jane Street, XTX, Citadel Securities, Virtu: microstructure and execution
+    market_makers  Jane Street, XTX, Citadel Securities, Virtu, Optiver: microstructure, execution
+                 and their public Kaggle competitions (solutions and write-ups, never the data)
+    ubiquant, jpx, g_research  Kaggle finance competitions (CN / JP / UK); G-Research's crypto
+                 competition is a methods-only lane (validation and online learning, no alpha)
     renaissance  paper / patent / litigation / interview archaeology ONLY
 
 NOT the author lineages in `desks/mt5/research/source_civilizations.py` (L1VSUN, BL888M): those

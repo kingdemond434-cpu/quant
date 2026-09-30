@@ -22,6 +22,7 @@ bounded retries, a deadline per call).
 from __future__ import annotations
 
 import glob
+import hashlib
 import html as _html
 import json
 import os
@@ -71,6 +72,63 @@ class Source:
     uses: list[str] = field(default_factory=list)   # direct|indirect_cells, allocation_intel
     consumer: str = ""               # for owned rows: the organ that fetches and consumes it
     respect_robots: bool = True
+    url_key: str = ""                # canonical_url of the row's own URL: the cross-roster join
+    aliases: list[str] = field(default_factory=list)  # ids other rosters gave the same source
+    shares_page: list[str] = field(default_factory=list)  # distinct sources on the same page
+    seats: list[str] = field(default_factory=list)  # docket `source` strings it answers for
+
+
+_SLUG = re.compile(r"\W+", re.UNICODE)
+
+
+def canonical_url(url: Any) -> str:
+    """host + path (+ sorted query), lower-case, no scheme, `www.`, fragment or trailing slash; a
+    template's `{page}`/`{q}` tail is cut. The query stays: `dataview.html?paramid=kx` and
+    `?paramid=pm` are two datasets, not one page."""
+    u = str(url or "").strip()
+    if not u:
+        return ""
+    u = u.split("{", 1)[0]
+    parts = urllib.parse.urlsplit(u if "//" in u else "//" + u)
+    host = (parts.hostname or "").lower().removeprefix("www.")
+    if not host or "." not in host:
+        return ""
+    q = urllib.parse.urlencode(sorted(urllib.parse.parse_qsl(parts.query)))
+    return host + parts.path.rstrip("/").lower() + (f"?{q}" if q else "")
+
+
+def _row_url(row: Mapping[str, Any]) -> str:
+    for k in ("url", "rss", "link", "page1"):
+        v = row.get(k)
+        if isinstance(v, str) and v:
+            return v
+    for k in ("urls", "roots", "feeds", "alt"):
+        v = row.get(k)
+        if isinstance(v, (list, tuple)) and v and isinstance(v[0], str):
+            return str(v[0])
+    return ""
+
+
+def slug(name: Any) -> str:
+    """The W1 registry's slug (desks/mt5/research/source_registry.py `_slug`), reproduced exactly
+    so a deep-forest ground carries the SAME id in both registries."""
+    raw = str(name or "").strip()
+    out = _SLUG.sub("_", raw.lower()).strip("_")[:60]
+    return out or ("x" + hashlib.sha1(raw.encode("utf-8")).hexdigest()[:10] if raw else "unnamed")
+
+
+def derive_id(row: Mapping[str, Any], style: str, taken: Mapping[str, str]) -> str:
+    """A durable id for a row its roster left unnamed. `ground` is the W1 registry's
+    `ground:<region>:<slug>` (with its collision suffix); anything else is `<style>:<slug>` of
+    the name, else of the canonical URL. Deterministic, so the cursor survives every pass."""
+    name = str(row.get("name") or row.get("title") or "")
+    if style == "ground":
+        sid = f"ground:{row.get('region') or 'na'}:{slug(name)}"
+    else:
+        sid = f"{style}:{slug(name or canonical_url(_row_url(row)))}"
+    if sid in taken and taken[sid] != name:
+        sid = f"{sid}_{hashlib.sha1(name.encode('utf-8')).hexdigest()[:6]}"
+    return sid
 
 
 USES: tuple[str, ...] = ("direct_cells", "indirect_cells", "allocation_intel")
@@ -162,36 +220,128 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
         immutable_time=bool(row.get("immutable_time", False)),
         handoff_deepening=bool(row.get("handoff_deepening", True)),
         feeds=[str(x) for x in (row.get("feeds_to") or [])],
-        enabled=bool(row.get("enabled", True)), config=cfg, origin=origin)
+        enabled=bool(row.get("enabled", True)), config=cfg, origin=origin,
+        url_key=canonical_url(_row_url(row)),
+        seats=_seats(row.get("seats")))
+
+
+def _seats(raw: Any) -> list[str]:
+    if isinstance(raw, list):
+        return [str(x) for x in raw]
+    return [str(raw)] if raw else []
 
 
 def load_roster(path: Path = ROSTER, *, root: Path | None = None) -> list[Source]:
-    """The roster, plus every external roster its `external_rosters` globs name.
+    """THE ONE SOURCE REGISTRY: this roster plus every lane's table its `external_rosters` name.
 
-    Later rows with an id already seen are ignored (the first definition wins), so another lane
-    adding a row can never silently redefine one of ours."""
+    Each entry is a glob read in place (`rows` picks the list inside a document; `id_style`
+    names rows the lane left unnamed, see `derive_id`), or `packs: <dir>` for the country
+    departments' `SourceRow`s. ONE CANONICAL ID PER SOURCE: a later row whose id was already
+    seen is ignored (first definition wins, so no lane can silently redefine another's), and a
+    later row from ANOTHER roster naming the same page (`canonical_url`) AND the same thing
+    (`slug` of the name) in the same region becomes an alias of the first rather than a second
+    source (two countries' packs naming one vendor page are two sources). Same page,
+    different thing (a portal ground and one dataset on it) stays two sources, each naming the
+    other in `shares_page` -- merging them would erase the dataset's own attribution."""
     doc = yaml.safe_load(Path(path).read_text("utf-8")) or {}
     out: list[Source] = []
     seen: set[str] = set()
+    names: dict[str, str] = {}
+    by_url: dict[str, Source] = {}
+
+    def add(s: Source | None) -> None:
+        if s is None or s.id in seen:
+            return
+        first = by_url.get(s.url_key) if s.url_key else None
+        if first is not None and first.origin != s.origin:
+            if slug(first.name) == slug(s.name) and first.region == s.region:
+                first.aliases.append(s.id)
+                return
+            first.shares_page.append(s.id)
+            s.shares_page.append(first.id)
+        seen.add(s.id)
+        out.append(s)
+        if s.url_key:
+            by_url.setdefault(s.url_key, s)
+
     for row in doc.get("sources") or []:
-        s = normalise_row(row, origin=str(path)) if isinstance(row, Mapping) else None
-        if s and s.id not in seen:
-            seen.add(s.id)
-            out.append(s)
+        add(normalise_row(row, origin=str(path)) if isinstance(row, Mapping) else None)
     base = root or Path(path).resolve().parents[2]
     for entry in doc.get("external_rosters") or []:
-        pattern = entry.get("path") if isinstance(entry, Mapping) else entry
-        defaults = dict(entry.get("defaults") or {}) if isinstance(entry, Mapping) else {}
-        for fp in sorted(glob.glob(str(base / str(pattern)), recursive=True)):
-            for row in _rows_of(Path(fp)):
-                s = normalise_row(row, origin=fp, defaults=defaults)
-                if s and s.id not in seen:
-                    seen.add(s.id)
-                    out.append(s)
+        e = entry if isinstance(entry, Mapping) else {"path": entry}
+        defaults = dict(e.get("defaults") or {})
+        if e.get("packs"):
+            for row in pack_rows(base / str(e["packs"])):
+                add(normalise_row(row, origin=str(row.get("_origin")),
+                                  defaults={**defaults, **dict(row.get("_defaults") or {})}))
+            continue
+        for fp in sorted(glob.glob(str(base / str(e.get("path"))), recursive=True)):
+            for row in _rows_of(Path(fp), str(e.get("rows") or "")):
+                if not (row.get("id") or row.get("source_id")):
+                    if not e.get("id_style") or not (row.get("name") or _row_url(row)):
+                        continue
+                    sid = derive_id(row, str(e["id_style"]), names)
+                    names[sid] = str(row.get("name") or row.get("title") or "")
+                    row = {**row, "id": sid}
+                if e.get("seat_template"):
+                    rid = row.get("id") or row.get("source_id")
+                    row = {**row, "seats": [str(e["seat_template"]).format(id=rid)]}
+                add(normalise_row(row, origin=fp, defaults=defaults))
     return out
 
 
-def _rows_of(fp: Path) -> list[Mapping[str, Any]]:
+def roster_files(path: Path = ROSTER, *, root: Path | None = None) -> list[dict[str, Any]]:
+    """Every external roster entry and what it matched. An entry matching nothing is MISSING --
+    loud, never a silent zero -- unless it declares `pending` (the lane's branch has not merged;
+    the reason is the value) or `optional` (a glob a lane may or may not use)."""
+    doc = yaml.safe_load(Path(path).read_text("utf-8")) or {}
+    base = root or Path(path).resolve().parents[2]
+    out = []
+    for entry in doc.get("external_rosters") or []:
+        e = entry if isinstance(entry, Mapping) else {"path": entry}
+        if e.get("packs"):
+            n = len(list((base / str(e["packs"])).glob("*/pack.py")))
+            out.append({"path": str(e["packs"]), "files": n,
+                        "state": "OK" if n else "MISSING"})
+            continue
+        n = len(glob.glob(str(base / str(e.get("path"))), recursive=True))
+        state = "OK" if n else ("PENDING" if e.get("pending") else
+                                "OPTIONAL_EMPTY" if e.get("optional") else "MISSING")
+        out.append({"path": str(e.get("path")), "files": n, "state": state,
+                    **({"pending": str(e["pending"])} if e.get("pending") and not n else {})})
+    return out
+
+
+def pack_rows(countries: Path) -> list[dict[str, Any]]:
+    """Every country department's declared sources as roster rows (`pack_<cc>_<id>`), owned by
+    that department. A layer the pack DECLARES absent is not a source; a pack that will not load
+    contributes nothing and breaks nothing."""
+    rows: list[dict[str, Any]] = []
+    try:
+        from libs.research import country_lab
+    except Exception:
+        return rows
+    for pf in sorted(countries.glob("*/pack.py")):
+        cc = pf.parent.name
+        try:
+            pack = country_lab.resolve_pack(cc)
+            srows = country_lab.source_rows(pack) if pack is not None else []
+        except Exception:
+            continue
+        for r in srows:
+            if getattr(r, "absent_reason", "") or not getattr(r, "id", ""):
+                continue
+            roots = [str(x) for x in (r.roots or ()) if str(x)]
+            rows.append({"id": f"pack_{cc}_{r.id}", "name": r.label or r.id,
+                         "url": roots[0] if roots else "", "region": cc,
+                         "language": (r.languages or ("",))[0], "licence": r.licence,
+                         "_origin": str(pf), "_defaults": {
+                             "owner": f"country_pack/{cc}",
+                             "consumer": f"desks/mt5/research/countries/{cc}/pack.py"}})
+    return rows
+
+
+def _rows_of(fp: Path, key: str = "") -> list[Mapping[str, Any]]:
     try:
         text = fp.read_text("utf-8")
     except OSError:
@@ -210,10 +360,15 @@ def _rows_of(fp: Path) -> list[Mapping[str, Any]]:
             doc = json.loads(text)
         except ValueError:
             return []
-    if isinstance(doc, Mapping):
+    if isinstance(doc, Mapping) and key:
+        doc = doc.get(key)
+    elif isinstance(doc, Mapping):
         doc = (doc.get("sources") or doc.get("rows") or doc.get("grounds")
-               or list(doc.values()))
-    return [r for r in doc if isinstance(r, Mapping)] if isinstance(doc, list) else []
+               or [x for v in doc.values() if isinstance(v, list) for x in v])
+    if not isinstance(doc, list):
+        return []
+    return [r if isinstance(r, Mapping) else {"url": r} for r in doc
+            if isinstance(r, Mapping) or (isinstance(r, str) and r.startswith("http"))]
 
 
 # ======================================================================== cursors
@@ -769,7 +924,11 @@ def fetch_external_feed(src: Source, cursor: dict[str, Any], ctx: FetchContext
     root = ctx.root / str(cfg.get("root") or ".")
     fields = dict(cfg.get("fields") or {})
     offsets = dict(cursor.get("offsets") or {})
-    for pattern in cfg.get("paths") or []:
+    patterns = [str(p) for p in cfg.get("paths") or []]
+    if not any(glob.glob(str(root / p), recursive=True) for p in patterns):
+        # LOUD, never an `empty` run: the lane's feed is not on this machine
+        raise FileNotFoundError(f"no file matches {patterns} under {root}")
+    for pattern in patterns:
         for fp in sorted(glob.glob(str(root / str(pattern)), recursive=True)):
             if ctx.expired():
                 return
@@ -917,6 +1076,8 @@ def acquire(src: Source, store: PitStore, cursors: CursorStore, ctx: FetchContex
                 cursors.save(src.id, cursor)
             if rep.fetched >= ctx.max_items or ctx.expired():
                 break
+    except FileNotFoundError as exc:               # a lane's feed absent from this machine
+        rep.outcome, rep.detail = "MISSING_FEED", str(exc)[:300]
     except Exception as exc:                       # one source's failure costs the others nothing
         rep.outcome, rep.detail = "ERROR", f"{type(exc).__name__}: {exc}"[:300]
     if rep.outcome == "ok":

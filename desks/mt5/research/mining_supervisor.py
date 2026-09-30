@@ -91,6 +91,8 @@ except Exception:                                          # tests and a bare ch
 COND_MIN_OBS = max(60, int(_FAMILY_MIN_OBS))
 #: The committed input for the cost and risk models: every page's latest PIT vintage, split
 #: into cost facts and prop-rule limits (extractor.COST_FACTS / RULE_FACTS). Never minted as cells.
+#: THE CONTRACT another lane registers a source against (roster row) and reads back (registry row).
+REGISTRY_SCHEMA = _ROOT / "libs" / "mining" / "source_registry.schema.json"
 MECHANICS_FACTS = _DESK / "data" / "mechanics_facts.json"
 COND_TRANSFORMS: tuple[str, ...] = ("level_z", "delta")
 UNI = _DESK / "data" / "universe"
@@ -149,7 +151,7 @@ class Hooks:
 
 def _fallback_gcell(spec: Mapping[str, Any]) -> str:
     payload = json.dumps(dict(spec.get("params") or {}), sort_keys=True, separators=(",", ":"))
-    return f"{spec.get('sym')}.{spec.get('family')}.p=" + \
+    return f"{spec.get('sym') or spec.get('symbol')}.{spec.get('family')}.p=" + \
         hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
@@ -192,7 +194,9 @@ def desk_hooks() -> Hooks:
     h.bars_available = bars_available
     try:
         from research.frontier_identity import cell_id as _gcell
-        h.gauntlet_cell = lambda spec: str(_gcell(dict(spec)))
+        from research.frontier_identity import docket_cell as _dcell
+        # the judge's own row -> cell rule (symbol|sym, a row chart folded into params)
+        h.gauntlet_cell = lambda spec: str(_gcell(_dcell(dict(spec))))
     except Exception:
         pass
     try:
@@ -259,6 +263,10 @@ class Pipeline:
         self.cursors = acq.CursorStore(self.data / "cursors")
         self.feed = self.data / "mechanics_feed.jsonl"
         self.gate_ledger = Path(gate_ledger)
+        # THE docket the judge reads, beside its ledger: data/hypotheses/external_survivors.json.
+        # Its rows keep the producer's `source` string (`miner:asia:rbnz_series`) and URL; the
+        # compiler's miner_candidates.json does not (0 of 53,174 rows carry a URL).
+        self.docket = self.gate_ledger.parent / "external_survivors.json"
         self.roster = roster if roster is not None else acq.load_roster(root=root)
         self.by_id = {s.id: s for s in self.roster}
         self.hooks = hooks or Hooks()
@@ -780,6 +788,149 @@ class Pipeline:
         self.cells.kv_set("gate_ledger_offset", str(off))
         return joined
 
+    # --------------------------------------------------- the one registry: global attribution
+    def index_judged(self, now: datetime | None = None) -> int:
+        """Every judged docket cell, whoever minted it, into `judged_cells` (own byte offset, so
+        the first pass reads the whole ledger once and every later one only what is new)."""
+        try:
+            size = self.gate_ledger.stat().st_size
+        except OSError:
+            return 0
+        off = int(self.cells.kv_get("judged_offset", "0") or 0)
+        off = 0 if off > size else off
+        batch: list[tuple[str, str, bool]] = []
+        stamp = iso(now or utcnow())
+        with self.gate_ledger.open("rb") as fh:
+            fh.seek(off)
+            for raw in fh:
+                if not raw.endswith(b"\n"):
+                    break
+                off += len(raw)
+                try:
+                    v = json.loads(raw.decode("utf-8"))
+                except (UnicodeDecodeError, ValueError):
+                    continue
+                if not isinstance(v, dict) or not v.get("cell"):
+                    continue
+                if rejection.reason_for_verdict(v)[1] == "DEFERRED":
+                    continue
+                batch.append((str(v["cell"]), str(v.get("at") or stamp), bool(v.get("passed"))))
+                if len(batch) >= 20_000:
+                    self.cells.record_judged(batch)
+                    batch = []
+        self.cells.record_judged(batch)
+        self.cells.kv_set("judged_offset", str(off))
+        return off
+
+    def _url_index(self) -> dict[str, list[tuple[str, str]]]:
+        idx: dict[str, list[tuple[str, str]]] = {}
+        for s in self.roster:
+            if s.url_key:
+                idx.setdefault(s.url_key.partition("/")[0], []).append((s.url_key, s.id))
+        return idx
+
+    def _seat_index(self) -> dict[str, str]:
+        """DECLARED seats only: a docket `source` string a registry row says it answers for.
+        No name-alike fallback -- a seat nobody declared is an internal producer, not a source."""
+        out: dict[str, str] = {}
+        for s in self.roster:
+            for seat in s.seats:
+                out.setdefault(seat, s.id)
+        return out
+
+    @staticmethod
+    def attribute_url(url: Any, idx: Mapping[str, list[tuple[str, str]]]) -> str:
+        """The ONE registry source whose URL is this URL or its longest proper path prefix.
+
+        A host-only registry URL matches only itself (never every page on the host), and a tie
+        at the winning length is ambiguous and credits nobody: a wrong credit is worse than none.
+        """
+        key = acq.canonical_url(url)
+        if not key:
+            return ""
+        host = key.partition("/")[0]
+        best: list[str] = []
+        best_len = -1
+        for rk, sid in idx.get(host) or []:
+            if rk == key:
+                hit = len(rk) + 1                         # exact beats any prefix
+            elif "/" in rk and "?" not in rk and key.startswith(rk + "/"):
+                hit = len(rk)
+            else:
+                continue
+            if hit > best_len:
+                best, best_len = [sid], hit
+            elif hit == best_len:
+                best.append(sid)
+        return best[0] if len(set(best)) == 1 else ""
+
+    def attribute_source(self, row: Mapping[str, Any], idx: Mapping[str, list[tuple[str, str]]],
+                         seats: Mapping[str, str]) -> tuple[str, str]:
+        """(source id, how): the declared seat first, then the row's own URL."""
+        sid = seats.get(str(row.get("source") or ""), "")
+        if sid:
+            return sid, "seat"
+        sid = self.attribute_url(row.get("source_url") or row.get("url"), idx)
+        return (sid, "url") if sid else ("", "")
+
+    def attributed_evaluations(self, now: datetime | None = None) -> dict[str, Any]:
+        """Per registry source: docket cells EVALUATED within ACTIVE_WINDOW.
+
+        Reads the judge's own docket (`external_survivors.json`) and names each row's cell by the
+        judge's rule (`frontier_identity.docket_cell`), so a docket cell and its verdict share a
+        key by construction. A row is credited through a DECLARED seat or its URL, never a guess;
+        what stays unattributed is counted by producer so the gap is visible."""
+        t = now or utcnow()
+        try:
+            rows = json.loads(self.docket.read_text("utf-8"))
+        except (OSError, ValueError):
+            return {"by_source": {}, "basis": f"UNMEASURED: {self.docket.name} unreadable"}
+        if isinstance(rows, dict):
+            rows = rows.get("rows") or rows.get("items") or []
+        judged = self.cells.judged_since(t - ACTIVE_WINDOW)
+        idx, seats = self._url_index(), self._seat_index()
+        by: dict[str, set[str]] = {}
+        how: dict[str, int] = {}
+        unattributed: dict[str, int] = {}
+        for r in rows if isinstance(rows, list) else []:
+            if not isinstance(r, dict) or not r.get("family"):
+                continue
+            try:
+                cid = self.hooks.gauntlet_cell(r)
+            except Exception:
+                continue
+            if cid not in judged:
+                continue
+            sid, via = self.attribute_source(r, idx, seats)
+            if not sid:
+                p = str(r.get("source") or "?").split(":")
+                k = ":".join(p[:2])
+                unattributed[k] = unattributed.get(k, 0) + 1
+                continue
+            by.setdefault(sid, set()).add(cid)
+            how[via] = how.get(via, 0) + 1
+        top = dict(sorted(unattributed.items(), key=lambda kv: -kv[1])[:25])
+        return {"by_source": {k: len(v) for k, v in by.items()}, "credited_by": how,
+                "unattributed_judged_rows": sum(unattributed.values()),
+                "unattributed_top_producers": top,
+                "basis": f"{self.docket.name} x judged_cells ({len(judged)} judged in window)"}
+
+    def register_cursors(self, now: datetime | None = None) -> int:
+        """A durable cursor per canonical source, carrying its registration; fetch state kept."""
+        wrote = 0
+        for s in self.roster:
+            reg = {"canonical_id": s.id, "origin": s.origin, "owner": s.owner,
+                   "url_key": s.url_key, "aliases": sorted(s.aliases),
+                   "shares_page": sorted(s.shares_page)}
+            cur = self.cursors.get(s.id)
+            old = {k: v for k, v in (cur.get("registered") or {}).items() if k != "first_seen"}
+            if old != reg:
+                reg["first_seen"] = (cur.get("registered") or {}).get("first_seen") or iso(
+                    now or utcnow())
+                self.cursors.save(s.id, {**cur, "registered": reg})
+                wrote += 1
+        return wrote
+
     def _apply_verdict(self, cell: Cell, v: Mapping[str, Any], *, axis: str = "as_donated",
                        now: datetime | None = None) -> int:
         """One docket cell's verdict onto its mining cell.
@@ -860,13 +1011,20 @@ class Pipeline:
     def source_status(self, now: datetime | None = None) -> dict[str, dict[str, Any]]:
         t = now or utcnow()
         receipts = self.cells.evaluated_by_source(t - ACTIVE_WINDOW)
+        try:
+            docket = self.attributed_evaluations(t)
+        except Exception as exc:                          # never lets status reporting fail
+            docket = {"by_source": {}, "basis": f"ERROR {type(exc).__name__}: {exc}"[:200]}
+        self._attribution = {k: v for k, v in docket.items() if k != "by_source"}
+        via = docket["by_source"]
         runs = self.store.last_runs()
         recs = self.store.records_by_source()
         out = {}
         for s in self.roster:
             if not s.enabled:
                 continue
-            n = int(receipts.get(s.id, 0))
+            n_mine, n_docket = int(receipts.get(s.id, 0)), int(via.get(s.id, 0))
+            n = n_mine + n_docket
             r = runs.get(s.id) or {}
             # Every use mints cells now: allocation_intel's facts become exogenous_conditioner
             # cells (see `conditioners`), so each use can carry a receipt.
@@ -878,6 +1036,9 @@ class Pipeline:
                                          "no cell EVALUATED in 30 days"),
                          "consumer": s.consumer,
                          "evaluated_cells_30d": n, "priority": s.priority,
+                         "evaluated_via": {"mining": n_mine, "docket": n_docket},
+                         "origin": s.origin, "url_key": s.url_key, "aliases": list(s.aliases),
+                         "shares_page": list(s.shares_page),
                          "last_outcome": r.get("outcome") or "NEVER_RUN",
                          "last_run": r.get("at"), "last_detail": r.get("detail") or "",
                          "records_total": int(recs.get(s.id, 0)), "auth": s.auth,
@@ -1110,6 +1271,38 @@ class Pipeline:
         return {"rows": n, "bytes": size, "sha256": sha.hexdigest() if size else None,
                 "path": "desks/mt5/data/mining/rejections.jsonl (box-only)", "by": by}
 
+    def registry_summary(self, srcs: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
+        """The one registry, bounded: per owner (sources, ACTIVE, COLD by reason), the join's
+        basis and the schema other lanes register against. Row detail is the box report."""
+        by_owner: dict[str, dict[str, Any]] = {}
+        cold_ids: dict[str, list[str]] = {}
+        for sid, v in sorted(srcs.items()):
+            if v.get("status") != "ACTIVE":
+                cold_ids.setdefault(str(v.get("cold_reason") or "?"), []).append(sid)
+        for v in srcs.values():
+            o = by_owner.setdefault(str(v.get("owner") or "?"), {"sources": 0, "active": 0,
+                                                                 "cold": {}})
+            o["sources"] += 1
+            if v.get("status") == "ACTIVE":
+                o["active"] += 1
+            else:
+                r = str(v.get("cold_reason") or "")
+                o["cold"][r] = o["cold"].get(r, 0) + 1
+        return {"schema": REGISTRY_SCHEMA.relative_to(_ROOT).as_posix(),
+                "rule": "ACTIVE = a cell of this source EVALUATED by the gauntlet within 30 "
+                        "days (its own mining cells, or a docket cell attributed to it by URL "
+                        "or seat); everything else is COLD with its reason",
+                "sources": len(srcs),
+                "active": sum(1 for v in srcs.values() if v.get("status") == "ACTIVE"),
+                "aliases": sum(len(v.get("aliases") or []) for v in srcs.values()),
+                "sharing_a_page": sum(1 for v in srcs.values() if v.get("shares_page")),
+                "attribution": getattr(self, "_attribution", {}),
+                "roster_files": acq.roster_files(root=self.root),
+                "by_owner": dict(sorted(by_owner.items())),
+                # EVERY COLD source by id, under its reason: committed, so a lane can see which
+                # of its sources has not reached the judge without asking the box
+                "cold_by_reason": cold_ids}
+
     def write_digest(self, m: Mapping[str, Any], now: datetime) -> None:
         """The committed digest (DIGEST): bounded, scalars and short rows only."""
         try:
@@ -1133,8 +1326,11 @@ class Pipeline:
                "metrics": {k: v for k, v in m.items() if k not in ("trace", "last_pass",
                                                                    "sources")},
                "sources": {sid: {k: v.get(k) for k in ("status", "uses", "cold_reason",
-                                                        "last_outcome", "evaluated_cells_30d")}
-                           for sid, v in (m.get("sources") or {}).items()},
+                                                        "last_outcome", "evaluated_cells_30d",
+                                                        "evaluated_via")}
+                           for sid, v in (m.get("sources") or {}).items()
+                           if v.get("status") == "ACTIVE" or v.get("owner") == "global_mining"},
+               "registry": self.registry_summary(m.get("sources") or {}),
                "trace": m.get("trace"),
                "rejection_ledger": ledger_digest,
                "conditioner_series": conds,
@@ -1163,6 +1359,7 @@ class Pipeline:
             except Exception as exc:                      # the rest of the pass still runs
                 rep.errors.append(f"acquire: {type(exc).__name__}: {exc}"[:300])
         for step in ("process", "civilizations", "conditioners", "retry", "donate", "join",
+                     "judged", "register",
                      "handoff"):
             if time.monotonic() - t0 > budget_s * 0.95:
                 rep.errors.append(f"budget exhausted before {step}")
@@ -1187,6 +1384,10 @@ class Pipeline:
                     rep.donated = self.donate(now=now)
                 elif step == "join":
                     rep.verdicts_joined = self.join_verdicts(now=now)
+                elif step == "judged":
+                    self.index_judged(now=now)
+                elif step == "register":
+                    self.register_cursors(now=now)
                 elif step == "handoff":
                     rep.handed_off = self.handoff_deepening()
             except Exception as exc:
