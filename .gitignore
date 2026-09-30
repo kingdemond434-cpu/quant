@@ -371,6 +371,18 @@ desks/mt5/data/deep_forest_seen.json
 !desks/mt5/reports/OCCUPANCY_MAP.json
 !desks/mt5/reports/CULTURE_ORTHOGONALITY.json
 !desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json
+# THE TIER S PROMOTION DOOR'S REPORT-SIDE EVIDENCE (2026-09-30), published by $relPaths.
+# `**/reports/*` excludes the DIRECTORY reports/tier_s itself, and git cannot re-include a file
+# under an excluded directory -- so the directory is re-included, its contents re-excluded, and
+# the one file negated. Same shape as reports/shadow/ above.
+!desks/mt5/reports/REPLICATION.json
+!desks/mt5/reports/tier_s/
+desks/mt5/reports/tier_s/*
+!desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json
+# THE LOCKBOX v4 RE-CERTIFICATION (2026-09-30), published by $relPaths: the before/after ledger
+# and the re-mint's status.
+!desks/mt5/reports/LOCKBOX_RECERT.json
+!desks/mt5/reports/REMINT_STATUS.json
 
 # CONSOLE LOGS ARE NEVER TRACKED (2026-09-06). Seventeen of them were, and they are append-only
 # files that RUNNING hunt processes hold open. Every merge on the trading box therefore tried to

@@ -4392,6 +4392,18 @@ def _door_input_health() -> dict[str, Any]:
             "grace_h": DOOR_INPUT_GRACE_H, "defects": defects}
 
 
+def _attest(errors: dict[str, str]) -> bool:
+    """Write data/tier_s/box_evidence.json on this host; record a failure under `box_evidence`."""
+    try:
+        from libs.tiers import box_evidence
+        box_evidence.attest()
+        errors.pop("box_evidence", None)
+        return True
+    except Exception as exc:                        # host dependent; recorded, never raised
+        errors["box_evidence"] = f"{type(exc).__name__}: {exc}"
+        return False
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--only", default="", help="comma-separated organ names")
@@ -4424,6 +4436,13 @@ def main(argv: list[str] | None = None) -> int:
     def want(n: str) -> bool:
         return not only or n in only
 
+    if not only:
+        # ATTEST FIRST AS WELL AS LAST (2026-09-30). The attestation used to be written only after
+        # the last organ, so a full pass killed at its leg cap (1,500 s; the box's ledgers are
+        # larger than the cloud's 607 s run) left NO box_evidence.json at all and the sync had
+        # nothing to carry. This early write records the previous pass's artifacts with their
+        # real ages -- stale layers read stale, never DONE -- and the write at the end replaces it.
+        _attest(errors)
     plan: list[tuple[str, Callable[[], dict[str, Any]]]] = [
         ("truth_kernel", organ_truth_kernel), ("firewall", organ_firewall),
         ("immune", organ_immune), ("red_queen", organ_red_queen),
@@ -4476,16 +4495,18 @@ def main(argv: list[str] | None = None) -> int:
         summary["door_inputs"] = _door_input_health()
         _write(SUMMARY, summary)
         # A layer is DONE only on the trading box's own evidence (libs/tiers/box_evidence).
-        try:
-            from libs.tiers import box_evidence
-            box_evidence.attest()
-        except Exception as exc:                    # pragma: no cover - host dependent
-            errors["box_evidence"] = f"{type(exc).__name__}: {exc}"
+        # A failed attestation used to land in `errors` AFTER the summary was written, so the
+        # one defect that keeps every layer from DONE was recorded nowhere: now it re-writes
+        # the summary with the error named.
+        if not _attest(errors):
+            summary["errors"] = {k: v.splitlines()[0] for k, v in errors.items()}
+            _write(SUMMARY, summary)
     door_defects = list((summary.get("door_inputs") or {}).get("defects") or [])
     print(json.dumps({"total_seconds": summary["total_seconds"],
                       "errors": list(summary["errors"]),
                       "door_input_defects": door_defects}), flush=True)
-    if errors and len(errors) == len(timings):
+    organ_errors = [k for k in errors if k in timings]
+    if organ_errors and len(organ_errors) == len(timings):
         return 1
     # A DOOR INPUT MISSING PAST ITS GRACE FAILS THE LEG, so the hourly report carries the defect
     # (exit code and stderr tail) instead of a quiet line in a JSON file: meanwhile every

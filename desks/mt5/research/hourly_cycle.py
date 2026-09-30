@@ -845,6 +845,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
     # a certificate minted by that task would wait for one. It reads two small JSON files.
     "canon_publication",
+    # THE LOCKBOX v4 RE-CERTIFICATION LEDGER (pass-2 P0, 2026-09-30), right after the seal it
+    # reads: per canon certificate, lockbox Sharpe before and after the re-mint. Two small JSON
+    # reads, seconds.
+    "lockbox_recert",
     # The cheap half of the Tier-1 B rows: each reads artifacts and writes one, in well under a
     # minute, and the closed-loop attestation that runs in this same plan reads three of them.
     # `regime_hierarchy` and `representation_discovery` fit models and stay on the heavy plan.
@@ -993,6 +997,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "lockbox_recert",
                      # each hunted family's own pipeline on null data: the gates' real
                      # false-positive rate, per family
                      "null_lab",
@@ -4602,6 +4607,11 @@ def main() -> None:
     # promotion authority.
     cpub = _costed("canon_publication", lambda: _producer(
         "canon_publication", "research/canon_publication.py"))
+    # THE RE-CERTIFICATION LEDGER, after the seal: every canon certificate's lockbox Sharpe
+    # before (write-once baseline) and after the lockbox v4 re-mint, and whether any was
+    # re-stamped instead of re-judged (exit 3). Read-only; the box's sync publishes it.
+    lrc = _costed("lockbox_recert", lambda: _producer(
+        "lockbox_recert", "research/lockbox_recert.py"))
     # THE BURN-DOWN (principal 2026-09-30: "the backlog burned down faster than creation"). After
     # the judge, so this hour's first rulings are counted this hour: cells whose FIRST real
     # verdict landed in the window against docket rows first seen in it, the backlog from
@@ -5411,7 +5421,7 @@ def main() -> None:
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
-                    "canon_publication": cpub, "judging_burndown": jbd,
+                    "canon_publication": cpub, "judging_burndown": jbd, "lockbox_recert": lrc,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
