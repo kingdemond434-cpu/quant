@@ -789,6 +789,33 @@ def _docket_rows(root: Path) -> list[dict[str, Any]]:
     return out
 
 
+def _self_model_rows(root: Path) -> list[dict[str, Any]]:
+    """The Tier S self-model's ranked deficiencies (`data/tier_s/SELF_MODEL_DOCKET.json`).
+
+    Until 2026-09-30 the self-model wrote this docket and nothing read it. The summary carries no
+    number -- the gap and its `why` move every hour, and a number in the text would mint a new row
+    per read past the (source, summary) dedupe -- so the order rides on `rank` instead."""
+    try:
+        from libs.tiers import authority
+        if authority.suspended("self_model", root / "desks" / "mt5" / "data" / "tier_s"
+                               / "AUTHORITY.json"):
+            return []        # its contract is REJECTED: its docket orders no work until re-admitted
+    except Exception:
+        pass
+    doc = _load_json(root / "desks" / "mt5" / "data" / "tier_s" / "SELF_MODEL_DOCKET.json",
+                     {}) or {}
+    out: list[dict[str, Any]] = []
+    for i, t in enumerate(doc.get("tasks") or []):
+        if not isinstance(t, dict) or not str(t.get("task") or "").strip():
+            continue
+        out.append({"source": "tier_s_self_model",
+                    "summary": (f"{str(t['task']).strip()}: raise it under the admission rule's "
+                                f"{t.get('gain') or 'unstated'} gain; the measured gap is in "
+                                "desks/mt5/data/tier_s/SELF_MODEL_DOCKET.json")[:600],
+                    "rank": i + 1})
+    return out
+
+
 def _frontier_rows(root: Path) -> tuple[list[dict[str, Any]], list[str]]:
     """(rows, unmeasured) -- the frontier audit's findings, and the sources that had nothing."""
     rows: list[dict[str, Any]] = []
@@ -834,7 +861,7 @@ def intake(d: dict[str, Any], root: Path, limit: int = INTAKE_PER_PASS) -> dict[
     seen = {(str(r.get("source")), str(r.get("summary")).strip()) for r in rows}
     open_tokens = [(_tokens(r.get("summary", "")), str(r.get("id")))
                    for r in rows if r.get("status") in ("open", "scheduled")]
-    candidates = _docket_rows(root)
+    candidates = _docket_rows(root) + _self_model_rows(root)
     fr, unmeasured = _frontier_rows(root)
     candidates += fr
     added: list[str] = []

@@ -151,6 +151,7 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # and a REFUSED_CONSERVATIVE row must carry the sentence saying whose aggressiveness it
     # would have cut. Portable: it reads only tracked files.
     ("check_tier5_audit.py", ()),
+    ("check_tier_s_program.py", ()),          # Tier S admission rule: no layer without a contract
     # THE PLUMBING-INVARIANT HIERARCHY (Tier-1 B26). Not "are the money-path laws tested" --
     # they always were -- but WHAT EACH TEST SPEAKS FOR: one hand-written state (EXAMPLE), a
     # generator's draws (PROPERTY), or the whole finite domain (PROOF). The fence is that the
@@ -316,6 +317,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: wolf on every PR, and a gate that cries wolf gets disabled -- which is how enforcement dies.
 #: They run in the hourly box gate, where their verdict is real.
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    # 87% OF THE DOCKET SAT UNJUDGED AND NOTHING SAID SO (2026-09-24). The evidence
+    # was in JUDGE_COVERAGE.json the whole time and no organ read it. This reads the
+    # STALL rather than its cause: a backlog is not a breach, a backlog that stops
+    # moving is. It caps nothing and rations nothing -- judging more is free in
+    # multiplicity terms. LIVE coverage state, so it belongs here, not in _LAW_FENCES.
+    ("check_judging_coverage.py", ()),
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
     # EVERY SOURCE COLLECTED AND CONVERTED (principal 2026-09-23, "make sure they are always
     # collected, 100% exploited and converted"). Two ratchets that may only fall -- sources never
@@ -331,6 +338,14 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # first census measured 63,110 rows waiting and a 654 h oldest row, and a fence tuned to pass
     # on today's backlog would pin that backlog in place (L1.43).
     ("check_no_queues.py", ()),
+    # THE BOX'S STATE REACHES GIT, OR THIS IS RED (2026-09-30). The last box state sync landed
+    # 2026-09-12 and the stamps inside every box file on the live branch stop 2026-09-16; for two
+    # weeks every reader off the box measured a frozen copy and no fence said so. Six hours,
+    # stated in the fence. STATE, never --laws-only: a red here must not wedge the push that heals it.
+    ("check_box_state_freshness.py", ()),
+    # A LEG TAKEN OFF EVERY PLAN RUNS ONLY IF ITS OWN TASK EXISTS AND IS ARMED. `OWN_CLOCK_LEGS`
+    # in hourly_cycle.py names them; this asks the Task Scheduler, so it is state and box-only.
+    ("check_own_clock_legs.py", ()),
     ("check_universe_integrity.py", ()),       # bars: corrupt is quarantined, stale named
     ("check_external_federation.py", ("--require-state",)),   # LAWS 5h -- the live half
     # LAWS 5h / L1.32 -- the SANDBOX half: no runnable federated system goes a rotation window
@@ -588,6 +603,14 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # touches the tree: committing on a builder's behalf, with four builders live, would be a
     # worse failure than the one it reports. State, because it measures a working tree.
     ("check_box_reversion.py", ("--require-git",)),
+    # THE ORDER PROTOCOL IS CALLED VERIFIED ONLY WHEN THE GATEWAY BACKS IT (Tier S S31). Reads the
+    # formal organ's FORMAL.json -- the model check, the AST conformance of the real send sites,
+    # the counterexamples driven through the real decision core -- and fails on a model VIOLATION,
+    # on fewer implementation-backed invariants than the best ever recorded, and on an absent or
+    # stale report. A proven model the gateway does not fully implement passes as MODEL_ONLY with
+    # the missing knobs named: the honest state, never the word "verified". It touches no money
+    # path and forces no change to one. State, because FORMAL.json is written by the box's tier_s.
+    ("check_formal_claim.py", ("--require-state",)),
 )
 
 

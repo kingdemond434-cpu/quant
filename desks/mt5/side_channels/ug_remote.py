@@ -190,8 +190,10 @@ def _ug_verdict(args) -> dict:
                               "stability": round(wf_stab, 4)}
     exp3 = float(np.asarray(arr_x3, dtype=float).mean()) if len(arr_x3) else 0.0
     stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
-    stages["lockbox"] = {"passed": bool(wf_oos >= 0.0),
-                         "lockbox_sharpe": round(wf_oos, 4)}
+    stages["lockbox"] = {"passed": False, "lockbox_sharpe": None,
+                         "why": ("this lane reserves no held-out window; since policy v3 the "
+                                 "reserved lockbox of scripts/external_gauntlet.py is the only "
+                                 "certification path")}
     ev = float(arr.mean())
     stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
     return {"cell": cid, "sym": sym, "days": len(arr),

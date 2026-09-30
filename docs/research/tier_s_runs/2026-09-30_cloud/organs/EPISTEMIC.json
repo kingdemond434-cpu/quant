@@ -1,0 +1,108 @@
+{
+ "n": 305,
+ "by_label": {
+  "KNOWN": 31,
+  "ESTIMATED": 104,
+  "WEAK": 139,
+  "UNKNOWN": 31,
+  "UNKNOWABLE": 0
+ },
+ "decidable_share": 0.4426229508196721,
+ "forward_edges_undecided": 58,
+ "by_family": {
+  "accounted_share": {
+   "n": 1,
+   "by_label": {
+    "KNOWN": 0,
+    "ESTIMATED": 1,
+    "WEAK": 0,
+    "UNKNOWN": 0,
+    "UNKNOWABLE": 0
+   },
+   "decidable_share": 1.0
+  },
+  "cost_model": {
+   "n": 71,
+   "by_label": {
+    "KNOWN": 20,
+    "ESTIMATED": 8,
+    "WEAK": 42,
+    "UNKNOWN": 1,
+    "UNKNOWABLE": 0
+   },
+   "decidable_share": 0.39436619718309857
+  },
+  "cost_x3": {
+   "n": 58,
+   "by_label": {
+    "KNOWN": 10,
+    "ESTIMATED": 46,
+    "WEAK": 2,
+    "UNKNOWN": 0,
+    "UNKNOWABLE": 0
+   },
+   "decidable_share": 0.9655172413793104
+  },
+  "dsr_excess": {
+   "n": 58,
+   "by_label": {
+    "KNOWN": 0,
+    "ESTIMATED": 49,
+    "WEAK": 9,
+    "UNKNOWN": 0,
+    "UNKNOWABLE": 0
+   },
+   "decidable_share": 0.8448275862068966
+  },
+  "forward_edge": {
+   "n": 58,
+   "by_label": {
+    "KNOWN": 0,
+    "ESTIMATED": 0,
+    "WEAK": 28,
+    "UNKNOWN": 30,
+    "UNKNOWABLE": 0
+   },
+   "decidable_share": 0.0
+  },
+  "immune_score": {
+   "n": 1,
+   "by_label": {
+    "KNOWN": 1,
+    "ESTIMATED": 0,
+    "WEAK": 0,
+    "UNKNOWN": 0,
+    "UNKNOWABLE": 0
+   },
+   "decidable_share": 1.0
+  },
+  "pbo": {
+   "n": 58,
+   "by_label": {
+    "KNOWN": 0,
+    "ESTIMATED": 0,
+    "WEAK": 58,
+    "UNKNOWN": 0,
+    "UNKNOWABLE": 0
+   },
+   "decidable_share": 0.0
+  }
+ },
+ "certifier_undecided": {
+  "dsr_excess": 9,
+  "pbo": 58,
+  "cost_x3": 2,
+  "cost_model": 43
+ },
+ "statement": "58 certificates' forward edge cannot yet be decided from their evidence -- there is not enough evidence to decide them",
+ "metric": {
+  "decidable_share": 0.03333333333333333,
+  "decidable_share_all": 0.4426229508196721,
+  "decidable_dsr_excess": 0.8448275862068966,
+  "decidable_pbo": 0.0,
+  "decidable_cost_x3": 0.9655172413793104,
+  "decidable_cost_model": 0.39436619718309857
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 0.555
+}

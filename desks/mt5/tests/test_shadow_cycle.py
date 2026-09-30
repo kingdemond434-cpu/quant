@@ -236,3 +236,47 @@ def test_zero_trade_diagnostics_separate_new_quiet_and_blocked_clocks() -> None:
     assert got["mature_14d_without_trade"] == 2
     assert got["naturally_inactive"] == 1
     assert got["suppressed_or_unproven"] == 2
+
+
+def test_census_writes_survive_a_windows_sharing_violation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The forward_start stamp and shadow_health.json go through win_write: a reader holding
+    either file (Errno 13 on Windows) costs a retry, never the census."""
+    import external_shadow
+    import promoter
+    import qquant_shadow
+    import scalp_shadow
+    import shadow_forward
+
+    win_write = shadow_cycle._resilient_writers()
+    for mod in (external_shadow, shadow_forward, scalp_shadow, qquant_shadow, promoter):
+        monkeypatch.setattr(mod, "main", lambda: None)
+    monkeypatch.setattr(shadow_cycle, "_refresh_scalp_bars", lambda: None)
+    reports = tmp_path / "reports" / "shadow"
+    reports.mkdir(parents=True)
+    _canonical(reports, 1)
+    state = reports / "shadow_state.json"
+    state.write_text(json.dumps({"XAUUSD.asia": {"n": 0}}))
+    health_path = reports / "health.json"
+    health_path.write_text("{}")
+    refused: dict[str, int] = {}
+    real_replace = os.replace
+
+    def held_open(src, dst):  # the first two renames onto each target are refused
+        name = Path(dst).name
+        refused[name] = refused.get(name, 0) + 1
+        if refused[name] <= 2:
+            raise PermissionError(13, "The process cannot access the file", str(dst))
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(win_write.os, "replace", held_open)
+    monkeypatch.setattr(win_write.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
+    monkeypatch.setattr(shadow_cycle, "OUT", health_path)
+    health, _rc = shadow_cycle.run()
+    assert refused["shadow_state.json"] == 3
+    assert refused["health.json"] == 3
+    assert json.loads(state.read_text())["XAUUSD.asia"]["forward_start"]
+    assert json.loads(health_path.read_text())["status"] == health["status"]
+    assert not list(reports.glob(".*.tmp"))

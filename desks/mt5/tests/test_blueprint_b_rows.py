@@ -257,3 +257,43 @@ def test_every_new_leg_has_a_clock_and_a_layer() -> None:
                 "representation_discovery", "evig_acquisition"):
         assert f'_costed("{leg}"' in src, f"{leg} has no clock in hourly_cycle"
         assert leg in LEG_LAYER, f"{leg} joins no strategy layer"
+
+
+def test_release_authority_remeasures_an_identity_verdict_from_the_previous_seal(
+        tmp_path: Path, monkeypatch) -> None:
+    """Adopt-And-Seal publishes the bit before the gateway rewrites release_identity.json, so the
+    file on disk judged the previous seal (2026-09-30 noon pass: undrifted REFUSED on paths the
+    new seal already named)."""
+    import release_authority as ra
+    from mt5desk import release_identity
+
+    monkeypatch.setattr(ra, "ATTESTATION", tmp_path / "gate_attestation.json")
+    monkeypatch.setattr(ra, "IDENTITY", tmp_path / "release_identity.json")
+    monkeypatch.setattr(ra, "RELEASE", tmp_path / "RELEASE.json")
+    monkeypatch.setattr(ra, "_code_hash", lambda ref: {"run": "AAA", "sealed": "AAA"}.get(ref, ""))
+    _write(ra.ATTESTATION, {"result": "pass", "tested_code_hash": "AAA", "tested_sha": "run"})
+    _write(ra.RELEASE, {"code_sha": "sealed", "release_id": "new000000000"})
+    _write(ra.IDENTITY, {"running_sha": "run", "verdict": "REFUSED", "release_id": "old000000000",
+                         "reason": "carries paths the sealed release never named"})
+
+    class _Live:
+        def to_dict(self) -> dict:
+            return {"running_sha": "run", "verdict": "OK", "release_id": "new000000000"}
+
+    calls: list[bool] = []
+
+    def _verdict(root=None, **kw):
+        calls.append(kw.get("write", True))
+        return _Live()
+
+    monkeypatch.setattr(release_identity, "verdict", _verdict)
+    doc = ra.measure()
+    assert calls == [False], "a live re-measure must never write the gateway's verdict file"
+    assert doc["clauses"]["undrifted"]["ok"] and doc["may_create_exposure"]
+    assert "old000000000" in doc["clauses"]["undrifted"]["why"]
+
+    # Same release_id: the file is current and is read, not re-measured.
+    calls.clear()
+    _write(ra.IDENTITY, {"running_sha": "run", "verdict": "REFUSED", "release_id": "new000000000"})
+    doc = ra.measure()
+    assert calls == [] and not doc["may_create_exposure"]

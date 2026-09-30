@@ -232,6 +232,8 @@ LEG_LAYER: dict[str, str] = {
     # experimental budget accounts for principal-override heat inside the book: portfolio. The
     # redundancy organ and the forward-evidence series measure the machine itself: meta.
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
+    "kelly_survival": "sizing",
+    "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "forward_evidence_tracker": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
@@ -304,7 +306,7 @@ LEG_LAYER: dict[str, str] = {
     # JUDGE (how many cells reach a verdict an hour, from measured cores/memory/commit) and the
     # other guarantees every certificate gets a forward clock the moment it is minted. They are
     # the machine that runs the machine -- throughput and evidence plumbing, not edge.
-    "judging_throughput": "meta", "forward_enrolment": "meta",
+    "judging_throughput": "meta", "forward_enrolment": "meta", "judging_burndown": "meta",
     # META for the same reason, and it is the one that measures whether the other two are even
     # being reached: what fraction of the day the desk actually mints and judges, against the best
     # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
@@ -417,6 +419,9 @@ LEG_LAYER: dict[str, str] = {
     "prediction_markets": "information",
     "archaeology": "information",
     "sares": "information",
+    # THE TWO ADVERSARIAL COMMITTEES argue explanations and run the falsifiers the judge picks:
+    # they decide which experiments a hypothesis meets, so prediction, like falsifier_run.
+    "committees": "prediction",
     # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
     # fence over the machine's own bookkeeping -- meta, like every other fence.
     "certificate_truth": "meta",
@@ -516,6 +521,7 @@ LEG_LAYER: dict[str, str] = {
     # CYCLE PRICING is meta for the same reason the control plane is: it decides how much of the
     # hour each of the other layers gets, and predicts, sizes and times nothing itself.
     "cycle_pricing": "meta",
+    "research_bandit": "meta",
     # CAUSAL INVARIANCE asks whether a cell's effect is the same number in a different session,
     # year or volatility regime. That is a property of the PREDICTION -- whether the claim about
     # returns holds outside the environment it was fitted in -- so it is billed there.
@@ -557,6 +563,10 @@ LEG_LAYER: dict[str, str] = {
     # nothing, which is exactly what `meta` covers.
     "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
+    # Tier S institution: the machine judging and improving its own research machinery
+    "tier_s": "meta", "adversary_evolution": "prediction", "frontier_map": "information",
+    "market_ecology": "information", "research_diversity_archive": "information",
+    "execution_science": "execution",
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
     # what it produces, the same rule as the rest of this table.
     "acquire_datasets": "information", "dukascopy_backfill": "information",

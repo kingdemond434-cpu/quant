@@ -506,3 +506,40 @@ def test_absent_inputs_are_named_unmeasured_rather_than_read_as_clean(organ):
     assert doc["fired"] == []                     # absence never fires a message
     assert doc["cold_share"] is None
     assert doc["windows"]["24h"]["pit"]["share"] is None
+
+
+
+# ------------------------------------------------------------- the whole graph, newest kept
+def test_windows_fill_when_the_recent_rows_sit_at_the_end_of_a_large_graph(organ, monkeypatch):
+    """CRO 2026-09-30: the reader stopped at the FIRST `MAX_LINES` rows of a 5.7M-line graph, so
+    every row it read was weeks old and both windows came back empty. The recent rows of an
+    append-only log are at its END; the reader must stream to them."""
+    monkeypatch.setattr(gb, "MAX_LINES", 1_000)
+    old = [_born("EURUSD", "carry", n=100_000 + k, hours_ago=24 * 30 + k / 100.0)
+           for k in range(5_000)]
+    old_verdicts = [{**_verdict("EURUSD", "carry", n=5_000 + k, hours_ago=24 * 30.0)}
+                    for k in range(3_000)]
+    _plant(organ, [*old, *_baseline_born()], [*old_verdicts, *_baseline_verdicts(4)])
+    doc = gb.build(now=NOW)
+    assert doc["windows"]["24h"]["intake"]["born_cells"] == 10
+    assert doc["windows"]["7d"]["intake"]["born_cells"] == 10
+    assert doc["windows"]["24h"]["testing"]["verdicts"] == 4, "the ledger keeps its newest too"
+
+
+def test_a_truncating_cap_keeps_the_newest_rows_and_says_so(organ, monkeypatch):
+    monkeypatch.setattr(gb, "MAX_LINES", 6)
+    rows = [_born("EURUSD", "carry", n=k, hours_ago=100.0 - k) for k in range(20)]
+    note: dict[str, str] = {}
+    _plant(organ, rows, [])
+    got = gb._read_jsonl(organ["GRAPH"], note, since=NOW - timedelta(days=14), births=True)
+    assert [r["id"] for r in got] == [f"EURUSD.carry.{k}" for k in range(14, 20)]
+    assert note["hypothesis_graph.jsonl"].startswith("TRUNCATED_KEPT_NEWEST(6 of 20")
+
+
+def test_an_id_born_before_the_horizon_is_not_reborn_by_a_recent_fate_row(organ):
+    """The graph is append-on-change: a death row today of a cell born a month ago is not intake."""
+    born_long_ago = _born("EURUSD", "carry", n=7, hours_ago=24 * 40)
+    died_today = {**_born("EURUSD", "carry", n=7, hours_ago=2.0), "fate": "DEAD"}
+    _plant(organ, [born_long_ago, *_baseline_born(), died_today], [])
+    doc = gb.build(now=NOW)
+    assert doc["windows"]["24h"]["intake"]["born_cells"] == 10
