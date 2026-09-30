@@ -376,8 +376,8 @@ function Publish-StateOnto {
     }
     $idx = Join-Path ([System.IO.Path]::GetTempPath()) ("mt5-state-index-{0}" -f $PID)
     $prevIndex = $env:GIT_INDEX_FILE
-    for ($attempt = 1; $attempt -le 3; $attempt++) {
-        if ($attempt -gt 1) {
+    for ($try = 1; $try -le 3; $try++) {
+        if ($try -gt 1) {
             $rc = Git-In-Repo @("fetch", "origin", $Branch)
             if ($rc -ne 0) { Write-SyncLog "publish: re-fetch failed rc=$rc"; return $false }
         }
@@ -422,7 +422,7 @@ function Publish-StateOnto {
                            $Branch, $commit.Substring(0, 12), $n)
             return $true
         }
-        Write-SyncLog "publish: push of $($commit.Substring(0, 12)) rejected (attempt $attempt); origin moved -- re-basing onto the new tip"
+        Write-SyncLog "publish: push of $($commit.Substring(0, 12)) rejected (attempt $try); origin moved -- re-basing onto the new tip"
     }
     Write-SyncLog "ABORT: box state could not be published after 3 attempts"
     return $false
