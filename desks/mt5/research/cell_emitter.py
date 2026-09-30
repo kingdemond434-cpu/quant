@@ -811,7 +811,7 @@ def _fixture_files(fixtures: Path) -> dict[str, list[dict[str, str]]]:
 
 def run(*, budget_s: float = 300.0, write: bool = True, fixtures: Path | None = None,
         sources: Path = SOURCES, state_path: Path = STATE, donate_dir: Path = DONATE_DIR,
-        report_path: Path = REPORT) -> dict[str, Any]:
+        report_path: Path = REPORT, provenance_path: Path | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     cap = None
     with contextlib.suppress(ValueError):
@@ -836,6 +836,7 @@ def run(*, budget_s: float = 300.0, write: bool = True, fixtures: Path | None = 
     worked = 0
     for g in order:
         name = str(g.get("name"))
+        gid = str(g.get("id") or name)
         st: dict[str, Any] = {"route": g.get("route"), "region": g.get("region"),
                               "listed": 0, "fetched": 0, "parsed": 0, "mapped_exact": 0,
                               "mapped_hypothesis": 0, "unmapped": 0, "donated": 0, "cells": 0,
@@ -864,9 +865,9 @@ def run(*, budget_s: float = 300.0, write: bool = True, fixtures: Path | None = 
             for k in ("fetched", "parsed", "donated", "cells"):
                 st[k] = None                                    # UNMEASURED, never 0
             continue
-        off = int(cursors.get(name) or 0) % len(files)
+        off = int(cursors.get(gid) or 0) % len(files)
         batch = (files[off:] + files[:off])[:per_ground]
-        cursors[name] = (off + len(batch)) % len(files)
+        cursors[gid] = (off + len(batch)) % len(files)
         http_errors: Counter[str] = Counter()
         for f in batch:
             if time.monotonic() - t0 > budget:
@@ -930,12 +931,13 @@ def run(*, budget_s: float = 300.0, write: bool = True, fixtures: Path | None = 
         _atomic_write(out, rows)
         donated_to = str(out)
         with contextlib.suppress(Exception):
-            from libs.data.datahub import record_mined_source
+            from libs.data.datahub import MINED_SOURCES, record_mined_source
             for r in rows:
                 record_mined_source(repo=str(r.get("ground")), url=str(r.get("url")),
                                     commit=str(r.get("content_sha256"))[:16],
                                     license_=str(r.get("license")), file=str(r.get("file")),
-                                    mechanism=str(r.get("mechanism"))[:200], code_copied=False)
+                                    mechanism=str(r.get("mechanism"))[:200], code_copied=False,
+                                    path=provenance_path or MINED_SOURCES)
     if write and fixture_map is None:
         if len(seen) > SEEN_CAP:
             seen = dict(sorted(seen.items(), key=lambda kv: kv[1])[-SEEN_CAP:])

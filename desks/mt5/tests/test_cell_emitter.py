@@ -60,7 +60,11 @@ def test_every_fixture_is_marked_and_hash_pinned() -> None:
 def test_grounds_registry_is_data_and_every_route_is_known() -> None:
     reg = json.loads(ce.SOURCES.read_text("utf-8"))
     assert reg["grounds"], "the grounds registry is empty"
+    ids = [g["id"] for g in reg["grounds"]]
+    assert len(ids) == len(set(ids)), "ground ids must be unique (they key the cursor)"
     for g in reg["grounds"]:
+        for k in ("id", "cadence", "auth", "license", "cursor", "region", "language"):
+            assert g.get(k), f"{g['name']} lacks {k}: rows must be absorbable by a wider roster"
         assert g["route"] in {"github_repo", "gitee_repo", "github_code_search", "page_code"}
         assert g.get("default_instruments"), g["name"]
         if g.get("venue") == "crypto_exchange":
@@ -214,7 +218,8 @@ def test_live_route_falls_back_to_seeds_donates_and_advances_its_cursor(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _fake_network(monkeypatch)
     kw = {"state_path": tmp_path / "state.json", "donate_dir": tmp_path / "donate",
-          "report_path": tmp_path / "CELL_EMITTER.json"}
+          "report_path": tmp_path / "CELL_EMITTER.json",
+          "provenance_path": tmp_path / "mined_sources.jsonl"}
     doc = ce.run(write=True, **kw)
     assert doc["mode"] == "LIVE"
     vn = doc["per_source"]["vnpy CTA strategies"]
@@ -229,7 +234,8 @@ def test_live_route_falls_back_to_seeds_donates_and_advances_its_cursor(
                         for r in rows)
     assert not any(r.get("fixture") for r in rows)
     st = json.loads((tmp_path / "state.json").read_text())
-    assert st["file_cursor"]["vnpy CTA strategies"] == 0   # 8 seeds, slice of 12 -> wraps
+    assert st["file_cursor"]["vnpy_cta_strategies"] == 0   # 8 seeds, slice of 12 -> wraps
+    assert (tmp_path / "mined_sources.jsonl").read_text().count("\n") == len(rows)
     assert st["seen"]
     # second pass: unchanged bytes are not re-donated
     doc2 = ce.run(write=True, **kw)
