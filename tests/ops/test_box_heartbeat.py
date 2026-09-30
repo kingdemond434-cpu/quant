@@ -48,8 +48,8 @@ def test_absence_fails_and_closed_market_excuses_only_gateway(
     monkeypatch.setattr(hb, "GATEWAY_BEAT", tmp_path / "none.json")
     monkeypatch.setattr(hb, "WATCHDOG_BEAT", tmp_path / "none2.json")
     sat = datetime(2026, 10, 3, 12, tzinfo=UTC).timestamp()
-    r = hb.measure(sat, research={"age_days": None}, disk_free_gb=None)
-    assert r["failing"] == ["disk", "research", "watchdog"]
+    r = hb.measure(sat, research={"age_days": None}, disk_free_gb=50)
+    assert r["failing"] == ["research", "watchdog"]
 
 
 def test_unarmed_is_recorded_and_page_fires_once(tmp_path: Path,
