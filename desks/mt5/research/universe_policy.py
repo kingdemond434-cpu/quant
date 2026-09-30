@@ -200,10 +200,22 @@ def lane(symbol: str) -> str:
 #: bet: it ranks a share against its peers on the same date, so each name's own disclosures are
 #: the idiosyncratic noise the class book diversifies, not the signal.
 #: Pinned to `mt5desk.families_cross_sectional.CROSS_SECTIONAL_FAMILIES` by a test.
+#:
+#: EXTENDED 2026-09-30 by the SECTOR book (the semiconductor peer class, `mt5desk.families_sector`)
+#: and the QUANTAMENTAL books (point-in-time SEC fundamentals ranked within the equity class,
+#: `mt5desk.families_quantamental`). Both are cross-sectional by construction -- every leg is
+#: ranked against its peers on the same date -- so they are admitted on the same terms.
 CROSS_SECTIONAL_FAMILIES = frozenset({
     "cross_sectional_class_momentum", "cross_sectional_class_reversal",
     "cross_sectional_class_value", "cross_sectional_class_low_vol",
     "crisis_only_class_defensive", "lead_lag_class_catchup",
+    # the semiconductor sector book
+    "semis_sector_momentum", "semis_sector_reversal", "semis_sector_value",
+    "semis_leader_catchup",
+    # the quantamental books
+    "quantamental_value", "quantamental_quality", "quantamental_earnings_yield",
+    # the INDIRECT use of fundamentals: a class-book leg gated by a valuation/quality regime
+    "valuation_regime_conditioned",
 })
 
 
@@ -215,6 +227,8 @@ def is_equity(symbol: str) -> bool:
 def may_hypothesise(symbol: str, family: object = None) -> bool:
     """True for instruments whose edge is sought statistically -- and, for a share CFD, only when
     `family` is one of the cross-sectional class books (principal 2026-09-30)."""
+    if is_delisted(symbol):
+        return False                       # untradable now: never hunted, never placed
     if lane(symbol) == HYPOTHESIS:
         return True
     return (str(family or "") in CROSS_SECTIONAL_FAMILIES) and is_equity(symbol)
@@ -271,9 +285,10 @@ _COMMODITY_CLASSES = _norm_set({"commodity", "commodities", "soft commodity", "s
 _BOND_CLASSES = _norm_set({"bond", "bonds"})
 _CRYPTO_CLASSES = _norm_set({"crypto", "cryptocurrency"})
 
-#: The peer classes, in the order reports list them.
+#: The peer classes, in the order reports list them. `semis` is a SECTOR book (below): a second,
+#: narrower class its members belong to beside their primary one.
 PEER_CLASSES: tuple[str, ...] = ("fx_usd", "fx_cross", "index", "commodity", "bond", "crypto",
-                                 "equity")
+                                 "equity", "semis")
 
 
 def _pair_legs(symbol: str) -> tuple[str, str] | None:
@@ -291,6 +306,8 @@ def peer_class(symbol: str) -> str | None:
     count one bet twice (a metal quoted in a second currency, the dollar basket among indices).
     """
     try:
+        if is_delisted(symbol):
+            return None                    # a ranking-history peer only, never a cell
         if is_equity(symbol):
             return "equity"
         if lane(symbol) != HYPOTHESIS:
@@ -316,6 +333,107 @@ def peer_class(symbol: str) -> str | None:
     return None
 
 
+# =============================================================================================
+# SECTOR BOOKS (2026-09-30): a narrower peer class a member belongs to BESIDE its primary one.
+#
+# The broker registry carries no sector field (every share CFD row has `sector: None`), so a
+# sector's membership cannot be derived the way an asset class is. It is declared here by ISSUER
+# -- the company, with the spellings a broker uses for it -- and RESOLVED against the registry on
+# every read: a name the broker does not quote is reported ABSENT by `sector_resolution`, never
+# faked, and a registry row that is not a share CFD never joins as an issuer. A PROXY leg is a
+# hypothesis-lane instrument whose economics are the sector's (USDKRW: Korea's exports are
+# dominated by memory and foundry, so the won is read as the sector's Korean leg, in dollars).
+# =============================================================================================
+
+#: book -> {"issuers": {issuer: (broker spellings, first match wins)}, "proxies": {symbol: why},
+#:          "leaders": (issuers the lead-lag leg treats as the SOXX-like leader basket)}
+SECTOR_BOOKS: dict[str, dict[str, Any]] = {
+    "semis": {
+        "issuers": {
+            "NVIDIA": ("NVIDIA", "NVDA"),
+            "AMD": ("AMD", "AdvancedMicroDevices"),
+            "Intel": ("Intel", "INTC"),
+            "Micron": ("MicronTechnology", "Micron", "MU"),
+            "TSMC": ("TSMC", "TaiwanSemiconductor", "TSM"),
+            "Qualcomm": ("Qualcomm", "QCOM"),
+            "Broadcom": ("Broadcom", "AVGO"),
+            "Texas Instruments": ("TexasInstruments", "TXN"),
+            "Applied Materials": ("AppliedMaterials", "AMAT"),
+        },
+        "proxies": {"USDKRW": "Korea proxy leg: memory and foundry dominate Korean exports, "
+                              "so the won (read in dollars) carries the sector's Korean leg",
+                    "JPN225": "Japan proxy leg: the Nikkei 225 is price-weighted and Advantest, "
+                              "Tokyo Electron, Disco and Screen are among its heaviest members, "
+                              "so it carries the sector's Japanese equipment leg"},
+        "leaders": ("NVIDIA", "Broadcom", "TSMC"),
+        # CULTURE PROVENANCE (principal 2026-09-30 14:18): the supply-chain culture each LOCAL
+        # member speaks for, who trades it, and why its version fails at different times from
+        # the US-listed names. Members not named here are US-listed US issuers.
+        "cultures": {
+            "TSMC": ("TW", "mixed",
+                     "the ADR trades against a Taipei line under foreign-ownership limits and TWD "
+                     "capital-flow rules, so it breaks on Taiwan flow and cross-strait shocks "
+                     "that leave the US-listed names untouched"),
+            "USDKRW": ("KR", "policy_driven",
+                       "the won's memory-cycle leg fails when Bank of Korea smoothing or National "
+                       "Pension Service FX hedging overrides the export signal, which happens on "
+                       "Korean policy dates, not US ones"),
+            "JPN225": ("JP", "mixed",
+                       "the Nikkei's equipment leg is diluted by price-weighted non-semis giants "
+                       "and by BoJ and NISA retail flows, so it fails on yen and domestic-flow "
+                       "regimes rather than on the US semis cycle"),
+        },
+        "default_culture": ("US", "institutional",
+                            "the US-listed semis leg is the standard version: it fails in "
+                            "crowded AI-capex unwinds and index-rebalance flows"),
+    },
+}
+
+#: Classes whose USDXXX members are inverted to read as the non-USD currency in dollars.
+ORIENTED_CLASSES = frozenset({"fx_usd", *SECTOR_BOOKS})
+
+
+def sector_resolution(book: str) -> dict[str, Any]:
+    """{"issuers": {issuer: symbol}, "proxies": [symbols], "absent": [issuers or proxies],
+    "leaders": [symbols]} for `book`, resolved against the broker registry now. Never raises."""
+    spec = SECTOR_BOOKS.get(str(book)) or {}
+    reg = _registry()
+    issuers: dict[str, str] = {}
+    absent: list[str] = []
+    for issuer, spellings in (spec.get("issuers") or {}).items():
+        hit = None
+        for name in spellings:
+            row = reg.get(str(name).upper())
+            if isinstance(row, dict) and is_equity(name):
+                hit = str(row.get("symbol") or name)
+                break
+        if hit is None:
+            absent.append(issuer)
+        else:
+            issuers[issuer] = hit
+    proxies: list[str] = []
+    for sym in spec.get("proxies") or {}:
+        row = reg.get(str(sym).upper())
+        if isinstance(row, dict) and lane(sym) == HYPOTHESIS:
+            proxies.append(str(row.get("symbol") or sym))
+        else:
+            absent.append(str(sym))
+    leaders = [issuers[i] for i in spec.get("leaders") or () if i in issuers]
+    return {"book": str(book), "issuers": issuers, "proxies": proxies, "absent": absent,
+            "leaders": leaders}
+
+
+def sector_books_of(symbol: str) -> list[str]:
+    """Every sector book `symbol` resolves into."""
+    s = str(symbol).strip().upper()
+    out = []
+    for book in SECTOR_BOOKS:
+        res = sector_resolution(book)
+        if s in {m.upper() for m in [*res["issuers"].values(), *res["proxies"]]}:
+            out.append(book)
+    return out
+
+
 def usd_orientation(symbol: str) -> int:
     """+1 when the pair's price IS the non-USD currency in dollars (XXXUSD), -1 when it must be
     inverted to read that way (USDXXX), +1 for anything that is not a USD pair."""
@@ -332,9 +450,85 @@ def peer_classes() -> dict[str, list[str]]:
         c = peer_class(k)
         if c is not None:
             out.setdefault(c, []).append(str(v.get("symbol") or k))
+    for book in SECTOR_BOOKS:
+        res = sector_resolution(book)
+        out[book] = [*res["issuers"].values(), *res["proxies"]]
     return {k: sorted(set(v)) for k, v in out.items()}
 
 
 def class_members(klass: str) -> list[str]:
     """Every registry symbol whose peer class is `klass`, sorted."""
     return list(peer_classes().get(str(klass), []))
+
+
+# =============================================================================================
+# DELISTED ISSUERS: THE RANKING HISTORY IS NOT TODAY'S REGISTRY (survivorship, 2026-09-30).
+#
+# Every class book above ranks a share against the peers the broker quotes TODAY. Run backwards,
+# that cross-section is survivors only: Xilinx is not in 2019's semis book because it no longer
+# exists in 2026, so every historical rank was taken among the names that turned out to last,
+# which flatters any leg that bets on continuation and hides the ones acquired or failed.
+#
+# These issuers therefore enter the RANKING HISTORY -- their point-in-time SEC fundamentals
+# (research/sec_fundamentals.py resolves each one's CIK from EDGAR's own name list and reads its
+# filing history for the Form 25 / 15 that ended it) and their bars wherever the store holds any
+# -- and they are UNTRADABLE NOW: `is_delisted` is True, `peer_class` never classifies them,
+# `may_hypothesise` never admits them, `class_panel` refuses to build a panel FOR one, and no
+# producer enumerates them. They are peers, never cells. A name whose snapshots stop at its last
+# filing leaves the cross-section by itself (`fundamentals_pit.fresh`), exactly when it would have.
+#
+# DECLARED BY ISSUER, RESOLVED FROM EDGAR, NEVER FAKED: the CIK is never written here. A name EDGAR
+# cannot resolve uniquely is reported (`ambiguous` / `absent`) in FUNDAMENTALS_COVERAGE.json.
+# =============================================================================================
+
+#: name -> {"ticker": former ticker, "edgar_names": EDGAR conformed names (normalised match),
+#:          "classes": peer classes whose ranking history it belongs to, "why": how it ended}
+DELISTED_ISSUERS: dict[str, dict[str, Any]] = {
+    # semiconductors: both the equity class and the semis sector book
+    "Xilinx": {"ticker": "XLNX", "edgar_names": ("XILINX INC",),
+               "classes": ("equity", "semis"), "why": "acquired by AMD, 2022"},
+    "MaximIntegrated": {"ticker": "MXIM", "edgar_names": ("MAXIM INTEGRATED PRODUCTS INC",),
+                        "classes": ("equity", "semis"), "why": "acquired by Analog Devices, 2021"},
+    "LinearTechnology": {"ticker": "LLTC", "edgar_names": ("LINEAR TECHNOLOGY CORP",),
+                         "classes": ("equity", "semis"), "why": "acquired by Analog Devices, 2017"},
+    "Altera": {"ticker": "ALTR", "edgar_names": ("ALTERA CORP",),
+               "classes": ("equity", "semis"), "why": "acquired by Intel, 2015"},
+    "CypressSemiconductor": {"ticker": "CY", "edgar_names": ("CYPRESS SEMICONDUCTOR CORP",),
+                             "classes": ("equity", "semis"), "why": "acquired by Infineon, 2020"},
+    "Mellanox": {"ticker": "MLNX", "edgar_names": ("MELLANOX TECHNOLOGIES LTD",),
+                 "classes": ("equity", "semis"), "why": "acquired by NVIDIA, 2020"},
+    "Microsemi": {"ticker": "MSCC", "edgar_names": ("MICROSEMI CORP",),
+                  "classes": ("equity", "semis"), "why": "acquired by Microchip, 2018"},
+    "IntegratedDeviceTechnology": {"ticker": "IDTI",
+                                   "edgar_names": ("INTEGRATED DEVICE TECHNOLOGY INC",),
+                                   "classes": ("equity", "semis"),
+                                   "why": "acquired by Renesas, 2019"},
+    # large caps the US share-CFD universe would have quoted
+    "Twitter": {"ticker": "TWTR", "edgar_names": ("TWITTER INC",), "classes": ("equity",),
+                "why": "taken private, 2022"},
+    "ActivisionBlizzard": {"ticker": "ATVI", "edgar_names": ("ACTIVISION BLIZZARD INC",),
+                           "classes": ("equity",), "why": "acquired by Microsoft, 2023"},
+    "VMware": {"ticker": "VMW", "edgar_names": ("VMWARE INC",), "classes": ("equity",),
+               "why": "acquired by Broadcom, 2023"},
+    "Celgene": {"ticker": "CELG", "edgar_names": ("CELGENE CORP",), "classes": ("equity",),
+                "why": "acquired by Bristol-Myers Squibb, 2019"},
+    "RedHat": {"ticker": "RHT", "edgar_names": ("RED HAT INC",), "classes": ("equity",),
+               "why": "acquired by IBM, 2019"},
+    "Monsanto": {"ticker": "MON", "edgar_names": ("MONSANTO CO",), "classes": ("equity",),
+                 "why": "acquired by Bayer, 2018"},
+    "Splunk": {"ticker": "SPLK", "edgar_names": ("SPLUNK INC",), "classes": ("equity",),
+               "why": "acquired by Cisco, 2024"},
+    "Seagen": {"ticker": "SGEN", "edgar_names": ("SEAGEN INC", "SEATTLE GENETICS INC"),
+               "classes": ("equity",), "why": "acquired by Pfizer, 2023"},
+}
+
+
+def is_delisted(symbol: object) -> bool:
+    """True for a declared delisted issuer: a ranking-history peer, never tradable now."""
+    s = str(symbol or "").strip().upper()
+    return any(s == k.upper() for k in DELISTED_ISSUERS)
+
+
+def delisted_members(klass: str) -> list[str]:
+    """The delisted issuers whose ranking history belongs to peer class `klass`, sorted."""
+    return sorted(k for k, v in DELISTED_ISSUERS.items() if str(klass) in (v.get("classes") or ()))

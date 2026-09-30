@@ -546,7 +546,10 @@ NOT_SOURCED_HERE = {
     # same trials twice.
     **dict.fromkeys(("cross_sectional_class_momentum", "cross_sectional_class_reversal",
                      "cross_sectional_class_value", "cross_sectional_class_low_vol",
-                     "crisis_only_class_defensive", "lead_lag_class_catchup"),
+                     "crisis_only_class_defensive", "lead_lag_class_catchup",
+                     "semis_sector_momentum", "semis_sector_reversal", "semis_sector_value",
+                     "semis_leader_catchup", "quantamental_value", "quantamental_quality",
+                     "quantamental_earnings_yield", "valuation_regime_conditioned"),
                     "research/cross_sectional_breadth enumerates the class x family x params "
                     "grid, measures each cell's firing against the gauntlet's 60-day floor and "
                     "charges its own trials; sweeping it here would charge them twice"),

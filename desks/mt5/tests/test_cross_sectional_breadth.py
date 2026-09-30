@@ -223,6 +223,7 @@ def test_seeder_donates_only_cells_over_the_floor(universe, tmp_path, monkeypatc
     monkeypatch.setattr(csb, "BREADTH_LEDGER", tmp_path / "absent2.json")
     monkeypatch.setattr(csb, "CANON", tmp_path / "absent3.json")
     monkeypatch.setattr(csb, "VERDICTS", tmp_path / "absent4.jsonl")
+    monkeypatch.setattr(csb, "TRIALS_LEDGER", tmp_path / "screen_trials.jsonl")
     donated: list[list[dict]] = []
 
     def fake_donate(source, rows, tests_run):
@@ -293,6 +294,27 @@ def test_report_reads_occupancy_verdicts_and_certificates(universe, tmp_path, mo
     assert doc["certificates"]["total"] == 1
 
 
+def test_empty_target_flag_tracks_the_original_fifteen_and_reports_the_added_apart(
+        tmp_path, monkeypatch):
+    """The two clusters appended 2026-09-30 are reported, never counted into the tracked empty
+    set (audit: cross_sectional_breadth :422 counted them)."""
+    from libs.research.alpha_clusters import CLUSTERS, ORIGINAL_CLUSTER_KEYS
+    from research import cross_sectional_breadth as csb
+    (tmp_path / "eb.json").write_text(json.dumps({"clusters": {
+        "occupied_either": ["session_liquidity"]}}), "utf-8")
+    monkeypatch.setattr(csb, "BREADTH", tmp_path / "eb.json")
+    occ = csb._cluster_occupancy()
+    added = {c.key for c in CLUSTERS if c.added is not None}
+    assert added and not added & set(occ["empty"])
+    assert set(occ["empty"]) <= ORIGINAL_CLUSTER_KEYS
+    assert set(occ["empty_added"]) == added
+    fams = {f["family"]: f for f in csb._families(occ, {"status": "UNMEASURED"})}
+    assert fams["semis_sector_momentum"]["target_cluster_empty_now"] is False
+    assert fams["semis_sector_momentum"]["target_cluster_added_empty_now"] is True
+    assert fams["cross_sectional_class_momentum"]["target_cluster_empty_now"] is True
+    assert fams["cross_sectional_class_momentum"]["target_cluster_added_empty_now"] is False
+
+
 def test_hourly_leg_is_wired():
     """The seeder is a costed leg of the hourly cycle, in a department and a layer."""
     text = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
@@ -328,7 +350,10 @@ def test_real_registry_ranks_share_cfds_only_in_their_own_class():
     2026-09-30); every other class is hypothesis-lane only, and indices are ranked too."""
     from research import universe_policy as up
     classes = up.peer_classes()
-    ranked = {s for k, v in classes.items() if k != "equity" for s in v}
+    # a SECTOR book (semis) mixes its share-CFD issuers with a hypothesis-lane proxy leg by
+    # design; its own pins live in test_semis_and_fundamentals.py
+    ranked = {s for k, v in classes.items() if k != "equity" and k not in up.SECTOR_BOOKS
+              for s in v}
     if not ranked:
         pytest.skip("registry absent on this host -- UNMEASURED, not a pass")
     assert all(up.lane(s) == up.HYPOTHESIS for s in ranked)
@@ -337,10 +362,12 @@ def test_real_registry_ranks_share_cfds_only_in_their_own_class():
 
 
 def test_equity_admission_is_pinned_to_the_class_book_families():
+    from mt5desk.class_books import FAMILIES
     from mt5desk.families_cross_sectional import CROSS_SECTIONAL_FAMILIES
 
     from research import universe_policy as up
-    assert set(CROSS_SECTIONAL_FAMILIES) == set(up.CROSS_SECTIONAL_FAMILIES)
+    assert set(FAMILIES) == set(up.CROSS_SECTIONAL_FAMILIES)
+    assert set(CROSS_SECTIONAL_FAMILIES) <= set(up.CROSS_SECTIONAL_FAMILIES)
 
 def test_merge_door_admits_a_share_cfd_only_in_a_class_book(tmp_path, monkeypatch):
     """The docket door passes the row's family, so AAPL momentum reaches the judge and AAPL
@@ -367,3 +394,35 @@ def test_one_argument_doors_still_work():
     judged, off, _, _ = mh.split_by_lane([{"symbol": "X", "family": "f"}],
                                          lambda s: "event", "now")
     assert not judged and len(off) == 1
+
+
+def test_a_null_pass_still_charges_its_full_screened_width(universe, tmp_path, monkeypatch):
+    """A pass with no hits writes no discovery file, so it used to charge ZERO trials. The full
+    screened width now goes to the census, per family, and the lifetime ledger counts it."""
+    from libs.research import experiment_ledger as el
+    from research import cross_sectional_breadth as csb
+    from research import proposer_common as pc
+    monkeypatch.setattr(xs, "_policy", lambda: _stub_policy(MEMBERS))
+    for name, fname in (("STATE", "state.json"), ("OUT", "out.json"), ("BREADTH", "a.json"),
+                        ("BREADTH_LEDGER", "b.json"), ("CANON", "c.json"),
+                        ("VERDICTS", "d.jsonl")):
+        monkeypatch.setattr(csb, name, tmp_path / fname)
+    desk = tmp_path / "desk"
+    monkeypatch.setattr(csb, "TRIALS_LEDGER", desk / "data" / "screen_trials.jsonl")
+    monkeypatch.setattr(csb, "SEED_FLOOR", 10**9)          # nothing can clear: a null pass
+    monkeypatch.setattr(pc, "donate", lambda *a, **k: pytest.fail("a null pass donated"))
+    doc = csb.run(budget_s=600, symbols=MEMBERS[:2])
+    seeding = doc["seeding"]
+    width = sum(int(c.get("measured_this_pass", 0))
+                for c in seeding["cells_by_family"].values())
+    assert width > 0 and seeding["candidates_this_pass"] == 0
+    assert seeding["trials_charged"]["screened"] == width
+    rows = [json.loads(ln) for ln in (desk / "data" / "screen_trials.jsonl")
+            .read_text("utf-8").splitlines()]
+    assert len(rows) == 1 and sum(rows[0]["by_family"].values()) == width
+    monkeypatch.setattr(el, "DESK", desk)
+    total, by_fam = el._proposer_counts()
+    assert total == width and by_fam == rows[0]["by_family"]
+    # the same day again screens nothing new and charges nothing twice
+    csb.run(budget_s=600, symbols=MEMBERS[:2])
+    assert len((desk / "data" / "screen_trials.jsonl").read_text("utf-8").splitlines()) == 1

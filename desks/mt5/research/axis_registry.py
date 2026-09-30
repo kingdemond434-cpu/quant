@@ -173,13 +173,25 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
                                                      " cross_sectional_class_value"
-                                                     " cross_sectional_class_low_vol",
+                                                     " cross_sectional_class_low_vol"
+                                                     " semis_sector_value",
     "relative_value_dislocation microstructure limit": "triangle",
-    "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup",
+    "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
+                                            " semis_leader_catchup",
     # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
     # against its own peer class on the same date.
-    "trend_persistence cross_asset market": "cross_sectional_class_momentum",
-    "range_reversion cross_asset market": "cross_sectional_class_reversal",
+    "trend_persistence cross_asset market": "cross_sectional_class_momentum"
+                                            " semis_sector_momentum",
+    "range_reversion cross_asset market": "cross_sectional_class_reversal"
+                                          " semis_sector_reversal",
+    # The quantamental books (2026-09-30, `mt5desk.families_quantamental`): a share ranked
+    # within the equity class on SEC fundamentals as accepted -- a dislocation between price and
+    # a disclosed fundamental, read from an outside dataset rather than from the tape.
+    "relative_value_dislocation event market": "quantamental_value quantamental_quality"
+                                               " quantamental_earnings_yield",
+    # An OPERATOR over a class-book leg: the base leg's signals kept only in a lagged valuation or
+    # quality regime read from SEC fundamentals (`mt5desk.valuation_regime`).
+    "regime_transition event market": "valuation_regime_conditioned",
     "forced_liquidation cross_asset market": "crisis_only_class_defensive",
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
                                         " mean_reversion_rsi range_reversion",

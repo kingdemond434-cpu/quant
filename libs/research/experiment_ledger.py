@@ -42,26 +42,85 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
     return sum(by_fam.values()), by_fam
 
 
+def _count(v: Any) -> int | None:
+    """A non-negative integer trial count, or None when the field is absent or not a count."""
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0:
+        return None
+    return int(v)
+
+
+def charge_by_family(tests_run: Any, rows: Any, by_family: Any = None) -> dict[str, int]:
+    """Charge a discovery file's trials to families by what each row actually cost.
+
+    THE ONE PLACE A FILE-LEVEL `tests_run` IS SPLIT (audit 2026-09-30). The old split divided the
+    file's count evenly over its DISTINCT families with a floor, so a family with 40 rows was
+    charged the same as one with 1, and the floor's remainder was charged to nobody.
+
+    Order of evidence, strongest first:
+      1. a declared per-family count on the file (`by_family`), charged as written;
+      2. a per-row count (`tests_run` / `n_trials` / `trials` on a discovery row), charged to
+         that row's family;
+      3. whatever of the file's `tests_run` those two do not explain, split over the remaining
+         rows in proportion to how many rows each family has, largest remainder first, so the
+         integers sum exactly.
+    With no family anywhere, the whole count goes to "?".
+
+    INVARIANT, pinned by tests: the charge sums to max(file tests_run, declared counts) -- it can
+    exceed the file's own figure when the rows declare more, and never falls below it.
+    """
+    n = _count(tests_run) or 0
+    charge: dict[str, int] = {}
+    if isinstance(by_family, dict):
+        for fam, k in by_family.items():
+            c = _count(k)
+            if c:
+                charge[str(fam)] = charge.get(str(fam), 0) + c
+    weights: dict[str, int] = {}
+    if not charge:
+        for r in rows if isinstance(rows, list) else []:
+            if not isinstance(r, dict) or not r.get("family"):
+                continue
+            fam = str(r["family"])
+            own = next((c for c in (_count(r.get(k)) for k in ("tests_run", "n_trials", "trials"))
+                        if c is not None), None)
+            if own is not None:
+                charge[fam] = charge.get(fam, 0) + own
+            else:
+                weights[fam] = weights.get(fam, 0) + 1
+    rest = n - sum(charge.values())
+    if rest > 0:
+        if not weights:
+            # every row declared its count (or none named a family): the unexplained remainder
+            # goes to the declared families by their charge, or to "?" when there are none.
+            weights = dict(charge) if charge else {"?": 1}
+        w = sum(weights.values())
+        share = {f: rest * k // w for f, k in weights.items()}
+        left = rest - sum(share.values())
+        for f in sorted(weights, key=lambda f: (-((rest * weights[f]) % w), f))[:left]:
+            share[f] += 1
+        for f, k in share.items():
+            if k:
+                charge[f] = charge.get(f, 0) + k
+    return charge
+
+
 def _proposer_counts() -> tuple[int, dict[str, int]]:
     """`tests_run` on every discovery file, attributed to the families it proposed."""
     total = 0
     by_fam: dict[str, int] = {}
     intel = DESK / "data" / "intelligence"
-    if not intel.exists():
-        return 0, {}
-    for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
+    for f in (glob.glob(str(intel / "*" / "discoveries_*.json")) if intel.exists() else []):
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
             continue
         if not isinstance(doc, dict) or not isinstance(doc.get("tests_run"), (int, float)):
             continue
-        n = int(doc["tests_run"])
-        total += n
-        fams = {str(r.get("family")) for r in (doc.get("discoveries") or [])
-                if isinstance(r, dict) and r.get("family")}
-        for fam in fams or {"?"}:
-            by_fam[fam] = by_fam.get(fam, 0) + n // max(1, len(fams))
+        charge = charge_by_family(doc["tests_run"], doc.get("discoveries"),
+                                  doc.get("tests_by_family"))
+        total += sum(charge.values())
+        for fam, k in charge.items():
+            by_fam[fam] = by_fam.get(fam, 0) + k
     # FACTOR x MODEL PAIRINGS ARE TRIALS TOO. Co-evolution writes no discovery file (a pairing is
     # not a cell), so its ledger is read here and charged to the model_pairing family.
     try:
@@ -72,6 +131,23 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             k = int(row.get("pairings") or 0) if isinstance(row, dict) else 0
             total += k
             by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
+    except (OSError, ValueError, TypeError):
+        pass
+    # SCREENS THAT FOUND NOTHING ARE TRIALS TOO. A pass with no candidate writes no discovery
+    # file, so its width is appended to screen_trials.jsonl instead (research/
+    # cross_sectional_breadth.py) and charged here, per family.
+    try:
+        for ln in (DESK / "data" / "screen_trials.jsonl").read_text("utf-8").splitlines():
+            if not ln.strip():
+                continue
+            row = json.loads(ln)
+            widths = row.get("by_family") if isinstance(row, dict) else None
+            if not isinstance(widths, dict):
+                continue
+            for fam, k in widths.items():
+                n = int(k or 0)
+                total += n
+                by_fam[str(fam)] = by_fam.get(str(fam), 0) + n
     except (OSError, ValueError, TypeError):
         pass
     return total, by_fam

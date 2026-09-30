@@ -976,7 +976,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage", "orthogonality_yield", "effective_trials"), "data"),
+                     "judge_coverage", "orthogonality_yield", "effective_trials",
+                     # point-in-time SEC fundamentals for the share CFDs (quantamental books)
+                     "sec_fundamentals"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -1763,6 +1765,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
+    # The SEC refresh stops itself at --budget-s 600 (stalest first, resumable); cap above it.
+    "sec_fundamentals": 700,
     "event_surprise": 400,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
@@ -3623,6 +3627,12 @@ def main() -> None:
     # crisis-only defensive, lead-lag catch-up -- mt5desk/families_cross_sectional.py) whose
     # lower-bound trade days clear the gauntlet's 60-day floor, through the one proposer door,
     # and writes reports/CROSS_SECTIONAL_BREADTH.json. Additive: no other miner is touched.
+    # POINT-IN-TIME FUNDAMENTALS (2026-09-30): SEC EDGAR companyfacts + submissions for every
+    # share CFD, each value stamped with its ACCEPTANCE time, into data/lake/fundamentals, with
+    # reports/FUNDAMENTALS_COVERAGE.json and reports/SECTOR_VALUATION_STATE.json. Runs BEFORE the
+    # class-book seeder, which ranks the quantamental books and the regime operator on it.
+    secf = _costed("sec_fundamentals", lambda: _producer(
+        "sec_fundamentals", "research/sec_fundamentals.py", "--once", "--budget-s", "600"))
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
@@ -5238,6 +5248,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
+                    "sec_fundamentals": secf,
                     "event_surprise": esur,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,

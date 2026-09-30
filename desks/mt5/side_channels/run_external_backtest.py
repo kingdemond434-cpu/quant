@@ -439,10 +439,21 @@ def route_by_lane(grid: list[dict]) -> tuple[list[dict], dict]:
         # behaviour and is safe; quietly discarding 61% of it because an import failed is not.
         return grid, {"status": f"UNAVAILABLE ({type(exc).__name__}: {exc})", "routed_out": 0}
 
+    # AMENDED 2026-09-30 (principal): a share CFD may be hunted in the cross-sectional class-book
+    # families -- `policy.CROSS_SECTIONAL_FAMILIES`, the equity class books, the semis sector book
+    # and the quantamental/valuation-regime books, every one ranked against the `equity` peer
+    # class -- and in no other statistical family. `policy.may_hypothesise(symbol, family)` is the
+    # one spelling of that rule; routing on `lane()` alone made those families unpassable here.
     kept, by_lane, syms = [], Counter(), {}
+    xs_kept: Counter = Counter()
     for cell in grid:
         sym = canonical_symbol(str(cell.get("symbol") or ""))
         lane = policy.lane(sym)
+        if lane != policy.HYPOTHESIS and policy.may_hypothesise(sym, cell.get("family")):
+            xs_kept[str(cell.get("family"))] += 1
+            by_lane[policy.HYPOTHESIS] += 1
+            kept.append(cell)
+            continue
         by_lane[lane] += 1
         syms.setdefault(lane, set()).add(sym)
         if lane == policy.HYPOTHESIS:
@@ -463,6 +474,7 @@ def route_by_lane(grid: list[dict]) -> tuple[list[dict], dict]:
         "routed_unclassified": by_lane.get(policy.UNCLASSIFIED, 0),
         "symbols_event": sorted(syms.get(policy.EVENT, ())),
         "symbols_unclassified": sorted(syms.get(policy.UNCLASSIFIED, ())),
+        "kept_equity_class_books": dict(sorted(xs_kept.items())),
         "policy": "desks/mt5/research/universe_policy.py",
     }
 

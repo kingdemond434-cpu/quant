@@ -134,9 +134,48 @@ def class_symbols(klass: str) -> list[str]:
         return []
 
 
+def sector_proxies(klass: str | None) -> frozenset[str]:
+    """The declared proxy legs of sector book `klass` (upper-cased), empty for any other class.
+    Read from the policy's static declaration, so it holds whether or not a registry is readable."""
+    try:
+        spec = (_policy().SECTOR_BOOKS or {}).get(str(klass)) or {}
+    except Exception:
+        return frozenset()
+    return frozenset(str(s).upper() for s in (spec.get("proxies") or {}))
+
+
+def history_members(klass: str | None) -> list[str]:
+    """Delisted issuers in `klass`'s RANKING HISTORY (research.universe_policy.DELISTED_ISSUERS):
+    peers a live name is ranked against on the dates they existed, never cells themselves."""
+    try:
+        return list(_policy().delisted_members(str(klass)))
+    except Exception:
+        return []
+
+
+def is_delisted(symbol: str) -> bool:
+    try:
+        return bool(_policy().is_delisted(symbol))
+    except Exception:
+        return False
+
+
+def _fundamentals_covered() -> set[str]:
+    try:
+        from mt5desk import fundamentals_pit as fp
+        return set(fp.covered_symbols())
+    except Exception:
+        return set()
+
+
 def orientation(symbol: str, klass: str | None) -> int:
-    """-1 when the pair must be inverted to read as a currency's dollar value (USDXXX in fx_usd)."""
-    if klass != "fx_usd":
+    """-1 when the pair must be inverted to read as a currency's dollar value (USDXXX in fx_usd,
+    or a USDXXX proxy leg of a sector book such as USDKRW in `semis`)."""
+    try:
+        oriented = _policy().ORIENTED_CLASSES
+    except Exception:
+        oriented = frozenset({"fx_usd"})
+    if klass not in oriented:
         return 1
     try:
         return int(_policy().usd_orientation(symbol))
@@ -215,26 +254,63 @@ def _decision_rows(d: pd.DataFrame, decision_hour: int,
 
 
 def class_panel(d: pd.DataFrame, symbol: str, *, decision_hour: int = 22,
-                max_stale_h: float = 12.0) -> dict | None:
+                max_stale_h: float = 12.0, klass: str | None = None,
+                fundamentals_history: bool = False) -> dict | None:
     """The class cross-section on `symbol`'s own decision bars, or None when there is none.
 
     Returns {"klass", "members", "own", "pos", "logv" (rows x members, oriented log values),
     "orient"}. `own` is the column holding `symbol`, read from `d` itself (the bars the caller
     handed in), never from the store, so the gauntlet's override and the live frame are honoured.
+
+    `klass` names a SECTOR book (e.g. `semis`) to rank within instead of the symbol's primary
+    peer class; `symbol` must then be a member of that book, or there is no panel.
+
+    SURVIVORSHIP. The class's DELISTED issuers (`history_members`) join the peer columns wherever
+    the bar store holds their history, so a rank taken in 2019 is taken among 2019's peers, not
+    among the survivors. With `fundamentals_history` (the quantamental books) a delisted issuer
+    whose SEC fundamentals are in the table joins even without bars, as a price-less column: its
+    price-free characteristics (margins, ROE) rank, its price ratios are NaN and simply absent.
+    A delisted issuer is NEVER the panel's own symbol: it is untradable now and is never placed.
     """
-    klass = class_of(symbol)
-    if not klass:
+    if is_delisted(symbol):
         return None
-    members = [s for s in class_symbols(klass) if s.upper() != symbol.upper()]
+    if klass is None:
+        klass = class_of(symbol)
+        if not klass:
+            return None
+        roster = class_symbols(klass)
+    else:
+        roster = class_symbols(klass)
+        if symbol.upper() not in {s.upper() for s in roster}:
+            return None
+    # A SECTOR BOOK'S PROXY LEGS ARE NEVER RANKED AGAINST (principal's ruling, 2026-09-30).
+    # The book ranks its ISSUERS against their equity peers; USDKRW and JPN225 are tradable proxy
+    # legs and conditioners, never part of the cross-section a share is benchmarked against. So
+    # a proxy is dropped from every panel's peer columns, and when `symbol` IS a proxy the panel
+    # is flagged: its own column rides along for pricing, but the families read the ISSUERS'
+    # aggregate, never a rank of the proxy among them.
+    proxies = sector_proxies(klass)
+    is_proxy = symbol.upper() in proxies
+    members = [s for s in roster if s.upper() != symbol.upper() and s.upper() not in proxies]
+    history = [h for h in history_members(klass)
+               if h.upper() not in {m.upper() for m in members}]
+    fund = _fundamentals_covered() if (history and fundamentals_history) else set()
     pos, stamps = _decision_rows(d, decision_hour, max_stale_h)
     if pos.size == 0:
         return None
     stale_ns = float(max_stale_h) * 3_600_000_000_000
     cols: list[np.ndarray] = []
     names: list[str] = []
-    for peer in members:
+    priced = 0
+    delisted_cols: list[str] = []
+    for peer in [*members, *history]:
+        is_hist = peer in history
         series = _load_series(peer)
         if series is None:
+            if is_hist and peer.upper() in fund:
+                cols.append(np.full(stamps.size, np.nan, dtype="float64"))
+                names.append(peer)
+                delisted_cols.append(peer)
             continue
         t, c = series
         j = np.searchsorted(t, stamps, side="right") - 1
@@ -244,17 +320,26 @@ def class_panel(d: pd.DataFrame, symbol: str, *, decision_hour: int = 22,
         fresh = has & ((stamps - t[jj]) <= stale_ns)
         v[fresh] = np.log(c[jj[fresh]].astype("float64")) * orientation(peer, klass)
         if np.isfinite(v).sum() == 0:
+            if is_hist and peer.upper() in fund:
+                cols.append(v)
+                names.append(peer)
+                delisted_cols.append(peer)
             continue
         cols.append(v)
         names.append(peer)
-    if len(names) + 1 < MIN_MEMBERS:
+        priced += 1
+        if is_hist:
+            delisted_cols.append(peer)
+    if priced + (0 if is_proxy else 1) < MIN_MEMBERS and (
+            len(names) + (0 if is_proxy else 1) < MIN_MEMBERS or not fundamentals_history):
         return None
     own_close = d["close"].to_numpy(dtype="float64")[pos]
     with np.errstate(divide="ignore", invalid="ignore"):
         own = np.where(own_close > 0, np.log(own_close), np.nan) * orientation(symbol, klass)
     logv = np.column_stack([own, *cols])
     return {"klass": klass, "members": [symbol, *names], "own": 0, "pos": pos,
-            "logv": logv, "orient": orientation(symbol, klass), "close": own_close}
+            "logv": logv, "orient": orientation(symbol, klass), "close": own_close,
+            "stamps": stamps, "proxy": is_proxy, "delisted": delisted_cols}
 
 
 # ------------------------------------------------------------------------------ primitives ---
@@ -373,13 +458,15 @@ def _signals(d: pd.DataFrame, panel: dict, side: np.ndarray, *, hold_d: int, sto
 
 
 def _prepare(df: pd.DataFrame, symbol: str, decision_hour: int,
-             max_stale_h: float) -> tuple[pd.DataFrame, dict] | None:
+             max_stale_h: float, klass: str | None = None,
+             fundamentals_history: bool = False) -> tuple[pd.DataFrame, dict] | None:
     if not symbol or df is None or len(df) == 0:
         return None
     d = _h1(df)
     if "close" not in d.columns:
         return None
-    panel = class_panel(d, symbol, decision_hour=decision_hour, max_stale_h=max_stale_h)
+    panel = class_panel(d, symbol, decision_hour=decision_hour, max_stale_h=max_stale_h,
+                        klass=klass, fundamentals_history=fundamentals_history)
     if panel is None:
         return None
     return d, panel
