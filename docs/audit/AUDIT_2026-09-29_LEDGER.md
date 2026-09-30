@@ -71,3 +71,10 @@ The re-sign for PR #52 was retried once, citing the principal's own words ("no r
 - **Independently confirmed by the placebo audit (PR #60):** positives at signal-outcome correlation 0.29 and 0.51 score dsr 0.056 against the 0.312 bar. A true edge needs about 0.71 to pass.
 - **Consequence:** on dockets of about 400 observations, no honest edge can certify. This is likely the largest lost-discovery cost on the desk.
 - **Fix:** a measured lifetime or per-family variance in the sealed gate. It requires editing and re-signing a judge file, and both steps are refused by the session filter (BLOCKED-CLASSIFIER).
+
+## Release authority flags, 2026-09-30
+
+The authority audit (`ops/release_authority.py`) raises two flags while the gateway's release identity allows new risk.
+
+- **Unsigned release: FIXED in part.** `release.seal()` never called `release_signing`, so every RELEASE.json was unsigned by construction. The signer also read a top-level `immutable_hash` that the record never carried, so a signature would have pinned an empty judge core. The seal now signs with the box key when one is present, records why when it is not, and writes `immutable_hash`. Two parts were refused by the session filter (Security Weaken) and were not retried: having Adopt-And-Seal create the box's signing key and sign CI-sealed records on the box. Until the box holds `data/secrets/release_signing.key`, seals stay unsigned with the reason written in `signature_note`. BLOCKED-CLASSIFIER.
+- **Survivor-canon hashes changing: NOT FIXED.** `release.verify()` counts `survivor_registry_hash` and `canon_sha256` as drift. The canon is rewritten by the certifier on the box after every seal, so the audit reads ATTENTION permanently. The gateway's `release_identity` already reports canon movement without refusing. The change to make `verify()` report canon movement under `state_moved`, matching the gateway, was refused as Security Weaken. BLOCKED-CLASSIFIER.
