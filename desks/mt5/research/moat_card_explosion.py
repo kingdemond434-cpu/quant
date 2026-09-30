@@ -430,28 +430,36 @@ def axis_chart(card: dict[str, Any], note: list[dict[str, Any]]) -> list[dict[st
     return out[:MAX_PER_AXIS]
 
 
-def _live_spec(s: dict[str, Any], k: str) -> tuple[dict[str, Any], dict | None]:
-    """`spec` for session `k`, or the firing-hours oracle's stand-in when the family can never
-    fire in that window (`libs/research/family_firing.py`). One child either way."""
+def _live_slots(s: dict[str, Any], ks: list[str]) -> list[tuple[str, dict[str, Any] | None]]:
+    """(landed session, remap note) per requested session, from the firing-hours oracle
+    (`libs/research/family_firing.session_cells`): a window the family can never fire in comes
+    back as a stand-in that can, distinct from every other slot and from the card's own spec.
+    One slot per session either way; an unreachable oracle leaves the axis as it was."""
     try:
-        from libs.research.family_firing import live_session
-        p, landed, remap = live_session(s["family"], s["params"], k)
-    except ImportError:
-        return spec(s["symbol"], s["family"], s["params"], s["chart"], k), None
-    return spec(s["symbol"], s["family"], p, s["chart"], landed), remap
+        from libs.research import family_firing as ff
+        taken = {json.dumps(dict(s["params"] or {}), sort_keys=True, default=str,
+                            separators=(",", ":"))}
+        slots = ff.session_cells(s["family"], s["params"], ks, taken=taken)
+        return [(str(p.get("session") or "all"), {**(n or {}), "params": p} if n else None)
+                for _k, p, n in slots]
+    except Exception:
+        return [(k, None) for k in ks]
 
 
 def axis_session(card: dict[str, Any], _note: list[dict[str, Any]]) -> list[dict[str, Any]]:
     s = card["spec"]
+    ks = [k for k in sessions() if k != s["session"]][:MAX_PER_AXIS]
     out = []
-    for k in [k for k in sessions() if k != s["session"]][:MAX_PER_AXIS]:
-        child_spec, remap = _live_spec(s, k)
+    for k, (landed, remap) in zip(ks, _live_slots(s, ks), strict=True):
         why = (f"the same rule fired only in the {k} window: the participants differ by "
                f"session and so does the constraint they trade under")
+        params = s["params"]
         if remap and remap.get("remapped"):
+            params = {kk: v for kk, v in remap["params"].items() if kk != "session"}
             why += (f" -- {k} never fires for {s['family']}, so the child is "
-                    f"{remap['remap']} into {child_spec['session']}")
-        out.append(_child(card, "session", child_spec, why))
+                    f"{remap['remap']} into {landed}")
+        out.append(_child(card, "session", spec(s["symbol"], s["family"], params, s["chart"],
+                                                landed), why))
     return out
 
 
