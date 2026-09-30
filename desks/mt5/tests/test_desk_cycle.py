@@ -260,3 +260,40 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
         assert f"| {row} |" in step, row
     assert "STEP 4B" in LAUNCHER.read_text("utf-8")
     assert "D15-D26" in LAUNCHER.read_text("utf-8")
+
+
+# ------------------------------------------------------------------ no silent skips
+def _claude_args(src: str) -> str:
+    start = src.index('if ($agentName -eq "claude") {')
+    return src[start:src.index('} elseif ($agentName -eq "codex")', start)]
+
+
+def test_the_claude_lane_speaks_stream_json_and_records_every_refusal() -> None:
+    """In -p mode a refused tool is skipped with no record. stream-json is the only output that
+    names the refusals, and the recorder turns each one into an UNMEASURED = MISSED row."""
+    src = LAUNCHER.read_text("utf-8")
+    args = _claude_args(src)
+    assert '"--output-format", "stream-json", "--verbose"' in args
+    assert '"--output-format", "text"' not in src
+    assert "scripts\\record_agent_denials.py --stream $Stream --ledger $Ledger" in src
+    assert "--review $Review" in src and "--started-at" in src
+    assert "permission_denials = $deniedCount" in src
+    # The stream is teed to its own file; the recorder puts the result text back in the log.
+    assert "Add-Content -LiteralPath $Stream -Value $text -Encoding UTF8" in src
+    assert (REPO / "scripts" / "record_agent_denials.py").is_file()
+
+
+def test_the_lane_widening_is_read_only_and_from_the_one_domain_file() -> None:
+    src = LAUNCHER.read_text("utf-8")
+    args = _claude_args(src)
+    assert 'Join-Path $RepoRoot "ops\\agent_webfetch_domains.json"' in src
+    assert ") + $webFetchRules + @(" in args
+    # No host is hard-coded here: the data file is the one list.
+    assert "go.kr" not in src and "census.gov" not in src
+    for rule in ('"Bash(ls:*)"', '"Bash(pwd)"', '"Bash(date)"', '"Bash(wc:*)"'):
+        assert rule in args
+    allowed = args[args.index('"--allowedTools"'):args.index('"--disallowedTools"')]
+    for forbidden in ("bypass", "dangerously", "Bash(git push:*)", "Bash(git push --", "rm ",
+                      "Remove-Item", "secrets", "Bash(*)", "Bash(powershell", "Bash(cmd"):
+        assert forbidden not in allowed, forbidden
+    assert '"Read(data/secrets/**)"' in args
