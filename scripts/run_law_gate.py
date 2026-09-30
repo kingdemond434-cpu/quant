@@ -151,6 +151,7 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # and a REFUSED_CONSERVATIVE row must carry the sentence saying whose aggressiveness it
     # would have cut. Portable: it reads only tracked files.
     ("check_tier5_audit.py", ()),
+    ("check_tier_s_program.py", ()),          # Tier S admission rule: no layer without a contract
     # THE PLUMBING-INVARIANT HIERARCHY (Tier-1 B26). Not "are the money-path laws tested" --
     # they always were -- but WHAT EACH TEST SPEAKS FOR: one hand-written state (EXAMPLE), a
     # generator's draws (PROPERTY), or the whole finite domain (PROOF). The fence is that the
