@@ -979,7 +979,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the judge's ENVIRONMENT, measured before each sweep (recovered patch 08)
                      "gauntlet_guard",
                      # session_range_breakout judged as a PORTFOLIO (recovered patch 13)
-                     "srb_basket_judge"),
+                     "srb_basket_judge",
+                     # ...and the uncorrelated leg sweep it reads, on its own daily refresh
+                     "srb_uncorrelated_sweep"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1638,6 +1640,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # prebuilt series take well under a minute. The cap sits above both; the 720 s default would
     # leave no margin for a cold cache.
     "srb_basket_judge": 840,
+    # THE SWEEP THE BASKET JUDGE READS stops building legs at --budget-s 480 and carries the rest
+    # from its previous pass; on the 23 hours a day its artifact is fresh it exits in a second.
+    "srb_uncorrelated_sweep": 600,
     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
@@ -5070,6 +5075,13 @@ def main() -> None:
     # the lifetime trial census (data/srb_basket_trials.jsonl -> experiment_ledger), and feeds
     # the lot to the SEALED gauntlet as single cells. Report only: no gate ledger, no
     # certificate, no authority file, no roster.
+    # ITS INPUT, ON A CLOCK. SRB_UNCORRELATED_SWEEP.json was written once by hand on the box and
+    # never again, so the basket judge read a photograph (or UNMEASURED on every other host). The
+    # sweep mints one leg per (hypothesis-lane instrument, session) on instruments clustered into
+    # correlation blocks and NOT held by the live book; it judges nothing and refreshes daily.
+    suw = _costed("srb_uncorrelated_sweep", lambda: _producer(
+        "srb_uncorrelated_sweep", "research/srb_uncorrelated_sweep.py", "--once",
+        "--budget-s", "480", "--max-age-h", "20"))
     sbk = _costed("srb_basket_judge", lambda: _producer(
         "srb_basket_judge", "research/srb_basket_judge.py", "--once", "--budget-s", "600"))
     ac = _costed("acceptance", lambda: _producer(
@@ -5351,6 +5363,7 @@ def main() -> None:
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "gauntlet_guard": ggd,
+                    "srb_uncorrelated_sweep": suw,
                     "srb_basket_judge": sbk,
                     "canon_publication": cpub, "judging_burndown": jbd,
                     "falsifier_run": fz, "merge_docket": mh,

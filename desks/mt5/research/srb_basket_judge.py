@@ -577,7 +577,10 @@ def build(budget_s: float = 900.0) -> dict[str, Any]:
         return {"measured": False,
                 "why": f"UNMEASURED: {SWEEP.name} unreadable on this host ({type(exc).__name__})",
                 "generated_at": datetime.now(UTC).isoformat()}
-    rows = [r for r in sweep.get("all_judged_cells") or [] if isinstance(r, dict)]
+    # `cells` is what research/srb_uncorrelated_sweep.py publishes on its clock; the one-off box
+    # sweep of 2026-09-24 spelled the same rows `all_judged_cells`, and both are read.
+    rows = [r for r in sweep.get("cells") or sweep.get("all_judged_cells") or []
+            if isinstance(r, dict)]
     meta = json.loads((G.UNI / "universe.json").read_text("utf-8"))
     legs, leg_stats = build_legs(rows, meta, deadline)
     if len(legs) < 2:
@@ -723,8 +726,9 @@ def build(budget_s: float = 900.0) -> dict[str, Any]:
             "run_gauntlet called directly: no gate ledger, no certificate, no authority file. "
             "data/sleeves.json, the rosters, the E8 config and UNIVERSAL_SURVIVORS were not "
             "opened. gate_spec.yaml was not touched and no threshold was moved."),
-        "source_sweep": {"file": SWEEP.name, "judged_cells": len(rows),
-                         "passed_in_sweep": 0, "sr0_hurdle": 0.3122},
+        "source_sweep": {"file": SWEEP.name, "legs_in_sweep": len(rows),
+                         "sweep_generated_at": sweep.get("generated_at"),
+                         "sr0_hurdle": 0.3122},
         "legs": {**leg_stats, "unblocked_legs": sum(
             1 for k in panel.names if panel.legs[k]["row"].get("block") is None),
             "unblocked_note": ("legs the sweep could not cluster (short history) are excluded "

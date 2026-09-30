@@ -167,6 +167,7 @@ LEG_LAYER: dict[str, str] = {
     # hands it to the sealed gauntlet. That is portfolio construction being tested, not a new
     # prediction -- the legs' signals were minted elsewhere and are not touched here.
     "srb_basket_judge": "portfolio",
+    "srb_uncorrelated_sweep": "portfolio",
     "lake_promote": "information",
     "research_exchange_score": "information",
     # The FRED archive and the macro view it feeds are inputs about the world, refreshed hourly
