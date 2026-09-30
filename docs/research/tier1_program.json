@@ -9012,6 +9012,23 @@
     "desks/mt5/research/deep_forest_miner.py:684-697 culture_gaps() -> schedule(): grounds of a gap culture are worked first inside each frontier bucket (a reorder, never a narrowing)."
    ],
    "consumer": "desks/mt5/research/culture_orthogonality.py (Tier S, #113: load_culture_index keys CELL_CULTURE_INDEX.jsonl by cell_id), desks/mt5/research/deep_forest_miner.py (culture_gaps)"
+  },
+  {
+   "id": "CULT2",
+   "item": "CULTURE-GAP PRODUCERS (principal 2026-09-30): every ZERO culture gap of CELL_CULTURE.json gets a producer that turns the gap's participant structure into cells of registered families on the gap's own clock -- fixings for policy-driven markets, settlement and session windows for settlement-constrained ones, tax months for tax-driven ones, local bullion sessions and local premiums for physical-flow ones, local retail hours for retail-heavy ones -- windows converted to broker stamp-hours through libs/regime/session_clock.py, culture declared at birth, every trial charged at the registry door.",
+   "domain": "U",
+   "phase": 2,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:culture_gap_cells",
+   "artifact": "desks/mt5/reports/CULTURE_GAP_CELLS.json",
+   "evidence": [
+    "desks/mt5/research/culture_gap_cells.py:142-237 _utc_to_broker()/window_hours()/variants()/_causal_order() -- each local-clock window converted to broker stamp-hours for every weekday of the year, round-tripped through session_clock.server_to_utc, one cell per distinct broker hour with its year share, sub-10% DST-mismatch variants and same-day-lookahead variants published and refused; :264-300 cells_for() (MT5 universe only, `discovered` banned, exogenous conditioners UNMEASURED without the pack's stamped series); :337-421 _culture()/emit() -- cell_culture.stamp with declared culture and structure, record_discovery + enqueue_candidate at the one registry door; :423-496 run() -- ZERO gaps first from CELL_CULTURE.json, per-recipe cursor so no rule is enqueued twice.",
+    "desks/mt5/data/culture_gap_recipes.json -- 45 recipes as data (family, instruments, local-clock windows, grid, roster source); desks/mt5/data/source_rosters/culture_gap_sources.json -- 33 key-less public sources with the fact each states and how it was verified, also added as grounds to desks/mt5/data/deep_forest_sources.json.",
+    "libs/regime/session_clock.py -- the venue clock (New York + 7 h) ported verbatim from claude/session-clock (#134).",
+    "MEASURED on the container the day it landed: 1,081 cells defined, 1,081 registry rows after two passes (8 identical rules deduplicated at the door, then re-aimed); cell_culture_index re-run over the registry: 43 gaps -> 38, and 33 of the 34 ZERO gaps left ZERO (5 closed, 28 THIN); fx CA stays ZERO (no recipe). Three local-premium conditioners are UNMEASURED here: their pack series are not in this tree's lake."
+   ],
+   "consumer": "desks/mt5/research/moat_candidate_compiler.py (prices and leases registry candidates to the sealed gauntlet), desks/mt5/research/cell_culture_index.py (counts them per gap)"
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

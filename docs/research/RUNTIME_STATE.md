@@ -6,12 +6,12 @@
 
 - Measured at **2026-09-30T11:20:18+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `UNMEASURED` on `UNMEASURED`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **874** of 1328 registry components (454 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **876** of 1330 registry components (454 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 0.78s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
 |---|---:|---|
-| **LIVE** | 123 | artifact present and newer than the organ's derived max silence |
+| **LIVE** | 125 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 0 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
 | **NEVER** | 675 | no artifact and no run record on this host |
@@ -19,7 +19,7 @@
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
 
-## LIVE (123)
+## LIVE (125)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -146,6 +146,8 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `task:MT5-Shadow` | `MT5-Shadow` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 0.5h | 3K | `9583b625e9b7d9c0` | status=FAILED |
 | `task:MT5-Universe` | `MT5-Universe` | UNMEASURED UNMEASURED | `desks/mt5/data/universe_expansion.json` | 0.5h | 24K | `c4e001c1a7b63e53` | UNMEASURED |
 | `timer:quant-mt5-suite` | `quant-mt5-suite` | UNMEASURED UNMEASURED | `desks/mt5/reports/mt5_suite.json` | 0.5h | 452B | `d459f7fec791a7c1` | verdict=OK |
+| `leg:cell_culture_index` | `hourly_cycle:cell_culture_index` | UNMEASURED UNMEASURED | `desks/mt5/reports/CELL_CULTURE.json` | 0.1h | 44K | `353199103c6861fe` | UNMEASURED |
+| `leg:culture_gap_cells` | `hourly_cycle:culture_gap_cells` | UNMEASURED UNMEASURED | `desks/mt5/reports/CULTURE_GAP_CELLS.json` | 0.0h | 41K | `b9795c727d8dd78e` | UNMEASURED |
 
 ## MISSING (47)
 

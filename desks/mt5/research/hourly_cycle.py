@@ -852,6 +852,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
+    # The culture-gap producers (2026-09-30): a data-driven recipe walk, well under a second
+    # when nothing is new, so every gap's cells are minted on the core clock.
+    "culture_gap_cells",
     "fill_recorder", "cost_surfaces",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
@@ -947,7 +950,11 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "sandbox_roster", "proposer_seat", "kimi_hunt",
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
-                     "session_structure"),
+                     "session_structure",
+                     # The culture-gap producers: each zero-coverage culture gap's participant
+                     # structure (fixing, settlement window, tax month, local session) turned
+                     # into registered-family cells on the gap's own clock.
+                     "culture_gap_cells"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
     **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
@@ -1736,6 +1743,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Streams the backlog from a byte cursor at ~3,400 rows/s and self-stops 45 s inside its
     # --budget-s; 240 s of work plus the docket stream and the write fit 300 s.
     "cell_culture_index": 300,
+    # A recipe walk: ~20 s for the first 1,081 registry writes, well under a second after that.
+    # The organ self-stops 10 s inside its --budget-s 240; the cap sits above it.
+    "culture_gap_cells": 300,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -5003,6 +5013,15 @@ def main() -> None:
     # whose deeper pages still name nothing gets a measured verdict with the shape that defeated
     # the reader, and the links it did not reach go to `world_frontier`. Information department,
     # information layer. It must run AFTER pack_cells, whose ladder decides its targets.
+    # THE CULTURE GAPS GET PRODUCERS (principal 2026-09-30). `cell_culture_index` publishes the
+    # (asset class x culture x participant structure) gaps; this turns each gap's participant
+    # structure into cells of registered families on the gap's OWN clock -- a PBoC or CNB fixing,
+    # the Tokyo settlement fix, a Japanese or Australian tax month, a Hong Kong session, a Gulf or
+    # Mumbai bullion morning, a local retail session -- converted to broker stamp-hours through
+    # libs/regime/session_clock.py, ZERO gaps first, through the one registry door. Measured the
+    # day it landed on the container's data: 33 of 34 ZERO gaps left ZERO after one pass.
+    cgc = _costed("culture_gap_cells", lambda: _producer(
+        "culture_gap_cells", "research/culture_gap_cells.py", "--once", "--budget-s", "240"))
     gdp = _costed("ground_depth", lambda: _producer(
         "ground_depth", "research/ground_depth.py", "--once", "--budget-s", "600"))
     # THE SAME MECHANISM ON EVERY CHART (principal 2026-09-23). `counterfactual_timeframes`
@@ -5298,6 +5317,7 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
+                    "culture_gap_cells": cgc,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
