@@ -2091,8 +2091,12 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         match_mechanism,
         posterior_prior_factors,
         roi_factors_by_mechanism,
+        tier_s_factors,
     )
     rows, ev_why = consumed_inputs(evidence_doc, now=now)
+    # TIER S: the opportunity exchange's robust E[log W] book and measured execution capture,
+    # heat-neutral like the six below (libs/tiers/allocator_tilts.py). Absent/stale -> 1.0.
+    ts_terms, ts_why = tier_s_factors(now=now)
     roi_terms, roi_why = roi_factors_by_mechanism(roi_doc)
     post_terms, post_why = posterior_prior_factors(posterior_doc)
     breadth_terms, breadth_why = marginal_breadth_factors(posterior_doc)
@@ -2114,7 +2118,8 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         # `net_of_cost_factors` makes it heat-neutral over the funded book, so it moves capital
         # toward the sleeves that survive their own costs and cannot change the total.
         nf = float(row.get("net_of_cost_factor", 1.0))
-        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf)))
+        sf = float(ts_terms.get(e.name, 1.0))
+        tilt = float(min(TILT_HI, max(TILT_LO, lf * rf * pf * bf * tf * nf * sf)))
         shift = 0.0
         fin = row.get("financing_cost_r_per_day")
         if fin is not None and row.get("financing_charged_in_replay") is False:
@@ -2136,6 +2141,7 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
                              "marginal_breadth_factor": round(bf, 6),
                              "factor_tier_factor": round(tf, 6),
                              "net_of_cost_factor": round(nf, 6),
+                             "tier_s_factor": round(sf, 6),
                              "financing_r_per_day_shift": round(shift, 8),
                              "mean_before": round(mean, 8),
                              "mean_after": round(float(arr[mask].mean()), 8)}
@@ -2147,6 +2153,8 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         "status": "APPLIED" if by_sleeve else "NEUTRAL",
         "evidence": ev_why, "roi": roi_why,
         "forward_posterior": post_why, "marginal_breadth": breadth_why, "factor_tier": tier_why,
+        "tier_s": ts_why, "n_tier_s_tilted": sum(
+            1 for e in ev if abs(float(ts_terms.get(e.name, 1.0)) - 1.0) >= 1e-9),
         # DECLARED, so a reader (and `research/allocator_liveness.py`) can see whether the pass
         # conditioned on the net-of-cost spine at all, rather than inferring it from silence.
         "net_of_cost": (
@@ -2162,10 +2170,10 @@ def apply_allocator_evidence(ev: list[SleeveEvidence], evidence_doc: dict[str, A
         "bounds": [TILT_LO, TILT_HI], "by_sleeve": by_sleeve,
         "rule": ("mean += (tilt - 1) x |mean| + financing shift, dispersion unchanged; tilt = "
                  "clip(lineage_factor x roi_factor x forward_posterior x marginal_breadth x "
-                 "factor_tier x net_of_cost); every one of the six is heat-neutral (mean 1.0 "
-                 "across the book) so they reallocate and never lever; the shift only where the "
-                 "replay charged no swap; UNMEASURED reads 1.0 / 0.0; nothing outside the "
-                 "E[log W] solve"),
+                 "factor_tier x net_of_cost x tier_s); every one of the seven is heat-neutral "
+                 "(mean 1.0 across the book) so they reallocate and never lever; the shift only "
+                 "where the replay charged no swap; UNMEASURED reads 1.0 / 0.0; nothing outside "
+                 "the E[log W] solve"),
         "governance": {
             "rule_1": ("a sleeve is lowered only by a measured swap cost or a measured lineage "
                        "redundancy, priced through E[log W] itself; the heat floor, gold lot "

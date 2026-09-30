@@ -561,3 +561,35 @@ def test_process_kill_drill_kills_a_real_child_in_a_sandbox() -> None:
     r = chaos.process_kill_drill(ROOT, orders=150, kills=2, seed=1, step_s=0.01)
     assert r["sandbox"] == "tempdir" and r["kills"] >= 1 and r["restarts"] >= r["kills"]
     assert r["status"] == "PASS" and r["journalled"] == 150 and r["duplicates"] == 0
+
+
+def test_allocator_tilts_are_heat_neutral_two_sided_and_hold_out() -> None:
+    from libs.tiers import allocator_tilts as at
+    live = {"A.asia": 0.05, "B.london": 0.05, "C.ny": 0.05, "D.all": 0.05}
+    groups = {k: k for k in live}
+    ex = {"A.asia": 0.10, "B.london": 0.02, "C.ny": 0.05, "D.all": 0.05}
+    cap = {"C.ny": {"capture": 0.3, "n": 60}}
+    rows = at.build(live, groups, ex, cap, held_out=lambda k: k == "D.all")
+    ex_f = [rows[k]["exchange_factor"] for k in live]
+    assert abs(sum(ex_f) / len(ex_f) - 1.0) < 1e-6          # equal heat: mean exactly 1
+    assert rows["A.asia"]["exchange_factor"] > 1.0 > rows["B.london"]["exchange_factor"]
+    assert rows["C.ny"]["capture_factor"] < 1.0 < rows["A.asia"]["capture_factor"]
+    assert rows["D.all"]["held_out"]
+    assert all(at.TILT_LO <= r["tilt"] <= at.TILT_HI for r in rows.values())
+    assert at.capture_raw(None, 0) == 1.0 and at.exchange_raw(0.05, 0.05) == pytest.approx(1.0)
+
+
+def test_allocator_reads_tier_s_tilts_fresh_only() -> None:
+    from datetime import UTC, datetime, timedelta
+
+    from libs.portfolio import allocator_evidence as ae
+    now = datetime(2026, 9, 30, 12, tzinfo=UTC)
+    doc = {"kind": "tier_s_tilts", "generated_utc": now.isoformat(),
+           "sleeves": {"A.asia": {"tilt": 1.4}, "B.london": {"tilt": 9.0}}}
+    got, _ = ae.tier_s_factors(doc, now=now)
+    assert got == {"A.asia": 1.4, "B.london": ae.TILT_HI}
+    stale, why = ae.tier_s_factors(doc, now=now + timedelta(hours=7))
+    assert stale == {} and "stale" in why
+    assert ae.tier_s_factors({"kind": "other"}, now=now)[0] == {}
+    src = (DESK / "research" / "pf_allocator.py").read_text("utf-8")
+    assert "tier_s_factors(now=now)" in src and "nf * sf" in src

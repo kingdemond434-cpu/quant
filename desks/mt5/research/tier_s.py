@@ -51,6 +51,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.tiers import (  # noqa: E402
+    allocator_tilts,
     authority,
     bitemporal,
     chaos,
@@ -2430,6 +2431,45 @@ def _posterior_bids() -> tuple[list[opportunity_exchange.Bid], dict[str, float]]
     return bids, live_book
 
 
+ALLOCATOR_TILTS = STATE / "allocator_tilts.json"
+
+
+def _allocator_tilts(ex_book: Mapping[str, float], live_book: Mapping[str, float]
+                     ) -> dict[str, Any]:
+    """The exchange's book and each sleeve's measured execution capture, as heat-neutral tilts
+    of the allocator's posterior means (`libs/tiers/allocator_tilts.py`), read by pf_allocator
+    through `allocator_evidence.tier_s_factors`. Suspended exchange -> nothing written."""
+    if not live_book:
+        return {"status": "UNMEASURED", "why": "no live allocator book on this host"}
+    if authority.suspended("exchange"):
+        with contextlib.suppress(OSError):
+            ALLOCATOR_TILTS.unlink()
+        return {"status": "SUSPENDED", "why": "the exchange's contracts are all REJECTED"}
+    nm = names()
+    ex_by: dict[str, float] = defaultdict(float)
+    for k, w in ex_book.items():
+        ex_by[nm.group(k)] += float(w)
+    shadow = shadow_rows()
+    rs: dict[str, list[float]] = defaultdict(list)
+    for r in live_rows():
+        if r.get("r_multiple") is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                rs[r["_group"]].append(float(r["r_multiple"]))
+    cap: dict[str, dict[str, Any]] = {}
+    for g, xs in rs.items():
+        ev = _execution_evidence(len(xs), xs, (shadow.get(g) or {}).get("exp_r"))
+        cap[g] = {"capture": ev.get("capture"), "n": len(xs)}
+    rows = allocator_tilts.build(live_book, {k: nm.group(k) for k in live_book}, ex_by, cap,
+                                 held_out=lambda k: control_arm.in_control(k, "exchange"))
+    _write(ALLOCATOR_TILTS, {"kind": "tier_s_tilts", "generated_utc": NOW.isoformat(),
+                             "sleeves": rows,
+                             "consumer": "research/pf_allocator.py via "
+                                         "libs/portfolio/allocator_evidence.tier_s_factors"})
+    moved = [k for k, v in rows.items() if abs(float(v["tilt"]) - 1.0) > 1e-6]
+    return {"status": "WRITTEN", "sleeves": len(rows), "tilted": len(moved),
+            "captured_groups": sum(1 for v in cap.values() if v["capture"] is not None)}
+
+
 def organ_exchange() -> dict[str, Any]:
     bids, live = _posterior_bids()
     if not bids:
@@ -2446,9 +2486,11 @@ def organ_exchange() -> dict[str, Any]:
     with (STATE / "exchange_book_log.jsonl").open("a", encoding="utf-8") as fh:
         fh.write(json.dumps({"t": NOW.isoformat(), "book": res["book"]}) + "\n")
     _register_challenger("allocator", "opportunity_exchange", {"k": res["k"]}, None)
+    tilts = _allocator_tilts(res["book"], live)
     n = sum(res["action_counts"].values())
     return {**{k: v for k, v in res.items() if k != "actions"},
             "actions_sample": dict(list(res["actions"].items())[:30]), "vs_live": cmp,
+            "allocator_tilts": tilts,
             "metric": {"expected_log_growth": res["expected_log_growth"],
                        "defer_share": res["action_counts"]["DEFER"] / n if n else None}}
 
