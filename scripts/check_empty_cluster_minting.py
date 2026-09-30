@@ -35,10 +35,7 @@ OUT = DESK / "reports" / "EMPTY_CLUSTER_MINTING.json"
 def check(window_h: float = 24.0, ledger: Path | None = None) -> dict:
     from research.empty_cluster_breadth import CLUSTERS, minted_in_window
     win = minted_in_window(hours=window_h, ledger=ledger)
-    if win.get("status") != "MEASURED":
-        red = list(CLUSTERS)
-    else:
-        red = list(win["zero_minted"])
+    red = list(CLUSTERS) if win.get("status") != "MEASURED" else list(win["zero_minted"])
     return {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "fence": "scripts/check_empty_cluster_minting.py",
             "verdict": "RED" if red else "GREEN", "window_h": window_h,
