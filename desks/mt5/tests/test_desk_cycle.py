@@ -253,10 +253,10 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
         "No unfed datasets", "Paid-substitute coverage", "Cross-culture orthogonality",
         "No live code drift", "Decay and markout ran", "Confident kills per day",
         "Credential coverage", "Desktop pass-2 queue age", "Six-event trend",
-        "Committee health per specialist", "Coverage tensor status shares",
-        "Nothing never-attempted, stranded or silent", "No empty alpha clusters",
-        "GitHub resident miner advancing",
-        "QuantConnect, WorldQuant and fund civilizations active",
+        "Committee health per specialist", "Global coverage tensor",
+        "Deep-forest never-attempted = 0", "Stranded ingestion = 0", "Silent organs = 0",
+        "No empty risk clusters", "Source ROI", "Backpressure", "GitHub resident miner",
+        "QuantConnect, WorldQuant and fund civilizations",
         "Institutional coverage per jurisdiction",
     ), start=1):
         assert f"| D{n} | **{duty}** |" in step, duty
@@ -264,4 +264,4 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
                 "Cert to forward", "Deep-forest vectors", "Judged", "Live"):
         assert f"| {row} |" in step, row
     assert "STEP 4B" in LAUNCHER.read_text("utf-8")
-    assert "D15-D33" in LAUNCHER.read_text("utf-8")
+    assert "D15-D37" in LAUNCHER.read_text("utf-8")
