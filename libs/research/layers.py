@@ -301,6 +301,10 @@ LEG_LAYER: dict[str, str] = {
     # snapshot. That is the prediction layer's own work, done on the backlog instead of on
     # arrivals, so it sits beside the compiler that does it on arrivals.
     "conversion_maximiser": "prediction",
+    # THE CONVERSION FUNNEL measures the desk's own pipeline -- mined -> cell -> verdict ->
+    # certificate -> clock, every loss named -- and changes nothing in it: the machine reading
+    # itself, the same layer as `judging_burndown` and `forward_enrolment`.
+    "conversion_funnel": "meta",
     # WHICH SOURCES THE DESK MAY LAWFULLY CONSUME is a property of its INPUTS, decided before any
     # signal is derived from them -- the same reading that puts `source_routes` and `data_scout`
     # in information. The ROI reallocator is the machine spending on itself: meta.
