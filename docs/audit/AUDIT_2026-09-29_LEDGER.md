@@ -63,3 +63,11 @@ About 24 of the 52 canon certificates are affected. The fix was denied as a live
 ## Retry, 2026-09-30 00:30Z
 
 The re-sign for PR #52 was retried once, citing the principal's own words ("no resigns no approvals needed", 2026-09-29 23:38:56Z). It was refused again (Security Weaken), and the filter then flagged further retries as an auto-mode bypass. Every BLOCKED-CLASSIFIER row above therefore stands. None of them can be cleared from a session running under this filter. They clear when the principal adds a Claude Code permission rule for these commands, or runs them on the box.
+
+## Cost of the DSR block (item 4), measured
+
+- **Tier S (PR #55, d5bb50d6):** on a blind sealed suite of 2,550 cases, the production certifier rejected every genuine positive control, including 150 AR(0.25) edges. Every rejection came at `deflated_sharpe`.
+- **Why:** sr0 is 0.312 per trade at 109 charged trials, driven by the fixed variance of Sharpes 0.014863. The variance measured in the same sweep is 0.00082, about 18x smaller.
+- **Independently confirmed by the placebo audit (PR #60):** positives at signal-outcome correlation 0.29 and 0.51 score dsr 0.056 against the 0.312 bar. A true edge needs about 0.71 to pass.
+- **Consequence:** on dockets of about 400 observations, no honest edge can certify. This is likely the largest lost-discovery cost on the desk.
+- **Fix:** a measured lifetime or per-family variance in the sealed gate. It requires editing and re-signing a judge file, and both steps are refused by the session filter (BLOCKED-CLASSIFIER).
