@@ -38,7 +38,7 @@ import contextlib
 import json
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -226,6 +226,17 @@ def _iso_ms(at: Any) -> int:
         return 2**62
 
 
+def last_rollover_ms(at_ms: int) -> int:
+    """The venue's last daily rollover (17:00 New York) at or before `at_ms`, in UTC ms. The
+    widened send-time bound never reaches past it: yesterday's legs are not today's sends."""
+    from zoneinfo import ZoneInfo
+    ny = datetime.fromtimestamp(at_ms / 1000, tz=ZoneInfo("America/New_York"))
+    roll = ny.replace(hour=17, minute=0, second=0, microsecond=0)
+    if roll > ny:
+        roll -= timedelta(days=1)
+    return int(roll.timestamp() * 1000)
+
+
 def venue_clock_skew_ms(journal: list[dict], rows: list[dict]) -> int | None:
     """How far the venue's order stamps run ahead of this box's clock, in ms, measured on the
     lane's OWN sends: each SENT journal row's box time against the venue's stamp on that order.
@@ -282,10 +293,10 @@ def matching_resting_order(orders: list[dict], side: str, price: float, known_id
 
 
 def position_since_failure(positions: list[dict], side: str, first_at: Any, state: dict,
-                           filled: dict[int, int]) -> bool:
-    """Is there an open XAU position on this leg's side, opened at or after the failed send, that
-    no window or carried row owns and no order of ours opened? Such a position may be the
-    "failed" send itself, filled; sending again would double it. Unknown open time counts."""
+                           filled: dict[int, int]) -> int | None:
+    """The id of an open XAU position on this leg's side, opened at or after the failed send, that
+    no window or carried row owns and no order of ours opened, or None. Such a position may be
+    the "failed" send itself, filled; sending again would double it. Unknown open time counts."""
     want = "buy" if side == "buy_stop" else "sell"
     rows = [w for bucket in ("windows", "carried") for w in (state.get(bucket) or {}).values()]
     owned = {int(w["position_id"]) for w in rows if w.get("position_id") is not None}
@@ -305,8 +316,8 @@ def position_since_failure(positions: list[dict], side: str, first_at: Any, stat
             continue
         opened = int(p.get("openDate") or 0)
         if opened == 0 or opened >= since_ms:
-            return True
-    return False
+            return pid
+    return None
 
 
 def manage_actions(state: dict, hour: float, open_ids: set[int],
@@ -503,10 +514,19 @@ def _read_json(p: Path, default: Any) -> Any:
 
 def _journal_rows(limit: int = 5000) -> list[dict]:
     """The last `limit` rows of the intents journal; unreadable -> none (no adoption, no cancel)."""
+    return _journal_read(limit) or []
+
+
+def _journal_read(limit: int = 5000) -> list[dict] | None:
+    """The journal's rows, or None when it is missing or unreadable (non-UTF-8 included).
+
+    None is not "no rows": the retry path needs the journal's order ids to refuse yesterday's own
+    legs, so it treats None as blind and skips the pass (audit 2026-09-30).
+    """
     try:
         lines = INTENTS.read_text(encoding="utf-8").splitlines()[-limit:]
-    except OSError:
-        return []
+    except (OSError, UnicodeDecodeError):
+        return None
     rows: list[dict] = []
     for line in lines:
         try:
@@ -867,6 +887,10 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
                                   ("the order history is unreadable", not history_ok),
                                   ("the gold instrument id is unknown", not instrument_id))
              if bad]
+    journal = _journal_read()
+    if journal is None:
+        blind.append("the intents journal is missing or unreadable, so this lane's own order "
+                      "ids cannot be told apart from the lost send")
     if blind:
         waiting = [f"{n}/{side}" for n, w in (state.get("windows") or {}).items()
                    for side in (w.get("failed") or {})]
@@ -887,9 +911,12 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
              for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
     # Every id the intents journal says this lane sent -- yesterday's legs included, which have
     # left the state at the rollover but still sit in the venue's two-day history.
-    journal = _journal_rows()
-    known |= set(own_entry_orders(journal, state))
-    skew = venue_clock_skew_ms(journal, [*open_orders, *hist_rows])
+    jrows = journal or []
+    known |= set(own_entry_orders(jrows, state))
+    # A position a block already stood aside for, and the order that opened it, are known too.
+    known |= {int(r["order_id"]) for r in jrows
+              if r.get("status") == "RAIL_BLOCKED" and r.get("order_id") is not None}
+    skew = venue_clock_skew_ms(jrows, [*open_orders, *hist_rows])
     try:
         venue_min = float(venue.min_lot(SYMBOL))
     except Exception:
@@ -914,15 +941,17 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
         # floors every lot at the venue minimum), so neither a skewed box nor a small lot can
         # hide a send that landed.
         sent_at = _iso_ms(leg.get("first_at"))
-        since = sent_at + skew if skew is not None else sent_at - UNMEASURED_SKEW_MS
+        since = (sent_at + skew if skew is not None
+                 else max(sent_at - UNMEASURED_SKEW_MS, last_rollover_ms(sent_at)))
         oid = None
         for book in (open_orders, done):
             oid = oid or matching_resting_order(book, side, float(leg["price"]), known,
                                                 lot=max(float(leg["lot"]), venue_min),
                                                 instrument_id=int(instrument_id),
                                                 since_ms=since)
-        if oid is None and position_since_failure(xau_positions, side, leg.get("first_at"),
-                                                  state, filled):
+        pos_id = None if oid is not None else position_since_failure(
+            xau_positions, side, leg.get("first_at"), state, filled)
+        if pos_id is not None:
             why = ("a position on this side opened after the failed send and no window owns it: "
                    "it may be that send, so the leg is not sent again")
             # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1): if that position is NOT our send, this
@@ -939,6 +968,9 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                      **levels, "status": "RAIL_BLOCKED", "rail": UNOWNED_BLOCK_RAIL,
                      "missed_growth_risk_usd": round(float(missed), 2),
+                     "position_id": int(pos_id),
+                     "order_id": next((int(o) for o, p in filled.items() if int(p) == pos_id),
+                                      None),
                      "retry_of": leg.get("first_at")})
             log(f"[{name}] {side} dropped leg abandoned: {why}; MISSED GROWTH "
                 f"({UNOWNED_BLOCK_RAIL}): the leg's {float(missed):.0f} USD of certified risk "

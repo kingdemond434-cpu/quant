@@ -218,6 +218,7 @@ def _retry(venue: _Venue, st: dict, *, hour: float = 8.0, **kw: Any) -> dict:
 def _no_journal(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(g, "INTENTS", tmp_path / "intents.jsonl")
     monkeypatch.setattr(g, "LOG", tmp_path / "log")
+    (tmp_path / "intents.jsonl").write_text("", "utf-8")     # a readable, empty journal
 
 
 def test_the_pass_re_sends_the_leg_and_moves_it_into_the_bracket() -> None:
@@ -292,11 +293,11 @@ def test_yesterdays_own_leg_in_the_history_is_not_adopted_as_todays(monkeypatch)
 
 def test_a_position_that_predates_the_failure_or_is_ours_does_not_block() -> None:
     old = [{"id": 9, "side": "buy", "openDate": 1_000}]                  # 1970: before it
-    assert g.position_since_failure(old, "buy_stop", LEG["first_at"], _state(), {}) is False
+    assert g.position_since_failure(old, "buy_stop", LEG["first_at"], _state(), {}) is None
     ours = [{"id": 9, "side": "buy", "openDate": 4_102_444_800_000}]
     st = _state()
-    assert g.position_since_failure(ours, "buy_stop", LEG["first_at"], st, {11: 9}) is False
-    assert g.position_since_failure(ours, "sell_stop", LEG["first_at"], st, {}) is False
+    assert g.position_since_failure(ours, "buy_stop", LEG["first_at"], st, {11: 9}) is None
+    assert g.position_since_failure(ours, "sell_stop", LEG["first_at"], st, {}) is None
 
 
 # ----------------------------------------------------------------- third audit (2026-09-30)
@@ -354,3 +355,38 @@ def test_the_unowned_position_block_is_billed_to_its_registered_rail() -> None:
     _retry(v, st, xau_positions=[{"id": 9, "side": "buy", "openDate": 4_102_444_800_000}])
     [row] = [r for r in g._journal_rows() if r.get("status") == "RAIL_BLOCKED"]
     assert row["rail"] == g.UNOWNED_BLOCK_RAIL and row["missed_growth_risk_usd"] == 1000.0
+    assert row["position_id"] == 9
+
+
+# ----------------------------------------------------------------- fourth audit (2026-09-30)
+@pytest.mark.parametrize("journal", [None, b"\xff\xfe not utf-8 \x80"])
+def test_a_missing_or_unreadable_journal_skips_the_retry_rather_than_guessing(journal) -> None:
+    """Without the journal the lane cannot refuse its own earlier legs, so it sends nothing."""
+    if journal is None:
+        g.INTENTS.unlink()
+    else:
+        g.INTENTS.write_bytes(journal)
+    landed = _order(78, "buy", 4340.0)
+    v, st = _Venue(book=[landed]), _state()
+    doc = _retry(v, st)
+    assert v.sent == [] and "buy_stop" in st["windows"]["asia"]["failed"]
+    assert "journal" in " ".join(doc["retry_skipped"]["why"])
+    assert g._journal_rows() == []                        # the rest of the pass does not crash
+
+
+def test_the_widened_bound_stops_at_the_rollover() -> None:
+    """With no own send to measure the clock, a fill from before the last 17:00 New York is
+    yesterday's, however well its fields match."""
+    roll = g.last_rollover_ms(SENT_MS)
+    assert roll == g._iso_ms("2026-09-27T21:00:00+00:00")
+    yesterday = _order(79, "buy", 4340.0, createdDate=roll - 2 * MIN)
+    v, st = _Venue(book=[yesterday]), _state()
+    _retry(v, st)
+    assert len(v.sent) == 1 and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 901
+
+
+def test_a_blocked_position_and_its_order_enter_the_known_set() -> None:
+    _journal({"status": "RAIL_BLOCKED", "order_id": 78, "position_id": 9})
+    v, st = _Venue(book=[_order(78, "buy", 4340.0)]), _state()
+    _retry(v, st)
+    assert len(v.sent) == 1 and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 901
