@@ -15,7 +15,9 @@ hunt5-param gold book.
 """
 
 import json
+import os
 import sys
+import time
 import traceback
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -41,6 +43,65 @@ SHADOW_DIR.mkdir(parents=True, exist_ok=True)
 LOG_PATH = BASE / "logs" / "shadow.log"
 
 SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
+
+
+def _write_state(path: Path, state: dict) -> None:
+    """Atomically publish a forward ledger; readers never see torn JSON."""
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        tmp.write_text(json.dumps(state, indent=2), encoding="utf-8")
+        for attempt in range(6):
+            try:
+                os.replace(tmp, path)
+                return
+            except PermissionError:
+                if attempt == 5:
+                    raise
+                time.sleep(0.05 * (2 ** attempt))
+    finally:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
+def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
+    """Persist every new certified clock before expensive evidence replay begins."""
+    seen: set[str] = set()
+    added = 0
+    changed = 0
+    stamp = datetime.now(UTC).isoformat(timespec="seconds")
+    for row in enrolled:
+        sym, win, params = row[0], row[1], row[2]
+        fam = row[3] if len(row) > 3 else "session_range_breakout"
+        side = row[4] if len(row) > 4 else "LONG"
+        key = sleeve_key(sym, win, params, fam, side)
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            from family_policy import family_banned
+            if family_banned(fam):
+                continue
+        except Exception:
+            pass
+        if key in state:
+            if "enrolled_at" not in state[key]:
+                state[key]["enrolled_at"] = stamp
+                changed += 1
+            continue
+        state[key] = {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
+                      "first_entry": None, "last_entry": None, "status": "ACTIVE",
+                      "enrolled_at": stamp, "promotion_authority": False,
+                      "order_authority": False,
+                      "evidence_note": "clock enrolled; forward replay pending"}
+        added += 1
+    if added or changed:
+        state["configured_sleeves"] = len(seen)
+        state["updated_at"] = stamp
+        _write_state(state_path, state)
+        slog(f"enrolment checkpoint: {added} new certified clock(s) persisted before replay")
+    return added
 
 #: Verdicts that END a row. A blocked evaluation must never overwrite one of these: a KILL that
 #: turns back into an unevaluated row would re-enter the book, and a PROMOTION CANDIDATE that
@@ -570,6 +631,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     breached = clock_breaches()
     if breached:
         slog(f"forward-clock ratchet: {len(breached)} breached key(s) will be quarantined")
+    # Clock creation is cheap and grants no capital.  Persist the complete enrolment set before
+    # replaying any bars so a timeout cannot repeatedly strand the same tail of certificates.
+    checkpoint_enrolments(enrolled, state, state_path)
     seen: set[str] = set()
     for row in enrolled:
         # SLICED, NOT DESTRUCTURED. A rigid five-way unpack here would break on any
@@ -1237,7 +1301,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     state["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     state["configured_sleeves"] = len(enrolled)
     state["gate_blocked_sleeves"] = 0
-    state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    _write_state(state_path, state)
     slog(f"shadow state saved ({len(enrolled)} sleeves, "
          f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
     _enrolment_watermark(len(enrolled), ledger)
