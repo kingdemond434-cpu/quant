@@ -719,7 +719,7 @@ def test_the_leg_is_wired_with_a_budget_a_layer_and_a_consumer() -> None:
     jt = (DESK / "research" / "judging_throughput.py").read_text("utf-8")
     assert 'payload["two_stage"] = _two_stage()' in jt
     wg = (DESK / "scripts" / "warm_gauntlet_cache.py").read_text("utf-8")
-    assert "backlog_first(keep, stage1_ranks(G, keep))" in wg
+    assert "O.sealed_keep(G, specs, stage1_rank=rank)" in wg and "backlog_first(keep, rank)" in wg
 
 
 def test_stage1_trials_join_the_lifetime_ledger(tmp_path: Path) -> None:
