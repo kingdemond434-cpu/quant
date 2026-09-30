@@ -88,7 +88,7 @@ from pathlib import Path
 # ONE LADDER, IMPORTED. A second literal spelling of the charts here is how a producer and a
 # consumer quietly stop agreeing about which charts exist; `universe_registry` owns what the
 # registry means, and `min_bars` below reads the same module for the floor.
-from mt5desk.universe_registry import TIMEFRAMES
+from mt5desk.universe_registry import TIMEFRAMES, publish_frame
 
 BASE = Path(__file__).resolve().parent.parent
 UNIVERSE = BASE / "data" / "universe"
@@ -337,7 +337,7 @@ def main() -> int:
             df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
             df = df.set_index("time").sort_index()
             try:
-                df.to_parquet(UNIVERSE / f"{name}_{tf}.parquet")
+                publish_frame(df, UNIVERSE / f"{name}_{tf}.parquet")
             except Exception as exc:
                 failed.append({"symbol": name, "tf": tf, "why": f"{type(exc).__name__}: {exc}"})
                 continue

@@ -35,7 +35,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk.config import desk_root, terminal_path
-from mt5desk.universe_registry import may_write_median_spread, merge
+from mt5desk.universe_registry import may_write_median_spread, merge, publish_frame
 
 #: What this collector's `median_spread_pts` IS: the median of the H1 spread column it just
 #: downloaded. Named so the stamp cannot mean something else, and so the ranking can place it.
@@ -210,7 +210,7 @@ def _fetch_intraday(mt5, sym: str, info) -> dict[str, dict]:
         d["time"] = pd.to_datetime(d["time"], unit="s", utc=True)
         d = d.set_index("time").sort_index()
         d = d[["open", "high", "low", "close", "tick_volume", "spread", "real_volume"]]
-        d.to_parquet(OUT / f"{sym}_{label}.parquet")
+        publish_frame(d, OUT / f"{sym}_{label}.parquet")
         out[label] = {"bars": len(d), "first": str(d.index.min()),
                       "last": str(d.index.max()),
                       "median_spread_pts": float(d["spread"].median())}
@@ -380,7 +380,7 @@ def main(argv: list[str] | None = None) -> None:
         df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
         df = df.set_index("time").sort_index()
         df = df[["open", "high", "low", "close", "tick_volume", "spread", "real_volume"]]
-        df.to_parquet(OUT / f"{sym}_H1.parquet")
+        publish_frame(df, OUT / f"{sym}_H1.parquet")
         med_spread = float(df["spread"].median())
         summary[sym] = {
             "bars": len(df),

@@ -975,7 +975,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
-                     "committees"),
+                     "committees",
+                     # the judge's ENVIRONMENT, measured before each sweep (recovered patch 08)
+                     "gauntlet_guard"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1625,6 +1627,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # THE JUDGE'S ENVIRONMENT GUARD (recovered box patch 08, 2026-09-24). Eight bytes per universe
+    # frame, one commit-counter read and a cursor-bounded tail of the judge's log: seconds, not
+    # minutes. The one slow call is `schtasks /query /xml` (timeout 120 s); the cap sits above.
+    "gauntlet_guard": 240,
     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
@@ -4497,6 +4503,14 @@ def main() -> None:
     # refuse what the judge itself refuses terminally before a bar is read. It deletes nothing.
     fa = _costed("fast_admission", lambda: _producer(
         "fast_admission", "research/fast_admission.py"))
+    # THE JUDGE DIES ON ITS ENVIRONMENT, NOT ITS BUDGET (recovered box patch 08). Measured over
+    # 844 MB of MT5-Gauntlet.log: 129 of 168 tracebacks were the commit ceiling breaking the pool
+    # at spawn and 19 were a torn universe frame read mid-rewrite. This measures both -- commit
+    # headroom and every frame's PAR1 sentinels -- plus the pass ledger from the judge's own log,
+    # into reports/GAUNTLET_PASSES.json, IMMEDIATELY BEFORE the sealed judge reads those frames.
+    # It starts nothing, stops nothing and never writes into the sealed judge.
+    ggd = _costed("gauntlet_guard", lambda: _producer(
+        "gauntlet_guard", "scripts/gauntlet_guard.py"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
     # THE CANON'S LAST MISSING LINK, IMMEDIATELY AFTER THE JUDGE. `external_gauntlet.py` is a
@@ -5319,6 +5333,7 @@ def main() -> None:
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
+                    "gauntlet_guard": ggd,
                     "canon_publication": cpub, "judging_burndown": jbd,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,

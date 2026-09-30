@@ -292,6 +292,10 @@ LEG_LAYER: dict[str, str] = {
     # being reached: what fraction of the day the desk actually mints and judges, against the best
     # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
     "duty_cycle": "meta",
+    # META as well: the judge's environment (commit headroom, torn universe frames, the pass
+    # ledger read off the judge's own log). It buys no prediction; it says whether the judge can
+    # reach its epilogue at all (recovered box patch 08).
+    "gauntlet_guard": "meta",
     "analyst_pipeline": "information", "knowledge_graph": "information",
     "card_explosion": "prediction", "alpha_lineage": "prediction",
     "graveyard_resurrection": "prediction", "shadow_discovery": "information",
