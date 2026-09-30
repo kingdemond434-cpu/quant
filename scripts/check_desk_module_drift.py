@@ -155,6 +155,7 @@ MODULES = [
     # Steps the daily chain gained after the list above was written, re-derived from
     # daily_cycle.py's imports by the test named above (2026-09-30).
     "desks/mt5/research/build_allocator.py",
+    "desks/mt5/research/deepen_universe.py",
     "desks/mt5/research/daily_research_os.py",
     "desks/mt5/research/export_aurum_findings.py",
     "desks/mt5/research/module_rent.py",

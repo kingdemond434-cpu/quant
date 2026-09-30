@@ -1270,6 +1270,10 @@ def _path_expr(node: ast.AST, here: Path, env: dict[str, Path]) -> Path | None:
             return here
         if isinstance(f, ast.Attribute) and f.attr in ("resolve", "absolute") and not node.args:
             return _path_expr(f.value, here, env)
+        # `mt5desk.config.desk_root()` -- the desk's single path authority -- is `desks/mt5`.
+        if isinstance(f, ast.Name) and f.id == "desk_root" and not node.args:
+            return next((p for p in here.parents
+                         if p.name == "mt5" and p.parent.name == "desks"), None)
         return None
     if isinstance(node, ast.Attribute) and node.attr == "parent":
         base = _path_expr(node.value, here, env)
