@@ -111,6 +111,16 @@ DECIDED_STATUSES = frozenset({"KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED",
 #:
 #: NOT A CAP AND NOT A BRAKE. This measures and reports; it enrols everything exactly as before
 #: and refuses nothing. The only thing it changes is that a stalled clock is LOUD.
+#: A WORKING STATUS IS NOT A TICKING CLOCK (2026-09-30). The engine stamps `last_attempt_at` on
+#: every pass that reaches a row, and it passes every 15 minutes (MT5-Shadow) plus hourly
+#: (`enrol_clocks`). Measured on the box 2026-09-30: forward ledgers had not moved in 7 days while
+#: every clock still read ACTIVE, so this census counted them accruing and the fence passed. A
+#: row whose newest tick is older than this has an engine that stopped reaching it: it is blocked,
+#: named ENGINE_SILENT, and the repair sweep re-runs the engine. A row with NO tick at all keeps
+#: its old reading -- absence of a stamp is not proof of silence.
+SILENT_TICK_HOURS = 3.0 * CYCLE_HOURS
+ENGINE_SILENT = "ENGINE_SILENT"
+
 BLOCKED_WHY = ("a clock exists and is accruing NO forward evidence: the certificate can never "
                "mature, so it can never be promoted. Fix the blocker named in `status`/"
                "`last_error` -- never the certificate, and never by retiring the clock")
@@ -317,7 +327,18 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
             decided = (state in DECIDED_STATUSES
                        or state.startswith("QUARANTINED")
                        or any(state.startswith(name + "_") for name in DECIDED_STATUSES))
-            if state in ACCRUING_STATUSES:
+            tick = _parse_ts(row.get("last_attempt_at"))
+            silent_h = ((t - tick).total_seconds() / 3600.0) if tick is not None else None
+            if state in ACCRUING_STATUSES and silent_h is not None and silent_h > SILENT_TICK_HOURS:
+                entry["accruing"], entry["decided"] = False, False
+                entry["silent_hours"] = round(silent_h, 2)
+                entry["why"] = BLOCKED_WHY
+                entry["blocker"] = (f"{ENGINE_SILENT}: status {state or 'ACTIVE'!r} but the engine "
+                                    f"last reached this clock {silent_h:.1f}h ago (limit "
+                                    f"{SILENT_TICK_HOURS:.0f}h) -- read logs/shadow.log for the "
+                                    "pass that is failing")
+                entry["engine_silent"] = True
+            elif state in ACCRUING_STATUSES:
                 entry["accruing"] = True
             elif decided:
                 # A verdict, not a stall. `shadow_forward._TERMINAL_STATUSES` carries the same
@@ -336,15 +357,17 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
     # THE POPULATION THE FENCE FAILS ON. Enrolled, not decided, and accruing nothing.
     blocked = [c for c in enrolled if c["accruing"] is False and not c.get("decided")]
     accruing = [c for c in enrolled if c["accruing"] is True]
+    silent = [c for c in blocked if c.get("engine_silent")]
     by_status: dict[str, int] = {}
     for c in blocked:
-        name = str(c["status"] or UNMEASURED)
+        name = ENGINE_SILENT if c.get("engine_silent") else str(c["status"] or UNMEASURED)
         by_status[name] = by_status.get(name, 0) + 1
     return {
         "n_certificates": len(seen), "n_enrolled": len(enrolled), "n_missing": len(missing),
         "n_held": len(held), "held": held,
         "n_overdue": len(overdue),
-        "n_accruing": len(accruing), "n_blocked": len(blocked),
+        "n_accruing": len(accruing), "n_blocked": len(blocked), "n_silent": len(silent),
+        "silent_tick_hours": SILENT_TICK_HOURS,
         "blocked": blocked, "blocked_by_status": by_status,
         "accruing_rule": (
             "ENROLLED IS NOT ACCRUING. A clock whose status is neither working nor decided is "
@@ -363,6 +386,7 @@ def census(runs: list[dict[str, Any]], clocks: dict[str, dict[str, Any]],
                     "an unstamped clock never reports zero latency"),
         },
         "certificates": seen, "enrolled": enrolled, "missing": missing, "overdue": overdue,
+        "silent": silent,
     }
 
 
@@ -377,7 +401,7 @@ def repair(missing: list[dict[str, Any]], deadline: float,
     """
     if not missing:
         return {"status": "NOT_NEEDED", "n_missing": 0,
-                "why": "every certificate already holds a clock"}
+                "why": "every certificate holds a clock and every clock is ticking"}
     remaining = deadline - time.monotonic()
     if remaining < 30.0:
         return {"status": "SKIPPED_BUDGET", "n_missing": len(missing),
@@ -410,7 +434,9 @@ def run(write: bool = True, now: datetime | None = None, budget_s: float = 300.0
     stamps = certification_stamps()
     gate, gate_why = integrity_gate()
     body = census(runs, clocks, stamps, now, gate=gate)
-    rep = (repair(body["missing"], deadline) if do_repair and not why
+    # A SILENT ENGINE IS REPAIRED THE SAME WAY A MISSING CLOCK IS: by running the engine now, so
+    # its failure lands in this leg's tail (and in `logs/shadow.log`) instead of in nobody's.
+    rep = (repair(body["missing"] + body["silent"], deadline) if do_repair and not why
            else {"status": "NOT_RUN", "why": why or "repair disabled for this pass"})
     if rep.get("status") in {"RAN", "RAN_NONZERO"}:
         # RE-MEASURE AFTER THE REPAIR, because the whole point is the state AFTER the sweep. A
