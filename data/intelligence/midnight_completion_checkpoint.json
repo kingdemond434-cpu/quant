@@ -15,7 +15,7 @@
    "status": "DONE"
   },
   "certificate_yield_fence": {
-   "finished_at": "2026-09-30T06:40:54.689194+00:00",
+   "finished_at": "2026-09-30T09:52:35.349282+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -33,58 +33,53 @@
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "finished_at": "2026-09-30T06:44:35.199166+00:00",
+   "finished_at": "2026-09-30T09:52:45.642479+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-09-30T06:33:33.421863+00:00",
+   "finished_at": "2026-09-30T09:51:11.427032+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-09-30T06:33:11.921216+00:00",
+   "finished_at": "2026-09-30T09:50:52.871092+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-09-30T06:34:03.215939+00:00",
+   "finished_at": "2026-09-30T09:51:37.769436+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-desk-pull.service"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-09-30T09:05:39.639683+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-09-30T09:50:28.283249+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   },
   "mechanism_independence": {
-   "finished_at": "2026-09-30T06:37:50.473759+00:00",
+   "finished_at": "2026-09-30T09:52:13.999640+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-09-30T06:39:51.790759+00:00",
+   "finished_at": "2026-09-30T09:52:25.225727+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-09-30T06:34:41.784473+00:00",
+   "finished_at": "2026-09-30T09:51:56.858885+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-09-30T09:05:39.639683+00:00"
+ "updated_at": "2026-09-30T09:52:45.642479+00:00"
 }
