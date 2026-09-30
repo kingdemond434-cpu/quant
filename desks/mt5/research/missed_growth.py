@@ -501,6 +501,44 @@ def measure_tier_s_block(r: Any, alloc: dict[str, Any],
             "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
 
 
+#: E8 gold's intents journal: the duplicate guard journals each block as RAIL_BLOCKED there.
+E8_INTENTS = BASE / "data" / "e8_gold_intents.jsonl"
+
+
+def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
+                             _fv: dict[str, Any]) -> dict[str, Any]:
+    """What E8 gold's duplicate guard stood aside from, read from the lane's own journal.
+
+    Each RAIL_BLOCKED row is a dropped bracket leg NOT re-sent because an unowned same-side
+    position opened after the failed send may have been that send. If it was, the block saved a
+    doubled position; if not, it forwent the leg's certified risk (`missed_growth_risk_usd`).
+    Which one it was is not observable from the journal, so the verdict stays UNMEASURED with
+    the count and the risk at stake published: an upper bound on the growth it can cost, never
+    a zero."""
+    rows: list[dict[str, Any]] = []
+    try:
+        for line in E8_INTENTS.read_text("utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if isinstance(row, dict) and row.get("status") == "RAIL_BLOCKED" \
+                    and row.get("rail") == r.name:
+                rows.append(row)
+    except (OSError, ValueError):
+        return {"verdict": UNMEASURED, "why": "the E8 intents journal is missing or unreadable"}
+    if not rows:
+        return {"verdict": NOT_BINDING, "n": 0,
+                "why": "the guard has not blocked a re-send on this host"}
+    risk = [float(x["missed_growth_risk_usd"]) for x in rows
+            if isinstance(x.get("missed_growth_risk_usd"), (int, float))]
+    return {"verdict": UNMEASURED, "n": len(rows),
+            "missed_risk_usd_upper": round(sum(risk), 2),
+            "last_at": rows[-1].get("at"),
+            "why": ("each block forgoes the leg's certified risk only if the blocking position "
+                    "was not the lost send; the journal cannot tell which, so this is an upper "
+                    "bound, published rather than priced as zero")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 

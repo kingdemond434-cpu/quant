@@ -391,3 +391,18 @@ def test_a_blocked_position_and_its_order_enter_the_known_set() -> None:
     v, st = _Venue(book=[_order(78, "buy", 4340.0)]), _state()
     _retry(v, st)
     assert len(v.sent) == 1 and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 901
+
+
+def test_the_rails_ledger_reads_every_block_from_the_journal(monkeypatch) -> None:
+    """The missed-growth reader bills the rail from the E8 journal (audit residual D)."""
+    from types import SimpleNamespace as NS
+
+    from research import missed_growth as mg
+    monkeypatch.setattr(mg, "E8_INTENTS", g.INTENTS)
+    rail = NS(name=g.UNOWNED_BLOCK_RAIL)
+    assert mg.measure_e8_unowned_block(rail, {}, {})["verdict"] == mg.NOT_BINDING
+    v, st = _Venue(), _state()
+    _retry(v, st, xau_positions=[{"id": 9, "side": "buy", "openDate": 4_102_444_800_000}])
+    got = mg.measure_e8_unowned_block(rail, {}, {})
+    assert got["n"] == 1 and got["missed_risk_usd_upper"] == 1000.0
+    assert got["verdict"] == mg.UNMEASURED
