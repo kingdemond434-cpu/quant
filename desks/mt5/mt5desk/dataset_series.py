@@ -22,6 +22,9 @@ THREE KINDS, each with its own honest stamp -- and a dataset with no stamp gets 
                    points read a day after their date.
     grounds:<name> `data/<name>.jsonl`, an append-only grounds journal: rows mined per UTC day,
                    known at the end of the day. A grounds LIST with no row stamps has no series.
+    acquired:<feed> `data/acquired/<feed>_<column>.parquet`, written by `acquire_datasets` for the
+                   repo-mined feeds (#166, libs/data/repo_mined_feeds): each value already sits
+                   at its FIRST-PRINT `available_time` (the frame's index), so it is read as is.
     intel:<seat>   `data/intelligence/<seat>/` under either root: snapshot files a miner wrote.
                    A file's stamp is the time IN ITS NAME (`discoveries_YYYYMMDD_HHMM.json`) -- when
                    the desk fetched it, which is when it knew it; a day rollup
@@ -63,7 +66,8 @@ INTEL_ROOTS: tuple[Path, ...] = (DATA / "intelligence", ROOT / "data" / "intelli
                                  STAMPS_ROOT)
 AXES = DATA / "axes"
 
-KINDS: tuple[str, ...] = ("lake", "cot", "intel", "macro", "grounds")
+KINDS: tuple[str, ...] = ("lake", "cot", "intel", "macro", "grounds", "acquired")
+ACQUIRED = DATA / "acquired"
 DEFAULT_LAG_HOURS = 24
 DEFAULT_Z_WINDOW = 250
 TRANSFORMS: tuple[str, ...] = ("level", "level_z", "delta", "delta_z")
@@ -416,11 +420,50 @@ def macro_fields(name: str, root: Path | None = None,
     return []
 
 
+#: Days after a period's END before a monthly / quarterly print without its own `k` is read
+#: (conservative: later costs a little edge, earlier invents it).
+MONTHLY_RELEASE_LAG_DAYS = 45
+QUARTERLY_RELEASE_LAG_DAYS = 95
+WEEKLY_RELEASE_LAG_DAYS = 10
+
+
+def series_release_rule(dates: list[str]) -> str:
+    """D / W / M / Q from a series-shaped record's point dates (median spacing)."""
+    ts = sorted(t for t in (pd.to_datetime(d[:10], errors="coerce") for d in dates[-60:] if d)
+                if pd.notna(t))
+    gaps = sorted((b - a).days for a, b in zip(ts, ts[1:], strict=False))
+    if not gaps:
+        return "D"
+    g = gaps[len(gaps) // 2]
+    return "D" if g <= 4 else "W" if g <= 10 else "M" if g <= 40 else "Q"
+
+
+def _release_knowable(d: Any, rule: str) -> pd.Timestamp | None:
+    """A series point's knowable time by its frequency's release rule: a daily print at the END
+    of the next business day, a weekly one 10 days on, a monthly / quarterly one (dated at the
+    period's first day) its period END plus the release lag."""
+    s = str(d or "").strip()[:10]
+    t = pd.to_datetime(s, errors="coerce")
+    if pd.isna(t):
+        return None
+    t = pd.Timestamp(t).tz_localize(UTC) if pd.Timestamp(t).tzinfo is None else pd.Timestamp(t)
+    if rule == "D":
+        return (t + pd.offsets.BDay(1)).normalize() + pd.Timedelta(days=1)
+    if rule == "W":
+        return t + pd.Timedelta(days=WEEKLY_RELEASE_LAG_DAYS)
+    if rule == "M":
+        return (t + pd.offsets.MonthBegin(1)).normalize() + pd.Timedelta(
+            days=MONTHLY_RELEASE_LAG_DAYS)
+    return (t + pd.offsets.QuarterBegin(1, startingMonth=1)).normalize() + pd.Timedelta(
+        days=QUARTERLY_RELEASE_LAG_DAYS)
+
+
 def macro_raw(name: str, field: str, *, match: str = "",
               root: Path | None = None) -> pd.Series | None:
     """An axis record's field on its availability clock: a rows-shaped record's `knowable_at`
-    (the axis organ's own knowability stamp), a series-shaped record's point date + one day (a
-    daily print is read after its day closes). None when the record or field is absent."""
+    (the axis organ's own knowability stamp), a series-shaped record's point `k` (its own
+    knowable_at) or else its frequency's release rule (`_release_knowable`). None when the record
+    or field is absent."""
     doc = axis_doc(name, root)
     if not doc or not field:
         return None
@@ -439,14 +482,18 @@ def macro_raw(name: str, field: str, *, match: str = "",
             vals.append(v)
     else:
         sd = (doc.get("series") or {}).get(field) if isinstance(doc.get("series"), dict) else None
-        for pt in (sd or {}).get("points") or []:
-            if not isinstance(pt, dict):
-                continue
+        pts = [pt for pt in (sd or {}).get("points") or [] if isinstance(pt, dict)]
+        rule = series_release_rule([str(pt.get("d") or "") for pt in pts])
+        for pt in pts:
             v = _num(pt.get("v"))
-            t = _knowable(pt.get("d"))
+            # THE POINT'S OWN knowable_at FIRST (`k`, written by research/fred_fetch.py from
+            # ALFRED's first release or the series' release rule). A point without one is stamped
+            # by its FREQUENCY's release rule, never `date + 1 day`: FRED dates a monthly print at
+            # the period's FIRST day, and +1 day read it weeks before it was published.
+            t = _knowable(pt.get("k")) if pt.get("k") else _release_knowable(pt.get("d"), rule)
             if v is None or t is None:
                 continue
-            stamps.append(t + pd.Timedelta(days=1))
+            stamps.append(t)
             vals.append(v)
     if not vals:
         return None
@@ -492,6 +539,34 @@ def grounds_raw(name: str, field: str = ROW_COUNT_FIELD, *,
 
 
 # ------------------------------------------------------------------ the one entry point
+def acquired_files(feed: str, root: Path | None = None) -> list[Path]:
+    """A repo-mined feed's per-column files (`<feed>_<column>.parquet`)."""
+    base = root or ACQUIRED
+    feed = str(feed or "").strip()
+    if not feed or "/" in feed or "\\" in feed or feed.startswith(".") or not base.is_dir():
+        return []
+    return sorted(p for p in base.glob(f"{feed}_*.parquet") if p.is_file())
+
+
+def acquired_raw(feed: str, field: str, *, root: Path | None = None) -> pd.Series | None:
+    """One column of a repo-mined feed on its first-print availability clock (the file's index,
+    written by `repo_mined_feeds.as_available`). `field` is the file's stem."""
+    base = root or ACQUIRED
+    if not str(field or "").startswith(f"{feed}_"):
+        return None
+    p = base / f"{field}.parquet"
+    try:
+        df = pd.read_parquet(p)
+    except Exception:
+        return None
+    if df.empty:
+        return None
+    col = "value" if "value" in df.columns else df.columns[0]
+    idx = pd.DatetimeIndex(pd.to_datetime(df.index, errors="coerce", utc=True))
+    s = pd.Series(pd.to_numeric(df[col], errors="coerce").to_numpy(dtype=float), index=idx)
+    return s[s.index.notna()].dropna().sort_index()
+
+
 def raw(dataset: str, field: str, *, match: str = "", root: Path | None = None) -> pd.Series | None:
     """The dataset's field as UNSHAPED values on its availability clock (UTC). None = UNMEASURED.
 
@@ -510,6 +585,8 @@ def raw(dataset: str, field: str, *, match: str = "", root: Path | None = None) 
         return macro_raw(rest, field, match=match, root=root)
     if kind == "grounds":
         return grounds_raw(rest, field, root=root)
+    if kind == "acquired":
+        return acquired_raw(rest, field, root=root)
     return None
 
 

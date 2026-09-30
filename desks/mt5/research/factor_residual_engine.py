@@ -614,6 +614,17 @@ def run(targets: list[str] | None = None, shuffle: bool = False,
                                    for r in report["proposals"]]}
         (INTEL / f"discoveries_{stamp}.json").write_text(
             json.dumps(payload, indent=1, default=str), "utf-8")
+    elif not shuffle:
+        # A RUN THAT FOUND NOTHING IS STILL A READING (D18, 2026-09-30): before this, an hour with
+        # no proposal wrote no file and the seat read as dead (last file 2026-09-12) while the
+        # leg ran every hour. Zero rows at this instant, outside data/intelligence/.
+        try:
+            if str(_DESK.parent.parent) not in sys.path:
+                sys.path.insert(0, str(_DESK.parent.parent))
+            from libs.research.seat_stamper import record_run
+            record_run("factor_residual", 0, organ="factor_residual_engine", tests_run=n_tests)
+        except Exception:
+            pass
     return report
 
 

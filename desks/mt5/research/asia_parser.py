@@ -606,6 +606,53 @@ def _canonical_frame(series: Path, source_id: str) -> Any:
     return None
 
 
+#: Columns that say WHEN a row was knowable, never WHAT it says.
+_WHEN = ("available_time", "published_time")
+
+
+def restamp_revisions(h: Any, key: list[str]) -> Any:
+    """A REVISED VALUE IS KNOWABLE WHEN IT WAS FETCHED, NEVER AT THE ORIGINAL RELEASE (audit of
+    #168, 2026-09-30). `pit_stamp` stamps a dated row at its period + the registry's lag, so a
+    later vintage that REVISES a period carried the ORIGINAL instant; the stack then held the
+    first print and the revision at the same `available_time`, and a reader keeping the last
+    duplicate read the revision at the original release -- a lookahead.
+
+    The point-in-time-correct rule, per period (every non-value column, `event_time` included):
+    the FIRST value seen keeps its release stamp; each later vintage whose values DIFFER from the
+    last value kept is a revision, stamped `available_time` = `published_time` = that vintage's
+    FETCH time (`_first_seen`, never earlier than its own rule); a vintage that repeats the last
+    kept value adds nothing. `h` is sorted by `_first_seen`."""
+    import pandas as pd
+    if h.empty or "_first_seen" not in h.columns:
+        return h.drop_duplicates(subset=key, keep="first")
+    values = [c for c in key if c not in _WHEN and c not in ("event_time", "source_id")
+              and pd.api.types.is_numeric_dtype(h[c])]
+    ident = [c for c in key if c not in _WHEN and c not in values]
+    if not values or not ident:
+        return h.drop_duplicates(subset=key, keep="first")
+    h = h.reset_index(drop=True)
+    sig = h[values].astype("string").fillna("<NA>").agg("|".join, axis=1)
+    grp = h[ident].astype("string").fillna("<NA>").agg("|".join, axis=1)
+    prev = sig.groupby(grp, sort=False).shift(1)
+    first = prev.isna()
+    changed = ~first & (sig != prev)
+    # consecutive repeats of the value last kept carry no news
+    keep = first | changed
+    h = h[keep].copy()
+    rev = changed[keep]
+    if rev.any():
+        fetched = pd.to_datetime(h.loc[rev, "_first_seen"], utc=True)
+        for c in _WHEN:
+            if c in h.columns:
+                cur = pd.to_datetime(h.loc[rev, c], errors="coerce", utc=True)
+                h.loc[rev, c] = pd.concat([cur, fetched], axis=1).max(axis=1).astype(
+                    h[c].dtype if str(h[c].dtype).startswith("datetime") else object)
+        if "revision_time" in h.columns:
+            h.loc[rev, "revision_time"] = fetched.astype(str).values
+    return h.drop_duplicates(subset=[c for c in key if c not in _WHEN] + [
+        c for c in _WHEN if c in h.columns], keep="first")
+
+
 def fold_vintages(source_id: str, registry: dict[str, dict[str, Any]],
                   max_fold: int = MAX_FOLD_PER_PASS) -> dict[str, Any]:
     """Every vintage of a source, not only the newest, as ONE dated series.
@@ -678,7 +725,7 @@ def fold_vintages(source_id: str, registry: dict[str, dict[str, Any]],
         key = [c for c in h.columns if c not in _VINTAGE_ONLY and c != "_first_seen"]
         h = _numeric_text(h)
         h = h.astype({c: "string" for c in h.columns if pd.api.types.is_object_dtype(h[c])})
-        h = h.drop_duplicates(subset=key, keep="first").drop(columns=["_first_seen"])
+        h = restamp_revisions(h, key).drop(columns=["_first_seen"])
         h = h.reset_index(drop=True)
         real.mkdir(parents=True, exist_ok=True)
         h.to_parquet(hist_p)

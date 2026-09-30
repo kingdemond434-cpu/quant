@@ -1,0 +1,53 @@
+{
+ "note": "REGISTERED LAWFUL SUBSTITUTES for enrolled datasets whose own source is walled (D18, 2026-09-30). Read by libs/research/dataset_substitutes.py inside the hourly dataset_exploitation leg. Every source here passes the terms fence (libs/data/terms_fence.py where present, and its own `terms` verdict) before any request; a wall is never routed around -- no scraping past a 403/429/anti-bot and no changed user agent. A walled dataset inherits the uses of its substitute members (dataset_exploitation.MEMBERS), and the report says so. `route` names an organ that already produces the substitute (never duplicated here); `fetch` is a keyless series this module fetches itself.",
+ "walled": {
+  "intel:google_trends": {
+   "wall": "trends.google.com answers HTTP 429 to every explore query (side_channels/seed_miners.py google_trends)",
+   "substitutes": [
+    {"id": "wikipedia_pageviews", "kind": "route", "organ": "desks/mt5/research/attention_substitutes.py (leg attention_substitutes, PR #162)",
+     "members": ["intel:attention_substitutes", "lake:attn_wikipedia_pageviews__*"],
+     "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/",
+     "terms": "CLEAN", "terms_basis": "Wikimedia pageview data is CC0; the REST API asks only for an identifying User-Agent, which the organ sends",
+     "measures": "retail attention to the same topics, daily, per article"}
+   ]
+  },
+  "intel:investing": {
+   "wall": "www.investing.com returns 403 to the page AND to /robots.txt (side_channels/seed_miners.py investing)",
+   "substitutes": [
+    {"id": "fred_alfred", "kind": "route", "organ": "desks/mt5/research/fred_fetch.py (the fred axis, run by axis_ingest_all)",
+     "members": ["macro:fred", "registry:fred_macro"],
+     "url": "https://fred.stlouisfed.org/graph/fredgraph.csv",
+     "terms": "CLEAN", "terms_basis": "FRED/ALFRED data are public; the API terms permit automated access with a key and the fredgraph CSV is the published download link",
+     "measures": "the calendar's release values (first-release via ALFRED) and the rates/dollar/vol prices investing.com re-publishes"},
+    {"id": "dbnomics_us_calendar", "kind": "route", "organ": "scripts/data_alternates.py DBNOMICS_MIRROR (free_data._fred_alternate)",
+     "members": ["macro:fred"],
+     "url": "https://api.db.nomics.world/v22/series/",
+     "terms": "CLEAN", "terms_basis": "DBnomics is an open keyless aggregator of official publishers' series; its API is documented for programmatic use",
+     "measures": "the same BLS/FED calendar series from a second host"},
+    {"id": "nasdaq_calendar_json", "kind": "blocked",
+     "url": "https://api.nasdaq.com/api/calendar/economicevents",
+     "terms": "BLOCKED_TERMS", "terms_basis": "not verified clean: nasdaq.com's terms restrict automated access and api.nasdaq.com refuses clients that do not present a browser User-Agent, which this desk never spoofs. Not fetched until a named terms review clears it.",
+     "measures": "the economic calendar's consensus and actuals"}
+   ]
+  },
+  "intel:china": {
+   "wall": "www.zhihu.com search answers 403 with an anti-bot interstitial (side_channels/seed_miners.py china)",
+   "substitutes": [
+    {"id": "asia_packs_cn_official", "kind": "route", "organ": "desks/mt5/research/asia_collector.py + asia_parser.py (lake packs)",
+     "members": ["lake:pboc_open_market", "lake:pboc_survey_stats", "lake:safe_fx_settlement", "lake:safe_cross_border", "lake:safe_reserves", "lake:cfets_fixing", "lake:nbs_pmi", "lake:nbs_industrial"],
+     "url": "https://www.pbc.gov.cn/",
+     "terms": "CLEAN", "terms_basis": "official public statistical releases (PBoC, SAFE, CFETS, NBS), already collected as registered packs; nothing here duplicates them",
+     "measures": "China's policy, FX-settlement, fixing and activity releases"},
+    {"id": "dbnomics_nbs", "kind": "fetch", "provider": "NBS",
+     "series": [
+      {"key": "cn_pmi_manufacturing", "search": "NBS purchasing managers index", "must": ["manufacturing", "pmi"], "lag_days": 7, "revises": false},
+      {"key": "cn_cpi_yoy", "search": "NBS consumer price index", "must": ["consumer price", "same month"], "lag_days": 20, "revises": false}
+     ],
+     "members": ["lake:sub_dbnomics_nbs_*"],
+     "url": "https://api.db.nomics.world/v22/",
+     "terms": "CLEAN", "terms_basis": "DBnomics republishes NBS's official series keylessly for programmatic use",
+     "measures": "China's PMI and CPI, the activity and price releases the forum chatter reacts to"}
+   ]
+  }
+ }
+}

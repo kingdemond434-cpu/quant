@@ -650,6 +650,41 @@ def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: d
         summary["raw_only"] += 0 if real else 1
 
 
+def record_mql5_reputation(results: dict, base_path: Path | None = None) -> int:
+    """Every MQL5 miner's sweep, recorded through the MQL5 reputation tracker (D18, 2026-09-30).
+
+    `sources/strategy/mql5_reputation.MQL5ReputationTracker` had NO caller: the seat
+    `data/intelligence/mql5_reputation/` held four `test_author` rows from 2026-08-24 and nothing
+    else, so it was enrolled and could never be fed. Each sweep now records, per MQL5 miner, the
+    real (non-stub) rows it returned as that source's testable mechanisms; the history line that
+    writes is the seat's reading, stamped by seat_stamper when it lands. Returns the sources
+    recorded; never raises (a tracker failure must not cost the sweep)."""
+    import importlib
+    import sys
+    mods = [n for n in results if n.startswith("mql5")]
+    if not mods:
+        return 0
+    try:
+        # A PACKAGE IMPORT: the tracker imports `...base` relatively, so it loads only as
+        # side_channels.sources.strategy.mql5_reputation with the desk root on the path.
+        if str(BASE) not in sys.path:
+            sys.path.insert(0, str(BASE))
+        mod = importlib.import_module("side_channels.sources.strategy.mql5_reputation")
+        tracker = mod.MQL5ReputationTracker(base_path or BASE.parent.parent)
+        for n in mods:
+            rows_ = (results.get(n) or {}).get("discoveries") or []
+            real = [r_ for r_ in rows_ if isinstance(r_, dict)
+                    and not r_.get("needs_selector_work")]
+            tracker.record_output(n, "seed_miner", hypotheses=len(real),
+                                  unique=len({str(r_.get("url") or r_.get("title"))
+                                              for r_ in real}))
+        tracker.save_all()
+        return len(mods)
+    except Exception as exc:                                  # pragma: no cover - defensive
+        print(f"  mql5_reputation: UNMEASURED ({type(exc).__name__}: {exc})")
+        return 0
+
+
 def run_and_save() -> dict:
     ts = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
     results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0}
@@ -723,6 +758,7 @@ def run_and_save() -> dict:
         real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
         print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
     STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    record_mql5_reputation(results)
     # merge into latest_discoveries.json so convert_to_hypotheses feeds the gauntlet queue
     latest_p = INTEL / "latest_discoveries.json"
     try:

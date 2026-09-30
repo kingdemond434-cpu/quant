@@ -459,6 +459,20 @@ def _preregister(source: str, candidates: list[dict]) -> dict[str, Any]:
     return out
 
 
+def record_quiet_run(source: str, tests_run: int | None = None) -> None:
+    """The seat's reading for a run that donated nothing (D18, 2026-09-30): zero rows at this
+    instant under data/dataset_stamps/<source>/, never in the intake. A proposer that ran and
+    found nothing is alive, and its seat must say so. Never raises."""
+    try:
+        import sys
+        if str(_DESK.parent.parent) not in sys.path:
+            sys.path.insert(0, str(_DESK.parent.parent))
+        from libs.research.seat_stamper import record_run
+        record_run(source, 0, organ=f"proposer_common.donate ({source})", tests_run=tests_run)
+    except Exception:
+        pass
+
+
 def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
 
@@ -472,6 +486,7 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     LAST_DONATION = {"source": source, "donated": 0, "refused_unstamped": 0,
                      "refused_wrong_lane": 0, "refusals": [], "lane_refusals": []}
     if not candidates:
+        record_quiet_run(source, tests_run)
         return None
     candidates, lane_refused = _lane_filtered(candidates)
     LAST_DONATION["refused_wrong_lane"] = len(lane_refused)
@@ -479,6 +494,7 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     if not candidates:
         # Every row was the wrong lane. Writing an empty contract would record a proposer that
         # produced nothing, when it produced rows the mandate turned away.
+        record_quiet_run(source, tests_run)
         return None
     candidates, refused = _stamped(source, candidates)
     LAST_DONATION["refused_unstamped"] = len(refused)
@@ -486,6 +502,7 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     if not candidates:
         # Nothing survived the door. Writing an empty contract would put a file into the intake
         # that says a proposer produced nothing, when it produced rows the door turned away.
+        record_quiet_run(source, tests_run)
         return None
     prereg = _preregister(source, candidates)
     LAST_DONATION["prereg"] = prereg

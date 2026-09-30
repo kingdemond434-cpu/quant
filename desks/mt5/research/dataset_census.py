@@ -333,6 +333,23 @@ def intel_datasets(roots: tuple[Path, ...] | None = None) -> list[dict[str, Any]
     return out
 
 
+def fetch_failure(doc: dict[str, Any]) -> str | None:
+    """FETCH_FAILED_ENV / FETCH_FAILED_HTTP for an axis record whose fetch failed with nothing
+    held, else None. The record's own `fetch_status` (research/fred_fetch.py) wins; an older
+    record is classified from its `failed` messages: an HTTP status from the publisher is
+    _HTTP, anything that never reached it (timeout, reset, proxy refusal) is _ENV."""
+    st = str(doc.get("fetch_status") or "")
+    if st.startswith("FETCH_FAILED"):
+        return st
+    failed = doc.get("failed")
+    if doc.get("n_series") or not isinstance(failed, dict) or not failed:
+        return None
+    msgs = [str(v) for v in failed.values()]
+    if any(m.startswith(("HTTPError", "FETCH_FAILED_HTTP")) or "HTTP Error" in m for m in msgs):
+        return "FETCH_FAILED_HTTP"
+    return "FETCH_FAILED_ENV"
+
+
 def file_datasets(data: Path | None = None) -> list[dict[str, Any]]:
     """Macro axis records and grounds files.
 
@@ -358,9 +375,16 @@ def file_datasets(data: Path | None = None) -> list[dict[str, Any]]:
             why = (f"an axis record with no series inside (n_series={n}"
                    + (f"; its fetch failed for {len(failed)} series: "
                       f"{sorted(failed)[:4]}" if failed else "") + ")")
+            pit = _pit(False, why)
+            fs = fetch_failure(doc) if isinstance(doc, dict) else None
+            if fs:
+                # AN ENVIRONMENT THAT COULD NOT REACH THE PUBLISHER SAYS NOTHING ABOUT THE
+                # DATASET (2026-09-30): the fence reads it UNMEASURED with this reason, never
+                # UNFED, until a host fetches it (research/fred_fetch.py).
+                pit["fetch_status"] = fs
             out.append({"id": f"macro:{p.stem}", "kind": "macro",
                         "path": _relp(p), "fields": [],
-                        "source_names": names, "pit": _pit(False, why)})
+                        "source_names": names, "pit": pit})
             continue
         f0 = fields[0]
         facts = _series_facts(DS.macro_raw(p.stem, f0["field"], match=f0["match"],
@@ -392,9 +416,54 @@ def file_datasets(data: Path | None = None) -> list[dict[str, Any]]:
     return out
 
 
+#: The repo-mined feeds #166 absorbs into acquire_datasets (libs/data/repo_mined_feeds.FEEDS):
+#: read from that module when this tree has it, this list otherwise, so they are ENROLLED from the
+#: moment the code exists -- UNFED / UNMEASURED until their cells are judged, never invisible.
+REPO_MINED_FEEDS: dict[str, str] = {
+    "gpr_daily": "Caldara-Iacoviello daily geopolitical risk (GPRD, act, threat)",
+    "epu_us_daily": "Baker-Bloom-Davis US daily economic policy uncertainty",
+    "crypto_fear_greed": "alternative.me crypto Fear & Greed: a sensor for Fusion's crypto CFDs "
+                         "only, never a hunted venue",
+}
+
+
+def acquired_datasets(root: Path | None = None) -> list[dict[str, Any]]:
+    """The repo-mined feeds (#166) as datasets: one per feed, one field per column file."""
+    from mt5desk import dataset_series as DS
+    feeds = dict(REPO_MINED_FEEDS)
+    try:
+        from libs.data import repo_mined_feeds as rmf  # type: ignore[import-not-found,unused-ignore]
+        feeds.update({f.name: f.use for f in rmf.FEEDS})
+    except Exception:
+        pass
+    out: list[dict[str, Any]] = []
+    for name in sorted(feeds):
+        files = DS.acquired_files(name, root)
+        fields = [{"field": p.stem, "match": ""} for p in files]
+        names = sorted({name, f"ext_{name}", *[p.stem for p in files],
+                        *[f"ext_{p.stem}" for p in files]})
+        if not fields:
+            out.append({"id": f"acquired:{name}", "kind": "acquired",
+                        "path": _relp((root or DS.ACQUIRED) / f"{name}_*.parquet"),
+                        "fields": [], "source_names": names,
+                        "pit": _pit(False, "repo-mined feed (#166, acquire_datasets): no column "
+                                           "file acquired on this host yet")})
+            continue
+        facts = _series_facts(DS.acquired_raw(name, fields[0]["field"], root=root))
+        usable = facts.get("points", 0) >= MIN_OBSERVATIONS
+        out.append({"id": f"acquired:{name}", "kind": "acquired",
+                    "path": _relp((root or DS.ACQUIRED) / f"{name}_*.parquet"),
+                    "fields": fields, "source_names": names,
+                    "pit": _pit(usable, "" if usable else
+                                f"{facts.get('points', 0)} first-print reading(s), under "
+                                f"{MIN_OBSERVATIONS}", facts)})
+    return out
+
+
 def discover() -> list[dict[str, Any]]:
     named, tags = cultures()
-    out = lake_datasets() + cot_datasets() + intel_datasets() + file_datasets()
+    out = (lake_datasets() + cot_datasets() + intel_datasets() + file_datasets()
+           + acquired_datasets())
     for d in out:
         name = d["id"].split(":", 1)[1]
         if d["kind"] == "lake" and d.get("country"):

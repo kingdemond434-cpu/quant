@@ -165,6 +165,8 @@ def run(symbols: list[str] | None = None, shuffle: bool = False,
     report["report_path"] = str(out)
     if cands and not shuffle:
         report["donated"] = str(pc.donate(SOURCE, cands, len(rows)))
+    elif not shuffle:
+        pc.record_quiet_run(SOURCE, len(rows))      # a run with no proposal is still a reading
     return report
 
 

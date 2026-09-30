@@ -590,11 +590,47 @@ def data_endpoints(page: str, base: str) -> list[str]:
 
 
 # ------------------------------------------------------------------------------- ledgers
+#: The D18 fence's routing file: free substitutes for enrolled datasets whose own source is walled
+#: or failed, written hourly by libs/research/dataset_exploitation.py.
+SUBSTITUTE_QUEUE = _DESK / "data" / "deep_forest_queue" / "dataset_substitutes.json"
+
+
+def substitute_grounds(registered: set[str] | None = None, path: Path | None = None
+                       ) -> list[dict[str, Any]]:
+    """The dataset-substitute grounds the D18 fence routes here (its routing file had no reader).
+
+    GUARDED AGAINST A DOUBLE READ. PR #152 adds `queued_grounds`, which reads EVERY file in
+    `data/deep_forest_queue/` -- this one included. Once that reader is in this module this
+    returns [] and the queue is read once, by it. Until then this reads only this one file. A
+    ground whose name is already registered (or already queued) is never added twice."""
+    if callable(globals().get("queued_grounds")):
+        return []
+    try:
+        doc = json.loads((path or SUBSTITUTE_QUEUE).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    seen = set(registered or ())
+    out: list[dict[str, Any]] = []
+    for g in (doc.get("grounds") if isinstance(doc, dict) else None) or []:
+        if not isinstance(g, dict) or not g.get("name") or not g.get("route"):
+            continue
+        if str(g["name"]) in seen:
+            continue
+        seen.add(str(g["name"]))
+        out.append(g)
+    return out
+
+
 def _load_sources() -> dict[str, Any]:
     try:
-        return json.loads(SOURCES.read_text("utf-8"))
+        cfg = json.loads(SOURCES.read_text("utf-8"))
     except (OSError, ValueError):
-        return {"grounds": []}
+        cfg = {"grounds": []}
+    extra = substitute_grounds({str(g.get("name")) for g in cfg.get("grounds") or []
+                                if isinstance(g, dict)})
+    if extra:
+        cfg = {**cfg, "grounds": [*(cfg.get("grounds") or []), *extra]}
+    return cfg
 
 
 def _load_seen() -> dict[str, Any]:

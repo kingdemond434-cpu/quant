@@ -63,7 +63,15 @@ def run_all(apply: bool) -> dict[str, Any]:
     axes: dict[str, Any] = {}
     for name in sorted(ai.INGESTERS):
         try:
-            doc = ai.INGESTERS[name]()
+            if name == "fred":
+                # THE FRED AXIS GOES THROUGH fred_fetch (2026-09-30): retried with backoff,
+                # each failure classified (FETCH_FAILED_ENV vs _HTTP), every point stamped with
+                # its own knowable_at, and a failed series keeps its previous points instead of
+                # the pass overwriting the record with an empty one.
+                import fred_fetch
+                doc = fred_fetch.ingest_fred(previous=fred_fetch.previous(OUT_DIR))
+            else:
+                doc = ai.INGESTERS[name]()
         except Exception as exc:
             # ONE PUBLISHER'S OUTAGE IS NOT THE LANE'S VERDICT. Recorded, then carry on.
             axes[name] = {"axis": name, "state": "UNMEASURED",
@@ -79,6 +87,7 @@ def run_all(apply: bool) -> dict[str, Any]:
             "n_symbols": len(doc.get("symbols") or []),
             "n_failed": len(doc.get("failed") or {}),
             "failed": {k: str(v)[:120] for k, v in (doc.get("failed") or {}).items()},
+            **({"fetch_status": doc["fetch_status"]} if doc.get("fetch_status") else {}),
         }
         if apply:
             OUT_DIR.mkdir(parents=True, exist_ok=True)

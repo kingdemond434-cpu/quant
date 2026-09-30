@@ -245,6 +245,19 @@ def run_and_save() -> dict:
     if rows:
         (OUT / f"discoveries_{now:%Y%m%d_%H%M}.json").write_text(
             json.dumps(rows, indent=1, default=str), "utf-8")
+    else:
+        # A SWEEP THAT FOUND NO NEW POPULATION IS STILL A READING (D18, 2026-09-30). The query
+        # rings exhaust, so most sweeps find none, and writing nothing then made the seat read as
+        # dead (one file, 2026-09-12). Zero rows at this instant, outside data/intelligence/.
+        try:
+            _root = str(BASE.parent.parent)
+            if _root not in sys.path:
+                sys.path.insert(0, _root)
+            from libs.research.seat_stamper import record_run
+            record_run("frontier", 0, organ="global_survivor_frontier",
+                       tests_run=len(queries), now=now)
+        except Exception:
+            pass
     POPULATIONS.write_text(json.dumps(pops, indent=1), "utf-8")
     FRONTIER.write_text(json.dumps(cov, indent=1), "utf-8")
     st["queries_done"][locale] = sorted(set(st["queries_done"][locale]))[-400:]

@@ -126,6 +126,14 @@ def _unknown_unknown_counts(path: Path | None = None) -> tuple[int, dict[str, in
 REGIME_SPLIT_TRIALS = DESK / "data" / "REGIME_SPLIT_TRIALS.jsonl"
 
 
+#: THE PRODUCER SWARM'S TRIAL LEDGER (desks/mt5/research/producer_swarm.py, TRIALS), same row
+#: shape: every cell the swarm mints -- the D18 dataset lane's `dataset_stance` /
+#: `dataset_conditioned` cells and the short-history lane's included -- is a trial of its family.
+#: It was written and read by nothing (audit of #168, 2026-09-30); charging it here can only
+#: RAISE a family's lifetime count, so every consumer deflates more, never less.
+PRODUCER_SWARM_TRIALS = DESK / "data" / "PRODUCER_SWARM_TRIALS.jsonl"
+
+
 def _prereg_counts() -> int:
     try:
         from libs.research.preregistration import cards
@@ -149,6 +157,10 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     for fam, k in r_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
     p_total += r_total
+    s_total, s_fam = _mass_screen_counts(PRODUCER_SWARM_TRIALS)
+    for fam, k in s_fam.items():
+        p_fam[fam] = p_fam.get(fam, 0) + k
+    p_total += s_total
     prereg = _prereg_counts()
     fams = sorted(set(g_fam) | set(p_fam))
     by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0)) for f in fams}
@@ -156,12 +168,13 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "lifetime_trials": int(g_total + p_total),
            "judged_cells": g_total, "screened_cells": p_total, "preregistered_cards": prereg,
            "mass_screen_cells": m_total, "unknown_unknown_cells": u_total,
-           "regime_split_union_cells": r_total,
+           "regime_split_union_cells": r_total, "producer_swarm_cells": s_total,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and every "
                     "unknown-unknown cell in UNKNOWN_UNKNOWN_TRIALS.jsonl, and every "
-                    "regime-split cell of the lifetime union in REGIME_SPLIT_TRIALS.jsonl); "
+                    "regime-split cell of the lifetime union in REGIME_SPLIT_TRIALS.jsonl, and "
+                    "every producer-swarm cell in PRODUCER_SWARM_TRIALS.jsonl); "
                     "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
