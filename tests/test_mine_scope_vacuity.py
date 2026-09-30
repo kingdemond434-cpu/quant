@@ -9,6 +9,7 @@ the desk to keep entries around. Vacuity is content the parser cannot SEE, never
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 import scripts.max_audit as m
@@ -104,10 +105,35 @@ class TestFeedInboxBacklog:
     def test_absent_inbox_does_not_fire(self, tmp_path, monkeypatch) -> None:
         assert _run(monkeypatch, tmp_path, m.check_feed_inbox_backlog) == []
 
-    def test_live_inbox_is_drained(self) -> None:
-        out: list[tuple[str, str]] = []
-        m.check_feed_inbox_backlog(out)
-        assert out == [], out
+    def test_live_inbox_is_measured_not_parsed_to_zero(self, tmp_path, monkeypatch) -> None:
+        """The REAL inbox is counted, whatever its depth today.
+
+        This used to assert the live inbox was drained, which made the suite's colour a function
+        of whether the CRO cycle had triaged the collector's latest pull (2 entries, 35 days, on
+        2026-09-30) -- the audit's job, not a test's. What a test CAN pin is R0269's actual
+        defect: the fence parsed the real file to zero and reported a clean backlog off an empty
+        set. So the live file is copied into a sandbox and the fence must count exactly the
+        entries an independent parse finds, and read the file the collector writes.
+        """
+        import re
+
+        from scripts import collect_research_feed as feed
+
+        live = m.ROOT / "docs/research/feed_inbox.md"
+        assert Path(feed._INBOX) == Path("docs/research/feed_inbox.md"), \
+            "the fence and the collector must name the same inbox"
+        text = live.read_text("utf-8") if live.exists() else ""
+        body = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+        n = len(re.findall(r"^## ", body, flags=re.M))
+        _doc(tmp_path, "docs/research/feed_inbox.md", text)
+        out = _run(monkeypatch, tmp_path, m.check_feed_inbox_backlog)
+        if n == 0:
+            assert out == [], out
+        elif out:
+            assert [d[0] for d in out] == ["feed-inbox-backlog"], out
+            assert f"holds {n} live entr" in out[0][1], out
+        else:   # a fresh, shallow queue is legitimately clean -- but only a shallow one
+            assert n <= m._FEED_INBOX_MAX_OPEN, (n, "entries read clean past the depth bar")
 
 
 @pytest.mark.parametrize("check", [m.check_mine_scope_vacuous, m.check_feed_inbox_backlog])
