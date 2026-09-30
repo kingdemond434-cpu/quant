@@ -671,6 +671,19 @@ STEPS = (("research_gap_map", _research_gap_map),
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    # ONE STEP ON ITS OWN CLOCK (2026-09-30). `markout` sits behind research steps this box has
+    # measured at 9,056 s, under a 900 s hourly budget, so `reports/markout.json` stood at
+    # 2026-09-08 with n_matched=0 while the live book kept filling. `--step NAME` runs that one
+    # step now, through the same `run_step`, and leaves the day's stamp alone: the chain still
+    # runs it in order, and an hourly leg can give a live-truth step the cadence it needs.
+    if "--step" in argv:
+        i = argv.index("--step")
+        want = argv[i + 1] if i + 1 < len(argv) else ""
+        fns = dict(STEPS)
+        if want not in fns:
+            dlog(f"--step {want!r}: no such step; known: {', '.join(fns)}")
+            return 2
+        return 0 if run_step(want, fns[want])["ok"] else 1
     force = "--force" in argv
     today = datetime.now(UTC).date().isoformat()
     stamp = _load_stamp()
