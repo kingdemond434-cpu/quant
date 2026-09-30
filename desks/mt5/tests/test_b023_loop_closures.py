@@ -8,8 +8,12 @@ call with the final iteration's values.
 
 from __future__ import annotations
 
+import importlib.util
+import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 DESK = Path(__file__).resolve().parents[1]
 if str(DESK) not in sys.path:
@@ -62,3 +66,18 @@ def test_url_refusers_stamp_their_own_endpoint() -> None:
         assert row == {"host": f"h{i}.test", "series": [], "status": "REFUSED",
                        "at": f"2026-09-30T00:00:0{i}+00:00", "refusal": f"why{i}"}
     assert reasons == [f"why{i}" for i in range(4)]
+
+
+REPO = DESK.parents[1]
+
+
+@pytest.mark.skipif(importlib.util.find_spec("ruff") is None,
+                    reason="UNMEASURED: ruff is not installed in this interpreter")
+def test_no_b023_anywhere_in_the_repository() -> None:
+    """The fence. pyproject's ruff config selects B but EXCLUDES desks/mt5 wholesale, so the
+    project gate never saw these sites; ``--isolated`` checks every file with B023 alone."""
+    proc = subprocess.run(
+        [sys.executable, "-m", "ruff", "check", "--isolated", "--no-cache", "--select", "B023",
+         "--output-format", "concise", str(REPO)],
+        capture_output=True, text=True, timeout=300, check=False)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
