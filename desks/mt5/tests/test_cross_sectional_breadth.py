@@ -299,3 +299,32 @@ def test_hourly_leg_is_wired():
     hc = importlib.import_module("research.hourly_cycle")
     assert hc.department_of("cross_sectional_breadth") == "discovery"
     assert hc.LEG_BUDGET_SEC["cross_sectional_breadth"] >= 900
+
+
+def test_sealed_gauntlet_rebuilds_every_family_through_its_own_import_path(universe, monkeypatch):
+    """The judge's OWN door: `external_gauntlet.build_cell`, imported exactly as the sweep imports
+    it, rebuilds every family from (symbol, family, params) with no sealed edit -- and none of the
+    families is banned by `family_policy` (whose PERMANENT list holds `discovered`)."""
+    sys.path.insert(0, str(_DESK / "scripts"))
+    import external_gauntlet as eg
+    from research.family_policy import PERMANENT, family_banned
+    monkeypatch.setattr(eg, "_bars_for", lambda sym, tf="H1": universe.get(sym))
+    for fam in xs.CROSS_SECTIONAL_FAMILIES:
+        assert not family_banned(fam) and fam not in PERMANENT
+        params = {"symbol": "GGGHHH", **{k: v[0] for k, v in xs.PARAM_GRID[fam].items()}}
+        cell = eg.build_cell("GGGHHH", fam, dict(params), {})
+        assert cell is not None, f"{fam}: {eg.LAST_BUILD_FAILURE}"
+        assert eg.LAST_BUILD_FAILURE is None
+        assert cell["sigs"], f"{fam} rebuilt by the gauntlet with no signals"
+
+
+def test_real_registry_keeps_share_cfds_out_of_every_class():
+    """On the desk's own registry: single names are never ranked; indices are."""
+    from research import universe_policy as up
+    classes = up.peer_classes()
+    ranked = {s for v in classes.values() for s in v}
+    if not ranked:
+        pytest.skip("registry absent on this host -- UNMEASURED, not a pass")
+    assert all(up.lane(s) == up.HYPOTHESIS for s in ranked)
+    assert all(up.asset_class_of(s) not in up.EVENT_DRIVEN_CLASSES for s in ranked)
+    assert classes.get("index"), "indices are the equity cross-section"
