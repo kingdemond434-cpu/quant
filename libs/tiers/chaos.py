@@ -191,7 +191,8 @@ def process_kill_drill(root: Path, *, orders: int = 400, kills: int = 5, seed: i
             out["restarts"] += 1
         if proc.poll() is None:
             proc.kill()
-        proc.communicate()
+        if proc.stdout is not None and not proc.stdout.closed:
+            proc.communicate()
         ver = truth_kernel_verify(jp)
         seqs: list[int] = []
         if ver.get("ok"):
