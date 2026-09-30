@@ -2788,6 +2788,29 @@ def organ_formal() -> dict[str, Any]:
                                      else None)}}
 
 
+FORMAL_REPORT = OUT_DIR / "FORMAL.json"
+
+
+def organ_formal_claim() -> dict[str, Any]:
+    """S31's CONSUMER: what the desk may say about its order protocol, read back from the
+    FORMAL.json the formal organ published (`libs/tiers/formal.claim`). The model check proves the
+    model; the word VERIFIED needs every invariant's knobs present at the real send sites and no
+    counterexample admitted by the real decision core. The best count of implementation-backed
+    invariants is a ratchet: `scripts/check_formal_claim.py` fails the law gate on a VIOLATED
+    model or a regression, and `self_model` ranks the gap as a deficiency."""
+    st = _state("formal_claim")
+    best = st.get("best_implemented")
+    c = formal.claim(_read(FORMAL_REPORT), now=NOW,
+                     best_implemented=int(best) if best is not None else None)
+    if c["claim"] != "UNMEASURED":
+        _save_state("formal_claim", {"best_implemented": c["best_implemented"],
+                                     "claim": c["claim"], "at": NOW.isoformat()})
+    return {**c, "source": FORMAL_REPORT.as_posix(),
+            "metric": {"protocol_verified": 1.0 if c["claim"] == "VERIFIED" else 0.0,
+                       "implemented_invariants": c["implemented"],
+                       "verified_share": c.get("verified_share")}}
+
+
 def _protocol_conformance() -> dict[str, Any]:
     """The proved protocol's knobs judged on the REAL gateway's syntax tree, send site by send
     site (`libs/tiers/conformance.py`) -- never a keyword grep, which comments could satisfy."""
@@ -2934,7 +2957,14 @@ def organ_data_os() -> dict[str, Any]:
     moved = data_os.retarget(landed, metric_now)
     n_landed = bitemporal.resolve(landed, acquired, metric_now, NOW.isoformat())
     _save_state("acquisition", {"predictions": [p.to_dict() for p in landed + own][-3000:]})
+    # THE STORE ON A DATA PATH: the macro-conditioned research sweep reads its conditioning state
+    # through `BitemporalStore.latest_known` and publishes what the same-date join would have
+    # admitted before the print was knowable (run_edges_macro_fusion_sweep.py, hourly leg).
+    sweep = _read(REPORTS / "edges_macro_fusion_sweep.json")
+    pit_reads = (sweep.get("pit") if isinstance(sweep, dict) else None) or {
+        "status": data_os.UNMEASURED, "why": "edges_macro_fusion_sweep.json absent or pre-PIT"}
     return {"pit_audits": audits, "sources": sources, "gate_yield": yields,
+            "pit_reads": pit_reads,
             "acquisition": {"scored_on": {"rankers": "own_metric", "landed": "gate_yield"},
                             "open": len(ranking), "registered_now": made,
                             "resolved_now": n_res, "calibration": cal, "top": ranking[:25],
@@ -4179,7 +4209,8 @@ def main(argv: list[str] | None = None) -> int:
         ("grammar", organ_grammar), ("theory", organ_theory),
         ("predictions", organ_predictions), ("market", organ_market),
         ("failure_memory", organ_failure_memory), ("formal", organ_formal),
-        ("chaos", organ_chaos), ("replay", organ_replay), ("data_os", organ_data_os),
+        ("formal_claim", organ_formal_claim), ("chaos", organ_chaos),
+        ("replay", organ_replay), ("data_os", organ_data_os),
         ("world_science", organ_world_and_science), ("exchange", organ_exchange),
         ("worlds", organ_worlds),
     ]

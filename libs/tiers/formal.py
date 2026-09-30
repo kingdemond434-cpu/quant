@@ -47,6 +47,7 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from typing import Any
 
 PHASES = ("IDLE", "DECIDED", "SENT", "ACKED", "FILLED", "REJECTED")
@@ -233,3 +234,118 @@ def ablations(base: Protocol | None = None) -> dict[str, Any]:
 
 def phase_rank(p: str) -> int:
     return _ORDER[p]
+
+
+# ------------------------------------------------------------------------------ the claim
+
+#: the only claim that may call the order protocol VERIFIED; everything else says what it lacks
+CLAIMS = ("VERIFIED", "MODEL_ONLY", "VIOLATED", "UNMEASURED")
+#: FORMAL.json is rewritten by the hourly tier_s pass; older than this it is a photograph
+CLAIM_MAX_AGE_H = 3.0
+
+
+def _needs(depends_on: list[str]) -> tuple[set[str], list[set[str]]]:
+    """An invariant's knob requirements from the ablation map: a single knob whose removal breaks
+    it is REQUIRED; a pair `a+b` that breaks it only together is satisfied by EITHER."""
+    single: set[str] = set()
+    either: list[set[str]] = []
+    for removed in depends_on or []:
+        parts = [p for p in str(removed).split("+") if p]
+        if len(parts) == 1:
+            single.add(parts[0])
+        elif parts:
+            either.append(set(parts))
+    return single, either
+
+
+def claim(doc: Any, *, now: datetime | None = None, max_age_h: float = CLAIM_MAX_AGE_H,
+          best_implemented: int | None = None) -> dict[str, Any]:
+    """What the desk may SAY about its order protocol, read from FORMAL.json.
+
+    A model check proves the MODEL. The real gateway earns the word VERIFIED only when, for every
+    invariant, (1) the model check PROVED it over the complete state space, (2) every design knob
+    the proof rests on (`depends_on`, from the single and paired ablations) is present at the
+    gateway's send sites by the AST conformance check, and (3) no counterexample trace driven
+    through the real decision core was admitted (`decision_core_drive.core_gaps`). Anything short
+    of that is MODEL_ONLY with the missing knobs named; a model violation is VIOLATED; an absent,
+    unreadable or stale report is UNMEASURED -- never a pass by default.
+
+    `best_implemented` is the ratchet: the most invariants ever backed by the implementation. A
+    reading below it is `regressed` (a send site lost a knob it had)."""
+    at_now = now or datetime.now(UTC)
+    out: dict[str, Any] = {"claim": "UNMEASURED", "invariants": {}, "reasons": [],
+                           "implemented": 0, "of": len(INVARIANTS), "regressed": False,
+                           "best_implemented": int(best_implemented or 0)}
+    if not isinstance(doc, dict) or not isinstance(doc.get("protocol"), dict):
+        out["reasons"].append("FORMAL.json absent or has no protocol block")
+        return out
+    stamp = doc.get("generated_utc")
+    try:
+        gen = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError:
+        out["reasons"].append(f"FORMAL.json generated_utc unreadable: {stamp!r}")
+        return out
+    gen = gen if gen.tzinfo else gen.replace(tzinfo=UTC)
+    age_h = (at_now - gen).total_seconds() / 3600.0
+    out["formal_generated_utc"], out["age_h"] = gen.isoformat(), round(age_h, 3)
+    if age_h > max_age_h:
+        out["reasons"].append(f"FORMAL.json is {age_h:.1f}h old (> {max_age_h}h): stale")
+        return out
+    proto = doc["protocol"]
+    invs = proto.get("invariants") or {}
+    depends = proto.get("depends_on") or {}
+    knobs = (doc.get("conformance") or {}).get("knobs") or {}
+    drive = doc.get("decision_core_drive")
+    gaps = drive.get("core_gaps") if isinstance(drive, dict) else None
+    gap_invs: dict[str, list[str]] = {}
+    for g in gaps or []:
+        for inv in (g.get("invariants") or []) if isinstance(g, dict) else []:
+            gap_invs.setdefault(str(inv), []).append(str(g.get("function")))
+    violated = unmeasured = 0
+    for name in INVARIANTS:
+        v = str((invs.get(name) or {}).get("verdict") or "UNMEASURED")
+        single, either = _needs(depends.get(name) or [])
+        missing = sorted(k for k in single if knobs.get(k) is not True)
+        missing += ["|".join(sorted(grp)) for grp in either
+                    if not any(knobs.get(k) is True for k in grp)]
+        if v == "VIOLATED":
+            verdict = "VIOLATED"
+            violated += 1
+        elif v != "PROVEN":
+            verdict = "UNMEASURED"
+            unmeasured += 1
+        elif missing or name in gap_invs:
+            verdict = "MODEL_ONLY"
+        else:
+            verdict = "IMPLEMENTED"
+        out["invariants"][name] = {"model": v, "verdict": verdict,
+                                   "needs": sorted(single) + ["|".join(sorted(g))
+                                                              for g in either],
+                                   "missing_knobs": missing,
+                                   "core_gaps": sorted(set(gap_invs.get(name, [])))}
+    impl = sum(1 for r in out["invariants"].values() if r["verdict"] == "IMPLEMENTED")
+    out["implemented"] = impl
+    out["verified_share"] = round(impl / len(INVARIANTS), 4)
+    if gaps is None:
+        out["reasons"].append("decision_core_drive UNMEASURED: counterexamples were not driven "
+                              "through the real core, so no invariant can be VERIFIED")
+    if violated:
+        out["claim"] = "VIOLATED"
+        out["reasons"].append(f"{violated} invariant(s) VIOLATED in the desk's own model")
+    elif unmeasured:
+        out["claim"] = "UNMEASURED"
+        out["reasons"].append(f"{unmeasured} invariant(s) not PROVEN (bounded or absent)")
+    elif impl == len(INVARIANTS) and gaps is not None:
+        out["claim"] = "VERIFIED"
+    else:
+        out["claim"] = "MODEL_ONLY"
+        out["reasons"].append(
+            f"model PROVEN, implementation backs {impl}/{len(INVARIANTS)} invariants; lacking: "
+            + "; ".join(f"{n} <- {', '.join(r['missing_knobs'] + r['core_gaps'])}"
+                        for n, r in out["invariants"].items() if r["verdict"] == "MODEL_ONLY"))
+    if best_implemented is not None and impl < int(best_implemented):
+        out["regressed"] = True
+        out["reasons"].append(f"implementation regressed: {impl} invariants backed, best ever "
+                              f"{best_implemented}")
+    out["best_implemented"] = max(impl, int(best_implemented or 0))
+    return out
