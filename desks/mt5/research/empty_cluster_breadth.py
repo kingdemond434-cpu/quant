@@ -166,6 +166,13 @@ def _grid(family: str) -> list[dict[str, Any]]:
             for combo in itertools.product(*(spec[k] for k in keys))]
 
 
+def _rel(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def _has_bars(symbol: str) -> bool:
     return (UNIVERSE_DIR / f"{symbol}_H1.parquet").exists()
 
@@ -197,7 +204,7 @@ def plan() -> tuple[list[tuple[str, str, dict[str, Any]]], dict[str, list[str]]]
     indices = sorted({v[0] for v in ec.IMPLIED_MAP.values()} | {"vix3m"})
     for idx in indices:
         if ec.implied_series(idx) is None:
-            missing["options_implied"].append(str(ec.implied_file(idx).relative_to(ROOT)))
+            missing["options_implied"].append(_rel(ec.implied_file(idx)))
     for sym, (idx, _r) in sorted(ec.IMPLIED_MAP.items()):
         if ec.implied_series(idx) is None:
             continue
@@ -212,7 +219,7 @@ def plan() -> tuple[list[tuple[str, str, dict[str, Any]]], dict[str, list[str]]]
         if ec.cot_frame(sym) is None:
             got = ec.cot_contract(sym)
             if got is not None:
-                have.add(str((ec.COT_DIR / f"{got[0]}.parquet").relative_to(ROOT)))
+                have.add(_rel(ec.COT_DIR / f"{got[0]}.parquet"))
             continue
         for fam in ("positioning_crowding_unwind", "positioning_hedging_pressure",
                     "positioning_flow_momentum"):
@@ -226,7 +233,7 @@ def plan() -> tuple[list[tuple[str, str, dict[str, Any]]], dict[str, list[str]]]
                 add(sym, fam, {"base_family": base, "base_params": {}})
 
     if not ec.fed_calendar():
-        rel = str(ec.FED_CALENDAR.relative_to(ROOT))
+        rel = _rel(ec.FED_CALENDAR)
         missing["news_reaction"].append(rel)
         missing["event_surprise"].append(rel)
     else:
@@ -235,7 +242,7 @@ def plan() -> tuple[list[tuple[str, str, dict[str, Any]]], dict[str, list[str]]]
             add(sym, "news_reaction_unscheduled_shock")
             add(sym, "event_surprise_impact_drift")
     if not ec.CONSENSUS_STORE.exists():
-        missing["event_surprise"].append(str(ec.CONSENSUS_STORE.relative_to(ROOT)))
+        missing["event_surprise"].append(_rel(ec.CONSENSUS_STORE))
     else:
         for sym in CONSENSUS_INSTRUMENTS:
             add(sym, "event_surprise_consensus")

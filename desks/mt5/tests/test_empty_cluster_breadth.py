@@ -99,13 +99,14 @@ def world(tmp_path, monkeypatch):
         f.to_parquet(uni / f"{s}_H1.parquet")
     _write_index(obs / "cboe_vix_history.json", 7)
     _write_cot(cot / "jpy.parquet", 9)
+    _write_cot(cot / "aud.parquet", 11)
     _write_calendar(obs / "fomc_calendar.json")
     monkeypatch.setattr(xs, "UNIVERSE_DIR", uni)
     xs._SERIES_CACHE.clear()
     monkeypatch.setattr(ec, "OBSERVABLES", obs)
     monkeypatch.setattr(ec, "FED_CALENDAR", obs / "fomc_calendar.json")
     monkeypatch.setattr(ec, "COT_DIR", cot)
-    monkeypatch.setattr(ec, "CONSENSUS_STORE", tmp_path / "absent.jsonl")
+    monkeypatch.setattr(ec, "CONSENSUS_STORE", tmp_path / "consensus_actuals.jsonl")
     return {"frames": frames, "uni": uni, "obs": obs, "cot": cot, "tmp": tmp_path}
 
 
@@ -203,7 +204,7 @@ def test_cot_is_usable_from_friday_2300_broker_and_delayed_reports_are_dropped(w
     dropped = frame[(frame.index >= pd.Timestamp("2018-12-18", tz="UTC"))
                     & (frame.index <= pd.Timestamp("2019-03-12", tz="UTC"))]
     assert dropped.empty
-    assert ec.cot_contract("AUDJPY") == ("jpy", -1) and ec.cot_contract("XAUUSD") == ("gold", 1)
+    assert ec.cot_contract("AUDJPY") == ("aud", 1) and ec.cot_contract("XAUUSD") == ("gold", 1)
 
 
 def test_fed_et_time_lands_on_the_bar_clock_plus_seven_hours(world):
