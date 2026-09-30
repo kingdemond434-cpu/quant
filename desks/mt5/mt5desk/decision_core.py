@@ -2148,67 +2148,10 @@ def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
     return last_bar if last_bar.minute == 0 else None
 
 
-#: How many bars a family may need to exist AFTER the bar it emits on. `families_orthogonal.py`
-#: loops `range(n, len(d) - 1)` and needs ONE; every family in `families.py` loops
-#: `range(n, len(h1) - 2)` and needs TWO. `test_family_tail_slack` measures both modules against
-#: this number and fails when a family is added that needs more, so the constant cannot rot.
-FAMILY_TAIL_SLACK = 2
-
-
-def extend_signal_tail(bars: pd.DataFrame, last_bar: pd.Timestamp,
-                       slack: int = FAMILY_TAIL_SLACK) -> pd.DataFrame:
-    """`bars` with enough trailing placeholder rows that a family can EMIT on `last_bar`.
-
-    THE `signal_bars` FIX OF 2026-09-15 WAS ONE BAR SHORT, AND THAT ONE BAR IS THE WHOLE REASON
-    NO `families.py` SLEEVE HAS EVER TRADED. That fix appended the forming bar so a family whose
-    loop ends at `len(d) - 1` could reach the last closed bar, and it worked: `overnight_gap_decay`,
-    `carry` and `discovered` all place, and all three live in `families_orthogonal.py`, which is
-    the module that uses `- 1`. Every one of the 27 families in `families.py` uses `- 2`, so for
-    those the loop still stops exactly ONE index short of `last_bar` -- forever, on every pass.
-
-    MEASURED 2026-09-24 on the box's own XAUUSD H1 bars, walking the last 240 hourly passes as
-    `resolve_family_order` builds them for `session_range_breakout` rr=1.5/wb=12:
-
-        passes where the family emitted something   240 / 240   (28 distinct signal bars)
-        signals AT `last_bar`, frame as handed today    0
-        signals AT `last_bar`, one more trailing bar   10
-
-    The condition was met constantly. It is `[g for g in raw if g.time == last_bar]` that matched
-    nothing, because the family is structurally incapable of emitting there.
-
-    THE PADDING IS PROVABLY NOT DATA. Copies of the frame's own final row are appended at the
-    frame's own cadence, and no family reads them: the loop bound stops before them, every
-    indicator here is a backward-looking `rolling`/`ewm` so no value at an index <= `last_bar`
-    can move, and the one whole-frame aggregate these families take is a per-date `max`/`min`
-    (`range_by_day`), for which duplicating a value already in the frame is the identity. A
-    signal emitted ON a padded bar is discarded by the caller's `g.time == last_bar` filter, so
-    padding can only ever ADD the signal at the bar the desk is asking about.
-    """
-    if bars is None or len(bars) < 2 or slack <= 0:
-        return bars
-    try:
-        pos = int(bars.index.get_loc(last_bar))
-    except (KeyError, TypeError, ValueError):
-        return bars                      # `last_bar` is not in this frame: nothing to guarantee
-    need = int(slack) - (len(bars) - 1 - pos)
-    if need <= 0:
-        return bars
-    # The frame's own cadence, from the median gap: robust to session and weekend breaks in a way
-    # `index[-1] - index[-2]` is not.
-    step = pd.to_timedelta(pd.Series(bars.index[-min(len(bars), 50):]).diff().dropna().median())
-    if not isinstance(step, pd.Timedelta) or pd.isna(step) or step <= pd.Timedelta(0):
-        return bars
-    pad = pd.concat([bars.iloc[[-1]]] * need)
-    pad.index = pd.DatetimeIndex([bars.index[-1] + step * (k + 1) for k in range(need)],
-                                 name=bars.index.name)
-    return pd.concat([bars, pad])
-
-
 def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,
                        want_state: object, side: int, family_fn: Any,
                        day_states_fn: Any, call_params: dict | None = None,
-                       signal_bars: pd.DataFrame | None = None,
-                       prefer_side: int | None = None) -> FamilyStep:
+                       signal_bars: pd.DataFrame | None = None) -> FamilyStep:
     """The replay-faithful signal decision for one family sleeve at its signal bar.
 
     FAITHFUL TO THE REPLAY OR NOT AT ALL: the signal comes from the SAME family function the
@@ -2254,16 +2197,6 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
     It defaults to None, and None means `closed` -- so `shadow_forward` and every hunt16 caller
     resolve to the byte-identical call they have always made, and the forward clocks that
     certified these cells are not re-pointed by this fix.
-
-    `prefer_side` IS THE DIRECTIONAL RULE ON AN OCO PAIR, AND IT DECIDES WHICH LEG, NEVER WHETHER.
-    `family_session_range_breakout` appends a LONG at the range high and a SHORT at the range low
-    on the same bar -- one breakout bracket, two legs, and exactly one of them is taken. This
-    function took `sigs[-1]`, which is the order the family happens to append in, so the sleeve
-    was structurally always SHORT. With three such rows on XAUUSD beside three gold bracket
-    windows that is one bet in sextuplicate, and that shape has already been paid for once.
-    So when the book already holds a direction on this symbol, the AGREEING leg is the one
-    placed and only the opposing leg is skipped -- never both, never a smaller order. `None`
-    (no held direction, or a caller that does not compute one) keeps `sigs[-1]` exactly.
     """
     if last_signal_bar == str(last_bar):
         return FamilyStep(mark=False)                          # this bar already considered
@@ -2273,8 +2206,7 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
             return FamilyStep(mark=True, note=f"no trade: day state {got} != {want_state}")
     try:
         from mt5desk.family_call import hunt16_signals, signals
-        bars = (closed if signal_bars is None
-                else extend_signal_tail(signal_bars, last_bar))
+        bars = closed if signal_bars is None else signal_bars
         raw = (hunt16_signals(family_fn, bars, side) if call_params is None
                else signals(family_fn, bars, side=side, params=call_params))
         sigs = [g for g in raw if pd.Timestamp(g.time) == last_bar]
@@ -2283,12 +2215,7 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
                           note=f"FAMILY-EXEC signal computation failed ({exc}); skipped")
     if not sigs:
         return FamilyStep(mark=True)
-    chosen = sigs[-1]
-    if prefer_side and len({int(getattr(g, "side", 0)) for g in sigs}) > 1:
-        agreeing = [g for g in sigs if int(getattr(g, "side", 0)) == int(prefer_side)]
-        if agreeing:
-            chosen = agreeing[-1]
-    return FamilyStep(mark=True, signal=chosen)
+    return FamilyStep(mark=True, signal=sigs[-1])
 
 
 def family_entry(g: object, side: int, bid: float, ask: float) -> tuple[float, float]:
