@@ -118,6 +118,13 @@ def next_pairs(families: list[str], ledger: list[dict[str, Any]]) -> list[tuple[
     return sorted(pairs, key=lambda fa: (have[fa], fa[0], fa[1]))
 
 
+def _rel(p: Path) -> str:
+    try:
+        return p.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(p)
+
+
 def _chart(sym: str, tf: str) -> Path:
     return UNI / f"{sym}_{tf}.parquet"
 
@@ -189,7 +196,7 @@ def one_draw(eg: Any, family: str, arm: str, specs: list[tuple[str, dict[str, An
 
 
 def run(budget_s: float = DEFAULT_BUDGET_S, *, ledger_path: Path = LEDGER,
-        dry_run: bool = False) -> dict[str, Any]:
+        dry_run: bool = False, max_draws: int | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     docket = _read_json(DOCKET)
     specs = docket_specs(docket)
@@ -198,7 +205,7 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, ledger_path: Path = LEDGER,
     blocked = None
     drawn: list[dict[str, Any]] = []
     if not specs:
-        blocked = f"UNMEASURED: no docket at {DOCKET.relative_to(ROOT).as_posix()}"
+        blocked = f"UNMEASURED: no docket at {_rel(DOCKET)}"
     else:
         try:
             import external_gauntlet as eg
@@ -207,17 +214,34 @@ def run(budget_s: float = DEFAULT_BUDGET_S, *, ledger_path: Path = LEDGER,
             blocked = f"BLOCKED: external_gauntlet not importable ({type(exc).__name__}: {exc})"
         if eg is not None:
             count = len(ledger)
-            for family, arm in next_pairs(sorted(specs), ledger):
-                if time.monotonic() - t0 > budget_s - MARGIN_S:
+            # ROUNDS until the budget is spent: one sweep over every (family, arm) is ~200 s on
+            # the build box, so a single sweep would leave most of an hour's budget unspent. A
+            # pair that could not run in THIS pass is not retried until the next pass -- its
+            # reason will not change inside the hour.
+            failed: set[tuple[str, str]] = set()
+            out_of_time = False
+            while not out_of_time:
+                progressed = False
+                for family, arm in next_pairs(sorted(specs), [*ledger, *drawn]):
+                    if (family, arm) in failed:
+                        continue
+                    if time.monotonic() - t0 > budget_s - MARGIN_S or (
+                            max_draws is not None and len(drawn) >= max_draws):
+                        out_of_time = True
+                        break
+                    seed = SEED + count + len(drawn)
+                    d = one_draw(eg, family, arm, specs[family], meta, seed)
+                    d["elapsed_s"] = round(time.monotonic() - t0, 2)
+                    drawn.append(d)
+                    progressed = True
+                    if d.get("status") != "RUN":
+                        failed.add((family, arm))
+                    if not dry_run:
+                        ledger_path.parent.mkdir(parents=True, exist_ok=True)
+                        with ledger_path.open("a", encoding="utf-8") as fh:
+                            fh.write(json.dumps(d, default=str) + "\n")
+                if not progressed:
                     break
-                seed = SEED + count + len(drawn)
-                d = one_draw(eg, family, arm, specs[family], meta, seed)
-                d["elapsed_s"] = round(time.monotonic() - t0, 2)
-                drawn.append(d)
-                if not dry_run:
-                    ledger_path.parent.mkdir(parents=True, exist_ok=True)
-                    with ledger_path.open("a", encoding="utf-8") as fh:
-                        fh.write(json.dumps(d, default=str) + "\n")
     fams = nl.summarise([*ledger, *drawn])
     exceeds = sorted(f for f, r in fams.items()
                      if (r["gates"][nl.CHARGED_GATE].get("exceeds_nominal")))

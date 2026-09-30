@@ -97,8 +97,8 @@ def test_macro_sweep_reads_point_in_time() -> None:
 
 def test_both_macro_sweeps_read_one_declaration() -> None:
     import run_edges_macro_fusion_sweep as emf
-    assert emf.MACRO_KNOWABLE_AFTER == pd.Timedelta(
-        seconds=data_os.PUBLICATION_LAGS[mcs.MACRO_SOURCE]["lag_s"])
+    assert pd.Timedelta(
+        seconds=data_os.PUBLICATION_LAGS[mcs.MACRO_SOURCE]["lag_s"]) == emf.MACRO_KNOWABLE_AFTER
 
 
 def test_macro_sweep_is_an_hourly_leg() -> None:
@@ -129,7 +129,8 @@ from libs.tiers import data_os
 def f(fav, sigs):
     store = data_os.store_from_series(fav, source="cross_asset_anchors", entity="x",
                                       attribute="a")  # macro_regime.load_history
-    return store.latest_known("x", "a", [s.time for s in sigs])
+    known = store.latest_known("x", "a", [s.time for s in sigs])
+    return fav.reindex([s.time for s in sigs]), known
 """
 
 
@@ -171,7 +172,7 @@ def test_committed_floor_holds_and_the_repo_has_no_new_offender() -> None:
 
 def test_lint_is_a_law_fence() -> None:
     src = (ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
-    law = src[src.index("_LAW_FENCES"):src.index("_STATE_FENCES")]
+    law = src[src.index("_LAW_FENCES: tuple"):src.index("_STATE_FENCES: tuple")]
     assert '("check_known_by_date.py", ())' in law
 
 

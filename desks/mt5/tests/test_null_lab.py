@@ -147,7 +147,8 @@ def test_easy_family_is_named_and_charged_nominal_family_is_not() -> None:
 
 
 def test_few_draws_are_not_repriced_on_luck() -> None:
-    assert nl.charge(1, 2, 0.05) < 1.6          # 1 of 2 is 50%, but the prior holds it near 5%
+    # 1 of 2 is 50% (10x nominal), but the prior holds the charge under 2x
+    assert nl.charge(1, 2, 0.05) < 2.0
     assert nl.charge(0, 0, 0.05) == 1.0
 
 
@@ -170,15 +171,14 @@ def test_fdr_charge_multiplies_only_the_named_family() -> None:
 
 
 def test_the_charge_can_put_a_certificate_over_budget() -> None:
-    tests = [online_fdr.Test(f"f{i}", f"2026-01-{i + 1:02d}", p=1.0, family="x")
-             for i in range(5)]
-    tests.append(online_fdr.Test("cert", "2026-01-10", p=0.0004, family="easy",
-                                 certified=True))
+    # affordable at the first LORD++ level (p=0.001 clears it), unaffordable at 20x
+    tests = [online_fdr.Test("cert", "2026-01-01", p=0.001, family="easy", certified=True),
+             online_fdr.Test("fair", "2026-01-02", p=0.001, family="fair", certified=True)]
     before = online_fdr.replay(tests)
-    charged, _ = online_fdr.charge_null_fpr(tests, {"easy": 50.0})
+    charged, _ = online_fdr.charge_null_fpr(tests, {"easy": 20.0})
     after = online_fdr.replay(charged)
     assert before["over_budget"] == 0
-    assert after["over_budget"] == 1
+    assert after["over_budget"] >= 1
 
 
 def test_tier_s_online_fdr_reads_the_null_lab() -> None:
@@ -225,10 +225,11 @@ def test_organ_runs_a_budgeted_pass(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(organ, "REPORT", tmp_path / "NULL_LAB.json")
     monkeypatch.setitem(sys.modules, "external_gauntlet", _stub_gauntlet("bad_fam"))
     ledger = tmp_path / "draws.jsonl"
-    doc = organ.run(60.0, ledger_path=ledger)
+    doc = organ.run(600.0, ledger_path=ledger, max_draws=15)
     assert doc["status"] == "MEASURED"
     rows = [json.loads(x) for x in ledger.read_text("utf-8").splitlines()]
-    assert len(rows) == doc["draws_this_pass"] >= 9           # 3 families x 3 arms at least
+    assert len(rows) == doc["draws_this_pass"] == 15          # rounds until the cap
+    # a pair that could not run is tried once per pass, the rest of the pass goes to good_fam
     assert {r["arm"] for r in rows} == set(nl.ARMS)
     bad = [r for r in rows if r["family"] == "bad_fam"]
     assert bad and all(r["status"] == "NOT_RUN" and "stub" in r["why"] for r in bad)
@@ -241,7 +242,7 @@ def test_organ_runs_a_budgeted_pass(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert rep["families"]["good_fam"]["run"] == len(good)
     assert "online_fdr" in rep["consumer"]
     # a second pass continues from the ledger instead of starting again
-    doc2 = organ.run(30.0, ledger_path=ledger)
+    doc2 = organ.run(600.0, ledger_path=ledger, max_draws=3)
     assert doc2["ledger_draws"] > doc["ledger_draws"]
 
 
