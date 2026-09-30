@@ -404,5 +404,5 @@ def test_the_rails_ledger_reads_every_block_from_the_journal(monkeypatch) -> Non
     v, st = _Venue(), _state()
     _retry(v, st, xau_positions=[{"id": 9, "side": "buy", "openDate": 4_102_444_800_000}])
     got = mg.measure_e8_unowned_block(rail, {}, {})
-    assert got["n"] == 1 and got["missed_risk_usd_upper"] == 1000.0
+    assert got["n"] == 1 and got["undeployed_risk_usd"] == 1000.0
     assert got["verdict"] == mg.UNMEASURED

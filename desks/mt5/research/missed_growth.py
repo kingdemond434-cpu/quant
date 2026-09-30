@@ -513,8 +513,9 @@ def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
     position opened after the failed send may have been that send. If it was, the block saved a
     doubled position; if not, it forwent the leg's certified risk (`missed_growth_risk_usd`).
     Which one it was is not observable from the journal, so the verdict stays UNMEASURED with
-    the count and the risk at stake published: an upper bound on the growth it can cost, never
-    a zero."""
+    the count and the undeployed risk published. That figure is the risk the blocked legs would
+    have carried, NOT a bound on the growth forgone: a leg that ran to target earns its R:R
+    multiple of that risk, so the forgone profit can exceed it several times over."""
     rows: list[dict[str, Any]] = []
     try:
         for line in E8_INTENTS.read_text("utf-8").splitlines():
@@ -532,11 +533,12 @@ def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
     risk = [float(x["missed_growth_risk_usd"]) for x in rows
             if isinstance(x.get("missed_growth_risk_usd"), (int, float))]
     return {"verdict": UNMEASURED, "n": len(rows),
-            "missed_risk_usd_upper": round(sum(risk), 2),
+            "undeployed_risk_usd": round(sum(risk), 2),
             "last_at": rows[-1].get("at"),
-            "why": ("each block forgoes the leg's certified risk only if the blocking position "
-                    "was not the lost send; the journal cannot tell which, so this is an upper "
-                    "bound, published rather than priced as zero")}
+            "why": ("each block leaves the leg's certified risk undeployed only if the blocking "
+                    "position was not the lost send; the journal cannot tell which. The figure "
+                    "is risk, not forgone profit, which can be R:R times larger; it is "
+                    "published rather than priced as zero")}
 
 
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
