@@ -15,6 +15,11 @@ from pathlib import Path
 
 import pytest
 
+# The Tier S door fails closed on absent verifier inputs; these promoter tests are not about
+# the door, so they run against fresh, clean verifier artifacts (desks/mt5/tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("fresh_tier_s_door")
+
+
 _DESK = Path(__file__).resolve().parents[1]
 for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
     if _p not in sys.path:
