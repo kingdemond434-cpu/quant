@@ -234,8 +234,12 @@ a hunted universe of its own.
 
 ### TWO LANES: WHICH PROCESS MAY MINT A HYPOTHESIS (2026-09-06, principal's standing order)
 
-**Single-name equities are traded on news, financial reports and earnings reaction -- never
-hunted for statistical hypotheses.** Forex, metals, energy, soft commodities, indices, bonds and
+**AMENDED BY THE PRINCIPAL 2026-09-30: single-name equities get cross-sectional class books AND
+the news/earnings lane.** Share CFDs may mint hypotheses ONLY in the cross-sectional class-book
+families (`universe_policy.CROSS_SECTIONAL_FAMILIES`: ranked against the `equity` peer class on
+the same date); every other statistical family stays event-lane-only for them, for the reasons
+below. The original order read: **Single-name equities are traded on news, financial reports and
+earnings reaction -- never hunted for statistical hypotheses.** Forex, metals, energy, soft commodities, indices, bonds and
 Fusion's crypto CFDs remain the hypothesis-discovery universe. This does NOT narrow the universe
 above: share CFDs stay tradable, their bars and ticks are still collected, and their edge is
 sought in the event lane.

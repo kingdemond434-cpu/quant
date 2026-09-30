@@ -951,7 +951,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
-                     "conversion_maximiser", "trend_core"),
+                     "conversion_maximiser", "trend_core",
+                     # the within-class rank books, one leg per cell, aimed at the empty
+                     # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
+                     "cross_sectional_breadth"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -1690,6 +1693,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "engine_registry": 400,
     "counterfactual_attribution": 700,
     "trend_core": 700,
+    # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
+    # cell is measured at most once a day), so the cap only has to sit above its own budget.
+    "cross_sectional_breadth": 1_000,
     "event_surprise": 400,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
@@ -3489,6 +3495,15 @@ def main() -> None:
     # gates judge it like anything else. No privileged path to capital.
     tcor = _costed("trend_core", lambda: _producer(
         "trend_core", "research/trend_core.py", "--once", "--budget-s", "600"))
+    # CROSS-SECTIONAL CLASS BOOKS (2026-09-30). k_eff read 2.53 on 453 nominal sleeves with 6 of
+    # 15 alpha clusters empty; tier-1 breadth comes from cross-sectional books. This seeds every
+    # hypothesis-lane symbol's within-class rank legs (momentum, reversal, value, low-vol,
+    # crisis-only defensive, lead-lag catch-up -- mt5desk/families_cross_sectional.py) whose
+    # lower-bound trade days clear the gauntlet's 60-day floor, through the one proposer door,
+    # and writes reports/CROSS_SECTIONAL_BREADTH.json. Additive: no other miner is touched.
+    xsb = _costed("cross_sectional_breadth", lambda: _producer(
+        "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
+        "--budget-s", "900"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -5061,7 +5076,7 @@ def main() -> None:
                     "research_artifacts": rart,
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
-                    "trend_core": tcor,
+                    "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "event_surprise": esur,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
