@@ -70,7 +70,10 @@ REFUSED_RETRY_S = 24 * 3600           #: bad pages yield their seat to the rest 
 #: Column names that are plausibly a DATE. Checked in order; the first that parses wins.
 _DATE_COLS = ("date", "DATE", "Date", "time", "TIME", "Time", "timestamp", "TIMESTAMP",
               "datetime", "DATETIME", "period", "PERIOD", "obs_date", "ref_date", "week",
-              "as_of", "asof", "report_date", "TIME_PERIOD")
+              "as_of", "asof", "report_date", "TIME_PERIOD",
+              # fredgraph.csv has named its date column `observation_date` since 2024; without
+              # it every keyless FRED CSV is refused as "no usable date column".
+              "observation_date")
 
 #: Anything matching this needs a credential and is skipped rather than retried.
 _KEYED = re.compile(r"(api[_-]?key|apikey|token=|access_key|client_id|subscription)", re.I)
@@ -126,6 +129,82 @@ _SEED_ENDPOINTS: tuple[str, ...] = (
 )
 
 
+#: THE ALT-DATA ROWS (satellite / supply chain / patents), as DATA: `data/alt_dataset_sources.json`.
+#: Each row names its licence, keyless/machine-use flags, the MT5 instruments it informs and its
+#: mechanism. `fetch: false` rows are registered with their blocker and never fetched; a keyed row
+#: is never fetched either. The acquirer reads them after its seeds and before the country packs.
+ALT_SOURCES = DESK / "data" / "alt_dataset_sources.json"
+
+
+def alt_rows(path: Path | None = None) -> list[dict[str, Any]]:
+    try:
+        doc = json.loads((path or ALT_SOURCES).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    rows = doc.get("rows") if isinstance(doc, dict) else None
+    return [r for r in (rows or []) if isinstance(r, dict) and r.get("url")]
+
+
+def _alt_url(row: dict[str, Any], now: datetime | None = None) -> str:
+    return str(row["url"]).replace("{today}", (now or datetime.now(UTC)).strftime("%Y%m%d"))
+
+
+def _alt_fetchable(row: dict[str, Any]) -> bool:
+    return (bool(row.get("fetch")) and row.get("keyless") is not False
+            and row.get("machine_use_allowed") is not False
+            and not _KEYED.search(str(row.get("url") or "")))
+
+
+def _declare_alt(now: datetime | None = None) -> None:
+    """What each alt row DECLARES about itself reaches the PIT certificate, never a guess."""
+    for row in alt_rows():
+        url = _alt_url(row, now)
+        if row.get("selection"):
+            _SELECTION[url] = str(row["selection"])
+        if isinstance(row.get("revised"), bool):
+            _REVISED[url] = bool(row["revised"])
+        if isinstance(row.get("publication_lag_s"), int):
+            _PUBLICATION_LAG_S[url] = int(row["publication_lag_s"])
+
+
+def _nasa_power(obj: dict[str, Any]) -> pd.DataFrame | None:
+    """NASA POWER daily JSON: properties.parameter.<NAME>.<YYYYMMDD> -> value, fill -999."""
+    params = ((obj.get("properties") or {}).get("parameter")
+              if isinstance(obj.get("properties"), dict) else None)
+    if not isinstance(params, dict) or not params:
+        return None
+    cols = {k: v for k, v in params.items() if isinstance(v, dict)}
+    if not cols:
+        return None
+    frame = pd.DataFrame(cols)
+    frame = frame.where(frame > -998)
+    frame.insert(0, "date", pd.to_datetime(frame.index.astype(str), format="%Y%m%d",
+                                           errors="coerce", utc=True))
+    return frame.reset_index(drop=True)
+
+
+def _arcgis_features(obj: dict[str, Any]) -> pd.DataFrame | None:
+    """An ArcGIS FeatureServer query: features[].attributes, epoch-millisecond dates made ISO.
+
+    pandas reads a bare integer as NANOSECONDS after 1970, so an epoch-ms `date` handed to the
+    generic dater would land every row in January 1970; it is converted here, where the format is
+    known, rather than guessed at later."""
+    feats = obj.get("features")
+    if not isinstance(feats, list) or not feats:
+        return None
+    rows = [f.get("attributes") for f in feats if isinstance(f, dict)
+            and isinstance(f.get("attributes"), dict)]
+    if not rows:
+        return None
+    frame = pd.DataFrame(rows)
+    for col in ("date", "Date", "DATE"):
+        if col in frame.columns:
+            ms = pd.to_numeric(frame[col], errors="coerce")
+            if ms.notna().any() and ms.dropna().gt(1e11).all():
+                frame[col] = pd.to_datetime(ms, unit="ms", utc=True, errors="coerce")
+    return frame
+
+
 def _fetch(url: str) -> tuple[bytes | None, str]:
     """Bytes and content-type. HTML is rejected AT THE HEADER rather than parsed and refused.
 
@@ -179,6 +258,10 @@ def _parse(raw: bytes, url: str) -> pd.DataFrame | None:
         if head.startswith((b"{", b"[")):
             obj = json.loads(raw.decode("utf-8", errors="replace"))
             if isinstance(obj, dict):
+                for adapter in (_nasa_power, _arcgis_features):
+                    got = adapter(obj)
+                    if got is not None and not got.empty:
+                        return got
                 for v in obj.values():
                     if isinstance(v, list) and v and isinstance(v[0], dict):
                         return pd.DataFrame(v)
@@ -293,6 +376,18 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
         out.append((u, urllib.parse.urlparse(u).netloc or "seed"))
         if len(out) >= limit:
             return out
+    # THE ALT-DATA ROWS (satellite / supply chain / patents), after the seeds for the same reason:
+    # each was chosen for an MT5 instrument and declares its own licence and publication lag.
+    for row in alt_rows():
+        if not _alt_fetchable(row):
+            continue
+        u = _alt_url(row, now)
+        if u in fresh or u in seen:
+            continue
+        seen.add(u)
+        out.append((u, urllib.parse.urlparse(u).netloc or "alt"))
+        if len(out) >= limit:
+            return out
     # EVERY COUNTRY PACK, FAIRLY BY REGION. Declaring sources in 170+ native-market packs while
     # the acquirer reads only crawler output is declaration theatre: none of those sources can
     # ever reach a parser. Interleave regions so alphabetical country order cannot spend every
@@ -357,6 +452,7 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
 
     tried = kept = 0
     refusals: dict[str, int] = {}
+    _declare_alt()
     new_series: list[str] = []
 
     def _refuse(why: str) -> None:

@@ -82,6 +82,9 @@ EVENT_LOG = DATA / "events" / "events.jsonl"
 REPORT = REPORTS / "NEWS_EVENT_STREAM.json"
 NEWS_CAPTURES = DATA / "news_captures.jsonl"
 INTEL = DATA / "intelligence"
+#: The primary-disclosure lane's dated event rows (`research/corporate_disclosure.py`). Per-day
+#: COUNT rows there are aggregates for index bursts, not headlines, and are not read as items.
+DISCLOSURE_EVENTS = DATA / "lake" / "events" / "corporate_disclosure"
 MOAT_NORMALIZED = _ROOT / "data" / "moat" / "normalized"
 UNIVERSE = DATA / "universe" / "universe.json"
 ATLAS = REPORTS / "EVENT_RESPONSE_ATLAS.json"
@@ -178,6 +181,12 @@ SOURCE_TIERS: tuple[tuple[str, str], ...] = (
     ("federalreserve", "official_statement"), ("central_bank", "official_statement"),
     ("centralbank", "official_statement"), ("ecb.europa", "official_statement"),
     ("boj.or.jp", "official_statement"), ("bis.org", "official_statement"),
+    # PRIMARY CORPORATE DISCLOSURES (research/corporate_disclosure.py): the issuer's own filing
+    # through the exchange or regulator that published it.
+    ("tdnet", "official_statement"), ("edinet", "official_statement"),
+    ("jquants", "official_data_release"), ("dart_openapi", "official_statement"),
+    ("cninfo", "official_statement"), ("sse_bulletin", "official_statement"),
+    ("szse_annlist", "official_statement"),
     ("bis_speeches", "official_statement"), ("sec_edgar", "official_statement"),
     ("treasury", "official_statement"), ("imf.org", "official_statement"),
     ("bls.gov", "official_data_release"), ("eia.gov", "official_data_release"),
@@ -412,6 +421,17 @@ def collect_items(limit: int = MAX_ITEMS, notes: list[str] | None = None) -> lis
                     out.append(got)
     if not seen_seats:
         say.append(f"none of the {len(NEWS_SEATS)} declared news seats exists under {INTEL}")
+    if DISCLOSURE_EVENTS.is_dir():
+        for path in sorted(DISCLOSURE_EVENTS.glob("*.jsonl")):
+            for row in _tail_rows(path, limit // 4 or 1):
+                if row.get("kind") == "count":
+                    continue
+                got = _item(str(row.get("source") or path.stem), row, "corporate_disclosure")
+                if got is not None:
+                    out.append(got)
+    else:
+        say.append(f"{DISCLOSURE_EVENTS} absent: the primary-disclosure lane has written no "
+                   f"event row on this box ({UNMEASURED})")
     out.sort(key=lambda i: i.seen_at)
     return out[-limit:]
 

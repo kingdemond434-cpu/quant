@@ -1,0 +1,797 @@
+{
+ "note": "ALT DATASETS (satellite / supply chain / patents), read by research/acquire_datasets.py after its seeds. Every row names its licence, whether it is keyless and machine-use-allowed, the MT5 instruments it informs and the mechanism. `fetch: false` rows are REGISTERED with the blocker that stops them, so the gap is a named row rather than an absence. Rows were written from the cloud container, whose proxy blocks these hosts: none is probed here; the acquirer probes on the box every hour and records SUCCESS or the refusal in data/acquired/registry.json. `{today}` in a URL is replaced with the UTC date (YYYYMMDD). Row shape (id, cadence, auth, licence, machine_use_allowed, cursor, region, language) matches the roster the MT5 global mining pipeline absorbs.",
+ "rows": [
+  {
+   "id": "alt_power_iowa_corn_belt",
+   "name": "POWER Iowa corn belt",
+   "class": "satellite",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "nasa_power_json",
+   "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,PRECTOTCORR&community=AG&longitude=-93.6&latitude=41.9&start=20100101&end={today}&format=JSON",
+   "publication_lag_s": 259200,
+   "revised": false,
+   "selection": "fixed point chosen for the crop belt it represents; every day published is kept",
+   "licence": "NASA open data (POWER: public domain, no key, machine use allowed; cite NASA LaRC POWER)",
+   "instruments": [
+    "CORN",
+    "SOYBEAN"
+   ],
+   "mechanism": "US corn-belt heat and dryness in the growing season tightens the crop balance -> CORN/SOYBEAN",
+   "provider": "NASA LaRC POWER (MERRA-2 / CERES satellite-derived daily meteorology)",
+   "auth": "none",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "us",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US crop-belt weather is priced by CBOT funds and commercial hedgers around the USDA WASDE and crop-progress calendar, so it should fail around those reports rather than when a generic Western weather-momentum rule does",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_power_kansas_wheat",
+   "name": "POWER Kansas wheat",
+   "class": "satellite",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "nasa_power_json",
+   "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,PRECTOTCORR&community=AG&longitude=-98.0&latitude=38.5&start=20100101&end={today}&format=JSON",
+   "publication_lag_s": 259200,
+   "revised": false,
+   "selection": "fixed point chosen for the crop belt it represents; every day published is kept",
+   "licence": "NASA open data (POWER: public domain, no key, machine use allowed; cite NASA LaRC POWER)",
+   "instruments": [
+    "WHEAT"
+   ],
+   "mechanism": "hard-red-winter wheat belt drought -> WHEAT",
+   "provider": "NASA LaRC POWER (MERRA-2 / CERES satellite-derived daily meteorology)",
+   "auth": "none",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "us",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US crop-belt weather is priced by CBOT funds and commercial hedgers around the USDA WASDE and crop-progress calendar, so it should fail around those reports rather than when a generic Western weather-momentum rule does",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_power_mato_grosso_soy",
+   "name": "POWER Mato Grosso soy",
+   "class": "satellite",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "nasa_power_json",
+   "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,PRECTOTCORR&community=AG&longitude=-55.7&latitude=-12.6&start=20100101&end={today}&format=JSON",
+   "publication_lag_s": 259200,
+   "revised": false,
+   "selection": "fixed point chosen for the crop belt it represents; every day published is kept",
+   "licence": "NASA open data (POWER: public domain, no key, machine use allowed; cite NASA LaRC POWER)",
+   "instruments": [
+    "SOYBEAN",
+    "USDBRL"
+   ],
+   "mechanism": "Brazilian soy-belt rainfall -> SOYBEAN supply, BRL export receipts",
+   "provider": "NASA LaRC POWER (MERRA-2 / CERES satellite-derived daily meteorology)",
+   "auth": "none",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "br",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "BR",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "Brazilian crops are sold forward in reais by farmers hedging through BRL, so the weather signal should fail when the real moves and the farmer selling pace changes, not with US weather",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_power_sao_paulo_sugar_belt",
+   "name": "POWER Sao Paulo sugar belt",
+   "class": "satellite",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "nasa_power_json",
+   "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,PRECTOTCORR&community=AG&longitude=-48.0&latitude=-21.2&start=20100101&end={today}&format=JSON",
+   "publication_lag_s": 259200,
+   "revised": false,
+   "selection": "fixed point chosen for the crop belt it represents; every day published is kept",
+   "licence": "NASA open data (POWER: public domain, no key, machine use allowed; cite NASA LaRC POWER)",
+   "instruments": [
+    "SUGAR",
+    "SUGARRAW",
+    "OJ"
+   ],
+   "mechanism": "centre-south cane and citrus belt dryness -> SUGAR, OJ",
+   "provider": "NASA LaRC POWER (MERRA-2 / CERES satellite-derived daily meteorology)",
+   "auth": "none",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "br",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "BR",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "Brazilian crops are sold forward in reais by farmers hedging through BRL, so the weather signal should fail when the real moves and the farmer selling pace changes, not with US weather",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_power_cote_d_ivoire_cocoa_belt",
+   "name": "POWER Cote d'Ivoire cocoa belt",
+   "class": "satellite",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "nasa_power_json",
+   "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,PRECTOTCORR&community=AG&longitude=-5.3&latitude=6.8&start=20100101&end={today}&format=JSON",
+   "publication_lag_s": 259200,
+   "revised": false,
+   "selection": "fixed point chosen for the crop belt it represents; every day published is kept",
+   "licence": "NASA open data (POWER: public domain, no key, machine use allowed; cite NASA LaRC POWER)",
+   "instruments": [
+    "USCOCOA",
+    "UKCOCOA"
+   ],
+   "mechanism": "West African cocoa-belt rainfall and heat -> cocoa supply",
+   "provider": "NASA LaRC POWER (MERRA-2 / CERES satellite-derived daily meteorology)",
+   "auth": "none",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "ci",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "CI",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "Ivorian cocoa is sold forward by the state regulator (Conseil Cafe-Cacao) at a fixed farmgate price, so the weather signal should fail when forward-sale policy changes rather than when the crop itself does",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_power_west_texas_cotton",
+   "name": "POWER West Texas cotton",
+   "class": "satellite",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "nasa_power_json",
+   "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,PRECTOTCORR&community=AG&longitude=-101.9&latitude=33.6&start=20100101&end={today}&format=JSON",
+   "publication_lag_s": 259200,
+   "revised": false,
+   "selection": "fixed point chosen for the crop belt it represents; every day published is kept",
+   "licence": "NASA open data (POWER: public domain, no key, machine use allowed; cite NASA LaRC POWER)",
+   "instruments": [
+    "COTTON"
+   ],
+   "mechanism": "Texas high-plains drought -> COTTON abandonment",
+   "provider": "NASA LaRC POWER (MERRA-2 / CERES satellite-derived daily meteorology)",
+   "auth": "none",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "us",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US crop-belt weather is priced by CBOT funds and commercial hedgers around the USDA WASDE and crop-progress calendar, so it should fail around those reports rather than when a generic Western weather-momentum rule does",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_power_florida_citrus",
+   "name": "POWER Florida citrus",
+   "class": "satellite",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "nasa_power_json",
+   "url": "https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MIN,PRECTOTCORR&community=AG&longitude=-81.5&latitude=27.5&start=20100101&end={today}&format=JSON",
+   "publication_lag_s": 259200,
+   "revised": false,
+   "selection": "fixed point chosen for the crop belt it represents; every day published is kept",
+   "licence": "NASA open data (POWER: public domain, no key, machine use allowed; cite NASA LaRC POWER)",
+   "instruments": [
+    "OJ"
+   ],
+   "mechanism": "freeze and hurricane-season rain in the citrus belt -> OJ",
+   "provider": "NASA LaRC POWER (MERRA-2 / CERES satellite-derived daily meteorology)",
+   "auth": "none",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "us",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US crop-belt weather is priced by CBOT funds and commercial hedgers around the USDA WASDE and crop-progress calendar, so it should fail around those reports rather than when a generic Western weather-momentum rule does",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_firms_viirs_global_active_fire_7d",
+   "name": "FIRMS VIIRS global active fire 7d",
+   "class": "satellite",
+   "fetch": false,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "csv_points",
+   "url": "https://firms.modaps.eosdis.nasa.gov/data/active_fire/noaa-20-viirs-c2/csv/J1_VIIRS_C2_Global_7d.csv",
+   "licence": "NASA FIRMS open data, no key for the global text files",
+   "instruments": [
+    "XAUUSD",
+    "SOYBEAN",
+    "USDBRL",
+    "AUDUSD"
+   ],
+   "mechanism": "fire counts over the Amazon soy frontier and Australian bush -> crop and FX supply shocks",
+   "blocker": "point file (one row per detection): needs a daily per-region count/FRP aggregation adapter before it is a series",
+   "auth": "none",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "fire counts in Amazon and Indonesian frontiers follow land-clearing seasons and local enforcement, so they should fail when clearing policy changes rather than with Western commodity sentiment",
+   "feeds_now": false
+  },
+  {
+   "id": "alt_viirs_nighttime_lights_eog",
+   "name": "VIIRS nighttime lights (EOG)",
+   "class": "satellite",
+   "fetch": false,
+   "keyless": false,
+   "machine_use_allowed": true,
+   "url": "https://eogdata.mines.edu/products/vnl/",
+   "licence": "CC BY 4.0, but downloads require an EOG account token",
+   "instruments": [
+    "USDCNH",
+    "AUDUSD",
+    "XCUUSD"
+   ],
+   "mechanism": "industrial-zone radiance as an activity nowcast -> China demand for copper/iron (AUD)",
+   "blocker": "KEYED: account token required; the mandate forbids depending on a key",
+   "auth": "key",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "CN",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "night-light activity in China tracks state-directed construction and power rationing, so it should fail when policy credit turns rather than with the reported PMI a Western model reads",
+   "feeds_now": false
+  },
+  {
+   "id": "alt_copernicus_sentinel_hub_statistical_api",
+   "name": "Copernicus Sentinel Hub Statistical API",
+   "class": "satellite",
+   "fetch": false,
+   "keyless": false,
+   "machine_use_allowed": true,
+   "url": "https://services.sentinel-hub.com/api/v1/statistics",
+   "licence": "Copernicus open licence; API needs OAuth client credentials",
+   "instruments": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN"
+   ],
+   "mechanism": "NDVI over crop belts -> grain supply",
+   "blocker": "KEYED: OAuth client credentials",
+   "auth": "oauth",
+   "cadence": "daily",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "US patent grants follow USPTO examination backlogs, so they should fail with office throughput rather than with the innovation cycle a Western equity model assumes",
+   "feeds_now": false
+  },
+  {
+   "id": "alt_imf_portwatch_strait_of_hormuz_daily_transits",
+   "name": "IMF PortWatch Strait of Hormuz daily transits",
+   "class": "supply_chain",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "arcgis_features",
+   "url": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname%3D%27Strait+of+Hormuz%27&outFields=date,n_tanker,n_total,capacity_tanker&orderByFields=date+DESC&resultRecordCount=2000&f=json",
+   "publication_lag_s": 604800,
+   "revised": true,
+   "selection": "AIS-derived daily transit counts for one chokepoint; PortWatch revises recent weeks",
+   "licence": "IMF PortWatch open data (CC BY 4.0, cite IMF PortWatch / UN Global Platform AIS)",
+   "instruments": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD"
+   ],
+   "mechanism": "tanker transits through Hormuz -> Gulf crude and LNG supply at risk",
+   "auth": "none",
+   "cadence": "weekly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "chokepoint transits are set by insurers, navies and rerouting decisions, so they should fail on security events and war-risk premia rather than on the demand cycle a Western freight index tracks",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_imf_portwatch_suez_canal_daily_transits",
+   "name": "IMF PortWatch Suez Canal daily transits",
+   "class": "supply_chain",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "arcgis_features",
+   "url": "https://services9.arcgis.com/weJ1QsnbMYJlCHdG/arcgis/rest/services/Daily_Chokepoints_Data/FeatureServer/0/query?where=portname%3D%27Suez+Canal%27&outFields=date,n_tanker,n_total,capacity_container&orderByFields=date+DESC&resultRecordCount=2000&f=json",
+   "publication_lag_s": 604800,
+   "revised": true,
+   "selection": "AIS-derived daily transit counts for one chokepoint; PortWatch revises recent weeks",
+   "licence": "IMF PortWatch open data (CC BY 4.0, cite IMF PortWatch / UN Global Platform AIS)",
+   "instruments": [
+    "XBRUSD",
+    "EURUSD",
+    "XNGUSD"
+   ],
+   "mechanism": "Red Sea diversions lengthen Asia-Europe voyages -> freight, European energy and goods inflation",
+   "auth": "none",
+   "cadence": "weekly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "chokepoint transits are set by insurers, navies and rerouting decisions, so they should fail on security events and war-risk premia rather than on the demand cycle a Western freight index tracks",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_fred_cass_freight_index_shipments",
+   "name": "FRED Cass Freight Index shipments",
+   "class": "supply_chain",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "csv",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=FRGSHPUSM649NCIS",
+   "publication_lag_s": 1728000,
+   "revised": false,
+   "selection": "monthly index, whole history",
+   "licence": "FRED fredgraph.csv, keyless; series owner's terms (Cass/BLS/BTS public data)",
+   "instruments": [
+    "US500",
+    "XTIUSD",
+    "USDCAD"
+   ],
+   "mechanism": "North American freight volumes lead goods demand and diesel/crude consumption",
+   "auth": "none",
+   "cadence": "monthly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "us",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US domestic freight volumes follow inventory and trucking-contract cycles, so they should fail at restocking turns rather than on the monthly print a Western macro trader watches",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_fred_bts_freight_transportation_services_index",
+   "name": "FRED BTS Freight Transportation Services Index",
+   "class": "supply_chain",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "csv",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=TSIFRGHT",
+   "publication_lag_s": 5184000,
+   "revised": true,
+   "selection": "monthly index, whole history",
+   "licence": "FRED fredgraph.csv, keyless; series owner's terms (Cass/BLS/BTS public data)",
+   "instruments": [
+    "US500",
+    "XTIUSD"
+   ],
+   "mechanism": "for-hire freight activity as a real-economy nowcast",
+   "auth": "none",
+   "cadence": "monthly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "us",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US domestic freight volumes follow inventory and trucking-contract cycles, so they should fail at restocking turns rather than on the monthly print a Western macro trader watches",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_fred_ppi_deep_sea_freight",
+   "name": "FRED PPI deep-sea freight",
+   "class": "supply_chain",
+   "fetch": true,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "format": "csv",
+   "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=PCU483111483111",
+   "publication_lag_s": 2592000,
+   "revised": true,
+   "selection": "monthly PPI, whole history",
+   "licence": "FRED fredgraph.csv, keyless; series owner's terms (Cass/BLS/BTS public data)",
+   "instruments": [
+    "XBRUSD",
+    "AUDUSD",
+    "XCUUSD"
+   ],
+   "mechanism": "ocean freight rates as a Baltic-style proxy: seaborne commodity demand and landed cost",
+   "auth": "none",
+   "cadence": "monthly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "us",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US domestic freight volumes follow inventory and trucking-contract cycles, so they should fail at restocking turns rather than on the monthly print a Western macro trader watches",
+   "feeds_now": true
+  },
+  {
+   "id": "alt_ny_fed_global_supply_chain_pressure_index",
+   "name": "NY Fed Global Supply Chain Pressure Index",
+   "class": "supply_chain",
+   "fetch": false,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "url": "https://www.newyorkfed.org/medialibrary/research/interactives/gscpi/downloads/gscpi_data.xlsx",
+   "licence": "Federal Reserve Bank of New York public research data",
+   "instruments": [
+    "US500",
+    "EURUSD",
+    "XAUUSD"
+   ],
+   "mechanism": "supply-chain pressure -> goods inflation -> rates repricing",
+   "blocker": "xlsx workbook: the acquirer reads BIFF8 .xls, CSV, JSON and zipped CSV, not OOXML",
+   "auth": "none",
+   "cadence": "monthly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "a Fed-built composite of global freight and PMI delivery times reflects the institutional survey cycle, so it should fail at survey-methodology and seasonal-adjustment breaks rather than at physical turns",
+   "feeds_now": false
+  },
+  {
+   "id": "alt_un_comtrade_public_preview",
+   "name": "UN Comtrade public preview",
+   "class": "supply_chain",
+   "fetch": false,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "url": "https://comtradeapi.un.org/public/v1/preview/C/M/HS?reporterCode=156&partnerCode=0&cmdCode=2601&flowCode=M&period=202401",
+   "licence": "UN Comtrade terms: public preview keyless (<=500 records per call)",
+   "instruments": [
+    "AUDUSD",
+    "XCUUSD",
+    "USDCNH"
+   ],
+   "mechanism": "China iron-ore / copper imports -> AUD and copper demand",
+   "blocker": "one period per call and <=500 records: a monthly series needs period paging to reach the acquirer's 200-row floor",
+   "auth": "none",
+   "cadence": "monthly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "GLOBAL",
+   "participant_structure": "settlement_constrained",
+   "failure_mode_hypothesis": "declared customs trade is reported with long lags and re-export routing, so it should fail when trade is rerouted through third countries rather than when demand turns",
+   "feeds_now": false
+  },
+  {
+   "id": "alt_uspto_patentsview_patentsearch_api",
+   "name": "USPTO PatentsView PatentSearch API",
+   "class": "patents",
+   "fetch": false,
+   "keyless": false,
+   "machine_use_allowed": true,
+   "url": "https://search.patentsview.org/api/v1/patent/",
+   "licence": "USPTO public data (CC BY 4.0); the API needs a free key",
+   "instruments": [
+    "US500",
+    "NAS100"
+   ],
+   "mechanism": "patent-grant intensity by CPC class as an innovation-cycle state for the tech-heavy indices",
+   "blocker": "KEYED: X-Api-Key required since the legacy keyless API was retired",
+   "auth": "key",
+   "cadence": "monthly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "US patent grants follow USPTO examination backlogs, so they should fail with office throughput rather than with the innovation cycle a Western equity model assumes",
+   "feeds_now": false
+  },
+  {
+   "id": "alt_patentsview_bulk_granted_patents",
+   "name": "PatentsView bulk granted patents",
+   "class": "patents",
+   "fetch": false,
+   "keyless": true,
+   "machine_use_allowed": true,
+   "url": "https://s3.amazonaws.com/data.patentsview.org/download/g_patent.tsv.zip",
+   "licence": "USPTO public data (CC BY 4.0)",
+   "instruments": [
+    "US500",
+    "NAS100"
+   ],
+   "mechanism": "weekly grant counts as an innovation-cycle state",
+   "blocker": "multi-GB archive above the acquirer's 60 MB per-file cap: needs a streamed weekly-count reducer",
+   "auth": "none",
+   "cadence": "monthly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "US patent grants follow USPTO examination backlogs, so they should fail with office throughput rather than with the innovation cycle a Western equity model assumes",
+   "feeds_now": false
+  },
+  {
+   "id": "alt_epo_open_patent_services",
+   "name": "EPO Open Patent Services",
+   "class": "patents",
+   "fetch": false,
+   "keyless": false,
+   "machine_use_allowed": true,
+   "url": "https://ops.epo.org/3.2/rest-services/",
+   "licence": "EPO OPS fair-use terms; OAuth consumer key required",
+   "instruments": [
+    "GER40",
+    "EURUSD"
+   ],
+   "mechanism": "European filing intensity",
+   "blocker": "KEYED: OAuth consumer key",
+   "auth": "oauth",
+   "cadence": "monthly",
+   "cursor": "desks/mt5/data/acquired/registry.json#by_url",
+   "region": "global",
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "EU",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "European patent publication follows EPO procedure timing, so it should fail with procedural backlog rather than with the European innovation cycle",
+   "feeds_now": false
+  }
+ ]
+}

@@ -49,6 +49,8 @@ LEG_LAYER: dict[str, str] = {
     # skeleton, which mechanism name, which territory -- before any claim about returns is made.
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
+    "world_media_miners": "information", "world_factory": "meta",
+    "fetch_alfred": "information", "llm_extractor": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",
@@ -241,6 +243,8 @@ LEG_LAYER: dict[str, str] = {
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
     "event_surprise": "information",
+    # primary corporate disclosures: new information into the event lane and the lake
+    "corporate_disclosure": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",

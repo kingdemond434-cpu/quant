@@ -26,11 +26,11 @@
   "LIVE": 125,
   "STALE": 1,
   "MISSING": 48,
-  "NEVER": 712,
+  "NEVER": 718,
   "UNMEASURED": 34
  },
  "scope": {
-  "attested": 920,
+  "attested": 926,
   "excluded": 421,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1341,
@@ -38,7 +38,21 @@
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
   "wall_s": 0.55,
-  "summaries_trimmed": 0
+  "summaries_trimmed": 0,
+  "only_missing_appended": [
+   {
+    "at": "2026-09-30T19:32:32+00:00",
+    "host": "vm",
+    "organs": [
+     "executable:desks/mt5/research/world_cells.py",
+     "leg:corporate_disclosure",
+     "leg:fetch_alfred",
+     "leg:llm_extractor",
+     "leg:world_factory",
+     "leg:world_media_miners"
+    ]
+   }
+  ]
  },
  "states": {
   "LIVE": "artifact present and newer than the organ's derived max silence",
@@ -23346,6 +23360,156 @@
    "artifact_sha256": "7acc04b9cfddf89308b6e212ad003ca0134f1d00b8991ee37c86770b9a9c38d2",
    "summary": {},
    "progress_metric": "timer_runs",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "executable:desks/mt5/research/world_cells.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/world_cells.py"
+   ],
+   "clock": "invoked:desks/mt5/mt5desk/families_orthogonal.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/WORLD_FACTORY.json",
+   "artifact_declared": "desks/mt5/reports/WORLD_FACTORY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:corporate_disclosure",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/corporate_disclosure.py"
+   ],
+   "clock": "hourly_cycle:corporate_disclosure",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CORPORATE_DISCLOSURE.json",
+   "artifact_declared": "desks/mt5/reports/CORPORATE_DISCLOSURE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:fetch_alfred",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/fetch_alfred.py"
+   ],
+   "clock": "hourly_cycle:fetch_alfred",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/alfred_vintages.json",
+   "artifact_declared": "desks/mt5/reports/alfred_vintages.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:llm_extractor",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/llm_extractor.py"
+   ],
+   "clock": "hourly_cycle:llm_extractor",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/LLM_EXTRACTION.json",
+   "artifact_declared": "desks/mt5/reports/LLM_EXTRACTION.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:world_factory",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/world_factory.py"
+   ],
+   "clock": "hourly_cycle:world_factory",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/WORLD_FACTORY.json",
+   "artifact_declared": "desks/mt5/reports/WORLD_FACTORY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:world_media_miners",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/world_factory.py"
+   ],
+   "clock": "hourly_cycle:world_media_miners",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/WORLD_FACTORY.json",
+   "artifact_declared": "desks/mt5/reports/WORLD_FACTORY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
    "consumer": "UNMEASURED"
   }
  ],

@@ -533,8 +533,13 @@ def main(argv: list[str] | None = None) -> int:
     state = _read(STATE, {})
     now = time.time()
     # A TRANSPORT CARRIES OTHER SOURCES AND HAS NO ENDPOINT OF ITS OWN TO COLLECT.
+    # A ROW OWNED BY A DEDICATED COLLECTOR (`collector: <organ>`) is fetched by that organ -- the
+    # primary-disclosure sources need a key in the provider's own parameter, a date cursor and
+    # pagination this generic GET cannot express, and fetching them twice would double the load
+    # on the provider for nothing.
     todo = [s for s in sources
-            if str(s.get("role") or "mechanism") != "transport" and (args.id or due(s, state, now))]
+            if str(s.get("role") or "mechanism") != "transport" and not s.get("collector")
+            and (args.id or due(s, state, now))]
     # FETCH IN EXPECTED-INFORMATION-GAIN ORDER (Tier-1 B14). The pass budget is spent in registry
     # order otherwise, so whichever sources sat late in a hand-written file were the ones deferred
     # every hour. `source_evig` prices each source BEFORE it is fetched -- prior uncertainty on the

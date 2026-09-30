@@ -1,0 +1,28 @@
+{
+ "_fixture": "FIXTURE -- constructed from the provider's documented response shape, NOT a network recording: this build container's egress proxy refuses every one of these hosts (CONNECT rejected, 2026-09-30). Values are illustrative; the shape is what is tested.",
+ "pageHelp": {
+  "pageNo": 1,
+  "pageCount": 1,
+  "total": 2,
+  "data": [
+   {
+    "SECURITY_CODE": "688981",
+    "SECURITY_NAME": "中芯国际",
+    "TITLE": "中芯国际关于股东减持股份计划公告",
+    "URL": "/disclosure/listedinfo/announcement/c/new/2026-09-29/688981_20260929_1.pdf",
+    "SSEDATE": "2026-09-29",
+    "ADDDATE": "2026-09-29 17:32:10",
+    "BULLETIN_TYPE": "临时公告"
+   },
+   {
+    "SECURITY_CODE": "600519",
+    "SECURITY_NAME": "贵州茅台",
+    "TITLE": "贵州茅台2026年半年度权益分派实施公告",
+    "URL": "/disclosure/listedinfo/announcement/c/new/2026-09-29/600519_20260929_1.pdf",
+    "SSEDATE": "2026-09-29",
+    "ADDDATE": "2026-09-29",
+    "BULLETIN_TYPE": "临时公告"
+   }
+  ]
+ }
+}

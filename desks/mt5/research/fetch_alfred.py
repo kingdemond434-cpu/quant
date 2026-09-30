@@ -37,6 +37,17 @@ revision.
 
     python research/fetch_alfred.py                # all series
     python research/fetch_alfred.py DGS10 T10YIE   # a subset
+    python research/fetch_alfred.py --leg          # the hourly leg (see below)
+
+ON A CLOCK SINCE 2026-09-30 (leg `fetch_alfred`, macro department). Until then nothing ran this
+file, so the vintages it exists to hold were never on the box. The leg passes `--leg`, which
+(1) also reads the key the desk already keeps for `scripts/collect_fred_macro.py`,
+`data/secrets/fred.json` -- the same FRED key serves ALFRED; (2) REFETCHES a series whose file is
+older than `REFRESH_DAYS`, because a vintage history that stops growing is a point-in-time lake
+that silently falls behind the market; and (3) exits 0 whenever the report was written, exactly
+as the fred_macro leg does without a key -- the report's `status` (OK / EMPTY / UNAVAILABLE) is
+the measurement. `research/world_cells.py` turns every vintage file into first-print and revision
+series in the lake: direct and gated cells, and allocation state inputs.
 """
 
 from __future__ import annotations
@@ -52,9 +63,13 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk.config import DATA, REPORTS  # noqa: E402
+from mt5desk.config import DATA, desk_root  # noqa: E402
 
 OUT = DATA / "lake" / "alfred"
+#: The leg's own artifact, bound as a module-level constant through `desk_root()` so the
+#: component registry reads it without importing this module (`components.own_artifact`) and
+#: the runtime attestation carries a row for the `fetch_alfred` leg.
+REPORT = desk_root() / "reports" / "alfred_vintages.json"
 OUT.mkdir(parents=True, exist_ok=True)
 
 API = "https://api.stlouisfed.org/fred/series/observations"
@@ -81,11 +96,25 @@ SERIES = {
 }
 
 
+#: A series file older than this is refetched on the hourly leg. Monthly prints revise within
+#: weeks, so a week keeps the vintage history current at one download per series per week.
+REFRESH_DAYS = 7.0
+
+
 def api_key() -> str | None:
     """Key from the environment or secrets/. Never logged, never written to a report."""
     env = os.environ.get("FRED_API_KEY", "").strip()
     if env:
         return env
+    # The key the desk already holds for the fred_macro leg: {"key": "..."}.
+    desk_key = Path(__file__).resolve().parents[3] / "data" / "secrets" / "fred.json"
+    if desk_key.exists():
+        try:
+            k = str(json.loads(desk_key.read_text(encoding="utf-8")).get("key") or "").strip()
+        except (OSError, ValueError, AttributeError):
+            k = ""
+        if k:
+            return k
     for p in (Path(__file__).resolve().parents[3] / "secrets" / "fred_api_key",
               Path(__file__).resolve().parent.parent / "secrets" / "fred_api_key"):
         if p.exists():
@@ -215,7 +244,8 @@ def release_lag(df: pd.DataFrame) -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    wanted = {s.upper() for s in argv} or set(SERIES)
+    leg = "--leg" in argv
+    wanted = {s.upper() for s in argv if not s.startswith("--")} or set(SERIES)
 
     key = api_key()
     report = {"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -234,11 +264,10 @@ def main(argv: list[str] | None = None) -> int:
             "fix": ("free key at https://fredaccount.stlouisfed.org/apikeys, then write it to "
                     "secrets/fred_api_key (one line) or export FRED_API_KEY"),
             "written": 0})
-        (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2),
-                                                      encoding="utf-8")
+        REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
         print("ALFRED UNAVAILABLE -- no API key.")
         print(report["fix"])
-        return 2
+        return 0 if leg else 2
 
     force = "--force" in argv
     written, lags, failed, skipped = 0, {}, [], []
@@ -247,7 +276,10 @@ def main(argv: list[str] | None = None) -> int:
         # killer takes the process mid-run, restarting must not re-fetch what already landed.
         # Each series is written before the next is requested, so completed work survives.
         out_path = OUT / f"{sid}.parquet"
-        if out_path.exists() and not force:
+        stale = (leg and out_path.exists()
+                 and (datetime.now(timezone.utc).timestamp() - out_path.stat().st_mtime)
+                 > REFRESH_DAYS * 86400)
+        if out_path.exists() and not force and not stale:
             skipped.append(sid)
             print(f"{sid}: already on disk, skipping (--force to refetch)", flush=True)
             continue
@@ -300,11 +332,11 @@ def main(argv: list[str] | None = None) -> int:
                    "failed": failed, "release_lag_days": lags,
                    "path": str(OUT),
                    "usage": "research: from research.fetch_alfred import vintage_as_of"})
-    (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"\n{written} written to {OUT}"
           + (f", {len(skipped)} already present" if skipped else "")
           + (f", {len(failed)} REJECTED/failed: {', '.join(failed)}" if failed else ""))
-    return 0 if (written or skipped) else 1
+    return 0 if (written or skipped or leg) else 1
 
 
 if __name__ == "__main__":

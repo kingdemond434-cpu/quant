@@ -207,6 +207,15 @@ CROSS_SECTIONAL_FAMILIES = frozenset({
 })
 
 
+#: THE NEWS AND EARNINGS LANE'S OWN FAMILIES, admitted to the judge on a share CFD by the same
+#: amendment ("cross sectional AND news"). These two ARE the event lane: `event_reaction` trades a
+#: scheduled release and `news_reaction` an unscheduled headline, each on the issuer's own dated
+#: disclosures (`research/corporate_disclosure.py`), which is exactly how the two-lane order says
+#: single names are traded. Refusing them sent every such cell to `event_lane_docket.json`, which
+#: no judge reads, so the lane the order created could never produce a verdict.
+EVENT_LANE_FAMILIES = frozenset({"event_reaction", "news_reaction"})
+
+
 def is_equity(symbol: str) -> bool:
     """True for a share CFD: the event lane's own asset class, from the broker's registry."""
     return lane(symbol) == EVENT and asset_class_of(symbol) in EVENT_DRIVEN_CLASSES
@@ -214,10 +223,12 @@ def is_equity(symbol: str) -> bool:
 
 def may_hypothesise(symbol: str, family: object = None) -> bool:
     """True for instruments whose edge is sought statistically -- and, for a share CFD, only when
-    `family` is one of the cross-sectional class books (principal 2026-09-30)."""
+    `family` is one of the cross-sectional class books or the news/earnings lane's own event
+    families (principal 2026-09-30)."""
     if lane(symbol) == HYPOTHESIS:
         return True
-    return (str(family or "") in CROSS_SECTIONAL_FAMILIES) and is_equity(symbol)
+    fam = str(family or "")
+    return (fam in CROSS_SECTIONAL_FAMILIES or fam in EVENT_LANE_FAMILIES) and is_equity(symbol)
 
 
 def split(symbols) -> dict[str, list[str]]:

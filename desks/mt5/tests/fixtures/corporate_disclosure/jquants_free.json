@@ -1,0 +1,14 @@
+{
+ "_fixture": "FIXTURE -- constructed from the provider's documented response shape, NOT a network recording: this build container's egress proxy refuses every one of these hosts (CONNECT rejected, 2026-09-30). Values are illustrative; the shape is what is tested.",
+ "statements": [
+  {
+   "DisclosedDate": "2026-07-05",
+   "DisclosedTime": "15:00:00",
+   "LocalCode": "72030",
+   "DisclosureNumber": "20260705500001",
+   "TypeOfDocument": "1QFinancialStatements_Consolidated_IFRS",
+   "OperatingProfit": "1200000000000",
+   "ForecastOperatingProfit": "1000000000000"
+  }
+ ]
+}

@@ -1,0 +1,19 @@
+{
+ "_fixture": "FIXTURE -- constructed from the provider's documented response shape, NOT a network recording: this build container's egress proxy refuses every one of these hosts (CONNECT rejected, 2026-09-30). Values are illustrative; the shape is what is tested.",
+ "announceCount": 1,
+ "data": [
+  {
+   "id": "fix-szse-1",
+   "annId": 1224000009,
+   "title": "关于筹划重大资产重组的停牌公告",
+   "publishTime": "2026-09-29 20:05:00",
+   "attachPath": "/disc/disk03/finalpage/2026-09-29/fix.PDF",
+   "secCode": [
+    "002594"
+   ],
+   "secName": [
+    "比亚迪"
+   ]
+  }
+ ]
+}

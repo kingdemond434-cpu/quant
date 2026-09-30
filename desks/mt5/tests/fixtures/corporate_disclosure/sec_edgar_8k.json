@@ -1,0 +1,64 @@
+{
+ "_fixture": "FIXTURE -- constructed from the provider's documented response shape, NOT a network recording: this build container's egress proxy refuses every one of these hosts (CONNECT rejected, 2026-09-30). Values are illustrative; the shape is what is tested.",
+ "hits": {
+  "total": {
+   "value": 3,
+   "relation": "eq"
+  },
+  "hits": [
+   {
+    "_id": "0001577552-26-000123:ex99.htm",
+    "_source": {
+     "ciks": [
+      "0001577552"
+     ],
+     "display_names": [
+      "Alibaba Group Holding Ltd  (BABA, BABAF)  (CIK 0001577552)"
+     ],
+     "form": "6-K",
+     "root_form": "6-K",
+     "file_date": "2026-09-29",
+     "adsh": "0001577552-26-000123",
+     "items": []
+    }
+   },
+   {
+    "_id": "0000320193-26-000077:a8k.htm",
+    "_source": {
+     "ciks": [
+      "0000320193"
+     ],
+     "display_names": [
+      "Apple Inc.  (AAPL)  (CIK 0000320193)"
+     ],
+     "form": "8-K",
+     "root_form": "8-K",
+     "file_date": "2026-09-29",
+     "adsh": "0000320193-26-000077",
+     "items": [
+      "2.02",
+      "9.01"
+     ]
+    }
+   },
+   {
+    "_id": "0009999999-26-000001:x.htm",
+    "_source": {
+     "ciks": [
+      "0009999999"
+     ],
+     "display_names": [
+      "Meta Materials Inc.  (MMAT)  (CIK 0009999999)"
+     ],
+     "form": "8-K",
+     "root_form": "8-K",
+     "file_date": "2026-09-29",
+     "adsh": "0009999999-26-000001",
+     "items": [
+      "1.03"
+     ]
+    }
+   }
+  ]
+ }
+}

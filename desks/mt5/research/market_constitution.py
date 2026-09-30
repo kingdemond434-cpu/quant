@@ -196,7 +196,11 @@ def _holiday_sets(years: Iterable[int]) -> tuple[dict[str, list[str]], list[str]
     notes: list[str] = []
     ys = list(years)
     try:
-        from japan import calendars as jc
+        try:
+            from japan import calendars as jc
+        except ImportError:
+            # The box's untracked department first, the in-git rebuild second (2026-09-30).
+            from research.countries.jp import calendars as jc  # type: ignore[no-redef]
         days: list[str] = []
         for y in ys:
             with suppress(Exception):

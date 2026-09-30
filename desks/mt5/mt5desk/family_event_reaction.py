@@ -61,6 +61,74 @@ _DROPPED: dict[str, int] = {}
 #: fits after seeing the data -- the same discipline `family_clock_transition` applies to its three.
 MODES = ("drift", "fade")
 
+#: THE NAMED CAUSE an event_reaction cell is refused with when it would otherwise be judged on the
+#: wrong stream. See `MissingEventStream`.
+MISSING_EVENT_STREAM = "MISSING_EVENT_STREAM"
+
+
+class MissingEventStream(TypeError):
+    """An event_reaction cell on a single-name equity that names no readable event stream.
+
+    WHY A SHARE CFD MAY NOT FALL BACK TO THE CALENDAR (2026-09-30). The sealed gauntlet and the
+    forward clock hand every event_reaction cell ONE event index -- the Forex Factory macro
+    calendar -- unless the cell names its own stream (`event_stream`, minted by
+    `research/corporate_disclosure.py`). For FX, indices and metals that calendar IS the declared
+    stream: a CPI print moves EURUSD. For a single-name equity it is not: the two-lane order
+    admits share CFDs to this family because they trade on THEIR OWN disclosures, and a Toyota
+    cell judged on US payrolls would be a different hypothesis wearing the disclosure lane's
+    name -- a trial charged to the shared budget for a claim nobody made. So a share-CFD cell
+    with no `event_stream`, and any cell whose `event_stream` does not parse, is refused by name.
+
+    WHY A TypeError SUBCLASS. The refusal must reach the sealed `build_cell` as a FAILED BUILD
+    with this cause, never as an empty signal list the judge would score as "the market said no".
+    `build_cell` retries a TypeError without `side` and turns the second raise into
+    `_build_failed("event_reaction raised MissingEventStream: MISSING_EVENT_STREAM ...")`; the
+    forward clock (`family_call.signals`) and the live executor (`decision_core`, which catches
+    every exception) see the same named refusal. Nothing sealed changes; the explicit branch is
+    staged as a sealed patch (patches/event_reaction_stream_fence/).
+    """
+
+    cause = MISSING_EVENT_STREAM
+
+
+def _is_single_name_equity(symbol: str) -> bool:
+    """`research.universe_policy.is_equity`, importable from the gauntlet, clock and gateway.
+
+    A policy that cannot be imported answers False: the macro-calendar lane (FX, indices, metals)
+    keeps running exactly as before, and a share CFD without a stream still loads no disclosure
+    events, so it cannot fire on one."""
+    try:
+        try:
+            from research import universe_policy as up
+        except ImportError:                                        # pragma: no cover - path
+            import sys
+            from pathlib import Path
+            base = str(Path(__file__).resolve().parents[1])
+            if base not in sys.path:
+                sys.path.insert(0, base)
+            from research import universe_policy as up
+        return bool(up.is_equity(symbol))
+    except Exception:                                              # pragma: no cover - policy
+        return False
+
+
+def stream_refusal(symbol: str, event_stream: str) -> str | None:
+    """The named cause this cell is unbuildable for, or None when it may be built.
+
+    Shared by the family and its emitter (`research/corporate_disclosure.enumerate_specs`), so the
+    rule that decides what the judge refuses is the rule that decides what is minted."""
+    if event_stream:
+        from mt5desk.disclosure_events import parse_spec
+        if parse_spec(event_stream) is None:
+            return (f"{MISSING_EVENT_STREAM}: event_stream {event_stream[:80]!r} is not a stream "
+                    "spec this desk can read")
+        return None
+    if symbol and _is_single_name_equity(symbol):
+        return (f"{MISSING_EVENT_STREAM}: {symbol} is a single-name equity and the cell names no "
+                "event_stream; the generic macro calendar is not its disclosure stream")
+    return None
+
+
 #: The field carrying the moment the market could first know. `libs.research.form4` writes
 #: `knowable_at` into `at`; nothing here may read a transaction or announcement date.
 AT_KEY = "at"
@@ -137,6 +205,7 @@ def family_event_reaction(
     ttl_bars: int = 48,
     cooldown_bars: int = 12,
     clock: str = "bars",
+    event_stream: str = "",
 ) -> list[Signal]:
     """Trade the bars after a dated event, entering only once the market could know about it.
 
@@ -167,6 +236,21 @@ def family_event_reaction(
     # `len()` answers for a list, a tuple, a dict, a Series and an Index alike, and the `is None`
     # guard keeps the one shape that has no length at all. An input this function cannot measure
     # is still refused -- it is refused as a verdict rather than as a crash.
+    # A CELL THAT NAMES ITS OWN EVENT STREAM LOADS IT (2026-09-30). The sealed gauntlet hands
+    # every event_reaction cell the one calendar index it knows; a cell minted from a corporate
+    # disclosure stream (`research/corporate_disclosure.py`) carries `event_stream` in its params
+    # and reads its own dated filings here instead. Those stamps are genuinely UTC (the exchange's
+    # or regulator's publication time), so the clock is declared rather than assumed. An empty
+    # `event_stream` changes nothing for any existing cell.
+    # THE STREAM FENCE COMES FIRST (2026-09-30): a share-CFD cell with no stream of its own, or a
+    # stream that does not parse, is refused by name before any calendar could stand in for it.
+    refusal = stream_refusal(symbol, event_stream)
+    if refusal is not None:
+        raise MissingEventStream(refusal)
+    if event_stream:
+        from mt5desk.disclosure_events import load_events
+        events = load_events(event_stream, symbol)
+        clock = "utc"
     if events is None or mode not in MODES or side not in (1, -1) or symbol == "":
         return []
     try:

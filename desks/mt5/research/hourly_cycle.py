@@ -848,6 +848,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # verdict older than 6h, so this leg is on the core clock and exempt from rotation
     # (libs/ops/leg_rotation.ALWAYS_RUN). ~10 min measured end to end under its 1,500 s cap.
     "tier_s",
+    # THE WORLD FACTORY'S ACCOUNT (2026-09-30): one cheap reader, hourly, of every source organ
+    # that turns news, macro, datasets, media and the forests into cells -- items fetched,
+    # hypotheses minted, cells donated, cells reaching the docket, and the coverage holes.
+    "world_factory",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
@@ -924,6 +928,9 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "dukascopy_backfill", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
+                     # the dedicated collector for primary corporate disclosures
+                     "corporate_disclosure",
+                     "llm_extractor",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -948,6 +955,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "research_tree", "residual_map", "frontier_ceo",
                      "federation_ops", "sandbox_runner", "sandbox_provision",
                      "sandbox_roster", "proposer_seat", "kimi_hunt",
+                     # the twenty-five media/news/macro miners plus the seed sweep, which had
+                     # no clock on the trading box (research/world_factory.py --mine)
+                     "world_media_miners",
                      # Derives each instrument's own session from its own bars and mints the
                      # breakout aimed at it, instead of porting gold's hours everywhere.
                      "session_structure"),
@@ -989,7 +999,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
                      "regime_hierarchy", "representation_discovery",
-                     "event_surprise", "cross_asset_graph", "transmission_engine"), "macro"),
+                     "event_surprise", "cross_asset_graph", "transmission_engine",
+                     # 2026-09-30: ALFRED point-in-time vintages, on no clock until now.
+                     "fetch_alfred"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -1605,6 +1617,17 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
     "acquire_datasets": 1_100,
+    # THE WORLD FACTORY. The miner orchestrator stops starting units 30 s before its own
+    # --budget-s 1400 and each unit has its own timeout, so the parent cap sits above both. The
+    # account reads ledgers, discovery files and one GROUP BY on the registry.
+    "world_media_miners": 1_500,
+    # `--produce --measure`: world_cells publishes the lake series and mints the direct and
+    # gated cells (each enqueued once, ever), then the measurement reads what it did.
+    "world_factory": 420,
+    # First pass downloads every vintage of 14 series; later passes refetch only a week-old file.
+    "fetch_alfred": 900,
+    # 5 documents x a 150 s call ceiling, plus the validator and the parquet writes.
+    "llm_extractor": 900,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
     # 28 organs, 416 s measured end to end in the cloud checkout on 2026-09-30 (immune 160 s,
@@ -1720,6 +1743,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
     "event_surprise": 400,
+    # The disclosure moat stops itself at --budget-s 600 (fetch share 75%) and writes; the cap
+    # sits above it.
+    "corporate_disclosure": 700,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -3587,6 +3613,14 @@ def main() -> None:
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
     esur = _costed("event_surprise", lambda: _producer(
         "event_surprise", "research/event_surprise.py", "--once", "--budget-s", "300"))
+    # THE PRIMARY-DISCLOSURE MOAT (2026-09-30): TDnet, EDINET, J-Quants, DART, cninfo, SSE, SZSE
+    # and EDGAR 8-K/6-K, read in the issuers' own languages, dated at publication, mapped to MT5
+    # instruments through the registry. Event rows for the news lane (read by news_event_stream
+    # below), a PIT disclosure-flow series per source and country (pack_cells), the allocation
+    # state file, and event_reaction / news_reaction / exogenous_gate donations for the compiler.
+    # Keyed sources with no key report BLOCKED_NO_KEY; nothing here sizes or judges.
+    cdis = _costed("corporate_disclosure", lambda: _producer(
+        "corporate_disclosure", "research/corporate_disclosure.py", "--once", "--budget-s", "600"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -4739,6 +4773,11 @@ def main() -> None:
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
+    # AFTER the parser: the prose it filed NO_TABLE / NO_TEXT / pdf_text goes to the LLM seat, and
+    # every extracted row is checked against the source text before it may become a series
+    # (`research/llm_extractor.py`, `research/extraction_validator.py`). UNMEASURED with no seat.
+    lxt = _costed("llm_extractor", lambda: _producer("llm_extractor",
+                                                     "research/llm_extractor.py"))
     # The bars every study reads: an unreadable parquet is quarantined for the fetcher to
     # rebuild, a stale one is named by asset class (`scripts/check_universe_integrity.py`).
     uin = _costed("universe_integrity",
@@ -4893,6 +4932,21 @@ def main() -> None:
     # only, so the cadence spends nothing; a run with no credential records its own BLOCKER and
     # exits, which is a measurement rather than a failing leg.
     kh = _costed("kimi_hunt", lambda: _producer("kimi_hunt", "scripts/kimi_hunter.py"))
+    # THE WORLD FACTORY (principal 2026-09-30: "a global media 24/7 miner ... for maximum data and
+    # news and macro and datasets and maximum hypothesis and cell mining"). Measured the same day:
+    # the twenty-five media / news / macro / earnings / sentiment miners of
+    # `side_channels/run_all_miners.py` and the seed sweep ran on the VPS only (full-pipeline
+    # daily at 06:00, seed-miners hourly), and the VPS branch is an orphan whose output never
+    # reaches this box's compiler -- so on the box that trades they had no clock. The mine leg
+    # runs them least-recently-run first under their own timeouts; the account leg writes
+    # reports/WORLD_FACTORY.json with every source's fetched / minted / donated / docket counts
+    # and the coverage holes, UNMEASURED where a counter cannot be read.
+    wmm = _costed("world_media_miners", lambda: _producer(
+        "world_media_miners", "research/world_factory.py", "--mine", "--budget-s", "1400"))
+    alf = _costed("fetch_alfred", lambda: _producer(
+        "fetch_alfred", "research/fetch_alfred.py", "--leg"))
+    wfy = _costed("world_factory", lambda: _producer(
+        "world_factory", "research/world_factory.py", "--produce", "--measure"))
     # P0.1, THE LAST UNSCHEDULED CAPABILITY OF THE NINETY-FOUR. `release_identity.py` has a
     # main() and nothing on either machine ever called it: the registry names its ARTIFACT as the
     # producer, so `scheduler_for` searched for a schedule matching a .json path and found none,
@@ -5180,7 +5234,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
-                    "event_surprise": esur,
+                    "event_surprise": esur, "corporate_disclosure": cdis,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
@@ -5265,6 +5319,7 @@ def main() -> None:
                     "asia_collector": aco,
                     "asia_parser": apr,
                     "source_fixer": sfx,
+                    "llm_extractor": lxt,
                     "universe_integrity": uin,
                     "synthetic_usdx": usx,
                     "source_routes": srt,
@@ -5290,6 +5345,7 @@ def main() -> None:
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
                     "proposer_seat": prs, "committees": cmt, "kimi_hunt": kh,
+                    "world_media_miners": wmm, "world_factory": wfy, "fetch_alfred": alf,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
