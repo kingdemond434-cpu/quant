@@ -38,7 +38,9 @@ READ-ONLY OF CERTIFICATES, BY THE FIREWALL: every file this module opens is chec
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -180,14 +182,17 @@ def block(name: str) -> str | None:
     and dropped all six checks at once. The withheld row is billed by `tier_s_evidence_block`
     like every other door verdict, so a broken check costs a measured amount of growth rather
     than silently waving certificates through."""
-    checks = [(fn.__name__, lambda fn=fn: fn(name))
-              for fn in (_constitution, _replication, _fdr, _panel_and_theory)]
-    checks.append(("_freeze", _freeze))
-    for label, fn in checks:
+    per_cert: list[tuple[str, Callable[[str], str | None]]] = [
+        ("constitution", _constitution), ("replication", _replication), ("fdr", _fdr),
+        ("panel_and_theory", _panel_and_theory)]
+    checks: list[tuple[str, Callable[[], str | None]]] = [
+        (label, partial(fn, name)) for label, fn in per_cert]
+    checks.append(("freeze", _freeze))
+    for label, check in checks:
         try:
-            why = fn()
+            why = check()
         except Exception as exc:  # any failure must withhold, never pass
-            return (f"DOOR_ERROR: the {label.lstrip('_')} check raised "
+            return (f"DOOR_ERROR: the {label} check raised "
                     f"{type(exc).__name__}: {exc}; withheld until it runs clean")
         if why:
             return why
