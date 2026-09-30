@@ -283,7 +283,14 @@ def _researcher_prices(max_age_h: float = 6.0) -> dict[str, float]:
     `tier_s.organ_market` prices every PRODUCER that bore a judged hypothesis -- its P(novel),
     P(pass), P(forward holds), false-discovery history and measured CPU -- and folds those
     prices onto the legs that run them. A stale or absent file says nothing, which the blend
-    below reads as "no opinion", never as a zero."""
+    below reads as "no opinion", never as a zero. A market whose contract is REJECTED has lost
+    its authority (`libs.tiers.authority`) and is read the same way: no opinion."""
+    try:
+        from libs.tiers import authority
+        if authority.suspended("market"):
+            return {}
+    except ImportError:
+        pass
     p = Path(__file__).resolve().parents[1] / "data" / "tier_s" / "researcher_prices.json"
     doc = _read(p)
     try:

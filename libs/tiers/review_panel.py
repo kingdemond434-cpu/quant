@@ -61,6 +61,21 @@ def _f(x: Any) -> float | None:
         return None
 
 
+def _matched_fills_10(ev: Evidence) -> bool | None:
+    """Ten matched live fills, then: the live mean R captures more than half the forward clock's
+    expectancy -- or, with no positive forward expectancy to compare against, is itself positive.
+
+    Until 2026-09-30 this read `execution.capture`, which no evidence builder wrote: every
+    candidate reaching ten fills was resolved AGAINST on a missing field (None -> 0.0 > 0.5)."""
+    if (_f(_g(ev, "execution", "matched_fills")) or 0) < 10:
+        return None
+    cap = _f(_g(ev, "execution", "capture"))
+    if cap is not None:
+        return cap > 0.5
+    live = _f(_g(ev, "execution", "live_mean_r"))
+    return None if live is None else live > 0
+
+
 #: predicate name -> function(evidence) -> True when the challenge is answered in the candidate's
 #: favour, False when answered against it, None while still open
 RESOLVERS: dict[str, Callable[[Evidence], bool | None]] = {
@@ -70,8 +85,7 @@ RESOLVERS: dict[str, Callable[[Evidence], bool | None]] = {
                                 else (_f(_g(ev, "forward", "mean_r")) or 0.0) > 0),
     "stress_x5_positive": lambda ev: (None if _f(_g(ev, "stress", "exp_x5")) is None
                                       else (_f(_g(ev, "stress", "exp_x5")) or 0.0) > 0),
-    "matched_fills_10": lambda ev: (None if (_f(_g(ev, "execution", "matched_fills")) or 0) < 10
-                                    else (_f(_g(ev, "execution", "capture")) or 0.0) > 0.5),
+    "matched_fills_10": lambda ev: _matched_fills_10(ev),
     "uniqueness_03": lambda ev: (None if _f(_g(ev, "topology", "uniqueness")) is None
                                  else (_f(_g(ev, "topology", "uniqueness")) or 0.0) >= 0.3),
     "falsifier_declared": lambda ev: (None if _g(ev, "mechanism") is None

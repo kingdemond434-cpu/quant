@@ -20,7 +20,7 @@ import pytest
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
-for p in (str(ROOT), str(DESK / "research"), str(DESK)):
+for p in (str(ROOT), str(ROOT / "scripts"), str(DESK / "research"), str(DESK)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
@@ -176,3 +176,56 @@ def test_world_and_science_is_unmeasured_without_bars(monkeypatch: Any) -> None:
     monkeypatch.setattr(ts, "_returns_panel", lambda: ({}, {}, {}))
     out = ts.organ_world_and_science()
     assert out["status"] == "UNMEASURED" and out["metric"]["hypotheses"] == 0
+
+
+def test_matched_fills_resolver_reads_evidence_that_exists() -> None:
+    from libs.tiers import review_panel as rp
+    res = rp.RESOLVERS["matched_fills_10"]
+    assert res({"execution": {"matched_fills": 9, "live_mean_r": 1.0}}) is None
+    # the old defect: ten fills and no `capture` field resolved AGAINST
+    assert res({"execution": {"matched_fills": 12}}) is None
+    assert res({"execution": {"matched_fills": 12, "live_mean_r": 0.2}}) is True
+    assert res({"execution": {"matched_fills": 12, "live_mean_r": -0.2}}) is False
+    assert res({"execution": {"matched_fills": 12, "capture": 0.8}}) is True
+    ev = ts._execution_evidence(12, [0.1, 0.3], 0.4)
+    assert ev == {"matched_fills": 12, "live_mean_r": 0.2, "capture": 0.5}
+    assert "capture" not in ts._execution_evidence(12, [0.1], -0.2)
+    assert ts._execution_evidence(0, None, None) == {"matched_fills": 0}
+
+
+def test_rejected_organ_loses_steering_never_emission(tmp_path: Path) -> None:
+    from libs.tiers import authority
+    ledger = {"layers": [{"id": "S08", "contract": {"organ": "market"}},
+                         {"id": "S40", "contract": {"organ": "market"}},
+                         {"id": "S22", "contract": {"organ": "grammar"}},
+                         {"id": "S44", "contract": {"organ": "grammar"}}]}
+    doc = authority.compute(ledger, {"S08": {"verdict": "REJECTED"},
+                                     "S40": {"verdict": "REJECTED"},
+                                     "S22": {"verdict": "REJECTED"},
+                                     "S44": {"verdict": "ADMITTED"}})
+    assert doc["suspended"] == ["market"], "suspended only when EVERY layer is REJECTED"
+    p = tmp_path / "AUTHORITY.json"
+    p.write_text(json.dumps(doc), "utf-8")
+    assert authority.suspended("market", p) and not authority.suspended("grammar", p)
+    old = dict(doc, generated_utc="2020-01-01T00:00:00+00:00")
+    p.write_text(json.dumps(old), "utf-8")
+    assert not authority.suspended("market", p), "a stale verdict lapses"
+    assert not authority.suspended("market", tmp_path / "absent.json")
+
+
+def test_contract_verdicts_carry_their_baseline() -> None:
+    from libs.tiers import contracts
+    c = contracts.Contract.parse({"gain": "ALPHA_DISCOVERY", "metric": "m", "better": "down"})
+    ev = contracts.evaluate(c, [4.0, 4.0, 2.0, 1.0])
+    assert ev["baseline"] == 4.0 and ev["delta_vs_baseline"] == 3.0
+    assert contracts.evaluate(c, [])["baseline"] is None
+
+
+def test_every_new_hourly_leg_has_a_contract() -> None:
+    import check_tier_s_program as chk
+    ledger = json.loads(chk.LEDGER.read_text("utf-8"))
+    problems, _ = chk.check(ledger, chk.ROOT)
+    assert not problems, problems
+    ledger["leg_contracts"] = [r for r in ledger["leg_contracts"] if r["leg"] != "frontier_map"]
+    problems, _ = chk.check(ledger, chk.ROOT)
+    assert any("frontier_map" in p for p in problems)

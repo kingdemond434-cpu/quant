@@ -905,5 +905,73 @@
    },
    "remaining": ""
   }
+ ],
+ "leg_contracts": [
+  {
+   "leg": "tier_s",
+   "report": "TIER_S.json",
+   "contract": {
+    "gain": "PRODUCTIVITY",
+    "metric": "contracts.ADMITTED",
+    "better": "up",
+    "organ": "report:TIER_S.json"
+   },
+   "why": "the organ's own yield: how many of its 46 layers show a measured gain against their baseline"
+  },
+  {
+   "leg": "adversary_evolution",
+   "report": "ADVERSARY_EVOLUTION.json",
+   "contract": {
+    "gain": "FALSIFICATION",
+    "metric": "n_breach",
+    "better": "up",
+    "organ": "report:ADVERSARY_EVOLUTION.json"
+   },
+   "why": "gaps the evolved adversary finds in the ten gates"
+  },
+  {
+   "leg": "execution_science",
+   "report": "EXECUTION_SCIENCE.json",
+   "contract": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "attribution.median_execution_drag",
+    "better": "down",
+    "organ": "report:EXECUTION_SCIENCE.json"
+   },
+   "why": "median gross-minus-net growth lost to execution"
+  },
+  {
+   "leg": "frontier_map",
+   "report": "FRONTIER_MAP.json",
+   "contract": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "coverage.n_certificates",
+    "better": "up",
+    "organ": "report:FRONTIER_MAP.json"
+   },
+   "why": "certificates on the mapped frontier"
+  },
+  {
+   "leg": "market_ecology",
+   "report": "MARKET_ECOLOGY.json",
+   "contract": {
+    "gain": "ALPHA_DISCOVERY",
+    "metric": "n_detected",
+    "better": "up",
+    "organ": "report:MARKET_ECOLOGY.json"
+   },
+   "why": "participant footprints that beat a block-permuted null"
+  },
+  {
+   "leg": "research_diversity_archive",
+   "report": "RESEARCH_DIVERSITY_ARCHIVE.json",
+   "contract": {
+    "gain": "PRODUCTIVITY",
+    "metric": "counts.occupied_niches",
+    "better": "up",
+    "organ": "report:RESEARCH_DIVERSITY_ARCHIVE.json"
+   },
+   "why": "occupied niches in the research diversity archive"
+  }
  ]
 }

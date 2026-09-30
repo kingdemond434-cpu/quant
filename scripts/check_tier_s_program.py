@@ -15,7 +15,9 @@ research productivity. This fence is that admission rule, enforced at every law-
     as check_tier5_audit.py); the artifact is named;
   * the contract parses (`libs.tiers.contracts.problems`) and its `organ` is a Tier S organ
     (`desks/mt5/research/tier_s.py`) or `report:<FILE>` whose writer is itself a known leg;
-  * a DONE layer carries an empty `remaining`: "done, except" is PARTIAL.
+  * a DONE layer carries an empty `remaining`: "done, except" is PARTIAL;
+  * every hourly leg the programme ADDED (`LEG_CONTRACTED`) carries a parsing contract in
+    `leg_contracts`, read from its own report -- a new leg with no contract is refused.
 
 `--render` writes docs/research/TIER_S_PROGRAM.md (the gap map; derived, never hand-edited),
 and with `--with-verdicts` joins this host's latest hourly verdicts from
@@ -45,6 +47,9 @@ VERDICTS = ROOT / "desks" / "mt5" / "reports" / "tier_s" / "CONTRACTS.json"
 ORGAN_SRC = ROOT / "desks" / "mt5" / "research" / "tier_s.py"
 STATUSES = ("DONE", "PARTIAL", "BLOCKED_ON_USER", "BLOCKED_ON_BOX")
 N_LAYERS = 46
+#: the hourly legs the Tier S programme added outside the 46 layers: each needs a contract
+LEG_CONTRACTED = ("tier_s", "adversary_evolution", "execution_science", "frontier_map",
+                  "market_ecology", "research_diversity_archive")
 
 
 def organs(root: Path) -> set[str]:
@@ -94,6 +99,16 @@ def check(ledger: dict[str, Any], root: Path) -> tuple[list[str], Counter[str]]:
                 problems.append(f"{lid}: a report: organ must name the hourly leg that writes it")
         elif organ not in names:
             problems.append(f"{lid}: organ {organ!r} is not a tier_s organ")
+    have = {str(r.get("leg")): r for r in ledger.get("leg_contracts") or []}
+    for leg in LEG_CONTRACTED:
+        r = have.get(leg)
+        if r is None:
+            problems.append(f"leg {leg}: a new hourly leg with no contract")
+            continue
+        raw = r.get("contract")
+        problems.extend(f"leg {leg}: {p}" for p in contracts.problems(raw))
+        if not str((raw or {}).get("organ") or "").startswith("report:"):
+            problems.append(f"leg {leg}: its contract must read its own report (report:<FILE>)")
     return problems, counts
 
 

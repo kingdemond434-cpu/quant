@@ -32,6 +32,10 @@ def bias(path: Path | None = None, max_age_h: float = MAX_AGE_H) -> dict[str, An
     if path is None and os.environ.get("PYTEST_CURRENT_TEST"):
         return {}
     p = path or GRAMMAR
+    if path is None:
+        from libs.tiers import authority
+        if authority.suspended("grammar"):
+            return {}          # a REJECTED grammar organ steers nothing: the uniform draw
     try:
         m = p.stat().st_mtime
     except OSError:

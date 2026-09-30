@@ -1421,6 +1421,22 @@ def organ_theory() -> dict[str, Any]:
                        "composed": composed}}
 
 
+def _execution_evidence(n: int, rs: list[float] | None, fwd_exp: Any) -> dict[str, Any]:
+    """Matched fills, the live mean R and CAPTURE = live mean R / forward expectancy (only when
+    the forward clock's expectancy is positive; a ratio against <= 0 means nothing)."""
+    out: dict[str, Any] = {"matched_fills": int(n)}
+    if rs:
+        live = float(np.mean(rs))
+        out["live_mean_r"] = round(live, 5)
+        try:
+            f = float(fwd_exp)
+        except (TypeError, ValueError):
+            f = 0.0
+        if f > 0:
+            out["capture"] = round(live / f, 4)
+    return out
+
+
 def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | None,
                  rq: Mapping[str, Any] | None) -> dict[str, Any]:
     shadow = shadow_rows()
@@ -1438,7 +1454,13 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
             if k:
                 rep_by[k] = "AGREE" if str(v).upper() in ("AGREE", "REPLICATED", "PASS",
                                                            "MATCH") else str(v)
-    fills: Counter[str] = Counter(r["_group"] for r in live_rows())
+    fills: Counter[str] = Counter()
+    live_r: dict[str, list[float]] = defaultdict(list)
+    for r in live_rows():
+        fills[r["_group"]] += 1
+        if r.get("r_multiple") is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                live_r[r["_group"]].append(float(r["r_multiple"]))
     worlds_by = {str(r.get("key")): r for r in (_read(STATE / "worlds_by_certificate.json")
                                                 or {}).get("rows") or []}
     cands: dict[str, dict[str, Any]] = {}
@@ -1451,7 +1473,9 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
         sleeve_keys = [k for k in uniq if str(k).startswith(f"{sym}.{fam}")]
         ev: dict[str, Any] = {"gates": row.get("gates") or {}, "days": row.get("days"),
                               "forward": {"n": fw.get("n"), "mean_r": fw.get("exp_r")},
-                              "execution": {"matched_fills": fills.get(f"{sym}.{sel}", 0)},
+                              "execution": _execution_evidence(
+                                  fills.get(f"{sym}.{sel}", 0), live_r.get(f"{sym}.{sel}"),
+                                  fw.get("exp_r")),
                               "mechanism": {"falsifier": mechanism_for(str(fam or "")).falsifier}}
         if sleeve_keys:
             ev["topology"] = {"uniqueness": uniq[sleeve_keys[0]]}
@@ -2384,8 +2408,36 @@ def evaluate_contracts(reports: Mapping[str, Any]) -> dict[str, Any]:
         out[lid] = {**ev, "gain": str(c.gain), "metric": f"{organ}.{c.metric}",
                     "latest": val}
         counts[ev["verdict"]] += 1
+    # THE NEW HOURLY LEGS carry contracts too (`leg_contracts`), read from their own reports.
+    # They are verdicts only: none of these legs is a steering organ, so none can be suspended.
+    legs_out: dict[str, Any] = {}
+    for lc in ledger.get("leg_contracts") or []:
+        lid = f"leg:{lc.get('leg')}"
+        raw = lc.get("contract") or {}
+        try:
+            c = contracts.Contract.parse(raw)
+        except (KeyError, ValueError) as exc:
+            legs_out[lid] = {"verdict": "INVALID", "why": str(exc)}
+            continue
+        organ = str(raw.get("organ") or "")
+        if organ == "report:TIER_S.json":
+            src: Any = {"contracts": dict(counts)}      # this hour's own verdicts, not last hour's
+        else:
+            src = _read(DESK / "reports" / organ.split(":", 1)[1]) or {}
+        val = contracts.read_metric(src, c.metric)
+        if val is not None:
+            hist.setdefault(lid, []).append(val)
+            hist[lid] = hist[lid][-500:]
+        legs_out[lid] = {**contracts.evaluate(c, hist.get(lid, [])), "gain": str(c.gain),
+                         "metric": f"{organ}.{c.metric}", "latest": val}
     _save_state("contracts", {"history": hist})
-    return {"layers": out, "counts": dict(counts)}
+    from libs.tiers import authority
+    auth = authority.compute(ledger, out)
+    _write(authority.AUTHORITY, auth)
+    return {"layers": out, "legs": legs_out, "counts": dict(counts),
+            "leg_counts": dict(Counter(v["verdict"] for v in legs_out.values())),
+            "suspended": auth["suspended"],
+            "authority_rule": auth["rule"]}
 
 
 def epistemic_census(reports: Mapping[str, Any]) -> dict[str, Any]:

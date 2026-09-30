@@ -103,8 +103,25 @@ def read_metric(doc: Any, path: str) -> float | None:
 
 
 def evaluate(contract: Contract, history: Sequence[float]) -> dict[str, Any]:
-    """Verdict from the metric's history (oldest first)."""
+    """Verdict from the metric's history (oldest first), with the BASELINE it was judged against.
+
+    The baseline is the mean of the earliest half of the readings (the layer's own "before"),
+    and `delta_vs_baseline` is the latest reading minus it, signed so positive is better."""
     xs = [float(x) for x in history if x is not None and math.isfinite(float(x))]
+    out = _evaluate(contract, xs)
+    if xs:
+        base = xs[: max(1, len(xs) // 2)]
+        b = sum(base) / len(base)
+        out["baseline"] = round(b, 8)
+        out["delta_vs_baseline"] = round((1.0 if contract.better == "up" else -1.0)
+                                         * (xs[-1] - b), 8)
+    else:
+        out["baseline"] = None
+        out["delta_vs_baseline"] = None
+    return out
+
+
+def _evaluate(contract: Contract, xs: list[float]) -> dict[str, Any]:
     sign = 1.0 if contract.better == "up" else -1.0
     if xs and contract.bar is not None and sign * (xs[-1] - contract.bar) >= 0:
         return {"verdict": str(Verdict.ADMITTED), "why": f"latest {xs[-1]:.6g} meets bar "
