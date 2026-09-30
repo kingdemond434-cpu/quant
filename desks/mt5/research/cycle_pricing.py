@@ -79,6 +79,8 @@ OUT = R / "CYCLE_PRICING.json"
 #: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach. Both are
 #: bounds on the RATIO, so the plan is a reallocation and not a resize.
 FLOOR, CEIL = 1.00, 2.00
+#: alpha rank's two-sided band: the bottom quartile loses any boost, the top quartile earns one
+ALPHA_VETO = 0.25
 #: THE PRICE ALLOCATES SPARE COMPUTE ONLY (2026-09-29, Tier-1 #10). The floor was 0.60: a leg the
 #: board priced last lost 40% of its seconds to fund the winners, which is throttling a miner on an
 #: estimate. It is now par, and what a winner gets ABOVE par comes out of the MEASURED spare
@@ -476,6 +478,24 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         f = (1.0 + (s - median) / max(1e-9, 1.0 - median) * (CEIL - 1.0)) if s >= median else \
             (FLOOR + (s / max(1e-9, median)) * (1.0 - FLOOR))
         v["price_factor"] = round(max(FLOOR, min(CEIL, f)), 4)
+    # THE NORTH STAR HAS TWO-SIDED AUTHORITY (verifier 2026-09-30: as one weighted source it could
+    # never shorten anything). Inside the principal's 1.0x floor -- no leg is ever cut below its
+    # base, and research generation is never reduced -- alpha rank now binds in BOTH directions:
+    # a leg in its bottom quartile of independent alpha per compute hour gets NO boost however
+    # the other sources price it (its above-base ask is withdrawn and the spare goes to others),
+    # and a leg in its top quartile gets at least the boost its alpha rank alone earns.
+    for leg, v in legs.items():
+        if leg not in a01:
+            continue
+        a = float(a01[leg])
+        if a < ALPHA_VETO and v["price_factor"] > 1.0:
+            v["alpha_rank_bound"] = f"capped at 1.0x from {v['price_factor']}"
+            v["price_factor"] = 1.0
+        elif a > 1.0 - ALPHA_VETO:
+            own = round(1.0 + (a - (1.0 - ALPHA_VETO)) / ALPHA_VETO * (CEIL - 1.0), 4)
+            if own > v["price_factor"]:
+                v["alpha_rank_bound"] = f"raised to {own}x from {v['price_factor']}"
+                v["price_factor"] = min(CEIL, own)
 
     # THE EXTRA COMES OUT OF MEASURED SPARE, PER DEPARTMENT CLOCK. Every leg keeps its base; a
     # leg priced above par ASKS for base x (price_factor - 1) more, and the asks inside one
