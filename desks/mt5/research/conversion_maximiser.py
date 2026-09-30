@@ -353,6 +353,126 @@ class Budget:
         return False
 
 
+# ------------------------------------------------------------- the pass fits inside its cap
+#: THE PASS NEVER OUTLIVES THE CAP IT RUNS UNDER (noon CRO 2026-09-30: this leg "times out every
+#: pass and moves 0 artifacts"; its carry file was last written 2026-09-23 22:00, so not one pass
+#: reached even the end of its convert loop in a week). Three things let it run past its own
+#: `--budget-s` and into the cycle's SIGKILL, and the budget check at the top of the loop could
+#: see none of them:
+#:
+#:   * ONE ROW COULD WAIT NINE MINUTES. `LOCK_WAIT_MS` is 180 s and `_enqueue` retries three
+#:     times, so a row started at 890 s of a 900 s budget could still be waiting at 1,430 s. The
+#:     lock window is now the SMALLER of that and what the pass has left (`_bound_lock_window`).
+#:   * THE TAIL HAD NO TIME. The loop ran to 5 s before the budget and then the pass charged
+#:     trials, wrote the carry, measured bar coverage over the whole universe, backfilled,
+#:     re-counted the debt, re-scanned breadth, read the judge's ledger and the docket -- all
+#:     after the budget was spent. The loop now stops at `CONVERT_SHARE` of the pass and every
+#:     tail stage runs only while the budget allows, published as SKIPPED_BUDGET when it does not.
+#:   * NOTHING WAS WRITTEN UNTIL THE END. A pass killed anywhere left the previous artifact and
+#:     no trace of itself. It now writes a checkpoint BEFORE its first query and again after the
+#:     loop, before the slow tail (`_checkpoint`).
+#:
+#: And the cycle tells the child its cap (`QUANT_LEG_BUDGET_S`, hourly_cycle._producer_impl), so
+#: the pass sizes itself to whatever the pricer granted rather than to the number on its own
+#: command line (`effective_budget_s`).
+CONVERT_SHARE = 0.70
+TAIL_RESERVE_MIN_S = 90.0
+#: The cycle's own write margin (hourly_cycle.WRITE_MARGIN_MIN_S / WRITE_MARGIN_FRAC): the cap it
+#: grants is at least `own + max(60, 15% of own)`, so this is the room the kill leaves the write.
+WRITE_MARGIN_MIN_S = 60.0
+WRITE_MARGIN_FRAC = 0.15
+MIN_BUDGET_S = 30.0
+#: One statement may take at most this share of what the pass has left. SQLite has no statement
+#: timeout; a progress handler is the documented way to interrupt one (`_deadline`).
+STATEMENT_SHARE = 0.25
+
+
+def effective_budget_s(requested: float, env: Mapping[str, str] | None = None) -> float:
+    """The pass's wall clock: its own `--budget-s`, never more than the cycle's cap allows.
+
+    `QUANT_LEG_BUDGET_S` is the SIGKILL. The pass must be finished and written before it, so the
+    cap minus the cycle's write margin is the ceiling. An absent or unreadable cap changes
+    nothing: the organ's own budget stands (a manual run has no cycle over it).
+    """
+    source = os.environ if env is None else env
+    try:
+        cap = float(source.get("QUANT_LEG_BUDGET_S") or 0.0)
+    except (TypeError, ValueError):
+        cap = 0.0
+    want = float(requested)
+    if cap <= 0.0:
+        return want
+    margin = max(WRITE_MARGIN_MIN_S, WRITE_MARGIN_FRAC * want)
+    return max(MIN_BUDGET_S, min(want, cap - margin))
+
+
+def tail_reserve_s(budget: Budget) -> float:
+    """Seconds kept back from the convert loop for the write and the measurements after it."""
+    return min(budget.seconds * 0.5,
+               max(TAIL_RESERVE_MIN_S, budget.seconds * (1.0 - CONVERT_SHARE)))
+
+
+@contextlib.contextmanager
+def _deadline(conn: sqlite3.Connection, budget: Budget | None, *, reserve: float = 0.0,
+              share: float = STATEMENT_SHARE) -> Any:
+    """Interrupt any statement on `conn` that runs past its share of the pass.
+
+    An interrupted read raises `sqlite3.OperationalError: interrupted`, which every measuring
+    function here already turns into UNMEASURED with the reason -- a count the pass could not
+    afford is a named gap, never a zero and never a kill. Reads only: no write runs under this.
+    """
+    if budget is None:
+        yield
+        return
+    allowed = max(1.0, (budget.left() - reserve) * share)
+    stop = time.monotonic() + allowed
+    try:
+        conn.set_progress_handler(lambda: 1 if time.monotonic() > stop else 0, 20_000)
+    except (sqlite3.Error, AttributeError):                              # pragma: no cover
+        yield
+        return
+    try:
+        yield
+    finally:
+        with contextlib.suppress(sqlite3.Error, AttributeError):
+            conn.set_progress_handler(None, 0)
+
+
+def _bound_lock_window(conn: sqlite3.Connection, budget: Budget | None,
+                       reserve: float = 0.0) -> int | None:
+    """The write lock may be waited for, but never past the end of the pass."""
+    if budget is None:
+        return _widen_lock_window(conn)
+    ms = int(min(LOCK_WAIT_MS, max(1_000.0, (budget.left() - reserve) * 1000.0)))
+    try:
+        conn.execute(f"PRAGMA busy_timeout={ms}")
+        return ms
+    except (sqlite3.Error, AttributeError):
+        return None
+
+
+STAGE_RUNNING = "RUNNING"
+STAGE_CONVERTED = "CONVERTED"
+STAGE_COMPLETE = "COMPLETE"
+
+
+def _checkpoint(out_path: Path | None, stage: str, prior: Mapping[str, Any],
+                body: Mapping[str, Any]) -> None:
+    """Write what the pass knows NOW, so a kill leaves a trace instead of last week's file.
+
+    A checkpoint is labelled on its face (`pass_status`), carries the last COMPLETE pass's debt
+    under `last_complete` so the drain trend survives a killed pass, and is overwritten by the
+    full artifact when the pass completes. Never written by a dry run or a test harness that did
+    not name an output.
+    """
+    if out_path is None:
+        return
+    with contextlib.suppress(OSError, TypeError, ValueError):
+        _atomic_write(out_path, {"generated_utc": _now(), "organ": SEAT, "rule": RULE,
+                                 "pass_status": stage, "last_complete": dict(prior),
+                                 **body})
+
+
 # ------------------------------------------------------------------------------- the debt
 #: The five components of conversion debt, each one cheap SQL over the WHOLE population. A row
 #: that is a testable cell, or that carries a recorded reasoned refusal, is NOT debt.
@@ -497,7 +617,27 @@ def cell_counts(conn: sqlite3.Connection,
 
 
 def measure_breadth(conn: sqlite3.Connection) -> dict[str, Any]:
-    counts = cell_counts(conn)
+    return breadth_of(cell_counts(conn))
+
+
+def _grid_cell(row: Mapping[str, Any]) -> str:
+    try:
+        return str(R.grid_cell(row) or "unknown")
+    except Exception:                                                    # pragma: no cover
+        return str(row.get("grid_cell") or "unknown")
+
+
+def _counts_after(counts: Mapping[str, int],
+                  repaired: Sequence[Mapping[str, Any]]) -> dict[str, int]:
+    out = dict(counts)
+    for r in repaired:
+        cell = str(r.get("grid_cell_after") or "unknown")
+        out[cell] = out.get(cell, 0) + 1
+    return out
+
+
+def breadth_of(counts: Mapping[str, int], *, basis_note: str = "") -> dict[str, Any]:
+    """Breadth from counts already in hand -- the scan is `cell_counts`, paid once a pass."""
     if not counts:
         return {"status": UNMEASURED, "nominal_cells": 0, "effective_breadth": 0.0,
                 "n_testable": 0,
@@ -508,7 +648,8 @@ def measure_breadth(conn: sqlite3.Connection) -> dict[str, Any]:
             "effective_breadth": round(eff, 4), "n_testable": int(sum(counts.values())),
             "concentration": round(sum(counts.values()) / max(eff, 1e-9), 3),
             "basis": "participation ratio over registry grid_cell "
-                     "(= libs.risk.fx_exposure.effective_rank of diag(sqrt(counts)))"}
+                     "(= libs.risk.fx_exposure.effective_rank of diag(sqrt(counts)))"
+                     + (f"; {basis_note}" if basis_note else "")}
 
 
 # ------------------------------------------------------------------------ universe / lanes
@@ -1097,6 +1238,11 @@ def previous_pass(path: Path | None = None) -> dict[str, Any]:
     doc = _read_json(path or OUT)
     if not isinstance(doc, Mapping):
         return {}
+    if doc.get("pass_status") in (STAGE_RUNNING, STAGE_CONVERTED):
+        # A CHECKPOINT IS NOT A PASS. Its own debt was never measured at the end, so the trend is
+        # measured against the last pass that completed, which the checkpoint carries forward.
+        last = doc.get("last_complete")
+        return dict(last) if isinstance(last, Mapping) else {}
     after = (doc.get("debt_after") or {}) if isinstance(doc.get("debt_after"), Mapping) else {}
     return {"at": doc.get("generated_utc"), "debt_after": after.get("total_debt")}
 
@@ -1107,7 +1253,25 @@ def _read_carry(path: Path | None = None) -> list[str]:
     return [str(i) for i in ids][:MAX_CARRY] if isinstance(ids, list) else []
 
 
-def _write_carry(ids: Sequence[str], path: Path | None = None) -> None:
+def _read_cursor(path: Path | None = None) -> dict[str, Any]:
+    """Where the last pass stopped in each debt population: {pop: [created_at, id] | None}."""
+    doc = _read_json(path or CARRY)
+    cur = doc.get("cursor") if isinstance(doc, Mapping) else None
+    out: dict[str, Any] = {"laps": {}}
+    if not isinstance(cur, Mapping):
+        return out
+    for pop in DEBT_POPULATIONS:
+        key = cur.get(pop)
+        if isinstance(key, (list, tuple)) and len(key) == 2:
+            out[pop] = (str(key[0] or ""), str(key[1] or ""))
+    laps = cur.get("laps")
+    if isinstance(laps, Mapping):
+        out["laps"] = {str(k): int(v) for k, v in laps.items() if isinstance(v, int)}
+    return out
+
+
+def _write_carry(ids: Sequence[str], path: Path | None = None,
+                 cursor: Mapping[str, Any] | None = None) -> None:
     """Hand this pass's leftover to the next one. IDS ONLY -- never rows.
 
     A file that held the rows themselves would be a second store beside the registry, which is
@@ -1117,10 +1281,18 @@ def _write_carry(ids: Sequence[str], path: Path | None = None) -> None:
     if len(ids) > MAX_CARRY:
         sa.note(SEAT, "carry_overflow", kept=MAX_CARRY, considered=len(ids),
                 ordering="carry first, then oldest created_at, then thinnest grid_cell")
-    _atomic_write(path or CARRY, {
+    doc: dict[str, Any] = {
         "generated_utc": _now(), "ids": list(ids)[:MAX_CARRY], "n": min(len(ids), MAX_CARRY),
         "rule": "no queues: a pass that ran out of budget hands its remainder to the next pass "
-                "as the FIRST work, and the oldest waiting row's age is published every pass"})
+                "as the FIRST work, and the oldest waiting row's age is published every pass"}
+    if cursor is not None:
+        doc["cursor"] = {**{pop: (list(cursor[pop]) if cursor.get(pop) else None)
+                            for pop in DEBT_POPULATIONS},
+                         "laps": dict(cursor.get("laps") or {}),
+                         "rule": "keyset (created_at, id) per debt population: the next pass "
+                                 "starts where this one stopped, and wraps to the oldest row "
+                                 "when it reaches the newest (one lap)"}
+    _atomic_write(path or CARRY, doc)
 
 
 def _rank_key(row: Mapping[str, Any], counts: Mapping[str, int]) -> tuple[float, str]:
@@ -1142,7 +1314,7 @@ _ID_CHUNK = 900
 
 def _debt_rows(conn: sqlite3.Connection, pool: int, *,
                carry: Sequence[str] = (), offset: int = 0,
-               exclude: Sequence[str] = ()) -> list[dict[str, Any]]:
+               exclude: Sequence[str] = (), carry_only: bool = False) -> list[dict[str, Any]]:
     """The debt population this pass may work on. LAST PASS'S LEFTOVER COMES FIRST.
 
     "Nothing should be queued ... all immediate tested" (principal 2026-09-23): a row the last
@@ -1177,6 +1349,8 @@ def _debt_rows(conn: sqlite3.Connection, pool: int, *,
                     seen.add(str(row.get("id") or ""))
             except sqlite3.Error:
                 continue
+    if carry_only:
+        return rows
     # THE DONATED BACKLOG IS THE TARGET (principal's addendum 2026-09-23: "the 234,996 donated
     # candidates that never reached the judge are the target"), so it takes two thirds of the
     # pool. The queued-but-untestable rows take the rest: they are already on the queue and a
@@ -1207,6 +1381,131 @@ def _debt_rows(conn: sqlite3.Connection, pool: int, *,
         except sqlite3.Error:
             continue
     return rows
+
+
+#: THE TWO DEBT POPULATIONS THIS ORGAN DRAINS, each walked by its own keyset cursor. The WHERE
+#: text is shared VERBATIM by the draw and by the partial index behind it: SQLite uses a partial
+#: index only when the query repeats the index's own terms, so one string serves both.
+DEBT_POPULATIONS: tuple[str, ...] = ("donated", "untestable")
+_POP_WHERE: dict[str, str] = {
+    "donated": "status='donated'",
+    "untestable": "status IN ('queued','claimed') AND COALESCE(falsifier,'')=''",
+}
+_POP_SHARE: dict[str, float] = {"donated": 2.0 / 3.0, "untestable": 1.0 / 3.0}
+_KEY = "COALESCE(created_at,'')"
+#: Partial indexes over exactly the debt rows, keyed in draw order. Without them the oldest-first
+#: draw sorts the whole population on every wave, and `OFFSET n` re-walks n rows to skip them --
+#: the cost of wave k grows with k, which is why the waves got slower as the pass went on.
+CURSOR_INDEXES: dict[str, str] = {
+    pop: (f"CREATE INDEX IF NOT EXISTS ix_cvm_{pop} ON research_candidates({_KEY}, id) "
+          f"WHERE {where}")
+    for pop, where in _POP_WHERE.items()}
+
+
+def _ensure_cursor_indexes(conn: sqlite3.Connection, budget: Budget | None = None,
+                           ) -> dict[str, str]:
+    """Build the two partial indexes once, bounded: an index the pass cannot afford is skipped
+    and named, and the draw still works without it (only slower)."""
+    out: dict[str, str] = {}
+    for pop, ddl in CURSOR_INDEXES.items():
+        try:
+            with _deadline(conn, budget, share=0.2):
+                conn.execute(ddl)
+                conn.commit()
+            out[pop] = "present"
+        except sqlite3.Error as exc:
+            with contextlib.suppress(sqlite3.Error):
+                conn.rollback()
+            out[pop] = f"{UNMEASURED}: {type(exc).__name__}: {exc}"
+    return out
+
+
+def _pop_of(row: Mapping[str, Any]) -> str:
+    return "donated" if str(row.get("status") or "") == "donated" else "untestable"
+
+
+def _row_key(row: Mapping[str, Any]) -> tuple[str, str]:
+    return (str(row.get("created_at") or ""), str(row.get("id") or ""))
+
+
+class _Cursor:
+    """THE PASS RESUMES WHERE THE LAST ONE STOPPED, and never re-reads the head it already worked.
+
+    Oldest-first with `OFFSET` restarts at the oldest row every pass. A row that cannot be
+    repaired keeps its status, so the head of the population fills with exactly those rows and
+    every pass spends its budget re-classifying them -- the drain runs in place. A keyset cursor
+    per population walks the whole backlog oldest-first ACROSS passes; on reaching the newest
+    row it wraps once to the oldest (a lap, counted), so nothing is skipped for ever and a stuck
+    row is revisited once a lap rather than once a pass.
+    """
+
+    def __init__(self, conn: sqlite3.Connection, pool: int,
+                 state: Mapping[str, Any] | None = None,
+                 budget: Budget | None = None) -> None:
+        self.conn = conn
+        self.pool = max(2, int(pool))
+        state = state or {}
+        self.pos: dict[str, tuple[str, str] | None] = {
+            pop: (tuple(state[pop]) if state.get(pop) else None)
+            for pop in DEBT_POPULATIONS}
+        self.laps: dict[str, int] = {str(k): int(v)
+                                     for k, v in dict(state.get("laps") or {}).items()}
+        self.wrapped: set[str] = set()
+        self.done: set[str] = set()
+        self.budget = budget
+        self.errors: list[str] = []
+
+    def _page(self, pop: str, limit: int) -> list[dict[str, Any]]:
+        where = _POP_WHERE[pop]
+        pos = self.pos.get(pop)
+        sql = f"SELECT * FROM research_candidates WHERE {where}"  # noqa: S608
+        args: list[Any] = []
+        if pos is not None:
+            sql += f" AND ({_KEY}, id) > (?, ?)"
+            args += [pos[0], pos[1]]
+        sql += f" ORDER BY {_KEY}, id LIMIT ?"
+        args.append(int(limit))
+        try:
+            with _deadline(self.conn, self.budget):
+                cur = self.conn.execute(sql, args)
+                cols = [c[0] for c in cur.description]
+                return [dict(zip(cols, r, strict=False)) for r in cur.fetchall()]
+        except sqlite3.Error as exc:
+            self.errors.append(f"{pop}: {type(exc).__name__}: {exc}")
+            self.done.add(pop)
+            return []
+
+    def draw(self, exclude: set[str]) -> list[dict[str, Any]]:
+        """The next wave: up to `pool` rows not in `exclude`, split by `_POP_SHARE`."""
+        out: list[dict[str, Any]] = []
+        for pop in DEBT_POPULATIONS:
+            want = max(1, int(self.pool * _POP_SHARE[pop]))
+            got = 0
+            while got < want and pop not in self.done:
+                asked = want - got
+                from_head = self.pos.get(pop) is None
+                page = self._page(pop, asked)
+                if page:
+                    self.pos[pop] = _row_key(page[-1])
+                fresh = [r for r in page if str(r.get("id") or "") not in exclude]
+                out.extend(fresh)
+                got += len(fresh)
+                if len(page) < asked:
+                    # REACHED THE NEWEST ROW. Wrap to the oldest once per pass -- a second wrap
+                    # would only re-read rows this pass has already handled -- and never from a
+                    # read that already started at the head: that one saw the whole population.
+                    if from_head or pop in self.wrapped:
+                        self.done.add(pop)
+                        if from_head and not page:
+                            self.pos[pop] = None
+                    else:
+                        self.wrapped.add(pop)
+                        self.laps[pop] = self.laps.get(pop, 0) + 1
+                        self.pos[pop] = None
+        return out
+
+    def state(self) -> dict[str, Any]:
+        return {**{pop: self.pos.get(pop) for pop in DEBT_POPULATIONS}, "laps": dict(self.laps)}
 
 
 class _Waves:
@@ -1275,7 +1574,8 @@ def _widen_lock_window(conn: sqlite3.Connection) -> int | None:
         return None
 
 
-def _enqueue(spec: Any, conn: sqlite3.Connection) -> tuple[str, bool]:
+def _enqueue(spec: Any, conn: sqlite3.Connection, *, budget: Budget | None = None,
+             reserve: float = 0.0) -> tuple[str, bool]:
     """`XS.enqueue` with the lock treated as CONTENTION, not as a verdict.
 
     A `database is locked` is a statement about who else is writing this second. Retrying it is
@@ -1290,8 +1590,10 @@ def _enqueue(spec: Any, conn: sqlite3.Connection) -> tuple[str, bool]:
             if "locked" not in str(exc).lower() and "busy" not in str(exc).lower():
                 raise
             last = exc
+            if budget is not None and not budget.ok("enqueue_retry", reserve=reserve):
+                break
             time.sleep(min(2.0, 0.25 * (2 ** attempt)))
-            _widen_lock_window(conn)
+            _bound_lock_window(conn, budget, reserve)
     raise last if last is not None else sqlite3.OperationalError("enqueue failed")
 
 
@@ -1320,7 +1622,7 @@ def _median(values: Sequence[float]) -> float | None:
 
 
 def _keep_queued(conn: sqlite3.Connection, cid: str, blocker: str, owner: str,
-                 detail: str) -> bool:
+                 detail: str, current: Mapping[str, Any] | None = None) -> bool:
     """A row this pass could not repair STAYS QUEUED, carrying its blocker and its owner.
 
     THE PRINCIPAL'S ADDENDUM (2026-09-23): a row that cannot be repaired this pass "stays QUEUED
@@ -1330,10 +1632,16 @@ def _keep_queued(conn: sqlite3.Connection, cid: str, blocker: str, owner: str,
     """
     if not cid:
         return False
+    reason = f"{blocker} (owner: {owner}): {detail}"[:400]
+    if (current is not None and str(current.get("status") or "") == "queued"
+            and str(current.get("failure_class") or "") == blocker
+            and str(current.get("rejection_reason") or "") == reason):
+        # ALREADY SAYS EXACTLY THIS. Rewriting an identical disposition costs a write lock and
+        # moves nothing; a stuck row is revisited once a lap, and a lap should cost reads only.
+        return True
     try:
         return bool(R.mark_candidate(
-            cid, "queued", conn=conn, failure_class=blocker,
-            rejection_reason=f"{blocker} (owner: {owner}): {detail}"[:400]))
+            cid, "queued", conn=conn, failure_class=blocker, rejection_reason=reason))
     except sqlite3.Error:
         return False
 
@@ -1405,32 +1713,56 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
         universe_dir: Path | None = None, seat_dir: Path | None = None,
         carry_path: Path | None = None, out_path: Path | None = None,
         grace_days: float = GRACE_DAYS) -> dict[str, Any]:
-    """One pass: measure, classify, prioritise by breadth, act, re-enqueue, measure again."""
+    """One pass: measure, classify, prioritise by breadth, act, re-enqueue, measure again.
+
+    Bounded end to end by `budget` (see "the pass fits inside its cap" above): the loop stops at
+    `CONVERT_SHARE` of it, every statement is interruptible, the lock is never waited for past
+    the end of the pass, and the artifact is checkpointed before the first query and again
+    before the slow tail.
+    """
     # Read the last pass's debt BEFORE this one overwrites the artifact: the gap trend is measured
     # against it, and it is the only number that says whether the desk is catching up.
     prior_pass = previous_pass(out_path)
-    debt_before = measure_debt(conn, grace_days=grace_days)
-    breadth_before = measure_breadth(conn)
-    counts = cell_counts(conn)
-
-    _widen_lock_window(conn)
-    pool = min(POOL_CEILING, max(max_rows, max_rows * POOL_FACTOR))
+    ckpt_path = None if dry_run else out_path
+    reserve = tail_reserve_s(budget)
     carried = _read_carry(carry_path)
+    cursor_state = _read_cursor(carry_path)
+    _checkpoint(ckpt_path, STAGE_RUNNING, prior_pass, {
+        "budget_s": budget.seconds, "tail_reserve_s": round(reserve, 1),
+        "carried_in": len(carried), "cursor_in": cursor_state,
+        "note": "checkpoint written before the first query; replaced when the pass completes"})
+    indexes = {} if dry_run else _ensure_cursor_indexes(conn, budget)
+    with _deadline(conn, budget, reserve=reserve):
+        debt_before = measure_debt(conn, grace_days=grace_days)
+    with _deadline(conn, budget, reserve=reserve):
+        counts = cell_counts(conn)
+    # ONE SCAN, NOT TWO: `measure_breadth` re-ran the same GROUP BY `cell_counts` had just run.
+    breadth_before = breadth_of(counts)
+
+    _bound_lock_window(conn, budget, reserve)
+    pool = min(POOL_CEILING, max(max_rows, max_rows * POOL_FACTOR))
     # THE LEFTOVER KEEPS ITS PLACE AT THE FRONT. Within each half the order is by the breadth a
     # conversion adds, but a row the last pass could not reach is not re-ranked against fresh
     # arrivals -- that is how a tail starves while the report says the backlog is being worked.
     carried_set = set(carried)
     handled: set[str] = set()
+    cursor = _Cursor(conn, pool, cursor_state, budget)
 
     def _draw(offset: int) -> list[dict[str, Any]]:
-        """One wave of the debt population, oldest first, with what this pass already touched
-        excluded. The exclusion matters: a row that stays blocked keeps its status, so without it
-        the next wave would re-read the same rows and the drain would run in place."""
-        pop = _debt_rows(conn, pool, carry=carried if offset == 0 else (),
-                         offset=offset, exclude=tuple(handled))
-        pop.sort(key=lambda r: (str(r.get("id") or "") not in carried_set,
-                                *_rank_key(r, counts)))
-        return pop
+        """One wave of the debt population: the carry first (on the first wave), then the next
+        rows AFTER the cursor, oldest first, with what this pass already touched excluded. The
+        exclusion matters: a row that stays blocked keeps its status, so without it the next
+        wave would re-read the same rows and the drain would run in place."""
+        rows: list[dict[str, Any]] = []
+        if offset == 0 and carried:
+            with _deadline(conn, budget, reserve=reserve):
+                rows = _debt_rows(conn, 0, carry=carried, exclude=tuple(handled),
+                                  carry_only=True)
+        seen = handled | {str(r.get("id") or "") for r in rows}
+        rows += cursor.draw(seen)
+        rows.sort(key=lambda r: (str(r.get("id") or "") not in carried_set,
+                                 *_rank_key(r, counts)))
+        return rows
 
     population = _draw(0)
 
@@ -1505,9 +1837,11 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
             row = supply.next_row()
             if row is None:
                 break
-            if examined >= max_rows or not budget.ok("convert", reserve=5.0):
+            if examined >= max_rows or not budget.ok("convert", reserve=reserve):
                 leftover = [str(row.get("id") or ""), *supply.remaining()]
                 break
+            # NEVER WAIT FOR THE LOCK PAST THE END OF THE LOOP: the tail must still get written.
+            _bound_lock_window(conn, budget, reserve)
             examined += 1
             cid = str(row.get("id") or "")
             handled.add(cid)
@@ -1586,7 +1920,7 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                                              "chart": str(fixed.get("chart") or ""),
                                              "origin": origin, "detail": detail[:400]})
                     if not dry_run:
-                        _keep_queued(conn, cid, reason2, owner, detail)
+                        _keep_queued(conn, cid, reason2, owner, detail, current=row)
                     continue
             spec = obj if not isinstance(obj, XS.CompileDefect) else None
             if spec is None:
@@ -1611,7 +1945,7 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
                     _park(conn, cid, STUDY, STUDY_REASON.format(family=spec.family))
                 continue
             repaired.append({"id": cid, "reason": reason, "actions": actions,
-                             "family": spec.family,
+                             "family": spec.family, "grid_cell_after": _grid_cell(fixed),
                              "symbol": spec.symbols[0] if spec.symbols else "",
                              "grid_cell_before": str(row.get("grid_cell") or ""), "age_days": age})
             stat["repaired"] += 1
@@ -1621,7 +1955,7 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
             if dry_run:
                 continue
             try:
-                new_id, was_new = _enqueue(spec, conn)
+                new_id, was_new = _enqueue(spec, conn, budget=budget, reserve=reserve)
                 enqueued += 1
                 created += int(was_new)
                 if cid and new_id != cid:
@@ -1667,23 +2001,71 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
             considered=examined + len(leftover),
             ordering="carry first, then oldest created_at, then thinnest grid_cell")
     if not dry_run:
-        _write_carry(leftover, carry_path)
-    # THE WHOLE HYPOTHESIS-LANE UNIVERSE, not only the symbols this pass happened to touch: the
-    # mandate is every symbol at every timeframe, so the coverage that drives the backfill has to
-    # be measured over the registry rather than over the sample.
-    coverage = bar_coverage([*universe_symbols((universe_dir or UNIVERSE_DIR) / "universe.json"),
-                             *wanted_symbols], universe_dir=universe_dir)
-    coverage["backfill"] = ({"skipped": "dry run"} if dry_run else
-                            backfill_bars(coverage, budget=budget, universe_dir=universe_dir))
-    debt_after = measure_debt(conn, grace_days=grace_days)
-    breadth_after = measure_breadth(conn)
-    arrivals = arrival_rate(conn)
+        _write_carry(leftover, carry_path, cursor=cursor.state())
+    converted = {
+        "examined": examined, "repaired": len(repaired), "enqueued": enqueued,
+        "new_cells": created, "refused": len(refusals), "still_blocked": len(parked),
+        "routed_to_study": len(studied), "carried_out": len(leftover),
+        "cursor_out": cursor.state(), "spent_s": budget.spent(),
+        "debt_before": debt_before}
+    _checkpoint(ckpt_path, STAGE_CONVERTED, prior_pass, converted)
+
+    # THE TAIL, EACH STAGE ONLY WHILE THE PASS CAN AFFORD IT. Everything below is measurement;
+    # a stage the budget cannot reach is published as SKIPPED_BUDGET, never as zero.
+    write_reserve = min(15.0, reserve / 3.0)
+    tail: dict[str, Any] = {}
+
+    def _stage(name: str, fn: Any) -> Any:
+        if not budget.ok(name, reserve=write_reserve):
+            tail[name] = "SKIPPED_BUDGET"
+            return {"status": "SKIPPED_BUDGET",
+                    "why": f"the pass reached its write reserve before `{name}`; measured next "
+                           "pass -- a skipped measurement is a gap, never a zero"}
+        t0 = time.monotonic()
+        with _deadline(conn, budget, reserve=write_reserve, share=0.5):
+            out = fn()
+        tail[name] = round(time.monotonic() - t0, 2)
+        return out
+
+    debt_after = _stage("debt_after", lambda: measure_debt(conn, grace_days=grace_days))
+    if not isinstance(debt_after, Mapping) or "components" not in debt_after:
+        debt_after = {**(debt_after if isinstance(debt_after, Mapping) else {}),
+                      "total_debt": None, "status": UNMEASURED}
+    # INCREMENTAL, NOT A SECOND SCAN: every repaired row became one testable cell in the grid
+    # cell it was compiled into, so the after-population is the before-population plus those.
+    breadth_after = breadth_of(_counts_after(counts, repaired),
+                               basis_note="incremental: the pass-start scan plus this pass's "
+                                          "repairs, one cell each in its compiled grid cell")
+    arrivals = _stage("arrival_rate", lambda: arrival_rate(conn))
+    oldest = _stage("oldest_unconverted", lambda: oldest_unconverted(conn))
+    jvd = _stage("judged_vs_docket", judged_vs_docket)
+
+    def _coverage() -> dict[str, Any]:
+        # THE WHOLE HYPOTHESIS-LANE UNIVERSE, not only the symbols this pass happened to touch:
+        # the mandate is every symbol at every timeframe, so the coverage that drives the
+        # backfill has to be measured over the registry rather than over the sample.
+        cov = bar_coverage([*universe_symbols((universe_dir or UNIVERSE_DIR) / "universe.json"),
+                            *wanted_symbols], universe_dir=universe_dir)
+        cov["backfill"] = ({"skipped": "dry run"} if dry_run else
+                           backfill_bars(cov, budget=budget, universe_dir=universe_dir))
+        return cov
+
+    coverage = _stage("bar_coverage", _coverage)
     return {
         "examined": examined, "pool": supply.drawn, "waves": supply.waves,
         "max_rows": max_rows, "max_rows_basis": max_rows_basis(),
         "arrival_rate": arrivals,
-        "drain": drain_verdict(debt_before, debt_after, arrivals, previous=prior_pass),
+        "drain": drain_verdict(debt_before, debt_after,
+                               arrivals if isinstance(arrivals, Mapping) else {},
+                               previous=prior_pass),
         "lock_wait_ms": LOCK_WAIT_MS,
+        "pass_status": STAGE_COMPLETE,
+        "bounds": {"budget_s": budget.seconds, "tail_reserve_s": round(reserve, 1),
+                   "convert_share": CONVERT_SHARE, "tail_stages_s": tail,
+                   "cursor_indexes": indexes, "cursor_errors": cursor.errors,
+                   "rule": "the loop stops at convert_share of the pass; each tail stage runs "
+                           "only inside the budget; a statement is interrupted past its share"},
+        "cursor": cursor.state(),
         "blocker_histogram": dict(sorted(histogram.items(), key=lambda kv: -kv[1])),
         "blocker_owner": {k: DEFECT_OWNER.get(k, "unassigned") for k in histogram},
         "per_blocker_class": _class_table(per_class),
@@ -1694,8 +2076,8 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
         "repairs": repaired[:60], "refusals": refusals[:60], "still_blocked_rows": parked[:60],
         "bar_coverage": coverage,
         "refusal_policy": REFUSAL_POLICY,
-        "judged_vs_docket": judged_vs_docket(),
-        "oldest_unconverted": oldest_unconverted(conn),
+        "judged_vs_docket": jvd,
+        "oldest_unconverted": oldest,
         "carried_in": len(carried), "carried_out": len(leftover),
         "carry_rule": "no queues: this pass's leftover is the FIRST work of the next pass, and "
                       "the oldest waiting row's age is published every pass",
@@ -1829,7 +2211,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
 
-    budget = Budget(a.budget_s)
+    budget = Budget(effective_budget_s(a.budget_s))
     max_rows = a.max_rows if a.max_rows > 0 else max_rows_per_pass()
     conn = R.connect()
     try:
@@ -1841,7 +2223,9 @@ def main(argv: list[str] | None = None) -> int:
 
     doc: dict[str, Any] = {
         "generated_utc": _now(), "organ": SEAT, "rule": RULE,
-        "budget_s": budget.seconds, "spent_s": budget.spent(),
+        "budget_s": budget.seconds, "requested_budget_s": float(a.budget_s),
+        "leg_cap_s": os.environ.get("QUANT_LEG_BUDGET_S") or None,
+        "spent_s": budget.spent(),
         "stopped_at": budget.stopped_at, "dry_run": bool(a.dry_run),
         "registry": str(R.path()),
         **body,
