@@ -257,7 +257,7 @@ def test_both_organs_are_checked_for_PRODUCTION_not_exit_code() -> None:
     # production check; it must refuse an absent file, an unreadable one and the BLOCKED record.
     assert "not _calibration_measured()" in src
     import scripts.run_cadence as RC
-    assert RC._CALIBRATION == Path("data/gauntlet_calibration.json")
+    assert Path("data/gauntlet_calibration.json") == RC._CALIBRATION
     with tempfile.TemporaryDirectory() as d:
         p = Path(d) / "gauntlet_calibration.json"
         assert RC._calibration_measured(p) is False                # absent

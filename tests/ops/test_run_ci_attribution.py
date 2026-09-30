@@ -13,6 +13,7 @@ that cannot be shown at HEAD (fresh add) stays attributed to committed code, fai
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -33,6 +34,9 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     _git(tmp_path, "add", "scripts/clean.py")
     _git(tmp_path, "commit", "-qm", "clean")
     monkeypatch.setattr(ci, "_ROOT", tmp_path)
+    # _PY is the box's `.venv` interpreter, which a CI container or fresh clone does not have;
+    # the attribution logic under test is the same under whichever interpreter carries ruff.
+    monkeypatch.setattr(ci, "_PY", sys.executable)
     return tmp_path
 
 
