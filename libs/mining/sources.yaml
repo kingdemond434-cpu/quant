@@ -262,13 +262,13 @@ sources:
       queries: ["site:x.com MT5 EA strategy", "site:x.com MQL5 expert advisor backtest"]
 
   - id: discord_public
-    name: "Discord public quant/algo servers (needs an account; keyless path is invite discovery)"
+    name: "Discord quant/algo servers that invite our bot (bot token only; automating a user account breaks Discord ToS)"
     priority: 2
     kind: text
     uses: [direct_cells, indirect_cells]
     fetcher: json_api
-    auth: login
-    auth_env: DISCORD_USER_TOKEN
+    auth: key
+    auth_env: DISCORD_BOT_TOKEN
     cadence_minutes: 360
     config: {url: "", items_path: ""}
 
