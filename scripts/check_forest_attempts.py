@@ -32,13 +32,17 @@ for _p in (str(ROOT), str(ROOT / "desks" / "mt5" / "research")):
 
 import forest_attempts as fa  # type: ignore[import-not-found]  # noqa: E402
 
+#: The artifact this leg writes (the same path `forest_attempts.ARTIFACT` binds), declared here
+#: so the component registry and the runtime attestation read it from the organ's own file.
+OUT = ROOT / "desks" / "mt5" / "reports" / "FOREST_ATTEMPTS.json"
+
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
-    doc = fa.publish(write=not a.dry_run)
+    doc = fa.publish(out=OUT, write=not a.dry_run)
     verdict = doc.get("fence") or {}
     if a.json:
         print(json.dumps({"summary": doc.get("summary"), "fence": verdict}, indent=1,

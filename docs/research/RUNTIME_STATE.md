@@ -6,7 +6,7 @@
 
 - Measured at **2026-09-30T14:33:34+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `UNMEASURED` on `UNMEASURED`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **920** of 1341 registry components (421 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **922** of 1341 registry components (421 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 0.55s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
@@ -14,7 +14,7 @@
 | **LIVE** | 125 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 1 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 48 | artifact absent while this host recorded the organ running |
-| **NEVER** | 712 | no artifact and no run record on this host |
+| **NEVER** | 714 | no artifact and no run record on this host |
 | **UNMEASURED** | 34 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
@@ -208,7 +208,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (712)
+## NEVER (714)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -608,6 +608,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:committees` | `hourly_cycle:committees` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:compute_economics` | `hourly_cycle:compute_economics` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMPUTE_ECONOMICS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:constrained_book` | `hourly_cycle:constrained_book` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONSTRAINED_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:kelly_survival` | `hourly_cycle:kelly_survival` | UNMEASURED UNMEASURED | `desks/mt5/reports/KELLY_SURVIVAL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:control_plane` | `hourly_cycle:control_plane` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_PLANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:conversion_maximiser` | `hourly_cycle:conversion_maximiser` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONVERSION_MAXIMISER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cost_surfaces` | `hourly_cycle:cost_surfaces` | UNMEASURED UNMEASURED | `desks/mt5/reports/COST_SURFACES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -661,6 +662,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:forced_flow_calendar` | `hourly_cycle:forced_flow_calendar` | UNMEASURED UNMEASURED | `desks/mt5/data/forced_flow_calendar.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_africa` | `hourly_cycle:forest_africa` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_KOREA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_asean` | `hourly_cycle:forest_asean` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_KOREA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:forest_attempts` | `hourly_cycle:forest_attempts` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_ATTEMPTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_china` | `hourly_cycle:forest_china` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_KOREA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_europe` | `hourly_cycle:forest_europe` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_KOREA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_global_web` | `hourly_cycle:forest_global_web` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_KOREA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
