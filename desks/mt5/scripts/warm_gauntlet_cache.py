@@ -66,6 +66,24 @@ WHAT CHANGED, AND WHY EACH CHANGE IS A CORRECTION RATHER THAN A PREFERENCE
     forward-cure route, and breaks near-ties toward ground the desk has judged least. That module
     ORDERS and never rejects; every cell stays in the queue.
 
+5.  (2026-09-30) THE SAME DOCKET, THE SAME ORDER, THE BOX'S REAL FREE CORES. The judge rules on
+    every CACHED cell of the docket it computes each sweep (ban set-aside, its eight-key sort,
+    the novelty head, `allocate_by_yield`'s family trim) -- so a warmed cell outside that docket
+    is a build nobody reads. `research/judge_docket_order.py` restates that docket from the
+    sealed module's own helpers (drift-tested against the sealed source) and this job warms
+    exactly it, NEVER-JUDGED FIRST: the sealed pre-warm walks the trimmed docket family by
+    family, so it builds family A's re-judges before family B's first rulings; the warmer builds
+    every family's backlog first and the sweep then finds those as hits.
+    Workers are sized from psutil-measured idle cores and free memory, re-measured every
+    `CAPACITY_EVERY_SEC` DURING a round (the sweep's gate phase is single-threaded and leaves most
+    of the box idle for as long as it runs), and they run at IDLE priority so no miner, the
+    terminal, the gateway or the judge's own pool ever loses a cycle to them. `WARM_WORKERS` is
+    now a floor: the value `judging_throughput` used to publish machine-wide pinned this job to
+    ONE worker. Cells are handed out in (symbol, chart) batches so the sealed builder's
+    per-process frame and external-universe memos hit. `gate_room` stops warming at the number of
+    cached cells the judge's last sweep says it can rule inside its task limit: a sweep killed at
+    its limit publishes nothing.
+
 WHAT IT DELIBERATELY DOES NOT DO
 
 No gates, no verdicts, no report, no trial charge, and it never touches UNIVERSAL_SURVIVORS.json.
@@ -85,7 +103,6 @@ import json
 import os
 import sys
 import time
-from multiprocessing import Pool
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parents[3]
@@ -137,71 +154,154 @@ HISTORIC_FLOOR = 2
 NEED_MB = float(os.environ.get("WARM_NEED_MB", "900"))
 
 
-def _workers() -> int:
-    """The judge's own arithmetic, RE-MEASURED at the start of each round.
+#: The share of MEASURED free memory the warmer's pool may be sized into. Half, the same share the
+#: sealed sweep takes of what it finds free (`HEADROOM_SHARE`): the other half stays for whoever is
+#: admitted next, and `FLOOR_MB` still stands the whole job down mid-round if the box gets tight.
+MEM_SHARE = float(os.environ.get("WARM_MEM_SHARE", "0.5"))
 
-    ONE BUILDER FOR THIS NUMBER, and it is `external_gauntlet`: the cores this box has, the cores
-    the live terminal is owed (`SESSION_RESERVED_CORES`), the weekend maximum, its measured memory
-    budget and its per-worker figure. Every input below is read from that module; none is invented
-    here. What this does NOT inherit is the judge's TIMING.
+#: Cores the warmer leaves idle on top of what everything else was MEASURED to use. One, because a
+#: one-second CPU sample can miss a burst; the workers also run at IDLE priority (see `_init`), so
+#: even inside that margin any normal-priority process -- a miner, the terminal, the gateway, the
+#: sealed judge's own workers -- preempts a warm worker outright. The warmer can only ever spend
+#: cycles nothing else wanted.
+RESERVE_CORES = float(os.environ.get("WARM_RESERVE_CORES", "1"))
 
-    WHY THE TIMING MATTERS, MEASURED 2026-09-24. `external_gauntlet.WORKERS` is evaluated once, at
-    module import, from `MEMORY_BUDGET_MB`, which is itself evaluated once at import from
-    `free_mb()` -- the MINIMUM of free physical memory and free COMMIT. On a box shared with a
-    dozen other research processes that reading swings hard: measured minutes apart, `free_mb()`
-    read 46,785MB (budget 11,520MB, fifteen workers) and, at the instant this job happened to
-    start, low enough that the budget fell to its 1,200MB declaration -- 1200 // 768 == ONE
-    worker, pinned for the whole life of a process that then ran for hours on an eighteen-core
-    box. The log line reads `1 worker(s)` and nothing about it looks like a fault.
+#: How often, in seconds, the in-flight target is re-measured DURING a round. The box's free cores
+#: move by the minute (the sealed sweep's pool builds for hours and then rules single-threaded for
+#: its gate phase, leaving most cores idle), so a pool sized once per round is sized for a moment
+#: that has passed.
+CAPACITY_EVERY_SEC = float(os.environ.get("WARM_CAPACITY_EVERY_SEC", "15"))
 
-    So the CORE bound is the judge's, re-read each round, and the MEMORY bound is this job's own
-    `NEED_MB` rather than the sweep's `PER_WORKER_MB`. That is not a second builder: they are
-    bounds on two different shapes, and the sweep's own comment says its 768 is "headroom over
-    that shape, not a measured peak". A sweep worker lives inside a process that also holds the
-    whole docket's verdicts; a warm worker holds ONE cell and releases it on return, and this
-    job's declared admission need is the 900MB already written into `exclusive_job` at the foot
-    of this file. Using the sweep's figure here made the warmer inherit a bound that is not about
-    it, and on a crowded box that bound reads ONE.
+#: Cells of one (symbol, chart) handed to ONE worker as one task. The sealed builder memoises its
+#: frame (`_FRAME_CACHE`) and the external-feature universe (`edge_search.resolve_inputs`, two
+#: entries deep) PER PROCESS, and the sealed file measured what interleaving costs: 14,060
+#: `discovered` ext_ cells on 137 symbols rebuilt the same universe 13,923 redundant times when
+#: their cells were not consecutive. A batch keeps a symbol's cells on one worker, so each worker
+#: pays for a symbol's frame and universe once per batch instead of once per cell.
+BATCH_CELLS = max(1, int(os.environ.get("WARM_BATCH_CELLS", "8")))
+#: Cells looked ahead when grouping a batch -- a short window, so the judge's order is kept to
+#: within a few hundred cells and nothing is moved across the backlog/re-judge boundary.
+BATCH_WINDOW = 256
 
-    Memory safety does not rest on this estimate. `FLOOR_MB` is checked against live free memory
-    every `REPORT_EVERY` cells DURING the round and stands the whole job down when the box gets
-    tight -- a measurement, not a guess, and the reason a generous start is safe.
-    """
-    override = os.environ.get("WARM_WORKERS")
-    if override:
-        return max(1, int(float(override)))
+
+def _cpu_idle_cores(sample_s: float = 1.0) -> float | None:
+    """Cores idle across the WHOLE box over `sample_s`, from psutil. None when unmeasurable."""
     try:
-        import external_gauntlet as G
-        from research.job_lock import free_mb
-        cores = os.cpu_count() or 1
-        by_cores = cores if G.market_closed() else cores - G.SESSION_RESERVED_CORES
-        free = free_mb()
-        by_mem = int(free // NEED_MB) if free else by_cores
-        return max(HISTORIC_FLOOR, min(by_cores, by_mem))
+        import psutil
+        pct = float(psutil.cpu_percent(interval=max(0.1, sample_s)))
     except Exception:
-        # An unreadable judge leaves the historic figure, never unlimited and never zero.
-        return HISTORIC_FLOOR
+        return None
+    cores = os.cpu_count() or 1
+    return max(0.0, cores * (100.0 - pct) / 100.0)
+
+
+def measure_capacity(sample_s: float = 1.0) -> dict:
+    """THE BOX'S FREE CORES AND FREE MEMORY, measured with psutil on the machine this runs on.
+
+    Returns `pool` (processes to start: the memory bound, never above cores - 1) and `inflight`
+    (cells to keep building right now: the cores measured idle, less `RESERVE_CORES`). Both are
+    floored at `HISTORIC_FLOOR` -- with IDLE-priority workers a floor of two costs nobody a cycle.
+
+    `WARM_WORKERS` is a FLOOR, never a cap (2026-09-30). `research/judging_throughput.py` used to
+    publish it machine-wide as `min(4, by_cores - judge_workers)`, which on the 18-core box read
+    ONE whenever the judge held its fifteen: every warm round then ran one worker however idle the
+    box was, including the whole of each sweep's single-threaded gate phase. A stale machine value
+    can therefore no longer pin the warmer low; an operator who wants fewer sets `WARM_WORKERS_MAX`.
+    """
+    cores = os.cpu_count() or 1
+    free: float | None
+    try:
+        from research.job_lock import free_mb
+        free = free_mb()
+    except Exception:
+        free = None
+    if free is None:
+        try:
+            import psutil
+            free = float(psutil.virtual_memory().available) / 1048576.0
+        except Exception:
+            free = None
+    by_mem = int((MEM_SHARE * float(free)) // NEED_MB) if free else HISTORIC_FLOOR
+    pool = max(HISTORIC_FLOOR, min(max(1, cores - 1), by_mem))
+    idle = _cpu_idle_cores(sample_s)
+    inflight = (pool if idle is None
+                else max(HISTORIC_FLOOR, min(pool, int(idle - RESERVE_CORES))))
+    floor_env = os.environ.get("WARM_WORKERS")
+    if floor_env:
+        with contextlib.suppress(ValueError):
+            want = max(1, int(float(floor_env)))
+            pool, inflight = max(pool, want), max(inflight, want)
+    cap_env = os.environ.get("WARM_WORKERS_MAX")
+    if cap_env:
+        with contextlib.suppress(ValueError):
+            cap = max(1, int(float(cap_env)))
+            pool, inflight = min(pool, cap), min(inflight, cap)
+    return {"cores": cores, "free_mb": None if free is None else round(float(free)),
+            "idle_cores": None if idle is None else round(idle, 2),
+            "by_mem": by_mem, "pool": int(pool), "inflight": int(min(inflight, pool)),
+            "basis": "psutil" if idle is not None else "UNMEASURED cpu: pool size, memory-bound"}
+
+
+def _workers() -> int:
+    """The pool size this box can hold right now (kept by name for callers and tests)."""
+    return int(measure_capacity(sample_s=0.2)["pool"])
+
+
+def retarget(running: int, pool: int, idle: float | None) -> int:
+    """In-flight cells for the next interval: what is running now plus what is measured idle.
+
+    Our own running workers sit in the measured BUSY share, so the target is
+    `running + idle - reserve`, clamped to [HISTORIC_FLOOR, pool]. Unmeasured idle keeps the
+    current count: never a jump on a number nobody read.
+    """
+    if idle is None:
+        return max(HISTORIC_FLOOR, min(pool, running or HISTORIC_FLOOR))
+    return max(HISTORIC_FLOOR, min(pool, int(running + idle - RESERVE_CORES)))
 
 
 #: Set once per worker process by `_init`, so the universe registry is not pickled per cell.
 _META: dict | None = None
 
 
+def _lower_priority() -> str:
+    """Run this process at IDLE priority: it may only take CPU nothing else wants.
+
+    THE RULE THIS ENFORCES: never reduce a miner's throughput. Windows `IDLE_PRIORITY_CLASS`
+    (POSIX nice 19) means every normal-priority process -- miners, the live terminal, the gateway,
+    the sealed judge and its pool -- preempts a warm worker outright. Best effort; the outcome is
+    returned so a box where it failed says so.
+    """
+    try:
+        import psutil
+        p = psutil.Process()
+        if sys.platform == "win32":
+            p.nice(psutil.IDLE_PRIORITY_CLASS)
+        else:
+            p.nice(19)
+        return "idle"
+    except Exception as exc:
+        try:
+            os.nice(19)  # type: ignore[attr-defined,unused-ignore]
+            return "nice19"
+        except Exception:
+            return f"UNCHANGED ({type(exc).__name__})"
+
+
 def _init(meta: dict) -> None:
     global _META
     _META = meta
+    _lower_priority()
 
 
 def _warm_one(spec: dict) -> tuple[str, str]:
-    """Compute and cache ONE cell's 1x and 3x daily series. Returns a one-word outcome.
+    """Compute and cache ONE cell's 1x and 3x daily series. Returns (cache key, outcome).
 
     Runs in a worker process, so it must be importable at module level (Windows spawns rather
     than forks). Every function it calls comes from `external_gauntlet`, so the series it writes
     are the ones the sweep would have computed itself -- same identity, same key, same trim.
 
-    The parent has already resolved this cell's chart, its data day and its cache key and has
-    already established that the key is NOT on disk, so this function no longer spends a process
-    round-trip answering "already cached".
+    `hit` when the key landed on disk after the parent last looked (the sealed sweep's own pool
+    builds the same docket head): a stat, never a second build of a cell already built.
     """
     import external_gauntlet as G
 
@@ -209,6 +309,8 @@ def _warm_one(spec: dict) -> tuple[str, str]:
     obj = None
     ckey = str(spec.get("ckey") or "")
     try:
+        if ckey and (G.CACHE_DIR / f"{ckey}.npz").exists():
+            return ckey, "hit"
         tf = str(spec.get("tf") or "H1")
         frame = G._bars_for(spec["sym"], tf)
         if frame is None or len(frame) == 0:
@@ -234,6 +336,31 @@ def _warm_one(spec: dict) -> tuple[str, str]:
             obj["df"] = None
 
 
+def _warm_batch(specs: list[dict]) -> list[tuple[str, str]]:
+    """Warm one (symbol, chart) batch in order on this worker; one outcome per cell."""
+    return [_warm_one(sp) for sp in specs]
+
+
+def batches(specs: list[dict], size: int = BATCH_CELLS,
+            window: int = BATCH_WINDOW) -> list[list[dict]]:
+    """Group cells by (symbol, chart) inside a short look-ahead window.
+
+    A PARTITION: every cell lands in exactly one batch, in its window's first-appearance order,
+    and a cell moves at most `window` places -- so the judge's order survives at the resolution
+    that matters, and `backlog_first` output is batched tier by tier by the caller.
+    """
+    out: list[list[dict]] = []
+    for w0 in range(0, len(specs), max(1, window)):
+        groups: dict[tuple[str, str], list[dict]] = {}
+        for sp in specs[w0:w0 + window]:
+            groups.setdefault((str(sp.get("sym") or ""), str(sp.get("tf") or "H1")),
+                              []).append(sp)
+        for rows in groups.values():
+            for i in range(0, len(rows), max(1, size)):
+                out.append(rows[i:i + size])
+    return out
+
+
 def _read_json(path: Path, default):
     try:
         return json.loads(path.read_text("utf-8"))
@@ -252,41 +379,21 @@ def _write_json(path: Path, doc) -> None:
 
 
 def docket_specs(G, meta: dict) -> list[dict]:
-    """The sweep's own cells, derived the sweep's own way.
+    """The sweep's own eligible cells, derived the sweep's own way (`judge_docket_order`).
 
-    De-duplication, the row-level `timeframe` fold and the economic-prior partition all mirror
-    `external_gauntlet.main` exactly, INCLUDING `meta` -- without it the tradeability limb never
-    runs and this job warms cells the sweep sets aside at gate 0.
+    Streaming read, the point-in-time ratchet, de-duplication, the row-level `timeframe` fold, the
+    economic-prior partition WITH `meta` and the modifier preflight all mirror
+    `external_gauntlet.main`; without `meta` the tradeability limb never runs and this job warms
+    cells the sweep sets aside at gate 0. Each spec carries `tf`, its own chart.
     """
-    surv_file = G.HYP / "external_survivors.json"
-    if not surv_file.exists():
-        return []
-    survivors = _read_json(surv_file, [])
-    if not isinstance(survivors, list):
-        return []
-    cells: dict[str, dict] = {}
-    for h in survivors:
-        if not isinstance(h, dict):
-            continue
-        sym, fam = h.get("symbol"), h.get("family")
-        if not sym or not fam:
-            continue
-        params = dict(h.get("params") or {})
-        # THE ROW-LEVEL TIMEFRAME FOLD, as `main` does it: a row that names its chart outside
-        # params must not collapse into the H1 cell of the same name.
-        row_tf = str(h.get("timeframe") or "").upper()
-        if row_tf and row_tf != "H1" and not params.get("timeframe"):
-            params["timeframe"] = row_tf
-        key = f"{sym}.{fam}.{json.dumps(params, sort_keys=True)}"
-        cells.setdefault(key, {"sym": sym, "family": fam, "params": params,
-                               "mechanism_status": h.get("mechanism_status"),
-                               "mechanism_note": h.get("mechanism_note")})
-    eligible, rejected = G.partition_at_economic_prior(list(cells.values()), meta)
-    print(f"docket {len(survivors)} rows -> {len(cells)} cells -> {len(eligible)} eligible "
-          f"({len(rejected)} rejected at the economic prior, as the sweep would)")
-    for sp in eligible:
-        sp["tf"] = G.timeframe_of(sp.get("params"), str(sp.get("family") or ""))
-    return list(eligible)
+    import judge_docket_order as O
+
+    eligible, census = O.sealed_docket(G, meta)
+    print(f"docket {census['rows']} rows -> {census['cells']} cells -> {census['eligible']} "
+          f"eligible ({census['rejected_at_prior']} rejected at the economic prior, "
+          f"{census['modifier_refused']} conserved by the sealed modifier preflight, as the "
+          f"sweep would)")
+    return eligible
 
 
 def resolve_keys(G, specs: list[dict]) -> tuple[list[dict], dict[str, str], int]:
@@ -412,29 +519,14 @@ def never_judged_flags(G, specs: list[dict]) -> int:
 
     `external_gauntlet.main._is_new` sorts a cell first when its id is absent from the seen-cells
     record, or present there with no stages behind it (`_stamped_but_unjudged`). The same two
-    readers are called here, never restated, so the warmer and the judge agree on which cells
-    are the backlog. An unreadable record reads as EMPTY -- every cell looks new, which spends one
-    rotation and never hides a cell (the sweep's own fail-open direction).
+    readers are called (in `judge_docket_order.stamp_new`), never restated, so the warmer and the
+    judge agree on which cells are the backlog. An unreadable record reads as EMPTY -- every cell
+    looks new, which spends one rotation and never hides a cell (the sweep's own fail-open
+    direction).
     """
-    try:
-        seen = G._seen_cells()
-    except Exception:
-        seen = {}
-    try:
-        unjudged = G._stamped_but_unjudged()
-    except Exception:
-        unjudged = set()
-    n = 0
-    for sp in specs:
-        try:
-            cid = G.cell_id({"sym": sp.get("sym"), "family": sp.get("family"),
-                             "params": sp.get("params") or {}})
-        except Exception:
-            cid = ""
-        flag = (not cid) or (cid not in seen) or (cid in unjudged)
-        sp["_never_judged"] = bool(flag)
-        n += int(flag)
-    return n
+    import judge_docket_order as O
+
+    return O.stamp_new(G, specs)
 
 
 def backlog_first(specs: list[dict]) -> list[dict]:
@@ -563,43 +655,125 @@ def plan_equivalents(G, keyed: list[dict], warm: set[str], order_: list[dict],
     return send, followers, served_now
 
 
+#: Share of the judge's measured post-build room the warmer may fill. A sweep that outgrows its
+#: task's ExecutionTimeLimit is KILLED and publishes nothing, so this is the one bound on warming
+#: that protects throughput rather than costing it; 0.8 because the gate phase is superlinear in
+#: the cells it rules (measured on the sealed `run_gauntlet`: 0.022 s/cell at 200 cached cells,
+#: 0.048 at 2,000, 0.058 at 5,000) and a linear extrapolation from a smaller sweep under-reads it.
+GATE_SAFETY = float(os.environ.get("WARM_GATE_SAFETY", "0.8"))
+JUDGING_THROUGHPUT = DESK / "reports" / "JUDGING_THROUGHPUT.json"
+GAUNTLET_ORDER = DESK / "reports" / "GAUNTLET_ORDER.json"
+GATES_REPORT = DESK / "reports" / "universal_gates_external.json"
+SEALED_FRESH_BUDGET_SEC = 2700.0
+
+
+def _tail_scalars(path: Path, keys: tuple[str, ...], chunk: int = 1 << 22) -> dict[str, str]:
+    """The LAST value of each top-level scalar `key` in a JSON file, streamed in chunks.
+
+    The judge's report carries its per-cell verdict list first and its scalar census after it, and
+    on the trading box that list runs to a million rows; decoding it whole to read four numbers is
+    the cost this avoids. A value split across two chunks is caught by the overlap.
+    """
+    import re
+
+    pats = {k: re.compile(r'"' + re.escape(k) + r'"\s*:\s*("([^"]*)"|[-0-9.eE+]+)') for k in keys}
+    pre = re.compile(r'"prewarm"\s*:\s*\{[^{}]*?"seconds"\s*:\s*([-0-9.eE+]+)')
+    out: dict[str, str] = {}
+    try:
+        with path.open("r", encoding="utf-8", errors="replace") as fh:
+            tail = ""
+            while True:
+                part = fh.read(chunk)
+                if not part:
+                    break
+                buf = tail + part
+                for k, p in pats.items():
+                    for m in p.finditer(buf):
+                        out[k] = m.group(2) if m.group(2) is not None else m.group(1)
+                for m in pre.finditer(buf):
+                    out["prewarm.seconds"] = m.group(1)
+                tail = buf[-4096:]
+    except OSError:
+        return {}
+    return out
+
+
+def _iso(ts: str | None) -> float | None:
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(str(ts).replace("Z", "+00:00")).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def gate_room() -> dict:
+    """How many cached cells the judge's LAST sweep says it can rule inside its task limit.
+
+    Post-build seconds per cell = (report `swept_at` - order `at` - pre-warm seconds) / cells
+    advanced, all from the judge's own artifacts; the room is `GATE_SAFETY x (task limit - build
+    budget) / that`, with the limit and budget read from `JUDGING_THROUGHPUT.json`. Any missing
+    input is UNMEASURED and bounds nothing (L1.28a) -- the warmer then behaves as it did before.
+    """
+    sc = _tail_scalars(GATES_REPORT, ("swept_at", "n_cells_advanced_beyond_economic_prior"))
+    order_at = _iso((_read_json(GAUNTLET_ORDER, {}) or {}).get("at"))
+    swept = _iso(sc.get("swept_at"))
+    try:
+        n_adv = int(float(sc.get("n_cells_advanced_beyond_economic_prior") or 0))
+        pre_s = float(sc.get("prewarm.seconds") or 0.0)
+    except ValueError:
+        n_adv, pre_s = 0, 0.0
+    dec = ((_read_json(JUDGING_THROUGHPUT, {}) or {}).get("decision") or {})
+    limit = dec.get("task_time_limit_s")
+    fresh = dec.get("fresh_budget_s") or float(
+        os.environ.get("GAUNTLET_FRESH_BUDGET_SEC", SEALED_FRESH_BUDGET_SEC))
+    base = {"status": "UNMEASURED", "cells": None, "swept_at": sc.get("swept_at"),
+            "cells_advanced": n_adv, "prewarm_seconds": pre_s, "task_limit_s": limit,
+            "build_budget_s": fresh, "safety": GATE_SAFETY}
+    if swept is None or order_at is None or swept <= order_at or n_adv <= 0:
+        return {**base, "why": "last sweep's order/report pair unreadable or out of step"}
+    if not isinstance(limit, (int, float)) or float(limit) <= float(fresh):
+        return {**base, "why": "judge task limit UNMEASURED (JUDGING_THROUGHPUT.json)"}
+    per_cell = max(1e-6, (swept - order_at - pre_s) / n_adv)
+    room = int(GATE_SAFETY * (float(limit) - float(fresh)) / per_cell)
+    return {**base, "status": "MEASURED", "cells": room,
+            "post_build_s_per_cell": round(per_cell, 5)}
+
+
 def run_round(G, meta: dict, priors, deadline: float) -> dict:
-    """One full pass over the docket. Returns the round's census."""
+    """One pass over the JUDGE'S OWN next docket, backlog first. Returns the round's census."""
+    from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
+
+    import judge_docket_order as O
     from research.job_lock import free_mb
 
     t0 = time.time()
     specs = docket_specs(G, meta)
     if not specs:
         return {"eligible": 0, "note": "no docket to warm"}
-    specs, n_modifier = modifier_refusals(G, specs)
-    if n_modifier:
-        print(f"  modifier preflight: {n_modifier} cell(s) the sealed preflight refuses are left "
-              f"to the sweep, which conserves each as NOT_RUN_MODIFIER; no worker is spent on them")
+    # THE SAME DOCKET, IN THE SAME ORDER, THE SEALED SWEEP WILL READ. Cells the family trim leaves
+    # out of this sweep are not warmed now: the next sweep would not look at them, and their key
+    # may roll over with the data day before one does. They stay in the docket.
+    keep, order_census = O.sealed_keep(G, specs)
+    n_never = int(order_census["keep_never_judged"])
+    keep = backlog_first(keep)
+    ordered_by = "sealed docket order (judge_docket_order), backlog first"
+    print(f"  order: {ordered_by} -- {order_census['keep']} of {len(specs)} eligible cell(s) in "
+          f"the next sweep's docket, {n_never} of them never judged; "
+          f"{order_census['outside_keep']} left to a later sweep by the family trim")
 
-    try:
-        import cell_priority as CP
-        specs = CP.order(specs, priors)
-        ordered_by = "cell_priority"
-    except Exception as exc:
-        ordered_by = f"UNORDERED ({type(exc).__name__}: {exc})"
-        print(f"  cell priority unavailable ({exc}); warming in docket order")
-    n_never = never_judged_flags(G, specs)
-    specs = backlog_first(specs)
-    ordered_by = f"backlog_first, then {ordered_by}"
-    print(f"  order: {ordered_by} ({n_never} of {len(specs)} cell(s) never judged)")
-
-    keyed, stamps, no_bars = resolve_keys(G, specs)
+    keyed, stamps, no_bars = resolve_keys(G, keep)
     warm = on_disk_keys(G)
     cold = [sp for sp in keyed if sp["ckey"] not in warm]
     n_warm_already = len(keyed) - len(cold)
     share = (n_warm_already / len(keyed)) if keyed else 0.0
     never_cold = sum(1 for sp in cold if sp.get("_never_judged"))
-    print(f"  keyed {len(keyed)} of {len(specs)} cell(s) ({no_bars} with no bars on their own "
+    print(f"  keyed {len(keyed)} of {len(keep)} cell(s) ({no_bars} with no bars on their own "
           f"chart); {n_warm_already} already warm ({share:.1%}), {len(cold)} cold "
           f"({never_cold} of them never judged)")
 
     now = time.time()
     order_, held, rows = split_deferred(cold, stamps, now)
+    order_ = backlog_first(order_)
     if held:
         print(f"  deferred: {len(held)} cell(s) held this round (build failed before, bars "
               f"unchanged, retry in under {RETRY_SEC / 3600:.0f}h) -- ages in "
@@ -612,80 +786,134 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
               f"{n_followers} more ride on a twin being built this round -- "
               f"{n_before_eq - len(order_)} build(s) saved; each is still judged under its own id")
 
-    counts = {"warmed": 0, "missing": 0, "failed": 0, "fanned_out": served_now,
-              "never_judged_warmed": 0}
+    room = gate_room()
+    n_room_held = 0
+    if room.get("status") == "MEASURED":
+        allow = max(0, int(room["cells"]) - n_warm_already - served_now)
+        if len(order_) > allow:
+            n_room_held = len(order_) - allow
+            order_ = order_[:allow]
+            print(f"  gate room: the last sweep ruled at {room['post_build_s_per_cell']}s a "
+                  f"cell after its build; {room['cells']} cached cells fit its task limit, so "
+                  f"{n_room_held} cold cell(s) wait for the next data day's room -- a sweep "
+                  f"killed at its limit publishes nothing")
+
+    counts = {"warmed": 0, "missing": 0, "failed": 0, "hit": 0}
+    fanned = served_now
+    never_warmed = 0
     stopped = ""
-    workers = _workers()
-    print(f"  {workers} worker(s) on {len(order_)} cold cell(s)")
+    cap = measure_capacity()
+    pool_n, target = int(cap["pool"]), int(cap["inflight"])
+    samples = [target]
+    print(f"  capacity: {cap['cores']} cores, {cap['idle_cores']} idle, {cap['free_mb']}MB free "
+          f"-> pool {pool_n}, {target} in flight at IDLE priority, {len(order_)} cold cell(s)")
     if order_:
+        todo = batches(order_)
         by_key = {str(sp.get("ckey") or ""): sp for sp in order_}
-        with Pool(processes=max(1, workers), initializer=_init, initargs=(meta,)) as pool:
-            # UNORDERED, and the key comes back WITH the outcome. `imap` would have yielded in
-            # submission order, so one pathological cell stalls the result stream -- and with it
-            # both the deadline check and the memory check, which is the shape of stall this
-            # desk has already paid for twice (a process burning CPU while every liveness check
-            # reports it healthy). The workers were never the thing that had to be ordered.
-            it = pool.imap_unordered(_warm_one, order_, chunksize=1)
-            for i, (ck, outcome) in enumerate(it, 1):
-                counts[outcome] = counts.get(outcome, 0) + 1
-                sp = by_key.get(ck) or {}
-                if outcome == "warmed":
-                    rows.pop(ck, None)
-                    if sp.get("_never_judged"):
-                        counts["never_judged_warmed"] += 1
-                    if followers.get(ck):
-                        counts["fanned_out"] += fan_out(G, ck, followers[ck])
-                elif ck:
-                    prev = rows.get(ck) if isinstance(rows.get(ck), dict) else {}
-                    rows[ck] = {
-                        "first_failed_at": prev.get("first_failed_at", now),
-                        "last_failed_at": time.time(),
-                        "n_failures": int(prev.get("n_failures") or 0) + 1,
-                        "bars": stamps.get(f"{sp.get('sym')}|{sp.get('tf')}", ""),
-                        "sym": sp.get("sym"), "family": sp.get("family"), "tf": sp.get("tf"),
-                        "why": outcome,
-                    }
-                # THE DEADLINE IS CHECKED EVERY RESULT, not every REPORT_EVERY. `time.time()` is
-                # free next to a cell build, and a budget that is only consulted once every 250
-                # cells is not a budget on a pass that slows down.
-                if time.time() > deadline:
+        done_n = 0
+        next_cap = time.time() + CAPACITY_EVERY_SEC
+        with ProcessPoolExecutor(max_workers=max(1, pool_n), initializer=_init,
+                                 initargs=(meta,)) as pool:
+            pending: set = set()
+            it = iter(todo)
+
+            def _submit() -> bool:
+                while True:
+                    b = next(it, None)
+                    if b is None:
+                        return False
+                    # The judge's own pool may have built these since the scan; a stat is free.
+                    live = [sp for sp in b if not (G.CACHE_DIR / f"{sp['ckey']}.npz").exists()]
+                    counts["hit"] += len(b) - len(live)
+                    if live:
+                        pending.add(pool.submit(_warm_batch, live))
+                        return True
+
+            while len(pending) < target and _submit():
+                pass
+            while pending:
+                fin, _ = wait(pending, timeout=5, return_when=FIRST_COMPLETED)
+                for f in fin:
+                    pending.discard(f)
+                    try:
+                        res = f.result()
+                    except Exception:
+                        res = []
+                    for ck, outcome in res:
+                        done_n += 1
+                        counts[outcome] = counts.get(outcome, 0) + 1
+                        sp = by_key.get(ck) or {}
+                        if outcome in ("warmed", "hit"):
+                            rows.pop(ck, None)
+                            if outcome == "warmed" and sp.get("_never_judged"):
+                                never_warmed += 1
+                            if followers.get(ck):
+                                fanned += fan_out(G, ck, followers[ck])
+                        elif ck:
+                            prev = rows.get(ck) if isinstance(rows.get(ck), dict) else {}
+                            rows[ck] = {
+                                "first_failed_at": prev.get("first_failed_at", now),
+                                "last_failed_at": time.time(),
+                                "n_failures": int(prev.get("n_failures") or 0) + 1,
+                                "bars": stamps.get(f"{sp.get('sym')}|{sp.get('tf')}", ""),
+                                "sym": sp.get("sym"), "family": sp.get("family"),
+                                "tf": sp.get("tf"), "why": outcome,
+                            }
+                        if done_n % REPORT_EVERY == 0:
+                            rate = done_n / max(1e-9, time.time() - t0) * 60.0
+                            print(f"  [{done_n}/{len(order_)}] warmed={counts['warmed']} "
+                                  f"failed={counts['failed']} hit={counts['hit']} "
+                                  f"{time.time() - t0:.0f}s {rate:.0f} cells/min "
+                                  f"in-flight={target}", flush=True)
+                # THE DEADLINE AND THE MEMORY FLOOR ARE CHECKED EVERY WAKE, never every N cells.
+                if not stopped and time.time() > deadline:
                     stopped = "run budget spent; the next invocation resumes from the cache"
-                    pool.terminate()
-                    break
-                if i % REPORT_EVERY:
+                if not stopped:
+                    avail = free_mb()
+                    if avail is not None and avail < FLOOR_MB:
+                        stopped = (f"{avail}MB free, floor {FLOOR_MB}MB -- warming is optional "
+                                   f"work and yields the box; progress is cached and resumable")
+                if stopped:
+                    for f in list(pending):
+                        if f.cancel():
+                            pending.discard(f)
                     continue
-                avail = free_mb()
-                if avail is not None and avail < FLOOR_MB:
-                    stopped = (f"{avail}MB free, floor {FLOOR_MB}MB -- warming is optional work "
-                               f"and yields the box; progress is cached and resumable")
-                    pool.terminate()
-                    break
-                rate = i / max(1e-9, time.time() - t0) * 60.0
-                print(f"  [{i}/{len(order_)}] warmed={counts['warmed']} "
-                      f"failed={counts['failed']} missing={counts['missing']} "
-                      f"{time.time() - t0:.0f}s {rate:.0f} cells/min free={avail}MB",
-                      flush=True)
+                if time.time() >= next_cap:
+                    target = retarget(len(pending), pool_n, _cpu_idle_cores(1.0))
+                    samples.append(target)
+                    next_cap = time.time() + CAPACITY_EVERY_SEC
+                while len(pending) < target and _submit():
+                    pass
     if stopped:
         print(f"  STOPPED: {stopped}")
 
     census = publish_deferrals(rows, held, time.time(), {"held_sample": [
         {"sym": sp.get("sym"), "family": sp.get("family"), "tf": sp.get("tf")}
         for sp in held[:50]]})
+    built = counts["warmed"] + counts["failed"] + counts["missing"]
+    secs = max(1e-9, time.time() - t0)
     return {
-        "eligible": len(specs), "keyed": len(keyed), "no_bars": no_bars,
+        "eligible": len(specs), "keep": len(keep), "keyed": len(keyed), "no_bars": no_bars,
         "warm_before": n_warm_already, "warm_share_before": round(share, 4),
         "cold": len(cold), "sent": len(order_), "held": len(held),
         "warmed": counts["warmed"], "failed": counts["failed"], "missing": counts["missing"],
+        "hit_since_scan": counts["hit"],
         # THE BACKLOG'S SHARE OF THIS ROUND, and the builds equivalence saved. These are what
         # `research/judging_burndown.py` reads as the warm side of the drain: a cell warmed here
         # is a cell the next sweep judges without spending its own build budget.
         "never_judged": n_never, "never_judged_cold": never_cold,
-        "never_judged_warmed": counts["never_judged_warmed"],
-        "fanned_out": counts["fanned_out"], "equivalent_followers": n_followers,
-        "modifier_refused_not_sent": n_modifier,
-        "seconds": round(time.time() - t0, 1),
-        "cells_per_min": round(sum(counts.values()) / max(1e-9, time.time() - t0) * 60.0, 1),
-        "workers": workers, "ordered_by": ordered_by, "stopped": stopped,
+        "never_judged_warmed": never_warmed,
+        "fanned_out": fanned, "equivalent_followers": n_followers,
+        "modifier_refused_not_sent": 0,
+        "order_census": order_census,
+        "gate_room": room, "held_for_gate_room": n_room_held,
+        "seconds": round(secs, 1),
+        # BUILD ATTEMPTS per minute -- a `hit` is a stat, not a build, and is not counted.
+        "cells_per_min": round(built / secs * 60.0, 1),
+        "workers": pool_n, "inflight_samples": {"min": min(samples), "max": max(samples),
+                                                "last": samples[-1], "n": len(samples)},
+        "capacity": cap, "priority": "IDLE (workers)", "batch_cells": BATCH_CELLS,
+        "ordered_by": ordered_by, "stopped": stopped,
         "deferral_census": {k: v for k, v in census.items() if k != "held_sample"},
     }
 
@@ -708,6 +936,10 @@ def main() -> int:
     while time.time() < deadline:
         r = run_round(G, meta, priors, deadline)
         rounds.append(r)
+        # PUBLISHED EVERY ROUND, not once at exit: `judging_burndown` reads the last round as the
+        # warm side of the drain, and a report written only after an hour is an hour stale.
+        _write_json(REPORT, {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                             "budget_sec": BUDGET_SEC, "rounds": rounds, "in_progress": True})
         if not r.get("eligible"):
             break
         # A round that warmed nothing and held nothing new has converged: the docket is warm to
