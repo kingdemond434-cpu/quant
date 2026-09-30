@@ -204,7 +204,7 @@ def build(runtime: Path | None = None, events: Path | None = None,
                     "last_event": ({k: ev.get(k) for k in ("at", "kind", "outcome")}
                                    if ev else None)})
         organs.append(row)
-    for name, p in (readers or READERS).items():
+    for name, p in (READERS if readers is None else readers).items():
         d = _json(p)
         st = str((d or {}).get("status") or "")
         organs.append({
