@@ -335,15 +335,21 @@ def test_promotion_authority_withholds_on_evidence_only(monkeypatch: Any, tmp_pa
     for attr in ("REPLICATION", "FDR_ROWS", "FREEZE", "LEDGER", "DOOR_VERDICTS"):
         monkeypatch.setattr(pa, attr, tmp_path / "reports" / f"{attr}.json")
     (tmp_path / "reports").mkdir()
-    assert pa.block("EURUSD.x.asia") is None, "absent verdicts withhold nothing"
-    pa.REPLICATION.write_text(json.dumps({"verdicts": [
+    assert str(pa.block("EURUSD.x.asia")).startswith("DOOR_ERROR"), "absent verdicts withhold"
+    fresh_empty = {"REPLICATION": {"at": now}, "FDR_ROWS": {"generated_utc": now},
+                   "FREEZE": {"at": now, "verdict": "OK"},
+                   "DOOR_VERDICTS": {"generated_utc": now, "rows": {}}}
+    for attr, doc in fresh_empty.items():
+        getattr(pa, attr).write_text(json.dumps(doc), "utf-8")
+    assert pa.block("EURUSD.x.asia") is None, "fresh verdicts with nothing against it pass"
+    pa.REPLICATION.write_text(json.dumps({"at": now, "verdicts": [
         {"key": "external.EURUSD.x.asia", "verdict": "MISMATCH"}]}), "utf-8")
     assert str(pa.block("EURUSD.x.asia")).startswith("REPLICATION_MISMATCH")
-    pa.REPLICATION.write_text("{}", "utf-8")
+    pa.REPLICATION.write_text(json.dumps({"at": now}), "utf-8")
     pa.FDR_ROWS.write_text(json.dumps({"generated_utc": now, "certified": [
         {"test_id": "GBPUSD.y.ny", "over_budget": True, "p": 0.04}]}), "utf-8")
     assert str(pa.block("GBPUSD.y.ny")).startswith("ONLINE_FDR_OVER_BUDGET")
-    pa.FDR_ROWS.write_text("{}", "utf-8")
+    pa.FDR_ROWS.write_text(json.dumps({"generated_utc": now}), "utf-8")
     # a freeze counts only when the PRODUCTION certifier's score DROPPED
     pa.FREEZE.write_text(json.dumps({"at": now, "verdict": "FREEZE", "judge":
                                      "reference_validator", "why": "immune score fell"}), "utf-8")
@@ -356,7 +362,7 @@ def test_promotion_authority_withholds_on_evidence_only(monkeypatch: Any, tmp_pa
     assert str(pa.block("A")).startswith("IMMUNE_FREEZE")
     pa.FREEZE.write_text(json.dumps({"at": "2020-01-01T00:00:00+00:00", "verdict": "FREEZE",
                                      "judge": "production:ab", "why": "fell"}), "utf-8")
-    assert pa.block("A") is None, "a stale freeze lapses"
+    assert str(pa.block("A")).startswith("DOOR_ERROR"), "a stale verdict withholds"
     pa.record("A", "IMMUNE_FREEZE: x", lane="main", exp_r=0.2, n=40)
     row = json.loads(pa.LEDGER.read_text("utf-8").splitlines()[0])
     assert row["reason"] == "IMMUNE_FREEZE" and row["exp_r"] == 0.2
@@ -546,9 +552,13 @@ def test_suspended_immune_and_fdr_withhold_nothing(monkeypatch: Any, tmp_path: P
                               "why": "immune score fell"}), "utf-8")
     monkeypatch.setattr(pa, "FDR_ROWS", fdr)
     monkeypatch.setattr(pa, "FREEZE", fr)
-    monkeypatch.setattr(pa, "REPLICATION", tmp_path / "none.json")
+    rep = tmp_path / "rep.json"
+    rep.write_text(json.dumps({"at": now}), "utf-8")
+    monkeypatch.setattr(pa, "REPLICATION", rep)
     monkeypatch.setattr(pa, "CONSTITUTION", tmp_path / "no_constitution.json")
-    monkeypatch.setattr(pa, "DOOR_VERDICTS", tmp_path / "no_door.json")
+    door = tmp_path / "door.json"
+    door.write_text(json.dumps({"generated_utc": now, "rows": {}}), "utf-8")
+    monkeypatch.setattr(pa, "DOOR_VERDICTS", door)
     monkeypatch.setattr(pa, "ROOT", tmp_path)
     monkeypatch.setattr(pa.firewall, "may", lambda *a, **k: True)
     monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)

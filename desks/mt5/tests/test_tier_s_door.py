@@ -54,10 +54,13 @@ def test_door_reads_fresh_verdicts_and_respects_suspension(monkeypatch: Any,
     monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)
     row = {"review_failed": ["execution:X"], "family": "f",
            "theory": {"status": "REFUTED", "n_oos": 12, "confidence": 0.1}}
-    assert pa._panel_and_theory("EURUSD.x") is None, "absent file withholds nothing"
+    import pytest
+    with pytest.raises(pa.DoorReadError):
+        pa._panel_and_theory("EURUSD.x")                 # absent: the door cannot vouch
     dv.write_text(json.dumps({"generated_utc": "2020-01-01T00:00:00+00:00",
                               "rows": {"ext.EURUSD.x": row}}), "utf-8")
-    assert pa._panel_and_theory("EURUSD.x") is None, "a stale file withholds nothing"
+    with pytest.raises(pa.DoorReadError):
+        pa._panel_and_theory("EURUSD.x")                 # stale: the verifier stopped
     dv.write_text(json.dumps({"generated_utc": datetime.now(UTC).isoformat(),
                               "rows": {"ext.EURUSD.x": row}}), "utf-8")
     assert (pa._panel_and_theory("EURUSD.x") or "").startswith("REVIEW_PANEL_FAILED")
@@ -195,7 +198,19 @@ def test_every_door_input_fails_closed_when_damaged(monkeypatch: Any, tmp_path: 
     from libs.tiers import truth_kernel
     pa = _door_sandbox(monkeypatch, tmp_path)
     now = datetime.now(UTC).isoformat()
-    assert pa.block("EURUSD.x") is None, "absent inputs withhold nothing"
+    fresh = {"REPLICATION": {"at": now}, "FDR_ROWS": {"generated_utc": now},
+             "FREEZE": {"at": now, "verdict": "OK"},
+             "DOOR_VERDICTS": {"generated_utc": now, "rows": {}}}
+    for attr in fresh:
+        assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR"), f"{attr} absent"
+        getattr(pa, attr).write_text(json.dumps(fresh[attr]), "utf-8")
+    assert pa.block("EURUSD.x") is None, "every required verdict fresh, none against it"
+    for attr in fresh:
+        getattr(pa, attr).write_text(json.dumps({**fresh[attr], "at": "2020-01-01T00:00:00",
+                                                 "generated_utc": "2020-01-01T00:00:00"}),
+                                     "utf-8")
+        assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR"), f"{attr} stale"
+        getattr(pa, attr).write_text(json.dumps(fresh[attr]), "utf-8")
     damaged = {
         "REPLICATION": ["{torn", "[1, 2]", json.dumps({"verdicts": {"a": 1}})],
         "FDR_ROWS": ["{torn", json.dumps({"generated_utc": now, "certified": {"a": 1}})],
@@ -208,7 +223,10 @@ def test_every_door_input_fails_closed_when_damaged(monkeypatch: Any, tmp_path: 
             getattr(pa, attr).write_text(body, "utf-8")
             why = pa.block("EURUSD.x") or ""
             assert why.startswith("DOOR_ERROR"), (attr, body, why)
-        getattr(pa, attr).unlink()
+        if attr in fresh:
+            getattr(pa, attr).write_text(json.dumps(fresh[attr]), "utf-8")
+        else:
+            getattr(pa, attr).unlink()
     assert pa.block("EURUSD.x") is None
     pa.CONSTITUTION.write_text(json.dumps(truth_kernel.constitution_doc()), "utf-8")
     pa.RATIFICATIONS.write_text("{torn\n", "utf-8")

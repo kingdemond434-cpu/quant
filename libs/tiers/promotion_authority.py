@@ -19,9 +19,14 @@ check that raises withholds too (`DOOR_ERROR`, fail closed):
                          (`libs/tiers/door_evidence`, `data/tier_s/door_verdicts.json`);
   IMMUNE_FREEZE          the production certifier got EASIER TO FOOL on the sealed suite -- a
                          freeze judged by the real certifier (`judge` production:*) whose reason
-                         is a DROP. A freeze from the reference validator, from an absolute
-                         floor, or from a stale file (> MAX_AGE_H) withholds nothing: a toy's
-                         verdict gets no authority over capital.
+                         is a DROP. A freeze from the reference validator or from an absolute
+                         floor withholds nothing: a toy's verdict gets no authority over capital.
+
+FAIL CLOSED (audit 2026-09-30). The door's four hourly verdict files (replication, online FDR,
+the immune verdict, the panel/theory verdicts) must be PRESENT and FRESH (<= MAX_AGE_H): absent,
+stale, torn or malformed withholds as `DOOR_ERROR`, as does any check that raises. Silence from
+a verifier is never read as its approval. An organ whose contracts are all REJECTED is suspended
+and is not required.
 
 BILLED LIKE EVERY RAIL (growth governance Rule 1): the rail `tier_s_evidence_block` in
 `libs/portfolio/rails.py` is measured by `missed_growth.measure_tier_s_block` from the ledger
@@ -78,6 +83,20 @@ def _read(p: Path) -> Any:
     return doc
 
 
+def _required(p: Path, key: str = "generated_utc") -> dict[str, Any]:
+    """A verdict file the door NEEDS: present, readable and fresh (<= MAX_AGE_H). Absent or stale
+    raises DoorReadError -- a verifier that stopped reporting cannot vouch for a certificate, so
+    the door withholds (billed, like every door verdict) instead of reading silence as a pass
+    (audit 2026-09-30). Suspended organs are exempt: their checks return before reading."""
+    doc = _read(p)
+    if doc is None:
+        raise DoorReadError(f"{p.name} absent: its hourly verifier has not reported")
+    if not _fresh(doc, key):
+        raise DoorReadError(f"{p.name} stale or undated (> {MAX_AGE_H:g}h): its hourly "
+                            "verifier has stopped reporting")
+    return dict(doc)
+
+
 def _fresh(doc: Any, key: str = "generated_utc") -> bool:
     try:
         at = datetime.fromisoformat(str((doc or {}).get(key) or (doc or {}).get("at")))
@@ -93,7 +112,7 @@ def _match(cert: str, name: str) -> bool:
 
 
 def _replication(name: str) -> str | None:
-    doc = _read(REPLICATION)
+    doc = _required(REPLICATION, "at")
     rows = (doc.get("verdicts") or doc.get("rows") or []) if isinstance(doc, dict) else []
     if not isinstance(rows, list):
         raise DoorReadError(f"{REPLICATION.name} verdicts are a {type(rows).__name__}")
@@ -110,9 +129,7 @@ def _replication(name: str) -> str | None:
 def _fdr(name: str) -> str | None:
     if authority.suspended("online_fdr"):      # its contract is REJECTED: no authority here
         return None
-    doc = _read(FDR_ROWS)
-    if not isinstance(doc, dict) or not _fresh(doc):
-        return None
+    doc = _required(FDR_ROWS)
     certified = doc.get("certified") or []
     if not isinstance(certified, list):
         raise DoorReadError(f"{FDR_ROWS.name} certified rows are a {type(certified).__name__}")
@@ -127,9 +144,7 @@ def _fdr(name: str) -> str | None:
 def _freeze() -> str | None:
     if authority.suspended("immune"):
         return None
-    doc = _read(FREEZE)
-    if not isinstance(doc, dict) or not _fresh(doc, "at"):
-        return None
+    doc = _required(FREEZE, "at")
     if str(doc.get("verdict")) != "FREEZE" or not str(doc.get("judge") or "").startswith(
             "production:"):
         return None
@@ -181,9 +196,9 @@ def _panel_and_theory(name: str) -> str | None:
     sample (`libs/tiers/door_evidence`). A stale verdict file withholds nothing, and each half
     loses its authority while its organ is suspended."""
     from libs.tiers import door_evidence
-    doc = _read(DOOR_VERDICTS)
-    if not isinstance(doc, dict) or not _fresh(doc):
+    if authority.suspended("review") and authority.suspended("theory"):
         return None
+    doc = _required(DOOR_VERDICTS)
     rows = doc.get("rows") or {}
     if not isinstance(rows, dict):
         raise DoorReadError(f"{DOOR_VERDICTS.name} rows are a {type(rows).__name__}")
