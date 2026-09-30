@@ -243,6 +243,37 @@ def _recent_no_data(symbol: str, timeframe: str) -> bool:
 
 jobs = [(s, tf) for s in tradable for tf in TIMEFRAMES
         if (s.name, tf) not in existing and not _recent_no_data(s.name, tf)]
+
+
+def _clock_wanted() -> dict[tuple[str, str], int]:
+    """(symbol, timeframe) -> forward clocks waiting on that chart, from CLOCK_ACCRUAL.json.
+
+    A FORWARD CLOCK WAITING ON A CHART IS WAITING ON THIS LOOP. After 2026-09-28 (1,731 bar files
+    deleted) this walked the broker's symbol order, so the charts that certified clocks replay on
+    were refetched wherever that order put them -- behind hundreds of cells nothing reads, under
+    a four-hour limit. The accrual diagnostic publishes exactly which charts its BAR_FILE_MISSING
+    and NO_BARS clocks need; those go first. Absent or unreadable report: an empty map, and the
+    order is exactly what it was.
+    """
+    try:
+        doc = json.loads((desk_root() / "reports" / "CLOCK_ACCRUAL.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[tuple[str, str], int] = {}
+    for row in (doc.get("bars_wanted") or []) if isinstance(doc, dict) else []:
+        if isinstance(row, dict) and row.get("symbol") and row.get("timeframe"):
+            out[(str(row["symbol"]), str(row["timeframe"]).upper())] = int(row.get("clocks") or 1)
+    return out
+
+
+_WANTED_BY_CLOCKS = _clock_wanted()
+# A stable sort: clock-wanted cells first (most clocks first), everything else in its old order.
+# Reordering never drops a cell -- the job list is a permutation of what it was.
+jobs.sort(key=lambda job: -_WANTED_BY_CLOCKS.get((job[0].name, job[1]), 0))
+if _WANTED_BY_CLOCKS:
+    _first = sum(1 for s, tf in jobs if (s.name, tf) in _WANTED_BY_CLOCKS)
+    print(f"Forward-clock charts first: {_first} of {len(jobs)} due cell(s) are waited on by "
+          f"a certified clock (reports/CLOCK_ACCRUAL.json)")
 deferred_no_data = sum(1 for s in tradable for tf in TIMEFRAMES
                        if (s.name, tf) not in existing and _recent_no_data(s.name, tf))
 print(f"To download: {len(jobs)} series over timeframes {', '.join(TIMEFRAMES)}")

@@ -823,7 +823,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # `state_vector` is listed here for the reader's sake and runs on NEITHER plan: it is in
     # `OWN_CLOCK_LEGS`, which `in_plan` checks first, so `MT5-StateVector` is its only clock.
     "regime_monitor", "state_vector", "heal_clocks", "wiring_audit", "promoter",
-    "forward_reconcile", "clock_liveness", "certificate_clock_law",
+    "forward_reconcile", "clock_liveness", "certificate_clock_law", "clock_accrual",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
@@ -962,7 +962,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "evaluator_lab", "lead_replication", "science_controller",
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
-                     "duty_cycle", "forward_enrolment", "residual_gate",
+                     "duty_cycle", "forward_enrolment", "clock_accrual", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown"),
                     "validate"),
     # macro: the cross-asset / macro brain
@@ -1615,6 +1615,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
+    # Reads the canon (through the admission door), three lane state files and the sleeve
+    # registry, and writes one report. No bars, no terminal: arithmetic over the rows above.
+    "clock_accrual": 180,
     # THE JUDGE WAS BEING KILLED AT 27% OF ITS OWN BUDGET (measured 2026-09-23). The sealed
     # gauntlet builds cells under `FRESH_BUILD_BUDGET_SEC = 2700` and stops ITSELF at that mark
     # to write `universal_gates_external.json`. This leg had no entry here, so it fell through to
@@ -4467,6 +4470,13 @@ def main() -> None:
     # promotes, sizes and retires nothing.
     ccl = _costed("certificate_clock_law", lambda: _producer(
         "certificate_clock_law", "scripts/check_certificate_clock_law.py"))
+    # AND FOR EVERY CLOCK THAT IS NOT TICKING, WHY -- as one named reason per certificate
+    # (NOT_ENROLLED, KEY_MISMATCH, FAMILY_UNBUILDABLE, BAR_FILE_MISSING, ENGINE_NOT_REACHED,
+    # GATE_NEVER_OPENS, ...). The two legs above count; this one routes. It writes
+    # reports/CLOCK_ACCRUAL.json, whose headline is the non-accruing count by reason and whose
+    # `bars_wanted` the MT5-Universe collector fetches first. It enrols and retires nothing.
+    cac = _costed("clock_accrual", lambda: _producer(
+        "clock_accrual", "research/clock_accrual.py", "--once"))
     # THE FALSIFIERS RUN AGAINST THE FRESH CANON (Tier-1 item V4, 2026-09-09). libs/validation/
     # falsifiers.py had zero callers; every certificate was minted and never attacked. The
     # producer budgets itself (600 s default) under this leg's timeout and writes
@@ -5221,7 +5231,7 @@ def main() -> None:
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
                     "moat_candidate_compiler": mcp, "algorithm_db": adb,
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
-                    "certificate_clock_law": ccl,
+                    "certificate_clock_law": ccl, "clock_accrual": cac,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd,
                     "falsifier_run": fz, "merge_docket": mh,

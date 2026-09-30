@@ -26,6 +26,12 @@ from desks.mt5.research.shadow_admission import (  # noqa: E402
     SCALP_LANE_FAMILY,
     authorized_specs,
 )
+from desks.mt5.research.shadow_admission import (  # noqa: E402
+    _canon as _admission_canon,
+)
+from desks.mt5.research.shadow_admission import (  # noqa: E402
+    scalp_certificates as _scalp_certificates,
+)
 
 DESK = Path(__file__).resolve().parents[1]
 DATA = DESK / "data" / "universe"
@@ -131,6 +137,39 @@ def _first_forward_trade(records: list[dict]) -> str | None:
     return first.isoformat()
 
 
+def certified_recipes() -> dict[str, tuple[str, str, families.Choice]]:
+    """candidate -> (symbol, timeframe, Choice) for every canon scalp certificate NOT in
+    `CANDIDATES`.
+
+    A SCALP CERTIFICATE THIS LANE HAD NEVER HEARD OF GOT NO CLOCK, EVER. This lane ran exactly the
+    four hand-written `CANDIDATES`, so a recipe the scalp gauntlet certified under any other name
+    sat in the canon with nothing advancing it -- a certificate that can never mature and so can
+    never be promoted (L1.102). The canon's `shadow_spec` carries the complete recipe
+    (`shadow_admission.SCALP_RECIPE_KEYS` plus the symbol), and `scalp_certificates` already
+    returns only exact ten-gate passes that carry all of it, so the clock is built from the
+    certificate verbatim. Nothing is guessed: a spec that does not construct is skipped here and
+    surfaces as a row with the reason below.
+    """
+    try:
+        universal, _ = _admission_canon(DESK)
+        certs = _scalp_certificates(universal)
+    except Exception:
+        return {}
+    out: dict[str, tuple[str, str, families.Choice]] = {}
+    for candidate, row in certs.items():
+        if candidate in CANDIDATES:
+            continue
+        spec = row.get("shadow_spec") or {}
+        try:
+            out[candidate] = (str(spec["symbol"]), str(spec["timeframe"]).upper(),
+                              families.Choice(str(spec["family"]), str(spec["session"]),
+                                              float(spec["stop_atr"]), float(spec["target_atr"]),
+                                              int(spec["max_hold"])))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
 def run(now: datetime | None = None) -> dict:
     now = now or datetime.now(UTC)
     prior_sleeves = _previous_sleeves()
@@ -143,7 +182,9 @@ def run(now: datetime | None = None) -> dict:
     # lane's certificate is its own forward clock: Fusion-native bars, the canon maturity bar
     # (50 trades, or 14 days with 20), positive expectancy and the drawdown bound, judged only
     # after the frozen pre-registration boundary. Promotion (research/promoter.py) reads that.
-    admitted = dict(CANDIDATES)
+    admitted: dict[str, tuple[str, str, families.Choice]] = {
+        name: ("XAUUSD", tf, choice) for name, (tf, choice) in CANDIDATES.items()}
+    admitted.update(certified_recipes())
     blocked_names: list[str] = []
     # WHICH CANDIDATES HOLD A TEN-GATE CERTIFICATE. scripts/scalp_gauntlet.py judges every
     # candidate daily on the box's M5/M15 bars through the one validator, and the canon carries
@@ -169,16 +210,26 @@ def run(now: datetime | None = None) -> dict:
         },
     }
     SHADOW.mkdir(parents=True, exist_ok=True)
-    cache: dict[str, tuple[pd.DataFrame, dict[str, np.ndarray]]] = {}
-    for name, (tf, choice) in admitted.items():
-        path = DATA / f"XAUUSD_{tf}.parquet"
+    cache: dict[tuple[str, str], tuple[pd.DataFrame, dict[str, np.ndarray]]] = {}
+    for name, (sym, tf, choice) in admitted.items():
+        path = DATA / f"{sym}_{tf}.parquet"
         if not path.exists():
-            state["sleeves"][name] = {"status": "NO_DATA", "n": 0}
+            state["sleeves"][name] = {"status": "NO_DATA", "n": 0, "symbol": sym,
+                                      "timeframe": tf,
+                                      "bars_wanted": {"symbol": sym, "timeframe": tf}}
             continue
-        if tf not in cache:
+        if (sym, tf) not in cache:
             df = pd.read_parquet(path).sort_index()
-            cache[tf] = (df, families._base_signals(df))
-        df, all_signals = cache[tf]
+            cache[(sym, tf)] = (df, families._base_signals(df))
+        df, all_signals = cache[(sym, tf)]
+        if choice.family not in all_signals:
+            # One unknown family must not take the lane down with a KeyError: the other clocks
+            # keep running and this one names why it cannot.
+            state["sleeves"][name] = {"status": "BLOCKED_FAMILY_UNBUILDABLE", "n": 0,
+                                      "symbol": sym, "timeframe": tf, "choice": choice.__dict__,
+                                      "last_error": f"scalp family {choice.family!r} has no "
+                                                    f"signal in scalp_family_expansion"}
+            continue
         signal = all_signals[choice.family].copy()
         signal[~families._session_mask(df.index, choice.session)] = 0
         signal[df.index < SHADOW_START] = 0
@@ -309,7 +360,7 @@ def run(now: datetime | None = None) -> dict:
             # keeps an existing freeze; a row without one gets the lane preregistration.
             "forward_start": _fs or SHADOW_START.isoformat(),
             "first_trade_at": _first_forward_trade(records) or _prior.get("first_trade_at"),
-            "status": status, "timeframe": tf, "choice": choice.__dict__,
+            "status": status, "symbol": sym, "timeframe": tf, "choice": choice.__dict__,
             "n": n, "n_historical": n_historical, "days": days,
             # BOTH SPELLINGS. `shadow_forward` and `qquant_shadow` publish `days_active`, this
             # lane published `days`, and the dashboard read only the first -- so three sleeves on

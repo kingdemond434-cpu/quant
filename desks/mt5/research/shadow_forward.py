@@ -61,10 +61,8 @@ def _write_state(path: Path, state: dict) -> None:
                     raise
                 time.sleep(0.05 * (2 ** attempt))
     finally:
-        try:
+        with contextlib.suppress(OSError):
             tmp.unlink(missing_ok=True)
-        except OSError:
-            pass
 
 
 def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
@@ -434,7 +432,19 @@ def sleeve_key(sym: str, win: str, params: dict, family: str = "session_range_br
     return stem + chart + tail + ("" if str(side).upper() != "SHORT" else ".SHORT")
 
 
-FETCH_DAYS = 45
+#: WARMUP HISTORY BEFORE `SHADOW_START`, and it must outlast every certified family's lookback.
+#:
+#: IT WAS 45 DAYS, AND THAT SILENTLY STARVED WHOLE FAMILIES (measured 2026-09-30 on the committed
+#: state of 2026-09-16). The MT5 route answers `copy_rates_range(start, now)` with EXACTLY that
+#: range, while the cache route hands back the whole parquet from 2018 -- so the same clock saw
+#: ten weeks of bars on one route and eight years on the other. `family_clock_transition` returns
+#: nothing on fewer than sixty days of bars; replayed on the committed H1 files, all 20 of its
+#: ACTIVE zero-observation clocks produce ZERO signals from a 45-day warmup and forward signals
+#: from a 400-day one (EURUSD: 0 against 22 since SHADOW_START), and two correlation_regime clocks
+#: behave the same way. Nothing raised: a clock that can never fire reads exactly like a quiet
+#: market. 400 days is still less history than the cache route has always supplied, so this makes
+#: the two routes agree; it changes no identity, no parameter and no threshold.
+FETCH_DAYS = 400
 VERDICT_MIN_TRADES = 50
 VERDICT_MIN_DAYS = 14
 PROMOTE_MIN_EXP = 0.05
@@ -526,6 +536,14 @@ def frozen_costs(key: str):
         return None
 
 
+def _bar_file_present(sym: str, timeframe: str) -> bool:
+    """Is the cached chart this clock replays on physically present in the bar store?"""
+    try:
+        return (UNI / f"{sym}_{str(timeframe).upper()}.parquet").exists()
+    except OSError:
+        return False
+
+
 def fetch_h1(sym: str, timeframe: str = "H1"):
     """Bars from whatever source is available, with the provenance attached.
 
@@ -550,12 +568,19 @@ def fetch_h1(sym: str, timeframe: str = "H1"):
     from research.h1_source import fetch_h1 as _fetch
     start = max(SHADOW_START - timedelta(days=FETCH_DAYS),
                 datetime(2018, 1, 1, tzinfo=UTC))
-    bars = _fetch(sym, start, require_coverage=True, timeframe=str(timeframe).upper())
+    # COVERAGE IS OF THE FORWARD WINDOW, NOT OF THE WARMUP'S FIRST INSTANT, and the staleness
+    # allowance is the chart's own. Both used to be judged against `start` with a flat six hours:
+    # a broker reply for gold/indices/energy begins at the venue's 01:00 open and so never
+    # "covered" a midnight start, and a D1 series (stamped at the bar's open) read stale from
+    # 06:00 every weekday. Either one alone was enough to leave the clock BLOCKED_NO_BARS the
+    # moment its cache file went missing (1,731 deleted 2026-09-28).
+    bars = _fetch(sym, start, require_coverage=True, timeframe=str(timeframe).upper(),
+                  cover_from=SHADOW_START, per_chart_staleness=True)
     if bars is None:
         slog(f"{sym} [{timeframe}]: NO DATA from any source. That is an absence of bars, not "
              f"an empty market, and no verdict may be drawn from it.")
         return None
-    ok, why = bars.covers(SHADOW_START)
+    ok, why = bars.covers(SHADOW_START, per_chart=True)
     slog(f"{sym} [{timeframe}]: {bars.n} bars from {bars.source} -- {why}")
     if not ok:
         # NOT a silent continue: replaying a window the source does not cover
@@ -967,6 +992,11 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 st["last_attempt_at"] = datetime.now(UTC).isoformat()
                 st["last_error"] = (f"no {sleeve_tf} bars from any source for {sym} covering "
                                     f"SHADOW_START {SHADOW_START.date()}")
+                # THE CHART THIS CLOCK IS WAITING FOR, machine-readable. `clock_accrual` lists
+                # these as `bars_wanted` and the MT5-Universe collector fetches them FIRST,
+                # instead of reaching them wherever the broker's symbol order happens to put them.
+                st["bars_wanted"] = {"symbol": sym, "timeframe": sleeve_tf}
+                st["bar_file_present"] = _bar_file_present(sym, sleeve_tf)
                 if st.get("status") not in _TERMINAL_STATUSES:
                     st["status"] = "BLOCKED_NO_BARS"
                 st["promotion_authority"] = False
@@ -977,7 +1007,21 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             h1 = bars.df
             fam_fn = _family_fn(fam)
             if fam_fn is None:
-                slog(f"{key}: constructor for family {fam} vanished; skipping this pass")
+                # A SKIP THAT WRITES NOTHING IS A PASS THAT NEVER HAPPENED. This `continue`d
+                # without touching the row, so a clock whose family the engine cannot rebuild
+                # kept its old status (ACTIVE) and a `last_attempt_at` that only aged --
+                # indistinguishable from a pass that was killed before reaching it. It is now a
+                # named state, like BLOCKED_NO_BARS, and clears through the block-cleared clause
+                # below the moment the constructor resolves again.
+                st["last_attempt_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+                st["last_error"] = (f"family {fam!r} has no constructor in mt5desk.families or "
+                                    f"families_orthogonal on this tree: the certificate cannot be "
+                                    f"rebuilt, so no forward observation can accrue")
+                st["last_error_at"] = st["last_attempt_at"]
+                if st.get("status") not in _TERMINAL_STATUSES:
+                    st["status"] = "BLOCKED_FAMILY_UNBUILDABLE"
+                state[key] = st
+                slog(f"{key}: BLOCKED_FAMILY_UNBUILDABLE -- {st['last_error']}")
                 continue
             # Rebuild whatever this family needs beyond bars, from its own stored params. A
             # family that needs nothing gets an empty dict and is unaffected.
@@ -1301,8 +1345,11 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             # mid-rewrite, and kept reading it while every later pass fetched 41,811 bars and
             # evaluated them, because only the one status name was in this clause.
             if str(st.get("status") or "").upper() in (
-                    "BLOCKED_SLEEVE_ERROR", "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE"):
+                    "BLOCKED_SLEEVE_ERROR", "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE",
+                    "BLOCKED_FAMILY_UNBUILDABLE"):
                 st["status"] = "ACTIVE"
+                st.pop("bars_wanted", None)
+                st.pop("bar_file_present", None)
                 st["last_error_seen_at"] = st.pop("last_error_at", None)
                 st["last_error_cleared"] = st.pop("last_error", None)
                 slog(f"{key}: block CLEARED -- evaluated end to end; previous error was "
@@ -1431,6 +1478,10 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             detail = f"{type(exc).__name__}: {exc}"
             st["last_error"] = detail
             st["last_error_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+            # THE ENGINE REACHED THIS ROW, and the row must say so. Without the attempt stamp a
+            # clock that raises on every pass is indistinguishable from one the pass never
+            # reached, and `forward_enrolment` reports it ENGINE_SILENT -- the wrong cure.
+            st["last_attempt_at"] = st["last_error_at"]
             if not _is_terminal(st.get("status")):
                 st["status"] = "BLOCKED_SLEEVE_ERROR"
             state[key] = st

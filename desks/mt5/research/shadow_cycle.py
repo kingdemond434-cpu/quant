@@ -449,6 +449,7 @@ def run() -> tuple[dict, int]:
     blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE",
                                          "BLOCKED_UNIVERSAL_GATES", "BLOCKED_SLEEVE_ERROR",
                                          "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE",
+                                         "BLOCKED_FAMILY_UNBUILDABLE",
                                          "REFUSED_BY_UNIVERSE_POLICY"}
                   for row in active_rows)
     # LIVE-ARM STATE, SURFACED HERE ON PURPOSE. `armed` lives in data/gateway_state.json,
