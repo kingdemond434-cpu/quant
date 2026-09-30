@@ -194,8 +194,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     "breakout_liquidity price_only limit": "failed_breakout",
     "volatility_shock price_only market": "jump vol_mean_reversion",
     "volatility_shock price_only stop": "d1_inside volatility_squeeze",
-    "regime_transition price_only market": "drawdown_conditional regime_transition"
-                                           " vol_transition",
+    "regime_transition price_only market": "drawdown_conditional regime_split"
+                                           " regime_transition vol_transition",
     "execution_microstructure microstructure market": "liquidity_regime orderflow_imbalance",
     "execution_microstructure microstructure limit": "execution_state moat_spread_window"
                                                      " spread_state",

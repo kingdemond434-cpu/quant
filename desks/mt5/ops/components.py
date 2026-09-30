@@ -671,6 +671,22 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        ComponentSpec(
+            component_id="resident:gateway",
+            kind="task", host="box",
+            code_paths=("desks/mt5/research/gateway_resident.py",),
+            inputs=("desks/mt5/data/sleeves.json",),
+            # The resident's work is the gateway pass it drives; every pass that reaches the
+            # venue publishes the desk-staleness verdict, so that file's age IS the resident's
+            # heartbeat (and the one MT5-BoxHeartbeat watches from outside).
+            outputs=("desks/mt5/reports/DESK_STALE.json",),
+            consumers=("desks/mt5/scripts/box_heartbeat.py",),
+            cadence_s=600, timeout_s=None, progress_metric="gateway_passes",
+            expected_artifact_schema="desks/mt5/reports/DESK_STALE.json",
+            owner="lane:ops", restart_action="restart:task:MT5-GatewayResident",
+            criticality="required", resource_budget={},
+            schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
+            notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
     ]
 
 
@@ -1241,6 +1257,10 @@ def _path_expr(node: ast.AST, here: Path, env: dict[str, Path]) -> Path | None:
             return here
         if isinstance(f, ast.Attribute) and f.attr in ("resolve", "absolute") and not node.args:
             return _path_expr(f.value, here, env)
+        # `mt5desk.config.desk_root()` -- the desk's single path authority -- is `desks/mt5`.
+        if isinstance(f, ast.Name) and f.id == "desk_root" and not node.args:
+            return next((p for p in here.parents
+                         if p.name == "mt5" and p.parent.name == "desks"), None)
         return None
     if isinstance(node, ast.Attribute) and node.attr == "parent":
         base = _path_expr(node.value, here, env)
