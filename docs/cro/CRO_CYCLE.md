@@ -163,6 +163,38 @@ Do not celebrate upstream volume when the downstream constraint is unchanged.
 
 ---
 
+## STEP 4B — DAILY TIER-1 BREADTH REVIEW (principal's standing order, 2026-09-30)
+
+Every pass, without exception, asks and answers two questions from LIVE box data, never from docs or memory:
+
+1. **Are breadth, research production and global ingestion/mining maxed out at tier-1 level?**
+2. **What tier is the quant today?**
+
+Benchmark against Western tier-1 firms (Renaissance, D.E. Shaw, Two Sigma, Citadel/Jane Street class) AND Asian ones (the Chinese quant majors such as High-Flyer, Ubiquant, Minghong, Lingjun; Japanese and Korean systematic/prop shops). Public figures are estimates and are labelled as estimates.
+
+Measure at least, with day-over-day change:
+
+- instruments and datasets ingested; alt-platform yield (platforms yielding / platforms wired);
+- source coverage by region and language (Western, Chinese, Japanese, Korean, Russian forests);
+- cells mined per day and cells judged per day; judge capacity;
+- UNKNOWN verdict rate and build/data-failure rate before judging;
+- true backlog (all unjudged cells, not one queue) and its daily growth;
+- certificates by family, family concentration, effective independent bets (k_eff) against the k_eff the return target needs, and empty risk clusters;
+- certificate-to-forward rate, forward-ledger freshness, and symbols traded live per day;
+- broker instruments with fresh bars that no book uses yet.
+
+Baseline (2026-09-30, `/mnt/project-files/reports/tier1_breadth_gap_2026-09-30.md`): 249 instruments; 4 datasets; 0 of 14 alt platforms yielding; ~8.3k cells/day mined, ~5.3k/day judged; 43% UNKNOWN; 69% build/data failures; backlog ~1.4M growing ~3k/day; 837 certs from 10 families (41% cross_asset_residual); k_eff 2.53 against ~7 needed; 6 of 15 risk clusters empty; 9% cert-to-forward. Verdict: tier 3 overall.
+
+Then:
+
+- Rank what holds breadth down, biggest first.
+- **Never assume the machinery is at its peak or exhausted.** "Maxed out" or "exhausted" needs per-axis evidence (L1.51); absent that, the answer is NO.
+- Act on the biggest gaps in the same pass: build, test and merge a fix, or park it with evidence naming the thread that owns it. The gap work competes in STEP 7 like any other item and usually wins when capital-path integrity is clean.
+- Never cut mining, ingestion or research generation, and never lower a validation gate to raise throughput.
+- Write the measurements, the tier verdict, the ranked gaps and the change since the last pass to `desks/mt5/reports/TIER1_BREADTH_REVIEW.json` (append to its `history` array) and carry `tier_verdict`, `k_eff` and `top_breadth_gaps` in the cycle ledger row.
+
+---
+
 ## STEP 5 — PREREGISTRATION / EVIDENCE-INTEGRITY CHECK
 
 For new serious candidates or material validation changes verify:
@@ -309,6 +341,7 @@ Return only:
 4. **Material work completed + proof**
 5. **Previous-cycle changes verified**
 6. **Research funnel binding constraint**
+6b. **Tier verdict + breadth: maxed out? (measured table vs tier-1 benchmarks, ranked gaps, what this pass did about them)**
 7. **Gauntlet / forward / promotion material changes**
 8. **Live execution / reconciliation material changes**
 9. **Parked / retired / reopened work**
