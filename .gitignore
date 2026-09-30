@@ -381,6 +381,9 @@ desks/mt5/logs/
 # them made both hosts unpullable while the desk was running, which is always.
 desks/mt5/data/.job_locks/
 desks/mt5/data/free_data_cache/
+# keyed_sources store: PIT observations and cursors are box-local; reports/KEYED_SOURCES.json is
+# the record of what it holds (and reports/CREDENTIAL_COVERAGE.json of which keys are set).
+desks/mt5/data/keyed_sources/
 
 # Session scratch: throwaway measurement one-liners written to answer one question.
 # Excluded from ruff too (pyproject [tool.ruff] exclude) -- 32 of these once held the trading

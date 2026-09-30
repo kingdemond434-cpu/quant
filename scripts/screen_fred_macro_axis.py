@@ -80,6 +80,7 @@ signal[k] is observed strictly inside period k and predicts period k+1.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import urllib.parse
@@ -334,7 +335,10 @@ def transform(sid: str, s: pd.Series) -> pd.Series:
 
 
 def main() -> None:
-    key = json.loads((ROOT / "data/secrets/fred.json").read_text("utf-8"))["key"]
+    # The env var the principal sets (FRED_API_KEY) first, then the desk's key file -- the same
+    # two places scripts/collect_fred_macro.py reads. Never printed.
+    key = os.environ.get("FRED_API_KEY", "").strip() or json.loads(
+        (ROOT / "data/secrets/fred.json").read_text("utf-8"))["key"]
     btc = target_close()
     print(f"{_TARGET} leg (MT5 H1 -> daily close): n={len(btc)} "
           f"{btc.index.min().date()} -> {btc.index.max().date()}\n")
