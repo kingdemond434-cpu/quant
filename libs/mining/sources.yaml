@@ -13,6 +13,12 @@
 #   immutable_time  the source's own timestamp can be used as availability (it cannot be
 #             silently edited). Anything editable is available from acquisition only.
 #   feeds_to  consumers beyond the gauntlet docket (mechanics feed for risk and cost models).
+#   uses      direct_cells (a rule compiled onto a registered family), indirect_cells (existing
+#             families multiplied by a regime condition, or conditioning/regime features), and
+#             allocation_intel (mechanics and intelligence for sizing, risk and cost). A source
+#             serving no use is COLD whatever it fetched.
+#   robots    page crawls (html_listing, page_snapshot, telegram_preview) obey robots.txt;
+#             a disallowed path is BLOCKED_ROBOTS, recorded every run.
 #
 # A source is ACTIVE only with a consumer receipt: >= 1 of its cells reached EVALUATED in the
 # last 30 days. Everything else is COLD, whatever it fetched.
@@ -22,9 +28,23 @@
 # auth, licence/license, region, language/lang). First definition of an id wins.
 
 external_rosters:
-  - desks/mt5/data/source_rosters/*.json
-  - desks/mt5/data/source_rosters/*.jsonl
-  - desks/mt5/data/source_rosters/*.yaml
+  # Other lanes' source tables, read as they are. `defaults` fill only what a row leaves out.
+  # fetcher `owned` = that lane's organ fetches and consumes the row; it is rostered here for
+  # coverage and uses, never fetched twice.
+  - path: desks/mt5/data/source_rosters/*.json
+  - path: desks/mt5/data/source_rosters/*.jsonl
+  - path: desks/mt5/data/source_rosters/*.yaml
+  - path: libs/mining/rosters/asia_thread_sources.yaml          # Asian quant practices thread
+    defaults: {fetcher: owned, owner: asia_gap_thread}
+  - path: desks/mt5/data/cell_emitter_sources.json              # breadth cell_emitter (#116)
+    defaults: {fetcher: owned, owner: breadth/cell_emitter, kind: code,
+               consumer: desks/mt5/research/cell_emitter.py, uses: [direct_cells, indirect_cells]}
+  - path: desks/mt5/data/world_factory_sources.json             # breadth world factory (#123)
+    defaults: {fetcher: owned, owner: breadth/world_factory, kind: text,
+               uses: [indirect_cells, allocation_intel]}
+  - path: desks/mt5/data/alt_dataset_sources.json               # breadth alt datasets (#123)
+    defaults: {fetcher: owned, owner: breadth/alt_datasets, kind: text,
+               uses: [indirect_cells, allocation_intel]}
 
 sources:
   # ============================================================ PRIORITY 1: MT5 native
@@ -32,14 +52,12 @@ sources:
     name: "MQL5 CodeBase (English), experts/indicators/scripts/libraries, full index walk"
     priority: 1
     kind: code
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 60
     region: global
     language: en
     licence: "MQL5.com terms; concept only, code never copied"
-    owner: breadth/cell_emitter
-    mode: fallback
-    owner_feed: desks/mt5/data/intelligence/cell_emitter/**/*mql5*
     config:
       listing:
         - {url: "https://www.mql5.com/en/code/mt5/experts/page{page}", page1: "https://www.mql5.com/en/code/mt5/experts"}
@@ -53,13 +71,11 @@ sources:
     name: "MQL5 CodeBase (Russian), full index walk"
     priority: 1
     kind: code
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 120
     region: cis
     language: ru
-    owner: breadth/cell_emitter
-    mode: fallback
-    owner_feed: desks/mt5/data/intelligence/cell_emitter/**/*mql5*
     config:
       listing:
         - {url: "https://www.mql5.com/ru/code/mt5/experts/page{page}", page1: "https://www.mql5.com/ru/code/mt5/experts"}
@@ -71,6 +87,7 @@ sources:
     name: "MQL5 Market products (listing, description, what's-new changelog, reviews), long tail included"
     priority: 1
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 180
     language: en
@@ -86,6 +103,7 @@ sources:
     name: "MQL5 Signals, public MT5 signal providers"
     priority: 1
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 360
     language: en
@@ -99,6 +117,7 @@ sources:
     name: "MQL5 Freelance public job posts (specifications are rule statements)"
     priority: 1
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 120
     language: en
@@ -112,6 +131,7 @@ sources:
     name: "MQL5 Forum (English)"
     priority: 1
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 60
     language: en
@@ -125,6 +145,7 @@ sources:
     name: "MQL5 Forum (Russian), the deepest technical MT5 discussion"
     priority: 1
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 60
     region: cis
@@ -139,6 +160,7 @@ sources:
     name: "MQL5 Articles (en), strategy write-ups with code"
     priority: 1
     kind: code
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 360
     language: en
@@ -152,11 +174,9 @@ sources:
     name: "MQL5 CodeBase MT4 experts (same indicator grammar, older and larger corpus)"
     priority: 1
     kind: code
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 180
-    owner: breadth/cell_emitter
-    mode: fallback
-    owner_feed: desks/mt5/data/intelligence/cell_emitter/**/*mql5*
     config:
       listing:
         - {url: "https://www.mql5.com/en/code/mt4/experts/page{page}", page1: "https://www.mql5.com/en/code/mt4/experts"}
@@ -168,6 +188,7 @@ sources:
     name: "Forex Factory forum, Trading Systems and Platform Tech"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 60
     config:
@@ -180,6 +201,7 @@ sources:
     name: "Reddit r/algotrading r/mt5 r/Forex r/quant r/Daytrading r/metatrader"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: reddit_json
     cadence_minutes: 60
     immutable_time: true
@@ -190,6 +212,7 @@ sources:
     name: "Public Telegram channels (MT5/EA/algo; RU, AR, PT-BR, CN-adjacent), self-extending"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: telegram_preview
     cadence_minutes: 60
     config:
@@ -199,6 +222,7 @@ sources:
     name: "Search route that discovers public Telegram MT5 channels"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: search_route
     cadence_minutes: 1440
     config:
@@ -215,6 +239,7 @@ sources:
     name: "X (Twitter) MT5 hashtags, EA sellers, algo accounts (API)"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: json_api
     auth: key
     auth_env: X_BEARER_TOKEN
@@ -230,6 +255,7 @@ sources:
     name: "X, keyless path (search-engine snippets)"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: search_route
     cadence_minutes: 360
     config:
@@ -239,6 +265,7 @@ sources:
     name: "Discord public quant/algo servers (needs an account; keyless path is invite discovery)"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: json_api
     auth: login
     auth_env: DISCORD_USER_TOKEN
@@ -249,6 +276,7 @@ sources:
     name: "Discord invite discovery (keyless)"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: search_route
     cadence_minutes: 1440
     config:
@@ -258,6 +286,7 @@ sources:
     name: "TradingView public Pine scripts (strategies and indicators)"
     priority: 2
     kind: code
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 180
     config:
@@ -270,6 +299,7 @@ sources:
     name: "BabyPips forum (Discourse RSS)"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: rss
     cadence_minutes: 120
     config:
@@ -279,6 +309,7 @@ sources:
     name: "Quantitative Finance StackExchange (forex, backtesting, execution tags)"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: json_api
     cadence_minutes: 360
     immutable_time: true
@@ -292,6 +323,7 @@ sources:
     name: "YouTube MT5 strategy videos (search route; transcripts via deep_forest)"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: search_route
     cadence_minutes: 720
     config:
@@ -301,6 +333,7 @@ sources:
     name: "arXiv q-fin trading/microstructure papers (Atom API)"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: rss
     cadence_minutes: 1440
     immutable_time: true
@@ -313,6 +346,7 @@ sources:
     name: "Regulator actions/filings naming MT5-based systems or brokers (SEC, CFTC, FCA, ASIC, CySEC)"
     priority: 5
     kind: text
+    uses: [allocation_intel]
     fetcher: search_route
     cadence_minutes: 1440
     feeds_to: [risk_model]
@@ -324,6 +358,7 @@ sources:
     name: "WeChat public articles via Sogou (微信/搜狗)"
     priority: 3
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: html_listing
     cadence_minutes: 180
     region: cn
@@ -339,6 +374,7 @@ sources:
     name: "Zhihu (知乎) via search route (direct search needs login)"
     priority: 3
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: search_route
     cadence_minutes: 360
     region: cn
@@ -350,6 +386,7 @@ sources:
     name: "Xueqiu (雪球), behind a WAF: login cookie path"
     priority: 3
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: json_api
     auth: login
     auth_env: XUEQIU_COOKIE
@@ -362,6 +399,7 @@ sources:
     name: "Xueqiu keyless path (search-engine snippets)"
     priority: 3
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: search_route
     cadence_minutes: 720
     region: cn
@@ -373,6 +411,7 @@ sources:
     name: "Russian/CIS MT5 forums (smart-lab, forexsystems, mql5 ru blogs) via search route"
     priority: 3
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: search_route
     cadence_minutes: 360
     region: cis
@@ -388,6 +427,7 @@ sources:
     name: "note.com Japanese algo/EA posts (public search API)"
     priority: 3
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: json_api
     cadence_minutes: 360
     region: jp
@@ -402,6 +442,7 @@ sources:
     name: "Japanese 5ch/2ch market boards and X-JP via search route"
     priority: 3
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: search_route
     cadence_minutes: 720
     region: jp
@@ -413,6 +454,7 @@ sources:
     name: "Korean Naver cafes/blogs via search route (cafe bodies need login)"
     priority: 3
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: search_route
     cadence_minutes: 720
     region: kr
@@ -424,6 +466,7 @@ sources:
     name: "Kakao public channels (login only)"
     priority: 3
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: json_api
     auth: login
     auth_env: KAKAO_TOKEN
@@ -437,6 +480,7 @@ sources:
     name: "GitHub repositories on mt5/mql5/metatrader5/expert-advisor topics, with READMEs"
     priority: 4
     kind: code
+    uses: [direct_cells, indirect_cells]
     fetcher: github_search
     auth: optional
     auth_env: GITHUB_TOKEN
@@ -444,7 +488,7 @@ sources:
     immutable_time: false
     owner: breadth/cell_emitter
     mode: fallback
-    owner_feed: desks/mt5/data/intelligence/cell_emitter/**/*github*
+    owner_feed: desks/mt5/data/intelligence/cell_emitter/discoveries_cellemitter_*.json
     config:
       search: repositories
       queries: ["topic:mt5", "topic:mql5", "topic:metatrader5", "topic:expert-advisor", "mql5 in:name,description"]
@@ -453,6 +497,7 @@ sources:
     name: "GitHub issues, discussions and PRs on MT5 repos (failure knowledge)"
     priority: 4
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: github_search
     auth: optional
     auth_env: GITHUB_TOKEN
@@ -466,6 +511,7 @@ sources:
     name: "Gitee MT5 projects"
     priority: 4
     kind: code
+    uses: [direct_cells, indirect_cells]
     fetcher: json_api
     cadence_minutes: 720
     region: cn
@@ -480,6 +526,7 @@ sources:
     name: "GitLab MT5 projects"
     priority: 4
     kind: code
+    uses: [direct_cells, indirect_cells]
     fetcher: json_api
     cadence_minutes: 720
     config:
@@ -493,6 +540,7 @@ sources:
     name: "Broker contract specs, swaps, execution policies (the desk's Fusion first)"
     priority: 5
     kind: mechanics
+    uses: [indirect_cells, allocation_intel]
     fetcher: page_snapshot
     cadence_minutes: 1440
     feeds_to: [cost_model, risk_model]
@@ -514,6 +562,7 @@ sources:
     name: "Broker outages, requotes, execution defects (from forums, not docs)"
     priority: 5
     kind: text
+    uses: [indirect_cells, allocation_intel]
     fetcher: reddit_json
     cadence_minutes: 180
     immutable_time: true
@@ -525,6 +574,7 @@ sources:
     name: "Broker outage postmortems via search route"
     priority: 5
     kind: text
+    uses: [indirect_cells, allocation_intel]
     fetcher: search_route
     cadence_minutes: 720
     feeds_to: [risk_model]
@@ -535,6 +585,7 @@ sources:
     name: "Prop firm evaluation rules (E8 first; FTMO, The5ers, TopStep, FundedNext), change log by vintage"
     priority: 5
     kind: mechanics
+    uses: [allocation_intel]
     fetcher: page_snapshot
     cadence_minutes: 720
     feeds_to: [risk_model, e8_rules]
@@ -553,6 +604,7 @@ sources:
     name: "deep_forest_miner claims (502 grounds, 26 languages), compiled deterministically here"
     priority: 2
     kind: text
+    uses: [direct_cells, indirect_cells]
     fetcher: external_feed
     cadence_minutes: 60
     handoff_deepening: false     # deep_forest already queues these for the LLM seat

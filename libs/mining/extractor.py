@@ -88,6 +88,21 @@ PATTERNS: dict[str, tuple[str, ...]] = {
                  "モメンタム", "моментум"),
 }
 
+#: Regime conditions a text can state, mapped to the regimes `mt5desk.cell_modifiers` applies
+#: honestly (volatility masks, month/quarter-end windows). Anything else is not a regime here.
+REGIME_WORDS: dict[str, tuple[str, ...]] = {
+    "high_vol": ("high volatility", "volatile market", "high vol", "高波动", "高ボラ", "высокой волатильн"),
+    "low_vol": ("low volatility", "quiet market", "low vol", "低波动", "低ボラ", "низкой волатильн"),
+    "month_end": ("month end", "month-end", "end of month", "月末", "конец месяца"),
+    "quarter_end": ("quarter end", "quarter-end", "end of quarter", "季末", "四半期末",
+                    "конец квартала"),
+}
+
+
+def _regimes(low: str) -> list[str]:
+    return [r for r, words in REGIME_WORDS.items() if any(w in low for w in words)]
+
+
 # ------------------------------------------------------------------------------- mechanics
 _FACTS: dict[str, re.Pattern[str]] = {
     "max_daily_loss_pct": re.compile(r"(?:max(?:imum)?\s+)?daily\s+(?:loss|drawdown)"
@@ -178,6 +193,7 @@ def read_code(text: str) -> dict[str, Any]:
     if _NEG_SHIFT.search(text):
         leaks.append("negative bar shift reads a bar that has not closed")
     return {"indicators": ind, "patterns": _patterns(text.lower()),
+            "regimes": _regimes(text.lower()),
             "timeframe": periods.most_common(1)[0][0] if periods else "",
             "hours": sorted({int(h.group(1)) for h in _HOUR.finditer(text)
                              if int(h.group(1)) < 24}),
@@ -209,6 +225,7 @@ def read_text(text: str) -> dict[str, Any]:
         if _ZIGZAG.search(text) and ("signal" in text.lower() or "entry" in text.lower()) \
         else []
     return {"indicators": ind, "patterns": _patterns(text.lower()),
+            "regimes": _regimes(text.lower()),
             "timeframe": tfs.most_common(1)[0][0] if tfs else "", "hours": [],
             "lookahead": leaks}
 

@@ -29,6 +29,15 @@ from libs.mining.rejection import Reason
 DEFAULT_TRANSFER: tuple[str, ...] = ("EURUSD", "XAUUSD")
 TIMEFRAMES: frozenset[str] = frozenset({"M1", "M5", "M15", "M30", "H1", "H4", "D1"})
 MAX_SPECS_PER_RULE = 4
+#: USES. Every cell serves one of these; a source that serves none is COLD.
+USES: tuple[str, ...] = ("direct_cells", "indirect_cells", "allocation_intel")
+#: INDIRECT CELLS multiply an existing family by a regime condition the gauntlet applies
+#: honestly (`mt5desk.cell_modifiers`: volatility masks, month/quarter-end windows). The two
+#: volatility regimes are always tried -- whether a published rule works only in one volatility
+#: state is the commonest way a practitioner rule is half-right -- and the calendar ones when the
+#: source names them. Each is a descendant of the direct cell, charged to the same trial family.
+DEFAULT_REGIMES: tuple[str, ...] = ("high_vol", "low_vol")
+MAX_INDIRECT_PER_SPEC = 4
 
 
 @dataclass
@@ -166,6 +175,23 @@ def compile_rule(rule: Mapping[str, Any], *,
         return CompileResult([], None, "mapped families are not registered here",
                              research_only=True)
     return CompileResult(specs)
+
+
+def indirect_variants(spec: CompiledSpec, rule: Mapping[str, Any]) -> list[CompiledSpec]:
+    """Regime-conditioned children of a direct spec (the `indirect_cells` use)."""
+    stated = [str(r) for r in (rule.get("regimes") or [])]
+    regimes = list(dict.fromkeys([*stated, *DEFAULT_REGIMES]))[:MAX_INDIRECT_PER_SPEC]
+    out = []
+    for r in regimes:
+        if spec.params.get("regime") == r:
+            continue
+        out.append(CompiledSpec(sym=spec.sym, family=spec.family,
+                                params={**spec.params, "regime": r}, timeframe=spec.timeframe,
+                                subtype=f"{spec.subtype}@{r}",
+                                published=spec.published and r in stated,
+                                transferred=spec.transferred,
+                                required_data=[*spec.required_data, f"regime:{r}"]))
+    return out
 
 
 def falsifier_for(spec: CompiledSpec) -> str:

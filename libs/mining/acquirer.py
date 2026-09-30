@@ -27,7 +27,9 @@ import json
 import os
 import re
 import time
+import threading
 import urllib.parse
+import urllib.robotparser
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -66,6 +68,24 @@ class Source:
     enabled: bool = True
     config: dict[str, Any] = field(default_factory=dict)
     origin: str = "sources.yaml"
+    uses: list[str] = field(default_factory=list)      # direct_cells|indirect_cells|allocation_intel
+    consumer: str = ""               # for owned rows: the organ that fetches and consumes it
+    respect_robots: bool = True
+
+
+USES: tuple[str, ...] = ("direct_cells", "indirect_cells", "allocation_intel")
+#: What a row serves when it does not say: prose and code become cells and their regime-
+#: conditioned children; broker and prop mechanics condition cells and inform allocation.
+DEFAULT_USES: dict[str, list[str]] = {
+    "code": ["direct_cells", "indirect_cells"],
+    "text": ["direct_cells", "indirect_cells"],
+    "mechanics": ["indirect_cells", "allocation_intel"],
+}
+#: Fetchers that crawl web PAGES obey robots.txt. Documented APIs and feeds published for
+#: machine reading (json_api, github_search, reddit_json, rss) and rows read from another
+#: lane's files do not consult it; search routes follow deep_forest_miner's established route.
+ROBOTS_FETCHERS: frozenset[str] = frozenset({"html_listing", "page_snapshot",
+                                             "telegram_preview"})
 
 
 def _as_int(v: Any, default: int) -> int:
@@ -75,12 +95,14 @@ def _as_int(v: Any, default: int) -> int:
         return default
 
 
-def normalise_row(row: Mapping[str, Any], *, origin: str) -> Source | None:
+def normalise_row(row: Mapping[str, Any], *, origin: str,
+                  defaults: Mapping[str, Any] | None = None) -> Source | None:
     """A roster row from this file OR from another lane's source table, as it is.
 
     The breadth thread keeps every source as a data row (id, cadence, auth, licence, cursor,
     region/language); those rows are read here without reshaping: `source_id` or `id`,
     cadence in minutes, seconds or hours, `license` or `licence`, `lang` or `language`."""
+    defaults = dict(defaults or {})
     sid = str(row.get("id") or row.get("source_id") or "").strip()
     if not sid:
         return None
@@ -90,10 +112,19 @@ def normalise_row(row: Mapping[str, Any], *, origin: str) -> Source | None:
     if cadence is None and row.get("cadence_hours") is not None:
         cadence = _as_int(row.get("cadence_hours"), 1) * 60
     if cadence is None and isinstance(row.get("cadence"), (int, float, str)):
-        c = str(row.get("cadence")).strip().lower()
+        c = str(row.get("cadence")).strip().lower().split(" ", 1)[0].strip("(),;")
         named = {"hourly": 60, "daily": 1440, "weekly": 10080, "continuous": 15}
-        cadence = named.get(c, _as_int(c.rstrip("m"), 60))
-    auth = str(row.get("auth") or "none").lower()
+        if c in named:
+            cadence = named[c]
+        elif c.endswith("h"):
+            cadence = _as_int(c[:-1], 1) * 60
+        elif c.endswith("d"):
+            cadence = _as_int(c[:-1], 1) * 1440
+        else:
+            cadence = _as_int(c.rstrip("ms"), 60)
+    auth = str(row.get("auth") or "none").lower().split(" ", 1)[0].strip("(),;")
+    if auth in ("cookie", "crumb", "session"):
+        auth = "none"                  # a session cookie with no login: the owner fetches it
     if auth in ("keyless", "public", "no"):
         auth = "none"
     if auth in ("api_key", "token", "paid"):
@@ -105,19 +136,28 @@ def normalise_row(row: Mapping[str, Any], *, origin: str) -> Source | None:
               "paths", "item_regex"):
         if k in row and k not in cfg:
             cfg[k] = row[k]
-    fetcher = str(row.get("fetcher") or ("rss" if row.get("feeds") or row.get("rss")
-                                         else "external_feed" if row.get("paths")
-                                         else "html_listing"))
+    fetcher = str(row.get("fetcher") or defaults.get("fetcher") or (
+        "rss" if row.get("feeds") or row.get("rss")
+        else "external_feed" if row.get("paths") else "html_listing"))
     if fetcher == "rss" and "feeds" not in cfg and row.get("rss"):
         cfg["feeds"] = [row.get("rss")] if isinstance(row.get("rss"), str) else row.get("rss")
+    kind = str(row.get("kind") or defaults.get("kind") or "text")
+    if kind not in DEFAULT_USES:
+        kind = str(defaults.get("kind") or "text")
+    uses_raw = row.get("uses") if row.get("uses") is not None else defaults.get("uses")
+    uses = [str(u) for u in (uses_raw if isinstance(uses_raw, list) else
+                             [uses_raw] if uses_raw else DEFAULT_USES[kind]) if str(u) in USES]
     return Source(
-        id=sid, fetcher=fetcher, kind=str(row.get("kind") or "text"),
+        id=sid, fetcher=fetcher, kind=kind, uses=uses,
+        consumer=str(row.get("consumer") or row.get("organ") or defaults.get("consumer") or ""),
+        respect_robots=bool(row.get("respect_robots", fetcher in ROBOTS_FETCHERS)),
         priority=_as_int(row.get("priority"), 9), name=str(row.get("name") or sid),
         cadence_minutes=max(1, _as_int(cadence, 60)), auth=auth,
         auth_env=str(row.get("auth_env") or ""), region=str(row.get("region") or "global"),
         language=str(row.get("language") or row.get("lang") or ""),
         licence=str(row.get("licence") or row.get("license") or ""),
-        owner=str(row.get("owner") or "global_mining"), mode=str(row.get("mode") or "primary"),
+        owner=str(row.get("owner") or defaults.get("owner") or "global_mining"),
+        mode=str(row.get("mode") or "primary"),
         owner_feed=str(row.get("owner_feed") or ""),
         immutable_time=bool(row.get("immutable_time", False)),
         handoff_deepening=bool(row.get("handoff_deepening", True)),
@@ -139,10 +179,12 @@ def load_roster(path: Path = ROSTER, *, root: Path | None = None) -> list[Source
             seen.add(s.id)
             out.append(s)
     base = root or Path(path).resolve().parents[2]
-    for pattern in doc.get("external_rosters") or []:
+    for entry in doc.get("external_rosters") or []:
+        pattern = entry.get("path") if isinstance(entry, Mapping) else entry
+        defaults = dict(entry.get("defaults") or {}) if isinstance(entry, Mapping) else {}
         for fp in sorted(glob.glob(str(base / str(pattern)), recursive=True)):
             for row in _rows_of(Path(fp)):
-                s = normalise_row(row, origin=fp)
+                s = normalise_row(row, origin=fp, defaults=defaults)
                 if s and s.id not in seen:
                     seen.add(s.id)
                     out.append(s)
@@ -169,7 +211,8 @@ def _rows_of(fp: Path) -> list[Mapping[str, Any]]:
         except ValueError:
             return []
     if isinstance(doc, Mapping):
-        doc = doc.get("sources") or doc.get("rows") or list(doc.values())
+        doc = (doc.get("sources") or doc.get("rows") or doc.get("grounds")
+               or list(doc.values()))
     return [r for r in doc if isinstance(r, Mapping)] if isinstance(doc, list) else []
 
 
@@ -235,6 +278,38 @@ class Item:
     meta: dict[str, Any] = field(default_factory=dict)
 
 
+ROBOTS_AGENT = "quant-global-mining"
+
+
+class RobotsCache:
+    """robots.txt per host, fetched once per pass through the same transport. 404/410 means
+    no rules; any other failure to read it means DISALLOW (the conservative reading)."""
+
+    def __init__(self) -> None:
+        self._by_host: dict[str, urllib.robotparser.RobotFileParser | None] = {}
+        self._lock = threading.Lock()
+
+    def allowed(self, url: str, http_get: HttpGet) -> bool:
+        parts = urllib.parse.urlsplit(url)
+        host = f"{parts.scheme}://{parts.netloc}"
+        with self._lock:
+            known = host in self._by_host
+            rp = self._by_host.get(host)
+        if not known:
+            r = http_get(host + "/robots.txt", {})
+            if r.ok:
+                rp = urllib.robotparser.RobotFileParser()
+                rp.parse(r.text.splitlines())
+            elif r.status in (404, 410):
+                rp = None
+            else:
+                rp = urllib.robotparser.RobotFileParser()
+                rp.parse(["User-agent: *", "Disallow: /"])
+            with self._lock:
+                self._by_host[host] = rp
+        return rp is None or rp.can_fetch(ROBOTS_AGENT, url)
+
+
 @dataclass
 class FetchContext:
     http_get: HttpGet
@@ -244,11 +319,16 @@ class FetchContext:
     root: Path = field(default_factory=Path.cwd)         # relative paths in the roster resolve here
     blocked: list[str] = field(default_factory=list)     # hosts/urls that refused this run
     ok_fetches: int = 0
+    respect_robots: bool = False
+    robots: RobotsCache = field(default_factory=RobotsCache)
 
     def expired(self) -> bool:
         return time.monotonic() >= self.deadline
 
     def fetch(self, url: str, headers: Mapping[str, str] | None = None) -> HttpResult:
+        if self.respect_robots and not self.robots.allowed(url, self.http_get):
+            self.blocked.append(f"{url} -> ROBOTS_DISALLOWED")
+            return HttpResult(None, "", "ROBOTS_DISALLOWED")
         r = self.http_get(url, headers or {})
         if r.ok:
             self.ok_fetches += 1
@@ -690,7 +770,14 @@ def _feed_rows(fp: Path) -> list[Any]:
     return list(doc) if isinstance(doc, list) else []
 
 
+def fetch_owned(src: Source, cursor: dict[str, Any], ctx: FetchContext) -> Iterator[Item]:
+    """A row another organ fetches and consumes (its `consumer`). Rostered here for coverage and
+    uses; never fetched twice."""
+    return iter(())
+
+
 FETCHERS: dict[str, Fetcher] = {
+    "owned": fetch_owned,
     "html_listing": fetch_html_listing,
     "rss": fetch_rss,
     "reddit_json": fetch_reddit_json,
@@ -738,6 +825,7 @@ def acquire(src: Source, store: PitStore, cursors: CursorStore, ctx: FetchContex
     rep = AcquireReport(src.id, "ok")
     ctx.blocked = []
     ctx.ok_fetches = 0
+    ctx.respect_robots = src.respect_robots
     if not src.enabled:
         rep.outcome = "DISABLED"
     elif not force and not is_due(src, cursor, ctx.now):
@@ -747,6 +835,8 @@ def acquire(src: Source, store: PitStore, cursors: CursorStore, ctx: FetchContex
         rep.outcome, rep.detail = "BLOCKED_AUTH", f"needs {src.auth} ({src.auth_env or '?'})"
     elif root is not None and owner_feed_present(src, root):
         rep.outcome, rep.detail = "DEFERRED_TO_OWNER", f"{src.owner} feed {src.owner_feed}"
+    elif src.fetcher == "owned":
+        rep.outcome, rep.detail = "OWNED", f"fetched and consumed by {src.consumer or src.owner}"
     elif src.fetcher not in FETCHERS:
         rep.outcome, rep.detail = "ERROR", f"unknown fetcher {src.fetcher!r}"
     if rep.outcome != "ok":
@@ -784,7 +874,9 @@ def acquire(src: Source, store: PitStore, cursors: CursorStore, ctx: FetchContex
         rep.outcome, rep.detail = "ERROR", f"{type(exc).__name__}: {exc}"[:300]
     if rep.outcome == "ok":
         if rep.fetched == 0 and ctx.blocked and ctx.ok_fetches == 0:
-            rep.outcome, rep.detail = "BLOCKED_FETCH", "; ".join(ctx.blocked[:3])[:300]
+            robots = all(b.endswith("ROBOTS_DISALLOWED") for b in ctx.blocked)
+            rep.outcome = "BLOCKED_ROBOTS" if robots else "BLOCKED_FETCH"
+            rep.detail = "; ".join(ctx.blocked[:3])[:300]
         elif rep.fetched == 0:
             rep.outcome = "empty"
     store.log_run(src.id, rep.outcome, rep.fetched, rep.new, rep.detail, now=ctx.now)

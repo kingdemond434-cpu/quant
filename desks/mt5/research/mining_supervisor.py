@@ -185,9 +185,11 @@ class Pipeline:
         get = http_get or acq.polite_http(deadline)
         t = now or utcnow()
         due = sorted(self.roster, key=lambda s: (s.priority, s.id))
+        robots = acq.RobotsCache()
 
         def one(src: acq.Source) -> acq.AcquireReport:
-            ctx = acq.FetchContext(http_get=get, deadline=deadline, now=t, root=self.root)
+            ctx = acq.FetchContext(http_get=get, deadline=deadline, now=t, root=self.root,
+                                   robots=robots)
             return acq.acquire(src, self.store, self.cursors, ctx, root=self.root, force=force)
         out: list[acq.AcquireReport] = []
         for src, rep, err in run_concurrently(due, one, workers=workers):
@@ -292,44 +294,60 @@ class Pipeline:
         made = 0
         parent = ""
         for spec in res.specs:
-            s = spec.spec()
-            cid = extractor.cell_id_for(str(rec["record_id"]), s)
-            mh = dedup.mechanism_hash(mechanism_family=mfam, spec=s)
-            tfid = prereg.trial_family_id(mfam, spec.subtype, spec.family)
-            gcell = self.hooks.gauntlet_cell(s)
-            rules = {"family": spec.family, "params": spec.params, "sym": spec.sym,
-                     "timeframe": spec.timeframe, "source_rule": dict(rule)}
-            cell = Cell(cell_id=cid, mechanism_family=mfam, mechanism_subtype=spec.subtype,
-                        directly_published_rules=rules if spec.published else None,
-                        reconstructed_rules=None if spec.published else rules,
-                        required_data=list(spec.required_data),
-                        required_instruments=[spec.sym],
-                        falsifier=compiler.falsifier_for(spec), trial_lineage_id=tfid,
-                        trial_family_id=tfid, parent_cell_id=parent, mechanism_hash=mh,
-                        spec=s, gauntlet_cell=gcell, status="TESTABLE",
-                        claim=str(rule.get("claim") or "")[:500], **base)
-            owner = self.dedup.claim(mh, cid, language=cell.original_language)
-            prior = self.hooks.prior_verdict(gcell) if owner is None else None
-            if owner is not None or prior is not None:
-                dup_of = owner or f"gauntlet:{gcell}"
-                cell.status = "BLOCKED_DUPLICATE_MECHANISM"
-                cell.rejection_reason, cell.rejection_stage = "DUPLICATE_MECHANISM", "dedup"
-                cell.duplicate_of = dup_of
-                if prior is not None and owner is None:
-                    self.dedup.seed_prior_art(mh, dup_of, "gauntlet")
-                if self.cells.add(cell, stage="dedup", now=now):
-                    self.ledger.reject(cid, "DUPLICATE_MECHANISM", "dedup",
-                                       source_id=cell.source_id, duplicate_of=dup_of,
-                                       detail=f"{cell.original_language} telling of {dup_of}"
-                                       + (f"; prior verdict {prior}" if prior else ""))
-                    made += 1
-                continue
-            if not self.cells.add(cell, stage="compile", now=now):
-                continue                                  # same record re-processed
-            made += 1
+            n, cid = self._spec_cell(rec, ex, rule, spec, mfam, parent=parent,
+                                     use="direct_cells", now=now)
+            made += n
             parent = parent or cid
-            self._seal(cell, now=now)
+            # INDIRECT CELLS: the same family, multiplied by the regime conditions the gauntlet
+            # applies honestly. Children of the direct cell, charged to its trial family.
+            for child in compiler.indirect_variants(spec, rule):
+                made += self._spec_cell(rec, ex, rule, child, mfam, parent=cid or parent,
+                                        use="indirect_cells", now=now,
+                                        family_subtype=spec.subtype)[0]
         return made, True
+
+    def _spec_cell(self, rec: Mapping[str, Any], ex: extractor.Extraction,
+                   rule: Mapping[str, Any], spec: compiler.CompiledSpec, mfam: str, *,
+                   parent: str, use: str, now: datetime | None = None,
+                   family_subtype: str = "") -> tuple[int, str]:
+        """One compiled spec -> one cell (sealed, or blocked with its reason). (made, cell_id);
+        cell_id is "" when the spec was a duplicate or already existed."""
+        base = self._base(rec, ex)
+        s = spec.spec()
+        cid = extractor.cell_id_for(str(rec["record_id"]), s)
+        mh = dedup.mechanism_hash(mechanism_family=mfam, spec=s)
+        tfid = prereg.trial_family_id(mfam, family_subtype or spec.subtype, spec.family)
+        gcell = self.hooks.gauntlet_cell(s)
+        rules = {"family": spec.family, "params": spec.params, "sym": spec.sym,
+                 "timeframe": spec.timeframe, "source_rule": dict(rule)}
+        cell = Cell(cell_id=cid, mechanism_family=mfam, mechanism_subtype=spec.subtype,
+                    directly_published_rules=rules if spec.published else None,
+                    reconstructed_rules=None if spec.published else rules,
+                    required_data=list(spec.required_data), required_instruments=[spec.sym],
+                    falsifier=compiler.falsifier_for(spec), trial_lineage_id=tfid,
+                    trial_family_id=tfid, parent_cell_id=parent, mechanism_hash=mh, spec=s,
+                    gauntlet_cell=gcell, status="TESTABLE", use=use,
+                    claim=str(rule.get("claim") or "")[:500], **base)
+        owner = self.dedup.claim(mh, cid, language=cell.original_language)
+        prior = self.hooks.prior_verdict(gcell) if owner is None else None
+        if owner is not None or prior is not None:
+            dup_of = owner or f"gauntlet:{gcell}"
+            cell.status = "BLOCKED_DUPLICATE_MECHANISM"
+            cell.rejection_reason, cell.rejection_stage = "DUPLICATE_MECHANISM", "dedup"
+            cell.duplicate_of = dup_of
+            if prior is not None and owner is None:
+                self.dedup.seed_prior_art(mh, dup_of, "gauntlet")
+            if self.cells.add(cell, stage="dedup", now=now):
+                self.ledger.reject(cid, "DUPLICATE_MECHANISM", "dedup",
+                                   source_id=cell.source_id, duplicate_of=dup_of,
+                                   detail=f"{cell.original_language} telling of {dup_of}"
+                                   + (f"; prior verdict {prior}" if prior else ""))
+                return 1, ""
+            return 0, ""
+        if not self.cells.add(cell, stage="compile", now=now):
+            return 0, ""                                  # same record re-processed
+        self._seal(cell, now=now)
+        return 1, cid
 
     def _seal(self, cell: Cell, now: datetime | None = None) -> None:
         """TESTABLE -> QUEUED only through the seal. No bars is BLOCKED_DATA (retried)."""
@@ -401,6 +419,7 @@ class Pipeline:
                "available_for_decision_at": rec["available_for_decision_at"],
                "label": (rec.get("meta") or {}).get("label"), "facts": dict(facts),
                "changed_fields": changed, "page_changed": bool(prev),
+               "published_at": iso(utcnow()),
                "feeds_to": (self.by_id[str(rec["source_id"])].feeds
                             if str(rec["source_id"]) in self.by_id else [])}
         self.feed.parent.mkdir(parents=True, exist_ok=True)
@@ -545,7 +564,15 @@ class Pipeline:
                 continue
             n = int(receipts.get(s.id, 0))
             r = runs.get(s.id) or {}
-            out[s.id] = {"status": "ACTIVE" if n >= 1 else "COLD",
+            cell_use = bool({"direct_cells", "indirect_cells"} & set(s.uses))
+            out[s.id] = {"status": "ACTIVE" if n >= 1 and cell_use else "COLD",
+                         "uses": list(s.uses),
+                         "cold_reason": ("" if n >= 1 and cell_use else
+                                         "serves no use" if not s.uses else
+                                         "allocation_intel only: no cell can carry a receipt"
+                                         if not cell_use else
+                                         "no cell EVALUATED in 30 days"),
+                         "consumer": s.consumer,
                          "evaluated_cells_30d": n, "priority": s.priority,
                          "last_outcome": r.get("outcome") or "NEVER_RUN",
                          "last_run": r.get("at"), "last_detail": r.get("detail") or "",
@@ -598,6 +625,7 @@ class Pipeline:
                 day, stages=[s for s in rejection.STAGES
                              if s not in rejection.EVALUATION_STAGES]),
             "cells_survived_24h": survived,
+            "cells_by_use_24h": self._by_use(day),
             "rejection_rate": round(rate, 4) if rate is not None else None,
             "median_time_source_to_evaluation_hours": lat,
             "queue_age_p95_days": p95,
@@ -615,6 +643,34 @@ class Pipeline:
                                   "nothing was evaluated (UNMEASURED, not zero)",
                 "sources_active": "ACTIVE = >=1 cell EVALUATED in the last 30 days"},
         }
+
+    def _by_use(self, since: datetime) -> dict[str, Any]:
+        """Cells created per use in the window, and what became of them; allocation_intel is
+        counted in mechanics-feed rows, since it produces facts rather than cells."""
+        out: dict[str, Any] = {u: {"created": 0, "sealed": 0, "evaluated": 0, "survived": 0}
+                               for u in compiler.USES}
+        for c in self.cells.created_since(since):
+            b = out.get(c.use or "direct_cells")
+            if b is None:
+                continue
+            b["created"] += 1
+            b["sealed"] += int(bool(c.preregistration_id))
+            b["evaluated"] += int(c.status == "EVALUATED")
+            b["survived"] += int(bool((c.verdict or {}).get("survivor")))
+        feed = 0
+        try:
+            with self.feed.open(encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        row = json.loads(line)
+                    except ValueError:
+                        continue
+                    t = parse_time(row.get("published_at"))
+                    feed += int(t is not None and t >= since)
+        except OSError:
+            pass
+        out["allocation_intel"]["feed_rows"] = feed
+        return out
 
     def _latency_hours(self, now: datetime) -> float | None:
         """Median hours from acquisition to verdict, over cells evaluated in the last 30 days."""

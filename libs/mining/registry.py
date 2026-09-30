@@ -90,6 +90,7 @@ class Cell:
     spec: dict[str, Any] | None = None
     gauntlet_cell: str = ""
     verdict: dict[str, Any] | None = None
+    use: str = "direct_cells"            # direct_cells | indirect_cells | allocation_intel
 
     def as_row(self) -> dict[str, Any]:
         return asdict(self)
@@ -268,6 +269,12 @@ class CellRegistry:
                 "JOIN cells c ON c.cell_id=e.cell_id WHERE e.to_status='EVALUATED' "
                 "AND e.at >= ? GROUP BY c.source_id", (iso(since),)).fetchall()
         return {str(r["s"]): int(r["n"]) for r in rows}
+
+    def created_since(self, since: datetime) -> list[Cell]:
+        with self._conn() as c:
+            rows = c.execute("SELECT doc FROM cells WHERE created_at >= ?",
+                             (iso(since),)).fetchall()
+        return [Cell(**json.loads(str(r["doc"]))) for r in rows]
 
     def all_cells(self) -> list[Cell]:
         with self._conn() as c:
