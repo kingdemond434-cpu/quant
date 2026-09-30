@@ -192,6 +192,8 @@ def screen(rows: list[Any], meta: dict[str, Any]) -> dict[str, Any]:
         spec["rationale_grade"] = _rg.best(spec.get("rationale_grade", "NONE"), g["grade"])
         spec["rationale_grade_cell_only"] = _rg.best(
             spec.get("rationale_grade_cell_only", "NONE"), g["grade_cell_only"])
+        if g.get("context"):
+            spec.setdefault("rationale_context", g["context"])
     t_grade = time.time() - t0
 
     # GATE 0, DELEGATED. This is the sealed judge's own call, on the sealed judge's own specs.

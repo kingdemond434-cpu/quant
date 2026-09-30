@@ -27,6 +27,8 @@ FULL = {
     "payer": "passive funds mandated to execute at the published fix",
     "constraint": "dealer balance-sheet limits cap how much fix flow can be warehoused",
 }
+A_SENTENCE_NO_PAYER = ("the price overshoots after the Tokyo open and reverts within two hours "
+                       "as the opening imbalance clears")
 
 
 def test_all_three_from_the_cell_is_grade_a() -> None:
@@ -85,6 +87,25 @@ def test_nobody_is_compelled_is_not_a_payer() -> None:
         assert g["components"]["payer"]["present"] is False
 
 
+def test_context_fields_ride_along_and_failure_mode_counts_as_payer() -> None:
+    row = {"symbol": "EURUSD", "family": "zz_unmapped",
+           "mechanism_note": A_SENTENCE_NO_PAYER,
+           "source_culture": "japanese retail forum", "participant_structure": "retail-heavy",
+           "failure_mode_hypothesis": "retail margin traders are stopped out mechanically "
+                                      "rather than by choice",
+           "crowding_prior": "low"}
+    g = RG.grade(row, use_registry=False)
+    assert g["components"]["payer"] == {"present": True,
+                                        "source": "cell:failure_mode_hypothesis"}
+    assert set(g["context"]) == set(RG.CONTEXT_KEYS)
+    tagged = RG.tag(dict(row))
+    assert tagged["rationale_context"]["crowding_prior"] == "low"
+    # a boilerplate failure mode does not count
+    weak = dict(row, failure_mode_hypothesis="unknown")
+    assert RG.grade(weak, use_registry=False)["components"]["payer"]["present"] is False
+    assert "failure_mode_hypothesis" not in RG.grade(weak, use_registry=False)["context"]
+
+
 def test_tag_only_adds_keys_and_never_raises_on_junk() -> None:
     row = dict(FULL)
     before = dict(row)
@@ -128,7 +149,7 @@ def test_fast_admission_admits_exactly_the_same_cells_with_the_tag(monkeypatch) 
 
     monkeypatch.setitem(sys.modules, "rationale_grade", _Flat)
     flat = fa.screen([dict(r) for r in rows], meta)
-    strip = ("rationale_grade", "rationale_grade_cell_only")
+    strip = ("rationale_grade", "rationale_grade_cell_only", "rationale_context")
     assert [{k: v for k, v in s.items() if k not in strip} for s in tagged["admissible"]] == \
         [{k: v for k, v in s.items() if k not in strip} for s in flat["admissible"]]
     assert tagged["admissible_cells"] == flat["admissible_cells"] == 3

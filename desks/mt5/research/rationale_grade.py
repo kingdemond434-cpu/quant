@@ -32,6 +32,11 @@ WHERE EACH COMPONENT MAY COME FROM, recorded per component so the grade is audit
               for a cell that declares its `event`. No registry on this desk names a CONSTRAINT,
               so (c) is only ever satisfied by the cell itself -- stated, not papered over.
 
+CONTEXT FIELDS (`source_culture`, `participant_structure`, `failure_mode_hypothesis`,
+`crowding_prior`), when a cell carries them, are copied into the tag's `context`; a non-
+boilerplate `failure_mode_hypothesis` (>= 4 words, not a label) also satisfies (b), because it
+names why the counterparty behaves differently from the desk.
+
 `grade_cell_only` is the same grade with registry lookups off, so a reader can see how much of a
 grade the family lent the cell.
 
@@ -83,6 +88,11 @@ _PAYER_KEYS = ("payer", "counterparty", "opposing_side", "actor", "economic_acto
 _CONSTRAINT_KEYS = ("constraint", "constraints", "limits_to_arbitrage", "arbitrage_constraint",
                     "why_edge_can_persist", "why_persists", "persistence")
 _NESTS = ("structured", "spec", "rationale", "mechanism_genome")
+#: Context fields other builders attach to a cell. Carried through into the tag output verbatim
+#: (truncated); `failure_mode_hypothesis` also COUNTS toward the payer component when non-
+#: boilerplate, because it names why the counterparty behaves differently from the desk.
+CONTEXT_KEYS: tuple[str, ...] = ("source_culture", "participant_structure",
+                                 "failure_mode_hypothesis", "crowding_prior")
 
 #: Values that name nothing: labels and fillers the desk's writers emit when they have no answer.
 _EMPTY = frozenset({"", "unknown", "none", "null", "n/a", "na", "tbd", "?", "other", "market",
@@ -128,6 +138,12 @@ def _mechanism_ok(text: str) -> bool:
     if _is_label(t) or len(t.split()) < 6:
         return False
     return not any(p.search(t) for p in _BOILER_MECH)
+
+
+def _statement_ok(text: str) -> bool:
+    """A short statement, not a label or a filler: at least four words."""
+    t = _norm(text)
+    return not _is_label(t) and len(t.split()) >= 4
 
 
 def _named_ok(text: str) -> bool:
@@ -188,7 +204,7 @@ def _event_payer(blocks: list[Mapping[str, Any]]) -> tuple[str | None, str | Non
     return None, None
 
 
-_SIG_KEYS = _MECH_KEYS + _PAYER_KEYS + _CONSTRAINT_KEYS + ("event",)
+_SIG_KEYS = _MECH_KEYS + _PAYER_KEYS + _CONSTRAINT_KEYS + CONTEXT_KEYS + ("event",)
 
 
 def grade(row: Mapping[str, Any], *, use_registry: bool = True) -> dict[str, Any]:
@@ -198,11 +214,12 @@ def grade(row: Mapping[str, Any], *, use_registry: bool = True) -> dict[str, Any
     a million rows carries a few thousand distinct statements; the returned dict is a copy."""
     if not isinstance(row, Mapping):
         return {"grade": "NONE", "grade_cell_only": "NONE", "census_class": None,
-                "components": {}}
+                "components": {}, "context": {}}
     blocks = _fields(row)
     sig = tuple(tuple((k, _norm(b.get(k))[:600]) for k in _SIG_KEYS if b.get(k)) for b in blocks)
     out = _grade_sig(_norm(row.get("family")), sig, use_registry)
-    return {**out, "components": {k: dict(v) for k, v in out["components"].items()}}
+    return {**out, "components": {k: dict(v) for k, v in out["components"].items()},
+            "context": dict(out["context"])}
 
 
 @lru_cache(maxsize=65536)
@@ -219,6 +236,13 @@ def _grade_sig(family: str, sig: tuple[tuple[tuple[str, str], ...], ...],
     comps["payer"] = {"present": bool(payer), "source": "cell" if payer else None}
     if not payer and text_ok and _PAYER_CLAUSE.search(text):
         comps["payer"] = {"present": True, "source": "cell_text"}
+    # A FAILURE-MODE HYPOTHESIS names why the counterparty behaves differently from the desk --
+    # the "why are they willing to lose" half of (b) -- so a real one satisfies the payer.
+    if not comps["payer"]["present"] and _first(blocks, ("failure_mode_hypothesis",),
+                                                 _statement_ok):
+        comps["payer"] = {"present": True, "source": "cell:failure_mode_hypothesis"}
+    context = {k: v[:300] for k in CONTEXT_KEYS
+               if (v := _first(blocks, (k,), _named_ok)) is not None}
     cons = _first(blocks, _CONSTRAINT_KEYS, _named_ok)
     comps["constraint"] = {"present": bool(cons), "source": "cell" if cons else None}
     if not cons and text_ok and _CONSTRAINT_CLAUSE.search(text):
@@ -240,7 +264,7 @@ def _grade_sig(family: str, sig: tuple[tuple[tuple[str, str], ...], ...],
                               else f"registry:mechanism_census:{cls}"}
     n = sum(1 for c in comps.values() if c["present"])
     return {"grade": _GRADE_OF[n], "grade_cell_only": _GRADE_OF[cell_only],
-            "census_class": cls, "components": comps}
+            "census_class": cls, "components": comps, "context": context}
 
 
 def best(a: str, b: str) -> str:
@@ -253,6 +277,8 @@ def tag(row: dict[str, Any]) -> dict[str, Any]:
     g = grade(row)
     row["rationale_grade"] = g["grade"]
     row["rationale_grade_cell_only"] = g["grade_cell_only"]
+    if g["context"]:
+        row["rationale_context"] = g["context"]
     return row
 
 
