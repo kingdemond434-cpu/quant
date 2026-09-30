@@ -1573,6 +1573,9 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
     proj18 = int(rate_t * 18 * DUTY * 86400) if rate_t else UNMEASURED
     proj_here = int(rate_t * cores * DUTY * 86400) if rate_t and cores else UNMEASURED
     proj18_ruled = int(rate_r * 18 * DUTY * 86400) if rate_r else UNMEASURED
+    # the CONSERVATIVE bound: as if every backlog cell needed a build (no free preflight
+    # ruling), at the measured built-cells rate
+    proj18_built = int(rate * 18 * DUTY * 86400) if rate else UNMEASURED
     # the SCHEDULED pace: what one hourly leg rules (and tests) per run, x24
     per_run = [int(r.get("ruled") or 0) for r in runs[-6:] if not r.get("dry_run")]
     scheduled = int(np.median(per_run) * 24) if per_run else UNMEASURED
@@ -1686,6 +1689,11 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
                                            "a training-window statistic per core-second) x 18 "
                                            f"cores x {DUTY} duty x 86,400 s; not a measurement"),
         "stage1_ruled_per_day_projected_18c_50pct": proj18_ruled,
+        "stage1_built_per_day_projected_18c_50pct": proj18_built,
+        "stage1_ruled_projection_note": ("the RULED rate counts no-build preflight rulings "
+                                         "(untradeable, modifier-refused, dead session), whose "
+                                         "share depends on the host's bars; the built-rate "
+                                         "projection is the bound if every cell needs a build"),
         "stage1_per_day_scheduled": scheduled,
         "stage1_tested_per_day_scheduled": scheduled_t,
         "stage2_per_day": s2.get("judged_24h", UNMEASURED) if isinstance(s2, dict) else UNMEASURED,
@@ -1710,6 +1718,7 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
                           "projected_18c_50pct": _clear(proj18_ruled),
                           "projected_18c_50pct_including_wrong_space":
                               _clear(proj18_ruled, backlog_total),
+                          "projected_18c_50pct_if_every_cell_is_built": _clear(proj18_built),
                           "rule": "backlog_excluding_wrong_space / (stage-1 per day - creation "
                                   "per day); GROWING when creation is not outrun"},
         "unknown_causes": {
