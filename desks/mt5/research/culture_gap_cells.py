@@ -107,6 +107,30 @@ WRITE_RESERVE_S = 10.0
 BANNED_FAMILIES = frozenset({"discovered"})
 ORIGIN = "culture_gap_cells"
 
+#: Families that take a window in the PUBLISHER'S OWN CLOCK (`mt5desk/local_clock.py`): the
+#: recipe's window param -> the family's prefix for `<prefix>_tz`, `<prefix>_at`, `<prefix>_align`.
+#: A recipe on one of these mints ONE cell per grid point whose window is right on every date,
+#: DST included, instead of one broker-hour variant per season (each wrong 35-65% of the year).
+LOCAL_CLOCK: dict[str, dict[str, str]] = {
+    "fx_fixing_reversal": {"fix_hour": "fix"},
+    "hedging_demand_close": {"close_hour": "close", "rod_start_hour": "rod_start"},
+    "session_handoff": {"source_start_hour": "source", "trade_hour": "trade"},
+}
+#: The session identity every cell carries. The window is the rule's own clock, so the compiler's
+#: session axis (asia/london/ny) would only re-slice it into filters that keep or empty it.
+SESSION = "all"
+
+#: TRADABILITY, from the broker's own contract terms (2026-09-30). A symbol the broker has
+#: DISABLED (trade_mode 0) or set CLOSE-ONLY (3) cannot open a trade, and a symbol whose spread
+#: costs more than these fractions of notional cannot pay for a one-to-three-bar fixing or close
+#: effect: its cells would spend family-wise trials no result could cash. Gated symbols are named
+#: in the report with the numbers, and re-read every pass (a spread that normalises un-gates).
+UNTRADEABLE_MODES = {0: "DISABLED", 3: "CLOSE_ONLY"}
+MAX_MEDIAN_SPREAD_COST = 0.0010
+MAX_SNAPSHOT_SPREAD_COST = 0.0100
+TERMS_DIR = DESK / "data" / "tape" / "contract_terms"
+BARS_DIR = DESK / "data" / "universe"
+
 
 # ----------------------------------------------------------------------------------- helpers
 def _now() -> str:
@@ -142,6 +166,91 @@ def roster(path: Path = ROSTER) -> dict[str, dict[str, Any]]:
 def universe(path: Path = UNIVERSE) -> set[str]:
     doc = _read(path, {})
     return {str(k).upper() for k in doc} if isinstance(doc, dict) else set()
+
+
+def universe_rows(path: Path = UNIVERSE) -> dict[str, dict[str, Any]]:
+    doc = _read(path, {})
+    return ({str(k).upper(): v for k, v in doc.items() if isinstance(v, dict)}
+            if isinstance(doc, dict) else {})
+
+
+# ------------------------------------------------------------------------------ tradability
+def trade_modes(terms_dir: Path | None = None) -> dict[str, int] | None:
+    """symbol -> the broker's trade_mode from the newest contract-terms snapshot the tape wrote
+    (`mt5desk/tape.record_contract_terms`); None when no snapshot exists on this host."""
+    root = terms_dir or TERMS_DIR
+    files = sorted(root.glob("*.parquet")) if root.exists() else []
+    if not files:
+        return None
+    try:
+        frame = pd.read_parquet(files[-1])
+    except Exception:
+        return None
+    if "symbol" not in frame or "trade_mode" not in frame:
+        return None
+    out: dict[str, int] = {}
+    for sym, mode in zip(frame["symbol"], frame["trade_mode"], strict=False):
+        if mode is not None and pd.notna(mode):
+            out[str(sym).upper()] = int(mode)
+    return out
+
+
+def _last_close(sym: str, bars_dir: Path | None = None) -> float | None:
+    p = (bars_dir or BARS_DIR) / f"{sym}_H1.parquet"
+    if not p.exists():
+        return None
+    try:
+        close = pd.read_parquet(p, columns=["close"])["close"]
+        v = float(close.iloc[-1]) if len(close) else None
+    except Exception:
+        return None
+    return v if v and v > 0 else None
+
+
+def spread_costs(sym: str, rows: dict[str, dict[str, Any]], bars_dir: Path | None = None
+                 ) -> tuple[float | None, float | None, str]:
+    """(median spread cost, snapshot spread cost) as fractions of notional, and how measured.
+
+    With the desk's own H1 close: points x tick size / price. Without bars, for a pair whose
+    BASE is USD: points x tick value / (contract size x USD-in-account), the USD factor read off
+    EURUSD's own tick value -- price-free and exact for that shape. Anything else: UNMEASURED."""
+    r = rows.get(sym.upper()) or {}
+    med, snap = r.get("median_spread_pts"), r.get("spread_pts_at_collection")
+    ts, tv, cs = r.get("tick_size"), r.get("tick_value"), r.get("contract_size")
+    px = _last_close(sym, bars_dir)
+    if px and ts:
+        f = float(ts) / px
+        return ((float(med) * f if med is not None else None),
+                (float(snap) * f if snap is not None else None), "bars: pts x tick_size / close")
+    eu = rows.get("EURUSD") or {}
+    if (sym.upper().startswith("USD") and len(sym) == 6 and tv and cs and eu.get("tick_value")
+            and eu.get("tick_size") and eu.get("contract_size")):
+        usd_acct = float(eu["tick_value"]) / (float(eu["tick_size"]) * float(eu["contract_size"]))
+        g = float(tv) / (float(cs) * usd_acct)
+        return ((float(med) * g if med is not None else None),
+                (float(snap) * g if snap is not None else None),
+                "terms: pts x tick_value / (contract_size x USD-in-account)")
+    return None, None, CC.UNMEASURED
+
+
+def tradability(sym: str, rows: dict[str, dict[str, Any]], modes: dict[str, int] | None,
+                bars_dir: Path | None = None) -> dict[str, Any]:
+    """{"ok": bool, "why": str, ...measurements}. UNMEASURED never gates: a check that could not
+    be made is reported as such and the symbol is minted."""
+    mode = None if modes is None else modes.get(sym.upper())
+    med, snap, basis = spread_costs(sym, rows, bars_dir)
+    m: dict[str, Any] = {"trade_mode": (CC.UNMEASURED if mode is None else mode),
+                         "median_spread_cost": med, "snapshot_spread_cost": snap,
+                         "spread_basis": basis}
+    if mode in UNTRADEABLE_MODES:
+        return {"ok": False, "why": f"trade_mode {mode} ({UNTRADEABLE_MODES[mode]})", **m}
+    if med is not None and med > MAX_MEDIAN_SPREAD_COST:
+        return {"ok": False, "why": f"median spread {med:.3%} of notional > "
+                                    f"{MAX_MEDIAN_SPREAD_COST:.2%}", **m}
+    if snap is not None and snap > MAX_SNAPSHOT_SPREAD_COST:
+        return {"ok": False, "why": f"spread at collection {snap:.2%} of notional > "
+                                    f"{MAX_SNAPSHOT_SPREAD_COST:.0%}", **m}
+    return {"ok": True, "why": "", **m}
 
 
 # ------------------------------------------------------------------------- the clock, converted
@@ -202,6 +311,9 @@ def variants(rec: dict[str, Any], year: int) -> tuple[list[dict[str, Any]], list
     wins = [w for w in (rec.get("windows") or []) if isinstance(w, dict)]
     if not wins:
         return [{"params": {}, "share": 1.0}], []
+    lv = local_variant(rec)
+    if lv is not None:
+        return [lv], []
     days = weekdays(year)
     cols = [window_hours(w, days) for w in wins]
     tally: Counter[tuple[Any, ...]] = Counter()
@@ -226,6 +338,43 @@ def variants(rec: dict[str, Any], year: int) -> tuple[list[dict[str, Any]], list
         else:
             kept.append(row)
     return kept, dropped
+
+
+def local_variant(rec: dict[str, Any]) -> dict[str, Any] | None:
+    """The ONE DST-exact variant of a recipe whose family reads its window in the publisher's
+    own clock, or None when the family or a window cannot be expressed that way. A recipe with a
+    `calendar` fires only on that calendar's dates at each date's own time (fixing family only).
+    The family enforces order itself (a handoff's trade window must open after its source, a
+    close must follow its start on the same local date)."""
+    fam = str(rec.get("family"))
+    m = LOCAL_CLOCK.get(fam)
+    wins = [w for w in (rec.get("windows") or []) if isinstance(w, dict)]
+    if not m or not wins or any(w.get("param") not in m or w.get("span") for w in wins):
+        return None
+    params: dict[str, Any] = {}
+    for w in wins:
+        pre = m[str(w["param"])]
+        params[f"{pre}_tz"] = str(w["tz"])
+        params[f"{pre}_at"] = str(w["at"])
+        params[f"{pre}_align"] = str(w.get("align") or "contains")
+    cal = str(rec.get("calendar") or "")
+    if cal:
+        if fam != "fx_fixing_reversal":
+            return None
+        params = {"calendar": cal, "fix_align": params.get("fix_align", "contains")}
+    return {"params": params, "share": 1.0, "clock": "local"}
+
+
+def identity_params(params: dict[str, Any], chart: str) -> dict[str, Any]:
+    """The params ONE identity carries everywhere -- registry row, donation row, compiled docket
+    cell: the rule, `session`, and `timeframe` off H1 (the desk's convention). The registry and
+    the intake then name the same rule the same way, so the merge's (symbol, family, params)
+    identity and the registry's content hash both see one cell, charged once."""
+    out = dict(params)
+    out["session"] = SESSION
+    if chart != "H1":
+        out["timeframe"] = chart
+    return out
 
 
 def _causal_order(rec: dict[str, Any], params: dict[str, Any]) -> str:
@@ -269,10 +418,14 @@ def pack_signals(pack: str) -> tuple[list[str], str]:
     return list(sigs), ("" if sigs else f"UNMEASURED: {why}")
 
 
-def cells_for(rec: dict[str, Any], year: int, universe_syms: set[str]
+def cells_for(rec: dict[str, Any], year: int, universe_syms: set[str], *,
+              rows: dict[str, dict[str, Any]] | None = None,
+              modes: dict[str, int] | None = None,
               ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Every cell a recipe asks for, in a stable order, and the recipe's measurement notes."""
-    note: dict[str, Any] = {"refused": []}
+    """Every cell a recipe asks for, in a stable order, and the recipe's measurement notes.
+    With `rows` (the registry's contract terms) a symbol the broker will not let the desk trade
+    is GATED: named in `note["gated"]` with its numbers, and not minted this pass."""
+    note: dict[str, Any] = {"refused": [], "gated": []}
     fam = str(rec["family"])
     if fam in BANNED_FAMILIES:
         note["refused"].append(f"family {fam!r} is banned")
@@ -280,10 +433,15 @@ def cells_for(rec: dict[str, Any], year: int, universe_syms: set[str]
     syms = []
     for s in rec.get("symbols") or []:
         su = str(s).upper()
-        if su in universe_syms:
-            syms.append(str(s))
-        else:
+        if su not in universe_syms:
             note["refused"].append(f"{s}: not in the MT5 universe registry")
+            continue
+        if rows is not None:
+            t = tradability(su, rows, modes)
+            if not t["ok"]:
+                note["gated"].append({"symbol": str(s), **t})
+                continue
+        syms.append(str(s))
     kept, dropped = variants(rec, year)
     note["variants"], note["dropped_variants"] = kept, dropped
     extra: list[dict[str, Any]] = [{}]
@@ -300,9 +458,9 @@ def cells_for(rec: dict[str, Any], year: int, universe_syms: set[str]
             for ex in extra:
                 for gp in _grid(rec):
                     for chart in rec.get("charts") or ["H1"]:
-                        params = {**fixed, **v["params"], **ex, **gp}
+                        params = identity_params({**fixed, **v["params"], **ex, **gp}, chart)
                         out.append({"symbol": sym, "params": params, "chart": chart,
-                                    "share": v["share"]})
+                                    "share": v["share"], "clock": v.get("clock", "broker")})
     return out, note
 
 
@@ -342,20 +500,40 @@ _ORDER = {"ZERO": 0, "THIN": 1, CC.UNMEASURED: 2, "COVERED": 3}
 
 
 # ---------------------------------------------------------------------------------- the door
-def _culture(rec: dict[str, Any], cell: dict[str, Any], src: dict[str, Any]) -> dict[str, Any]:
+def english_families(summary: Path = SUMMARY) -> frozenset[str] | None:
+    """The English-coverage evidence `crowding_prior` needs: the families the registry already
+    holds from an English source, as the culture index last published them in `summary` (the
+    same file this leg reads its gap list from). None when that summary does not carry it."""
+    doc = _read(summary, None)
+    fams = doc.get("english_covered_families") if isinstance(doc, dict) else None
+    return frozenset(str(f) for f in fams) if isinstance(fams, list) else None
+
+
+def _culture(rec: dict[str, Any], cell: dict[str, Any], src: dict[str, Any],
+             english: frozenset[str] | None = None) -> dict[str, Any]:
     """The four fields through the ONE rule: culture and structure DECLARED (the recipe exists
-    because its publisher states the fact), failure mode and crowding inferred."""
+    because its publisher states the fact), failure mode and crowding inferred -- crowding from
+    the English-coverage evidence the run read (`english`), or the module's own reading of the
+    published summary when the run had none. Where no rule reaches, it stays UNMEASURED."""
     row = {"family": rec["family"], "symbol": cell["symbol"], "params": cell["params"],
            "source_url": src.get("url"), "mechanism": rec.get("mechanism"),
-           "source": f"{ORIGIN}:{rec['id']}"}
-    return CC.stamp(row, source_culture=rec.get("source_culture"),
-                    participant_structure=rec.get("participant_structure"))
+           "source": f"{ORIGIN}:{rec['id']}",
+           "source_culture": rec.get("source_culture"),
+           "participant_structure": rec.get("participant_structure")}
+    return CC.infer(row, english_families=(english if english is not None else True))
 
 
 def _rationale(rec: dict[str, Any], cell: dict[str, Any], src: dict[str, Any]) -> str:
     clock = ""
     wins = rec.get("windows") or []
-    if wins:
+    if wins and cell.get("clock") == "local":
+        clock = (" Clock: " + "; ".join(f"{w['at']} {w['tz']} ({w.get('align')})"
+                                        for w in wins)
+                 + ", found on each date in the publisher's own clock from the venue stamp "
+                   "(mt5desk/local_clock, libs/regime/session_clock), DST-exact"
+                 + (f"; only on the dates of calendar {rec['calendar']}"
+                    if rec.get("calendar") else "") + ".")
+    elif wins:
         clock = (" Clock: " + "; ".join(f"{w['param']} = {w['at']} {w['tz']} ({w.get('align')})"
                                         for w in wins)
                  + f" -> broker stamp {cell['params'].get(wins[0]['param'])}, exact on "
@@ -370,19 +548,15 @@ def donation_row(rec: dict[str, Any], cell: dict[str, Any], src: dict[str, Any])
     """One intake row for `proposer_common.donate`: an EXACT RECIPE the compiler admits as
     written (family + params dict + symbol + a registered family).
 
-    The chart is written as `timeframe` (H1 carries none, the desk's convention) and the session
-    is pinned to `all`: the cell already names its broker hour, so the compiler's session axis
-    (asia/london/ny) would only re-slice one fixed hour into filters that either keep it or empty
-    it -- trials charged for nothing. Both are identity keys the families never see.
+    Its params are the cell's `identity_params` UNCHANGED -- the very dict the registry row
+    carries -- so the rule has one identity from the registry to the docket (the chart as
+    `timeframe` off H1, the session pinned to `all`; both identity keys the families never see).
 
     CULTURE: only the two fields the recipe KNOWS ride as declared (`source_culture`,
     `participant_structure`); the failure mode and crowding prior are left for the compiler's
     `cell_culture.carry` to infer by the one rule, so the docket's `culture_derivation` says
     `inferred:*` for them and not a laundered `declared`."""
     params = dict(cell["params"])
-    if cell["chart"] != "H1":
-        params["timeframe"] = cell["chart"]
-    params["session"] = "all"
     return {"source": SEAT, "kind": "culture_gap_recipe", "symbol": cell["symbol"],
             "family": rec["family"], "params": params,
             "mechanism": _rationale(rec, cell, src),
@@ -396,7 +570,8 @@ def donation_row(rec: dict[str, Any], cell: dict[str, Any], src: dict[str, Any])
             "falsifier": (f"{rec['family']} on {cell['symbol']} {cell['chart']} with "
                           f"{json.dumps(cell['params'], sort_keys=True)} shows no out-of-sample "
                           f"edge after costs, or its losses coincide with the Western version's"),
-            "evidence": {"clock": "libs/regime/session_clock.py",
+            "evidence": {"clock": ("mt5desk/local_clock.py" if cell.get("clock") == "local"
+                                   else "libs/regime/session_clock.py"),
                          "variant_share": round(float(cell.get("share") or 0.0), 4),
                          "source_verified": src.get("verified", CC.UNMEASURED)}}
 
@@ -410,7 +585,10 @@ def donate_cells(rows: list[dict[str, Any]]) -> dict[str, Any]:
         return {"donated": 0, "path": None}
     try:
         from research import proposer_common as PC
-        path = PC.donate(SEAT, rows, tests_run=len(rows))
+        # registry=False: every row was written to the registry by `emit` with this exact identity;
+        # the door writing it again would be a second candidate (and a second docket cell) for
+        # one rule. The trials are charged once, here, through `tests_run`.
+        path = PC.donate(SEAT, rows, tests_run=len(rows), registry=False)
         counts = PC.donation_counts()
         return {"donated": int(counts.get("donated") or 0), "path": str(path) if path else None,
                 "refused_unstamped": int(counts.get("refused_unstamped") or 0),
@@ -422,7 +600,8 @@ def donate_cells(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 def emit(rec: dict[str, Any], cells: list[dict[str, Any]], start: int, deadline: float,
          src: dict[str, Any], *, dry_run: bool, done: set[str],
-         donations: list[tuple[str, dict[str, Any]]] | None = None) -> dict[str, Any]:
+         donations: list[tuple[str, dict[str, Any]]] | None = None,
+         english: frozenset[str] | None = None) -> dict[str, Any]:
     made = created = 0
     errors: list[str] = []
     did = ""
@@ -435,7 +614,7 @@ def emit(rec: dict[str, Any], cells: list[dict[str, Any]], start: int, deadline:
                 source_id=str(rec.get("source_id") or rec["id"]), source_type="culture_gap_recipe",
                 mechanism=mech, origin=ORIGIN, generator=ORIGIN,
                 assets=sorted({c["symbol"] for c in cells}),
-                exact_rule_if_known=f"{rec['family']} on the recipe's broker-converted clock",
+                exact_rule_if_known=f"{rec['family']} on the publisher's own clock",
                 horizons=list(rec.get("charts") or ["H1"]), source_url=src.get("url"),
                 note=f"culture-gap recipe {rec['id']}",
                 source_culture=rec.get("source_culture"),
@@ -456,7 +635,7 @@ def emit(rec: dict[str, Any], cells: list[dict[str, Any]], start: int, deadline:
         if dry_run:
             continue
         src_row = src
-        fields = _culture(rec, c, src_row)
+        fields = _culture(rec, c, src_row, english)
         try:
             from libs.moat.registry import enqueue_candidate
             _cid, was_new = enqueue_candidate(
@@ -471,7 +650,11 @@ def emit(rec: dict[str, Any], cells: list[dict[str, Any]], start: int, deadline:
                 falsifier=(f"{rec['family']} on {c['symbol']} {c['chart']} with "
                            f"{json.dumps(c['params'], sort_keys=True)} shows no out-of-sample "
                            f"edge after costs, or its losses coincide with the Western version's"),
-                url=src_row.get("url"), **fields)
+                url=src_row.get("url"),
+                lineage_json=json.dumps({"producer": ORIGIN, "recipe": rec["id"],
+                                         "source_id": rec.get("source_id"),
+                                         "clock": c.get("clock", "broker")}, sort_keys=True),
+                **fields)
             created += int(bool(was_new))
             done.add(key)
             if donations is not None:
@@ -494,7 +677,12 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
     recs = recipes(recipes_path)
     src_rows = roster()
     uni = universe()
+    rows = universe_rows()
+    modes = trade_modes()
+    english = english_families(summary)
     states = gap_states(summary)
+    crowding: Counter[str] = Counter()
+    gated: list[dict[str, Any]] = []
     cursor = _read(cursor_path, {}) if not dry_run else {}
     if not isinstance(cursor, dict):
         cursor = {}
@@ -503,7 +691,12 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
     dones: dict[str, set[str]] = {}
     order = sorted(recs, key=lambda r: (_ORDER.get(recipe_gap_state(r, states), 9), r["id"]))
     for rec in order:
-        cells, note = cells_for(rec, yr, uni)
+        cells, note = cells_for(rec, yr, uni, rows=rows, modes=modes)
+        n_cells_each = len(cells) // max(1, len({c["symbol"] for c in cells}))
+        for gt in note.get("gated") or []:
+            gated.append({"recipe": rec["id"], "cells_not_minted": n_cells_each, **gt})
+        for c in cells:
+            crowding[str(_culture(rec, c, {}, english).get(CC.CROWDING_PRIOR))] += 1
         fp = hashlib.sha1(json.dumps([cell_key(rec["id"], c) for c in cells]).encode()
                           ).hexdigest()[:16]
         prev = cursor.get(rec["id"])
@@ -512,7 +705,7 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
         start = int(st.get("next") or 0) if st.get("fingerprint") == fp else 0
         src = src_rows.get(str(rec.get("source_id")), {})
         res = emit(rec, cells, start, deadline, src, dry_run=dry_run, done=done,
-                   donations=donations)
+                   donations=donations, english=english)
         dones[rec["id"]] = done
         if not dry_run:
             cursor[rec["id"]] = {"fingerprint": fp, "next": res["next"], "done": done,
@@ -533,7 +726,8 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
             "emitted_this_pass": res["emitted"], "created_this_pass": res["created"],
             "complete": res["next"] >= len(cells) and len(cells) > 0,
             "variants": note.get("variants"), "dropped_variants": note.get("dropped_variants"),
-            "refused": note.get("refused"), "unmeasured": note.get("unmeasured"),
+            "refused": note.get("refused"), "gated": note.get("gated"),
+            "unmeasured": note.get("unmeasured"),
             "errors": res.get("errors")})
     donation: dict[str, Any] = {"donated": 0, "path": None}
     if not dry_run:
@@ -564,7 +758,8 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
             agg["unmeasured"].append(f"{r['id']}: {r['unmeasured']}")
     return {
         "generated_at": _now(), "leg": LEG, "dry_run": dry_run, "year": yr,
-        "clock": {"module": "libs/regime/session_clock.py", "server_tz": SC.SERVER_TZ,
+        "clock": {"module": "libs/regime/session_clock.py", "local": "mt5desk/local_clock.py",
+                  "local_families": sorted(LOCAL_CLOCK), "server_tz": SC.SERVER_TZ,
                   "server_shift_h": getattr(SC, "SERVER_SHIFT_H", 0),
                   "min_variant_share": MIN_VARIANT_SHARE},
         "gap_list": ("read" if states is not None
@@ -574,6 +769,19 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
                    "created_this_pass": sum(r["created_this_pass"] for r in per),
                    "unmeasured_recipes": [r["id"] for r in per if r["unmeasured"]]},
         "donation": {"seat": SEAT, **donation},
+        "tradability": {"trade_modes": ("read" if modes is not None else
+                                        f"{CC.UNMEASURED}: no contract-terms snapshot under "
+                                        f"{TERMS_DIR} on this host"),
+                        "max_median_spread_cost": MAX_MEDIAN_SPREAD_COST,
+                        "max_snapshot_spread_cost": MAX_SNAPSHOT_SPREAD_COST,
+                        "gated": gated,
+                        "cells_not_minted": sum(int(g["cells_not_minted"]) for g in gated)},
+        "crowding_prior": {"counts": dict(crowding),
+                           "english_evidence": ("summary" if english is not None else
+                                                "module (cell_culture.SUMMARY)"),
+                           "rule": ("low: non-English source and a family the registry holds "
+                                    "from no English source; high: an English source and a "
+                                    "textbook family; anything else UNMEASURED by the rule")},
         "gaps": gaps, "recipes": per,
         "consumers": {f"desks/mt5/data/intelligence/{SEAT}/discoveries_*.json":
                       "miner_candidate_compiler compiles them (EXACT_RECIPE) into the docket "
