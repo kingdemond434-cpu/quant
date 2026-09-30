@@ -6,13 +6,13 @@
 
 - Measured at **2026-09-30T14:33:34+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `UNMEASURED` on `UNMEASURED`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **920** of 1341 registry components (421 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **921** of 1341 registry components (421 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 0.55s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
 |---|---:|---|
 | **LIVE** | 125 | artifact present and newer than the organ's derived max silence |
-| **STALE** | 1 | artifact present but older than the organ's derived max silence |
+| **STALE** | 2 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 48 | artifact absent while this host recorded the organ running |
 | **NEVER** | 712 | no artifact and no run record on this host |
 | **UNMEASURED** | 34 | artifact present, cadence undeclared -- nothing here may call it late |
@@ -149,11 +149,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `task:MT5-Universe` | `MT5-Universe` | UNMEASURED UNMEASURED | `desks/mt5/data/universe_expansion.json` | 1.6h | 24K | `c4e001c1a7b63e53` | UNMEASURED |
 | `timer:quant-mt5-suite` | `quant-mt5-suite` | UNMEASURED UNMEASURED | `desks/mt5/reports/mt5_suite.json` | 1.6h | 452B | `d459f7fec791a7c1` | verdict=OK |
 
-## STALE (1)
+## STALE (2)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
 | `task:MT5-DeskState` | `MT5-DeskState` | UNMEASURED UNMEASURED | `web/desk_state.json` | 1.6h | 463K | `c449d4e6774e4427` | UNMEASURED |
+| `leg:session_variant_remap` | `hourly_cycle:session_variant_remap` | UNMEASURED UNMEASURED | `desks/mt5/reports/SESSION_VARIANT_REMAP.json` | 3.3h | 12K | `b00264316d25ec4d` | UNMEASURED |
 
 ## MISSING (48)
 
@@ -208,7 +209,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (712)
+## NEVER (713)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -608,6 +609,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:committees` | `hourly_cycle:committees` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMMITTEES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:compute_economics` | `hourly_cycle:compute_economics` | UNMEASURED UNMEASURED | `desks/mt5/reports/COMPUTE_ECONOMICS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:constrained_book` | `hourly_cycle:constrained_book` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONSTRAINED_BOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:kelly_survival` | `hourly_cycle:kelly_survival` | UNMEASURED UNMEASURED | `desks/mt5/reports/KELLY_SURVIVAL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:control_plane` | `hourly_cycle:control_plane` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_PLANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:conversion_maximiser` | `hourly_cycle:conversion_maximiser` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONVERSION_MAXIMISER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cost_surfaces` | `hourly_cycle:cost_surfaces` | UNMEASURED UNMEASURED | `desks/mt5/reports/COST_SURFACES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |

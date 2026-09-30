@@ -24,13 +24,13 @@
  },
  "census": {
   "LIVE": 125,
-  "STALE": 1,
+  "STALE": 2,
   "MISSING": 48,
   "NEVER": 712,
   "UNMEASURED": 34
  },
  "scope": {
-  "attested": 920,
+  "attested": 921,
   "excluded": 421,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1341,
@@ -38,7 +38,16 @@
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
   "wall_s": 0.55,
-  "summaries_trimmed": 0
+  "summaries_trimmed": 0,
+  "only_missing_appended": [
+   {
+    "at": "2026-09-30T19:32:27+00:00",
+    "host": "vm",
+    "organs": [
+     "leg:session_variant_remap"
+    ]
+   }
+  ]
  },
  "states": {
   "LIVE": "artifact present and newer than the organ's derived max silence",
@@ -23346,6 +23355,31 @@
    "artifact_sha256": "7acc04b9cfddf89308b6e212ad003ca0134f1d00b8991ee37c86770b9a9c38d2",
    "summary": {},
    "progress_metric": "timer_runs",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:session_variant_remap",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/session_variant_remap.py"
+   ],
+   "clock": "hourly_cycle:session_variant_remap",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "STALE",
+   "why": "artifact 3.3h old, past its 2.0h max silence",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/SESSION_VARIANT_REMAP.json",
+   "artifact_declared": "desks/mt5/reports/SESSION_VARIANT_REMAP.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 11729,
+   "artifact_bytes": 12099,
+   "artifact_sha256": "b00264316d25ec4dd225ac1dac48681e9bfa58c25a0295e2aa819e1203ed9d22",
+   "summary": {},
+   "progress_metric": "leg_completions",
    "consumer": "UNMEASURED"
   }
  ],
