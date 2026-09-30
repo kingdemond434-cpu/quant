@@ -86,6 +86,24 @@ COND_MIN_OBS = max(60, int(_FAMILY_MIN_OBS))
 #: into cost facts and prop-rule limits (extractor.COST_FACTS / RULE_FACTS). Never minted as cells.
 #: An archive capture: web.archive.org/web/<timestamp>[flags]/<original url>.
 _WAYBACK = re.compile(r"^(?:https?://)?(?:www\.)?web\.archive\.org/web/\d+[a-z_]*/(.+)$", re.I)
+def _scout_seats() -> dict[str, str]:
+    """seat -> producing scout, from research/scout_roster.py `seats=` (the one declared map)."""
+    try:
+        from research.scout_roster import SCOUTS
+    except Exception:
+        return {}
+    return {str(seat): str(sc["name"]) for sc in SCOUTS for seat in sc.get("seats") or ()}
+
+
+def producer_of(source: Any, organ_of: Mapping[str, str]) -> str:
+    """The organ that produced a docket row: its seat (`miner:<seat>[:<id>]`, or the row's own
+    producer prefix) through the scout map, else `unmapped:<seat>` -- named, never guessed."""
+    raw = str(source or "")
+    seat = raw.removeprefix("miner:").split(":", 1)[0] if raw.startswith("miner:") else \
+        raw.split(":", 1)[0]
+    return organ_of.get(seat, f"unmapped:{seat or '?'}")
+
+
 _INDEX_PAGE = re.compile(r"/(?:index|default)\.(?:html?|php|aspx?)$", re.I)
 _SECOND_LEVEL = frozenset({"co", "com", "gov", "org", "ac", "or", "ne", "go", "net", "edu"})
 
@@ -861,7 +879,10 @@ class Pipeline:
             rows = rows.get("rows") or rows.get("items") or []
         judged = self.cells.judged_since(t - ACTIVE_WINDOW)
         idx, seats = self._url_index(), self._seat_index()
+        organ_of = _scout_seats()
         by: dict[str, set[str]] = {}
+        producers: dict[str, dict[str, int]] = {}
+        funnel: dict[str, dict[str, int]] = {}
         how: dict[str, int] = {}
         unattributed: dict[str, int] = {}
         for r in rows if isinstance(rows, list) else []:
@@ -874,6 +895,13 @@ class Pipeline:
             if cid not in judged:
                 continue
             sid, via = self.attribute_source(r, idx, seats)
+            organ = producer_of(r.get("source"), organ_of)
+            f = funnel.setdefault(organ, {"judged": 0, "credited": 0})
+            f["judged"] += 1
+            f["credited"] += int(bool(sid))
+            if sid:
+                pr = producers.setdefault(sid, {})
+                pr[organ] = pr.get(organ, 0) + 1
             if not sid:
                 p = str(r.get("source") or "?").split(":")
                 k = ":".join(p[:2])
@@ -882,7 +910,11 @@ class Pipeline:
             by.setdefault(sid, set()).add(cid)
             how[via] = how.get(via, 0) + 1
         top = dict(sorted(unattributed.items(), key=lambda kv: -kv[1])[:25])
+        self._producers = producers
         return {"by_source": {k: len(v) for k, v in by.items()}, "credited_by": how,
+                # the producing ORGAN's funnel (scout_roster seats), beside the source credit:
+                # a source is judged ACTIVE per source; ROI per organ reads this
+                "by_producer": dict(sorted(funnel.items())),
                 "unattributed_judged_rows": sum(unattributed.values()),
                 "unattributed_top_producers": top,
                 "basis": f"{self.docket.name} x judged_cells ({len(judged)} judged in window)"}
@@ -1009,6 +1041,7 @@ class Pipeline:
                          "consumer": s.consumer,
                          "evaluated_cells_30d": n, "priority": s.priority,
                          "evaluated_via": {"mining": n_mine, "docket": n_docket},
+                         "producers": dict(getattr(self, "_producers", {}).get(s.id, {})),
                          "origin": s.origin, "url_key": s.url_key, "aliases": list(s.aliases),
                          "shares_page": list(s.shares_page),
                          "last_outcome": r.get("outcome") or "NEVER_RUN",

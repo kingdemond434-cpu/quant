@@ -953,6 +953,9 @@ def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_pat
     assert st["twin_a"]["status"] == st["twin_b"]["status"] == "COLD"      # a tie credits nobody
     att = pipe._attribution
     assert att["credited_by"] == {"seat": 1, "url": 1}
+    assert att["by_producer"]["unmapped:asia"] == {"judged": 1, "credited": 1}
+    assert st["rbnz_series"]["producers"] == {"unmapped:asia": 1}
+    assert MS.producer_of("miner:world:x", {"world": "world_crawler"}) == "world_crawler"
     assert att["unattributed_judged_rows"] == 3
     assert att["unattributed_top_producers"] == {"miner:world_crawler": 1,
                                                  "miner:discovery_compiler": 1,
