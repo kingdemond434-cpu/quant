@@ -663,7 +663,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         # deliberately rather than drifting back in.
         try:
             from universe_policy import lane, may_hypothesise
-            _allowed, _lane = may_hypothesise(sym), lane(sym)
+            _allowed, _lane = may_hypothesise(sym, fam), lane(sym)
         except Exception:
             _allowed, _lane = True, ""      # no policy module: enrol exactly as before
         if not _allowed:
