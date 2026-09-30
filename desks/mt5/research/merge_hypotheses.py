@@ -743,6 +743,32 @@ def main() -> int:
         print(f"   docket bank: {readmitted} previously-known candidate(s) re-admitted "
               f"(idempotent re-judging; freshness still governs provenance)")
 
+    # THE TRIANGLE LEGS, BACKFILLED ONTO EVERY ROW, FRESH OR BANKED (2026-09-30). All 1,796
+    # triangle rows in the docket were legless, so `family_triangle` returned [] and every one
+    # was UNKNOWN; the compiler now names legs for rows it mints, but the bank is re-admitted
+    # verbatim above, so the old rows would never have been reached. Filled HERE because this is
+    # the docket's only writer: same rule as the compiler, in place, nothing deleted, each row
+    # recording what was filled or why not. A fault costs the fill, never a row.
+    triangle_legs: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        for _p in (str(BASE), str(BASE.parents[1])):
+            if _p not in _sys.path:
+                _sys.path.insert(0, _p)
+        from research import triangle_leg_backfill as _tlb
+        _rows = list(merged.values())
+        triangle_legs = _tlb.backfill(_rows, identity=_identity, now=now)
+        if triangle_legs.get("filled"):
+            merged = {_identity(r): r for r in _rows}
+        _tlb.publish(triangle_legs, HYP / _tlb.OUT.name)
+        if triangle_legs.get("legless_before"):
+            print(f"   triangle legs: {triangle_legs['filled']} of "
+                  f"{triangle_legs['legless_before']} legless row(s) filled, "
+                  f"{triangle_legs['unfilled']} unfilled {triangle_legs['unfilled_by_reason']}")
+    except Exception as exc:
+        triangle_legs = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   triangle legs unavailable ({type(exc).__name__}: {exc}); rows unchanged")
+
     if unrouted:
         print(f"   {unrouted} row(s) dropped as UNROUTABLE (no family named) -- never "
               f"relabelled as the dominant family")
@@ -955,6 +981,9 @@ def main() -> int:
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
         "preregistration": prereg,
+        "triangle_legs": {k: triangle_legs.get(k) for k in
+                          ("status", "legless_before", "filled", "unfilled",
+                           "unfilled_by_reason", "legless_after")},
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "
