@@ -2152,6 +2152,23 @@ def _breadth_delta(before: Mapping[str, Any], after: Mapping[str, Any]) -> dict[
 #: (`trial_ledger.MAX_MEMBERS`): measured 36 s for one 25,000-row family on the build container
 #: 2026-09-30. A family is priced by its participation ratio only while this much is left.
 CHARGE_FAMILY_S = 45.0
+#: When the budget cannot afford the full sample, the SAME estimator on a coarser deterministic
+#: sample (O(400^2) instead of O(2,500^2): well under a second). Only when not even that fits is
+#: a family charged its raw count.
+CHARGE_COARSE_MEMBERS = 400
+CHARGE_COARSE_S = 3.0
+
+
+def _coarse_family_charge(members: Sequence[Any]) -> float:
+    """`trial_ledger.family_census`'s own rule on a smaller stride sample: PR of the sample
+    scaled by m / sample, clipped to [1, m]; then max(PR, declared width x PR / m)."""
+    from libs.research.trial_ledger import family_census
+    m = len(members)
+    step = max(1, m // CHARGE_COARSE_MEMBERS)
+    sample = list(members)[::step][:CHARGE_COARSE_MEMBERS]
+    fc = family_census(sample)
+    pr = max(1.0, min(float(fc.n_effective_members) * (m / len(sample)), float(m)))
+    return max(pr, fc.declared_width * pr / m)
 
 
 def _charge_trials(repaired: Sequence[Mapping[str, Any]], conn: sqlite3.Connection, *,
@@ -2178,12 +2195,15 @@ def _charge_trials(repaired: Sequence[Mapping[str, Any]], conn: sqlite3.Connecti
             t = trial_from_record(rec, index=i)
             groups.setdefault(t.group, []).append(t)
         n_eff = 0.0
-        priced = raw_charged = 0
+        priced = coarse = raw_charged = 0
         for _g, members in sorted(groups.items(), key=lambda kv: -len(kv[1])):
             if budget is None or budget.ok("charge_trials",
                                            reserve=reserve + CHARGE_FAMILY_S):
                 n_eff += float(family_census(members).n_effective)
                 priced += 1
+            elif budget.ok("charge_trials_coarse", reserve=reserve + CHARGE_COARSE_S):
+                n_eff += _coarse_family_charge(members)
+                coarse += 1
             else:
                 n_eff += float(len(members))
                 raw_charged += 1
@@ -2192,10 +2212,13 @@ def _charge_trials(repaired: Sequence[Mapping[str, Any]], conn: sqlite3.Connecti
                 "status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}; charged raw"}
     out = {"n_raw": len(repaired), "n_effective": round(n_eff, 3),
            "inflation": round(len(repaired) / n_eff, 4) if n_eff > 0 else None,
-           "families_priced": priced, "families_charged_raw": raw_charged,
+           "families_priced": priced, "families_priced_coarse": coarse,
+           "families_charged_raw": raw_charged,
            "basis": "libs.research.trial_ledger family_census per family (participation ratio), "
-                    "summed; a family the pass budget could not price is charged its raw count "
-                    "(an upper bound -- the bill is never short)"}
+                    "summed; a family the budget could not price at full resolution is priced on "
+                    f"a {CHARGE_COARSE_MEMBERS}-member stride sample by the same rule, and one it "
+                    "could not price at all is charged its raw count (an upper bound -- the bill "
+                    "is never short)"}
     if not dry_run:
         with contextlib.suppress(Exception):
             R.metric("conversion_maximiser.effective_trials_charged", n_eff,

@@ -128,3 +128,17 @@ def test_the_indexes_the_cursor_walks_are_used(desk) -> None:  # noqa: F811
                                                                   args))
         assert f"SEARCH research_candidates USING INDEX ix_cvm_{pop}" in plan, plan
     assert R.path().exists()
+
+
+def test_every_repaired_row_is_charged_and_the_charge_fits_the_budget(monkeypatch) -> None:
+    recs = [{"id": f"r{i}", "family": "f1" if i % 2 else "f2", "params": {"i": i},
+             "symbol": "TESTFX"} for i in range(60)]
+    full = cm._charge_trials(recs, None, dry_run=True)
+    assert full["families_priced"] == 2 and full["families_charged_raw"] == 0
+    assert full["n_raw"] == 60 and 0 < full["n_effective"] <= 60
+    monkeypatch.setattr(cm, "CHARGE_FAMILY_S", 10_000.0)
+    coarse = cm._charge_trials(recs, None, dry_run=True, budget=cm.Budget(60.0))
+    assert coarse["families_priced_coarse"] == 2
+    none_left = cm._charge_trials(recs, None, dry_run=True, budget=cm.Budget(0.001))
+    assert none_left["families_charged_raw"] == 2
+    assert none_left["n_effective"] == 60.0, "an unpriced family is charged raw, never short"
