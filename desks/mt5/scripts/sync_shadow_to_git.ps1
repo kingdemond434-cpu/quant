@@ -403,7 +403,19 @@ $relPaths = @(
     "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
     "desks/mt5/reports/OCCUPANCY_MAP.json",
     "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
-    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json"
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # THE REST OF THE TIER S PROMOTION DOOR'S EVIDENCE (2026-09-30). `promotion_authority` reads
+    # six box-local files to decide whether a candidate may go LIVE: live_door (above), the door
+    # verdicts, the immune system's PROMOTION_FREEZE, the regression stop's RELEASE_STOP, the
+    # online-FDR rows and the replication verdicts. Only live_door and the attestation crossed
+    # the wire, so no reader off the box could say WHY a promotion was withheld. Small JSON, each
+    # declared NON_CODE in both seal lists and (for the two under reports/) negated in
+    # .gitignore; tests/ops/test_tier_s_evidence_publication.py pins all four properties.
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {
