@@ -1596,9 +1596,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "acquire_datasets": 1_100,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
-    # 26 organs, ~35 s measured in the cloud checkout; the cap leaves room for the box's
-    # larger ledgers (the gate verdict ledger and hypothesis graph are read in full).
-    "tier_s": 900,
+    # 28 organs, 416 s measured end to end in the cloud checkout on 2026-09-30 (immune 160 s,
+    # twin 64 s, world_science 58 s); the cap leaves room for the box's larger ledgers (the
+    # gate verdict ledger and hypothesis graph are read in full).
+    "tier_s": 1_500,
     # THE CONTROL PLANE'S OBSERVE PASS walks ~1,100 components, every watermark, every lease and
     # every mandatory edge. Its own budget is 600 s (it stops itself), so the cycle's cap sits
     # above that: a cap BELOW an organ's own budget is the truncated-job defect that cost this
