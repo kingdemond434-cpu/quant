@@ -22,14 +22,6 @@ HELD OUT: a sleeve the control arm assigns to the exchange's control (`control_a
 salt "exchange") reads EXACTLY 1.0 -- pinned after the treated sleeves are renormalised among
 themselves, and excluded from capture too -- so the exchange is judged by what its tilted
 sleeves did against the sleeves it did not touch.
-
-FREEZE (2026-09-30). While the immune system's FREEZE stands (the production certifier got
-easier to fool, `promotion_authority._freeze`, data/tier_s/PROMOTION_FREEZE.json), a third
-factor moves heat toward the sleeves whose edge is carried by OUT-OF-SAMPLE evidence -- live
-fills and forward trades -- and away from sleeves that stand on their certificate alone:
-freeze_factor = 1 + KAPPA_FREEZE x (2s - 1) with s = n / (n + K_CAPTURE), heat-neutral like the
-others and 1.0 exactly for a held-out sleeve. The book's total is untouched; only which sleeves
-carry it changes while the certificates' own word is worth less.
 """
 from __future__ import annotations
 
@@ -45,7 +37,6 @@ EXCHANGE_LO = 0.0
 KAPPA_EXCHANGE = 0.5
 CAPTURE_LO, CAPTURE_HI = 0.25, 2.0
 K_CAPTURE = 20.0
-KAPPA_FREEZE = 0.5
 EPS = 1e-4
 
 
@@ -81,15 +72,9 @@ def capture_raw(capture: float | None, n: int) -> float:
     return 1.0 + (n / (n + K_CAPTURE)) * (c - 1.0)
 
 
-def freeze_raw(n_oos: int) -> float:
-    s = max(0, n_oos) / (max(0, n_oos) + K_CAPTURE)
-    return 1.0 + KAPPA_FREEZE * (2.0 * s - 1.0)
-
-
 def build(live_book: Mapping[str, float], group_of: Mapping[str, str],
           exchange_by_group: Mapping[str, float], capture_by_group: Mapping[str, Any],
-          held_out: Any = None, *, freeze: bool = False,
-          oos_n_by_group: Mapping[str, int] | None = None) -> dict[str, dict[str, Any]]:
+          held_out: Any = None) -> dict[str, dict[str, Any]]:
     """{book name: {exchange_factor, capture_factor, tilt, ...}} over the live book's names."""
     live_by_group: dict[str, float] = {}
     for name, w in live_book.items():
@@ -113,14 +98,9 @@ def build(live_book: Mapping[str, float], group_of: Mapping[str, str],
     heat = {k: abs(float(v)) for k, v in live_book.items()}
     ex = heat_neutral(ex_raw, heat, held=held, lo=EXCHANGE_LO)
     cap = heat_neutral(cap_raw, heat, held=held)
-    oos = oos_n_by_group or {}
-    fz = heat_neutral({k: (freeze_raw(int(oos.get(group_of.get(k, k), 0)))
-                           if freeze and k not in held else 1.0) for k in live_book},
-                      heat, held=held)
     return {name: {"group": group_of.get(name, name), "exchange_factor": round(ex[name], 6),
-                   "capture_factor": round(cap[name], 6), "freeze_factor": round(fz[name], 6),
+                   "capture_factor": round(cap[name], 6),
                    "tilt": (1.0 if name in held else
-                            round(min(TILT_HI, max(EXCHANGE_LO,
-                                                   ex[name] * cap[name] * fz[name])), 6)),
+                            round(min(TILT_HI, max(EXCHANGE_LO, ex[name] * cap[name])), 6)),
                    "held_out": name in held}
             for name in live_book}

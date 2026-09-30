@@ -3395,24 +3395,14 @@ def _allocator_tilts(ex_book: Mapping[str, float], live_book: Mapping[str, float
     for g, xs in rs.items():
         ev = _execution_evidence(len(xs), xs, (shadow.get(g) or {}).get("exp_r"))
         cap[g] = {"capture": ev.get("capture"), "n": len(xs)}
-    # THE IMMUNE FREEZE REACHES THE ALLOCATOR: while it stands, heat moves (heat-neutrally)
-    # toward the sleeves whose edge rests on out-of-sample fills and forward trades.
-    oos_n = {g: len(rs.get(g) or []) + int((shadow.get(g) or {}).get("n") or 0)
-             for g in {nm.group(k) for k in live_book}}
-    try:
-        from libs.tiers import promotion_authority
-        frozen = promotion_authority._freeze() is not None
-    except Exception:
-        frozen = False                  # unreadable -> no freeze factor; the tilt is neutral
     rows = allocator_tilts.build(live_book, {k: nm.group(k) for k in live_book}, ex_by, cap,
-                                 held_out=lambda k: control_arm.in_control(k, "exchange"),
-                                 freeze=frozen, oos_n_by_group=oos_n)
+                                 held_out=lambda k: control_arm.in_control(k, "exchange"))
     _write(ALLOCATOR_TILTS, {"kind": "tier_s_tilts", "generated_utc": NOW.isoformat(),
-                             "sleeves": rows, "freeze": frozen,
+                             "sleeves": rows,
                              "consumer": "research/pf_allocator.py via "
                                          "libs/portfolio/allocator_evidence.tier_s_factors"})
     moved = [k for k, v in rows.items() if abs(float(v["tilt"]) - 1.0) > 1e-6]
-    return {"status": "WRITTEN", "sleeves": len(rows), "tilted": len(moved), "freeze": frozen,
+    return {"status": "WRITTEN", "sleeves": len(rows), "tilted": len(moved),
             "captured_groups": sum(1 for v in cap.values() if v["capture"] is not None)}
 
 
