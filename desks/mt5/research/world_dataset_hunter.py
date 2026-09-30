@@ -274,6 +274,14 @@ def _write_parquet(df: Any, path: Path) -> None:
     _replace_windows_safe(tmp, path)
 
 
+def _rel(path: Path) -> str:
+    """A desk-relative, forward-slash path when it lies under the desk; else the absolute one."""
+    try:
+        return str(path.relative_to(DESK)).replace("\\", "/")
+    except ValueError:
+        return str(path).replace("\\", "/")
+
+
 def _slug(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "_", str(text)).strip("_")[:120] or "x"
 
@@ -1000,7 +1008,7 @@ def ingest_series(provider: str, dataset: str, dname: str, series: list[dict[str
     meta = _read_json(mpath, {}) or {}
     meta.setdefault("series", {})
     meta.update({"provider": provider, "dataset": dataset, "name": dname,
-                 "path": str(path.relative_to(DESK)).replace("\\", "/"), "updated_at": _iso(now)})
+                 "path": _rel(path), "updated_at": _iso(now)})
     passed = 0
     for s in series:
         ok, reason, freq = quality(s["points"], s.get("freq") or "", now=now)
@@ -1064,7 +1072,7 @@ def fetch_dbnomics(client: Client, cat: dict[str, Any], *, now: datetime, until:
                     "series_seen": int(row.get("series_seen") or 0) + len(series),
                     "series_passed": int(row.get("series_passed") or 0) + res["passed"],
                     "rows": res["rows_total"],
-                    "path": str(dataset_path(prov, code).relative_to(DESK)).replace("\\", "/")})
+                    "path": _rel(dataset_path(prov, code))})
         _promote(row, "INGESTED")
         if res["passed"]:
             _promote(row, "QUALITY-PASSED")
@@ -1138,8 +1146,7 @@ def fetch_direct(client: Client, cat: dict[str, Any], *, now: datetime, until: f
                     "series_total": len(series), "series_passed": res["passed"],
                     "rows": res["rows_total"],
                     "next_due": _iso(now + timedelta(hours=DIRECT_REFRESH_H)),
-                    "path": str(dataset_path(spec["provider"], spec["dataset"])
-                                .relative_to(DESK)).replace("\\", "/")})
+                    "path": _rel(dataset_path(spec["provider"], spec["dataset"]))})
         _promote(row, "INGESTED")
         if res["passed"]:
             _promote(row, "QUALITY-PASSED")
@@ -1210,8 +1217,7 @@ def attempt_legacy(client: Client, cat: dict[str, Any], *, now: datetime, until:
                                 hint_stems=probe.get("stems", ()), qstats=qstats)
             rec.update({"status": "QUALITY-PASSED" if res["passed"] else "INGESTED",
                         "series": len(series), "passed": res["passed"],
-                        "path": str(dataset_path("DIRECT", rid).relative_to(DESK))
-                        .replace("\\", "/")})
+                        "path": _rel(dataset_path("DIRECT", rid))})
         except FetchError as exc:
             rec["reason"] = exc.reason
         except Exception as exc:
@@ -1398,7 +1404,7 @@ def update_registry(cat: dict[str, Any], exposure: dict[str, Any], now: datetime
                                    "registered": len(fetched) + min(len(discovered),
                                                                     REGISTRY_DISCOVERED_CAP),
                                    "discovered_withheld_from_registry": withheld,
-                                   "catalog": str(CATALOG.relative_to(DESK)).replace("\\", "/")}
+                                   "catalog": _rel(CATALOG)}
     write_json(REGISTRY, reg)
     return {"status": "OK", "withheld": withheld}
 
