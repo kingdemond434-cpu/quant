@@ -329,6 +329,7 @@ def test_a_world_cell_reaches_the_docket_end_to_end(monkeypatch, tmp_path) -> No
     monkeypatch.setattr(hg, "Graph", _Graph)
     monkeypatch.setattr(hg, "record_candidates", lambda *a, **k: 0)
     monkeypatch.setattr(ri, "request_repair", lambda reason, **kw: False)
+    monkeypatch.setattr(mcc, "_lineage", lambda out: None)   # writes data/lineage.sqlite
     assert mcc.main() == 0
     out = json.loads((tmp_path / "out.json").read_text("utf-8"))
     hyps = [h for h in out["hypotheses"] if str(h.get("source")) == "miner:world_cells"]

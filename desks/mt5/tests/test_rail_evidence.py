@@ -176,3 +176,20 @@ def test_no_allocator_pass_is_unmeasured_and_a_curve_that_misses_the_heat_says_s
         {"heat": {"binding": "effective_ceiling", "effective_ceiling": 0.20,
                   "free_optimum": 0.25, "hard_ceiling": 0.30, "curve": []}}, {})
     assert thin["verdict"] == mg.UNMEASURED and "curve" in thin["why"]
+
+
+# ------------------------------------ audit of PR #123: the gate family's own FDR budget
+def test_the_gate_family_fdr_budget_is_billed_and_never_reads_as_free(tmp_path,
+                                                                      monkeypatch) -> None:
+    monkeypatch.setattr(mg, "BASE", tmp_path)
+    out = mg.measure_gate_family_fdr_budget(None, {}, {})
+    assert out["verdict"] == mg.UNMEASURED and "partition" in out["why"]
+    p = tmp_path / "reports" / "tier_s" / "ONLINE_FDR_ROWS.json"
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({"partition": {"flipped_admitted": [], "flipped_blocked": [],
+                                           "budgets": {"main": 10, "exogenous_gate": 90}}}))
+    assert mg.measure_gate_family_fdr_budget(None, {}, {})["verdict"] == mg.NOT_BINDING
+    p.write_text(json.dumps({"partition": {"flipped_admitted": ["h.EURUSD_x"],
+                                           "flipped_blocked": []}}))
+    got = mg.measure_gate_family_fdr_budget(None, {}, {})
+    assert got["verdict"] == mg.UNMEASURED and got["n_released"] == 1

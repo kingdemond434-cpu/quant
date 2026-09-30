@@ -501,6 +501,50 @@ def measure_tier_s_block(r: Any, alloc: dict[str, Any],
             "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
 
 
+def measure_gate_family_fdr_budget(r: Any, _alloc: dict[str, Any],
+                                   _fv: dict[str, Any]) -> dict[str, Any]:
+    """What giving the `exogenous_gate` family its OWN online-FDR budget costs, and saves.
+
+    THE RAIL, PRECISELY (audit of PR #123, 2026-09-30). World cells arrive at ~1k gate cells an
+    hour, ~560k in total. In ONE lifetime online-FDR stream (23,488 tests when measured) every one
+    of them spends the budget the FX and metals certificates are judged against, so the promotion
+    door's `ONLINE_FDR_OVER_BUDGET` bar rises for the classes the method suits. The staged patch
+    (/mnt/project-files/patches/exogenous_gate_fdr_budget/) replays the gate family in its own
+    stream: every trial is still charged, in its own family budget; deflated Sharpe is per family
+    and untouched. It is billed like every gate because it changes which certificate is admitted:
+
+      flipped_admitted  certificates OVER budget in the pooled stream and admitted once the gate
+                        family pays its own way -- the growth the separation RELEASES
+      flipped_blocked   gate-family certificates admitted by the pooled stream and over budget in
+                        their own -- the growth it COSTS
+
+    Both lists are written by `tier_s.organ_online_fdr` into ONLINE_FDR_ROWS.json `partition`.
+    Pricing either in log-wealth needs the forward R of the flipped certificates, which exists only
+    once they have clocks; until then the counts are published and the verdict is UNMEASURED --
+    an invented number would make a rail that moves the promotion bar look free. Registered in
+    `libs.portfolio.rails` by the same patch, so the measurement lands first (the hazard_shrink
+    order).
+    """
+    doc = _json(BASE / "reports" / "tier_s" / "ONLINE_FDR_ROWS.json") or {}
+    part = doc.get("partition") if isinstance(doc, dict) else None
+    if not isinstance(part, dict):
+        return {"verdict": UNMEASURED,
+                "why": ("ONLINE_FDR_ROWS.json carries no `partition` block: the gate family "
+                        "still shares the one lifetime stream on this host (patch "
+                        "exogenous_gate_fdr_budget not applied), or tier_s has not run")}
+    released = list(part.get("flipped_admitted") or [])
+    cost = list(part.get("flipped_blocked") or [])
+    if not released and not cost:
+        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
+                "budgets": part.get("budgets"),
+                "why": "no certificate's admission differs between the pooled and split streams"}
+    return {"verdict": UNMEASURED, "n_released": len(released), "n_blocked": len(cost),
+            "budgets": part.get("budgets"),
+            "why": (f"{len(released)} certificate(s) admitted only because the gate family pays "
+                    f"its own budget, {len(cost)} gate certificate(s) over budget only in their "
+                    f"own stream; pricing needs their forward R, which no clock carries yet")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 
