@@ -138,7 +138,8 @@ def artifact_hours(d: pd.DataFrame) -> dict[int, float]:
 
 
 def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
-           unfillable: dict[int, float] | None = None) -> dict[str, Any] | None:
+           unfillable: dict[int, float] | None = None, *,
+           detail: bool = False) -> dict[str, Any] | None:
     """Forward return of each signal at its own TTL, net of cost, on non-overlapping trades.
 
     Entry is the OPEN of the bar after the signal, as the engine fills it. A signal inside a live
@@ -146,6 +147,10 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
     signal whose fill bar opens at an artifact hour (see `artifact_hours`) is skipped too, and
     the count of such refusals is reported: a cell that only pays when filled at a marked price
     is not a cell.
+
+    `detail=True` adds the per-trade log returns and their entry bar positions (`pnl`,
+    `entry_pos`), so a caller can fold them in time -- a purged walk-forward -- on exactly the
+    trades this screen took, rather than re-implementing the fill rules above.
     """
     if not signals:
         return None
@@ -168,6 +173,7 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
               if t is None or not math.isfinite(float(t))}
     pos = {ts: i for i, ts in enumerate(idx)}
     pnl: list[float] = []
+    entries: list[int] = []
     last_exit = -1
     refused = 0
     delayed = 0
@@ -236,6 +242,7 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
         if not math.isfinite(r):
             continue
         pnl.append(r)
+        entries.append(entry)
         last_exit = exit_
     if len(pnl) < MIN_TRADES:
         return None
@@ -248,7 +255,8 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
             "net_per_trade": round(gross - cost, 8), "cost_frac": round(cost, 8),
             "t_gross": round(gross / (sd / math.sqrt(arr.size)), 3),
             "clears_cost": bool(gross > cost), "refused_unfillable": int(refused),
-            "delayed_fills": int(delayed)}
+            "delayed_fills": int(delayed),
+            **({"pnl": [float(x) for x in pnl], "entry_pos": entries} if detail else {})}
 
 
 def deflate(rows: list[dict]) -> list[dict]:

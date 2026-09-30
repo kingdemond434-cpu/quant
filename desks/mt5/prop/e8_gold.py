@@ -61,10 +61,16 @@ from mt5desk.decision_core import (  # noqa: E402
     window_end_hour,
     window_session_ended,
 )
+from mt5desk.kelly_sizing import load_kelly_survival  # noqa: E402
 
 SYMBOL = "XAUUSD"
 #: Per-trade risk on the prop account, as a fraction of equity (docs/PROP_FIRM_E8.md).
 RISK_FRAC = 0.005
+#: The survival-constrained growth solve (research/kelly_survival.py; principal 2026-09-30:
+#: "maximum aggressiveness within survival"). Its `e8` block names each window's risk fraction:
+#: the fastest median pass whose P(floor) + P(daily breach) stays under EPS_STOP. Absent, stale
+#: or not OK -> every window keeps RISK_FRAC, exactly as before the solve existed.
+KELLY_FILE = DESK / "reports" / "KELLY_SURVIVAL.json"
 STATE = DESK / "data" / "e8_gold_state.json"
 OUT = DESK / "reports" / "E8_GOLD.json"
 INTENTS = DESK / "data" / "e8_gold_intents.jsonl"
@@ -88,6 +94,17 @@ def log(msg: str) -> None:
 
 
 # ------------------------------------------------------------------ pure decisions
+
+def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
+    """(risk fraction of equity for window `name`, where it came from). Pure.
+
+    The solve's number when it holds one for this window -- 0 means the window stands aside
+    because every size it could send lowers the pass rate or breaks survival -- else RISK_FRAC.
+    """
+    if kelly is not None and name in kelly:
+        return float(kelly[name]), "kelly_survival"
+    return RISK_FRAC, "policy RISK_FRAC"
+
 
 def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
          stops_level: int = 0) -> list[dict]:
@@ -334,20 +351,36 @@ def _journal_rows(limit: int = 5000) -> list[dict]:
     return rows
 
 
-def _record(row: dict[str, Any]) -> None:
+def _record(row: dict[str, Any]) -> bool:
+    """Append one intent row. Returns False -- LOUDLY -- when the write failed.
+
+    THIS WAS `except OSError: pass`, AND THIS JOURNAL IS NOT TELEMETRY. TradeLocker carries no
+    magic number and no comment, so `own_entry_orders` recognises the desk's own resting orders
+    on the venue ONLY by the order id written here at the send. A lost row is an order the next
+    pass cannot re-adopt or stale-cancel: a GTC leg left resting with nothing managing it. The
+    failure is logged with the order id, so the one place it survives is readable, and the
+    caller records it on the pass report."""
     try:
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
         with INTENTS.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, default=str) + "\n")
-    except OSError:
-        pass
+        return True
+    except OSError as exc:
+        log(f"INTENT JOURNAL WRITE FAILED ({type(exc).__name__}: {exc}) for "
+            f"{row.get('window')} {row.get('side')} order {row.get('order_id')} "
+            f"status {row.get('status')}: this order is recorded in this log line only")
+        return False
 
 
 def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     """One pass. `venue` is a connected TradeLockerVenue; `mt5` the MetaTrader5 module (bars
     and the server clock, read exactly as the gateway reads them)."""
+    from mt5desk import order_door
     from prop.e8_executor import E8_ROUND_TRIP_PER_PRICE_UNIT, _quantise, lot_for_risk
 
+    # ONE DOOR FOR MONEY: place_stop / modify_stop / cancel / close go through the order door's
+    # ledger, and a raise or an unacknowledged write is logged, never silent.
+    venue = order_door.guard_venue(venue, caller="e8_gold", log=log)
     now = datetime.now(tz=UTC)
     doc: dict[str, Any] = {"at": now.isoformat(timespec="seconds"), "armed": bool(armed),
                            "symbol": SYMBOL, "placed": [], "actions": [], "skipped": []}
@@ -368,7 +401,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     acct = venue.account()
     equity = float(acct.get("equity") or acct.get("balance") or 0.0)
     risk_usd = equity * RISK_FRAC
-    doc.update({"equity": equity, "risk_usd": round(risk_usd, 2)})
+    kelly = load_kelly_survival(KELLY_FILE, "e8")
+    doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
+                "sizing_source": "kelly_survival" if kelly is not None else "policy RISK_FRAC",
+                "kelly_risk": kelly})
     guard = _read_json(GUARD, {})
     stood_down = bool(guard.get("stood_down"))
     if stood_down:
@@ -425,6 +461,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         due_now = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
+        frac, frac_src = window_risk(name, kelly)
+        if not frac > 0:
+            doc["skipped"].append({"window": name, "why": (
+                "stands aside: the survival-constrained growth solve "
+                "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
+            continue
+        risk_usd = equity * frac
         legs: dict[str, dict] = {}
         for side in ("buy_stop", "sell_stop"):
             if side == blocked:
@@ -446,7 +489,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                    "price": float(s["price"]), "sl": float(s["sl"]), "tp": float(s["tp"]),
                    "lot": lot, "stop_dist": round(dist, 2), "risk_usd": round(risk_usd, 2),
-                   "sizing": basis, "armed": bool(armed)}
+                   "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
+                   "armed": bool(armed)}
             if not (lot > 0):
                 row["status"] = "UNSIZEABLE"
                 doc["skipped"].append(row)
@@ -470,7 +514,9 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             except Exception as exc:
                 row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
                 log(f"[{name}] REJECTED {side}: {row['why']}")
-            _record(row)
+            if not _record(row):
+                doc.setdefault("journal_write_failed", []).append(
+                    {"window": name, "side": side, "order_id": row.get("order_id")})
         state["windows"][name] = {"placed_at": now.isoformat(timespec="seconds"),
                                   "placed_hour": hour, "hi": due["hi"], "lo": due["lo"],
                                   "orders": legs, "position_id": None, "shadow": not armed}
@@ -606,12 +652,19 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 w["position_id"] = act["position_id"]
                 log(f"[{act['window']}] {act['side']} filled -> position {act['position_id']}")
             elif kind in ("oco_cancel", "ttl_cancel", "eod_cancel"):
-                if armed or not w.get("shadow", False):
-                    venue.cancel(int(act["order_id"]))
+                # THE VENUE'S ANSWER IS READ (2026-09-30). `cancel` and `close` return the
+                # acknowledgement; both were discarded and the action logged as done, so a leg
+                # the venue refused to cancel stayed resting while the pass reported it gone.
+                if (armed or not w.get("shadow", False)) and \
+                        not venue.cancel(int(act["order_id"])):
+                    raise RuntimeError(f"venue did not acknowledge cancel of order "
+                                       f"{act['order_id']}; it may still be resting")
                 log(f"[{act['window']}] {kind}: order {act['order_id']} cancelled")
             elif kind == "close":
-                if armed or not w.get("shadow", False):
-                    venue.close(int(act["position_id"]))
+                if (armed or not w.get("shadow", False)) and \
+                        not venue.close(int(act["position_id"])):
+                    raise RuntimeError(f"venue did not acknowledge close of position "
+                                       f"{act['position_id']}; it may still be open")
                 w["closed"] = True
                 log(f"[{act['window']}] CLOSE position {act['position_id']} at the close hour")
             act["ok"] = True
