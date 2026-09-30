@@ -346,7 +346,7 @@ def test_reviewed_terms_carry_evidence() -> None:
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
         assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
-    assert reviewed == {"cn_nbs_retail"}
+    assert reviewed == {"cn_nbs_retail", *NEW_SUBSTITUTES}
 
 
 def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
@@ -358,11 +358,12 @@ def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
     for src in A.SOURCES:
         if src.terms == "confirmed":
             continue
-        assert A.status_of(src).startswith(("BLOCKED_ON_TERMS:", "DEAD:")), src.id
+        assert A.status_of(src).startswith(("BLOCKED_ON_TERMS:", "BLOCKED+SUBSTITUTE:",
+                                            "DEAD:")), src.id
         for fixtures in (None, FIX):
             rec = A.collect(paths, src, {}, NOW, fetch=True, fixtures=fixtures,
                             deadline=1e18, getter=boom)
-            assert rec["status"] == f"BLOCKED_ON_TERMS:{src.terms}" and rec["requests"] == 0
+            assert rec["status"] == A.status_of(src) and rec["requests"] == 0
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
     for sid in ("cn_maoyan_box_office", "cn_baidu_migration"):
         assert rep["sources"][sid]["series"] == {}
@@ -504,8 +505,148 @@ def test_repo_roster_file_matches_the_code_and_parses() -> None:
     ids = [r["id"] for r in doc["sources"]]
     assert len(ids) == len(set(ids))
     assert set(ids) == {s.id for s in A.SUBSTITUTE_SOURCES}
+    # every row's terms and status are the code's, not just its id (status as declared, no keys)
+    code = {r["id"]: r for r in A.roster_file_rows()}
+    for r in doc["sources"]:
+        c = A.BY_ID[r["id"]]
+        assert r["terms"] == c.terms == A.TERMS[c.id][0], r["id"]
+        assert r["status"] == A.status_of(c, {}) == code[r["id"]]["status"], r["id"]
+        assert r.get("substituted_by") == code[r["id"]].get("substituted_by"), r["id"]
+    assert doc["sources"] == A.roster_file_rows()           # regenerated, never hand-edited
     for r in doc["sources"]:
         assert r["fetcher"] == "owned" and r["owner"] == "asia_gap_thread"
         assert r["auth"] in ("none", "key") and (r["auth"] == "none" or r["auth_env"])
         for k in (*META, "substitutes_for", "consumer", "uses", "cadence_minutes"):
             assert r.get(k), (r["id"], k)
+
+
+# ============================================================================ blocked -> substitute
+NEW_SUBSTITUTES = ("jp_estat_immigration", "hk_immd_passenger", "br_bcb_payments",
+                   "mx_inegi_emec", "tr_tuik_retail", "kr_mof_container_teu")
+BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva", "mx_antad_sss",
+           "cn_maoyan_box_office", "in_npci_upi", "cn_sge_premium", "cn_baidu_migration",
+           "za_beti", "kr_busan_port", "cn_mot_port_weekly")
+
+
+def test_every_blocked_source_is_substituted_or_says_why_not() -> None:
+    blocked = {s.id for s in A.SOURCES if s.terms != "confirmed"}
+    assert blocked == set(BLOCKED)
+    assert set(A.SUBSTITUTED_BY) | set(A.NO_SUBSTITUTE) == blocked
+    assert not set(A.SUBSTITUTED_BY) & set(A.NO_SUBSTITUTE)
+    for sid, subs in A.SUBSTITUTED_BY.items():
+        assert subs and len(subs) == len(set(subs)), sid
+        for x in subs:
+            sub = A.BY_ID[x]
+            assert sub.terms == "confirmed" and not sub.archive_until, (sid, x)
+            assert x not in A.SUBSTITUTED_BY, x                     # never a blocked stand-in
+        assert A.status_of(A.BY_ID[sid]) == "BLOCKED+SUBSTITUTE:" + ",".join(subs)
+    for sid, why in A.NO_SUBSTITUTE.items():
+        assert why and A.status_of(A.BY_ID[sid]) == f"BLOCKED_ON_TERMS:{A.BY_ID[sid].terms}"
+
+
+def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
+    def boom(url: str) -> tuple[bytes, str]:
+        raise AssertionError(f"fetched {url}")
+
+    paths = A.Paths(tmp_path / "desk")
+    rec = A.collect(paths, A.BY_ID["tr_bkm_card"], {}, NOW, fetch=True, fixtures=None,
+                    deadline=1e18, getter=boom)
+    assert rec == {**rec, "status": "BLOCKED+SUBSTITUTE:tr_tuik_retail", "requests": 0}
+    rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
+    assert rep["blocked_substituted"]["kr_busan_port"] == ["kr_mof_container_teu",
+                                                           "imf_portwatch_ports"]
+    assert set(rep["blocked_unsubstituted"]) == {"in_npci_upi", "za_beti"}
+    assert rep["sources"]["tr_bkm_card"]["status"].startswith("BLOCKED+SUBSTITUTE:")
+    rows = {r["id"]: r for r in A.roster_rows()}
+    assert rows["jp_jnto_arrivals"]["substituted_by"] == ["jp_estat_immigration"]
+    assert "substituted_by" not in rows["in_npci_upi"]
+
+
+def test_new_substitute_rows_carry_schema_terms_and_evidence() -> None:
+    uni = json.loads((DESK / "data" / "universe" / "universe.json").read_text("utf-8"))
+    for sid in NEW_SUBSTITUTES:
+        s = A.BY_ID[sid]
+        assert s in A.SUBSTITUTE_SOURCES and s.substitutes_for, sid
+        assert s.terms == A.TERMS[sid][0] == "confirmed", sid
+        ev = A.TERMS_EVIDENCE[sid]
+        assert ev["terms_url"].startswith("https://") and ev["terms_quote"].strip("( "), sid
+        assert not ev["terms_quote"].startswith("(not"), sid     # a verbatim quote, not a gap
+        for k in META:
+            assert getattr(s, k), (sid, k)
+        assert s.crowding_prior in ("low", "medium", "high")
+        assert s.parse is not None and s.signal_series and s.transform
+        for m in (s.instruments, *s.series_instruments.values()):
+            assert m and set(m) <= set(uni) and set(m.values()) <= {1, -1}, sid
+            assert all(A.may_mint(sym) for sym in m), sid          # index/FX only: never a share
+        for d in (date(2026, 1, 31), date(2026, 8, 31)):
+            assert s.rule(d) > datetime(d.year, d.month, d.day, tzinfo=UTC), sid
+        assert "{key}" not in A.roster_rows([s])[0]["url"]
+
+
+def test_new_substitute_parsers_read_their_fixtures() -> None:
+    ctx = A.Ctx(fetched_at=NOW)
+    im = _parse("jp_estat_immigration")
+    assert im[("foreign_entries", date(2026, 8, 31))].value == 3420000      # the total, not a sum
+    hk = _parse("hk_immd_passenger", ctx)
+    assert hk[("mainland_visitor_arrivals", date(2026, 9, 28))].value == 30000
+    assert hk[("hk_resident_departures", date(2026, 9, 28))].value == 24000
+    same_day = A.Ctx(fetched_at=datetime(2026, 9, 28, 20, tzinfo=UTC))    # today never emitted
+    got = A.parse_hk_immd((FIX / "hk_immd_passenger.csv").read_bytes(), same_day)
+    assert got and all(o.period < date(2026, 9, 28) for o in got)
+    br = _parse("br_bcb_payments")
+    assert br[("retail_payments_value_brl", date(2026, 8, 31))].value == pytest.approx(4190000.0)
+    mx = _parse("mx_inegi_emec")
+    assert mx[("retail_index", date(2026, 6, 30))].value == pytest.approx(118.4)
+    tr = _parse("tr_tuik_retail")
+    o = tr[("retail_volume_yoy", date(2026, 7, 31))]
+    assert o.value == pytest.approx(12.7) and o.published_at == datetime(2026, 9, 4, 10,
+                                                                          tzinfo=UTC)
+    kr = _parse("kr_mof_container_teu")
+    assert kr[("container_teu", date(2026, 8, 31))].value == 1150000 + 1170000 + 92000 + 97000
+    doc = json.loads((FIX / "kr_mof_container_teu.json").read_text("utf-8"))
+    doc["response"]["body"]["totalCount"] = 40                          # page holds 4 of 40
+    assert A.parse_kr_mof_container(json.dumps(doc).encode(), ctx) == []
+    xml = (b"<response><body><items><item><useYm>202608</useYm><eContnTeuTotal>10"
+           b"</eContnTeuTotal><tContnTeuTotal>5</tContnTeuTotal></item></items>"
+           b"<totalCount>1</totalCount></body></response>")
+    assert A.parse_kr_mof_container(xml, ctx)[0].value == 15
+
+
+def test_configured_substitutes_never_request_on_a_placeholder(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    for env in ("ALT_ESTAT_IMMIG_STATS_ID", "ALT_ESTAT_IMMIG_CAT01", "ALT_INEGI_EMEC_ID",
+                "ALT_TUIK_RETAIL_URL"):
+        monkeypatch.delenv(env, raising=False)
+    monkeypatch.setenv("ESTAT_APP_ID", "k")
+    monkeypatch.setenv("INEGI_TOKEN", "k")
+    for sid in ("jp_estat_immigration", "mx_inegi_emec", "tr_tuik_retail"):
+        src = A.BY_ID[sid]
+        assert A.status_of(src).startswith("UNCONFIGURED:"), sid
+        assert A.requests_for(src, NOW, {}) == [], sid
+
+
+def test_nbs_terms_were_rejudged_against_the_listed_exclusions() -> None:
+    ev = A.TERMS_EVIDENCE["cn_nbs_retail"]
+    for item in ("a.本网所指向", "b.已作出不得转载", "c.未由本网署名", "d.本网中特有",
+                 "e.本网中必须具有特别授权", "f.其他法律不允许"):
+        assert item in ev["terms_quote"], item
+    assert "Stays confirmed" in ev["judgement"] and A.BY_ID["cn_nbs_retail"].terms == "confirmed"
+
+
+def test_dead_board_urls_were_replaced() -> None:
+    assert "Board.do?mCode=MN1003" not in A.BY_ID["kr_busan_port"].url
+    assert "/tongjishuju/" not in A.BY_ID["cn_mot_port_weekly"].url
+
+
+def test_engine_rows_file_matches_the_code_and_the_engine_can_read_it() -> None:
+    fp = DESK / "data" / "paid_data_substitutes_asia_blocked.json"
+    doc = json.loads(fp.read_text("utf-8"))
+    assert doc == json.loads(json.dumps(A.engine_rows(), ensure_ascii=False))
+    rows = {r["paid"].rsplit("[", 1)[1].rstrip("]"): r for r in doc["rows"]}
+    assert set(rows) == set(BLOCKED)
+    for sid, r in rows.items():
+        assert r["status"] == A.status_of(A.BY_ID[sid], {}), sid
+        assert list(r)[:3] == ["class", "paid", "free"]      # the engine finds columns by word
+        assert bool(r["free"]) == (sid in A.SUBSTITUTED_BY), sid
+    lib = {r["id"] for r in doc["library_rows"]}
+    assert lib == {f"asia_{x}" for v in A.SUBSTITUTED_BY.values() for x in v}
