@@ -844,6 +844,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "cycle_pricing", "causal_invariance",
     # The bandit's shares, re-derived hourly before the legs that spend them (Tier S).
     "research_bandit",
+    # THE TIER S DOOR'S WRITER, EVERY HOUR (2026-09-30): the promotion door fails closed on a
+    # verdict older than 6h, so this leg is on the core clock and exempt from rotation
+    # (libs/ops/leg_rotation.ALWAYS_RUN). ~10 min measured end to end under its 1,500 s cap.
+    "tier_s",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
