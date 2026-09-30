@@ -286,8 +286,8 @@ class Subject:
                      "m": self.mechanism, "k": self.claim_type})
 
 
-def scientific_subjects(bank: Path = BANK) -> list[Subject]:
-    rows = _json(bank, [])
+def scientific_subjects(bank: Path | None = None) -> list[Subject]:
+    rows = _json(bank or BANK, [])
     if isinstance(rows, dict):
         rows = next((v for v in rows.values() if isinstance(v, list)), [])
     out: list[Subject] = []
@@ -305,9 +305,10 @@ def scientific_subjects(bank: Path = BANK) -> list[Subject]:
     return out
 
 
-def forensic_subjects(sares_dir: Path = SARES_DONATIONS,
-                      queue: Path = NAMING_QUEUE) -> list[Subject]:
+def forensic_subjects(sares_dir: Path | None = None,
+                      queue: Path | None = None) -> list[Subject]:
     """SARES' public-record cells, newest file first, then the largest unnamed effects."""
+    sares_dir, queue = sares_dir or SARES_DONATIONS, queue or NAMING_QUEUE
     out: list[Subject] = []
     files = sorted(sares_dir.glob("discoveries_*.json"), reverse=True) if sares_dir.is_dir() \
         else []
@@ -616,9 +617,10 @@ def alpha_cells(s: Subject, said: Sequence[Mapping[str, Any]],
     return rows
 
 
-def donate(rows: Sequence[Mapping[str, Any]], directory: Path = DONATE_DIR) -> Path | None:
+def donate(rows: Sequence[Mapping[str, Any]], directory: Path | None = None) -> Path | None:
     if not rows:
         return None
+    directory = directory or DONATE_DIR
     path = directory / f"discoveries_{_now().replace(':', '').replace('-', '')[:15]}.json"
     _atomic(path, {"source": "committees", "generated_at": _now(),
                    "rule": "a competing mechanism is a candidate, never a verdict",
@@ -703,8 +705,8 @@ def scrap_verdict(v: Mapping[str, Any]) -> tuple[bool, str]:
         "precision holds; net compute UNMEASURED until the gauntlet's cell cost is published"
 
 
-def _gauntlet_cell_seconds(path: Path = THROUGHPUT) -> float | None:
-    doc = _json(path, {})
+def _gauntlet_cell_seconds(path: Path | None = None) -> float | None:
+    doc = _json(path or THROUGHPUT, {})
     for k in ("seconds_per_cell", "median_seconds_per_cell", "cell_seconds"):
         v = doc.get(k) if isinstance(doc, dict) else None
         if isinstance(v, (int, float)) and v > 0:
@@ -839,9 +841,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, calls: int = DEFAULT_CALLS, write
     return doc
 
 
-def premortem_for(graph_id: str, path: Path = PREMORTEMS) -> dict[str, Any] | None:
+def premortem_for(graph_id: str, path: Path | None = None) -> dict[str, Any] | None:
     """The committee's lead failure class for one cell, for the falsifier battery's ORDER only."""
-    hint = _json(path, {}).get(graph_id) if graph_id else None
+    hint = _json(path or PREMORTEMS, {}).get(graph_id) if graph_id else None
     return dict(hint) if isinstance(hint, dict) and hint.get("failure_class") else None
 
 
