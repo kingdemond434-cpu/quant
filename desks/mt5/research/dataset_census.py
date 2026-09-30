@@ -342,7 +342,14 @@ def _lake_series_files(pack: str, series_dir: Path | None = None) -> list[str]:
     out = [base / f"{pack}{ext}" for ext in (".parquet", ".csv", ".json", ".txt")
            if (base / f"{pack}{ext}").exists()]
     out += sorted(p for p in base.glob(f"{pack}__t*") if p.suffix in (".parquet", ".csv"))
-    return [str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p) for p in out]
+    return [_rel(p) for p in out]
+
+
+def _rel(p: Path) -> str:
+    try:
+        return str(p.relative_to(ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(p)
 
 
 def fetch_facts(d: dict[str, Any], collector_state: dict[str, Any] | None) -> dict[str, Any]:
@@ -589,9 +596,8 @@ def census(now: datetime | None = None, db: Path | None = None,
                 "rule": ("unfed = no fetched series file on disk, or a series that fed no "
                          "producer in 7d; UNMEASURED only when a series is present and nothing "
                          "can tell whether it fed"),
-                "lake_collector_state": (str(LAKE_STATE.relative_to(ROOT)) if lake_state
-                                         is not None else f"{UNMEASURED}: "
-                                         f"{LAKE_STATE.relative_to(ROOT)} absent"),
+                "lake_collector_state": (_rel(LAKE_STATE) if lake_state is not None
+                                         else f"{UNMEASURED}: {_rel(LAKE_STATE)} absent"),
                 "datasets": len(rows),
                 "fetched": sum(1 for r in rows.values() if r["fetched"] is True),
                 "fetched_unmeasured": sum(1 for r in rows.values()

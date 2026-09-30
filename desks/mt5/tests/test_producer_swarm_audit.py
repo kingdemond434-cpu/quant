@@ -74,7 +74,8 @@ def test_every_swarm_cell_carries_all_four_culture_fields_in_the_schema(sandbox:
             assert k in lin
         assert lin["crowding_prior"] == crowd
         seen.add(sc)
-    assert "JP/ja" in seen                                  # the schema's tag, not bare "JP"
+    # the schema's tag ("JP/ja"), never the registry's bare "JP"
+    assert seen - {"GLOBAL"} and all(CC.CULTURE_RE.match(t) for t in seen - {"GLOBAL"})
     for s in doc["cell_sample"]:
         assert s["crowding_prior"] in CC.CROWDING_PRIORS
 
