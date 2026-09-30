@@ -42,11 +42,18 @@ def _graph_counts() -> tuple[int, dict[str, int]]:
     return sum(by_fam.values()), by_fam
 
 
+def _census_files() -> list[str]:
+    """`data/*_TRIALS.jsonl`, matched case-SENSITIVELY: Windows globbing ignores case and would
+    also catch `learned_miners_trials.jsonl`, which is charged by its own reader below."""
+    return sorted(f for f in glob.glob(str(DESK / "data" / "*_TRIALS.jsonl"))
+                  if Path(f).name.endswith("_TRIALS.jsonl"))
+
+
 def _censused_sources() -> set[str]:
     """Producers that keep their own `*_TRIALS.jsonl` census: their discovery files are NOT also
     summed, or every donated pass would be charged twice."""
     out: set[str] = set()
-    for f in glob.glob(str(DESK / "data" / "*_TRIALS.jsonl")):
+    for f in _census_files():
         try:
             for ln in Path(f).read_text("utf-8").splitlines():
                 row = json.loads(ln) if ln.strip() else None
@@ -62,6 +69,7 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     total = 0
     by_fam: dict[str, int] = {}
     intel = DESK / "data" / "intelligence"
+    # No early return when there is no intelligence dir: the side ledgers below still count.
     censused = _censused_sources()
     for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
         if Path(f).parent.name in censused:
@@ -90,11 +98,27 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
     except (OSError, ValueError, TypeError):
         pass
+    # A MINER RUN THAT PROPOSES NOTHING STILL RAN ITS TESTS. `learned_miners` writes one row per
+    # (config, symbol, threshold) it tried; a run that donated is already counted through its
+    # discovery file's tests_run, so only the runs that donated nothing are charged here -- the
+    # null runs that would otherwise leave no trace in the lifetime count.
+    try:
+        for ln in (DESK / "data" / "learned_miners_trials.jsonl").read_text("utf-8").splitlines():
+            if not ln.strip():
+                continue
+            row = json.loads(ln)
+            if not isinstance(row, dict) or row.get("donated"):
+                continue
+            fam = str(row.get("family") or "?").rsplit(":", 1)[-1]
+            total += 1
+            by_fam[fam] = by_fam.get(fam, 0) + 1
+    except (OSError, ValueError, TypeError):
+        pass
     # A PRODUCER'S NULL PASSES ARE TRIALS TOO. `donate` writes a discovery file only when it has
     # a candidate, so a sweep that found nothing charged nothing. A producer that keeps its own
     # census writes `data/<NAME>_TRIALS.jsonl` rows {"family", "cells_screened"} -- each cell once,
     # on its first screen -- and every such file is summed here (regime_split_miner, 2026-09-30).
-    for f in sorted(glob.glob(str(DESK / "data" / "*_TRIALS.jsonl"))):
+    for f in _census_files():
         try:
             lines = Path(f).read_text("utf-8").splitlines()
         except OSError:

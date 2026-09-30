@@ -190,6 +190,9 @@ LEG_LAYER: dict[str, str] = {
     "candidate_conservation": "meta",
     # Planted point-in-time canaries measure whether the desk can read the future: meta.
     "pit_canaries": "meta",
+    # Whether the desk has stopped placing without saying so is a measurement of its own
+    # execution wiring, not an act on the book: meta.
+    "placement_interlock": "meta",
     # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
     # Whether the running code may create new exposure, which scientist earned what, which
     # structures have started surviving again, and one EVIG price over every research resource

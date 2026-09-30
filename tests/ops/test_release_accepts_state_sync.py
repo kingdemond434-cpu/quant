@@ -169,3 +169,30 @@ def test_a_seal_still_refuses_a_dirty_code_path(tmp_path) -> None:
         release.seal(root=repo, by="test", write=False)
     doc = release.seal(root=repo, by="test", write=False, allow_dirty=True)
     assert doc["worktree_dirty"] == ["libs/x.py"]
+
+
+# ----------------------------------- one classification (recovered box commit fe09b89b, 09-24)
+def test_seal_blocking_paths_is_the_seals_own_rule(tmp_path) -> None:
+    """`seal()` and `seal_blocking_paths()` are one rule: the scoped code reading, minus state and
+    build output. A real code edit still blocks; a ledger never does."""
+    repo = _repo(tmp_path)
+    (repo / "desks" / "mt5" / "data" / "ledger.json").write_text("[1, 2]\n")
+    assert release.seal_blocking_paths(repo) == []
+    (repo / "libs" / "x.py").write_text("code = 2\n")
+    assert release.seal_blocking_paths(repo) == ["libs/x.py"]
+    assert release.seal_blocking_paths(dirty=["dist/quant-platform.zip",
+                                              "desks/mt5/swap_exposure.json",
+                                              "libs/x.py"]) == ["libs/x.py"]
+
+
+def test_a_regenerated_build_artifact_is_not_unreleased_code(monkeypatch) -> None:
+    _diff(monkeypatch, ["dist/quant-platform.zip", "desks/mt5/swap_exposure.json"])
+    ok, why, code = release.accepts(RUNNING, REC)
+    assert ok, why
+    assert code == []
+    assert release.is_build_artifact("dist/quant-platform.zip")
+    assert not release.is_build_artifact("desks/mt5/mt5desk/gateway.py")
+    # ...and it never excuses code sitting beside it.
+    _diff(monkeypatch, ["dist/quant-platform.zip", "desks/mt5/mt5desk/gateway.py"])
+    ok, _, code = release.accepts(RUNNING, REC)
+    assert not ok and code == ["desks/mt5/mt5desk/gateway.py"]
