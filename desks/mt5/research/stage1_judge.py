@@ -14,7 +14,6 @@ go to the full ten gates, at the front of the judge's order.
 WHAT IS READ, AND WHAT IS NEVER READ. One replay of the cell's signals at 1x cost gives its
 active-day calendar; statistics are then taken only on days strictly before
 
-  * TRAIN_FRAC of the cell's own chart history (mass_screen's window), and
   * the earliest day the sealed walk-forward TEST region can start. The gauntlet runs its
     walk-forward on the DEVELOPMENT series (after the lockbox carve), whose length is not known
     here, so the bound is the minimum of the WF start rank over every development length the
@@ -23,7 +22,11 @@ active-day calendar; statistics are then taken only on days strictly before
   * a lower bound on the sealed lockbox cut (`lockbox_cut_lb`): the gauntlet reserves the last
     `gate_policy.LOCKBOX_FRAC` of the UNION calendar of a sweep; with trading days at least
     5-of-7 dense that cut can be no earlier than `T - LOCKBOX_FRAC x 7/5 x (T - earliest bar in
-    the universe)`, and a 25% margin is added on top.
+    the universe)`.
+
+THE FULL TRAINING WINDOW (audit 2026-09-30). Everything before those two lower bounds is used; an
+earlier version also capped the window at mass_screen's TRAIN_FRAC (30%) of the chart calendar,
+which left ~16% of history and made the screen blind below t~10. That cap is gone.
 
 The 1x daily-series VALUES outside that window are never touched; the 3x stress arm is replayed on
 the signal prefix alone. So neither the walk-forward nor the lockbox gate is ever screened on.
@@ -126,6 +129,15 @@ UNRUNNABLE_BANK = HYP / "unrunnable_specs.json"
 DEAD_SIDECAR = HYP / "DEAD_SESSION_VARIANTS.jsonl"
 SESSION_TZ_MISMATCH = "SESSION_TZ_MISMATCH"
 UNMEASURED = "UNMEASURED"
+#: THE SCREEN'S WINDOW. "pre_wf" (default): days before BOTH the walk-forward-test and the lockbox
+#: lower bounds -- the sealed WF tests the last 2/3 of each development series, so this is ~16% of
+#: a typical cell's days, and a planted t=4 edge ranks in the top decile only ~62% of the time
+#: (`planted_edge_control`, measured 2026-09-30). "pre_lockbox": everything before the lockbox
+#: lower bound (~48%; t=4 ranks top-decile ~93%), which reads the WF region for ORDER only.
+#: Switching is the principal's call; STAGE1_WINDOW in the environment selects it.
+WINDOW = os.environ.get("STAGE1_WINDOW", "pre_wf")
+#: How many head-of-order cells the published priority file lists (the record holds all).
+PRIORITY_TOP = 5000
 #: THE WRONG-SPACE BUCKET (2026-09-30). `judge_coverage._cell_id` names a docket row with the chart
 #: as a separate `timeframe` key; the judge folds a non-H1 row chart into `params` first
 #: (`frontier_identity.docket_cell`). Its build-failure bank is keyed in the judge's space, so the
@@ -205,17 +217,28 @@ def lockbox_cut_lb(earliest: date, today: date, frac: float | None = None) -> da
 
 
 def train_boundary(days: np.ndarray, first_bar: date, last_bar: date, cut_lb: date,
-                   train_frac: float) -> tuple[date, dict[str, Any]]:
+                   train_frac: float | None = None, window: str | None = None
+                   ) -> tuple[date, dict[str, Any]]:
     """The exclusive end of the training window for one cell, and how it was derived.
 
     `days` are the cell's active days (sorted, unique, numpy datetime64[D]) over its full replay.
     """
-    cal = first_bar + timedelta(days=int(train_frac * (last_bar - first_bar).days))
+    # No calendar cap by default (the full training window); a fraction is honoured only when
+    # a caller passes one explicitly (the boundary property tests do).
+    cal = (first_bar + timedelta(days=int(train_frac * (last_bar - first_bar).days))
+           if train_frac is not None and train_frac < 1.0 else last_bar + timedelta(days=1))
     n = int(days.size)
     n_lo = int(np.searchsorted(days, np.datetime64(cut_lb, "D")))
     r = wf_start_lb(n_lo, n)
     wf_day = (days[r].astype("datetime64[D]").astype(date) if 0 <= r < n
               else last_bar + timedelta(days=1))
+    if (window or WINDOW) == "pre_lockbox":
+        # ORDER-ONLY MODE (off by default): the development series up to the lockbox lower
+        # bound, walk-forward region included. The lockbox is never read in either mode.
+        end = min(cal, cut_lb)
+        return end, {"calendar": cal.isoformat(), "wf_lb": wf_day.isoformat(),
+                     "lockbox_lb": cut_lb.isoformat(), "wf_rank_lb": r,
+                     "binding": "calendar" if end == cal else "lockbox", "window": "pre_lockbox"}
     end = min(cal, wf_day, cut_lb)
     return end, {"calendar": cal.isoformat(), "wf_lb": wf_day.isoformat(),
                  "lockbox_lb": cut_lb.isoformat(), "wf_rank_lb": r, "binding": (
@@ -354,14 +377,15 @@ def unbuildable_cause(why: str | None) -> str:
 _W: dict[str, Any] = {}
 
 
-def _init_worker(cut_lb_iso: str, train_frac: float) -> None:
+def _init_worker(cut_lb_iso: str, train_frac: float | None = None) -> None:
     import external_gauntlet as G
     try:
         meta = json.loads((G.UNI / "universe.json").read_text("utf-8"))
     except (OSError, ValueError):
         meta = {}
     _W.update(G=G, meta=meta if isinstance(meta, dict) else {},
-              cut_lb=date.fromisoformat(cut_lb_iso), train_frac=float(train_frac),
+              cut_lb=date.fromisoformat(cut_lb_iso),
+              train_frac=None if train_frac is None else float(train_frac),
               prepared={})
     with contextlib.suppress(Exception):
         import psutil
@@ -387,6 +411,65 @@ def _stats(v: np.ndarray) -> tuple[float, float, float]:
     t = mean / sd * math.sqrt(d) if sd > 0 else 0.0
     p = float(student_t.sf(t, df=d - 1)) if d > 1 else 1.0
     return mean, t, p
+
+
+def planted_edge_control(values: np.ndarray, days: np.ndarray, end: date, t_full: float, *,
+                         m: int, reps: int = 400, seed: int = 0, q: float = FDR_Q
+                         ) -> dict[str, Any]:
+    """THE END-TO-END CONTROL (audit 2026-09-30): plant an edge of full-history t = `t_full` into
+    a REAL cell's daily R series and ask what stage 1 does with it.
+
+    The real series is demeaned and each replicate flips the sign of every day at random (the
+    real calendar, variance and tails stay; any real edge is removed), then the drift that makes
+    the full-history t equal `t_full` is added. Stage 1 sees ONLY the training window (days before
+    `end`, the same boundary it uses in the run). Returned:
+
+      * top_decile_rate -- how often the planted cell's training t beats the 90th percentile of
+        null replicates of the same cell: what the stage-2 ORDER does with it;
+      * bh_pass_rate    -- how often it survives BH at q among `m` tested cells (m-1 nulls);
+      * predicted_bh_pass_rate -- the documented rate, Phi(t_full x sqrt(f) - z_{q/m}), where f is
+        the training share of the cell's days: the screen's power is set by f and m, not by t.
+    """
+    from mass_screen import bh_threshold
+    from scipy.stats import norm
+    v = np.asarray(values, dtype="float64")
+    d = np.asarray(days).astype("datetime64[D]")
+    n = int(v.size)
+    r0 = v - v.mean()
+    sd = float(r0.std(ddof=1))
+    mask = d < np.datetime64(end, "D")
+    f = float(mask.mean()) if n else 0.0
+    if n < 3 or sd <= 0 or mask.sum() < 3:
+        return {"status": UNMEASURED, "why": "series too short for the control"}
+    mu = float(t_full) * sd / math.sqrt(n)
+    rng = np.random.default_rng(seed)
+    rt = r0[mask]
+    k = rt.size
+
+    def _t(x: np.ndarray) -> np.ndarray:
+        mean = x.mean(axis=-1)
+        s = x.std(axis=-1, ddof=1)
+        return np.where(s > 0, mean / s * math.sqrt(k), 0.0)
+
+    null_t = _t(rng.choice((-1.0, 1.0), size=(max(reps, 1000), k)) * rt)
+    thr = float(np.quantile(null_t, 0.9))
+    planted = rng.choice((-1.0, 1.0), size=(reps, k)) * rt + mu
+    pt = _t(planted)
+    from scipy.stats import t as student_t
+    pp = student_t.sf(pt, df=k - 1)
+    passed = 0
+    for i in range(reps):
+        n_listed = int(rng.binomial(max(m - 1, 0), q))
+        listed = np.r_[rng.uniform(0.0, q, n_listed), pp[i]]
+        cut = bh_threshold(listed[listed <= q], max(m, 1), q)
+        passed += int(cut > 0 and pp[i] <= cut and planted[i].mean() > 0)
+    z = float(norm.isf(q / max(m, 1)))
+    return {"t_full": float(t_full), "n_days_full": n, "n_days_train": int(k),
+            "train_fraction": round(f, 4), "expected_t_train": round(t_full * math.sqrt(f), 3),
+            "top_decile_rate": round(float((pt > thr).mean()), 4),
+            "bh_pass_rate": round(passed / reps, 4),
+            "predicted_bh_pass_rate": round(float(norm.cdf(t_full * math.sqrt(f) - z)), 4),
+            "m_tested": int(m), "q": q, "reps": int(reps)}
 
 
 def evaluate_engine(spec: dict[str, Any]) -> dict[str, Any]:
@@ -979,13 +1062,27 @@ def bh_cut(pvals: list[float], m: int, q: float) -> float:
     return bh_threshold(listed, m, q)
 
 
+def score_of(r: dict[str, Any]) -> float | None:
+    """The stage-2 ORDER score: the training-window t-statistic of a TESTED cell, else None
+    (untested or unbuildable, which sort after every scored cell and are never dropped)."""
+    if r.get("verdict") == REC.UNBUILDABLE or r.get("basis") == "UNSCREENABLE_TRAIN_WINDOW":
+        return None
+    t = r.get("t")
+    try:
+        return None if t is None or not math.isfinite(float(t)) else float(t)
+    except (TypeError, ValueError):
+        return None
+
+
 def finalise(results: list[dict[str, Any]], q: float = FDR_Q) -> dict[str, Any]:
-    """Turn EVALUATED rows into PASS / REJECT under one BH cut over the run."""
-    evaluated = [r for r in results if r.get("verdict") in ("EVALUATED", REC.PASS) or
-                 (r.get("verdict") == REC.REJECT and r.get("reason") in (
-                     "R_NO_SIGNALS", "R_UNDER_60_DAYS"))]
-    m = len(evaluated)
+    """Turn EVALUATED rows into PASS / REJECT under one BH cut over the run.
+
+    m COUNTS ONLY TESTED CELLS (audit 2026-09-30): a cell with no training-window statistic
+    (no signals, under 60 days, too few training days) is not a hypothesis tested in this run,
+    and counting it in m only raised the bar for the cells that were. Every tested cell is still
+    charged as a trial (STAGE1_TRIALS.jsonl)."""
     ps = [float(r["p"]) for r in results if r.get("verdict") == "EVALUATED"]
+    m = len(ps)
     cut = bh_cut(ps, m, q)
     for r in results:
         if r.get("verdict") != "EVALUATED":
@@ -1169,7 +1266,7 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     select_s = time.monotonic() - t_sel
     seen_s = t_sel - t_seen
     earliest = universe_earliest(G.UNI) or date(2000, 1, 1)
-    from mass_screen import TRAIN_FRAC
+    TRAIN_FRAC = None  # the full training window: no calendar cap
     cut_lb = lockbox_cut_lb(earliest, now.date())
 
     # ---- preflight (no build) --------------------------------------------------------------
@@ -1270,8 +1367,8 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
             con.execute(
                 "INSERT INTO cells(cid, sym, family, tf, verdict, basis, reason, cause, p, t, "
                 "mean_r, mean_r_x3, n_days_full, n_days_train, train_end, n_bars, first_bar, "
-                "family_ver, first_seen, run_id, ruled_at, forwarded_at) "
-                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                "family_ver, first_seen, run_id, ruled_at, forwarded_at, score) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
                 "ON CONFLICT(cid) DO UPDATE SET verdict=excluded.verdict, basis=excluded.basis, "
                 "reason=excluded.reason, cause=excluded.cause, p=excluded.p, t=excluded.t, "
                 "mean_r=excluded.mean_r, mean_r_x3=excluded.mean_r_x3, "
@@ -1279,13 +1376,13 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
                 "train_end=excluded.train_end, n_bars=excluded.n_bars, "
                 "first_bar=excluded.first_bar, family_ver=excluded.family_ver, "
                 "run_id=excluded.run_id, ruled_at=excluded.ruled_at, "
-                "times_ruled=cells.times_ruled+1, "
+                "times_ruled=cells.times_ruled+1, score=excluded.score, "
                 "forwarded_at=COALESCE(cells.forwarded_at, excluded.forwarded_at)",
                 (r["cid"], sp["sym"], sp["family"], sp["tf"], r["verdict"], r.get("basis"),
                  r.get("reason"), r.get("cause"), r.get("p"), r.get("t"), r.get("mean_r"),
                  r.get("mean_r_x3"), r.get("n_days_full"), r.get("n_days_train"),
                  r.get("train_end"), nb, fb, family_version(sp["family"]), sp["first_seen"],
-                 run_id, ts, ts if r["verdict"] == REC.PASS else None))
+                 run_id, ts, ts if r["verdict"] == REC.PASS else None, score_of(r)))
             con.execute(
                 "INSERT INTO rulings(cid, run_id, ruled_at, verdict, basis, reason, cause, "
                 "family, p, cost_s) VALUES(?,?,?,?,?,?,?,?,?,?)",
@@ -1327,20 +1424,20 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
         _append(trials_p, trial_rows)
 
     # ---- the survivors' priority file (read by the warmer and the sealed patch) ------------
-    fwd_rows = con.execute(
-        "SELECT cid, basis, first_seen, forwarded_at, family FROM cells WHERE verdict=? "
-        "ORDER BY CASE basis WHEN 'BH_SURVIVOR' THEN 0 ELSE 1 END, first_seen",
-        (REC.PASS,)).fetchall()
-    fwd_open = [row for row in fwd_rows if h64(row[0]) not in seen]
+    top_rows = con.execute(
+        "SELECT cid, basis, score FROM cells WHERE score IS NOT NULL "
+        "ORDER BY score DESC LIMIT ?", (4 * PRIORITY_TOP,)).fetchall()
+    top_open = [row for row in top_rows if h64(row[0]) not in seen][:PRIORITY_TOP]
     if not dry_run or out_dir is not None:
         _write_json(prio_p, {
             "at": ts, "source": "research/stage1_judge.py",
-            "rule": ("stage-1 survivors (BH at q over the run, 3x-stress positive, training "
-                     "window only) first, then cells forwarded unscreened; oldest first. Order "
-                     "only: v4 re-mint and evicted re-judges stay ahead (stage1_record tiers)"),
-            "cells": [row[0] for row in fwd_open],
-            "n_bh_survivors": sum(1 for row in fwd_open if row[1] == "BH_SURVIVOR"),
-            "n_forward_unscreened": sum(1 for row in fwd_open if row[1] != "BH_SURVIVOR")})
+            "rule": ("the head of the stage-2 order: tested cells not yet sealed-judged, by "
+                     "training-window t DESCENDING (BH survivors and the rest alike -- stage 1 "
+                     "only reorders). Named priorities (v4 re-mint, re-judge queues) stay ahead; "
+                     "untested and unbuildable cells sort after every scored cell, never dropped. "
+                     "The full order is the record (stage1_record.rank_of_state)"),
+            "cells": [row[0] for row in top_open],
+            "n_bh_survivors": sum(1 for row in top_open if row[1] == "BH_SURVIVOR")})
 
     # ---- throughput -------------------------------------------------------------------------
     wall = time.monotonic() - started
@@ -1585,7 +1682,8 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
                                        if isinstance(proj18, int) and proj18 else UNMEASURED)},
         "boundary": {"lockbox_cut_lower_bound": cut_lb.isoformat(),
                      "universe_earliest_bar": earliest.isoformat(),
-                     "min_days_full": MIN_DAYS_FULL, "min_train_days": MIN_TRAIN_DAYS},
+                     "min_days_full": MIN_DAYS_FULL, "min_train_days": MIN_TRAIN_DAYS,
+                     "window": WINDOW},
         "workers": winfo,
         "priority_file": str(PRIORITY.relative_to(DESK)),
     }

@@ -529,7 +529,8 @@ def never_judged_flags(G, specs: list[dict]) -> int:
     return O.stamp_new(G, specs)
 
 
-def backlog_first(specs: list[dict], rank: dict[int, int] | None = None) -> list[dict]:
+def backlog_first(specs: list[dict], rank: dict[int, tuple[int, float]] | None = None
+                  ) -> list[dict]:
     """THE BACKLOG IS WARMED BEFORE ANY RE-JUDGE. A PERMUTATION -- same cells, same multiset.
 
     WHY, MEASURED 2026-09-30. The judge rules on what is WARM: a cached cell costs the sweep no
@@ -551,15 +552,16 @@ def backlog_first(specs: list[dict], rank: dict[int, int] | None = None) -> list
     if rank is None:
         return sorted(specs, key=lambda sp: 0 if sp.get("_never_judged", True) else 1)
     # THE TWO-STAGE JUDGE'S ORDER INSIDE THE BACKLOG (2026-09-30, `research/stage1_record`):
-    # named priorities (v4 re-mint, evicted re-judges) first, then stage-1 survivors, then cells
-    # forwarded unscreened, then cells stage 1 has not reached, and stage-1 rejects LAST -- still
-    # warmed, never dropped. Still a permutation; a missing tier reads as "not yet ruled".
+    # named priorities (v4 re-mint, re-judge queues) first, then every TESTED cell by its
+    # stage-1 score descending, then cells stage 1 has not reached, then untested and
+    # unbuildable cells -- still warmed, never dropped, never parked by a low score. A
+    # permutation; a missing rank reads as "not yet ruled".
     return sorted(specs, key=lambda sp: (0 if sp.get("_never_judged", True) else 1,
-                                         rank.get(id(sp), 3)))
+                                         rank.get(id(sp), (2, 0.0))))
 
 
-def stage1_ranks(G, specs: list[dict]) -> dict[int, int] | None:
-    """{id(spec): stage-1 tier} from the stage-1 record, or None when it cannot be read (the
+def stage1_ranks(G, specs: list[dict]) -> dict[int, tuple[int, float]] | None:
+    """{id(spec): (group, -score)} from the stage-1 record, or None when it cannot be read (the
     order is then exactly what it was before the two-stage judge existed)."""
     try:
         import stage1_record as S1

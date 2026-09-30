@@ -9,6 +9,7 @@ re-screenable and never deleted, and that the order consumers read keeps v4 re-m
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 import sys
 from datetime import UTC, date, datetime, timedelta
@@ -107,7 +108,7 @@ def test_bh_over_the_run_and_the_stress_decide_pass_and_reject() -> None:
              {"cid": "broken", "verdict": REC.UNBUILDABLE, "cause": "MODIFIER_REFUSED"}]
     fdr = S.finalise(rows)
     by = {r["cid"]: r for r in rows}
-    assert fdr["m"] == 44                       # untestable counted, unbuildable not
+    assert fdr["m"] == 42                       # m counts TESTED cells only
     assert by["strong"]["verdict"] == REC.PASS and by["strong"]["basis"] == "BH_SURVIVOR"
     assert by["fragile"]["reason"] == "R_COST_STRESS_X3"
     assert by["c0"]["reason"] == "R_BH_NOT_SIGNIFICANT"
@@ -216,31 +217,48 @@ def test_the_published_stage1_projection_meets_the_target() -> None:
 
 
 # ------------------------------------------------------------------------ the record, the order
-def test_tiers_keep_named_priorities_first_and_rejects_last(tmp_path: Path) -> None:
+def test_stage1_only_reorders_by_score_and_never_parks_a_reject(tmp_path: Path) -> None:
+    """Named priority, then every TESTED cell by score descending (a BH reject with a high t
+    goes ahead of a survivor with a lower one), then unruled, then untested, then unbuildable."""
     db = tmp_path / "r.sqlite"
     con = REC.connect(db)
-    for cid, v, basis in (("a", REC.PASS, "BH_SURVIVOR"),
-                          ("b", REC.PASS, "UNSCREENABLE_TRAIN_WINDOW"),
-                          ("c", REC.REJECT, None), ("d", REC.UNBUILDABLE, None),
-                          ("e", REC.REJECT, None)):
-        con.execute("INSERT INTO cells(cid, verdict, basis, ruled_at) VALUES(?,?,?,?)",
-                    (cid, v, basis, "2026-09-30T00:00:00+00:00"))
+    for cid, v, basis, score in (("a", REC.PASS, "BH_SURVIVOR", 4.0),
+                                 ("b", REC.PASS, "UNSCREENABLE_TRAIN_WINDOW", None),
+                                 ("c", REC.REJECT, None, 5.0), ("d", REC.UNBUILDABLE, None, None),
+                                 ("e", REC.REJECT, None, -1.0), ("f", REC.REJECT, None, 0.5)):
+        con.execute("INSERT INTO cells(cid, verdict, basis, score, ruled_at) VALUES(?,?,?,?,?)",
+                    (cid, v, basis, score, "2026-09-30T00:00:00+00:00"))
     con.commit()
     con.close()
     pri = tmp_path / "priority_remint.json"
     pri.write_text(json.dumps({"attestation": "x", "cells": ["e"]}))
-    t = REC.tiers(["a", "b", "c", "d", "e", "z"], db, REC.priority_cells([pri]))
-    assert t == {"a": 1, "b": 2, "c": 4, "d": 4, "e": 0, "z": 3}
-    assert REC.tiers(["a"], tmp_path / "absent.sqlite", set()) == {"a": 3}
+    t = REC.tiers(["a", "b", "c", "d", "e", "f", "z"], db, REC.priority_cells([pri]))
+    order = sorted(t, key=lambda c: t[c])
+    assert order == ["e", "c", "a", "f", "z", "b", "d"]
+    assert t["c"] == (REC.TIER_SCORED, -5.0) and t["z"] == REC.UNRULED_RANK
+    assert REC.tiers(["a"], tmp_path / "absent.sqlite", set()) == {"a": REC.UNRULED_RANK}
+    # a record written before the score column still opens, and reads untested
+    old = tmp_path / "old.sqlite"
+    c2 = sqlite3.connect(old)
+    c2.execute("CREATE TABLE cells(cid TEXT PRIMARY KEY, verdict TEXT, basis TEXT, cause TEXT,"
+               " n_bars INTEGER, first_bar TEXT, family_ver TEXT, ruled_at TEXT,"
+               " times_ruled INTEGER)")
+    c2.execute("INSERT INTO cells VALUES('q','REJECT_STAGE1',NULL,NULL,1,'',"
+               "'',  '2026-09-30', 1)")
+    c2.commit()
+    c2.close()
+    assert REC.tiers(["q"], old, set()) == {"q": (REC.TIER_UNTESTED, 0.0)}
 
 
-def test_warmer_orders_the_backlog_by_stage1_tier_as_a_permutation() -> None:
+def test_warmer_orders_the_backlog_by_stage1_score_as_a_permutation() -> None:
     import warm_gauntlet_cache as W
     specs = [{"sym": s, "_never_judged": nj} for s, nj in
-             (("rej", True), ("old", False), ("pass", True), ("unruled", True), ("pri", True))]
-    tier = {"rej": 4, "old": 1, "pass": 1, "unruled": 3, "pri": 0}
-    out = W.backlog_first(specs, {id(sp): tier[sp["sym"]] for sp in specs})
-    assert [sp["sym"] for sp in out] == ["pri", "pass", "unruled", "rej", "old"]
+             (("unb", True), ("old", False), ("hi", True), ("unruled", True), ("pri", True),
+              ("lo", True))]
+    rank = {"unb": (4, 0.0), "old": (1, -9.0), "hi": (1, -3.0), "unruled": (2, 0.0),
+            "pri": (0, 0.0), "lo": (1, 1.0)}
+    out = W.backlog_first(specs, {id(sp): rank[sp["sym"]] for sp in specs})
+    assert [sp["sym"] for sp in out] == ["pri", "hi", "lo", "unruled", "unb", "old"]
     assert W.backlog_first(specs, None) == sorted(
         specs, key=lambda sp: 0 if sp["_never_judged"] else 1)
 
@@ -420,6 +438,46 @@ def test_dead_session_variants_from_the_sidecar_are_ruled_without_a_build(tmp_pa
     con2.close()
     assert [x["cid"] for x in a] == [x["cid"] for x in b] and cb["dead_session_variants"] == 0
     assert not any(x.get("dead_cause") for x in b)
+
+
+@pytest.mark.parametrize("window", ["pre_wf", "pre_lockbox"])
+def test_a_planted_edge_is_ranked_and_screened_at_the_documented_rate(window: str) -> None:
+    """END-TO-END CONTROL on a REAL bar series: a real EURUSD cell's daily R, demeaned and
+    sign-flipped per replicate (real calendar and tails, no real edge), with an edge planted at
+    full-history t = 3, 4, 6. Stage 1's rank and its BH pass rate must match the documented
+    power (Phi(t sqrt(f) - z)), and the order must be monotone in t. In the pre_lockbox window a
+    t=4 edge ranks in the top decile >= 85% of the time; in the default pre_wf window the
+    documented rate is ~62% (f ~ 16%, set by the sealed walk-forward geometry)."""
+    import external_gauntlet as G
+    from scipy.stats import norm
+    meta = json.loads((G.UNI / "universe.json").read_text())
+    row = next(r for r in _real_rows(10) if r["symbol"] == "EURUSD"
+               and r["family"] == "session_range_breakout" and "conditioner" not in r["params"])
+    obj = G.build_cell(row["symbol"], row["family"], row["params"], meta)
+    frame = obj["df"]
+    ds = G._series_trim_partial(G.daily_series(frame, obj["sigs"], obj["costs"]),
+                                frame.index[-1].normalize())
+    days = S._dates(ds.index)
+    cut_lb = S.lockbox_cut_lb(S.universe_earliest(G.UNI), date(2026, 9, 30))
+    end, _ = S.train_boundary(days, frame.index[0].date(), frame.index[-1].date(), cut_lb,
+                              window=window)
+    rates = {t: S.planted_edge_control(ds.to_numpy(float), days, end, t, m=2332, reps=400,
+                                       seed=7) for t in (3.0, 4.0, 6.0)}
+    for t, r in rates.items():
+        f = r["train_fraction"]
+        top_pred = float(norm.cdf(t * math.sqrt(f) - norm.isf(0.10)))
+        se = math.sqrt(max(top_pred * (1 - top_pred), 0.01) / r["reps"])
+        assert abs(r["top_decile_rate"] - top_pred) < 4 * se + 0.05, (t, r, top_pred)
+        se_bh = math.sqrt(max(r["predicted_bh_pass_rate"], 0.005) / r["reps"])
+        assert abs(r["bh_pass_rate"] - r["predicted_bh_pass_rate"]) < 4 * se_bh + 0.03, (t, r)
+    assert rates[3.0]["top_decile_rate"] <= rates[4.0]["top_decile_rate"] \
+        <= rates[6.0]["top_decile_rate"]
+    if window == "pre_lockbox":
+        assert rates[4.0]["top_decile_rate"] >= 0.85
+        assert rates[6.0]["bh_pass_rate"] >= 0.30
+    else:
+        assert 0.10 <= rates[4.0]["train_fraction"] <= 0.35
+        assert rates[6.0]["top_decile_rate"] >= 0.80
 
 
 def test_the_vectorised_path_agrees_with_the_engine_path() -> None:

@@ -15,16 +15,20 @@ stays on the docket and in this record, and `due_for_rescreen` makes it eligible
 bars grow materially or its family's code changes. Every ruling also lands in `rulings` (append
 only), which is the per-cell logged verdict.
 
-TIERS, the one order every consumer uses (lower first):
+STAGE 1 ONLY REORDERS (audit 2026-09-30). No cell is parked or demoted to a "reject" tier: a
+low score sorts later, and every cell stays on the docket and is judged when the order reaches it.
+The rank every consumer uses is a (group, -score) pair, lower first:
 
-  0  named priority     -- v4 re-mint cells (`priority_remint.json`) and evicted re-judges
-                           (`priority_rejudge.json`): other agents' queues keep precedence.
-  1  STAGE1_PASS        -- BH survivors of the training-window screen.
-  2  STAGE1_FORWARD     -- forwarded UNSCREENED: the cell has >= 60 days but its training window
-                           is too short to test, so it goes to the full judge rather than being
-                           rejected without evidence.
-  3  NOT_YET_RULED      -- the rest of the never-judged backlog, oldest first.
-  4  STAGE1_REJECT      -- ruled against (or UNBUILDABLE); judged last, never dropped.
+  group 0  named priority  -- v4 re-mint cells (`priority_remint.json`), evicted re-judges
+                              (`priority_rejudge.json`), the rollover re-judge queue and the
+                              zero-spread stress re-judge list: other queues keep precedence.
+  group 1  SCORED          -- every cell stage 1 TESTED, by its training-window t-statistic,
+                              DESCENDING (BH survivors and non-survivors alike: the score orders,
+                              the BH verdict is reported).
+  group 2  NOT_YET_RULED   -- cells stage 1 has not reached.
+  group 3  UNTESTED        -- ruled but not testable on the training window (too few training
+                              days, no signals, under 60 days): judged after every scored cell.
+  group 4  UNBUILDABLE     -- a named build cause; last, never dropped.
 """
 from __future__ import annotations
 
@@ -39,7 +43,8 @@ DESK = Path(__file__).resolve().parents[1]
 DB = DESK / "data" / "stage1" / "stage1_record.sqlite"
 HYP = DESK / "data" / "hypotheses"
 #: Other agents' priority queues, read only (never written here).
-PRIORITY_FILES = (HYP / "priority_remint.json", HYP / "priority_rejudge.json")
+PRIORITY_FILES = (HYP / "priority_remint.json", HYP / "priority_rejudge.json",
+                  HYP / "priority_rollover_rejudge.json", HYP / "priority_rejudge_zero_spread.json")
 
 PASS = "PASS_TO_STAGE2"  # noqa: S105 -- a verdict name, not a credential
 REJECT = "REJECT_STAGE1"
@@ -47,13 +52,15 @@ UNBUILDABLE = "UNBUILDABLE"
 VERDICTS = (PASS, REJECT, UNBUILDABLE)
 
 TIER_PRIORITY = 0
-TIER_PASS = 1
-TIER_FORWARD = 2
-TIER_UNRULED = 3
-TIER_REJECT = 4
-TIER_NAMES = {TIER_PRIORITY: "named_priority", TIER_PASS: "stage1_pass",
-              TIER_FORWARD: "stage1_forward_unscreened", TIER_UNRULED: "not_yet_ruled",
-              TIER_REJECT: "stage1_reject_or_unbuildable"}
+TIER_SCORED = 1
+TIER_UNRULED = 2
+TIER_UNTESTED = 3
+TIER_UNBUILDABLE = 4
+TIER_NAMES = {TIER_PRIORITY: "named_priority", TIER_SCORED: "scored_by_stage1_t",
+              TIER_UNRULED: "not_yet_ruled", TIER_UNTESTED: "untested_on_training_window",
+              TIER_UNBUILDABLE: "unbuildable_named_cause"}
+#: The rank of a cell the record does not know: exactly where every cell sat before stage 1.
+UNRULED_RANK = (TIER_UNRULED, 0.0)
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS cells(
@@ -67,6 +74,7 @@ CREATE TABLE IF NOT EXISTS cells(
   n_days_full INTEGER, n_days_train INTEGER, train_end TEXT,
   n_bars INTEGER, first_bar TEXT, family_ver TEXT,
   first_seen TEXT,
+  score REAL,
   run_id TEXT, ruled_at TEXT NOT NULL,
   times_ruled INTEGER NOT NULL DEFAULT 1,
   forwarded_at TEXT
@@ -90,6 +98,9 @@ def connect(path: Path | None = None) -> sqlite3.Connection:
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA synchronous=NORMAL")
     con.executescript(_SCHEMA)
+    # a record written before the score column: add it (NULL = untested), never rebuild
+    with contextlib.suppress(sqlite3.Error):
+        con.execute("ALTER TABLE cells ADD COLUMN score REAL")
     return con
 
 
@@ -122,11 +133,13 @@ def states(con: sqlite3.Connection, cids: Iterable[str]) -> dict[str, dict[str, 
     """{cid: row} for the cids the record knows; the rest are absent (never ruled)."""
     out: dict[str, dict[str, Any]] = {}
     ids = [c for c in dict.fromkeys(cids) if c]
-    cols = ("cid", "verdict", "basis", "cause", "n_bars", "first_bar", "family_ver",
+    cols = ("cid", "verdict", "basis", "cause", "score", "n_bars", "first_bar", "family_ver",
             "ruled_at", "times_ruled")
+    have = {r[1] for r in con.execute("PRAGMA table_info(cells)")}
+    sel = [c if c in have else "NULL" for c in cols]
     for part in _chunks(ids):
         # Column names are this module's constants and the ids are bound parameters.
-        q = (f"SELECT {', '.join(cols)} FROM cells WHERE cid IN "  # noqa: S608
+        q = (f"SELECT {', '.join(sel)} FROM cells WHERE cid IN "  # noqa: S608
              f"({','.join('?' * len(part))})")
         for row in con.execute(q, part):
             out[row[0]] = dict(zip(cols, row, strict=True))
@@ -134,12 +147,26 @@ def states(con: sqlite3.Connection, cids: Iterable[str]) -> dict[str, dict[str, 
 
 
 def tier_of_state(state: dict[str, Any] | None) -> int:
+    """The group: scored when stage 1 tested it (a score), untested when ruled without one,
+    unbuildable for a named build cause. Never a "reject" group: a score only orders."""
     if not state:
         return TIER_UNRULED
-    v = state.get("verdict")
-    if v == PASS:
-        return TIER_FORWARD if state.get("basis") == "UNSCREENABLE_TRAIN_WINDOW" else TIER_PASS
-    return TIER_REJECT
+    if state.get("verdict") == UNBUILDABLE:
+        return TIER_UNBUILDABLE
+    if state.get("score") is not None:
+        return TIER_SCORED
+    return TIER_UNTESTED
+
+
+def rank_of_state(state: dict[str, Any] | None) -> tuple[int, float]:
+    """(group, -score): lower sorts first, so a higher score comes first inside group 1."""
+    g = tier_of_state(state)
+    if g == TIER_SCORED:
+        try:
+            return (g, -float(state["score"]))  # type: ignore[index]
+        except (TypeError, ValueError):
+            return (TIER_UNTESTED, 0.0)
+    return (g, 0.0)
 
 
 def priority_cells(files: Iterable[Path] | None = None) -> set[str]:
@@ -163,8 +190,8 @@ def priority_cells(files: Iterable[Path] | None = None) -> set[str]:
 
 
 def tiers(cids: Iterable[str], path: Path | None = None,
-          priority: set[str] | None = None) -> dict[str, int]:
-    """{cid: tier} for every cid given. No record yet: every cell reads NOT_YET_RULED (tier 3)
+          priority: set[str] | None = None) -> dict[str, tuple[int, float]]:
+    """{cid: (group, -score)} for every cid given. No record yet: every cell reads NOT_YET_RULED
     except the named priorities -- the fail-open direction, which changes no order at all."""
     ids = [c for c in dict.fromkeys(cids) if c]
     pri = priority_cells() if priority is None else priority
@@ -178,14 +205,15 @@ def tiers(cids: Iterable[str], path: Path | None = None,
         finally:
             with contextlib.suppress(Exception):
                 con.close()
-    return {c: (TIER_PRIORITY if c in pri else tier_of_state(known.get(c))) for c in ids}
+    return {c: ((TIER_PRIORITY, 0.0) if c in pri else rank_of_state(known.get(c)))
+            for c in ids}
 
 
 def stage1_rank_for_specs(specs: list[dict], cell_id_fn, path: Path | None = None
-                          ) -> dict[int, int]:
-    """{id(spec): tier} for docket specs, computing each cell id with the judge's own
-    `cell_id` (passed in so this module never imports the sealed file). Unidentifiable
-    specs read tier 3, which is where they already were."""
+                          ) -> dict[int, tuple[int, float]]:
+    """{id(spec): (group, -score)} for docket specs, computing each cell id with the judge's own
+    `cell_id` (passed in so this module never imports the sealed file). Unidentifiable specs
+    read NOT_YET_RULED, which is where they already were."""
     cids: dict[int, str] = {}
     for sp in specs:
         try:
@@ -194,4 +222,4 @@ def stage1_rank_for_specs(specs: list[dict], cell_id_fn, path: Path | None = Non
         except Exception:
             cids[id(sp)] = ""
     t = tiers([c for c in cids.values() if c], path)
-    return {k: t.get(c, TIER_UNRULED) if c else TIER_UNRULED for k, c in cids.items()}
+    return {k: t.get(c, UNRULED_RANK) if c else UNRULED_RANK for k, c in cids.items()}
