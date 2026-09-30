@@ -135,7 +135,7 @@ def test_fetch_alfred_leg_mode_exits_zero_and_writes_its_report_without_a_key(
         monkeypatch, tmp_path) -> None:
     from research import fetch_alfred as fa
     monkeypatch.setattr(fa, "api_key", lambda: None)
-    monkeypatch.setattr(fa, "REPORTS", tmp_path)
+    monkeypatch.setattr(fa, "REPORT", tmp_path / "alfred_vintages.json")
     assert fa.main(["--leg"]) == 0
     rep = json.loads((tmp_path / "alfred_vintages.json").read_text())
     assert rep["status"] == "UNAVAILABLE" and rep["written"] == 0
