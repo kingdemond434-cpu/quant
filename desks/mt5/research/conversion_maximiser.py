@@ -1098,8 +1098,10 @@ def previous_pass(path: Path | None = None) -> dict[str, Any]:
     if not isinstance(doc, Mapping):
         return {}
     after = (doc.get("debt_after") or {}) if isinstance(doc.get("debt_after"), Mapping) else {}
-    return {"at": doc.get("generated_utc"), "debt_after": after.get("total_debt"),
-            "tail_s": doc.get("tail_s")}
+    out = {"at": doc.get("generated_utc"), "debt_after": after.get("total_debt")}
+    if doc.get("tail_s") is not None:
+        out["tail_s"] = doc.get("tail_s")
+    return out
 
 
 #: The floor and the fraction of the pass held back for everything AFTER the convert loop.
