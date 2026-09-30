@@ -120,6 +120,12 @@ def _unknown_unknown_counts(path: Path | None = None) -> tuple[int, dict[str, in
     return _mass_screen_counts(path or UNKNOWN_UNKNOWN_TRIALS)
 
 
+#: THE REGIME-SPLIT MINER'S UNION LEDGER (desks/mt5/research/regime_split_miner.py, PR #124, with
+#: the producer-swarm follow-up patch): each (symbol, base, regime) cell charged ONCE over the
+#: lifetime union, same row shape. Absent until that miner writes it: 0 cells, never an error.
+REGIME_SPLIT_TRIALS = DESK / "data" / "REGIME_SPLIT_TRIALS.jsonl"
+
+
 def _prereg_counts() -> int:
     try:
         from libs.research.preregistration import cards
@@ -139,6 +145,10 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     for fam, k in u_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
     p_total += u_total
+    r_total, r_fam = _mass_screen_counts(REGIME_SPLIT_TRIALS)
+    for fam, k in r_fam.items():
+        p_fam[fam] = p_fam.get(fam, 0) + k
+    p_total += r_total
     prereg = _prereg_counts()
     fams = sorted(set(g_fam) | set(p_fam))
     by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0)) for f in fams}
@@ -146,10 +156,12 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "lifetime_trials": int(g_total + p_total),
            "judged_cells": g_total, "screened_cells": p_total, "preregistered_cards": prereg,
            "mass_screen_cells": m_total, "unknown_unknown_cells": u_total,
+           "regime_split_union_cells": r_total,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and every "
-                    "unknown-unknown cell in UNKNOWN_UNKNOWN_TRIALS.jsonl); "
+                    "unknown-unknown cell in UNKNOWN_UNKNOWN_TRIALS.jsonl, and every regime-split cell "
+                    "of the lifetime union in REGIME_SPLIT_TRIALS.jsonl); "
                     "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
