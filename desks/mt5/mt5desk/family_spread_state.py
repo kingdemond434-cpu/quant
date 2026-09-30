@@ -90,16 +90,21 @@ def family_spread_state(
     signals: list[Signal] = []
     last = -10 ** 9
     idx = d.index
+    _a_atr = atr.to_numpy()
+    _a_ret = ret.to_numpy()
+    _a_sp_rank = sp_rank.to_numpy()
+    _a_act_rank = act_rank.to_numpy()
+    _a_close = close.to_numpy()
     for i in range(norm_window, len(idx) - 1):
         if i - last < hold_bars:
             continue
-        a = float(atr.iloc[i])
+        a = float(_a_atr[i])
         if not np.isfinite(a) or a <= 0:
             continue
-        mv = float(ret.iloc[i])
+        mv = float(_a_ret[i])
         if not np.isfinite(mv) or abs(mv) < min_move_atr * a:
             continue
-        sr = float(sp_rank.iloc[i])
+        sr = float(_a_sp_rank[i])
         if not np.isfinite(sr):
             continue
         if mode == "spike_reversion":
@@ -107,11 +112,11 @@ def family_spread_state(
                 continue
             side = -1 if mv > 0 else 1
         else:
-            ar = float(act_rank.iloc[i]) if has_vol else np.nan
+            ar = float(_a_act_rank[i]) if has_vol else np.nan
             if sr > calm_pct or (has_vol and (not np.isfinite(ar) or ar < active_pct)):
                 continue
             side = 1 if mv > 0 else -1
-        px = float(close.iloc[i])
+        px = float(_a_close[i])
         signals.append(Signal(time=idx[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=int(hold_bars),
                               tag=f"spread_state:{mode}", trigger=None, wait_bars=1))

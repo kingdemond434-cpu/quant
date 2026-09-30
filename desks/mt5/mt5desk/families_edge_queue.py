@@ -81,19 +81,24 @@ def family_hedging_demand_close(
 
     out: list[Signal] = []
     hours = d.index.hour
+    _a_atr = atr.to_numpy()
+    _a_rod = rod.to_numpy()
+    _a_d_close = d["close"].to_numpy()
+    _a_rv = rv.to_numpy()
+    _a_rv_med = rv_med.to_numpy()
     for i in range(vol_n * 5, len(d) - 1):
         if hours[i] != close_hour:
             continue
-        a = float(atr.iloc[i])
-        r = float(rod.iloc[i]) if np.isfinite(rod.iloc[i]) else np.nan
-        px = float(d["close"].iloc[i])
+        a = float(_a_atr[i])
+        r = float(_a_rod[i]) if np.isfinite(_a_rod[i]) else np.nan
+        px = float(_a_d_close[i])
         if not np.isfinite(a) or a <= 0 or not np.isfinite(r):
             continue
         # The displacement must be abnormal relative to the instrument's own range, not merely
         # non-zero: "the day moved" is true every day and is not the claim.
         if abs(r) * px < min_displacement_atr * a:
             continue
-        if require_elevated_vol and not (float(rv.iloc[i]) > float(rv_med.iloc[i])):
+        if require_elevated_vol and not (float(_a_rv[i]) > float(_a_rv_med[i])):
             continue
         side = 1 if r > 0 else -1          # CONTINUATION, per the preregistration
         stop = px - side * stop_atr * a
@@ -130,14 +135,16 @@ def family_fx_fixing_reversal(
     atr = _atr(d, vol_n)
     hours = d.index.hour
     out: list[Signal] = []
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(vol_n * 5, len(d) - 1):
         if hours[i] != fix_hour:
             continue
         j = i - pre_window_bars
         if j < 0:
             continue
-        a = float(atr.iloc[i])
-        px = float(d["close"].iloc[i])
+        a = float(_a_atr[i])
+        px = float(_a_d_close[i])
         pre = px - float(d["close"].iloc[j])
         if not np.isfinite(a) or a <= 0 or not np.isfinite(pre):
             continue
@@ -183,12 +190,15 @@ def family_session_handoff(
             - src_open.groupby(day).transform("first"))
 
     out: list[Signal] = []
+    _a_atr = atr.to_numpy()
+    _a_info = info.to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(vol_n * 5, len(d) - 1):
         if hours[i] != trade_hour:
             continue
-        a = float(atr.iloc[i])
-        v = float(info.iloc[i]) if np.isfinite(info.iloc[i]) else np.nan
-        px = float(d["close"].iloc[i])
+        a = float(_a_atr[i])
+        v = float(_a_info[i]) if np.isfinite(_a_info[i]) else np.nan
+        px = float(_a_d_close[i])
         if not np.isfinite(a) or a <= 0 or not np.isfinite(v):
             continue
         if abs(v) < min_info_atr * a:
@@ -233,20 +243,26 @@ def family_liquidity_gamma_reversal(
 
     out: list[Signal] = []
     start = max(vol_n, liquidity_n) * 5
+    _a_atr = atr.to_numpy()
+    _a_d_close = d["close"].to_numpy()
+    _a_ret = ret.to_numpy()
+    _a_rng = rng.to_numpy()
+    _a_rng_med = rng_med.to_numpy()
+    _a_d_open = d["open"].to_numpy()
     for i in range(start, len(d) - 1):
-        a = float(atr.iloc[i])
-        px = float(d["close"].iloc[i])
-        disp = float(ret.iloc[i])
+        a = float(_a_atr[i])
+        px = float(_a_d_close[i])
+        disp = float(_a_ret[i])
         if not np.isfinite(a) or a <= 0 or not np.isfinite(disp):
             continue
         if abs(disp) < min_displacement_atr * a:
             continue
-        liquid = float(rng.iloc[i]) < float(rng_med.iloc[i]) * 1.5
+        liquid = float(_a_rng[i]) < float(_a_rng_med[i]) * 1.5
         if require_high_liquidity and not liquid:
             continue
         # FAILED CONTINUATION: the move did not extend into the close of its own bar, which is
         # the observable the preregistration names as the quality axis.
-        body = float(d["close"].iloc[i]) - float(d["open"].iloc[i])
+        body = float(_a_d_close[i]) - float(_a_d_open[i])
         extended = (np.sign(body) == np.sign(disp)) and abs(body) > 0.7 * abs(disp)
         if require_failed_continuation and extended:
             continue
