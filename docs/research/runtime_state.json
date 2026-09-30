@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 721,
-  "UNMEASURED": 33
+  "NEVER": 724,
+  "UNMEASURED": 34
  },
  "scope": {
-  "attested": 937,
+  "attested": 941,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -52,7 +52,38 @@
     ]
    },
    {
-    "at": "2026-09-30T20:26:24+00:00",
+    "at": "2026-09-30T20:19:36+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "fence:check_placement_interlock"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:33:19+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "library:libs/ops/host_identity.py"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:46:33+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:box_state_freshness",
+     "leg:desk_health"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:55:13+00:00",
     "host": "vm",
     "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
     "on_attesting_host": false,
@@ -10492,6 +10523,31 @@
    "last_run_source": "UNMEASURED",
    "artifact": "desks/mt5/reports/NEGATIVE_KNOWLEDGE.json",
    "artifact_declared": "desks/mt5/reports/NEGATIVE_KNOWLEDGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "executable:desks/mt5/research/learned_miners.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/learned_miners.py"
+   ],
+   "clock": "invoked:desks/mt5/research/daily_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/GNN_ATTENTION_ALLOCATION_INTEL.json",
+   "artifact_declared": "desks/mt5/reports/GNN_ATTENTION_ALLOCATION_INTEL.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -23732,6 +23788,120 @@
    "consumer": "UNMEASURED"
   },
   {
+   "organ": "fence:check_placement_interlock",
+   "kind": "task",
+   "code": [
+    "scripts/check_placement_interlock.py"
+   ],
+   "clock": "run_law_gate.py",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "gate_runs",
+   "consumer": "desks/mt5/research/plumbing_watchdog.py",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:19:36+00:00"
+  },
+  {
+   "organ": "library:libs/ops/host_identity.py",
+   "kind": "library",
+   "code": [
+    "libs/ops/host_identity.py"
+   ],
+   "clock": "import:scripts/check_placement_interlock.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read UNMEASURED here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 29,
+   "artifact_bytes": 8441,
+   "artifact_sha256": "147714b65a5e8cb2762c074fa40e58bf5800262276ed7f77e2c44c63e2c27f3f",
+   "summary": {
+    "ok": true
+   },
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:33:19+00:00"
+  },
+  {
+   "organ": "leg:box_state_freshness",
+   "kind": "leg",
+   "code": [
+    "scripts/check_box_state_freshness.py"
+   ],
+   "clock": "hourly_cycle:box_state_freshness",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+   "artifact_declared": "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:46:33+00:00"
+  },
+  {
+   "organ": "leg:desk_health",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/scripts/check_desk_health.py"
+   ],
+   "clock": "hourly_cycle:desk_health",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DESK_HEALTH.json",
+   "artifact_declared": "desks/mt5/reports/DESK_HEALTH.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:46:33+00:00"
+  },
+  {
    "organ": "leg:mass_screen",
    "kind": "leg",
    "code": [
@@ -23757,7 +23927,7 @@
    "consumer": "libs/moat/registry.py enqueue_candidate -> libs/moat/docket_feed.py -> desks/mt5",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-09-30T20:26:24+00:00"
+   "measured_at": "2026-09-30T20:55:13+00:00"
   },
   {
    "organ": "leg:stage1_judge",
@@ -23785,7 +23955,7 @@
    "consumer": "UNMEASURED",
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
-   "measured_at": "2026-09-30T20:26:24+00:00"
+   "measured_at": "2026-09-30T20:55:13+00:00"
   }
  ],
  "ratchet": {
