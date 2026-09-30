@@ -99,11 +99,8 @@ _MANUAL: dict[str, str] = {
     "need a reachable surface rather than a library (R0317).",
     # scripts/screen_oi_ls_axes.py LEFT 2026-09-05 with the crypto-exchange purge (an OI/long-short
     # screen over exchange-native positioning); an exemption for a deleted file cites nothing.
-    "scripts/falsify_funding_state_axis.py": "a ONE-SHOT falsifier, run BEFORE the L1.63 build it "
-    "tests (capability hunt 2026-08-13 s0). Its whole "
-    "purpose is to execute once against a standing claim; "
-    "re-running it on a timer would re-answer a question "
-    "already answered and recorded in the law's own text.",
+    # scripts/falsify_funding_state_axis.py (a one-shot perp-funding falsifier) left with the
+    # same purge; its answer is recorded in L1.63's own text, the file is gone.
     # THE RETIRED BOOK'S ACCOUNTING (recorded 2026-09-12). It reconciles the spot/perp carry legs
     # of the CRYPTO-EXCHANGE book, which the MT5 universe mandate retired permanently -- "no
     # crypto-exchange universe may EVER be hunted again", and data/RECORDERS_OFF has idled that
