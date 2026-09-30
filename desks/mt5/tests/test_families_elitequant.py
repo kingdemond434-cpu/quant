@@ -1,12 +1,21 @@
 """The five EliteQuant-map families: registered through the one door, causal, and seeded."""
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 
-from mt5desk import families_elitequant as eq
-from mt5desk import families_orthogonal as fo
+_DESK = Path(__file__).resolve().parents[1]
+_ROOT = _DESK.parent.parent
+for p in (str(_DESK), str(_ROOT)):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+from mt5desk import families_elitequant as eq  # noqa: E402
+from mt5desk import families_orthogonal as fo  # noqa: E402
 
 
 def _bars(n: int = 12_000, seed: int = 7, drift: float = 0.0) -> pd.DataFrame:
@@ -51,14 +60,19 @@ def test_no_lookahead_future_bars_do_not_change_past_signals(name):
     assert full == part
 
 
-def test_ffd_is_stationary_where_the_log_price_is_not():
-    rng = np.random.default_rng(3)
-    x = np.cumsum(rng.normal(0, 1, 5000))
-    ffd = eq.frac_diff(x, 0.5)
-    tail = ffd[~np.isnan(ffd)]
-    # A random walk's variance grows with the window; the FFD series' does not.
-    assert np.var(x[2500:]) > 3 * np.var(x[:1250])
-    assert np.var(tail[len(tail) // 2:]) < 3 * np.var(tail[: len(tail) // 4])
+def test_ffd_is_bounded_where_the_random_walk_is_not_and_keeps_its_memory():
+    ends_x, ends_f = [], []
+    for seed in range(30):
+        x = np.cumsum(np.random.default_rng(seed).normal(0, 1, 4000))
+        f = eq.frac_diff(x, 0.5)
+        ends_x.append(x[-1])
+        ends_f.append(f[-1])
+    # A random walk's dispersion at t=4000 is ~63; the FFD series' stays near its innovations'.
+    assert np.std(ends_x) > 4 * np.std(ends_f)
+    x = np.cumsum(np.random.default_rng(1).normal(0, 1, 4000))
+    f = eq.frac_diff(x, 0.5)
+    ok = ~np.isnan(f)
+    assert np.corrcoef(f[ok], x[ok])[0, 1] > 0.2          # memory an integer difference loses
     assert eq.ffd_weights(1.0)[:2].tolist() == [1.0, -1.0]
 
 
@@ -84,8 +98,6 @@ def test_bsadf_separates_an_explosive_root_from_a_random_walk():
 
 
 def test_seeder_is_wired_as_an_hourly_leg():
-    from pathlib import Path
-
     from libs.research.layers import LEG_LAYER
     text = (Path(__file__).resolve().parents[1] / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '_costed("elitequant_breadth"' in text
