@@ -112,7 +112,8 @@ def _row_urls(row: Mapping[str, Any]) -> list[str]:
         elif isinstance(v, (list, tuple)):
             for x in v:
                 take(x)
-    for src in (row, row.get("config") if isinstance(row.get("config"), Mapping) else {}):
+    cfg = row.get("config")
+    for src in (row, cfg if isinstance(cfg, Mapping) else {}):
         for k in ("url", "rss", "link", "page1", "urls", "roots", "feeds", "alt", "listing",
                   "pages"):
             take(src.get(k))
