@@ -26,6 +26,10 @@ if str(BASE) not in sys.path:
     # ``desks/mt5/`` to sys.path, so exact recipes otherwise cannot see the family registry and
     # are silently routed to deepening instead of the gauntlet.
     sys.path.insert(0, str(BASE))
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+from libs.research import source_provenance as _sp  # noqa: E402
+
 UNIVERSE = BASE / "data" / "universe"
 INTEL_ROOTS = (BASE / "data" / "intelligence", ROOT / "data" / "intelligence")
 OUT = BASE / "data" / "hypotheses" / "miner_candidates.json"
@@ -699,7 +703,7 @@ def _candidate_core(symbol: str, family: str, params: dict, source: str, row: di
         "family": family,
         "params": params,
         "source": f"miner:{source}",
-        "source_url": row.get("url") or row.get("link") or "",
+        "source_url": _sp.source_url_of(row),
         "source_title": str(row.get("title") or row.get("description") or "")[:300],
         "mechanism_status": "NAMED",
         "mechanism_note": mechanism,
