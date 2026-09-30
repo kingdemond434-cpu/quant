@@ -58,6 +58,10 @@ ARTIFACTS: tuple[tuple[str, str, float], ...] = (
     ("data/hypotheses/orthogonal_candidates.json", "the SWEEP leg", 3.0),
     ("reports/UNIVERSAL_SURVIVORS.json", "the gauntlet's canon", 6.0),
     ("reports/pf_allocation.json", "the allocator", 0.5),
+    # Whether the box's state reaches origin (verdict inside: FLOWING / STALLED), and the gate
+    # verdict digest that rides the same publication -- both from the hourly publish_state leg.
+    ("reports/BOX_STATE_FLOW.json", "publish_state's delivery meter", 2.0),
+    ("reports/GATE_VERDICT_DIGEST.json", "publish_state's gate verdict digest", 2.0),
 )
 
 
@@ -161,6 +165,42 @@ def check_artifacts() -> None:
     print()
 
 
+def check_state_flow() -> None:
+    """A FRESH meter that says STALLED is still a stall: read its verdict, not only its age."""
+    print("IS THE BOX'S STATE REACHING ORIGIN")
+    p = DESK / "reports" / "BOX_STATE_FLOW.json"
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
+        _unknown("reports/BOX_STATE_FLOW.json is absent -- delivery is UNMEASURED, not fine")
+        print()
+        return
+    except (OSError, ValueError) as exc:
+        _unknown(f"reports/BOX_STATE_FLOW.json unreadable ({exc})")
+        print()
+        return
+    verdict = str(doc.get("verdict") or "UNMEASURED")
+    line = f"{verdict}: {doc.get('why')}"
+    if verdict == "FLOWING":
+        _ok(line)
+    elif verdict == "STALLED":
+        _bad(f"{line} (unpushed local commits: {doc.get('local_commits_not_on_origin')}, "
+             f"last sync refusal: {(doc.get('sync_log') or {}).get('last_refusal_line')})")
+    else:
+        _unknown(line)
+    # A PAGE TO NO ONE IS THE SAME SILENCE: whether any alert channel is armed rides the meter.
+    alerts = doc.get("alerts") if isinstance(doc.get("alerts"), dict) else None
+    if alerts is None:
+        _unknown("alert arming not recorded in BOX_STATE_FLOW.json -- whether a STALLED page "
+                 "reaches anyone is UNMEASURED")
+    elif alerts.get("line"):
+        _bad(f"{alerts['line']} (configure data/secrets/alert_channels.json on this box)")
+    else:
+        kinds = ", ".join(alerts.get("kinds") or [])
+        _ok(f"alerts armed: {alerts.get('armed')} channel(s) ({kinds})")
+    print()
+
+
 def check_gateway_state() -> None:
     print("THE GATEWAY'S OWN LAST WORD")
     p = DESK / "data" / "gateway_state.json"
@@ -205,6 +245,7 @@ def main() -> int:
     check_tasks()
     check_processes()
     check_artifacts()
+    check_state_flow()
     check_gateway_state()
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")
     print("which is a finding too -- it is never the same as OK.")
