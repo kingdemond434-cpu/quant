@@ -348,3 +348,19 @@ def test_the_registered_deep_forest_file_has_exactly_the_six_subreddit_grounds_f
     assert len([g for g in doc["grounds"] if g.get("route") == "reddit"]) == 6
     assert set(fenced) >= {g["name"] for g in doc["grounds"] if g.get("route") == "reddit"}
     assert not [g for g in dfm.schedule(doc["grounds"]) if dfm.fenced_ground(g)]
+
+
+def test_the_stocktwits_asia_source_is_never_requested_and_mints_no_pack_cell(
+        wire: _Tripwire) -> None:
+    """StockTwits' Terms s.5 bar automated extraction without written authorization: the
+    registered `stocktwits_macro` row is refused before any request (robots.txt included) and
+    pack_cells mints nothing new from its lake series."""
+    import asia_collector as ac
+    import pack_cells as pk
+    doc = json.loads((DESK / "data" / "asia_sources.json").read_text("utf-8"))
+    row = next(r for r in doc["sources"] if r["id"] == "stocktwits_macro")
+    rec = ac.collect_one(row)
+    assert rec["status"] == tf.BLOCKED_WITH_SUBSTITUTE and rec["platform"] == "stocktwits"
+    assert not [h for h in wire.hosts if "stocktwits" in h]
+    assert pk._fenced_pack(row) == "stocktwits"
+    assert pk._fenced_pack({"id": "cftc_cot", "url": "https://www.cftc.gov/x.csv"}) is None
