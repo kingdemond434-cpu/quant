@@ -930,6 +930,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     "kelly_survival",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
+    # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
+    # and the plain-English desk health check, each seconds, each writing a report that the
+    # `publish_state` leg right after them carries to origin. Before this the fence rode only the
+    # 48h law-gate rotation and the health check ran on no clock at all.
+    "box_state_freshness", "desk_health",
 })
 
 
@@ -5209,6 +5214,15 @@ def main() -> None:
     rdh = _costed("research_dashboard", lambda: _producer("research_dashboard",
                                                           "research/research_dashboard.py",
                                                           "--once", "--budget-s", "300"))
+    # THE BOX'S STATE FRESHNESS AND THE DESK'S HEALTH, IMMEDIATELY BEFORE PUBLICATION (2026-09-30).
+    # Both write a published report (BOX_STATE_FRESHNESS.json carries CRO D17's
+    # box_state_age_hours and the NOT-ARMED line; DESK_HEALTH.json every PROBLEM/UNKNOWN finding),
+    # so the push below delivers THIS hour's verdicts. The fence exits 1 on STALE/UNMEASURED and
+    # the leg reads FAILED then -- loud, and it gates nothing: `publish_state` runs regardless.
+    bsf = _costed("box_state_freshness", lambda: _producer(
+        "box_state_freshness", "scripts/check_box_state_freshness.py"))
+    dhl = _costed("desk_health", lambda: _producer(
+        "desk_health", "scripts/check_desk_health.py", "--out"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -5371,6 +5385,7 @@ def main() -> None:
                     "dead_architecture": dac, "producer_census": prdc,
                     "productivity_census": prodc, "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
+                    "box_state_freshness": bsf, "desk_health": dhl,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
