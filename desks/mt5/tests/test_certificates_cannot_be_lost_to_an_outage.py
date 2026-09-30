@@ -108,9 +108,9 @@ def test_the_only_empty_returns_left_are_for_an_unreadable_or_malformed_file() -
 
 # ------------------------------------------------------------- 3. the box pulls, unattended
 def test_adopt_and_seal_runs_in_the_only_safe_order() -> None:
-    steps = ["Adopt-Release.ps1", "if ($sealed -eq $head)", "git status --porcelain",
+    steps = ["Adopt-Release.ps1", "if ($sealed -eq $head)", "git diff --name-only --no-ext-diff HEAD",
              "release.seal(by='Adopt-And-Seal')", 'git add -- "desks/mt5/data/RELEASE.json"',
-             "git commit -q -m",
+             "git write-tree", "git commit-tree", "git update-ref",
              # a79c35a8475: the gateway is a 24/7 resident now; the seal STARTS its keep-alive
              # task (a running singleton makes that a no-op) instead of stop/start of MT5-Gateway
              'Start-ScheduledTask -TaskName "MT5-GatewayResident"']
@@ -129,6 +129,9 @@ def test_adopt_and_seal_stages_exactly_one_path_and_never_stashes() -> None:
     assert 'git add -- "desks/mt5/data/RELEASE.json"' in ADOPT_CODE
     assert "git add -A" not in ADOPT_CODE
     assert "stash" not in ADOPT_CODE
+    assert '$staged.Count -ne 1' in ADOPT_CODE
+    assert '$staged[0] -ne "desks/mt5/data/RELEASE.json"' in ADOPT_CODE
+    assert "git update-ref $branchRef $sealCommit $head" in ADOPT_CODE
     # THE FLAG, NOT THE FORMAT OPERATOR (2026-09-23). `" -f "` matched every PowerShell format
     # expression in the file, so adding one line of logging failed a test about forcing git.
     # What must never appear is a FORCED git operation; `"{0}" -f $x` is string interpolation.
