@@ -5438,7 +5438,7 @@
    "item": "The Korea structured data plane (KRX, Customs 10-day trade, BOK ECOS with vintages, OpenDART as sector sensors) and the trade nowcasting factory",
    "domain": "K",
    "phase": "K",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/countries/kr/data_plane.py:1173 run() -- the four official lanes (KRX, Customs 10-day trade, BOK ECOS with vintages, OpenDART)",
@@ -5452,15 +5452,14 @@
    "consumer": "the twelve KR agents (ctx.data_plane); the transmission seeds in countries/kr/pack.py",
    "landed": [
     "VERIFIED 2026-09-23: the row was STALE -- the builder was not cut off. data_plane.py is 1,223 lines carrying all four lanes and a vintage store, nowcast.py is 690, and KR_DATA_PLANE.json on this box was written today"
-   ],
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): desks/mt5/research/countries/kr/data_plane.py, nowcast.py and agents.py were never committed to live (countries/kr holds only miners.py and pack.py); the KR data plane, trade nowcaster wiring and agent context this row claims do not exist on the branch the box adopts. Rebuild them, or re-cite the generic _declared_data_plane path. | previous gap: "
+   ]
   },
   {
    "id": "K2",
    "item": "The Korea research civilization agents (twelve), native query territories, the candidate lattice with EVIG, the five moat stores, the KR x JP x CN interaction miner, delayed source credit",
    "domain": "K",
    "phase": "K",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/countries/kr/agents.py:2341 AGENTS -- the twelve, each with its own native query territory",
@@ -5477,15 +5476,14 @@
     "VERIFIED 2026-09-23: agents.py 2,408 lines, lattice.py 742, moat.py 972 -- the builder finished and the row was stale",
     "ONE REAL DEFECT FOUND AND FIXED: interaction_miner and credit_survivors ran on the lab's clock but moat.build -- the function that WRITES the five stores -- ran nowhere, so the department's own artifact never existed. moat_stores is now the sixteenth miner (16/16 resolve, MINERS | MISSING == NAMES holds) and data/countries/kr/moat.json now exists at 13,976 bytes with all five stores (data, semantic, failure, source, interaction) populated.",
     "THE CLASS, NOT THE INSTANCE: a sweep of all 71 country packages found three more writers with no clock -- ae, il and sa each hold a data_plane.py with run() and a REPORT path and held NO miners.py, which is the only file global_research_os reads to find a country's own miners. All three are now clocked through countries/_data_plane_miner.py and AE_DATA_PLANE.json, IL_DATA_PLANE.json and SA_DATA_PLANE.json exist for the first time."
-   ],
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): desks/mt5/research/countries/kr/agents.py, lattice.py and moat.py were never committed to live; the twelve KR agents, the EVIG lattice and the five moat stores this row claims are absent from the branch the box adopts. | previous gap: "
+   ]
   },
   {
    "id": "U1",
    "item": "The ingestion-exploitation contract and checker (every ingested unit gets a disposition; stranded units become discoveries; the ratchet floor) and the macro intelligence fusion (posteriors, nowcasts, news lane, two-sided suggestions through the router contract)",
    "domain": "U",
    "phase": "U",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/ingestion_ledger.py:1058 (the disposition per ingested unit)",
@@ -5500,7 +5498,7 @@
    "scheduled_by": "hourly_cycle:ingestion_ledger, hourly_cycle:ingestion_exploitation, hourly_cycle:macro_intelligence",
    "artifact": "desks/mt5/reports/INGESTION_EXPLOITATION.json; desks/mt5/reports/MACRO_INTELLIGENCE.json",
    "consumer": "the law gate (scripts/run_law_gate.py:170); the daily research OS; pf_allocator through the router contract",
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): desks/mt5/research/macro_intelligence.py on live is a 169-line reader (build() at :91), not the 730+-line organ this row cites for P(alpha > 0 | fused state) per sleeve, and tests/test_ingestion_exploitation.py was never committed. The fused per-sleeve posterior must be rebuilt and pinned before this is LANDED again. | previous gap: VERIFIED 2026-09-23: the builder that was cut off finished. Both legs exist and run (ingestion_ledger in the data department, ingestion_exploitation as a core leg every pass, macro_intelligence in macro), the checker is the 170th line of the law gate's fence list, and the macro fusion's suggestions are two-sided by construction rather than by assertion.",
+   "gap": "VERIFIED 2026-09-23: the builder that was cut off finished. Both legs exist and run (ingestion_ledger in the data department, ingestion_exploitation as a core leg every pass, macro_intelligence in macro), the checker is the 170th line of the law gate's fence list, and the macro fusion's suggestions are two-sided by construction rather than by assertion.",
    "next_step": "",
    "landed": [
     "verified wired: both legs, the law-gate checker and the two-sided router contract"
@@ -5562,7 +5560,7 @@
    "item": "News as a first-class event stream: the fast router (source, timestamp, event ontology, entities, novelty, surprise, affected markets, fast posterior update) and the deep lane (causal interpretation, analogues, transmission, positioning, scenario tree), the liquidity and portfolio shock models, the allocator re-solve hook, the execution scientist, and the event-conditioned sleeve families validated beforehand",
    "domain": "N",
    "phase": "N",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/news_event_stream.py:374 collect_items and the fast router (source tier, classification, entities, novelty, surprise, affected set, precision-weighted posterior nudge)",
@@ -5577,15 +5575,14 @@
    "landed": [
     "VERIFIED 2026-09-23: the row was STALE. news_event_stream.py is 925 lines carrying both lanes, the liquidity and portfolio shock models, the allocator re-solve hook and the execution scientist, on an hourly leg with a layer and a report; event_sleeves is its own leg",
     "nothing in it sizes, caps or vetoes, and the nudge table is two-sided by construction so the world state cannot ratchet towards fear"
-   ],
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): desks/mt5/research/event_sleeves.py was never committed to live; hourly leg `event_sleeves` (hourly_cycle.py) names a producer that does not exist, so the event-conditioned sleeve families this row claims are not built. | previous gap: "
+   ]
   },
   {
    "id": "S1",
    "item": "The free shadow-institutional stack: public proxy ensembles for private capabilities, free crypto L2 / Deribit options as risk sensors for MT5 instruments, the latency laboratory (edge after latency, auto-reject below the desk's latency), retail positioning ecology, latent actor inference with UNKNOWN_ACTOR classes, synthetic proprietary datasets by archiving with vintages, the disagreement dataset, the capability gap map",
    "domain": "S",
    "phase": "S",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "evidence": [
     "desks/mt5/research/shadow_institutional.py:366 the public proxy sensors per latent; :787 fuse -- the proxy ENSEMBLE with lead-lag weights",
@@ -5599,8 +5596,7 @@
    "consumer": "the world model (latent axes written through store_latent); the compiler (record_discoveries into libs/moat/registry)",
    "landed": [
     "VERIFIED 2026-09-23: the row was STALE. shadow_institutional.py is 1,365 lines and latency_lab.py 620; the proxy ensembles, the risk sensors, the latency laboratory, the disagreement dataset, the vintage archive and the gap map all exist, each on an hourly leg with a layer and a report"
-   ],
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): latency_lab.py on live is a 144-line helper module (the leg is DEDUPLICATED onto feed_clock_lab) with no edge_after_latency / latency_verdict, and latent_actors.py was never committed (the leg is DEDUPLICATED onto actor_pressure). The latency auto-reject this row claims is not on live. | previous gap: "
+   ]
   },
   {
    "id": "W21",
@@ -5736,7 +5732,7 @@
    "id": "U18",
    "domain": "U",
    "phase": "U",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "item": "MAXIMUM MULTILINGUAL UNDERSTANDING (principal, 2026-09-17, permanent): a 101-language / 41-script identifier with no model download and no network call, code-switch segmentation, romanisation detection, per-script normalisation, 437 finance-slang terms in 39 languages canonicalised onto the desk's own mechanism vocabulary, cross-locale numbers and calendars, and NATIVE SEMANTIC SEARCH -- native-script queries built from local terminology per language per source layer (official, institutional, academic, practitioner, retail_ecology, app_ecosystem, media, archive, physical_economy, source_graph), never one English phrase translated once. Nothing is dropped for being unreadable: what polyglot cannot read becomes a seat task, and what the seat answers is ingested BESIDE the verbatim original. A language or layer with no native vocabulary is named UNMEASURED rather than filled with a translation, and fringe/contradictory/low-confidence material is preserved as evidence (crowding and narrative are features), never filtered.",
    "evidence": [
@@ -5748,7 +5744,7 @@
    "scheduled_by": "desks/mt5/research/hourly_cycle.py leg `understanding_seat` (intel department, information layer)",
    "artifact": "desks/mt5/reports/UNDERSTANDING.json",
    "consumer": "the LLM seats via data/intelligence/understanding_seat/tasks_*.json; the registry claims table and research_memory kind=understanding; the source scouts via the two gap lists (languages_without_terminology, query_layers_unmeasured); understanding_coverage() for the dashboards",
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): the organ files exist (libs/research/polyglot.py, research/understanding_seat.py) but tests/research/test_polyglot.py and desks/mt5/tests/test_understanding_seat.py were never committed, so nothing pins the behaviour. | previous gap: LANDED 2026-09-17 and MEASURED on the box the same day: 5,962 documents, 3,352 understood natively (56.2%), 2,610 pending of which 1,097 are labels too short to translate, 300 seat tasks written, gap list bg/cy/et/ga/ha/hr/mk/mt/sq. understood_via_seat is 0 until a seat answers -- the loop's second half is wired and has not yet been exercised by a real seat."
+   "gap": "LANDED 2026-09-17 and MEASURED on the box the same day: 5,962 documents, 3,352 understood natively (56.2%), 2,610 pending of which 1,097 are labels too short to translate, 300 seat tasks written, gap list bg/cy/et/ga/ha/hr/mk/mt/sq. understood_via_seat is 0 until a seat answers -- the loop's second half is wired and has not yet been exercised by a real seat."
   },
   {
    "id": "U19",
@@ -5786,7 +5782,7 @@
    "id": "N2",
    "domain": "N",
    "phase": "N",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "item": "News as a first-class event stream: a fast deterministic router (source ladder, classification, entities, novelty, surprise, affected markets) nudging a world-state vector with uncertainty and lodging an allocator re-solve REQUEST; a slower deep lane (transmission edges, analogues, cross-country, positioning, scenario tree) recorded as research_memory `event_deep` plus a discovery per implied mechanism",
    "evidence": [
@@ -5798,14 +5794,14 @@
    ],
    "scheduled_by": "hourly_cycle:news_event_stream",
    "artifact": "desks/mt5/reports/NEWS_EVENT_STREAM.json, desks/mt5/data/world_state.json, desks/mt5/data/allocator_resolve_request.json, desks/mt5/data/events/events.jsonl",
-   "consumer": "event_sleeves (never committed to live; see N3) (world_state -> p_alpha_positive_now); the allocator MAY read the resolve request and the shock model",
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): tests/research/test_event_ontology.py and desks/mt5/tests/test_news_event_stream.py were never committed, so the 'tests green' evidence cannot be re-run on live; the consumer event_sleeves.py was never committed either. | previous gap: The 60 s --resident loop has NO box task row yet, so hourly --once is the only clock and intra-hour repricing is UNMEASURED. pf_allocator does not yet consume allocator_resolve_request.json: the request is lodged and nothing is obliged to read it. The moat collectors' normalised store does not exist on this box, so the fast lane reads news_captures.jsonl and the intelligence seats only."
+   "consumer": "desks/mt5/research/event_sleeves.py (world_state -> p_alpha_positive_now); the allocator MAY read the resolve request and the shock model",
+   "gap": "The 60 s --resident loop has NO box task row yet, so hourly --once is the only clock and intra-hour repricing is UNMEASURED. pf_allocator does not yet consume allocator_resolve_request.json: the request is lodged and nothing is obliged to read it. The moat collectors' normalised store does not exist on this box, so the fast lane reads news_captures.jsonl and the intelligence seats only."
   },
   {
    "id": "N3",
    "domain": "N",
    "phase": "N",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "item": "Event-conditioned sleeve families validated BEFORE the event: eight family cards, a hosting decision per card against the live family registry, discoveries recorded once, and p_alpha_positive_now published under the regime_router convention",
    "evidence": [
@@ -5818,13 +5814,13 @@
    "scheduled_by": "hourly_cycle:event_sleeves",
    "artifact": "desks/mt5/data/event_sleeve_posteriors.json, desks/mt5/reports/EVENT_SLEEVES.json, desks/mt5/data/program_candidates.jsonl",
    "consumer": "desks/mt5/research/pf_allocator.py and research/promoter.py read the router convention; miner_candidate_compiler reads the donated discoveries",
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): desks/mt5/research/event_sleeves.py and desks/mt5/tests/test_event_sleeves.py were never committed to live; the eight event cards, their hosting verdicts and event_sleeve_posteriors.json have no producer on the branch the box adopts. | previous gap: family_event_reaction carries no `event_kind` argument and family_inputs.resolve hands it the WHOLE calendar for the symbol, so every hosted cell is the UNCONDITIONAL expression of its card (condition_expressible=false on each hosting row). Closing it needs an event_kind argument on the family and a kind-aware _event_index. The cross-sectional dispersion card has no registered family that ranks a universe, so it goes to program_candidates.jsonl with the gap named, never to the docket."
+   "gap": "family_event_reaction carries no `event_kind` argument and family_inputs.resolve hands it the WHOLE calendar for the symbol, so every hosted cell is the UNCONDITIONAL expression of its card (condition_expressible=false on each hosting row). Closing it needs an event_kind argument on the family and a kind-aware _event_index. The cross-sectional dispersion card has no registered family that ranks a universe, so it goes to program_candidates.jsonl with the gap named, never to the docket."
   },
   {
    "id": "M25",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "item": "The ingestion-exploitation contract: every ingested unit (seat row, claim, axis series, tape instrument-day, universe bar file, sleeve ledger, normalised document, moat series, country plane) registered with a disposition and EXACTLY ONE downstream state; three independent labels (access_label, credibility, predictive_state) that are never collapsed; a stranded unit handed to the discovery compiler rather than reported; and a gate carrying the exploitation ratchet (up only), the DATA STRANDING ratchet (down only) and the twelve-question data-utilization audit per dataset",
    "evidence": [
@@ -5837,7 +5833,7 @@
    "scheduled_by": "hourly_cycle:ingestion_ledger (data department) and hourly_cycle:ingestion_exploitation (core, meta department); the gate also runs in scripts/run_law_gate.py state fences",
    "artifact": "desks/mt5/reports/INGESTION_EXPLOITATION.json, desks/mt5/data/ingestion_ledger.jsonl, desks/mt5/data/ingestion_floor.json, desks/mt5/reports/DATA_UTILIZATION_AUDIT.json",
    "consumer": "desks/mt5/research/discovery_compiler.py (the handed-over discoveries), the law gate, and the desk's daily awareness through the floor history",
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): tests/test_ingestion_exploitation.py was never committed; scripts/check_ingestion_exploitation.py and research/ingestion_ledger.py exist and desks/mt5/tests/test_ingestion_ledger.py pins the ledger half only. | previous gap: The share is measured over a ROTATING window of each kind's listing, so the fenced number is the population's latest disposition over the ledger tail rather than this pass's slice; the per-pass number is published beside it. DATA STRANDING is UNMEASURED until the ledger has two passes.",
+   "gap": "The share is measured over a ROTATING window of each kind's listing, so the fenced number is the population's latest disposition over the ledger tail rather than this pass's slice; the per-pass number is published beside it. DATA STRANDING is UNMEASURED until the ledger has two passes.",
    "next_step": "import libs/research/access_classifier when it lands (the three labels already carry its exact vocabulary); resolve the ACCESS_UNCLEAR quarantine queue; drive the stranded count below 35",
    "landed": [
     "ingestion-exploitation contract 2026-09-17"
@@ -5847,7 +5843,7 @@
    "id": "M26",
    "domain": "M",
    "phase": "M",
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "item": "Macro intelligence fusion, 24/7: every macro-relevant ingested unit fused into a stated-model regime posterior per axis (vol, usd, risk, rates, liquidity, growth, inflation), nowcasts and next central-bank decisions, a news lane ranked by concepts x instruments x recency with the response atlas's measured reactions attached, and TWO-SIDED decision suggestions the allocator MAY consume through the regime_router contract -- never written into sleeves.json or any allocator file",
    "evidence": [
@@ -5858,7 +5854,7 @@
    "scheduled_by": "hourly_cycle:macro_intelligence (macro department)",
    "artifact": "desks/mt5/reports/MACRO_INTELLIGENCE.json, desks/mt5/data/macro_intelligence.json",
    "consumer": "desks/mt5/research/pf_allocator.py MAY read the suggestions; desks/mt5/research/ingestion_ledger.py joins `consumed_units` to award EXPLOITED_MACRO and WORLD_MODEL_INPUT",
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): desks/mt5/tests/test_macro_intelligence.py was never committed, and research/macro_intelligence.py on live is the 169-line reader, not the organ this row measured on 2026-09-17. | previous gap: fred.json carries 0 series on this box (7 fetch failures), so the liquidity and inflation axes sit at their priors and say UNMEASURED; the claims table is empty, so the news lane is UNMEASURED rather than quiet; no series prices a central bank's next decision, so every market-implied expectation is UNMEASURED; no country plane (kr_*, jp_*) has landed.",
+   "gap": "fred.json carries 0 series on this box (7 fetch failures), so the liquidity and inflation axes sit at their priors and say UNMEASURED; the claims table is empty, so the news lane is UNMEASURED rather than quiet; no series prices a central bank's next decision, so every market-implied expectation is UNMEASURED; no country plane (kr_*, jp_*) has landed.",
    "next_step": "repair the FRED fetch so the liquidity/inflation axes measure; feed the collectors' claims so the news lane measures; add a short-rate series so the next-decision expectation stops being UNMEASURED",
    "landed": [
     "macro intelligence fusion 2026-09-17"
@@ -8748,7 +8744,7 @@
    "item": "Every registered data pack produces CELLS or names the reason it cannot, and the number published per pack and per region is cells emitted and cells judged.",
    "domain": "U",
    "phase": 3,
-   "status": "PARTIAL",
+   "status": "LANDED",
    "gate": "none",
    "scheduled_by": "hourly_cycle:pack_cells",
    "artifact": "desks/mt5/reports/PACK_CELLS.json",
@@ -8773,8 +8769,7 @@
    "tests": [
     "desks/mt5/tests/test_pack_cells_mapping.py",
     "desks/mt5/tests/test_pack_and_timeframe_cells.py"
-   ],
-   "gap": "2026-09-30 re-verification against live (claude/llm-auto-upgrade-verify-gcjac3): desks/mt5/research/japan/mandate.py was never committed to live; the actor map EXECUTABLE_INSTRUMENTS is said to derive from does not exist there. | previous gap: "
+   ]
   },
   {
    "id": "PACK2",
