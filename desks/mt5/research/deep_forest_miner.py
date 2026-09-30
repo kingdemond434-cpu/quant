@@ -681,9 +681,23 @@ def _frontier_bucket(g: dict[str, Any], frontier_state: Any | None,
     return 2 if vector.huntable(now)[0] else 3
 
 
+def culture_gaps() -> frozenset[str]:
+    """Jurisdiction codes (lower-case) `reports/CELL_CULTURE.json` lists as zero or thin cells.
+
+    The CULTURE GAP LIST is the producers' to-do list (research/cell_culture_index.py): an MT5
+    asset class a culture's participants move, with no cells mined from that culture's own
+    sources. Empty -- and therefore reordering nothing -- when the summary is absent.
+    """
+    try:
+        from research.cell_culture_index import gap_cultures
+        return frozenset(gap_cultures())
+    except Exception:
+        return frozenset()
+
+
 def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] | None = None,
-             region: str | None = None, frontier_state: Any | None = None
-             ) -> list[dict[str, Any]]:
+             region: str | None = None, frontier_state: Any | None = None,
+             gaps: frozenset[str] | None = None) -> list[dict[str, Any]]:
     """The order a run works grounds in: round-robin across clusters (heaviest weight first
     inside each), rotated by the cursor the previous run left, so every forest gets its turn
     across runs and no region is worked only because it sorts first in a file."""
@@ -711,13 +725,21 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     # ground has no attempt and sorts first; ground tried an hour ago sorts behind ground tried a
     # week ago. The cursor alone could not do this: it only advanced when a run finished, and a
     # run the cycle killed left it where it was, so every hour re-hit the same head.
+    # CULTURE GAPS FIRST INSIDE EACH BUCKET (2026-09-30). A ground standing in a culture the
+    # cell-culture index lists as a zero/thin gap is worked before a ground of a culture already
+    # holding cells, then least-recently-attempted as before. It never crosses a frontier bucket
+    # and never removes a ground: a reorder, so an absent gap list changes nothing. `run()`
+    # passes `culture_gaps()`; a direct call with no `gaps` keeps the historic order exactly.
+    gap = gaps or frozenset()
     out: list[dict[str, Any]] = []
     for bucket in buckets:
         ordered = _fair_order(bucket)
         if ordered:
             start = cursor % len(ordered)
             rotated = ordered[start:] + ordered[:start]
-            out.extend(sorted(rotated, key=lambda g: _last_attempt(g, frontier_state)))
+            out.extend(sorted(rotated, key=lambda g: (
+                str(g.get("region") or "").lower() not in gap,
+                _last_attempt(g, frontier_state))))
     return out
 
 
@@ -1535,8 +1557,21 @@ def _task(row: dict[str, Any], tellings: list[dict[str, Any]] | None = None) -> 
             "event_time": row.get("event_time"), "published_time": row.get("published_time"),
             "available_time": row.get("available_time") or row.get("fetched_utc"),
             "score": row.get("score"), "status": None,
+            # CULTURE PROVENANCE DECLARED AT THE SOURCE (libs/research/cell_culture.py): the
+            # ground's region and language are known here and nowhere downstream, so they ride
+            # the task into compile_row -> _candidate -> the docket.
+            **_culture_of(row),
             "consumer": "deepening_worker (story_mechanism) -> miner_candidate_compiler "
                         "-> gauntlet"}
+
+
+def _culture_of(row: dict[str, Any]) -> dict[str, Any]:
+    try:
+        from libs.research import cell_culture as _cc
+        got = _cc.infer({**row, "kind": row.get("kind") or row.get("ground_kind")})
+    except Exception:  # provenance may never cost a task
+        return {}
+    return got
 
 
 def build_tasks(rows: list[dict[str, Any]], *, decided: set[str] | None = None,
@@ -1632,8 +1667,9 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         frontier_state = _hf.load(_frontier_path())
     except Exception:  # a damaged accounting file may never stop the miner
         frontier_state = None
+    culture_gap = culture_gaps()
     order = schedule(grounds, cursor, only=r.only, region=region,
-                     frontier_state=frontier_state)
+                     frontier_state=frontier_state, gaps=culture_gap)
     # THE PROPOSER SEAT, OPTIONAL: which registered GROUND is worth this pass's seconds first.
     # An ORDER over the grounds the registry already holds -- the seat may reorder the crawl and
     # may never widen it, so a name it invents is discarded and no unregistered ground can be
@@ -1658,6 +1694,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
             # frontier bucket first, then least-recently-attempted, the seat's rank breaking ties
             order = sorted(seat_order,
                            key=lambda g: (_frontier_bucket(g, frontier_state, now),
+                                          str(g.get("region") or "").lower()
+                                          not in culture_gap,
                                           _last_attempt(g, frontier_state)))
     except Exception as _exc:                             # pragma: no cover - optional seat
         seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
@@ -1832,6 +1870,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "frontier_added": frontier_added,
            "source_shares": share_meta,
            "proposer_seat": seat_hint,
+           # the culture gap list this run worked first (reports/CELL_CULTURE.json `gaps`)
+           "culture_gaps_first": sorted(culture_gap),
            "source_expansion": expansion,
            "fetch_notes": [s for s in r.status if "url" in s][:40],
            "top_claims": [{k: t.get(k) for k in ("title", "symbols", "channel", "mechanism_class",

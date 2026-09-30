@@ -671,6 +671,23 @@ def _genome_id(symbol: str, family: str, params: dict) -> str | None:
 
 def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
                mechanism: str) -> dict:
+    """One compiled candidate, carrying the donor row's CULTURE PROVENANCE (principal
+    2026-09-30): `source_culture`, `participant_structure`, `failure_mode_hypothesis`,
+    `crowding_prior` and `culture_derivation`, declared by the donor where it knew them and
+    inferred from the donor's own evidence (its URL, ground, language, claim text) otherwise, by
+    the one rule in `libs/research/cell_culture.py`. Every compiled cell -- donations, the
+    deepening worker's story_mechanism re-compiles, the deep-forest claims -- passes here, so this
+    is the door that makes the fields ride onto the docket."""
+    cand = _candidate_core(symbol, family, params, source, row, mechanism)
+    try:
+        from libs.research import cell_culture as _cc
+        return _cc.carry(cand, row)
+    except Exception:  # provenance may never cost the desk a cell
+        return cand
+
+
+def _candidate_core(symbol: str, family: str, params: dict, source: str, row: dict,
+                    mechanism: str) -> dict:
     gid = _genome_id(symbol, family, params)
     return {
         **({"genome_id": gid} if gid else {}),

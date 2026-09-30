@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 719,
+  "NEVER": 721,
   "UNMEASURED": 33
  },
  "scope": {
-  "attested": 935,
+  "attested": 937,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -49,6 +49,15 @@
      "fence:check_box_state_freshness",
      "library:desks/mt5/research/free_shadows.py",
      "library:desks/mt5/research/gate_verdict_digest.py"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:05:40+00:00",
+    "host": "vm",
+    "on_attesting_host": true,
+    "organs": [
+     "leg:cell_culture_index",
+     "leg:culture_gap_cells"
     ]
    }
   ]
@@ -23719,6 +23728,60 @@
    "summary": {},
    "progress_metric": "UNMEASURED",
    "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:cell_culture_index",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/cell_culture_index.py"
+   ],
+   "clock": "hourly_cycle:cell_culture_index",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CELL_CULTURE.json",
+   "artifact_declared": "desks/mt5/reports/CELL_CULTURE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/research/culture_orthogonality.py (Tier S, #113: load_culture_index ke",
+   "measured_on": "vm",
+   "measured_at": "2026-09-30T20:05:40+00:00"
+  },
+  {
+   "organ": "leg:culture_gap_cells",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/culture_gap_cells.py"
+   ],
+   "clock": "hourly_cycle:culture_gap_cells",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CULTURE_GAP_CELLS.json",
+   "artifact_declared": "desks/mt5/reports/CULTURE_GAP_CELLS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/research/moat_candidate_compiler.py (prices and leases registry candid",
+   "measured_on": "vm",
+   "measured_at": "2026-09-30T20:05:40+00:00"
   }
  ],
  "ratchet": {
