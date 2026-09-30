@@ -33,8 +33,10 @@ certified through UNIVERSAL_SURVIVORS, a family nothing resolves), with the reas
 never counted as a match.
 
 THE CONSEQUENCE lives in `libs/tiers/promotion_authority.review_live`, which lists a LIVE row
-whose identity MISMATCHES among the rows the door would withhold (`data/tier_s/live_door.json`);
-the promoter's automatic retirement reads that file. Nothing here writes a sleeve.
+whose identity MISMATCHES among the rows the door would withhold (`data/tier_s/live_door.json`).
+That file's reader, the promoter's `retire_tier_s_live`, is the sealed desktop patch T4
+(`tier_s_promoter_live_door_retirement.patch`); until it lands nothing retires on it. Nothing
+here writes a sleeve.
 """
 from __future__ import annotations
 
