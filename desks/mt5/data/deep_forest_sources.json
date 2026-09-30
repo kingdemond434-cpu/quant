@@ -477,7 +477,7 @@
     "en"
    ],
    "market": "EA",
-   "grounds": 1
+   "grounds": 2
   },
   "ch": {
    "name": "Switzerland",
@@ -488,7 +488,7 @@
     "en"
    ],
    "market": "CH",
-   "grounds": 1
+   "grounds": 2
   }
  },
  "grounds": [
@@ -7615,6 +7615,28 @@
    "weight": 1.0,
    "why": "culture-gap ground (institutional): the Spanish continuous market runs 09:00-17:30 CET and closes with an auction",
    "url": "https://www.bolsasymercados.es/bme-exchange/en/"
+  },
+  {
+   "name": "The ECB Blog",
+   "region": "ea",
+   "language": "en",
+   "route": "http",
+   "kind": "blog",
+   "weight": 0.8,
+   "why": "euro-area policy makers explaining the reaction function in their own words: the story side of the ECB reference-rate and policy cells",
+   "url": "https://www.ecb.europa.eu/press/blog/html/index.en.html",
+   "cluster": "eu"
+  },
+  {
+   "name": "finews.ch Swiss finance news",
+   "region": "ch",
+   "language": "de",
+   "route": "http",
+   "kind": "column",
+   "weight": 0.8,
+   "why": "Swiss banking and SNB coverage in the local press: the story side of the franc's policy and institutional cells",
+   "url": "https://www.finews.ch/",
+   "cluster": "eu"
   }
  ],
  "engines": [
