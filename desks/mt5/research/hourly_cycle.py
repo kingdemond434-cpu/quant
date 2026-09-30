@@ -1843,6 +1843,41 @@ def _leg_floor_s(name: str) -> int:
     return floor
 
 
+#: What a leg needs AFTER its own self-stop to write its artifact: the larger of a minute and 15%
+#: of the budget it was handed. A cap set exactly AT the organ's `--budget-s` kills it in the
+#: middle of its write -- `probation` carried cap 1,800 against its own 1,800 and moved nothing.
+WRITE_MARGIN_FRAC = 0.15
+WRITE_MARGIN_MIN_S = 60
+
+
+def _self_budget_s(args: tuple[str, ...]) -> float | None:
+    """The organ's own stopping point, read off the `--budget-s` it is launched with.
+
+    THE CALL SITE IS THE DECLARATION. Every discovery leg is started with `--budget-s N`, which
+    is the second at which the organ stops working and writes. Reading it here rather than keeping
+    a second table means the floor can never drift from the number the organ actually obeys.
+    """
+    for i, tok in enumerate(args):
+        raw = None
+        if tok == "--budget-s" and i + 1 < len(args):
+            raw = args[i + 1]
+        elif tok.startswith("--budget-s="):
+            raw = tok.split("=", 1)[1]
+        if raw is not None:
+            with suppress(TypeError, ValueError):
+                val = float(raw)
+                return val if val > 0 else None
+    return None
+
+
+def _self_stop_floor_s(args: tuple[str, ...]) -> int:
+    """The shortest cap under which an organ with a declared `--budget-s` can still write."""
+    own = _self_budget_s(args)
+    if own is None:
+        return 0
+    return int(own + max(WRITE_MARGIN_MIN_S, WRITE_MARGIN_FRAC * own))
+
+
 def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     """The body: resolve the script against both roots and run it under the cycle budget.
 
@@ -1873,7 +1908,13 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
     # base unchanged, so this line is exactly what it was whenever the price cannot be read.
     budget, _price_rec = _priced_budget(name, LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC))
     # THE FLOOR IS ONE-SIDED AND IT IS THE ORGAN'S OWN STOPPING POINT -- see LEG_BUDGET_FLOOR_SEC.
-    _floor = _leg_floor_s(name)
+    # AND FOR EVERY LEG THAT DECLARES ITS OWN STOP, THE SAME RULE (noon CRO 2026-09-30: sweep,
+    # compile_candidates, descendants, probation, discovery_compiler and conversion_maximiser all
+    # timed out and moved 0 artifacts). The pricer multiplies the base and floors it only at a
+    # scout minute, so a leg launched with `--budget-s 900` could be capped at 600 and killed at
+    # the same prefix every hour -- the defect `LEG_BUDGET_FLOOR_SEC` names, arriving by the
+    # pricer. The floor is the organ's own stop plus its write margin, one-sided.
+    _floor = max(_leg_floor_s(name), _self_stop_floor_s(args))
     if _floor and budget < _floor:
         _price_rec = {**(_price_rec if isinstance(_price_rec, dict) else {}),
                       "floor_s": _floor, "priced_s": budget,
@@ -2457,7 +2498,8 @@ def compile_candidates() -> dict:
     reach the gauntlet until 11:xx at the earliest and only if somebody had run the compiler by
     hand in between.
     """
-    return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py")
+    return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py",
+                     "--budget-s", "600")
 
 
 def pit_canaries() -> dict:
@@ -2527,7 +2569,7 @@ def sweep() -> dict:
     book's binding constraint is orthogonality. A stalled sweep does not just slow discovery, it
     slows discovery of exactly the cells that would raise effective breadth.
     """
-    return _producer("orthogonal_sweep", "research/orthogonal_sweep.py")
+    return _producer("orthogonal_sweep", "research/orthogonal_sweep.py", "--budget-s", "600")
 
 
 def frontier() -> dict:
@@ -3463,7 +3505,8 @@ def main() -> None:
     # hunting"); probation (heavy plan) exercises the safe ones until they earn a named leg.
     wce = _costed("wiring_ceo", lambda: _producer("wiring_ceo", "research/wiring_ceo.py",
                                                    "--apply"))
-    prb = _costed("probation", lambda: _producer("probation", "research/probation_runner.py"))
+    prb = _costed("probation", lambda: _producer("probation", "research/probation_runner.py",
+                                                 "--budget-s", "1800"))
     sqs = _costed("standing_questions", lambda: _producer("standing_questions",
                                                            "research/standing_questions.py",
                                                            "--budget-s", "240"))
