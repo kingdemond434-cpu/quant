@@ -1,0 +1,7655 @@
+{
+ "at": "2026-09-30T16:16:38+00:00",
+ "status": "UNMEASURED",
+ "why": "15 cross-culture same-mechanism pair(s): 0 DIVERGE, 0 SAME_EDGE, 15 UNMEASURED; 201 of 210 survivor(s) carry no culture",
+ "rule": "pairs share a mechanism and differ in culture; live+forward daily R on the common window; SAME_EDGE if rho >= 0.4, or rho >= 0.2 with co_loss_lift >= 1.75 and dd_jaccard >= 0.5; DIVERGE otherwise; UNMEASURED below 30 overlap days or 5 co-active days, never resolved",
+ "thresholds": {
+  "min_overlap_days": 30,
+  "min_co_active_days": 5,
+  "same_edge_rho": 0.4,
+  "tail_rho_floor": 0.2,
+  "co_loss_lift_same": 1.75,
+  "dd_jaccard_same": 0.5
+ },
+ "inputs": {
+  "canon": "READ",
+  "sleeves": "READ",
+  "shadow_state": "READ",
+  "cell_culture_index": "CELL_CULTURE_INDEX.jsonl absent on this host -- culture derived from provenance"
+ },
+ "survivors_total": 210,
+ "survivors_with_returns": 24,
+ "culture_sources": {
+  "declared": 0,
+  "derived": 9,
+  "UNMEASURED": 201
+ },
+ "pair_counts": {
+  "total": 15,
+  "DIVERGE": 0,
+  "SAME_EDGE": 0,
+  "UNMEASURED": 15
+ },
+ "k_eff_survivors": {
+  "nominal": 210,
+  "merged": 210,
+  "collapsed": 0
+ },
+ "merge_groups": [],
+ "per_culture": {
+  "CN": {
+   "survivors": 3,
+   "with_returns": 0,
+   "stages": {
+    "certified": 3
+   },
+   "independent_edges_claimed": 1,
+   "independent_edges_proven": 0,
+   "edges_shared_with_another_culture": 0,
+   "edges_unmeasured": 1,
+   "proven_mechanisms": []
+  },
+  "DK": {
+   "survivors": 1,
+   "with_returns": 0,
+   "stages": {
+    "certified": 1
+   },
+   "independent_edges_claimed": 1,
+   "independent_edges_proven": 0,
+   "edges_shared_with_another_culture": 0,
+   "edges_unmeasured": 1,
+   "proven_mechanisms": []
+  },
+  "JP": {
+   "survivors": 5,
+   "with_returns": 0,
+   "stages": {
+    "certified": 5
+   },
+   "independent_edges_claimed": 1,
+   "independent_edges_proven": 0,
+   "edges_shared_with_another_culture": 0,
+   "edges_unmeasured": 1,
+   "proven_mechanisms": []
+  },
+  "UNMEASURED": {
+   "survivors": 201,
+   "with_returns": 24,
+   "stages": {
+    "certified": 43,
+    "forward": 149,
+    "live": 40
+   },
+   "independent_edges_claimed": 15,
+   "independent_edges_proven": 0,
+   "edges_shared_with_another_culture": 0,
+   "edges_unmeasured": 15,
+   "proven_mechanisms": []
+  }
+ },
+ "crowding_prior_survival": {
+  "status": "UNMEASURED",
+  "why": "no CELL_CULTURE_INDEX on this host"
+ },
+ "pairs": [
+  {
+   "a": "cert:external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  },
+  {
+   "a": "cert:external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+   "b": "cert:external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "cultures": [
+    "JP",
+    "CN"
+   ],
+   "verdict": "UNMEASURED",
+   "overlap_days": 0,
+   "co_active_days": 0,
+   "why": "one side has no live or forward returns"
+  }
+ ],
+ "survivors": [
+  {
+   "id": "cert:external.AUDCAD.discovered.p=7c996ac8456c8919",
+   "symbol": "AUDCAD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "AUDCAD.discovered.p=7c996ac8456c8919",
+    "AUDCAD_discovered_asia",
+    "audcad_discovered_asia_p_7c996ac8456c8919",
+    "external.AUDCAD.discovered.p=7c996ac8456c8919"
+   ],
+   "cert_cell": "AUDCAD.discovered.p=7c996ac8456c8919",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "ext_resid_EURGBP_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.AUDCAD.discovered.p=8030fb339510dceb",
+   "symbol": "AUDCAD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "AUDCAD.discovered.p=8030fb339510dceb",
+    "AUDCAD_discovered_asia",
+    "audcad_discovered_asia_p_8030fb339510dceb",
+    "external.AUDCAD.discovered.p=8030fb339510dceb"
+   ],
+   "cert_cell": "AUDCAD.discovered.p=8030fb339510dceb",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.AUDCAD.discovered.p=a7324e7affe1f80a",
+   "symbol": "AUDCAD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "AUDCAD.discovered.p=a7324e7affe1f80a",
+    "AUDCAD_discovered_asia",
+    "audcad_discovered_asia_p_a7324e7affe1f80a",
+    "external.AUDCAD.discovered.p=a7324e7affe1f80a"
+   ],
+   "cert_cell": "AUDCAD.discovered.p=a7324e7affe1f80a",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "ext_resid_EURDKK_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "AUDCHF",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+    "AUDCHF_overnight_gap_decay_asia",
+    "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a"
+   ],
+   "cert_cell": "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.AUDNZD.discovered.p=c76b860ff91ee920",
+   "symbol": "AUDNZD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "AUDNZD.discovered.p=c76b860ff91ee920",
+    "AUDNZD_discovered_asia",
+    "audnzd_discovered_asia_p_c76b860ff91ee920",
+    "external.AUDNZD.discovered.p=c76b860ff91ee920"
+   ],
+   "cert_cell": "AUDNZD.discovered.p=c76b860ff91ee920",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.AUDUSD.discovered.p=8e61ea22743f15b7",
+   "symbol": "AUDUSD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "AUDUSD.discovered.p=8e61ea22743f15b7",
+    "AUDUSD_discovered_asia",
+    "audusd_discovered_asia_p_8e61ea22743f15b7",
+    "external.AUDUSD.discovered.p=8e61ea22743f15b7"
+   ],
+   "cert_cell": "AUDUSD.discovered.p=8e61ea22743f15b7",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.AUDUSD.discovered.p=a5bbf78b5c8595c0",
+   "symbol": "AUDUSD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "AUDUSD.discovered.p=a5bbf78b5c8595c0",
+    "AUDUSD_discovered_asia",
+    "audusd_discovered_asia_p_a5bbf78b5c8595c0",
+    "external.AUDUSD.discovered.p=a5bbf78b5c8595c0"
+   ],
+   "cert_cell": "AUDUSD.discovered.p=a5bbf78b5c8595c0",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.AUDUSD.discovered.p=cf0368e026d6b477",
+   "symbol": "AUDUSD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "AUDUSD.discovered.p=cf0368e026d6b477",
+    "AUDUSD_discovered_asia",
+    "audusd_discovered_asia_p_cf0368e026d6b477",
+    "external.AUDUSD.discovered.p=cf0368e026d6b477"
+   ],
+   "cert_cell": "AUDUSD.discovered.p=cf0368e026d6b477",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_240",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.AUDUSD.discovered.p=de80ad4f2ef91116",
+   "symbol": "AUDUSD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "AUDUSD.discovered.p=de80ad4f2ef91116",
+    "AUDUSD_discovered_asia",
+    "audusd_discovered_asia_p_de80ad4f2ef91116",
+    "external.AUDUSD.discovered.p=de80ad4f2ef91116"
+   ],
+   "cert_cell": "AUDUSD.discovered.p=de80ad4f2ef91116",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_240",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "CADCHF",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+    "CADCHF_overnight_gap_decay_asia",
+    "cadchf_overnight_gap_decay_asia_p_44136fa355b3678a",
+    "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a"
+   ],
+   "cert_cell": "CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.CADJPY.session_range_breakout.rr=1.5_wb=12",
+   "symbol": "CADJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "CADJPY.session_range_breakout.rr=1.5_wb=12",
+    "CADJPY_session_range_breakout_asia",
+    "external.CADJPY.session_range_breakout.rr=1.5_wb=12"
+   ],
+   "cert_cell": "CADJPY.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 1.5,
+    "wait_bars": 12
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.CADJPY.session_range_breakout.rr=2.0_wb=12",
+   "symbol": "CADJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "CADJPY.session_range_breakout.rr=2.0_wb=12",
+    "CADJPY_session_range_breakout_asia",
+    "external.CADJPY.session_range_breakout.rr=2.0_wb=12"
+   ],
+   "cert_cell": "CADJPY.session_range_breakout.rr=2.0_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 2.0,
+    "wait_bars": 12
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.CADJPY.session_range_breakout.rr=2.5_wb=12",
+   "symbol": "CADJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "CADJPY.session_range_breakout.rr=2.5_wb=12",
+    "CADJPY_session_range_breakout_asia",
+    "external.CADJPY.session_range_breakout.rr=2.5_wb=12"
+   ],
+   "cert_cell": "CADJPY.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 2.5,
+    "wait_bars": 12
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "CHFDKK",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+    "CHFDKK_overnight_gap_decay_asia",
+    "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a"
+   ],
+   "cert_cell": "CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "DK",
+   "culture_source": "derived",
+   "culture_how": "exact cell: derived: seat asia:nationalbanken_dkk -> data/asia_sources.json country",
+   "cultures_seen": [
+    "DK"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.CHFNOK.carry.p=98d776f3e210d3e2",
+   "symbol": "CHFNOK",
+   "family": "carry",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "CHFNOK.carry.p=98d776f3e210d3e2",
+    "CHFNOK_carry_asia",
+    "chfnok_carry_asia_p_98d776f3e210d3e2",
+    "external.CHFNOK.carry.p=98d776f3e210d3e2"
+   ],
+   "cert_cell": "CHFNOK.carry.p=98d776f3e210d3e2",
+   "mechanism": "carry",
+   "params": {
+    "input_symbol": "CHFNOK"
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURCHF.discovered.p=16bd35526c7f3515",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURCHF.discovered.p=16bd35526c7f3515",
+    "EURCHF_discovered_asia",
+    "eurchf_discovered_asia_p_16bd35526c7f3515",
+    "external.EURCHF.discovered.p=16bd35526c7f3515"
+   ],
+   "cert_cell": "EURCHF.discovered.p=16bd35526c7f3515",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURCHF.discovered.p=4cba1afa572a99cd",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURCHF.discovered.p=4cba1afa572a99cd",
+    "EURCHF_discovered_asia",
+    "eurchf_discovered_asia_p_4cba1afa572a99cd",
+    "external.EURCHF.discovered.p=4cba1afa572a99cd"
+   ],
+   "cert_cell": "EURCHF.discovered.p=4cba1afa572a99cd",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURCHF.discovered.p=6c7943b997558157",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURCHF.discovered.p=6c7943b997558157",
+    "EURCHF_discovered_asia",
+    "eurchf_discovered_asia_p_6c7943b997558157",
+    "external.EURCHF.discovered.p=6c7943b997558157"
+   ],
+   "cert_cell": "EURCHF.discovered.p=6c7943b997558157",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURCHF.discovered.p=9bc1f7c40f200e78",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURCHF.discovered.p=9bc1f7c40f200e78",
+    "EURCHF_discovered_asia",
+    "eurchf_discovered_asia_p_9bc1f7c40f200e78",
+    "external.EURCHF.discovered.p=9bc1f7c40f200e78"
+   ],
+   "cert_cell": "EURCHF.discovered.p=9bc1f7c40f200e78",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURCHF.discovered.p=a5bbf78b5c8595c0",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURCHF.discovered.p=a5bbf78b5c8595c0",
+    "EURCHF_discovered_asia",
+    "eurchf_discovered_asia_p_a5bbf78b5c8595c0",
+    "external.EURCHF.discovered.p=a5bbf78b5c8595c0"
+   ],
+   "cert_cell": "EURCHF.discovered.p=a5bbf78b5c8595c0",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURCHF.discovered.p=c14e361e680e6d0b",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURCHF.discovered.p=c14e361e680e6d0b",
+    "EURCHF_discovered_asia",
+    "eurchf_discovered_asia_p_c14e361e680e6d0b",
+    "external.EURCHF.discovered.p=c14e361e680e6d0b"
+   ],
+   "cert_cell": "EURCHF.discovered.p=c14e361e680e6d0b",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURCHF.discovered.p=c7d53510458ba32c",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURCHF.discovered.p=c7d53510458ba32c",
+    "EURCHF_discovered_asia",
+    "eurchf_discovered_asia_p_c7d53510458ba32c",
+    "external.EURCHF.discovered.p=c7d53510458ba32c"
+   ],
+   "cert_cell": "EURCHF.discovered.p=c7d53510458ba32c",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "ru_24",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURCHF.discovered.p=e266baf78567bef3",
+   "symbol": "EURCHF",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURCHF.discovered.p=e266baf78567bef3",
+    "EURCHF_discovered_asia",
+    "eurchf_discovered_asia_p_e266baf78567bef3",
+    "external.EURCHF.discovered.p=e266baf78567bef3"
+   ],
+   "cert_cell": "EURCHF.discovered.p=e266baf78567bef3",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURGBP.discovered.p=8e61ea22743f15b7",
+   "symbol": "EURGBP",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURGBP.discovered.p=8e61ea22743f15b7",
+    "EURGBP_discovered_asia",
+    "eurgbp_discovered_asia_p_8e61ea22743f15b7",
+    "external.EURGBP.discovered.p=8e61ea22743f15b7"
+   ],
+   "cert_cell": "EURGBP.discovered.p=8e61ea22743f15b7",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+   "symbol": "EURGBP",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURGBP.discovered.p=f31f02aa2b9d79b1",
+    "EURGBP_discovered_asia",
+    "eurgbp_discovered_asia_p_f31f02aa2b9d79b1",
+    "external.EURGBP.discovered.p=f31f02aa2b9d79b1"
+   ],
+   "cert_cell": "EURGBP.discovered.p=f31f02aa2b9d79b1",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "ru_24",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+   "symbol": "EURJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "EURJPY.session_range_breakout.rr=1.5_wb=12",
+    "EURJPY_session_range_breakout_asia",
+    "external.EURJPY.session_range_breakout.rr=1.5_wb=12"
+   ],
+   "cert_cell": "EURJPY.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 1.5,
+    "wait_bars": 12
+   },
+   "culture": "JP",
+   "culture_source": "derived",
+   "culture_how": "symbol+family: derived: seat asia:boj_timeseries -> data/asia_sources.json country",
+   "cultures_seen": [
+    "JP"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 3
+   }
+  },
+  {
+   "id": "cert:external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+   "symbol": "EURJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "EURJPY.session_range_breakout.rr=2.0_wb=12",
+    "EURJPY_session_range_breakout_asia",
+    "external.EURJPY.session_range_breakout.rr=2.0_wb=12"
+   ],
+   "cert_cell": "EURJPY.session_range_breakout.rr=2.0_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 2.0,
+    "wait_bars": 12
+   },
+   "culture": "JP",
+   "culture_source": "derived",
+   "culture_how": "symbol+family: derived: seat asia:boj_timeseries -> data/asia_sources.json country",
+   "cultures_seen": [
+    "JP"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 3
+   }
+  },
+  {
+   "id": "cert:external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+   "symbol": "EURJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "EURJPY.session_range_breakout.rr=2.5_wb=12",
+    "EURJPY_session_range_breakout_asia",
+    "external.EURJPY.session_range_breakout.rr=2.5_wb=12"
+   ],
+   "cert_cell": "EURJPY.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 2.5,
+    "wait_bars": 12
+   },
+   "culture": "JP",
+   "culture_source": "derived",
+   "culture_how": "symbol+family: derived: seat asia:boj_timeseries -> data/asia_sources.json country",
+   "cultures_seen": [
+    "JP"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 3
+   }
+  },
+  {
+   "id": "cert:external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "EURNOK",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+    "EURNOK_overnight_gap_decay_asia",
+    "eurnok_overnight_gap_decay_asia_p_44136fa355b3678a",
+    "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a"
+   ],
+   "cert_cell": "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURUSD.discovered.p=6d034b421914e1a2",
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURUSD.discovered.p=6d034b421914e1a2",
+    "EURUSD_discovered_asia",
+    "eurusd_discovered_asia_p_6d034b421914e1a2",
+    "external.EURUSD.discovered.p=6d034b421914e1a2"
+   ],
+   "cert_cell": "EURUSD.discovered.p=6d034b421914e1a2",
+   "mechanism": "discovered:no economic cause is encoded by this price-shape primitive",
+   "params": {
+    "feature": "dd_48",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURUSD.discovered.p=f8bd412f38e33d20",
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "EURUSD.discovered.p=f8bd412f38e33d20",
+    "EURUSD_discovered_asia",
+    "eurusd_discovered_asia_p_f8bd412f38e33d20",
+    "external.EURUSD.discovered.p=f8bd412f38e33d20"
+   ],
+   "cert_cell": "EURUSD.discovered.p=f8bd412f38e33d20",
+   "mechanism": "discovered:no economic cause is encoded by this price-shape primitive",
+   "params": {
+    "feature": "dd_96",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "EURZAR",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+    "EURZAR_overnight_gap_decay_asia",
+    "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a"
+   ],
+   "cert_cell": "EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "GBPCHF",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+    "GBPCHF_overnight_gap_decay_asia",
+    "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a"
+   ],
+   "cert_cell": "GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+   "symbol": "GBPJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "GBPJPY.session_range_breakout.rr=1.5_wb=12",
+    "GBPJPY_session_range_breakout_asia",
+    "external.GBPJPY.session_range_breakout.rr=1.5_wb=12"
+   ],
+   "cert_cell": "GBPJPY.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 1.5,
+    "wait_bars": 12
+   },
+   "culture": "JP",
+   "culture_source": "derived",
+   "culture_how": "symbol+family: derived: seat asia:boj_timeseries -> data/asia_sources.json country",
+   "cultures_seen": [
+    "JP"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 3
+   }
+  },
+  {
+   "id": "cert:external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+   "symbol": "GBPJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "GBPJPY.session_range_breakout.rr=2.5_wb=12",
+    "GBPJPY_session_range_breakout_asia",
+    "external.GBPJPY.session_range_breakout.rr=2.5_wb=12"
+   ],
+   "cert_cell": "GBPJPY.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 2.5,
+    "wait_bars": 12
+   },
+   "culture": "JP",
+   "culture_source": "derived",
+   "culture_how": "symbol+family: derived: seat asia:boj_timeseries -> data/asia_sources.json country",
+   "cultures_seen": [
+    "JP"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 3
+   }
+  },
+  {
+   "id": "cert:external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "GBPMXN",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+    "GBPMXN_overnight_gap_decay_asia",
+    "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+    "gbpmxn_overnight_gap_decay_asia_p_44136fa355b3678a"
+   ],
+   "cert_cell": "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "GBPNOK",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+    "GBPNOK_overnight_gap_decay_asia",
+    "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+    "gbpnok_overnight_gap_decay_asia_p_44136fa355b3678a"
+   ],
+   "cert_cell": "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "GBPSEK",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+    "GBPSEK_overnight_gap_decay_asia",
+    "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+    "gbpsek_overnight_gap_decay_asia_p_44136fa355b3678a"
+   ],
+   "cert_cell": "GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "GBPZAR",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+    "GBPZAR_overnight_gap_decay_asia",
+    "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+    "gbpzar_overnight_gap_decay_asia_p_44136fa355b3678a"
+   ],
+   "cert_cell": "GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+   "symbol": "NZDCAD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "NZDCAD.discovered.p=0ffb1e19a04f260e",
+    "NZDCAD_discovered_asia",
+    "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+    "nzdcad_discovered_asia_p_0ffb1e19a04f260e"
+   ],
+   "cert_cell": "NZDCAD.discovered.p=0ffb1e19a04f260e",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "dd_48",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.USDCAD.discovered.p=193aadf2caba3698",
+   "symbol": "USDCAD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "USDCAD.discovered.p=193aadf2caba3698",
+    "USDCAD_discovered_asia",
+    "external.USDCAD.discovered.p=193aadf2caba3698",
+    "usdcad_discovered_asia_p_193aadf2caba3698"
+   ],
+   "cert_cell": "USDCAD.discovered.p=193aadf2caba3698",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "ru_240",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.USDCAD.discovered.p=56aadf0a3018c790",
+   "symbol": "USDCAD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "USDCAD.discovered.p=56aadf0a3018c790",
+    "USDCAD_discovered_asia",
+    "external.USDCAD.discovered.p=56aadf0a3018c790",
+    "usdcad_discovered_asia_p_56aadf0a3018c790"
+   ],
+   "cert_cell": "USDCAD.discovered.p=56aadf0a3018c790",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "ru_96",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.USDCHF.discovered.p=19dd11ec392fa005",
+   "symbol": "USDCHF",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "certified",
+    "live"
+   ],
+   "names": [
+    "USDCHF.discovered.p=19dd11ec392fa005",
+    "USDCHF_discovered_asia",
+    "external.USDCHF.discovered.p=19dd11ec392fa005",
+    "usdchf_discovered_asia_p_19dd11ec392fa005"
+   ],
+   "cert_cell": "USDCHF.discovered.p=19dd11ec392fa005",
+   "mechanism": "discovered",
+   "params": {
+    "feature": "ext_residz_AUDCAD",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "USDJPY.session_range_breakout.rr=1.5_wb=12",
+    "USDJPY_session_range_breakout_asia",
+    "external.USDJPY.session_range_breakout.rr=1.5_wb=12"
+   ],
+   "cert_cell": "USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 1.5,
+    "wait_bars": 12
+   },
+   "culture": "CN",
+   "culture_source": "derived",
+   "culture_how": "symbol+family: derived: seat asia:cfets_fixing -> data/asia_sources.json country",
+   "cultures_seen": [
+    "CN"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 5
+   }
+  },
+  {
+   "id": "cert:external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "USDJPY.session_range_breakout.rr=2.0_wb=12",
+    "USDJPY_session_range_breakout_asia",
+    "external.USDJPY.session_range_breakout.rr=2.0_wb=12"
+   ],
+   "cert_cell": "USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 2.0,
+    "wait_bars": 12
+   },
+   "culture": "CN",
+   "culture_source": "derived",
+   "culture_how": "symbol+family: derived: seat asia:cfets_fixing -> data/asia_sources.json country",
+   "cultures_seen": [
+    "CN"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 5
+   }
+  },
+  {
+   "id": "cert:external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "symbol": "USDJPY",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "USDJPY.session_range_breakout.rr=2.5_wb=12",
+    "USDJPY_session_range_breakout_asia",
+    "external.USDJPY.session_range_breakout.rr=2.5_wb=12"
+   ],
+   "cert_cell": "USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 2.5,
+    "wait_bars": 12
+   },
+   "culture": "CN",
+   "culture_source": "derived",
+   "culture_how": "symbol+family: derived: seat asia:cfets_fixing -> data/asia_sources.json country",
+   "cultures_seen": [
+    "CN"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 5
+   }
+  },
+  {
+   "id": "cert:external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "USDMXN",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+    "USDMXN_overnight_gap_decay_asia",
+    "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a"
+   ],
+   "cert_cell": "USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "symbol": "USDZAR",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+    "USDZAR_overnight_gap_decay_asia",
+    "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a"
+   ],
+   "cert_cell": "USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "mechanism": "overnight_gap_decay",
+   "params": {},
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.XAUUSD.session_range_breakout.rr=1.5_wb=12",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "XAUUSD.session_range_breakout.rr=1.5_wb=12",
+    "XAUUSD_session_range_breakout_asia",
+    "external.XAUUSD.session_range_breakout.rr=1.5_wb=12"
+   ],
+   "cert_cell": "XAUUSD.session_range_breakout.rr=1.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 1.5,
+    "wait_bars": 12
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "symbol+family rows name 2 cultures (JP, RU) -- ambiguous, not derived",
+   "cultures_seen": [
+    "JP",
+    "RU"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "XAUUSD.session_range_breakout.rr=1.5_wb=8",
+    "XAUUSD_session_range_breakout_asia",
+    "external.XAUUSD.session_range_breakout.rr=1.5_wb=8"
+   ],
+   "cert_cell": "XAUUSD.session_range_breakout.rr=1.5_wb=8",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 1.5,
+    "wait_bars": 8
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "symbol+family rows name 2 cultures (JP, RU) -- ambiguous, not derived",
+   "cultures_seen": [
+    "JP",
+    "RU"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.XAUUSD.session_range_breakout.rr=2.0_wb=12",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "XAUUSD.session_range_breakout.rr=2.0_wb=12",
+    "XAUUSD_session_range_breakout_asia",
+    "external.XAUUSD.session_range_breakout.rr=2.0_wb=12"
+   ],
+   "cert_cell": "XAUUSD.session_range_breakout.rr=2.0_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 2.0,
+    "wait_bars": 12
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "symbol+family rows name 2 cultures (JP, RU) -- ambiguous, not derived",
+   "cultures_seen": [
+    "JP",
+    "RU"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "cert:external.XAUUSD.session_range_breakout.rr=2.5_wb=12",
+   "symbol": "XAUUSD",
+   "family": "session_range_breakout",
+   "selector": "asia",
+   "stages": [
+    "certified"
+   ],
+   "names": [
+    "XAUUSD.session_range_breakout.rr=2.5_wb=12",
+    "XAUUSD_session_range_breakout_asia",
+    "external.XAUUSD.session_range_breakout.rr=2.5_wb=12"
+   ],
+   "cert_cell": "XAUUSD.session_range_breakout.rr=2.5_wb=12",
+   "mechanism": "session_range_breakout",
+   "params": {
+    "rr": 2.5,
+    "wait_bars": 12
+   },
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "symbol+family rows name 2 cultures (JP, RU) -- ambiguous, not derived",
+   "cultures_seen": [
+    "JP",
+    "RU"
+   ],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:AUDCAD.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'LTCUSD', 'BTCUSD', 'BNBUSD', 'ADAUSD', 'DOGEUSD', 'DOTUSD']",
+   "symbol": "AUDCAD",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "AUDCAD.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'LTCUSD', 'BTCUSD', 'BNBUSD', 'ADAUSD', 'DOGEUSD', 'DOTUSD']",
+    "c0d55d29e2309b618bb6"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:AUDJPY.pca_residual.continuous#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
+   "symbol": "AUDJPY",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "95de6bc8d02f8eef57a5",
+    "AUDJPY.pca_residual.continuous#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:AUDSGD.vol_transition.continuous",
+   "symbol": "AUDSGD",
+   "family": "vol_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "2550bd9152e6e09fe6f6",
+    "AUDSGD.vol_transition.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:AUDUSD.asia",
+   "symbol": "AUDUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "50fdd62fa72732caa8ad",
+    "AUDUSD.asia"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:AUDUSD.asia#rr=1.5",
+   "symbol": "AUDUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "5ff69c5070b8fe55b4b3",
+    "AUDUSD.asia#rr=1.5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:AUDUSD.asia#rr=2.5",
+   "symbol": "AUDUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "AUDUSD.asia#rr=2.5",
+    "e3bfbf0bc8ecd45d861a"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:BTCUSD.correlation_regime.continuous#peer_symbol=3M",
+   "symbol": "BTCUSD",
+   "family": "correlation_regime",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "995065fdb3d8f9e0536c",
+    "BTCUSD.correlation_regime.continuous#peer_symbol=3M"
+   ],
+   "cert_cell": null,
+   "mechanism": "correlation_regime",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:BTCUSD.correlation_regime.continuous#peer_symbol=BCHUSD",
+   "symbol": "BTCUSD",
+   "family": "correlation_regime",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "BTCUSD.correlation_regime.continuous#peer_symbol=BCHUSD",
+    "b3b4ce0e1986b4de7c21"
+   ],
+   "cert_cell": null,
+   "mechanism": "correlation_regime",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CADJPY.asia#rr=1.5_wait_bars=8",
+   "symbol": "CADJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "079b230c500d819ac626",
+    "CADJPY.asia#rr=1.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CADJPY.asia#rr=2.5_wait_bars=8",
+   "symbol": "CADJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "CADJPY.asia#rr=2.5_wait_bars=8",
+    "a396c943ab7af3858371"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CADJPY.asia#wait_bars=8",
+   "symbol": "CADJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "346f0fefb3a955eda128",
+    "CADJPY.asia#wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CADJPY.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'USDZAR', 'EURUSD', 'XAGUSD', 'JPN225', 'XNGUSD', 'WHEAT']",
+   "symbol": "CADJPY",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "CADJPY.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'USDZAR', 'EURUSD', 'XAGUSD', 'JPN225', 'XNGUSD', 'WHEAT']",
+    "c8fac461d0204b355754"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CADJPY.relative_value.continuous#peer_symbol=AUDCAD",
+   "symbol": "CADJPY",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "56f9a538aef77d271b99",
+    "CADJPY.relative_value.continuous#peer_symbol=AUDCAD"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CADJPY.vol_transition.continuous",
+   "symbol": "CADJPY",
+   "family": "vol_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "CADJPY.vol_transition.continuous",
+    "dc00ae8c7d8da6d6de01"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFDKK.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']",
+   "symbol": "CHFDKK",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "CHFDKK.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']",
+    "c94106fb7467bad891d4"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFJPY.asia",
+   "symbol": "CHFJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "6a1d62eddb7bb4e3817d",
+    "CHFJPY.asia"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFJPY.asia#rr=1.5",
+   "symbol": "CHFJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "3209e442831b7a2ae320",
+    "CHFJPY.asia#rr=1.5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFJPY.asia#rr=2.5",
+   "symbol": "CHFJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "CHFJPY.asia#rr=2.5",
+    "a8634f5866b88bd32537"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFJPY.asia#rr=2.5_wait_bars=8",
+   "symbol": "CHFJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "9e550c966eebf4d50fb6",
+    "CHFJPY.asia#rr=2.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFJPY.asia#wait_bars=8",
+   "symbol": "CHFJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "5cf5fe0a609b940327db",
+    "CHFJPY.asia#wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFJPY.relative_value.continuous#peer_symbol=3M",
+   "symbol": "CHFJPY",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "CHFJPY.relative_value.continuous#peer_symbol=3M",
+    "aeadb666c711ffb0e34b"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFNOK.carry.asia#input_symbol=CHFNOK",
+   "symbol": "CHFNOK",
+   "family": "carry",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "CHFNOK.carry.asia#input_symbol=CHFNOK",
+    "f108e80ae6fca1431023"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFNOK.carry.continuous#input_symbol=CHFNOK",
+   "symbol": "CHFNOK",
+   "family": "carry",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "4c9200bfb12af8efc49a",
+    "CHFNOK.carry.continuous#input_symbol=CHFNOK"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFNOK.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'USDZAR', 'EURUSD', 'XAGUSD', 'JPN225', 'XNGUSD', 'WHEAT']",
+   "symbol": "CHFNOK",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "CHFNOK.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'USDZAR', 'EURUSD', 'XAGUSD', 'JPN225', 'XNGUSD', 'WHEAT']",
+    "e41874b5b51df6b8d9ab"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFNOK.relative_value.continuous#peer_symbol=EURCHF",
+   "symbol": "CHFNOK",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "932c7b76c1034dcc2df7",
+    "CHFNOK.relative_value.continuous#peer_symbol=EURCHF"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFSEK.carry.continuous#input_symbol=CHFSEK",
+   "symbol": "CHFSEK",
+   "family": "carry",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "84c78832846911bc7018",
+    "CHFSEK.carry.continuous#input_symbol=CHFSEK"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFSEK.pca_residual.continuous#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
+   "symbol": "CHFSEK",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "848271c6ca4966602248",
+    "CHFSEK.pca_residual.continuous#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFSEK.relative_value.continuous#peer_symbol=EURCHF",
+   "symbol": "CHFSEK",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "639aec5cc61fc55669ea",
+    "CHFSEK.relative_value.continuous#peer_symbol=EURCHF"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:CHFSGD.carry.continuous#input_symbol=CHFSGD",
+   "symbol": "CHFSGD",
+   "family": "carry",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "0fb296faef82479c8a1b",
+    "CHFSGD.carry.continuous#input_symbol=CHFSGD"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURAUD.asia",
+   "symbol": "EURAUD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "584f8ca6a9df59d63fd2",
+    "EURAUD.asia"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURAUD.asia#rr=1.5",
+   "symbol": "EURAUD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURAUD.asia#rr=1.5",
+    "ad89710754e33798296a"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURAUD.asia#rr=2.5",
+   "symbol": "EURAUD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "41c4d1a8eacf047a0a52",
+    "EURAUD.asia#rr=2.5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURAUD.relative_value.continuous#peer_symbol=EURHKD",
+   "symbol": "EURAUD",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURAUD.relative_value.continuous#peer_symbol=EURHKD",
+    "d21d43ea416247f0d4dc"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURAUD.relative_value.continuous#peer_symbol=EURUSD",
+   "symbol": "EURAUD",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "43cacc3a9572813f3845",
+    "EURAUD.relative_value.continuous#peer_symbol=EURUSD"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURAUD.vol_mean_reversion.continuous",
+   "symbol": "EURAUD",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "45058a5baf5d14e8a840",
+    "EURAUD.vol_mean_reversion.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURGBP.carry.continuous#input_symbol=EURGBP",
+   "symbol": "EURGBP",
+   "family": "carry",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "2b8a3750d6d8c4e02c70",
+    "EURGBP.carry.continuous#input_symbol=EURGBP"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURILS.relative_value.continuous#peer_symbol=EURCHF",
+   "symbol": "EURILS",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURILS.relative_value.continuous#peer_symbol=EURCHF",
+    "f843d10ea1af7f1c1254"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURILS.relative_value.continuous#peer_symbol=EURUSD",
+   "symbol": "EURILS",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "64d385eecbfa0d889a2d",
+    "EURILS.relative_value.continuous#peer_symbol=EURUSD"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURJPY.asia#rr=1.5_wait_bars=8",
+   "symbol": "EURJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "3c907130a292f61f6946",
+    "EURJPY.asia#rr=1.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURJPY.asia#rr=2.5_wait_bars=8",
+   "symbol": "EURJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURJPY.asia#rr=2.5_wait_bars=8",
+    "bd2291c5d828f6ce988d"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURJPY.asia#wait_bars=8",
+   "symbol": "EURJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "84900f7d512184f8e5ca",
+    "EURJPY.asia#wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURJPY.carry.continuous#input_symbol=EURJPY",
+   "symbol": "EURJPY",
+   "family": "carry",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURJPY.carry.continuous#input_symbol=EURJPY",
+    "a93cbf647c5bdc4e0c35"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURJPY.vol_mean_reversion.continuous",
+   "symbol": "EURJPY",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "53042e09dd976b010bbb",
+    "EURJPY.vol_mean_reversion.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURMXN.carry.continuous#input_symbol=EURMXN",
+   "symbol": "EURMXN",
+   "family": "carry",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURMXN.carry.continuous#input_symbol=EURMXN",
+    "d573e19382f44a9a31a7"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURNOK.carry.continuous#input_symbol=EURNOK",
+   "symbol": "EURNOK",
+   "family": "carry",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "7b40a55f324e7e7eed30",
+    "EURNOK.carry.continuous#input_symbol=EURNOK"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURNOK.relative_value.continuous#peer_symbol=EURCHF",
+   "symbol": "EURNOK",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "7deb64c92eb8c4f8d12b",
+    "EURNOK.relative_value.continuous#peer_symbol=EURCHF"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURNOK.relative_value.continuous#peer_symbol=EURHKD",
+   "symbol": "EURNOK",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURNOK.relative_value.continuous#peer_symbol=EURHKD",
+    "ea933a25c1e1d24528d8"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURNOK.relative_value.continuous#peer_symbol=EURUSD",
+   "symbol": "EURNOK",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "85cee20d81d2ea9dea9a",
+    "EURNOK.relative_value.continuous#peer_symbol=EURUSD"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURNZD.relative_value.continuous#peer_symbol=EURCHF",
+   "symbol": "EURNZD",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "9ed4bec315b19c2ee0d5",
+    "EURNZD.relative_value.continuous#peer_symbol=EURCHF"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURNZD.vol_mean_reversion.continuous",
+   "symbol": "EURNZD",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURNZD.vol_mean_reversion.continuous",
+    "fe69f103454e6cb82aa8"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURNZD.vol_transition.continuous",
+   "symbol": "EURNZD",
+   "family": "vol_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "9541280467901c87aa7f",
+    "EURNZD.vol_transition.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.asia",
+   "symbol": "EURUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "7af10136eb7949a9ef0e",
+    "EURUSD.asia"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.asia#rr=1.5",
+   "symbol": "EURUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURUSD.asia#rr=1.5",
+    "dc991393b5124c486ded"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.asia#rr=1.5_wait_bars=8",
+   "symbol": "EURUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "7aea815859fb39401183",
+    "EURUSD.asia#rr=1.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.asia#rr=2.5",
+   "symbol": "EURUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "0015f2d2f9b8e7429886",
+    "EURUSD.asia#rr=2.5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.asia#rr=2.5_wait_bars=8",
+   "symbol": "EURUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "5d2f46ebe0aa8dec44ab",
+    "EURUSD.asia#rr=2.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.asia#wait_bars=8",
+   "symbol": "EURUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURUSD.asia#wait_bars=8",
+    "f0b830ee64d43c3cbb81"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=23",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=23",
+    "fee4586dc73e6eae3827"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=23",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "1547bdc8d40d41079fb4",
+    "EURUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=23"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=2_mode=into_side=1_stamp_hour=1",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=2_mode=into_side=1_stamp_hour=1",
+    "aba28d3195add073aa08"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURUSD.clock_transition.continuous#hold_bars=4_label=tokyo_open_lead_bars=4_mode=into_side=1_stamp_hour=3",
+   "symbol": "EURUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURUSD.clock_transition.continuous#hold_bars=4_label=tokyo_open_lead_bars=4_mode=into_side=1_stamp_hour=3",
+    "c183ec153335f716ea5c"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:EURZAR.pca_residual.continuous#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
+   "symbol": "EURZAR",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "EURZAR.pca_residual.continuous#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
+    "c5fca57558feedd2cd45"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPAUD.asia",
+   "symbol": "GBPAUD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPAUD.asia",
+    "fde3e69fe8a4d03c4829"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPAUD.asia#rr=1.5",
+   "symbol": "GBPAUD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPAUD.asia#rr=1.5",
+    "a5e66d3f7a50295e737a"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPAUD.asia#rr=1.5_wait_bars=8",
+   "symbol": "GBPAUD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "13f34fc1bb7ff6c47679",
+    "GBPAUD.asia#rr=1.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPAUD.asia#rr=2.5",
+   "symbol": "GBPAUD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPAUD.asia#rr=2.5",
+    "b77581fa23074085cc00"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPAUD.asia#rr=2.5_wait_bars=8",
+   "symbol": "GBPAUD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPAUD.asia#rr=2.5_wait_bars=8",
+    "f9311b4d5617f8cccf70"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPAUD.asia#wait_bars=8",
+   "symbol": "GBPAUD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "0fccbac260ef4c2d4b0c",
+    "GBPAUD.asia#wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPAUD.relative_value.continuous#peer_symbol=EURGBP",
+   "symbol": "GBPAUD",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "9445ce5b4de0165ee9b6",
+    "GBPAUD.relative_value.continuous#peer_symbol=EURGBP"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPAUD.relative_value.continuous#peer_symbol=GBPUSD",
+   "symbol": "GBPAUD",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "385bd5949027e505c7fc",
+    "GBPAUD.relative_value.continuous#peer_symbol=GBPUSD"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPAUD.vol_mean_reversion.continuous",
+   "symbol": "GBPAUD",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "554483186473e221f748",
+    "GBPAUD.vol_mean_reversion.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPCAD.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'USDZAR', 'EURUSD', 'XAGUSD', 'JPN225', 'XNGUSD', 'WHEAT']",
+   "symbol": "GBPCAD",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "521313ee037340cf454b",
+    "GBPCAD.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'USDZAR', 'EURUSD', 'XAGUSD', 'JPN225', 'XNGUSD', 'WHEAT']"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPJPY.asia",
+   "symbol": "GBPJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "9f047ceaa820e1f45b39",
+    "GBPJPY.asia"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPJPY.asia#rr=1.5_wait_bars=8",
+   "symbol": "GBPJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "89d9ec7a676512fe72a6",
+    "GBPJPY.asia#rr=1.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPJPY.asia#rr=2.5_wait_bars=8",
+   "symbol": "GBPJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPJPY.asia#rr=2.5_wait_bars=8",
+    "afbc0e20305a51764549"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPJPY.asia#wait_bars=8",
+   "symbol": "GBPJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPJPY.asia#wait_bars=8",
+    "fbdf4558a96907f28375"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPJPY.relative_value.continuous#peer_symbol=EURGBP",
+   "symbol": "GBPJPY",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "106d46aa07cb8979e506",
+    "GBPJPY.relative_value.continuous#peer_symbol=EURGBP"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPMXN.overnight_gap_decay.asia",
+   "symbol": "GBPMXN",
+   "family": "overnight_gap_decay",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPMXN.overnight_gap_decay.asia",
+    "ad143729857a065992bc"
+   ],
+   "cert_cell": null,
+   "mechanism": "overnight_gap_decay",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 1,
+    "first": "2026-09-16",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPNOK.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'LTCUSD', 'BTCUSD', 'BNBUSD', 'ADAUSD', 'DOGEUSD', 'DOTUSD']",
+   "symbol": "GBPNOK",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "550587195527525bf65f",
+    "GBPNOK.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'LTCUSD', 'BTCUSD', 'BNBUSD', 'ADAUSD', 'DOGEUSD', 'DOTUSD']"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPSEK.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'LTCUSD', 'BTCUSD', 'BNBUSD', 'ADAUSD', 'DOGEUSD', 'DOTUSD']",
+   "symbol": "GBPSEK",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPSEK.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'LTCUSD', 'BTCUSD', 'BNBUSD', 'ADAUSD', 'DOGEUSD', 'DOTUSD']",
+    "ec4da398914844197df8"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPSGD.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']",
+   "symbol": "GBPSGD",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPSGD.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']",
+    "b83ede02bf15d69e1e42"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.asia",
+   "symbol": "GBPUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "81e58587622a60fa0a9c",
+    "GBPUSD.asia"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.asia#rr=1.5",
+   "symbol": "GBPUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "21d23abc913323193a0d",
+    "GBPUSD.asia#rr=1.5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.asia#rr=1.5_wait_bars=8",
+   "symbol": "GBPUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.asia#rr=1.5_wait_bars=8",
+    "be85b8f88f91e79a96fe"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.asia#rr=2.5",
+   "symbol": "GBPUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.asia#rr=2.5",
+    "ae452c45701e76b29157"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.asia#rr=2.5_wait_bars=8",
+   "symbol": "GBPUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.asia#rr=2.5_wait_bars=8",
+    "b5fd8c7288f887b6a369"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.asia#wait_bars=8",
+   "symbol": "GBPUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.asia#wait_bars=8",
+    "d092eea8cf5606fecf9b"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+    "da48f3d59a8371da0151"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=23",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "0ba39ab13a8c7823e565",
+    "GBPUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=23"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+    "bbaddbbfc997a286092d"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=23",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "43fea239baf436dde688",
+    "GBPUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=23"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=2_label=cme_fx_close_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.clock_transition.continuous#hold_bars=2_label=cme_fx_close_lead_bars=2_mode=out_of_side=1_stamp_hour=0",
+    "e482efef53a9686f0b2b"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=2_label=comex_settle_lead_bars=2_mode=out_of_side=-1_stamp_hour=21",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "4b7372fe405ce82347ce",
+    "GBPUSD.clock_transition.continuous#hold_bars=2_label=comex_settle_lead_bars=2_mode=out_of_side=-1_stamp_hour=21"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=4_label=broker_rollover_lead_bars=1_mode=into_side=-1_stamp_hour=23",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "0946aff293b168eae00e",
+    "GBPUSD.clock_transition.continuous#hold_bars=4_label=broker_rollover_lead_bars=1_mode=into_side=-1_stamp_hour=23"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=4_label=broker_rollover_lead_bars=2_mode=fade_side=1_stamp_hour=0",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "29978c69d909106397fb",
+    "GBPUSD.clock_transition.continuous#hold_bars=4_label=broker_rollover_lead_bars=2_mode=fade_side=1_stamp_hour=0"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=4_label=cash_equity_close_lead_bars=1_mode=into_side=-1_stamp_hour=23",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "0d459fea3ff8ac9bb922",
+    "GBPUSD.clock_transition.continuous#hold_bars=4_label=cash_equity_close_lead_bars=1_mode=into_side=-1_stamp_hour=23"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=4_label=cash_equity_close_lead_bars=2_mode=fade_side=1_stamp_hour=0",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "90bf8c627f637753c499",
+    "GBPUSD.clock_transition.continuous#hold_bars=4_label=cash_equity_close_lead_bars=2_mode=fade_side=1_stamp_hour=0"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=2_mode=fade_side=1_stamp_hour=0",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "292b77478e3690cd6e2b",
+    "GBPUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=2_mode=fade_side=1_stamp_hour=0"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=2_mode=into_side=1_stamp_hour=1",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "5e875d9858145df03074",
+    "GBPUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=2_mode=into_side=1_stamp_hour=1"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.clock_transition.continuous#hold_bars=4_label=tokyo_open_lead_bars=4_mode=into_side=1_stamp_hour=3",
+   "symbol": "GBPUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "229da22bb159081e788d",
+    "GBPUSD.clock_transition.continuous#hold_bars=4_label=tokyo_open_lead_bars=4_mode=into_side=1_stamp_hour=3"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.correlation_regime.continuous#peer_symbol=3M",
+   "symbol": "GBPUSD",
+   "family": "correlation_regime",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.correlation_regime.continuous#peer_symbol=3M",
+    "fb7e968392d188426e1c"
+   ],
+   "cert_cell": null,
+   "mechanism": "correlation_regime",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.london_am",
+   "symbol": "GBPUSD",
+   "family": "session_window",
+   "selector": "london_am",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.london_am",
+    "efef387cf0658859b4d9"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPUSD.relative_value.continuous#peer_symbol=EURGBP",
+   "symbol": "GBPUSD",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GBPUSD.relative_value.continuous#peer_symbol=EURGBP",
+    "fb8114356bfe6400c0e9"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GBPZAR.carry.continuous#input_symbol=GBPZAR",
+   "symbol": "GBPZAR",
+   "family": "carry",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "1cd7809cc2260dc6c725",
+    "GBPZAR.carry.continuous#input_symbol=GBPZAR"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GER40.correlation_regime.continuous#peer_symbol=ETHUSD",
+   "symbol": "GER40",
+   "family": "correlation_regime",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GER40.correlation_regime.continuous#peer_symbol=ETHUSD",
+    "fd6df38d18b53b744ebb"
+   ],
+   "cert_cell": null,
+   "mechanism": "correlation_regime",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GER40.relative_value.continuous#peer_symbol=3M",
+   "symbol": "GER40",
+   "family": "relative_value",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "GER40.relative_value.continuous#peer_symbol=3M",
+    "f304995d79dd2a8ec25a"
+   ],
+   "cert_cell": null,
+   "mechanism": "relative_value",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:GER40.vol_mean_reversion.continuous",
+   "symbol": "GER40",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "442fe41814e162c93813",
+    "GER40.vol_mean_reversion.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NAS100.asia",
+   "symbol": "NAS100",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "NAS100.asia",
+    "ddb6faf4d81f4917b859"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NAS100.asia#rr=2.5",
+   "symbol": "NAS100",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "67269dad773eac2ac00e",
+    "NAS100.asia#rr=2.5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NAS100.asia#rr=2.5_wait_bars=8",
+   "symbol": "NAS100",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "9ec6673b5b5d9bbbfc48",
+    "NAS100.asia#rr=2.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NAS100.asia#wait_bars=8",
+   "symbol": "NAS100",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "NAS100.asia#wait_bars=8",
+    "b64ee94edf104882c6ac"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NAS100.vol_mean_reversion.continuous",
+   "symbol": "NAS100",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "6463f44d3e624b464916",
+    "NAS100.vol_mean_reversion.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NZDCAD.discovered.asia#band=[0.9, 1.0]_feature=dd_48_horizon=3_side=-1",
+   "symbol": "NZDCAD",
+   "family": "discovered",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "29d63be3bb5f4b31706c",
+    "NZDCAD.discovered.asia#band=[0.9, 1.0]_feature=dd_48_horizon=3_side=-1"
+   ],
+   "cert_cell": null,
+   "mechanism": "discovered",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NZDCHF.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']",
+   "symbol": "NZDCHF",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "NZDCHF.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']",
+    "b3467b5a50cefcb8f05c"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NZDCHF.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'USDZAR', 'EURUSD', 'XAGUSD', 'JPN225', 'XNGUSD', 'WHEAT']",
+   "symbol": "NZDCHF",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "262c0d1605573da2feee",
+    "NZDCHF.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'USDZAR', 'EURUSD', 'XAGUSD', 'JPN225', 'XNGUSD', 'WHEAT']"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NZDUSD.asia",
+   "symbol": "NZDUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "NZDUSD.asia",
+    "f9de990c255737fe67f9"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NZDUSD.asia#rr=1.5",
+   "symbol": "NZDUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "2e8f89405269300cbc63",
+    "NZDUSD.asia#rr=1.5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:NZDUSD.asia#rr=2.5",
+   "symbol": "NZDUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "NZDUSD.asia#rr=2.5",
+    "a55a417422ca69b87768"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:SGDJPY.vol_transition.continuous",
+   "symbol": "SGDJPY",
+   "family": "vol_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "197d683559d70af87f03",
+    "SGDJPY.vol_transition.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:US30.correlation_regime.continuous#peer_symbol=AUS200",
+   "symbol": "US30",
+   "family": "correlation_regime",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "US30.correlation_regime.continuous#peer_symbol=AUS200",
+    "bd0a454646ab022e696a"
+   ],
+   "cert_cell": null,
+   "mechanism": "correlation_regime",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:US30.vol_transition.continuous",
+   "symbol": "US30",
+   "family": "vol_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "US30.vol_transition.continuous",
+    "c5a42c3d647c05155325"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDCAD.asia",
+   "symbol": "USDCAD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "USDCAD.asia",
+    "dfdcd4afebef4211ca9e"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDCAD.asia#rr=1.5",
+   "symbol": "USDCAD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "0d05c45376b5476fbfd5",
+    "USDCAD.asia#rr=1.5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDCAD.asia#rr=2.5",
+   "symbol": "USDCAD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "USDCAD.asia#rr=2.5",
+    "bf6cf2af4dfb327e6fca"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDCAD.correlation_regime.continuous#peer_symbol=3M",
+   "symbol": "USDCAD",
+   "family": "correlation_regime",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "631297f4ead3bdb9cf9c",
+    "USDCAD.correlation_regime.continuous#peer_symbol=3M"
+   ],
+   "cert_cell": null,
+   "mechanism": "correlation_regime",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDDKK.vol_mean_reversion.continuous",
+   "symbol": "USDDKK",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "41116ff99089f4926cda",
+    "USDDKK.vol_mean_reversion.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDHUF.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']",
+   "symbol": "USDHUF",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "1a7544a590018da0ffa9",
+    "USDHUF.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDJPY.asia#rr=1.5_wait_bars=8",
+   "symbol": "USDJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "USDJPY.asia#rr=1.5_wait_bars=8",
+    "d7fb632ecf530fa205f5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDJPY.asia#rr=2.5_wait_bars=8",
+   "symbol": "USDJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "0f7055d6f7a2dbc7450f",
+    "USDJPY.asia#rr=2.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDJPY.asia#wait_bars=8",
+   "symbol": "USDJPY",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "39e9dcb373b78e4eb99f",
+    "USDJPY.asia#wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDJPY.vol_mean_reversion.continuous",
+   "symbol": "USDJPY",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "USDJPY.vol_mean_reversion.continuous",
+    "c8bbb5d499c6ab96b7c6"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDMXN.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']",
+   "symbol": "USDMXN",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "USDMXN.pca_residual.continuous#factor_symbols=['BCHUSD', 'ETHUSD', 'EURHKD', 'AUDCAD', 'AUS200', 'XAGUSD', 'XNGUSD', 'WHEAT']",
+    "b9838d6a34926a3f2a48"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDMXN.pca_residual.continuous#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']",
+   "symbol": "USDMXN",
+   "family": "pca_residual",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "7c638b334e24c986a383",
+    "USDMXN.pca_residual.continuous#factor_symbols=['ETHUSD', 'BTCUSD', 'EURCHF', 'EURJPY', 'GBPUSD', 'USDCAD', 'EURUSD', 'GBPAUD']"
+   ],
+   "cert_cell": null,
+   "mechanism": "pca_residual",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDNOK.correlation_regime.continuous#peer_symbol=NOKJPY",
+   "symbol": "USDNOK",
+   "family": "correlation_regime",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "546ad429d9a22cae6262",
+    "USDNOK.correlation_regime.continuous#peer_symbol=NOKJPY"
+   ],
+   "cert_cell": null,
+   "mechanism": "correlation_regime",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:USDNOK.vol_mean_reversion.continuous",
+   "symbol": "USDNOK",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "USDNOK.vol_mean_reversion.continuous",
+    "a7038160c24f33bb9916"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUAUD.correlation_regime.continuous#peer_symbol=3M",
+   "symbol": "XAUAUD",
+   "family": "correlation_regime",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "9172182d0dfbeec1e79e",
+    "XAUAUD.correlation_regime.continuous#peer_symbol=3M"
+   ],
+   "cert_cell": null,
+   "mechanism": "correlation_regime",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUEUR.correlation_regime.continuous#peer_symbol=3M",
+   "symbol": "XAUEUR",
+   "family": "correlation_regime",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "76f67f47ca3927ace924",
+    "XAUEUR.correlation_regime.continuous#peer_symbol=3M"
+   ],
+   "cert_cell": null,
+   "mechanism": "correlation_regime",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.asia",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "XAUUSD.asia",
+    "de21e129da01ee5017ab"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.asia#rr=1.5",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "XAUUSD.asia#rr=1.5",
+    "bbd9b2c6bb3499f92564"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.asia#rr=1.5_wait_bars=8",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "19f599c4153a14a9973c",
+    "XAUUSD.asia#rr=1.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.asia#rr=2.5",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "14375c0e6a4e4d12f0d7",
+    "XAUUSD.asia#rr=2.5"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.asia#rr=2.5_wait_bars=8",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "677971cbdb82dbeb7b6e",
+    "XAUUSD.asia#rr=2.5_wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.asia#wait_bars=8",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "asia",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "2e903728c937a7ed35a7",
+    "XAUUSD.asia#wait_bars=8"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=23",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "4fb9f9bd24ca3a749407",
+    "XAUUSD.clock_transition.continuous#hold_bars=2_label=broker_rollover_lead_bars=2_mode=out_of_side=1_stamp_hour=23"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=23",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "8f1fca8d8f6cb25418e9",
+    "XAUUSD.clock_transition.continuous#hold_bars=2_label=cash_equity_close_lead_bars=2_mode=out_of_side=1_stamp_hour=23"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=1_mode=into_side=1_stamp_hour=1",
+   "symbol": "XAUUSD",
+   "family": "clock_transition",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "51735ad9b7a7cfe9f382",
+    "XAUUSD.clock_transition.continuous#hold_bars=4_label=cme_fx_close_lead_bars=1_mode=into_side=1_stamp_hour=1"
+   ],
+   "cert_cell": null,
+   "mechanism": "clock_transition",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XAUUSD.trend_ma_cross.continuous",
+   "symbol": "XAUUSD",
+   "family": "trend_ma_cross",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "35e57b8ffcbcc815e55d",
+    "XAUUSD.trend_ma_cross.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "trend_ma_cross",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XBRUSD.vol_mean_reversion.continuous",
+   "symbol": "XBRUSD",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "XBRUSD.vol_mean_reversion.continuous",
+    "e78c405051446983c0d6"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "fwd:XTIUSD.vol_mean_reversion.continuous",
+   "symbol": "XTIUSD",
+   "family": "vol_mean_reversion",
+   "selector": "continuous",
+   "stages": [
+    "forward"
+   ],
+   "names": [
+    "5a62abf4f8b95204e60f",
+    "XTIUSD.vol_mean_reversion.continuous"
+   ],
+   "cert_cell": null,
+   "mechanism": "vol_mean_reversion",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "live:CHFNOK.carry.asia#input_symbol=CHFNOK",
+   "symbol": "CHFNOK",
+   "family": "carry",
+   "selector": "asia",
+   "stages": [
+    "live"
+   ],
+   "names": [
+    "CHFNOK.carry.asia#input_symbol=CHFNOK"
+   ],
+   "cert_cell": null,
+   "mechanism": "carry",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "live:audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte",
+   "symbol": "AUDNZD",
+   "family": "dav_range_filter_adx",
+   "selector": "afternoon",
+   "stages": [
+    "live"
+   ],
+   "names": [
+    "audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte"
+   ],
+   "cert_cell": "hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+   "mechanism": "dav_range_filter_adx",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "live:gold_afternoon_v2",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "afternoon",
+   "stages": [
+    "live"
+   ],
+   "names": [
+    "gold_afternoon_v2"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 4,
+    "first": "2026-09-07",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "live:gold_afternoon_v3",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "afternoon",
+   "stages": [
+    "live"
+   ],
+   "names": [
+    "gold_afternoon_v3"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 4,
+    "first": "2026-09-07",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "live:gold_afternoon_v4",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "afternoon",
+   "stages": [
+    "live"
+   ],
+   "names": [
+    "gold_afternoon_v4"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 4,
+    "first": "2026-09-07",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "live:gold_london_am_v2",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "london_am",
+   "stages": [
+    "live"
+   ],
+   "names": [
+    "gold_london_am_v2"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 3,
+    "first": "2026-09-07",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "live:gold_london_am_v3",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "london_am",
+   "stages": [
+    "live"
+   ],
+   "names": [
+    "gold_london_am_v3"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 3,
+    "first": "2026-09-07",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "live:gold_london_am_v4",
+   "symbol": "XAUUSD",
+   "family": "session_window",
+   "selector": "london_am",
+   "stages": [
+    "live"
+   ],
+   "names": [
+    "gold_london_am_v4"
+   ],
+   "cert_cell": null,
+   "mechanism": "session_window",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "live",
+    "days": 3,
+    "first": "2026-09-07",
+    "last": "2026-09-16"
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  },
+  {
+   "id": "live:xau_m5_anti_breakout_overlap",
+   "symbol": "XAUUSD",
+   "family": "anti_donchian_breakout",
+   "selector": "overlap",
+   "stages": [
+    "live"
+   ],
+   "names": [
+    "xau_m5_anti_breakout_overlap"
+   ],
+   "cert_cell": null,
+   "mechanism": "anti_donchian_breakout",
+   "culture": "UNMEASURED",
+   "culture_source": "UNMEASURED",
+   "culture_how": "no provenance names a culture",
+   "cultures_seen": [],
+   "participant_structure": "UNMEASURED",
+   "failure_mode_hypothesis": null,
+   "crowding_prior": "UNMEASURED",
+   "returns": {
+    "source": "none",
+    "days": 0,
+    "first": null,
+    "last": null
+   },
+   "pair_verdicts": {
+    "DIVERGE": 0,
+    "SAME_EDGE": 0,
+    "UNMEASURED": 0
+   }
+  }
+ ],
+ "consumers": {
+  "k_eff": "research/docket_keff.py score(): culture block, merge groups count once",
+  "allocator": "research/pf_allocator.py apply_culture_labels(): merge group = one family and one mechanism for the cap and the structured correlation; an all-DIVERGE survivor gets <family>@<culture>; heat-neutral",
+  "cro": "docs/cro/CRO_CYCLE.md STEP 4B duty D9"
+ }
+}

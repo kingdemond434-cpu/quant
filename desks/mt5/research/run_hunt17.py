@@ -22,7 +22,9 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
+from libs.tiers import data_os  # noqa: E402
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, Signal, run_backtest  # noqa: E402
 
@@ -215,6 +217,21 @@ def fam_d1_inside(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
 _ANC: pd.DataFrame | None = None
 
 
+#: the declared source of the anchors pickle (`data_os.PUBLICATION_LAGS`): a daily market print
+#: is knowable one day plus the broker offset after the day it describes
+ANCHORS_SOURCE = "cross_asset_anchors"
+
+
+def _known_on(z: pd.Series, index: pd.DatetimeIndex) -> pd.Series:
+    """KNOWN-BY-DATE (2026-09-30): a daily anchor z-score, re-indexed on its knowledge time
+    (`data_os.known_series`) and carried causally onto `index`. The old read looked each bar up
+    by its own calendar date -- `z.get(bar.date())` -- so a 03:00 bar read that day's close,
+    ~a day before the print existed."""
+    k = data_os.known_series(z.dropna().sort_index(), ANCHORS_SOURCE)
+    k = k[~k.index.duplicated(keep="last")]
+    return k.reindex(k.index.union(index)).ffill().reindex(index)
+
+
 def _anchors_df() -> pd.DataFrame:
     global _ANC
     if _ANC is None:
@@ -245,13 +262,14 @@ def fam_macro_gold_yield(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
     z = (t10 - roll.mean()) / roll.std()
     if z.index.tz is not None:
         z = z.tz_localize(None)
+    zk = _known_on(z, h4.index)
     sm = _sma(h4["close"], n)
     a = _atr(h4, ATR_N)
     cl = h4["close"].to_numpy(float)
     smv = sm.to_numpy(float)
     out = []
     for i in range(2, len(h4)):
-        zv = z.get(pd.Timestamp(h4.index[i].date()), float("nan"))
+        zv = float(zk.iloc[i])
         if zv != zv:
             continue
         if side > 0 and zv <= yield_z and cl[i] > smv[i] \
@@ -286,13 +304,14 @@ def fam_gold_dxy_shock(h4: pd.DataFrame, d1: pd.DataFrame, side: int,
     z = (dx - roll.mean()) / roll.std()
     if z.index.tz is not None:
         z = z.tz_localize(None)
+    zk = _known_on(z, h4.index)
     sm = _sma(h4["close"], n)
     a = _atr(h4, ATR_N)
     cl = h4["close"].to_numpy(float)
     smv = sm.to_numpy(float)
     out = []
     for i in range(2, len(h4)):
-        zv = z.get(pd.Timestamp(h4.index[i].date()), float("nan"))
+        zv = float(zk.iloc[i])
         if zv != zv:
             continue
         if side > 0 and zv <= -dxy_z and cl[i] > smv[i] \

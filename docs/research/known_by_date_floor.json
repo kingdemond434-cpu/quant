@@ -1,9 +1,4 @@
 {
  "_": "KNOWN-BY-DATE FLOOR: research readers that joined an external dataset by valid date without a declared lag when the fence was built. Only SHRINKS: a module that routes through data_os / the bitemporal store drops out; a new offender fails scripts/check_known_by_date.py and is never added here.",
- "offenders": [
-  "desks/mt5/research/edge_search.py",
-  "desks/mt5/research/exposure_decomposition.py",
-  "desks/mt5/research/free_shadows.py",
-  "desks/mt5/research/run_hunt17.py"
- ]
+ "offenders": []
 }
