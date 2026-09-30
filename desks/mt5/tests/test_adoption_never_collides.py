@@ -112,6 +112,7 @@ def test_the_discovery_corpus_is_left_to_the_organ_that_ships_it() -> None:
     verify = src.index('$allDiff = @(Get-NonShippedDiff')
     assert verify > loop
     assert "function Get-ShippedDiffCount" in src and '"--shortstat"' in src
+    assert '"--no-renames"' in src
 
 
 def test_the_skip_names_the_organ_that_actually_delivers_those_paths() -> None:

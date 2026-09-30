@@ -728,7 +728,10 @@ function Get-ShippedDiffCount {
     # `--shortstat` preserves the exact audit count without shipping tens of thousands of path
     # strings through the PowerShell pipeline.  The detailed corpus remains visible to the organ
     # that owns and lands it (MT5-IntelShip).
-    $args = @("diff", "--shortstat", $From, $To, "--") + $ShippedPathspecs
+    # Rename similarity is irrelevant to this telemetry count and forces Git to compare blobs
+    # across the entire discovery lake.  On the live box that left adoption inside one count
+    # for minutes.  Count adds/deletes/modifications directly; IntelShip owns path genealogy.
+    $args = @("diff", "--shortstat", "--no-renames", $From, $To, "--") + $ShippedPathspecs
     $summary = "$(Invoke-Git $args -AllowFail)"
     if ($LASTEXITCODE -ne 0 -or $summary -notmatch '(\d+) files? changed') { return 0 }
     return [int]$Matches[1]
