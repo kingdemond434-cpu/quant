@@ -415,9 +415,9 @@ def coverage(pass_doc: dict[str, Any]) -> dict[str, Any]:
 
 def valuation_state() -> dict[str, Any]:
     """The allocation-state artifact: every regime `mt5desk.valuation_regime` defines, measured
-    on weekday 22:00 UTC stamps over the store -- its level now, percentile in its own history,
-    the state a conditioned cell reads, and the daily level and trailing percentile rank (the
-    shape `libs/portfolio/macro_state` ranks its FRED dimensions in)."""
+    on weekday 22:00 bar stamps (broker clock) over the store -- its level now, percentile in its
+    own history, the state a conditioned cell reads, and the daily level and trailing percentile
+    rank (the shape `libs/portfolio/macro_state` ranks its FRED dimensions in)."""
     from mt5desk import valuation_regime as vr
     stamps = vr.daily_stamps(days=int(STATE_HISTORY_D * 1.5) + 400)
     regimes = vr.state_now(stamps)

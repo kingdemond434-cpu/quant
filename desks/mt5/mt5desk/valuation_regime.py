@@ -209,7 +209,10 @@ def state_now(stamps: np.ndarray) -> dict[str, Any]:
 
 
 def daily_stamps(days: int = 900, hour: int = 22) -> np.ndarray:
-    """Weekday stamps at `hour` UTC over the last `days` calendar days, for the state report."""
+    """Weekday BAR stamps at broker `hour` (the cells' `decision_hour`) over the last `days`
+    calendar days, for the state report. They carry a UTC label like every bar stamp and are
+    read on the broker clock: `fundamentals_pit.asof` converts them before the availability
+    comparison, and the bar store's closes are keyed on the same clock."""
     end = pd.Timestamp.now(tz="UTC").normalize()
     dates = pd.bdate_range(end - pd.Timedelta(days=days), end, tz="UTC")
     return (dates + pd.Timedelta(hours=hour)).as_unit("ns").asi8.astype("int64")

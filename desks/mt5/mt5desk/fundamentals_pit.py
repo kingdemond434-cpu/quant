@@ -49,6 +49,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from libs.regime import session_clock
+
 BASE = Path(__file__).resolve().parent.parent
 #: The lake file the refresh leg writes and every family reads. Module-level for tests.
 PIT_PATH = BASE / "data" / "lake" / "fundamentals" / "sec_pit.parquet"
@@ -310,14 +312,35 @@ def covered_symbols() -> list[str]:
     return sorted(_panel_by_symbol())
 
 
+def bar_stamps_to_utc_ns(stamps_ns: np.ndarray) -> np.ndarray:
+    """BAR stamps (the broker's EET/EEST wall clock under a UTC label) -> true UTC nanoseconds.
+
+    THE TWO CLOCKS MEET HERE. `available` is a TRUE UTC instant (an SEC acceptance time), while
+    every stamp a family hands this module is a bar stamp from the store, two hours ahead of UTC
+    in winter and three in summer. Compared raw, a 10-Q accepted after the US close (16:05 ET
+    = 20:05 UTC in summer) read as "known" at the 22:00 bar -- which is 19:00 UTC, an hour
+    BEFORE the filing existed: an earnings reaction read with lookahead. The conversion is
+    `libs.regime.session_clock.server_to_utc`, the desk's one broker-clock helper (PR #134).
+    """
+    arr = np.asarray(stamps_ns, dtype="int64")
+    if arr.size == 0:
+        return arr
+    flat = arr.reshape(-1)
+    got = session_clock.server_to_utc(pd.DatetimeIndex(flat, tz="UTC"))
+    return np.asarray(got.as_unit("ns").asi8, dtype="int64").reshape(arr.shape)
+
+
 def asof(symbol: str, stamps_ns: np.ndarray, field: str) -> np.ndarray:
-    """`field` for `symbol` as known at each stamp (NaN before the first availability)."""
+    """`field` for `symbol` as known at each BAR stamp (NaN before the first availability).
+
+    `stamps_ns` are bar stamps on the broker clock; they are converted to true UTC before they
+    are compared with the true-UTC `available` column (`bar_stamps_to_utc_ns`)."""
     got = _panel_by_symbol().get(str(symbol).upper())
     out = np.full(np.asarray(stamps_ns).shape, np.nan, dtype="float64")
     if got is None or field not in got[1]:
         return out
     t, vals = got[0], got[1][field]
-    j = np.searchsorted(t, np.asarray(stamps_ns, dtype="int64"), side="right") - 1
+    j = np.searchsorted(t, bar_stamps_to_utc_ns(stamps_ns), side="right") - 1
     ok = j >= 0
     out[ok] = vals[j[ok]]
     return out
@@ -328,8 +351,9 @@ def fresh(symbol: str, stamps_ns: np.ndarray, max_age_d: float) -> np.ndarray:
     days of it. A company that stopped filing is ABSENT from the cross-section, never ranked on
     a year-old number carried forward."""
     pe = asof(symbol, stamps_ns, "period_end_ns")
+    utc = bar_stamps_to_utc_ns(stamps_ns).astype("float64")
     with np.errstate(invalid="ignore"):
-        return np.isfinite(pe) & ((np.asarray(stamps_ns, dtype="float64") - pe)
+        return np.isfinite(pe) & ((utc - pe)
                                   <= float(max_age_d) * 86_400e9)
 
 
