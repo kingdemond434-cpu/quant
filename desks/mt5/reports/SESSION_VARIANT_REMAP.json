@@ -3,18 +3,20 @@
   "adx_channel_hybrid": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 192,
+   "live": 111,
+   "unmeasured": 81,
    "variants": 192
   },
   "asia_momentum": {
-   "dead": 302,
-   "dead_share_of_measured": 0.658,
-   "dead_share_of_variants": 0.658,
-   "live": 150,
+   "dead": 263,
+   "dead_share_of_measured": 0.6542,
+   "dead_share_of_variants": 0.573,
+   "live": 132,
    "live_filter_only": 5,
-   "rehomed": 262,
-   "remapped": 262,
+   "rehomed": 223,
+   "remapped": 223,
    "session_tz_mismatch": 2,
+   "unmeasured": 57,
    "variants": 459
   },
   "calendar_month": {
@@ -30,22 +32,22 @@
    "variants": 90
   },
   "clock_transition": {
-   "dead": 26,
-   "dead_share_of_measured": 0.8667,
-   "dead_share_of_variants": 0.619,
-   "live_filter_only": 4,
-   "reanchored": 26,
-   "remapped": 26,
-   "unmeasured": 12,
+   "dead": 15,
+   "dead_share_of_measured": 1.0,
+   "dead_share_of_variants": 0.3571,
+   "reanchored": 15,
+   "remapped": 15,
+   "unmeasured": 27,
    "variants": 42
   },
   "comex_settlement": {
-   "dead": 47,
-   "dead_share_of_measured": 0.7966,
-   "dead_share_of_variants": 0.7966,
-   "live": 12,
-   "reanchored": 47,
-   "remapped": 47,
+   "dead": 15,
+   "dead_share_of_measured": 0.6818,
+   "dead_share_of_variants": 0.2542,
+   "live": 7,
+   "reanchored": 15,
+   "remapped": 15,
+   "unmeasured": 37,
    "variants": 59
   },
   "correlation_regime": {
@@ -79,25 +81,27 @@
    "variants": 1593
   },
   "dow_effect": {
-   "dead": 12,
+   "dead": 4,
    "dead_share_of_measured": 0.6667,
-   "dead_share_of_variants": 0.6667,
-   "live_filter_only": 6,
-   "rehomed": 12,
-   "remapped": 12,
+   "dead_share_of_variants": 0.2222,
+   "live_filter_only": 2,
+   "rehomed": 4,
+   "remapped": 4,
+   "unmeasured": 12,
    "variants": 18
   },
   "drawdown_conditional": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 24,
-   "unmeasured": 285,
+   "live": 27,
+   "unmeasured": 282,
    "variants": 309
   },
   "engulfing_reversal": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 243,
+   "live": 96,
+   "unmeasured": 147,
    "variants": 243
   },
   "event_reaction": {
@@ -115,18 +119,20 @@
   "failed_breakout": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 41,
-   "session_tz_mismatch": 16,
+   "live": 35,
+   "session_tz_mismatch": 13,
+   "unmeasured": 9,
    "variants": 57
   },
   "forced_flow": {
-   "dead": 62,
+   "dead": 2,
    "dead_share_of_measured": 0.3333,
-   "dead_share_of_variants": 0.3333,
-   "live": 66,
-   "live_filter_only": 58,
-   "rehomed": 49,
-   "remapped": 49,
+   "dead_share_of_variants": 0.0108,
+   "live": 2,
+   "live_filter_only": 2,
+   "rehomed": 2,
+   "remapped": 2,
+   "unmeasured": 180,
    "variants": 186
   },
   "formula": {
@@ -136,33 +142,37 @@
    "variants": 705
   },
   "fx_fixing_reversal": {
-   "dead": 26,
+   "dead": 20,
    "dead_share_of_measured": 0.6667,
-   "dead_share_of_variants": 0.6667,
-   "live": 13,
-   "reanchored": 26,
-   "remapped": 26,
+   "dead_share_of_variants": 0.5128,
+   "live": 10,
+   "reanchored": 20,
+   "remapped": 20,
+   "unmeasured": 9,
    "variants": 39
   },
   "hedging_demand_close": {
-   "dead": 24,
+   "dead": 14,
    "dead_share_of_measured": 0.6667,
-   "dead_share_of_variants": 0.6667,
-   "rehomed": 24,
-   "remapped": 24,
-   "session_tz_mismatch": 12,
+   "dead_share_of_variants": 0.3889,
+   "rehomed": 14,
+   "remapped": 14,
+   "session_tz_mismatch": 7,
+   "unmeasured": 15,
    "variants": 36
   },
   "ict_fvg": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 180,
+   "live": 84,
+   "unmeasured": 96,
    "variants": 180
   },
   "jump": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 717,
+   "live": 477,
+   "unmeasured": 240,
    "variants": 717
   },
   "lead_lag": {
@@ -172,24 +182,24 @@
    "variants": 642
   },
   "level_breakout": {
-   "dead": 8,
-   "dead_share_of_measured": 0.381,
-   "dead_share_of_variants": 0.381,
-   "live": 13,
-   "reanchored": 8,
-   "remapped": 8,
+   "dead": 4,
+   "dead_share_of_measured": 0.6667,
+   "dead_share_of_variants": 0.1905,
+   "live": 2,
+   "reanchored": 4,
+   "remapped": 4,
+   "unmeasured": 15,
    "variants": 21
   },
   "liquidity_gamma_reversal": {
-   "dead": 74,
-   "dead_share_of_measured": 0.048,
-   "dead_share_of_variants": 0.0433,
-   "live": 700,
-   "live_filter_only": 384,
-   "rehomed": 58,
-   "remapped": 58,
-   "session_tz_mismatch": 384,
-   "unmeasured": 168,
+   "dead": 35,
+   "dead_share_of_measured": 0.3333,
+   "dead_share_of_variants": 0.0205,
+   "live": 52,
+   "live_filter_only": 18,
+   "rehomed": 27,
+   "remapped": 27,
+   "unmeasured": 1605,
    "variants": 1710
   },
   "liquidity_regime": {
@@ -199,13 +209,14 @@
    "variants": 486
   },
   "london_close_momentum": {
-   "dead": 44,
-   "dead_share_of_measured": 0.4074,
-   "dead_share_of_variants": 0.4074,
-   "live": 32,
-   "rehomed": 44,
-   "remapped": 44,
-   "session_tz_mismatch": 32,
+   "dead": 23,
+   "dead_share_of_measured": 0.3333,
+   "dead_share_of_variants": 0.213,
+   "live": 23,
+   "rehomed": 23,
+   "remapped": 23,
+   "session_tz_mismatch": 23,
+   "unmeasured": 39,
    "variants": 108
   },
   "macro_conditional": {
@@ -217,46 +228,49 @@
   "mean_reversion_bollinger": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 195,
+   "live": 114,
+   "unmeasured": 81,
    "variants": 195
   },
   "mean_reversion_rsi": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 222,
+   "live": 99,
+   "unmeasured": 123,
    "variants": 222
   },
   "momentum_volgate": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 339,
+   "live": 240,
+   "unmeasured": 99,
    "variants": 339
   },
   "monday_gap": {
-   "dead_share_of_measured": 0.0,
+   "dead_share_of_measured": "UNMEASURED",
    "dead_share_of_variants": 0.0,
-   "live_filter_only": 6,
-   "unmeasured": 6,
+   "unmeasured": 12,
    "variants": 12
   },
   "multi_speed_trend": {
-   "dead": 144,
+   "dead": 38,
    "dead_share_of_measured": 0.6667,
-   "dead_share_of_variants": 0.5714,
+   "dead_share_of_variants": 0.1508,
    "live": 2,
-   "live_filter_only": 70,
-   "rehomed": 130,
-   "remapped": 130,
-   "unmeasured": 36,
+   "live_filter_only": 17,
+   "rehomed": 32,
+   "remapped": 32,
+   "unmeasured": 195,
    "variants": 252
   },
   "opening_range": {
-   "dead": 10,
-   "dead_share_of_measured": 0.3704,
-   "dead_share_of_variants": 0.3704,
-   "live": 17,
-   "reanchored": 10,
-   "remapped": 10,
+   "dead": 8,
+   "dead_share_of_measured": 0.381,
+   "dead_share_of_variants": 0.2963,
+   "live": 13,
+   "reanchored": 8,
+   "remapped": 8,
+   "unmeasured": 6,
    "variants": 27
   },
   "orderflow_imbalance": {
@@ -266,26 +280,24 @@
    "variants": 417
   },
   "overnight_drift": {
-   "dead": 45,
-   "dead_share_of_measured": 0.625,
-   "dead_share_of_variants": 0.5769,
-   "live_filter_only": 25,
-   "reanchored": 40,
-   "rehomed": 5,
-   "remapped": 45,
-   "session_tz_mismatch": 2,
-   "unmeasured": 6,
+   "dead": 8,
+   "dead_share_of_measured": 0.6667,
+   "dead_share_of_variants": 0.1026,
+   "live_filter_only": 4,
+   "reanchored": 8,
+   "remapped": 8,
+   "unmeasured": 66,
    "variants": 78
   },
   "overnight_gap_decay": {
-   "dead": 60,
-   "dead_share_of_measured": 0.5172,
-   "dead_share_of_variants": 0.5172,
-   "live": 12,
-   "live_filter_only": 30,
-   "protected_by_evidence": 14,
-   "rehomed": 60,
-   "remapped": 60,
+   "dead": 44,
+   "dead_share_of_measured": 0.6567,
+   "dead_share_of_variants": 0.3793,
+   "live": 5,
+   "live_filter_only": 18,
+   "rehomed": 44,
+   "remapped": 44,
+   "unmeasured": 49,
    "variants": 116
   },
   "pca_residual": {
@@ -295,23 +307,29 @@
    "variants": 1230
   },
   "pin_bar_reversal": {
-   "dead_share_of_measured": 0.0,
-   "dead_share_of_variants": 0.0,
-   "live": 249,
-   "unmeasured": 21,
+   "dead": 6,
+   "dead_share_of_measured": 0.15,
+   "dead_share_of_variants": 0.0222,
+   "live": 33,
+   "live_filter_only": 1,
+   "rehomed": 6,
+   "remapped": 6,
+   "unmeasured": 230,
    "variants": 270
   },
   "pullback_entry": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 267,
+   "live": 177,
+   "unmeasured": 90,
    "variants": 267
   },
   "range_reversion": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 654,
-   "unmeasured": 12,
+   "live": 203,
+   "session_tz_mismatch": 1,
+   "unmeasured": 462,
    "variants": 666
   },
   "regime_transition": {
@@ -327,49 +345,55 @@
    "variants": 1464
   },
   "retail_overlap_reversal": {
-   "dead": 15,
+   "dead": 13,
    "dead_share_of_measured": 0.3333,
-   "dead_share_of_variants": 0.3333,
-   "live": 30,
-   "reanchored": 15,
-   "remapped": 15,
+   "dead_share_of_variants": 0.2889,
+   "live": 26,
+   "reanchored": 13,
+   "remapped": 13,
+   "unmeasured": 6,
    "variants": 45
   },
   "session_range_breakout": {
-   "dead": 58,
-   "dead_share_of_measured": 0.4496,
-   "dead_share_of_variants": 0.4496,
-   "live": 55,
+   "dead": 36,
+   "dead_share_of_measured": 0.4615,
+   "dead_share_of_variants": 0.2791,
+   "live": 26,
    "protected_by_evidence": 16,
-   "reanchored": 48,
+   "reanchored": 26,
    "rehomed": 10,
-   "remapped": 58,
+   "remapped": 36,
+   "unmeasured": 51,
    "variants": 129
   },
   "spread_state": {
-   "dead": 2,
-   "dead_share_of_measured": 0.0039,
-   "dead_share_of_variants": 0.0039,
-   "live": 507,
-   "live_filter_only": 1,
-   "rehomed": 2,
-   "remapped": 2,
+   "dead": 26,
+   "dead_share_of_measured": 0.0912,
+   "dead_share_of_variants": 0.051,
+   "live": 241,
+   "live_filter_only": 17,
+   "rehomed": 20,
+   "remapped": 20,
+   "session_tz_mismatch": 1,
+   "unmeasured": 225,
    "variants": 510
   },
   "style_premia": {
-   "dead": 1127,
-   "dead_share_of_measured": 0.9415,
-   "dead_share_of_variants": 0.886,
-   "live_filter_only": 70,
-   "rehomed": 668,
-   "remapped": 668,
-   "unmeasured": 75,
+   "dead": 277,
+   "dead_share_of_measured": 0.8964,
+   "dead_share_of_variants": 0.2178,
+   "live": 11,
+   "live_filter_only": 21,
+   "rehomed": 181,
+   "remapped": 181,
+   "unmeasured": 963,
    "variants": 1272
   },
   "trend_ma_cross": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 762,
+   "live": 555,
+   "unmeasured": 207,
    "variants": 762
   },
   "triangle": {
@@ -381,7 +405,8 @@
   "turn_of_month": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 30,
+   "live": 27,
+   "unmeasured": 3,
    "variants": 30
   },
   "usd_session_shock": {
@@ -393,25 +418,29 @@
   "vol_mean_reversion": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 609,
+   "live": 426,
+   "unmeasured": 183,
    "variants": 609
   },
   "vol_transition": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 309,
+   "live": 201,
+   "unmeasured": 108,
    "variants": 309
   },
   "volatility_squeeze": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 732,
+   "live": 483,
+   "unmeasured": 249,
    "variants": 732
   },
   "volume_spike": {
    "dead_share_of_measured": 0.0,
    "dead_share_of_variants": 0.0,
-   "live": 123,
+   "live": 24,
+   "unmeasured": 99,
    "variants": 123
   }
  },
@@ -422,14 +451,14 @@
  ],
  "dead_but_server_window_fires": 0,
  "dead_by_cause": {
-  "NEVER_FIRES_IN_SESSION": 2086
+  "NEVER_FIRES_IN_SESSION": 851
  },
- "dead_found": 2086,
+ "dead_found": 851,
  "dead_rule": "DEAD only when NEITHER clock holds a signal (never on today's server-hour filter, never in the market's own session); filter-only is LIVE_FILTER_ONLY, market-only is SESSION_TZ_MISMATCH",
- "dead_share": 0.096,
- "dead_share_of_measured": 0.1946,
- "dead_today_on_server_window": 2534,
- "dead_without_standin": 542,
+ "dead_share": 0.0392,
+ "dead_share_of_measured": 0.1708,
+ "dead_today_on_server_window": 898,
+ "dead_without_standin": 156,
  "docket": {
   "path": "data/hypotheses/external_survivors.json",
   "rows": 57538,
@@ -439,21 +468,20 @@
  "donation": {
   "available": true,
   "dry_run": true,
-  "planned": 1544
+  "planned": 695
  },
- "elapsed_s": 178.56,
- "generated_at": "2026-09-30T16:16:57+00:00",
+ "elapsed_s": 141.35,
+ "generated_at": "2026-09-30T20:02:59+00:00",
  "guard": {
   "certified_cells": 52,
   "certified_or_positive_dead": 0,
   "certified_or_positive_dead_sample": [],
   "evidence_variants_by_verdict": {
-   "LIVE": 9,
-   "LIVE_FILTER_ONLY": 7,
-   "PROTECTED_BY_EVIDENCE": 30,
-   "UNMEASURED": 15
+   "LIVE": 8,
+   "PROTECTED_BY_EVIDENCE": 16,
+   "UNMEASURED": 37
   },
-  "live_filter_only_or_protected": 689,
+  "live_filter_only_or_protected": 121,
   "net_positive_cells": 80,
   "passed_cells": 0,
   "session_variants_with_evidence": 61,
@@ -469,25 +497,29 @@
   }
  },
  "law": "NOTHING REMOVED: a dead variant stays in the docket and is only marked; UNMEASURED is never DEAD; every stand-in is a new cell charged to the census",
- "live": 7497,
- "live_filter_only": 659,
+ "live": 3964,
+ "live_filter_only": 105,
  "oracle": {
-  "elapsed_s": 157.66,
-  "keys": 434,
-  "measured_now": 434,
-  "unmeasured_keys": 182
+  "elapsed_s": 126.39,
+  "keys": 2584,
+  "measured_now": 2584,
+  "unmeasured_keys": 1908
  },
- "oracle_clock_hash": "09c62e1ff12198d4",
- "oracle_version": "4+clock:09c62e1ff12198d4",
- "protected_by_evidence": 30,
- "remapped": 1544,
+ "oracle_clock_hash": "3d7cfcb6a47504cd",
+ "oracle_version": "5+clock:3d7cfcb6a47504cd",
+ "protected_by_evidence": 16,
+ "remapped": 695,
  "remapped_by_kind": {
-  "reanchored": 220,
-  "rehomed": 1324
+  "reanchored": 109,
+  "rehomed": 586
  },
  "sealed_need": "/mnt/project-files/patches/session_variants/: the sealed sort in external_gauntlet.main cannot read DEAD_SESSION_VARIANTS.jsonl; the patch there sorts a dead variant last (never drops it). The two-stage judge (claude/two-stage-judge) should read the sidecar in stage 0 and spend no build on a listed genome_id.",
- "session_tz_mismatch": 448,
+ "session_tz_mismatch": 47,
+ "session_tz_mismatch_in_sidecar": 0,
  "session_variants": 21721,
  "sidecar": "data/hypotheses/DEAD_SESSION_VARIANTS.jsonl",
- "unmeasured": 11001
+ "sidecar_verdicts": [
+  "DEAD"
+ ],
+ "unmeasured": 16738
 }
