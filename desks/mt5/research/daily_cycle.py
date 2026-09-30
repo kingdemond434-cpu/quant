@@ -220,6 +220,52 @@ def _refresh_bars() -> None:
         raise RuntimeError(f"refresh_tail returned {rc}")
 
 
+def _deepen_bars() -> None:
+    """Widen every cached series back toward what the venue serves, PREPEND ONLY.
+
+    `research/deepen_universe.py` was recovered from the trading box with no clock, so the depth
+    of every parquet stayed frozen at whatever its first producer asked for. Its own cursor and
+    `--recheck-hours 20` make a daily pass the natural cadence; it stands down inside a placement
+    window by itself. Off the box `MetaTrader5` is absent and that is recorded, not raised.
+    """
+    try:
+        import deepen_universe
+    except ModuleNotFoundError:
+        dlog("deepen_bars: research/deepen_universe.py not present on this tree")
+        return
+    try:
+        rc = deepen_universe.main(["--budget-s", "1500"])
+    except ModuleNotFoundError as exc:
+        dlog(f"deepen_bars: no terminal on this box ({exc.name}); UNMEASURED")
+        return
+    dlog(f"deepen_bars: rc={rc}")
+
+
+def _capacity_watch() -> None:
+    """Two read-only readings a restart window needs, taken daily so neither goes stale.
+
+    `scripts/restart_for_capacity.py` with no flag only measures its preconditions and the
+    terminal's MaxBars into reports/CAPACITY_RESTART.json -- it never stops or restarts anything
+    without `--stage`, which no clock passes. `scripts/check_after_reboot.py --verify` names any
+    process or task that did not come back since the healthy baseline, into
+    reports/REBOOT_VERIFY.json; rc 1 is that finding and rc 2 is "no baseline", both recorded.
+    """
+    import subprocess
+    for script, args in (("scripts/restart_for_capacity.py", []),
+                         ("scripts/check_after_reboot.py", ["--verify"])):
+        path = BASE / script
+        if not path.exists():
+            dlog(f"capacity_watch: {script} not present on this tree")
+            continue
+        try:
+            r = subprocess.run([sys.executable, str(path), *args], cwd=str(BASE),
+                               capture_output=True, text=True, timeout=600, check=False)
+            dlog(f"capacity_watch: {script} rc={r.returncode} "
+                 f"{(r.stdout or r.stderr).strip().splitlines()[-1:] or ''}")
+        except (OSError, subprocess.SubprocessError) as exc:
+            dlog(f"capacity_watch: {script} failed to run ({type(exc).__name__}: {exc})")
+
+
 def _cost_fields() -> None:
     """Fill `tick_value` for any registry symbol that lacks one, from the live terminal.
 
@@ -592,7 +638,8 @@ def _zentech() -> None:
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
 STEPS = (("research_gap_map", _research_gap_map),
-         ("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
+         ("refresh_bars", _refresh_bars), ("deepen_bars", _deepen_bars),
+         ("cost_fields", _cost_fields),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
          ("world_miners", _world_miners), ("proposers", _proposers),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
@@ -607,7 +654,7 @@ STEPS = (("research_gap_map", _research_gap_map),
          ("module_rent", _module_rent), ("zentech", _zentech), ("conservation", _conservation),
          ("wiring_ceo", _wiring_ceo), ("probation", _probation),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
-         ("simplifier", _simplifier),
+         ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:
