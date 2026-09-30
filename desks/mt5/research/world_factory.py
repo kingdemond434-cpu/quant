@@ -227,12 +227,14 @@ def fetch_runs(since: datetime, path: Path | None = None) -> dict[str, dict[str,
 
 # ------------------------------------------------------------------------------------ the yields
 def seat_yield(seats: Iterable[str], since: datetime,
-               roots: tuple[Path, ...] = INTEL_ROOTS) -> dict[str, Any]:
+               roots: tuple[Path, ...] | None = None) -> dict[str, Any]:
     """Discovery files a seat wrote inside the window, their rows, and what the contract donated.
 
     `donated` is the proposer contract's own `counts.donated` (research/proposer_common.donate);
     a miner that writes bare rows has no such counter, and its donated count is UNMEASURED rather
     than assumed equal to its rows."""
+    roots = INTEL_ROOTS if roots is None else roots
+    seats = list(seats)
     files = rows = donated = 0
     donated_seen = False
     unparsed = 0
