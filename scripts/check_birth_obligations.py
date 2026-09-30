@@ -473,7 +473,7 @@ AXES: tuple[Axis, ...] = (
     Axis("certificate_birth", "a row in desks/mt5/data/certificate_provenance.json naming the "
                               "producer that earned it by EXACT cell identity, or UNMEASURED "
                               "with its reason -- silence is the defect, not the admission",
-         _certificate_birth, None,
+         _certificate_birth, ("check_producer_yield.py", ()),
          "desks/mt5/data/certificate_provenance.json"),
 )
 

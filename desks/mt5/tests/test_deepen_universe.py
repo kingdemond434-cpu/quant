@@ -149,6 +149,9 @@ def test_deepen_prepends_and_never_rewrites_a_bar_it_found(_store: Path) -> None
     held = held.astype({"tick_volume": "uint64", "spread": "int32", "real_volume": "uint64"})
     path = _store / "EURUSD_M30.parquet"
     held.to_parquet(path)
+    # What is ON DISK is the reference: parquet has no second-resolution timestamp, so a frame
+    # built at `datetime64[s]` reads back at `[ms]` on current pandas/pyarrow.
+    held = pd.read_parquet(path)
 
     res = deepen_one(mt5, "EURUSD", "M30", dry_run=False)
     assert res["status"] == "DEEPENED", res
