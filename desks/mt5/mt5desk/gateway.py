@@ -39,9 +39,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import MetaTrader5 as mt5
+import MetaTrader5 as _mt5_venue
 import pandas as pd
 from mt5desk import account_profile as _acct
+from mt5desk import order_door as _door
 from mt5desk import decision_core as _core
 from mt5desk import position_manager as _pm
 from mt5desk import provenance as _prov
@@ -109,6 +110,14 @@ PAUSED = BASE / "data" / "GATEWAY_PAUSED"
 
 TERMINAL = terminal_path()
 MAGIC = 341953
+
+#: ONE DOOR FOR MONEY (2026-09-30). Every `mt5.order_send` in this module -- the bracket, the
+#: family and scalp entries, every close, cancel, CLOSE_BY and stop move -- goes through
+#: `order_door.send`: broker `order_check` first, the answer validated (retcode, volume, price),
+#: one ledger row per attempt, an in-doubt send never repeated blind, and an exception logged
+#: and propagated, never swallowed. Bound here, once, so no call site can bypass it by
+#: accident; `log` is late-bound so the door writes to this gateway's own log.
+mt5 = _door.guard(_mt5_venue, caller="gateway", log=lambda m: log(m))
 
 #: The longest order comment THIS terminal accepts. MEASURED, not documented.
 #:
@@ -1140,6 +1149,23 @@ def _record_intent(**row) -> str | None:
     except Exception as exc:
         log(f"intent record failed (non-fatal): {type(exc).__name__}: {exc}")
         return None
+
+
+def _recent_intents(limit: int = 5000) -> list[dict]:
+    """The last `limit` placement intents (for the restart reconcile's stop lookup). Never
+    raises: an unreadable ledger is an empty one, and the reconcile then names the stopless
+    position instead of restoring it."""
+    try:
+        lines = INTENTS.read_text("utf-8").splitlines()[-limit:]
+    except OSError:
+        return []
+    out: list[dict] = []
+    for ln in lines:
+        with contextlib.suppress(ValueError):
+            row = json.loads(ln)
+            if isinstance(row, dict):
+                out.append(row)
+    return out
 
 
 def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
@@ -3948,6 +3974,19 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+
+    # RESTART HOLDING A POSITION (2026-09-30). Every pass is a fresh process, so every pass is a
+    # restart: before management and before anything new is placed, the venue's own book under
+    # MAGIC is read, the order door's in-doubt sends are settled against it (so a send that
+    # timed out last pass and landed is never sent twice), and a position holding with no stop
+    # gets its placement stop back. Never raises; an unreadable venue is recorded UNMEASURED.
+    try:
+        st["restart_reconcile"] = _door.restart_reconcile(
+            mt5, magic=MAGIC, armed=bool(st.get("armed")), intents=_recent_intents(),
+            log=log)
+    except Exception as exc:
+        log(f"RESTART RECONCILE FAILED ({type(exc).__name__}: {exc}); the lanes' own venue "
+            f"checks still stand")
 
     # MANAGE WHAT IS ALREADY OPEN BEFORE CONSIDERING ANYTHING NEW, and run it on EVERY pass --
     # before the regime filter, before the equity floor, before heat. Those gates decide whether
