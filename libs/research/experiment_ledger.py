@@ -77,6 +77,19 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
+def _claim_selection_counts() -> tuple[int, dict[str, int]]:
+    """A SOURCE'S OWN SEARCH IS A TRIAL TOO (libs.research.claim_selection, 2026-09-30). A claim
+    reported as the best of N searched variations spent N trials before the desk saw it; the
+    lifetime ledger `claim_families.json` holds N per claim family and each is charged here
+    exactly once -- never once per cell the desk later swept the claim into."""
+    try:
+        from libs.research.claim_selection import lifetime_charges
+        by_fam = lifetime_charges()
+    except Exception:
+        return 0, {}
+    return sum(by_fam.values()), by_fam
+
+
 def _prereg_counts() -> int:
     try:
         from libs.research.preregistration import cards
@@ -88,15 +101,18 @@ def _prereg_counts() -> int:
 def lifetime(write: bool = True) -> dict[str, Any]:
     g_total, g_fam = _graph_counts()
     p_total, p_fam = _proposer_counts()
+    s_total, s_fam = _claim_selection_counts()
     prereg = _prereg_counts()
-    fams = sorted(set(g_fam) | set(p_fam))
-    by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0)) for f in fams}
+    fams = sorted(set(g_fam) | set(p_fam) | set(s_fam))
+    by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0) + s_fam.get(f, 0)) for f in fams}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(),
-           "lifetime_trials": int(g_total + p_total),
-           "judged_cells": g_total, "screened_cells": p_total, "preregistered_cards": prereg,
+           "lifetime_trials": int(g_total + p_total + s_total),
+           "judged_cells": g_total, "screened_cells": p_total,
+           "source_selection_trials": s_total, "preregistered_cards": prereg,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
-                    "tests_run); consumers may only deflate MORE with it, never less")}
+                    "tests_run) + each claim family's stated source selection, once; "
+                    "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1), "utf-8")
