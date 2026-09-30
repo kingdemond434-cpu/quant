@@ -1190,6 +1190,35 @@ def watch(rows: list[dict[str, Any]], get: HttpGet | None, deadline: float) -> d
     return st
 
 
+#: Atlas pages probed per pass. A row researched from the web is checked on the box, where the
+#: hosts are reachable; the probe is the closure on its URL, not a one-off claim.
+URL_PROBES_PER_PASS = 40
+URL_STATE_NAME = "url_checks.json"
+
+
+def verify_urls(rows: list[dict[str, Any]], get: HttpGet | None, deadline: float
+                ) -> dict[str, Any]:
+    """Probe the page of every row that has no fetch recipe, stalest first, and record what came
+    back. Two failures running mark it BROKEN, which puts it back in the search queue as a
+    `fix the URL` ask; a 2xx marks it VERIFIED. Without a transport nothing is claimed."""
+    path = STATE_DIR / URL_STATE_NAME
+    st = _read_json(path, {})
+    todo = sorted((r for r in rows if r.get("url") and not (r.get("fetch") or {}).get("kind")),
+                  key=lambda r: str((st.get(r["id"]) or {}).get("at") or ""))
+    for r in todo[:URL_PROBES_PER_PASS]:
+        if get is None or time.monotonic() > deadline:
+            break
+        code, _body, err = get(str(r["url"]))
+        prev = st.get(r["id"]) or {}
+        ok = _ok(code, err)
+        fails = 0 if ok else int(prev.get("fails") or 0) + 1
+        st[r["id"]] = {"at": now_utc().isoformat(timespec="seconds"), "http": code,
+                       "error": err[:120], "fails": fails,
+                       "status": "VERIFIED" if ok else ("BROKEN" if fails >= 2 else "RETRY")}
+    _write_json(path, st)
+    return st
+
+
 # =========================================================================== coverage
 def _fresh(ts: Any, now: datetime) -> bool:
     try:
@@ -1246,7 +1275,11 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
     fs = fetch_state or {}
     ws = watch_state or {}
     em = emitted_sources or {}
-    rul = dict(rulings if rulings is not None else _read_json(RULINGS, {}))
+    doc = dict(rulings if rulings is not None else _read_json(RULINGS, {}))
+    # {"cells": {"j|class": ruling}, "roles": {"j|role": ruling}}; a flat {"j|class": ...} map
+    # (the first shape) is read as cells.
+    rul = dict(doc.get("cells") or {}) if "cells" in doc or "roles" in doc else doc
+    role_rul = dict(doc.get("roles") or {})
     rank = {s: i for i, s in enumerate(("ACTIVE", "TESTED_NO_INFORMATION",
                                         "DISCOVERED_NOT_INGESTED", "PAID_PUBLIC_PROXY",
                                         "BLOCKED_SUBSTITUTE", "WATCH", "NOT_PUBLISHED",
@@ -1295,7 +1328,7 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
         if j == "global" or j not in onto.JURISDICTION_CODES:
             continue          # region packs owe classes, not a national institution set
         for role, ids in rr.items():
-            if not ids:
+            if not ids and not role_rul.get(f"{j}|{role}"):
                 queue.append({"jurisdiction": j, "role": role,
                               "ask": f"name {j}'s {role.replace('_', ' ')} and its public "
                                      "datasets, or rule that it publishes none"})
@@ -1307,7 +1340,11 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
             1 for v, ids in views.items()
             if any(status_of.get(i) in ("ACTIVE", "DISCOVERED_NOT_INGESTED") for i in ids))
     return {"grid": grid, "status_counts": counts, "roles": roles,
-            "role_gaps": {j: sorted(k for k, v in rr.items() if not v) for j, rr in roles.items()},
+            "role_gaps": {j: sorted(k for k, v in rr.items()
+                                    if not v and not role_rul.get(f"{j}|{k}"))
+                          for j, rr in roles.items()},
+            "role_rulings": {k: (v.get("status") if isinstance(v, Mapping) else str(v))
+                             for k, v in role_rul.items()},
             "row_status": status_of, "search_queue": queue, "triangulation": tri,
             "n_cells": sum(len(v) for v in grid.values())}
 
@@ -1399,12 +1436,17 @@ def run(budget_s: float = 300.0, *, offline: bool = False, dry_run: bool = False
     rows = load_roster()
     transport = get if get is not None else (None if offline else polite_get(deadline))
     fs = fetch_all(rows, get=transport, deadline=t0 + budget_s * 0.45)
-    ws = watch(rows, transport, deadline=t0 + budget_s * 0.55)
+    ws = watch(rows, transport, deadline=t0 + budget_s * 0.50)
+    urls = verify_urls(rows, transport, deadline=t0 + budget_s * 0.58)
     states = build_states()
     plans = planned_cells(states, rows)
     cells = emit_cells(plans, deadline=deadline, dry_run=dry_run)
     emitted_sources = dict(cells["sources_credited"])
     cov = coverage(rows, fetch_state=fs, watch_state=ws, emitted_sources=emitted_sources)
+    broken = sorted(k for k, v in urls.items() if isinstance(v, Mapping)
+                    and v.get("status") == "BROKEN")
+    cov["search_queue"].extend({"source_id": k, "ask": "the atlas page no longer answers: find "
+                                "the dataset's current URL, else rule the row"} for k in broken)
     ages = state_ages(states or load_states())
     fetched = {k: v for k, v in fs.items() if isinstance(v, Mapping)}
     # THE DATASET RULE (principal 2026-09-30 15:33Z): a frame on disk with no cell is UNFED.
@@ -1422,6 +1464,13 @@ def run(budget_s: float = 300.0, *, offline: bool = False, dry_run: bool = False
                          for j, cells_ in cov["grid"].items()},
         "role_gaps": cov["role_gaps"],
         "search_queue_n": len(cov["search_queue"]),
+        "url_checks": {"counts": _count_by([v for v in urls.values() if isinstance(v, Mapping)],
+                                           "status"),
+                       "unchecked": sum(1 for r in rows if r.get("url")
+                                        and not (r.get("fetch") or {}).get("kind")
+                                        and r["id"] not in urls),
+                       "broken": broken},
+        "role_rulings_n": len(cov["role_rulings"]),
         "search_queue_by_class": _count_by(cov["search_queue"], "source_class"),
         "search_queue_by_role": _count_by(cov["search_queue"], "role"),
         "search_queue_head": cov["search_queue"][:40],

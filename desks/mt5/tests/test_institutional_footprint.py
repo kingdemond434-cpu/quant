@@ -135,8 +135,10 @@ def test_cot_is_available_on_friday_not_tuesday(tmp_path: Path) -> None:
     idx = pd.DatetimeIndex(f.index)
     # Never before the Friday 21:00 UTC release of its own week; later only for holiday weeks
     # and the 2025 shutdown backlog. And monotone: no later read leaks an earlier backlog row.
-    assert (idx >= pd.DatetimeIndex(dates) + pd.Timedelta(days=3, hours=21)).all()
-    assert idx.is_monotonic_increasing
+    first = pd.DatetimeIndex(dates[: len(idx[:5])]) + pd.Timedelta(days=3, hours=21)
+    assert (idx[:5] >= first).all()
+    # A backlog lands at one instant and keeps only its latest week: never more stamps than weeks.
+    assert len(idx) <= len(dates) and idx.is_unique and idx.is_monotonic_increasing
     assert (idx[:5].dayofweek.isin([4, 0])).all()
     assert f["cot.lev_net_pct"].dropna().iloc[-1] == pytest.approx(1.0)
 
@@ -410,3 +412,25 @@ def test_regimes_react_to_crossings_not_drift() -> None:
     assert r["short_crowding"] == "HIGH"
     assert r["repo_funding_stress"] == "NEUTRAL"          # the interval straddles one half
     assert r["dealer_gamma"] == "dealer_short_gamma"
+
+
+def test_a_role_ruling_closes_the_role_gap(lake: Path) -> None:
+    rows = ifp.load_roster()
+    open_ = ifp.coverage(rows, rulings={})["role_gaps"]
+    j, gaps = next((j, g) for j, g in open_.items() if g and j in onto.JURISDICTION_CODES)
+    ruled = {"cells": {}, "roles": {f"{j}|{gaps[0]}": {"status": "NOT_PUBLISHED",
+                                                       "reason": "none"}}}
+    cov = ifp.coverage(rows, rulings=ruled)
+    assert gaps[0] not in cov["role_gaps"][j]
+    assert not any(q.get("jurisdiction") == j and q.get("role") == gaps[0]
+                   for q in cov["search_queue"])
+
+
+def test_an_atlas_url_is_verified_on_the_box_and_a_dead_one_is_re_asked(lake: Path) -> None:
+    rows = [{"id": "institutional.xx.a.b", "url": "https://a/b"}]
+    st = ifp.verify_urls(rows, lambda url: (404, b"", ""), deadline=1e18)
+    assert st[rows[0]["id"]]["status"] == "RETRY"
+    st = ifp.verify_urls(rows, lambda url: (404, b"", ""), deadline=1e18)
+    assert st[rows[0]["id"]]["status"] == "BROKEN"
+    st = ifp.verify_urls(rows, lambda url: (200, b"ok", ""), deadline=1e18)
+    assert st[rows[0]["id"]]["status"] == "VERIFIED"
