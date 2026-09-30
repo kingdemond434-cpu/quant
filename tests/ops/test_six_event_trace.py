@@ -57,8 +57,12 @@ def test_the_mining_digest_proves_events_one_to_three(tmp_path: Path) -> None:
         "reason": "UNSTABLE_OOS",
     }
     late = dict(chain, cell_id="mc_2", prereg_sealed_at="2026-09-29T04:00:00Z")
-    rej = {"subject_id": "mc_1", "reason": "UNSTABLE_OOS", "stage": "gauntlet",
-           "at": "2026-09-29T03:00:00Z"}
+    rej = {
+        "subject_id": "mc_1",
+        "reason": "UNSTABLE_OOS",
+        "stage": "gauntlet",
+        "at": "2026-09-29T03:00:00Z",
+    }
     digest.write_text(json.dumps({"chains": [chain, late], "rejections_latest": [rej]}))
     doc = _run(tmp_path)
     by = {e["event"][0]: e for e in doc["events"]}
@@ -67,4 +71,4 @@ def test_the_mining_digest_proves_events_one_to_three(tmp_path: Path) -> None:
     assert by["2"]["verdict"] == "PROVEN"
     assert by["2"]["n_instances"] == 1  # a contract sealed after its verdict never counts
     assert by["3"]["verdict"] == "PROVEN"
-    assert by["3"]["n_instances"] == 2
+    assert by["3"]["n_instances"] == 3  # two rejecting chains plus the ledger row
