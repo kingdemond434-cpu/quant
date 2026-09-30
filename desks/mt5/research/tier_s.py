@@ -883,19 +883,120 @@ def organ_test_invention() -> dict[str, Any]:
                  "failed": v.get("failed") or [], "truncated": len(v.get("failed") or []) >= 3}
                 for v in prod.values() if isinstance(v, dict) and not v.get("unmeasured")]
     matrix = test_invention.redundancy_matrix(vectors)
+    # MACHINE RATIFICATION: proposed on one suite, confirmed on another, surviving the sealed
+    # trap suite -> ratified, recorded with its evidence, and RUN on every backtested candidate
+    ratif = _ratify_invented(reg)
     _save_state("candidate_gates", {"gates": list(reg.values())})
     return {**out, "from_production": real, "registry_size": len(reg),
+            "ratification": ratif,
             "real_suite": {**{k: v for k, v in suite.items() if k != "rows"}, **real_suite},
             "redundancy": matrix,
             "metric": {"candidate_gates": len(out["candidate_gates"])
                        + len(real.get("candidate_gates") or [])
                        + len(real_suite.get("candidate_gates") or []),
                        "registry": len(reg),
+                       "ratified_tests": ratif.get("ratified_total"),
+                       "ratified_now": ratif.get("ratified_now"),
                        "production_fooling_cases": len(fooled),
                        "real_suite_labelled": suite["n_labelled"],
                        "certificate_precision": suite["precision"],
                        "redundant_gates": len(matrix.get("subsumed") or [])
                        if matrix.get("status") == "MEASURED" else None}}
+
+
+#: the machine's ratifications of invented tests (append-only, one row per ratified check). NOT
+#: docs/research/tier_s_ratifications.jsonl: that ledger is the principal's ratification of
+#: CONSTITUTION hashes, verified as human-committed, and a machine row there would be refused.
+TEST_RATIFICATIONS_NAME = "test_ratifications.jsonl"
+
+
+def _test_ratifications() -> Path:
+    return STATE / TEST_RATIFICATIONS_NAME
+
+
+def _prejudge_rules_path() -> Path:
+    """desks/mt5/data/tier_s/PREJUDGE_RULES.json (libs/tiers/prejudge_screen.RULES)."""
+    from libs.tiers import prejudge_screen as pj
+    return STATE / pj.RULES.name
+#: sealed-suite checks per pass, and how long a check that failed it waits before a re-check
+MAX_RATIFY_PER_PASS = 3
+RATIFY_RETRY_H = 24
+#: the sealed trap suite ratification is judged on: neither the proposal (31337) nor the
+#: confirmation (424242) suite
+RATIFY_SUITE = meta_benchmark.Suite(per_kind=4, base_seed=5150, n=1200)
+
+
+def _ratify_invented(reg: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Layer 21's automatic path. Every CANDIDATE_GATE in the registry whose feature a
+    candidate's backtest yields is checked against the sealed trap suite; one that survives is
+    RATIFIED BY THE MACHINE (principal: no approvals needed): a row with its evidence is appended
+    to test_ratifications.jsonl and the check is adopted into the pre-judge screen, where
+    run_external_backtest runs it on every candidate it tests. Registry rows carry their
+    disposition (`ratification`) so a refusal is named, never silent."""
+    from libs.tiers import prejudge_screen as pj
+    if authority.suspended("test_invention"):
+        return {"status": "SUSPENDED", "ratified_now": 0, "ratified_total": None}
+    done = {json.dumps(r.get("check")) for r in _jsonl(_test_ratifications())
+            if isinstance(r.get("check"), list)}
+    doc = pj.load_rules(_prejudge_rules_path())
+    sealed: list[Any] | None = None
+    seal: str | None = None
+    ratified: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+    checked = 0
+    restored = 0
+    for key, g in sorted(reg.items()):
+        if key in done:
+            g["ratification"] = "RATIFIED"
+            # a ratified check always runs: a lost rules file is re-filled from the ledger
+            doc, ok = pj.adopt(doc, {"id": pj.rule_id("test_invention", g["check"]),
+                                     "source": "test_invention", "check": list(g["check"]),
+                                     "adopted_at": NOW.isoformat(),
+                                     "ratified_by": test_invention.RATIFIED_BY,
+                                     "evidence": f"see {TEST_RATIFICATIONS_NAME}"})
+            restored += int(ok)
+            continue
+        why = test_invention.ratifiable(g, pj.SCREEN_FEATURES)
+        if why:
+            g["ratification"] = f"NOT_RATIFIABLE: {why}"
+            continue
+        last = replay.parse_t(g.get("sealed_checked_at"))
+        if last and NOW - last < timedelta(hours=RATIFY_RETRY_H):
+            continue
+        if checked >= MAX_RATIFY_PER_PASS:
+            g["ratification"] = "QUEUED"
+            continue
+        checked += 1
+        if sealed is None:
+            sealed = list(RATIFY_SUITE.cases())
+        surv = pj.sealed_survival(_incumbent_validator(), g["check"], sealed)
+        g["sealed_checked_at"] = NOW.isoformat()
+        g["sealed"] = surv
+        if not surv["survives"]:
+            g["ratification"] = "FAILED_SEALED_SUITE"
+            failed.append({"check": g["check"], **surv})
+            continue
+        seal = seal or RATIFY_SUITE.seal()
+        rid = pj.rule_id("test_invention", g["check"])
+        row = test_invention.ratification_row(g, surv, at=NOW.isoformat(), seal=seal, rule=rid)
+        _test_ratifications().parent.mkdir(parents=True, exist_ok=True)
+        with _test_ratifications().open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, default=str) + "\n")
+        doc, _ok = pj.adopt(doc, {"id": rid, "source": "test_invention",
+                                  "check": list(g["check"]), "adopted_at": NOW.isoformat(),
+                                  "ratified_by": test_invention.RATIFIED_BY,
+                                  "evidence": row["evidence"]})
+        g["ratification"] = "RATIFIED"
+        done.add(key)
+        ratified.append(row)
+    if ratified or restored:
+        pj.save_rules(doc, _prejudge_rules_path())
+    return {"status": "MEASURED", "ratified_now": len(ratified), "ratified_total": len(done),
+            "restored_to_screen": restored,
+            "sealed_checked": checked, "failed_sealed": failed, "new": ratified,
+            "ledger": str(_test_ratifications()), "rules_file": str(_prejudge_rules_path()),
+            "not_ratifiable": sum(1 for g in reg.values()
+                                  if str(g.get("ratification", "")).startswith("NOT_"))}
 
 
 def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str, Any]:
@@ -971,6 +1072,72 @@ def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str
             "genuine_power": sum(r["passed"] for r in real) / len(real) if real else None}
 
 
+#: a kind whose defender could not be found is re-attempted after this many generations (hours)
+DEFENDER_RETRY_GENS = 24
+#: defender searches per generation (each costs a few seconds)
+MAX_DEFENDER_ATTEMPTS = 2
+
+
+def _adopt_defenders(res: Mapping[str, Any], real: Mapping[str, Any], gen: int,
+                     sealed: list[Any]) -> dict[str, Any]:
+    """Layer 9's consequence. The kinds that fooled the certifier this generation -- the
+    production ten-gate certifier's leaks first, then the reference validator's blind spots --
+    each get `red_queen.defender_rule`; an ADOPTABLE rule (proposed, confirmed, and its
+    challenger survived the sealed trap suite) is written into the pre-judge screen
+    (libs/tiers/prejudge_screen.RULES), which run_external_backtest applies to every candidate
+    it backtests and merge_hypotheses turns into docket order. Never a sealed file."""
+    from libs.tiers import prejudge_screen as pj
+    if authority.suspended("red_queen"):
+        return {"status": "SUSPENDED", "adopted_now": 0, "adopted_total": None}
+    subt = {str(e["attack"].get("kind")): float(e["attack"].get("subtlety") or 0.5)
+            for e in res.get("elite_attacks") or [] if isinstance(e.get("attack"), dict)}
+    fooled: dict[str, dict[str, Any]] = {}
+    for r in real.get("leaks") or []:
+        fooled.setdefault(str(r.get("kind")), {"certifier": "production_gauntlet"})
+    for k, fit in (res.get("blind_spots") or {}).items():
+        fooled.setdefault(str(k), {"certifier": "reference_validator",
+                                   "attack_success": fit})
+    st = _state("red_queen_defenders")
+    attempts = {str(k): int(v) for k, v in (st.get("attempts") or {}).items()}
+    doc = pj.load_rules(_prejudge_rules_path())
+    have = {str(r.get("kind")) for r in doc.get("rules") or []
+            if isinstance(r, dict) and r.get("source") == "red_queen"}
+    queue = sorted((k for k in fooled if k not in have
+                    and gen - attempts.get(k, -10**9) >= DEFENDER_RETRY_GENS),
+                   key=lambda k: (fooled[k]["certifier"] != "production_gauntlet", k))
+    tried: list[dict[str, Any]] = []
+    added = 0
+    for k in queue[:MAX_DEFENDER_ATTEMPTS]:
+        attempts[k] = gen
+        try:
+            out = red_queen.defender_rule(k, _incumbent_validator(), sealed, seed=gen,
+                                          subtlety=subt.get(k, 0.5))
+        except Exception as exc:
+            tried.append({"kind": k, "status": "ERROR", "why": f"{type(exc).__name__}: {exc}"})
+            continue
+        out = {**out, **fooled[k]}
+        tried.append(out)
+        if out["status"] == "ADOPTABLE":
+            doc, ok = pj.adopt(doc, {
+                "id": pj.rule_id("red_queen", out["check"], k), "source": "red_queen",
+                "kind": k, "check": out["check"], "certifier": fooled[k]["certifier"],
+                "adopted_at": NOW.isoformat(), "generation": gen,
+                "adoption": "the challenger (incumbent validator + this rule) survived the "
+                            "sealed trap suite", "evidence": out})
+            added += int(ok)
+    if added:
+        pj.save_rules(doc, _prejudge_rules_path())
+    _save_state("red_queen_defenders", {"attempts": attempts, "at": NOW.isoformat()})
+    total = sum(1 for r in doc.get("rules") or [] if isinstance(r, dict)
+                and r.get("source") == "red_queen" and r.get("status") == "ADOPTED")
+    return {"status": "MEASURED", "fooled_kinds": fooled, "attempted": tried,
+            "adopted_now": added, "adopted_total": total,
+            "waiting_retry": sorted(k for k in fooled if k not in have and k not in queue),
+            "rules_file": str(_prejudge_rules_path()),
+            "consumer": "side_channels/run_external_backtest.py tags; "
+                        "research/merge_hypotheses.py demotes flagged rows within family"}
+
+
 def organ_red_queen() -> dict[str, Any]:
     st = _state("red_queen")
     attackers = red_queen.from_state(st)
@@ -984,6 +1151,9 @@ def organ_red_queen() -> dict[str, Any]:
     res = red_queen.generation(attackers, _incumbent_validator(), sealed, seed=gen,
                                researchers=profiles or None)
     real = _real_gauntlet_attack([e["attack"] for e in res["elite_attacks"]], gen)
+    # THE FINDING GETS A CONSEQUENCE: a kind that fooled the certifier earns a defender rule in
+    # the research-side pre-judge screen, once its challenger survives the sealed trap suite
+    defenders = _adopt_defenders(res, real, gen, sealed)
     hist = list(st.get("success_history") or [])
     hist.append({"gen": gen, "at": NOW.isoformat(), "attack_success": res["attack_success"],
                  "real_attack_success": real.get("attack_success"),
@@ -1058,6 +1228,7 @@ def organ_red_queen() -> dict[str, Any]:
         arch = {"status": "ERROR", "error": f"{type(exc).__name__}: {exc}"}
     return {"generation": gen, **{k: v for k, v in res.items() if k != "next_attackers"},
             "real_gauntlet": real, "architecture_challengers": arch,
+            "defender_adoption": defenders,
             "attribution": ("MEASURED" if profiles else
                             "UNMEASURED: no researcher_prices.json with judged counts yet; "
                             "attacks charged their trap's own trials and left unattributed"),
@@ -1066,6 +1237,8 @@ def organ_red_queen() -> dict[str, Any]:
                        "attributed_researchers": len(profiles),
                        "real_attack_success": real.get("attack_success"),
                        "real_genuine_power": real.get("genuine_power"),
+                       "defender_rules_adopted": defenders.get("adopted_total"),
+                       "defender_rules_adopted_now": defenders.get("adopted_now"),
                        "scheduler_heldout_lift": (arch.get("scheduler") or {})
                        .get("heldout_lift"),
                        "search_policy_heldout_lift": (arch.get("search_policy") or {})
@@ -2350,8 +2523,13 @@ def organ_market() -> dict[str, Any]:
     # ENFORCED BLINDING: one firewall role per seat (registered for firewall.may), audited
     # statically with its own ratchet; cohort pairs that can read each other are not independent
     blind = _blinding_audit()
+    # AND AT RUNTIME: a seat whose own output carried held-out / lockbox / forward outcomes in
+    # the last day (libs/tiers/blinding.py doors) saw the answer, so its cohort is blind to
+    # nothing and its passes are withheld from the independent count too
+    rt = _runtime_blinding()
+    pairs = [*(blind.get("contaminated_pairs") or ()), *rt["contaminated_pairs"]]
     ind = researcher_market.independent_discoveries(
-        sight, {n: r.cohort for n, r in rs.items()}, blind.get("contaminated_pairs") or ())
+        sight, {n: r.cohort for n, r in rs.items()}, pairs)
     # THE FRONTIER PRICES THE GROUND (layer 36): a producer whose ground the species estimator
     # says still hides many unseen mechanisms is worth more compute than its record alone says.
     # Last hour's FRONTIER report (the organ runs after this one); absent -> factor 1.
@@ -2397,11 +2575,34 @@ def organ_market() -> dict[str, Any]:
     return {**{k: v for k, v in res.items() if k != "allocations"},
             "researchers": dict(sorted(table.items(), key=lambda kv: -kv[1]["births"])[:40]),
             "independent_discoveries": ind, "priced_legs": len(leg_prices), "control_arm": arm,
-            "blinding": blind,
+            "blinding": blind, "runtime_blinding": rt,
             "metric": {"n_researchers": len(rs), "independently_discovered":
                        ind["independently_discovered"], "priced_legs": len(leg_prices),
                        "blinding_violations": blind.get("n_violations"),
+                       "blinding_runtime_violations": rt["violations"],
+                       "blinding_runtime_output_violators": len(rt["output_violators"]),
                        "blinding_breach": blind.get("breach")}}
+
+
+#: the runtime window the market reads: a seat that stops carrying outcomes is re-admitted a day
+#: later, one that keeps doing it stays out
+BLINDING_WINDOW_H = 24
+
+
+def _runtime_blinding() -> dict[str, Any]:
+    """Layer 4 at runtime: the doors' counters (libs/tiers/blinding.RuntimeCounter), summed over
+    the last BLINDING_WINDOW_H hours, and the cohort pairs they contaminate."""
+    from libs.tiers import blinding
+    rows = _jsonl(STATE / "blinding_runtime.jsonl", 50_000)
+    summ = blinding.runtime_summary(rows, NOW - timedelta(hours=BLINDING_WINDOW_H))
+    pairs = blinding.runtime_contaminated(summ["output_violators"],
+                                          lambda s: _epistemology(f"miner:{s}"))
+    return {**summ, "window_h": BLINDING_WINDOW_H,
+            "status": "MEASURED" if rows else "UNMEASURED: no door has written the ledger yet",
+            "contaminated_pairs": sorted(sorted(p) for p in pairs),
+            "doors": ["libs/ops/deepseek_cycle.cold_context (context)",
+                      "research/proposer_common.donate (output)",
+                      "research/miner_candidate_compiler.recent_rows (compiler_read)"]}
 
 
 def _blinding_audit() -> dict[str, Any]:

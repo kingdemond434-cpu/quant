@@ -10,8 +10,19 @@ Thresholds come from the feature's own quantiles on the PROPOSAL suite. Every ca
 to the incumbent validator and scored; the ones that raise the immune score without lowering power
 are then re-scored on a CONFIRMATION suite with different seeds (a check that only works on the
 cases it was fitted to is overfit to the benchmark, the very failure it exists to catch). A check
-that survives both is a CANDIDATE GATE. It becomes constitutional only by principal ratification
-(`libs/tiers/truth_kernel.constitution_status`) -- agents may propose, never enact.
+that survives both is a CANDIDATE GATE.
+
+MACHINE RATIFICATION (principal's standing order: no approvals needed). A candidate gate
+proposed on one suite and confirmed on another is RATIFIED BY THE MACHINE when, added to the
+incumbent validator, it also survives a THIRD, sealed trap suite neither half saw (it rejects at
+least as many traps and accepts every genuine planted edge the incumbent accepts:
+`libs/tiers/prejudge_screen.sealed_survival`) and its feature is one a real candidate's backtest
+yields (`prejudge_screen.SCREEN_FEATURES`). `ratification_row` is the evidence record appended to
+desks/mt5/data/tier_s/test_ratifications.jsonl, and the ratified check is adopted into the
+pre-judge screen, where it runs on every candidate `run_external_backtest` tests before the
+docket reaches the judge. What machine ratification does NOT do is edit the sealed judge: adding
+a gate to `external_gauntlet.py` itself stays the principal's constitutional act
+(`libs/tiers/truth_kernel.constitution_status`, docs/research/tier_s_ratifications.jsonl).
 """
 from __future__ import annotations
 
@@ -56,7 +67,7 @@ def invent(incumbent: mb.ValidatorConfig, proposal: mb.Suite, confirmation: mb.S
 
 def invent_from(incumbent: mb.ValidatorConfig, prop_cases: list[tuple[Case, Truth]],
                 conf_cases: list[tuple[Case, Truth]], *, max_power_loss: float = 0.0,
-                top: int = 3) -> dict[str, Any]:
+                top: int = 3, features: Sequence[str] = FEATURES) -> dict[str, Any]:
     """The same proposal/confirmation discipline over explicit case lists -- e.g. the cases that
     actually FOOLED the production certifier, beside the genuine controls it must keep."""
     if not prop_cases or not conf_cases:
@@ -65,7 +76,7 @@ def invent_from(incumbent: mb.ValidatorConfig, prop_cases: list[tuple[Case, Trut
     base_p = mb.score(mb.reference_validator(incumbent), cases=prop_cases)
     base_c = mb.score(mb.reference_validator(incumbent), cases=conf_cases)
     tried: list[dict[str, Any]] = []
-    for check in propose(prop_cases):
+    for check in propose(prop_cases, features):
         cfg = mb.with_extra(incumbent, check)
         s = mb.score(mb.reference_validator(cfg), cases=prop_cases)
         d_imm = (s["immune_score"] or 0) - (base_p["immune_score"] or 0)
@@ -89,6 +100,50 @@ def invent_from(incumbent: mb.ValidatorConfig, prop_cases: list[tuple[Case, Trut
                          "confirmation": {k: base_c[k] for k in ("immune_score", "power")}},
             "n_tried": len(tried), "n_promising": len(promising), "candidate_gates": confirmed,
             "adoption": "candidate gates become constitutional only by principal ratification"}
+
+
+#: who ratifies, and on what authority
+RATIFIED_BY = "machine:tier_s.test_invention"
+RATIFICATION_BASIS = ("principal standing order: no approvals needed -- a test proposed on one "
+                      "suite, confirmed on another and surviving the sealed trap suite is "
+                      "ratified automatically into the research-side pre-judge screen")
+
+
+def ratifiable(gate: Mapping[str, Any], screen_features: Sequence[str]) -> str | None:
+    """None when the gate may be ratified, else why not."""
+    if gate.get("status") != "CANDIDATE_GATE":
+        return f"status {gate.get('status')!r} is not CANDIDATE_GATE"
+    chk = gate.get("check")
+    if not isinstance(chk, (list, tuple)) or len(chk) != 3:
+        return "malformed check"
+    if str(chk[0]) not in screen_features:
+        return (f"feature {chk[0]!r} is not one a candidate's backtest yields before judging "
+                "(certificate fields exist only after the judge ran)")
+    proposed = gate.get("d_immune", (gate.get("proposal") or {}).get("d_immune"))
+    confirmed = gate.get("confirm_d_immune", (gate.get("confirmation") or {}).get("d_immune"))
+    if not (isinstance(proposed, (int, float)) and proposed > 0
+            and isinstance(confirmed, (int, float)) and confirmed > 0):
+        return "not both proposed and confirmed with a positive immune gain"
+    return None
+
+
+def ratification_row(gate: Mapping[str, Any], sealed: Mapping[str, Any], *, at: str,
+                     seal: str, rule: str) -> dict[str, Any]:
+    """The evidence record: the check, both suites' deltas, the sealed-suite survival and the
+    rule id it runs under in the pre-judge screen."""
+    return {"at": at, "kind": "invented_test", "check": list(gate["check"]),
+            "by": RATIFIED_BY, "basis": RATIFICATION_BASIS,
+            "source": gate.get("source") or "synthetic_suites",
+            "evidence": {"proposal": gate.get("proposal") or {
+                             "d_immune": gate.get("d_immune"), "d_power": gate.get("d_power")},
+                         "confirmation": gate.get("confirmation") or {
+                             "d_immune": gate.get("confirm_d_immune"),
+                             "d_power": gate.get("confirm_d_power")},
+                         "confirmations": gate.get("confirmations"),
+                         "first_seen": gate.get("first_seen"),
+                         "sealed_suite": {**dict(sealed), "seal": seal}},
+            "runs_in": "libs/tiers/prejudge_screen (run_external_backtest -> merge_hypotheses)",
+            "rule_id": rule}
 
 
 # ------------------------------------------------------------------------------------------------
