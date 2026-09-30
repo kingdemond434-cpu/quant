@@ -299,6 +299,7 @@ _CAUSES = (
 #: build-side fixes land and after.
 UNKNOWN_CLASS = {
     "NEVER_FIRES_IN_SESSION": "NEVER_FIRES_IN_SESSION", "MISSING_DRIVER": "MISSING_DRIVER",
+    "SESSION_CLOCK_MISMATCH": "SESSION_CLOCK_MISMATCH",
     "NO_CHART_BARS": "DATA_MISSING", "FACTOR_BASKET_INCOMPLETE": "DATA_MISSING",
     "INPUT_LOAD_FAILED": "DATA_MISSING", "UNTRADEABLE_SYMBOL": "DATA_MISSING",
     "SYMBOL_NOT_IN_REGISTRY": "DATA_MISSING",
@@ -398,9 +399,15 @@ def evaluate_engine(spec: dict[str, Any]) -> dict[str, Any]:
                 # A SESSION VARIANT OF A FAMILY THAT NEVER FIRES IN THAT SESSION (Tier S,
                 # 2026-09-30: 21% of the judge's UNKNOWN verdicts). Named, counted, never
                 # forwarded; the producers' remap (claude/session-variant-fix) removes the cause.
-                return {"verdict": REC.UNBUILDABLE, "cause": NEVER_FIRES_IN_SESSION,
+                # Unless the family DOES fire in that session on the UTC clock and the sealed
+                # filter compared UTC session hours with broker-time bars (UTC+2/+3): that is a
+                # clock defect (desktop pass 2), not a family that never fires, and is named so.
+                cause = session_probe(G, meta, sym, fam, params)
+                return {"verdict": REC.UNBUILDABLE, "cause": cause,
                         "reason": (f"0 signals over full history inside session "
-                                   f"{params.get('session')!r}")}
+                                   f"{params.get('session')!r}" + (
+                                       "; the unfiltered family fires there on the UTC clock"
+                                       if cause == SESSION_CLOCK_MISMATCH else ""))}
             return {"verdict": REC.REJECT, "reason": "R_NO_SIGNALS", "n_days_full": 0}
         last_day = frame.index[-1].normalize()
         ds1 = G._series_trim_partial(G.daily_series(obj["df"], sigs, obj["costs"]), last_day)
@@ -436,6 +443,35 @@ def evaluate_engine(spec: dict[str, Any]) -> dict[str, Any]:
 
 
 NEVER_FIRES_IN_SESSION = "NEVER_FIRES_IN_SESSION"
+
+
+SESSION_CLOCK_MISMATCH = "SESSION_CLOCK_MISMATCH"
+#: The broker's offsets from UTC (winter, summer): bars are stamped in broker time.
+BROKER_UTC_OFFSETS_H = (2, 3)
+
+
+def session_probe(G: Any, meta: dict, sym: str, fam: str, params: dict[str, Any]) -> str:
+    """NEVER_FIRES_IN_SESSION, or SESSION_CLOCK_MISMATCH when the family's UNFILTERED signals do
+    land in the session's window once their broker-time hours are read as UTC (h - 2 or h - 3).
+    Only called for a session cell with zero signals; one extra build, never a verdict change."""
+    try:
+        from mt5desk.family_call import session_window
+        win = session_window(params.get("session"))
+        if win is None:
+            return NEVER_FIRES_IN_SESSION
+        base = {k: v for k, v in params.items() if k != "session"}
+        obj = G.build_cell(sym, fam, base, meta)
+        sigs = list((obj or {}).get("sigs") or [])
+        lo, hi = win
+        for g in sigs:
+            h = getattr(getattr(g, "time", None), "hour", None)
+            if h is None:
+                continue
+            if any(lo <= (int(h) - off) % 24 < hi for off in BROKER_UTC_OFFSETS_H):
+                return SESSION_CLOCK_MISMATCH
+    except Exception:
+        return NEVER_FIRES_IN_SESSION
+    return NEVER_FIRES_IN_SESSION
 
 
 def session_bound(params: dict[str, Any] | None) -> bool:

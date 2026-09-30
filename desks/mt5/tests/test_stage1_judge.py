@@ -134,8 +134,12 @@ def test_a_session_variant_that_never_fires_is_its_own_unbuildable_cause(monkeyp
     frame = pd.DataFrame({"open": [1.0] * 3, "high": [1.0] * 3, "low": [1.0] * 3,
                           "close": [1.0] * 3},
                          index=pd.date_range("2024-01-01", periods=3, freq="h", tz="UTC"))
-    G = types.SimpleNamespace(_bars_for=lambda s, tf: frame,
-                              build_cell=lambda *a, **k: {"sigs": [], "df": frame},
+    unfiltered: list = []
+
+    def _build(sym, fam, params, meta):
+        return {"sigs": [] if "session" in params else list(unfiltered), "df": frame}
+
+    G = types.SimpleNamespace(_bars_for=lambda s, tf: frame, build_cell=_build,
                               LAST_BUILD_FAILURE=None)
     monkeypatch.setitem(S._W, "G", G)
     monkeypatch.setitem(S._W, "meta", {})
@@ -143,6 +147,13 @@ def test_a_session_variant_that_never_fires_is_its_own_unbuildable_cause(monkeyp
             "params": {"session": "london"}}
     r = S.evaluate_engine(spec)
     assert r["verdict"] == REC.UNBUILDABLE and r["cause"] == S.NEVER_FIRES_IN_SESSION
+    # the family fires at broker 18:00 = 15:00/16:00 UTC -- inside london (8-16 UTC) on the UTC
+    # clock, outside it on the broker clock the sealed filter reads: a clock defect, named
+    unfiltered.append(types.SimpleNamespace(time=pd.Timestamp("2024-06-03 18:00")))
+    r = S.evaluate_engine(spec)
+    assert r["cause"] == S.SESSION_CLOCK_MISMATCH
+    assert S.unknown_class(r) == "SESSION_CLOCK_MISMATCH"
+    unfiltered.clear()
     spec["params"] = {}
     assert S.evaluate_engine(spec)["reason"] == "R_NO_SIGNALS"
     assert S.firing_oracle("asia_momentum", {"session": "all"}) is None
