@@ -236,3 +236,136 @@ def test_the_default_sender_is_the_desks_alert_path_anchored_on_the_root(
     assert sp.page_flow(tmp_path, _flow("STALLED"))["sent"]
     assert seen["config"] == tmp_path / "data/secrets/alert_channels.json"
     assert seen["ledger"] == tmp_path / "data/alert_delivery.jsonl"
+
+
+# ------------------------------------------------------------ the independent watcher (gap 1)
+class _Rec:
+    def __init__(self) -> None:
+        self.titles: list[str] = []
+
+    def __call__(self, title: str, body: str) -> dict:
+        self.titles.append(title)
+        return {"armed": 1, "delivered": 1, "results": []}
+
+
+def _meter(root: Path, verdict: str, age_h: float, now: datetime) -> None:
+    p = root / sp.FLOW_REL
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(_flow(verdict)), "utf-8")
+    t = now.timestamp() - age_h * 3600
+    os.utime(p, (t, t))
+
+
+def test_a_dead_publisher_is_paged_by_the_watcher(tmp_path: Path) -> None:
+    """The hourly leg died: its meter says FLOWING but is 3h old. The in-leg pager is dead too."""
+    now = datetime.now(UTC)
+    _meter(tmp_path, "FLOWING", 3.0, now)
+    rec = _Rec()
+    out = sp.watch(tmp_path, now=now, sender=rec)
+    assert out["verdict"] == sp.METER_SILENT and out["page"]["sent"], out
+    assert rec.titles == ["BOX STATE METER SILENT"]
+    assert "origin measured by the watcher" in out["why"]
+    # deduplicated on the next ten-minute pass
+    assert not sp.watch(tmp_path, now=now + timedelta(minutes=10), sender=rec)["page"]["sent"]
+    # the leg comes back: a fresh FLOWING meter pages the recovery once
+    _meter(tmp_path, "FLOWING", 0.1, now + timedelta(hours=1))
+    back = sp.watch(tmp_path, now=now + timedelta(hours=1), sender=rec)
+    assert back["page"]["title"] == "BOX STATE FLOWING again"
+    assert rec.titles == ["BOX STATE METER SILENT", "BOX STATE FLOWING again"]
+
+
+def test_the_watcher_and_the_leg_share_one_dedup_so_a_stall_pages_once(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    rec = _Rec()
+    sp.page_flow(tmp_path, _flow("STALLED"), now=now, sender=rec)       # the hourly leg
+    _meter(tmp_path, "STALLED", 0.2, now)
+    out = sp.watch(tmp_path, now=now + timedelta(minutes=10), sender=rec, measure_origin=False)
+    assert out["verdict"] == "STALLED" and not out["page"]["sent"]
+    assert rec.titles == ["BOX STATE STALLED"]
+    # a fresh stall the leg never paged (it died right after writing) IS paged by the watcher
+    rec2 = _Rec()
+    other = tmp_path / "other"
+    _meter(other, "SOURCE_STALE", 0.5, now)
+    assert sp.watch(other, now=now, sender=rec2, measure_origin=False)["page"]["sent"]
+    assert rec2.titles == ["BOX STATE SOURCE_STALE"]
+
+
+def test_an_absent_meter_pages_only_once_it_has_stayed_absent(tmp_path: Path) -> None:
+    now = datetime.now(UTC)
+    rec = _Rec()
+    first = sp.watch(tmp_path, now=now, sender=rec)
+    assert first["meter_age_h"] is None and not first["page"]["sent"]
+    assert not sp.watch(tmp_path, now=now + timedelta(hours=1), sender=rec)["page"]["sent"]
+    late = sp.watch(tmp_path, now=now + timedelta(hours=2.5), sender=rec)
+    assert late["verdict"] == sp.METER_SILENT and late["page"]["sent"]
+    assert "absent for 2.5h" in late["why"]
+
+
+def test_the_watcher_never_raises(tmp_path: Path, monkeypatch) -> None:
+    def boom(*a, **k):
+        raise RuntimeError("git vanished")
+    monkeypatch.setattr(sp, "measure_flow", boom)
+
+    def bad_sender(title: str, body: str) -> dict:
+        raise OSError("network down")
+    now = datetime.now(UTC)
+    _meter(tmp_path, "FLOWING", 5.0, now)
+    out = sp.watch(tmp_path, now=now, sender=bad_sender)
+    assert out["origin"]["verdict"] == "UNMEASURED"
+    assert out["page"]["delivered"] == 0 and "OSError" in out["page"]["error"]
+
+
+def test_the_cli_prints_one_json_line_last(tmp_path: Path, capsys, monkeypatch) -> None:
+    from libs.ops import alert_channels
+    monkeypatch.setattr(alert_channels, "send_all",
+                        lambda *a, **k: {"armed": 0, "delivered": 0, "results": []})
+    assert sp.main(["--watch", "--root", str(tmp_path)]) == 0
+    last = capsys.readouterr().out.strip().splitlines()[-1]
+    doc = json.loads(last)
+    assert doc["schema"] == "box_state_flow_watch/1" and "alerts_line" in doc
+
+
+def test_stall_watch_runs_the_watcher_on_its_own_clock() -> None:
+    sw = (ROOT / "desks/mt5/scripts/stall_watch.ps1").read_text("utf-8", errors="ignore")
+    assert "-m libs.ops.state_publication --watch" in sw
+    assert "alerts_line" in sw and "alerts_armed" in sw and "state_flow_watch" in sw
+    for forbidden in ("run_deadman_switch", "fusion_deadman"):
+        assert forbidden not in sw
+
+
+# ------------------------------------------------------------------ NOT-ARMED is loud (gap 2)
+def test_not_armed_is_a_loud_line_in_the_published_meter(tmp_path: Path) -> None:
+    doc = sp.publish_flow(tmp_path, doc=_flow("FLOWING"), events_path=tmp_path / "ev.jsonl",
+                          sender=_Rec())
+    assert doc["alerts"] == {"armed": 0, "kinds": [], "line": sp.NOT_ARMED_LINE}
+    written = json.loads((tmp_path / sp.FLOW_REL).read_text("utf-8"))
+    assert written["alerts"]["line"] == "ALERTS NOT ARMED: STALLED pages reach no one"
+    assert sp.watch(tmp_path, measure_origin=False, sender=_Rec())["alerts_line"] == \
+        sp.NOT_ARMED_LINE
+
+
+def test_armed_channels_are_counted_by_kind_only(tmp_path: Path) -> None:
+    cfg = tmp_path / "data/secrets/alert_channels.json"
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(json.dumps({"channels": [{"kind": "ntfy", "topic": "t0p-s3cret"}]}), "utf-8")
+    a = sp.alerts_armed(tmp_path)
+    assert a == {"armed": 1, "kinds": ["ntfy"], "line": None}
+    assert "t0p-s3cret" not in json.dumps(a)
+
+
+def test_the_health_board_names_not_armed(tmp_path: Path, monkeypatch, capsys) -> None:
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "_quant_check_desk_health_na", ROOT / "desks/mt5/scripts/check_desk_health.py")
+    assert spec and spec.loader
+    hb = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(hb)
+    desk = tmp_path / "desk"
+    (desk / "reports").mkdir(parents=True)
+    monkeypatch.setattr(hb, "DESK", desk)
+    (desk / "reports/BOX_STATE_FLOW.json").write_text(json.dumps(
+        {**_flow("FLOWING"), "alerts": {"armed": 0, "kinds": [], "line": sp.NOT_ARMED_LINE}}),
+        "utf-8")
+    hb.check_state_flow()
+    out = capsys.readouterr().out
+    assert "[PROBLEM]" in out and sp.NOT_ARMED_LINE in out

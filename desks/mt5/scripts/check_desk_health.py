@@ -187,6 +187,16 @@ def check_state_flow() -> None:
              f"last sync refusal: {(doc.get('sync_log') or {}).get('last_refusal_line')})")
     else:
         _unknown(line)
+    # A PAGE TO NO ONE IS THE SAME SILENCE: whether any alert channel is armed rides the meter.
+    alerts = doc.get("alerts") if isinstance(doc.get("alerts"), dict) else None
+    if alerts is None:
+        _unknown("alert arming not recorded in BOX_STATE_FLOW.json -- whether a STALLED page "
+                 "reaches anyone is UNMEASURED")
+    elif alerts.get("line"):
+        _bad(f"{alerts['line']} (configure data/secrets/alert_channels.json on this box)")
+    else:
+        kinds = ", ".join(alerts.get("kinds") or [])
+        _ok(f"alerts armed: {alerts.get('armed')} channel(s) ({kinds})")
     print()
 
 

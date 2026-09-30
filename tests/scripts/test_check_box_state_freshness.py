@@ -108,3 +108,27 @@ def test_it_is_a_state_fence_on_the_box_clock_never_a_push_gate() -> None:
     assert "check_box_state_freshness.py" in {n for n, _ in gate._STATE_FENCES}
     assert "check_box_state_freshness.py" not in {n for n, _ in gate._LAW_FENCES}, (
         "a red freshness fence in --laws-only would refuse the very push that heals it")
+
+
+@needs_git
+def test_d17_metric_and_the_not_armed_line_reach_the_fence(tmp_path: Path) -> None:
+    """CRO D17 reads `box_state_age_hours`; NOT-ARMED rides the published meter to this fence."""
+    now = datetime.now(UTC)
+    repo = _repo(tmp_path, now - timedelta(hours=1), now)
+    script = repo / "desks/mt5/scripts/sync_shadow_to_git.ps1"
+    script.write_text(_SCRIPT.replace(
+        '"desks/mt5/data/live_ledger.jsonl"',
+        '"desks/mt5/data/live_ledger.jsonl",\n    "desks/mt5/reports/BOX_STATE_FLOW.json"'),
+        "utf-8")
+    flow = repo / "desks/mt5/reports/BOX_STATE_FLOW.json"
+    flow.write_text(json.dumps({"verdict": "FLOWING", "alerts": {
+        "armed": 0, "kinds": [], "line": "ALERTS NOT ARMED: STALLED pages reach no one"}}),
+        "utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "meter")
+    doc = fence.measure(repo, ref="HEAD")
+    assert doc["verdict"] == "FRESH", doc
+    assert doc["box_state_age_hours"] == doc["age_h"]
+    assert fence.alerts_line(doc) == "ALERTS NOT ARMED: STALLED pages reach no one"
+    assert fence.alerts_line({"alerts": {"armed": 1, "line": None}}) is None
+    assert fence.alerts_line({}) is None

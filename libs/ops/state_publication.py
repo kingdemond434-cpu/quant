@@ -200,6 +200,10 @@ def measure_flow(root: Path = ROOT, *, now: datetime | None = None,
 #: `libs.ops.alert_channels.send_all` (the armed channels in data/secrets/alert_channels.json,
 #: every attempt in data/alert_delivery.jsonl) -- a different route that needs no git.
 ALERT_VERDICTS = ("STALLED", "SOURCE_STALE")
+#: The watcher's own verdict: the meter itself stopped (see `watch`). Paged exactly like the two
+#: above, through the same dedup file, so the hourly leg and the watcher never page one stall twice.
+METER_SILENT = "METER_SILENT"
+PAGED_VERDICTS = (*ALERT_VERDICTS, METER_SILENT)
 #: Box-local dedup state (desks/mt5/logs/ is gitignored): one page per verdict change, and a
 #: reminder every REPAGE_H hours while the verdict stands.
 ALERT_STATE_REL = "desks/mt5/logs/state_flow_alert.json"
@@ -239,15 +243,16 @@ def page_flow(root: Path, doc: dict[str, Any], *, now: datetime | None = None,
     last = None
     with contextlib.suppress(TypeError, ValueError):
         last = datetime.fromisoformat(str(prev.get("paged_at")))
-    if verdict in ALERT_VERDICTS:
+    if verdict in PAGED_VERDICTS:
         if prev_verdict != verdict:
             reason = "verdict changed"
         elif last is None or (now - last).total_seconds() / 3600 >= repage_h:
             reason = f"still {verdict} after {repage_h:g}h"
         else:
             return {"sent": False, "reason": f"deduplicated: {verdict} paged at {last.isoformat()}"}
-        title = f"BOX STATE {verdict}"
-    elif verdict == "FLOWING" and prev_verdict in ALERT_VERDICTS:
+        title = ("BOX STATE METER SILENT" if verdict == METER_SILENT
+                 else f"BOX STATE {verdict}")
+    elif verdict == "FLOWING" and prev_verdict in PAGED_VERDICTS:
         reason, title = f"recovered from {prev_verdict}", "BOX STATE FLOWING again"
     else:
         return {"sent": False, "reason": f"{verdict}: nothing to page"}
@@ -277,6 +282,24 @@ def page_flow(root: Path, doc: dict[str, Any], *, now: datetime | None = None,
     return out
 
 
+#: THE LOUD LINE (2026-09-30). With no channel configured `send_all` records NOT-ARMED in two
+#: gitignored box files and nowhere a reader looks, so a STALLED page "succeeds" into the void.
+#: This line rides BOX_STATE_FLOW.json (published to origin, read by the CRO cycle and the
+#: freshness fence), stall_watch.json and check_desk_health.py.
+NOT_ARMED_LINE = "ALERTS NOT ARMED: STALLED pages reach no one"
+
+
+def alerts_armed(root: Path = ROOT) -> dict[str, Any]:
+    """How many alert channels the box has armed, by kind only -- never a credential."""
+    try:
+        from libs.ops import alert_channels
+        chans = alert_channels.load_channels(root / "data/secrets/alert_channels.json")
+    except Exception as exc:
+        return {"armed": None, "kinds": [], "line": f"ALERTS UNMEASURED: {type(exc).__name__}"}
+    kinds = sorted({str(c.get("kind")) for c in chans})
+    return {"armed": len(chans), "kinds": kinds, "line": None if chans else NOT_ARMED_LINE}
+
+
 def publish_flow(root: Path = ROOT, *, doc: dict[str, Any] | None = None,
                  events_path: Path | None = None,
                  sender: Sender | None = None) -> dict[str, Any]:
@@ -292,6 +315,9 @@ def publish_flow(root: Path = ROOT, *, doc: dict[str, Any] | None = None,
         doc["page"] = page_flow(root, doc, sender=sender)
     except Exception as exc:
         doc["page"] = {"sent": False, "error": f"{type(exc).__name__}: {exc}"}
+    doc["alerts"] = alerts_armed(root)
+    if doc["alerts"].get("line"):
+        print(doc["alerts"]["line"], flush=True)
     out = root / FLOW_REL
     try:
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -309,3 +335,114 @@ def publish_flow(root: Path = ROOT, *, doc: dict[str, Any] | None = None,
         except Exception as exc:
             print(f"STATE_FLOW_STALLED event not written: {exc}", flush=True)
     return doc
+
+
+# ------------------------------------------------------------------ the independent watcher
+#: THE PAGER CANNOT DIE WITH ITS HOST (2026-09-30). `publish_flow` pages from inside the hourly
+#: publish_state leg, so a dead leg or a dead hourly cycle pages nobody -- the one failure a meter
+#: most needs to report is the one it cannot. `watch` runs on stall_watch's own ten-minute clock
+#: (MT5-StallWatch runs `python -m libs.ops.state_publication --watch`), reads the meter's age and
+#: verdict, measures origin itself from this clone's refs (no fetch), and pages through the SAME
+#: sender and the SAME dedup file, so the leg and the watcher never page one stall twice.
+#: Two hours is two missed hourly legs: past one slow pass, still the same morning.
+METER_SILENT_H = 2.0
+#: The watcher's own box-local memory (desks/mt5/logs/ is gitignored): when the meter was first
+#: seen absent, so an absent file pages once it has STAYED absent for METER_SILENT_H -- a fresh
+#: install whose first hourly leg has not run yet is not a dead publisher.
+WATCH_STATE_REL = "desks/mt5/logs/state_flow_watch.json"
+
+
+def _read_obj(path: Path) -> dict[str, Any] | None:
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def watch(root: Path = ROOT, *, now: datetime | None = None, sender: Sender | None = None,
+          silent_h: float = METER_SILENT_H, measure_origin: bool = True) -> dict[str, Any]:
+    """Judge the meter from outside the leg that writes it, and page. Never raises.
+
+    Pages (deduplicated with the leg): the meter's own STALLED / SOURCE_STALE verdict, and
+    METER_SILENT when BOX_STATE_FLOW.json is older than `silent_h` or has stayed absent that
+    long. A fresh FLOWING meter after an alert pages the recovery once.
+    """
+    now = now or datetime.now(UTC)
+    out: dict[str, Any] = {"schema": "box_state_flow_watch/1",
+                           "checked_at": now.isoformat(timespec="seconds"), "silent_h": silent_h}
+    memory = _read_obj(root / WATCH_STATE_REL) or {}
+    flow_path = root / FLOW_REL
+    age_h: float | None = None
+    with contextlib.suppress(OSError):
+        age_h = (now.timestamp() - flow_path.stat().st_mtime) / 3600
+    doc = _read_obj(flow_path) if age_h is not None else None
+    out["meter_age_h"] = round(age_h, 2) if age_h is not None else None
+    out["meter_verdict"] = str(doc.get("verdict")) if doc else None
+    first_absent = None
+    if age_h is None:
+        first_absent = memory.get("first_absent_at") or now.isoformat(timespec="seconds")
+    absent_h = 0.0
+    with contextlib.suppress(TypeError, ValueError):
+        absent_h = (now - datetime.fromisoformat(str(first_absent))).total_seconds() / 3600
+    origin: dict[str, Any] = {}
+    if measure_origin:
+        try:
+            origin = measure_flow(root, now=now)
+        except Exception as exc:
+            origin = {"verdict": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+        out["origin"] = {k: origin.get(k) for k in (
+            "verdict", "why", "published_age_h", "local_state_age_h",
+            "local_commits_not_on_origin")}
+    silent_why = None
+    if age_h is None:
+        if absent_h >= silent_h:
+            silent_why = f"{FLOW_REL} has been absent for {absent_h:.1f}h"
+    elif age_h > silent_h:
+        silent_why = (f"{FLOW_REL} is {age_h:.1f}h old (limit {silent_h:g}h): the publish_state "
+                      "leg or the hourly cycle has died, and the in-leg pager with it")
+    if silent_why:
+        page_doc: dict[str, Any] = {
+            "verdict": METER_SILENT,
+            "why": f"{silent_why}; origin measured by the watcher: "
+                   f"{origin.get('verdict', 'not measured')} -- {origin.get('why')}",
+            "measured_at": out["checked_at"]}
+        page_doc.update({k: origin[k] for k in (
+            "published_age_h", "local_state_age_h", "local_commits_not_on_origin", "sync_log")
+            if k in origin})
+    else:
+        page_doc = doc or {"verdict": "UNMEASURED", "why": "meter unreadable"}
+    out["verdict"] = str(page_doc.get("verdict") or "UNMEASURED")
+    out["why"] = page_doc.get("why")
+    try:
+        out["page"] = page_flow(root, page_doc, now=now, sender=sender)
+    except Exception as exc:
+        out["page"] = {"sent": False, "error": f"{type(exc).__name__}: {exc}"}
+    out["alerts"] = alerts_armed(root)
+    out["alerts_line"] = out["alerts"].get("line")
+    try:
+        p = root / WATCH_STATE_REL
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"first_absent_at": first_absent, "last": {
+            k: out.get(k) for k in ("checked_at", "verdict", "meter_age_h", "alerts_line")}},
+            indent=2), "utf-8")
+    except OSError as exc:
+        out["state_write_error"] = f"{type(exc).__name__}: {exc}"
+    return out
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    ap = argparse.ArgumentParser(description="box state flow meter and its independent watcher")
+    ap.add_argument("--watch", action="store_true",
+                    help="judge BOX_STATE_FLOW.json from outside the hourly leg, and page")
+    ap.add_argument("--root", type=Path, default=ROOT)
+    args = ap.parse_args(argv)
+    doc = watch(args.root) if args.watch else publish_flow(args.root)
+    # ONE LINE OF JSON, LAST: stall_watch.ps1 parses the final stdout line.
+    print(json.dumps(doc, default=str, separators=(",", ":")), flush=True)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

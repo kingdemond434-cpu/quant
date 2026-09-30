@@ -50,7 +50,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from libs.ops.state_publication import published_paths  # noqa: E402
+from libs.ops.state_publication import FLOW_REL, published_paths  # noqa: E402
 
 LIVE_BRANCH = "claude/llm-auto-upgrade-verify-gcjac3"
 THRESHOLD_H = 6.0
@@ -122,6 +122,10 @@ def measure(root: Path = ROOT, *, ref: str | None = None, threshold_h: float = T
             continue
         if not isinstance(data, dict):
             continue
+        if rel == FLOW_REL:
+            # NOT-ARMED, carried off the box: the meter records whether any alert channel is
+            # armed, and this fence (CRO D17) is where a reader off the box sees it.
+            doc["alerts"] = data.get("alerts") if isinstance(data.get("alerts"), dict) else None
         best = max((t for t in (_parse(data.get(k)) for k in STAMP_KEYS) if t), default=None)
         if best:
             stamps[rel] = best.isoformat(timespec="seconds")
@@ -138,6 +142,7 @@ def measure(root: Path = ROOT, *, ref: str | None = None, threshold_h: float = T
         return doc
     age_h = (now - freshest).total_seconds() / 3600
     doc["age_h"] = round(age_h, 2)
+    doc["box_state_age_hours"] = doc["age_h"]   # the metric name CRO duty D17 reads
     if age_h > threshold_h:
         doc.update(verdict="STALE",
                    why=(f"the box's newest state on {use} is {age_h:.1f}h old (threshold "
@@ -165,7 +170,21 @@ def main(argv: list[str] | None = None) -> int:
         print(f"box state freshness: artifact not written ({exc})", file=sys.stderr)
     print(json.dumps(doc, indent=2) if args.json else
           f"box state freshness: {doc['verdict']} -- {doc['why']}")
+    line = alerts_line(doc)
+    if line and not args.json:
+        # Loud, never a verdict: arming is a human step, and a fence that failed on it would
+        # wedge nothing and heal nothing. The line is what a reader of this fence must not miss.
+        print(line)
     return 0 if doc["verdict"] == "FRESH" else 1
+
+
+def alerts_line(doc: dict[str, Any]) -> str | None:
+    """The loud NOT-ARMED line from the published meter, or None when armed / not published."""
+    alerts = doc.get("alerts")
+    if not isinstance(alerts, dict):
+        return None
+    line = alerts.get("line")
+    return str(line) if line else None
 
 
 if __name__ == "__main__":
