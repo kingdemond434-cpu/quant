@@ -161,6 +161,12 @@ LEG_LAYER: dict[str, str] = {
     "alpha_rl": "prediction",
     "regime_monitor": "prediction",
     "orthogonality": "portfolio",
+    # THE BASKET JUDGE asks the portfolio question directly: does one family, held as many
+    # near-zero-correlated legs at once, clear a bar no single leg clears? It builds the summed
+    # daily series, measures the realised correlation and the effective independent bets, and
+    # hands it to the sealed gauntlet. That is portfolio construction being tested, not a new
+    # prediction -- the legs' signals were minted elsewhere and are not touched here.
+    "srb_basket_judge": "portfolio",
     "lake_promote": "information",
     "research_exchange_score": "information",
     # The FRED archive and the macro view it feeds are inputs about the world, refreshed hourly

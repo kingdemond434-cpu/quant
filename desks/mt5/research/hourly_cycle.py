@@ -977,7 +977,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
                      "committees",
                      # the judge's ENVIRONMENT, measured before each sweep (recovered patch 08)
-                     "gauntlet_guard"),
+                     "gauntlet_guard",
+                     # session_range_breakout judged as a PORTFOLIO (recovered patch 13)
+                     "srb_basket_judge"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1631,6 +1633,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # frame, one commit-counter read and a cursor-bounded tail of the judge's log: seconds, not
     # minutes. The one slow call is `schtasks /query /xml` (timeout 120 s); the cap sits above.
     "gauntlet_guard": 240,
+    # THE BASKET JUDGE (recovered box patch 13) stops building legs and drawing its sign-flip null
+    # at --budget-s 600, then hands ~20 basket cells to the sealed judge, whose ten gates on
+    # prebuilt series take well under a minute. The cap sits above both; the 720 s default would
+    # leave no margin for a cold cache.
+    "srb_basket_judge": 840,
     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
@@ -5055,6 +5062,16 @@ def main() -> None:
         "--once", "--budget-s", "240"))
     mrd = _costed("meta_rnd", lambda: _producer(
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
+    # THE FAMILY JUDGED AS A BOOK, NOT ONE LEG AT A TIME (recovered box patch 13, 2026-09-24).
+    # SRB_UNCORRELATED_SWEEP passed 0 of 262 session_range_breakout cells and its own closing
+    # line named the test it had not run: near-zero-correlated legs summed into ONE series. This
+    # leg builds those portfolio series under membership rules fixed in the module, charges the
+    # ones that select on in-sample performance with a sign-flip null, charges every basket to
+    # the lifetime trial census (data/srb_basket_trials.jsonl -> experiment_ledger), and feeds
+    # the lot to the SEALED gauntlet as single cells. Report only: no gate ledger, no
+    # certificate, no authority file, no roster.
+    sbk = _costed("srb_basket_judge", lambda: _producer(
+        "srb_basket_judge", "research/srb_basket_judge.py", "--once", "--budget-s", "600"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
     # THE ORGAN CENSUS (2026-09-25). Three external reviews asked one closing question -- does
@@ -5334,6 +5351,7 @@ def main() -> None:
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "gauntlet_guard": ggd,
+                    "srb_basket_judge": sbk,
                     "canon_publication": cpub, "judging_burndown": jbd,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
