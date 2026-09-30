@@ -131,7 +131,50 @@ def inventory(reports: Mapping[str, Mapping[str, Any]]) -> list[dict[str, Any]]:
             add(f"layer.{layer}", 1.0 if verdict == "REJECTED" else None,
                 str(_get(v, "gain") or "PRODUCTIVITY"),
                 f"contract {verdict}: {_get(v, 'why')}", p_fix=0.3)
+    # THE SHADOW DESK (S28's TWIN.json, read back): the code about to land replayed beside the
+    # sealed release. Counted only when the caller passes it, like the formal claim above.
+    if "shadow_desk" in reports:
+        sgap, swhy = shadow_desk_gap(reports.get("shadow_desk"))
+        add("twin.shadow_desk", sgap, "OPERATIONAL_RISK", swhy, p_fix=0.6)
     return out
+
+
+def shadow_desk_gap(doc: Mapping[str, Any] | None) -> tuple[float | None, str]:
+    """The shadow desk's report as a deficiency gap, with its reason.
+
+      1.0   a candidate reached for the live terminal inside the sandbox, or the candidate
+            CODE (what MT5-AdoptRelease lands next) LOST to the sealed release (REJECT)
+      1-a   no candidate code pending: the release replayed against itself should agree with
+            itself on every decision; agreement a < 1 is non-determinism in the desk's code
+      0.0   the candidate code WON (a proposal for the principal) or agreed with itself fully
+      None  unmeasured, stale, or the paired verdict is still undecided (half weight)"""
+    if not isinstance(doc, Mapping) or doc.get("status") != "MEASURED":
+        why = _get(doc, "why") if isinstance(doc, Mapping) else None
+        return None, f"shadow desk UNMEASURED: {why or 'no report'}"
+    runs = [r for r in doc.get("runs") or [] if isinstance(r, Mapping)]
+    touches = sum(len(_get(r, "sandbox", "terminal_touches") or []) for r in runs)
+    if touches:
+        return 1.0, f"{touches} terminal access(es) from inside the shadow-desk sandbox"
+    code = next((r for r in runs if r.get("component") == "code"), None)
+    if code is None or code.get("status") != "MEASURED":
+        return None, "the candidate code was not replayed: " + str(
+            (code or {}).get("why") or "no code run")
+    v = _get(code, "verdict", "verdict")
+    if code.get("same_code"):
+        agree = _get(code, "decision_agreement")
+        if agree is None:
+            return None, "self-consistency replay carries no decision agreement"
+        return (1.0 - float(agree),
+                f"the sealed release replayed against itself agrees on {float(agree):.1%} of "
+                "decisions")
+    if v == "REJECT":
+        return 1.0, (f"candidate code {code.get('name')} LOSES to the sealed release on the "
+                     f"same inputs (mean {_get(code, 'verdict', 'mean_improvement')}R over "
+                     f"{_get(code, 'verdict', 'n')} pairs, t {_get(code, 'verdict', 't')})")
+    if v in ("PROPOSE", "PROMOTE"):
+        return 0.0, f"candidate code {code.get('name')} beats the sealed release (a proposal)"
+    return None, (f"candidate code {code.get('name')} undecided after "
+                  f"{_get(code, 'verdict', 'n') or 0} paired days")
 
 
 #: research-queue statuses that are WAITING for the gate (anything else has been judged/closed)
