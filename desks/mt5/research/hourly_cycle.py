@@ -1794,6 +1794,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "model_search": 720,
     # the organ's own budget is 900 s; the cap sits above it so it stops itself, never cut
     "market_constitution": 1_020,
+    # THE DEEP-FOREST MINER STOPS ITSELF AT --budget-s 900 AND ONLY THEN WROTE ITS LEDGERS. It had
+    # no entry here, so the 720 s default killed it at the same prefix every hour: measured
+    # 2026-09-30, 467 of 502 grounds still NAMED_ONLY and its cursor never advanced. The cap now
+    # sits above its budget, the cap is exported to the child (QUANT_LEG_BUDGET_S) so it
+    # self-stops inside whatever the pricer grants, and it checkpoints per ground regardless.
+    "deep_forest_miner": 1_020,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
     # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
     # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
@@ -1922,9 +1928,13 @@ def _producer_impl(name: str, script: str, args: tuple[str, ...] = ()) -> dict:
                                    f"before it writes, at the same prefix every hour"}
         budget = _floor
     try:
+        # THE CAP IS TOLD TO THE CHILD. An organ that stops itself at its own budget can only stop
+        # INSIDE the cap if it knows the cap; the pricer moves it hourly. Read by
+        # deep_forest_miner (and anything else that wants to self-stop before the kill).
+        _env = {**os.environ, "QUANT_LEG_BUDGET_S": str(int(budget))}
         r = _run_tree([sys.executable, "-u", "-W", "ignore", str(target), *args],
                            capture_output=True, text=True, cwd=str(root),
-                           timeout=budget, check=False)
+                           timeout=budget, check=False, env=_env)
         # STDERR IS KEPT SEPARATELY, and that is not cosmetic. `tail` is `stdout or stderr`, so a
         # leg that printed ANYTHING to stdout before dying lost its traceback entirely -- which is
         # why `coverage_tensor` exiting 1 on 199 of its last 204 passes never told anyone WHY.
@@ -2660,7 +2670,7 @@ def deep_forest() -> dict:
     cursor makes repeat passes cheap when nothing new has landed, so hourly costs little and a
     quiet pass still advances the queue (mandate section 70, never idle).
     """
-    return _producer("deep_forest_miner", "research/deep_forest_miner.py")
+    return _producer("deep_forest_miner", "research/deep_forest_miner.py", "--budget-s", "900")
 
 
 def session_structure() -> dict:
@@ -4265,55 +4275,55 @@ def main() -> None:
     forests_out: dict[str, dict] = {}
     forests_out["forest_korea"] = _costed("forest_korea", lambda: _producer(
         "forest_korea", "research/forest_runner.py", "--forest", "korea", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_china"] = _costed("forest_china", lambda: _producer(
         "forest_china", "research/forest_runner.py", "--forest", "china", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_russia_cis"] = _costed("forest_russia_cis", lambda: _producer(
         "forest_russia_cis", "research/forest_runner.py", "--forest", "russia_cis", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_south_asia"] = _costed("forest_south_asia", lambda: _producer(
         "forest_south_asia", "research/forest_runner.py", "--forest", "south_asia", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_asean"] = _costed("forest_asean", lambda: _producer(
         "forest_asean", "research/forest_runner.py", "--forest", "asean", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_oceania"] = _costed("forest_oceania", lambda: _producer(
         "forest_oceania", "research/forest_runner.py", "--forest", "oceania", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_europe"] = _costed("forest_europe", lambda: _producer(
         "forest_europe", "research/forest_runner.py", "--forest", "europe", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_north_america"] = _costed("forest_north_america", lambda: _producer(
         "forest_north_america", "research/forest_runner.py", "--forest", "north_america",
-        "--once", "--budget-s", "3000"))
+        "--once", "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_latam"] = _costed("forest_latam", lambda: _producer(
         "forest_latam", "research/forest_runner.py", "--forest", "latam", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_mena"] = _costed("forest_mena", lambda: _producer(
         "forest_mena", "research/forest_runner.py", "--forest", "mena", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_africa"] = _costed("forest_africa", lambda: _producer(
         "forest_africa", "research/forest_runner.py", "--forest", "africa", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     # The four GLOBAL-LAYER forests ride the `regions` resident: their ground is a layer of the
     # world rather than a place, and giving each a region resident would have them competing
     # with the twelve for the same sources.
     forests_out["forest_global_web"] = _costed("forest_global_web", lambda: _producer(
         "forest_global_web", "research/forest_runner.py", "--forest", "global_web", "--once",
-        "--budget-s", "3000"))
+        "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_global_academic_code"] = _costed(
         "forest_global_academic_code", lambda: _producer(
             "forest_global_academic_code", "research/forest_runner.py", "--forest",
-            "global_academic_code", "--once", "--budget-s", "3000"))
+            "global_academic_code", "--once", "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_global_physical_data"] = _costed(
         "forest_global_physical_data", lambda: _producer(
             "forest_global_physical_data", "research/forest_runner.py", "--forest",
-            "global_physical_data", "--once", "--budget-s", "3000"))
+            "global_physical_data", "--once", "--budget-s", "3000", "--mine-grounds"))
     forests_out["forest_global_market_data"] = _costed(
         "forest_global_market_data", lambda: _producer(
             "forest_global_market_data", "research/forest_runner.py", "--forest",
-            "global_market_data", "--once", "--budget-s", "3000"))
+            "global_market_data", "--once", "--budget-s", "3000", "--mine-grounds"))
     # EVERY BUILD ON A CLOCK: the auto-clocked organs of this plan (data/auto_legs.json).
     auto = run_auto_legs()
     sw = _costed("sweep", sweep)
