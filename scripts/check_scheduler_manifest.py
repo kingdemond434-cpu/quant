@@ -561,6 +561,35 @@ class ScheduleRow:
     where: str        # manifest line, unit, task name or leg -- for the report
 
 
+_CMD_PY = re.compile(r"(?:^|\s)((?:[\w.-]+[\\/])*[\w.-]+\.py)(?=\s|$)")
+
+
+def _resolve_cmd_wrapper(root: Path, runs: str) -> str:
+    """A `.cmd` task that only sets environment and launches ONE python file IS that file.
+
+    MT5-Gauntlet moved behind `RunGauntlet.cmd` (it exports judging_throughput's env, then runs
+    `scripts\\external_gauntlet.py`), and keyed by the wrapper's stem the gauntlet vanished from
+    the duplicate report while it still ran on two planes. The wrapper is read, and when it
+    launches exactly one repo .py that file is the organ; anything else keeps the wrapper.
+    """
+    wrapper = root / runs
+    try:
+        text = wrapper.read_text("utf-8", errors="ignore")
+    except OSError:
+        return runs
+    found: set[str] = set()
+    for line in text.splitlines():
+        if line.strip().lower().startswith(("rem ", "::")):
+            continue
+        for m in _CMD_PY.finditer(line):
+            rel = m.group(1).replace("\\", "/")
+            for base in (wrapper.parent, wrapper.parent.parent, root):
+                if (base / rel).is_file():
+                    found.add((base / rel).resolve().relative_to(root.resolve()).as_posix())
+                    break
+    return found.pop() if len(found) == 1 else runs
+
+
 def _box_rows(root: Path) -> tuple[list[ScheduleRow], str]:
     p = root / _BOX_TASKS_REL
     try:
@@ -576,6 +605,8 @@ def _box_rows(root: Path) -> tuple[list[ScheduleRow], str]:
         runs = kv.get("runs", "")
         if not runs or runs == "UNKNOWN" or not runs.endswith((".py", ".sh", ".ps1", ".cmd")):
             continue
+        if runs.lower().endswith(".cmd"):
+            runs = _resolve_cmd_wrapper(root, runs)
         rows.append(ScheduleRow("box_task", runs, kv.get("trigger", "UNDECLARED"), None,
                                 f"{kv.get('name', '?')} (line {i})"))
     return rows, f"{_BOX_TASKS_REL}: {len(rows)} task row(s) naming a script"

@@ -53,7 +53,6 @@ from mt5desk.decision_core import (  # noqa: E402
     CANCEL_HOUR,
     CLOSE_HOUR,
     GOLD_WINDOWS,
-    MIN_RATCHET_IMPROVEMENT_R,
     OPPOSING_LEG,
     atr_last,
     book_direction,
@@ -71,6 +70,8 @@ ARMED_MARKER = DESK / "data" / "E8_GOLD_ARMED"
 GUARD = DESK / "data" / "e8_guard_state.json"
 LOG = DESK / "logs" / "e8_gold.log"
 TAG = "E8gold"
+#: XAUUSD's price grid, used only when the terminal cannot state `trade_tick_size`.
+STOP_STEP = 0.01
 
 
 def log(msg: str) -> None:
@@ -168,6 +169,97 @@ def _window_for_position(state: dict, position_id: int) -> tuple[str, dict] | No
     return None
 
 
+def rollover_state(state: dict, today: str) -> dict:
+    """The state a new server day starts from: no windows, every still-open position carried.
+
+    THE ROLLOVER LOST POSITIONS (2026-09-29). It carried only yesterday's WINDOWS that had a
+    recorded `position_id`, so (1) a position carried INTO yesterday was dropped at the next
+    rollover, and (2) a leg that filled after the last pass of the day -- its `position_id` not
+    yet recorded -- was dropped outright. Either way the ratchet, the break-even floor and the
+    close hour stopped managing a live position. (1) is fixed here: every open carried row rides
+    forward. (2) is fixed by `readopt_positions`, which re-derives ownership from the venue.
+    """
+    if state.get("date") == today:
+        return state
+    old_date = str(state.get("date") or "")
+    carried = {n: w for n, w in (state.get("carried") or {}).items()
+               if w.get("position_id") is not None and not w.get("closed")}
+    for n, w in (state.get("windows") or {}).items():
+        if n.startswith("carried:") or w.get("closed") or w.get("position_id") is None:
+            continue
+        carried[f"{old_date}/{n}" if n in carried else n] = w
+    return {"date": today, "windows": {}, "carried": carried}
+
+
+def own_entry_orders(journal: list[dict], state: dict) -> dict[int, dict]:
+    """Every entry order THIS lane sent, by venue order id -> its leg (window, side, levels).
+
+    TradeLocker has no magic number and this adapter sends no comment, so the desk's own mark
+    on the venue is the order id it was handed at the send. Read from the intents journal (which
+    survives the rollover and a lost state file) and from the state's own legs.
+    """
+    own: dict[int, dict] = {}
+    for row in journal:
+        if row.get("status") == "SENT" and row.get("order_id") is not None:
+            own[int(row["order_id"])] = {k: row.get(k) for k in
+                                         ("window", "side", "price", "sl", "tp", "lot")}
+    for bucket in ("carried", "windows"):
+        for name, w in (state.get(bucket) or {}).items():
+            for side, leg in (w.get("orders") or {}).items():
+                if leg.get("id") is not None:
+                    own.setdefault(int(leg["id"]), {"window": name, "side": side,
+                                                    **{k: leg.get(k) for k in
+                                                       ("price", "sl", "tp", "lot")}})
+    return own
+
+
+def _today_leg_ids(state: dict) -> set[int]:
+    return {int(leg["id"]) for n, w in (state.get("windows") or {}).items()
+            if not n.startswith("carried:")
+            for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
+
+
+def readopt_positions(state: dict, filled: dict[int, int], position_ids: set[int],
+                      own: dict[int, dict]) -> list[dict]:
+    """Adopt into `state["carried"]` every open XAU position one of OUR entry orders opened
+    that no window maps. Mutates `state`; returns one `readopt` action per adoption.
+
+    Today's own legs are excluded: a fill this pass is recorded on its window by
+    `manage_actions`, and adopting it twice would schedule two closes for one position.
+    """
+    today = _today_leg_ids(state)
+    by_pos: dict[int, int] = {}
+    for oid, pid in filled.items():
+        if oid in own and oid not in today:
+            by_pos.setdefault(int(pid), int(oid))
+    acts: list[dict] = []
+    for pid in sorted(position_ids):
+        if _window_for_position(state, pid) is not None or pid not in by_pos:
+            continue
+        oid = by_pos[pid]
+        leg = own[oid]
+        key = f"readopted:{pid}"
+        state.setdefault("carried", {})[key] = {
+            "window": leg.get("window"), "readopted": True, "position_id": pid,
+            "orders": {str(leg.get("side")): {"id": oid, **{k: leg.get(k) for k in
+                                                            ("price", "sl", "tp", "lot")}}}}
+        acts.append({"act": "readopt", "window": key, "position_id": pid, "order_id": oid})
+    return acts
+
+
+def stale_entry_orders(state: dict, open_ids: set[int], own: dict[int, dict]) -> list[int]:
+    """Our own entry orders still resting at the venue that no window of TODAY owns.
+
+    GTC LEGS OUTLIVED THE DAY (2026-09-29). Cancellation (OCO, TTL, end of day) walks today's
+    windows only, and the rollover empties them -- so a GTC leg left resting across midnight was
+    never cancelled again and could fill a day later, outside any window, unmanaged. Only ids
+    this lane itself sent qualify: the venue's protective stop/target orders and anything a
+    human placed are never touched.
+    """
+    today = _today_leg_ids(state)
+    return sorted(oid for oid in open_ids if oid in own and oid not in today)
+
+
 def trail_decision(position: dict, window: dict, bars: Any, current_stop: float,
                    *, cost_per_unit: float = 0.0, spread: float = 0.0
                    ) -> _pm.RatchetDecision | None:
@@ -211,6 +303,23 @@ def _read_json(p: Path, default: Any) -> Any:
         return default
 
 
+def _journal_rows(limit: int = 5000) -> list[dict]:
+    """The last `limit` rows of the intents journal; unreadable -> none (no adoption, no cancel)."""
+    try:
+        lines = INTENTS.read_text(encoding="utf-8").splitlines()[-limit:]
+    except OSError:
+        return []
+    rows: list[dict] = []
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
+
+
 def _record(row: dict[str, Any]) -> None:
     try:
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
@@ -241,11 +350,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     today = str(tnow.date())
     doc.update({"server_time": tnow.isoformat(), "hour": round(hour, 3)})
 
-    state = _read_json(STATE, {})
-    if state.get("date") != today:
-        carried = {n: w for n, w in (state.get("windows") or {}).items()
-                   if w.get("position_id") is not None and not w.get("closed")}
-        state = {"date": today, "windows": {}, "carried": carried}
+    state = rollover_state(_read_json(STATE, {}), today)
     acct = venue.account()
     equity = float(acct.get("equity") or acct.get("balance") or 0.0)
     risk_usd = equity * RISK_FRAC
@@ -374,14 +479,39 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 filled[int(o["id"])] = int(o["positionId"])
     except Exception as exc:
         doc["history_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+    positions_ok = True
     try:
         venue_positions = venue.positions()
         xau_positions = gold_positions(venue_positions, iid)
         position_ids = {int(p["id"]) for p in xau_positions}
     except Exception as exc:
+        positions_ok = False
         xau_positions = []
         position_ids = set()
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+
+    # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
+    # lost state file) can neither orphan a position from management nor leave a GTC leg resting.
+    own = own_entry_orders(_journal_rows(), state)
+    if positions_ok and iid:
+        for act in readopt_positions(state, filled, position_ids, own):
+            log(f"[{act['window']}] RE-ADOPTED position {act['position_id']} "
+                f"(opened by our order {act['order_id']})")
+            act["ok"] = True
+            doc["actions"].append(act)
+        state["carried"] = {n: w for n, w in (state.get("carried") or {}).items()
+                            if int(w.get("position_id") or 0) in position_ids}
+    for oid in stale_entry_orders(state, open_ids, own):
+        act = {"act": "stale_cancel", "window": str(own[oid].get("window")), "order_id": oid}
+        try:
+            act["ok"] = bool(venue.cancel(int(oid)))
+            log(f"[{act['window']}] stale_cancel: our GTC entry order {oid} outlived its day; "
+                f"cancelled")
+        except Exception as exc:
+            act["ok"] = False
+            act["why"] = f"{type(exc).__name__}: {exc}"[:160]
+            log(f"[{act['window']}] stale_cancel FAILED: {act['why']}")
+        doc["actions"].append(act)
 
     # The Fusion gold book and this E8 port are the same bracket strategy.  Both therefore use
     # the same measured stop ratchet.  Until this block existed E8 left every winner at its
@@ -389,6 +519,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # in Fusion.  Broker stop orders are re-read on every pass; local state advances only after
     # the venue acknowledges the PATCH.
     order_by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
+    _info = getattr(mt5, "symbol_info", lambda _s: None)(SYMBOL)
+    stop_step = float(getattr(_info, "trade_tick_size", 0.0) or 0.0) or STOP_STEP
     for p in xau_positions:
         mapped = _window_for_position(state, int(p["id"]))
         stop_order = order_by_id.get(int(p.get("stopLossId") or 0))
@@ -400,8 +532,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             p, w, df, current_stop,
             cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT,
             spread=max(0.0, float(ask) - float(bid)))
-        if decision is None or not decision.moves \
-                or decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R:
+        # ANY TIGHTENING THE VENUE CAN REPRESENT IS SENT (2026-09-29), trail or break-even; the
+        # 0.05R floor skipped real protection to save a request that costs no spread.
+        if decision is None or not decision.moves or not _pm.tightens_by_min_step(
+                side=1 if str(p.get("side") or "").lower() == "buy" else -1,
+                new_stop=float(decision.new_stop), current_stop=current_stop, step=stop_step):
             continue
         action = {"act": "ratchet_stop", "window": name, "position_id": int(p["id"]),
                   "before": current_stop, "after": float(decision.new_stop),

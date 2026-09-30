@@ -477,8 +477,19 @@ def target_horizon_sweep(
                 skipped.append({"cell": cell, "target": target, "horizon_days": h,
                                 "reason": f"only {len(s_flat)} aligned finite observations"})
                 continue
+            # MEASURE THE PANEL'S BREADTH HERE, WHERE THE 2-D PANEL STILL EXISTS. `stage_a_screen`
+            # refuses to call an UNMEASURED panel powered (only the caller can measure it, from
+            # the unflattened panel), and this harness passed panel_width alone -- so every cell
+            # it ever screened read SCREEN-UNDERPOWERED whatever its IC, and the sweep could not
+            # find the very mechanism it exists to find. Paired the way the screen scores them:
+            # signal[t] against the target realised over t+1 (the harness's own roll).
+            kwargs = dict(screen_kwargs)
+            if "xs_neff" not in kwargs and n_inst > 1 and sig.shape[0] > 1:
+                from libs.research.panel_breadth import measure_panel_breadth
+                breadth = measure_panel_breadth(sig[:-1], tgt[1:])
+                kwargs["xs_neff"] = breadth.xs_neff if breadth.measured else None
             res = stage_a_screen(s_flat, t_flat, name=cell, horizon_days=float(h),
-                                 panel_width=n_inst, **screen_kwargs)
+                                 panel_width=n_inst, **kwargs)
             res.update({"target": target, "n_instruments": n_inst})
             cells.append(res)
 

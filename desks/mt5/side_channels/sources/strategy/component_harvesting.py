@@ -18,6 +18,8 @@ from typing import Any, Literal
 from enum import Enum
 from collections import defaultdict
 
+import pandas as pd
+
 from ...base import SideChannelAxis, SideChannelHypothesis, generate_id, save_hypothesis, DATA_DIR
 
 
@@ -360,9 +362,9 @@ class ComponentHarvester:
                 },
                 "metadata": {
                     "source": "component_harvesting",
-                    "component_type": component.component_type.value,
-                    "component_value": component.value,
-                    "source_strategy": component.source_strategy,
+                    "component_type": comp.component_type.value,
+                    "component_value": comp.value,
+                    "source_strategy": comp.source_strategy,
                     "heuristic_score": score,
                 },
             }

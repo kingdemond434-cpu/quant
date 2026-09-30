@@ -103,9 +103,15 @@ def _promotion_row(m, tmp_path, monkeypatch, *, kill: Path | None, fast_track: s
     monkeypatch.setattr(m, "_KILL", kill if kill is not None else tmp_path / "no-such-kill")
     out = tmp_path / "growth_audit.json"
     monkeypatch.setattr(m, "_OUT", out)
-    real_load = m._load
-    monkeypatch.setattr(m, "_load", lambda p: (
-        {"fast_track": fast_track} if "cashcarry_shadow" in str(p) else real_load(p)))
+    # The shadow is read through `read_fresh` now (L1.44: a stale clock resolves to UNMEASURED),
+    # not `_load`, so the stub sits on that seam: a FRESH read carrying the fast-track label.
+    # Stubbing `_load` alone left the real read_fresh looking for a box-only web/ artifact, and
+    # every row read UNMEASURED in a clean checkout.
+    from types import SimpleNamespace
+    real_read_fresh = m.read_fresh
+    monkeypatch.setattr(m, "read_fresh", lambda p, *a, **k: (
+        SimpleNamespace(fresh=True, data={"fast_track": fast_track}, why="", age_h=1.0)
+        if "cashcarry_shadow" in str(p) else real_read_fresh(p, *a, **k)))
     m.main()
     doc = _json.loads(out.read_text("utf-8"))
     return next(i for i in doc["items"] if i["check"] == "promotion_latency")

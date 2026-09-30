@@ -323,7 +323,11 @@ class TestAnUnreadableSchedulerIsUnmeasuredNeverDisabled:
     nothing, and the artifact announced it in a field that reads like a configuration choice.
     """
 
-    def test_a_timeout_is_unmeasured_and_not_box_clocks_off(self):
+    def test_a_timeout_is_unmeasured_and_not_box_clocks_off(self, monkeypatch):
+        # The case is a host WITH the MetaTrader5 package (the trading box); off it, `host_kind`
+        # answers `build_box` before it ever reads the scheduler status. Pinned so the test
+        # measures the box's branch on any machine, CI included.
+        monkeypatch.setattr(cl, "mt5_installed", lambda: True)
         host, why = cl.host_kind({}, "TIMEOUT after 90s: the scheduler query did not return")
         assert host != "box_clocks_off", (
             "an unreadable scheduler is being reported as a host whose clocks are switched off. "

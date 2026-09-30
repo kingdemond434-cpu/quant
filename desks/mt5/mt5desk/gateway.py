@@ -53,7 +53,6 @@ from mt5desk.decision_core import (
     CLOSE_HOUR,
     GOLD_SYMBOL,
     MAX_TOTAL_REJECTIONS,
-    MIN_RATCHET_IMPROVEMENT_R,
     PROMOTED_MIN_EQUITY,
     REJECTION_STREAK_WINDOW_H,
     addon_desc,
@@ -1780,16 +1779,17 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
             if not decision.moves:
                 log(f"{tag}: {decision.reason}")
                 continue
-            # THE IMPROVEMENT FLOOR IS FOR THE TRAIL, NOT FOR BREAK-EVEN. 0.05R exists so the
-            # chandelier does not spend a network round trip nudging a stop that is already
-            # roughly right. The break-even move is a different question -- it is the one move
-            # the principal asked for by name, and a position sitting 0.04R below break-even is
-            # exactly the position that turns a winner into a loser. Skipping it to save a
-            # modify would defeat the mechanism at the only moment it matters.
-            if (decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R
-                    and not decision.breakeven_floor):
-                log(f"{tag}: improvement {decision.improvement_r:+.3f}R below the "
-                    f"{MIN_RATCHET_IMPROVEMENT_R:.2f}R floor; not worth a modify")
+            # THE IMPROVEMENT FLOOR IS THE VENUE'S STOP STEP, NOT 0.05R (2026-09-29). A modify
+            # pays no spread and no commission; the 0.05R floor skipped real tightenings of the
+            # trail -- and, before the break-even exemption, the break-even move itself -- to
+            # save a request. Any move the venue can represent (one `trade_tick_size`, else one
+            # `point`) is sent, whether it is the trail or the break-even floor.
+            _step = (float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+                     or float(getattr(info, "point", 0.0) or 0.0))
+            if not _pm.tightens_by_min_step(side=side, new_stop=float(decision.new_stop),
+                                            current_stop=float(p.sl), step=_step):
+                log(f"{tag}: move {p.sl:.5f} -> {decision.new_stop:.5f} is under one venue "
+                    f"stop step ({_step:g}); nothing the broker can represent")
                 continue
 
             # THE LEVEL MUST STILL BE A STOP WHEN IT ARRIVES, and the venue's own minimum
@@ -3298,12 +3298,21 @@ def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
 
 
 def _retarget_sleeve_positions(symbol: str, name: str, sl: float, tp: float) -> None:
-    """Move every slice's target to the basket's new average-entry target (stop unchanged)."""
+    """Move every slice's target to the basket's new average-entry target (stop unchanged).
+
+    THE STOP IS NEVER LOOSENED HERE (2026-09-29). This sent `sl` -- the basket's ORIGINAL
+    stop -- onto every slice, so a slice `manage_open_positions` had already trailed or floored
+    at break-even was pushed back to the opening level by an add-on. Each slice now keeps its
+    own broker-reported stop unless `sl` protects more.
+    """
     for p in _sleeve_positions(symbol, name):
+        side = 1 if p.type == mt5.POSITION_TYPE_BUY else -1
+        keep_sl = _pm.never_loosen(side=side, proposed=float(sl),
+                                   current=float(getattr(p, "sl", 0.0) or 0.0))
         res = mt5.order_send({"action": mt5.TRADE_ACTION_SLTP, "position": p.ticket,
-                              "symbol": symbol, "sl": float(sl), "tp": float(tp),
+                              "symbol": symbol, "sl": float(keep_sl), "tp": float(tp),
                               "magic": MAGIC})
-        log(f"[{name}] RETARGET ticket {p.ticket} tp={tp:.5f} -> "
+        log(f"[{name}] RETARGET ticket {p.ticket} sl={keep_sl:.5f} tp={tp:.5f} -> "
             f"retcode={res.retcode if res else None}")
 
 
@@ -3461,11 +3470,22 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
         entries = addon_entries(basket["entries"], price, per)
         new_tp = sx.basket_target(entries, side, float(basket["target_atr"]),
                                   float(basket["atr"]))
+        # THE ADD-ON CARRIES THE BASKET'S CURRENT STOP, NOT ITS OPENING ONE (2026-09-29).
+        # `basket["stop"]` is the level recorded at the first slice; `manage_open_positions`
+        # may since have trailed the slices or floored them at break-even on the broker. The
+        # new slice takes the tightest stop the account holds, so an add-on can never re-open
+        # risk the desk has already locked away. Sizing (`dist`) is unchanged -- still priced at
+        # the basket's own stop, exactly as before -- so the order is never smaller for it.
+        stop_now = _pm.tightest_stop(
+            side=side,
+            stops=[float(basket["stop"]),
+                   *(float(getattr(p, "sl", 0.0) or 0.0)
+                     for p in _sleeve_positions(s["symbol"], name))]) or float(basket["stop"])
         return {"ok": True, "stage": "ok", "why": "resolved", "kind": "addon", "forming": forming,
                 "mark": True, "per": float(per), "mode": mode, "side": side, "price": price,
-                "stop": float(basket["stop"]), "tp": float(new_tp), "dist": float(dist),
+                "stop": float(stop_now), "tp": float(new_tp), "dist": float(dist),
                 "sym": sym, "tick": tick, "entries": [[float(p), float(u)] for p, u in entries],
-                "desc": addon_desc(side, per, s["symbol"], float(basket["stop"]), new_tp,
+                "desc": addon_desc(side, per, s["symbol"], float(stop_now), new_tp,
                                    len(entries)),
                 "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live}) "
                           f"at the basket's own {dist:.5g} stop, sliced to {per} ({mode})")}

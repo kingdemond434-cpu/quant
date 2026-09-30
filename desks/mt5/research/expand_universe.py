@@ -457,10 +457,6 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
-
-
 def _explain(err: object) -> str:
     """Route the raw MT5 error through the shared explanation -- see h1_source.
 
@@ -475,3 +471,7 @@ def _explain(err: object) -> str:
         except ImportError:
             return f"{err}"
     return explain_init_failure(err)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

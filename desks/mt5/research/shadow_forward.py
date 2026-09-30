@@ -35,7 +35,10 @@ sys.path.insert(0, str(BASE / "research"))
 UNI = BASE / "data" / "universe"
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_DIR.mkdir(parents=True, exist_ok=True)
-LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")  # noqa: SIM115
+#: The run log. Opened per write and closed at once: a handle opened at import leaked into every
+#: importer (the test suite imports this module dozens of times) and surfaced as a
+#: ResourceWarning under ``filterwarnings = error``.
+LOG_PATH = BASE / "logs" / "shadow.log"
 
 SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
 
@@ -388,8 +391,12 @@ SEQ_MIN_T = 2.5          # forward mean R significantly > 0, one-sided
 def slog(*a) -> None:
     msg = " ".join(str(x) for x in a)
     print(msg, flush=True)
-    LOG.write(msg + "\n")
-    LOG.flush()
+    try:
+        LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(LOG_PATH, "a", encoding="utf-8") as fh:
+            fh.write(msg + "\n")
+    except OSError as exc:  # a full disk or a locked file must not stop the forward clock
+        print(f"shadow.log write failed: {exc}", file=sys.stderr, flush=True)
 
 
 def per_symbol_costs(meta: dict, sym: str):

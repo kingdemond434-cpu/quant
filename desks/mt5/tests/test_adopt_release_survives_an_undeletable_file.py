@@ -529,11 +529,16 @@ def test_partial_adoption_target_matches_do_not_become_permanent_false_conflicts
     fetched target is unknown local work. The comparison must cover every dirty path, including
     target deletions, and the ordinary refusal must remain after it."""
     code = _executable_lines(SCRIPT.read_text("utf-8"))
-    compare = code.index("foreach ($raw in $dirty)")
+    # BATCHED since f82c4727 (2026-09-29): one `git diff --name-only $target -- <100 paths>` per
+    # batch instead of one `git diff --quiet` per path, which took hours on the live index. Every
+    # dirty path is still classified: each batch covers a slice of the whole normalised list.
+    compare = code.index("$normalisedDirty = @($dirty")
     refuse = code.index("local code path(s) are dirty")
     assert compare < refuse
     block = code[compare:refuse]
-    assert "diff --quiet --no-ext-diff $target -- $rel" in block
+    assert "for ($start = 0; $start -lt $normalisedDirty.Count; $start += $batchSize)" in block
+    assert '@("diff", "--name-only", "--no-ext-diff", $target, "--") + $batch' in block
+    assert "foreach ($rel in $batch)" in block
     assert "$stillDirty.Add($rel)" in block
     assert "$dirty = @($stillDirty)" in block
     assert "already equal the fetched target" in block

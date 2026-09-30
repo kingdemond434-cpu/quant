@@ -29,8 +29,12 @@ from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
-from libs.ops.canon_lease import hold
-from libs.ops.repair_invoke import request_repair
+_R = Path(__file__).resolve().parent.parent
+if str(_R) not in sys.path:  # run by path: scripts/ is on sys.path, the root is not
+    sys.path.insert(0, str(_R))
+
+from libs.ops.canon_lease import hold  # noqa: E402
+from libs.ops.repair_invoke import request_repair  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"

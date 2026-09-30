@@ -297,6 +297,27 @@ if ($adoptExit -ne 0) {
     Done $adoptExit "adopt-release-partial"
 }
 
+# ------------------------------------- 1b. TASKS THE ADOPTED TREE DECLARES BUT THE BOX LACKS
+# A task with an installer in the repo and no registration on the box is code that runs nowhere
+# (III.16). MT5-FrontierAudit was exactly that: declared daily in box_tasks.manifest, installer
+# NONE, thirty organs scheduled only by one machine's memory. Each installer here is called with
+# -IfMissing, so a registered task is NEVER touched (re-registering live tasks has failed with
+# "Access is denied") and a missing one appears on the first adoption after it ships. Best-effort:
+# a failed registration is logged and never stops the seal.
+foreach ($ensure in @(
+        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
+    if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
+    $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
+    if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }
+    try {
+        $out = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $installer -IfMissing 2>&1 |
+                 ForEach-Object { "$_" })
+        Log ("ensure-task: {0} was missing; installer exit {1}: {2}" -f $ensure.Task, $LASTEXITCODE, ($out -join ' | '))
+    } catch {
+        Log ("ensure-task: {0} registration failed: {1}" -f $ensure.Task, $_.Exception.Message)
+    }
+}
+
 # ------------------------------------------------------ 2. seal, only if HEAD is not sealed
 $head = (git rev-parse HEAD 2>$null | Out-String).Trim()
 if (-not $head) { Log "cannot read HEAD"; Done 2 "head-unreadable" }
@@ -355,8 +376,38 @@ if ($LASTEXITCODE -ne 0) { Log "release.seal failed (exit $LASTEXITCODE)"; Done 
 
 # --------------------------------------------- 3. RELEASE.json alone -- the pure-seal commit
 git add -- "desks/mt5/data/RELEASE.json"
-git commit -q -m "Seal release $($head.Substring(0,12)) (Adopt-And-Seal, unattended)"
-if ($LASTEXITCODE -ne 0) { Log "seal commit failed (exit $LASTEXITCODE)"; Done 5 "seal-commit-failed" }
+if ($LASTEXITCODE -ne 0) { Log "seal stage failed (exit $LASTEXITCODE)"; Done 5 "seal-stage-failed" }
+
+# `git commit` repeatedly crashed with 0xC0000005 on the trading box while refreshing its
+# 28,000+ path Windows index.  The index already contains the adopted HEAD plus this one staged
+# state file, so build the same pure commit with Git plumbing and advance the branch atomically.
+# This also avoids hooks touching unrelated runtime state.  Refuse rather than guess if another
+# path was staged by a concurrent writer or HEAD is detached.
+$staged = @(git diff --cached --name-only --no-ext-diff 2>$null |
+            Where-Object { "$_" -match '\S' } | ForEach-Object { "$($_)".Trim().Trim('"') })
+if ($LASTEXITCODE -ne 0 -or $staged.Count -ne 1 -or $staged[0] -ne "desks/mt5/data/RELEASE.json") {
+    Log "seal commit refused: staged paths are not exactly RELEASE.json: $($staged -join ', ')"
+    Done 5 "seal-stage-contaminated"
+}
+$branchRef = (git symbolic-ref -q HEAD 2>$null | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $branchRef) {
+    Log "seal commit refused: HEAD is detached or branch ref is unreadable"
+    Done 5 "seal-branch-unreadable"
+}
+$tree = (git write-tree 2>$null | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $tree) { Log "seal write-tree failed"; Done 5 "seal-write-tree-failed" }
+$message = "Seal release $($head.Substring(0,12)) (Adopt-And-Seal, unattended)"
+$sealCommit = (git commit-tree $tree -p $head -m $message 2>$null | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $sealCommit) {
+    Log "seal commit-tree failed (exit $LASTEXITCODE)"
+    Done 5 "seal-commit-tree-failed"
+}
+git update-ref $branchRef $sealCommit $head
+if ($LASTEXITCODE -ne 0) {
+    Log "seal update-ref refused; HEAD changed concurrently"
+    Done 5 "seal-update-ref-failed"
+}
+Log "pure seal commit $($sealCommit.Substring(0,12)) created by atomic commit-tree/update-ref"
 
 # ---------------------------------------- 4. the gateway reads the seal at start; restart it
 # THE RESIDENT IS ASKED, NOT KILLED (2026-09-16). MT5-Gateway is disabled; the sole pass runner

@@ -105,6 +105,9 @@ FENCES: tuple[Entry, ...] = (
     _e("scripts/check_blueprint_coverage.py", "a capability's claim may not outrun its evidence"),
     _e("scripts/check_breadth_mandate.py", "an alpha cluster that received NO attempt is a defect"),
     _e("scripts/check_cert_yield.py", "when the pipeline certifies nothing, say WHICH nothing"),
+    # Sole importer of libs.ops.completion and invoked by nothing until 2026-09-29, so the
+    # undeclared-work ratchet it owns was never read. Read-only without --accept.
+    _e("scripts/check_completion.py", "a leg may not join the cycles without declaring output"),
     _e("scripts/check_credentials.py", "what needs a credential, and what breaks without it"),
     _e("scripts/check_data_recoverability.py", "L1.65 -- lost span, and can it be bought back"),
     _e("scripts/check_desk_manifest.py", "the manifest describes the repo that exists"),
@@ -127,6 +130,9 @@ FENCES: tuple[Entry, ...] = (
     _e("scripts/check_shell_hygiene.py", "the ops launchers stay POSIX-clean"),
     _e("scripts/check_swap_reliability.py", "R0595 -- an upgrade is gauntleted on capability"),
     _e("scripts/check_tier5_audit.py", "the audit cannot claim what the repository lacks"),
+    # The Tier-1 programme ledger's twin of the line above had no clock at all (Tier-5 audit
+    # CI/169, 2026-09-29): read-only, ~0.5 s, and a failing verdict is named in BATTERY_FENCES.
+    _e("scripts/check_tier1_program.py", "the Tier-1 ledger cannot claim what the tree lacks"),
     _e("scripts/check_unmeasurable_claims.py", "every 'cannot measure' is re-litigated"),
     _e("scripts/audit_mt5_capability_reuse.py", "every shared library organ mapped to this desk"),
     _e("scripts/monitor_data_decay.py", "the decay of what the desk already ingested"),

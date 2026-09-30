@@ -19,12 +19,14 @@ from libs.doctrine.constitution import (
 )
 
 #: (module, attribute holding the system prompt). Every seat here is SHOWN the desk's dossier.
+#: The code auditor and the blind researcher were moved to scripts/_retired/ in 7401f769
+#: (2026-09-27). The property still binds the file: a revived seat must carry the same prompt.
 _SEATED: tuple[tuple[str, str], ...] = (
     ("scripts.breadth_expander", "SYSTEM"),
     ("scripts.meta_architect", "CHARTER"),
     ("scripts.hypothesis_generator", "SYSTEM"),
     ("scripts.collector_author", "SYSTEM"),
-    ("scripts.llm_code_auditor", "SYSTEM"),
+    ("scripts._retired.llm_code_auditor", "SYSTEM"),
 )
 
 
@@ -49,7 +51,7 @@ def test_THE_BLIND_RESEARCHER_MUST_NOT_RECEIVE_IT() -> None:
     Handing it the map would destroy the only control the desk has against its own anchoring --
     and it would do so invisibly, because the output would still look like independent research.
     """
-    mod = importlib.import_module("scripts.llm_blind_researcher")
+    mod = importlib.import_module("scripts._retired.llm_blind_researcher")
     prompts = [v for v in vars(mod).values() if isinstance(v, str) and len(v) > 200]
     assert prompts, "no prompt found -- the fence would pass vacuously"
     assert not any("RESIDUAL MANDATE" in p for p in prompts)
@@ -90,7 +92,8 @@ def test_EVERY_ITEM_OWES_A_CONVERSION_PATH() -> None:
 
 # --- THE PROTOCOL: HOW a seat searches, as opposed to WHAT it searches for -------------------
 
-@pytest.mark.parametrize(("mod", "attr"), (*_SEATED, ("scripts.llm_blind_researcher", "SYSTEM")))
+@pytest.mark.parametrize(("mod", "attr"),
+                         (*_SEATED, ("scripts._retired.llm_blind_researcher", "SYSTEM")))
 def test_EVERY_SEAT_CARRIES_THE_PROTOCOL_INCLUDING_THE_BLIND_ONE(mod: str, attr: str) -> None:
     """The blind researcher gets this one and not the mandate, and the split is the point.
 

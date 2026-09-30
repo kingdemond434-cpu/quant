@@ -19,7 +19,10 @@ from libs.ops.deploy_plan import (
     plan,
 )
 
-_EXECUTOR = "scripts/run_cashcarry_executor.py"
+#: The surviving TIER_RESTART process. These tests were pinned on the cash-and-carry executor
+#: (quant-cashcarry.service), retired with its unit on 2026-09-05; the restart property they guard
+#: is venue-independent, so they now stand on the one restartable unit the desk still owns.
+_EXECUTOR = "scripts/serve_dashboard.py"
 _DEADMAN = "scripts/run_deadman_switch.py"
 
 
@@ -48,11 +51,11 @@ class TestTheRuinRailIsNeverRestartedByAScript:
 #: so `import_closure` of it is honestly empty and the tests measured a file that no longer exists.
 #: The MECHANISM they exist to guard -- a libs/ edit nothing in scripts/ touched must still restart
 #: the process that imports it -- is what a fixture pins, independent of which venue is live.
-_LISTENER = "scripts/liquidation_listener.py"
+_LISTENER = _EXECUTOR
 
 
 def _tree_with_a_transitive_import(tmp_path: Path) -> Path:
-    """listener -> libs.execution.carry_accounting -> libs.execution.collateral"""
+    """entry -> libs.execution.carry_accounting -> libs.execution.collateral"""
     (tmp_path / "libs" / "execution").mkdir(parents=True)
     (tmp_path / "libs" / "__init__.py").write_text("", "utf-8")
     (tmp_path / "libs" / "execution" / "__init__.py").write_text("", "utf-8")
@@ -60,20 +63,25 @@ def _tree_with_a_transitive_import(tmp_path: Path) -> Path:
     (tmp_path / "libs" / "execution" / "carry_accounting.py").write_text(
         "from libs.execution.collateral import X\n", "utf-8")
     (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "liquidation_listener.py").write_text(
+    (tmp_path / "scripts" / "serve_dashboard.py").write_text(
         "from libs.execution.carry_accounting import X\n", "utf-8")
     return tmp_path
 
 
 class TestAChangeThatReachesTheExecutorRestartsIt:
     def test_a_direct_edit_restarts_it(self) -> None:
-        assert [a.unit for a in plan([_EXECUTOR]).restarts] == ["quant-cashcarry.service"]
+        assert [a.unit for a in plan([_EXECUTOR]).restarts] == ["quant-dashboard.service"]
+
+    def test_retired_units_are_not_restart_targets(self) -> None:
+        from libs.ops.deploy_plan import _OWNED
+        assert "scripts/run_cashcarry_executor.py" not in _OWNED
+        assert "scripts/liquidation_listener.py" not in _OWNED
 
     def test_a_transitive_libs_change_restarts_it_too(self, tmp_path: Path) -> None:
         # THE case a hand-written path list gets wrong: nothing in scripts/ changed at all
         root = _tree_with_a_transitive_import(tmp_path)
         p = plan(["libs/execution/collateral.py"], root)
-        assert [a.unit for a in p.restarts] == ["quant-liquidations.service"]
+        assert [a.unit for a in p.restarts] == ["quant-dashboard.service"]
 
     def test_it_names_the_path_that_invalidated_it_not_just_the_unit(self, tmp_path: Path) -> None:
         root = _tree_with_a_transitive_import(tmp_path)
@@ -95,7 +103,7 @@ class TestTheBlastRadiusIsComputedNotWritten:
         root = _tree_with_a_transitive_import(tmp_path)
         c = import_closure(_LISTENER, root)
         assert c == {"libs/execution/carry_accounting.py", "libs/execution/collateral.py"}
-        # and the real listener is stdlib+pandas+websockets by design, as the planner records
+        # and the real dashboard server has no first-party imports, as the planner records
         assert import_closure(_LISTENER) == set()
 
     def test_the_ruin_rail_is_dependency_free_by_design(self) -> None:

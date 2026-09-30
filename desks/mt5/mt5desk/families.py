@@ -418,8 +418,9 @@ def family_usd_session_shock(
     a = atr.to_numpy()
     c = h1["close"].to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(2, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if not (london_start <= ts.hour < london_end):
             continue
         if np.isnan(c[i]) or np.isnan(c[i - 1]):
@@ -465,8 +466,9 @@ def family_comex_settlement(
     a = atr.to_numpy()
     vm = vol_med.to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(window_before, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.hour != settle_hour:
             continue
         if np.isnan(c[i - 1]):
@@ -520,8 +522,9 @@ def family_asia_momentum(
     signals: list[Signal] = []
     a = atr.to_numpy()
     o = h1["open"].to_numpy()
+    _ts_h1 = list(h1.index)
     for i in range(2, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.hour != asia_end:
             continue
         key = ts.date()
@@ -561,8 +564,9 @@ def family_dow_effect(
     signals: list[Signal] = []
     a = atr.to_numpy()
     o = h1["open"].to_numpy()
+    _ts_h1 = list(h1.index)
     for i in range(2, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.hour != 0:
             continue
         ai = a[i]
@@ -609,7 +613,6 @@ def family_momentum_volgate(
     o = h1["open"].to_numpy()
     signals: list[Signal] = []
     for i in range(mom_n + 1, len(h1) - 2):
-        ts = h1.index[i]
         if np.isnan(c[i]):
             continue
         ai = a[i]
@@ -691,8 +694,9 @@ def family_session_range_breakout(
         day = h1.groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
         prev_mid = ((day["hi"] + day["lo"]) / 2.0).shift(1).to_dict()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(1, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.hour != signal_hour:
             continue
         if np.isnan(h1["open"].iloc[i]):
@@ -767,8 +771,9 @@ def family_monday_gap(
     o = h1["open"].to_numpy()
     c = h1["close"].to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(2, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.dayofweek != 0 or ts.hour != 0:
             continue
         j = i - 1
@@ -817,8 +822,9 @@ def family_london_close_momentum(
     c = h1["close"].to_numpy()
     o = h1["open"].to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(lookback + 1, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.hour != 16:
             continue
         ai = a[i]
@@ -880,8 +886,9 @@ def family_level_breakout(
     sp = h1["spread"].to_numpy() if "spread" in h1.columns else None
     sm = spread_med.to_numpy() if spread_med is not None else None
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(1, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.hour != signal_hour:
             continue
         if level == "week" and ts.dayofweek != 0:
@@ -953,8 +960,9 @@ def family_failed_breakout(
     sp = h1["spread"].to_numpy() if "spread" in h1.columns else None
     sm = spread_med.to_numpy() if spread_med is not None else None
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(2, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.hour not in signal_hours:
             continue
         key = h1["date"].iloc[i]
@@ -1118,8 +1126,9 @@ def family_mean_reversion_rsi(
     r = rsi.to_numpy()
     o = h1["open"].to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(max(rsi_n, atr_n) + 1, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         ai = a[i]
         if not (ai > 0) or np.isnan(r[i]) or np.isnan(r[i - 1]):
             continue
@@ -1164,7 +1173,6 @@ def family_mean_reversion_bollinger(
     hi_arr = upper.to_numpy()
     signals: list[Signal] = []
     for i in range(max(bb_n, atr_n) + 1, len(h1) - 2):
-        ts = h1.index[i]
         ai = a[i]
         if not (ai > 0) or np.isnan(lo_arr[i]) or np.isnan(hi_arr[i]):
             continue
@@ -1211,8 +1219,9 @@ def family_trend_ma_cross(
     s = slow.to_numpy()
     o = h1["open"].to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(max(slow_ema, atr_n) + 1, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         ai = a[i]
         if not (ai > 0) or np.isnan(f[i]) or np.isnan(s[i]):
             continue
@@ -1262,7 +1271,6 @@ def family_volatility_squeeze(
     bw_low_arr = bw_low.to_numpy()
     signals: list[Signal] = []
     for i in range(max(bb_n, squeeze_lookback, atr_n) + 1, len(h1) - 2):
-        ts = h1.index[i]
         ai = a[i]
         if not (ai > 0) or np.isnan(bw_arr[i]) or np.isnan(bw_low_arr[i]):
             continue
@@ -1305,7 +1313,6 @@ def family_range_reversion(
     o = h1["open"].to_numpy()
     signals: list[Signal] = []
     for i in range(range_n + 1, len(h1) - 2):
-        ts = h1.index[i]
         ai = a[i]
         if not (ai > 0) or np.isnan(c[i]) or np.isnan(c[i - range_n]):
             continue
@@ -1350,7 +1357,6 @@ def family_volume_spike(
     vm = vol_med.to_numpy()
     signals: list[Signal] = []
     for i in range(vol_lookback + 1, len(h1) - 2):
-        ts = h1.index[i]
         ai = a[i]
         if not (ai > 0) or np.isnan(vm[i]) or vm[i] <= 0:
             continue
@@ -1390,8 +1396,9 @@ def family_overnight_drift(
     c = h1["close"].to_numpy()
     o = h1["open"].to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(hold_bars + 2, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.hour != anchor_hour:
             continue
         ai = a[i]
@@ -1438,7 +1445,6 @@ def family_pullback_entry(
     o = h1["open"].to_numpy()
     signals: list[Signal] = []
     for i in range(max(trend_ema, rsi_n, atr_n) + 1, len(h1) - 2):
-        ts = h1.index[i]
         ai = a[i]
         if not (ai > 0) or np.isnan(r[i]) or np.isnan(e[i]):
             continue
@@ -1486,8 +1492,9 @@ def family_pin_bar_reversal(
     l_arr = h1["low"].to_numpy()
     c_arr = h1["close"].to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(2, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         ai = a[i]
         if not (ai > 0):
             continue
@@ -1539,8 +1546,9 @@ def family_engulfing_reversal(
     l_arr = h1["low"].to_numpy()
     c_arr = h1["close"].to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(n + 1, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         ai = a[i]
         if not (ai > 0):
             continue
@@ -1597,8 +1605,9 @@ def family_ict_fvg(
     l_arr = h1["low"].to_numpy()
     c_arr = h1["close"].to_numpy()
     signals: list[Signal] = []
+    _ts_h1 = list(h1.index)
     for i in range(max(ema_slow, atr_n) + 1, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         ai = a[i]
         if not (ai > 0) or np.isnan(f[i]) or np.isnan(s[i]):
             continue
@@ -1668,8 +1677,9 @@ def family_retail_overlap_reversal(
     signals: list[Signal] = []
     # i is the CLOSED extension bar; entry fills at the open of i+1 (engine rule), so the
     # bar that decides the signal is never the bar that fills it.
+    _ts_h1 = list(h1.index)
     for i in range(atr_n + 1, len(h1) - 2):
-        ts = h1.index[i]
+        ts = _ts_h1[i]
         if ts.hour not in hset:
             continue
         ai = a[i]

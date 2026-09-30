@@ -573,7 +573,10 @@ if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
         $adoptSettings = New-ScheduledTaskSettingsSet `
             -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
             -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 2) `
-            -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -MultipleInstances IgnoreNew
+            # A cold adoption of the large evidence tree can exceed twenty minutes.  Keep this
+            # identical to install_adopt_release_task.ps1 so a full reinstall cannot restore the
+            # timeout/IgnoreNew starvation loop that left the box hundreds of commits behind.
+            -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
         # SYSTEM, ServiceAccount: the box's tasks run as SYSTEM (an Interactive principal only
         # fires while that user holds a desktop session, and the adoption then dies with it).
         $adoptPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `

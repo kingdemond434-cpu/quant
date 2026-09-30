@@ -8,6 +8,10 @@ per-cell results, issue journals and the last checkpoint. Checkpoint after each 
 before long work. A restarted controller process is not a new research operation: do not replay
 completed tests or reset forward clocks.
 
+SCOPE (the standing MT5 universe mandate, LAWS s1): every candidate this cycle touches goes
+through the MT5/Fusion queue -- never direct this miner or any midnight cycle toward a
+crypto-exchange-only universe.
+
 ================================================================================
 RULE 0 -- DELIVER TO ORIGIN, NEVER TO A BOX
 ================================================================================

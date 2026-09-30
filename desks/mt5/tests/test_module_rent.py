@@ -414,7 +414,13 @@ def test_dry_run_writes_nothing_and_a_plain_run_writes_both(tmp_path: Path,
     doc = {"at": "2026-09-17T12:00:00+00:00", "n_modules": 1, "elapsed_s": 0.1,
            "median_roi": 1.0, "by_verdict": {"KEEP": 1}, "unmeasured": [],
            "rows": [{"module": "a.py", "clock": "leg", "roi": 1.0, "verdict": "KEEP", "why": "ok",
-                     "compute_h_7d": 0.5, "candidates_30d": 3, "survivors_30d": 0, "loc": 10}]}
+                     "compute_h_7d": 0.5, "candidates_30d": 3, "survivors_30d": 0, "loc": 10}],
+           # `build` has published the exemption audit since the exemptions landed, and `main`
+           # prints it; the stub carries the shape `build` returns, with nothing to report.
+           "exemptions_summary": {"n_declared_here": 0, "n_inherited_keys": 0, "n_retire": 0,
+                                  "n_partial": 0, "n_covers_nothing": 0, "n_unmeasured": 0,
+                                  "n_modules_unshielded": 0},
+           "exemptions": [], "exemption_schema_problems": []}
     out, led = tmp_path / "MODULE_RENT_RESEARCH.json", tmp_path / "rent.jsonl"
     monkeypatch.setattr(mr, "OUT", out)
     monkeypatch.setattr(mr, "LEDGER", led)

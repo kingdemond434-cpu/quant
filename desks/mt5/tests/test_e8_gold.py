@@ -159,3 +159,14 @@ def test_e8_gold_ratchet_accounts_for_its_own_round_trip_cost() -> None:
     assert free is not None and costed is not None
     assert costed.new_stop > free.new_stop
     assert costed.breakeven_floor
+
+
+def test_terminal_dependent_e8_tasks_run_in_the_interactive_desktop() -> None:
+    installer = (_DESK / "scripts" / "install_e8_tasks.ps1").read_text("utf-8")
+    assert '[switch] $RequiresDesktop' in installer
+    assert 'New-ScheduledTaskPrincipal -UserId $InteractiveUser -LogonType Interactive' in installer
+    gold = installer[installer.index('Set-E8Task -Name "E8-Gold"'):]
+    gold = gold[:gold.index('Set-E8Task -Name "E8-Spreads"')]
+    assert "-RequiresDesktop" in gold
+    spreads = installer[installer.index('Set-E8Task -Name "E8-Spreads"'):]
+    assert "-RequiresDesktop" in spreads

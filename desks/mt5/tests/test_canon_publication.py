@@ -83,6 +83,27 @@ def test_never_shrinks_the_seal(desk: Path) -> None:
     assert rec["admitted"] == 0
 
 
+def test_equivalent_clock_identities_collapse_to_a_durable_alias(
+        desk: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Two names for one executable sleeve are one certificate, not two bets."""
+    report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
+    first, second = _row("CHFNOK"), _row("CHFNOK")
+    first["shadow_spec"]["params"] = {}
+    second["shadow_spec"]["params"] = {"input_symbol": "CHFNOK"}
+    report.write_text(json.dumps(_report({"external.B": second, "external.A": first},
+                                         "2026-09-30T00:00:00+00:00")), "utf-8")
+    seal.write_text(json.dumps({"n": 0, "survivors": {}}), "utf-8")
+    monkeypatch.setattr(cp, "_clock_identity", lambda row: "CHFNOK.carry.asia")
+
+    rec = cp.publish(report, seal)
+
+    doc = json.loads(seal.read_text("utf-8"))
+    assert set(doc["survivors"]) == {"external.A"}
+    assert doc["n"] == 1
+    assert doc["certificate_aliases"]["external.B"]["canonical_certificate"] == "external.A"
+    assert rec["identity_aliases_collapsed"] == 1
+
+
 def test_mints_nothing_a_row_without_ten_passes_is_refused(desk: Path) -> None:
     report, seal = desk / "reports" / "u.json", desk / "data" / "canon.json"
     partial = _row("GBPUSD")

@@ -91,6 +91,10 @@ def test_policy_signals_read_the_description_too(miner) -> None:  # type: ignore
 
 def test_seeded_feeds_are_a_seed_not_a_boundary(miner) -> None:  # type: ignore[no-untyped-def]
     """LAWS §1 anti-hardcode: adding a bank must be adding a row, never editing logic."""
-    assert set(miner.FEEDS) >= {"Fed", "ECB", "BoJ", "BoE", "BoC", "BIS"}
+    # BIS left FEEDS 2026-08-28 (§13: its RSS sits under robots `Disallow: /doclist/`); its
+    # full-text corpus is mined by side_channels/bis_speech_tone.py instead. RBA was added.
+    assert set(miner.FEEDS) >= {"Fed", "ECB", "BoJ", "BoE", "BoC", "RBA"}
+    assert "BIS" not in miner.FEEDS
+    assert (_SRC.parent / "bis_speech_tone.py").exists()
     for info in miner.FEEDS.values():
         assert info["url"].startswith("https://") and info["currency"]

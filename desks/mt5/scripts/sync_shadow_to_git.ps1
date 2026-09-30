@@ -277,6 +277,34 @@ function Free-DiskForGit {
                    "measured cleanup and this pass may fail/retry.")
 }
 
+# CODE ADOPTION HAS ONE OWNER. The publisher used to merge FETCH_HEAD itself. On the trading
+# box a large merge outlived Task Scheduler's ten-minute limit: PowerShell was terminated,
+# released the named mutex, and left its child `git merge` running against `.git/index.lock`.
+# MT5-AdoptRelease then acquired the mutex legitimately and collided with that orphan. The
+# publisher owns runtime-state publication; MT5-AdoptRelease owns inbound code and sealing.
+# Keeping those authorities separate makes a timeout recoverable instead of corrupting the next
+# writer's window.
+$script:InboundAdoptionRequired = $false
+function Request-Adoption {
+    param([string]$Branch, [string]$Reason)
+    $script:InboundAdoptionRequired = $true
+    Write-SyncLog ("DEFER: origin/$Branch requires canonical adoption ($Reason); " +
+                   "publisher will not merge code or hold the git-writer lock through adoption")
+    try {
+        $task = Get-ScheduledTask -TaskName "MT5-AdoptRelease" -ErrorAction SilentlyContinue
+        if ($null -eq $task) {
+            Write-SyncLog "WARN: MT5-AdoptRelease task is absent; inbound code remains pending"
+        } elseif ($task.State -eq "Running") {
+            Write-SyncLog "MT5-AdoptRelease is already running"
+        } else {
+            Start-ScheduledTask -TaskName "MT5-AdoptRelease"
+            Write-SyncLog "requested MT5-AdoptRelease"
+        }
+    } catch {
+        Write-SyncLog ("WARN: could not request MT5-AdoptRelease: " + $_.Exception.Message)
+    }
+}
+
 # THE PULL, AND IT RUNS BEFORE EVERY EARLY EXIT. See Sync-Pull's caller near the top of the run.
 function Sync-Pull {
     param([string]$RepoRoot, [string]$Branch)
@@ -306,12 +334,7 @@ function Sync-Pull {
     }
     $behind = @(& git -C $RepoRoot rev-list --count "HEAD..FETCH_HEAD") | Select-Object -First 1
     if (-not $behind -or [int]$behind -eq 0) { Write-SyncLog "up to date with origin/$Branch"; return }
-    Write-SyncLog "behind origin/$Branch by $behind commit(s) -- merging"
-    if (-not (Merge-FetchHead -RepoRoot $RepoRoot -Branch $Branch)) {
-        Write-SyncLog "ABORT: merge conflicted -- a human resolves this, not a sync"
-        exit 1
-    }
-    Write-SyncLog "merged $behind commit(s) from origin/$Branch"
+    Request-Adoption -Branch $Branch -Reason "$behind inbound commit(s)"
 }
 
 # Desk-relative paths of every state file this sync carries. Each MUST already be individually
@@ -380,6 +403,12 @@ foreach ($rel in $relPaths) {
 # correct -- an empty commit every fifteen minutes is noise. Delivery is not.
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
 Sync-Pull -RepoRoot $RepoRoot -Branch $branch
+if ($script:InboundAdoptionRequired) {
+    # Exit success: this pass completed its responsibility by handing inbound code to the one
+    # task allowed to adopt and seal it. The next scheduled publisher pass will publish runtime
+    # state after adoption converges.
+    exit 0
+}
 
 if ($existing.Count -eq 0) {
     Write-SyncLog "SKIP: none of the tracked state files exist yet on this box"
@@ -445,7 +474,7 @@ for ($attempt = 1; $attempt -le 3 -and -not $pushed; $attempt++) {
     $pushRc = Git-In-Repo @("push", "origin", $branch)
     if ($pushRc -eq 0) { $pushed = $true; break }
 
-    Write-SyncLog "push rejected (attempt $attempt), fetch+merge and retry"
+    Write-SyncLog "push rejected (attempt $attempt), checking whether canonical adoption is required"
     $fetchRc = Git-In-Repo @("fetch", "origin", $branch)
     if ($fetchRc -ne 0) { Write-SyncLog "ABORT: git fetch failed rc=$fetchRc"; exit 1 }
 
@@ -461,13 +490,13 @@ for ($attempt = 1; $attempt -le 3 -and -not $pushed; $attempt++) {
     # exact line was the final entry of roughly 800 consecutive passes between 2026-08-26 and
     # 2026-09-06 while the box committed locally and published nothing. A silence that reads like
     # progress is worse than an error: it is the reason nobody looked for eleven days.
-    if (-not (Merge-FetchHead -RepoRoot $RepoRoot -Branch $branch)) {
-        Write-SyncLog ("ABORT: could not merge origin/$branch into the local branch. The commit " +
-                       "is safe locally and nothing is lost, but this box is no longer publishing " +
-                       "and will not resume without a human. Run ``git status`` here.")
-        exit 1
+    $behind = @(& git -C $RepoRoot rev-list --count "HEAD..FETCH_HEAD") | Select-Object -First 1
+    if ($behind -and [int]$behind -gt 0) {
+        Request-Adoption -Branch $branch -Reason "push race left $behind inbound commit(s)"
+        Write-SyncLog "local state commit is safe; publication resumes after canonical adoption"
+        exit 0
     }
-    Write-SyncLog "merged origin/$branch, retrying push"
+    Write-SyncLog "push failed without an inbound commit; retrying after a short backoff"
     Start-Sleep -Seconds 2
 }
 

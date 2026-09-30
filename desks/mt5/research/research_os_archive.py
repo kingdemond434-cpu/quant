@@ -167,6 +167,140 @@ RULE = ("variants compete on survivor yield, delta n_eff, novelty rate, FDR, com
         "survivor and forward success -- never on a coding benchmark; the constitution is not "
         "a knob")
 
+# --------------------------------------------------------- THE CHAMPION (Tier-1 #12, 2026-09-29)
+#: THE SEAT IS NOT THE CROWN. UCB rotation decides which variant gets the NEXT window -- that is
+#: exploration, and a challenger seated on optimism is an EXPERIMENT, not a promotion. Before this
+#: block the seat was the only notion of "incumbent", so a variant replaced the incumbent on its
+#: in-sample UCB score alone, which is selection on the very windows it was scored on.
+#:
+#: Three things now separate a challenger from the champion:
+#:
+#:   SEALED WINDOWS   a completed window is sealed with probability SEALED_SHARE by a hash coin on
+#:                    (variant, window start) -- decided before its fitness is known and never
+#:                    read by the UCB board. Promotion is judged on sealed windows only, so the
+#:                    comparison is out-of-sample with respect to the selection that seated it.
+#:   FRESH EPISODE    the challenger's newest window must be later than the champion's seating
+#:                    and must itself beat the champion's sealed mean: it is still good NOW.
+#:   SEALED SUITE     `meta_rnd.sealed_benchmark()` -- quantbench's sealed defect corpus and the
+#:                    adversary's breach count. UNMEASURED fails it.
+#:
+#: RANDOMISED BUDGET SHARE. After a challenger's trial window the seat returns to the champion with
+#: probability CHAMPION_RESEAT_SHARE (a hash draw on the hour), so the champion keeps accruing
+#: contemporaneous windows and the split of research time between the incumbent policy and its
+#: challengers is randomised and published (`budget_share`), not decided by whoever is ahead.
+SEALED_SHARE = 0.34
+MIN_SEALED_WINDOWS = 2
+CHAMPION_RESEAT_SHARE = 0.5
+
+
+def _coin(*parts: Any) -> float:
+    """A reproducible uniform draw in [0, 1) from its inputs: the same window always gets the same
+    coin, so sealing can never be re-rolled after the fitness is seen."""
+    h = hashlib.sha256("|".join(str(p) for p in parts).encode("utf-8")).hexdigest()
+    return int(h[:12], 16) / float(16 ** 12)
+
+
+def is_sealed(variant_id: Any, window_from: Any) -> bool:
+    return _coin("seal", variant_id, window_from) < SEALED_SHARE
+
+
+def sealed_record(v: dict[str, Any]) -> tuple[float | None, int]:
+    """(mean composite over SEALED windows, n) for one variant."""
+    comps = [float(w["composite"]) for w in v.get("active_windows") or []
+             if isinstance(w, dict) and w.get("sealed")
+             and isinstance(w.get("composite"), (int, float))]
+    return (round(sum(comps) / len(comps), 5) if comps else None), len(comps)
+
+
+def _sealed_benchmark() -> dict[str, Any]:
+    try:
+        return dict(importlib.import_module("meta_rnd").sealed_benchmark())
+    except Exception as exc:
+        return {"passed": False, "why": f"meta_rnd.sealed_benchmark unavailable: "
+                                        f"{type(exc).__name__}: {exc}"}
+
+
+def champion_decision(arch: dict[str, Any], now: datetime,
+                      bench: dict[str, Any]) -> dict[str, Any]:
+    """Promote a challenger to CHAMPION only on sealed windows + a fresh episode + the sealed
+    suite. PURE on its inputs apart from mutating `arch` when it promotes. Ties hold the champion:
+    churn in a research system is paid in every comparison that then spans two regimes."""
+    champ_id = str(arch.get("champion") or "incumbent")
+    by_id = {str(v.get("variant_id")): v for v in arch.get("variants", []) if isinstance(v, dict)}
+    champ = by_id.get(champ_id)
+    if champ is None:
+        champ_id, champ = "incumbent", by_id.get("incumbent")
+    ref, ref_n = sealed_record(champ or {})
+    ref_basis = "sealed windows"
+    if ref is None:
+        comps = [float(w["composite"]) for w in (champ or {}).get("active_windows") or []
+                 if isinstance(w, dict) and isinstance(w.get("composite"), (int, float))]
+        ref = round(sum(comps) / len(comps), 5) if comps else None
+        ref_basis = "all windows (the champion has no sealed window yet)"
+    since = _parse_at(arch.get("champion_since"))
+    rows: list[dict[str, Any]] = []
+    for vid, v in by_id.items():
+        if vid == champ_id:
+            continue
+        s_mean, s_n = sealed_record(v)
+        wins = [w for w in v.get("active_windows") or [] if isinstance(w, dict)]
+        last = wins[-1] if wins else None
+        last_at = _parse_at((last or {}).get("to"))
+        fresh = bool(last is not None and isinstance(last.get("composite"), (int, float))
+                     and (since is None or (last_at is not None and last_at > since)))
+        why: list[str] = []
+        if s_n < MIN_SEALED_WINDOWS or s_mean is None:
+            why.append(f"{s_n} sealed window(s), under {MIN_SEALED_WINDOWS}")
+        if ref is None:
+            why.append("the champion has no measured window to beat")
+        elif s_mean is not None and not s_mean > ref:
+            why.append(f"sealed mean {s_mean} does not beat the champion's {ref}")
+        if not fresh:
+            why.append("no completed window since the champion was seated")
+        elif ref is not None and not float(last["composite"]) > ref:     # type: ignore[index]
+            why.append(f"fresh episode {last['composite']} does not beat {ref}")  # type: ignore[index]
+        if not bench.get("passed"):
+            why.append("the sealed benchmark suite did not pass")
+        rows.append({"variant_id": vid, "sealed_mean": s_mean, "n_sealed": s_n,
+                     "fresh_composite": (last or {}).get("composite"),
+                     "eligible": not why, "why_not": why})
+    eligible = [r for r in rows if r["eligible"]]
+    promoted = None
+    if eligible:
+        best = max(eligible, key=lambda r: (float(r["sealed_mean"]), r["variant_id"]))
+        promoted = best["variant_id"]
+        stamp = now.isoformat(timespec="seconds")
+        arch["champion"], arch["champion_since"] = promoted, stamp
+        arch.setdefault("history", []).append(
+            {"at": stamp, "event": "CHAMPION", "from": champ_id, "to": promoted,
+             "why": (f"sealed mean {best['sealed_mean']} over {best['n_sealed']} sealed windows "
+                     f"and a fresh episode {best['fresh_composite']} beat the champion's {ref} "
+                     f"({ref_basis}); sealed suite passed")})
+    return {"champion": str(arch.get("champion") or "incumbent"), "previous": champ_id,
+            "promoted": promoted, "reference": ref, "reference_basis": ref_basis,
+            "reference_n_sealed": ref_n, "sealed_benchmark": bench,
+            "challengers": sorted(rows, key=lambda r: str(r["variant_id"]))[:MAX_VARIANTS],
+            "rule": (f"a challenger becomes champion only with >= {MIN_SEALED_WINDOWS} sealed "
+                     "windows whose mean beats the champion, a window completed since the "
+                     "champion was seated that also beats it, and a passing sealed benchmark "
+                     "suite; ties hold the champion")}
+
+
+def budget_share(arch: dict[str, Any]) -> dict[str, Any]:
+    """The measured split of completed research hours between the champion and its challengers."""
+    champ = str(arch.get("champion") or "incumbent")
+    hours = {"champion": 0.0, "challengers": 0.0}
+    for v in arch.get("variants", []):
+        if not isinstance(v, dict):
+            continue
+        h = sum(float(w.get("hours") or 0.0) for w in v.get("active_windows") or []
+                if isinstance(w, dict))
+        hours["champion" if str(v.get("variant_id")) == champ else "challengers"] += h
+    tot = sum(hours.values())
+    return {"hours": {k: round(x, 3) for k, x in hours.items()},
+            "challenger_share": round(hours["challengers"] / tot, 4) if tot else None,
+            "reseat_probability": CHAMPION_RESEAT_SHARE, "sealed_share": SEALED_SHARE}
+
 
 class ConstitutionBreach(Exception):
     """A policy that reached for the judge. Raised, never logged and continued."""
@@ -934,6 +1068,10 @@ def variant_composite(v: dict[str, Any]) -> tuple[float | None, int]:
     never completed a window, so one quiet hour cannot erase a lineage's record."""
     comps, meas = [], 0
     for w in v.get("active_windows") or []:
+        # A SEALED window is held out of selection: the UCB board never reads it, so the
+        # promotion rule that does read it judges a variant out of sample (Tier-1 #12).
+        if isinstance(w, dict) and w.get("sealed"):
+            continue
         if isinstance(w, dict) and isinstance(w.get("composite"), (int, float)):
             comps.append(float(w["composite"]))
             meas = max(meas, int(w.get("n_measured") or 0))
@@ -984,7 +1122,7 @@ def prune(arch: dict[str, Any], keep: int = MAX_VARIANTS) -> list[str]:
     by_id = {str(v.get("variant_id")): v for v in variants}
     rank = {r["variant_id"]: i for i, r in enumerate(leaderboard(arch))}
     ordered = sorted(by_id, key=lambda vid: rank.get(vid, 10**6))
-    protected = {"incumbent", str(arch.get("active"))}
+    protected = {"incumbent", str(arch.get("active")), str(arch.get("champion") or "incumbent")}
     kept: list[str] = [vid for vid in ordered if vid in protected]
     seen_clusters = {cluster_of(by_id[vid].get("policy") or {}) for vid in kept}
     for vid in ordered:                      # one per cluster first
@@ -1143,16 +1281,34 @@ def build(window_hours: float = WINDOW_HOURS, now: datetime | None = None,
     if seated is not None:
         seated["fitness"] = fit
         if elapsed_h >= window_hours:
+            w_from = start.isoformat(timespec="seconds")
             seated.setdefault("active_windows", []).append(
-                {"from": start.isoformat(timespec="seconds"),
+                {"from": w_from,
                  "to": now.isoformat(timespec="seconds"), "hours": elapsed_h,
-                 "fitness": fit, "composite": comp, "n_measured": n_meas})
+                 "fitness": fit, "composite": comp, "n_measured": n_meas,
+                 # decided by a coin on (variant, start) -- never by the fitness just measured
+                 "sealed": is_sealed(active, w_from)})
 
     board = leaderboard(arch)
     best = board[0] if board else None
     rotation: dict[str, Any] = {"rotated": False, "from": active, "to": active,
                                 "elapsed_h": elapsed_h, "window_hours": window_hours}
-    if elapsed_h < window_hours:
+    champion_id = str(arch.get("champion") or "incumbent")
+    reseat_draw = _coin("reseat", now.isoformat(timespec="hours"), active)
+    if (elapsed_h >= window_hours and active != champion_id
+            and reseat_draw < CHAMPION_RESEAT_SHARE
+            and any(v.get("variant_id") == champion_id for v in arch["variants"])):
+        # THE RANDOMISED BUDGET SHARE: a challenger's trial window is over and the draw returns
+        # the seat to the champion, so the incumbent keeps producing contemporaneous episodes.
+        arch["active"] = champion_id
+        arch["active_since"] = now.isoformat(timespec="seconds")
+        rotation.update({"rotated": True, "to": champion_id, "reseat_draw": round(reseat_draw, 4),
+                         "why": (f"trial window over; randomised reseat draw {reseat_draw:.3f} < "
+                                 f"{CHAMPION_RESEAT_SHARE} returns the seat to the champion")})
+        arch.setdefault("history", []).append(
+            {"at": arch["active_since"], "event": "RESEAT_CHAMPION", "from": active,
+             "to": champion_id, "why": rotation["why"]})
+    elif elapsed_h < window_hours:
         rotation["why"] = (f"seated {elapsed_h}h of a {window_hours}h window; rotating now would "
                            f"leave a window too short to measure and select on its noise")
     elif best is None or best["variant_id"] == active:
@@ -1182,6 +1338,7 @@ def build(window_hours: float = WINDOW_HOURS, now: datetime | None = None,
     elif why_no_child.startswith("REFUSED"):
         refused.append(why_no_child)
 
+    champ = champion_decision(arch, now, _sealed_benchmark())
     dropped = prune(arch)
     board = leaderboard(arch)
     clusters: dict[str, Any] = {}
@@ -1211,6 +1368,11 @@ def build(window_hours: float = WINDOW_HOURS, now: datetime | None = None,
         "clusters": clusters,
         "dropped": dropped,
         "rotation": rotation,
+        "schema_version": "research_os_archive/2",
+        # THE CROWN, SEPARATE FROM THE SEAT (Tier-1 #12): who is champion, whether anyone was
+        # promoted this pass and exactly why every challenger was not.
+        "champion": champ,
+        "budget_share": budget_share(arch),
         "policy_knobs": {k: {kk: vv for kk, vv in v.items() if kk != "domain"}
                          for k, v in POLICY_KNOBS.items()},
         "wall": {"immutable_checked": bool(immut), "n_immutable_files": len(immut),

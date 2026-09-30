@@ -15,7 +15,7 @@ that in three places it never joined:
                       Measured 2026-09-23 on this box: realised_sd 0.1399 against model_sd
                       0.0075, an eighteen-fold under-dispersion that no generator was ever told
                       about.
-    CALIBRATION HOLES `EDGE_RELIABILITY.json` and `EDGE_CONFIDENCE.json` -- where a stated edge
+    CALIBRATION HOLES `edge_reliability.json` and `EDGE_CONFIDENCE.json` -- where a stated edge
                       and its realised frequency disagree, per sleeve.
     EXECUTION         `MARKOUT.json` and `FILL_ATTRIBUTION.json` -- slippage the cost model did
                       not predict, and the share of edge it ate.
@@ -44,7 +44,9 @@ OUT = R / "RESIDUAL_MAP.json"
 PRIOR = DESK / "data" / "residual_prior.json"
 
 ATTRIBUTION = R / "allocator_attribution.json"
-RELIABILITY = R / "EDGE_RELIABILITY.json"
+#: The producer (research/edge_reliability.py OUT) writes lower-case; the upper-case name
+#: resolved only on the case-insensitive Windows box and read as absent everywhere else.
+RELIABILITY = R / "edge_reliability.json"
 CONFIDENCE = R / "EDGE_CONFIDENCE.json"
 MARKOUT = R / "markout.json"
 FILLS = R / "FILL_ATTRIBUTION.json"

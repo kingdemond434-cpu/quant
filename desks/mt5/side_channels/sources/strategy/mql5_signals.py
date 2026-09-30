@@ -31,6 +31,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
+from urllib.parse import urljoin
+
+import requests
+from bs4 import BeautifulSoup
 
 import numpy as np
 import pandas as pd

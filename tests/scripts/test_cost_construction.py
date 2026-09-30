@@ -61,7 +61,11 @@ def test_from_symbol_is_correct(tmp_path):
 
 
 def test_a_hand_rolled_call_without_quote_per_account_is_flagged(tmp_path):
-    sites = _scan(tmp_path, 'c = Costs(spread_per_lot=s, commission_per_lot=2.25, '
+    # The per-side figure is the measured contract (2.00 since the fusion_cost re-measurement,
+    # was 2.25); a literal above it is ALSO the round-turn trap, which made this read BOTH_TRAPS.
+    # This test isolates the missing-conversion trap, so it charges exactly the contract.
+    sites = _scan(tmp_path, f'c = Costs(spread_per_lot=s, commission_per_lot='
+                            f'{cc.COMMISSION_PER_SIDE:.2f}, '
                             'contract_oz=meta["contract_size"])\n')
     assert [s.verdict for s in sites] == [cc.NO_QPA]
     assert "184x too little" in sites[0].why

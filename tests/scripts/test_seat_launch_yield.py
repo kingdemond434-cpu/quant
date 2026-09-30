@@ -20,7 +20,11 @@ def test_classify_separates_the_reasons_a_launch_produced_nothing() -> None:
     assert fence.classify("=== x attempt ===\n... DEFERRED -- brain mutex held", 90) == \
         "MUTEX_DEFERRED"
     assert fence.classify("=== x attempt ===\n=== x start ===", 118) == "DIED_AFTER_START"
-    assert fence.classify("=== x attempt ===\n", 58) == "DIED_AT_ATTEMPT"
+    # A header-only log (<=200 bytes) is its own verdict since the 2026-08-28 gap-wirer finding
+    # (check_seat_launch_yield.classify): DIED_SILENT_NO_OUTPUT. DIED_AT_ATTEMPT is what a
+    # launcher that got further, and still said nothing classifiable, reads as.
+    assert fence.classify("=== x attempt ===\n", 58) == "DIED_SILENT_NO_OUTPUT"
+    assert fence.classify("=== x attempt ===\n" + "y" * 400, 420) == "DIED_AT_ATTEMPT"
 
 
 def _write(logs, name: str, body: str) -> None:

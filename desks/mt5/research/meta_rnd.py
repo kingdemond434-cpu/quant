@@ -69,6 +69,102 @@ OUT = DESK / "reports" / "META_RND.json"
 POLICIES = ("catalogue_prior", "measured_kill_rates", "premortem_first", "cheapest_first")
 MIN_ROWS = 5              # replayed certificates below this: the tournament is UNMEASURED
 
+# ----------------------------------------------------------------------------- THE WALL (F25)
+# RESTORED 2026-09-29 from 16dc47e4 (F25, 2026-09-12). The rewrite of this module for B25
+# (291270e2, 2026-09-23) dropped both tables, and `research_os_archive` -- which imports them to
+# build its constitution -- fell back to an EMPTY forbidden list and an EMPTY movable set without
+# a word: `forbidden_knobs()` returned {} and `meta_knob_specs()` returned {}, so the wall around
+# the self-improving research system silently lost one of its two refusal lists. The tables are
+# restored verbatim; the F25 single-champion tournament they came with is superseded by the
+# archive (research_os_archive.py) and is not.
+
+#: The knobs a meta-version MAY move. Every one is a property of how the desk SEARCHES -- never of
+#: what it will risk, and never of the bar it is judged against.
+META_KNOBS: dict[str, dict[str, Any]] = {
+    "research_tree.BEAM": {
+        "module": "research.research_tree", "attr": "BEAM", "lo": 4, "hi": 48,
+        "changes": "how many tree nodes are expanded per pass -- the rate at which reach is "
+                   "bought"},
+    "research_tree.INHERIT": {
+        "module": "research.research_tree", "attr": "INHERIT", "lo": 0.0, "hi": 0.9,
+        "changes": "how strongly a child node inherits its parent's posterior; 0 flattens the "
+                   "tree into a list, 1 makes a cross-market analogue as likely as its parent"},
+    "joint_evolution.DRAWS": {
+        "module": "research.joint_evolution", "attr": "DRAWS", "lo": 40, "hi": 400,
+        "changes": "genomes sampled per surface -- the resolution of the interaction measurement"},
+    "representation_discovery.BEAM": {
+        "module": "research.representation_discovery", "attr": "BEAM", "lo": 2, "hi": 16,
+        "changes": "composite search width, and therefore the trial count it charges the desk"},
+    "adversary_evolution.MUT": {
+        "module": "research.adversary_evolution", "attr": "MUT", "lo": 0.05, "hi": 0.6,
+        "changes": "how far an attack's child moves from its parent -- the adversary's own "
+                   "exploration rate"},
+    "negative_knowledge.EXPLORE_FLOOR": {
+        "module": "research.negative_knowledge", "attr": "EXPLORE_FLOOR", "lo": 0.10, "hi": 0.50,
+        "changes": "the share of admissions reserved for the cells the model scores worst"},
+}
+
+#: Knobs a meta-version may NEVER move, and why. Enumerated rather than left to judgement: a
+#: system graded on its own output will find these if they are merely discouraged.
+FORBIDDEN_KNOBS: dict[str, str] = {
+    "any gate threshold": (
+        "the gates are what a meta-version is JUDGED by. A system permitted to move them would "
+        "improve its score by lowering its bar, which is the shortest path to a better number "
+        "and the least useful one."),
+    "heat floor, heat ceiling, per-sleeve caps": (
+        "the principal's standing order: risk is never reduced by fiat, and its mirror binds "
+        "equally -- research must not raise its scores by moving what the desk will risk."),
+    "minimum lot, daily loss, sizing parameters": (
+        "money-path constants. A research tournament has no business near them, and F26's "
+        "invariant says exactly one authority sizes."),
+    "the trial charge": (
+        "F19 measured what happens when it moves: the registry now holds two regimes and 15 of "
+        "61 certificates cleared a standard the desk no longer applies. A meta-version moving it "
+        "would make every comparison in this report span two worlds."),
+}
+
+QUANTBENCH = DESK / "reports" / "QUANTBENCH.json"
+ADVERSARY = DESK / "reports" / "ADVERSARY_EVOLUTION.json"
+
+
+def sealed_benchmark() -> dict[str, Any]:
+    """THE SEALED BENCHMARK SUITE a challenger research policy must not regress, read -- never
+    re-run -- from the two organs that own it (F25's arenas, restored as a verdict):
+
+        sealed_traps   `quantbench` -- the defects this desk already paid for, replayed whole
+        synthetic      `adversary_evolution` -- attacks with declared ground truth; a BREACH is
+                       a gate that let a planted fake through
+
+    `passed` is True only when BOTH were read and neither regressed. An absent or unreadable
+    arena is UNMEASURED and FAILS the suite: absence never passes (L1.28a), and a self-improving
+    system that could be promoted while its judge was dark would be promoted by the dark.
+    False rejections are reported and never scored -- a policy can always cut them by making the
+    gates permissive, which is the one lever this suite exists to deny it."""
+    qb = _read(QUANTBENCH)
+    adv = _read(ADVERSARY)
+    traps: dict[str, Any]
+    if qb.get("status") in ("OK", "REGRESSED"):
+        traps = {"status": qb["status"], "n_cases": qb.get("n_cases"),
+                 "regressed": qb.get("regressed") or [], "score": qb.get("score"),
+                 "ok": qb["status"] == "OK"}
+    else:
+        traps = {"status": "UNMEASURED", "ok": False,
+                 "why": f"no usable {QUANTBENCH.name} (status {qb.get('status')!r})"}
+    synth: dict[str, Any]
+    if isinstance(adv.get("n_breach"), int) and adv.get("status") != "BLOCKED":
+        ctl = adv.get("controls") if isinstance(adv.get("controls"), dict) else {}
+        synth = {"status": "OK", "n_breach": adv["n_breach"],
+                 "n_false_rejection": ctl.get("n_false_rejection"),
+                 "ok": int(adv["n_breach"]) == 0}
+    else:
+        synth = {"status": "UNMEASURED", "ok": False,
+                 "why": f"no usable {ADVERSARY.name}: the arena that stops a policy improving "
+                        "its score by weakening a gate is dark"}
+    return {"passed": bool(traps["ok"] and synth["ok"]), "sealed_traps": traps,
+            "synthetic": synth,
+            "rule": ("both arenas read and neither regressed; UNMEASURED fails; breaches score, "
+                     "false rejections are reported and never scored")}
+
 
 def _read(p: Path) -> dict[str, Any]:
     try:
@@ -272,6 +368,10 @@ def build(budget_s: float = 180.0) -> dict[str, Any]:
         "arena": verdicts,
         "operators": operator_mixes(),
         "thresholds": threshold_variants(),
+        # THE WALL AND THE SEALED SUITE, published where the archive's promotion rule reads them.
+        "wall": {"movable_meta_knobs": sorted(META_KNOBS),
+                 "forbidden_knobs": FORBIDDEN_KNOBS},
+        "sealed_benchmark": sealed_benchmark(),
         "consumers": [
             "desks/mt5/research/falsifier_run.py falsify() -> ordering_kill_rates(): the winning "
             "policy's kill rates are what `falsifiers.schedule` is given",
