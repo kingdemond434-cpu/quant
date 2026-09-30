@@ -17,6 +17,11 @@ THREE KINDS, each with its own honest stamp -- and a dataset with no stamp gets 
                    `report_date` (a Tuesday); the CFTC publishes on the Friday after. The stamp is
                    the SATURDAY 00:00 UTC after the report date -- after every release time, EST
                    or EDT -- and never the report date, which would be three days of lookahead.
+    macro:<name>   `data/axes/<name>.json`, an axis record: rows stamped `knowable_at` (the axis
+                   organ's own knowability stamp; a month is known at its END), or dated series
+                   points read a day after their date.
+    grounds:<name> `data/<name>.jsonl`, an append-only grounds journal: rows mined per UTC day,
+                   known at the end of the day. A grounds LIST with no row stamps has no series.
     intel:<seat>   `data/intelligence/<seat>/` under either root: snapshot files a miner wrote.
                    A file's stamp is the time IN ITS NAME (`discoveries_YYYYMMDD_HHMM.json`) -- when
                    the desk fetched it, which is when it knew it; a day rollup
@@ -50,9 +55,15 @@ import pandas as pd
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
 DATA = DESK / "data"
-INTEL_ROOTS: tuple[Path, ...] = (DATA / "intelligence", ROOT / "data" / "intelligence")
+#: Name-stamped digests `libs/research/seat_stamper` writes for a seat whose own files carry no
+#: time in their names (a state file rewritten in place). A third root, OUTSIDE data/intelligence
+#: on purpose: the compiler reads data/intelligence/** and a digest is a reading, not a claim.
+STAMPS_ROOT = DATA / "dataset_stamps"
+INTEL_ROOTS: tuple[Path, ...] = (DATA / "intelligence", ROOT / "data" / "intelligence",
+                                 STAMPS_ROOT)
+AXES = DATA / "axes"
 
-KINDS: tuple[str, ...] = ("lake", "cot", "intel")
+KINDS: tuple[str, ...] = ("lake", "cot", "intel", "macro", "grounds")
 DEFAULT_LAG_HOURS = 24
 DEFAULT_Z_WINDOW = 250
 TRANSFORMS: tuple[str, ...] = ("level", "level_z", "delta", "delta_z")
@@ -79,7 +90,7 @@ NON_SIGNAL_KEYS: frozenset[str] = frozenset({
 ROW_COUNT_FIELD = "_rows"
 
 _STAMPED = re.compile(r"(20\d{2})(\d{2})(\d{2})(?:[_T-](\d{2})(\d{2})(\d{2})?)?")
-_SNAPSHOT_SUFFIXES = (".json", ".jsonl", ".jsonl.gz", ".json.gz")
+_SNAPSHOT_SUFFIXES = (".json", ".jsonl", ".jsonl.gz", ".json.gz", ".yaml", ".yml")
 
 
 def kind_of(dataset: str) -> str | None:
@@ -224,6 +235,18 @@ def rows_in(path: Path) -> Iterator[dict[str, Any]]:
             text = path.read_text("utf-8", "replace")
     except OSError:
         return
+    if path.name.endswith((".yaml", ".yml")):
+        # A seat that writes one YAML document per record (`H-YYYYMMDD-NNN.yaml`): one row.
+        try:
+            import yaml
+            doc = yaml.safe_load(text)
+        except Exception:
+            return
+        if isinstance(doc, dict):
+            yield doc
+        elif isinstance(doc, list):
+            yield from (r for r in doc if isinstance(r, dict))
+        return
     if ".jsonl" in path.name:
         for ln in text.splitlines():
             try:
@@ -274,21 +297,28 @@ def _reading(row: dict[str, Any], field: str) -> float | None:
 def _intel_raw(key: tuple[str, ...], field: str, match: str, mtimes: tuple[int, ...],
                limit: int) -> pd.Series | None:
     dirs = [Path(k) for k in key]
-    stamps: list[datetime] = []
-    vals: list[float] = []
+    # ONE READING PER STAMP, over every file that carries it (2026-09-30). A seat that writes one
+    # file per RECORD (`H-YYYYMMDD-NNN.yaml`, `REC-YYYYMMDD-<hash>.json`) stamps many files with
+    # the same day; read file-by-file, `_rows` was 1 for each and the series a constant the
+    # z-score cannot read, while the honest reading -- how many records the seat made that day --
+    # sat in the file count. A numeric field is the mean over every matching row at the stamp.
+    counts: dict[datetime, float] = {}
+    sums: dict[datetime, list[float]] = {}
     for t, p in snapshot_files(dirs, limit):
         if field == ROW_COUNT_FIELD:
-            stamps.append(t)
-            vals.append(float(sum(1 for r in rows_in(p) if _matches(r, match))))
+            counts[t] = counts.get(t, 0.0) + float(sum(1 for r in rows_in(p) if _matches(r, match)))
             continue
         got = [v for r in rows_in(p) if _matches(r, match)
                for v in [_reading(r, field)] if v is not None]
         if got:
-            stamps.append(t)
-            vals.append(float(np.mean(got)))
-    if not vals:
+            sums.setdefault(t, []).extend(got)
+    if field == ROW_COUNT_FIELD:
+        items = sorted(counts.items())
+    else:
+        items = sorted((t, float(np.mean(v))) for t, v in sums.items())
+    if not items:
         return None
-    return pd.Series(vals, index=pd.DatetimeIndex(stamps))
+    return pd.Series([v for _t, v in items], index=pd.DatetimeIndex([t for t, _v in items]))
 
 
 def intel_raw(seat: str, field: str, *, match: str = "", roots: tuple[Path, ...] | None = None,
@@ -306,6 +336,161 @@ def intel_raw(seat: str, field: str, *, match: str = "", roots: tuple[Path, ...]
                       int(limit))
 
 
+# ------------------------------------------------------------------ macro axis records
+#: Row keys of an axis record that are coordinates or flags, never readings.
+AXIS_NON_SIGNAL: frozenset[str] = frozenset({"inverted"})
+
+
+@lru_cache(maxsize=8)
+def _axis_doc(path: str, mtime_ns: int) -> dict[str, Any] | None:
+    try:
+        doc = json.loads(Path(path).read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    return doc if isinstance(doc, dict) else None
+
+
+def axis_doc(name: str, root: Path | None = None) -> dict[str, Any] | None:
+    base = root or AXES
+    name = str(name or "").strip()
+    if not name or "/" in name or "\\" in name or name.startswith("."):
+        return None
+    p = base / f"{name}.json"
+    try:
+        return _axis_doc(str(p), p.stat().st_mtime_ns)
+    except OSError:
+        return None
+
+
+def _knowable(v: Any) -> pd.Timestamp | None:
+    """An axis row's `knowable_at` as the instant the desk could first read it. A month
+    (`1999-01`) is knowable at the END of that month -- never its first day."""
+    s = str(v or "").strip()
+    if not s:
+        return None
+    try:
+        if len(s) == 7:
+            return pd.Period(s, freq="M").end_time.tz_localize(UTC).ceil("D")
+        t = pd.Timestamp(s)
+    except (ValueError, TypeError):
+        return None
+    return t.tz_localize(UTC) if t.tzinfo is None else t.tz_convert(UTC)
+
+
+def macro_fields(name: str, root: Path | None = None,
+                 max_matches: int = 12) -> list[dict[str, str]]:
+    """The fields an axis record carries: each numeric row key split by `symbol` (rows-shaped
+    records: bis, cot), or each named series (series-shaped: ecb, fred). [] when it holds none."""
+    doc = axis_doc(name, root)
+    if not doc:
+        return []
+    rows = doc.get("rows")
+    if isinstance(rows, list) and rows:
+        keys: dict[str, int] = {}
+        syms: dict[str, int] = {}
+        for r in rows:
+            if isinstance(r, dict) and isinstance(r.get("symbol"), str):
+                syms[r["symbol"]] = syms.get(r["symbol"], 0) + 1
+        for r in rows[:5000]:
+            if not isinstance(r, dict):
+                continue
+            for k, v in r.items():
+                if k in NON_SIGNAL_KEYS or k in AXIS_NON_SIGNAL or isinstance(v, bool):
+                    continue
+                if isinstance(v, (int, float)):
+                    keys[k] = keys.get(k, 0) + 1
+        # The record's own `shape` names the reading its family uses (`carry_differential`,
+        # `net_pct_oi`): that field leads, the rest follow by frequency.
+        shape_txt = str(doc.get("shape") or "")
+        names = sorted(keys, key=lambda k: (k not in shape_txt, -keys[k], k))
+        if syms:
+            top = [s for s, _ in sorted(syms.items(), key=lambda kv: -kv[1])][:max_matches]
+            # Field-major: the lead reading on every symbol before a second reading on any, so
+            # the first few fields a producer takes span instruments, not one symbol's columns.
+            return [{"field": f, "match": f"symbol={s}"} for f in names for s in top]
+        return [{"field": f, "match": ""} for f in names]
+    series = doc.get("series")
+    if isinstance(series, dict):
+        return [{"field": str(k), "match": ""} for k, v in series.items()
+                if isinstance(v, dict) and v.get("points")]
+    return []
+
+
+def macro_raw(name: str, field: str, *, match: str = "",
+              root: Path | None = None) -> pd.Series | None:
+    """An axis record's field on its availability clock: a rows-shaped record's `knowable_at`
+    (the axis organ's own knowability stamp), a series-shaped record's point date + one day (a
+    daily print is read after its day closes). None when the record or field is absent."""
+    doc = axis_doc(name, root)
+    if not doc or not field:
+        return None
+    stamps: list[Any] = []
+    vals: list[float] = []
+    rows = doc.get("rows")
+    if isinstance(rows, list) and rows:
+        for r in rows:
+            if not isinstance(r, dict) or not _matches(r, match):
+                continue
+            v = _reading(r, field)
+            t = _knowable(r.get("knowable_at"))
+            if v is None or t is None:
+                continue
+            stamps.append(t)
+            vals.append(v)
+    else:
+        sd = (doc.get("series") or {}).get(field) if isinstance(doc.get("series"), dict) else None
+        for pt in (sd or {}).get("points") or []:
+            if not isinstance(pt, dict):
+                continue
+            v = _num(pt.get("v"))
+            t = _knowable(pt.get("d"))
+            if v is None or t is None:
+                continue
+            stamps.append(t + pd.Timedelta(days=1))
+            vals.append(v)
+    if not vals:
+        return None
+    return pd.Series(vals, index=pd.DatetimeIndex(stamps)).sort_index()
+
+
+# ------------------------------------------------------------------ grounds journals
+#: Keys a grounds journal row may carry its own recording time under, most specific first.
+JOURNAL_TIME_KEYS: tuple[str, ...] = ("at", "recorded_at", "observed_at", "timestamp", "ts")
+
+
+def grounds_raw(name: str, field: str = ROW_COUNT_FIELD, *,
+                root: Path | None = None) -> pd.Series | None:
+    """An APPEND-ONLY grounds journal (`data/<name>.jsonl`, one row per ground or claim mined,
+    each stamped when it was recorded) as its daily activity: `_rows` per UTC day, known at the
+    END of that day. A grounds LIST with no row stamps has no series (None)."""
+    if field != ROW_COUNT_FIELD:
+        return None
+    p = (root or DATA) / f"{name}.jsonl"
+    if not p.is_file():
+        return None
+    per_day: dict[pd.Timestamp, int] = {}
+    for r in rows_in(p):
+        t = None
+        for k in JOURNAL_TIME_KEYS:
+            if r.get(k):
+                try:
+                    t = pd.Timestamp(str(r[k]))
+                except (ValueError, TypeError):
+                    t = None
+                if t is not None:
+                    break
+        if t is None:
+            continue
+        t = t.tz_localize(UTC) if t.tzinfo is None else t.tz_convert(UTC)
+        day = t.normalize() + pd.Timedelta(days=1)
+        per_day[day] = per_day.get(day, 0) + 1
+    if not per_day:
+        return None
+    idx = pd.date_range(min(per_day), max(per_day), freq="D")
+    # A day the journal recorded nothing reads 0: a measurement of the miner's day, not a gap.
+    return pd.Series([float(per_day.get(d, 0)) for d in idx], index=idx)
+
+
 # ------------------------------------------------------------------ the one entry point
 def raw(dataset: str, field: str, *, match: str = "", root: Path | None = None) -> pd.Series | None:
     """The dataset's field as UNSHAPED values on its availability clock (UTC). None = UNMEASURED.
@@ -321,6 +506,10 @@ def raw(dataset: str, field: str, *, match: str = "", root: Path | None = None) 
     if kind == "lake":
         from mt5desk.family_exogenous_conditioner import conditioner
         return conditioner(rest, field, "level", lag_hours=0, root=root)
+    if kind == "macro":
+        return macro_raw(rest, field, match=match, root=root)
+    if kind == "grounds":
+        return grounds_raw(rest, field, root=root)
     return None
 
 
