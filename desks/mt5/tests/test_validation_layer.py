@@ -113,6 +113,8 @@ def test_the_second_replay_agrees_with_the_engine_on_a_real_family():
     # registry metadata; the replay is charged the same round trip in price units.
     costs = Costs.from_symbol({"contract_size": 100.0, "tick_size": 0.01, "tick_value": 1.0,
                                "median_spread_pts": 20.0})
+    # A zero round trip would make "agree at cost" the uncosted comparison under another name.
+    assert float(costs.per_oz_roundtrip()) > 0, costs
     bt = run_backtest(d, sig, costs)
     r2 = replay2.replay(d, sig, cost_price_units=float(costs.per_oz_roundtrip())
                         / float(costs.contract_oz))
