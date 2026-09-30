@@ -107,6 +107,8 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.tiers import swap_world  # noqa: E402
+
 UNIVERSE = DESK / "data" / "universe"
 SURVIVORS = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 SLEEVES = DESK / "data" / "sleeves.json"
@@ -132,6 +134,7 @@ FLAG_RULES: dict[str, tuple[str, str]] = {
     "path_specific": ("block_bootstrap", "sign"),
     "dies_in_crisis": ("crisis_ladder", "sign"),
     "broker_cost_fragile": ("broker_widening", "sign"),
+    "dies_on_swap_rollover": (swap_world.NAME, "sign"),
 }
 
 
@@ -269,6 +272,9 @@ class World:
     partial: float = 0.0
     applied: int = 0
     why: str = ""
+    #: the per-bar swap/rollover world (`libs/tiers/swap_world.py`): the SAME tape, the replay's
+    #: own trades re-charged for financing and rollover-bar spread
+    swap_stress: bool = False
 
 
 def _s_usd_shock(bars: pd.DataFrame, sym: str, seed: int, name: str) -> World:
@@ -488,6 +494,16 @@ def _s_broker_widening(bars: pd.DataFrame, sym: str, seed: int, name: str) -> Wo
     return World(out, out, cost_mult=2.5, applied=len(out))
 
 
+def _s_swap_rollover(bars: pd.DataFrame, sym: str, seed: int, name: str) -> World:
+    """The tape untouched; the trades it produces are charged per rollover bar they hold through
+    (`swap_world.stress_r`). `applied` is the number of rollover-hour bars on the tape."""
+    idx = pd.DatetimeIndex(bars.index)
+    hours = idx.tz_convert("UTC").hour if idx.tz is not None else idx.hour
+    n = int(np.isin(np.asarray(hours), swap_world.ROLLOVER_BAR_HOURS).sum())
+    return World(bars, bars, applied=n, swap_stress=True,
+                 why="" if n else "no rollover-hour bar on this tape")
+
+
 #: Name -> (what it does, the transform). Order is the order they run and the order they print.
 SCENARIOS: dict[str, tuple[str, Any]] = {
     "usd_shock_liquidity_crash": (
@@ -526,6 +542,7 @@ SCENARIOS: dict[str, tuple[str, Any]] = {
                       "x3/x5/x8 for a day each, round trip charged x3", _s_crisis_ladder),
     "broker_widening": ("spread x2 everywhere and x6 at the day's first and last hour, round "
                         "trip charged x2.5", _s_broker_widening),
+    swap_world.NAME: (swap_world.WHAT, _s_swap_rollover),
 }
 
 
@@ -613,6 +630,27 @@ def _minimal_replay(df: pd.DataFrame, sigs: list, cost_px: float) -> list[float]
         last_exit = i + held - 1
         out.append((exit_px - entry) / sd * side - cost_px / sd)
     return out
+
+
+def _swap_replay(world: World, sigs: list, eng: Any, sym_meta: dict,
+                 symbol: str) -> list[float] | str:
+    """The swap world needs each trade's entry and exit TIMES, which only the engine returns."""
+    if eng is None:
+        return "the minimal replay carries no trade times; the swap world needs the engine"
+    run_backtest, costs_cls = eng
+    try:
+        costs = costs_cls.from_symbol(sym_meta, mult=world.cost_mult)
+        swap = float(getattr(costs, "swap_per_lot_per_night", 0.0) or 0.0)
+        if swap <= 0:
+            return f"no swap terms for {symbol} in universe.json: a zero-swap stress is no stress"
+        res = run_backtest(world.exec_bars, sigs, costs)
+        rs, touched = swap_world.stress_r(res.trades, swap_per_lot=swap,
+                                          spread_per_lot=float(costs.spread_per_lot),
+                                          contract=float(costs.contract_oz))
+    except Exception as exc:
+        return f"replay raised: {type(exc).__name__}: {str(exc)[:70]}"
+    world.applied = touched or world.applied
+    return rs
 
 
 def _signals(fn: Any, bars: pd.DataFrame, side: int, params: dict, selector: str) -> list:
@@ -770,6 +808,8 @@ def probe_sleeve(sleeve: Sleeve, meta: dict, seed: int, basis: str,
             return f"family raised: {type(exc).__name__}: {str(exc)[:70]}"
         if not sigs:
             return []
+        if world.swap_stress:
+            return _swap_replay(world, sigs, eng, sym_meta, sleeve.symbol)
         try:
             if eng is not None:
                 run_backtest, costs_cls = eng

@@ -58,12 +58,14 @@ from libs.tiers import (  # noqa: E402
     contracts,
     control_arm,
     cross_science,
+    data_os,
     epistemic,
     evolution,
     failure_memory,
     firewall,
     formal,
     frontier,
+    graph_edges,
     meta_benchmark,
     online_fdr,
     opportunity_exchange,
@@ -72,9 +74,12 @@ from libs.tiers import (  # noqa: E402
     replay,
     researcher_market,
     review_panel,
+    science_labs,
     self_model,
+    swap_world,
     test_invention,
     theory,
+    theory_context,
     topology,
     traps,
     truth_kernel,
@@ -1540,13 +1545,17 @@ def organ_theory() -> dict[str, Any]:
     shadow = shadow_rows()
     n_back = 0
     by_fam_sym: dict[str, Counter[str]] = defaultdict(Counter)
+    ctx = _TheoryContext()
     for r in _jsonl(GATE_LEDGER):
         fam = str(r.get("family") or "")
         if not fam:
             continue
-        g.theory(mechanism_for(fam)).add(experiment=str(r.get("cell")),
-                                         supports=bool(r.get("passed")), source="backtest",
-                                         context=str(r.get("sym") or ""))
+        sym = str(r.get("sym") or "")
+        theory_context.add(g.theory(mechanism_for(fam)), experiment=str(r.get("cell")),
+                           supports=bool(r.get("passed")), source="backtest", context=sym,
+                           jurisdiction=ctx.jurisdiction(sym),
+                           regime=theory_context.declared_regime(str(r.get("cell")))
+                           or "full_sample")
         if r.get("passed"):
             by_fam_sym[fam][str(r.get("sym") or "")] += 1
         n_back += 1
@@ -1559,29 +1568,42 @@ def organ_theory() -> dict[str, Any]:
             continue
         fw = shadow.get(f"{spec.get('symbol')}.{spec.get('selector')}") or {}
         if fw.get("n") and int(fw["n"]) >= 5 and fw.get("exp_r") is not None:
-            g.theory(mechanism_for(fam)).add(experiment=f"forward:{key}",
-                                             supports=float(fw["exp_r"]) > 0, source="forward",
-                                             context=str(spec.get("symbol")))
+            sym = str(spec.get("symbol"))
+            theory_context.add(g.theory(mechanism_for(fam)), experiment=f"forward:{key}",
+                               supports=float(fw["exp_r"]) > 0, source="forward", context=sym,
+                               jurisdiction=ctx.jurisdiction(sym),
+                               regime=theory_context.declared_regime(str(spec.get("condition")
+                                                                         or "")) or ctx.regime(sym))
         by_fam_sym[fam][str(spec.get("symbol") or "")] += 1
     rep_doc = _read(REPORTS / "REPLICATION.json") or {}
     for r in (rep_doc.get("verdicts") or []) if isinstance(rep_doc, dict) else []:
         if isinstance(r, dict) and r.get("family"):
-            g.theory(mechanism_for(str(r["family"]))).add(
+            sym = str(r.get("symbol") or "")
+            theory_context.add(
+                g.theory(mechanism_for(str(r["family"]))),
                 experiment=f"replication:{r.get('key')}", source="replication",
                 supports=str(r.get("verdict") or "").upper() in ("REPLICATED", "AGREE"),
-                context=str(r.get("symbol") or ""))
+                context=sym, jurisdiction=ctx.jurisdiction(sym), regime="full_sample")
     live_by: dict[str, float] = defaultdict(float)
     for r in live_rows():
         live_by[r["_group"]] += float(r.get("pl_quote") or 0.0)
     done: set[tuple[str, str]] = set()
     for k, v in registry().items():
-        fam = str(((v or {}).get("identity") or {}).get("family") or "")
+        ident = (v or {}).get("identity") or {}
+        fam = str(ident.get("family") or "")
         grp = names().group(k)
         if fam and grp in live_by and (fam, grp) not in done:
             done.add((fam, grp))
-            g.theory(mechanism_for(fam)).add(experiment=f"live:{grp}", supports=live_by[grp] > 0,
-                                             source="live", context=grp)
+            sym = str(ident.get("symbol") or grp.split(".")[0])
+            theory_context.add(g.theory(mechanism_for(fam)), experiment=f"live:{grp}",
+                               supports=live_by[grp] > 0, source="live", context=grp,
+                               jurisdiction=ctx.jurisdiction(sym), regime=ctx.regime(sym))
+    persisted = theory_context.merge_persisted(g, THEORY_GRAPH, NOW.isoformat())
+    by_ctx = theory_context.context_report(g)
     rep = g.report(top=80)
+    for t in rep["theories"]:
+        t["context"] = by_ctx.get(t["id"])
+    n_ctx = sum(1 for c in by_ctx.values() if c["context_dependent"])
     # composition: theory x condition -> exact recipes
     try:
         from mt5desk.families import FAMILY_REGISTRY  # type: ignore[import-not-found]
@@ -1619,10 +1641,41 @@ def organ_theory() -> dict[str, Any]:
                                      f"confidence {t['confidence']}) under {label} on {sym}"})
     emitted = _emit("theory_compositions", rows)
     return {**rep, "backtest_rows": n_back, "composed": composed, "emitted": emitted,
+            "persisted": persisted, "context_dependent": n_ctx,
             "metric": {"n_theories": rep["n_theories"], "complete_share":
                        rep["complete_share"], "refuted": rep["by_status"].get("REFUTED", 0),
                        "supported": rep["by_status"].get("SUPPORTED", 0),
-                       "composed": composed}}
+                       "composed": composed, "context_dependent": n_ctx,
+                       "carried_evidence": persisted["carried"]}}
+
+
+THEORY_GRAPH = STATE / "theory_graph.json"
+
+
+class _TheoryContext:
+    """Jurisdiction and current volatility regime per symbol, each read once per pass."""
+
+    def __init__(self) -> None:
+        doc = _read(UNIVERSE / "universe.json")
+        self.meta: dict[str, Any] = doc if isinstance(doc, dict) else {}
+        self._reg: dict[str, str] = {}
+
+    def jurisdiction(self, sym: str) -> str:
+        return theory_context.jurisdiction_of(sym, self.meta.get(sym))
+
+    def regime(self, sym: str) -> str:
+        if sym not in self._reg:
+            p = UNIVERSE / f"{sym}_H1.parquet"
+            reg = theory_context.UNMEASURED
+            if p.exists():
+                try:
+                    import pandas as pd
+                    reg = theory_context.vol_regime(pd.read_parquet(p, columns=["close"])
+                                                    ["close"].to_numpy()[-2500:])
+                except Exception:
+                    reg = theory_context.UNMEASURED
+            self._reg[sym] = reg
+        return self._reg[sym]
 
 
 def _execution_evidence(n: int, rs: list[float] | None, fwd_exp: Any) -> dict[str, Any]:
@@ -2137,11 +2190,13 @@ def organ_data_os() -> dict[str, Any]:
         if isinstance(rows, list):
             intel_rows.extend(r for r in rows[:200] if isinstance(r, dict))
     audits["intelligence"] = bitemporal.pit_audit(intel_rows)
-    # the acquisition ledger: predictions from the four rankers, resolved on arrival
+    # ONE RECORD PER SOURCE: data_registry x ingestion_ledger x vintage, and each source's gate
+    # yield (`libs/tiers/data_os.py`). The acquisition ledger is scored on gate yield.
+    yields, sources = _data_os_sources()
     st = _state("acquisition")
     preds = [bitemporal.Prediction(**p) for p in st.get("predictions") or []]
     known = {p.item for p in preds}
-    metric_now = {"pit_share": float(audits["intelligence"].get("pit_share") or 0.0)}
+    metric_now = data_os.metric_now(yields)
     for ranker, fname in (("data_acquisition_scientist", "DATA_ACQUISITION.json"),
                           ("evig_acquisition", "EVIG_ACQUISITION.json"),
                           ("source_evig", "SOURCE_EVIG.json"),
@@ -2169,24 +2224,61 @@ def organ_data_os() -> dict[str, Any]:
                                                ranker=ranker, predicted_gain=g,
                                                cost_eur=float(r.get("cost_eur") or 0.0),
                                                cost_cpu_h=float(r.get("cost_cpu_h") or 0.1),
-                                               metric="pit_share",
-                                               metric_before=metric_now["pit_share"],
-                                               at=NOW.isoformat()))
+                                               metric=data_os.yield_metric(
+                                                   data_os.info_class(item, r.get("kind"))),
+                                               metric_before=None, at=NOW.isoformat()))
             known.add(item)
     acquired: dict[str, datetime] = {}
     acq_dir = DESK / "data" / "acquired"
     if acq_dir.exists():
         for p in acq_dir.iterdir():
             acquired[p.stem] = datetime.fromtimestamp(p.stat().st_mtime, UTC)
+    moved = data_os.retarget(preds, metric_now)
     n_res = bitemporal.resolve(preds, acquired, metric_now, NOW.isoformat())
     cal = bitemporal.calibration(preds)
     ranking = bitemporal.rank(preds, cal)
+    for row in ranking:
+        cls = data_os.info_class(row["item"], row["kind"])
+        row["info_class"] = cls
+        row["class_gate_yield"] = (yields.get(cls) or {}).get("yield")
     _save_state("acquisition", {"predictions": [p.to_dict() for p in preds][-3000:]})
-    return {"pit_audits": audits, "acquisition": {"open": len(ranking),
-                                                  "resolved_now": n_res,
-                                                  "calibration": cal, "top": ranking[:25]},
+    return {"pit_audits": audits, "sources": sources, "gate_yield": yields,
+            "acquisition": {"open": len(ranking), "resolved_now": n_res, **moved,
+                            "scored_on": "gate_yield", "calibration": cal,
+                            "top": ranking[:25]},
             "metric": {"pit_share": audits["intelligence"].get("pit_share"),
-                       "calibrated_rankers": len(cal)}}
+                       "calibrated_rankers": len(cal),
+                       "sources": sources.get("n_sources"),
+                       "sources_fully_joined": sources.get("fully_joined"),
+                       "gate_yield": (yields.get("all") or {}).get("yield")}}
+
+
+INGESTION_LEDGER = DESK / "data" / "ingestion_ledger.jsonl"
+DATA_REGISTRY = DESK / "data" / "data_registry.json"
+
+
+def _yield_class(family: str) -> str:
+    try:
+        import axis_registry
+    except Exception:                                 # pragma: no cover - import guard
+        return data_os.UNKNOWN
+    return str(axis_registry.classify_family(family)[1])
+
+
+def _data_os_sources() -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """(gate yield per information class, one record per source). Absent ledgers are UNMEASURED
+    sides of each record, never an empty clean join."""
+    yields = data_os.gate_yield(_jsonl(GATE_LEDGER), _yield_class, NOW)
+    reg_doc = _read(DATA_REGISTRY)
+    reg = reg_doc.get("datasets") if isinstance(reg_doc, dict) else None
+    reg = reg if isinstance(reg, dict) else {}
+    ing = data_os.ingestion_by_dataset(data_os.tail_jsonl(INGESTION_LEDGER))
+    vint = data_os.vintage_series((ROOT, DESK))
+    src = data_os.source_records(reg, ing, vint, yields)
+    src["inputs"] = {"registry": len(reg) if reg_doc is not None else data_os.UNMEASURED,
+                     "ingestion_datasets": len(ing) if INGESTION_LEDGER.exists()
+                     else data_os.UNMEASURED, "vintage_series": len(vint)}
+    return yields, src
 
 
 #: THE CROSS-SCIENCE QUEUE. Hits whose mechanism no registered family states go to the expression
@@ -2206,6 +2298,8 @@ def xsci_expression(hit: Mapping[str, Any]) -> str | None:
     """The lab's own mechanism as an alpha-grammar expression on the hit's symbol, or None when
     the mechanism is cross-instrument (those go to the compiler as lead_lag instead)."""
     lab = str(hit.get("lab") or "")
+    if lab in ("operations", "motif"):
+        return science_labs.expression(hit)          # libs/tiers/science_labs.py
     if lab == "signal":
         half = _nearest_window(max(2.0, float(hit.get("period") or 16.0) / 2.0))
         return f"neg(delta(close, {half}))"          # half a cycle up -> the next half is down
@@ -2291,14 +2385,43 @@ def science_rows(labs: Mapping[str, list[dict[str, Any]]],
     return rows, exprs
 
 
+CAUSAL_GRAPH = DESK / "data" / "world_causal_graph.json"
+CROSS_ASSET_GRAPH = REPORTS / "CROSS_ASSET_GRAPH.json"
+
+
+def _listed_graph() -> dict[str, Any]:
+    """The world model's OWN edge list (world_causal_graph + cross_asset_graph), classified
+    (`libs/tiers/graph_edges.py`); broken STABLE listed edges come back as residual rows."""
+    causal, cross = _read(CAUSAL_GRAPH), _read(CROSS_ASSET_GRAPH)
+    if causal is None and cross is None:
+        return {"status": "UNMEASURED", "why": "neither world_causal_graph.json nor "
+                "CROSS_ASSET_GRAPH.json is on this host", "broken": [], "edges": []}
+    listed = graph_edges.listed_edges(causal, cross)
+    syms = {e[k] for e in listed for k in ("driver", "target")}
+    out = graph_edges.classify_listed(listed, graph_edges.h1_returns(UNIVERSE, syms),
+                                      may=_may_hypothesise)
+    out["sources"] = {"world_causal_graph": causal is not None,
+                      "cross_asset_graph": cross is not None}
+    return out
+
+
 def organ_world_and_science() -> dict[str, Any]:
+    listed = _listed_graph()
+    listed_broken = listed.pop("broken", [])
+    listed_edges = listed.pop("edges", [])
+    _write(STATE / "listed_edges.json", {"generated_utc": NOW.isoformat(),
+                                         "edges": listed_edges})
     rets, closes, vols = _returns_panel()
     if len(rets) < 3:
+        rows0, _ = science_rows({}, listed_broken)
         return {"status": "UNMEASURED", "why": f"{len(rets)} eligible H1 series on this host",
-                "metric": {"stable_edges": None, "hypotheses": 0}}
+                "listed_graph": listed, "emitted": _emit("cross_science", rows0),
+                "metric": {"stable_edges": None, "hypotheses": len(rows0),
+                           "listed_edges_measured": listed.get("n_measured")}}
     edges = world_edges.classify_all(rets, lags=(1,), max_pairs=300)
-    resid = world_edges.residuals(rets, edges)
+    resid = world_edges.residuals(rets, edges) + listed_broken
     labs = cross_science.run_all(rets, closes, vols)
+    labs.update(science_labs.run_all(rets, vols))     # operations + motif labs (layer 43)
     rows, exprs = science_rows(labs, resid)
     emitted = _emit("cross_science", rows)
     queued = enqueue_xsci(exprs)
@@ -2308,7 +2431,7 @@ def organ_world_and_science() -> dict[str, Any]:
     macro_exprs = macro.pop("exprs")
     queued += enqueue_xsci(macro_exprs)
     macro.pop("edges", None)
-    return {"edges": census, "broken_relationships": resid[:20],
+    return {"edges": census, "broken_relationships": resid[:20], "listed_graph": listed,
             "macro_world": {**macro, "emitted": macro_emitted},
             "labs": {k: len(v) for k, v in labs.items()}, "emitted": emitted,
             "expressions_queued": queued, "expressions_offered": len(exprs),
@@ -2317,6 +2440,10 @@ def organ_world_and_science() -> dict[str, Any]:
                        "hypotheses": len(rows) + len(exprs) + int(macro_emitted.get(
                            "emitted") or 0) + len(macro_exprs),
                        "macro_kinds_measured": macro.get("kinds_measured"),
+                       "listed_edges_measured": listed.get("n_measured"),
+                       "listed_edges_contradicted": listed.get("contradicted"),
+                       "or_motif_hits": len(labs.get("operations") or [])
+                       + len(labs.get("motif") or []),
                        "macro_live_edges": len(macro.get("live_edges") or [])}}
 
 
@@ -2360,7 +2487,8 @@ def organ_worlds() -> dict[str, Any]:
                "flags": (hit or {}).get("flags") or [], "verdict": (hit or {}).get("verdict"),
                "twin": str(key) in twin_keys,
                "exp_x5": (((hit or {}).get("scenarios") or {}).get("spread_x5") or {})
-               .get("expectancy")}
+               .get("expectancy"),
+               "swap_world": _swap_world_of(hit, worlds)}
         rows.append(rec)
         if not measured:
             untested.append(str(key))
@@ -2368,11 +2496,32 @@ def organ_worlds() -> dict[str, Any]:
                                                    "rows": rows})
     n = len(rows)
     flagged = sum(1 for r in rows if r["flags"])
+    swap_states = Counter(str(r["swap_world"]["status"]) for r in rows)
+    swap_dead = sum(1 for r in rows if "dies_on_swap_rollover" in (r["flags"] or []))
     return {"worlds": worlds, "n_certificates": n, "untested": untested[:60],
             "flagged": flagged,
+            "swap_world": {"name": swap_world.NAME, "what": swap_world.WHAT,
+                           "in_synthetic_regimes": swap_world.NAME in worlds,
+                           "by_status": dict(swap_states), "dies_on_swap_rollover": swap_dead},
             "metric": {"stress_tested_share": (n - len(untested)) / n if n else None,
                        "flagged_share": flagged / n if n else None,
-                       "worlds": len(worlds)}}
+                       "worlds": len(worlds),
+                       "swap_world_measured_share": swap_states.get("MEASURED", 0) / n
+                       if n else None}}
+
+
+def _swap_world_of(hit: Mapping[str, Any] | None, worlds: list[Any]) -> dict[str, Any]:
+    """This certificate's reading in the per-bar swap/rollover world, or why there is none."""
+    if swap_world.NAME not in worlds:
+        return {"status": "UNMEASURED", "why": "SYNTHETIC_REGIMES.json predates the swap world "
+                "(its next pass on the box carries it)"}
+    if not hit:
+        return {"status": "UNMEASURED", "why": "no synthetic-regime row for this certificate"}
+    row = (hit.get("scenarios") or {}).get(swap_world.NAME) or {}
+    if row.get("status") != "MEASURED":
+        return {"status": "UNMEASURED", "why": row.get("why") or "scenario absent from the row"}
+    return {"status": "MEASURED", "expectancy": row.get("expectancy"),
+            "delta_expectancy": row.get("delta_expectancy"), "trades_touched": row.get("applied")}
 
 
 def _posterior_bids() -> tuple[list[opportunity_exchange.Bid], dict[str, float]]:
