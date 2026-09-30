@@ -80,7 +80,7 @@ def test_the_floor_is_applied_between_the_price_and_the_run() -> None:
     src = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     body = src[src.index("def _producer_impl("):src.index("def execution_twin(")]
     price = body.index("budget, _price_rec = _priced_budget(")
-    floor = body.index("_floor = _leg_floor_s(name)")
+    floor = body.index("_floor = max(_leg_floor_s(name), _self_stop_floor_s(args))")
     run = body.index("timeout=budget")
     assert price < floor < run
     assert "if _floor and budget < _floor:" in body
