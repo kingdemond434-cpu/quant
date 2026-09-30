@@ -1,10 +1,11 @@
 """MONEY-PATH SOVEREIGNTY, pinned (principal's audit, 2026-09-30, and the blueprint re-score).
 
     I1 allocator zero / absent / non-finite  -> no order, and the sizers return 0.0
-    I2 UNMEASURED (or absent) admission      -> shadow
+    I2 UNMEASURED (or absent) admission      -> shadow when enforced; REPORT-ONLY by default
     I3 banned family (read, never restated)  -> no new risk
     I4 UNMEASURED material cost              -> shadow, decided by cost_surfaces.cost_for
-    I5 UNMEASURED marginal dE[log W]         -> shadow
+    I5 UNMEASURED marginal dE[log W]         -> shadow when enforced; REPORT-ONLY by default
+    (the one switch `money_path.ENFORCE_UNMEASURED_ADMISSION`; both modes are pinned below)
     I6 principal override outside the declared experimental budget -> no new risk
 
 plus the fence that keeps every new-risk placement site calling the guard, and the identity tag
@@ -45,8 +46,9 @@ def _row(**kw):
     return row
 
 
-def _v(row, *, banned=frozenset({"discovered"}), cost=MEASURED, budget=None):
-    return mp.verdict(row, banned=banned, cost=cost, budget=budget, now=NOW)
+def _v(row, *, banned=frozenset({"discovered"}), cost=MEASURED, budget=None, enforce=None):
+    return mp.verdict(row, banned=banned, cost=cost, budget=budget, now=NOW,
+                      enforce_unmeasured_admission=enforce)
 
 
 def _refused_by(v):
@@ -104,7 +106,7 @@ def test_the_floors_still_bind_above_zero():
 # ------------------------------------------------------------------------------ I2 / I5
 @pytest.mark.parametrize("adm", [{"status": "UNMEASURED", "risk_frac": 0.01}, None, {}])
 def test_an_unmeasured_or_absent_admission_is_shadow(adm):
-    v = _v(_row(admission=adm))
+    v = _v(_row(admission=adm), enforce=True)
     assert mp.ADMISSION_UNMEASURED in _refused_by(v)
 
 
@@ -116,10 +118,87 @@ def test_a_canonical_gold_window_is_admitted_by_the_allocators_book():
 
 
 def test_a_live_admission_without_a_marginal_reading_is_shadow():
-    v = _v(_row(admission={"status": "LIVE", "risk_frac": 0.01}))
+    v = _v(_row(admission={"status": "LIVE", "risk_frac": 0.01}), enforce=True)
     assert _refused_by(v) == {mp.MARGINAL_UNMEASURED}
-    ok = _v(_row(admission={"status": "LIVE", "risk_frac": 0.01, "delta_elogw_per_day": 1e-5}))
+    ok = _v(_row(admission={"status": "LIVE", "risk_frac": 0.01, "delta_elogw_per_day": 1e-5}),
+            enforce=True)
     assert ok["ok"]
+
+
+# ------------------------------------------------------------------------------ the switch
+def test_the_switch_ships_report_only_and_governs_exactly_i2_and_i5():
+    """Today's setting, pinned: fail-closed on a reading that is only UNMEASURED would flatten
+    the book. Flipping it is one line; this test is the one that must change with it."""
+    assert mp.ENFORCE_UNMEASURED_ADMISSION is False
+    governed = {mp.ADMISSION_UNMEASURED, mp.MARGINAL_UNMEASURED}
+    assert set(mp.UNMEASURED_ADMISSION_INVARIANTS) == governed
+    assert mp.mode_of(mp.ADMISSION_UNMEASURED) == mp.REPORT_ONLY
+    assert mp.mode_of(mp.ADMISSION_UNMEASURED, True) == mp.ENFORCE
+    for inv in (mp.ALLOCATOR_ZERO, mp.BANNED_FAMILY, mp.COST_UNMEASURED,
+                mp.OVERRIDE_OUTSIDE_BUDGET):
+        assert mp.mode_of(inv) == mp.mode_of(inv, False) == mp.ENFORCE
+
+
+@pytest.mark.parametrize(("adm", "invs"), [
+    ({"status": "UNMEASURED", "risk_frac": 0.01},
+     {mp.ADMISSION_UNMEASURED, mp.MARGINAL_UNMEASURED}),
+    (None, {mp.ADMISSION_UNMEASURED, mp.MARGINAL_UNMEASURED}),
+    ({"status": "LIVE", "risk_frac": 0.01}, {mp.MARGINAL_UNMEASURED}),
+])
+def test_report_only_mode_records_but_does_not_refuse(adm, invs):
+    v = _v(_row(admission=adm), enforce=False)
+    assert v["ok"] and v["refusals"] == [] and v["first"] is None
+    assert {r["invariant"] for r in v["reported"]} == invs
+    assert all(r["mode"] == mp.REPORT_ONLY for r in v["reported"])
+    enforced = _v(_row(admission=adm), enforce=True)
+    assert not enforced["ok"] and _refused_by(enforced) == invs and enforced["reported"] == []
+    assert all(r["mode"] == mp.ENFORCE for r in enforced["refusals"])
+
+
+def test_the_module_constant_is_what_an_unset_call_reads(monkeypatch):
+    row = _row(admission={"status": "UNMEASURED", "risk_frac": 0.01})
+    assert _v(row)["ok"]
+    monkeypatch.setattr(mp, "ENFORCE_UNMEASURED_ADMISSION", True)
+    assert mp.ADMISSION_UNMEASURED in _refused_by(_v(row))
+
+
+@pytest.mark.parametrize("enforce", [True, False])
+def test_the_four_measured_invariants_refuse_in_both_modes(enforce):
+    assert mp.ALLOCATOR_ZERO in _refused_by(_v(_row(risk_frac=0.0), enforce=enforce))
+    assert mp.BANNED_FAMILY in _refused_by(_v(_row(family="discovered"), enforce=enforce))
+    assert mp.COST_UNMEASURED in _refused_by(_v(_row(), cost=None, enforce=enforce))
+    assert mp.OVERRIDE_OUTSIDE_BUDGET in _refused_by(
+        _v(_row(principal_override={"by": "p"}), budget=None, enforce=enforce))
+
+
+def test_a_refused_sleeve_still_carries_its_report_only_findings():
+    v = _v(_row(risk_frac=0.0, admission={"status": "UNMEASURED", "risk_frac": 0.0}),
+           enforce=False)
+    assert _refused_by(v) == {mp.ALLOCATOR_ZERO} and v["first"] == mp.ALLOCATOR_ZERO
+    assert {r["invariant"] for r in v["reported"]} == {mp.ADMISSION_UNMEASURED,
+                                                       mp.MARGINAL_UNMEASURED}
+
+
+def test_report_only_missed_growth_lines_are_marked_and_not_counted_as_refusals(tmp_path):
+    v = _v(_row(admission={"status": "UNMEASURED", "risk_frac": 0.01}), enforce=False)
+    assert mp.missed_growth_line(v, sleeve="s1", symbol="EURUSD", day="d", at="t",
+                                 lane="x") == []
+    lines = mp.missed_growth_line(v, sleeve="s1", symbol="EURUSD", day="2026-09-30", at="t",
+                                  lane="family_market", report_only=True)
+    assert {ln["rail"] for ln in lines} == {"money_path_sovereignty.admission_unmeasured",
+                                            "money_path_sovereignty.marginal_unmeasured"}
+    assert all(ln["mode"] == mp.REPORT_ONLY and ln["value"] is None for ln in lines)
+    p = tmp_path / "missed_growth.jsonl"
+    assert mp.append_missed_growth(lines, p) == 2
+    assert mp.append_missed_growth(lines, p) == 0
+    # flipping the switch mid-day still writes the enforce line for the same rail and sleeve
+    enf = mp.missed_growth_line(_v(_row(admission={"status": "UNMEASURED", "risk_frac": 0.01}),
+                                   enforce=True),
+                                sleeve="s1", symbol="EURUSD", day="2026-09-30", at="t", lane="x")
+    assert mp.append_missed_growth(enf, p) == 2
+    summary = mg.sovereignty_refusals([json.loads(x) for x in p.read_text().splitlines()])
+    assert summary["admission_unmeasured"]["report_only_sleeve_days"] == 1
+    assert summary["admission_unmeasured"]["sleeve_days"] == 1
 
 
 # ------------------------------------------------------------------------------ I3
@@ -262,7 +341,8 @@ def test_on_the_committed_registry_no_banned_or_unmeasured_row_is_tradable():
     banned, _ = mp.banned_families()
     surface, _ = mp.load_cost_surface()
     rep = mp.measure_registry(rows, banned=banned, surface=surface,
-                              budget=mp.load_experimental_budget())
+                              budget=mp.load_experimental_budget(),
+                              enforce_unmeasured_admission=True)
     by = {r["name"]: r for r in rep["rows"]}
     live = [r for r in rows if r.get("status") == "LIVE"]
     for r in live:
@@ -272,6 +352,26 @@ def test_on_the_committed_registry_no_banned_or_unmeasured_row_is_tradable():
         if mp.admission_status(r) in mp.UNMEASURED_ADMISSIONS:
             assert not got["ok"]
     assert rep["tradable_under_invariants"] <= rep["live"]
+
+
+def test_on_the_committed_registry_report_only_never_admits_a_measured_refusal():
+    """Report-only relaxes I2/I5 and nothing else: no banned, zero-allocated, cost-unmeasured or
+    out-of-budget row becomes tradable, and the tradable set only grows."""
+    rows = json.loads((DESK / "data" / "sleeves.json").read_text("utf-8"))["sleeves"]
+    banned, _ = mp.banned_families()
+    surface, _ = mp.load_cost_surface()
+    kw = {"banned": banned, "surface": surface, "budget": mp.load_experimental_budget()}
+    enf = mp.measure_registry(rows, enforce_unmeasured_admission=True, **kw)
+    rep = mp.measure_registry(rows, enforce_unmeasured_admission=False, **kw)
+    assert rep["enforce_unmeasured_admission"] is False
+    assert rep["tradable_under_invariants"] >= enf["tradable_under_invariants"]
+    for r in rep["rows"]:
+        assert not set(r["refused_by"]) & mp.UNMEASURED_ADMISSION_INVARIANTS
+        if r["ok"]:
+            assert not r["refused_by"]
+    assert rep["refused_by_invariant"][mp.ADMISSION_UNMEASURED] == 0
+    assert rep["reported_by_invariant"][mp.ADMISSION_UNMEASURED] == \
+        enf["refused_by_invariant"][mp.ADMISSION_UNMEASURED]
 
 
 # ------------------------------------------------------------------------------ identity tag
@@ -436,9 +536,24 @@ def test_an_unchanged_sleeve_passes_the_recheck():
     _row(status="STANDBY"), _row(status="RETIRED"), None,
 ])
 def test_a_sleeve_that_changed_before_the_send_is_refused(fresh):
-    v = mp.recheck(_row(), fresh)
+    v = mp.recheck(_row(), fresh, enforce_unmeasured_admission=True)
     assert not v["ok"] and v["first"] == mp.CHANGED_BEFORE_SEND
     assert mp.CHANGED_BEFORE_SEND in mp.INVARIANTS
+
+
+@pytest.mark.parametrize("fresh", [
+    _row(admission={"status": "UNMEASURED"}), _row(admission=None),
+    _row(admission={"status": "LIVE", "risk_frac": 0.01}),
+])
+def test_report_only_recheck_reports_an_unmeasured_admission_and_lets_it_send(fresh):
+    v = mp.recheck(_row(), fresh, enforce_unmeasured_admission=False)
+    assert v["ok"] and v["reported"]
+    assert all(r["mode"] == mp.REPORT_ONLY for r in v["reported"])
+
+
+@pytest.mark.parametrize("fresh", [_row(risk_frac=0.0), _row(status="STANDBY"), None])
+def test_report_only_recheck_still_refuses_what_it_measured(fresh):
+    assert not mp.recheck(_row(), fresh, enforce_unmeasured_admission=False)["ok"]
 
 
 def test_a_value_that_cannot_be_re_read_is_refused():
@@ -475,7 +590,7 @@ def _recheck_world(tmp_path, monkeypatch, *, rows, book):
             "journal_refusal": lambda *a, **k: None, "now": lambda: NOW.isoformat(),
             "datetime": datetime, "UTC": UTC}
     ns = _gw(("_money_path_fresh_row", "money_path_recheck", "_money_path_refuse",
-              "_book_key"), seed)
+              "_money_path_report", "_book_key"), seed)
     return ns, decisions, logs
 
 
@@ -513,9 +628,31 @@ def test_the_gateway_recheck_refuses_a_zeroed_book_and_records_it(tmp_path, monk
     ([_GOLD_ROW], {"someone_else": 0.02}),                           # left the book
 ])
 def test_the_gateway_recheck_refuses_what_changed(tmp_path, monkeypatch, rows, book):
+    monkeypatch.setattr(mp, "ENFORCE_UNMEASURED_ADMISSION", True)
     ns, decisions, _ = _recheck_world(tmp_path, monkeypatch, rows=rows, book=book)
     assert ns["money_path_recheck"]({}, _sent_row(), lane="family_market", side=1) is False
     assert decisions[0]["reason"] == "sovereignty_changed_before_send"
+
+
+def test_the_gateway_recheck_in_report_only_sends_and_leaves_both_rows(tmp_path, monkeypatch):
+    monkeypatch.setattr(mp, "ENFORCE_UNMEASURED_ADMISSION", False)
+    rows = [{**_GOLD_ROW, "admission": {"status": "UNMEASURED"}}]
+    ns, decisions, _logs = _recheck_world(tmp_path, monkeypatch, rows=rows,
+                                          book={"xau_srb": 0.01})
+    st: dict = {}
+    assert ns["money_path_recheck"](st, _sent_row(), lane="family_market", side=1,
+                                    lot=0.02) is True
+    assert len(decisions) == 1
+    d = decisions[0]
+    assert d["reason"] == "sovereignty_report_only" and d["taken"] is True
+    assert d["suppressions"]["money_path"]["mode"] == mp.REPORT_ONLY
+    assert {g["mode"] for g in d["failed_gates"]} == {mp.REPORT_ONLY}
+    lines = [json.loads(x) for x in
+             (tmp_path / "missed_growth.jsonl").read_text("utf-8").splitlines()]
+    assert lines and all(ln["mode"] == mp.REPORT_ONLY for ln in lines)
+    # once per sleeve, invariant set and day
+    assert ns["money_path_recheck"](st, _sent_row(), lane="family_market", side=1) is True
+    assert len(decisions) == 1
 
 
 def test_every_new_risk_send_is_rechecked_after_its_guard():

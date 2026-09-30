@@ -502,7 +502,10 @@ def sovereignty_refusals(rows: list[dict]) -> dict[str, Any]:
     """What the four money-path invariants refused, by invariant: sleeve-days, sleeves, and how
     many of those lines carry a priced value. A line with no value is UNMEASURED -- the order
     that was not sent is priced by the counterfactual replay of its decision row, never read as
-    free (Rule 1)."""
+    free (Rule 1).
+
+    A line marked `mode: "report_only"` (`money_path.ENFORCE_UNMEASURED_ADMISSION` False) is
+    counted under `report_only_sleeve_days`, never as a refusal: that order was sent."""
     out: dict[str, Any] = {}
     for r in rows:
         rail = str(r.get("rail") or "")
@@ -510,7 +513,12 @@ def sovereignty_refusals(rows: list[dict]) -> dict[str, Any]:
             continue
         inv = rail[len(SOVEREIGNTY_PREFIX):]
         b = out.setdefault(inv, {"sleeve_days": 0, "sleeves": set(), "priced": 0,
-                                 "value_logw": 0.0, "last_day": ""})
+                                 "value_logw": 0.0, "last_day": "",
+                                 "report_only_sleeve_days": 0})
+        if str(r.get("mode") or "") == "report_only":
+            b["report_only_sleeve_days"] += 1
+            b["last_day"] = max(b["last_day"], str(r.get("day") or ""))
+            continue
         b["sleeve_days"] += 1
         b["sleeves"].add(str(r.get("sleeve") or ""))
         v = _num(r.get("value"))

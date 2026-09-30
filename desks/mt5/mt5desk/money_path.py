@@ -44,6 +44,13 @@ blocked by anything here, because a refused sleeve is SHADOW, not orphaned.
        experimental book is WITHIN, and accounts for this very sleeve. Undeclared, over, stale,
        absent or silent about the sleeve is no new risk -- the budget is the principal's number.
 
+REPORT-ONLY MODE FOR I2 AND I5 (`ENFORCE_UNMEASURED_ADMISSION`, 2026-09-30). The two checks
+that read only "the admission scan has not measured this yet" are REPORTED, not enforced, until
+the box measures admission: they still write the decision-ledger row and the missed-growth line,
+marked `mode: "report_only"`, but the send goes. I1 (allocator zero), I3 (banned family), I4
+(unmeasured cost) and I6 (override outside budget) always refuse. Flipping the one switch below
+to True makes I2/I5 refuse again; nothing else changes.
+
 PRINCIPAL OVERRIDES DO NOT BYPASS I1-I5. An override row changes a sleeve's status; it does not
 change what the allocator, the admission scan, the ban list or the cost surface say about it.
 
@@ -81,6 +88,41 @@ CHANGED_BEFORE_SEND = "changed_before_send"
 INVARIANTS: tuple[str, ...] = (ALLOCATOR_ZERO, ADMISSION_UNMEASURED, BANNED_FAMILY,
                                COST_UNMEASURED, MARGINAL_UNMEASURED, OVERRIDE_OUTSIDE_BUDGET,
                                CHANGED_BEFORE_SEND)
+
+#: THE ONE SWITCH for I2 (ADMISSION_UNMEASURED) and I5 (MARGINAL_UNMEASURED).
+#: False = REPORT-ONLY: the check still runs, still writes its decision-ledger row and its
+#: missed-growth line (both marked `mode: "report_only"`), but does NOT refuse the send.
+#: WHY False today: these two checks refuse on a reading that is only UNMEASURED -- the admission
+#: scan has not yet run on the box for those sleeves -- and failing closed on "not measured yet"
+#: would flatten the whole book: a risk reduction by fiat that no evidence shows raises
+#: E[log W] (growth governance Rule 1). The four checks that read a MEASURED fact (allocator
+#: zero, banned family, unmeasured material cost, override outside the declared budget) stay
+#: enforced whatever this switch says.
+#: TURN IT ON (True) once the box measures admission (a heavy admission scan writing
+#: `admission.status` / `delta_elogw_per_day` / `heat_earned` on every LIVE row). That one line
+#: is the whole change -- the tests and the fence pin both modes.
+ENFORCE_UNMEASURED_ADMISSION = False
+#: The invariants the switch governs. Every other invariant always refuses.
+UNMEASURED_ADMISSION_INVARIANTS: frozenset[str] = frozenset({ADMISSION_UNMEASURED,
+                                                             MARGINAL_UNMEASURED})
+ENFORCE = "enforce"
+REPORT_ONLY = "report_only"
+
+
+def enforcing_unmeasured_admission(enforce: bool | None = None) -> bool:
+    """The switch's value for one judgement: an explicit `enforce` wins (tests, the fence),
+    otherwise the module constant, read at call time so a patched constant takes effect."""
+    return ENFORCE_UNMEASURED_ADMISSION if enforce is None else bool(enforce)
+
+
+def mode_of(invariant: str, enforce: bool | None = None) -> str:
+    """`enforce` (the finding refuses the send) or `report_only` (recorded, not refused)."""
+    if invariant in UNMEASURED_ADMISSION_INVARIANTS and not enforcing_unmeasured_admission(
+            enforce):
+        return REPORT_ONLY
+    return ENFORCE
+
+
 #: Decision-ledger reason prefix and missed-growth rail prefix.
 REASON_PREFIX = "sovereignty_"
 RAIL_PREFIX = "money_path_sovereignty."
@@ -243,9 +285,15 @@ def check_override_budget(row: Mapping[str, Any], budget: Mapping[str, Any] | No
 def verdict(row: Mapping[str, Any], *, banned: Iterable[str] | None,
             cost: Mapping[str, Any] | None,
             budget: Mapping[str, Any] | None = None,
-            now: datetime | None = None) -> dict[str, Any]:
+            now: datetime | None = None,
+            enforce_unmeasured_admission: bool | None = None) -> dict[str, Any]:
     """Every invariant over one sleeve. Pure. Every refusal is reported, not only the first,
-    so the ledger can say a sleeve was refused on three counts rather than one."""
+    so the ledger can say a sleeve was refused on three counts rather than one.
+
+    `refusals` holds the findings that REFUSE the send (`mode: "enforce"`) and decide `ok`;
+    `reported` holds the findings recorded but not enforced (`mode: "report_only"`: I2/I5 while
+    `ENFORCE_UNMEASURED_ADMISSION` is False). `enforce_unmeasured_admission` overrides the
+    switch for one call (None = the module constant)."""
     frac, src = allocator_fraction(row)
     checks = ((ALLOCATOR_ZERO, check_allocator(row)),
               (ADMISSION_UNMEASURED, check_admission(row)),
@@ -253,8 +301,12 @@ def verdict(row: Mapping[str, Any], *, banned: Iterable[str] | None,
               (COST_UNMEASURED, check_cost(cost)),
               (MARGINAL_UNMEASURED, check_marginal(row)),
               (OVERRIDE_OUTSIDE_BUDGET, check_override_budget(row, budget, now)))
-    refusals = [{"invariant": inv, "why": why} for inv, why in checks if why]
-    return {"ok": not refusals, "refusals": refusals,
+    found = [{"invariant": inv, "why": why,
+              "mode": mode_of(inv, enforce_unmeasured_admission)}
+             for inv, why in checks if why]
+    refusals = [f for f in found if f["mode"] == ENFORCE]
+    reported = [f for f in found if f["mode"] == REPORT_ONLY]
+    return {"ok": not refusals, "refusals": refusals, "reported": reported,
             "first": refusals[0]["invariant"] if refusals else None,
             "allocator_fraction": frac, "allocator_source": src,
             "admission": admission_status(row) or None,
@@ -262,7 +314,8 @@ def verdict(row: Mapping[str, Any], *, banned: Iterable[str] | None,
 
 
 def recheck(before: Mapping[str, Any], fresh: Mapping[str, Any] | None, *,
-            registry_read: bool = True, book_read: bool = True) -> dict[str, Any]:
+            registry_read: bool = True, book_read: bool = True,
+            enforce_unmeasured_admission: bool | None = None) -> dict[str, Any]:
     """TIME-OF-CHECK / TIME-OF-USE (2026-09-30). The pass reads the allocator book and the
     registry ONCE, at its start, and a pass can run for minutes; the promoter or the allocator
     may zero, demote or un-measure a sleeve in between. This re-judges the values that can move
@@ -274,8 +327,13 @@ def recheck(before: Mapping[str, Any], fresh: Mapping[str, Any] | None, *,
     the registry). `registry_read` / `book_read` False: that re-read failed, and a value that
     cannot be re-read cannot be shown to still hold, so the order does not go (fail closed --
     the order is new risk; nothing open is touched).
+
+    The admission and marginal re-checks follow `ENFORCE_UNMEASURED_ADMISSION` exactly as
+    `verdict` does: in report-only mode an UNMEASURED admission or marginal at send time lands
+    in `reported` (mode `report_only`) rather than refusing the send.
     """
     whys: list[str] = []
+    reported: list[dict[str, Any]] = []
     registry = before.get("origin") == "registry"
     if registry and not registry_read:
         whys.append("the registry could not be re-read immediately before the send")
@@ -287,13 +345,20 @@ def recheck(before: Mapping[str, Any], fresh: Mapping[str, Any] | None, *,
         status = str(fresh.get("status") or "LIVE").strip().upper()
         if registry and status != "LIVE":
             whys.append(f"the sleeve's status changed to {status} after the pass read it")
-        for check in (check_allocator, check_admission, check_marginal):
+        for inv, check in ((ALLOCATOR_ZERO, check_allocator),
+                           (ADMISSION_UNMEASURED, check_admission),
+                           (MARGINAL_UNMEASURED, check_marginal)):
             why = check(fresh)
-            if why:
+            if not why:
+                continue
+            if mode_of(inv, enforce_unmeasured_admission) == REPORT_ONLY:
+                reported.append({"invariant": inv, "mode": REPORT_ONLY,
+                                 "why": f"at send time -- {why}"})
+            else:
                 whys.append(f"changed since the pass read it -- {why}")
-    refusals = [{"invariant": CHANGED_BEFORE_SEND, "why": w} for w in whys]
+    refusals = [{"invariant": CHANGED_BEFORE_SEND, "why": w, "mode": ENFORCE} for w in whys]
     frac, src = allocator_fraction(fresh) if fresh is not None else (None, "absent")
-    return {"ok": not refusals, "refusals": refusals,
+    return {"ok": not refusals, "refusals": refusals, "reported": reported,
             "first": CHANGED_BEFORE_SEND if refusals else None,
             "allocator_fraction": frac, "allocator_source": src,
             "admission": admission_status(fresh) if fresh is not None else None}
@@ -305,14 +370,26 @@ def reason_of(v: Mapping[str, Any]) -> str:
 
 
 def missed_growth_line(v: Mapping[str, Any], *, sleeve: str, symbol: str, day: str,
-                       at: str, lane: str) -> list[dict[str, Any]]:
-    """One missed-growth ledger line per refused invariant. Pure.
+                       at: str, lane: str, report_only: bool = False) -> list[dict[str, Any]]:
+    """One missed-growth ledger line per refused invariant -- or, with `report_only`, per
+    REPORTED invariant: the send went, and the line records what enforce mode would have
+    refused, marked `mode: "report_only"`. Pure.
 
     VALUE IS UNMEASURED, NEVER ZERO. What the refused order would have earned is priced by the
     counterfactual replay from the decision-ledger row written beside this; a 0.0 here would read
     as "this refusal cost nothing" and is exactly the unbilled rail the governance forbids."""
+    if report_only:
+        return [{"day": day, "rail": f"{RAIL_PREFIX}{r['invariant']}", "value": None,
+                 "status": UNMEASURED, "mode": REPORT_ONLY, "at": at, "sleeve": sleeve,
+                 "symbol": symbol, "lane": lane,
+                 "allocator_fraction": v.get("allocator_fraction"),
+                 "why": (f"{r['why']}. REPORT-ONLY (ENFORCE_UNMEASURED_ADMISSION is False): the "
+                         f"order was NOT refused, so no growth was given up; this line records "
+                         f"what enforce mode would have refused")}
+                for r in v.get("reported") or []]
     return [{"day": day, "rail": f"{RAIL_PREFIX}{r['invariant']}", "value": None,
-             "status": UNMEASURED, "at": at, "sleeve": sleeve, "symbol": symbol, "lane": lane,
+             "status": UNMEASURED, "mode": ENFORCE, "at": at, "sleeve": sleeve,
+             "symbol": symbol, "lane": lane,
              "allocator_fraction": v.get("allocator_fraction"),
              "why": (f"{r['why']}. Growth given up is priced by the counterfactual replay of the "
                      f"not-taken decision row (Rule 1: a risk reduction must prove it raises "
@@ -431,7 +508,8 @@ def banned_families(family_file: Path | None = None,
 
 # ------------------------------------------------------------------------------ ledgers
 def append_missed_growth(lines: list[dict[str, Any]], path: Path | None = None) -> int:
-    """Append lines not already written for (day, rail, sleeve). Never raises; returns count."""
+    """Append lines not already written for (day, rail, sleeve, mode). Never raises; returns
+    count. A line with no `mode` (written before the switch existed) is an `enforce` line."""
     p = path or MISSED_GROWTH
     if not lines:
         return 0
@@ -444,9 +522,11 @@ def append_missed_growth(lines: list[dict[str, Any]], path: Path | None = None) 
                 except ValueError:
                     continue
                 if str(r.get("rail") or "").startswith(RAIL_PREFIX):
-                    have.add((str(r.get("day")), str(r.get("rail")), str(r.get("sleeve"))))
+                    have.add((str(r.get("day")), str(r.get("rail")), str(r.get("sleeve")),
+                              str(r.get("mode") or ENFORCE)))
         fresh = [ln for ln in lines
-                 if (str(ln["day"]), str(ln["rail"]), str(ln["sleeve"])) not in have]
+                 if (str(ln["day"]), str(ln["rail"]), str(ln["sleeve"]),
+                     str(ln.get("mode") or ENFORCE)) not in have]
         if not fresh:
             return 0
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -464,7 +544,8 @@ def measure_registry(rows: Iterable[Mapping[str, Any]], *,
                      surface: Mapping[str, Any] | None,
                      budget: Mapping[str, Any] | None = None,
                      live_policy_refuse: Any = None,
-                     now: datetime | None = None) -> dict[str, Any]:
+                     now: datetime | None = None,
+                     enforce_unmeasured_admission: bool | None = None) -> dict[str, Any]:
     """How many LIVE registry rows would remain tradable under every invariant. Pure.
 
     `live_policy_refuse` (the live policy's `refuse`, optional) is reported as a separate column:
@@ -473,26 +554,34 @@ def measure_registry(rows: Iterable[Mapping[str, Any]], *,
     live = [dict(r) for r in rows if str(r.get("status") or "").upper() == "LIVE"]
     per: list[dict[str, Any]] = []
     by_inv = dict.fromkeys(INVARIANTS, 0)
+    reported = dict.fromkeys(INVARIANTS, 0)
     firsts = dict.fromkeys(INVARIANTS, 0)
     for r in live:
         cost = cost_basis(str(r.get("symbol") or ""), session_of_row(r), surface=surface)
-        v = verdict(r, banned=banned, cost=cost, budget=budget, now=now)
+        v = verdict(r, banned=banned, cost=cost, budget=budget, now=now,
+                    enforce_unmeasured_admission=enforce_unmeasured_admission)
         pol = live_policy_refuse(r) if callable(live_policy_refuse) else None
         for f in v["refusals"]:
             by_inv[f["invariant"]] += 1
+        for f in v["reported"]:
+            reported[f["invariant"]] += 1
         if v["first"]:
             firsts[v["first"]] += 1
         per.append({"name": r.get("name"), "symbol": r.get("symbol"),
                     "family": r.get("family"), "ok": v["ok"],
                     "refused_by": [f["invariant"] for f in v["refusals"]],
+                    "reported_by": [f["invariant"] for f in v["reported"]],
                     "live_policy": pol, "principal_override": is_override(r),
                     "cost_source": (v["cost"] or {}).get("source")})
     return {"live": len(live),
+            "enforce_unmeasured_admission":
+                enforcing_unmeasured_admission(enforce_unmeasured_admission),
             "tradable_under_invariants": sum(1 for p in per if p["ok"]),
             "tradable_under_invariants_and_live_policy":
                 sum(1 for p in per if p["ok"] and not p["live_policy"]),
             "admitted_by_live_policy_before": sum(1 for p in per if not p["live_policy"]),
-            "refused_by_invariant": by_inv, "first_refusal": firsts,
+            "refused_by_invariant": by_inv, "reported_by_invariant": reported,
+            "first_refusal": firsts,
             "principal_overrides": sum(1 for p in per if p["principal_override"]),
             "principal_overrides_tradable": sum(1 for p in per
                                                 if p["principal_override"] and p["ok"]),

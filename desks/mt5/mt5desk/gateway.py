@@ -1671,7 +1671,9 @@ def money_path_guard(st: dict, s: dict, *, lane: str, side: object = None,
 
     CALLED AT EVERY SITE THAT OPENS RISK AND AT NO SITE THAT REDUCES IT (money-path sovereignty,
     principal 2026-09-30). The invariants are `mt5desk.money_path`: allocator zero means no
-    order, an UNMEASURED admission or marginal is shadow, a banned family takes no capital, an
+    order, an UNMEASURED admission or marginal is shadow (REPORT-ONLY while
+    `money_path.ENFORCE_UNMEASURED_ADMISSION` is False: recorded by `_money_path_report`, the
+    send goes), a banned family takes no capital, an
     UNMEASURED material cost (as `cost_surfaces.cost_for` decides it) is shadow, and a principal
     override trades only inside the declared experimental budget. Stops, trailing, TTL exits, closes, cancels and OCO repair never
     call this, so a refused sleeve keeps its open positions managed. `scripts/
@@ -1692,11 +1694,58 @@ def money_path_guard(st: dict, s: dict, *, lane: str, side: object = None,
         v = {"ok": False, "first": "unjudgeable", "allocator_fraction": None,
              "refusals": [{"invariant": "unjudgeable",
                            "why": f"money-path guard raised ({type(exc).__name__}: {exc})"}]}
-    s["money_path"] = {"ok": bool(v.get("ok")), "first": v.get("first")}
+    s["money_path"] = {"ok": bool(v.get("ok")), "first": v.get("first"),
+                       "reported": [r["invariant"] for r in v.get("reported") or []]}
     if v.get("ok"):
+        if v.get("reported"):
+            _money_path_report(st, s, v, lane=lane, side=side, lot=lot, price=price, sl=sl,
+                               tp=tp)
         return True
     _money_path_refuse(st, s, v, lane=lane, side=side, lot=lot, price=price, sl=sl, tp=tp)
     return False
+
+
+def _money_path_report(st: dict, s: dict, v: dict, *, lane: str, side: object = None,
+                       lot: float | None = None, price: float | None = None,
+                       sl: float | None = None, tp: float | None = None) -> None:
+    """Write a REPORT-ONLY money-path finding (`money_path.ENFORCE_UNMEASURED_ADMISSION` is
+    False): the send is NOT refused, but the finding leaves the same two rows a refusal does,
+    each marked `mode: "report_only"` -- a decision-ledger row (reason
+    `sovereignty_report_only`, execution `report_only`, one failed gate per reported invariant;
+    an annotation beside the send's own `placed` row, not a second send) and one missed-growth
+    line per reported invariant. Once per sleeve, invariant set and day. Never raises."""
+    name = str(s.get("name") or "")
+    reported = list(v.get("reported") or [])
+    today = datetime.now(tz=UTC).date().isoformat()
+    invs = ",".join(sorted(r["invariant"] for r in reported))
+    seen = st.setdefault("money_path_reported", {})
+    stamp = f"{today}|{invs}"
+    if seen.get(name) == stamp:
+        return
+    whys = "; ".join(f"{r['invariant']} [report_only]: {r['why']}" for r in reported)
+    log(f"[{name}] MONEY-PATH REPORT-ONLY ({lane}) -- order NOT refused: {whys}")
+    _numeric_side = isinstance(side, (int, float)) and not isinstance(side, bool)
+    _side = (("buy" if float(side) > 0 else "sell")  # type: ignore[arg-type]
+             if _numeric_side else side)
+    try:
+        _record_decision(sleeve=name, symbol=s.get("symbol"), side=_side,
+                         lot=lot, price=price, sl=sl, tp=tp, taken=True,
+                         reason=f"{_mp.REASON_PREFIX}{_mp.REPORT_ONLY}", execution=_mp.REPORT_ONLY,
+                         detail=f"mode: {_mp.REPORT_ONLY}; {whys}",
+                         failed_gates=[{"gate": f"{_mp.REASON_PREFIX}{r['invariant']}",
+                                        "actual": r["why"], "required": "invariant holds",
+                                        "mode": _mp.REPORT_ONLY} for r in reported],
+                         suppressions={"money_path": {
+                             "mode": _mp.REPORT_ONLY,
+                             "invariants": [r["invariant"] for r in reported]}},
+                         money_path=v)
+    except Exception as exc:
+        log(f"[{name}] money-path report record failed (non-fatal): {type(exc).__name__}: "
+            f"{exc}")
+    _mp.append_missed_growth(_mp.missed_growth_line(
+        v, sleeve=name, symbol=str(s.get("symbol") or ""), day=today, at=now(), lane=lane,
+        report_only=True))
+    seen[name] = stamp
 
 
 def _money_path_refuse(st: dict, s: dict, v: dict, *, lane: str, side: object = None,
@@ -1704,10 +1753,15 @@ def _money_path_refuse(st: dict, s: dict, v: dict, *, lane: str, side: object = 
                        sl: float | None = None, tp: float | None = None) -> None:
     """Write a refused money-path verdict: the SHADOW log line, the not-taken decision row, the
     refusal journal and one missed-growth line per failed invariant -- once per sleeve, reason
-    and day. Shared by the guard and the pre-send re-check so both leave the same record."""
+    and day. Shared by the guard and the pre-send re-check so both leave the same record.
+    Findings the verdict only REPORTS (`money_path.ENFORCE_UNMEASURED_ADMISSION` False) ride on
+    the same row as `mode: "report_only"` failed gates and get their own report-only
+    missed-growth lines; they did not decide the refusal."""
     name = str(s.get("name") or "")
     reason = _mp.reason_of(v)
-    whys = "; ".join(f"{r['invariant']}: {r['why']}" for r in v.get("refusals") or [])
+    reported = list(v.get("reported") or [])
+    whys = "; ".join([f"{r['invariant']}: {r['why']}" for r in v.get("refusals") or []]
+                     + [f"{r['invariant']} [report_only]: {r['why']}" for r in reported])
     today = datetime.now(tz=UTC).date().isoformat()
     seen = st.setdefault("money_path_refused", {})
     stamp = f"{today}|{reason}"
@@ -1723,8 +1777,9 @@ def _money_path_refuse(st: dict, s: dict, v: dict, *, lane: str, side: object = 
                          lot=lot, price=price, sl=sl, tp=tp, taken=False, reason=reason,
                          detail=whys, first_blocking_gate=reason,
                          failed_gates=[{"gate": f"{_mp.REASON_PREFIX}{r['invariant']}",
-                                        "actual": r["why"], "required": "invariant holds"}
-                                       for r in v.get("refusals") or []],
+                                        "actual": r["why"], "required": "invariant holds",
+                                        "mode": r.get("mode") or _mp.ENFORCE}
+                                       for r in list(v.get("refusals") or []) + reported],
                          money_path=v)
     except Exception as exc:
         log(f"[{name}] money-path decision record failed (non-fatal): {type(exc).__name__}: "
@@ -1733,7 +1788,9 @@ def _money_path_refuse(st: dict, s: dict, v: dict, *, lane: str, side: object = 
         journal_refusal(name, str(s.get("symbol") or ""), int(side),  # type: ignore[call-overload]
                         reason, whys, lot, price)
     _mp.append_missed_growth(_mp.missed_growth_line(
-        v, sleeve=name, symbol=str(s.get("symbol") or ""), day=today, at=now(), lane=lane))
+        v, sleeve=name, symbol=str(s.get("symbol") or ""), day=today, at=now(), lane=lane)
+        + _mp.missed_growth_line(v, sleeve=name, symbol=str(s.get("symbol") or ""), day=today,
+                                 at=now(), lane=lane, report_only=True))
     seen[name] = stamp
 
 
@@ -1793,6 +1850,9 @@ def money_path_recheck(st: dict, s: dict, *, lane: str, side: object = None,
              "refusals": [{"invariant": _mp.CHANGED_BEFORE_SEND,
                            "why": f"pre-send re-check raised ({type(exc).__name__}: {exc})"}]}
     if v.get("ok"):
+        if v.get("reported"):
+            _money_path_report(st, s, v, lane=lane, side=side, lot=lot, price=price, sl=sl,
+                               tp=tp)
         return True
     s["money_path"] = {"ok": False, "first": v.get("first")}
     _money_path_refuse(st, s, v, lane=lane, side=side, lot=lot, price=price, sl=sl, tp=tp)

@@ -33,6 +33,13 @@ the allocator had sized at zero. `desks/mt5/mt5desk/money_path.py` holds the fou
       `money_path_recheck(` after its guard and before the `order_send`, so the allocator's
       fraction, the registry status and the admission are re-read immediately before the send
       rather than trusted from the top of a pass that can run for minutes.
+  S9  ONE SWITCH, BOTH MODES PINNED. `money_path.ENFORCE_UNMEASURED_ADMISSION` is a module-level
+      bool and governs exactly I2 and I5 (`UNMEASURED_ADMISSION_INVARIANTS`). With it True an
+      UNMEASURED admission / marginal refuses (verdict and time-of-use re-check); with it False
+      the same finding is REPORTED (`mode: "report_only"`, in `reported`, never in `refusals`)
+      and the send goes -- while I1, I3, I4 and I6 refuse in BOTH modes. A report-only finding
+      still leaves its rows: the guard and the re-check call `_money_path_report`, which calls
+      `_record_decision` and `append_missed_growth`.
 
 S3 also covers the blueprint additions: I5 (an UNMEASURED marginal dE[log W] is refused), I6 (a
 principal override outside the declared experimental budget is refused) and that I4 is decided by
@@ -67,6 +74,8 @@ GUARD = "money_path_guard"
 RECHECK = "money_path_recheck"
 #: The one writer of a refusal's rows, shared by the guard and the re-check (S6).
 REFUSE = "_money_path_refuse"
+#: The one writer of a REPORT-ONLY finding's rows (S9).
+REPORT = "_money_path_report"
 #: The three lanes that open risk today. A new one is welcome and is guarded by S1 like these;
 #: fewer than these means the walk broke, not that the desk stopped trading.
 KNOWN_SITES = frozenset({"place_bracket", "run_family_sleeves", "run_scalp_sleeves"})
@@ -202,6 +211,19 @@ def check_sites(src: str) -> list[dict[str, str]]:
                 f.append({"check": "S6_REFUSAL_ROWS",
                           "why": f"{REFUSE} no longer calls {need}: a refusal would leave "
                                  f"no row"})
+    # S9 -- a report-only finding leaves the same two rows, from the guard and the re-check
+    for name in (GUARD, RECHECK):
+        if name in fns and not _calls(fns[name], REPORT):
+            f.append({"check": "S9_REPORT_ONLY_ROWS",
+                      "why": f"{name} no longer records report-only findings through {REPORT}"})
+    if REPORT not in fns:
+        f.append({"check": "S9_REPORT_ONLY_ROWS", "why": f"gateway.py has no {REPORT}"})
+    else:
+        for need in ("_record_decision", "append_missed_growth"):
+            if not _calls(fns[REPORT], need):
+                f.append({"check": "S9_REPORT_ONLY_ROWS",
+                          "why": f"{REPORT} no longer calls {need}: a report-only finding "
+                                 f"would leave no row"})
     return f
 
 
@@ -228,9 +250,51 @@ def check_behaviour() -> list[dict[str, str]]:
     measured = {"status": mp.MEASURED, "source": "fence"}
     unmeasured = {"status": mp.UNMEASURED, "why": "fence"}
 
-    def refused(row: dict[str, Any], cost: dict[str, Any], inv: str) -> bool:
-        v = mp.verdict(row, banned=banned, cost=cost)
+    def refused(row: dict[str, Any], cost: dict[str, Any], inv: str,
+                enforce: bool | None = True) -> bool:
+        v = mp.verdict(row, banned=banned, cost=cost, enforce_unmeasured_admission=enforce)
         return (not v["ok"]) and inv in {r["invariant"] for r in v["refusals"]}
+
+    def reported_only(row: dict[str, Any], inv: str) -> bool:
+        v = mp.verdict(row, banned=banned, cost=measured, enforce_unmeasured_admission=False)
+        return v["ok"] and inv in {r["invariant"] for r in v["reported"]} and all(
+            r["mode"] == mp.REPORT_ONLY for r in v["reported"])
+
+    # S9 -- the one switch, both modes
+    if not isinstance(getattr(mp, "ENFORCE_UNMEASURED_ADMISSION", None), bool):
+        f.append({"check": "S9_SWITCH",
+                  "why": "money_path.ENFORCE_UNMEASURED_ADMISSION is not a module-level bool"})
+    if set(getattr(mp, "UNMEASURED_ADMISSION_INVARIANTS", ())) != {mp.ADMISSION_UNMEASURED,
+                                                                   mp.MARGINAL_UNMEASURED}:
+        f.append({"check": "S9_SWITCH",
+                  "why": "the switch no longer governs exactly admission_unmeasured and "
+                         "marginal_unmeasured"})
+    for adm, inv in (({"status": "UNMEASURED", "risk_frac": 0.01}, mp.ADMISSION_UNMEASURED),
+                     ({"status": "LIVE", "risk_frac": 0.01}, mp.MARGINAL_UNMEASURED)):
+        if not reported_only(_base_row(admission=adm), inv):
+            f.append({"check": "S9_REPORT_ONLY",
+                      "why": f"in report-only mode {inv} is not reported-and-admitted"})
+    for row, cost, inv in ((_base_row(risk_frac=0.0), measured, mp.ALLOCATOR_ZERO),
+                           (_base_row(), unmeasured, mp.COST_UNMEASURED),
+                           (_base_row(principal_override={"by": "fence"}), measured,
+                            mp.OVERRIDE_OUTSIDE_BUDGET)):
+        if not refused(row, cost, inv, enforce=False):
+            f.append({"check": "S9_ALWAYS_ENFORCED",
+                      "why": f"{inv} does not refuse in report-only mode"})
+    for fam in sorted(banned):
+        if not refused(_base_row(family=fam), measured, mp.BANNED_FAMILY, enforce=False):
+            f.append({"check": "S9_ALWAYS_ENFORCED",
+                      "why": f"banned family {fam!r} does not refuse in report-only mode"})
+    _b = _base_row()
+    _rc = mp.recheck(_b, _base_row(admission={"status": "UNMEASURED"}),
+                     enforce_unmeasured_admission=False)
+    if not _rc["ok"] or not _rc["reported"]:
+        f.append({"check": "S9_REPORT_ONLY",
+                  "why": "the time-of-use re-check refuses (or drops) an UNMEASURED admission "
+                         "in report-only mode"})
+    if mp.recheck(_b, _base_row(risk_frac=0.0), enforce_unmeasured_admission=False)["ok"]:
+        f.append({"check": "S9_ALWAYS_ENFORCED",
+                  "why": "the time-of-use re-check admits a zeroed book in report-only mode"})
 
     if not mp.verdict(_base_row(), banned=banned, cost=measured)["ok"]:
         f.append({"check": "S3_ADMITS_CLEAN", "why": "a sleeve satisfying all four is refused"})
@@ -264,7 +328,7 @@ def check_behaviour() -> list[dict[str, str]]:
         f.append({"check": "S8_RECHECK", "why": "an unchanged sleeve is refused at send time"})
     for fresh in (_base_row(risk_frac=0.0), _base_row(admission={"status": "UNMEASURED"}),
                   _base_row(status="STANDBY"), None):
-        if mp.recheck(base, fresh)["ok"]:
+        if mp.recheck(base, fresh, enforce_unmeasured_admission=True)["ok"]:
             f.append({"check": "S8_RECHECK",
                       "why": f"a sleeve that changed to {fresh!r} before the send is admitted"})
     if mp.recheck(base, dict(base), book_read=False)["ok"]:
@@ -324,11 +388,20 @@ def measure(path: Path = SLEEVES) -> dict[str, Any]:
         return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     banned, _ = mp.banned_families()
     surface, source = mp.load_cost_surface()
-    rep = mp.measure_registry(rows, banned=banned, surface=surface,
-                              budget=mp.load_experimental_budget(),
+    budget = mp.load_experimental_budget()
+    rep = mp.measure_registry(rows, banned=banned, surface=surface, budget=budget,
                               live_policy_refuse=refuse)
     rep.pop("rows", None)
     rep["cost_surface"] = source
+    # Both modes of the one switch, so flipping it is a known number, never a surprise.
+    by_mode: dict[str, Any] = {}
+    for mode, enforce in (("enforce", True), ("report_only", False)):
+        m = mp.measure_registry(rows, banned=banned, surface=surface, budget=budget,
+                                live_policy_refuse=refuse, enforce_unmeasured_admission=enforce)
+        by_mode[mode] = {"tradable_under_invariants": m["tradable_under_invariants"],
+                         "tradable_under_invariants_and_live_policy":
+                             m["tradable_under_invariants_and_live_policy"]}
+    rep["by_mode"] = by_mode
     return rep
 
 
@@ -357,7 +430,9 @@ def main(argv: list[str] | None = None) -> int:
               f"{len(rep.get('new_risk_sites') or [])} new-risk site(s) guarded; committed LIVE "
               f"{m.get('live')}, tradable under the money-path invariants "
               f"{m.get('tradable_under_invariants')} "
-              f"(and under the live policy {m.get('tradable_under_invariants_and_live_policy')})")
+              f"(and under the live policy {m.get('tradable_under_invariants_and_live_policy')});"
+              f" ENFORCE_UNMEASURED_ADMISSION={m.get('enforce_unmeasured_admission')}, "
+              f"by mode {m.get('by_mode')}")
         for x in rep["findings"]:
             print(f"  [{x['check']}] {x['why']}")
     return 0 if rep["ok"] else 1
