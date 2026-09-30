@@ -28,7 +28,7 @@ def test_forex_and_m15_gold_are_refused_and_gold_is_not() -> None:
     assert lp.refuse(FX, pol) and "CHFNOK" in lp.refuse(FX, pol)
     assert lp.refuse(GOLD_M15, pol) and "M15" in lp.refuse(GOLD_M15, pol)
     assert lp.refuse(GOLD, pol) is None
-    assert lp.refuse(GOLD_M5, pol) is None
+    assert lp.refuse(GOLD_M5, pol) is None      # no exec lane named: judged on symbol/tf only
     assert lp.refuse({"name": "nameless", "status": "LIVE"}, pol)   # no symbol is not permission
 
 
@@ -106,3 +106,18 @@ def test_a_row_the_policy_refuses_cannot_survive_a_promoter_write(monkeypatch, t
     live = [r for r in written if r["status"] == "LIVE"]
     assert [r["name"] for r in live] == ["gold_asia_v2"]
     assert [r["status"] for r in written if r["name"] == FX["name"]] == ["RETIRED"]
+
+
+def test_the_scalp_lane_is_stood_down_and_only_the_file_can_lift_it(tmp_path) -> None:
+    """The principal, 2026-09-29: the scalp "seems unprofitable". The executable replay is <= 0R a
+    trade on every candidate, so the lane holds no live capital until the principal says so."""
+    row = {**GOLD_M5, "exec": "scalp_market"}
+    why = lp.refuse(row, lp.Policy())
+    assert why and "scalp_market" in why
+    assert lp.refuse({**GOLD, "exec": "gold_bracket"}, lp.Policy()) is None
+    lifted = tmp_path / "live_sleeve_policy.json"
+    lifted.write_text(json.dumps({"banned_execs": []}), encoding="utf-8")
+    assert lp.refuse(row, lp.policy(lifted)) is None
+    broken = tmp_path / "broken.json"
+    broken.write_text("{ nope", encoding="utf-8")
+    assert lp.refuse(row, lp.policy(broken)) is not None
