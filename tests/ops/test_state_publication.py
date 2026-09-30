@@ -155,5 +155,5 @@ def test_stall_watch_and_the_health_board_read_the_verdict() -> None:
 def test_publish_state_runs_the_digest_and_the_meter() -> None:
     src = (ROOT / "desks/mt5/research/hourly_cycle.py").read_text("utf-8")
     body = src[src.index("def publish_state"):src.index("def _tape_main")]
-    assert body.index("_gate_verdict_digest()") < body.index("sync_shadow_to_git.ps1")
+    assert body.index("_gate_verdict_digest()") < body.index("subprocess.run(")
     assert "_state_flow()" in body
