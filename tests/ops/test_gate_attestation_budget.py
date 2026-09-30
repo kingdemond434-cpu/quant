@@ -29,10 +29,10 @@ def test_tracked_python_census_runs_once_for_many_untracked_files(monkeypatch, t
 
     def fake_git(*args: str) -> str:
         calls.append(args)
-        if args == ("status", "--porcelain", "--untracked-files=no"):
+        if args == ("diff-files", "--name-status"):
             return ""
-        if args == ("ls-files", "--others", "--exclude-standard", "--", "*.py"):
-            return "scratch_a.py\nscratch_b.py\n"
+        if args == ("diff-index", "--cached", "--name-status", "HEAD"):
+            return ""
         if args == ("ls-files", "*.py"):
             return "real_module.py\n"
         if args == ("rev-parse", "HEAD"):
@@ -59,5 +59,6 @@ def test_working_tree_census_does_not_request_all_untracked_state(monkeypatch) -
     calls: list[tuple[str, ...]] = []
     monkeypatch.setattr(module, "_git", lambda *args: calls.append(args) or "")
     module._working_tree_rows()
-    assert ("status", "--porcelain", "--untracked-files=no") in calls
+    assert ("diff-files", "--name-status") in calls
+    assert ("diff-index", "--cached", "--name-status", "HEAD") in calls
     assert ("status", "--porcelain") not in calls

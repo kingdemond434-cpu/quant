@@ -12,12 +12,15 @@ fail; nothing here can turn a red gate green.
 """
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+RUN_REPORT = ROOT / "data" / "gate_attestation_run.json"
 
 # The recorder performs multiple independent Git reads. On the Windows trading checkout each is
 # deliberately bounded at 60 seconds, so a 120-second wrapper could kill an otherwise completed
@@ -50,6 +53,15 @@ def main() -> int:
         rc, tail, s = results[name]
         print(f"{name}: rc={rc} in {s}s -- {tail.replace(chr(10), ' | ')[:160]}")
     verdict = "pass" if all(rc == 0 for rc, _, _ in results.values()) else "fail"
+    # Persist the component verdicts before the subject recorder. If recording the Git-bound
+    # attestation fails, operators still see which gate was red versus a plumbing failure.
+    RUN_REPORT.parent.mkdir(parents=True, exist_ok=True)
+    RUN_REPORT.write_text(json.dumps({
+        "at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "verdict": verdict,
+        "gates": {name: {"rc": rc, "tail": tail, "seconds": seconds}
+                  for name, (rc, tail, seconds) in results.items()},
+    }, indent=1), encoding="utf-8")
     rc, tail, _ = _run([py, "scripts/gate_attestation.py", "--gates", "fast", "--result", verdict],
                        timeout=ATTEST_RECORD_TIMEOUT_S)
     print(f"attestation: {verdict} rc={rc} ({tail[:120]})")

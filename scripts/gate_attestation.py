@@ -73,11 +73,22 @@ def _working_tree_rows() -> list[str]:
     changes and import-shadowing Python are the only two classes this policy consumes, so ask Git
     for exactly those classes.
     """
-    rows = _git("status", "--porcelain", "--untracked-files=no").splitlines()
-    for rel in _git("ls-files", "--others", "--exclude-standard", "--", "*.py").splitlines():
-        rel = rel.strip()
-        if rel:
-            rows.append(f"?? {rel}")
+    # `diff-files` examines tracked worktree entries only; `diff-index --cached` examines staged
+    # entries only.  Neither traverses the huge untracked runtime-data forest that made `status`
+    # exceed its 60-second bound on the trading box.
+    rows = _git("diff-files", "--name-status").splitlines()
+    rows.extend(_git("diff-index", "--cached", "--name-status", "HEAD").splitlines())
+    # For untracked Python, the only possible same-directory/same-name collision with a tracked
+    # module is package bootstrap or pytest bootstrap (a normal module would be the same tracked
+    # path). Check those exact paths in known tracked-package directories without a repository
+    # crawl.
+    tracked = _tracked_py()
+    parents = {str(PurePosixPath(rel).parent) for rel in tracked}
+    for parent in parents:
+        for name in ("__init__.py", "conftest.py"):
+            rel = str(PurePosixPath(parent) / name)
+            if rel not in tracked and (ROOT / Path(rel)).is_file():
+                rows.append(f"?? {rel}")
     return rows
 
 
