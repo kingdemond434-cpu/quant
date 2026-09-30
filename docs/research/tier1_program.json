@@ -8993,6 +8993,26 @@
     "TESTS: desks/mt5/tests/test_judge_coverage.py, 36 passing -- the realised rate is counted from the ledger, an UNKNOWN verdict counts toward neither, an unjudged family is still explored at 1.0, a measured passer outranks a measured non-passer, and an untaught family is backfilled past the cursor."
    ],
    "consumer": "desks/mt5/research/merge_hypotheses.py calls the same allocator when it writes the docket, so the order this ranking sets is the order the sealed gauntlet judges in; scripts/check_judge_coverage.py ratchets the carried backlog down."
+  },
+  {
+   "id": "PSUB1",
+   "item": "FIND THE FREE SUBSTITUTE FOR EVERY PAID DATASET, THOUSANDS OF HUNTS AN HOUR (2026-09-30, principal): a catalogue of paid datasets by class, a multilingual substitute hunt emitted into the forest, crawler and roster, a coverage scorer, and enrolment that feeds every substitute to its three uses.",
+   "domain": "U",
+   "phase": 2,
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:paid_substitute_engine",
+   "artifact": "desks/mt5/reports/PAID_SUBSTITUTE_COVERAGE.json",
+   "evidence": [
+    "THE CATALOGUE: desks/mt5/data/paid_dataset_catalogue/ holds 224 entries over 31 classes, each with an honest seed_source (105 public_listing:<url>, 119 model_knowledge_unverified); _floor.json pins 224 and desks/mt5/research/paid_substitute_engine.py:1990 fails the fence if it shrinks or the report is older than 6h. desks/mt5/research/paid_substitute_engine.py:581 crawls the 18 public listing pages (robots honoured, names and links only); desks/mt5/research/paid_substitute_engine.py:374 reads the Asia thread's table as owner=asia without editing it.",
+    "THE HUNT: desks/mt5/research/paid_substitute_engine.py:881 expands 31 classes x 12 languages (en/zh/ja/ko/ru/pt/es/de/fr/tr/ar/hi) into 6,246 search grounds for the deep-forest queue (desks/mt5/research/deep_forest_miner.py:610 merges them, a registered ground wins) and seeds for the world crawler (desks/mt5/side_channels/world_crawler.py:922); desks/mt5/research/paid_substitute_engine.py:967 pairs the 209-source free library (no login, no paid, no crypto exchange; free keys read by NAME only) into 2,378 candidates.",
+    "THE SCORE: desks/mt5/research/paid_substitute_engine.py:739 scores class/region/frequency/history/latency, an UNMEASURED component excluded rather than zeroed; desks/mt5/research/paid_substitute_engine.py:827 measures correlation only where both series are on disk and is UNMEASURED otherwise; desks/mt5/research/paid_substitute_engine.py:1096 enrols a class match with region >= 0.7, free, machine-readable, >= 4 measured components, never an ended archive, never a measured correlation below 0.5.",
+    "THE THREE USES, NOTHING PARKED: desks/mt5/research/paid_substitute_engine.py:1263 lands the series in the lake with available_time = period + declared latency; desks/mt5/research/paid_substitute_engine.py:1337 then mints direct cells and exogenous_gate conditioner cells through libs.moat.registry.enqueue_candidate with a stable dataset_id in params and provenance, and desks/mt5/research/paid_substitute_engine.py:1549 upserts the WORLD_STATE_INPUTS entry. A substitute with no series yet mints nothing; the gate use is reported BLOCKED while family_exogenous_gate is absent from the tree.",
+    "MEASURED 2026-09-30 (scratch registry, live fetch where the container reaches): catalogue 235 (224 + 11 Asia), candidates generated 8,624, scored 2,378, paid entries with a matching free series 227 (coverage share 0.966, class-level, not entity replication), enrolled 1 (Indeed Hiring Lab, 12 direct cells, 1 world-state input), 35 ready awaiting acquisition, correlation measured on 0 pairs, 16.4 s wall.",
+    "CLOCK AND LAYER: desks/mt5/research/hourly_cycle.py:4130 runs the leg before acquire_datasets with desks/mt5/research/hourly_cycle.py:1615 budgeting 300 s; libs/research/layers.py:555 gives it the information layer.",
+    "TESTS: desks/mt5/tests/test_paid_substitute_engine.py, 20 passing."
+   ],
+   "consumer": "desks/mt5/research/deep_forest_miner.py (queued grounds), desks/mt5/side_channels/world_crawler.py (seeds), desks/mt5/research/acquire_datasets.py (discoveries), the candidate registry's claim_candidates (enrolled cells) and WORLD_STATE_INPUTS.json (paid_substitutes key)."
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."

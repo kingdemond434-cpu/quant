@@ -1,0 +1,46 @@
+{
+ "class": "calendars",
+ "label": "Economic, central-bank and earnings calendars",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:econoday:economic_calendar",
+   "vendor": "Econoday",
+   "dataset": "Economic calendar",
+   "class": "calendars",
+   "region": "global",
+   "measures": "Scheduled macro releases with consensus",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:trading_economics:economic_calendar_api",
+   "vendor": "Trading Economics",
+   "dataset": "Economic calendar API",
+   "class": "calendars",
+   "region": "global",
+   "measures": "Macro release calendar, actual/forecast",
+   "frequency": "intraday",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:wall_street_horizon:corporate_event_calendar",
+   "vendor": "Wall Street Horizon",
+   "dataset": "Corporate event calendar",
+   "class": "calendars",
+   "region": "global",
+   "measures": "Earnings dates, confirmations and revisions",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  }
+ ]
+}

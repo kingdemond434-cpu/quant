@@ -1,0 +1,59 @@
+{
+ "class": "jobs",
+ "label": "Job postings, hiring and labour-market alternative data",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:burning_glass_lightcast:job_postings_analytics",
+   "vendor": "Burning Glass (Lightcast)",
+   "dataset": "Job postings analytics",
+   "class": "jobs",
+   "region": "global",
+   "measures": "Job postings and skills",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:glassdoor:glassdoor_workforce_data",
+   "vendor": "Glassdoor",
+   "dataset": "Glassdoor workforce data",
+   "class": "jobs",
+   "region": "global",
+   "measures": "Employee reviews and hiring",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:linkup:job_listings_index",
+   "vendor": "LinkUp",
+   "dataset": "Job Listings Index",
+   "class": "jobs",
+   "region": "global",
+   "measures": "Aggregated job postings and hiring trends",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": null
+  },
+  {
+   "id": "paid:revelio_labs:workforce_analytics",
+   "vendor": "Revelio Labs",
+   "dataset": "Workforce Analytics",
+   "class": "jobs",
+   "region": "global",
+   "measures": "Job listings and professional profile employment data",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": null
+  }
+ ]
+}

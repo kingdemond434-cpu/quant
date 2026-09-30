@@ -1,0 +1,5 @@
+{
+ "floor": 224,
+ "at": "2026-09-30",
+ "note": "Seeded paid sets in this directory. Coverage floors ratchet UP only (L1.50): raise this when seeds are added; the fence fails when the catalogue falls below it."
+}
