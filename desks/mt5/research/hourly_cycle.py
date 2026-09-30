@@ -975,7 +975,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
-                     "committees"),
+                     "committees", "rejection_throughput"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1675,6 +1675,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # a second; the trading box's million-row docket and ledger scale that linearly. The cap is
     # an order of magnitude above, so a doubled docket is never truncated at the same prefix.
     "judging_burndown": 600,
+    # REJECTION THROUGHPUT streams the same gate ledger once more and the compute ledger once, and
+    # decodes each row; the burn-down's measurement scales to it. Same order-of-magnitude cap.
+    "rejection_throughput": 600,
     # STATE ADMISSION reads the shadow ledgers and the live ledger and judges six dimensions; the
     # daily cycle measured it at 2.1 s. The cap is here so it HAS an entry rather than inheriting
     # SEARCH_BUDGET_SEC by accident, and it is set well above the measurement so a box with more
@@ -4524,6 +4527,11 @@ def main() -> None:
     # JUDGE_COVERAGE, and the warmer's backlog-first share. Read-only; it throttles nothing.
     jbd = _costed("judging_burndown", lambda: _producer(
         "judging_burndown", "research/judging_burndown.py"))
+    # CONFIDENT KILLS PER DAY, after the judge and the burn-down: the share of this hour's verdicts
+    # that are finished, evidence-backed REJECTs (a measured gate statistic) rather than UNKNOWN /
+    # NOT_RUN postponements. Reads the ledger the burn-down reads; throttles nothing.
+    rjt = _costed("rejection_throughput", lambda: _producer(
+        "rejection_throughput", "research/rejection_throughput.py"))
     # EVERY CERTIFICATE GETS ITS CLOCK THE MOMENT IT EXISTS, with no quota and no waiting queue
     # (principal 2026-09-23: forward evidence is never rationed; forward clocks gather evidence
     # and deploy no capital, so the only thing a slot cap bought was a slower desk). AFTER the
@@ -5320,6 +5328,7 @@ def main() -> None:
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
                     "canon_publication": cpub, "judging_burndown": jbd,
+                    "rejection_throughput": rjt,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,
