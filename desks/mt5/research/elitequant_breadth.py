@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""SEED THE FIVE ELITEQUANT FAMILIES INTO THE DOCKET, SCREENED, AND SAY WHAT LANDED.
+"""SEED THE FAMILIES ABSORBED FROM THE ELITEQUANT AND THUQUANT LISTS, SCREENED, AND SAY WHAT LANDED.
 
     python desks/mt5/research/elitequant_breadth.py --once --budget-s 600
     python desks/mt5/research/elitequant_breadth.py --once --dry-run   # measure only
 
 WHY. `mt5desk/families_elitequant.py` adds five price-only mechanisms the desk could not express
 (fractional-difference level reversion, the Corwin-Schultz spread shock, backward sup-ADF
-bubbles, Carver's accel and skew rules). A registered family nobody seeds is IDLE (III.16), so
+bubbles, Carver's accel and skew rules), and `mt5desk/families_cn_cta.py` adds the Chinese futures
+CTA canon (Dual Thrust, R-Breaker, Sky Garden, King Keltner), whose MT5 analogues are walked
+first. A registered family nobody seeds is IDLE (III.16), so
 this organ puts every hypothesis-lane symbol x PARAM_GRID cell in front of the ten gates.
 
 WHAT A PASS DOES, in order:
@@ -49,7 +51,14 @@ for _p in (str(BASE), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import families_cn_cta as cn  # noqa: E402
 from mt5desk import families_elitequant as eq  # noqa: E402
+
+#: Every family absorbed from the two curated lists, with its grid and declared culture:
+#: EliteQuant (Western canon) and thuquant/awesome-quant (the CN futures CTA canon).
+FAMILIES = {**eq.ELITEQUANT_FAMILIES, **cn.CN_CTA_FAMILIES}
+PARAM_GRID = {**eq.PARAM_GRID, **cn.PARAM_GRID}
+CULTURE = {**eq.CULTURE, **cn.CULTURE}
 
 SOURCE = "elitequant_breadth"
 OUT = BASE / "reports" / "ELITEQUANT_BREADTH.json"
@@ -71,7 +80,7 @@ def identity(symbol: str, family: str, params: dict[str, Any]) -> str:
 
 
 def grid(family: str) -> list[dict[str, Any]]:
-    spec = eq.PARAM_GRID.get(family) or {}
+    spec = PARAM_GRID.get(family) or {}
     keys = sorted(spec)
     return [dict(zip(keys, combo, strict=True))
             for combo in itertools.product(*(spec[k] for k in keys))]
@@ -100,13 +109,18 @@ def symbols() -> list[str]:
     """Hypothesis-lane symbols from the broker registry, in registry order."""
     from research import proposer_common as pc
     from research import universe_policy as up
-    return [s for s in pc.universe_meta() if up.may_hypothesise(s)]
+    syms = [s for s in pc.universe_meta() if up.may_hypothesise(s)]
+    # The CN analogues first, so the CN-crowd families reach the gauntlet on the first pass.
+    first = [s for s in syms if s.upper() in {a.upper() for a in cn.CN_ANALOGUES}]
+    return first + [s for s in syms if s not in first]
 
 
 def _mechanism(family: str, symbol: str) -> str:
-    doc = (eq.ELITEQUANT_FAMILIES[family].__doc__ or "").strip().splitlines()[0]
-    return (f"{family} on {symbol}: {doc} Absorbed from the EliteQuant map "
-            f"(families_elitequant); fails when {eq.CULTURE[family]['failure_mode_hypothesis']}")
+    fn = FAMILIES[family]
+    doc = (fn.__doc__ or family.replace("_", " ")).strip().splitlines()[0]
+    src = "thuquant/awesome-quant" if family in cn.CN_CTA_FAMILIES else "EliteQuant"
+    return (f"{family} on {symbol}: {doc} Absorbed from the {src} map "
+            f"({fn.__module__}); fails when {CULTURE[family]['failure_mode_hypothesis']}")
 
 
 def _null_tails(ts: list[float]) -> dict[str, Any]:
@@ -136,7 +150,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
     meta = pc.universe_meta()
     state = _load_state()
     cells: dict[str, Any] = state["cells"]
-    by_family: dict[str, Counter] = {f: Counter() for f in eq.ELITEQUANT_FAMILIES}
+    by_family: dict[str, Counter] = {f: Counter() for f in FAMILIES}
     cands: list[dict[str, Any]] = []
     no_bars: list[str] = []
     errors: Counter = Counter()
@@ -145,7 +159,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
         if time.monotonic() - started > budget_s:
             stopped = f"time budget {budget_s:g}s reached; resumes next pass"
             break
-        plan = [(f, p) for f in eq.ELITEQUANT_FAMILIES for p in grid(f)]
+        plan = [(f, p) for f in FAMILIES for p in grid(f)]
         stale = any((cells.get(identity(sym, f, p)) or {}).get("day") != today for f, p in plan)
         d = pc.bars(sym) if stale else None
         if stale and (d is None or len(d) < MIN_BARS):
@@ -161,7 +175,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                     by_family[fam]["held_back_no_cost_model"] += 1
                     continue
                 try:
-                    r = pc.screen(d, eq.ELITEQUANT_FAMILIES[fam](d, **params), cost) or {}
+                    r = pc.screen(d, FAMILIES[fam](d, **params), cost) or {}
                 except Exception as exc:
                     errors[f"{fam}: {type(exc).__name__}"] += 1
                     continue
@@ -188,8 +202,9 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                 SOURCE, c["symbol"], c["family"], dict(c["params"]),
                 _mechanism(c["family"], c["symbol"]), f"{c['symbol']} {c['family']}",
                 {"screen_t_gross": c.get("t_gross"), "n_independent": c.get("n_independent"),
-                 "origin": "github.com/EliteQuant/EliteQuant (Apache-2.0 link map)"})
-            culture = dict(eq.CULTURE[c["family"]])
+                 "origin": ("github.com/thuquant/awesome-quant (MIT)" if c["family"] in cn.CN_CTA_FAMILIES
+                            else "github.com/EliteQuant/EliteQuant (Apache-2.0)")})
+            culture = dict(CULTURE[c["family"]])
             row.update(culture)
             row["culture_derivation"] = {k: "declared" for k in culture}
             rows.append(row)
@@ -210,7 +225,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
 
     contract: dict[str, Any] = {}
     n_all = sum(1 for v in cells.values() if v.get("t_gross") is not None)
-    for fam in eq.ELITEQUANT_FAMILIES:
+    for fam in FAMILIES:
         rows_f = [v for v in cells.values() if v.get("family") == fam
                   and isinstance(v.get("t_gross"), (int, float)) and math.isfinite(v["t_gross"])]
         best = max(rows_f, key=lambda v: float(v["t_gross"]), default=None)
@@ -221,7 +236,7 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                 "t_gross": best["t_gross"],
                 "t_deflated_all_cells": round(deflate_t(float(best["t_gross"]), n_all), 3)},
             "donated_total": sum(1 for v in rows_f if v.get("donated_at")),
-            "culture": eq.CULTURE[fam],
+            "culture": CULTURE[fam],
         }
     return {
         "status": "OK", "dry_run": bool(dry_run), "stopped_because": stopped,

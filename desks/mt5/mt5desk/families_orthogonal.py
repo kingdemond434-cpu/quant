@@ -2355,3 +2355,15 @@ ORTHOGONAL_FAMILIES.update(ELITEQUANT_FAMILIES)
 for _eq_name in ELITEQUANT_FAMILIES:
     FAMILY_INPUTS[_eq_name] = ("price only", "data/universe/*_H1.parquet")
 del _eq_name
+
+# THE CHINESE FUTURES CTA CANON (2026-09-30): Dual Thrust, R-Breaker, Sky Garden (空中花园) and
+# King Keltner, absorbed from thuquant/awesome-quant and the CN strategy collections it links.
+# The cell emitter reads these systems in vn.py's code and had no family to map them onto. Price
+# only; seeded (CN analogues first: USDCNH, XAUUSD, China50/HK50, copper, oil) by
+# `research/elitequant_breadth.py`.
+from mt5desk.families_cn_cta import CN_CTA_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(CN_CTA_FAMILIES)
+for _cn_name in CN_CTA_FAMILIES:
+    FAMILY_INPUTS[_cn_name] = ("price only", "data/universe/*_H1.parquet")
+del _cn_name

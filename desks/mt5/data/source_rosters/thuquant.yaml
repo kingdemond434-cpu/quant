@@ -1,0 +1,669 @@
+# thuquant/awesome-quant (MIT, Tsinghua's curated Chinese quant list), absorbed 2026-09-30.
+#
+# Only what no roster held. Already covered and NOT repeated here: SAFE, PBOC, CFETS fixing,
+# SGE, SHFE/INE/DCE/CZCE/GFEX/CFFEX dailies and member ranks, AkShare, TuShare, RQData, Wind
+# (desks/mt5/data/asia_sources.json), and the JoinQuant / Uqer / Ricequant / BigQuant / Xueqiu /
+# Zhihu grounds (desks/mt5/data/deep_forest_sources.json). Paid-only rows on the list (Wind EDB,
+# RESSET, CSMAR/GTA, Hundsun, Chinascope, RQData, kdb) and crypto-venue rows (0xArchive,
+# CoinNudge, godzilla.dev) are not rostered. Read by libs/mining/acquirer.load_roster (#133).
+sources:
+- id: thu_tqsdk
+  name: 'TqSdk (Shinny) free CN futures and options quotes, ticks and klines: SHFE/INE/DCE/CZCE/CFFEX/GFEX'
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: login
+  auth_env: TQ_USER
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: Apache-2.0 SDK; free account (self-registrable, 2026-09-30 data-access ruling)
+  config:
+    url: https://github.com/shinnytech/tqsdk-python
+  note: CN futures ticks for SHFE gold/copper, INE crude, CFFEX IF/IH -> XAUUSD, XCUUSD, XTIUSD, China50 lead-lag
+    cells
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_pytdx
+  name: 'pytdx: TongDaXin public quote servers (A-shares, HK, and the ext market''s CN/intl futures), no key'
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: cn
+  language: zh
+  licence: MIT client; public quote servers
+  config:
+    url: https://github.com/rainx/pytdx
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_baostock
+  name: BaoStock free A-share daily/minute bars, financials, macro (no key)
+  priority: 3
+  kind: mechanics
+  uses:
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: free public API
+  config:
+    url: http://baostock.com/baostock/index.php
+  mode: fallback
+  owner_feed: desks/mt5/data/lake/series/*akshare*
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_jqdatasdk
+  name: 'JoinQuant jqdatasdk (free trial quota): CN futures main-contract bars, factor library'
+  priority: 3
+  kind: mechanics
+  uses:
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: login
+  auth_env: JQ_USER
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: free trial account (self-registrable)
+  config:
+    url: https://github.com/JoinQuant/jqdatasdk
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_fxmacrodata
+  name: 'FXMacroData: central-bank announcements, rates, CPI, jobs, GDP for 18 currencies (API, free tier)'
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: key
+  auth_env: FXMACRODATA_API_KEY
+  cadence_minutes: 60
+  region: global
+  language: en
+  licence: free tier key
+  config:
+    url: https://fxmacrodata.com/api
+  note: 'every FX major''s policy calendar with release times: event-lane cells on FX'
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_futu_openapi
+  name: 'Futu OpenAPI (futuquant): HK market quotes and broker queue (needs a Futu account)'
+  priority: 4
+  kind: mechanics
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: login
+  auth_env: FUTU_OPEND_HOST
+  cadence_minutes: 60
+  region: hk
+  language: zh
+  licence: free with account
+  config:
+    url: https://github.com/FutunnOpen/py-futu-api
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_ashare_lake
+  name: ashare-lake open A-share data lake (quotes, commodities futures, fundamentals, flows, macro, sentiment)
+  priority: 3
+  kind: mechanics
+  uses:
+  - indirect_cells
+  - allocation_intel
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: zh
+  licence: see repo
+  config:
+    search: repositories
+    queries:
+    - repo:rootSunc/ashare-lake
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_finlight_news
+  name: finlight real-time financial and geopolitical news API with entities and sentiment
+  priority: 4
+  kind: text
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: key
+  auth_env: FINLIGHT_API_KEY
+  cadence_minutes: 30
+  region: global
+  language: en
+  licence: free tier key
+  config:
+    url: https://api.finlight.me
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_financialdata_net
+  name: financialdata.net stock market and financial statements API
+  priority: 5
+  kind: mechanics
+  uses:
+  - allocation_intel
+  fetcher: json_api
+  auth: key
+  auth_env: FINANCIALDATA_API_KEY
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: free tier key
+  config:
+    url: https://financialdata.net
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_myquant_bbs
+  name: 掘金量化社区 (myquant BBS) strategy threads
+  priority: 2
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: html_listing
+  cadence_minutes: 720
+  region: cn
+  language: zh
+  licence: public pages; mechanism claims only
+  config:
+    url: https://bbs.myquant.cn/
+    item_regex: /thread/
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_fmz_strategies
+  name: FMZ (ex-BotVS) public strategy square
+  priority: 2
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: html_listing
+  cadence_minutes: 720
+  region: cn
+  language: zh
+  licence: public pages; concept reimplemented
+  config:
+    url: https://www.fmz.com/square
+    item_regex: /strategy/\d+
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_guorn
+  name: '果仁网 (guorn) public strategy pages: CN stock-selection rules'
+  priority: 4
+  kind: text
+  uses:
+  - indirect_cells
+  fetcher: html_listing
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: public pages
+  config:
+    url: https://guorn.com/
+    item_regex: /stock/strategy
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_papers
+  name: 'thuquant papers.md: ML, RL, NLP (Google Trends, Wikipedia, Twitter mood) trading papers'
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: page_snapshot
+  cadence_minutes: 10080
+  region: cn
+  language: en
+  licence: MIT list
+  config:
+    url: https://raw.githubusercontent.com/thuquant/awesome-quant/master/papers.md
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_xueqiu_ricequant
+  name: Xueqiu quant account ricequant
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: page_snapshot
+  cadence_minutes: 720
+  region: cn
+  language: zh
+  licence: public pages
+  config:
+    url: https://xueqiu.com/ricequant
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_xueqiu_uqer
+  name: Xueqiu quant account 4105947155
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: page_snapshot
+  cadence_minutes: 720
+  region: cn
+  language: zh
+  licence: public pages
+  config:
+    url: https://xueqiu.com/4105947155
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_xueqiu_engineer
+  name: Xueqiu quant account engineer
+  priority: 3
+  kind: text
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: page_snapshot
+  cadence_minutes: 720
+  region: cn
+  language: zh
+  licence: public pages
+  config:
+    url: https://xueqiu.com/engineer
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_myquant_strategy
+  name: 'myquant/strategy: 掘金 strategy collection (CN futures and stocks)'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:myquant/strategy
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_botvs_strategies
+  name: 'botvs/strategies: BotVS/FMZ JS and Python strategies'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:botvs/strategies
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_quantaxis
+  name: 'yutiansut/QUANTAXIS: QUANTAXIS framework and CN futures/stock strategies'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:yutiansut/QUANTAXIS
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_hikyuu
+  name: 'fasiondog/hikyuu: Hikyuu trading system components (signals, stops, money management)'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:fasiondog/hikyuu
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_quantdigger
+  name: 'QuantFans/quantdigger: TB/金字塔-style strategy syntax examples'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:QuantFans/quantdigger
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_starquant
+  name: 'physercoe/starquant: StarQuant CN futures strategies'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:physercoe/starquant
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_ml_quant_trading
+  name: 'initial-d/ml-quant-trading: 213 A-share factors with limit-up/suspension bias fixes'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:initial-d/ml-quant-trading
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_finclaw
+  name: 'NeuZhou/finclaw: 484 built-in alpha factors, GA strategy evolution'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:NeuZhou/finclaw
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_cloudquant_backtrader
+  name: 'cloudQuant/backtrader: backtrader fork with 1,271 strategy regression tests'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:cloudQuant/backtrader
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_backtrader_web
+  name: 'cloudQuant/backtrader_web: AI strategy generation platform (strategy templates)'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:cloudQuant/backtrader_web
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_pyalgotrade_cn
+  name: 'Yam-cn/pyalgotrade-cn: A-share pyalgotrade strategies'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:Yam-cn/pyalgotrade-cn
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_pyktrader
+  name: 'harveywwu/pyktrader: CTP futures strategies (CN)'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:harveywwu/pyktrader
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_zvt
+  name: 'zvtvz/zvt: ZVT factors and selectors, multi-level'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:zvtvz/zvt
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_fooltrader
+  name: 'foolcage/fooltrader: full-market CN data recorder'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:foolcage/fooltrader
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_tqsdk_demos
+  name: 'shinnytech/tqsdk-python: TqSdk demo strategies (dual thrust, R-breaker, grid, spread)'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:shinnytech/tqsdk-python
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_dsh_quant
+  name: 'pengpengyi92/dsh-quant: agent-native quant toolbox: factor/ML/risk tools'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:pengpengyi92/dsh-quant
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_traderharness
+  name: 'HephaestLab/TraderHarness: leakage-proof A-share LLM agent backtest environment'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:HephaestLab/TraderHarness
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_manifoldbt
+  name: 'manifoldbt/manifoldbt: Rust vectorised backtester with walk-forward and Monte Carlo'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:manifoldbt/manifoldbt
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant
+- id: thu_gh_fincore
+  name: 'cloudQuant/fincore: 150+ performance/risk metrics (empyrical/pyfolio successor)'
+  priority: 3
+  kind: code
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: github_search
+  auth: optional
+  auth_env: GITHUB_TOKEN
+  cadence_minutes: 10080
+  region: cn
+  language: python
+  licence: per repo; MIT/Apache copied with notice, GPL reimplemented
+  config:
+    search: repositories
+    queries:
+    - repo:cloudQuant/fincore
+  owner: elitequant_thread
+  origin: github.com/thuquant/awesome-quant

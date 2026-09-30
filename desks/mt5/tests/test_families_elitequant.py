@@ -110,6 +110,8 @@ def test_seeder_donates_cost_clearing_cells_with_culture(monkeypatch, tmp_path):
     from research import elitequant_breadth as eb
     from research import proposer_common as pc
 
+    assert set(eb.FAMILIES) == set(eq.ELITEQUANT_FAMILIES) | set(cn.CN_CTA_FAMILIES)
+
     d = _bars(9_000)
     monkeypatch.setattr(eb, "STATE", tmp_path / "state.json")
     monkeypatch.setattr(eb, "symbols", lambda: ["EURUSD"])
@@ -128,8 +130,62 @@ def test_seeder_donates_cost_clearing_cells_with_culture(monkeypatch, tmp_path):
     rep = eb.seed(budget_s=120)
     assert rep["status"] == "OK" and rep["donation"]["status"] == "DONATED"
     rows = got["rows"]
-    assert rows and {r["family"] for r in rows} <= set(eq.ELITEQUANT_FAMILIES)
+    assert rows and {r["family"] for r in rows} <= set(eb.FAMILIES)
     assert all(r["culture_derivation"]["source_culture"] == "declared" for r in rows)
     # a second pass the same day donates nothing new
     got.clear()
     assert eb.seed(budget_s=120)["candidates_this_pass"] == 0
+
+
+# ------------------------------------------------ the CN futures CTA canon (thuquant list) ---
+from mt5desk import families_cn_cta as cn  # noqa: E402
+
+
+def _gapped_bars(n_days: int = 500, seed: int = 9) -> pd.DataFrame:
+    """Hourly bars with an overnight gap at each day's first bar, as a CN-session chart has."""
+    d = _bars(24 * n_days, seed=seed)
+    rng = np.random.default_rng(seed)
+    gaps = np.repeat(rng.normal(0, 0.006, n_days), 24)
+    mult = np.exp(np.cumsum(np.where(np.arange(len(d)) % 24 == 0, gaps, 0.0)))
+    for c in ("open", "high", "low", "close"):
+        d[c] = d[c] * mult
+    d["open"] = np.where(np.arange(len(d)) % 24 == 0, d["open"], d["close"].shift(1))
+    d["high"] = np.maximum(d["high"], d[["open", "close"]].max(axis=1))
+    d["low"] = np.minimum(d["low"], d[["open", "close"]].min(axis=1))
+    return d
+
+
+def test_cn_families_registered_with_cn_culture():
+    for name, fn in cn.CN_CTA_FAMILIES.items():
+        assert fo.ORTHOGONAL_FAMILIES[name] is fn
+        assert fo.FAMILY_INPUTS[name][0] == "price only"
+        assert cn.CULTURE[name]["source_culture"] == "CN/zh"
+
+
+@pytest.mark.parametrize("name", sorted(cn.CN_CTA_FAMILIES))
+def test_cn_family_fires_is_intraday_and_causal(name):
+    d = _gapped_bars()
+    sigs = cn.CN_CTA_FAMILIES[name](d)
+    assert sigs, f"{name} never fired"
+    for s in sigs:
+        assert s.side in (1, -1) and 0 < s.ttl_bars <= 24
+        assert (s.target - s.stop) * s.side > 0
+    cut = len(d) - 24 * 40
+    early = d.index[cut - 48]
+    full = {(s.time, s.side) for s in sigs if s.time < early}
+    part = {(s.time, s.side) for s in cn.CN_CTA_FAMILIES[name](d.iloc[:cut]) if s.time < early}
+    assert full == part
+
+
+def test_dual_thrust_fade_is_the_mirror_of_follow():
+    d = _gapped_bars()
+    f = {(s.time, s.side) for s in cn.family_dual_thrust(d, mode="follow")}
+    r = {(s.time, -s.side) for s in cn.family_dual_thrust(d, mode="fade")}
+    assert f and f == r
+
+
+def test_live_edge_bar_can_still_signal():
+    """The newest bar in the frame must not read as 'no bar left today' (clock, not count)."""
+    d = _gapped_bars()
+    _, _, left = cn._day_frame(d)
+    assert left[-1] >= 1 and left[-24] == 24
