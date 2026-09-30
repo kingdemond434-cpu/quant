@@ -128,6 +128,13 @@ def _json(path: Path) -> dict[str, Any]:
     return doc if isinstance(doc, dict) else {}
 
 
+def _rel(p: Path) -> str:
+    try:
+        return p.relative_to(DESK.parent.parent).as_posix()
+    except ValueError:
+        return str(p)
+
+
 def _f(v: object) -> float | None:
     try:
         x = float(v)  # type: ignore[arg-type]
@@ -371,9 +378,8 @@ def build(corpus: list[dict[str, Any]] | None = None, ledger: list[dict[str, Any
         "sessions": {name: [lo, hi] for lo, hi, name in PHASES},
         "size_bucket_edges_lots": size_edges, "vol_bucket_edges_frac": vol_edges,
         "vol_basis": "fill_corpus vol_frac, else the order's own stop distance / price",
-        "sources": {"fill_corpus": str(CORPUS.relative_to(DESK.parent.parent)),
-                    "live_ledger": str(LEDGER.relative_to(DESK.parent.parent)),
-                    "prior": str(PRIOR.relative_to(DESK.parent.parent))},
+        "sources": {"fill_corpus": _rel(CORPUS), "live_ledger": _rel(LEDGER),
+                    "prior": _rel(PRIOR)},
         "n_obs": {"fill_corpus": sum(o["source"] == "fill_corpus" for o in obs),
                   "live_ledger": sum(o["source"] == "live_ledger" for o in obs)},
         "n_cells": len(levels["exact"]), "n_measured_terms_exact": n_measured,
