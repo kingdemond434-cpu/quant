@@ -337,7 +337,7 @@ eleven-line COMPACT REPORT). The launcher marks DONE only on a clean exit.
 
 THIS IS AN ACTION CYCLE, NOT A REPORTING CYCLE.
 STEP 4B (the daily tier-1 breadth review) runs every pass: answer from live data whether breadth, production and global ingestion are maxed out at tier-1 level and what tier the quant is today, rank the gaps, act on the biggest, and write desks/mt5/reports/TIER1_BREADTH_REVIEW.json.
-Duties D15-D26 (judging rate, UNKNOWN by cause, box state freshness, unfed datasets, paid substitutes, cross-culture orthogonality, live code drift, decay and markout, confident kills, credentials, pass-2 queue age, six-event trend) are checked every pass with their artifacts; an absent artifact is UNMEASURED, which is MISSED.
+Duties D15-D33 (judging rate, UNKNOWN by cause, box state freshness, unfed datasets, paid substitutes, cross-culture orthogonality, live code drift, decay and markout, confident kills, credentials, pass-2 queue age, six-event trend, committee health, coverage tensor, never-attempted/stranded/silent, empty clusters, GitHub resident miner, QuantConnect/WorldQuant/fund lanes, institutional coverage) are checked every pass with their artifacts; an absent artifact is UNMEASURED, which is MISSED.
 "@
 
 if ($WhatIfOnly) {
