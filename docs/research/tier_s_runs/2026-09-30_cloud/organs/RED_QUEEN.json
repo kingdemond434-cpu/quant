@@ -1,0 +1,328 @@
+{
+ "generation": 2,
+ "attack_success": 0.6667,
+ "blind_spots": {
+  "false_causality": 1.0,
+  "hidden_factor": 1.0,
+  "label_randomization": 1.0,
+  "overlap": 0.3333333333333333
+ },
+ "elite_attacks": [
+  {
+   "attack": {
+    "kind": "false_causality",
+    "subtlety": 0.423,
+    "researcher": "unattributed"
+   },
+   "success": 1.0
+  },
+  {
+   "attack": {
+    "kind": "false_causality",
+    "subtlety": 0.617,
+    "researcher": "unattributed"
+   },
+   "success": 1.0
+  },
+  {
+   "attack": {
+    "kind": "false_causality",
+    "subtlety": 0.725,
+    "researcher": "unattributed"
+   },
+   "success": 1.0
+  },
+  {
+   "attack": {
+    "kind": "false_causality",
+    "subtlety": 0.729,
+    "researcher": "unattributed"
+   },
+   "success": 1.0
+  },
+  {
+   "attack": {
+    "kind": "hidden_factor",
+    "subtlety": 0.55,
+    "researcher": "unattributed"
+   },
+   "success": 1.0
+  }
+ ],
+ "by_researcher": {
+  "unattributed": {
+   "attacks": 11,
+   "success": 0.6667,
+   "kinds_through": [
+    "false_causality",
+    "hidden_factor",
+    "label_randomization",
+    "overlap"
+   ],
+   "trials_charged": null
+  }
+ },
+ "new_kinds": {
+  "hidden_factor": 1.0,
+  "overlap": 0.3333,
+  "false_causality": 1.0
+ },
+ "incumbent_defender": {
+  "balanced": 0.8215042372881356,
+  "immune": 0.8305084745762712,
+  "power": 0.8125
+ },
+ "best_defender": {
+  "balanced": 0.8215042372881356,
+  "immune": 0.8305084745762712,
+  "power": 0.8125
+ },
+ "challenger": null,
+ "attribution_total": {
+  "unattributed": {
+   "attacks": 22,
+   "success": 0.5151,
+   "real_attacks": 8,
+   "real_leaks": 0,
+   "kinds_through": [
+    "false_causality",
+    "hidden_factor",
+    "label_randomization",
+    "overlap"
+   ]
+  }
+ },
+ "real_gauntlet": {
+  "status": "MEASURED",
+  "rows": [
+   {
+    "cell": "rq2_657b0b32b9",
+    "kind": "false_causality",
+    "genuine": false,
+    "passed": false,
+    "unmeasured": false,
+    "failed_gates": [
+     "deflated_sharpe"
+    ],
+    "researcher": "unattributed",
+    "gates": [
+     "cpcv",
+     "deflated_sharpe",
+     "economic_prior",
+     "expected_value",
+     "in_sample_screen",
+     "lockbox",
+     "pbo",
+     "reality_check_spa",
+     "stress_costs",
+     "swap_cost",
+     "walk_forward"
+    ]
+   },
+   {
+    "cell": "rq2_8925186ebd",
+    "kind": "false_causality",
+    "genuine": false,
+    "passed": false,
+    "unmeasured": false,
+    "failed_gates": [
+     "deflated_sharpe"
+    ],
+    "researcher": "unattributed",
+    "gates": [
+     "cpcv",
+     "deflated_sharpe",
+     "economic_prior",
+     "expected_value",
+     "in_sample_screen",
+     "lockbox",
+     "pbo",
+     "reality_check_spa",
+     "stress_costs",
+     "swap_cost",
+     "walk_forward"
+    ]
+   },
+   {
+    "cell": "rq2_70fae4e73e",
+    "kind": "false_causality",
+    "genuine": false,
+    "passed": false,
+    "unmeasured": false,
+    "failed_gates": [
+     "deflated_sharpe"
+    ],
+    "researcher": "unattributed",
+    "gates": [
+     "cpcv",
+     "deflated_sharpe",
+     "economic_prior",
+     "expected_value",
+     "in_sample_screen",
+     "lockbox",
+     "pbo",
+     "reality_check_spa",
+     "stress_costs",
+     "swap_cost",
+     "walk_forward"
+    ]
+   },
+   {
+    "cell": "rq2_873537af91",
+    "kind": "false_causality",
+    "genuine": false,
+    "passed": false,
+    "unmeasured": false,
+    "failed_gates": [
+     "deflated_sharpe"
+    ],
+    "researcher": "unattributed",
+    "gates": [
+     "cpcv",
+     "deflated_sharpe",
+     "economic_prior",
+     "expected_value",
+     "in_sample_screen",
+     "lockbox",
+     "pbo",
+     "reality_check_spa",
+     "stress_costs",
+     "swap_cost",
+     "walk_forward"
+    ]
+   },
+   {
+    "cell": "rq2_564c8b6e1b",
+    "kind": "true_signal",
+    "genuine": true,
+    "passed": false,
+    "unmeasured": false,
+    "failed_gates": [
+     "deflated_sharpe"
+    ],
+    "researcher": null,
+    "gates": [
+     "cpcv",
+     "deflated_sharpe",
+     "economic_prior",
+     "expected_value",
+     "in_sample_screen",
+     "lockbox",
+     "pbo",
+     "reality_check_spa",
+     "stress_costs",
+     "swap_cost",
+     "walk_forward"
+    ]
+   },
+   {
+    "cell": "rq2_6bcf0cb494",
+    "kind": "true_weak_signal",
+    "genuine": true,
+    "passed": false,
+    "unmeasured": false,
+    "failed_gates": [
+     "in_sample_screen",
+     "deflated_sharpe",
+     "cpcv",
+     "walk_forward",
+     "stress_costs",
+     "lockbox",
+     "expected_value"
+    ],
+    "researcher": null,
+    "gates": [
+     "cpcv",
+     "deflated_sharpe",
+     "economic_prior",
+     "expected_value",
+     "in_sample_screen",
+     "lockbox",
+     "pbo",
+     "reality_check_spa",
+     "stress_costs",
+     "swap_cost",
+     "walk_forward"
+    ]
+   }
+  ],
+  "leaks": [],
+  "inexpressible": [
+   "hidden_factor"
+  ],
+  "by_researcher": {
+   "unattributed": {
+    "attacks": 4,
+    "leaks": 0,
+    "kinds_leaked": []
+   }
+  },
+  "attack_success": 0.0,
+  "genuine_power": 0.0
+ },
+ "architecture_challengers": {
+  "search_policy": {
+   "generation": 2,
+   "kind": "search_policy",
+   "status": "MEASURED",
+   "population": 10,
+   "champion": {
+    "rule": "posterior_mean",
+    "prior": 1.3158,
+    "half_life_days": 15.269,
+    "explore_floor": 0.1384,
+    "mutation_rate": 0.0919
+   },
+   "champion_id": "g9267bd01d337",
+   "champion_train": 0.001548,
+   "champion_heldout": 0.014573,
+   "incumbent": {
+    "rule": "as_spent"
+   },
+   "incumbent_train": 0.000876,
+   "incumbent_heldout": 0.000703,
+   "heldout_lift": 0.01387,
+   "beats_incumbent_heldout": true,
+   "train_fitness": [
+    0.001548,
+    0.001539,
+    0.001539,
+    0.001533,
+    0.001506,
+    0.001503,
+    0.001503,
+    0.001496,
+    0.00148,
+    0.000103
+   ],
+   "diversity": 0.4667
+  },
+  "scheduler": {
+   "status": "MEASURED",
+   "why": null,
+   "champion": {
+    "rule": "greedy",
+    "prior": 13.9969,
+    "half_life_days": 7.2666,
+    "explore_floor": 0.0627,
+    "mutation_rate": 0.2188
+   },
+   "champion_heldout": 0.029481,
+   "incumbent_heldout": 0.002342,
+   "heldout_lift": 0.027139,
+   "beats_incumbent_heldout": true
+  }
+ },
+ "attribution": "UNMEASURED: no researcher_prices.json with judged counts yet; attacks charged their trap's own trials and left unattributed",
+ "metric": {
+  "attack_success": 0.6667,
+  "defender_balanced": 0.8215042372881356,
+  "attributed_researchers": 0,
+  "real_attack_success": 0.0,
+  "real_genuine_power": 0.0,
+  "scheduler_heldout_lift": 0.027139,
+  "search_policy_heldout_lift": 0.01387
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 9.84
+}

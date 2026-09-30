@@ -286,11 +286,74 @@ def _apply_live_policy(rows: list[dict]) -> int:
     return n
 
 
+UNIVERSE_FILE = BASE / "data" / "universe" / "universe.json"
+#: Registry fields the engine prices a symbol's round trip and financing from.
+_COST_FIELDS = ("median_spread_pts", "tick_size", "tick_value", "contract_size",
+                "swap_long", "swap_short")
+
+
+def cost_basis_of(row: dict, universe: dict | None = None) -> tuple[str | None, str]:
+    """(cost_hash, source) for a sleeve row, or (None, why) when its cost is UNMEASURED.
+
+    THE ARTIFACT SAID "no cost basis" ON 40/40 LIVE ROWS (external audit, 2026-09-29) because it
+    read `row["cost_hash"]`, a field no writer ever put on a sleeve row -- the hash lives on the
+    forward clock's frozen identity. Sources, in order: the row's own field, the clock's frozen
+    identity, then the universe registry's cost fields for the symbol (the numbers the engine
+    charged). None of the three is UNMEASURED, and unknown cost is unknown edge.
+    """
+    if row.get("cost_hash"):
+        return str(row["cost_hash"]), "row"
+    for key in (row.get("certificate"), row.get("name")):
+        if not key:
+            continue
+        ident = registry_row(str(key)).get("identity")
+        if isinstance(ident, dict) and ident.get("cost_hash"):
+            return str(ident["cost_hash"]), f"clock identity {key}"
+    sym = str(row.get("symbol") or "").upper()
+    if universe is None:
+        try:
+            universe = json.loads(UNIVERSE_FILE.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            universe = {}
+    meta = (universe or {}).get(sym) if isinstance(universe, dict) else None
+    if isinstance(meta, dict):
+        vals = [meta.get(f) for f in _COST_FIELDS]
+        ok = all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in vals) and all(
+            float(meta[f]) > 0 for f in ("median_spread_pts", "tick_size", "tick_value",
+                                         "contract_size"))
+        if ok:
+            import hashlib
+            blob = json.dumps({f: meta[f] for f in _COST_FIELDS}, sort_keys=True).encode()
+            return hashlib.sha256(blob).hexdigest()[:16], f"universe registry {sym}"
+        return None, f"{sym} registry cost fields incomplete"
+    return None, f"{sym or 'row'} has no clock identity and no registry cost fields"
+
+
 def save_sleeves(sleeves: list[dict]) -> None:
     SLEEVES_FILE.parent.mkdir(parents=True, exist_ok=True)
     _apply_live_policy(sleeves)
     kept: list[dict] = []
+    _universe: dict | None = None
+    try:
+        _universe = json.loads(UNIVERSE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        _universe = {}
+    stamp = datetime.now(tz=UTC).isoformat(timespec="seconds")
     for row in sleeves:
+        if str(row.get("status") or "").upper() == "LIVE":
+            _ch, _src = cost_basis_of(row, _universe)
+            if _ch:
+                row["cost_hash"], row["cost_basis_source"] = _ch, _src
+            else:
+                # UNKNOWN COST IS UNKNOWN EDGE (principal, 2026-09-29). Reversible: STANDBY,
+                # never RETIRED, so the row returns the pass its cost is measured.
+                row.update({"status": "STANDBY", "risk_frac": 0.0, "risk_frac_source": "none",
+                            "demoted_at": stamp,
+                            "demote_reason": f"UNMEASURED cost basis ({_src}): unknown cost is "
+                                             f"unknown edge, so it holds no capital"})
+                plog(f"{row.get('name')}: LIVE -> STANDBY, no cost basis ({_src})")
+                kept.append(row)
+                continue
         if str(row.get("status") or "").upper() == "LIVE":
             art = artifact_of(row)
             row["artifact"] = art
@@ -1101,6 +1164,28 @@ def allocation_view(now: datetime | None = None) -> dict:
     return view
 
 
+def _same_mechanism(row: dict, key: str, symbol: str, family: str, selector: str) -> bool:
+    """False when a row was reached ONLY through the `sym|selector` short key and prices a
+    DIFFERENT mechanism than the sleeve asking.
+
+    THE SHORT KEY BORROWED ANOTHER MECHANISM'S HEAT (measured 2026-09-30 on the trading box).
+    The book held one XAUUSD asia row, `XAUUSD_session_range_breakout_asia` at 1.04%. Nine
+    `xauusd_cross_asset_residual_asia_p_*` sleeves matched none of the allocator's rows by name
+    or by `xauusd|cross_asset_residual|asia`, fell through to `xauusd|asia`, and each was written
+    LIVE at that 1.04% "already funded by the allocator" -- 9.4% of heat parked on a mechanism the
+    allocator never priced, on sleeves the gateway then refused at execution. `_index` already
+    drops a short key two book rows claim; it cannot see that ONE book row and many sleeves claim
+    it. The short key exists for sleeves that carry no mechanism (the gold windows), so it still
+    joins those, and any row that itself names no mechanism.
+    """
+    sym, sel = str(symbol).strip().lower(), str(selector).strip().lower()
+    fam = str(family).strip().lower()
+    if not (sym and sel and fam) or key != f"{sym}|{sel}":
+        return True
+    row_fam = str(row.get("family") or "").strip().lower()
+    return not row_fam or row_fam == fam
+
+
 def admission_of(view: dict, name: str, symbol: str = "", family: str = "",
                  selector: str = "") -> tuple[dict | None, str]:
     """The sleeve's current reading and the key it joined on, or (None, why there is none).
@@ -1118,11 +1203,11 @@ def admission_of(view: dict, name: str, symbol: str = "", family: str = "",
     keys = _join_keys(name, symbol, family, selector)
     for k in keys:
         row = (view.get("candidates") or {}).get(k)
-        if isinstance(row, dict):
+        if isinstance(row, dict) and _same_mechanism(row, k, symbol, family, selector):
             return row, f"joined on {k!r}"
     for k in keys:
         row = (view.get("book") or {}).get(k)
-        if isinstance(row, dict):
+        if isinstance(row, dict) and _same_mechanism(row, k, symbol, family, selector):
             # Already funded by the allocator: its marginal was measured when it entered and its
             # heat IS the current reading. There is no candidate row for something already held.
             return ({"delta_elogw_per_day": None, "heat_earned": float(row.get("heat") or 0.0),
@@ -1131,10 +1216,27 @@ def admission_of(view: dict, name: str, symbol: str = "", family: str = "",
                     f"joined on {k!r} (funded book)")
     for k in keys:
         row = (view.get("zeroed") or {}).get(k)
-        if isinstance(row, dict):
+        if isinstance(row, dict) and _same_mechanism(row, k, symbol, family, selector):
             return ({"delta_elogw_per_day": None, "heat_earned": 0.0, "admit": False,
                      "why": str(row.get("why") or "this solve gave the sleeve no heat")},
                     f"joined on {k!r} (zeroed by this solve)")
+    # A SHORT-KEY ROW THAT PRICES ANOTHER MECHANISM IS A READING, AND ITS ANSWER IS "NOT YOU".
+    # Returning None here would be read as UNMEASURED, and UNMEASURED lets a row that already
+    # holds capital KEEP it -- so the nine cross_asset_residual sleeves would have held their
+    # borrowed 1.04% forever. The allocator did price this symbol and window; every unit of its
+    # heat there belongs to a named other mechanism, so this sleeve's share of it is zero, which
+    # is a refusal the demotion may act on. The heat itself never moves: it stays on the book
+    # row the allocator actually solved, so nothing is reported short.
+    for src in ("candidates", "book", "zeroed"):
+        for k in keys:
+            row = (view.get(src) or {}).get(k)
+            if isinstance(row, dict) and not _same_mechanism(row, k, symbol, family, selector):
+                return ({"delta_elogw_per_day": None, "heat_earned": 0.0, "admit": False,
+                         "why": (f"the only allocator row on {k!r} prices "
+                                 f"{str(row.get('family') or '?')!r}, not {family!r}; the "
+                                 f"allocator has not priced this mechanism, so none of that "
+                                 f"row's heat is this sleeve's")},
+                        f"joined on {k!r} (different mechanism: not a reading for this sleeve)")
     return None, (f"no allocator row answers to any of {keys!r}: this sleeve is not in the priced "
                   f"universe, or the admission scan's budget did not reach it, so its marginal "
                   f"contribution has not been measured on this pass")
@@ -1566,6 +1668,31 @@ def blind_review_veto(name: str, verdicts: dict[str, str] | None = None) -> str 
     return None
 
 
+def tier_s_block(name: str) -> str | None:
+    """The Tier S verifiers' refusal for this certificate, or None (principal 2026-09-29: every
+    blueprint wired live, no approvals). Same door and limits as `blind_review_veto`: it withholds
+    a NEW live row only. Replication MISMATCH, an online-FDR over-budget certificate, or a
+    production-judged immune DROP -- see `libs/tiers/promotion_authority.py`, billed as the rail
+    `tier_s_evidence_block`. FAILS CLOSED: an unimportable or raising door withholds the row
+    with `DOOR_ERROR`, the verdict `promotion_authority.block` gives a raising check. It used to
+    return None here, which waved every certificate through whenever the door itself broke."""
+    try:
+        root = str(Path(__file__).resolve().parents[3])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.tiers import promotion_authority
+        return promotion_authority.block(name)
+    except Exception as exc:
+        return (f"DOOR_ERROR: the Tier S door did not load ({type(exc).__name__}: {exc}); "
+                "withheld until it does")
+
+
+def _record_tier_s_block(name: str, why: str, lane: str, row: dict) -> None:
+    with suppress(Exception):
+        from libs.tiers import promotion_authority
+        promotion_authority.record(name, why, lane=lane, exp_r=row.get("exp_r"), n=row.get("n"))
+
+
 def regrade_block(name: str, fails: dict[str, dict]) -> dict | None:
     """The failing audit row for `name`, matched exactly or across the canon's prefixing
     convention (`external.<cell>`, `<hunt>.<cell>` on one side, the bare cell on the other)."""
@@ -1795,6 +1922,14 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
             plog(f"{key}: candidate refused -- {row['gate_reason']}")
             changed = True
             continue
+        _ts = tier_s_block(key)
+        if _ts:
+            row["status"] = "BLOCKED_TIER_S"
+            row["gate_reason"] = _ts
+            plog(f"{key}: candidate refused -- {_ts}")
+            _record_tier_s_block(key, _ts, "qquant", row)
+            changed = True
+            continue
         tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
                str(spec["family"]), spec.get("is_universe") is True)
         row["certificate_drift"] = bool(gate_authority) and tup not in gate_authority
@@ -1930,6 +2065,15 @@ def main() -> None:
             st["gate_reason"] = (f"the blind reviewer could not reproduce certificate {_veto} "
                                  f"from the data (VETO)")
             plog(f"{key}: live promotion refused -- {st['gate_reason']}")
+            changed = True
+            continue
+        _ts = tier_s_block(key)
+        if _ts:
+            st["status"] = "BLOCKED_TIER_S"
+            st["promotion_authority"] = False
+            st["gate_reason"] = _ts
+            plog(f"{key}: live promotion refused -- {_ts}")
+            _record_tier_s_block(key, _ts, "main", st)
             changed = True
             continue
         cap = capital_verdict(view, key, symbol=sym, family=family, selector=win)

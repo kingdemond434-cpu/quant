@@ -354,6 +354,7 @@ def _research_bandit() -> None:
     try:
         import research_bandit
         d = research_bandit.run()
+        research_bandit.publish(d)
         top = sorted(d["shares"].items(), key=lambda kv: -kv[1])[:3]
         dlog("research bandit: " + ", ".join(f"{a}={s:.0%}" for a, s in top))
     except Exception as exc:
