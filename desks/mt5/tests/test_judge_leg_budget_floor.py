@@ -66,7 +66,17 @@ def test_the_floor_follows_the_budget_that_was_actually_applied(
 
 def test_no_other_leg_gains_a_floor_by_accident() -> None:
     assert hc._leg_floor_s("weak_signals") == 0
-    assert set(hc.LEG_BUDGET_FLOOR_SEC) == {"external_gauntlet"}
+    assert set(hc.LEG_BUDGET_FLOOR_SEC) == {"external_gauntlet", "gauntlet_backpressure",
+                                            "global_coverage_tensor"}
+
+
+def test_a_self_stopping_organ_is_never_priced_below_its_own_budget() -> None:
+    """CRO 2026-09-30 gap 2: both organs stop themselves on `--budget-s`; the floor sits above
+    that budget and at or below the leg's base, so the pricer can only ever give them more."""
+    src = (_DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    for leg, own in (("gauntlet_backpressure", 480), ("global_coverage_tensor", 540)):
+        assert f'"--budget-s", "{own}"' in src, leg
+        assert own < hc._leg_floor_s(leg) <= hc.LEG_BUDGET_SEC[leg], leg
 
 
 def test_the_base_budget_covers_a_measured_full_pass() -> None:
