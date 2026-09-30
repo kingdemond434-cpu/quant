@@ -978,8 +978,31 @@ def _dated(s: Any) -> Any:
     return out[~out.index.duplicated(keep="last")].sort_index()
 
 
-def _series_for(name: str, *, lake: Path, acquired: Mapping[str, Any] | None) -> Any:
-    """A numeric series on a UTC date index, by lake id or acquired-series name, else None."""
+#: The lake frame's PERIOD column (what the value is ABOUT), in preference order. A correlation is
+#: measured period against period: two identical series published with different latencies are
+#: the same series, and joining them on `available_time` shifted one against the other.
+PERIOD_COLUMNS: tuple[str, ...] = ("event_time", "period", "date")
+
+
+def lake_lag_days(sub: Mapping[str, Any]) -> float:
+    """The lag `materialise` adds to the period to stamp `available_time` (its exact formula), so
+    a frame written before the period column existed can be put back on its period."""
+    try:
+        lat = float(sub.get("latency_days") or 1)
+    except (TypeError, ValueError):
+        lat = 1.0
+    return max(1.0, min(lat, 400.0))
+
+
+def _series_for(
+    name: str, *, lake: Path, acquired: Mapping[str, Any] | None, lag_days: float = 0.0
+) -> Any:
+    """A numeric series on a UTC PERIOD index, by lake id or acquired-series name, else None.
+
+    A lake frame is dated by its period column when it has one; a frame carrying only
+    `available_time` is put back on its period by subtracting `lag_days` (the lag materialise
+    added). Never on `available_time` itself: that index is for point-in-time joins to prices,
+    not for comparing two releases of the same quantity."""
     try:
         import pandas as pd
     except Exception:
@@ -989,10 +1012,15 @@ def _series_for(name: str, *, lake: Path, acquired: Mapping[str, Any] | None) ->
         if p.exists():
             try:
                 df = pd.read_parquet(p) if suf == ".parquet" else pd.read_csv(p)
-                if "available_time" in df.columns and SIGNAL in df.columns:
-                    return _dated(
-                        pd.Series(df[SIGNAL].to_numpy(), index=df["available_time"].to_numpy())
-                    )
+                if SIGNAL not in df.columns:
+                    continue
+                pc = next((c for c in PERIOD_COLUMNS if c in df.columns), None)
+                if pc is not None:
+                    return _dated(pd.Series(df[SIGNAL].to_numpy(), index=df[pc].to_numpy()))
+                if "available_time" in df.columns:
+                    idx = pd.to_datetime(df["available_time"], utc=True, errors="coerce")
+                    idx = idx - pd.Timedelta(days=float(lag_days))
+                    return _dated(pd.Series(df[SIGNAL].to_numpy(), index=idx.to_numpy()))
             except Exception:
                 return None
     rec = ((acquired or {}).get("series") or {}).get(name)
@@ -1026,12 +1054,15 @@ def correlation(
     a = sample_series(paid, lake=lk, acquired=acquired)
     if a is None:
         return UNMEASURED
-    b = _series_for(dataset_id(sub), lake=lk, acquired=acquired)
+    # The acquired series first: it is on its period date as fetched. The lake frame second, put
+    # back on its period (never compared on available_time -- R1, 2026-09-30).
+    b = None
+    for name in _acquired_names(sub, acquired) or []:
+        b = _series_for(name, lake=lk, acquired=acquired)
+        if b is not None:
+            break
     if b is None:
-        for name in _acquired_names(sub, acquired) or []:
-            b = _series_for(name, lake=lk, acquired=acquired)
-            if b is not None:
-                break
+        b = _series_for(dataset_id(sub), lake=lk, acquired=acquired, lag_days=lake_lag_days(sub))
     if b is None:
         return UNMEASURED
     try:
@@ -1041,7 +1072,8 @@ def correlation(
         if len(j) < 12:
             return UNMEASURED
         c = float(j["a"].corr(j["b"]))
-        return round(c, 4) if c == c else UNMEASURED
+        # UNROUNDED: every threshold compares this value, and a rounded 0.49995 read as 0.5.
+        return c if c == c else UNMEASURED
     except Exception:
         return UNMEASURED
 
@@ -1817,11 +1849,11 @@ def materialise(
         df = pd.read_parquet(Path(str(rec.get("path"))))
         col = df.columns[0]
         idx = pd.to_datetime(df.index, utc=True, errors="coerce")
-        lat = float(sub.get("latency_days") or 1)
         frame = pd.DataFrame(
             {
                 SIGNAL: pd.to_numeric(df[col], errors="coerce").to_numpy(),
-                "available_time": idx + pd.Timedelta(days=max(1.0, min(lat, 400.0))),
+                "event_time": idx,
+                "available_time": idx + pd.Timedelta(days=lake_lag_days(sub)),
                 "source_id": did,
             }
         ).dropna(subset=[SIGNAL, "available_time"])
@@ -2117,10 +2149,15 @@ def write_world_state(rows: list[dict[str, Any]], now: datetime, path: Path | No
 
 
 # -------------------------------------------------------------------------------- report
+#: A paid set whose only VERIFIED free series is the vendor's OWN public release (same endpoint:
+#: VIXCLS for Cboe, the CFTC TFF file for CME, CSUSHPINSA for CoreLogic). It says the vendor gives
+#: that headline away; it is not an independent replica of the product, so it is never COVERED.
+VENDOR_SAMPLE_ONLY = "VENDOR_SAMPLE_ONLY"
 #: A paid set's coverage status, best first. Only COVERED counts toward covered_share (D19: "a
 #: substitute whose strength is unmeasured counts as uncovered").
 PAID_STATUSES = (
     "COVERED",
+    VENDOR_SAMPLE_ONLY,
     "MATCHED_UNVERIFIED",
     "CONTRADICTED",
     "UNMATCHED",
@@ -2139,7 +2176,11 @@ def paid_status(
     out: dict[str, dict[str, Any]] = {}
     for e in catalogue:
         cs = by_paid.get(e["id"], [])
-        v = [c for c in cs if verification(c) == "VERIFIED" and c.get("usable")]
+        verified = [c for c in cs if verification(c) == "VERIFIED" and c.get("usable")]
+        # COVERED counts only an INDEPENDENT verified series (R2, 2026-09-30): the vendor's own
+        # public sample correlating ~1 with itself is VENDOR_SAMPLE_ONLY.
+        v = [c for c in verified if not c.get("same_series")]
+        same = [c for c in verified if c.get("same_series")]
         u = [c for c in cs if verification(c) == "MATCHED_UNVERIFIED"]
         r = [c for c in cs if verification(c) == "REJECTED"]
         # A measured VERIFIED substitute outranks the Asia verdict; nothing weaker does -- a
@@ -2147,6 +2188,8 @@ def paid_status(
         status = (
             "COVERED"
             if v
+            else VENDOR_SAMPLE_ONLY
+            if same
             else BLOCKED_NO_SUBSTITUTE
             if e.get("substitute_status") == BLOCKED_NO_SUBSTITUTE
             else "MATCHED_UNVERIFIED"
@@ -2159,13 +2202,8 @@ def paid_status(
             "status": status,
             "sample_status": public_sample(e)["status"],
             "verified_by": sorted({str(c["dataset_id"]) for c in v}),
-            "basis": (
-                None
-                if not v
-                else "same_series"
-                if all(c.get("same_series") for c in v)
-                else "independent"
-            ),
+            "same_series_by": sorted({str(c["dataset_id"]) for c in same}),
+            "basis": "independent" if v else "same_series" if same else None,
             "best_correlation": max(
                 (
                     float(c["correlation"])
@@ -2231,9 +2269,12 @@ def summarise(
     fed: Any,
     asia_classes: Iterable[str] = (),
     status: Mapping[str, Mapping[str, Any]] | None = None,
+    blocked_measured: bool = True,
 ) -> list[dict[str, Any]]:
     """Per (class, region): paid sets, matched, covered (VERIFIED), matched-unverified, best
-    strength, enrolled substitutes, cells fed."""
+    strength, enrolled substitutes, cells fed. `blocked_measured` False (no Asia table that
+    could carry a blocked verdict is on the host): a group with no blocked row reads UNMEASURED
+    there, never 0."""
     status = status if status is not None else paid_status(catalogue, cands)
     groups: dict[tuple[str, str], dict[str, Any]] = {}
     for e in catalogue:
@@ -2249,6 +2290,7 @@ def summarise(
                 "covered": 0,
                 "matched_unverified": 0,
                 "contradicted": 0,
+                "vendor_sample_only": 0,
                 "blocked_no_substitute": 0,
                 "enrolled_substitutes": set(),
                 "best_coverage": None,
@@ -2285,6 +2327,8 @@ def summarise(
                 g["matched_unverified"] += 1
             elif st == "CONTRADICTED":
                 g["contradicted"] += 1
+            elif st == VENDOR_SAMPLE_ONLY:
+                g["vendor_sample_only"] += 1
             elif st == BLOCKED_NO_SUBSTITUTE:
                 g["blocked_no_substitute"] += 1
             if b is not None and isinstance(b.get("coverage"), (int, float)):
@@ -2298,6 +2342,8 @@ def summarise(
             g["enrolled_substitutes"] |= by_paid_enrolled.get(pid, set())
     out = []
     for g in sorted(groups.values(), key=lambda x: (x["class"], x["region"])):
+        if not blocked_measured and not g["blocked_no_substitute"]:
+            g["blocked_no_substitute"] = UNMEASURED
         enr = sorted(g.pop("enrolled_substitutes"))
         g.pop("_paid")
         best_cov = g.pop("best_coverage")
@@ -2663,8 +2709,20 @@ def run(
 
     enrolled_ids = {dataset_id(s) for s in enrolled}
     status = paid_status(catalogue, cands)
-    rows = summarise(catalogue, cands, enrolled_ids, fed, asia["owned_classes"], status)
     st_n = Counter(v["status"] for v in status.values())
+    # BLOCKED_NO_SUBSTITUTE is only measurable when the blocked-source export is on this host;
+    # absent, it is UNMEASURED everywhere it is reported (headline, paid_status, per group) unless
+    # another table carried a blocked row, which is then counted.
+    blocked_measured = blocked_table.is_file() or bool(st_n.get(BLOCKED_NO_SUBSTITUTE))
+    rows = summarise(
+        catalogue,
+        cands,
+        enrolled_ids,
+        fed,
+        asia["owned_classes"],
+        status,
+        blocked_measured=blocked_measured,
+    )
     covered = st_n.get("COVERED", 0)
     strength = match_strength(cands, {d: lanes.get(d, LANE_RESEARCH) for d in enrolled_ids})
     paid_with_match = sum(r["matched"] for r in rows)
@@ -2716,8 +2774,9 @@ def run(
             "unmatched": st_n.get("UNMATCHED", 0),
             # UNMEASURED (never 0) while the Asia blocked-source export is not on this host.
             "blocked_no_substitute": st_n.get(BLOCKED_NO_SUBSTITUTE, 0)
-            if blocked_table.is_file()
+            if blocked_measured
             else UNMEASURED,
+            "vendor_sample_only": st_n.get(VENDOR_SAMPLE_ONLY, 0),
             "blocked_no_substitute_ids": sorted(
                 str(e.get("dataset_id") or e["id"])
                 for e in catalogue
@@ -2732,7 +2791,14 @@ def run(
                 1 for c in named_c if verification(c) == "MATCHED_UNVERIFIED"
             ),
             "asia_named_verified": sum(1 for c in named_c if verification(c) == "VERIFIED"),
-            "paid_status": {k: st_n.get(k, 0) for k in PAID_STATUSES},
+            "paid_status": {
+                k: (
+                    UNMEASURED
+                    if k == BLOCKED_NO_SUBSTITUTE and not blocked_measured
+                    else st_n.get(k, 0)
+                )
+                for k in PAID_STATUSES
+            },
             # Trading Economics, field by field; a separate section, never folded into
             # covered_share. UNMEASURED (never 0) while its catalogue is not on this host.
             "te_fields": te["fields"],

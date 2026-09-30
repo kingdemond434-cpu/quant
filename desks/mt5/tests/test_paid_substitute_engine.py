@@ -559,10 +559,93 @@ def test_only_a_measured_correlation_covers_a_paid_set() -> None:
     assert ms["by_dataset"]["s1"]["strength"] == 0.8 and ms["measured"] == 2
 
 
-def test_the_vendors_own_release_is_reported_as_same_series() -> None:
-    cat = [{"id": "a"}]
-    st = pse.paid_status(cat, [_cand("a", "s1", 1.0, same=True)])
-    assert st["a"]["status"] == "COVERED" and st["a"]["basis"] == "same_series"
+def test_the_vendors_own_release_is_never_covered() -> None:
+    """R2: VIXCLS for Cboe, the CFTC TFF file for CME, CSUSHPINSA for CoreLogic are the vendor's
+    own public release. They are VENDOR_SAMPLE_ONLY; only an INDEPENDENT series covers."""
+    cat = [{"id": "a"}, {"id": "b"}]
+    st = pse.paid_status(cat, [_cand("a", "s1", 1.0, same=True),
+                               _cand("b", "s1", 1.0, same=True), _cand("b", "s2", 0.7)])
+    assert st["a"]["status"] == pse.VENDOR_SAMPLE_ONLY and st["a"]["basis"] == "same_series"
+    assert st["a"]["verified_by"] == [] and st["a"]["same_series_by"] == ["s1"]
+    assert st["b"]["status"] == "COVERED" and st["b"]["basis"] == "independent"
+    assert st["b"]["verified_by"] == ["s2"]
+    rows = pse.summarise([{**e, "class": "x"} for e in cat],
+                         [_cand("a", "s1", 1.0, same=True)], set(), {}, status=st)
+    assert rows[0]["covered"] == 1 and rows[0]["vendor_sample_only"] == 1
+
+
+def test_the_committed_vendor_samples_are_not_counted_as_coverage() -> None:
+    rows = pse.load_catalogue(crawled=Path("/nonexistent"), classes=pse.load_classes())
+    lib = {s["id"]: s for s in pse.load_library()}
+    by_id = {e["id"]: e for e in rows}
+    for pid, sid in (("paid:cboe:cboe_livevol", "fred_vixcls"),
+                     ("paid:cme_group:datamine_cot_and_settlement_data", "cftc_tff"),
+                     ("paid:corelogic:property_data", "fred_csushpinsa")):
+        assert pse.same_series(by_id[pid], lib[sid]), (pid, sid)
+        c = {**_cand(pid, sid, 0.99, same=True)}
+        assert pse.paid_status([by_id[pid]], [c])[pid]["status"] == pse.VENDOR_SAMPLE_ONLY
+
+
+# ---------------------------------------------- R1: correlation on the PERIOD, not availability
+def _identical_pair(tmp: Path, *, latency: float, with_period: bool) -> tuple[dict, dict]:
+    pd = pytest.importorskip("pandas")
+    np = pytest.importorskip("numpy")
+    idx = pd.date_range("2010-01-01", periods=180, freq="MS", tz="UTC")
+    vals = np.cumsum(np.random.default_rng(11).normal(size=len(idx)))
+    paid = {"id": "paid:v:lag", "public_sample": {"status": "MACHINE_SERIES",
+                                                  "endpoints": ["https://v/lag.csv"]}}
+    sub = {"id": "free_lag", "latency_days": latency}
+    pd.DataFrame({"value": vals, "available_time": idx}).to_parquet(
+        tmp / f"{pse.sample_id(paid)}.parquet")
+    # the substitute's lake frame exactly as materialise writes it: available = period + latency
+    frame = {"value": vals, "available_time": idx + pd.Timedelta(days=pse.lake_lag_days(sub))}
+    if with_period:
+        frame["event_time"] = idx
+    pd.DataFrame(frame).to_parquet(tmp / f"{pse.dataset_id(sub)}.parquet")
+    return paid, sub
+
+
+@pytest.mark.parametrize("with_period", [True, False])
+def test_a_lagged_identical_series_correlates_at_one(tmp_path: Path, with_period: bool) -> None:
+    """R1: an identical series published 45 days later read -0.05 and was REJECTED when the join
+    was on available_time. On the period date it is the same series."""
+    paid, sub = _identical_pair(tmp_path, latency=45, with_period=with_period)
+    c = pse.correlation(paid, sub, lake=tmp_path)
+    assert isinstance(c, float) and c > 0.999
+    assert pse.verification({"components": {"class": 1.0, "region": 1.0}, "coverage": 1.0,
+                             "correlation": c}) == "VERIFIED"
+
+
+def test_materialise_writes_the_period_beside_available_time(tmp_path: Path) -> None:
+    pd = pytest.importorskip("pandas")
+    acq = tmp_path / "s.parquet"
+    days = pd.to_datetime(["2026-01-01", "2026-02-01"], utc=True)
+    pd.Series([1.0, 2.0], index=days, name="value").to_frame().to_parquet(acq)
+    sub = {"id": "fred_p", "endpoint": "https://e/p.csv", "latency_days": 45}
+    reg = {"by_url": {"https://e/p.csv": {"series": ["s"]}}, "series": {"s": {"path": str(acq)}}}
+    assert pse.materialise(sub, lake=tmp_path / "lake", acquired=reg) == "WRITTEN"
+    f = pd.read_parquet(tmp_path / "lake" / f"{pse.dataset_id(sub)}.parquet")
+    assert list(pd.to_datetime(f["event_time"], utc=True)) == list(days)
+    assert (pd.to_datetime(f["available_time"], utc=True) - pd.to_datetime(
+        f["event_time"], utc=True)).dt.days.tolist() == [45, 45]
+
+
+def test_correlation_is_compared_unrounded() -> None:
+    """0.49995 rounded to 0.5 and passed MIN_CORRELATION; the threshold reads the raw value."""
+    m = {"components": {"class": 1.0, "region": 1.0}, "coverage": 1.0}
+    assert pse.verification({**m, "correlation": pse.MIN_CORRELATION - 5e-5}) == "REJECTED"
+    src = Path(pse.__file__).read_text("utf-8")
+    body = src[src.index("def correlation("):src.index("def public_sample(")]
+    assert "round(" not in body
+
+
+def test_blocked_counts_are_unmeasured_without_the_blocked_table(tmp_path: Path) -> None:
+    doc = pse.run(now=NOW, fetch=False, dry_run=True, paths=_paths(tmp_path), environ={},
+                  asia_globs=[])
+    h = doc["headline"]
+    assert h["blocked_no_substitute"] == pse.UNMEASURED
+    assert h["paid_status"][pse.BLOCKED_NO_SUBSTITUTE] == pse.UNMEASURED
+    assert all(r["blocked_no_substitute"] == pse.UNMEASURED for r in doc["by_class_region"])
 
 
 def test_every_catalogue_row_states_its_public_sample() -> None:
@@ -602,8 +685,9 @@ def test_samples_go_to_the_acquirer_and_are_measured_from_it(tmp_path: Path) -> 
     s = pse.sample_series(paid, lake=tmp_path, acquired=acq)
     assert s is not None and isinstance(s.index, pd.DatetimeIndex) and len(s) == len(idx)
     sub = {"id": "free_y", "endpoint": "https://free/y.csv"}
-    pd.DataFrame({"value": vals, "available_time": idx}).to_parquet(
-        tmp_path / f"{pse.dataset_id(sub)}.parquet")
+    # the lake frame as materialise writes it: available_time = period + the (>= 1 day) lag
+    pd.DataFrame({"value": vals, "available_time": idx + pd.Timedelta(
+        days=pse.lake_lag_days(sub))}).to_parquet(tmp_path / f"{pse.dataset_id(sub)}.parquet")
     c = pse.correlation(paid, sub, lake=tmp_path, acquired=acq)
     assert isinstance(c, float) and c > 0.99
 
@@ -762,3 +846,66 @@ def test_committed_te_catalogue_scores_every_field(tmp_path: Path) -> None:
     assert all(r["substitutes"] for r in te["rows"])
     assert te["field_status"]["COVERED"] == 0
     assert te["field_status"][pse.BLOCKED_ON_TERMS] == te["fields"]
+
+
+# ------------------------------------ the research lane survives donation, end to end (R-lane)
+def test_research_lane_is_carried_from_registry_through_donation_to_the_docket(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A research-lane substitute cell (correlation to its paid set UNMEASURED) is minted into the
+    registry, claimed and donated by the moat exchange, and compiled by miner_candidate_compiler:
+    at every step it still says campaign_id / source_id / validation_lane = research_unverified,
+    so it can never be certified or sized unmarked."""
+    pytest.importorskip("pandas")
+    from libs.moat import registry as R
+    import moat_candidate_compiler as mcc
+    import miner_candidate_compiler as mc
+    from research import proposer_common as pc
+
+    monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
+    R.set_path(tmp_path / "alpha_registry.sqlite")
+    monkeypatch.setattr(pc, "INTEL", tmp_path / "intel")
+    from libs.ops import throughput
+    monkeypatch.setattr(throughput, "SAMPLES", tmp_path / "throughput_samples.jsonl")
+    monkeypatch.setattr(pc, "_preregister", lambda _s, _c: {
+        "preregistered": 0, "failed": 0, "already": 0, "reasons": {}, "failures": []})
+    conn = R.connect()
+    try:
+        did = "psub_free_research"
+        campaign = f"paid_substitute:{pse.LANE_RESEARCH}:{did}"
+        _cid, created = R.enqueue_candidate(
+            family="exogenous_conditioner", symbol="EURUSD", status="queued",
+            params={"source": did, "signal": "value", "transform": "level_z"},
+            origin=pse.GENERATOR, generator=pse.GENERATOR, mechanism="m" * 20,
+            source_id=did, campaign_id=campaign, conn=conn)
+        assert created
+        out = mcc.claim_and_donate(conn, per_department=50)
+        assert out["status"] == "CLAIMED", out
+        files = list((tmp_path / "intel" / mcc.SOURCE).glob("discoveries_*.json"))
+        assert len(files) == 1
+        rows = json.loads(files[0].read_text("utf-8"))["discoveries"]
+        mine = [r for r in rows if (r.get("params") or {}).get("source") == did]
+        assert len(mine) == 1
+        row = mine[0]
+        for where in (row, row["evidence"]):
+            assert where["campaign_id"] == campaign
+            assert where["source_id"] == did
+            assert where["validation_lane"] == pse.LANE_RESEARCH
+        cands, disp = mc.compile_row(mcc.SOURCE, row, {"EURUSD"})
+        assert disp == "EXACT_RECIPE" and cands
+        for c in cands:
+            assert c["campaign_id"] == campaign and c["source_id"] == did
+            assert c["validation_lane"] == pse.LANE_RESEARCH
+    finally:
+        conn.close()
+        R.set_path(None)
+
+
+def test_provenance_mark_reads_the_lane_off_the_campaign_id() -> None:
+    import moat_candidate_compiler as mcc
+    assert mcc.provenance_mark({"campaign_id": "paid_substitute:validated_substitute:psub_x",
+                                "source_id": "psub_x"}) == {
+        "campaign_id": "paid_substitute:validated_substitute:psub_x", "source_id": "psub_x",
+        "validation_lane": "validated_substitute"}
+    assert mcc.provenance_mark({"campaign_id": "other:1"}) == {"campaign_id": "other:1"}
+    assert mcc.provenance_mark({}) == {}
