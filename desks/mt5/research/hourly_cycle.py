@@ -2503,7 +2503,8 @@ def mass_screen() -> dict:
     MASS_SCREEN_TRIALS.jsonl, and forward the BH-FDR, 3x-cost-stressed, day-deduplicated survivors
     through the registry door into the judge's docket. Artifact: reports/MASS_SCREEN.json."""
     return _producer("mass_screen", "research/mass_screen.py", "--once",
-                     "--budget-s", str(MASS_SCREEN_BUDGET_S))
+                     "--budget-s", "900")  # == MASS_SCREEN_BUDGET_S, literal so the
+    # component registry can read the production args statically (pinned by test_mass_screen)
 
 
 def search() -> dict:

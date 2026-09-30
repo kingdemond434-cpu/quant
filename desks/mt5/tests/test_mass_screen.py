@@ -217,6 +217,7 @@ def test_the_leg_is_wired_into_the_hourly_cycle() -> None:
     assert HC.LEG_BUDGET_SEC["mass_screen"] > HC.MASS_SCREEN_BUDGET_S
     src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
     assert '_costed("mass_screen", mass_screen)' in src
+    assert f'"--budget-s", "{HC.MASS_SCREEN_BUDGET_S}")' in src
     assert src.index('_costed("mass_screen"') < src.index('_costed("merge_docket"')
     assert layers.LEG_LAYER.get("mass_screen") == "prediction"
 
