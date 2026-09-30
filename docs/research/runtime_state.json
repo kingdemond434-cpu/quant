@@ -23,14 +23,14 @@
   }
  },
  "census": {
-  "LIVE": 89,
+  "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 716,
+  "NEVER": 720,
   "UNMEASURED": 33
  },
  "scope": {
-  "attested": 931,
+  "attested": 936,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -41,8 +41,22 @@
   "summaries_trimmed": 0,
   "only_missing_appended": [
    {
-    "at": "2026-09-30T19:46:50+00:00",
+    "at": "2026-09-30T19:54:02+00:00",
     "host": "vm",
+    "organs": [
+     "task:MT5-GatewayResident",
+     "executable:libs/ops/state_publication.py",
+     "fence:check_box_state_freshness",
+     "library:desks/mt5/research/free_shadows.py",
+     "library:desks/mt5/research/gate_verdict_digest.py"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:24:52+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "leg:sec_fundamentals"
     ]
@@ -23592,6 +23606,131 @@
    "consumer": "UNMEASURED"
   },
   {
+   "organ": "task:MT5-GatewayResident",
+   "kind": "task",
+   "code": [
+    "desks/mt5/research/gateway_resident.py"
+   ],
+   "clock": "MT5-GatewayResident",
+   "cadence_s": 600,
+   "max_silence_s": 1200,
+   "state": "LIVE",
+   "why": "artifact 0.1h old, inside its cadence",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/data/gateway_state.json",
+   "artifact_declared": "desks/mt5/data/gateway_state.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 196,
+   "artifact_bytes": 11830,
+   "artifact_sha256": "22a58e88eeb912efa446ffb604e96ddb404df95fc256126ba8140205948260ca",
+   "summary": {},
+   "progress_metric": "task_runs",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "executable:libs/ops/state_publication.py",
+   "kind": "executable",
+   "code": [
+    "libs/ops/state_publication.py"
+   ],
+   "clock": "invoked:desks/mt5/scripts/stall_watch.ps1",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "fence:check_box_state_freshness",
+   "kind": "task",
+   "code": [
+    "scripts/check_box_state_freshness.py"
+   ],
+   "clock": "run_law_gate.py",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "gate_runs",
+   "consumer": "desks/mt5/research/plumbing_watchdog.py"
+  },
+  {
+   "organ": "library:desks/mt5/research/free_shadows.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/research/free_shadows.py"
+   ],
+   "clock": "import:desks/mt5/research/run_gateway_loop.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/desk_module_drift.json",
+   "artifact_declared": "data/desk_module_drift.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "library:desks/mt5/research/gate_verdict_digest.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/research/gate_verdict_digest.py"
+   ],
+   "clock": "import:desks/mt5/research/hourly_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
+   "artifact_declared": "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
    "organ": "leg:sec_fundamentals",
    "kind": "leg",
    "code": [
@@ -23601,7 +23740,7 @@
    "cadence_s": 3600,
    "max_silence_s": 7200,
    "state": "NEVER",
-   "why": "no artifact and no run record on this host",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
    "last_run_at": "UNMEASURED",
    "last_run_outcome": "UNMEASURED",
    "last_run_source": "UNMEASURED",
@@ -23614,7 +23753,10 @@
    "artifact_sha256": "UNMEASURED",
    "summary": {},
    "progress_metric": "leg_completions",
-   "consumer": "UNMEASURED"
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:24:52+00:00"
   }
  ],
  "ratchet": {
