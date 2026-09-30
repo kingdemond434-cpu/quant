@@ -29,6 +29,8 @@ Do not create code churn merely to satisfy this rule. A no-change decision is va
 
 Do not spend the run rereading or resummarizing the entire institution when the current binding constraint is already known and evidenced.
 
+**AMENDMENT: EVERY PASS IS THE LAST CHANCE (principal's standing order, 2026-09-30; supersedes the scope limit above wherever they conflict).** Each pass works on every material item it notices, broad and deep, and carries each one fully to completion within that same pass. That means no partials, no deferring to tomorrow, and no stopping early or taking breaks while an item is still open. Treat the pass as if no cycle follows. The guards still bind: no forced or fake work on areas measured optimal (D12), a fix counts only when fully wired (D11), never lower a gate, and never route around a permission refusal. An item that is still blocked when the pass ends is recorded as BLOCKED with the exact reason and the exact unblock needed, never as done, partial or "next cycle".
+
 Read `CRO_CYCLE.md` first.
 
 Then load `QUANT_CONSTITUTION.md` for governing laws.
@@ -223,6 +225,7 @@ Baseline (2026-09-30, `/mnt/project-files/reports/tier1_breadth_gap_2026-09-30.m
 | D10 | **Machinery gaps to tier-1** | `ranked_gaps` (biggest first), each with a size in numbers | the biggest gaps closing day over day | Reverse-engineer the tier-1 mechanism behind the top gap and build the fix this pass, or park it with evidence and name the thread that owns it. |
 | D11 | **Fully wired or it does not count** | per fix: `caller`, `schedule`, `decision_changed`, `artifact`, `artifact_fresh_on_box` | every fix called by the canonical cycle or a scheduled box task, steering a real mine/ingest/judge/forward/allocate decision, with a fresh artifact confirmed on the box after adoption | A report-only module, a shadow module, an unscheduled script or a flag left off is not a fix (III.16). Record it as BLOCKED with the exact reason. The next pass re-verifies that yesterday's fixes still produce. |
 | D12 | **No forced or fake work** | `optimal_areas` with their evidence | work goes only where a real gap is measured | An area measured as optimal is marked OPTIMAL with the number and the reason no material gain is available, then left alone. Never manufacture changes, churn or busywork. OPTIMAL is re-measured every pass and holds only while the evidence does. |
+| D13 | **Every item fully completed this pass** | `items_noticed`, `items_completed`, `items_blocked` (each with its exact reason), `items_partial` | `items_partial` = 0 and `items_noticed` = `items_completed` + `items_blocked` + `items_optimal` | Keep working in the same pass until every noticed item is completed and fully wired, or is BLOCKED with its exact reason. Never end the pass holding a partial, and never defer to the next cycle. |
 
 Standing rules for every duty: never cut mining, ingestion or research generation, and never lower a validation gate to raise a number. The duty work competes in STEP 7 and usually wins when capital-path integrity is clean.
 
