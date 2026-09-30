@@ -375,10 +375,11 @@ def gauntlet_thresholds(root: Path, *, dsr_threshold: float, gates_required: flo
     be read (status UNREADABLE) and which the law may only TIGHTEN unless the principal ratified
     the rule set in force. The result is published beside the sweep so a verdict names the law
     it was judged under."""
+    law: dict[str, Any] | None
     try:
-        law: dict[str, Any] | None = read_in_force(root)
-        status, law_hash = str(law["status"]), law.get("hash")
-        law_why = str(law.get("why") or "")
+        read = read_in_force(root)
+        law, status, law_hash = read, str(read["status"]), read.get("hash")
+        law_why = str(read.get("why") or "")
     except Exception as exc:  # unreadable: the gauntlet's constants stand
         law, status, law_hash = None, "UNREADABLE", None
         law_why = f"{type(exc).__name__}: {exc}"
