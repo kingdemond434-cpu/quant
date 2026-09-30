@@ -256,11 +256,6 @@ def test_a_pass_discovers_fetches_registers_and_exposes(box):
     s = got[f"world_{key}"]
     assert s.index.equals(idx) and s.notna().sum() > 1000
     assert W.world_series_for("3M", idx, now=NOW) == {}
-    # rebuild-by-name reproduces exactly what the search saw
-    rebuilt = W.world_feature(f"ext_world_{key}", idx)
-    pd.testing.assert_series_equal(rebuilt, s.astype(float), check_names=False)
-    z = W.world_feature(f"ext_world_{key}_z", idx)
-    assert z.notna().sum() > 0
 
 
 def test_second_pass_resumes_and_a_revision_appends(box):
@@ -327,48 +322,136 @@ def test_write_json_replaces_a_read_only_destination(tmp_path):
     assert not list(tmp_path.glob("*.tmp"))
 
 
-# ------------------------------------------------------------------ research wiring ----
-def test_world_series_are_primitives_but_never_enter_the_interaction_pool():
-    from research.edge_search import build_primitives
-    idx = pd.date_range("2025-01-01", periods=600, freq="h", tz="UTC")
-    close = pd.Series(100 + (pd.Series(range(600)) % 13).to_numpy() * 0.1, index=idx)
-    df = pd.DataFrame({"open": close, "high": close + 0.2, "low": close - 0.2, "close": close,
-                       "tick_volume": 10.0}, index=idx)
-    world = pd.Series((pd.Series(range(600)) % 29).to_numpy() * 1.0, index=idx)
-    prim = build_primitives(df, "AUDUSD", {"world_wabc": world, "macro_x": world})
-    assert "ext_world_wabc" in prim and "ext_world_wabc_z" in prim
-    assert not [k for k in prim if k.startswith("x_") and "ext_world_" in k]
-    assert [k for k in prim if k.startswith("x_") and "ext_macro_x" in k]    # others still pair
-
-
-def test_world_features_carry_a_named_mechanism():
-    from research.edge_search import mechanism_for_feature
-    assert mechanism_for_feature("ext_world_w0123456789ab")[0] == "NAMED"
-
-
-def test_hourly_cycle_runs_the_hunter_after_acquisition_with_a_budget_above_its_own():
-    src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
-    acq = src.index('acq = _costed("acquire_datasets"')
-    wdh = src.index('wdh = _costed("world_dataset_hunt"')
-    census = src.index('sxc = _costed("source_experiment_census"')
-    assert acq < wdh < census
-    assert '"world_dataset_hunt": wdh' in src
-    assert '"world_dataset_hunt": 1_020' in src and '"--budget-s", "900"' in src
-    assert '"world_dataset_hunt": "regions"' in src
-    assert '"world_dataset_hunt": "information"' in (ROOT / "libs" / "research" /
-                                                      "layers.py").read_text("utf-8")
-
-
-def test_edge_search_resolve_inputs_asks_the_hunter():
-    src = (DESK / "research" / "edge_search.py").read_text("utf-8")
-    assert "world_series_for(symbol, index)" in src
-    fam = (DESK / "mt5desk" / "families_orthogonal.py").read_text("utf-8")
-    assert "world_feature(str(feature), d.index)" in fam
-
-
 def test_low_disk_stands_fetching_down_and_says_so(box, monkeypatch):
     monkeypatch.setattr(W, "_free_disk_ok", lambda: (False, {"free_gb": 0.5, "floor_gb": 3.0}))
     rep = W.run(budget_s=30, fetch=_fake(_dbnomics_routes()), now=NOW)
     assert "stood down" in rep["pass"]["stood_down"]
     assert rep["totals"]["datasets_discovered"] == 2          # discovery still ran
     assert rep["totals"]["datasets_fetched"] == 0
+
+
+
+# ------------------------------------------------------ the consumer: world_macro_state ----
+def _fixture_store(box) -> str:
+    """One monthly Australian policy-rate series in the hunter's store; returns its key."""
+    from collections import Counter
+
+    import numpy as np
+    periods, _ = _monthly(96, end=date(2026, 8, 1))
+    rng = np.random.default_rng(7)
+    vals = [float(v) for v in np.cumsum(rng.normal(0, 0.25, len(periods))) + 3.0]
+    W.ingest_series("BIS", "WS_CBPOL", "Central bank policy rates",
+                    [{"code": "M.AU", "name": "Policy rate - Australia", "freq": "monthly",
+                      "dims": {"REF_AREA": "AU"},
+                      "points": list(zip(periods, vals, strict=True))}],
+                    now=NOW, base_score=5.0, qstats=Counter())
+    W.build_exposure(NOW)
+    W._keys_at.cache_clear()
+    W._frame_at.cache_clear()
+    W._exposure_at.cache_clear()
+    return W.series_key("BIS", "WS_CBPOL", "M.AU")
+
+
+def _bars(n: int = 30000) -> pd.DataFrame:
+    import numpy as np
+    idx = pd.date_range(end="2026-09-29 23:00", periods=n, freq="h", tz="UTC")
+    rng = np.random.default_rng(11)
+    close = pd.Series(0.65 + np.cumsum(rng.normal(0, 0.0008, n)), index=idx)
+    return pd.DataFrame({"open": close.shift(1).fillna(close.iloc[0]), "high": close + 0.001,
+                         "low": close - 0.001, "close": close, "tick_volume": 100.0},
+                        index=idx)
+
+
+PARAMS = {"z_obs": 24, "z_lo": 0.5, "z_hi": 99.0, "direction": "short", "hold_bars": 24}
+
+
+def test_world_macro_state_is_registered_and_admitted():
+    from mt5desk import families_orthogonal as fo
+
+    from research import family_policy
+    assert fo.ORTHOGONAL_FAMILIES["world_macro_state"].__name__ == "family_world_macro_state"
+    assert "world_macro_state" in fo.FAMILY_INPUTS
+    assert fo.FAMILY_TIMEFRAMES["world_macro_state"][0] == ("H1", "H4", "D1")
+    assert not family_policy.family_banned("world_macro_state")
+    assert family_policy.family_banned("discovered")
+
+
+def test_the_sealed_gauntlet_rebuilds_the_cell_identically(box):
+    """Through `external_gauntlet.build_cell` -- the judge's own door, imported, not edited."""
+    from desks.mt5.scripts import external_gauntlet as gauntlet
+    key = _fixture_store(box)
+    df = _bars()
+    params = {"series_key": key, **PARAMS}
+    a = gauntlet.build_cell("AUDUSD", "world_macro_state", dict(params), {}, h1_override=df)
+    b = gauntlet.build_cell("AUDUSD", "world_macro_state", dict(params), {}, h1_override=df)
+    assert a is not None and b is not None, gauntlet.LAST_BUILD_FAILURE
+    sa = [(s.time, s.side, s.ttl_bars) for s in a["sigs"]]
+    sb = [(s.time, s.side, s.ttl_bars) for s in b["sigs"]]
+    assert sa and sa == sb
+    assert {s[1] for s in sa} == {-1}
+    # the forward clock's call shape produces the same signals from the same identity
+    from mt5desk import families_orthogonal as fo
+    from mt5desk.family_call import signals
+    fwd = signals(fo.ORTHOGONAL_FAMILIES["world_macro_state"], df, side=-1, params=params)
+    assert [(s.time, s.side) for s in fwd] == [(t, sd) for t, sd, _ in sa]
+
+
+def test_the_family_is_point_in_time():
+    """The z needs a full window of the series' own prints; nothing earlier is emitted."""
+    from mt5desk.family_world_macro import world_state_z
+    s = pd.Series(range(40), index=pd.date_range("2024-01-31", periods=40, freq="ME", tz="UTC"),
+                  dtype=float)
+    z = world_state_z(s + (s % 3), 24)
+    assert z.index.min() == s.index[23]
+
+
+def test_an_absent_series_yields_no_signals_not_an_error(box):
+    from mt5desk.family_world_macro import family_world_macro_state
+    assert family_world_macro_state(_bars(2000), series_key="wdeadbeef0000", **PARAMS) == []
+    assert family_world_macro_state(_bars(2000), series_key="", **PARAMS) == []
+
+
+def test_the_proposer_mints_world_macro_state_cells_from_the_exposure(box, monkeypatch):
+    from research import proposer_common as pc
+    from research import world_macro_proposer as P
+    _fixture_store(box)
+    df = _bars()
+    monkeypatch.setattr(P, "REPORT", box / "WORLD_MACRO_PROPOSER.json")
+    monkeypatch.setattr(pc, "bars", lambda sym: df)
+    monkeypatch.setattr(pc, "cost_frac", lambda sym, meta, close: 0.0)
+    monkeypatch.setattr(pc, "artifact_hours", lambda d: {})
+    rep = P.run(budget_s=120, now=NOW, donate=False)
+    assert rep["status"] == "OK" and rep["symbols_available"] >= 1
+    assert rep["tests_run"] > 0
+    assert json.loads((box / "WORLD_MACRO_PROPOSER.json").read_text("utf-8"))["family"] == \
+        "world_macro_state"
+    cur = json.loads((W.STORE / "proposer_cursor.json").read_text("utf-8"))
+    assert "next" in cur
+
+
+def test_the_proposer_reports_unmeasured_before_any_exposure(box, monkeypatch):
+    from research import world_macro_proposer as P
+    monkeypatch.setattr(P, "REPORT", box / "WORLD_MACRO_PROPOSER.json")
+    rep = P.run(budget_s=10, now=NOW, donate=False)
+    assert rep["status"] == W.UNMEASURED and rep["tests_run"] == W.UNMEASURED
+
+
+def test_hourly_cycle_runs_hunter_then_its_consumer():
+    src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    acq = src.index('acq = _costed("acquire_datasets"')
+    wdh = src.index('wdh = _costed("world_dataset_hunt"')
+    wmp = src.index('wmp = _costed("world_macro_proposer"')
+    census = src.index('sxc = _costed("source_experiment_census"')
+    assert acq < wdh < wmp < census
+    assert '"world_dataset_hunt": wdh' in src and '"world_macro_proposer": wmp' in src
+    assert '"world_dataset_hunt": 1_020' in src and '"world_macro_proposer": 1_020' in src
+    layers = (ROOT / "libs" / "research" / "layers.py").read_text("utf-8")
+    assert '"world_dataset_hunt": "information"' in layers
+    assert '"world_macro_proposer": "prediction"' in layers
+
+
+def test_the_banned_discovered_path_is_not_fed():
+    es = (DESK / "research" / "edge_search.py").read_text("utf-8")
+    fam = (DESK / "mt5desk" / "families_orthogonal.py").read_text("utf-8")
+    assert "world_series_for" not in es and "ext_world_" not in es
+    assert "world_feature" not in fam

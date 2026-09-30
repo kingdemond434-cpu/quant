@@ -541,6 +541,7 @@ LEG_LAYER: dict[str, str] = {
     # what it produces, the same rule as the rest of this table.
     "acquire_datasets": "information", "dukascopy_backfill": "information",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
+    "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",
     "state_replay_audit": "execution", "why_not_report": "execution",

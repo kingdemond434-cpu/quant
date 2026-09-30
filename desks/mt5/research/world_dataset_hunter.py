@@ -38,11 +38,13 @@ facts about the world (tables below); the instruments are read from the broker's
 is never given a statistical conditioner (two-lanes rule) and nothing here names a
 crypto-exchange venue. Crypto CFDs stay in the hypothesis lane exactly as the registry says.
 
-WHERE IT GOES. `edge_search.resolve_inputs` asks `world_series_for(symbol, index)` for each
-symbol it searches; the series arrive as `ext_world_<key>` primitives -- the same shared
-vocabulary the gauntlet rebuilds from -- and `family_discovered` resolves any `ext_world_` feature
-by NAME through `world_feature`, so a cell found on a series that has since rotated out of the
-hour's exposure still rebuilds bar-for-bar.
+WHERE IT GOES. `build_exposure` publishes, per hypothesis-lane symbol, the ranked series that
+inform it. `research/world_macro_proposer.py` (its own hourly leg) reads that exposure and mints
+`world_macro_state` cells -- a z-score band on ONE named series x direction x hold -- through the
+shared proposer screen and donation contract. The family (`mt5desk/family_world_macro.py`,
+registered in `ORTHOGONAL_FAMILIES`) reloads the series from the `series_key` on the recipe, so
+the sealed gauntlet's `build_cell` and the forward clock rebuild the same signals with no input
+resolver, and rotation can never orphan a cell. The banned `discovered` family is never fed.
 
     python desks/mt5/research/world_dataset_hunter.py --once --budget-s 900
 """
@@ -116,9 +118,6 @@ EXPOSE_CORE = 8
 EXPOSE_ROTATING = 16
 EXPOSE_CANDIDATES = 240
 WORLD_KEY_PREFIX = "world_"
-WORLD_FEATURE_PREFIX = "ext_world_"
-#: build_primitives' own z window; `world_feature` must reproduce it exactly.
-Z_WINDOW = 96
 
 LIFECYCLE = ("DISCOVERED", "INGESTED", "QUALITY-PASSED", "RESEARCH-USEFUL", "OOS-INCREMENTAL",
              "FORWARD-INCREMENTAL", "CORE")
@@ -1349,21 +1348,6 @@ def world_series_for(symbol: str, index: Any, *, now: datetime | None = None) ->
     return out
 
 
-def world_feature(feature: str, index: Any) -> Any:
-    """Rebuild one `ext_world_<key>[_z]` primitive by NAME, exactly as build_primitives does."""
-    if not feature.startswith(WORLD_FEATURE_PREFIX):
-        return None
-    rest = feature[len(WORLD_FEATURE_PREFIX):]
-    z = rest.endswith("_z")
-    key = rest[:-2] if z else rest
-    s = raw_world_series(key)
-    if s is None:
-        return None
-    aligned = _align(s, index).reindex(index).ffill().astype(float)
-    if not z:
-        return aligned
-    return (aligned - aligned.rolling(Z_WINDOW).mean()) / aligned.rolling(Z_WINDOW).std(ddof=1)
-
 
 # ------------------------------------------------------------------------------ registry ----
 def update_registry(cat: dict[str, Any], exposure: dict[str, Any], now: datetime) -> dict:
@@ -1568,9 +1552,9 @@ def build_report(cat: dict[str, Any], exposure: dict[str, Any], *, stats: Counte
         "quality_by_reason": dict(qstats),
         "legacy_discovered": cat.get("legacy") or UNMEASURED,
         "registry": registry,
-        "research_door": ("edge_search.resolve_inputs -> world_series_for(symbol, index) as "
-                          "ext_world_<key>; family_discovered rebuilds any ext_world_ feature by "
-                          "name via world_feature"),
+        "research_door": ("reports/WORLD_MACRO_PROPOSER.json <- world_macro_proposer reads "
+                          "exposure.json and mints world_macro_state cells; the family reloads "
+                          "each series by series_key"),
         "rule": ("absence is UNMEASURED, never 0; every observation carries available_time and "
                  "first_seen_utc; a revision is a new row, never an overwrite"),
     }

@@ -1041,7 +1041,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      *GLOBAL_FOREST_LEGS), "regions"),
     # the world dataset hunter: DBnomics' ~80 providers plus the direct public doors, one
     # breadth-first page per dataset per visit -- a global layer, like the forests above.
-    "world_dataset_hunt": "regions",
+    "world_dataset_hunt": "regions", "world_macro_proposer": "regions",
     # the forest federation: one department per regional civilization, each its own resident
     **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
     # the read-only join behind the 24/7 dashboard: it measures nothing new, it only puts what
@@ -1597,6 +1597,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # rows and DATASET_HUNT.json; the cap sits above so the write is never the part cut off.
     # Its per-dataset cursor means a short pass still advances the frontier.
     "world_dataset_hunt": 1_020,
+    # ITS CONSUMER mints world_macro_state cells from the hunter's exposure and stops itself at
+    # --budget-s 900; a symbol cursor carries the sweep across hours.
+    "world_macro_proposer": 1_020,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
     # THE CONTROL PLANE'S OBSERVE PASS walks ~1,100 components, every watermark, every lease and
@@ -3951,6 +3954,12 @@ def main() -> None:
     # `edge_search.resolve_inputs` reads. Writes reports/DATASET_HUNT.json.
     wdh = _costed("world_dataset_hunt", lambda: _producer(
         "world_dataset_hunt", "research/world_dataset_hunter.py", "--once", "--budget-s", "900"))
+    # ITS CONSUMER: mints `world_macro_state` cells (a z band on one named world series x
+    # direction x hold) from the exposure the hunter just published, screens and donates them to
+    # the docket; the sealed gauntlet judges them via ORTHOGONAL_FAMILIES. Writes
+    # reports/WORLD_MACRO_PROPOSER.json.
+    wmp = _costed("world_macro_proposer", lambda: _producer(
+        "world_macro_proposer", "research/world_macro_proposer.py", "--once", "--budget-s", "900"))
     # GLOBAL SOURCE-TO-EXPERIMENT CONSERVATION.  All regions use the same measured chain:
     # declaration -> fetch owner -> parser -> feature -> experiment -> evaluator outcome.  This
     # runs after the country OS so newly declared regional sources enter the census in the same
@@ -5027,6 +5036,7 @@ def main() -> None:
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "world_dataset_hunt": wdh,
+                    "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,

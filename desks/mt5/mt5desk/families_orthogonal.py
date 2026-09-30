@@ -1287,18 +1287,6 @@ def family_discovered(
             _PRIM_CACHE.clear()
         _PRIM_CACHE[_key] = prim
     series = prim.get(feature)
-    if series is None and str(feature).startswith("ext_world_"):
-        # A WORLD SERIES IS REBUILT BY NAME. The hunter's exposure rotates daily, so the series
-        # a cell was found on may not be in this hour's `extra`; `world_feature` rebuilds it
-        # with build_primitives' own formula. Every other feature takes the old path unchanged.
-        try:
-            try:
-                from research.world_dataset_hunter import world_feature
-            except ImportError:
-                from world_dataset_hunter import world_feature
-            series = world_feature(str(feature), d.index)
-        except Exception:
-            series = None
     if series is None:
         return []
     values = series.to_numpy(dtype="float64", na_value=np.nan)
@@ -1618,6 +1606,17 @@ ORTHOGONAL_FAMILIES["lead_lag"] = family_lead_lag
 FAMILY_INPUTS["lead_lag"] = ("the driver instrument's bars (driver_symbol on the recipe)",
                              "data/universe/*_H1.parquet")
 
+# THE WORLD'S OFFICIAL STATISTICS (2026-09-30): a condition on one point-in-time world series
+# (policy rates, prices, money, trade, commodity balances -- DBnomics, BIS, CFTC, Treasury, FRED)
+# being in a z-score band against its own history. The series is named on the recipe by
+# `series_key` and loaded by the family itself from the world dataset hunter's store, so every
+# caller rebuilds the same cell from the same identity without an input resolver.
+from mt5desk.family_world_macro import family_world_macro_state  # noqa: E402
+
+ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
+FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
+                                      "data/world_datasets (world_dataset_hunter)")
+
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
 from mt5desk.family_style_premia import family_style_premia  # noqa: E402
@@ -1918,6 +1917,11 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "at sub-hourly sampling that matrix is dominated by asynchronous quoting, and a "
         "Marchenko-Pastur cut on a noise structure that is not sampling noise keeps the wrong "
         "eigenvalues"),
+    "world_macro_state": (
+        ("H1", "H4", "D1"),
+        "the conditioning variable is an official statistic printed daily at best and usually "
+        "monthly; a decision on every sub-hourly bar asserts hundreds of independent decisions "
+        "from a number that moves once, which multiplies cells without adding information"),
     "lead_lag": (
         ("H1", "H4", "D1"),
         "trades the laggard against a DRIVER instrument bar for bar at a measured lag; a lag "
