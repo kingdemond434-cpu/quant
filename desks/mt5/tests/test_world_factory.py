@@ -238,3 +238,80 @@ def test_forest_country_coverage_only_ratchets_up() -> None:
     served = sum(len(wf.forest_coverage(s, g)["regions_with_grounds"])
                  for s in wf.forest_sources())
     assert served >= 105
+
+
+# ------------------------------------------------------------------------------- alt data
+ALT = json.loads((DESK / "data" / "alt_dataset_sources.json").read_text("utf-8"))
+
+
+def test_alt_rows_cover_satellite_supply_chain_and_patents_with_licences_and_instruments() -> None:
+    universe = set(json.loads((DESK / "data" / "universe" / "universe.json").read_text("utf-8")))
+    classes = {r["class"] for r in ALT["rows"]}
+    assert {"satellite", "supply_chain", "patents"} <= classes
+    for r in ALT["rows"]:
+        for key in ("id", "cadence", "auth", "licence", "machine_use_allowed", "cursor", "region",
+                    "language", "mechanism"):
+            assert r.get(key) is not None, (r["name"], key)
+        assert set(r["instruments"]) <= universe, (r["name"], set(r["instruments"]) - universe)
+        if not r["fetch"]:
+            assert r.get("blocker"), r["name"]      # a registered gap says what stops it
+        if r["auth"] != "none":
+            assert not r["fetch"]                   # a keyed row is never fetched
+    assert len({r["id"] for r in ALT["rows"]}) == len(ALT["rows"])
+
+
+def test_the_acquirer_reads_fetchable_alt_rows_after_its_seeds_and_skips_keyed(monkeypatch,
+                                                                              tmp_path) -> None:
+    from research import acquire_datasets as ad
+    monkeypatch.setattr(ad, "REGISTRY", tmp_path / "registry.json")
+    monkeypatch.setattr(ad, "WORLD", tmp_path / "world")
+    urls = [u for u, _h in ad._endpoints(10_000)]
+    n_seed = len(ad._SEED_ENDPOINTS)
+    alt = [ad._alt_url(r) for r in ad.alt_rows() if ad._alt_fetchable(r)]
+    assert alt and urls[n_seed:n_seed + len(alt)] == alt
+    assert not [u for u in urls if "patentsview" in u or "sentinel-hub" in u or "eogdata" in u]
+    assert all("{today}" not in u for u in urls)
+
+
+def test_nasa_power_and_arcgis_payloads_parse_into_dated_series() -> None:
+    from research import acquire_datasets as ad
+    days = {f"2025{m:02d}{d:02d}": float(m * 31 + d) for m in range(1, 13) for d in range(1, 29)}
+    power = {"properties": {"parameter": {"T2M_MAX": days,
+                                          "PRECTOTCORR": {k: (-999.0 if i == 0 else i % 17)
+                                                          for i, k in enumerate(days)}}}}
+    df = ad._parse(json.dumps(power).encode(), "https://power.larc.nasa.gov/api/x")
+    dated = ad._dated(df)
+    assert dated is not None and len(dated) == 336 and dated.index.min().year == 2025
+    assert df["PRECTOTCORR"].isna().sum() == 1                 # the -999 fill is not a value
+    base = 1_700_000_000_000
+    arc = {"features": [{"attributes": {"date": base + i * 86_400_000, "n_tanker": 30 + i % 11}}
+                        for i in range(260)]}
+    df2 = ad._parse(json.dumps(arc).encode(), "https://services9.arcgis.com/x/query")
+    dated2 = ad._dated(df2)
+    assert dated2 is not None and dated2.index.min().year == 2023   # epoch-ms, not 1970
+    fred = b"observation_date,TSIFRGHT\n" + b"".join(
+        f"20{y:02d}-{m:02d}-01,{100 + y + m}\n".encode() for y in range(0, 20) for m in range(1, 13))
+    assert ad._dated(ad._parse(fred, "https://fred.stlouisfed.org/graph/fredgraph.csv")) is not None
+
+
+def test_alt_measurement_names_unattempted_platforms_and_the_missing_cell_route(tmp_path) -> None:
+    cov = tmp_path / "cov.json"
+    cov.write_text(json.dumps({"platforms": {
+        "amarkets": {"last_attempt": "2026-09-12T04:01:59+00:00", "last_state": "ok",
+                     "best_rows": 115},
+        "hfm_pamm": {"last_attempt": "2026-09-12T04:01:55+00:00",
+                     "last_state": "error:HTTPError", "best_rows": 0}}}))
+    got = wf.alt_platforms(NOW - timedelta(hours=24), cov)
+    assert got["attempted_in_window"] == 0 and got["yielding"] == 0 and got["n"] == 2
+    fresh = wf.alt_platforms(datetime(2026, 9, 11, tzinfo=UTC), cov)
+    assert fresh["yielding"] == 1
+    acq = tmp_path / "acq.json"
+    row = next(r for r in ALT["rows"] if r["fetch"] and "{today}" in r["url"])
+    acq.write_text(json.dumps({"by_url": {row["url"].replace("{today}", "20260930"): {
+        "status": "SUCCESS", "series": ["power_x"], "at": "2026-09-30T10:00:00+00:00"}}}))
+    alt = wf.alt_datasets(NOW, acquired_path=acq)
+    by = {r["name"]: r for r in alt["rows"]}
+    assert by[row["name"]]["status"] == "SUCCESS"
+    assert any(r["status"] == "REGISTERED_BLOCKED" for r in alt["rows"])
+    assert alt["by_class"]["patents"]["fetchable"] == 0
+    assert "world_macro_state" in alt["cell_route"]

@@ -1,5 +1,5 @@
 {
- "note": "THE WORLD FACTORY ROSTER (research/world_factory.py). Every organ that turns the world -- news, macro, datasets, media, forests, LLM seats, screens -- into hypotheses and cells, with its clock, its seat directories, its registry generator names, its artifact counter, its declared regions/languages and its licence. The regional forests are NOT listed here: they are expanded from libs/research/forests.FORESTS and their coverage is measured against deep_forest_sources.json. `media_units` are the miners the `world_media_miners` leg orchestrates on the box, least-recently-run first. Add a source by adding a row; never hard-code one.",
+ "note": "THE WORLD FACTORY ROSTER (research/world_factory.py). Every organ that turns the world -- news, macro, datasets, media, forests, LLM seats, screens -- into hypotheses and cells, with its clock, its seat directories, its registry generator names, its artifact counter, its declared regions/languages and its licence. The regional forests are NOT listed here: they are expanded from libs/research/forests.FORESTS and their coverage is measured against deep_forest_sources.json. `media_units` are the miners the `world_media_miners` leg orchestrates on the box, least-recently-run first. Add a source by adding a row; never hard-code one. Every row carries id, cadence, auth, licence, machine_use_allowed, cursor and region/language so the MT5 global mining pipeline's roster can absorb it.",
  "expand_forests": true,
  "required_regions": [
   "us",
@@ -68,7 +68,11 @@
     "central_bank",
     "calendar"
    ],
-   "licence": "derived: reads other organs' captures; inherits their licences"
+   "licence": "derived: reads other organs' captures; inherits their licences",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "news_desk",
@@ -99,7 +103,11 @@
    "source_types": [
     "calendar"
    ],
-   "licence": "requires a licensed calendar feed (none configured)"
+   "licence": "requires a licensed calendar feed (none configured)",
+   "cadence": "5 min",
+   "auth": "key",
+   "machine_use_allowed": null,
+   "cursor": null
   },
   {
    "id": "event_surprise",
@@ -142,7 +150,11 @@
     "calendar",
     "earnings"
    ],
-   "licence": "derived from the desk's own calendar vintages and bars"
+   "licence": "derived from the desk's own calendar vintages and bars",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "event_response_atlas",
@@ -178,7 +190,11 @@
    "source_types": [
     "calendar"
    ],
-   "licence": "derived from the desk's own event log and bars"
+   "licence": "derived from the desk's own event log and bars",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "event_graph_lab",
@@ -213,7 +229,11 @@
    "source_types": [
     "event_graph"
    ],
-   "licence": "derived"
+   "licence": "derived",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "fred_macro",
@@ -241,7 +261,11 @@
    "source_types": [
     "macro_series"
    ],
-   "licence": "FRED: public domain US-government series and third-party series under their owners' terms (keyless fredgraph.csv)"
+   "licence": "FRED: public domain US-government series and third-party series under their owners' terms (keyless fredgraph.csv)",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "macro_state_engine",
@@ -282,7 +306,11 @@
    "source_types": [
     "macro_series"
    ],
-   "licence": "derived from FRED/ECB/BIS series"
+   "licence": "derived from FRED/ECB/BIS series",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "macro_intelligence",
@@ -311,7 +339,11 @@
    "source_types": [
     "macro_series"
    ],
-   "licence": "derived"
+   "licence": "derived",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "macro_department",
@@ -351,7 +383,11 @@
     "central_bank",
     "statistics"
    ],
-   "licence": "public-sector publication (government/central-bank/statistics office); open for automated retrieval under its site terms"
+   "licence": "public-sector publication (government/central-bank/statistics office); open for automated retrieval under its site terms",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "macro_desk",
@@ -383,7 +419,11 @@
    "source_types": [
     "macro_series"
    ],
-   "licence": "FRED/ALFRED keyless public series"
+   "licence": "FRED/ALFRED keyless public series",
+   "cadence": "perpetual",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "cross_asset_graph",
@@ -418,7 +458,11 @@
    "source_types": [
     "cross_asset"
    ],
-   "licence": "derived from the broker's own bars"
+   "licence": "derived from the broker's own bars",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "world_lab",
@@ -452,7 +496,11 @@
    "source_types": [
     "scenario"
    ],
-   "licence": "derived"
+   "licence": "derived",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "acquire_datasets",
@@ -488,7 +536,11 @@
    "source_types": [
     "dataset"
    ],
-   "licence": "public-sector publication (government/central-bank/statistics office); open for automated retrieval under its site terms"
+   "licence": "public-sector publication (government/central-bank/statistics office); open for automated retrieval under its site terms",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "world_dataset_hunter",
@@ -524,7 +576,11 @@
    "source_types": [
     "dataset"
    ],
-   "licence": "DBnomics/IMF/OECD/BIS/ECB/Eurostat/World Bank open-data terms"
+   "licence": "DBnomics/IMF/OECD/BIS/ECB/Eurostat/World Bank open-data terms",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "pack_cells",
@@ -559,7 +615,11 @@
    "source_types": [
     "country_pack"
    ],
-   "licence": "per pack root (desks/mt5/research/countries/<cc>/pack.py)"
+   "licence": "per pack root (desks/mt5/research/countries/<cc>/pack.py)",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "coverage_drain",
@@ -588,7 +648,11 @@
    "source_types": [
     "country_pack"
    ],
-   "licence": "derived"
+   "licence": "derived",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "world_crawler",
@@ -625,7 +689,11 @@
    "source_types": [
     "open_web"
    ],
-   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution; robots.txt honoured"
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution; robots.txt honoured",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "deep_forest",
@@ -667,7 +735,11 @@
     "video",
     "academic"
    ],
-   "licence": "per ground in deep_forest_sources.json"
+   "licence": "per ground in deep_forest_sources.json",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "moat_collectors",
@@ -696,7 +768,11 @@
    "source_types": [
     "capture"
    ],
-   "licence": "immutable capture of declared documents; robots honoured"
+   "licence": "immutable capture of declared documents; robots honoured",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "regional_survivor_hunters",
@@ -708,17 +784,56 @@
     "legs": [
      "world_media_miners"
     ],
-    "unit": "seed_miners",
-    "note": "runs inside the seed-miner sweep"
+    "unit": "regional_survivor_hunters",
+    "note": "was reachable only through the VPS seed sweep; its own unit on the box since 2026-09-30"
    },
    "seats": [
-    "regional_survivors"
+    "equiti_copy",
+    "trading_latam",
+    "litefinance",
+    "duplitrade",
+    "octa_masters",
+    "share4you",
+    "instaforex_copy",
+    "roboforex_copyfx",
+    "hfm_pamm",
+    "amarkets",
+    "followme_cn",
+    "minfx_jp",
+    "mylivefx_br",
+    "readitrades_africa"
    ],
    "generators": [
-    "regional_survivors"
+    "equiti_copy",
+    "trading_latam",
+    "litefinance",
+    "duplitrade",
+    "octa_masters",
+    "share4you",
+    "instaforex_copy",
+    "roboforex_copyfx",
+    "hfm_pamm",
+    "amarkets",
+    "followme_cn",
+    "minfx_jp",
+    "mylivefx_br",
+    "readitrades_africa"
    ],
    "compiler_sources": [
-    "regional_survivors"
+    "equiti_copy",
+    "trading_latam",
+    "litefinance",
+    "duplitrade",
+    "octa_masters",
+    "share4you",
+    "instaforex_copy",
+    "roboforex_copyfx",
+    "hfm_pamm",
+    "amarkets",
+    "followme_cn",
+    "minfx_jp",
+    "mylivefx_br",
+    "readitrades_africa"
    ],
    "fetch_legs": [
     "regional_survivor_hunters"
@@ -739,7 +854,11 @@
    "source_types": [
     "copy_trading"
    ],
-   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution"
+   "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "kimi_seat",
@@ -771,7 +890,11 @@
    "source_types": [
     "llm_seat"
    ],
-   "licence": "model provider API terms (credential on the box)"
+   "licence": "model provider API terms (credential on the box)",
+   "cadence": "hourly",
+   "auth": "key",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "deepseek_seat",
@@ -802,7 +925,11 @@
    "source_types": [
     "llm_seat"
    ],
-   "licence": "model provider API terms"
+   "licence": "model provider API terms",
+   "cadence": "hourly (VPS only)",
+   "auth": "key",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "understanding_seat",
@@ -837,7 +964,11 @@
    "source_types": [
     "llm_seat"
    ],
-   "licence": "derived"
+   "licence": "derived",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "proposer_seat",
@@ -870,7 +1001,11 @@
    "source_types": [
     "llm_seat"
    ],
-   "licence": "model provider API terms"
+   "licence": "model provider API terms",
+   "cadence": "hourly",
+   "auth": "key",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "mass_screen",
@@ -902,7 +1037,11 @@
    "source_types": [
     "screen"
    ],
-   "licence": "derived"
+   "licence": "derived",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   },
   {
    "id": "miner_candidate_compiler",
@@ -931,10 +1070,110 @@
    "source_types": [
     "compiler"
    ],
-   "licence": "derived"
+   "licence": "derived",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
+  },
+  {
+   "id": "alt_datasets",
+   "kind": "dataset",
+   "family": "datasets",
+   "organ": "desks/mt5/research/acquire_datasets.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "acquire_datasets"
+    ]
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/dataset_acquisition.json",
+   "items_keys": [
+    "endpoints_tried",
+    "datasets_kept"
+   ],
+   "regions": [
+    "us",
+    "br",
+    "ci",
+    "global"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "satellite",
+    "supply_chain",
+    "patents"
+   ],
+   "licence": "per row in desks/mt5/data/alt_dataset_sources.json",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": null
   }
  ],
  "media_units": [
+  {
+   "name": "regional_survivor_hunters",
+   "module": "regional_survivor_hunters",
+   "callable": "run_and_save",
+   "organ": "desks/mt5/side_channels/regional_survivor_hunters.py",
+   "seats": [
+    "equiti_copy",
+    "trading_latam",
+    "litefinance",
+    "duplitrade",
+    "octa_masters",
+    "share4you",
+    "instaforex_copy",
+    "roboforex_copyfx",
+    "hfm_pamm",
+    "amarkets",
+    "followme_cn",
+    "minfx_jp",
+    "mylivefx_br",
+    "readitrades_africa"
+   ],
+   "kind": "track_records",
+   "regions": [
+    "mena",
+    "latam",
+    "cis",
+    "sea",
+    "eu",
+    "cn",
+    "jp",
+    "br",
+    "africa"
+   ],
+   "languages": [
+    "en",
+    "ar",
+    "es",
+    "ru",
+    "vi",
+    "id",
+    "zh",
+    "ja",
+    "pt"
+   ],
+   "source_types": [
+    "copy_trading",
+    "pamm"
+   ],
+   "licence": "platforms' public leaderboard pages; robots honoured via polite_fetch",
+   "timeout_s": 420,
+   "id": "media_regional_survivor_hunters",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#regional_survivor_hunters"
+  },
   {
    "name": "central_bank",
    "module": "central_bank_miner",
@@ -959,7 +1198,12 @@
     "central_bank_press"
    ],
    "licence": "public-sector publication (government/central-bank/statistics office); open for automated retrieval under its site terms",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_central_bank",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#central_bank"
   },
   {
    "name": "forexfactory",
@@ -980,7 +1224,12 @@
     "calendar"
    ],
    "licence": "ForexFactory public weekly calendar feed (faireconomy.media JSON); site terms",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_forexfactory",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#forexfactory"
   },
   {
    "name": "investing",
@@ -1002,7 +1251,12 @@
     "news"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_investing",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#investing"
   },
   {
    "name": "earnings",
@@ -1023,7 +1277,12 @@
     "earnings"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_earnings",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#earnings"
   },
   {
    "name": "sec_edgar",
@@ -1044,7 +1303,12 @@
     "regulatory_filing"
    ],
    "licence": "SEC EDGAR: US-government public data; fair-access policy (declared UA, <=10 req/s)",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_sec_edgar",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#sec_edgar"
   },
   {
    "name": "cot",
@@ -1065,7 +1329,12 @@
     "positioning"
    ],
    "licence": "CFTC: US-government public data",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_cot",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#cot"
   },
   {
    "name": "aaii",
@@ -1086,7 +1355,12 @@
     "sentiment"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_aaii",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#aaii"
   },
   {
    "name": "fear_greed",
@@ -1107,7 +1381,12 @@
     "sentiment"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_fear_greed",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#fear_greed"
   },
   {
    "name": "google_trends",
@@ -1128,7 +1407,12 @@
     "search_attention"
    ],
    "licence": "Google Trends public explore endpoint; Google terms",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_google_trends",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#google_trends"
   },
   {
    "name": "weather",
@@ -1150,7 +1434,12 @@
     "weather"
    ],
    "licence": "Open-Meteo (CC BY 4.0) and NOAA/USDM (US-government public data)",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_weather",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#weather"
   },
   {
    "name": "shipping",
@@ -1171,7 +1460,12 @@
     "shipping"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_shipping",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#shipping"
   },
   {
    "name": "correlations",
@@ -1192,7 +1486,12 @@
     "cross_asset"
    ],
    "licence": "derived from the desk's own bars",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_correlations",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#correlations"
   },
   {
    "name": "seasonality",
@@ -1213,7 +1512,12 @@
     "seasonality"
    ],
    "licence": "derived from the desk's own bars",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_seasonality",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#seasonality"
   },
   {
    "name": "china",
@@ -1235,7 +1539,12 @@
     "column"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_china",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#china"
   },
   {
    "name": "korea",
@@ -1257,7 +1566,12 @@
     "forum"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_korea",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#korea"
   },
   {
    "name": "reddit",
@@ -1278,7 +1592,12 @@
     "social"
    ],
    "licence": "Reddit public JSON; Reddit data API terms",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_reddit",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#reddit"
   },
   {
    "name": "youtube",
@@ -1299,7 +1618,12 @@
     "video"
    ],
    "licence": "YouTube public pages; captions only via the keyless mirror route (robots honoured)",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_youtube",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#youtube"
   },
   {
    "name": "github",
@@ -1320,7 +1644,12 @@
     "code"
    ],
    "licence": "GitHub public search API; repo licences recorded per repo",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_github",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#github"
   },
   {
    "name": "mql5_codebase",
@@ -1343,7 +1672,12 @@
     "code"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_mql5_codebase",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_codebase"
   },
   {
    "name": "mql5_articles",
@@ -1366,7 +1700,12 @@
     "research"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_mql5_articles",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_articles"
   },
   {
    "name": "mql5_signals",
@@ -1388,7 +1727,12 @@
     "track_record"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_mql5_signals",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_signals"
   },
   {
    "name": "mql5_forum",
@@ -1410,7 +1754,12 @@
     "forum"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_mql5_forum",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_forum"
   },
   {
    "name": "tradingview",
@@ -1431,7 +1780,12 @@
     "scripts"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_tradingview",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#tradingview"
   },
   {
    "name": "quantconnect",
@@ -1452,7 +1806,12 @@
     "code"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_quantconnect",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#quantconnect"
   },
   {
    "name": "academic",
@@ -1473,7 +1832,12 @@
     "academic"
    ],
    "licence": "arXiv/SSRN metadata; arXiv API terms",
-   "timeout_s": 180
+   "timeout_s": 180,
+   "id": "media_academic",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#academic"
   },
   {
    "name": "seed_miners",
@@ -1527,7 +1891,12 @@
     "central_bank_press"
    ],
    "licence": "publisher's public web terms; automated fetch at hourly politeness, headline/claim extraction only, no redistribution; per-source robots re-probe in seed_miners",
-   "timeout_s": 900
+   "timeout_s": 900,
+   "id": "media_seed_miners",
+   "cadence": "hourly rotation (least-recently-run first)",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_factory_cursor.json#seed_miners"
   }
  ]
 }

@@ -75,6 +75,9 @@ FETCH_RUNS = DESK / "data" / "alt_fetch_runs.jsonl"
 COMPILED = DESK / "data" / "hypotheses" / "miner_candidates.json"
 GROUNDS = DESK / "data" / "deep_forest_sources.json"
 REGISTRY = ROOT / "data" / "alpha_registry.sqlite"
+ALT_SOURCES = DESK / "data" / "alt_dataset_sources.json"
+ACQUIRED = DESK / "data" / "acquired" / "registry.json"
+ALT_PLATFORMS = DESK / "data" / "intelligence" / "coverage_registry.json"
 INTEL_ROOTS: tuple[Path, ...] = (DESK / "data" / "intelligence", ROOT / "data" / "intelligence")
 SIDE_CHANNELS = DESK / "side_channels"
 #: The newest bytes of an append-only ledger worth reading for a 24-hour window. The compute
@@ -410,6 +413,84 @@ def forest_coverage(src: Mapping[str, Any], gidx: Mapping[str, Any]) -> dict[str
             "grounds": sum(int(by_r.get(r) or 0) for r in regions)}
 
 
+# ------------------------------------------------------------------------------------ alt data
+def alt_platforms(since: datetime, path: Path | None = None) -> dict[str, Any]:
+    """The regional copy/PAMM platforms (`regional_survivor_hunters`): which were ATTEMPTED in
+    the window and which yielded. A platform whose last attempt predates the window is reported
+    as NOT_ATTEMPTED -- the ALT_DATA_YIELD "0 of 14" is that, not fourteen failures."""
+    doc = _read_json(path or ALT_PLATFORMS)
+    plats = doc.get("platforms") if isinstance(doc, dict) else None
+    if not isinstance(plats, dict):
+        return {"status": UNMEASURED, "why": "coverage_registry.json absent or unreadable"}
+    rows: dict[str, dict[str, Any]] = {}
+    for name, p in plats.items():
+        if not isinstance(p, dict):
+            continue
+        last = _parse_at(p.get("last_attempt"))
+        attempted = bool(last and last >= since)
+        rows[str(name)] = {"attempted_in_window": attempted, "last_attempt": p.get("last_attempt"),
+                           "last_state": p.get("last_state"), "best_rows": p.get("best_rows"),
+                           "yielding": attempted and str(p.get("last_state")) == "ok"
+                           and int(p.get("best_rows") or 0) > 0,
+                           "region": p.get("region"), "lang": p.get("lang")}
+    return {"status": "MEASURED", "n": len(rows),
+            "attempted_in_window": sum(r["attempted_in_window"] for r in rows.values()),
+            "yielding": sum(r["yielding"] for r in rows.values()),
+            "last_attempt_any": max((str(r["last_attempt"] or "") for r in rows.values()),
+                                    default=None),
+            "platforms": rows}
+
+
+def alt_datasets(since: datetime, rows_path: Path | None = None,
+                 acquired_path: Path | None = None) -> dict[str, Any]:
+    """The satellite / supply-chain / patent rows and what the acquirer made of each."""
+    doc = _read_json(rows_path or ALT_SOURCES)
+    rows = doc.get("rows") if isinstance(doc, dict) else None
+    if not isinstance(rows, list):
+        return {"status": UNMEASURED, "why": "alt_dataset_sources.json absent"}
+    acq = _read_json(acquired_path or ACQUIRED)
+    by_url = (acq or {}).get("by_url") if isinstance(acq, dict) else None
+    out = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        stem = str(r.get("url") or "").split("{today}", 1)[0]
+        hit = None
+        if isinstance(by_url, dict):
+            hits = [(u, m) for u, m in by_url.items() if str(u).startswith(stem)]
+            hit = max(hits, key=lambda um: str((um[1] or {}).get("at") or ""), default=None)
+        if not r.get("fetch"):
+            status = "REGISTERED_BLOCKED"
+        elif by_url is None:
+            status = UNMEASURED
+        elif hit is None:
+            status = "NOT_YET_ATTEMPTED"
+        else:
+            status = str((hit[1] or {}).get("status") or UNMEASURED)
+        out.append({"name": r.get("name"), "class": r.get("class"), "status": status,
+                    "series": list((hit[1] or {}).get("series") or []) if hit else [],
+                    "refusal": (hit[1] or {}).get("refusal") if hit else None,
+                    "blocker": r.get("blocker"), "instruments": r.get("instruments"),
+                    "licence": r.get("licence")})
+    classes = sorted({str(x["class"]) for x in out})
+    return {"status": "MEASURED" if by_url is not None else UNMEASURED,
+            "why": None if by_url is not None else "data/acquired/registry.json absent on this box",
+            "n": len(out), "by_class": {c: {
+                "rows": sum(1 for x in out if x["class"] == c),
+                "fetchable": sum(1 for x in out if x["class"] == c
+                                 and x["status"] != "REGISTERED_BLOCKED"),
+                "acquired": sum(1 for x in out if x["class"] == c
+                                and x["status"] in ("SUCCESS", "PARTIAL"))} for c in classes},
+            "rows": out,
+            "cell_route": ("acquired series become PIT-certified `ext_<name>` primitives; on this "
+                           "tree the only family that executes an ext_ feature is the banned "
+                           "`discovered`, so these rows reach the anomaly factory, the "
+                           "transmission graph and the global research OS but NOT the docket. "
+                           "The cell route is the `world_macro_state` family of the unmerged "
+                           "world-dataset-hunter branch (PR #92), which reloads a series by key "
+                           "inside the family so the sealed gauntlet needs no change.")}
+
+
 # ---------------------------------------------------------------------------------- measure
 def _sum_or_unmeasured(values: list[Any]) -> Any:
     nums = [v for v in values if isinstance(v, int)]
@@ -587,6 +668,19 @@ def measure(now: datetime | None = None, roster_path: Path | None = None) -> dic
                 r["items_fetched"], r["items_how"] = ur["rows"], "world_factory_runs.jsonl rows"
         rows.append(r)
     holes = _holes(rows, roster)
+    plats = alt_platforms(since)
+    alt = alt_datasets(since)
+    if plats.get("status") == "MEASURED" and plats["attempted_in_window"] == 0:
+        holes.append({"source": "regional_survivor_hunters", "hole": "ALT_PLATFORMS_NOT_ATTEMPTED",
+                      "detail": f"0 of {plats['n']} platforms attempted in {WINDOW_H}h; last "
+                                f"attempt {plats['last_attempt_any']}"})
+    for r in alt.get("rows") or []:
+        if r["status"] == "REGISTERED_BLOCKED":
+            holes.append({"source": f"alt:{r['name']}", "hole": "ALT_DATASET_BLOCKED",
+                          "detail": r.get("blocker")})
+    if alt.get("status") == "MEASURED" or alt.get("rows"):
+        holes.append({"source": "alt_datasets", "hole": "NO_CELL_ROUTE_FOR_ACQUIRED_SERIES",
+                      "detail": alt.get("cell_route")})
     by_family: dict[str, dict[str, Any]] = {}
     for r in rows:
         fam = by_family.setdefault(str(r.get("family") or r.get("kind")), {
@@ -621,7 +715,9 @@ def measure(now: datetime | None = None, roster_path: Path | None = None) -> dic
                    "grounds": gidx.get("status"), "grounds_n": gidx.get("n")},
         "coverage": {"regions": sorted(regions), "languages": sorted(languages),
                      "n_regions": len(regions), "n_languages": len(languages)},
-        "by_family": by_family, "sources": rows, "holes": holes, "n_holes": len(holes),
+        "by_family": by_family, "sources": rows,
+        "alt_platforms": plats, "alt_datasets": alt,
+        "holes": holes, "n_holes": len(holes),
         "rule": ("UNMEASURED is never 0: a zero here was read from an artifact that said zero. "
                  "This organ adds clocks and measurements; it never sizes, caps or vetoes."),
         "elapsed_s": round(time.monotonic() - t0, 2),
