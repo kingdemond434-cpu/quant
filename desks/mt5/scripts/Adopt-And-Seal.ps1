@@ -297,6 +297,27 @@ if ($adoptExit -ne 0) {
     Done $adoptExit "adopt-release-partial"
 }
 
+# ------------------------------------- 1b. TASKS THE ADOPTED TREE DECLARES BUT THE BOX LACKS
+# A task with an installer in the repo and no registration on the box is code that runs nowhere
+# (III.16). MT5-FrontierAudit was exactly that: declared daily in box_tasks.manifest, installer
+# NONE, thirty organs scheduled only by one machine's memory. Each installer here is called with
+# -IfMissing, so a registered task is NEVER touched (re-registering live tasks has failed with
+# "Access is denied") and a missing one appears on the first adoption after it ships. Best-effort:
+# a failed registration is logged and never stops the seal.
+foreach ($ensure in @(
+        @{ Task = "MT5-FrontierAudit"; Installer = "install_frontier_audit_task.ps1" })) {
+    if (Get-ScheduledTask -TaskName $ensure.Task -ErrorAction SilentlyContinue) { continue }
+    $installer = Join-Path $desk ("scripts\" + $ensure.Installer)
+    if (-not (Test-Path $installer)) { Log "ensure-task: $($ensure.Task) missing and $installer absent"; continue }
+    try {
+        $out = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $installer -IfMissing 2>&1 |
+                 ForEach-Object { "$_" })
+        Log ("ensure-task: {0} was missing; installer exit {1}: {2}" -f $ensure.Task, $LASTEXITCODE, ($out -join ' | '))
+    } catch {
+        Log ("ensure-task: {0} registration failed: {1}" -f $ensure.Task, $_.Exception.Message)
+    }
+}
+
 # ------------------------------------------------------ 2. seal, only if HEAD is not sealed
 $head = (git rev-parse HEAD 2>$null | Out-String).Trim()
 if (-not $head) { Log "cannot read HEAD"; Done 2 "head-unreadable" }
