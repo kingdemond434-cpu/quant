@@ -1,0 +1,349 @@
+{
+ "book": {
+  "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": 0.05,
+  "external.XAUUSD.session_range_breakout": -0.05,
+  "external.USDJPY.session_range_breakout": 0.05,
+  "external.CADJPY.session_range_breakout": 0.05,
+  "external.GBPJPY.session_range_breakout": -0.05,
+  "external.EURJPY.session_range_breakout": -0.05,
+  "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": -0.05,
+  "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": -0.05,
+  "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": -0.05,
+  "external.USDJPY.session_range_breakout.rr=1.5_wb=12": 0.05,
+  "external.USDJPY.session_range_breakout.rr=2.0_wb=12": 0.05,
+  "external.USDJPY.session_range_breakout.rr=2.5_wb=12": 0.05,
+  "external.CADJPY.session_range_breakout.rr=2.0_wb=12": 0.05,
+  "external.CADJPY.session_range_breakout.rr=2.5_wb=12": 0.05,
+  "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": -0.05,
+  "external.CADJPY.session_range_breakout.rr=1.5_wb=12": 0.05,
+  "external.GBPJPY.session_range_breakout.rr=1.5_wb=12": -0.05,
+  "external.GBPJPY.session_range_breakout.rr=2.5_wb=12": -0.05,
+  "external.EURJPY.session_range_breakout.rr=1.5_wb=12": -0.05,
+  "external.EURJPY.session_range_breakout.rr=2.0_wb=12": -0.05,
+  "external.EURJPY.session_range_breakout.rr=2.5_wb=12": -0.05,
+  "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a": 0.05,
+  "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a": 0.05,
+  "external.CHFNOK.carry.p=98d776f3e210d3e2": 0.05,
+  "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": -0.05,
+  "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": -0.05,
+  "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": -0.05,
+  "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": 0.05,
+  "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": -0.05,
+  "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": 0.05,
+  "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": 0.05,
+  "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": 0.05,
+  "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": 0.05,
+  "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": -0.05,
+  "external.EURCHF.discovered.p=6c7943b997558157": -0.05,
+  "external.EURCHF.discovered.p=a5bbf78b5c8595c0": -0.05,
+  "external.EURCHF.discovered.p=9bc1f7c40f200e78": -0.05,
+  "external.EURCHF.discovered.p=c14e361e680e6d0b": -0.05,
+  "external.EURCHF.discovered.p=c7d53510458ba32c": -0.05,
+  "external.EURCHF.discovered.p=e266baf78567bef3": 0.05,
+  "external.EURCHF.discovered.p=16bd35526c7f3515": 0.05,
+  "external.EURGBP.discovered.p=8e61ea22743f15b7": 0.05,
+  "external.EURCHF.discovered.p=4cba1afa572a99cd": -0.05,
+  "external.EURGBP.discovered.p=f31f02aa2b9d79b1": 0.05,
+  "external.AUDCAD.discovered.p=7c996ac8456c8919": -0.05,
+  "external.AUDCAD.discovered.p=8030fb339510dceb": 0.05,
+  "external.AUDNZD.discovered.p=c76b860ff91ee920": 0.05,
+  "external.AUDUSD.discovered.p=de80ad4f2ef91116": -0.05,
+  "external.AUDUSD.discovered.p=cf0368e026d6b477": 0.05,
+  "external.AUDUSD.discovered.p=8e61ea22743f15b7": -0.05,
+  "external.AUDUSD.discovered.p=a5bbf78b5c8595c0": -0.05,
+  "external.EURUSD.discovered.p=6d034b421914e1a2": 0.05,
+  "external.EURUSD.discovered.p=f8bd412f38e33d20": 0.05,
+  "external.AUDCAD.discovered.p=a7324e7affe1f80a": -0.05,
+  "external.USDCHF.discovered.p=19dd11ec392fa005": -0.05,
+  "external.USDCAD.discovered.p=56aadf0a3018c790": -0.05,
+  "external.USDCAD.discovered.p=193aadf2caba3698": 0.05,
+  "external.NZDCAD.discovered.p=0ffb1e19a04f260e": 0.05
+ },
+ "action_counts": {
+  "LONG": 27,
+  "SHORT": 30,
+  "REDUCE": 1,
+  "EXIT": 0,
+  "ZERO": 0,
+  "DEFER": 0,
+  "ALT_EXPRESSION": 0
+ },
+ "heat": 0.025109,
+ "heat_floor_filled": false,
+ "expected_log_growth": 0.0029043374298275506,
+ "k": 1.0,
+ "rule": "shadow: publishes the cleared book; the live allocator stays sovereign",
+ "actions_sample": {
+  "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.0,
+   "robust_edge": 0.00076872,
+   "marginal_dElogW": 0.00076372,
+   "alt": null
+  },
+  "external.XAUUSD.session_range_breakout": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.003283,
+   "robust_edge": -0.00041797,
+   "marginal_dElogW": -0.0004159,
+   "alt": null
+  },
+  "external.USDJPY.session_range_breakout": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.00557875,
+   "robust_edge": 0.00310368,
+   "marginal_dElogW": 0.00310243,
+   "alt": null
+  },
+  "external.CADJPY.session_range_breakout": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.0,
+   "robust_edge": 0.00070618,
+   "marginal_dElogW": 0.00070493,
+   "alt": null
+  },
+  "external.GBPJPY.session_range_breakout": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -0.00172176,
+   "marginal_dElogW": -0.00171676,
+   "alt": null
+  },
+  "external.EURJPY.session_range_breakout": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -0.00032629,
+   "marginal_dElogW": -0.00032504,
+   "alt": null
+  },
+  "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.003283,
+   "robust_edge": -0.00065997,
+   "marginal_dElogW": -0.0006579,
+   "alt": null
+  },
+  "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.003283,
+   "robust_edge": -0.00053342,
+   "marginal_dElogW": -0.00053135,
+   "alt": null
+  },
+  "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.003283,
+   "robust_edge": -0.00041797,
+   "marginal_dElogW": -0.0004159,
+   "alt": null
+  },
+  "external.USDJPY.session_range_breakout.rr=1.5_wb=12": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.00557875,
+   "robust_edge": 0.00300584,
+   "marginal_dElogW": 0.00300459,
+   "alt": null
+  },
+  "external.USDJPY.session_range_breakout.rr=2.0_wb=12": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.00557875,
+   "robust_edge": 0.00307818,
+   "marginal_dElogW": 0.00307693,
+   "alt": null
+  },
+  "external.USDJPY.session_range_breakout.rr=2.5_wb=12": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.00557875,
+   "robust_edge": 0.00309858,
+   "marginal_dElogW": 0.00309733,
+   "alt": null
+  },
+  "external.CADJPY.session_range_breakout.rr=2.0_wb=12": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.0,
+   "robust_edge": 0.00072357,
+   "marginal_dElogW": 0.00072232,
+   "alt": null
+  },
+  "external.CADJPY.session_range_breakout.rr=2.5_wb=12": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.0,
+   "robust_edge": 0.00070522,
+   "marginal_dElogW": 0.00070397,
+   "alt": null
+  },
+  "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.003283,
+   "robust_edge": -0.00083483,
+   "marginal_dElogW": -0.00083276,
+   "alt": null
+  },
+  "external.CADJPY.session_range_breakout.rr=1.5_wb=12": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.0,
+   "robust_edge": 0.00061586,
+   "marginal_dElogW": 0.00061461,
+   "alt": null
+  },
+  "external.GBPJPY.session_range_breakout.rr=1.5_wb=12": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -0.00185139,
+   "marginal_dElogW": -0.00184639,
+   "alt": null
+  },
+  "external.GBPJPY.session_range_breakout.rr=2.5_wb=12": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -0.00172176,
+   "marginal_dElogW": -0.00171676,
+   "alt": null
+  },
+  "external.EURJPY.session_range_breakout.rr=1.5_wb=12": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -0.00035048,
+   "marginal_dElogW": -0.00034923,
+   "alt": null
+  },
+  "external.EURJPY.session_range_breakout.rr=2.0_wb=12": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -0.0003031,
+   "marginal_dElogW": -0.00030185,
+   "alt": null
+  },
+  "external.EURJPY.session_range_breakout.rr=2.5_wb=12": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -0.00032629,
+   "marginal_dElogW": -0.00032504,
+   "alt": null
+  },
+  "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a": {
+   "action": "REDUCE",
+   "weight": 0.05,
+   "current": 0.075,
+   "robust_edge": 0.00111786,
+   "marginal_dElogW": 0.00111286,
+   "alt": null
+  },
+  "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.007965,
+   "robust_edge": 0.00068776,
+   "marginal_dElogW": 0.00068276,
+   "alt": null
+  },
+  "external.CHFNOK.carry.p=98d776f3e210d3e2": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.040193,
+   "robust_edge": 0.00301911,
+   "marginal_dElogW": 0.00301411,
+   "alt": null
+  },
+  "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.075,
+   "robust_edge": -0.00040662,
+   "marginal_dElogW": -0.00040162,
+   "alt": null
+  },
+  "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -0.00053183,
+   "marginal_dElogW": -0.00052683,
+   "alt": null
+  },
+  "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -0.00099323,
+   "marginal_dElogW": -0.00098823,
+   "alt": null
+  },
+  "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.0,
+   "robust_edge": 0.00251829,
+   "marginal_dElogW": 0.00251329,
+   "alt": null
+  },
+  "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": {
+   "action": "SHORT",
+   "weight": -0.05,
+   "current": 0.0,
+   "robust_edge": -4.956e-05,
+   "marginal_dElogW": -4.456e-05,
+   "alt": null
+  },
+  "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": {
+   "action": "LONG",
+   "weight": 0.05,
+   "current": 0.04092,
+   "robust_edge": 0.00012202,
+   "marginal_dElogW": 0.00011702,
+   "alt": null
+  }
+ },
+ "vs_live": {
+  "n": 58,
+  "l1_distance": 2.855021,
+  "linear_growth_shadow": 0.0026017785261638134,
+  "linear_growth_live": 0.0010819601379133538,
+  "largest_differences": {
+   "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": -0.125,
+   "external.XAUUSD.session_range_breakout": -0.053283,
+   "external.XAUUSD.session_range_breakout.rr=1.5_wb=12": -0.053283,
+   "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": -0.053283,
+   "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": -0.053283,
+   "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": -0.053283,
+   "external.AUDCAD.discovered.p=7c996ac8456c8919": -0.05,
+   "external.AUDCAD.discovered.p=8030fb339510dceb": 0.05,
+   "external.AUDCAD.discovered.p=a7324e7affe1f80a": -0.05,
+   "external.AUDNZD.discovered.p=c76b860ff91ee920": 0.05
+  },
+  "live_book_names": 10
+ },
+ "allocator_tilts": {
+  "status": "WRITTEN",
+  "sleeves": 10,
+  "tilted": 6,
+  "captured_groups": 2
+ },
+ "metric": {
+  "expected_log_growth": 0.0029043374298275506,
+  "defer_share": 0.0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 0.094
+}

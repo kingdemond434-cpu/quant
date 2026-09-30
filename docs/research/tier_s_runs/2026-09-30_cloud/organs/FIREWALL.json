@@ -1,0 +1,66 @@
+{
+ "audit": {
+  "roles": {
+   "generator": "Generator cannot access lockbox results and cannot write evaluator state.",
+   "evaluator": "Evaluator cannot alter strategy code or the live sleeve book.",
+   "reviewer": "Reviewer cannot promote.",
+   "allocator": "Allocator accepts certificates only.",
+   "promoter": "Promoter reads certificates and verdicts only; it cannot write the allocator's capital allocation.",
+   "execution": "Execution cannot increase allocator exposure.",
+   "attribution": "Live attribution cannot rewrite historical forecasts.",
+   "developer": "Developer cannot alter the evaluator: no organ that writes code may write the gauntlet, the gate policy or the validation library.",
+   "lockbox": "Lockbox accepts immutable candidates only."
+  },
+  "organs_checked": {
+   "generator": 18,
+   "evaluator": 3,
+   "reviewer": 3,
+   "allocator": 1,
+   "promoter": 2,
+   "execution": 4,
+   "attribution": 3,
+   "developer": 26,
+   "lockbox": 1
+  },
+  "violations": [
+   {
+    "role": "generator",
+    "organ": "desks/mt5/research/expression_factory.py",
+    "kind": "IMPORT",
+    "token": "libs.validation.lockbox",
+    "rule": "Generator cannot access lockbox results and cannot write evaluator state."
+   },
+   {
+    "role": "lockbox",
+    "organ": "libs/autodiscovery/orchestrator.py",
+    "kind": "UNFROZEN_OPEN",
+    "token": "_validate_and_archive",
+    "line": 443,
+    "rule": "Lockbox accepts immutable candidates only."
+   }
+  ],
+  "n_violations": 2,
+  "developer_code_writers": [
+   "desks/mt5/research/global_research_os.py",
+   "scripts/collector_author.py",
+   "scripts/max_audit.py",
+   "scripts/prove_future.py",
+   "scripts/run_alerts.py"
+  ]
+ },
+ "ratchet": {
+  "breach": false,
+  "new": [],
+  "cleared": [],
+  "n_now": 2,
+  "n_baseline": 2
+ },
+ "seeded_rules": [],
+ "runtime_checks_remaining": "money-path call sites (universal_gate, external_gauntlet, the autodiscovery orchestrator's lockbox open) do not yet call firewall.may / firewall.lockbox_accepts: a desktop session's edit",
+ "metric": {
+  "violations": 2,
+  "breach": 0.0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 12.419
+}

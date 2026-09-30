@@ -1,0 +1,3 @@
+{
+ "about": "# Tier S hourly run, cloud container, 2026-09-30\n\nA full `desks/mt5/research/tier_s.py` pass run on #55's head in a cloud container, committed so\nthe programme's outputs exist on a branch. It took 607 s with no organ errors.\n\n**This is NOT box evidence and counts toward no layer's DONE.** `box_evidence.json` here records\nhost `vm` with `counts_toward_done: false`. A layer is DONE only on the evidence the trading box\n(vmi3571445) writes to `desks/mt5/data/tier_s/box_evidence.json` and publishes through its own\nsync (`desks/mt5/scripts/sync_shadow_to_git.ps1`) once #55 is adopted there. The cloud has no\nterminal, no live book and a partial copy of the desk's state, so several organs read\nUNMEASURED here that the box will measure.\n"
+}

@@ -380,7 +380,67 @@ def cells(only: str | None = None) -> list[dict]:
     # Most intraday first, so a capped merge reaches the charts the principal ranked highest; then
     # least-judged (symbol, family) first, so the cap spends itself on orthogonal ground.
     out.sort(key=_orthogonal_key())
+    # THEN THE FAILURE MEMORY (Tier S S13): inside each chart tier, cells in a neighbourhood the
+    # memory has already mapped as dead go LAST and carry the theorem that maps it.
+    out, stats = order_by_failure_memory(out)
+    FAILURE_MEMORY_STATS.clear()
+    FAILURE_MEMORY_STATS.update(stats)
     return out
+
+
+#: what the last `cells()` call did with the failure memory (printed by `main`)
+FAILURE_MEMORY_STATS: dict = {}
+
+
+def _cell_tf_rank(r: dict) -> int:
+    return _tf_rank(str((r.get("params") or {}).get("timeframe") or "H1"))
+
+
+def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tuple[list[dict],
+                                                                                  dict]:
+    """Consult `libs/tiers/failure_memory` -- the theorems `tier_s.organ_failure_memory` compresses
+    hourly from the gate ledger, the forward clocks and the live fills -- and push the cells it
+    already maps as dead behind the rest of their chart tier, tagged with the theorem.
+
+    REORDER, NEVER FILTER (the standing order: raw cell mining is never reduced). Every cell is
+    still returned and still merged; the only thing that moves is which cells a capped run reaches
+    FIRST, so unexplored ground is judged before re-litigated ground. The neighbourhood key is the
+    one the memory is built on -- (mechanism from `axis_registry`, asset class from
+    `universe_policy`, session) -- the same key `tier_s._explored` orders its own emissions by.
+    A suspended organ (`libs/tiers/authority`) and an absent or stale memory both leave the order
+    exactly as it was."""
+    from libs.tiers import failure_memory as fm
+    try:
+        from libs.tiers import authority
+        if authority.suspended("failure_memory"):
+            return rows, {"consulted": False, "why": "failure_memory organ suspended",
+                          "rows": len(rows), "tagged": 0, "moved": 0}
+    except Exception:
+        pass
+    mem = fm.load() if memory is None else memory
+    mech: dict[str, str] = {}
+    acls: dict[str, str] = {}
+
+    def desc_of(r: dict) -> dict:
+        fam, sym = str(r.get("family") or ""), str(r.get("symbol") or "")
+        if fam not in mech:
+            try:
+                import axis_registry
+                mech[fam] = str(axis_registry.classify_family(fam)[0])
+            except Exception:
+                mech[fam] = fam or "UNKNOWN"
+        if sym not in acls:
+            try:
+                import universe_policy
+                acls[sym] = str(universe_policy.asset_class_of(sym))
+            except Exception:
+                acls[sym] = "UNCLASSIFIED"
+        return {"mechanism": mech[fam], "asset_class": acls[sym],
+                "selector": str((r.get("params") or {}).get("session") or "?")}
+
+    return fm.prioritise(rows, mem, desc_of, rank=_cell_tf_rank)
+
+
 
 
 def write_report(new: list[dict], syms: list[str], added: int | None, total: int | None) -> dict:
@@ -482,6 +542,14 @@ def main(argv: list[str] | None = None) -> int:
     by_tf = Counter(str((r.get('params') or {}).get('timeframe') or 'H1') for r in new)
     by_sess = Counter(str((r.get('params') or {}).get('session') or 'all') for r in new)
     print(f"  by chart {dict(by_tf)}; by session {dict(by_sess)}")
+    fms = FAILURE_MEMORY_STATS
+    if fms.get("consulted"):
+        print(f"  failure memory: {fms.get('theorems')} theorem(s), {fms.get('rules')} rule(s); "
+              f"{fms.get('tagged')} cell(s) in mapped-dead neighbourhoods tagged and moved to the "
+              f"back of their chart tier ({fms.get('moved')} reordered, none dropped)")
+    else:
+        print(f"  failure memory: not consulted ({fms.get('why') or 'absent, stale or empty'})"
+              " -- order unchanged")
     for fam, why in BLOCKED.items():
         print(f"  BLOCKED {fam:<22} {why[:96]}")
     if not BLOCKED:

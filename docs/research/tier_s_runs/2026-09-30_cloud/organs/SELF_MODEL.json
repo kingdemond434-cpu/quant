@@ -1,0 +1,223 @@
+{
+ "scorecard": {
+  "immune_score": 0.9019047619047619,
+  "power": 0.78,
+  "protocol_proven": 1.0,
+  "chaos_breaches": 0.0,
+  "replay_share": 1.0,
+  "firewall_violations": 2.0,
+  "journal_ok": 1.0
+ },
+ "best_ever": {
+  "immune_score": 0.9019047619047619,
+  "power": 0.78,
+  "protocol_proven": 1.0,
+  "chaos_breaches": 0.0,
+  "replay_share": 1.0,
+  "firewall_violations": 2.0,
+  "journal_ok": 1.0
+ },
+ "regression": {
+  "regressed": [],
+  "blocked": false
+ },
+ "operations": {
+  "gate_backlog": {
+   "status": "MEASURED",
+   "waiting": 21373,
+   "by_status": {
+    "DONE": 10,
+    "GAUNTLET_REJECTED": 2374,
+    "BLOCKED_CANONICAL_DOCKET_MISSING": 19,
+    "QUEUED_CANONICAL_GAUNTLET": 17749,
+    "PENDING": 3624
+   },
+   "verdicts_per_h": null,
+   "drain_h": null,
+   "oldest_waiting_h": 542.7
+  },
+  "compute_timeouts": {
+   "status": "MEASURED",
+   "runs": 72,
+   "timeouts": 26,
+   "wasted_wall_s": 0.0,
+   "by_run": {
+    "stop": 26
+   }
+  },
+  "allocator_binding": {
+   "status": "UNMEASURED",
+   "why": "no allocator artifact"
+  }
+ },
+ "largest_deficiency": {
+  "area": "calibration.accounting",
+  "gap": 1.0,
+  "gain": "CALIBRATION",
+  "p_fix": 0.8,
+  "cost": 0.5,
+  "why": "trades with no forecast registered before them",
+  "expected_improvement": 1.28
+ },
+ "deficiencies": [
+  {
+   "area": "calibration.accounting",
+   "gap": 1.0,
+   "gain": "CALIBRATION",
+   "p_fix": 0.8,
+   "cost": 0.5,
+   "why": "trades with no forecast registered before them",
+   "expected_improvement": 1.28
+  },
+  {
+   "area": "breadth.niches",
+   "gap": 1.0,
+   "gain": "ALPHA_DISCOVERY",
+   "p_fix": 0.5,
+   "cost": 0.5,
+   "why": "MAP-Elites niches empty",
+   "expected_improvement": 1.0
+  },
+  {
+   "area": "validation.production_power",
+   "gap": 1.0,
+   "gain": "ALPHA_DISCOVERY",
+   "p_fix": 0.5,
+   "cost": 1.0,
+   "why": "genuine positive controls the PRODUCTION certifier rejects (the production certifier accepted 0.0% of 600 genuine positive controls (incl. an AR(0.25) edge): its immunity is uninformative and it is rejecting real edges)",
+   "expected_improvement": 0.5
+  },
+  {
+   "area": "provenance.fills",
+   "gap": 0.9722,
+   "gain": "OPERATIONAL_RISK",
+   "p_fix": 0.7,
+   "cost": 1.0,
+   "why": "fills whose ancestry the truth kernel cannot reconstruct",
+   "expected_improvement": 0.40832
+  },
+  {
+   "area": "breadth.independence",
+   "gap": 0.9735,
+   "gain": "ALPHA_DISCOVERY",
+   "p_fix": 0.4,
+   "cost": 1.0,
+   "why": "effective independent rank 8.4418 of 319 sleeves",
+   "expected_improvement": 0.3894
+  },
+  {
+   "area": "validation.red_queen",
+   "gap": 0.6667,
+   "gain": "FALSIFICATION",
+   "p_fix": 0.5,
+   "cost": 1.0,
+   "why": "evolved attacks fool the defender; blind spots {'false_causality': 1.0, 'hidden_factor': 1.0, 'label_randomization': 1.0, 'overlap': 0.3333333333333333}",
+   "expected_improvement": 0.30001
+  },
+  {
+   "area": "governance.firewall",
+   "gap": 0.2,
+   "gain": "FDR_REDUCTION",
+   "p_fix": 0.8,
+   "cost": 0.5,
+   "why": "organs that cross an epistemic role boundary",
+   "expected_improvement": 0.288
+  },
+  {
+   "area": "allocator.binding",
+   "gap": 0.5,
+   "gain": "ALPHA_DISCOVERY",
+   "p_fix": 0.5,
+   "cost": 1.0,
+   "why": "the allocator's binding constraint (UNMEASURED: counted at half weight, never as zero)",
+   "expected_improvement": 0.25
+  },
+  {
+   "area": "ops.protocol_conformance",
+   "gap": 0.6667,
+   "gain": "OPERATIONAL_RISK",
+   "p_fix": 0.6,
+   "cost": 1.0,
+   "why": "gateway send sites that break the model-checked order protocol: ['clamp_data_to_clock', 'idempotent_client_id', 'persist_before_send', 'reconcile_on_restart']",
+   "expected_improvement": 0.24001
+  },
+  {
+   "area": "calibration.forecasts",
+   "gap": 0.5,
+   "gain": "CALIBRATION",
+   "p_fix": 0.6,
+   "cost": 1.0,
+   "why": "standardised forecast error sd None (UNMEASURED: counted at half weight, never as zero)",
+   "expected_improvement": 0.24
+  },
+  {
+   "area": "throughput.gate_backlog",
+   "gap": 0.5,
+   "gain": "PRODUCTIVITY",
+   "p_fix": 0.6,
+   "cost": 1.0,
+   "why": "21373 cells wait for the gauntlet at None verdicts/h (drain unknown, oldest 543h) (UNMEASURED: counted at half weight, never as zero)",
+   "expected_improvement": 0.21
+  },
+  {
+   "area": "epistemics.decidable",
+   "gap": 0.5574,
+   "gain": "CALIBRATION",
+   "p_fix": 0.4,
+   "cost": 1.0,
+   "why": "published quantities not decidable from their evidence",
+   "expected_improvement": 0.17837
+  },
+  {
+   "area": "compute.timeouts",
+   "gap": 0.3611,
+   "gain": "INFO_PER_COMPUTE",
+   "p_fix": 0.7,
+   "cost": 1.0,
+   "why": "26 of 72 recorded leg runs timed out or were interrupted (0s of wall time with no verdict); worst stop",
+   "expected_improvement": 0.17694
+  },
+  {
+   "area": "inference.lifetime_budget",
+   "gap": 0.2414,
+   "gain": "FDR_REDUCTION",
+   "p_fix": 0.7,
+   "cost": 1.0,
+   "why": "certificates issued at a level the lifetime online-FDR budget cannot afford",
+   "expected_improvement": 0.15208
+  },
+  {
+   "area": "validation.power",
+   "gap": 0.22,
+   "gain": "ALPHA_DISCOVERY",
+   "p_fix": 0.5,
+   "cost": 1.0,
+   "why": "genuine planted signals rejected by the validator",
+   "expected_improvement": 0.11
+  },
+  {
+   "area": "validation.immune",
+   "gap": 0.0981,
+   "gain": "FALSIFICATION",
+   "p_fix": 0.6,
+   "cost": 1.0,
+   "why": "planted traps let through: {'survivorship': 56, 'regime_break': 48, 'label_randomization': 102}",
+   "expected_improvement": 0.05297
+  },
+  {
+   "area": "ops.replay",
+   "gap": 0.0,
+   "gain": "OPERATIONAL_RISK",
+   "p_fix": 0.7,
+   "cost": 1.0,
+   "why": "desk components the durable logs cannot rebuild",
+   "expected_improvement": 0.0
+  }
+ ],
+ "metric": {
+  "top_expected_improvement": 1.28,
+  "regressed": 0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 0.46
+}

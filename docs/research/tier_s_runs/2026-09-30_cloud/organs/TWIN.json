@@ -1,0 +1,65 @@
+{
+ "challengers": [
+  {
+   "name": "red_queen_gen1",
+   "component": "validator",
+   "verdict": "CONTINUE",
+   "n": 0,
+   "dropped_before_registration": 0,
+   "money_path": false,
+   "adoption": "REJECTED_ON_SEALED",
+   "sealed_balanced": 0.8467857142857143,
+   "incumbent_balanced": 0.8409523809523809,
+   "judged_on": "sealed:49fa2ab0e463"
+  },
+  {
+   "name": "search_policy_gen1",
+   "component": "search_policy",
+   "verdict": "CONTINUE",
+   "n": 0,
+   "dropped_before_registration": 0,
+   "money_path": false,
+   "adoption": "SHADOW"
+  },
+  {
+   "name": "opportunity_exchange",
+   "component": "allocator",
+   "verdict": "CONTINUE",
+   "n": 0,
+   "dropped_before_registration": 0,
+   "money_path": true,
+   "adoption": "SHADOW"
+  },
+  {
+   "name": "scheduler_gen2",
+   "component": "scheduler",
+   "verdict": "CONTINUE",
+   "n": 0,
+   "dropped_before_registration": 0,
+   "money_path": false,
+   "adoption": "SHADOW"
+  },
+  {
+   "name": "search_policy_gen2",
+   "component": "search_policy",
+   "verdict": "CONTINUE",
+   "n": 0,
+   "dropped_before_registration": 0,
+   "money_path": false,
+   "adoption": "SHADOW"
+  }
+ ],
+ "rollback": {
+  "available": true,
+  "current": "0f54177e639398af8ffc254e6b1db77c5f811179",
+  "target": "ead3465e73eaa68d4d73b792eeefde7524dbad53",
+  "command": "python desks/mt5/research/tier_s.py --rollback-to ead3465e73eaa68d4d73b792eeefde7524dbad53 --apply-rollback",
+  "effect": "one revert commit on the box branch; MT5-AdoptRelease adopts it within the hour"
+ },
+ "metric": {
+  "challengers": 5,
+  "adopted": 0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 5.014
+}
