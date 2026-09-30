@@ -59,16 +59,27 @@ def test_unmeasured_is_never_dead() -> None:
 
 def test_market_clock_follows_dst() -> None:
     import pandas as pd
-    # Server stamps are EET/EEST. 10:00 server is 08:00 London in BOTH seasons (EU DST aligned);
-    # 09:00 server is 07:00 London -- before the open.
+    # Server stamps are New York + 7h (`libs/regime/session_clock`). 10:00 server is 08:00 London
+    # whenever US and UK DST agree; 09:00 server is 07:00 London -- before the open.
     times = pd.DatetimeIndex(["2026-07-01 10:00", "2026-01-15 10:00", "2026-07-01 09:00"],
                              tz="UTC")
     m = ff.market_masks(times)
     assert list(m["london"]) == [True, True, False]
-    # 15:00 server is 08:00 New York in both seasons.
+    # In the weeks the US has sprung forward and the UK has not (2026-03-08 .. 03-29) server
+    # 10:00 is 07:00 London: the EET model called it the open, New York + 7h does not.
+    gap = ff.market_masks(pd.DatetimeIndex(["2026-03-20 10:00", "2026-03-20 11:00"], tz="UTC"))
+    assert list(gap["london"]) == [False, True]
+    # 15:00 server is 08:00 New York in every week.
     ny = ff.market_masks(pd.DatetimeIndex(["2026-07-01 15:00", "2026-01-15 15:00",
-                                           "2026-07-01 14:00"], tz="UTC"))["ny"]
-    assert list(ny) == [True, True, False]
+                                           "2026-03-20 15:00", "2026-07-01 14:00"], tz="UTC"))["ny"]
+    assert list(ny) == [True, True, True, False]
+
+
+def test_the_oracle_uses_the_one_session_clock() -> None:
+    from libs.regime import session_clock
+    assert ff.session_clock is session_clock
+    assert ff.MARKET_SESSIONS == dict(session_clock.MARKET_SESSIONS)
+    assert "Athens" not in ff.CLOCK_BASIS
 
 
 # ------------------------------------------------------------------------------ remapping

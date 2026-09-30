@@ -9,7 +9,8 @@ The producers minting the cartesian chart x session axis (`miner_candidate_compi
 `breadth_sweep.cells`, the axis proposers) had no way to know, because nothing said when a family
 fires.
 
-TWO CLOCKS (2026-09-30, the MT5-losses thread). Bars are broker EET/EEST stamps, and the shared
+TWO CLOCKS (2026-09-30, the MT5-losses thread). Bars are broker stamps on New York + 7h
+(`libs/regime/session_clock.py`), and the shared
 filter compares their SERVER hour with its windows; the markets keep their own local clocks. So
 every verdict is taken on both: DEAD means the market's own session (Tokyo / London / New York
 08:00-16:00 local, DST included) never holds a signal; SESSION_TZ_MISMATCH means it does and only
@@ -63,7 +64,7 @@ CACHE = DESK / "data" / "family_firing_hours.json"
 
 #: Bump when the measurement changes meaning; a cache written under another version is ignored
 #: (read as UNMEASURED), never trusted.
-VERSION = 2
+VERSION = 3
 UNMEASURED = "UNMEASURED"
 LIVE = "LIVE"
 DEAD = "DEAD"
@@ -107,58 +108,38 @@ Slot = tuple[str, dict[str, Any], dict[str, Any] | None]
 
 # ------------------------------------------------------------------------------ the two clocks
 #
-# THE BARS ARE BROKER STAMPS WEARING A UTC LABEL (Tier S 2026-09-30, PR #134): EET/EEST, UTC+2 in
-# winter and UTC+3 in summer. `family_call.SESSIONS` compares those SERVER hours with windows
-# written as if they were market hours, so "london" [8, 16) is 05:00-13:00 UTC in summer -- the
-# Frankfurt pre-open. A variant is therefore judged on BOTH clocks:
+# THE BARS ARE BROKER STAMPS WEARING A UTC LABEL (Tier S 2026-09-30, PR #134). The venue clock is
+# New York wall time + 7h (US DST rules), measured on eight years of EURUSD weekly opens; the ONE
+# conversion is `libs/regime/session_clock.py` and it is imported here, never restated.
+# `family_call.SESSIONS` compares those SERVER hours with windows written as if they were market
+# hours. A variant is therefore judged on BOTH clocks:
 #   market  the session in the market's own local clock, DST included (Tokyo / London / New York
-#           08:00-16:00), from the broker stamp converted to the true instant -- the definition the
-#           shared filter moves to in pass 2 (`libs/regime/session_clock.in_session`);
+#           08:00-16:00), `session_clock.in_session` -- the definition the shared filter moves to
+#           in pass 2;
 #   naive   the server-hour window the shared filter applies TODAY.
 # A variant is LIVE when both hold signals, DEAD when the market session holds none, and
 # SESSION_TZ_MISMATCH when only the clock kills it.
-SERVER_TZ = "Europe/Athens"
-MARKET_SESSIONS: dict[str, tuple[str, int, int]] = {
-    "asia": ("Asia/Tokyo", 8, 16),
-    "london": ("Europe/London", 8, 16),
-    "ny": ("America/New_York", 8, 16),
-}
-#: Server hours inside each market session in EVERY week of the year (the intersection of the
-#: two seasons): where a stand-in is anchored, and the only hours a prediction may count.
+from libs.regime import session_clock  # noqa: E402
+
+MARKET_SESSIONS: dict[str, tuple[str, int, int]] = dict(session_clock.MARKET_SESSIONS)
+#: Server hours inside each market session in EVERY week of the year under New York + 7h:
+#: Tokyo 08-16 is server 01-09 (US winter) or 02-10 (US summer); London 08-16 is server 10-18,
+#: or 09-17 in the weeks US and UK DST disagree; New York 08-16 is always server 15-23. These
+#: are where a stand-in is anchored and the only hours a prediction may count.
 MARKET_SERVER_HOURS: dict[str, frozenset[int]] = {
-    "asia": frozenset(range(2, 9)), "london": frozenset(range(10, 18)),
+    "asia": frozenset(range(2, 9)), "london": frozenset(range(10, 17)),
     "ny": frozenset(range(15, 23))}
-#: The market's 08:00 open in server hours (both seasons): the anchor a stand-in is shifted to.
+#: The market's 08:00 open in server hours (every week): the anchor a stand-in is shifted to.
 MARKET_OPEN_SERVER: dict[str, int] = {"asia": 2, "london": 10, "ny": 15}
-CLOCK_BASIS = ("bars are broker EET/EEST stamps (Europe/Athens, UTC+2 winter / +3 summer); market "
-               "sessions are Tokyo/London/New York 08:00-16:00 local, DST included")
+CLOCK_BASIS = (f"bars are broker stamps on {session_clock.SERVER_TZ} + "
+               f"{session_clock.SERVER_SHIFT_H}h (libs/regime/session_clock.py); market sessions "
+               "are Tokyo/London/New York 08:00-16:00 local, DST included")
 
 
 def market_masks(times: Any) -> dict[str, Any]:
-    """Per session, whether each broker-stamped time lies in that market's own session.
-
-    `libs.regime.session_clock` (PR #134) is the one conversion once it lands; until then the
-    same rule is restated here, and only here, so the oracle and the remap never guess."""
-    import numpy as np
-    import pandas as pd
-    try:
-        import importlib
-        session_clock = importlib.import_module("libs.regime.session_clock")
-        return {s: session_clock.in_session(times, s) for s in MARKET_SESSIONS}
-    except Exception:
-        pass
-    idx = pd.DatetimeIndex(times)
-    if len(idx) == 0:
-        return {s: np.zeros(0, dtype=bool) for s in MARKET_SESSIONS}
-    if idx.tz is not None:
-        idx = idx.tz_convert("UTC").tz_localize(None)
-    local = idx.tz_localize(SERVER_TZ, ambiguous=np.ones(len(idx), dtype=bool),
-                            nonexistent="shift_forward").tz_convert("UTC")
-    out = {}
-    for s, (tz, lo, hi) in MARKET_SESSIONS.items():
-        h = local.tz_convert(tz).hour
-        out[s] = np.asarray((h >= lo) & (h < hi))
-    return out
+    """Per session, whether each broker-stamped time lies in that market's own session --
+    `session_clock.in_session`, the desk's one conversion."""
+    return {s: session_clock.in_session(times, s) for s in MARKET_SESSIONS}
 
 
 # ------------------------------------------------------------------------------ plumbing

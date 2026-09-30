@@ -117,12 +117,12 @@
    "variants": 57
   },
   "forced_flow": {
-   "dead": 62,
-   "dead_share_of_measured": 0.3333,
-   "dead_share_of_variants": 0.3333,
-   "live": 124,
-   "rehomed": 49,
-   "remapped": 49,
+   "dead": 120,
+   "dead_share_of_measured": 0.6452,
+   "dead_share_of_variants": 0.6452,
+   "live": 66,
+   "rehomed": 94,
+   "remapped": 94,
    "variants": 186
   },
   "formula": {
@@ -405,21 +405,21 @@
    "variants": 123
   }
  },
- "clock": "bars are broker EET/EEST stamps (Europe/Athens, UTC+2 winter / +3 summer); market sessions are Tokyo/London/New York 08:00-16:00 local, DST included",
+ "clock": "bars are broker stamps on America/New_York + 7h (libs/regime/session_clock.py); market sessions are Tokyo/London/New York 08:00-16:00 local, DST included",
  "consumers": [
   "libs/research/family_firing.session_cells <- miner_candidate_compiler.expand_axes, breadth_sweep.cells, axis_registry, qd_frontier, trajectory_evolution, moat_card_explosion",
   "registry door -> research_candidates (origin session_variant_remap)"
  ],
- "dead_but_server_window_fires": 601,
+ "dead_but_server_window_fires": 659,
  "dead_by_cause": {
-  "NEVER_FIRES_IN_SESSION": 2717,
+  "NEVER_FIRES_IN_SESSION": 2775,
   "SESSION_TZ_MISMATCH": 448
  },
- "dead_found": 2717,
- "dead_share": 0.1251,
- "dead_share_of_measured": 0.2535,
+ "dead_found": 2775,
+ "dead_share": 0.1278,
+ "dead_share_of_measured": 0.2589,
  "dead_today_on_server_window": 2564,
- "dead_without_standin": 654,
+ "dead_without_standin": 667,
  "docket": {
   "path": "data/hypotheses/external_survivors.json",
   "rows": 57538,
@@ -429,23 +429,23 @@
  "donation": {
   "available": true,
   "dry_run": true,
-  "planned": 2063
+  "planned": 2108
  },
- "elapsed_s": 4.12,
- "generated_at": "2026-09-30T15:29:34+00:00",
+ "elapsed_s": 4.58,
+ "generated_at": "2026-09-30T15:52:09+00:00",
  "law": "NOTHING REMOVED: a dead variant stays in the docket and is only marked; UNMEASURED is never DEAD; every stand-in is a new cell charged to the census",
- "live": 7555,
+ "live": 7497,
  "oracle": {
-  "elapsed_s": 2.43,
+  "elapsed_s": 2.34,
   "keys": 434,
   "measured_now": 0,
   "unmeasured_keys": 182
  },
- "oracle_version": 2,
- "remapped": 2063,
+ "oracle_version": 3,
+ "remapped": 2108,
  "remapped_by_kind": {
   "reanchored": 262,
-  "rehomed": 1801
+  "rehomed": 1846
  },
  "sealed_need": "/mnt/project-files/patches/session_variants/: the sealed sort in external_gauntlet.main cannot read DEAD_SESSION_VARIANTS.jsonl; the patch there sorts a dead variant last (never drops it). The two-stage judge (claude/two-stage-judge) should read the sidecar in stage 0 and spend no build on a listed genome_id.",
  "session_tz_mismatch": 448,
