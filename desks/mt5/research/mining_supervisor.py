@@ -850,8 +850,8 @@ class Pipeline:
 
         Several rosters name one page (133 keys, 310 rows on 2026-09-30), and a tie credits
         nobody, so every such page's judged rows went uncredited. Within ONE jurisdiction (equal
-        regions, or one side the `global` default) the page is one source for attribution and the
-        FIRST definition owns it -- the registry's own precedence. Across jurisdictions (two
+        regions, or one side the `global` default) the page is one source for attribution, owned
+        by the row that declares a seat, else the FIRST definition -- the registry's precedence. Across jurisdictions (two
         countries' packs naming one vendor page) the tie stands: crediting either would be a
         guess. Every collision is published per source (`registry.url_collisions`)."""
         keyed: dict[str, list[acq.Source]] = {}
@@ -861,9 +861,12 @@ class Pipeline:
         idx: dict[str, list[tuple[str, str]]] = {}
         col: dict[str, dict[str, Any]] = {}
         for k, srcs in keyed.items():
-            owner = srcs[0]
+            # the row a producer DECLARES a seat on is the page's operative registration (its
+            # rows arrive under that seat); otherwise the first definition, as everywhere
+            owner = next((x for x in srcs if x.seats), srcs[0])
             regions = {x.region for x in srcs} - {"global"}
             keep = [owner] if len(regions) <= 1 else srcs
+            srcs = [owner, *[x for x in srcs if x is not owner]]
             if len(srcs) > 1:
                 col[k] = {"owner": owner.id if len(keep) == 1 else "",
                           "kind": "same_region" if len(keep) == 1 else "cross_region_tie",

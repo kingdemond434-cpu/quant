@@ -66,10 +66,7 @@
    "licence": "MQL5.com terms; concept only, code never copied",
    "fetcher": "owned",
    "cadence": "daily",
-   "region": "global",
-   "seats": [
-    "miner:world_crawler"
-   ]
+   "region": "global"
   },
   {
    "id": "quantifiable_edges_blog",
