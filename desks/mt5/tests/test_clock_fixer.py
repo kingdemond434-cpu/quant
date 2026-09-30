@@ -116,3 +116,14 @@ def test_a_lock_with_no_pid_and_no_process_is_dead(monkeypatch, tmp_path):
     monkeypatch.setattr(cf, "_run_task", lambda task: "started")
     rows = {r["resident"]: r for r in cf.check_residents(apply=True)}
     assert rows["dept_stale"]["state"] == "DEAD" and rows["dept_stale"]["lock"] == cf.LOCK_STALE
+
+
+def test_scalar_certificate_gap_runs_canonical_enrolment(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(cf, "run_step", lambda name, argv, timeout, apply:
+                        seen.update(name=name, timeout=timeout, apply=apply) or
+                        {"step": name, "status": "ok"})
+    row = cf.enrol_if_needed(True, {"n": 131}, 45)
+    assert row["status"] == "ok" and seen == {
+        "name": "enrolment", "timeout": 45, "apply": True}
+    assert cf.enrol_if_needed(True, {"n": 0}, 45)["status"] == "skipped"

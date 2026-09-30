@@ -663,7 +663,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         # deliberately rather than drifting back in.
         try:
             from universe_policy import lane, may_hypothesise
-            _allowed, _lane = may_hypothesise(sym), lane(sym)
+            _allowed, _lane = may_hypothesise(sym, fam), lane(sym)
         except Exception:
             _allowed, _lane = True, ""      # no policy module: enrol exactly as before
         if not _allowed:
@@ -1268,3 +1268,7 @@ if __name__ == "__main__":
     except Exception:
         import traceback
         slog("shadow error:", traceback.format_exc())
+        # NON-ZERO, SO THE CALLER SEES IT. Exiting 0 here made a pass that died before writing
+        # the state file read as a clean run to `enrol_clocks` and to the enrolment repair sweep;
+        # the forward book then stood still for days behind a green leg (measured 2026-09-30).
+        raise SystemExit(1) from None
