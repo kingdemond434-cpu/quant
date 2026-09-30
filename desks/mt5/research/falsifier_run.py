@@ -261,8 +261,9 @@ def _premortems(certs: dict[str, dict]) -> tuple[dict[str, dict], str]:
     """
     pre, basis = _graveyard_premortems(certs)
     try:
-        from libs.research.hypothesis_graph import node_id
         import committees as cm
+
+        from libs.research.hypothesis_graph import node_id
     except Exception:
         return pre, basis
     n = 0
