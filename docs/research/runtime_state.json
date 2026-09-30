@@ -13961,6 +13961,31 @@
    "consumer": "UNMEASURED"
   },
   {
+   "organ": "leg:kelly_survival",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/kelly_survival.py"
+   ],
+   "clock": "hourly_cycle:kelly_survival",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/KELLY_SURVIVAL.json",
+   "artifact_declared": "desks/mt5/reports/KELLY_SURVIVAL.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
    "organ": "leg:control_plane",
    "kind": "leg",
    "code": [
