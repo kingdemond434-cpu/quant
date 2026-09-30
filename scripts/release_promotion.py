@@ -18,10 +18,16 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+
+#: The box's last gate decision, rewritten on every `gate` run (Adopt-And-Seal, hourly): which
+#: commit it chose, why, and what code it held back. The heartbeat carries the same decision;
+#: this file carries it for a reader that does not know the heartbeat exists.
+REPORT = ROOT / "desks" / "mt5" / "reports" / "RELEASE_GATE.json"
 
 from libs.ops import release_promotion as rp  # noqa: E402
 
@@ -59,15 +65,30 @@ def _promote(a: argparse.Namespace) -> int:
     return 0
 
 
-def _gate(a: argparse.Namespace) -> int:
+def _write_report(root: Path, doc: dict[str, object]) -> None:
+    """Best-effort: an unwritable report is a lost diagnostic, never a failed adoption."""
+    out = root / REPORT.relative_to(ROOT)
     try:
-        d = rp.gate(Path(a.root), branch=a.branch, remote=a.remote,
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps({"measured_at": datetime.now(UTC).isoformat(), **doc},
+                                  indent=1, sort_keys=True), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _gate(a: argparse.Namespace) -> int:
+    root = Path(a.root)
+    try:
+        d = rp.gate(root, branch=a.branch, remote=a.remote,
                     allow_unreleased=a.allow_unreleased, fetch=not a.no_fetch)
     except Exception as exc:  # any failure means "fall back", never "stuck"
-        print(json.dumps({"decision": "ERROR", "target": None, "adopts": False,
-                          "reason": f"release gate could not decide: {type(exc).__name__}: "
-                                    f"{exc}"}))
+        doc: dict[str, object] = {"decision": "ERROR", "target": None, "adopts": False,
+                                  "reason": f"release gate could not decide: "
+                                            f"{type(exc).__name__}: {exc}"}
+        _write_report(root, doc)
+        print(json.dumps(doc))
         return 3
+    _write_report(root, d.as_dict())
     print(json.dumps(d.as_dict(), sort_keys=True))
     return 0
 

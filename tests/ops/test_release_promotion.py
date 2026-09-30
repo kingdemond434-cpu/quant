@@ -328,9 +328,12 @@ def test_gate_cli_emits_json_and_exits_3_when_it_cannot_decide(
     cli = _cli()
     assert cli.main(["gate", "--root", str(box)]) == 0
     assert json.loads(capsys.readouterr().out)["decision"] == "LEGACY_TIP"
+    report = box / "desks" / "mt5" / "reports" / "RELEASE_GATE.json"
+    assert json.loads(report.read_text(encoding="utf-8"))["decision"] == "LEGACY_TIP"
     assert cli.main(["gate", "--root", str(box), "--remote", "nowhere"]) == 3
     doc = json.loads(capsys.readouterr().out)
     assert doc["decision"] == "ERROR" and doc["adopts"] is False
+    assert json.loads(report.read_text(encoding="utf-8"))["decision"] == "ERROR"
 
 
 # ---------------------------------------------------------------------------- the wiring
