@@ -95,8 +95,8 @@ def _survivors(doc: Any) -> dict[str, dict]:
     return {}
 
 
-def evicted_rows(evicted: Path = EVICTED, survivors: Path = SURVIVORS,
-                 canon: Path = CANON) -> dict[str, dict]:
+def evicted_rows(evicted: Path | None = None, survivors: Path | None = None,
+                 canon: Path | None = None) -> dict[str, dict]:
     """Every certificate evicted (or evictable) for an unrecorded parameterisation.
 
     The eviction file first; then any row of the report or canon that the shared judge
@@ -105,6 +105,9 @@ def evicted_rows(evicted: Path = EVICTED, survivors: Path = SURVIVORS,
     lost, still finds them.
     """
     from survivor_publication import unrunnable_reason
+    # Resolved at CALL time, never bound as defaults at import: a default argument would pin the
+    # module's paths as they were when it was first imported.
+    evicted, survivors, canon = evicted or EVICTED, survivors or SURVIVORS, canon or CANON
     out = dict(_survivors(_read(evicted)))
     canon_doc = _read(canon)
     listed = set(canon_doc.get("unrunnable_evicted") or []) if isinstance(canon_doc, dict) else set()
