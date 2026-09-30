@@ -3,7 +3,7 @@ needed", every blueprint wired live).
 
 `block(name)` is called by `research/promoter.py` beside `blind_review_veto`, with the same
 consequence and the same limits: it WITHHOLDS A NEW LIVE ROW, it sizes nothing and it never
-touches an open position or a row already holding capital. Four verdicts can withhold:
+touches an open position or a row already holding capital. Six verdicts can withhold:
 
   CONSTITUTION_VIOLATED  the truth kernel's rule set in force loosens the sealed constitution
                          without a principal ratification of its exact hash;
@@ -12,6 +12,10 @@ touches an open position or a row already holding capital. Four verdicts can wit
   ONLINE_FDR_OVER_BUDGET the certificate was admitted after the desk's lifetime online-FDR
                          budget was spent (`reports/tier_s/ONLINE_FDR_ROWS.json`, certified row
                          with `over_budget`);
+  REVIEW_PANEL_FAILED    the review panel resolved a HIGH challenge against the candidate on
+                         its own evidence (forward clock or x5-cost world), and
+  THEORY_REFUTED         its mechanism is refuted on forward/live/replication evidence alone
+                         (`libs/tiers/door_evidence`, `data/tier_s/door_verdicts.json`);
   IMMUNE_FREEZE          the production certifier got EASIER TO FOOL on the sealed suite -- a
                          freeze judged by the real certifier (`judge` production:*) whose reason
                          is a DROP. A freeze from the reference validator, from an absolute
@@ -45,6 +49,7 @@ REPLICATION = DESK / "reports" / "REPLICATION.json"
 FDR_ROWS = DESK / "reports" / "tier_s" / "ONLINE_FDR_ROWS.json"
 FREEZE = DESK / "data" / "tier_s" / "PROMOTION_FREEZE.json"
 LEDGER = DESK / "data" / "tier_s" / "promotion_blocks.jsonl"
+DOOR_VERDICTS = DESK / "data" / "tier_s" / "door_verdicts.json"
 MAX_AGE_H = 6.0
 MISMATCH = frozenset({"MISMATCH", "DISAGREE", "FAIL", "FAILED", "NOT_REPLICATED"})
 
@@ -145,9 +150,30 @@ def _constitution(name: str) -> str | None:
             f"({loosened}) without a principal ratification; {name} waits for the law")
 
 
+def _panel_and_theory(name: str) -> str | None:
+    """The review panel's candidate-specific HIGH failure, or the mechanism REFUTED out of
+    sample (`libs/tiers/door_evidence`). A stale verdict file withholds nothing, and each half
+    loses its authority while its organ is suspended."""
+    from libs.tiers import door_evidence
+    doc = _read(DOOR_VERDICTS)
+    if not isinstance(doc, dict) or not _fresh(doc):
+        return None
+    for cert, row in (doc.get("rows") or {}).items():
+        if not isinstance(row, dict) or not _match(str(cert), name):
+            continue
+        if authority.suspended("review"):
+            row = {**row, "review_failed": []}
+        if authority.suspended("theory"):
+            row = {**row, "theory": {}}
+        why = door_evidence.door_reason(row)
+        if why:
+            return why
+    return None
+
+
 def block(name: str) -> str | None:
     """The first reason this certificate may not be written LIVE now, or None."""
-    for fn in (_constitution, _replication, _fdr):
+    for fn in (_constitution, _replication, _fdr, _panel_and_theory):
         why = fn(name)
         if why:
             return why

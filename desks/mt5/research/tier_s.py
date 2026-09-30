@@ -2768,6 +2768,55 @@ def evaluate_contracts(reports: Mapping[str, Any]) -> dict[str, Any]:
             "authority_rule": auth["rule"]}
 
 
+DOOR_VERDICTS = STATE / "door_verdicts.json"
+
+
+def organ_door() -> dict[str, Any]:
+    """The panel's and the theory graph's verdicts per certificate, for the promotion door
+    (`libs/tiers/door_evidence`): the panel's candidate-specific HIGH failures, and the
+    mechanism's status on OUT-OF-SAMPLE evidence only (forward, live, replication)."""
+    from libs.tiers import door_evidence
+    panel = _read(OUT_DIR / "REVIEW_PANEL_ROWS.json") or {}
+    shadow = shadow_rows()
+    oos: dict[str, list[tuple[bool, str]]] = defaultdict(list)
+    family_of: dict[str, str] = {}
+    for key, row in survivors().items():
+        if not isinstance(row, dict):
+            continue
+        spec = _spec(row)
+        fam = str(spec.get("family") or "")
+        if not fam:
+            continue
+        family_of[str(key)] = fam
+        fw = shadow.get(f"{spec.get('symbol')}.{spec.get('selector')}") or {}
+        if fw.get("n") and int(fw["n"]) >= 5 and fw.get("exp_r") is not None:
+            oos[fam].append((float(fw["exp_r"]) > 0, "forward"))
+    rep_doc = _read(REPORTS / "REPLICATION.json") or {}
+    for r in (rep_doc.get("verdicts") or []) if isinstance(rep_doc, dict) else []:
+        if isinstance(r, dict) and r.get("family"):
+            oos[str(r["family"])].append(
+                (str(r.get("verdict") or "").upper() in ("REPLICATED", "AGREE"), "replication"))
+    live_by: dict[str, float] = defaultdict(float)
+    for r in live_rows():
+        live_by[r["_group"]] += float(r.get("pl_quote") or 0.0)
+    done: set[tuple[str, str]] = set()
+    for k, v in registry().items():
+        fam = str(((v or {}).get("identity") or {}).get("family") or "")
+        grp = names().group(k)
+        if fam and grp in live_by and (fam, grp) not in done:
+            done.add((fam, grp))
+            oos[fam].append((live_by[grp] > 0, "live"))
+    rows = door_evidence.build(panel.get("rows") or [], family_of, oos)
+    blocking = {k: door_evidence.door_reason(v) for k, v in rows.items()}
+    blocking = {k: v for k, v in blocking.items() if v}
+    _write(DOOR_VERDICTS, {"generated_utc": NOW.isoformat(), "rows": rows,
+                           "consumer": "libs/tiers/promotion_authority.py block()"})
+    fam_status = Counter(str((v.get("theory") or {}).get("status")) for v in rows.values())
+    return {"n_rows": len(rows), "n_withheld": len(blocking), "withheld": dict(
+        sorted(blocking.items())[:40]), "theory_status": dict(fam_status),
+            "metric": {"door_rows": len(rows), "door_withheld": len(blocking)}}
+
+
 def epistemic_census(reports: Mapping[str, Any]) -> dict[str, Any]:
     qs: list[epistemic.Quantity] = []
     imm = (reports.get("immune") or {}).get("score") or {}
@@ -2909,6 +2958,8 @@ def main(argv: list[str] | None = None) -> int:
         fdr_rows = _read(OUT_DIR / "ONLINE_FDR_ROWS.json")
         reports["review"] = _run("review", lambda: organ_review(
             reports.get("topology"), fdr_rows, reports.get("red_queen")), timings, errors)
+    if want("door"):
+        reports["door"] = _run("door", organ_door, timings, errors)
     if want("epistemic"):
         reports["epistemic"] = _run("epistemic", lambda: epistemic_census(reports), timings,
                                     errors)

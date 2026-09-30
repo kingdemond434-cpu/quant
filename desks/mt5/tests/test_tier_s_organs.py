@@ -332,7 +332,7 @@ def test_promotion_authority_withholds_on_evidence_only(monkeypatch: Any, tmp_pa
     now = datetime.now(UTC).isoformat()
     monkeypatch.setattr(pa, "ROOT", tmp_path)
     monkeypatch.setattr(pa, "CONSTITUTION", tmp_path / "no_constitution.json")
-    for attr in ("REPLICATION", "FDR_ROWS", "FREEZE", "LEDGER"):
+    for attr in ("REPLICATION", "FDR_ROWS", "FREEZE", "LEDGER", "DOOR_VERDICTS"):
         monkeypatch.setattr(pa, attr, tmp_path / "reports" / f"{attr}.json")
     (tmp_path / "reports").mkdir()
     assert pa.block("EURUSD.x.asia") is None, "absent verdicts withhold nothing"
@@ -548,6 +548,7 @@ def test_suspended_immune_and_fdr_withhold_nothing(monkeypatch: Any, tmp_path: P
     monkeypatch.setattr(pa, "FREEZE", fr)
     monkeypatch.setattr(pa, "REPLICATION", tmp_path / "none.json")
     monkeypatch.setattr(pa, "CONSTITUTION", tmp_path / "no_constitution.json")
+    monkeypatch.setattr(pa, "DOOR_VERDICTS", tmp_path / "no_door.json")
     monkeypatch.setattr(pa, "ROOT", tmp_path)
     monkeypatch.setattr(pa.firewall, "may", lambda *a, **k: True)
     monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)
