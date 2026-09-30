@@ -122,8 +122,8 @@ def states(con: sqlite3.Connection, cids: Iterable[str]) -> dict[str, dict[str, 
     """{cid: row} for the cids the record knows; the rest are absent (never ruled)."""
     out: dict[str, dict[str, Any]] = {}
     ids = [c for c in dict.fromkeys(cids) if c]
-    cols = ("cid", "verdict", "basis", "n_bars", "first_bar", "family_ver", "ruled_at",
-            "times_ruled")
+    cols = ("cid", "verdict", "basis", "cause", "n_bars", "first_bar", "family_ver",
+            "ruled_at", "times_ruled")
     for part in _chunks(ids):
         # Column names are this module's constants and the ids are bound parameters.
         q = (f"SELECT {', '.join(cols)} FROM cells WHERE cid IN "  # noqa: S608

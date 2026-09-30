@@ -118,6 +118,12 @@ RUNS = DATA / "stage1" / "stage1_runs.jsonl"
 PRIORITY = HYP / "priority_stage1.json"
 #: judge_coverage's build-failure bank, keyed in the JUDGE's cell-id space.
 UNRUNNABLE_BANK = HYP / "unrunnable_specs.json"
+#: The session-variant fix's sidecar (`research/session_variant_remap.py`, branch
+#: claude/session-variant-fix): one row per docket session variant the family-firing oracle found
+#: dead, with `cause` NEVER_FIRES_IN_SESSION or SESSION_TZ_MISMATCH. Stage 1 rules every listed
+#: cell at preflight with that cause and spends no build on it. Absent: nothing changes.
+DEAD_SIDECAR = HYP / "DEAD_SESSION_VARIANTS.jsonl"
+SESSION_TZ_MISMATCH = "SESSION_TZ_MISMATCH"
 UNMEASURED = "UNMEASURED"
 #: THE WRONG-SPACE BUCKET (2026-09-30). `judge_coverage._cell_id` names a docket row with the chart
 #: as a separate `timeframe` key; the judge folds a non-H1 row chart into `params` first
@@ -311,6 +317,7 @@ _CAUSES = (
 UNKNOWN_CLASS = {
     "NEVER_FIRES_IN_SESSION": "NEVER_FIRES_IN_SESSION", "MISSING_DRIVER": "MISSING_DRIVER",
     "SESSION_CLOCK_MISMATCH": "SESSION_CLOCK_MISMATCH",
+    "SESSION_TZ_MISMATCH": "SESSION_CLOCK_MISMATCH",
     "NO_CHART_BARS": "DATA_MISSING", "FACTOR_BASKET_INCOMPLETE": "DATA_MISSING",
     "INPUT_LOAD_FAILED": "DATA_MISSING", "UNTRADEABLE_SYMBOL": "DATA_MISSING",
     "SYMBOL_NOT_IN_REGISTRY": "DATA_MISSING",
@@ -724,6 +731,66 @@ def load_bank_hashes(path: Path | None = None) -> tuple[set[int], str]:
     return out, f"MEASURED: {len(out)} banked cell(s)"
 
 
+def _ident_key(symbol: Any, family: Any, params: Any) -> int:
+    """The sidecar's fallback identity: symbol / family / params, canonical JSON."""
+    raw = json.dumps([symbol, family, params or {}], sort_keys=True, default=str,
+                     separators=(",", ":"))
+    return h64(raw)
+
+
+def load_dead_sidecar(path: Path | None = None
+                      ) -> tuple[dict[int, str], dict[int, str], str]:
+    """({h64(genome_id): cause}, {h64(symbol/family/params): cause}, status), streamed line by
+    line. An absent sidecar is two empty maps: nothing changes. A row whose cause is not one of
+    the two session causes is read as NEVER_FIRES_IN_SESSION only when its verdict says DEAD."""
+    p = Path(path or DEAD_SIDECAR)
+    by_gid: dict[int, str] = {}
+    by_ident: dict[int, str] = {}
+    try:
+        fh = p.open(encoding="utf-8")
+    except FileNotFoundError:
+        return by_gid, by_ident, f"ABSENT: {p.name} not on this host (nothing changes)"
+    except OSError as exc:
+        return by_gid, by_ident, f"{UNMEASURED}: {p.name} unreadable ({type(exc).__name__})"
+    bad = 0
+    with fh:
+        for ln in fh:
+            try:
+                r = json.loads(ln)
+            except ValueError:
+                bad += 1
+                continue
+            if not isinstance(r, dict):
+                continue
+            cause = str(r.get("cause") or "")
+            if cause not in (NEVER_FIRES_IN_SESSION, SESSION_TZ_MISMATCH):
+                if str(r.get("verdict") or "") != "DEAD":
+                    continue
+                cause = NEVER_FIRES_IN_SESSION
+            if r.get("genome_id"):
+                by_gid[h64(str(r["genome_id"]))] = cause
+            if r.get("symbol") and r.get("family"):
+                by_ident[_ident_key(r["symbol"], r["family"], r.get("params"))] = cause
+    return by_gid, by_ident, (f"MEASURED: {len(by_gid)} genome id(s), {len(by_ident)} "
+                              f"symbol/family/params key(s), {bad} unreadable line(s)")
+
+
+def dead_cause(h: dict[str, Any], sym: str, by_gid: dict[int, str],
+               by_ident: dict[int, str]) -> str | None:
+    """The sidecar's cause for a docket row: genome_id first, then symbol/family/params (the raw
+    row symbol and the registry's spelling)."""
+    if not by_gid and not by_ident:
+        return None
+    gid = h.get("genome_id")
+    if gid and h64(str(gid)) in by_gid:
+        return by_gid[h64(str(gid))]
+    for s_ in dict.fromkeys((h.get("symbol"), sym)):
+        c = by_ident.get(_ident_key(s_, h.get("family"), h.get("params")))
+        if c:
+            return c
+    return None
+
+
 def coverage_space_id(G: Any, h: dict[str, Any]) -> str | None:
     """The id `judge_coverage._cell_id` gives a docket row TODAY (chart beside params, raw row
     symbol) -- the wrong key space, reproduced only to count the rows it misses."""
@@ -736,7 +803,8 @@ def coverage_space_id(G: Any, h: dict[str, Any]) -> str | None:
 
 
 def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
-                   docket: Path, seen: set[int], bank: set[int] | None = None
+                   docket: Path, seen: set[int], bank: set[int] | None = None,
+                   dead: tuple[dict[int, str], dict[int, str]] | None = None
                    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """One streaming pass over the docket. Returns (the `cap` highest-priority cells to rule this
     run, the backlog census). Priority: never stage-1-ruled first, then due re-screens; oldest
@@ -745,8 +813,10 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
                               "sealed_judged": 0, "backlog": 0, "oldest_first_seen": None,
                               "tiers": dict.fromkeys(REC.TIER_NAMES.values(), 0),
                               "due_rescreen": 0, "created_24h": 0, "created_7d": 0,
-                              "wrong_space": 0, "key_space_mismatch_rows": 0}
+                              "wrong_space": 0, "key_space_mismatch_rows": 0,
+                              "dead_session_variants": 0}
     bank = bank or set()
+    dead_gid, dead_ident = dead or ({}, {})
     cut24 = (now - timedelta(hours=24)).isoformat(timespec="seconds")
     cut7d = (now - timedelta(days=7)).isoformat(timespec="seconds")
     from libs.data.pit import is_stamped
@@ -767,7 +837,15 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
             st = known.get(cid)
             tier = REC.TIER_PRIORITY if cid in priority else REC.tier_of_state(st)
             census["tiers"][REC.TIER_NAMES[tier]] += 1
-            if st is None:
+            dc = sp.get("dead_cause")
+            if dc:
+                # Listed dead by the session-variant sidecar: ruled at preflight, first, with
+                # no build. Already ruled with that cause -> nothing to do until the list drops it.
+                if st is not None and st.get("verdict") == REC.UNBUILDABLE and \
+                        st.get("cause") == dc:
+                    continue
+                rank = -1
+            elif st is None:
                 rank = 0
             else:
                 if not _due(st, chart_stamp(G.UNI, sp["sym"], sp["tf"], bars_memo),
@@ -828,13 +906,17 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
             oldest[0] = fs
         if not stamped:
             unstamped_ids.add(hh)
+        dc_row = dead_cause(h, sym, dead_gid, dead_ident)
+        if dc_row:
+            census["dead_session_variants"] += 1
         pending.append((cid, {"cid": cid, "sym": sym, "family": str(fam), "params": params,
                               "tf": G.timeframe_of(params, str(fam)), "first_seen": fs,
                               "stamped": stamped,
                               "priority": h.get("priority") if isinstance(
                                   h.get("priority"), str) else None,
                               "mechanism_status": h.get("mechanism_status"),
-                              "mechanism_note": h.get("mechanism_note")}))
+                              "mechanism_note": h.get("mechanism_note"),
+                              "dead_cause": dc_row}))
         if len(pending) >= 2000:
             _flush()
     _flush()
@@ -854,6 +936,10 @@ def preflight(G: Any, meta: dict, sp: dict[str, Any]) -> dict[str, Any] | None:
     """The rulings that need no build: ban, tradeability, the sealed gate 1, the sealed modifier
     preflight. Returns a result row, or None when the cell must be built."""
     fam = sp["family"]
+    if sp.get("dead_cause"):
+        return {"verdict": REC.UNBUILDABLE, "cause": sp["dead_cause"],
+                "reason": (f"DEAD_SESSION_VARIANTS.jsonl lists {fam} in session "
+                           f"{sp['params'].get('session')!r} as {sp['dead_cause']}; no build")}
     with contextlib.suppress(Exception):
         from research.family_policy import ban_reason, family_banned
         if family_banned(fam):
@@ -1040,7 +1126,8 @@ def throughput_fence(doc: dict[str, Any]) -> dict[str, Any]:
 def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None = None,
         q: float = FDR_Q, dry_run: bool = False, out_dir: Path | None = None,
         docket: Path | None = None, seen_path: Path | None = None,
-        db: Path | None = None, bank_path: Path | None = None) -> dict[str, Any]:
+        db: Path | None = None, bank_path: Path | None = None,
+        dead_path: Path | None = None) -> dict[str, Any]:
     started = time.monotonic()
     now = _now()
     run_id = f"s1_{now.strftime('%Y%m%dT%H%M%S')}_{uuid.uuid4().hex[:6]}"
@@ -1075,9 +1162,12 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     seen, seen_hit, seen_status = stream_seen(seen_path, watch, "")
     t_sel = time.monotonic()
     bank, bank_status = load_bank_hashes(bank_path)
+    d_gid, d_ident, dead_status = load_dead_sidecar(dead_path)
     chosen, census = select_backlog(G, meta, con, cap=cap, now=now, docket=docket, seen=seen,
-                                    bank=bank)
+                                    bank=bank, dead=(d_gid, d_ident))
     census["bank_status"] = bank_status
+    census["dead_sidecar_status"] = dead_status
+    del d_gid, d_ident
     del bank
     select_s = time.monotonic() - t_sel
     seen_s = t_sel - t_seen
@@ -1446,6 +1536,8 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
             "share_excluding_wrong_space": share_without,
             "share_including_wrong_space": share_with,
             "wrong_space_rows": wrong_space,
+            "dead_session_variants_on_backlog": census.get("dead_session_variants"),
+            "dead_session_sidecar": census.get("dead_sidecar_status", UNMEASURED),
             "forwarded_to_stage2_with_an_unknown_class": fwd_unknown,
             "rule": ("before: the share of ruled cells the sealed judge would have spent a slot "
                      "on and returned UNKNOWN/NOT_RUN (no data, no driver, never fires in its "

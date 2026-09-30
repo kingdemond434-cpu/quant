@@ -267,7 +267,7 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
     db = out / "rec.sqlite"
     doc = S.run(budget_s=240, workers=1, cap=100, docket=docket,
                 seen_path=tmp_path / "none.json", out_dir=out, db=db,
-                bank_path=tmp_path / "no_bank.json")
+                bank_path=tmp_path / "no_bank.json", dead_path=tmp_path / "no_dead.jsonl")
     ruled = doc["run"]["ruled"]
     assert ruled == len({(r["symbol"], r["family"], json.dumps(r["params"], sort_keys=True))
                          for r in rows})
@@ -293,7 +293,7 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
     # a second run rules nothing new: every cell is stage-1 ruled and not due
     doc2 = S.run(budget_s=120, workers=1, cap=100, docket=docket,
                  seen_path=tmp_path / "none.json", out_dir=out, db=db,
-                bank_path=tmp_path / "no_bank.json")
+                bank_path=tmp_path / "no_bank.json", dead_path=tmp_path / "no_dead.jsonl")
     assert doc2["run"]["ruled"] == 0
     # a family code change re-opens its cells; nothing was ever deleted
     con.execute("UPDATE cells SET family_ver='old' WHERE family='session_range_breakout'")
@@ -302,7 +302,7 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
                         ).fetchone()[0]
     doc3 = S.run(budget_s=240, workers=1, cap=100, docket=docket,
                  seen_path=tmp_path / "none.json", out_dir=out, db=db,
-                bank_path=tmp_path / "no_bank.json")
+                bank_path=tmp_path / "no_bank.json", dead_path=tmp_path / "no_dead.jsonl")
     assert doc3["run"]["ruled"] == n_srb
     assert con.execute("SELECT COUNT(*) FROM cells").fetchone()[0] == ruled
     assert con.execute("SELECT MAX(times_ruled) FROM cells").fetchone()[0] == 2
@@ -359,6 +359,63 @@ def test_wrong_space_rows_are_counted_apart_never_screened_never_dropped(tmp_pat
     con.close()
     # absent bank: UNMEASURED, an empty set, never a guess
     assert S.load_bank_hashes(tmp_path / "nope.json")[1].startswith(S.UNMEASURED)
+
+
+def test_dead_session_variants_from_the_sidecar_are_ruled_without_a_build(tmp_path: Path) -> None:
+    """DEAD_SESSION_VARIANTS.jsonl (the session-variant fix) lists dead variants; stage 1 rules
+    each at preflight with the sidecar's cause, matched by genome_id and else by
+    symbol/family/params, and spends no build. An absent sidecar changes nothing."""
+    rows = _real_rows(3)[:3]
+    rows = [{**r, "genome_id": f"G-test-{i}"} for i, r in enumerate(rows)]
+    docket = tmp_path / "docket.json"
+    docket.write_text(json.dumps(rows))
+    side = tmp_path / "DEAD_SESSION_VARIANTS.jsonl"
+    side.write_text("\n".join([
+        json.dumps({"genome_id": "G-test-0", "symbol": "NOPE", "family": "x", "params": {},
+                    "verdict": "DEAD", "cause": "NEVER_FIRES_IN_SESSION"}),
+        json.dumps({"genome_id": None, "symbol": rows[1]["symbol"], "family": rows[1]["family"],
+                    "params": rows[1]["params"], "verdict": "SESSION_TZ_MISMATCH",
+                    "cause": "SESSION_TZ_MISMATCH"}),
+        "not json"]) + "\n")
+    gid, ident, status = S.load_dead_sidecar(side)
+    assert status.startswith("MEASURED") and len(gid) == 1 and len(ident) == 2
+    # preflight never touches the builder (G=None would raise if it did)
+    sp = {"family": rows[0]["family"], "params": {"session": "asia"},
+          "dead_cause": S.NEVER_FIRES_IN_SESSION}
+    pre = S.preflight(None, {}, sp)
+    assert pre and pre["verdict"] == REC.UNBUILDABLE and pre["cause"] == S.NEVER_FIRES_IN_SESSION
+    out = tmp_path / "out"
+    db = out / "rec.sqlite"
+    doc = S.run(budget_s=240, workers=1, cap=100, docket=docket, seen_path=tmp_path / "n.json",
+                out_dir=out, db=db, bank_path=tmp_path / "nb.json", dead_path=side)
+    con = sqlite3.connect(db)
+    causes = {c: (v, k) for c, v, k in con.execute("SELECT cid, verdict, cause FROM cells")}
+    con.close()
+    import external_gauntlet as G
+    meta = json.loads((G.UNI / "universe.json").read_text())
+
+    def _cid(r: dict) -> str:
+        from research.frontier_identity import docket_cell
+        c = docket_cell(r)
+        return G.cell_id({**c, "sym": G.canonical_symbol(str(c["sym"]), meta)})
+    assert causes[_cid(rows[0])] == (REC.UNBUILDABLE, S.NEVER_FIRES_IN_SESSION)
+    assert causes[_cid(rows[1])] == (REC.UNBUILDABLE, S.SESSION_TZ_MISMATCH)
+    assert causes[_cid(rows[2])][1] not in (S.NEVER_FIRES_IN_SESSION, S.SESSION_TZ_MISMATCH)
+    assert doc["unknown_causes"]["dead_session_variants_on_backlog"] == 2
+    assert doc["run"]["preflight_ruled"] >= 2
+    assert S.unknown_class({"verdict": REC.UNBUILDABLE, "cause": S.SESSION_TZ_MISMATCH}) == \
+        "SESSION_CLOCK_MISMATCH"
+    # absent sidecar: nothing listed, nothing changes
+    g0, i0, st0 = S.load_dead_sidecar(tmp_path / "absent.jsonl")
+    assert not g0 and not i0 and st0.startswith("ABSENT")
+    con2 = REC.connect(tmp_path / "r2.sqlite")
+    a, _ca = S.select_backlog(G, meta, con2, cap=10, now=datetime.now(tz=UTC), docket=docket,
+                             seen=set())
+    b, cb = S.select_backlog(G, meta, con2, cap=10, now=datetime.now(tz=UTC), docket=docket,
+                             seen=set(), dead=(g0, i0))
+    con2.close()
+    assert [x["cid"] for x in a] == [x["cid"] for x in b] and cb["dead_session_variants"] == 0
+    assert not any(x.get("dead_cause") for x in b)
 
 
 def test_the_vectorised_path_agrees_with_the_engine_path() -> None:
