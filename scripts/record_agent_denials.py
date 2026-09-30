@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """RECORD EVERY REFUSED TOOL CALL OF ONE AGENT PASS, SO A SKIP COUNTS AS MISSED.
 
-    python scripts/record_agent_denials.py --stream <stream.jsonl> --ledger <ledger.jsonl>
+    python scripts/record_agent_denials.py --stream <stream.jsonl> [--ledger <ledger.jsonl>]
         [--log <human log>] [--review <TIER1_BREADTH_REVIEW.json>] [--started-at <iso>]
         [--surface cro_cycle] [--lane noon] [--agent claude] [--date 2026-09-30]
 
@@ -33,6 +33,9 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+#: This organ's own artifact: the CRO ledger the denial rows land in (the launcher passes it).
+ARTIFACT = ROOT / "desks" / "mt5" / "data" / "cro_cycle_ledger.jsonl"
+
 from libs.ops.agent_denials import (  # noqa: E402
     append_jsonl,
     denial_rows,
@@ -44,7 +47,7 @@ from libs.ops.agent_denials import (  # noqa: E402
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--stream", required=True, type=Path)
-    ap.add_argument("--ledger", required=True, type=Path)
+    ap.add_argument("--ledger", type=Path, default=ARTIFACT)
     ap.add_argument("--log", type=Path)
     ap.add_argument("--review", type=Path)
     ap.add_argument("--started-at")
