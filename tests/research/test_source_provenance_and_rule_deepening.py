@@ -338,3 +338,89 @@ def test_the_chain_moves_to_the_next_seat(monkeypatch) -> None:
                         ("", "HTTP 503") if seat is a else ("{}", None))
     _text, err = dw.chain_chat("p")
     assert err is None and dw.served_by() == "llm:second"
+
+
+# ------------------------------------------------ audit 2026-09-30: one URL reader, two floors
+
+def test_one_reader_accepts_every_url_key_raw_and_in_one_order() -> None:
+    assert sp.source_url_of({"source_uri": "https://a.example/x"}) == "https://a.example/x"
+    assert sp.source_url_of({"source_url": "https://b.example/"}) == "https://b.example/"
+    assert sp.source_url_of({"link": "https://c.example/"}) == "https://c.example/"
+    # url/link first: the historical seed and task-id inputs are unchanged for rows that had them
+    assert sp.source_url_of({"url": "https://u/", "source_url": "https://s/"}) == "https://u/"
+    assert sp.source_url_of({"url": "kimi://q1"}) == "kimi://q1", "raw, not filtered"
+    assert sp.source_url_of({"url": "  ", "source_uri": "https://d/"}) == "https://d/"
+    assert sp.source_url_of({}) == ""
+    # extract: a non-http url does not hide an http source_uri
+    got = sp.extract({"url": "kimi://q1", "source_uri": "https://e.example/p"})
+    assert got["source_url"] == "https://e.example/p"
+
+
+@pytest.mark.parametrize("row", [
+    {"source": "globalmine", "title": "carry in NOK", "source_url": "https://n.example/a"},
+    {"source": "globalmine", "title": "carry in NOK", "source_uri": "https://n.example/b"},
+    {"source": "reddit", "title": "gold asia fade", "url": "https://r.example/c"},
+    {"source": "fxblue", "title": "https://fx.example/link-only-title"},
+    {"source": "news", "description": "no url at all", "href": "https://h.example/d"},
+])
+def test_the_seed_key_and_row_cell_key_agree(row: dict) -> None:
+    """hypothesis_graph.seed_key_of (off the compiled candidate) and lead_schema.row_cell_key (off
+    the raw row) are the two ends of the ONLY mined-row -> cell join. They agree for every URL
+    key, including after the provenance stamp fills an empty source_url from elsewhere."""
+    from libs.research.hypothesis_graph import seed_key_of
+    from libs.research.lead_schema import row_cell_key
+    cand = mcc._candidate("XAUUSD", "session_range_breakout", {"rr": 2.0}, row["source"], row,
+                          "a mechanism")
+    sp.stamp_candidate(cand, sp.extract(row, artifact="x.json", row_index=0))
+    assert seed_key_of(cand) == row_cell_key(row)
+    assert mcc._deepening_task_id(row["source"], row) == dw.task_id(
+        {"source": row["source"], "url": sp.source_url_of(row),
+         "title": str(row.get("title") or row.get("description") or "")[:300]})
+
+
+def test_the_external_url_floor_rises_to_a_windows_worst_and_never_falls(tmp_path: Path) -> None:
+    p = tmp_path / "url_floor.json"
+    for share in (0.6, 0.9, 0.7):
+        doc = sp.ratchet_window(p, share, window=3)
+    assert doc["floor"] == 0.6, "raised to the worst of a full window, not the best pass"
+    doc = sp.ratchet_window(p, None, window=3)
+    assert doc["status"] == "UNMEASURED" and doc["floor"] == 0.6
+    doc = sp.ratchet_window(p, 0.5, window=3)
+    assert doc["status"] == "BELOW_FLOOR"
+    assert json.loads(p.read_text())["floor"] == 0.6, "a regression never lowers the floor"
+    for share in (0.8, 0.85, 0.95):
+        doc = sp.ratchet_window(p, share, window=3)
+    assert doc["floor"] == 0.8
+
+
+def test_the_url_fence_fails_below_its_floor_and_is_unmeasured_when_absent(
+        tmp_path: Path) -> None:
+    art, floor = tmp_path / "mc.json", tmp_path / "url_floor.json"
+    assert fence.check_url(art, floor)[0] == 0
+    art.write_text(json.dumps({"provenance": {"new": {"share_source_url": None}}}))
+    rc, msg = fence.check_url(art, floor)
+    assert rc == 0 and msg.startswith("UNMEASURED")
+    floor.write_text(json.dumps({"floor": 0.7}))
+    art.write_text(json.dumps({"provenance": {"new": {"share_source_url": 0.4}}}))
+    assert fence.check_url(art, floor)[0] == 1
+    art.write_text(json.dumps({"provenance": {"new": {"share_source_url": 0.75}}}))
+    assert fence.check_url(art, floor)[0] == 0
+
+
+def test_the_docket_feed_carries_the_registry_sources_url(tmp_path: Path) -> None:
+    import sqlite3
+
+    from libs.moat import docket_feed
+    db = sqlite3.connect(tmp_path / "r.sqlite")
+    db.row_factory = sqlite3.Row
+    db.execute("CREATE TABLE research_candidates (seq INTEGER PRIMARY KEY, id TEXT, symbol TEXT, "
+               "family TEXT, params_json TEXT, chart TEXT, origin TEXT, mechanism TEXT, "
+               "grid_cell TEXT, score REAL, created_at TEXT, content_hash TEXT, source_id TEXT, "
+               "discovery_id TEXT, judged_at TEXT, status TEXT)")
+    db.execute("CREATE TABLE sources (source_id TEXT PRIMARY KEY, url TEXT)")
+    db.execute("INSERT INTO sources VALUES ('kr_pack', 'https://kr.example/feed')")
+    db.execute("INSERT INTO research_candidates (id, symbol, family, params_json, created_at, "
+               "content_hash, source_id, score) VALUES ('c1', 'EURUSD', 'overnight_gap_decay', "
+               "'{}', '2026-09-30T00:00:00+00:00', 'h', 'kr_pack', 1.0)")
+    rows = list(docket_feed.candidate_rows(db))
+    assert rows and rows[0]["source_url"] == "https://kr.example/feed"

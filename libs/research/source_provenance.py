@@ -37,10 +37,39 @@ from typing import Any
 #: The provenance keys, in the order they are stamped. `retrieved_at_basis` rides along.
 FIELDS: tuple[str, ...] = ("source_url", "source_id", "ground", "retrieved_at", "content_hash")
 
+#: THE FOUR KEYS A ROW NAMES ITS SOURCE BY, in the ONE order every reader uses (audit
+#: 2026-09-30). `url`/`link` first because that is what the compiler has always hashed into the
+#: seed key and the deepening task id, so a row that carries them keeps every historical join;
+#: then `source_url` (this branch's producers) and `source_uri` (the MT5 global mining pipeline,
+#: `lead_schema`, `factory_federation`), which were silently read as "no source" before.
+URL_FIELDS: tuple[str, ...] = ("url", "link", "source_url", "source_uri")
+
 #: Keys a producer has used for the page a row was read from, most specific first. Only values
 #: that are http(s) URLs count as a `source_url`; anything else (kimi://, deepseek://) is an id.
-URL_KEYS: tuple[str, ...] = ("source_url", "url", "link", "href", "permalink",
+URL_KEYS: tuple[str, ...] = ("source_url", "source_uri", "url", "link", "href", "permalink",
                              "canonical_source", "page_url", "feed")
+
+
+def source_url_of(row: Mapping[str, Any]) -> Any:
+    """THE source-URL read: the first non-empty of `URL_FIELDS`, RAW (never stringified or
+    filtered), else "".
+
+    Raw because the seed key (`hypothesis_graph.seed_key_of`), `lead_schema.row_cell_key` and the
+    deepening task id all hash exactly this value and `json.dumps` renders a non-string
+    differently; every one of them now calls this, so the two ends of each join cannot drift. A
+    value that is not http(s) is still the row's source identity (kimi://, a DOI); whether it is
+    an EXTERNAL URL is `is_external_url`'s question, not this one's.
+    """
+    for k in URL_FIELDS:
+        v = row.get(k)
+        if v not in (None, "") and not (isinstance(v, str) and not v.strip()):
+            return v
+    return ""
+
+
+def is_external_url(v: Any) -> bool:
+    """An http(s) URL -- the only thing the external-URL floor counts."""
+    return _is_url(v)
 
 #: Keys a producer has used for when it retrieved or first saw a row, most specific first.
 #: Measured over 220,465 committed intelligence rows 2026-09-30: `found_at` (156,836), `date`,
@@ -90,7 +119,10 @@ def extract(row: Mapping[str, Any], *, artifact: str | None = None,
     """
     first = _first_provenance(row)
     url = ""
-    for k in URL_KEYS:
+    named = source_url_of(row)
+    if _is_url(named):
+        url = str(named).strip()
+    for k in () if url else URL_KEYS:
         v = row.get(k)
         if _is_url(v):
             url = str(v).strip()
@@ -185,14 +217,26 @@ def stamp_rows(rows: Iterable[dict[str, Any]], **kw: Any) -> list[dict[str, Any]
 
 def stamp_candidate(cand: dict[str, Any], prov: Mapping[str, Any]) -> dict[str, Any]:
     """Carry a row's provenance onto a compiled candidate. A value the candidate already holds
-    (a deepened candidate carrying its original row's URL) is never overwritten by an empty one."""
+    (a deepened candidate carrying its original row's URL) is never overwritten by an empty one.
+
+    When the stamp FILLS an empty `source_url` (a URL found under `href`, `permalink`, a
+    link-only title), the value the seed key was computed from is kept as `seed_url`, so
+    `hypothesis_graph.seed_key_of` and `lead_schema.row_cell_key` still agree on the row."""
     for k in (*FIELDS, "retrieved_at_basis", "content_hash_basis"):
         v = prov.get(k)
         if v in (None, ""):
             continue
         if not cand.get(k):
+            if k == "source_url" and "source_url" in cand and "seed_url" not in cand:
+                cand["seed_url"] = cand["source_url"]
             cand[k] = v
     return cand
+
+
+def seed_url_of(cand: Mapping[str, Any]) -> Any:
+    """The URL the candidate's seed key hashes: `seed_url` when a stamp filled `source_url`
+    after the fact, else `source_url` -- which the compiler set from `source_url_of(row)`."""
+    return cand["seed_url"] if "seed_url" in cand else cand.get("source_url")
 
 
 #: The culture fields (principal 2026-09-30; schema module libs/research/cell_culture.py lands on
@@ -233,6 +277,47 @@ def coverage(cands: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             "share_source_url": round(url / n, 6) if n else None,
             "by_source": {s: {"n": v[0], "provenanced": v[1], "with_source_url": v[2]}
                           for s, v in sorted(by_source.items(), key=lambda kv: -kv[1][0])[:40]}}
+
+
+def ratchet_window(floor_path: Path, measured_share: float | None, *, window: int = 24,
+                   now: datetime | None = None, what: str = "external-URL share") -> dict[str, Any]:
+    """A floor that ONLY RISES, raised to the WORST of the last `window` measured passes.
+
+    For a share that legitimately swings with which producers donated this hour (the external-
+    URL share: an internal generator has no URL). `ratchet` would raise the floor to the best
+    pass ever and then fail every ordinary hour; this raises it only when `window` consecutive
+    passes all cleared the new level, so the floor still never falls and a pass worse than a
+    whole window's worst is a regression. UNMEASURED (None) neither tests nor moves it.
+    """
+    prior: dict[str, Any] = {}
+    try:
+        loaded = json.loads(floor_path.read_text("utf-8"))
+        if isinstance(loaded, dict):
+            prior = loaded
+    except (OSError, ValueError):
+        prior = {}
+    floor = float(prior.get("floor") or 0.0)
+    hist = [float(x) for x in (prior.get("history") or []) if isinstance(x, (int, float))]
+    stamp = (now or datetime.now(tz=UTC)).isoformat(timespec="seconds")
+    if measured_share is None:
+        status, new_floor = "UNMEASURED", floor
+    else:
+        status = "BELOW_FLOOR" if measured_share < floor - TOLERANCE else "OK"
+        if status == "OK":
+            hist = [*hist, float(measured_share)][-window:]
+        new_floor = max(floor, min(hist)) if len(hist) >= window else floor
+    doc = {"floor": round(new_floor, 6), "measured": measured_share, "status": status,
+           "at": stamp, "prior_floor": round(floor, 6), "window": window, "history": hist,
+           "rule": (f"the {what} of NEW candidates only ratchets up, to the worst of the last "
+                    f"{window} passes; a pass below the floor (less a rounding tolerance) is a "
+                    "regression and scripts/check_provenance_floor.py fails on it")}
+    if status != "BELOW_FLOOR":
+        try:
+            floor_path.parent.mkdir(parents=True, exist_ok=True)
+            floor_path.write_text(json.dumps(doc, indent=1), "utf-8")
+        except OSError:
+            pass
+    return doc
 
 
 #: A pass may read up to this far below the recorded floor before the fence calls it a

@@ -50,7 +50,7 @@ SEAT_SOURCES = frozenset({"deepseek", "kimi_k3_deep_forest"})
 def _deepening_task_id(source: str, row: dict) -> str:
     """Use the deepening worker's durable row identity exactly."""
     title = str(row.get("title") or row.get("description") or "")[:300]
-    url = row.get("url") or row.get("link") or ""
+    url = _sp.source_url_of(row)
     return hashlib.sha256(f"{source}|{url}|{title}".encode()).hexdigest()[:16]
 
 
@@ -697,7 +697,7 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         "family": family,
         "params": params,
         "source": f"miner:{source}",
-        "source_url": row.get("url") or row.get("link") or "",
+        "source_url": _sp.source_url_of(row),
         "source_title": str(row.get("title") or row.get("description") or "")[:300],
         "mechanism_status": "NAMED",
         "mechanism_note": mechanism,
@@ -1424,16 +1424,22 @@ def _provenance_block(ordered: list[dict], now: datetime) -> dict:
         fresh = [c for i, c in ident.items() if i not in seen]
         newc = _sp.coverage(fresh)
         floor = _sp.ratchet(PROVENANCE_FLOOR, newc["share"], now=now)
+        # THE SECOND FLOOR (audit 2026-09-30): the first is met by construction, since an
+        # artifact coordinate counts as a source id. This one counts only http(s) source URLs,
+        # windowed so an hour of internal-generator donations is not read as a regression.
+        url_floor = _sp.ratchet_window(PROVENANCE_FLOOR.with_name("provenance_url_floor.json"),
+                                       newc["share_source_url"], now=now)
         with contextlib.suppress(OSError):
             PROVENANCE_SEEN.parent.mkdir(parents=True, exist_ok=True)
             PROVENANCE_SEEN.write_text(json.dumps({"at": now.isoformat(timespec="seconds"),
                                                    "ids": sorted(ident)}), "utf-8")
         return {"all": allc, "new": {k: v for k, v in newc.items() if k != "by_source"},
-                "floor": floor,
+                "floor": floor, "url_floor": url_floor,
                 "definition": ("provenanced = content_hash + retrieved_at + (source_url or "
                                "source_id); source_id falls back to the artifact coordinate "
-                               "<path>#<row>. share_source_url is the external-URL share and is "
-                               "reported, never fenced: an internal generator has no URL")}
+                               "<path>#<row>, so that share is met by construction. "
+                               "share_source_url counts http(s) source URLs only and is fenced "
+                               "by url_floor, which rises to the worst of the last 24 passes")}
     except Exception as exc:                         # the compiler must never die on a report
         return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
 
@@ -1611,7 +1617,7 @@ def main() -> int:
                 "source": source,
                 "disposition": disposition,
                 "title": str(row.get("title") or row.get("description") or "")[:300],
-                "url": row.get("url") or row.get("link") or "",
+                "url": _sp.source_url_of(row),
                 "symbols": resolve_symbols(row, universe),
                 "mechanism_tags": row.get("mechanism_tags") or row.get("patterns") or [],
             }

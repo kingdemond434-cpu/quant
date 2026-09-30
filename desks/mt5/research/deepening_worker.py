@@ -1008,7 +1008,7 @@ def replay_blocked(wanted: set[str], universe: set[str], budget_s: float, *,
                 continue
             task = {**row, "source": src,
                     "title": str(row.get("title") or row.get("description") or "")[:300],
-                    "url": row.get("url") or row.get("link") or ""}
+                    "url": sp.source_url_of(row)}
             with contextlib.suppress(OSError):
                 try:
                     rel = path.relative_to(ROOT).as_posix()

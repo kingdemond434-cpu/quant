@@ -43,6 +43,7 @@ from collections.abc import Iterator, Mapping
 from typing import Any
 
 from libs.moat import registry as R
+from libs.research.source_provenance import source_url_of
 
 #: Where a candidate's chart lives on the docket row. The gauntlet reads `timeframe` off the row
 #: and folds it into `params` itself when it is not H1, so two charts of one rule stay two cells.
@@ -89,6 +90,9 @@ def _row(c: Mapping[str, Any]) -> dict[str, Any] | None:
         # discovery ids -- a country pack's ground id, a donation's cell -- plus its birth time
         # and content hash, so a registry cell names its source in the docket like a miner's.
         "source_id": str(c.get("source_id") or c.get("discovery_id") or ""),
+        # The source's URL through the ONE reader (url/link/source_url/source_uri), from the
+        # registry's `sources` row for this source id when the registry holds one.
+        "source_url": source_url_of(c),
         "discovery_id": str(c.get("discovery_id") or ""),
         "retrieved_at": str(c.get("created_at") or ""),
         "content_hash": str(c.get("content_hash") or ""),
@@ -104,9 +108,17 @@ def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | N
     is already holding the whole docket bank in memory.
     """
     ban = banned or frozenset()
+    try:
+        has_sources = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND "
+                                   "name='sources'").fetchone() is not None
+    except sqlite3.Error:
+        has_sources = False
+    # a module literal, never input: the source's URL from the registry's own `sources` table
+    url_col = (", (SELECT s.url FROM sources s WHERE s.source_id = research_candidates.source_id)"
+               " AS url" if has_sources else "")
     cur = conn.execute(
-        "SELECT id, symbol, family, params_json, chart, origin, mechanism, grid_cell, score,"
-        " created_at, content_hash, source_id, discovery_id FROM research_candidates "
+        "SELECT id, symbol, family, params_json, chart, origin, mechanism, grid_cell, score,"  # noqa: S608
+        f" created_at, content_hash, source_id, discovery_id{url_col} FROM research_candidates "
         "WHERE symbol IS NOT NULL AND symbol != '' AND family IS NOT NULL AND family != '' "
         "AND judged_at IS NULL AND COALESCE(status,'') != 'survived' ORDER BY score DESC, seq")
     while True:

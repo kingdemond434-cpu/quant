@@ -37,6 +37,7 @@ from libs.research.source_provenance import TOLERANCE  # noqa: E402
 
 ARTIFACT = ROOT / "desks" / "mt5" / "data" / "hypotheses" / "miner_candidates.json"
 FLOOR = ROOT / "desks" / "mt5" / "data" / "hypotheses" / "provenance_floor.json"
+URL_FLOOR = ROOT / "desks" / "mt5" / "data" / "hypotheses" / "provenance_url_floor.json"
 
 
 def _provenance_block(path: Path) -> dict | None:
@@ -80,6 +81,33 @@ def check(artifact: Path = ARTIFACT, floor_path: Path = FLOOR) -> tuple[int, str
     return 0, "OK\n" + "\n".join(lines)
 
 
+def check_url(artifact: Path = ARTIFACT, floor_path: Path = URL_FLOOR) -> tuple[int, str]:
+    """THE SECOND FLOOR: the EXTERNAL-URL (http/https) share of new candidates.
+
+    The provenanced share above is met by construction -- an artifact coordinate counts as a
+    source id -- so it cannot see a producer that stops recording the page it read. This one
+    can. The floor rises to the worst of the last `window` passes and never falls
+    (`source_provenance.ratchet_window`); absent anything to read, it is UNMEASURED.
+    """
+    if not artifact.exists():
+        return 0, f"UNMEASURED: {artifact.name} has not been written on this host"
+    blk = _provenance_block(artifact)
+    if blk is None:
+        return 1, f"FAIL: {artifact} is unreadable"
+    share = (blk.get("new") or {}).get("share_source_url") if blk else None
+    try:
+        floor = float(json.loads(floor_path.read_text("utf-8")).get("floor") or 0.0)
+    except (OSError, ValueError, AttributeError):
+        floor = float(((blk or {}).get("url_floor") or {}).get("prior_floor") or 0.0)
+    line = f"external-URL share of new candidates {share}; floor {floor}"
+    if share is None:
+        return 0, f"UNMEASURED: no external-URL share measured this pass; {line}"
+    if float(share) < floor - TOLERANCE:
+        return 1, ("FAIL: the external-URL share of NEW candidates fell below its floor -- a "
+                   f"producer stopped recording the page it read. {line}")
+    return 0, f"OK: {line}"
+
+
 def check_certificates() -> tuple[int, str]:
     """The certificate half: every CURRENT certificate has a birth-record row with a source
     lineage (`certificate_provenance.coverage_gate`). Coverage below the number of current
@@ -99,9 +127,11 @@ def main() -> int:
     args = ap.parse_args()
     code, msg = check(args.artifact, args.floor)
     print("candidates: " + msg, flush=True)
+    c1, m1 = check_url(args.artifact)
+    print("external urls: " + m1, flush=True)
     c2, m2 = check_certificates()
     print("certificates: " + m2, flush=True)
-    return max(code, c2)
+    return max(code, c1, c2)
 
 
 if __name__ == "__main__":
