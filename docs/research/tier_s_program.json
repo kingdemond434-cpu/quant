@@ -96,19 +96,21 @@
    "title": "AlphaEvolve for alpha: genome evolution with operator yield",
    "files": [
     "libs/tiers/evolution.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/program_evolution.py",
+    "libs/tiers/panel.py",
+    "desks/mt5/tests/test_tier_s_evolution.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GENOMES.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.diversity",
     "better": "up",
     "organ": "genomes"
-   },
-   "remaining": "evolve portfolio, execution, regime-detector and scheduler programs, not only strategy genomes"
+   }
   },
   {
    "id": "S06",
@@ -116,19 +118,21 @@
    "files": [
     "libs/tiers/evolution.py",
     "desks/mt5/research/research_diversity_archive.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/qd_axes.py",
+    "libs/tiers/panel.py",
+    "desks/mt5/tests/test_tier_s_evolution.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/QD.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.qd_score",
     "better": "up",
     "organ": "qd"
-   },
-   "remaining": "capacity and correlation-cluster axes (the ten axis_registry axes, direction and complexity are live)"
+   }
   },
   {
    "id": "S07",
@@ -610,20 +614,21 @@
     "libs/tiers/formal.py",
     "desks/mt5/research/formal_invariants.py",
     "desks/mt5/research/tier_s.py",
-    "libs/tiers/conformance.py"
+    "libs/tiers/conformance.py",
+    "libs/tiers/core_drive.py",
+    "desks/mt5/tests/test_tier_s_evolution.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FORMAL.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.protocol_proven",
     "better": "up",
     "organ": "formal",
     "bar": 1.0
-   },
-   "remaining": "drive decision_core with the model checker's counterexample traces"
+   }
   },
   {
    "id": "S32",
@@ -650,19 +655,20 @@
    "files": [
     "libs/tiers/red_queen.py",
     "libs/tiers/twin.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/program_evolution.py",
+    "desks/mt5/tests/test_tier_s_evolution.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.defender_balanced",
     "better": "up",
     "organ": "red_queen"
-   },
-   "remaining": "scheduling and search-policy challengers beside validator genomes"
+   }
   },
   {
    "id": "S34",
@@ -766,20 +772,21 @@
    "title": "Architecture-level counterfactual failure search: protocol knob ablations",
    "files": [
     "libs/tiers/formal.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/failure_worlds.py",
+    "desks/mt5/tests/test_tier_s_evolution.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FORMAL.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.knobs_evidenced",
     "better": "up",
     "organ": "formal",
     "bar": 1.0
-   },
-   "remaining": "world-search over architecture failure worlds beyond knob ablations"
+   }
   },
   {
    "id": "S40",
