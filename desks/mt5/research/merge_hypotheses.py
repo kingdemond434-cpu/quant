@@ -745,6 +745,27 @@ def main() -> int:
               f"least-judged-family order")
         if judged:
             rows_out = breadth_order(rows_out, judged)
+    # TIER S PRE-JUDGE SCREEN (layers 9 and 21): a row the adopted Red Queen defenders or the
+    # machine-ratified invented tests FLAGGED (run_external_backtest tags it) moves behind the
+    # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
+    # allocator just built is unchanged, no row leaves the docket, and nothing is billed because
+    # nothing is withheld. A screen fault costs the demotion, never a row.
+    prejudge: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.tiers import prejudge_screen as _pj
+        rows_out, prejudge = _pj.demote_flagged(
+            rows_out, _pj.load_verdicts(HYP / _pj.VERDICTS.name))
+        prejudge["status"] = "APPLIED"
+        if prejudge["flagged"]:
+            print(f"   prejudge screen: {prejudge['flagged']} flagged row(s) demoted within "
+                  f"their family ({prejudge['moved']} position(s) changed, 0 removed)")
+    except Exception as exc:
+        prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -810,6 +831,7 @@ def main() -> int:
                                       "families_starved", "unjudged_total",
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
+        "prejudge": prejudge,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "
