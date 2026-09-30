@@ -385,12 +385,27 @@ def _node_id(symbol: str, family: str, params: Mapping[str, Any]) -> str:
         return ""
 
 
+_BANK_ROWS: dict[str, list[Any]] = {}
+
+
+def _bank_rows(bank: Path | None = None) -> list[Any] | None:
+    """The bank, read once per pass: the Scientific subjects and the Meta census share it."""
+    path = str(bank or BANK)
+    if path not in _BANK_ROWS:
+        rows = _json(Path(path), None)
+        if isinstance(rows, dict):
+            rows = next((v for v in rows.values() if isinstance(v, list)), None)
+        if not isinstance(rows, list):
+            return None
+        _BANK_ROWS.clear()
+        _BANK_ROWS[path] = rows
+    return _BANK_ROWS[path]
+
+
 def scientific_subjects(bank: Path | None = None) -> list[ce.Subject]:
-    rows = _json(bank or BANK, [])
-    if isinstance(rows, dict):
-        rows = next((v for v in rows.values() if isinstance(v, list)), [])
+    rows = _bank_rows(bank) or []
     out = []
-    for r in rows if isinstance(rows, list) else []:
+    for r in rows:
         if not isinstance(r, dict):
             continue
         sym, fam = str(r.get("symbol") or ""), str(r.get("family") or "")
@@ -1363,10 +1378,8 @@ def module_ablation(sp: ce.Specialist, o: Mapping[str, Any], key: str) -> ce.Res
 
 def _bank_census(bank: Path | None = None, universe: Mapping[str, Any] | None = None
                  ) -> dict[str, Any] | None:
-    rows = _json(bank or BANK, None)
-    if isinstance(rows, dict):
-        rows = next((v for v in rows.values() if isinstance(v, list)), None)
-    if not isinstance(rows, list):
+    rows = _bank_rows(bank)
+    if rows is None:
         return None
     reg = universe if universe is not None else _json(UNIVERSE, {})
     cls_of = {k: str((v or {}).get("asset_class") or "?") for k, v in reg.items()
@@ -1675,6 +1688,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         _atomic(PREMORTEMS, _premortems(examined_all))
         _atomic(REPORT, doc)
         _atomic(HEALTH, health)
+    _BANK_ROWS.clear()
     doc["health"] = health
     doc["examined"] = examined_all
     return doc
