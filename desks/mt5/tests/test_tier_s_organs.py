@@ -582,6 +582,20 @@ def test_allocator_tilts_are_heat_neutral_two_sided_and_hold_out() -> None:
     assert at.capture_raw(None, 0) == 1.0 and at.exchange_raw(0.05, 0.05) == pytest.approx(1.0)
 
 
+def test_control_arm_reads_exactly_one_and_the_exchange_can_clear_to_zero() -> None:
+    from libs.tiers import allocator_tilts as at
+    live = {"A": 0.05, "B": 0.05, "C": 0.05, "H": 0.05}
+    ex = {"A": 0.10, "B": 0.0, "C": 0.05, "H": 0.0}
+    cap = {"H": {"capture": 0.3, "n": 60}, "C": {"capture": 1.5, "n": 60}}
+    rows = at.build(live, {k: k for k in live}, ex, cap, held_out=lambda k: k == "H")
+    h = rows["H"]
+    assert (h["tilt"], h["exchange_factor"], h["capture_factor"]) == (1.0, 1.0, 1.0)
+    treated = [rows[k]["exchange_factor"] for k in ("A", "B", "C")]
+    assert abs(sum(treated) / 3 - 1.0) < 1e-6 or max(treated) == at.TILT_HI
+    assert rows["B"]["exchange_factor"] == 0.0 and rows["B"]["tilt"] == 0.0
+    assert rows["A"]["tilt"] > 1.0
+
+
 def test_allocator_reads_tier_s_tilts_fresh_only() -> None:
     from datetime import UTC, datetime, timedelta
 
@@ -591,6 +605,8 @@ def test_allocator_reads_tier_s_tilts_fresh_only() -> None:
            "sleeves": {"A.asia": {"tilt": 1.4}, "B.london": {"tilt": 9.0}}}
     got, _ = ae.tier_s_factors(doc, now=now)
     assert got == {"A.asia": 1.4, "B.london": ae.TILT_HI}
+    zero, _ = ae.tier_s_factors({**doc, "sleeves": {"Z": {"tilt": 0.0}}}, now=now)
+    assert zero == {"Z": 0.0}, "an exchange ZERO reaches the allocator as a zero"
     stale, why = ae.tier_s_factors(doc, now=now + timedelta(hours=7))
     assert stale == {} and "stale" in why
     assert ae.tier_s_factors({"kind": "other"}, now=now)[0] == {}

@@ -538,6 +538,9 @@ def net_of_cost_factors(doc: Mapping[str, Any] | None
 #: Tier S's heat-neutral tilts: the opportunity exchange's book and measured execution capture
 #: (`libs/tiers/allocator_tilts.py`, written hourly by `tier_s.organ_exchange`).
 TIER_S_TILTS_REL = ("desks", "mt5", "data", "tier_s", "allocator_tilts.json")
+#: the Tier S tilt's own floor: the exchange may clear a sleeve to nothing (libs/tiers/
+#: allocator_tilts.EXCHANGE_LO), heat-neutrally, so the heat it frees funds the sleeves it holds
+TIER_S_TILT_LO = 0.0
 TIER_S_MAX_AGE_S = 6 * 3600
 
 
@@ -545,8 +548,8 @@ def tier_s_factors(doc: Mapping[str, Any] | None = None, *, now: datetime | None
                    ) -> tuple[dict[str, float], str]:
     """{book name: tilt} from Tier S's exchange-and-capture tilts, or {} with the reason.
 
-    Each tilt is heat-neutral over the live book and bounded to [TILT_LO, TILT_HI] by its writer
-    and again here, so it REORDERS the book toward the sleeves the exchange's robust E[log W]
+    Each tilt is heat-neutral over the live book and bounded to [TIER_S_TILT_LO, TILT_HI] by its
+    writer and again here, so it REORDERS the book toward the sleeves the exchange's robust E[log W]
     clearing prefers and the ones whose live fills bank their forward edge; the total is the heat
     law's. Absent, stale (> 6h) or malformed reads as NOTHING, which the allocator treats as 1.0."""
     if doc is None:
@@ -570,7 +573,7 @@ def tier_s_factors(doc: Mapping[str, Any] | None = None, *, now: datetime | None
         except (TypeError, ValueError, AttributeError):
             continue
         if math.isfinite(t):
-            out[str(name)] = float(min(TILT_HI, max(TILT_LO, t)))
+            out[str(name)] = float(min(TILT_HI, max(TIER_S_TILT_LO, t)))
     return out, (f"tier_s allocator_tilts.json read: {len(out)} sleeve(s), "
                  f"{sum(1 for v in out.values() if abs(v - 1.0) > 1e-9)} tilted off 1.0")
 
