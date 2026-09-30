@@ -123,6 +123,9 @@ class Prediction:
     resolved: bool = False
     realised_gain: float | None = None
     resolved_at: str | None = None
+    #: an action counter at registration (a source's ok count, a dataset's acquired flag), so
+    #: an own-metric resolver can tell "acted on" from "re-listed" (acquisition_resolution.py)
+    flag_before: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

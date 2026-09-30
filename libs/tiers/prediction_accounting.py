@@ -26,6 +26,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Mapping
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from libs.tiers.replay import parse_t
@@ -185,3 +186,147 @@ def posterior_edge(claimed: float, factory_honesty: float) -> float:
 
 def as_rows(forecasts: Iterable[Forecast]) -> list[dict[str, Any]]:
     return [asdict(f) for f in forecasts]
+
+
+# ------------------------------------------------------------------------------------------------
+# THE REST OF THE DISTRIBUTION: MAE, MFE, HOLD AND SLIPPAGE, scored beside R (2026-09-30)
+#
+# A forecast of R alone says nothing about HOW a trade gets there. Four more quantities are
+# forecast per SYMBOL.window and scored exactly like R (CRPS, PIT, coverage90, overconfidence):
+#
+#   mae_r     maximum adverse excursion, in R          (shadow excursions ledger)
+#   mfe_r     maximum favourable excursion, in R       (shadow excursions ledger)
+#   hold_h    holding time in hours, forecast on log1p (shadow excursions; live fills whose
+#             opening order the intents ledger holds, when the order was a MARKET order)
+#   slip_r    entry slippage in R: (fill - intended) x side / |intended - stop|  (live fills
+#             joined to the intent that opened them)
+#
+# THE FORECASTER is the sleeve's own past: the mean and sd of every earlier outcome of that
+# quantity for that key, shrunk toward the desk-wide pool of the same quantity with PRIOR_N
+# pseudo-observations, its sd inflated by sqrt(1 + 1/n) for the parameter uncertainty. Two
+# ledgers score it:
+#   registered   a forecast written to the ledger each hour BEFORE the outcome, resolved on
+#                arrival (the same clock rule as R: `register` refuses a forecast after its
+#                outcome);
+#   prequential  the same forecaster replayed over the recorded history, each outcome forecast
+#                from STRICTLY EARLIER outcomes only -- a real out-of-sample score today, not a
+#                placeholder until the ledger fills.
+# ------------------------------------------------------------------------------------------------
+
+QUANTITIES: tuple[str, ...] = ("mae_r", "mfe_r", "hold_h", "slip_r")
+#: quantities forecast on log1p (strictly positive, right-skewed)
+LOG_QUANTITIES: frozenset[str] = frozenset({"hold_h"})
+PRIOR_N = 5.0
+MIN_SD = {"mae_r": 0.05, "mfe_r": 0.05, "hold_h": 0.05, "slip_r": 0.005}
+
+
+def transform(q: str, x: float) -> float:
+    return math.log1p(max(0.0, x)) if q in LOG_QUANTITIES else float(x)
+
+
+def _msd(xs: list[float]) -> tuple[float, float] | None:
+    if not xs:
+        return None
+    m = sum(xs) / len(xs)
+    v = sum((x - m) ** 2 for x in xs) / (len(xs) - 1) if len(xs) > 1 else 0.0
+    return m, math.sqrt(v)
+
+
+def forecast_from(q: str, own: list[float], pool: list[float]) -> tuple[float, float] | None:
+    """(mu, sd) on the quantity's forecast scale from the key's own past and the desk pool,
+    or None when there is no past at all (UNMEASURED, never a default)."""
+    own_t = [transform(q, x) for x in own]
+    pool_t = [transform(q, x) for x in pool]
+    o = _msd(own_t)
+    p = _msd(pool_t) or o
+    if p is None:
+        return None
+    pm, ps = p
+    n = len(own_t)
+    if o is None:
+        mu, sd = pm, ps
+    else:
+        w = n / (n + PRIOR_N)
+        mu = w * o[0] + (1 - w) * pm
+        sd = math.sqrt(w * (o[1] ** 2 if n > 1 else ps ** 2) + (1 - w) * ps ** 2)
+    sd = max(sd * math.sqrt(1.0 + 1.0 / max(n, 1)), MIN_SD.get(q, 0.01))
+    return mu, sd
+
+
+def quantity_key(key: str, q: str) -> str:
+    return f"{key}|{q}"
+
+
+def register_quantities(ledger: list[Forecast], history: Mapping[str, Mapping[str, list[
+        tuple[str, float]]]], keys: Iterable[str], made_at: str, horizon_end: str) -> int:
+    """One forecast per (key, quantity) the history can support, made now -- unless that pair
+    already holds a forecast whose horizon is still open (one live promise at a time, so the
+    ledger grows with outcomes, not with hours). history: quantity -> key -> [(time, value)] of
+    outcomes ALREADY known."""
+    now_t = parse_t(made_at)
+    live = {f.key for f in ledger
+            if now_t is not None and (parse_t(f.horizon_end) or now_t) > now_t}
+    made = 0
+    for q in QUANTITIES:
+        by = history.get(q) or {}
+        pool = [x for v in by.values() for _t, x in v]
+        for k in keys:
+            if quantity_key(k, q) in live:
+                continue
+            fc = forecast_from(q, [x for _t, x in by.get(k, [])], pool)
+            if fc is None:
+                continue
+            try:
+                register(ledger, Forecast(key=quantity_key(k, q), made_at=made_at,
+                                          horizon_end=horizon_end, mu=fc[0], sd=fc[1],
+                                          source=f"tier_s.{q}"))
+                made += 1
+            except RegistrationError:
+                continue
+    return made
+
+
+def score_quantities(ledger: Iterable[Forecast], history: Mapping[str, Mapping[str, list[
+        tuple[str, float]]]]) -> dict[str, Any]:
+    """The registered ledger, scored per quantity on the forecast scale."""
+    fs = list(ledger)
+    out: dict[str, Any] = {}
+    for q in QUANTITIES:
+        mine = [f for f in fs if f.source == f"tier_s.{q}"]
+        outs = {quantity_key(k, q): [(t, transform(q, x)) for t, x in v]
+                for k, v in (history.get(q) or {}).items()}
+        out[q] = {"registered": len(mine), **score(mine, outs)}
+    return out
+
+
+def prequential(history: Mapping[str, Mapping[str, list[tuple[str, float]]]],
+                min_past: int = 1) -> dict[str, Any]:
+    """Each recorded outcome forecast from strictly earlier outcomes (own key + desk pool).
+    UNMEASURED per quantity when nothing could be forecast."""
+    out: dict[str, Any] = {}
+    for q in QUANTITIES:
+        by = history.get(q) or {}
+        rows = sorted(((parse_t(t), k, x) for k, v in by.items() for t, x in v),
+                      key=lambda r: (r[0] is None, r[0] or 0, r[1]))
+        rows = [r for r in rows if r[0] is not None]
+        ledger: list[Forecast] = []
+        outcomes: dict[str, list[tuple[str, float]]] = {}
+        own: dict[str, list[float]] = {}
+        pool: list[float] = []
+        for i, (t, k, x) in enumerate(rows):
+            if t is None:
+                continue
+            if len(pool) >= min_past:
+                fc = forecast_from(q, own.get(k, []), pool)
+                if fc is not None:
+                    fk = f"{k}#{i}"
+                    made = datetime.fromtimestamp(t.timestamp() - 1e-3, UTC).isoformat()
+                    ledger.append(Forecast(key=fk, made_at=made, horizon_end=t.isoformat(),
+                                           mu=fc[0], sd=fc[1], source=f"prequential.{q}"))
+                    outcomes[fk] = [(t.isoformat(), transform(q, x))]
+            own.setdefault(k, []).append(x)
+            pool.append(x)
+        sc = score(ledger, outcomes)
+        out[q] = ({"status": "MEASURED", **sc} if sc["n_scored"] else
+                  {"status": "UNMEASURED", "why": f"{len(rows)} recorded outcome(s)", **sc})
+    return out
