@@ -5685,7 +5685,7 @@
     "scripts/run_law_gate.py:164 (registered in _LAW_FENCES)",
     "libs/research/screen_conversion.py:507 (the worst case found: one silent producer failure used to unlink every converted screen on disk; now require_live_rows)",
     "desks/mt5/scripts/retire_uncashable_certs.py:94 (stump floor and age over universe.json, where `if not meta` alone let a 23-symbol registry retire the book)",
-    "desks/mt5/research/retire_untradeable.py:78 (the same floor over the same registry)",
+    "desks/mt5/research/_retired/retire_untradeable.py:78 (the same floor over the same registry; retired 2026-09-30 with no scheduled caller, see docs/research/retirements.jsonl)",
     "libs/ops/workers.py:66 (an unconditional DELETE FROM on a timestamp now stands down when nothing is stamping)",
     "libs/ops/proctree.py:153 (an empty or partial process table manufactured orphans and killed them; the table must now contain this process's own pid)",
     "libs/ops/events.py:59 (REFERENCE_STAND_DOWN: a refusal is a transition with a time on it)",

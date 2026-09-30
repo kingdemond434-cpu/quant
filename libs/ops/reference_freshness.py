@@ -725,16 +725,6 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "would have retired the whole book. Now require_live_reference(min_rows=50).",
     ),
     DestructivePath(
-        path_id="retire_untradeable.retire",
-        module="desks/mt5/research/retire_untradeable.py",
-        function="retire",
-        removes="survivors dropped from UNIVERSAL_SURVIVORS.json into retired_certificates",
-        reference="desks/mt5/data/universe/universe.json",
-        status="guarded",
-        note="The predicate demands positive venue evidence but READS it out of the registry, "
-             "which was loaded with an unguarded json.loads. Now floored and aged.",
-    ),
-    DestructivePath(
         path_id="purge_untradeable_certs.main",
         module="scripts/purge_untradeable_certs.py",
         function="main",
