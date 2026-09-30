@@ -63,6 +63,9 @@ KINDS = (
     # verdict and the why, so a refusal is a transition with a time on it rather than a quiet
     # no-op -- which is the only way an operator learns that a writer upstream has gone silent.
     "REFERENCE_STAND_DOWN",
+    # The box's state is fresh on the box and stale on origin: delivery is broken, the desk is not
+    # idle (libs/ops/state_publication.py). Written by publish_state; read by stall_watch.
+    "STATE_FLOW_STALLED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.

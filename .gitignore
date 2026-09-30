@@ -396,6 +396,11 @@ data/alpha_registry.sqlite-shm
 # tree in one parse. Machine-rewritten on every registry build, so it is a cache by this file's
 # own definition above and belongs nowhere near git.
 desks/mt5/data/import_stems_cache.json
+# THE GATE VERDICT DIGEST AND THE STATE-FLOW METER (2026-09-30), published by
+# sync_shadow_to_git.ps1's $relPaths. `**/reports/*` above ignores both; the digest is the small
+# committed summary of the gitignored gate_verdict_ledger.jsonl and universal_gates_external.json.
+!desks/mt5/reports/GATE_VERDICT_DIGEST.json
+!desks/mt5/reports/BOX_STATE_FLOW.json
 # THE RESEARCH MEASUREMENTS THE BOX PUBLISHES (2026-09-30). `sync_shadow_to_git.ps1` lists these
 # in $reportPaths; each is a small JSON summary the CRO cycle, the audits and the breadth review
 # read from the branch, and none had ever crossed the wire -- `**/reports/*` above ignored them,
