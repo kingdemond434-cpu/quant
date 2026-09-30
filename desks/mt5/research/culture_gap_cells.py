@@ -254,7 +254,7 @@ def pack_signals(pack: str) -> tuple[list[str], str]:
                  if (SERIES_DIR / f"{pack}{s}").exists()), None)
     if path is None:
         return [], (f"UNMEASURED: no stamped series for pack {pack!r} under "
-                    f"{SERIES_DIR.relative_to(ROOT)} on this host")
+                    f"{SERIES_DIR} on this host")
     try:
         from research.pack_cells import signals_of
         sigs, _n, why = signals_of(path)

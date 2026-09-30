@@ -7284,8 +7284,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): the USD/CNY central parity is announced at 09:15 Beijing time each business day (01:15 UTC on the wire)",
-   "url": "https://www.chinamoney.com.cn/english/bmkcpr/",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://www.chinamoney.com.cn/english/bmkcpr/"
   },
   {
    "name": "FBIL USD/INR reference rate",
@@ -7295,8 +7294,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): the USD/INR reference rate is polled in the 11:30-12:30 IST window and published around 13:00 IST",
-   "url": "https://www.fbil.org.in/",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://www.fbil.org.in/"
   },
   {
    "name": "Tokyo 9:55 fixing (TTM) and gotobi settlement days",
@@ -7306,8 +7304,7 @@
    "kind": "exchange_rulebook",
    "weight": 1.0,
    "why": "culture-gap ground (settlement_constrained): Japanese banks set the day's customer rate from the 09:55 JST market; gotobi days (5th, 10th, 15th, 20th, 25th, 30th) are the settlement dates when large payments fall due",
-   "url": "https://www.nber.org/system/files/working_papers/w22820/w22820.pdf",
-   "dataset_class": "culture_gap:settlement_constrained"
+   "url": "https://www.nber.org/system/files/working_papers/w22820/w22820.pdf"
   },
   {
    "name": "FFAJ 店頭FX月次速報 (retail OTC FX monthly)",
@@ -7318,7 +7315,7 @@
    "weight": 1.0,
    "why": "culture-gap ground (retail_heavy): Japan's financial futures association publishes retail OTC FX volume and long/short open positions by currency pair every month",
    "url": "https://www.ffaj.or.jp/library/performance/fx_flash/",
-   "dataset_class": "culture_gap:retail_heavy"
+   "dataset_class": "positioning"
   },
   {
    "name": "NTA タックスアンサー No.1463 株式等を譲渡したときの課税",
@@ -7328,8 +7325,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (tax_driven): Japanese individuals' listed-share gains are taxed separately per CALENDAR year, so loss harvesting falls in December; the NISA allowance resets each January and Japanese companies' record dates cluster at the March fiscal year-end and the September interim",
-   "url": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1463.htm",
-   "dataset_class": "culture_gap:tax_driven"
+   "url": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1463.htm"
   },
   {
    "name": "HKEX Rule 501 trading hours (securities market)",
@@ -7339,8 +7335,7 @@
    "kind": "exchange_rulebook",
    "weight": 1.0,
    "why": "culture-gap ground (settlement_constrained): the morning session runs 09:30-12:00 and the afternoon 13:00-16:00 Hong Kong time",
-   "url": "https://www.hkex.com.hk/-/media/HKEX-Market/Services/Rules-and-Forms-and-Fees/Rules/SEHK/Securities/Rules/Chap_5_eng.pdf",
-   "dataset_class": "culture_gap:settlement_constrained"
+   "url": "https://www.hkex.com.hk/-/media/HKEX-Market/Services/Rules-and-Forms-and-Fees/Rules/SEHK/Securities/Rules/Chap_5_eng.pdf"
   },
   {
    "name": "上海证券交易所交易规则 (price limits, T+1)",
@@ -7350,8 +7345,7 @@
    "kind": "exchange_rulebook",
    "weight": 1.0,
    "why": "culture-gap ground (settlement_constrained): mainland A-shares trade under daily price limits and T+1 settlement (a share bought today cannot be sold today), 09:30-11:30 and 13:00-15:00 Beijing time",
-   "url": "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20250627_10783267.shtml",
-   "dataset_class": "culture_gap:settlement_constrained"
+   "url": "https://www.sse.com.cn/aboutus/mediacenter/hotandd/c/c_20250627_10783267.shtml"
   },
   {
    "name": "KRX 투자자별 거래실적",
@@ -7362,7 +7356,7 @@
    "weight": 1.0,
    "why": "culture-gap ground (retail_heavy): KRX publishes daily trading by investor type (individuals, foreigners, institutions); KRX's regular session opens 09:00 Seoul time",
    "url": "https://data.krx.co.kr/contents/MDC/MDI/outerLoader/index.cmd?screenId=MDCSTAT022&locale=ko_KR&kosdaqGlobalYn=1",
-   "dataset_class": "culture_gap:retail_heavy"
+   "dataset_class": "positioning"
   },
   {
    "name": "MOEX open positions by individuals and legal entities",
@@ -7373,7 +7367,7 @@
    "weight": 1.0,
    "why": "culture-gap ground (retail_heavy): MOEX publishes derivatives open positions split into individuals and legal entities, long and short",
    "url": "https://www.moex.com/en/derivatives/open-positions",
-   "dataset_class": "culture_gap:retail_heavy"
+   "dataset_class": "positioning"
   },
   {
    "name": "B3 Futuro Míni de Taxa de Câmbio (WDO)",
@@ -7384,7 +7378,7 @@
    "weight": 1.0,
    "why": "culture-gap ground (retail_heavy): the mini dollar future is B3's small-ticket BRL contract, the Brazilian individual trader's FX instrument, trading from 09:00 Sao Paulo time",
    "url": "https://www.b3.com.br/pt_br/produtos-e-servicos/negociacao/moedas/futuro-mini-de-taxa-de-cambio-de-reais-por-dolar-comercial.htm",
-   "dataset_class": "culture_gap:retail_heavy"
+   "dataset_class": "positioning"
   },
   {
    "name": "TCMB Haftalık Para ve Banka İstatistikleri (resident FX deposits)",
@@ -7395,7 +7389,7 @@
    "weight": 1.0,
    "why": "culture-gap ground (retail_heavy): the CBRT publishes weekly FX and gold deposits of resident real persons -- Turkish household dollarisation, the retail side of USDTRY and of Turkish gold demand",
    "url": "https://www.tcmb.gov.tr/wps/wcm/connect/173b7dec-d6c6-4727-9f51-82e0f4138560/Para_Banka.pdf?MOD=AJPERES",
-   "dataset_class": "culture_gap:retail_heavy"
+   "dataset_class": "positioning"
   },
   {
    "name": "Banxico tipo de cambio FIX",
@@ -7405,8 +7399,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): Banco de Mexico publishes the FIX from 12:00 Mexico City time every banking day, from wholesale quotes",
-   "url": "https://www.banxico.org.mx/apps/dao-web/4/52/tipo-cambio-equilibrio001.html",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://www.banxico.org.mx/apps/dao-web/4/52/tipo-cambio-equilibrio001.html"
   },
   {
    "name": "ECB euro foreign exchange reference rates",
@@ -7417,7 +7410,6 @@
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): the reference rates come from a concertation around 14:10 CET and are published around 16:00 CET",
    "url": "https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html",
-   "dataset_class": "culture_gap:policy_driven",
    "cluster": "eu"
   },
   {
@@ -7429,7 +7421,6 @@
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): the SNB sets policy at quarterly assessments in March, June, September and December",
    "url": "https://www.snb.ch/en/the-snb/mandates-goals/monetary-policy/decisions",
-   "dataset_class": "culture_gap:policy_driven",
    "cluster": "eu"
   },
   {
@@ -7440,8 +7431,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): exchange rates of commonly traded currencies are declared every working day at around 14:30 (Prague)",
-   "url": "https://www.cnb.cz/en/financial-markets/foreign-exchange-market/central-bank-exchange-rate-fixing/central-bank-exchange-rate-fixing/",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://www.cnb.cz/en/financial-markets/foreign-exchange-market/central-bank-exchange-rate-fixing/central-bank-exchange-rate-fixing/"
   },
   {
    "name": "MNB fixing and publication of the official exchange rates",
@@ -7451,8 +7441,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): the official rates are fixed at 11:00 (Budapest) from the EUR/HUF quotes of the ten most active domestic banks",
-   "url": "https://www.mnb.hu/en/statistics/statistical-data-and-information/statistical-time-series/exchange-rates/fixing-and-publication-of-the-official-exchange-rates",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://www.mnb.hu/en/statistics/statistical-data-and-information/statistical-time-series/exchange-rates/fixing-and-publication-of-the-official-exchange-rates"
   },
   {
    "name": "NBP average exchange rates, table A",
@@ -7462,8 +7451,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): table A average rates are set from interbank quotes around 11:00 Warsaw time on working days",
-   "url": "https://nbp.pl/en/statistic-and-financial-reporting/rates/table-a/",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://nbp.pl/en/statistic-and-financial-reporting/rates/table-a/"
   },
   {
    "name": "Bank of Israel representative exchange rates",
@@ -7473,8 +7461,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): the representative rate is published soon after 15:15 Israel time (12:15 on Fridays and holiday eves)",
-   "url": "https://www.boi.org.il/en/economic-roles/financial-markets/explanatory-notes-to-the-representative-exchange-rates/",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://www.boi.org.il/en/economic-roles/financial-markets/explanatory-notes-to-the-representative-exchange-rates/"
   },
   {
    "name": "ABS Benchmarks USD/SGD and USD/THB spot",
@@ -7484,8 +7471,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (institutional): USD/SGD and USD/THB spot benchmarks are published at 11:30 Singapore time",
-   "url": "https://www.abs.org.sg/docs/library/calculation-methodology-abs-benchmarks.pdf",
-   "dataset_class": "culture_gap:institutional"
+   "url": "https://www.abs.org.sg/docs/library/calculation-methodology-abs-benchmarks.pdf"
   },
   {
    "name": "Bank of Thailand weighted-average interbank rate",
@@ -7495,8 +7481,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): the weighted-average interbank USD/THB rate of the onshore day is published at 18:00 Bangkok time",
-   "url": "https://www.bot.or.th/content/dam/bot/documents/en/statistics/exchange%20rate%20description_en.pdf",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://www.bot.or.th/content/dam/bot/documents/en/statistics/exchange%20rate%20description_en.pdf"
   },
   {
    "name": "Bank Indonesia JISDOR",
@@ -7506,8 +7491,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): JISDOR is computed over 08:00-16:00 WIB and published at 16:15 WIB",
-   "url": "https://www.bi.go.id/en/publikasi/ruang-media/news-release/Pages/sp_233021.aspx",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://www.bi.go.id/en/publikasi/ruang-media/news-release/Pages/sp_233021.aspx"
   },
   {
    "name": "TMA USD/HKD 11am spot rate",
@@ -7517,8 +7501,7 @@
    "kind": "macro",
    "weight": 1.0,
    "why": "culture-gap ground (policy_driven): the TMA USD/HKD spot rate is fixed at 11:00 Hong Kong time, inside the HKMA's linked-rate band",
-   "url": "https://www.tma.org.hk/information/news-press-releases/transiting-tma-usdhkd-and-usdcnyhk-spot-rates-to-transactionbased-regime-282",
-   "dataset_class": "culture_gap:policy_driven"
+   "url": "https://www.tma.org.hk/information/news-press-releases/transiting-tma-usdhkd-and-usdcnyhk-spot-rates-to-transactionbased-regime-282"
   },
   {
    "name": "Deutsche Börse Xetra trading calendar and hours",
@@ -7528,8 +7511,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (institutional): Xetra trades 09:00-17:30 CET; the closing auction sets the official close",
-   "url": "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours",
-   "dataset_class": "culture_gap:institutional"
+   "url": "https://www.cashmarket.deutsche-boerse.com/cash-en/trading/trading-calendar-and-trading-hours"
   },
   {
    "name": "ASX trading hours (opening auction and close)",
@@ -7539,8 +7521,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (tax_driven): normal ASX trading begins by 10:00 Sydney after a single opening auction; the Australian income year ends 30 June, so capital losses are realised in June",
-   "url": "https://www.fool.com.au/2025/06/23/important-changes-to-asx-trading-times/",
-   "dataset_class": "culture_gap:tax_driven"
+   "url": "https://www.fool.com.au/2025/06/23/important-changes-to-asx-trading-times/"
   },
   {
    "name": "TSX trading hours (MOO / MOC)",
@@ -7550,8 +7531,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (tax_driven): TSX continuous trading runs 09:30-16:00 Toronto time with a market-on-close facility at 16:00; Canadian individuals' capital gains are taxed by calendar year, so tax-loss selling falls in December",
-   "url": "https://www.tsx.com/en/trading/calendars-and-trading-hours/trading-hours",
-   "dataset_class": "culture_gap:tax_driven"
+   "url": "https://www.tsx.com/en/trading/calendars-and-trading-hours/trading-hours"
   },
   {
    "name": "UK DMO gilt market data",
@@ -7561,8 +7541,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (institutional): UK pension and LDI mandates track gilt indices whose duration extends at each month-end rebalance",
-   "url": "https://www.dmo.gov.uk/data/gilt-market/",
-   "dataset_class": "culture_gap:institutional"
+   "url": "https://www.dmo.gov.uk/data/gilt-market/"
   },
   {
    "name": "TreasuryDirect upcoming auctions",
@@ -7572,8 +7551,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (institutional): Treasury index-tracking mandates add duration at each month-end index extension, and coupon settlement falls on the 15th and the month's last day",
-   "url": "https://www.treasurydirect.gov/auctions/upcoming/",
-   "dataset_class": "culture_gap:institutional"
+   "url": "https://www.treasurydirect.gov/auctions/upcoming/"
   },
   {
    "name": "IBJA daily bullion reference rates",
@@ -7584,7 +7562,7 @@
    "weight": 1.0,
    "why": "culture-gap ground (physical_flow): Indian physical gold buying peaks around Akshaya Tritiya (April-May) and Dhanteras-Diwali (October-November); the MCX bullion day opens 09:00 IST",
    "url": "https://www.ibja.co/",
-   "dataset_class": "culture_gap:physical_flow"
+   "dataset_class": "physical_premia"
   },
   {
    "name": "Dubai Gold and Commodities Exchange",
@@ -7595,7 +7573,7 @@
    "weight": 1.0,
    "why": "culture-gap ground (physical_flow): Dubai's physical bullion trade clears through the Gulf business morning before London opens",
    "url": "https://www.dgcx.ae/",
-   "dataset_class": "culture_gap:physical_flow"
+   "dataset_class": "physical_premia"
   },
   {
    "name": "Borsa Istanbul Precious Metals and Diamond Market",
@@ -7606,7 +7584,7 @@
    "weight": 1.0,
    "why": "culture-gap ground (physical_flow): Turkey's physical gold imports and household bullion clear on Borsa Istanbul's precious-metals market during the Istanbul business day",
    "url": "https://www.borsaistanbul.com/en/sayfa/1938/precious-metals-and-diamond-market",
-   "dataset_class": "culture_gap:physical_flow"
+   "dataset_class": "physical_premia"
   },
   {
    "name": "Euronext trading calendar and hours (Paris)",
@@ -7616,8 +7594,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (institutional): Euronext Paris cash trading runs 09:00-17:30 CET with a closing auction at 17:30",
-   "url": "https://www.euronext.com/en/trade/trading-hours-holidays",
-   "dataset_class": "culture_gap:institutional"
+   "url": "https://www.euronext.com/en/trade/trading-hours-holidays"
   },
   {
    "name": "Euronext trading calendar and hours (Amsterdam)",
@@ -7627,8 +7604,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (institutional): Euronext Amsterdam cash trading runs 09:00-17:30 CET with a closing auction at 17:30",
-   "url": "https://www.euronext.com/en/markets/amsterdam",
-   "dataset_class": "culture_gap:institutional"
+   "url": "https://www.euronext.com/en/markets/amsterdam"
   },
   {
    "name": "BME Spanish Exchanges trading hours",
@@ -7638,8 +7614,7 @@
    "kind": "local_market_mechanics",
    "weight": 1.0,
    "why": "culture-gap ground (institutional): the Spanish continuous market runs 09:00-17:30 CET and closes with an auction",
-   "url": "https://www.bolsasymercados.es/bme-exchange/en/",
-   "dataset_class": "culture_gap:institutional"
+   "url": "https://www.bolsasymercados.es/bme-exchange/en/"
   }
  ],
  "engines": [
