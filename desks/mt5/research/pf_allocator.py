@@ -3085,7 +3085,9 @@ def zeroed_live(ev: list[SleeveEvidence], funded: dict[str, float],
 
 
 #: A Tier S factor at or below this is the exchange's ZERO (ZERO / EXIT / DEFER): the sleeve's
-#: fraction, not only its mean, goes to nothing in the published book.
+#: fraction, not only its mean, goes to nothing in the published book. Derived, not tuned: the
+#: exchange publishes ZERO as an exact 0.0 and the product of its <= 3 factors is computed in IEEE
+#: doubles, so 1e-6 only absorbs round-off of an exact 0 and sits far below any real factor.
 TIER_S_ZERO_EPS = 1e-6
 
 
