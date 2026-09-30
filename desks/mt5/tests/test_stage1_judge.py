@@ -194,16 +194,17 @@ def _real_rows(n: int) -> list[dict]:
     import external_gauntlet as G
     doc = json.loads((DESK / "data" / "hypotheses" / "external_survivors.json").read_text())
     want = ("session_range_breakout", "adx_channel_hybrid", "mean_reversion_rsi")
-    out, broken = [], []
+    out: list[dict] = []
     for r in doc:
         p = r.get("params") or {}
-        if r.get("symbol") in ("EURUSD", "GBPUSD", "USDJPY") and "timeframe" not in p:
-            if r.get("family") in want and len(out) < n:
-                out.append(r)
-            elif r.get("family") == "formula" and not broken:
-                broken.append(r)                    # PARAM_SIGNATURE_MISMATCH in the sealed build
-    assert G.UNI.exists()
-    return out + broken
+        if r.get("symbol") in ("EURUSD", "GBPUSD", "USDJPY") and "timeframe" not in p \
+                and r.get("family") in want and len(out) < n:
+            out.append(r)
+    assert G.UNI.exists() and out
+    # one cell the sealed modifier preflight refuses: UNBUILDABLE, and never silent
+    broken = json.loads(json.dumps(out[0]))
+    broken["params"] = {**broken["params"], "conditioner": "event"}
+    return [*out, broken]
 
 
 def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path: Path) -> None:
