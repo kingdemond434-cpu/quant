@@ -712,7 +712,9 @@ def non_fired_cells(rows: dict[str, dict[str, Any]], sleeves: dict[str, dict[str
         phrase = SESSION_PHRASE.get(sess, "")
         out.append({
             "source": SEAT, "kind": "hypothesis", "family": fam, "symbol": sym,
-            "symbols": [sym], "params": {}, "url": "",
+            # NO `params` KEY: an empty one compiles as EXACT_RECIPE on the family's defaults and
+            # drops the window; without it the compiler reads the session from the mechanism.
+            "symbols": [sym], "url": "",
             "title": f"non-fired {fam} setups on {sym} {sess}".strip()[:120],
             "mechanism": (f"{len(rs)} {fam} setup(s) on {sym}"
                           + (f" in the {phrase}" if phrase else "")
