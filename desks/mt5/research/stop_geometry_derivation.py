@@ -52,7 +52,8 @@ m the same way); and the family drift delay is a single measurement from one ses
 
 An absent input is UNMEASURED, never a default: the report names what it needs.
 
-    python desks/mt5/research/stop_geometry_derivation.py      -> reports/STOP_GEOMETRY_DERIVATION.json
+    python desks/mt5/research/stop_geometry_derivation.py   # writes the report below
+    -> desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json
 """
 from __future__ import annotations
 
