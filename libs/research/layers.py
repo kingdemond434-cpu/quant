@@ -161,6 +161,13 @@ LEG_LAYER: dict[str, str] = {
     "alpha_rl": "prediction",
     "regime_monitor": "prediction",
     "orthogonality": "portfolio",
+    # THE BASKET JUDGE asks the portfolio question directly: does one family, held as many
+    # near-zero-correlated legs at once, clear a bar no single leg clears? It builds the summed
+    # daily series, measures the realised correlation and the effective independent bets, and
+    # hands it to the sealed gauntlet. That is portfolio construction being tested, not a new
+    # prediction -- the legs' signals were minted elsewhere and are not touched here.
+    "srb_basket_judge": "portfolio",
+    "srb_uncorrelated_sweep": "portfolio",
     "lake_promote": "information",
     "research_exchange_score": "information",
     # The FRED archive and the macro view it feeds are inputs about the world, refreshed hourly
@@ -292,6 +299,10 @@ LEG_LAYER: dict[str, str] = {
     # being reached: what fraction of the day the desk actually mints and judges, against the best
     # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
     "duty_cycle": "meta",
+    # META as well: the judge's environment (commit headroom, torn universe frames, the pass
+    # ledger read off the judge's own log). It buys no prediction; it says whether the judge can
+    # reach its epilogue at all (recovered box patch 08).
+    "gauntlet_guard": "meta",
     "analyst_pipeline": "information", "knowledge_graph": "information",
     "card_explosion": "prediction", "alpha_lineage": "prediction",
     "graveyard_resurrection": "prediction", "shadow_discovery": "information",

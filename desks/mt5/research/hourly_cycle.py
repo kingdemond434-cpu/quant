@@ -975,7 +975,13 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
-                     "committees"),
+                     "committees",
+                     # the judge's ENVIRONMENT, measured before each sweep (recovered patch 08)
+                     "gauntlet_guard",
+                     # session_range_breakout judged as a PORTFOLIO (recovered patch 13)
+                     "srb_basket_judge",
+                     # ...and the uncorrelated leg sweep it reads, on its own daily refresh
+                     "srb_uncorrelated_sweep"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1630,6 +1636,18 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
     "duty_cycle": 480,
     "forward_enrolment": 400,
+    # THE JUDGE'S ENVIRONMENT GUARD (recovered box patch 08, 2026-09-24). Eight bytes per universe
+    # frame, one commit-counter read and a cursor-bounded tail of the judge's log: seconds, not
+    # minutes. The one slow call is `schtasks /query /xml` (timeout 120 s); the cap sits above.
+    "gauntlet_guard": 240,
+    # THE BASKET JUDGE (recovered box patch 13) stops building legs and drawing its sign-flip null
+    # at --budget-s 600, then hands ~20 basket cells to the sealed judge, whose ten gates on
+    # prebuilt series take well under a minute. The cap sits above both; the 720 s default would
+    # leave no margin for a cold cache.
+    "srb_basket_judge": 840,
+    # THE SWEEP THE BASKET JUDGE READS stops building legs at --budget-s 480 and carries the rest
+    # from its previous pass; on the 23 hours a day its artifact is fresh it exits in a second.
+    "srb_uncorrelated_sweep": 600,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
@@ -4497,6 +4515,14 @@ def main() -> None:
     # refuse what the judge itself refuses terminally before a bar is read. It deletes nothing.
     fa = _costed("fast_admission", lambda: _producer(
         "fast_admission", "research/fast_admission.py"))
+    # THE JUDGE DIES ON ITS ENVIRONMENT, NOT ITS BUDGET (recovered box patch 08). Measured over
+    # 844 MB of MT5-Gauntlet.log: 129 of 168 tracebacks were the commit ceiling breaking the pool
+    # at spawn and 19 were a torn universe frame read mid-rewrite. This measures both -- commit
+    # headroom and every frame's PAR1 sentinels -- plus the pass ledger from the judge's own log,
+    # into reports/GAUNTLET_PASSES.json, IMMEDIATELY BEFORE the sealed judge reads those frames.
+    # It starts nothing, stops nothing and never writes into the sealed judge.
+    ggd = _costed("gauntlet_guard", lambda: _producer(
+        "gauntlet_guard", "scripts/gauntlet_guard.py"))
     gt = _costed("external_gauntlet", lambda: _producer(
         "external_gauntlet", "scripts/external_gauntlet.py"))
     # THE CANON'S LAST MISSING LINK, IMMEDIATELY AFTER THE JUDGE. `external_gauntlet.py` is a
@@ -5041,6 +5067,23 @@ def main() -> None:
         "--once", "--budget-s", "240"))
     mrd = _costed("meta_rnd", lambda: _producer(
         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
+    # THE FAMILY JUDGED AS A BOOK, NOT ONE LEG AT A TIME (recovered box patch 13, 2026-09-24).
+    # SRB_UNCORRELATED_SWEEP passed 0 of 262 session_range_breakout cells and its own closing
+    # line named the test it had not run: near-zero-correlated legs summed into ONE series. This
+    # leg builds those portfolio series under membership rules fixed in the module, charges the
+    # ones that select on in-sample performance with a sign-flip null, charges every basket to
+    # the lifetime trial census (data/srb_basket_trials.jsonl -> experiment_ledger), and feeds
+    # the lot to the SEALED gauntlet as single cells. Report only: no gate ledger, no
+    # certificate, no authority file, no roster.
+    # ITS INPUT, ON A CLOCK. SRB_UNCORRELATED_SWEEP.json was written once by hand on the box and
+    # never again, so the basket judge read a photograph (or UNMEASURED on every other host). The
+    # sweep mints one leg per (hypothesis-lane instrument, session) on instruments clustered into
+    # correlation blocks and NOT held by the live book; it judges nothing and refreshes daily.
+    suw = _costed("srb_uncorrelated_sweep", lambda: _producer(
+        "srb_uncorrelated_sweep", "research/srb_uncorrelated_sweep.py", "--once",
+        "--budget-s", "480", "--max-age-h", "20"))
+    sbk = _costed("srb_basket_judge", lambda: _producer(
+        "srb_basket_judge", "research/srb_basket_judge.py", "--once", "--budget-s", "600"))
     ac = _costed("acceptance", lambda: _producer(
         "acceptance", "scripts/check_acceptance_properties.py"))
     # THE ORGAN CENSUS (2026-09-25). Three external reviews asked one closing question -- does
@@ -5319,6 +5362,9 @@ def main() -> None:
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
+                    "gauntlet_guard": ggd,
+                    "srb_uncorrelated_sweep": suw,
+                    "srb_basket_judge": sbk,
                     "canon_publication": cpub, "judging_burndown": jbd,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
