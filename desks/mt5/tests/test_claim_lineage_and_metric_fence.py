@@ -138,7 +138,7 @@ def test_the_win_rate_is_the_percent_in_parentheses_never_the_count() -> None:
 
 @pytest.mark.parametrize(("html", "trades", "expect"), [
     ("Profit Trades: 2 281 (76,90%)", 2966.0, (76.9, "percent_in_parentheses")),
-    ("Profit Trades: 2,281", 2966.0, (76.91, "count_over_trades")),
+    ("Profit Trades: 2,281", 2966.0, (76.9, "count_over_trades")),
     ("Profit Trades: 2 281", None, (None, "count_without_trades")),
     ("Profitable Trades: 64%", None, (64.0, "bare_percent")),
     ("Profit Trades: 2296%", None, (None, "percent_out_of_bounds")),

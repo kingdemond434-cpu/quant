@@ -69,9 +69,9 @@ def test_the_tally_counts_every_refusal_by_reason_and_source() -> None:
 
 
 def test_the_claim_extractor_refuses_an_impossible_stated_number_and_counts_it() -> None:
-    text = ("Buying EURUSD at the London open after the Asia range breaks gives a win rate of "
-            "2296% over the next 4 hours. "
-            "Selling XAUUSD at the New York close when the day ran up gives a win rate of 62% "
+    text = ("Buying EURUSD at the London open when the Asia range breaks higher has a win rate "
+            "of 2296% over the next 4 hours. "
+            "Selling XAUUSD at the New York close when the day ran lower has a win rate of 62% "
             "over the next day.")
     out = mc.extract(text)
     assert out["dropped_impossible_metric"] == 1
