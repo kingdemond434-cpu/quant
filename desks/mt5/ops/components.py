@@ -392,8 +392,9 @@ def task_canonical_gaps(path: Path | None = None) -> dict[str, list[str]]:
                  so the manifest task would be registered as a second organ beside it.
     `dangling`   a TASK_CANONICAL line whose organ does not exist or does not name the task as
                  its schedule, so the skip would drop an organ instead of deduplicating one.
-    `unclaimed`  a script the skipped task runs that its canonical organ does not own, so the
-                 dedupe would turn a clocked file into an undeclared executable.
+    `unclaimed`  a script the skipped task runs that is not its canonical organ's entrypoint
+                 (code_paths[0]): the dedupe would turn a clocked file into an undeclared
+                 executable, or scheduler_gen would render the task running a different file.
     """
     runs: dict[str, set[str]] = {}
     for row in manifest_rows(path):
@@ -413,7 +414,7 @@ def task_canonical_gaps(path: Path | None = None) -> dict[str, list[str]]:
         if cid not in organs or organs[cid].schedule != task)
     unclaimed = sorted(
         f"{task}: {script}" for task, cid in TASK_CANONICAL.items() if cid in organs
-        for script in runs.get(task, ()) if script not in organs[cid].code_paths)
+        for script in runs.get(task, ()) if organs[cid].code_paths[:1] != (script,))
     return {"unlisted": unlisted, "dangling": dangling, "unclaimed": unclaimed}
 
 
@@ -725,17 +726,20 @@ def explicit_specs() -> list[ComponentSpec]:
         ComponentSpec(
             component_id="component:control_plane",
             kind="task", host="box",
-            # clock_fixer.py is what MT5-ClockFixer runs, and this is that task's one organ id
-            # (TASK_CANONICAL), so the organ owns the script the task invokes.
-            code_paths=("desks/mt5/research/control_plane.py",
-                        "libs/ops/control_plane/reconciler.py",
-                        "desks/mt5/research/clock_fixer.py"),
+            # THE TASK'S ENTRYPOINT COMES FIRST. This is MT5-ClockFixer's one organ id
+            # (TASK_CANONICAL), and scheduler_gen renders a task's `runs` and its XML command from
+            # code_paths[0] and production_args -- so they are what the task actually runs:
+            # clock_fixer.py --budget-s 600, the apply pass (it heartbeats this id itself). The
+            # observe pass, control_plane.py --once, is leg:control_plane's own spec.
+            code_paths=("desks/mt5/research/clock_fixer.py",
+                        "desks/mt5/research/control_plane.py",
+                        "libs/ops/control_plane/reconciler.py"),
             inputs=("desks/mt5/data/watermarks/", "desks/mt5/data/lineage.sqlite"),
             outputs=("desks/mt5/reports/CONTROL_PLANE.json",),
             consumers=("scripts/check_closed_loop.py", "desks/mt5/research/clock_fixer.py"),
             cadence_s=900, timeout_s=720,
             progress_metric="reconcile_passes",
-            production_args=("--once", "--budget-s", "600"),
+            production_args=("--budget-s", "600"),
             expected_artifact_schema="desks/mt5/reports/CONTROL_PLANE.json",
             owner="meta", restart_action="restart:task:MT5-ClockFixer",
             criticality="required",
