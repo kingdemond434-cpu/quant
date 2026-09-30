@@ -90,7 +90,8 @@ def _run(df, symbol, score_fn, *, hold_d, quantile, decision_hour, max_stale_h, 
         return []
     if not symbol or str(symbol).upper() not in set(fp.covered_symbols()):
         return []
-    got = xs._prepare(df, symbol, decision_hour, max_stale_h, klass=KLASS)
+    got = xs._prepare(df, symbol, decision_hour, max_stale_h, klass=KLASS,
+                      fundamentals_history=True)
     if got is None:
         return []
     d, panel = got

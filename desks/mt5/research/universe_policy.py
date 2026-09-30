@@ -227,6 +227,8 @@ def is_equity(symbol: str) -> bool:
 def may_hypothesise(symbol: str, family: object = None) -> bool:
     """True for instruments whose edge is sought statistically -- and, for a share CFD, only when
     `family` is one of the cross-sectional class books (principal 2026-09-30)."""
+    if is_delisted(symbol):
+        return False                       # untradable now: never hunted, never placed
     if lane(symbol) == HYPOTHESIS:
         return True
     return (str(family or "") in CROSS_SECTIONAL_FAMILIES) and is_equity(symbol)
@@ -304,6 +306,8 @@ def peer_class(symbol: str) -> str | None:
     count one bet twice (a metal quoted in a second currency, the dollar basket among indices).
     """
     try:
+        if is_delisted(symbol):
+            return None                    # a ranking-history peer only, never a cell
         if is_equity(symbol):
             return "equity"
         if lane(symbol) != HYPOTHESIS:
@@ -455,3 +459,76 @@ def peer_classes() -> dict[str, list[str]]:
 def class_members(klass: str) -> list[str]:
     """Every registry symbol whose peer class is `klass`, sorted."""
     return list(peer_classes().get(str(klass), []))
+
+
+# =============================================================================================
+# DELISTED ISSUERS: THE RANKING HISTORY IS NOT TODAY'S REGISTRY (survivorship, 2026-09-30).
+#
+# Every class book above ranks a share against the peers the broker quotes TODAY. Run backwards,
+# that cross-section is survivors only: Xilinx is not in 2019's semis book because it no longer
+# exists in 2026, so every historical rank was taken among the names that turned out to last,
+# which flatters any leg that bets on continuation and hides the ones acquired or failed.
+#
+# These issuers therefore enter the RANKING HISTORY -- their point-in-time SEC fundamentals
+# (research/sec_fundamentals.py resolves each one's CIK from EDGAR's own name list and reads its
+# filing history for the Form 25 / 15 that ended it) and their bars wherever the store holds any
+# -- and they are UNTRADABLE NOW: `is_delisted` is True, `peer_class` never classifies them,
+# `may_hypothesise` never admits them, `class_panel` refuses to build a panel FOR one, and no
+# producer enumerates them. They are peers, never cells. A name whose snapshots stop at its last
+# filing leaves the cross-section by itself (`fundamentals_pit.fresh`), exactly when it would have.
+#
+# DECLARED BY ISSUER, RESOLVED FROM EDGAR, NEVER FAKED: the CIK is never written here. A name EDGAR
+# cannot resolve uniquely is reported (`ambiguous` / `absent`) in FUNDAMENTALS_COVERAGE.json.
+# =============================================================================================
+
+#: name -> {"ticker": former ticker, "edgar_names": EDGAR conformed names (normalised match),
+#:          "classes": peer classes whose ranking history it belongs to, "why": how it ended}
+DELISTED_ISSUERS: dict[str, dict[str, Any]] = {
+    # semiconductors: both the equity class and the semis sector book
+    "Xilinx": {"ticker": "XLNX", "edgar_names": ("XILINX INC",),
+               "classes": ("equity", "semis"), "why": "acquired by AMD, 2022"},
+    "MaximIntegrated": {"ticker": "MXIM", "edgar_names": ("MAXIM INTEGRATED PRODUCTS INC",),
+                        "classes": ("equity", "semis"), "why": "acquired by Analog Devices, 2021"},
+    "LinearTechnology": {"ticker": "LLTC", "edgar_names": ("LINEAR TECHNOLOGY CORP",),
+                         "classes": ("equity", "semis"), "why": "acquired by Analog Devices, 2017"},
+    "Altera": {"ticker": "ALTR", "edgar_names": ("ALTERA CORP",),
+               "classes": ("equity", "semis"), "why": "acquired by Intel, 2015"},
+    "CypressSemiconductor": {"ticker": "CY", "edgar_names": ("CYPRESS SEMICONDUCTOR CORP",),
+                             "classes": ("equity", "semis"), "why": "acquired by Infineon, 2020"},
+    "Mellanox": {"ticker": "MLNX", "edgar_names": ("MELLANOX TECHNOLOGIES LTD",),
+                 "classes": ("equity", "semis"), "why": "acquired by NVIDIA, 2020"},
+    "Microsemi": {"ticker": "MSCC", "edgar_names": ("MICROSEMI CORP",),
+                  "classes": ("equity", "semis"), "why": "acquired by Microchip, 2018"},
+    "IntegratedDeviceTechnology": {"ticker": "IDTI",
+                                   "edgar_names": ("INTEGRATED DEVICE TECHNOLOGY INC",),
+                                   "classes": ("equity", "semis"),
+                                   "why": "acquired by Renesas, 2019"},
+    # large caps the US share-CFD universe would have quoted
+    "Twitter": {"ticker": "TWTR", "edgar_names": ("TWITTER INC",), "classes": ("equity",),
+                "why": "taken private, 2022"},
+    "ActivisionBlizzard": {"ticker": "ATVI", "edgar_names": ("ACTIVISION BLIZZARD INC",),
+                           "classes": ("equity",), "why": "acquired by Microsoft, 2023"},
+    "VMware": {"ticker": "VMW", "edgar_names": ("VMWARE INC",), "classes": ("equity",),
+               "why": "acquired by Broadcom, 2023"},
+    "Celgene": {"ticker": "CELG", "edgar_names": ("CELGENE CORP",), "classes": ("equity",),
+                "why": "acquired by Bristol-Myers Squibb, 2019"},
+    "RedHat": {"ticker": "RHT", "edgar_names": ("RED HAT INC",), "classes": ("equity",),
+               "why": "acquired by IBM, 2019"},
+    "Monsanto": {"ticker": "MON", "edgar_names": ("MONSANTO CO",), "classes": ("equity",),
+                 "why": "acquired by Bayer, 2018"},
+    "Splunk": {"ticker": "SPLK", "edgar_names": ("SPLUNK INC",), "classes": ("equity",),
+               "why": "acquired by Cisco, 2024"},
+    "Seagen": {"ticker": "SGEN", "edgar_names": ("SEAGEN INC", "SEATTLE GENETICS INC"),
+               "classes": ("equity",), "why": "acquired by Pfizer, 2023"},
+}
+
+
+def is_delisted(symbol: object) -> bool:
+    """True for a declared delisted issuer: a ranking-history peer, never tradable now."""
+    s = str(symbol or "").strip().upper()
+    return any(s == k.upper() for k in DELISTED_ISSUERS)
+
+
+def delisted_members(klass: str) -> list[str]:
+    """The delisted issuers whose ranking history belongs to peer class `klass`, sorted."""
+    return sorted(k for k, v in DELISTED_ISSUERS.items() if str(klass) in (v.get("classes") or ()))

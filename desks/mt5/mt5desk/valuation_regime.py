@@ -67,8 +67,14 @@ _LEVEL_CACHE_MAX = 64
 
 
 def _members(klass: str) -> list[str]:
+    """Covered members of `klass`, PLUS its delisted issuers (survivorship: a regime level taken
+    in 2019 is a level over 2019's class, not over the names that survived to today). A delisted
+    issuer's snapshots stop at its last filing, so `fp.fresh` drops it when it ceased to exist."""
     covered = set(fp.covered_symbols())
-    return [m for m in xs.class_symbols(klass) if m.upper() in covered]
+    live = [m for m in xs.class_symbols(klass) if m.upper() in covered]
+    seen = {m.upper() for m in live}
+    return live + [h for h in xs.history_members(klass)
+                   if h.upper() in covered and h.upper() not in seen]
 
 
 def class_characteristic(klass: str, stamps: np.ndarray, name: str) -> np.ndarray:

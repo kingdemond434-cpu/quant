@@ -12,9 +12,22 @@ SOURCES, FREE AND MACHINE-USE-ALLOWED. SEC EDGAR only, keyless:
   * https://www.sec.gov/files/company_tickers.json          ticker -> CIK (weekly)
   * https://data.sec.gov/submissions/CIK##########.json     filings list + acceptance times
   * https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json   every XBRL fact filed
-The SEC's fair-access policy asks for a User-Agent naming the requester and at most 10 requests a
-second. The UA here is a generic desk string (override with QUANT_EDGAR_UA, the variable the
-EDGAR sandbox already reads) and requests are spaced REQUEST_GAP_S apart.
+  * https://www.sec.gov/Archives/edgar/cik-lookup-data.txt   every entity name EDGAR knows,
+    including issuers that no longer trade (read once, only to resolve DELISTED_ISSUERS' CIKs)
+The SEC's fair-access policy asks for a User-Agent NAMING THE REQUESTER and at most 10 requests
+a second. The UA is read from the environment, first set wins: QUANT_EDGAR_UA,
+SEC_EDGAR_USER_AGENT, SEC_EDGAR_UA. WHEN NONE IS SET THE LEG SENDS NOTHING: the pass is
+UNMEASURED with the reason named, previous snapshots stand, and no placeholder identity ever
+reaches the SEC. The value itself is never printed or written -- only the variable's NAME is.
+Requests are spaced REQUEST_GAP_S apart.
+
+SURVIVORSHIP. The registry is today's survivors. `universe_policy.DELISTED_ISSUERS` names issuers
+that were acquired or taken private; their CIKs are resolved from EDGAR's own entity list (a name
+that does not resolve to exactly one CIK is reported, never guessed), their fundamentals are built
+like any other name's, and the filing history's Form 25 / 15 dates when each stopped trading.
+They join the class books' RANKING HISTORY and are never placed. Every ticker the SEC list has
+ever shown is also remembered (`ticker_history.json`), so a registry name whose ticker leaves the
+current list (Walgreens, taken private 2025) still resolves by its CIK.
 
 WHAT A PASS DOES.
   1. Map every share CFD in the broker registry (`universe_policy.is_equity`) to its US ticker
@@ -41,7 +54,7 @@ import json
 import os
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -72,7 +85,19 @@ UNMEASURED = "UNMEASURED"
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
 FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
-DEFAULT_UA = "QuantDesk fundamentals-research research-desk@quantdesk.example"
+CIK_LOOKUP_URL = "https://www.sec.gov/Archives/edgar/cik-lookup-data.txt"
+#: Environment variables that may carry the EDGAR User-Agent, first set wins. Names only: the
+#: value is never logged, printed or written to an artifact.
+UA_ENV_VARS = ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")
+#: Every ticker -> CIK the SEC list has ever shown on this host (LAKE/ticker_history.json), and
+#: the delisted issuers' resolved CIKs (LAKE/delisted_ciks.json). Read through LAKE at call time.
+TICKER_HISTORY_NAME = "ticker_history.json"
+DELISTED_CIKS_NAME = "delisted_ciks.json"
+#: An unresolved delisted issuer is looked up again after this long.
+DELISTED_RETRY_S = 7 * 86400
+#: Forms that end an issuer's listing or registration: the filing history's own delisting date.
+DELISTING_FORMS = frozenset({"25", "25-NSE", "15-12B", "15-12G", "15-15D", "15-12B/A",
+                             "15-12G/A", "15-15D/A"})
 REQUEST_GAP_S = 0.15            # under the SEC's 10 requests a second
 TICKERS_MAX_AGE_S = 7 * 86400
 #: A name is re-checked at most once in this window; the leg runs hourly, so every name is
@@ -146,9 +171,21 @@ def _write_json(path: Path, doc: Any) -> None:
 Fetcher = Callable[[str], tuple[int, Any]]
 
 
-def http_fetcher() -> Fetcher:
+LineFetcher = Callable[[str], tuple[int, Iterable[str]]]
+
+
+def edgar_user_agent() -> tuple[str | None, str | None]:
+    """(value, the NAME of the variable it came from), or (None, None) when none is set.
+    Callers report the name only; the value never leaves this process except as the header."""
+    for name in UA_ENV_VARS:
+        value = (os.environ.get(name) or "").strip()
+        if value:
+            return value, name
+    return None, None
+
+
+def http_fetcher(ua: str) -> Fetcher:
     """GET a JSON document from the SEC: (status, parsed or None). Never raises."""
-    ua = os.environ.get("QUANT_EDGAR_UA") or DEFAULT_UA
     last = [0.0]
 
     def fetch(url: str) -> tuple[int, Any]:
@@ -168,6 +205,37 @@ def http_fetcher() -> Fetcher:
             return int(exc.code), None
         except (URLError, TimeoutError, OSError, ValueError):
             return 0, None
+    return fetch
+
+
+def http_lines(ua: str) -> LineFetcher:
+    """Stream a text document from the SEC line by line: (status, lines). Never raises; a failed
+    request answers (code, [])."""
+    def fetch(url: str) -> tuple[int, Iterable[str]]:
+        req = Request(url, headers={"User-Agent": ua, "Accept": "text/plain"})
+        try:
+            resp = urlopen(req, timeout=120)
+        except HTTPError as exc:
+            return int(exc.code), []
+        except (URLError, TimeoutError, OSError, ValueError):
+            return 0, []
+
+        def lines() -> Iterator[str]:
+            with resp:
+                for raw in resp:
+                    yield raw.decode("latin-1", "replace")
+        return int(resp.status), lines()
+    return fetch
+
+
+def fixture_lines(directory: Path) -> LineFetcher:
+    """Recorded text documents by the URL's last segment; a missing file answers 404."""
+    def fetch(url: str) -> tuple[int, Iterable[str]]:
+        path = Path(directory) / url.rsplit("/", 1)[-1]
+        try:
+            return 200, path.read_text("latin-1").splitlines()
+        except OSError:
+            return 404, []
     return fetch
 
 
@@ -211,7 +279,104 @@ def ticker_to_cik(fetch: Fetcher, now: datetime) -> tuple[dict[str, int], str]:
     for row in (doc or {}).values() if isinstance(doc, dict) else []:
         if isinstance(row, dict) and row.get("ticker") and row.get("cik_str") is not None:
             out.setdefault(str(row["ticker"]).upper(), int(row["cik_str"]))
+    _remember_tickers(out, now)
     return out, status
+
+
+def _remember_tickers(current: dict[str, int], now: datetime) -> None:
+    """Accumulate every ticker -> CIK the SEC list has shown, so a name that LEAVES the list (a
+    delisting, a take-private) still resolves by the CIK it filed under."""
+    if not current:
+        return
+    hist = _read(LAKE / TICKER_HISTORY_NAME)
+    hist = hist if isinstance(hist, dict) else {}
+    stamp = now.isoformat(timespec="seconds")
+    for ticker, cik in current.items():
+        row = hist.get(ticker) if isinstance(hist.get(ticker), dict) else {}
+        hist[ticker] = {"cik": int(cik), "first_seen": row.get("first_seen") or stamp,
+                        "last_seen": stamp}
+    _write_json(LAKE / TICKER_HISTORY_NAME, hist)
+
+
+def ticker_history() -> dict[str, int]:
+    hist = _read(LAKE / TICKER_HISTORY_NAME)
+    return {str(k).upper(): int(v["cik"]) for k, v in (hist or {}).items()
+            if isinstance(v, dict) and v.get("cik") is not None} if isinstance(hist, dict) else {}
+
+
+def _norm_name(name: str) -> str:
+    """EDGAR conformed name, normalised: upper case, a trailing /XX/ state tag dropped,
+    punctuation removed, spaces collapsed ("MONSANTO CO /NEW/" -> "MONSANTO CO")."""
+    s = str(name).upper().strip()
+    while s.endswith("/"):
+        cut = s.rfind("/", 0, len(s) - 1)
+        if cut < 0:
+            break
+        s = s[:cut].strip()
+    s = "".join(ch if ch.isalnum() or ch.isspace() else " " for ch in s)
+    return " ".join(s.split())
+
+
+def resolve_delisted(lines: LineFetcher | None, now: datetime) -> dict[str, Any]:
+    """{issuer: {"cik": int} | {"status": "ambiguous"|"absent"|"UNMEASURED ...", ...}} for every
+    `universe_policy.DELISTED_ISSUERS` entry, from EDGAR's entity list. Resolved CIKs are kept
+    forever (a CIK never changes); an unresolved one is retried after DELISTED_RETRY_S."""
+    from research import universe_policy as up
+    cache = _read(LAKE / DELISTED_CIKS_NAME)
+    cache = cache if isinstance(cache, dict) else {}
+    want: dict[str, set[str]] = {}
+    for issuer, spec in up.DELISTED_ISSUERS.items():
+        row = cache.get(issuer) if isinstance(cache.get(issuer), dict) else {}
+        if row.get("cik") is not None:
+            continue
+        tried = row.get("tried_at")
+        if tried and (now - datetime.fromisoformat(tried)).total_seconds() < DELISTED_RETRY_S:
+            continue
+        want[issuer] = {_norm_name(n) for n in spec.get("edgar_names") or ()}
+    if not want:
+        return cache
+    stamp = now.isoformat(timespec="seconds")
+    if lines is None:
+        for issuer in want:
+            cache[issuer] = {"status": "UNMEASURED: no EDGAR entity list this pass",
+                             "tried_at": stamp}
+        return cache
+    code, body = lines(CIK_LOOKUP_URL)
+    if code != 200:
+        for issuer in want:
+            cache[issuer] = {"status": f"UNMEASURED: entity list HTTP {code}", "tried_at": stamp}
+        _write_json(LAKE / DELISTED_CIKS_NAME, cache)
+        return cache
+    by_name: dict[str, set[str]] = {}
+    for n in set().union(*want.values()):
+        by_name[n] = set()
+    for line in body:
+        parts = line.rstrip("\r\n").rsplit(":", 2)
+        if len(parts) < 3 or not parts[1].strip().isdigit():
+            continue
+        key = _norm_name(parts[0])
+        if key in by_name:
+            by_name[key].add(parts[1].strip())
+    for issuer, names in want.items():
+        ciks = sorted(set().union(*(by_name.get(n, set()) for n in names)))
+        if len(ciks) == 1:
+            cache[issuer] = {"cik": int(ciks[0]), "resolved_at": stamp,
+                             "matched": sorted(names)}
+        elif ciks:
+            cache[issuer] = {"status": "ambiguous", "candidates": [int(c) for c in ciks],
+                             "tried_at": stamp}
+        else:
+            cache[issuer] = {"status": "absent", "tried_at": stamp}
+    _write_json(LAKE / DELISTED_CIKS_NAME, cache)
+    return cache
+
+
+def delisting_date(submissions: dict | None) -> str | None:
+    """The filing history's own delisting date: the latest Form 25 / 15 filing date, or None."""
+    recent = ((submissions or {}).get("filings") or {}).get("recent") or {}
+    dates = [str(d) for f, d in zip(recent.get("form") or [], recent.get("filingDate") or [],
+                                    strict=False) if str(f) in DELISTING_FORMS]
+    return max(dates) if dates else None
 
 
 def newest_periodic(submissions: dict | None) -> str | None:
@@ -225,7 +390,8 @@ def newest_periodic(submissions: dict | None) -> str | None:
 
 # -------------------------------------------------------------------------------- the pass ---
 def refresh(*, fetch: Fetcher, budget_s: float = 600.0, force: bool = False,
-            symbols: list[str] | None = None) -> dict[str, Any]:
+            symbols: list[str] | None = None, lines: LineFetcher | None = None,
+            ua_source: str | None = None) -> dict[str, Any]:
     started = time.monotonic()
     now = _now()
     state = _read(STATE)
@@ -235,25 +401,45 @@ def refresh(*, fetch: Fetcher, budget_s: float = 600.0, force: bool = False,
     frames: dict[str, pd.DataFrame] = {
         str(s): g.drop(columns=["symbol"]) for s, g in table.groupby("symbol", sort=False)
     } if len(table) else {}
+    from research import universe_policy as up
     equities = symbols or registry_equities()
     ciks, tick_status = ticker_to_cik(fetch, now)
-    order = sorted(equities, key=lambda s: str((names.get(s) or {}).get("checked_at") or ""))
+    remembered = ticker_history()
+    delisted = resolve_delisted(lines, now)
+    targets = [*equities, *(d for d in up.DELISTED_ISSUERS if d not in equities)]
+    order = sorted(targets, key=lambda s: str((names.get(s) or {}).get("checked_at") or ""))
     touched = rebuilt = 0
     stopped = "all names visited"
     for sym in order:
         row = dict(names.get(sym) or {})
-        ticker = ISSUER_TICKERS.get(sym)
-        row["ticker"] = ticker
-        if ticker is None:
-            row["status"] = "no_ticker_mapping"
-            names[sym] = row
-            continue
-        cik = ciks.get(ticker.upper())
-        if cik is None:
-            row["status"] = ("ticker_not_in_sec_list" if ciks
-                             else f"UNMEASURED: SEC ticker list unavailable ({tick_status})")
-            names[sym] = row
-            continue
+        if sym in up.DELISTED_ISSUERS:
+            spec = up.DELISTED_ISSUERS[sym]
+            res = delisted.get(sym) if isinstance(delisted.get(sym), dict) else {}
+            row.update(ticker=spec.get("ticker"), delisted=True, tradable_now=False,
+                       ended=spec.get("why"))
+            cik = res.get("cik")
+            if cik is None:
+                row["status"] = f"cik_unresolved: {res.get('status') or UNMEASURED}"
+                if res.get("candidates"):
+                    row["candidates"] = res["candidates"]
+                names[sym] = row
+                continue
+        else:
+            ticker = ISSUER_TICKERS.get(sym)
+            row["ticker"] = ticker
+            if ticker is None:
+                row["status"] = "no_ticker_mapping"
+                names[sym] = row
+                continue
+            cik = ciks.get(ticker.upper())
+            row["ticker_in_sec_list"] = cik is not None if ciks else UNMEASURED
+            if cik is None:
+                cik = remembered.get(ticker.upper())
+            if cik is None:
+                row["status"] = ("ticker_not_in_sec_list" if ciks
+                                 else f"UNMEASURED: SEC ticker list unavailable ({tick_status})")
+                names[sym] = row
+                continue
         row["cik"] = cik
         last = row.get("checked_at")
         if not force and last and (now - datetime.fromisoformat(last)).total_seconds() < RECHECK_S:
@@ -270,6 +456,7 @@ def refresh(*, fetch: Fetcher, budget_s: float = 600.0, force: bool = False,
             names[sym] = row
             continue
         newest = newest_periodic(subs)
+        row["delisting_filed"] = delisting_date(subs)
         if newest and newest == row.get("built_from") and sym in frames and not force:
             row.update(status="fresh", checked_at=now.isoformat(timespec="seconds"))
             names[sym] = row
@@ -306,8 +493,7 @@ def refresh(*, fetch: Fetcher, budget_s: float = 600.0, force: bool = False,
     return {"status": "OK", "elapsed_s": round(time.monotonic() - started, 2),
             "stopped_because": stopped, "names_fetched_this_pass": touched,
             "names_rebuilt_this_pass": rebuilt, "ticker_list": tick_status,
-            "user_agent_source": "QUANT_EDGAR_UA" if os.environ.get("QUANT_EDGAR_UA")
-            else "default generic desk UA"}
+            "user_agent_source": ua_source or "fixture fetcher (no network)"}
 
 
 # ---------------------------------------------------------------------------- the coverage ---
@@ -389,6 +575,24 @@ def coverage(pass_doc: dict[str, Any]) -> dict[str, Any]:
                                           for k, a in v.items()}
                 entry["valuation_now"]["price"] = close[0]
         per_name[sym] = entry
+    from research import universe_policy as up
+    survivors: dict[str, Any] = {}
+    for sym, spec in up.DELISTED_ISSUERS.items():
+        row = names.get(sym) or {}
+        snaps = table[table["symbol"] == sym] if len(table) else table
+        has_bars = _last_close(sym) is not None
+        survivors[sym] = {
+            "former_ticker": spec.get("ticker"), "ended": spec.get("why"),
+            "classes": list(spec.get("classes") or ()), "tradable_now": False,
+            "cik": row.get("cik"), "status": row.get("status") or UNMEASURED,
+            "delisting_filed": row.get("delisting_filed"),
+            "snapshots": len(snaps),
+            "last_available": (str(pd.Timestamp(snaps["available"].max()))
+                               if len(snaps) else None),
+            "in_ranking_history": {
+                "price_free_ranks": bool(len(snaps)),
+                "price_ranks": has_bars or ("UNMEASURED: no bars in the store, so the price "
+                                            "and price-ratio ranks cannot include it")}}
     uncovered: dict[str, list[str]] = {}
     for sym, e in per_name.items():
         if "snapshots" not in e:
@@ -407,6 +611,14 @@ def coverage(pass_doc: dict[str, Any]) -> dict[str, Any]:
         "names_with_field": field_counts,
         "pass": pass_doc,
         "per_name": per_name,
+        "survivorship": {
+            "rule": ("delisted issuers (universe_policy.DELISTED_ISSUERS) join the class books' "
+                     "RANKING HISTORY on the dates their filings were live and are NEVER placed; "
+                     "a CIK is resolved from EDGAR's entity list or reported, never guessed"),
+            "declared": len(survivors),
+            "resolved": sum(1 for v in survivors.values() if v["cik"] is not None),
+            "with_fundamentals": sum(1 for v in survivors.values() if v["snapshots"]),
+            "issuers": survivors},
         "consumer": ("mt5desk/families_quantamental.py (quantamental_value, quantamental_quality, "
                      "quantamental_earnings_yield) -> research/cross_sectional_breadth.py -> the "
                      "docket -> scripts/external_gauntlet.py"),
@@ -452,12 +664,27 @@ def valuation_state() -> dict[str, Any]:
 
 
 def run(*, fetch: Fetcher | None = None, budget_s: float = 600.0, force: bool = False,
-        symbols: list[str] | None = None, out: Path | None = None) -> dict[str, Any]:
-    try:
-        pass_doc = refresh(fetch=fetch or http_fetcher(), budget_s=budget_s, force=force,
-                           symbols=symbols)
-    except Exception as exc:                      # the coverage artifact is still written
-        pass_doc = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
+        symbols: list[str] | None = None, out: Path | None = None,
+        lines: LineFetcher | None = None) -> dict[str, Any]:
+    ua_source: str | None = None
+    if fetch is None:
+        ua, ua_source = edgar_user_agent()
+        if ua is None:
+            pass_doc: dict[str, Any] = {
+                "status": UNMEASURED, "blocked": True,
+                "why": ("no EDGAR User-Agent: set one of " + ", ".join(UA_ENV_VARS) + " to a "
+                        "string naming the requester (the SEC fair-access policy). Nothing was "
+                        "sent; previous snapshots stand."),
+                "user_agent_source": None}
+            fetch = None
+        else:
+            fetch, lines = http_fetcher(ua), (lines or http_lines(ua))
+    if fetch is not None:
+        try:
+            pass_doc = refresh(fetch=fetch, budget_s=budget_s, force=force, symbols=symbols,
+                               lines=lines, ua_source=ua_source)
+        except Exception as exc:                      # the coverage artifact is still written
+            pass_doc = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"[:300]}
     doc = coverage(pass_doc)
     try:
         state = valuation_state()
@@ -480,13 +707,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args(argv)
     fetch = fixture_fetcher(args.fixtures) if args.fixtures else None
+    lines = fixture_lines(args.fixtures) if args.fixtures else None
     doc = run(fetch=fetch, budget_s=args.budget_s, force=args.force, symbols=args.symbols,
-              out=args.out)
+              out=args.out, lines=lines)
     p = doc.get("pass") or {}
     print(f"sec_fundamentals: {p.get('status')} covered={doc['names_covered']}/"
           f"{doc['names_in_registry']} fetched={p.get('names_fetched_this_pass')} "
           f"rebuilt={p.get('names_rebuilt_this_pass')} stopped={p.get('stopped_because')!r} "
           f"-> {args.out or OUT}")
+    if p.get("blocked"):
+        print(f"  BLOCKED: {p.get('why')}")
     for reason, syms in (doc.get("uncovered_by_reason") or {}).items():
         print(f"  uncovered [{reason}]: {len(syms)}")
     return 0
