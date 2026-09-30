@@ -170,16 +170,16 @@ def test_one_bad_snapshot_never_gates_the_median_and_trade_mode_do() -> None:
     """EURRUB was gated on ONE 10.33% print against a 0.0018% median: the snapshot is reported,
     only the median (or the box's trade_mode) vetoes."""
     rows = {"EURUSD": {"tick_value": 1.0, "tick_size": 1e-5, "contract_size": 100000.0},
-            "XXXUSD": {"median_spread_pts": 2.0, "spread_pts_at_collection": 5e6,
+            "USDXXX": {"median_spread_pts": 2.0, "spread_pts_at_collection": 5e6,
                        "tick_value": 1.0, "tick_size": 1e-5, "contract_size": 100000.0}}
-    t = G.tradability("XXXUSD", rows, None)
+    t = G.tradability("USDXXX", rows, None)
     assert t["ok"] and t["snapshot_spread_cost"] > 0.01
-    rows["XXXUSD"]["median_spread_pts"] = 5e3
-    assert "median spread" in G.tradability("XXXUSD", rows, None)["why"]
-    rows["XXXUSD"]["median_spread_pts"] = 2.0
-    assert "DISABLED" in G.tradability("XXXUSD", rows, {"XXXUSD": 0})["why"]
-    rows["XXXUSD"]["median_spread_pts"] = None                  # UNMEASURED never gates
-    assert G.tradability("XXXUSD", rows, None)["ok"]
+    rows["USDXXX"]["median_spread_pts"] = 5e3
+    assert "median spread" in G.tradability("USDXXX", rows, None)["why"]
+    rows["USDXXX"]["median_spread_pts"] = 2.0
+    assert "DISABLED" in G.tradability("USDXXX", rows, {"USDXXX": 0})["why"]
+    rows["USDXXX"]["median_spread_pts"] = None                  # UNMEASURED never gates
+    assert G.tradability("USDXXX", rows, None)["ok"]
 
 
 def test_every_gate_writes_its_missed_growth_line_once_a_day(tmp_path: Path) -> None:
