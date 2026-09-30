@@ -288,6 +288,36 @@ def _identity(row: dict) -> str:
     }, sort_keys=True, default=str)
 
 
+def stamp_fresh_intake(row: dict[str, Any], source: str, now: datetime) -> dict[str, Any]:
+    """Stamp a freshly produced row at this intake time, never at an older descriptive date.
+
+    This function is only called for artifacts that passed ``_fresh_for_run`` under an
+    orchestrated pipeline start.  A producer's old ``found_at`` may describe the source item,
+    but it cannot make the candidate available before this compiler actually received it.
+    Complete producer stamps are preserved; missing ones are added by the canonical PIT stamper
+    with availability floored to this merge.
+    """
+    import sys as _sys
+
+    root = str(BASE.parents[1])
+    if root not in _sys.path:
+        _sys.path.insert(0, root)
+    from libs.data.pit import is_stamped, stamp as pit_stamp
+
+    if is_stamped(row):
+        return row
+    ts = now.isoformat(timespec="seconds")
+    body = dict(row)
+    body["available_time"] = ts
+    body["ingested_time"] = ts
+    body["intake_stamp"] = {
+        "at": ts,
+        "source_artifact": source,
+        "availability_policy": "fresh artifact availability floored to canonical merge time",
+    }
+    return pit_stamp(body, source, now=now)
+
+
 def tradeable_universe() -> dict[str, str]:
     """UPPERCASE -> the registry's own spelling, for every symbol the desk can actually replay.
 
@@ -486,6 +516,7 @@ def main() -> int:
     untradeable_syms: dict[str, int] = {}
     per_source: dict[str, int] = {}
     source_state: dict[str, str] = {}
+    intake_stamped: dict[str, int] = {}
 
     for name, key in SOURCES:
         source_path = HYP / name
@@ -537,6 +568,17 @@ def main() -> int:
                 unrouted += 1
                 continue
             enriched["producer"] = name
+            if started_at is not None:
+                # The orchestrator proved this artifact was written during the current run. It
+                # is therefore safe to make the candidate available NOW. We never repair the
+                # old bank this way: historical unstamped rows remain refused until their
+                # originating producer emits a fresh, versioned candidate.
+                before = all(enriched.get(k) for k in
+                             ("available_time", "ingested_time", "source_version",
+                              "payload_hash"))
+                enriched = stamp_fresh_intake(enriched, name, now)
+                if not before:
+                    intake_stamped[name] = intake_stamped.get(name, 0) + 1
             merged[ident] = enriched
             kept += 1
         per_source[name] = kept
@@ -764,6 +806,7 @@ def main() -> int:
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
+        "fresh_intake_stamps": intake_stamped,
         # THE REGISTRY'S OWN LANE, MEASURED (libs/moat/docket_feed.py). Until 2026-09-24 the
         # sealed gauntlet had no path to `data/alpha_registry.sqlite` at all and the registry's
         # cells reached it only through a 276-row hourly lease; this census is how many of them
