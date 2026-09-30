@@ -976,3 +976,26 @@ def test_the_live_roster_is_one_registry() -> None:
     schema = json.loads((ROOT / "libs" / "mining" / "source_registry.schema.json")
                         .read_text("utf-8"))
     assert schema["schema"] == "source_registry/1"
+
+
+def test_archive_captures_config_urls_and_named_seats_on_the_same_site(tmp_path: Path) -> None:
+    """An archive capture is judged as the page it archived; the pipeline's own rows are keyed
+    by the URLs in their fetcher config; a seat named as a registry id credits it only when the
+    row's URL is on that source's own site."""
+    row = {"id": "mql5_forum_en", "fetcher": "html_listing", "config": {"listing": [
+        {"url": "https://www.mql5.com/en/forum/page{page}",
+         "page1": "https://www.mql5.com/en/forum"}]}}
+    src = acq.normalise_row(row, origin="t")
+    assert src is not None and "mql5.com/en/forum" in src.url_keys
+    darwinex = acq.Source(id="darwinex", fetcher="owned", url_key="api.darwinex.com",
+                          url_keys=["api.darwinex.com"])
+    pipe = _pipe(tmp_path, sources=[src, darwinex])
+    idx, seats = pipe._url_index(), pipe._seat_index()
+    assert pipe.attribute_url("https://web.archive.org/web/2019/https://www.mql5.com/en/forum/9",
+                              idx) == "mql5_forum_en"
+    assert pipe.attribute_url("https://www.mql5.com/en/code/1", idx) == ""
+    dx = "https://web.archive.org/web/20191210165044/https://www.darwinex.com/darwin/AJG.4.21"
+    assert pipe.attribute_source({"source": "miner:darwinex", "source_url": dx}, idx, seats) \
+        == ("darwinex", "seat+site")
+    assert pipe.attribute_source({"source": "miner:darwinex", "source_url":
+                                  "https://youtube.com/watch?v=1"}, idx, seats) == ("", "")

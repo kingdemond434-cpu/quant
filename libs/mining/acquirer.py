@@ -73,6 +73,7 @@ class Source:
     consumer: str = ""               # for owned rows: the organ that fetches and consumes it
     respect_robots: bool = True
     url_key: str = ""                # canonical_url of the row's own URL: the cross-roster join
+    url_keys: list[str] = field(default_factory=list)  # every URL it reads (config included)
     aliases: list[str] = field(default_factory=list)  # ids other rosters gave the same source
     shares_page: list[str] = field(default_factory=list)  # distinct sources on the same page
     seats: list[str] = field(default_factory=list)  # docket `source` strings it answers for
@@ -97,16 +98,30 @@ def canonical_url(url: Any) -> str:
     return host + parts.path.rstrip("/").lower() + (f"?{q}" if q else "")
 
 
+def _row_urls(row: Mapping[str, Any]) -> list[str]:
+    """Every URL a row names, its own fields first, then its fetcher `config` (the pipeline's own
+    rows keep theirs there: listing pages, feeds, API endpoints)."""
+    out: list[str] = []
+
+    def take(v: Any) -> None:
+        if isinstance(v, str) and "://" in v:
+            out.append(v)
+        elif isinstance(v, Mapping):
+            for k in ("page1", "url"):
+                take(v.get(k))
+        elif isinstance(v, (list, tuple)):
+            for x in v:
+                take(x)
+    for src in (row, row.get("config") if isinstance(row.get("config"), Mapping) else {}):
+        for k in ("url", "rss", "link", "page1", "urls", "roots", "feeds", "alt", "listing",
+                  "pages"):
+            take(src.get(k))
+    return list(dict.fromkeys(out))
+
+
 def _row_url(row: Mapping[str, Any]) -> str:
-    for k in ("url", "rss", "link", "page1"):
-        v = row.get(k)
-        if isinstance(v, str) and v:
-            return v
-    for k in ("urls", "roots", "feeds", "alt"):
-        v = row.get(k)
-        if isinstance(v, (list, tuple)) and v and isinstance(v[0], str):
-            return str(v[0])
-    return ""
+    urls = _row_urls(row)
+    return urls[0] if urls else ""
 
 
 def slug(name: Any) -> str:
@@ -222,6 +237,7 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
         feeds=[str(x) for x in (row.get("feeds_to") or [])],
         enabled=bool(row.get("enabled", True)), config=cfg, origin=origin,
         url_key=canonical_url(_row_url(row)),
+        url_keys=[k for k in dict.fromkeys(canonical_url(u) for u in _row_urls(row)) if k],
         seats=_seats(row.get("seats")))
 
 

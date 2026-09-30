@@ -35,6 +35,7 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import statistics
 import sys
 import time
@@ -83,6 +84,22 @@ except Exception:                                          # tests and a bare ch
 COND_MIN_OBS = max(60, int(_FAMILY_MIN_OBS))
 #: The committed input for the cost and risk models: every page's latest PIT vintage, split
 #: into cost facts and prop-rule limits (extractor.COST_FACTS / RULE_FACTS). Never minted as cells.
+#: An archive capture: web.archive.org/web/<timestamp>[flags]/<original url>.
+_WAYBACK = re.compile(r"^(?:https?://)?(?:www\.)?web\.archive\.org/web/\d+[a-z_]*/(.+)$", re.I)
+_SECOND_LEVEL = frozenset({"co", "com", "gov", "org", "ac", "or", "ne", "go", "net", "edu"})
+
+
+def _site(url: Any) -> str:
+    """The registrable domain (example.co.jp, darwinex.com), archive captures unwrapped."""
+    raw = str(url or "")
+    m = _WAYBACK.match(raw)
+    labels = acq.canonical_url(m.group(1) if m else raw).partition("/")[0].split(".")
+    if len(labels) < 2:
+        return ""
+    n = 3 if len(labels) >= 3 and labels[-2] in _SECOND_LEVEL and len(labels[-1]) == 2 else 2
+    return ".".join(labels[-n:])
+
+
 #: THE CONTRACT another lane registers a source against (roster row) and reads back (registry row).
 REGISTRY_SCHEMA = _ROOT / "libs" / "mining" / "source_registry.schema.json"
 MECHANICS_FACTS = _DESK / "data" / "mechanics_facts.json"
@@ -760,8 +777,8 @@ class Pipeline:
     def _url_index(self) -> dict[str, list[tuple[str, str]]]:
         idx: dict[str, list[tuple[str, str]]] = {}
         for s in self.roster:
-            if s.url_key:
-                idx.setdefault(s.url_key.partition("/")[0], []).append((s.url_key, s.id))
+            for k in s.url_keys or ([s.url_key] if s.url_key else []):
+                idx.setdefault(k.partition("/")[0], []).append((k, s.id))
         return idx
 
     def _seat_index(self) -> dict[str, str]:
@@ -777,20 +794,29 @@ class Pipeline:
     def attribute_url(url: Any, idx: Mapping[str, list[tuple[str, str]]]) -> str:
         """The ONE registry source whose URL is this URL or its longest proper path prefix.
 
-        A host-only registry URL matches only itself (never every page on the host), and a tie
-        at the winning length is ambiguous and credits nobody: a wrong credit is worse than none.
+        A web.archive.org capture is judged as the page it archived. A host-only registry URL is
+        a SITE-level source: it takes a page on its host only when it is the host's sole registry
+        row (on a shared host it would be a wildcard). A tie at the winning length is ambiguous
+        and credits nobody: a wrong credit is worse than none.
         """
-        key = acq.canonical_url(url)
+        raw = str(url or "")
+        m = _WAYBACK.match(raw)
+        key = acq.canonical_url(m.group(1) if m else raw)
         if not key:
             return ""
         host = key.partition("/")[0]
+        rows = idx.get(host) or []
         best: list[str] = []
         best_len = -1
-        for rk, sid in idx.get(host) or []:
+        page = key.split("?", 1)[0]
+        for rk, sid in rows:
+            rp = rk.split("?", 1)[0]                      # a listing's query is not its scope
             if rk == key:
                 hit = len(rk) + 1                         # exact beats any prefix
-            elif "/" in rk and "?" not in rk and key.startswith(rk + "/"):
-                hit = len(rk)
+            elif "/" in rp and (page == rp or page.startswith(rp + "/")):
+                hit = len(rp)
+            elif "/" not in rk and len(rows) == 1:        # the host's only row, site-level
+                hit = 0
             else:
                 continue
             if hit > best_len:
@@ -801,12 +827,21 @@ class Pipeline:
 
     def attribute_source(self, row: Mapping[str, Any], idx: Mapping[str, list[tuple[str, str]]],
                          seats: Mapping[str, str]) -> tuple[str, str]:
-        """(source id, how): the declared seat first, then the row's own URL."""
-        sid = seats.get(str(row.get("source") or ""), "")
+        """(source id, how): the declared seat, then the row's own URL, then -- only with BOTH
+        signals -- a seat named exactly as a registry id whose URL is on the same site."""
+        seat = str(row.get("source") or "")
+        sid = seats.get(seat, "")
         if sid:
             return sid, "seat"
-        sid = self.attribute_url(row.get("source_url") or row.get("url"), idx)
-        return (sid, "url") if sid else ("", "")
+        url = row.get("source_url") or row.get("url")
+        sid = self.attribute_url(url, idx)
+        if sid:
+            return sid, "url"
+        named = self.by_id.get(seat.removeprefix("miner:"))
+        if named is not None and _site(url) and _site(url) in {
+                _site(k) for k in named.url_keys or [named.url_key]}:
+            return named.id, "seat+site"
+        return "", ""
 
     def attributed_evaluations(self, now: datetime | None = None) -> dict[str, Any]:
         """Per registry source: docket cells EVALUATED within ACTIVE_WINDOW.
