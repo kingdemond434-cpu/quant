@@ -511,9 +511,32 @@ def connector_pairs(niches: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 # ------------------------------------------------------------------ proposals
-def _symbols(klass: str, by_class: dict[str, list[str]]) -> list[str]:
-    """The deepest-history hypothesis-lane instruments of a class; equities reach nothing."""
-    return [s for s in by_class.get(klass, []) if ar.may_hypothesise(s)][:PROPOSAL_SYMBOLS]
+def _symbols(klass: str, by_class: dict[str, list[str]], turn: int = 0) -> list[str]:
+    """`PROPOSAL_SYMBOLS` hypothesis-lane instruments of a class, ROTATING over the whole class.
+
+    IT WAS A PREFIX, AND A PREFIX IS A PERMANENT EXCLUSION (measured 2026-09-30). `[:3]` of the
+    class list meant every proposal this organ ever made, on every arm, sat on the same three
+    instruments per asset class; the rest of the class was unreachable by the frontier on any
+    pass. The count per proposal is unchanged -- the judge's load from this organ is what it was
+    -- and `breadth_rotation.rotating_window` slides that window one width per `turn`, over a ring
+    ordered least-judged-first, so a lap reaches every legal instrument of the class and the
+    orthogonal ones first. Equities still reach nothing: the lane is checked before the ring.
+    """
+    lane = [s for s in by_class.get(klass, []) if ar.may_hypothesise(s)]
+    if len(lane) <= PROPOSAL_SYMBOLS:
+        return lane
+    try:
+        import breadth_rotation as br
+        ring = br.orthogonal_ring(lane)
+        return br.rotating_window(ring, PROPOSAL_SYMBOLS, turn=turn)
+    except Exception:
+        # A rotation outage must not stop the frontier; it proposes on the ring's name order.
+        start = (int(turn) * PROPOSAL_SYMBOLS) % len(lane)
+        return (lane[start:] + lane[:start])[:PROPOSAL_SYMBOLS]
+
+
+def _hour_turn(now: datetime) -> int:
+    return int(now.timestamp() // 3600)
 
 
 def proposal(niche: dict[str, str], family: str | None, symbols: list[str], worker: str,
@@ -572,6 +595,19 @@ def select(cells: dict[str, dict[str, Any]], niches: dict[str, dict[str, Any]],
     prefer = ar.compiler_vocab()
     classes = [k for k in sorted(by_class) if _symbols(k, by_class)]
     bundles, seen = mechanism_bundles(families), set(cells)
+    # ONE RING CURSOR PER CLASS, advanced per proposal: this hour's proposals on a class spread
+    # across consecutive windows of its ring instead of all landing on one, and each hour starts
+    # one window further on, so every window of every class is a starting point within a lap.
+    # (A multiplied hour stride can alias to zero modulo the ring and pin one window forever.)
+    # A repeat of last hour's (niche, instrument) is deduplicated by the merge on the executable
+    # spec, so the overlap costs no judge time. `_symbols` documents why this is not a prefix.
+    base_turn = _hour_turn(now)
+    turns: dict[str, int] = {}
+
+    def syms(klass: str) -> list[str]:
+        t = turns.get(klass, 0)
+        turns[klass] = t + 1
+        return _symbols(klass, by_class, base_turn + t)
 
     for target in explorer_targets(niches, space, bundles, classes):
         if len(out["explorer"]) >= caps["explorer"]:
@@ -580,7 +616,7 @@ def select(cells: dict[str, dict[str, Any]], niches: dict[str, dict[str, Any]],
         _take(out, "explorer", proposal(
             niche, ar.family_for(niche["mechanism"], niche["information_source"], families,
                                  prefer, niche_key(niche)),
-            _symbols(niche["asset_class"], by_class), "explorer",
+            syms(niche["asset_class"]), "explorer",
             f"EMPTY NICHE: nothing the desk has judged sits at {niche_key(niche)}; it is ONE free "
             f"axis ({target['axis']}) from {target['from']}, and {target['neighbours']} occupied "
             f"niche(s) border it", target["neighbours"]), seen, caps)
@@ -598,7 +634,7 @@ def select(cells: dict[str, dict[str, Any]], niches: dict[str, dict[str, Any]],
             if fam not in families:
                 continue
             taken += int(_take(out, "exploiter", proposal(
-                niche, fam, _symbols(niche["asset_class"], by_class), "exploiter",
+                niche, fam, syms(niche["asset_class"]), "exploiter",
                 f"ELITE MUTATION: {key} improved at {row['last_improved_at']} -- its elite "
                 f"{elite.get('instrument')} {elite.get('family') or UNKNOWN} scores "
                 f"{elite.get('score')} on {elite.get('basis')}; this moves ONE step "
@@ -612,7 +648,7 @@ def select(cells: dict[str, dict[str, Any]], niches: dict[str, dict[str, Any]],
         if fam not in families:
             continue
         _take(out, "connector", proposal(
-            niche, fam, _symbols(niche["asset_class"], by_class), "connector",
+            niche, fam, syms(niche["asset_class"]), "connector",
             f"CROSS-NICHE: {pair['left']} and {pair['right']} share {pair['share']}; this carries "
             f"the left elite ({elite.get('instrument')} {fam}, {elite.get('basis')} "
             f"{elite.get('score')}) onto the right niche's session/horizon "
