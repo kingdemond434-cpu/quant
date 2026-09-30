@@ -389,11 +389,20 @@ sources:
     uses: [direct_cells, indirect_cells]
     fetcher: json_api
     auth: login
-    auth_env: XUEQIU_COOKIE
+    auth_env: XUEQIU_COOKIE          # "xq_a_token=..." or the whole browser cookie string
     cadence_minutes: 360
     region: cn
     language: zh
-    config: {url: "", items_path: ""}
+    config:
+      auth_style: cookie
+      cookie_name: xq_a_token
+      url: "https://xueqiu.com/query/v1/search/status.json?sortId=2&q={q}&count=20&page={page}"
+      items_path: list
+      max_page: 20
+      uri_template: "https://xueqiu.com{target}"
+      fields: {target: target, title: title, body: text, time: created_at}
+      queries: ["黄金 策略", "外汇 EA", "黄金 日内 交易", "原油 期货 策略", "恒指 日内",
+                "量化 交易 外汇", "美元 人民币 套利", "白银 交易 策略"]
 
   - id: xueqiu_route
     name: "Xueqiu keyless path (search-engine snippets)"
@@ -463,17 +472,27 @@ sources:
       queries: ["site:cafe.naver.com MT5 EA", "site:blog.naver.com MT5 자동매매 전략"]
 
   - id: kakao_public
-    name: "Kakao public channels (login only)"
+    name: "Daum web/blog/cafe search via Kakao (REST API key)"
     priority: 3
     kind: text
     uses: [direct_cells, indirect_cells]
     fetcher: json_api
-    auth: login
-    auth_env: KAKAO_TOKEN
+    auth: key
+    auth_env: KAKAO_TOKEN            # the app's REST API key, not a user OAuth token
     cadence_minutes: 720
     region: kr
     language: ko
-    config: {url: "", items_path: ""}
+    config:
+      auth_style: kakaoak
+      urls:
+        - "https://dapi.kakao.com/v2/search/web?query={q}&sort=recency&size=50&page={page}"
+        - "https://dapi.kakao.com/v2/search/blog?query={q}&sort=recency&size=50&page={page}"
+        - "https://dapi.kakao.com/v2/search/cafe?query={q}&sort=recency&size=50&page={page}"
+      items_path: documents
+      max_page: 50
+      fields: {uri: url, title: title, body: contents, time: datetime}
+      queries: ["MT5 EA 전략", "자동매매 외환 전략", "금 선물 매매 전략", "해외선물 단타 전략",
+                "외환 스캘핑", "나스닥 선물 전략"]
 
   # ============================================================ PRIORITY 4: code archaeology
   - id: github_mt5_repos

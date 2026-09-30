@@ -526,7 +526,7 @@ class Pipeline:
         self.cells.transition(cell.cell_id, "EVALUATED", stage="gauntlet",
                               reason=reason.value, now=now, updates={"verdict": verdict})
         self.ledger.reject(cell.cell_id, reason.value, "gauntlet", source_id=cell.source_id,
-                           detail=f"terminal gate {gate}")
+                           detail=f"terminal gate {gate}", kill_class=rejection.kill_class(gate))
         return 1
 
     # --------------------------------------------------------------------- deepening
@@ -624,6 +624,7 @@ class Pipeline:
             "kills_before_evaluation_24h_by_reason": self.ledger.counts(
                 day, stages=[s for s in rejection.STAGES
                              if s not in rejection.EVALUATION_STAGES]),
+            "gauntlet_kills_24h_by_class": self.ledger.kill_classes(day),
             "cells_survived_24h": survived,
             "cells_by_use_24h": self._by_use(day),
             "rejection_rate": round(rate, 4) if rate is not None else None,

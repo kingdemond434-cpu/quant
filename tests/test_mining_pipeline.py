@@ -641,3 +641,54 @@ def test_other_lanes_rosters_are_absorbed_as_owned_rows(tmp_path: Path) -> None:
                       acq.FetchContext(http_get=_fake_http({}), deadline=time.monotonic() + 5,
                                        now=T0), force=True)
     assert rep.outcome == "OWNED" and rep.fetched == 0
+
+
+def test_keyed_sources_accept_the_pasted_formats(monkeypatch: pytest.MonkeyPatch) -> None:
+    roster = {s.id: s for s in acq.load_roster(root=ROOT)}
+    xq, kk = roster["xueqiu"], roster["kakao_public"]
+    for raw, want in (("abc", "xq_a_token=abc"), ("xq_a_token=abc", "xq_a_token=abc"),
+                      ("Cookie: xq_a_token=abc; u=9", "xq_a_token=abc; u=9")):
+        monkeypatch.setenv(xq.auth_env, raw)
+        assert acq.auth_headers(xq) == {"Cookie": want}
+    for raw in ("k1", "KakaoAK k1"):
+        monkeypatch.setenv(kk.auth_env, raw)
+        assert acq.auth_headers(kk) == {"Authorization": "KakaoAK k1"}
+    monkeypatch.delenv(kk.auth_env)
+    assert acq.auth_headers(kk) == {} and acq.auth_missing(kk)
+
+
+def test_json_api_sends_the_secret_and_reads_epoch_ms(tmp_path: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    src = acq.Source(id="xq", fetcher="json_api", kind="text", auth="login",
+                     auth_env="XQ_TEST", config={
+                         "auth_style": "cookie", "cookie_name": "xq_a_token",
+                         "url": "https://x/s?q={q}&page={page}", "items_path": "list",
+                         "uri_template": "https://x{target}",
+                         "fields": {"target": "target", "title": "title", "body": "text",
+                                    "time": "created_at"},
+                         "queries": ["gold"]})
+    monkeypatch.setenv("XQ_TEST", "tok")
+    sent: list[Any] = []
+
+    def get(url: str, headers: Any) -> acq.HttpResult:
+        sent.append(dict(headers))
+        if url.endswith("page=1"):
+            return acq.HttpResult(200, json.dumps({"list": [
+                {"target": "/1/2", "title": "", "text": "<p>XAUUSD RSI(14) below 30</p>",
+                 "created_at": 1727700000000}]}))
+        return acq.HttpResult(200, json.dumps({"list": []}))
+    ctx = acq.FetchContext(http_get=get, deadline=time.monotonic() + 30, max_items=50,
+                           now=T0, root=tmp_path)
+    items = [i for i in acq.fetch_json_api(src, {}, ctx) if i.uri]
+    assert [i.uri for i in items] == ["https://x/1/2"]
+    assert items[0].publication_time == "2024-09-30T12:40:00+00:00"
+    assert "RSI(14)" in items[0].body
+    assert sent[0]["Cookie"] == "xq_a_token=tok"
+
+
+def test_gauntlet_kills_carry_the_asia_kill_class() -> None:
+    assert rejection.kill_class("deflated_sharpe") == "confident_kill"
+    assert rejection.kill_class("lockbox") == "fail_closed"
+    assert rejection.kill_class("economic_prior") == "screen_reject"
+    assert rejection.kill_class("not_run") == "unconfident"
+    assert rejection.GATE_REASON["swap_cost"] is rejection.Reason.INSUFFICIENT_SAMPLE

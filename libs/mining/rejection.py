@@ -66,7 +66,7 @@ GATE_REASON: dict[str, Reason] = {
     "economic_prior": Reason.NO_ECONOMIC_MECHANISM,
     "symbol_eligibility": Reason.EVALUATOR_REJECT,
     "stress_costs": Reason.COST_EXCEEDS_EDGE,
-    "swap_cost": Reason.COST_EXCEEDS_EDGE,
+    "swap_cost": Reason.INSUFFICIENT_SAMPLE,      # fail-closed: no swap schedule to charge
     "expected_value": Reason.COST_EXCEEDS_EDGE,
     "walk_forward": Reason.REGIME_FRAGILE,
     "cpcv": Reason.REGIME_FRAGILE,
@@ -74,10 +74,27 @@ GATE_REASON: dict[str, Reason] = {
     "deflated_sharpe": Reason.EVALUATOR_REJECT,
     "reality_check_spa": Reason.EVALUATOR_REJECT,
     "in_sample_screen": Reason.EVALUATOR_REJECT,
-    "lockbox": Reason.EVALUATOR_REJECT,
+    "lockbox": Reason.INSUFFICIENT_SAMPLE,        # fail-closed: the evidence is missing
     "observations": Reason.INSUFFICIENT_SAMPLE,
     "lookahead": Reason.LEAKAGE_LOOKAHEAD,
 }
+
+#: The Asia-gap thread's kill classes (`rejection_throughput.py`, #120), keyed by terminal gate.
+#: Only `confident_kill` counts toward kills per day; `fail_closed` means evidence was missing,
+#: `screen_reject` is a pre-test screen, and anything else is `unconfident`. The class rides on
+#: each gauntlet rejection row beside the reason code, so both lanes read one ledger.
+KILL_CLASS: dict[str, str] = {
+    **dict.fromkeys(("in_sample_screen", "deflated_sharpe", "pbo", "reality_check_spa", "cpcv",
+                     "walk_forward", "stress_costs", "expected_value"), "confident_kill"),
+    **dict.fromkeys(("lockbox", "swap_cost"), "fail_closed"),
+    **dict.fromkeys(("economic_prior", "symbol_eligibility"), "screen_reject"),
+}
+KILL_CLASSES: tuple[str, ...] = ("confident_kill", "fail_closed", "screen_reject", "unconfident")
+
+
+def kill_class(gate: str) -> str:
+    return KILL_CLASS.get(str(gate or ""), "unconfident")
+
 
 #: Downstream statuses the gauntlet writes for cells it did NOT judge. Only the data-missing one
 #: is a verdict about the cell; the others are deferrals and leave the cell EVALUATING.
@@ -128,6 +145,7 @@ class Rejection:
     detail: str = ""
     source_id: str = ""
     duplicate_of: str = ""
+    kill_class: str = ""       # gauntlet rows only: see KILL_CLASS
 
 
 class RejectionLedger:
@@ -138,7 +156,7 @@ class RejectionLedger:
 
     def reject(self, subject_id: str, reason: str, stage: str, *, detail: str = "",
                subject_kind: str = "cell", source_id: str = "", duplicate_of: str = "",
-               now: datetime | None = None) -> Rejection:
+               kill_class: str = "", now: datetime | None = None) -> Rejection:
         code = normalise(reason)
         if stage not in STAGES:
             raise ValueError(f"unknown stage {stage!r}; allowed: {STAGES}")
@@ -146,7 +164,8 @@ class RejectionLedger:
             raise ValueError("a rejection needs the id of what it rejected")
         row = Rejection(subject_id=subject_id, subject_kind=subject_kind, reason=code.value,
                         stage=stage, at=(now or datetime.now(tz=UTC)).isoformat(),
-                        detail=detail[:500], source_id=source_id, duplicate_of=duplicate_of)
+                        detail=detail[:500], source_id=source_id, duplicate_of=duplicate_of,
+                        kill_class=kill_class)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(asdict(row), ensure_ascii=False) + "\n")
@@ -183,6 +202,18 @@ class RejectionLedger:
             code = str(r.get("reason") or "")
             if code in out:
                 out[code] += 1
+        return out
+
+    def kill_classes(self, since: datetime | None = None) -> dict[str, int]:
+        """Gauntlet rejections by the Asia lane's kill class (every class present)."""
+        out = dict.fromkeys(KILL_CLASSES, 0)
+        for r in self.rows():
+            if r.get("stage") != "gauntlet":
+                continue
+            if since is not None and not _after(str(r.get("at") or ""), since):
+                continue
+            k = str(r.get("kill_class") or "unconfident")
+            out[k if k in out else "unconfident"] += 1
         return out
 
     def daily_report(self, now: datetime | None = None) -> dict[str, Any]:

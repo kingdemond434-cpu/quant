@@ -621,46 +621,93 @@ def _dig(obj: Any, path: str) -> Any:
     return obj
 
 
+def auth_headers(src: Source) -> dict[str, str]:
+    """The source's secret as the header its API expects, read from `auth_env` and never logged.
+
+    `config.auth_style`:
+      cookie   the value is sent as `Cookie`. A full browser cookie string or `name=value` is
+               used as pasted; a bare token becomes `<cookie_name>=<token>` (Xueqiu:
+               `xq_a_token`). A leading `Cookie:` is stripped.
+      kakaoak  `Authorization: KakaoAK <REST API key>` (Kakao/Daum search takes the app's REST
+               key, not a user OAuth token). A pasted `KakaoAK ` prefix is stripped.
+      bearer   `Authorization: Bearer <token>`.
+    """
+    raw = os.environ.get(src.auth_env, "").strip() if src.auth_env else ""
+    style = str(src.config.get("auth_style") or "")
+    if not raw or not style:
+        return {}
+    if style == "cookie":
+        raw = re.sub(r"(?i)^cookie:\s*", "", raw)
+        if "=" not in raw:
+            raw = f"{src.config.get('cookie_name') or 'token'}={raw}"
+        return {"Cookie": raw}
+    if style == "kakaoak":
+        return {"Authorization": "KakaoAK " + re.sub(r"(?i)^kakaoak\s+", "", raw)}
+    if style == "bearer":
+        return {"Authorization": "Bearer " + re.sub(r"(?i)^bearer\s+", "", raw)}
+    return {}
+
+
+def _time_text(v: Any) -> str | None:
+    """API timestamps: ISO strings pass through; epoch seconds or milliseconds become ISO."""
+    if v is None or v == "":
+        return None
+    if isinstance(v, (int, float)) or (isinstance(v, str) and v.strip().isdigit()):
+        x = float(v)
+        t = parse_time(x / 1000.0 if x > 1e11 else x)
+        return iso(t) if t else None
+    return str(v)
+
+
 def fetch_json_api(src: Source, cursor: dict[str, Any], ctx: FetchContext) -> Iterator[Item]:
-    """A generic JSON listing: `url` (with {q} and {page}), `items_path`, and field paths."""
+    """A generic JSON listing: `url` or `urls` (with {q} and {page}), `items_path`, field paths,
+    and the source's secret sent the way `config.auth_style` says (see `auth_headers`)."""
     cfg = src.config
     fields = dict(cfg.get("fields") or {})
     seen = _seen(cursor)
-    for q in cfg.get("queries") or [""]:
-        page = _as_int((cursor.get("page") or {}).get(str(q)), 1) \
-            if isinstance(cursor.get("page"), dict) else 1
-        for p in (1, page) if page > 1 else (1,):
-            if ctx.expired():
-                return
-            url = str(cfg.get("url") or "").replace("{q}", urllib.parse.quote(str(q))) \
-                .replace("{page}", str(p))
-            r = ctx.fetch(url, {"Accept": "application/json"})
-            if not r.ok:
-                break
-            try:
-                items = _dig(json.loads(r.text), str(cfg.get("items_path") or ""))
-            except ValueError:
-                break
-            if not isinstance(items, list) or not items:
-                break
-            for it in items:
-                uri = str(_dig(it, str(fields.get("uri") or "url")) or "")
-                if cfg.get("uri_template"):
-                    uri = str(cfg["uri_template"]).format(
-                        **{k: _dig(it, str(v)) for k, v in fields.items()})
-                if not uri or uri in seen:
-                    continue
-                seen.add(uri)
-                yield Item(uri=uri, title=str(_dig(it, str(fields.get("title") or "title"))
-                                              or ""),
-                           body=html_to_text(str(_dig(it, str(fields.get("body") or "body"))
-                                                 or "")),
-                           publication_time=str(_dig(it, str(fields.get("time") or "time"))
-                                                or "") or None,
-                           cursor_update=_seen_add(cursor, uri))
-            pg = dict(cursor.get("page") or {})
-            pg[str(q)] = p + 1
-            yield Item(uri="", body="", cursor_update={"page": pg})
+    headers = {"Accept": "application/json", **auth_headers(src)}
+    urls = [str(u) for u in (cfg.get("urls") or [cfg.get("url") or ""]) if u]
+    multi = len(urls) > 1
+    for base in urls:
+        for q in cfg.get("queries") or [""]:
+            key = f"{base}|{q}" if multi else str(q)
+            page = _as_int((cursor.get("page") or {}).get(key), 1) \
+                if isinstance(cursor.get("page"), dict) else 1
+            max_page = _as_int(cfg.get("max_page"), 0)
+            if max_page and page > max_page:
+                page = 1                                   # wrap: the index is walked again
+            for p in (1, page) if page > 1 else (1,):
+                if ctx.expired():
+                    return
+                url = base.replace("{q}", urllib.parse.quote(str(q))).replace("{page}", str(p))
+                r = ctx.fetch(url, headers)
+                if not r.ok:
+                    break
+                try:
+                    items = _dig(json.loads(r.text), str(cfg.get("items_path") or ""))
+                except ValueError:
+                    break
+                if not isinstance(items, list) or not items:
+                    break
+                for it in items:
+                    uri = str(_dig(it, str(fields.get("uri") or "url")) or "")
+                    if cfg.get("uri_template"):
+                        uri = str(cfg["uri_template"]).format(
+                            **{k: _dig(it, str(v)) for k, v in fields.items()})
+                    if not uri or uri in seen:
+                        continue
+                    seen.add(uri)
+                    yield Item(uri=uri,
+                               title=html_to_text(str(_dig(it, str(fields.get("title")
+                                                                    or "title")) or "")),
+                               body=html_to_text(str(_dig(it, str(fields.get("body") or "body"))
+                                                     or "")),
+                               publication_time=_time_text(_dig(it, str(fields.get("time")
+                                                                        or "time"))),
+                               cursor_update=_seen_add(cursor, uri))
+                pg = dict(cursor.get("page") or {})
+                pg[key] = p + 1
+                yield Item(uri="", body="", cursor_update={"page": pg})
 
 
 _BING = re.compile(r'(?is)<li class="b_algo".*?<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>(.*?)</li>')
