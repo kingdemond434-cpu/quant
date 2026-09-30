@@ -309,6 +309,14 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # is fenced at zero so it cannot regress, while the 25 pre-existing DONATION findings stay
     # reported rather than dumped red into another lane (L1.43).
     ("check_bare_excepts.py", ("--file-writes-only",)),
+    # LAWS 5c ON THE PUSH PATH TOO (PR #158 audit residual, 2026-09-30). The ingestion fence sat
+    # only in the full (hourly) gate, where a RED is recorded and nothing waits on it; here the
+    # pre-push hook runs it. PORTABLE BY ITS OWN CONTRACT: with no ingestion artifact (CI, a fresh
+    # clone) it is UNMEASURED and exits 0; a partial index read is UNMEASURED too, never red.
+    # `--dry-run`, so a push judges against the ratchets and never moves one -- the hourly leg
+    # and the state battery below remain the only writers. Measured before adding: UNMEASURED,
+    # exit 0 on LIVE + #158 here, and the box's attestation reads the fence LIVE / ok.
+    ("check_ingestion_exploitation.py", ("--dry-run",)),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
