@@ -877,6 +877,8 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
 
 
 def main() -> int:
+    # The parent too: reading and ordering a million-row docket is CPU a miner must never lose.
+    print(f"  priority: {_lower_priority()}")
     import external_gauntlet as G
 
     meta = json.loads((G.UNI / "universe.json").read_text("utf-8"))
