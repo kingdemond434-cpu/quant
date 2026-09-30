@@ -58,10 +58,10 @@ from mt5desk.decision_core import (  # noqa: E402
     book_direction,
     bracket_from_bars,
     h1_frame,
-    load_kelly_survival,
     window_end_hour,
     window_session_ended,
 )
+from mt5desk.kelly_sizing import load_kelly_survival  # noqa: E402
 
 SYMBOL = "XAUUSD"
 #: Per-trade risk on the prop account, as a fraction of equity (docs/PROP_FIRM_E8.md).

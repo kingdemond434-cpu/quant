@@ -33,7 +33,7 @@ INPUTS, all the desk's own:
 
     -> reports/KELLY_SURVIVAL.json
 
-The gateway and the E8 executor read it through `decision_core.load_kelly_survival`, which
+The gateway and the E8 executor read it through `mt5desk.kelly_sizing.load_kelly_survival`, which
 returns None -- today's behaviour, unchanged -- when the artifact is absent, stale or unreadable.
 
     python desks/mt5/research/kelly_survival.py

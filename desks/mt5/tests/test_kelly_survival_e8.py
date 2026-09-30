@@ -22,6 +22,7 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, _p)
 
 from mt5desk import decision_core as dc  # noqa: E402
+from mt5desk import kelly_sizing as ks_read  # noqa: E402
 
 e8_gold = pytest.importorskip("prop.e8_gold", reason="ships with the desk")
 
@@ -41,23 +42,23 @@ def _write(path: Path, *, age_s: float = 60.0, status: str = "OK",
 
 class TestTheLoader:
     def test_a_fresh_ok_solve_is_read_per_window(self, tmp_path) -> None:
-        got = dc.load_kelly_survival(_write(tmp_path / "k.json"), "e8")
+        got = ks_read.load_kelly_survival(_write(tmp_path / "k.json"), "e8")
         assert got == {"asia": 0.0075, "london_am": 0.0, "afternoon": 0.005}
 
     def test_venues_read_their_own_units(self, tmp_path) -> None:
-        assert dc.load_kelly_survival(_write(tmp_path / "k.json"), "fusion") == {"asia": 0.01}
+        assert ks_read.load_kelly_survival(_write(tmp_path / "k.json"), "fusion") == {"asia": 0.01}
 
     @pytest.mark.parametrize("kwargs", [
-        {"age_s": dc.KELLY_SURVIVAL_MAX_AGE_S + 60},
+        {"age_s": ks_read.KELLY_SURVIVAL_MAX_AGE_S + 60},
         {"status": "NO_SURVIVING_BOOK: every size fails the account too often; today stands"},
         {"windows": {"asia": {"risk_frac": -0.01}}},
         {"windows": {"asia": {}}},
     ])
     def test_stale_failed_or_malformed_falls_back_to_today(self, tmp_path, kwargs) -> None:
-        assert dc.load_kelly_survival(_write(tmp_path / "k.json", **kwargs), "e8") is None
+        assert ks_read.load_kelly_survival(_write(tmp_path / "k.json", **kwargs), "e8") is None
 
     def test_an_absent_file_falls_back_to_today(self, tmp_path) -> None:
-        assert dc.load_kelly_survival(tmp_path / "absent.json", "e8") is None
+        assert ks_read.load_kelly_survival(tmp_path / "absent.json", "e8") is None
 
 
 class TestTheE8Lane:
@@ -94,4 +95,4 @@ class TestTheSolver:
         assert set(e8["windows"]) == set(ks.WINDOWS)
         assert all(v["risk_frac"] in ks.E8_RISKS for v in e8["windows"].values())
         # The file the solver wrote is the file the lane can read.
-        assert dc.load_kelly_survival(out, "e8") is not None
+        assert ks_read.load_kelly_survival(out, "e8") is not None
