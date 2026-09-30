@@ -1631,6 +1631,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
+    # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
+    # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
+    "duty_cycle": 480,
+    "forward_enrolment": 400,
     # THE JUDGE'S ENVIRONMENT GUARD (recovered box patch 08, 2026-09-24). Eight bytes per universe
     # frame, one commit-counter read and a cursor-bounded tail of the judge's log: seconds, not
     # minutes. The one slow call is `schtasks /query /xml` (timeout 120 s); the cap sits above.
@@ -1643,11 +1648,6 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # THE SWEEP THE BASKET JUDGE READS stops building legs at --budget-s 480 and carries the rest
     # from its previous pass; on the 23 hours a day its artifact is fresh it exits in a second.
     "srb_uncorrelated_sweep": 600,
-    # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
-    # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
-    # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
-    "duty_cycle": 480,
-    "forward_enrolment": 400,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
