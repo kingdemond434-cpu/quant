@@ -2583,11 +2583,21 @@ def organ_chaos() -> dict[str, Any]:
     except Exception as exc:                        # pragma: no cover - host dependent
         kill = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     drills.append({"drill": "SIGKILL journal writer -> restart", **kill})
+    # THE REAL GATEWAY UNDER A FAULTY MT5 DOUBLE: gateway.py's own connect / place_bracket /
+    # expiry sweep, one child process per fault, the double installed before import and
+    # MT5_DESK_ROOT in a temp directory (`libs/tiers/gateway_drill`). Never the live terminal.
+    try:
+        from libs.tiers import gateway_drill
+        gw = gateway_drill.campaign()
+    except Exception as exc:                        # pragma: no cover - host dependent
+        gw = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}", "breaches": []}
     failing = [d for d in drills if d.get("status") == "FAIL"]
-    return {"campaign": camp, "drills": drills, "process_kill": kill,
+    return {"campaign": camp, "drills": drills, "process_kill": kill, "gateway_drill": gw,
             "metric": {"breaches": sum(camp["breaches"].values()),
                        "drills_failing": len(failing),
-                       "processes_killed": int(kill.get("kills") or 0)}}
+                       "processes_killed": int(kill.get("kills") or 0),
+                       "gateway_faults_measured": gw.get("n_measured", 0),
+                       "gateway_breaches": len(gw.get("breaches") or [])}}
 
 
 def organ_replay() -> dict[str, Any]:

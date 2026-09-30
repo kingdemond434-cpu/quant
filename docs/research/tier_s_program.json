@@ -842,19 +842,20 @@
    "title": "Continual recovery experiments: chaos campaigns and corruption drills on copies",
    "files": [
     "libs/tiers/chaos.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/gateway_drill.py",
+    "desks/mt5/tests/test_tier_s_gateway_drill.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/CHAOS.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.drills_failing",
     "better": "down",
     "organ": "chaos"
-   },
-   "remaining": "the gateway itself under a faulty MT5 double in a sandbox; a real journal-writer process is SIGKILLed and restarted hourly in a temp directory (chaos.process_kill_drill), never the live terminal"
+   }
   },
   {
    "id": "S43",
