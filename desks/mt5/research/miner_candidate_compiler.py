@@ -239,6 +239,46 @@ _LAST_INTAKE: dict = {"deferred_files": 0, "files_seen": 0, "bound_hit": False,
                       "cursor_prefix_sha256": None, "cycle_cutoff_utc": None}
 
 
+class _NoBlinding:
+    """Fallback when libs/ is unimportable: nothing stripped, and the report SAYS so."""
+
+    stage = "compiler_read"
+
+    def filter(self, seat: str, row: dict) -> dict:
+        return row
+
+    def report(self) -> dict:
+        return {"stage": self.stage, "status": "UNMEASURED: libs.tiers.blinding unimportable"}
+
+
+def _blinding_counter():
+    """TIER S LAYER 4, AT RUNTIME: every row this compiler (a proposer) reads is stripped of the
+    desk's held-out / lockbox / forward / gate outcomes before it can shape a candidate, and the
+    rows that carried them are counted per seat (`libs/tiers/blinding.RuntimeCounter`)."""
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.tiers.blinding import RuntimeCounter
+        return RuntimeCounter("compiler_read")
+    except Exception:
+        return _NoBlinding()
+
+
+_BLIND = _blinding_counter()
+
+
+def _seat_of(path: Path, row: dict) -> str:
+    """The seat a row belongs to: its directory under an intelligence root, else its source."""
+    for root in INTEL_ROOTS:
+        try:
+            parts = path.relative_to(root).parts
+        except ValueError:
+            continue
+        if len(parts) > 1:
+            return parts[0]
+    return str(row.get("source") or path.parent.name or "unknown")
+
+
 def _prefix_sha256(path: Path, size: int) -> str:
     """Hash exactly the bytes whose row offset was checkpointed.
 
@@ -417,6 +457,8 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
     NEWEST FIRST, so if `MAX_ROWS_PER_PASS` binds it is the oldest discoveries that wait for the
     next pass rather than an arbitrary slice, and the shortfall is reported rather than hidden.
     """
+    global _BLIND
+    _BLIND = _blinding_counter()          # one counter per pass
     current_cutoff = now - timedelta(days=WINDOW_DAYS)
     found: list[tuple[str, dict]] = []
     seen: set[str] = set()
@@ -456,6 +498,8 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
                       f"{_CLOCK.get('budget_s')}s budget with {len(found):,} row(s); "
                       f"{len(all_paths) - i} file(s) resume next pass at this row")
                 return found
+            if isinstance(row, dict):
+                row = _BLIND.filter(_seat_of(path, row), row)
             payload = json.dumps(row, sort_keys=True, default=str, separators=(",", ":"))
             digest = hashlib.sha256(payload.encode()).hexdigest()
             if digest in seen:
@@ -1416,6 +1460,14 @@ def main() -> int:
     # trial allocator can order on it.
     sources_by_identity: dict[str, set[str]] = {}
     rows = recent_rows(now)
+    # THE BLINDING COUNTER IS PUBLISHED BEFORE ANY ROW IS COMPILED: organ_market reads the ledger
+    # and withholds a seat whose output carried outcomes from the independent-discovery count.
+    # (the ledger sits beside OUT's data/ tree: desks/mt5/data/tier_s/blinding_runtime.jsonl)
+    blinding_note = (_BLIND.publish(OUT.parents[1], "tier_s/blinding_runtime.jsonl")
+                     if hasattr(_BLIND, "publish") else _BLIND.report())
+    if blinding_note.get("violations"):
+        print(f"blinding: {blinding_note['violations']} row(s) carried held-out/lockbox/forward "
+              f"outcomes; {blinding_note['fields_stripped']} field(s) stripped before compiling")
     for _row_k, (source, row) in enumerate(rows):
         if _past("compile_by") and _row_k < len(_POSITIONS):
             _path_s, _idx = _POSITIONS[_row_k]
@@ -1729,6 +1781,9 @@ def main() -> int:
         "agreement": {"candidates_with_2plus_sources": agreement},
         "disagreement": disagreement,
         "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
+        "blinding": {k: v for k, v in blinding_note.items() if k != "seats"}
+        | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
+                                   if d.get("rows_with_outcomes")}},
         "graph": graph_note,
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
