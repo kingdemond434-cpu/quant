@@ -318,6 +318,21 @@ def render(doc: Mapping[str, Any]) -> list[str]:
     return lines
 
 
+#: R0237: the exit code is `fence_exit` over a DECLARED pass set, never "fail on one named status,
+#: pass on everything else" -- that sent any unforeseen or misspelled status down `else 0`. The
+#: set is exactly the statuses this fence already exited 0 on (behaviour unchanged for every
+#: status it can emit); what changes is that a status nobody declared now fails closed.
+_PASSING = frozenset({"PASS", "UNMEASURED"})
+
+
+def _exit(status: object) -> int:
+    root = str(Path(__file__).resolve().parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.ops.fence_exit import fence_exit
+    return fence_exit(status, _PASSING, fail=1)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__ or "")
     ap.add_argument("--require-state", action="store_true",
@@ -339,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.audit:
         with suppress(OSError):
             _write(Path(args.audit), doc)
-    return 1 if doc["verdict"] == "FAIL" else 0
+    return _exit(doc["verdict"])
 
 
 __all__ = ["CEILINGS", "EPS", "FLOORS", "RULE", "STALE_H", "judge", "main", "render"]

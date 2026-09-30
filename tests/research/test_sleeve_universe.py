@@ -143,39 +143,45 @@ class TestTheCandidateListNeverBecomesTheCeiling:
     """Deriving the universe from capital is pointless if a hardcoded LIST binds first. That is the
     same defect wearing a different constant, and at $1,000/3x the original 24-name list hit it."""
 
+    # THE CANDIDATE LIST THESE TESTS READ IS GONE. `scripts/run_mechanism_sleeves.py` held the
+    # crypto momentum book's SYMBOLS tuple and was deleted in the 2026-09-05 MT5 purge (universe
+    # mandate: no crypto-exchange universe is hunted again). The property survives in
+    # `sleeve_universe.select`: capital, not a typed list, bounds the universe. Pinned below on
+    # the selector itself, plus the retirement so the runner cannot quietly return.
+
     def test_the_list_outreaches_capital_at_the_principals_stated_funding(self) -> None:
-        """$1,000 is the figure the principal stated on 2026-08-16, so that is the bar.
-
-        NOT AN UNBOUNDED CLAIM, AND THE LIMIT IS REAL RATHER THAN LAZY. Past roughly 50 names the
-        candidate list would be reaching into pairs too thin for the book to trade without moving
-        them, so at $2,000 and 3x it is LIQUIDITY that binds, not a constant nobody revisited.
-        That is a market fact and the correct thing for the universe to be limited by; a constant
-        is not. If the desk ever funds past that, the fix is a measured depth screen -- not more
-        tickers typed into a tuple.
-        """
-        import scripts.run_mechanism_sleeves as MS
-
-        n = len(MS.SLEEVES)
+        """$1,000 is the figure the principal stated on 2026-08-16: at that funding a candidate
+        list longer than capital supports must be truncated BY CAPITAL, never by the list."""
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[2]
+        assert not (root / "scripts/run_mechanism_sleeves.py").exists()
+        cands = tuple(f"S{i:02d}" for i in range(60))
+        hist = dict.fromkeys(cands, U.MIN_HISTORY_DAYS)
         for equity, lev in ((1_000.0, 1.0), (1_000.0, 3.0)):
-            cap = U.capital_supports(equity, leverage=lev,
-                                     book_frac=MS.EQUAL_CLIP_FRAC * n, n_sleeves=n,
-                                     min_notional=MS.MIN_NOTIONAL_USD)
-            assert len(MS.SYMBOLS) > cap, (
-                f"at ${equity:,.0f} and {lev}x capital reaches {cap} symbols but the candidate "
-                f"list holds {len(MS.SYMBOLS)} -- the LIST is the ceiling, so funding has stopped "
-                "being the only lever and the constant is back")
+            rep = U.select(cands, equity_usd=equity, leverage=lev, book_frac=0.25, n_sleeves=5,
+                           min_notional=5.0, history=hist)
+            cap = rep["capital_supports"]
+            assert len(cands) > cap, "the synthetic list must outreach capital to test this"
+            assert rep["n_selected"] == cap, "capital, not the list, is the ceiling"
 
     def test_the_momentum_books_six_stay_at_the_front(self) -> None:
-        # A new mechanism tested on a different universe confounds the mechanism with the universe.
-        import scripts.run_mechanism_sleeves as MS
-
-        assert MS.SYMBOLS[:6] == ("BTCUSDT", "ETHUSDT", "BNBUSDT",
-                                  "SOLUSDT", "LINKUSDT", "ADAUSDT")
+        # A new mechanism tested on a different universe confounds the mechanism with the universe;
+        # the selector keeps the measured-deepest names at the front, deterministically.
+        cands = ("A", "B", "C", "D", "E", "F", "G", "H")
+        hist = dict.fromkeys(cands, U.MIN_HISTORY_DAYS)
+        liq = {c: float(100 - i) for i, c in enumerate(cands)}
+        rep = U.select(cands, equity_usd=1_000.0, leverage=3.0, book_frac=0.25, n_sleeves=5,
+                       min_notional=5.0, history=hist, liquidity=liq)
+        assert rep["symbols"][:6] == cands[:6]
 
     def test_candidates_are_unique(self) -> None:
-        import scripts.run_mechanism_sleeves as MS
-
-        assert len(set(MS.SYMBOLS)) == len(MS.SYMBOLS), "a duplicated candidate double-weights it"
+        # With the list retired the only candidate source is the caller's tuple; the selector
+        # must still never publish a name twice from a unique input.
+        cands = tuple(f"S{i:02d}" for i in range(30))
+        hist = dict.fromkeys(cands, U.MIN_HISTORY_DAYS)
+        rep = U.select(cands, equity_usd=1_000.0, leverage=3.0, book_frac=0.25, n_sleeves=5,
+                       min_notional=5.0, history=hist)
+        assert len(set(rep["symbols"])) == len(rep["symbols"]), "a duplicate double-weights it"
 
 
 class TestTheEmptyUniverseNamesTheRightCause:
