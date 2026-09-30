@@ -81,7 +81,7 @@ def edge(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 def test_resolve_inputs_reads_cot_only_after_release(edge) -> None:
     es, _desk = edge
-    index = pd.date_range("2026-03-02", "2026-03-10", freq="h")
+    index = pd.date_range("2026-02-25", "2026-03-10", freq="h")
     weekly = es.resolve_inputs("XAUUSD", index, ["XAUUSD"])["cot_net"]
     assert (weekly.index.to_series().diff().dropna().dt.days >= 7).all()   # one row per report
     # what `build_primitives` does with it: exact-stamp reindex, then forward fill
