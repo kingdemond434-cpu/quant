@@ -92,6 +92,16 @@ MAX_CHILDREN = 40
 MAX_INTAKE_FILE_BYTES = 32 * 1024 * 1024
 MAX_ROWS_PER_FILE = 400
 
+#: THE GAUNTLET'S VOICE, read by the priority drain (`expand_ids`). `gauntlet_backpressure`
+#: publishes the cells the last sweep judged (`capacity.measured.n_judged`), whether the backlog is
+#: growing, and the delayed-credit trial budget by family. The drain reads it; it never writes it.
+BACKPRESSURE = BASE / "reports" / "GAUNTLET_BACKPRESSURE.json"
+MAX_BACKPRESSURE_BYTES = 16 * 1024 * 1024
+#: The drain's per-pass donation slice is never below the compiler's own per-pass volume
+#: (MAX_DISCOVERIES x MAX_CHILDREN): a slow sweep ORDERS the drain, it never starves it below the
+#: rate the scheduled compiler already runs at.
+DRAIN_SLICE_FLOOR = MAX_DISCOVERIES * MAX_CHILDREN
+
 RULE = ("no discovery exists without a disposition; maximum conversion is every economically "
         "defensible transformation, never the cartesian product")
 
@@ -377,6 +387,64 @@ def registry_parent(row: Mapping[str, Any],
             "origin": row.get("origin"), **_spec_from_row(merged)}
 
 
+def drain_backpressure(path: Path | None = None) -> dict[str, Any]:
+    """The gauntlet's capacity signal, as the drain reads it. Never raises.
+
+    MEASURED only when the report names a positive `capacity.measured.n_judged`; anything else is
+    UNMEASURED with the reason, and an UNMEASURED capacity orders the drain by family but slices
+    nothing (absence is never read as a small capacity).
+    """
+    p = path or BACKPRESSURE
+    out: dict[str, Any] = {"status": "UNMEASURED", "source": str(p.name),
+                           "capacity_cells": None, "backlog_growing": None,
+                           "family_factors": {}, "why": ""}
+    try:
+        if p.stat().st_size > MAX_BACKPRESSURE_BYTES:
+            out["why"] = f"{p.name} is over {MAX_BACKPRESSURE_BYTES} bytes; not read"
+            return out
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        out["why"] = f"{p.name} unreadable ({type(exc).__name__})"
+        return out
+    if not isinstance(doc, dict):
+        out["why"] = f"{p.name} is not an object"
+        return out
+    fired = doc.get("fired")
+    out["backlog_growing"] = ("backlog_growing" in fired) if isinstance(fired, list) else None
+    tb = doc.get("trial_budget")
+    factors = tb.get("factors") if isinstance(tb, dict) else None
+    if isinstance(factors, dict):
+        out["family_factors"] = {str(k): float(v) for k, v in factors.items()
+                                 if isinstance(v, (int, float)) and not isinstance(v, bool)}
+    cap = doc.get("capacity")
+    measured = cap.get("measured") if isinstance(cap, dict) else None
+    n = measured.get("n_judged") if isinstance(measured, dict) else None
+    if isinstance(n, int) and not isinstance(n, bool) and n > 0:
+        out.update(status="MEASURED", capacity_cells=n, swept_at=measured.get("swept_at"),
+                   why="cells judged by the gauntlet's last sweep")
+    else:
+        out["why"] = f"{p.name} carries no positive capacity.measured.n_judged"
+    return out
+
+
+def order_drained(donations: list[dict[str, Any]], bp: Mapping[str, Any]
+                  ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], int | None]:
+    """ORDER, never drop: (donate_now, deferred, slice).
+
+    Rows are ordered by the trial budget's family factor (an unpriced family reads 1.0 --
+    unpriced is not unwanted), stable within a factor, so discovery order breaks ties. With a
+    MEASURED capacity the first max(capacity, DRAIN_SLICE_FLOOR) rows are donated this pass; the
+    rest are DEFERRED, not refused: every one is already a `queued` row in the registry, served by
+    `claim_candidates` in READY_PRIORITY (score) order as the gauntlet frees capacity.
+    """
+    factors = bp.get("family_factors") or {}
+    ordered = sorted(donations, key=lambda r: -float(factors.get(str(r.get("family")), 1.0)))
+    if bp.get("status") != "MEASURED":
+        return ordered, [], None
+    cut = max(int(bp.get("capacity_cells") or 0), DRAIN_SLICE_FLOOR)
+    return ordered[:cut], ordered[cut:], cut
+
+
 def expand_ids(overrides: Mapping[str, Mapping[str, Any]], *, conn: Any,
                deadline: float | None = None, ctx: TM.Context | None = None,
                dry_run: bool = False) -> dict[str, Any]:
@@ -447,9 +515,28 @@ def expand_ids(overrides: Mapping[str, Mapping[str, Any]], *, conn: Any,
         if out["budget_stopped"]:
             break
     out["blocked_by_reason"] = dict(sorted(blocked.items()))
-    if donations and not dry_run:
-        out["donation_path"] = donate(donations, possible)
-        out["donated"] = len(donations)
+    # THROUGH THE GAUNTLET'S BACKPRESSURE, NOT PAST IT (PR #158 audit, item 3). The drain onboards
+    # every routed stranded unit in one pass -- ~120k cells an hour measured against the
+    # scheduled compiler's 8k -- and donated them all straight into the docket's intake with no
+    # capacity signal. Nothing is capped or dropped here: every cell is already a `queued`
+    # registry row. What changes is the ORDER the docket receives them in and how much of it
+    # jumps the READY_PRIORITY queue this pass. The census is charged ONCE over the union: the
+    # whole closure (`possible`) rides this single donation, and a deferred cell is never
+    # donated (or charged) again by the drain -- its discovery is QUEUED, not UNPROCESSED.
+    bp = drain_backpressure()
+    now_rows, deferred, cut = order_drained(donations, bp)
+    out["backpressure"] = {"status": bp["status"], "source": bp["source"],
+                           "capacity_cells": bp["capacity_cells"],
+                           "backlog_growing": bp["backlog_growing"],
+                           "slice": cut, "slice_floor": DRAIN_SLICE_FLOOR,
+                           "ordered_by": "trial_budget family factor (unpriced = 1.0), stable",
+                           "why": bp["why"]}
+    out["compiled_cells"] = len(donations)
+    out["deferred_to_ready_priority"] = len(deferred)
+    out["charged_tests"] = possible
+    if now_rows and not dry_run:
+        out["donation_path"] = donate(now_rows, possible)
+        out["donated"] = len(now_rows)
     out["errors"] = out["errors"][:20]
     return out
 

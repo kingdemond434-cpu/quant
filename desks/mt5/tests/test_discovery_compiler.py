@@ -401,3 +401,70 @@ def test_cli_dry_run(desk, ctx, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "dry run" in out and "conversion coverage" in out
     assert not desk["paths"]["OUT"].exists()
+
+
+# --------------------------------------------------------------------------- the priority drain
+def _drain_ids(n: int) -> dict[str, dict[str, Any]]:
+    """`n` UNPROCESSED discoveries, each with the overrides the ingestion ledger hands over."""
+    out: dict[str, dict[str, Any]] = {}
+    for i, sym in enumerate(["EURUSD", "GBPUSD", "XAUUSD", "USDJPY"][:n]):
+        did, _ = R.record_discovery(
+            source_id=f"ingestion_ledger:bars:{sym}:{i}", source_type="ingestion_ledger",
+            mechanism="ingested and unexploited: bars", origin="MOAT", assets=[sym],
+            information="price_only", payload={"unit_kind": "bars"})
+        out[did] = {"mechanism": "asia session handover: risk carried out of tokyo is repriced "
+                                 "in london", "symbols": [sym], "chart": "H1"}
+    return out
+
+
+def test_the_drain_is_ordered_through_backpressure_never_dropped_and_charged_once(
+        desk, ctx, monkeypatch):
+    """PR #158 audit item 3: the drain routes its cells through the gauntlet's backpressure.
+
+    Every compiled cell is a `queued` registry row (nothing capped, nothing dropped); only the
+    first max(capacity, floor) rows jump the queue as a donation this pass, ordered by the trial
+    budget's family factor; the rest wait in READY_PRIORITY; the census is charged ONCE, in one
+    donation call, over the whole closure.
+    """
+    bp = desk["tmp"] / "GAUNTLET_BACKPRESSURE.json"
+    _write(bp, {"fired": ["backlog_growing"],
+                "capacity": {"measured": {"n_judged": 1, "swept_at": "2026-09-30T12:00:00Z"}},
+                "trial_budget": {"factors": {"level_breakout": 2.0, "asia_momentum": 0.5}}})
+    monkeypatch.setattr(dc, "BACKPRESSURE", bp)
+    monkeypatch.setattr(dc, "DRAIN_SLICE_FLOOR", 3)
+    calls: list[int] = []
+    donated: list[dict[str, Any]] = []
+    monkeypatch.setattr(dc, "donate",
+                        lambda rows, n: calls.append(n) or donated.extend(rows) or "STUB")
+    conn = R.connect()
+    try:
+        out = dc.expand_ids(_drain_ids(4), conn=conn, ctx=ctx)
+    finally:
+        conn.close()
+    assert out["expanded"] == 4 and out["compiled"] > 3
+    assert out["backpressure"]["status"] == "MEASURED"
+    assert out["backpressure"]["capacity_cells"] == 1 and out["backpressure"]["slice"] == 3
+    assert out["backpressure"]["backlog_growing"] is True
+    # ORDERED, NOT DROPPED: the slice is donated, the tail waits as queued registry rows.
+    assert out["donated"] == 3 == len(donated)
+    assert out["deferred_to_ready_priority"] == out["compiled"] - 3
+    queued = [c for c in R.candidates(limit=5000) if c["status"] == "queued"]
+    assert len(queued) >= out["compiled"]
+    factors = {"level_breakout": 2.0, "asia_momentum": 0.5}
+    got = [factors.get(str(r["family"]), 1.0) for r in donated]
+    assert got == sorted(got, reverse=True)
+    # CHARGED ONCE OVER THE UNION: one donation call, carrying the whole closure.
+    assert calls == [out["charged_tests"]] and out["charged_tests"] >= out["compiled"]
+
+
+def test_an_unreadable_backpressure_orders_but_slices_nothing(desk, ctx, monkeypatch):
+    monkeypatch.setattr(dc, "BACKPRESSURE", desk["tmp"] / "absent.json")
+    assert dc.drain_backpressure()["status"] == "UNMEASURED"
+    conn = R.connect()
+    try:
+        out = dc.expand_ids(_drain_ids(2), conn=conn, ctx=ctx)
+    finally:
+        conn.close()
+    assert out["backpressure"]["status"] == "UNMEASURED"
+    assert out["backpressure"]["slice"] is None
+    assert out["deferred_to_ready_priority"] == 0 and out["donated"] == out["compiled"]
