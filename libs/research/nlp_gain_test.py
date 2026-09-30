@@ -40,7 +40,7 @@ MAX_GAP_DAYS = 5
 
 
 def _rank(a: np.ndarray) -> np.ndarray:
-    return pd.Series(a).rank(method="average").to_numpy(dtype=float)
+    return np.asarray(pd.Series(a).rank(method="average").to_numpy(dtype=float), dtype=float)
 
 
 def spearman(x: np.ndarray, y: np.ndarray) -> float:
