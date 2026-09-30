@@ -792,6 +792,21 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
              "nothing. A partial registry yields FEWER evictions, never more.",
     ),
     DestructivePath(
+        path_id="certificate_hygiene.evict_banned",
+        module="desks/mt5/research/certificate_hygiene.py",
+        function="evict_banned",
+        removes="banned-family survivors popped out of UNIVERSAL_SURVIVORS.json and the canon "
+                "into their `retired_certificates` and UNIVERSAL_SURVIVORS_BANNED.json",
+        reference="family_policy.family_banned on each row's own family (banned_rows())",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a key moves only when build()'s `banned` list names it, and "
+             "banned_rows() admits a row only when its OWN family is on the principal's ban list "
+             "(family_banned('') is False, so a row with no readable family is never evicted). "
+             "No decisions -> evicted 0; a missing or unreadable registry is skipped, never "
+             "rewritten. Nothing is deleted: every row moves with its reason to "
+             "retired_certificates and the banned archive.",
+    ),
+    DestructivePath(
         path_id="forward_reconcile.orphan_clocks",
         module="desks/mt5/research/forward_reconcile.py",
         function="main",
