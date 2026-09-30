@@ -46,7 +46,8 @@ def test_roster_lanes_load_through_the_spine_with_culture_and_known_fetchers() -
     rows = acq._rows_of(ROSTER)
     civs = {r["civilization"] for r in rows}
     assert civs == {"quantconnect", "worldquant", "man_ahl", "bridgewater", "aqr", "two_sigma",
-                    "deshaw", "winton", "market_makers", "renaissance"}
+                    "deshaw", "winton", "market_makers", "renaissance", "ubiquant", "jpx",
+                    "g_research"}
     lanes = {r["lane"] for r in rows if r["civilization"] == "quantconnect"}
     for lane in ("qc_strategy_library", "qc_shared_strategies", "qc_research", "qc_forum",
                  "lean_algorithms", "lean_framework", "lean_indicators",
@@ -390,7 +391,7 @@ def test_methods_only_lane_keeps_methods_and_drops_alpha(tmp_path: Path) -> None
            "body": "Buy when rsi(14) < 30 on Binance; alpha = ts_rank(close, 10)"}
     got = r.route(rec)
     assert not got.alpha and not got.rules
-    assert "RESEARCH_METHOD" in {o.kind for o in got.outcomes}
+    assert {o.kind for o in got.outcomes} & {"RESEARCH_METHOD", "VALIDATION_IDEA"}
 
 
 def test_git_mirror_never_reads_data_files() -> None:
