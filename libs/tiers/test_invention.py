@@ -15,7 +15,9 @@ that survives both is a CANDIDATE GATE. It becomes constitutional only by princi
 """
 from __future__ import annotations
 
-from collections.abc import Sequence
+import hashlib
+import math
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 import numpy as np
@@ -87,3 +89,189 @@ def invent_from(incumbent: mb.ValidatorConfig, prop_cases: list[tuple[Case, Trut
                          "confirmation": {k: base_c[k] for k in ("immune_score", "power")}},
             "n_tried": len(tried), "n_promising": len(promising), "candidate_gates": confirmed,
             "adoption": "candidate gates become constitutional only by principal ratification"}
+
+
+# ------------------------------------------------------------------------------------------------
+# THE LABELLED REAL SUITE: the desk's own certificates, labelled by what their forward clocks did
+# ------------------------------------------------------------------------------------------------
+
+#: a forward clock with fewer trades than this labels nothing
+MIN_FORWARD_N = 10
+#: each half (proposal, confirmation) needs this many of each label to judge a check on it
+MIN_PER_LABEL = 3
+
+
+def certificate_features(row: Mapping[str, Any]) -> dict[str, float]:
+    """Every numeric field a certificate's gates recorded, as `<gate>.<field>`, plus `days`."""
+    out: dict[str, float] = {}
+    for gate, st in (row.get("gates") or {}).items():
+        if not isinstance(st, Mapping):
+            continue
+        for k, v in st.items():
+            if isinstance(v, bool) or not isinstance(v, (int, float)):
+                continue
+            if math.isfinite(float(v)):
+                out[f"{gate}.{k}"] = float(v)
+    if isinstance(row.get("days"), (int, float)):
+        out["days"] = float(row["days"])
+    return out
+
+
+def labelled_suite(certificates: Mapping[str, Mapping[str, Any]],
+                   forward: Mapping[str, Mapping[str, Any]],
+                   forward_key: Callable[[Mapping[str, Any]], str],
+                   min_n: int = MIN_FORWARD_N) -> dict[str, Any]:
+    """certificate x forward outcome. label True = the forward clock's mean R is positive on at
+    least `min_n` trades; a certificate without such a clock is UNLABELLED (never a pass)."""
+    rows: list[dict[str, Any]] = []
+    unlabelled = 0
+    for key, cert in certificates.items():
+        if not isinstance(cert, Mapping):
+            continue
+        fk = forward_key(cert)
+        fw = forward.get(fk) or {}
+        n = int(fw.get("n") or 0)
+        er = fw.get("exp_r")
+        if n < min_n or not isinstance(er, (int, float)):
+            unlabelled += 1
+            continue
+        rows.append({"key": str(key), "forward_key": fk, "n": n, "exp_r": float(er),
+                     "label": float(er) > 0.0, "features": certificate_features(cert)})
+    held = sum(r["label"] for r in rows)
+    return {"rows": rows, "n_labelled": len(rows), "n_unlabelled": unlabelled,
+            "forward_holds": held, "forward_fails": len(rows) - held,
+            "precision": round(held / len(rows), 4) if rows else None}
+
+
+def _half(fk: str) -> int:
+    return int(hashlib.sha256(fk.encode()).hexdigest(), 16) % 2
+
+
+def _score_real(rows: Sequence[Mapping[str, Any]], check: tuple[str, str, float]
+                ) -> dict[str, Any]:
+    f, op, thr = check
+    fails = [r for r in rows if not r["label"]]
+    holds = [r for r in rows if r["label"]]
+
+    def rejects(r: Mapping[str, Any]) -> bool:
+        v = r["features"].get(f)
+        return v is not None and ((op == ">" and v > thr) or (op == "<" and v < thr))
+
+    caught = sum(1 for r in fails if rejects(r))
+    lost = sum(1 for r in holds if rejects(r))
+    return {"caught": caught, "of_fails": len(fails), "lost": lost, "of_holds": len(holds),
+            "d_immune": round(caught / len(fails), 4) if fails else 0.0,
+            "d_power": round(-lost / len(holds), 4) if holds else 0.0}
+
+
+def invent_real(suite: Mapping[str, Any], *, max_power_loss: float = 0.0, top: int = 3
+                ) -> dict[str, Any]:
+    """The proposal/confirmation discipline on REAL outcomes. The suite is split by forward
+    clock (never by certificate: certificates sharing a clock share a label, and splitting them
+    would leak the label across halves), checks are proposed from feature quantiles on the
+    proposal half only, and a check survives only if on BOTH halves it rejects certificates whose
+    forward clock failed while costing no more than `max_power_loss` of the ones that held."""
+    rows = list(suite.get("rows") or [])
+    prop = [r for r in rows if _half(r["forward_key"]) == 0]
+    conf = [r for r in rows if _half(r["forward_key"]) == 1]
+    need = {"proposal": (sum(r["label"] for r in prop), sum(not r["label"] for r in prop)),
+            "confirmation": (sum(r["label"] for r in conf), sum(not r["label"] for r in conf))}
+    short = [f"{h}: {a} holds / {b} fails" for h, (a, b) in need.items()
+             if a < MIN_PER_LABEL or b < MIN_PER_LABEL]
+    if short:
+        return {"status": "UNMEASURED", "why": f"fewer than {MIN_PER_LABEL} of a label in "
+                + "; ".join(short), "n_tried": 0, "candidate_gates": [], "halves": need}
+    table: dict[str, list[float]] = {}
+    for r in prop:
+        for k, v in r["features"].items():
+            table.setdefault(k, []).append(v)
+    checks: list[tuple[str, str, float]] = []
+    for f, xs in sorted(table.items()):
+        arr = np.asarray(xs, dtype=float)
+        if arr.size < 2 * MIN_PER_LABEL or float(arr.std()) == 0.0:
+            continue
+        for q in QUANTILES:
+            checks.append((f, ">" if q >= 0.5 else "<", round(float(np.quantile(arr, q)), 6)))
+    tried: list[dict[str, Any]] = []
+    confirmed: list[dict[str, Any]] = []
+    for chk in checks:
+        p = _score_real(prop, chk)
+        tried.append({"check": list(chk), **p})
+        if p["d_immune"] > 0 and p["d_power"] >= -max_power_loss:
+            c = _score_real(conf, chk)
+            if c["d_immune"] > 0 and c["d_power"] >= -max_power_loss:
+                confirmed.append({"check": list(chk), "proposal": p, "confirmation": c,
+                                  "status": "CANDIDATE_GATE", "source": "real_certificates"})
+    confirmed.sort(key=lambda g: (-(g["proposal"]["d_immune"] + g["confirmation"]["d_immune"]),
+                                  str(g["check"])))
+    return {"status": "MEASURED", "halves": need, "n_tried": len(tried),
+            "n_promising": sum(1 for t in tried if t["d_immune"] > 0
+                               and t["d_power"] >= -max_power_loss),
+            "candidate_gates": confirmed[:top],
+            "adoption": "candidate gates become constitutional only by principal ratification"}
+
+
+# ------------------------------------------------------------------------------------------------
+# THE GATE REDUNDANCY MATRIX: which gates kill the same cases
+# ------------------------------------------------------------------------------------------------
+
+def redundancy_matrix(vectors: Sequence[Mapping[str, Any]], *, min_kills: int = 5,
+                      subsume_at: float = 0.98) -> dict[str, Any]:
+    """vectors: one per real-certifier verdict, {"failed": [gate...], "gates": [...],
+    "genuine": bool, "truncated": bool}.
+
+    On the TRAPS: kills per gate, UNIQUE kills (the only gate that failed), P(b fails | a fails)
+    and the Jaccard overlap of kill sets. A gate is SUBSUMED by another when it has at least
+    `min_kills` kills, none of them unique, and the other fails on >= `subsume_at` of them. On
+    the GENUINE controls: false rejections per gate (what the gate costs). Truncated vectors (a
+    writer that kept only the first few failures) count as kills but make co-failure a LOWER
+    bound, and never count as unique. A report, never a removal: a gate leaves the gauntlet only
+    through the ratified constitution."""
+    trap_v = [v for v in vectors if not v.get("genuine")]
+    gen_v = [v for v in vectors if v.get("genuine")]
+    gates = sorted({str(g) for v in vectors for g in (v.get("failed") or [])}
+                   | {str(g) for v in vectors for g in (v.get("gates") or [])})
+    if not trap_v or not gates:
+        return {"status": "UNMEASURED", "why": "no real-certifier verdicts with gate vectors",
+                "n_vectors": len(vectors)}
+    kills: dict[str, set[int]] = {g: set() for g in gates}
+    unique: dict[str, int] = dict.fromkeys(gates, 0)
+    for i, v in enumerate(trap_v):
+        failed = [str(g) for g in v.get("failed") or []]
+        for g in failed:
+            kills[g].add(i)
+        if len(failed) == 1 and not v.get("truncated"):
+            unique[failed[0]] += 1
+    cond: dict[str, dict[str, float | None]] = {}
+    jac: dict[str, dict[str, float | None]] = {}
+    for a in gates:
+        cond[a], jac[a] = {}, {}
+        for b in gates:
+            if a == b:
+                continue
+            inter = len(kills[a] & kills[b])
+            union = len(kills[a] | kills[b])
+            cond[a][b] = round(inter / len(kills[a]), 4) if kills[a] else None
+            jac[a][b] = round(inter / union, 4) if union else None
+    subsumed = []
+    for a in gates:
+        if len(kills[a]) < min_kills or unique[a]:
+            continue
+        for b in gates:
+            p = cond[a].get(b)
+            if b != a and p is not None and p >= subsume_at:
+                subsumed.append({"gate": a, "by": b, "p_by_fails_given_gate_fails": p,
+                                 "kills": len(kills[a])})
+    false_rej: dict[str, int] = dict.fromkeys(gates, 0)
+    for v in gen_v:
+        for g in v.get("failed") or []:
+            false_rej[str(g)] = false_rej.get(str(g), 0) + 1
+    return {"status": "MEASURED", "gates": gates, "n_traps": len(trap_v),
+            "n_genuine": len(gen_v),
+            "n_truncated": sum(1 for v in vectors if v.get("truncated")),
+            "kills": {g: len(kills[g]) for g in gates}, "unique_kills": unique,
+            "p_cofail": cond, "jaccard": jac, "subsumed": subsumed,
+            "no_unique_kill": sorted(g for g in gates if kills[g] and not unique[g]),
+            "false_rejects": false_rej,
+            "use": "a report: a redundant gate is a candidate for ratified removal, never "
+                   "removed by an agent"}

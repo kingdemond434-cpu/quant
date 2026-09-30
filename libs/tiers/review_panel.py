@@ -193,6 +193,24 @@ def epistemologist(cid: str, ev: Evidence) -> list[Challenge]:
     return []
 
 
+def conflict(cid: str, ev: Evidence) -> list[Challenge]:
+    """The firewall's shared-reward flag (layer 32), raised in the panel: an evaluator that is
+    paid from the same reward artifact as the candidate it judged is not independent of it. A
+    SELF flag (the evaluator's own host bore the candidate) is HIGH; a SHARED one MEDIUM. Both
+    are answered only by an independent replication, never by the flagged evaluator."""
+    out: list[Challenge] = []
+    flags = _g(ev, "firewall", "shared_reward") or []
+    for sev, kind, level in (("SELF", "SELF_JUDGED", "HIGH"), ("SHARED", "SHARED_REWARD",
+                                                                "MEDIUM")):
+        hit = sorted({str(f.get("evaluator")) for f in flags
+                      if isinstance(f, Mapping) and f.get("severity") == sev})
+        if hit:
+            out.append(Challenge(cid, "conflict", kind, f"judged by {', '.join(hit)}, paid from "
+                                 "the same reward artifact as this candidate's producer", level,
+                                 "replication_agrees"))
+    return out
+
+
 #: reviewer -> (function, the evidence keys it is allowed to see)
 PANEL: dict[str, tuple[Callable[[str, Evidence], list[Challenge]], tuple[str, ...]]] = {
     "statistician": (statistician, ("gates", "online_fdr")),
@@ -204,6 +222,7 @@ PANEL: dict[str, tuple[Callable[[str, Evidence], list[Challenge]], tuple[str, ..
     "reproducibility": (reproducibility, ("replication",)),
     "adversarial": (adversarial, ("red_queen",)),
     "epistemologist": (epistemologist, ("epistemic",)),
+    "conflict": (conflict, ("firewall",)),
 }
 
 

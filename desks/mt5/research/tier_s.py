@@ -579,14 +579,31 @@ def _verified_ratifications(rows: list[dict[str, Any]]) -> tuple[list[dict[str, 
 
 
 def organ_firewall() -> dict[str, Any]:
-    audit = firewall.audit(ROOT)
+    # the static roles, the developer role widened to every organ measured to write code, and
+    # the lockbox rule (a lockbox is opened only on a candidate frozen in the same function)
+    dev = firewall.developer_role(ROOT)
+    firewall.register([dev])
+    roles = (*[r for r in firewall.ROLES if r.name != "developer"], dev)
+    audit = firewall.audit(ROOT, roles)
+    lock = firewall.lockbox_audit(ROOT)
+    audit["violations"] = [*audit["violations"], *lock["violations"]]
+    audit["n_violations"] = len(audit["violations"])
+    audit["organs_checked"]["lockbox"] = lock["openers"]
+    audit["roles"]["lockbox"] = firewall.LOCKBOX_SENTENCE
+    audit["developer_code_writers"] = [o for o in dev.organs
+                                       if o not in firewall.DEVELOPER_ORGANS]
     st = _state("firewall")
-    base = st.get("baseline")
+    rule_set = (*roles, firewall.Role("lockbox", (), sentence=firewall.LOCKBOX_SENTENCE))
+    base = firewall.seed_baseline(audit, st.get("baseline"), rule_set)
     rat = firewall.ratchet(audit, base)
-    if base is None or len(audit["violations"]) < len((base or {}).get("violations") or []):
-        st["baseline"] = {"violations": audit["violations"], "at": NOW.isoformat()}
+    if len(audit["violations"]) < len(base.get("violations") or []):
+        base["violations"] = audit["violations"]
+    st["baseline"] = {**base, "at": NOW.isoformat()}
     _save_state("firewall", st)
-    return {"audit": audit, "ratchet": rat,
+    return {"audit": audit, "ratchet": rat, "seeded_rules": base.get("seeded"),
+            "runtime_checks_remaining": "money-path call sites (universal_gate, "
+            "external_gauntlet, the autodiscovery orchestrator's lockbox open) do not yet call "
+            "firewall.may / firewall.lockbox_accepts: a desktop session's edit",
             "metric": {"violations": audit["n_violations"], "breach": 1.0 if rat["breach"]
                        else 0.0}}
 
@@ -809,12 +826,37 @@ def organ_test_invention() -> dict[str, Any]:
                                "source": "fooled_production_certifier"})
             reg[k]["confirmations"] = int(reg[k].get("confirmations", 0)) + 1
             reg[k]["last_seen"] = NOW.isoformat()
+    # THE LABELLED REAL SUITE: every certificate x what its forward clock then did
+    suite = test_invention.labelled_suite(
+        survivors(), shadow_rows(),
+        lambda c: f"{_spec(c).get('symbol')}.{_spec(c).get('selector')}")
+    real_suite = test_invention.invent_real(suite)
+    for g in real_suite.get("candidate_gates") or []:
+        k = json.dumps(g["check"])
+        reg.setdefault(k, {**g, "first_seen": NOW.isoformat(), "confirmations": 0})
+        reg[k]["confirmations"] = int(reg[k].get("confirmations", 0)) + 1
+        reg[k]["last_seen"] = NOW.isoformat()
+    # THE GATE REDUNDANCY MATRIX over every real-certifier verdict the desk holds: the Red
+    # Queen's full gate vectors and the sealed suite's production verdicts (first three kills)
+    vectors = [dict(v) for v in _state("red_queen").get("gate_vectors") or []
+               if isinstance(v, dict)]
+    vectors += [{"kind": v.get("kind"), "genuine": v.get("kind") in traps.TRUE_KINDS,
+                 "failed": v.get("failed") or [], "truncated": len(v.get("failed") or []) >= 3}
+                for v in prod.values() if isinstance(v, dict) and not v.get("unmeasured")]
+    matrix = test_invention.redundancy_matrix(vectors)
     _save_state("candidate_gates", {"gates": list(reg.values())})
     return {**out, "from_production": real, "registry_size": len(reg),
+            "real_suite": {**{k: v for k, v in suite.items() if k != "rows"}, **real_suite},
+            "redundancy": matrix,
             "metric": {"candidate_gates": len(out["candidate_gates"])
-                       + len(real.get("candidate_gates") or []),
+                       + len(real.get("candidate_gates") or [])
+                       + len(real_suite.get("candidate_gates") or []),
                        "registry": len(reg),
-                       "production_fooling_cases": len(fooled)}}
+                       "production_fooling_cases": len(fooled),
+                       "real_suite_labelled": suite["n_labelled"],
+                       "certificate_precision": suite["precision"],
+                       "redundant_gates": len(matrix.get("subsumed") or [])
+                       if matrix.get("status") == "MEASURED" else None}}
 
 
 def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str, Any]:
@@ -831,23 +873,29 @@ def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str
     if gate is None:
         return {"status": "UNMEASURED", "why": blocked}
     cells, truth = [], {}
-    plan = [(str(a.get("kind")), float(a.get("subtlety") or 0.0)) for a in attackers[:6]]
-    plan += [("true_signal", 0.0), ("true_weak_signal", 0.0)]
+    plan = [(str(a.get("kind")), float(a.get("subtlety") or 0.0),
+             str(a.get("researcher") or red_queen.UNATTRIBUTED)) for a in attackers[:6]]
+    # the Red Queen's own expressible kinds reach the real certifier every generation
+    plan += [(k, 0.5, red_queen.UNATTRIBUTED) for k in red_queen.NEW_KINDS
+             if k not in red_queen.INEXPRESSIBLE_TO_GAUNTLET and k not in {p[0] for p in plan}]
+    plan += [("true_signal", 0.0, ""), ("true_weak_signal", 0.0, "")]
     inexpressible = []
-    for k, (kind, sub) in enumerate(plan):
-        if kind in traps.INEXPRESSIBLE_TO_GAUNTLET:
+    by_cell: dict[str, str] = {}
+    for k, (kind, sub, who) in enumerate(plan):
+        if kind in red_queen.INEXPRESSIBLE_TO_GAUNTLET:
             inexpressible.append(kind)       # the certifier is never shown what this trap fakes
             continue
         # the cell name carries no hint of the kind: the certifier judges it blind
         name = f"rq{gen}_" + truth_kernel.sha256(f"{gen}:{k}:{kind}:{sub}")[:10]
         try:
-            case, _t = traps.generate(kind, gen * 101 + k, 402, sub)
+            case, _t = red_queen.generate(kind, gen * 101 + k, 402, sub)
             sig, fwd = _case_series(case)
             # a late-information attack is stamped where its information exists; stamped a bar
             # early it would be a real predictor in the docket and no engine could reject it
             cells.append(adversary.docket_cell(
                 name, sig, fwd, stamp_offset=1 if kind in traps.LATE_INFORMATION_KINDS else 0))
             truth[name] = kind
+            by_cell[name] = who
         except Exception:
             continue
     if len(cells) < 2:
@@ -866,11 +914,20 @@ def _real_gauntlet_attack(attackers: list[dict[str, Any]], gen: int) -> dict[str
         failed = [g for g, st in (v.get("stages") or {}).items() if not st.get("passed")]
         rows.append({"cell": name, "kind": truth[name], "genuine": truth[name].startswith("true"),
                      "passed": bool(v.get("passed")), "unmeasured": bool(v.get("unmeasured")),
-                     "failed_gates": failed})
+                     "failed_gates": failed, "researcher": by_cell.get(name) or None,
+                     "gates": sorted(v.get("stages") or {})})
     traps_ = [r for r in rows if not r["genuine"] and not r["unmeasured"]]
     real = [r for r in rows if r["genuine"] and not r["unmeasured"]]
     leaks = [r for r in traps_ if r["passed"]]
+    per: dict[str, dict[str, Any]] = {}
+    for r in traps_:
+        d = per.setdefault(str(r["researcher"]), {"attacks": 0, "leaks": 0, "kinds_leaked": []})
+        d["attacks"] += 1
+        if r["passed"]:
+            d["leaks"] += 1
+            d["kinds_leaked"] = sorted({*d["kinds_leaked"], r["kind"]})
     return {"status": "MEASURED", "rows": rows, "leaks": leaks, "inexpressible": inexpressible,
+            "by_researcher": per,
             "attack_success": len(leaks) / len(traps_) if traps_ else None,
             "genuine_power": sum(r["passed"] for r in real) / len(real) if real else None}
 
@@ -880,23 +937,59 @@ def organ_red_queen() -> dict[str, Any]:
     attackers = red_queen.from_state(st)
     sealed = list(meta_benchmark.Suite(per_kind=4, base_seed=5150, n=1200).cases())
     gen = int(st.get("generation", 0)) + 1
-    res = red_queen.generation(attackers, _incumbent_validator(), sealed, seed=gen)
+    # ATTRIBUTION: the market's researchers (their gate verdicts and passes) shape the attacks
+    prices = _read(STATE / "researcher_prices.json") or {}
+    profiles = {str(k): v for k, v in ((prices.get("researchers") if isinstance(prices, dict)
+                                        else None) or {}).items()
+                if isinstance(v, dict) and v.get("judged")}
+    res = red_queen.generation(attackers, _incumbent_validator(), sealed, seed=gen,
+                               researchers=profiles or None)
     real = _real_gauntlet_attack([e["attack"] for e in res["elite_attacks"]], gen)
     hist = list(st.get("success_history") or [])
     hist.append({"gen": gen, "at": NOW.isoformat(), "attack_success": res["attack_success"],
                  "real_attack_success": real.get("attack_success"),
                  "real_genuine_power": real.get("genuine_power")})
+    # every real-certifier verdict's full gate vector, for the gate redundancy matrix (layer 21)
+    vectors = list(st.get("gate_vectors") or [])
+    vectors += [{"kind": r["kind"], "genuine": r["genuine"], "failed": r["failed_gates"],
+                 "gates": r.get("gates") or []} for r in real.get("rows") or []
+                if not r.get("unmeasured")]
+    # attribution accumulates across generations: one hour samples a few researchers
+    tot = {str(k): dict(v) for k, v in (st.get("attribution_total") or {}).items()
+           if isinstance(v, dict)}
+    for who, row in (res.get("by_researcher") or {}).items():
+        d = tot.setdefault(who, {"attacks": 0, "success_sum": 0.0, "real_attacks": 0,
+                                 "real_leaks": 0, "kinds_through": []})
+        d["attacks"] += int(row["attacks"])
+        d["success_sum"] = float(d["success_sum"]) + float(row["success"]) * int(row["attacks"])
+        d["kinds_through"] = sorted({*d["kinds_through"], *row["kinds_through"]})
+    for who, row in (real.get("by_researcher") or {}).items():
+        d = tot.setdefault(who, {"attacks": 0, "success_sum": 0.0, "real_attacks": 0,
+                                 "real_leaks": 0, "kinds_through": []})
+        d["real_attacks"] = int(d.get("real_attacks", 0)) + int(row["attacks"])
+        d["real_leaks"] = int(d.get("real_leaks", 0)) + int(row["leaks"])
     _save_state("red_queen", {"generation": gen, "attackers": res["next_attackers"],
                               "success_history": hist[-500:],
                               "challenger": res["challenger"],
-                              "real_leaks": (real.get("leaks") or [])[:20]})
+                              "real_leaks": (real.get("leaks") or [])[:20],
+                              "gate_vectors": vectors[-3000:],
+                              "attribution_total": tot})
+    res["attribution_total"] = {
+        k: {"attacks": v["attacks"], "success": round(v["success_sum"] / v["attacks"], 4)
+            if v["attacks"] else None, "real_attacks": v.get("real_attacks", 0),
+            "real_leaks": v.get("real_leaks", 0), "kinds_through": v["kinds_through"]}
+        for k, v in sorted(tot.items())}
     if res["challenger"] and not authority.suspended("red_queen"):
         _register_challenger("validator", f"red_queen_gen{gen}", res["challenger"],
                              res["best_defender"])
     return {"generation": gen, **{k: v for k, v in res.items() if k != "next_attackers"},
             "real_gauntlet": real,
+            "attribution": ("MEASURED" if profiles else
+                            "UNMEASURED: no researcher_prices.json with judged counts yet; "
+                            "attacks charged their trap's own trials and left unattributed"),
             "metric": {"attack_success": res["attack_success"],
                        "defender_balanced": res["best_defender"]["balanced"],
+                       "attributed_researchers": len(profiles),
                        "real_attack_success": real.get("attack_success"),
                        "real_genuine_power": real.get("genuine_power")}}
 
@@ -1641,9 +1734,49 @@ def _execution_evidence(n: int, rs: list[float] | None, fwd_exp: Any) -> dict[st
     return out
 
 
+#: evaluator -> the producer name its host process is paid under in the reward artifacts. The
+#: panel and the Red Queen run inside tier_s, whose own emitters ("tier_s:<kind>") and whose leg
+#: ("tier_s") the researcher market prices.
+EVALUATOR_HOSTS: dict[str, str] = {"review_panel": "tier_s", "red_queen": "tier_s",
+                                   "universal_gate": "universal_gate"}
+
+
+def _shared_reward(keys: list[str]) -> dict[str, Any]:
+    """Layer 32's firewall flag: which evaluator judged a candidate that the same reward
+    artifact pays. Reward artifacts are the market's researcher prices and its leg prices (what
+    cycle_pricing spends compute by). Absent prices are UNMEASURED, never 'no conflict'."""
+    static = firewall.audit(ROOT, [firewall.EVALUATOR_REWARD])
+    doc = _read(STATE / "researcher_prices.json")
+    if not isinstance(doc, dict) or not isinstance(doc.get("researchers"), dict):
+        return {"status": "UNMEASURED", "why": "no researcher_prices.json (organ_market has "
+                "not priced the producers yet)", "static": static, "by_candidate": {}}
+    table = doc["researchers"]
+    legs = {str(k) for k in (doc.get("leg_prices") or {})}
+    rewarded = {"researcher_prices": set(map(str, table)),
+                "leg_prices": legs | {str(n) for n, r in table.items()
+                                      if isinstance(r, dict) and str(r.get("leg")) in legs}}
+    rows = survivors()
+    cell_prod = _producer_of_cell()
+    producer_of: dict[str, str] = {}
+    for k in keys:
+        row = rows.get(k) or {}
+        pr = cell_prod.get(str(row.get("cell") or "")) or (
+            _producer(row.get("hunt")) if row.get("hunt") else "")
+        if pr:
+            producer_of[k] = pr
+    judges = dict.fromkeys(EVALUATOR_HOSTS, keys)
+    rep = firewall.shared_reward(judges, producer_of, rewarded, EVALUATOR_HOSTS)
+    by: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for f in rep["flags"]:
+        by[f["candidate"]].append(f)
+    return {"status": "MEASURED", **{k: v for k, v in rep.items() if k != "flags"},
+            "flags": rep["flags"][:60], "static": static, "by_candidate": dict(by)}
+
+
 def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | None,
                  rq: Mapping[str, Any] | None) -> dict[str, Any]:
     shadow = shadow_rows()
+    conflict = _shared_reward([str(k) for k, r in survivors().items() if isinstance(r, dict)])
     uniq = ((topo or {}).get("rank") or {}).get("uniqueness") or {}
     over = {r["test_id"]: r for r in (fdr_rows or {}).get("certified") or []}
     rep_doc = _read(REPORTS / "REPLICATION.json") or {}
@@ -1710,13 +1843,20 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
             "attacks": len((rq.get("real_gauntlet") or {}).get("rows") or []) or
             rq.get("generation"), "killed": bool(leaks),
             "killed_by": ", ".join(sorted({str(x["kind"]) for x in leaks})) or None}
+        if conflict.get("status") == "MEASURED":
+            ev["firewall"] = {"shared_reward": conflict["by_candidate"].get(str(key)) or []}
         cands[str(key)] = ev
     rep = review_panel.panel_report(cands)
     rows = rep.pop("rows")
     _write(OUT_DIR / "REVIEW_PANEL_ROWS.json", {"generated_utc": NOW.isoformat(), "rows": rows})
-    return {**rep, "metric": {"resolved_share": rep["resolved_share"],
-                              "challenged": rep["verdicts"].get("CHALLENGED", 0),
-                              "failed": rep["verdicts"].get("FAILED", 0)}}
+    conflict.pop("by_candidate", None)
+    return {**rep, "shared_reward": conflict,
+            "metric": {"resolved_share": rep["resolved_share"],
+                       "challenged": rep["verdicts"].get("CHALLENGED", 0),
+                       "failed": rep["verdicts"].get("FAILED", 0),
+                       "shared_reward_flags": conflict.get("n_flags"),
+                       "self_judged": conflict.get("n_self"),
+                       "evaluator_reward_reads": conflict["static"]["n_violations"]}}
 
 
 #: epistemology of a producer, read off the tokens of its hypothesis-graph `source`. Cohorts are
@@ -1893,7 +2033,11 @@ def organ_market() -> dict[str, Any]:
             pr = producer_of_cell.get(str(row.get("cell") or ""), "unattributed")
             sp = f"{_mechanism(str(row.get('family') or ''))}|{_asset_class(str(row.get('sym')))}"
             sight.append((pr, sp))
-    ind = researcher_market.independent_discoveries(sight, {n: r.cohort for n, r in rs.items()})
+    # ENFORCED BLINDING: one firewall role per seat (registered for firewall.may), audited
+    # statically with its own ratchet; cohort pairs that can read each other are not independent
+    blind = _blinding_audit()
+    ind = researcher_market.independent_discoveries(
+        sight, {n: r.cohort for n, r in rs.items()}, blind.get("contaminated_pairs") or ())
     # THE FRONTIER PRICES THE GROUND (layer 36): a producer whose ground the species estimator
     # says still hides many unseen mechanisms is worth more compute than its record alone says.
     # Last hour's FRONTIER report (the organ runs after this one); absent -> factor 1.
@@ -1916,6 +2060,7 @@ def organ_market() -> dict[str, Any]:
                  "validated_per_cpu_h": round(3600.0 * r.successes.get("full", 0)
                                               / max(1.0, r.cost.get("cpu_s", 1.0)), 6),
                  "honesty": r.honesty, "ancestry_novelty": anc_nov.get(n),
+                 "judged": r.trials.get("full", 0), "passed": r.successes.get("full", 0),
                  "mean_novelty": round(r.mean_novelty, 4)} for n, r in rs.items()}
     # HELD-OUT CONTROL ARM: cycle_pricing never reprices a control leg by these prices, so the
     # market is judged by validated output per CPU hour on its treated legs against its held-out
@@ -1938,8 +2083,31 @@ def organ_market() -> dict[str, Any]:
     return {**{k: v for k, v in res.items() if k != "allocations"},
             "researchers": dict(sorted(table.items(), key=lambda kv: -kv[1]["births"])[:40]),
             "independent_discoveries": ind, "priced_legs": len(leg_prices), "control_arm": arm,
+            "blinding": blind,
             "metric": {"n_researchers": len(rs), "independently_discovered":
-                       ind["independently_discovered"], "priced_legs": len(leg_prices)}}
+                       ind["independently_discovered"], "priced_legs": len(leg_prices),
+                       "blinding_violations": blind.get("n_violations"),
+                       "blinding_breach": blind.get("breach")}}
+
+
+def _blinding_audit() -> dict[str, Any]:
+    """Layer 4's enforced blinding: seat roles from the repository, registered for
+    `firewall.may`, audited, ratcheted (a rule enters at what it measured, then only falls)."""
+    from libs.tiers import blinding
+    try:
+        rep = blinding.audit(ROOT, lambda s: _epistemology(f"miner:{s}"))
+    except Exception as exc:
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+    roles = [firewall.Role(n, ()) for n in rep["roles"]]  # signature per seat role name
+    st = _state("blinding")
+    base = firewall.seed_baseline(rep, st.get("baseline"), roles)
+    rat = firewall.ratchet(rep, base)
+    if len(rep["violations"]) < len(base["violations"]):
+        base["violations"] = rep["violations"]
+    _save_state("blinding", {"baseline": base, "at": NOW.isoformat()})
+    return {"status": "MEASURED", **{k: v for k, v in rep.items() if k != "home_organs"},
+            "violations": rep["violations"][:60], "ratchet": rat,
+            "breach": 1.0 if rat["breach"] else 0.0}
 
 
 def organ_frontier(topo_hist: list[dict[str, Any]] | None = None) -> dict[str, Any]:
