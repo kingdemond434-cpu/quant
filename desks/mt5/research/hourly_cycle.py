@@ -931,7 +931,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
                      "judge_coverage", "orthogonality_yield", "effective_trials"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
+    **dict.fromkeys(("world_crawler", "deep_forest", "cell_emitter", "moat_miner",
+                     "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
@@ -1823,6 +1824,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # sits above its budget, the cap is exported to the child (QUANT_LEG_BUDGET_S) so it
     # self-stops inside whatever the pricer grants, and it checkpoints per ground regardless.
     "deep_forest_miner": 1_020,
+    # The cell emitter stops itself at --budget-s 300 (it reads QUANT_LEG_BUDGET_S too); the cap
+    # sits above it so the pass writes its report, cursor and donations rather than being cut.
+    "cell_emitter": 420,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
     # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
     # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
@@ -2740,6 +2744,19 @@ def deep_forest() -> dict:
     quiet pass still advances the queue (mandate section 70, never idle).
     """
     return _producer("deep_forest_miner", "research/deep_forest_miner.py", "--budget-s", "900")
+
+
+def cell_emitter() -> dict:
+    """Open-source STRATEGY CODE read as cells (the lost 2026-09-25 lane, rebuilt 2026-09-30).
+
+    Grounds in `data/cell_emitter_sources.json` (vn.py, backtrader, zipline, pysystemtrade,
+    EA31337 MQL, freqtrade/jesse on crypto CFDs only, Pine, TradingView); each pass lists and
+    fetches a cursor's slice, statically reads each file's indicator calls into a registered
+    family + exact params (or a STRUCTURED_HYPOTHESIS), maps instruments through
+    universe_policy, donates to data/intelligence/cell_emitter/ for miner_candidate_compiler,
+    and writes reports/CELL_EMITTER.json with per-ground yield and drop reasons.
+    """
+    return _producer("cell_emitter", "research/cell_emitter.py", "--once", "--budget-s", "300")
 
 
 def session_structure() -> dict:
@@ -4768,6 +4785,9 @@ def main() -> None:
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
+    # OPEN-SOURCE CODE -> CELLS: donates to data/intelligence/cell_emitter/, which the next
+    # pass's `compile_candidates` reads. Network leg; self-stops inside its budget.
+    cem = _costed("cell_emitter", cell_emitter)
     ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
     # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
@@ -5258,6 +5278,7 @@ def main() -> None:
                     "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "cell_emitter": cem,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
