@@ -440,21 +440,27 @@ def _node_id(symbol: str, family: str, params: Mapping[str, Any]) -> str:
         return ""
 
 
-_BANK_ROWS: dict[str, list[Any]] = {}
+#: (path, rows): the bank read once per pass, shared by the Scientific subjects and the Meta
+#: census. A read cache, dropped by rebinding at the end of the pass; nothing on disk changes.
+_BANK_CACHE: tuple[str, list[Any]] | None = None
 
 
 def _bank_rows(bank: Path | None = None) -> list[Any] | None:
-    """The bank, read once per pass: the Scientific subjects and the Meta census share it."""
+    global _BANK_CACHE
     path = str(bank or BANK)
-    if path not in _BANK_ROWS:
+    if _BANK_CACHE is None or _BANK_CACHE[0] != path:
         rows = _json(Path(path), None)
         if isinstance(rows, dict):
             rows = next((v for v in rows.values() if isinstance(v, list)), None)
         if not isinstance(rows, list):
             return None
-        _BANK_ROWS.clear()
-        _BANK_ROWS[path] = rows
-    return _BANK_ROWS[path]
+        _BANK_CACHE = (path, rows)
+    return _BANK_CACHE[1]
+
+
+def _drop_bank_cache() -> None:
+    global _BANK_CACHE
+    _BANK_CACHE = None
 
 
 def scientific_subjects(bank: Path | None = None) -> list[ce.Subject]:
@@ -1744,7 +1750,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         _atomic(PREMORTEMS, _premortems(examined_all))
         _atomic(REPORT, doc)
         _atomic(HEALTH, health)
-    _BANK_ROWS.clear()
+    _drop_bank_cache()
     doc["health"] = health
     doc["examined"] = examined_all
     return doc
