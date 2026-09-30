@@ -63,6 +63,9 @@ KINDS = (
     # verdict and the why, so a refusal is a transition with a time on it rather than a quiet
     # no-op -- which is the only way an operator learns that a writer upstream has gone silent.
     "REFERENCE_STAND_DOWN",
+    # Stage 1's backlog has not cleared for 24h (net change >= 0 on every run): the screen's
+    # window now biases WHICH cells the sealed judge reaches, not just when. Carries the window.
+    "STAGE1_ORDERING_BIAS",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.

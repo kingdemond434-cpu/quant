@@ -28,8 +28,13 @@ THE FULL TRAINING WINDOW (audit 2026-09-30). Everything before those two lower b
 earlier version also capped the window at mass_screen's TRAIN_FRAC (30%) of the chart calendar,
 which left ~16% of history and made the screen blind below t~10. That cap is gone.
 
-The 1x daily-series VALUES outside that window are never touched; the 3x stress arm is replayed on
-the signal prefix alone. So neither the walk-forward nor the lockbox gate is ever screened on.
+THE WINDOW (coordinator's ruling 2026-09-30). The default, "pre_lockbox", screens everything
+before the lockbox lower bound, walk-forward region included, for ORDER ONLY; "pre_wf"
+(STAGE1_WINDOW=pre_wf, opt-in) also stops at the walk-forward lower bound. The 1x daily-series
+VALUES outside the chosen window are never touched and the lockbox is never read in either mode;
+the 3x stress arm is replayed on the signal prefix alone. The trial charge (`trial_charge`) and
+the set of cells the sealed judge eventually judges are identical under both windows; the ordering
+bias the default buys is flagged (`ordering_bias_warning`) once the backlog stops clearing for 24h.
 (The in-sample gates -- DSR, CPCV, PBO -- span the series by construction; that overlap is inherent
 to any pre-screen and is why stage 1 carries zero promotion authority.)
 
@@ -129,13 +134,22 @@ UNRUNNABLE_BANK = HYP / "unrunnable_specs.json"
 DEAD_SIDECAR = HYP / "DEAD_SESSION_VARIANTS.jsonl"
 SESSION_TZ_MISMATCH = "SESSION_TZ_MISMATCH"
 UNMEASURED = "UNMEASURED"
-#: THE SCREEN'S WINDOW. "pre_wf" (default): days before BOTH the walk-forward-test and the lockbox
-#: lower bounds -- the sealed WF tests the last 2/3 of each development series, so this is ~16% of
-#: a typical cell's days, and a planted t=4 edge ranks in the top decile only ~62% of the time
-#: (`planted_edge_control`, measured 2026-09-30). "pre_lockbox": everything before the lockbox
-#: lower bound (~48%; t=4 ranks top-decile ~93%), which reads the WF region for ORDER only.
-#: Switching is the principal's call; STAGE1_WINDOW in the environment selects it.
-WINDOW = os.environ.get("STAGE1_WINDOW", "pre_wf")
+#: THE SCREEN'S WINDOW. "pre_lockbox" (DEFAULT, coordinator's ruling 2026-09-30): everything
+#: before the lockbox lower bound (~48% of a typical cell's days; a planted t=4 edge ranks in the
+#: top decile ~93% of the time, `planted_edge_control`). It reads the walk-forward region for
+#: ORDER only: the lockbox is never read, stage 1 never drops or parks a cell, and the trial
+#: charge is over the full union of screened cells whichever window is used (`trial_charge`,
+#: pinned by a test), so the window moves only WHICH cell is judged first, never whether a cell is
+#: judged or what m the desk charges. The ordering bias that buys is negligible only while the
+#: backlog clears: `ordering_bias_warning` flags 24h of net backlog change >= 0.
+#: "pre_wf" (opt-in, STAGE1_WINDOW=pre_wf): days before BOTH the walk-forward-test and the
+#: lockbox lower bounds (~16%; t=4 top decile ~62%).
+WINDOWS = ("pre_lockbox", "pre_wf")
+WINDOW = os.environ.get("STAGE1_WINDOW", "pre_lockbox")
+if WINDOW not in WINDOWS:
+    WINDOW = "pre_lockbox"
+#: Hours of unbroken net backlog change >= 0 after which the window's ordering bias is flagged.
+ORDERING_BIAS_HOURS = 24.0
 #: Sealed-judged cells the rollover trigger collects per run while a change is active.
 RR_POPULATION_CAP = 200_000
 #: How many head-of-order cells the published priority file lists (the record holds all).
@@ -235,8 +249,8 @@ def train_boundary(days: np.ndarray, first_bar: date, last_bar: date, cut_lb: da
     wf_day = (days[r].astype("datetime64[D]").astype(date) if 0 <= r < n
               else last_bar + timedelta(days=1))
     if (window or WINDOW) == "pre_lockbox":
-        # ORDER-ONLY MODE (off by default): the development series up to the lockbox lower
-        # bound, walk-forward region included. The lockbox is never read in either mode.
+        # THE DEFAULT: the development series up to the lockbox lower bound, walk-forward region
+        # included (for ORDER only). The lockbox is never read in either mode.
         end = min(cal, cut_lb)
         return end, {"calendar": cal.isoformat(), "wf_lb": wf_day.isoformat(),
                      "lockbox_lb": cut_lb.isoformat(), "wf_rank_lb": r,
@@ -245,7 +259,7 @@ def train_boundary(days: np.ndarray, first_bar: date, last_bar: date, cut_lb: da
     return end, {"calendar": cal.isoformat(), "wf_lb": wf_day.isoformat(),
                  "lockbox_lb": cut_lb.isoformat(), "wf_rank_lb": r, "binding": (
                      "calendar" if end == cal else "walk_forward" if end == wf_day
-                     else "lockbox")}
+                     else "lockbox"), "window": "pre_wf"}
 
 
 def universe_earliest(uni: Path) -> date | None:
@@ -379,7 +393,8 @@ def unbuildable_cause(why: str | None) -> str:
 _W: dict[str, Any] = {}
 
 
-def _init_worker(cut_lb_iso: str, train_frac: float | None = None) -> None:
+def _init_worker(cut_lb_iso: str, train_frac: float | None = None,
+                 window: str | None = None) -> None:
     import external_gauntlet as G
     try:
         meta = json.loads((G.UNI / "universe.json").read_text("utf-8"))
@@ -388,7 +403,7 @@ def _init_worker(cut_lb_iso: str, train_frac: float | None = None) -> None:
     _W.update(G=G, meta=meta if isinstance(meta, dict) else {},
               cut_lb=date.fromisoformat(cut_lb_iso),
               train_frac=None if train_frac is None else float(train_frac),
-              prepared={})
+              window=window or WINDOW, prepared={})
     with contextlib.suppress(Exception):
         import psutil
         p = psutil.Process()
@@ -521,7 +536,7 @@ def evaluate_engine(spec: dict[str, Any]) -> dict[str, Any]:
         days = _dates(ds1.index)
         first_bar = frame.index[0].date()
         end, why = train_boundary(days, first_bar, last_day.date(), _W["cut_lb"],
-                                  _W["train_frac"])
+                                  _W["train_frac"], _W.get("window"))
         sel = days < np.datetime64(end, "D")
         vals = ds1.to_numpy(float)[sel]
         out: dict[str, Any] = {"n_days_full": n_full, "n_days_train": int(vals.size),
@@ -676,7 +691,8 @@ def evaluate_vector(spec: dict[str, Any]) -> dict[str, Any] | None:
     days = uniq.astype("datetime64[D]")
     t_last = datetime.fromtimestamp(int(P.t_ns[-1]) / 1e9, tz=UTC).date()
     t_first = datetime.fromtimestamp(int(P.t_ns[0]) / 1e9, tz=UTC).date()
-    end, why = train_boundary(days, t_first, t_last, _W["cut_lb"], _W["train_frac"])
+    end, why = train_boundary(days, t_first, t_last, _W["cut_lb"], _W["train_frac"],
+                              _W.get("window"))
     end_num = (np.datetime64(end, "D") - np.datetime64("1970-01-01", "D")).astype(int)
     sel = day_num < end_num
     k_tr = kept[sel]
@@ -1126,6 +1142,55 @@ def finalise(results: list[dict[str, Any]], q: float = FDR_Q) -> dict[str, Any]:
             "testable": len(ps), "rejected_null": sum(1 for p in ps if cut > 0 and p <= cut)}
 
 
+def trial_charge(results: list[dict[str, Any]]) -> dict[str, Any]:
+    """WHAT THE DESK CHARGES, over the FULL UNION of cells this run screened -- window-invariant.
+
+    Every ruled cell that is not UNBUILDABLE and not refused by the sealed economic prior is a
+    charged trial (STAGE1_TRIALS.jsonl `cells_screened`, read by the lifetime experiment ledger),
+    whether or not the training window gave it a statistic. Neither the unbuildable cause nor the
+    economic prior reads the training window, so this m is identical under every WINDOW; so is
+    the set of cells the sealed gauntlet eventually judges, because stage 1 only reorders. The
+    BH `m` in `finalise` (tested cells only) labels survivors and is NOT the charge."""
+    charged = [r for r in results if r.get("verdict") in REC.VERDICTS
+               and r.get("verdict") != REC.UNBUILDABLE
+               and r.get("reason") != "R_GATE1_ECONOMIC_PRIOR"]
+    return {"m_charged": len(charged), "cells_ruled": sum(
+                1 for r in results if r.get("verdict") in REC.VERDICTS),
+            "basis": ("full union of screened cells (ruled, not unbuildable, not refused by the "
+                      "sealed economic prior); window-invariant by construction")}
+
+
+def ordering_bias_warning(runs: list[dict[str, Any]], now: datetime, window: str,
+                          hours: float = ORDERING_BIAS_HOURS) -> dict[str, Any]:
+    """TRUE when the backlog has not cleared for `hours`: every run in the unbroken newest streak
+    measured net backlog change >= 0 and the streak's first run is at least `hours` old. Then the
+    window's ordering bias (the cells it ranks first are judged first, and the tail waits) stops
+    being negligible, and the artifact says so with the window. An unmeasured net breaks the
+    streak (it is never read as >= 0), and with no measured run at all the verdict is UNMEASURED."""
+    streak: list[dict[str, Any]] = []
+    measured = 0
+    for r in reversed(runs):
+        n = r.get("net_backlog_change")
+        if not isinstance(n, (int, float)) or isinstance(n, bool):
+            break
+        measured += 1
+        if n < 0:
+            break
+        streak.append(r)
+    since = None
+    with contextlib.suppress(Exception):
+        since = datetime.fromisoformat(str(streak[-1]["ts"])) if streak else None
+    age_h = round((now - since).total_seconds() / 3600.0, 2) if since else 0.0
+    warn = bool(streak) and age_h >= hours
+    out: dict[str, Any] = {
+        "ordering_bias_warning": warn if measured else UNMEASURED, "window": window,
+        "hours_not_clearing": age_h, "threshold_hours": hours,
+        "runs_in_streak": len(streak), "since": since.isoformat() if since else None,
+        "rule": (f"net backlog change >= 0 on every run for {hours:g}h: the {window} window's "
+                 "ordering bias is no longer negligible (the tail it ranks last is not reached)")}
+    return out
+
+
 # --------------------------------------------------------------------------------------------
 # workers, the run
 # --------------------------------------------------------------------------------------------
@@ -1252,8 +1317,11 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
         q: float = FDR_Q, dry_run: bool = False, out_dir: Path | None = None,
         docket: Path | None = None, seen_path: Path | None = None,
         db: Path | None = None, bank_path: Path | None = None,
-        dead_path: Path | None = None) -> dict[str, Any]:
+        dead_path: Path | None = None, window: str | None = None) -> dict[str, Any]:
     started = time.monotonic()
+    win = window or WINDOW
+    if win not in WINDOWS:
+        raise ValueError(f"stage-1 window {win!r} is not one of {WINDOWS}")
     now = _now()
     run_id = f"s1_{now.strftime('%Y%m%dT%H%M%S')}_{uuid.uuid4().hex[:6]}"
     report = (out_dir / REPORT.name) if out_dir else REPORT
@@ -1349,7 +1417,7 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
         return budget_s - (time.monotonic() - started)
 
     if w <= 1:
-        _init_worker(cut_lb.isoformat(), TRAIN_FRAC)
+        _init_worker(cut_lb.isoformat(), TRAIN_FRAC, win)
         for b in bl:
             if per_batch and _left() < float(np.median(per_batch)):
                 break
@@ -1360,7 +1428,7 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
             peak_mb = max(peak_mb, rss)
     else:
         ex = ProcessPoolExecutor(max_workers=w, initializer=_init_worker,
-                                 initargs=(cut_lb.isoformat(), TRAIN_FRAC))
+                                 initargs=(cut_lb.isoformat(), TRAIN_FRAC, win))
         try:
             it = iter(bl)
             live: dict[Any, float] = {}
@@ -1399,6 +1467,8 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
                     proc.terminate()
     worker_s = float(sum(float(r.get("cost_s") or 0.0) for r in results))
     fdr = finalise(results, q)
+    fdr["charge"] = trial_charge(results)
+    fdr["window"] = win
 
     # ---- stage-2 cost: the sealed judge's full build on a sample of this run's survivors ---
     survivors = [r for r in results if r.get("verdict") == REC.PASS
@@ -1406,7 +1476,7 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     s2_costs: list[float] = []
     if survivors and _left() > 30:
         if "G" not in _W:
-            _init_worker(cut_lb.isoformat(), TRAIN_FRAC)
+            _init_worker(cut_lb.isoformat(), TRAIN_FRAC, win)
         for r in survivors[:STAGE2_COST_SAMPLE]:
             if _left() < 10:
                 break
@@ -1475,6 +1545,7 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
             a["reject"] += 1
     trial_rows = [{"ts": ts, "run_id": run_id, "family": f, "cells_screened": a["cells_screened"],
                    "cells_testable": a["testable"], "fdr_q": q, "fdr_m": fdr["m"],
+                   "m_charged": fdr["charge"]["m_charged"], "window": win,
                    "pass_to_stage2": a["pass_bh"], "forward_unscreened": a["forward_unscreened"],
                    "dry_run": bool(dry_run)}
                   for f, a in sorted(fam_rows.items()) if a["cells_screened"]]
@@ -1532,10 +1603,33 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
                "stage2_build_s_per_cell": (round(float(np.median(s2_costs)), 4)
                                            if s2_costs else None),
                "backlog": census["backlog"], "dry_run": bool(dry_run)}
+    run_row["window"] = win
+    doc = build_report(run_row, census, fdr, by_fam_rate, results, winfo, [*prev_runs, run_row],
+                       first_run, seen_status, cut_lb, earliest, con, seen_hit, dry_run,
+                       window=win)
+    # the net the BOX saw: measured over the trailing 24h, else at the scheduled pace
+    nb = doc.get("net_backlog_change_per_day") or {}
+    n_meas = nb.get("measured_trailing_24h")
+    run_row["net_backlog_change"] = (n_meas if isinstance(n_meas, int)
+                                     else nb.get("scheduled_pace")
+                                     if isinstance(nb.get("scheduled_pace"), int) else UNMEASURED)
+    obw = ordering_bias_warning([*prev_runs, run_row], now, win)
+    doc["ordering_bias"] = obw
+    doc["ordering_bias_warning"] = obw["ordering_bias_warning"]
+    doc["window"] = win
+    if obw["ordering_bias_warning"] is True:
+        msg = (f"stage1_judge ORDERING BIAS: net backlog change >= 0 for "
+               f"{obw['hours_not_clearing']}h (window {win}); the ordering is no longer "
+               "negligible")
+        print(msg, file=sys.stderr, flush=True)
+        if not dry_run and out_dir is None:
+            with contextlib.suppress(Exception):
+                from libs.ops import events as EV
+                EV.emit("STAGE1_ORDERING_BIAS", producer="stage1_judge", window=win,
+                        hours_not_clearing=obw["hours_not_clearing"],
+                        net_backlog_change=run_row["net_backlog_change"])
     if not dry_run or out_dir is not None:
         _append(runs_p, [run_row])
-    doc = build_report(run_row, census, fdr, by_fam_rate, results, winfo, [*prev_runs, run_row],
-                       first_run, seen_status, cut_lb, earliest, con, seen_hit, dry_run)
     doc["requeue"] = requeue
     con.close()
     _write_json(report, doc)
@@ -1554,7 +1648,8 @@ def _stage2_measured(con, hit: dict[str, str], seen_status: str, since: str) -> 
 
 
 def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_run,
-                 seen_status, cut_lb, earliest, con, seen_hit, dry_run) -> dict[str, Any]:
+                 seen_status, cut_lb, earliest, con, seen_hit, dry_run,
+                 window: str | None = None) -> dict[str, Any]:
     now = _now()
     floor24 = (now - timedelta(hours=24)).isoformat(timespec="seconds")
     day_runs = [r for r in runs if str(r.get("ts") or "") >= floor24 and not r.get("dry_run")]
@@ -1781,7 +1876,7 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
         "boundary": {"lockbox_cut_lower_bound": cut_lb.isoformat(),
                      "universe_earliest_bar": earliest.isoformat(),
                      "min_days_full": MIN_DAYS_FULL, "min_train_days": MIN_TRAIN_DAYS,
-                     "window": WINDOW},
+                     "window": window or WINDOW},
         "workers": winfo,
         "priority_file": str(PRIORITY.relative_to(DESK)),
     }
@@ -1813,7 +1908,10 @@ def summary(path: Path | None = None) -> dict[str, Any]:
             "oldest_age_days": bl.get("oldest_age_days"),
             "unbuildable_by_cause": d.get("unbuildable_by_cause_this_run"),
             "days_to_clear_backlog": d.get("days_to_clear_backlog"),
-            "fence": d.get("fence")}
+            "fence": d.get("fence"),
+            "window": d.get("window") or (d.get("boundary") or {}).get("window"),
+            "ordering_bias_warning": d.get("ordering_bias_warning", UNMEASURED),
+            "ordering_bias": d.get("ordering_bias")}
 
 
 def main(argv: list[str] | None = None) -> int:

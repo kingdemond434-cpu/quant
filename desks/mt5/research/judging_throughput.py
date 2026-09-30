@@ -962,6 +962,10 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
         payload["two_stage"] = _two_stage()
     except Exception as exc:
         payload["two_stage"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
+    # the stage-1 window's ordering bias: TRUE once the backlog has not cleared for 24h
+    _ts = payload["two_stage"] if isinstance(payload["two_stage"], dict) else {}
+    payload["ordering_bias_warning"] = _ts.get("ordering_bias_warning", UNMEASURED)
+    payload["stage1_window"] = _ts.get("window", UNMEASURED)
     try:
         payload["rate"] = measure_rate(queue, decision, now)
     except Exception as exc:     # a broken rate read must never cost the sizing decision

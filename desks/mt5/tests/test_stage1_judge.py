@@ -58,8 +58,9 @@ def test_lockbox_lower_bound_never_exceeds_the_sealed_cut(weekend: bool, years: 
 
 
 def test_training_window_never_reaches_walk_forward_test_or_lockbox() -> None:
-    """Random activity patterns (dense early, dense late, sparse), random sweep calendars: every
-    training day precedes both the sealed WF test region of the dev series and the lockbox."""
+    """Random activity patterns (dense early, dense late, sparse), random sweep calendars: in the
+    opt-in pre_wf window every training day precedes both the sealed WF test region of the dev
+    series and the lockbox; in the default pre_lockbox window every day precedes the lockbox."""
     rng = np.random.default_rng(3)
     today = date(2026, 9, 30)
     earliest = date(2014, 1, 1)
@@ -73,12 +74,15 @@ def test_training_window_never_reaches_walk_forward_test_or_lockbox() -> None:
         if len(days) < 60:
             continue
         end, _ = S.train_boundary(days.values.astype("datetime64[D]"), first, today, cut_lb,
-                                  MS.TRAIN_FRAC)
+                                  MS.TRAIN_FRAC, window="pre_wf")
+        end_lb, why_lb = S.train_boundary(days.values.astype("datetime64[D]"), first, today,
+                                          cut_lb, MS.TRAIN_FRAC)
+        assert why_lb["window"] == S.WINDOW and end <= end_lb
         # any sweep: union from `earliest` (weekday dense) plus this cell
         union_start = earliest + timedelta(days=int(rng.integers(0, 1500)))
         union = sorted(set(_union(union_start, today, bool(trial % 2))) | set(days))
         cut = lockbox_cut([pd.Series(0.0, index=pd.DatetimeIndex(union))])
-        assert end <= cut.date()
+        assert end <= cut.date() and end_lb <= cut.date()
         ds = pd.Series(1.0, index=days)
         (dev,), _held = carve_lockbox([ds], cut)
         r = MS.wf_start_rank(len(dev))
@@ -329,6 +333,79 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
     assert con.execute("SELECT COUNT(*) FROM cells").fetchone()[0] == ruled
     assert con.execute("SELECT MAX(times_ruled) FROM cells").fetchone()[0] == 2
     con.close()
+
+
+def test_the_window_moves_order_only_never_the_charge_or_the_judged_set(tmp_path: Path) -> None:
+    """THE CONDITION ON THE pre_lockbox DEFAULT (coordinator's ruling 2026-09-30): on the same
+    docket, the two windows charge the same m over the full union, record the same cells, and
+    hand the sealed judge the same set to judge -- only the order may differ."""
+    assert S.WINDOW == "pre_lockbox" and set(S.WINDOWS) == {"pre_lockbox", "pre_wf"}
+    rows = _real_rows(10)
+    docket = tmp_path / "docket.json"
+    docket.write_text(json.dumps(rows))
+    got = {}
+    for win in S.WINDOWS:
+        out = tmp_path / win
+        doc = S.run(budget_s=240, workers=1, cap=100, docket=docket,
+                    seen_path=tmp_path / "none.json", out_dir=out, db=out / "rec.sqlite",
+                    bank_path=tmp_path / "no_bank.json", dead_path=tmp_path / "no_dead.jsonl",
+                    window=win)
+        assert doc["window"] == win and doc["boundary"]["window"] == win
+        con = sqlite3.connect(out / "rec.sqlite")
+        cids = {c for (c,) in con.execute("SELECT cid FROM cells")}
+        con.close()
+        trials = [json.loads(ln) for ln in (out / S.TRIALS.name).read_text().splitlines()]
+        assert {t["window"] for t in trials} == {win}
+        specs = [{"sym": r["symbol"], "family": r["family"], "params": r["params"]}
+                 for r in rows]
+        import external_gauntlet as G
+        rank = REC.stage1_rank_for_specs(specs, G.cell_id, out / "rec.sqlite")
+        got[win] = {"m": doc["stage1"]["fdr"]["charge"]["m_charged"],
+                    "screened": sum(t["cells_screened"] for t in trials),
+                    "by_family": {t["family"]: t["cells_screened"] for t in trials},
+                    "cids": cids, "ruled": doc["run"]["ruled"],
+                    "judged_set": {G.cell_id(sp) for sp in specs if id(sp) in rank},
+                    "unbuildable": doc["run"]["unbuildable"]}
+        assert got[win]["m"] == got[win]["screened"] > 0
+    a, b = got["pre_lockbox"], got["pre_wf"]
+    for k in ("m", "screened", "by_family", "cids", "ruled", "judged_set", "unbuildable"):
+        assert a[k] == b[k], k
+    assert len(a["judged_set"]) == len({G.cell_id(sp) for sp in specs})
+
+
+def test_ordering_bias_is_flagged_after_24h_of_a_backlog_that_does_not_clear() -> None:
+    now = datetime(2026, 10, 2, 12, tzinfo=UTC)
+
+    def runs(nets: list, hours_apart: float = 1.0) -> list[dict]:
+        k = len(nets)
+        return [{"ts": (now - timedelta(hours=(k - 1 - i) * hours_apart)).isoformat(),
+                 "net_backlog_change": n} for i, n in enumerate(nets)]
+    # 25 hourly runs, every one >= 0: flagged, with the window
+    w = S.ordering_bias_warning(runs([0, *([5_000] * 24)]), now, "pre_lockbox")
+    assert w["ordering_bias_warning"] is True and w["window"] == "pre_lockbox"
+    assert w["hours_not_clearing"] >= 24
+    # a single clearing run inside the last 24h breaks the streak
+    assert S.ordering_bias_warning(runs([*([5_000] * 20), -1, *([5_000] * 4)]), now,
+                                   "pre_lockbox")["ordering_bias_warning"] is False
+    # under 24h of not clearing is not yet a warning
+    assert S.ordering_bias_warning(runs([5_000] * 10), now, "pre_wf")[
+        "ordering_bias_warning"] is False
+    # shrinking: no warning; unmeasured is never read as >= 0
+    assert S.ordering_bias_warning(runs([-40_000] * 30), now, "pre_lockbox")[
+        "ordering_bias_warning"] is False
+    assert S.ordering_bias_warning(runs(["UNMEASURED"] * 30), now, "pre_lockbox")[
+        "ordering_bias_warning"] == "UNMEASURED"
+    assert S.ordering_bias_warning(
+        runs([*([5_000] * 5), "UNMEASURED", *([5_000] * 5)]), now, "pre_lockbox")[
+        "ordering_bias_warning"] is False
+    # the summary the throughput artifact embeds carries the flag and the window
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        rp = Path(d) / "r.json"
+        rp.write_text(json.dumps({"status": "OK", "window": "pre_lockbox",
+                                  "ordering_bias_warning": True, "ordering_bias": w}))
+        sm = S.summary(rp)
+        assert sm["ordering_bias_warning"] is True and sm["window"] == "pre_lockbox"
 
 
 def test_sealed_judged_cells_are_not_backlog(tmp_path: Path) -> None:
