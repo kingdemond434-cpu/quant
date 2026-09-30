@@ -249,8 +249,11 @@ def test_a_suspension_lookup_that_raises_withholds(monkeypatch: Any, tmp_path: P
 
 def test_a_door_input_missing_past_its_grace_is_a_loud_defect(monkeypatch: Any,
                                                               tmp_path: Path) -> None:
+    import sys as _sys
     from datetime import timedelta
-
+    _research = str(Path(__file__).resolve().parents[1] / "research")
+    if _research not in _sys.path:
+        _sys.path.insert(0, _research)
     import tier_s as ts  # type: ignore[import-not-found]
 
     pa = _door_sandbox(monkeypatch, tmp_path)
