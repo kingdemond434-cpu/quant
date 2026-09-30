@@ -57,12 +57,25 @@ MAX_AGE_H = 6.0
 MISMATCH = frozenset({"MISMATCH", "DISAGREE", "FAIL", "FAILED", "NOT_REPLICATED"})
 
 
+class DoorReadError(RuntimeError):
+    """A door input that EXISTS but cannot be read, parsed or understood. `block` turns it into
+    a `DOOR_ERROR` withhold: absence is a verdict (nothing to withhold on), damage is not."""
+
+
 def _read(p: Path) -> Any:
+    """The parsed file, or None when it does not exist. Anything else -- a permission error, a
+    torn write, invalid JSON, a document that is not a JSON object -- raises DoorReadError, so
+    the door fails CLOSED on a damaged input instead of reading it as 'nothing to withhold'."""
     firewall.may("promoter", "read", str(p.relative_to(ROOT)).replace("\\", "/"))
     try:
-        return json.loads(p.read_text("utf-8"))
-    except (OSError, ValueError):
+        doc = json.loads(p.read_text("utf-8"))
+    except FileNotFoundError:
         return None
+    except (OSError, ValueError) as exc:
+        raise DoorReadError(f"{p.name} unreadable: {type(exc).__name__}: {exc}") from exc
+    if not isinstance(doc, dict):
+        raise DoorReadError(f"{p.name} is a {type(doc).__name__}, not a JSON object")
+    return doc
 
 
 def _fresh(doc: Any, key: str = "generated_utc") -> bool:
@@ -82,7 +95,9 @@ def _match(cert: str, name: str) -> bool:
 def _replication(name: str) -> str | None:
     doc = _read(REPLICATION)
     rows = (doc.get("verdicts") or doc.get("rows") or []) if isinstance(doc, dict) else []
-    for r in rows if isinstance(rows, list) else []:
+    if not isinstance(rows, list):
+        raise DoorReadError(f"{REPLICATION.name} verdicts are a {type(rows).__name__}")
+    for r in rows:
         if not isinstance(r, dict):
             continue
         cert = str(r.get("cell") or r.get("key") or "")
@@ -98,7 +113,10 @@ def _fdr(name: str) -> str | None:
     doc = _read(FDR_ROWS)
     if not isinstance(doc, dict) or not _fresh(doc):
         return None
-    for r in doc.get("certified") or []:
+    certified = doc.get("certified") or []
+    if not isinstance(certified, list):
+        raise DoorReadError(f"{FDR_ROWS.name} certified rows are a {type(certified).__name__}")
+    for r in certified:
         if isinstance(r, dict) and r.get("over_budget") and _match(str(r.get("test_id")), name):
             return (f"ONLINE_FDR_OVER_BUDGET: {r.get('test_id')} was admitted after the lifetime "
                     f"online-FDR budget was spent (p={r.get('p')}, "
@@ -135,16 +153,21 @@ def _constitution(name: str) -> str | None:
         return None
     from libs.tiers import truth_kernel
     live = _read(CONSTITUTION)
-    if not isinstance(live, dict) or not isinstance(live.get("rules"), dict):
+    if live is None:
         return None                     # no live file: the sealed default is in force
+    if not isinstance(live.get("rules"), dict):
+        raise DoorReadError(f"{CONSTITUTION.name} carries no rules object")
     firewall.may("promoter", "read", str(RATIFICATIONS.relative_to(ROOT)))
     ratifs: list[dict[str, Any]] = []
     try:
         for line in RATIFICATIONS.read_text("utf-8").splitlines():
             if line.strip():
                 ratifs.append(json.loads(line))
-    except (OSError, ValueError):
+    except FileNotFoundError:
         pass
+    except (OSError, ValueError) as exc:
+        raise DoorReadError(f"{RATIFICATIONS.name} unreadable: {type(exc).__name__}: {exc}"
+                            ) from exc
     st = truth_kernel.constitution_status(truth_kernel.constitution_doc(), live, ratifs)
     if st.get("status") != "VIOLATION":
         return None
@@ -161,7 +184,10 @@ def _panel_and_theory(name: str) -> str | None:
     doc = _read(DOOR_VERDICTS)
     if not isinstance(doc, dict) or not _fresh(doc):
         return None
-    for cert, row in (doc.get("rows") or {}).items():
+    rows = doc.get("rows") or {}
+    if not isinstance(rows, dict):
+        raise DoorReadError(f"{DOOR_VERDICTS.name} rows are a {type(rows).__name__}")
+    for cert, row in rows.items():
         if not isinstance(row, dict) or not _match(str(cert), name):
             continue
         if authority.suspended("review"):

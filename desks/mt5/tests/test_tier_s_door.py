@@ -174,3 +174,56 @@ def test_the_door_reviews_rows_already_live(monkeypatch: Any) -> None:
     monkeypatch.setattr(pa, "block",
                         lambda n: "REPLICATION_MISMATCH: x" if n == "bad" else None)
     assert pa.review_live(["good", "bad"]) == {"bad": "REPLICATION_MISMATCH: x"}
+
+
+def _door_sandbox(monkeypatch: Any, tmp_path: Path) -> Any:
+    from libs.tiers import authority
+    from libs.tiers import promotion_authority as pa
+    monkeypatch.setattr(pa, "ROOT", tmp_path)
+    for attr in ("REPLICATION", "FDR_ROWS", "FREEZE", "LEDGER", "DOOR_VERDICTS",
+                 "CONSTITUTION"):
+        monkeypatch.setattr(pa, attr, tmp_path / f"{attr}.json")
+    monkeypatch.setattr(pa, "RATIFICATIONS", tmp_path / "RATIFICATIONS.jsonl")
+    monkeypatch.setattr(pa.firewall, "may", lambda *a, **k: True)
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)
+    return pa
+
+
+def test_every_door_input_fails_closed_when_damaged(monkeypatch: Any, tmp_path: Path) -> None:
+    """Absent withholds nothing; a PRESENT input that is torn, not JSON, not an object, or holds
+    the wrong shape withholds with DOOR_ERROR -- on every one of the door's inputs."""
+    from libs.tiers import truth_kernel
+    pa = _door_sandbox(monkeypatch, tmp_path)
+    now = datetime.now(UTC).isoformat()
+    assert pa.block("EURUSD.x") is None, "absent inputs withhold nothing"
+    damaged = {
+        "REPLICATION": ["{torn", "[1, 2]", json.dumps({"verdicts": {"a": 1}})],
+        "FDR_ROWS": ["{torn", json.dumps({"generated_utc": now, "certified": {"a": 1}})],
+        "FREEZE": ["not json", "3"],
+        "DOOR_VERDICTS": ["{", json.dumps({"generated_utc": now, "rows": [1]})],
+        "CONSTITUTION": ["{", json.dumps({"rules": [1]})],
+    }
+    for attr, bodies in damaged.items():
+        for body in bodies:
+            getattr(pa, attr).write_text(body, "utf-8")
+            why = pa.block("EURUSD.x") or ""
+            assert why.startswith("DOOR_ERROR"), (attr, body, why)
+        getattr(pa, attr).unlink()
+    assert pa.block("EURUSD.x") is None
+    pa.CONSTITUTION.write_text(json.dumps(truth_kernel.constitution_doc()), "utf-8")
+    pa.RATIFICATIONS.write_text("{torn\n", "utf-8")
+    loosened = truth_kernel.constitution_doc()
+    loosened["rules"]["cert.dsr_threshold"]["value"] = 0.5
+    pa.CONSTITUTION.write_text(json.dumps(loosened), "utf-8")
+    assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR"), "damaged ratifications"
+
+
+def test_a_suspension_lookup_that_raises_withholds(monkeypatch: Any, tmp_path: Path) -> None:
+    from libs.tiers import authority
+    pa = _door_sandbox(monkeypatch, tmp_path)
+
+    def boom(*a: Any, **k: Any) -> bool:
+        raise OSError("authority table locked")
+
+    monkeypatch.setattr(authority, "suspended", boom)
+    assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR")
