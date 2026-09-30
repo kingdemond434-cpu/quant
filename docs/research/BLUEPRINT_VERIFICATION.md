@@ -171,6 +171,35 @@ Still short:
 - **The judging drain needs evidence.** One box reading of `JUDGING_RATE.json` with creation ≤ judging is required.
 - **Not live.** The PR is not merged and CI is not green.
 
+### 2026-09-30 01:10Z: Tier S batch 4 (PR #55 at `ab404034`)
+
+Checked in the code. The organ, kernel and pricing tests pass (80). `check_tier_s_program.py` reports 20 DONE, 22 PARTIAL, 3 BLOCKED_ON_USER and 1 BLOCKED_ON_BOX.
+
+| Gap | Now | Evidence |
+|---|---|---|
+| Verifiers had no promotion authority (replication, FDR, FREEZE) | **Fixed on the promotion door** | `promoter.tier_s_block` runs beside `blind_review_veto` in both lanes (`promote_generic`, `main`). A replication MISMATCH, online FDR over budget, or a production-judged immune DROP withholds a new live row. Each block is ledgered and billed as rail `tier_s_evidence_block` via `missed_growth`. It fails open when the module errors, and a toy-validator FREEZE carries no authority. |
+| Firewall `may()` had no callers | **Fixed** | `promotion_authority` checks every read and write through `firewall.may("promoter", …)`. |
+| Admission baseline was the layer's own history | **Fixed** | `control_arm.py` holds out a hash-assigned 20% control arm, compared with Welch's t. `cycle_pricing` holds control legs out of the market's steering. |
+| Suspension applied to two consumers only | **Fixed** | `suspended()` is now checked at every steering consumer: market, grammar, self_model, failure_memory, red_queen, topology, genomes, predictions, frontier, online_fdr, immune and twin. |
+| World model was price-only | **Partly fixed** | `world_macro.py` adds rates, credit, vol, dollar, inflation, liquidity, carry and CFTC positioning as daily nodes through the factory's own field catalogue. Flows are UNMEASURED because no dataset exists. |
+| Ancestry was single-parent; rank was descriptor-only | **Fixed (lineage)** | `hypothesis_graph` has multi-parent lineage, and ancestry novelty now prices compute. |
+| Formal conformance was a keyword grep | **Fixed** | `conformance.py` parses the gateway's syntax tree, and the power alarm and conformance findings reach the implementer. |
+
+Still short:
+
+- **Allocator side of the money path.**
+  - `pf_allocator` does not clear the Opportunity Exchange.
+  - Money-path code does not read the constitution's thresholds.
+  - Execution capture does not reach `pf_allocator`.
+- **Traps are not injected blind into the live stream** (waiting on a promoter trap registry).
+- **Remaining scope gaps:**
+  - The digital twin is not a shadow desk.
+  - Chaos never kills processes.
+  - Trade lineage is still rebuilt after the fact rather than stamped at order time.
+  - There is no flows dataset.
+- **The certifier has zero power** (see batch 3). The new promotion door only ever withholds, so no new certificate reaches it until the DSR variance is fixed.
+- **Not live.** Not merged, CI not green, and no box run evidenced.
+
 ## A1 — Audit critical sequence (CS), named defects (D), 10/10 acceptance table (AC)
 
 LIVE = origin/claude/llm-auto-upgrade-verify-gcjac3 @ adaba442. INST = owner "Institutional truth discipline fixes"; TS = owner "Tier S research institution build". I ran the law-gate fences on clean worktrees of LIVE, #52 and #53. I also ran the #52 lockbox tests (23 passed) and the #53 sovereignty/cost-basis/min-lot tests (34 passed).
