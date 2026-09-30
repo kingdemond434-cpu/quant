@@ -39,6 +39,18 @@ def _baseline_tree(root: Path) -> None:
            json.dumps({"regions": {"old_region": {"depth": 3}}, "flagged": []}))
     _write(root / "libs" / "old_deleter.py",
            "import shutil\n\n\ndef go(p):\n    if p.exists():\n        shutil.rmtree(p)\n")
+    # 6. the SIXTH AXIS (attribution, 2026-09-23): a registry whose cells and discoveries born
+    # since the obligation date all carry their producer stamp.
+    import sqlite3
+    db = root / "data" / "alpha_registry.sqlite"
+    db.parent.mkdir(parents=True, exist_ok=True)
+    con = sqlite3.connect(str(db))
+    con.execute("create table research_candidates (id text, created_at text, producer text)")
+    con.execute("create table discoveries (discovery_id text, created_at text, producer text)")
+    con.execute("insert into research_candidates values ('c1', '2026-09-24T01:00:00', 'miner')")
+    con.execute("insert into discoveries values ('d1', '2026-09-24T01:00:00', 'miner')")
+    con.commit()
+    con.close()
 
 
 def _plant_five(root: Path) -> None:

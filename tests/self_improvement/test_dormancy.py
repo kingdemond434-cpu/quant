@@ -62,7 +62,11 @@ def test_a_HEAVILY_IMPORTED_module_is_never_dormant(report: D.DormancyReport) ->
     importer detection is broken, and every other row in the report is noise."""
     paths = {d.path for d in report.dormant}
     assert "libs/research/capacity_policy.py" not in paths
-    assert "libs/execution/protective_stops.py" not in paths
+    # Was libs/execution/protective_stops.py, whose importers (the crypto executors) were retired
+    # 2026-09-05 -- its only remaining importer is libs/execution/binance_testnet.py, so it IS
+    # dormant now and reading it that way is the detector working. input_provenance is the
+    # desk-wide core it stood in for (imported by ~50 organs).
+    assert "libs/ops/input_provenance.py" not in paths
 
 
 def test_every_finding_carries_a_PROVING_COMMAND(report: D.DormancyReport) -> None:

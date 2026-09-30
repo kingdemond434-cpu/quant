@@ -29,6 +29,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -125,6 +126,21 @@ def measure() -> dict[str, Any]:
     return out
 
 
+#: R0237: the exit code is `fence_exit` over a DECLARED pass set, never "fail on one named status,
+#: pass on everything else" -- that sent any unforeseen or misspelled status down `else 0`. The
+#: set is exactly the statuses this fence already exited 0 on (behaviour unchanged for every
+#: status it can emit); what changes is that a status nobody declared now fails closed.
+_PASSING = frozenset({"OK", "UNMEASURED"})
+
+
+def _exit(status: object) -> int:
+    root = str(Path(__file__).resolve().parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.ops.fence_exit import fence_exit
+    return fence_exit(status, _PASSING, fail=1)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true", help="print the measurement as JSON")
@@ -137,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
         for label, d in (m.get("books") or {}).items():
             print(f"   {label:9} entries={d['entries']:3} joined={d['joined']:3} "
                   f"(by raw name alone: {d['joined_by_raw_name']})")
-    return 1 if m["status"] == "BROKEN" else 0
+    return _exit(m["status"])
 
 
 if __name__ == "__main__":

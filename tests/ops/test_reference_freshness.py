@@ -440,9 +440,12 @@ def test_the_fence_is_registered_in_the_law_gate() -> None:
 
 
 def test_the_canon_incident_row_names_the_guard_call_its_owner_must_add() -> None:
-    """The one UNGUARDED path must hand its owner the exact call, not a description of one."""
+    """The canon incident row names the exact guard call -- and, since its owner added it, the
+    row reads GUARDED and the call is really in certificate_truth.apply (2026-09-29 guard)."""
     row = rf.by_id("certificate_truth.apply")
     assert row is not None
-    assert row.status == "unguarded"
+    assert row.status == "guarded"
     assert "require_live_reference(" in row.note
     assert CANON in row.reference
+    src = (Path(__file__).resolve().parents[2] / "desks/mt5/research/certificate_truth.py")
+    assert "require_live_reference(" in src.read_text(encoding="utf-8")

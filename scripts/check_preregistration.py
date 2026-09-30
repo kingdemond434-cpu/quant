@@ -242,6 +242,21 @@ def evaluate() -> dict[str, Any]:
     }
 
 
+#: R0237: the exit code is `fence_exit` over a DECLARED pass set, never "fail on one named status,
+#: pass on everything else" -- that sent any unforeseen or misspelled status down `else 0`. The
+#: set is exactly the statuses this fence already exited 0 on (behaviour unchanged for every
+#: status it can emit); what changes is that a status nobody declared now fails closed.
+_PASSING = frozenset({"OK", "UNMEASURED", "UNMEASURED_POST_CUTOVER"})
+
+
+def _exit(status: object) -> int:
+    root = str(Path(__file__).resolve().parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.ops.fence_exit import fence_exit
+    return fence_exit(status, _PASSING, fail=1)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true")
@@ -272,7 +287,7 @@ def main() -> int:
             print(f"  UNCOVERED {row['seat']:24} {row['generated_at']} {row['why'] or ''}")
     if args.report_only:
         return 0
-    return 1 if rep["status"] == "BREACH" else 0
+    return _exit(rep["status"])
 
 
 if __name__ == "__main__":

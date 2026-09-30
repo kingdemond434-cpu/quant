@@ -104,15 +104,24 @@ def test_no_script_computes_a_holm_bar_from_a_local_len():
 
 
 def test_axis_runner_imports_the_registry():
-    """If the import goes, the bar falls back to a roster count and nothing else notices."""
-    src = (_ROOT / "scripts/run_axis_shadows.py").read_text("utf-8")
-    tree = ast.parse(src)
-    imported = {
-        alias.name
-        for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
-        and node.module == "libs.research.slot_registry" for alias in node.names
-    }
-    assert "cohort_m_for_bar" in imported
+    """If the import goes, the bar falls back to a roster count and nothing else notices.
+
+    `scripts/run_axis_shadows.py` was a crypto axis runner retired in the 2026-09-05 MT5 purge.
+    The property survives as: no script may carry the retired runner's local roster, and every
+    script that computes a forward Holm bar imports the registry's m (the AST scan above is the
+    general form; this pins that the registry import is still what callers use).
+    """
+    assert not (_ROOT / "scripts/run_axis_shadows.py").exists()
+    importers = []
+    for p in sorted((_ROOT / "scripts").glob("*.py")):
+        try:
+            tree = ast.parse(p.read_text("utf-8", errors="ignore"))
+        except SyntaxError:
+            continue
+        if any(isinstance(n, ast.ImportFrom) and n.module == "libs.research.slot_registry"
+               and any(a.name == "cohort_m_for_bar" for a in n.names) for n in ast.walk(tree)):
+            importers.append(p.name)
+    assert "check_cohort_integrity.py" in importers, importers
 
 
 #: Artifacts written by the running desk and excluded from git (`web/*`, `data/*`). Tests that
@@ -144,9 +153,19 @@ def _report(monkeypatch, **over):
     return f
 
 
-def test_fence_is_green_on_the_live_tree():
+def test_fence_is_green_on_the_live_tree(monkeypatch):
+    import scripts.check_cohort_integrity as f
     from scripts.check_cohort_integrity import build_report
 
+    # HERMETIC PRODUCERS, LIVE REGISTRY. The bar/occupancy artifacts are gitignored runtime state
+    # (web/*, data/*) and their axis producer was retired 2026-09-05, so in any fresh checkout
+    # every one is absent and the fence reads UNMEASURED -- a fact about the host. Each is served
+    # here recording the registry's own m, so what is judged is the live registry, the live bar
+    # arithmetic and the live AST scan, not whether this disk holds another machine's files.
+    m = cohort_m_for_bar().m
+    served = {rel: {field: m} for rel, field in f._BAR_ARTIFACTS.items()}
+    served.update({rel: {sec: {fld: m}} for rel, (sec, fld) in f._OCCUPANCY_ARTIFACTS.items()})
+    monkeypatch.setattr(f, "_read_json", lambda rel: served.get(rel))
     rep = build_report()
     # THE DANGEROUS CONDITION IS CHECKED UNCONDITIONALLY, BEFORE ANY SKIP. `too_loose` is an
     # artifact judged against a SMALLER cohort than the registry knows about -- the phantom-edge

@@ -4961,7 +4961,12 @@ def check_test_suite_collectable(defects) -> None:
     best = int(rec.get("max_collected", 0))
     if n > best:
         TEST_RECORD.parent.mkdir(parents=True, exist_ok=True)
+        # MERGED, NEVER REPLACED. The record has a second writer (`libs/ops/suite_record`, the
+        # `pass_fail` block from scripts/record_suite_run.py); writing a fresh three-key dict
+        # here silently erased it on every raise of the collection mark -- the state-eraser
+        # class tests/ops/test_suite_record.py pins.
         TEST_RECORD.write_text(json.dumps({
+            **rec,
             "max_collected": n, "at": datetime.now(tz=UTC).isoformat(),
             "note": "high-water mark of COLLECTABLE test modules; ratchets UP only. A suite may "
                     "never quietly shrink -- deleting a test is a decision, not a side effect.",
@@ -4974,6 +4979,32 @@ def check_test_suite_collectable(defects) -> None:
             "deleted file at a time while 'tests pass' stays true the entire way down. Restore "
             f"them, or record in {TEST_RECORD.relative_to(ROOT)} why the coverage is legitimately "
             "gone."))
+
+
+def check_test_suite_pass_fail(defects) -> None:
+    """The PASS/FAIL half of the suite record (`libs/ops/suite_record.grade`).
+
+    The collection ratchet above cannot see a test that imports fine and FAILS; this reads the
+    block `scripts/record_suite_run.py` writes and raises a defect for every non-OK grade. A DICT
+    LOOKUP on purpose: a status `grade()` gains without a key here is a KeyError, loud on the
+    first run, rather than a silent skip (tests/ops/test_suite_record.py pins the two together).
+    """
+    from libs.ops import suite_record
+    keys = {
+        "RED": "test-suite-red",
+        "RED-ENTRENCHED": "test-suite-red-entrenched",
+        "FELL": "test-suite-fell",
+        "UNMEASURED": "test-suite-pass-fail-unmeasured",
+        "STALE": "test-suite-pass-fail-stale",
+    }
+    try:
+        rec = json.loads(TEST_RECORD.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        rec = {}
+    status, detail = suite_record.grade(rec if isinstance(rec, dict) else {})
+    if status == "OK":
+        return
+    defects.append((keys[status], f"test suite {status}: {detail}"))
 
 
 #: Triage registers excluded from §35 because they disposition their own items inline. The
@@ -7066,6 +7097,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("naive-datetime", check_naive_datetime),
                       ("host-memory", check_host_memory_headroom),
                       ("test-suite", check_test_suite_collectable),
+                      ("test-suite-pass-fail", check_test_suite_pass_fail),
                       ("triage-disposition", check_triage_disposition),
                       ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),
@@ -8595,12 +8627,16 @@ def check_unwired_modules(defects) -> None:
                     # register the module AND its parent packages, matching the AST roll-up
                     for i in range(2, len(parts) + 1):
                         imported.add(".".join(parts[:i]))
-    for area in ("scripts", "libs", "ops"):
+    # `desks` IS A CALLER SURFACE TOO (2026-09-29): the MT5 desk's organs under desks/mt5/ import
+    # libs/ directly, and leaving them out reported ~90 libs modules the trading desk actually
+    # uses as orphans. Its tests/ trees are excluded for the same reason tests/ is: a test
+    # importing a module proves it works, not that anything uses it.
+    for area in ("scripts", "libs", "ops", "desks"):
         base = ROOT / area
         if not base.exists():
             continue
         for p in base.rglob("*.py"):
-            if "__pycache__" in p.parts:
+            if "__pycache__" in p.parts or (area == "desks" and "tests" in p.parts):
                 continue
             try:
                 tree = ast.parse(p.read_text("utf-8", errors="ignore"))
@@ -8676,15 +8712,23 @@ def check_unwired_modules(defects) -> None:
     # script). Research one-shots stay unaudited on purpose: not every script needs a caller, and
     # a check that said otherwise would produce 69 defects nobody could act on.
     sole_importer: dict[str, str] = {}
+    # Walked ONCE, not once per module: the per-module rglob was O(modules x files) in directory
+    # walks alone. The MT5 desk (minus its tests) counts as an importer for the reason above.
+    script_files = list(ROOT.joinpath("scripts").glob("*.py"))
+    other_files = [
+        f for f in (*(ROOT / "libs").rglob("*.py"),
+                    *(p for p in (ROOT / "desks").rglob("*.py") if "tests" not in p.parts))
+        if "__pycache__" not in f.parts
+    ]
     for mod in modules:
         importers = [
             str(f.relative_to(ROOT))
-            for f in ROOT.joinpath("scripts").glob("*.py")
+            for f in script_files
             if mod in _imports_of(f)
         ]
         others = [
-            f for f in (ROOT / "libs").rglob("*.py")
-            if "__pycache__" not in f.parts and mod in _imports_of(f)
+            f for f in other_files
+            if mod in _imports_of(f)
             and ".".join(f.relative_to(ROOT).with_suffix("").parts) != mod
         ]
         if len(importers) == 1 and not others:
@@ -8698,6 +8742,11 @@ def check_unwired_modules(defects) -> None:
         f for pat in ("ops/*", "scripts/*.py", ".github/workflows/*", "docs/*.md")
         for f in ROOT.glob(pat) if f.is_file()
     ]
+    # The MT5 desk's cycle is a scheduler too: desks/mt5/research/hourly_cycle.py runs scripts as
+    # legs (`_producer("research_api_status", "scripts/research_api_status.py")`) and
+    # batteries.py lists more. Its tests are not invokers.
+    invoker_files += [p for p in (ROOT / "desks").rglob("*.py")
+                      if "tests" not in p.parts and "__pycache__" not in p.parts]
     # Scripts that cannot run on this platform at all. `run_autodiscovery.py` imports MetaTrader5,
     # a Windows-only broker bridge already carried in the optional-dependency allowlist -- wiring
     # it into a Linux cadence would schedule a guaranteed ImportError every cycle, which is noise

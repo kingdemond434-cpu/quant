@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 import time
 
+import pytest
 from scripts.check_organ_liveness import (
     MIN_TOLERANCE_H,
     STALE_MULTIPLE,
@@ -16,6 +17,22 @@ from scripts.check_organ_liveness import (
     cadence_hours,
     parse_manifest,
 )
+
+from libs.ops import producer_census as PCEN
+
+
+@pytest.fixture(autouse=True)
+def _the_vps_that_holds_the_plane(monkeypatch):
+    """Judge the synthetic plane AS the host that owns it.
+
+    Since bcbec41f (2026-09-24) the fence refuses to judge `ops/crontab.manifest` on a host that
+    does not run it and reports UNMEASURED_HERE instead -- correct on the box, a build box, CI and
+    a fresh clone, and exactly what every test below would see in one. These tests pin the
+    VERDICT LOGIC, so they stand on the VPS with its clocks registered; the mirror refusal is
+    pinned on its own in `test_a_host_that_does_not_hold_the_plane_judges_nothing`.
+    """
+    monkeypatch.setattr(PCEN, "host", lambda: "vps")
+    monkeypatch.setattr(PCEN, "runs_clocks_here", lambda *a, **k: True)
 
 _MAN = """# EVIDENCE: scripts/a.py -> data/a.json; docs/CONSTITUTION.md L1.1
 0 * * * * cd "$Q" && python scripts/a.py
@@ -170,3 +187,20 @@ def test_tolerance_is_loose_enough_that_one_missed_tick_is_not_a_failure(tmp_pat
 def test_an_unreadable_manifest_is_unmeasured_not_ok(tmp_path):
     rep = audit(tmp_path)
     assert rep["status"] == "UNMEASURED" and rep["organs"] == []
+
+
+def test_a_host_that_does_not_hold_the_plane_judges_nothing(tmp_path, monkeypatch):
+    """bcbec41f: a mirror checkout's absent gitignored artifact is not evidence about the organ.
+
+    The row is COUNTED and NAMED as UNMEASURED_HERE, never NEVER-PRODUCED and never a pass.
+    """
+    monkeypatch.setattr(PCEN, "runs_clocks_here", lambda *a, **k: False)
+    (tmp_path / "ops").mkdir()
+    (tmp_path / "ops/crontab.manifest").write_text(_MAN, encoding="utf-8")
+    rep = audit(tmp_path)
+    states = {o["script"]: o["state"] for o in rep["organs"]}
+    assert states["scripts/a.py"] == "UNMEASURED_HERE"
+    assert rep["status"] == "UNMEASURED_HERE" and rep["n_fresh"] == 0
+    # --strict judges the plane anyway, and then the absence IS a wiring diagnosis.
+    strict = {o["script"]: o["state"] for o in audit(tmp_path, strict=True)["organs"]}
+    assert strict["scripts/a.py"] == "NEVER-PRODUCED"

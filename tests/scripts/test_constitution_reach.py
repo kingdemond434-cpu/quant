@@ -75,6 +75,9 @@ _NOT_ORGANS = {
     "check_llm_routing":     "routing FENCE -- it greps organ sources for how they resolve models "
                              "and sends nothing to any of them. An objective preamble would be "
                              "text nothing sends anywhere",
+    "check_swap_reliability": "reliability READER (R0595) -- it computes each seat's completed-run "
+                              "rate from data/external_panel_log.jsonl after the fact; it names "
+                              "llm_panel.json only in a remediation string and calls no model",
 }
 
 
