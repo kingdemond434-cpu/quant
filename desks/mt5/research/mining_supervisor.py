@@ -327,7 +327,14 @@ class Pipeline:
         deadline = time.monotonic() + max(1.0, budget_s)
         get = http_get or acq.polite_http(deadline)
         t = now or utcnow()
-        due = sorted(self.roster, key=lambda s: (s.priority, s.id))
+        plan: dict[str, tuple[int, int]] = {}
+        if self.civ is not None:
+            try:
+                plan = self.civ.fetch_plan()          # SOURCE_ROI's lane budget, read here
+            except Exception:
+                plan = {}
+        due = sorted(self.roster, key=lambda s: (s.priority, plan.get(s.id, (10**6, 0))[0],
+                                                 s.id))
         if self.civ is not None and self.civ_mode in ("skip", "only"):
             civ_ids = self.civ.civ_ids()
             due = [s for s in due if (s.id in civ_ids) == (self.civ_mode == "only")]
@@ -336,6 +343,8 @@ class Pipeline:
         def one(src: acq.Source) -> acq.AcquireReport:
             ctx = acq.FetchContext(http_get=get, deadline=deadline, now=t, root=self.root,
                                    robots=robots)
+            if src.id in plan:
+                ctx.max_items = max(ctx.max_items, plan[src.id][1])
             t_src = time.monotonic()
             try:
                 return acq.acquire(src, self.store, self.cursors, ctx, root=self.root,

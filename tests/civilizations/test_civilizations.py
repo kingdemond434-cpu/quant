@@ -352,7 +352,10 @@ def test_end_to_end_git_lane_routes_parks_releases_and_publishes(tmp_path: Path)
     assert json.loads((rep / "CIV_FEED_FENCE.json").read_text())["unfed_count"] == 0
     lanes = json.loads((tmp_path / "reports" / "CIVILIZATION_LANES.json").read_text())
     row = next(x for x in lanes["lanes"] if x["id"] == "lean_test")
-    assert row["status"] in ("ACTIVE", "COLD") and row["last_evaluated_at"] == "NEVER"
+    # D36: nothing of the lane's own reached EVALUATED, so it is COLD with NEVER -- never
+    # ACTIVE on other producers' cells
+    assert row["status"] == "COLD" and row["last_evaluated_at"] == "NEVER"
+    assert row["evaluated_cells_30d"] == 0
     assert row["last_fetch_outcome"] != "NEVER_RUN"
     # a second pass on an unchanged repo is a no-op delta (durable cursor)
     pipe2 = MS.Pipeline(data, tmp_path / "reports" / "mining", roster=[src], hooks=hooks,

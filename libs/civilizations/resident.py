@@ -49,6 +49,7 @@ from libs.civilizations import worldquant as WQ
 ROSTER = Path("desks/mt5/data/source_rosters/civilizations.yaml")
 FRONTIER = Path("desks/mt5/data/source_rosters/civilizations_frontier.jsonl")
 JUDGE_COVERAGE = Path("desks/mt5/reports/JUDGE_COVERAGE.json")
+DEFAULT_ITEMS = 200               # libs.mining.acquirer.FetchContext.max_items
 HEARTBEAT_FRESH = timedelta(minutes=20)
 FRONTIER_PER_PASS = 25
 HANDBACK_SOURCE = "brain_llm_handback"
@@ -452,7 +453,13 @@ class Resident:
         """Hand the highest-priority parked candidates to the spine's compile/dedup/seal."""
         from libs.mining import extractor
         load = BP.judge_load(self.root / JUDGE_COVERAGE)
-        cap = budget if budget is not None else BP.release_budget(load)
+        growing = BP.backlog_growing(self.data / "backlog_history.txt", load)
+        hourly = BP.release_budget(load, growing=growing)
+        already = BP.released_within(self.data / "release_log.txt", 3600)
+        # one HOURLY budget shared by the resident and the hourly leg (release_log is written
+        # under the release lock), ordered on the judge's backlog signal (CRO D34)
+        cap = budget if budget is not None else max(0, hourly - already)
+        paused = budget is None and hourly == 0
         pend = self.parked.pending()
         sat = self.saturated_areas(pipeline)
         chosen = BP.select(pend, cap, sat)
@@ -481,7 +488,12 @@ class Resident:
             if n:
                 pipeline.store.set_state(str(rec["record_id"]), "EXTRACTED", n_cells=n)
         self.parked.mark_released(done)
-        return {"budget": cap, "judge_backlog": load.unjudged if load.measured
+        if done:
+            BP.log_release(self.data / "release_log.txt", len(done))
+        return {"budget": cap, "hourly_budget": hourly, "released_last_hour": already,
+                "paused_on_backlog": paused,
+                "backlog_growing": "UNMEASURED" if growing is None else growing,
+                "judge_backlog": load.unjudged if load.measured
                 else "UNMEASURED", "pending_before": len(pend), "released": len(done),
                 "cells_made": made, "rules_compiled": compiled,
                 "saturated_areas": len(sat), "still_parked": len(pend) - len(done)}
@@ -516,6 +528,8 @@ class Resident:
                "lane": meta.get("lane"), "uri": rec.get("source_uri"),
                "title": str(rec.get("title") or "")[:200],
                "outcomes": O.kinds(outs), "detail": [o.as_row() for o in outs],
+               # the reader's vocabulary (knowledge_graph / lead_schema): who said it, where
+               "source": f"civ:{rec.get('source_id')}", "url": rec.get("source_uri"),
                **culture_of(meta), **{k: v for k, v in extra.items() if v}}
         line = json.dumps(row, default=str, ensure_ascii=False) + "\n"
         for o in outs:
@@ -580,6 +594,20 @@ class Resident:
         t0 = time.monotonic()
         started = (now or _now()) - timedelta(hours=2)
         out: dict[str, Any] = {}
+        # the resident and the hourly leg share this store: whoever holds the lock runs the
+        # after-pass, the other skips it (and says so) rather than both releasing
+        lock = BP.FileLock(self.data / "after_pass.lock")
+        if not lock.acquire(wait_s=0):
+            out = {"skipped": "after_pass lock held by the other process"}
+            self._write("AFTER_PASS_SKIPPED.json", {"generated_at": _iso(_now()), **out})
+            return out
+        try:
+            return self._after_pass(pipeline, t0, started, out, now=now, budget_s=budget_s)
+        finally:
+            lock.release()
+
+    def _after_pass(self, pipeline: Any, t0: float, started: datetime, out: dict[str, Any], *,
+                    now: datetime | None, budget_s: float) -> dict[str, Any]:
         steps: tuple[tuple[str, Callable[[], Any]], ...] = (
                  ("release", lambda: self.release(pipeline, now=now)),
                  ("handback", lambda: self.verify_handback(pipeline, now=now)),
@@ -754,14 +782,27 @@ class Resident:
             st = status.get(sid) or {}
             r = runs.get(sid) or {}
             fun = roi_rows.get(sid) or {}
+            via = st.get("evaluated_via") or {}
+            # OWN cells only: the lane's own mining receipts (cells IT minted that reached
+            # EVALUATED). Docket attribution counts other producers' cells that merely cite
+            # the lane's URL; it is published beside the verdict, never as it.
+            own = int(via.get("mining") or 0)
+            if not st:
+                verdict = "DISABLED" if m.get("enabled") is False else "UNREGISTERED"
+                why = ""
+            elif own >= 1 and sid in last_eval:
+                verdict, why = "ACTIVE", ""
+            else:
+                verdict = "COLD"
+                why = (st.get("cold_reason") or "") if st.get("status") != "ACTIVE" else (
+                    "no cell of its own EVALUATED in 30 days (docket attribution only)")
+                why = why or "no cell of its own EVALUATED in 30 days"
             lanes.append({
                 "id": sid, "civilization": m.get("civilization"), "lane": m.get("lane"),
-                "status": st.get("status") or ("DISABLED" if m.get("enabled") is False
-                                               else "UNREGISTERED"),
-                "cold_reason": st.get("cold_reason", ""),
+                "status": verdict, "cold_reason": why,
                 "last_evaluated_at": last_eval.get(sid) or "NEVER",
-                "evaluated_cells_30d": st.get("evaluated_cells_30d", 0),
-                "evaluated_via": st.get("evaluated_via") or {},
+                "evaluated_cells_30d": own,
+                "docket_attributed_30d": int(via.get("docket") or 0),
                 "last_fetch_at": r.get("at") or "NEVER",
                 "last_fetch_outcome": r.get("outcome") or "NEVER_RUN",
                 "cells_emitted": fun.get("cells_emitted", 0),
@@ -770,8 +811,11 @@ class Resident:
                 "methods_only": bool(m.get("methods_only")),
                 "source_culture": m.get("source_culture")})
         by: Counter[str] = Counter(str(x["status"]) for x in lanes)
-        doc = {"generated_at": _iso(_now()), "rule": "ACTIVE = a cell EVALUATED within 30 days "
-               "(libs/mining source_status); last_evaluated_at is all-time",
+        doc = {"generated_at": _iso(_now()),
+               "rule": "ACTIVE = a cell the lane ITSELF minted reached EVALUATED within 30 "
+                       "days; docket attribution (other producers' cells citing the lane) is "
+                       "published as docket_attributed_30d and never makes a lane ACTIVE; "
+                       "last_evaluated_at is all-time over the lane's own cells",
                "lanes_total": len(lanes), "by_status": dict(by),
                "never_evaluated": sum(1 for x in lanes if x["last_evaluated_at"] == "NEVER"),
                "lanes": lanes}
@@ -841,6 +885,19 @@ class Resident:
                                         "next_pass_item_budget": budgets})
         return {"lanes": len(rows), "by_civilization": {k: dict(v) for k, v in by_civ.items()}}
 
+    def fetch_plan(self) -> dict[str, tuple[int, int]]:
+        """The READER of SOURCE_ROI.json's next_pass_item_budget: {lane: (order, max_items)}.
+        Higher-ROI lanes fetch first; a lane's item budget is never below the fetcher default
+        (200), so ROI only ever ADDS reach -- mining is never cut."""
+        try:
+            doc = json.loads((self.reports / "SOURCE_ROI.json").read_text("utf-8"))
+        except (OSError, ValueError):
+            return {}
+        budgets = doc.get("next_pass_item_budget") or {}
+        ranked = sorted(budgets, key=lambda k: -int(budgets.get(k) or 0))
+        return {sid: (i, max(DEFAULT_ITEMS, int(budgets.get(sid) or 0)))
+                for i, sid in enumerate(ranked)}
+
     def culture_rows(self, pipeline: Any, *, since: datetime) -> dict[str, Any]:
         """Every cell a civilization lane minted gets its lane's four culture fields, keyed by
         cell id and gauntlet cell (the join #139's CELL_CULTURE_INDEX reads)."""
@@ -901,7 +958,14 @@ class Resident:
             if at < cutoff and sid not in fed:
                 unfed.append(sid)
         doc = {"generated_at": _iso(_now()), "unfed_count": len(unfed), "target": 0,
+               "unmeasured_count": len(unmeasured),
+               "fed_means": "routed to a typed outcome ledger that has a reader (a cell for "
+                            "ALPHA_MECHANISM, the knowledge graph for the ten others) within "
+                            "24h of the lane's first record. It is NOT evaluation: whether a "
+                            "lane's own cells were judged is CIVILIZATION_LANES.json (D36)",
                "unfed": unfed, "unmeasured_no_records_yet": unmeasured,
-               "fence": "RED" if unfed else "GREEN"}
+               # a lane that has fetched nothing is neither fed nor unfed: the fence is not
+               # GREEN while any lane is unmeasured
+               "fence": "RED" if unfed else "UNMEASURED" if unmeasured else "GREEN"}
         self._write("CIV_FEED_FENCE.json", doc)
         return {k: v for k, v in doc.items() if k not in ("unfed", "unmeasured_no_records_yet")}

@@ -24,13 +24,17 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-FLOOR_PER_PASS = 200
-CIV_SHARE = 0.10                 # of the judge's measured hourly capacity
+FLOOR_PER_HOUR = 200
+FLOOR_PER_PASS = FLOOR_PER_HOUR   # kept for callers; the budget is HOURLY across all processes
+CIV_SHARE = 0.10                 # of the judge's measured daily capacity, spread over 24 hours
+GROWTH_WINDOW_H = 1.0            # the backlog is GROWING when it rose over this window
+LOCK_STALE_S = 1800
 SATURATION_JUDGED = 50
 SATURATED_WEIGHT = 0.1
 CROWDING_RANK = {"low": 0, "medium": 1, "UNMEASURED": 1, "high": 2}
@@ -61,14 +65,113 @@ def judge_load(report: Path) -> JudgeLoad:
                      False if drain else None)
 
 
-def release_budget(load: JudgeLoad, *, passes_per_day: int = 24) -> int:
-    """Candidates the civilizations may donate this pass."""
-    if not load.measured or not load.capacity_per_day:
-        return FLOOR_PER_PASS
+def release_budget(load: JudgeLoad, *, passes_per_day: int = 24,
+                   growing: bool | None = None) -> int:
+    """Candidates the civilizations may donate PER HOUR (all processes together).
+
+    Ordered on the judge's own backlog signal: while the measured backlog is GROWING (and the
+    judge is not draining) the civilizations donate nothing -- their candidates stay PARKED,
+    mining and parking continue, and the pause is published. A backlog that is not measured
+    gets the floor, never zero (a missing report must not silence a civilization)."""
+    if not load.measured:
+        return FLOOR_PER_HOUR
+    if growing and not load.draining:
+        return 0
+    if not load.capacity_per_day:
+        return FLOOR_PER_HOUR
     share = load.capacity_per_day * CIV_SHARE / max(1, passes_per_day)
     if load.draining:
         share *= 2
-    return max(FLOOR_PER_PASS, int(share))
+    return max(FLOOR_PER_HOUR, int(share))
+
+
+def backlog_growing(history: Path, load: JudgeLoad, *, now: float | None = None) -> bool | None:
+    """Record this reading and say whether the backlog ROSE over GROWTH_WINDOW_H. None while
+    there is no reading at least that old (UNMEASURED, never 'not growing')."""
+    t = time.time() if now is None else now
+    rows: list[tuple[float, int]] = []
+    try:
+        for ln in Path(history).read_text("utf-8").splitlines():
+            try:
+                a, b = ln.split()
+                rows.append((float(a), int(b)))
+            except ValueError:
+                continue
+    except OSError:
+        pass
+    if load.unjudged is not None:
+        rows.append((t, int(load.unjudged)))
+        rows = [r for r in rows if r[0] >= t - 48 * 3600][-2000:]
+        Path(history).parent.mkdir(parents=True, exist_ok=True)
+        Path(history).write_text("".join(f"{a} {b}\n" for a, b in rows), "utf-8")
+    old = [b for a, b in rows if a <= t - GROWTH_WINDOW_H * 3600]
+    if not old or load.unjudged is None:
+        return None
+    return int(load.unjudged) > old[-1]
+
+
+def released_within(log: Path, seconds: float, *, now: float | None = None) -> int:
+    t = time.time() if now is None else now
+    n = 0
+    try:
+        for ln in Path(log).read_text("utf-8").splitlines():
+            try:
+                a, b = ln.split()
+            except ValueError:
+                continue
+            if float(a) >= t - seconds:
+                n += int(b)
+    except OSError:
+        return 0
+    return n
+
+
+def log_release(log: Path, n: int, *, now: float | None = None) -> None:
+    with Path(log).open("a", encoding="utf-8") as fh:
+        fh.write(f"{time.time() if now is None else now} {int(n)}\n")
+
+
+class FileLock:
+    """A cross-process lock that works on Windows and POSIX: an O_EXCL lock file, broken when
+    older than LOCK_STALE_S (a process that died holding it). `acquire(wait_s=0)` never blocks."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = Path(path)
+        self.held = False
+
+    def acquire(self, wait_s: float = 0.0) -> bool:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        end = time.monotonic() + max(0.0, wait_s)
+        while True:
+            try:
+                fd = os.open(str(self.path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(fd, f"{os.getpid()} {time.time()}".encode())
+                os.close(fd)
+                self.held = True
+                return True
+            except FileExistsError:
+                try:
+                    if time.time() - self.path.stat().st_mtime > LOCK_STALE_S:
+                        self.path.unlink(missing_ok=True)
+                        continue
+                except OSError:
+                    continue
+            if time.monotonic() >= end:
+                return False
+            time.sleep(0.05)
+
+    def release(self) -> None:
+        if self.held:
+            self.path.unlink(missing_ok=True)
+            self.held = False
+
+    def __enter__(self) -> FileLock:
+        if not self.acquire(wait_s=30.0):
+            raise TimeoutError(f"lock {self.path} held")
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.release()
 
 
 def priority(c: Mapping[str, Any], *, saturated: bool) -> tuple[Any, ...]:
@@ -86,13 +189,18 @@ class ParkedQueue:
         self.path = Path(path)
         self.released_path = self.path.with_suffix(".released.jsonl")
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        # the resident and the hourly leg share this queue: every append holds the lock
+        self.lock = FileLock(self.path.with_suffix(".lock"))
 
     def park(self, rows: Iterable[Mapping[str, Any]]) -> int:
         n = 0
-        with self.path.open("a", encoding="utf-8") as fh:
-            for r in rows:
-                fh.write(json.dumps(dict(r), default=str, ensure_ascii=False) + "\n")
-                n += 1
+        body = "".join(json.dumps(dict(r), default=str, ensure_ascii=False) + "\n"
+                       for r in rows)
+        if not body:
+            return 0
+        with self.lock, self.path.open("a", encoding="utf-8") as fh:
+            fh.write(body)
+            n = body.count("\n")
         return n
 
     def _released(self) -> set[str]:
@@ -119,7 +227,7 @@ class ParkedQueue:
         return out
 
     def mark_released(self, ids: Iterable[str]) -> None:
-        with self.released_path.open("a", encoding="utf-8") as fh:
+        with self.lock, self.released_path.open("a", encoding="utf-8") as fh:
             for i in ids:
                 fh.write(f"{i}\n")
             fh.flush()
