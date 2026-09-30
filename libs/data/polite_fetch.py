@@ -245,10 +245,19 @@ def get(url: str, *, headers: Mapping[str, str] | None = None, timeout: float = 
     `timeout` is per attempt; `deadline` (a `time.monotonic()` value) caps the whole call,
     retries and backoff included, so no fetch can outlive the budget of the leg that made it.
     """
+    resp = Response(url=url)
+    # THE PLATFORM TERMS FENCE (2026-09-30): a URL on a platform whose own agreement bars this
+    # desk's automated use (Reddit, StockTwits -- libs/data/terms_fence.py) is never requested.
+    # The Response carries the named refusal, so the caller records it instead of a silent miss.
+    from libs.data import terms_fence as _tf
+    _why = _tf.platform_of_url(url)
+    if _why:
+        resp.error = f"{_tf.PLATFORMS[_why]['status']}:{_why}: {_tf.PLATFORMS[_why]['reason']}"
+        _stat(leg, error=f"terms_fenced:{_why}")
+        return resp
     hdr = {**BROWSER_HEADERS, **(headers or {})}
     host = urlparse(url).netloc.lower()
     open_ = opener or urllib.request.urlopen
-    resp = Response(url=url)
     t0 = time.monotonic()
     for attempt in range(max(0, retries) + 1):
         if deadline is not None and time.monotonic() >= deadline:

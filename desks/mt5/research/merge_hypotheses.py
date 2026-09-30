@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -535,6 +536,25 @@ def _lease(path: Path) -> None:
         pass
 
 
+def label_terms_fenced(rows: list[dict]) -> dict:
+    """Stamp `provenance_label` on every docket row a terms-fenced platform touched (Reddit's
+    User Agreement and Data API terms, 2026-09-30). The ORGAN that writes the docket labels it,
+    so the label survives every rebuild and nobody edits box state by hand. Nothing else about a
+    row changes: identity, order and any verdict it already has stay as they were."""
+    root = str(BASE.parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.data import terms_fence as tf
+    counts: dict[str, int] = {}
+    for r in rows:
+        if isinstance(r, dict):
+            lab = tf.label_row(r)
+            if lab:
+                counts[lab] = counts.get(lab, 0) + 1
+    return {"labelled": counts, "total": sum(counts.values()),
+            "field": "provenance_label", "rule": "label only; never delete, never re-judge"}
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
@@ -861,10 +881,14 @@ def main() -> int:
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
                   f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
             return 0
+    terms_labels = label_terms_fenced(rows_out)
     TARGET.write_text(json.dumps(rows_out, indent=1, default=str), "utf-8")
     _lease(TARGET)
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
+        # EXISTING CELLS FROM A TERMS-FENCED PLATFORM (libs/data/terms_fence.py), labelled and
+        # left exactly where they are: same order, same verdicts, never deleted or re-judged.
+        "terms_fence_labels": terms_labels,
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
         "fresh_intake_stamps": intake_stamped,

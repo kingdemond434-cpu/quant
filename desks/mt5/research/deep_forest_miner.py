@@ -97,6 +97,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
         sys.path.insert(0, p)
 
 from libs.data import polite_fetch as pf  # noqa: E402
+from libs.data import terms_fence as _tf  # noqa: E402
 from libs.research import mechanism_claims as mc  # noqa: E402
 
 SOURCE = "deep_forest"
@@ -266,6 +267,21 @@ def accept_language(lang: str) -> str:
 
 
 # ------------------------------------------------------------------------------- fetching
+def fenced_ground(g: dict[str, Any]) -> str | None:
+    """The fenced platform a ground belongs to (its route, url or site), or None."""
+    if str(g.get("route") or "").lower() in ("reddit", "stocktwits"):
+        return str(g.get("route")).lower()
+    for k in ("url", "site", "feed"):
+        p = _tf.platform_of_url(str(g.get(k) or ""))
+        if p:
+            return p
+    for f in g.get("feeds") or []:
+        p = _tf.platform_of_url(str(f or ""))
+        if p:
+            return p
+    return None
+
+
 def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
     """One polite GET (per-host spacing, bounded retry on 429/5xx/transport, certifi-backed TLS,
     charset-aware decoding). Raises `urllib.error.HTTPError` on an HTTP failure and `OSError`
@@ -1118,15 +1134,12 @@ class _Run:
                 "errors": errors[:4]}
 
     def ground_reddit(self, g: dict[str, Any]) -> dict[str, Any]:
-        """Subreddits through their public feeds (the JSON API answers 403 to a datacenter;
-        the feeds do not -- measured by side_channels/reddit_miner)."""
-        feeds = []
-        for sub in g.get("subs") or []:
-            feeds.append(f"https://www.reddit.com/r/{sub}/top/.rss?t=month")
-            feeds.append(f"https://www.reddit.com/r/{sub}/new/.rss")
-        out = self.ground_rss(g, feeds)
-        out["subs"] = len(g.get("subs") or [])
-        return out
+        """FENCED 2026-09-30: Reddit's User Agreement and Data API terms cover the RSS feeds and
+        the anonymous JSON too and require an agreement for commercial use, which the desk does
+        not hold. Nothing is requested; the refusal names the reason and the substitutes.
+        (`work` refuses the ground before reaching here; this stays so a direct call cannot
+        fetch either.)"""
+        return {**_tf.refusal("reddit"), "claims": 0, "subs": len(g.get("subs") or [])}
 
     def ground_wayback(self, g: dict[str, Any]) -> dict[str, Any]:
         """A ground that no longer exists (the Quantopian forum) through the Wayback Machine:
@@ -1344,6 +1357,14 @@ class _Run:
             self.status.append({**row, "status": "NO_ADDRESS",
                                 "why": f"no site and no url to reach for: {g.get('why')}"})
             return
+        # THE PLATFORM TERMS FENCE (2026-09-30). A ground on a platform whose own agreement bars
+        # this desk's automated use -- every `route: reddit` ground, and any ground whose url or
+        # site is on Reddit or StockTwits -- is never fetched. Its row says so by name, with the
+        # lawful substitutes that now carry its information class (libs/data/terms_fence.py).
+        fenced = fenced_ground(g)
+        if fenced:
+            self.status.append({**row, **_tf.refusal(fenced), "claims": 0})
+            return
         if not self.fetch:
             self.status.append({**row, "status": "SKIPPED", "why": "--no-fetch"})
             return
@@ -1448,6 +1469,9 @@ FRONTIER_NAME = "deep_forest_frontier.json"
 _FRONTIER_OUTCOME: dict[str, str] = {
     "PRODUCTIVE": "YIELDED", "REACHED_NO_CLAIMS": "EMPTY", "BLOCKED": "BLOCKED",
     "NO_NETWORK": "BLOCKED", "UNREACHABLE": "BLOCKED",
+    # A platform-terms fence (libs/data/terms_fence.py) is a named blocker that lifts only with
+    # an agreement; it is BLOCKED in the frontier's vocabulary, with the ruling as the blocker.
+    "BLOCKED_WITH_SUBSTITUTE": "BLOCKED", "BLOCKED_TERMS": "BLOCKED",
 }
 
 
@@ -1803,6 +1827,8 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "productive": sum(1 for s in grounds_status if s.get("status") == "PRODUCTIVE"),
            "blocked": [s.get("ground") for s in grounds_status
                        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE")],
+           "terms_fenced": [s.get("ground") for s in grounds_status
+                            if s.get("status") in ("BLOCKED_WITH_SUBSTITUTE", "BLOCKED_TERMS")],
            "momentum_only_grounds": [s.get("ground") for s in grounds_status
                                      if s.get("momentum_only")],
            "by_region": by_region,

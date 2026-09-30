@@ -132,6 +132,12 @@ ALL_MINERS = [
 ]
 
 
+#: Miners whose platform is terms-fenced: they run, request nothing and write a fence artifact.
+#: reddit: Reddit's User Agreement and Data API terms (project coordinator ruling 2026-09-30).
+TERMS_FENCED = {"reddit": ("Reddit User Agreement + Data API terms require an agreement for "
+                           "commercial use; see libs/data/terms_fence.py")}
+
+
 def run_all_miners() -> dict:
     results = {}
     total = 0
@@ -140,6 +146,11 @@ def run_all_miners() -> dict:
         if status == "ok":
             disc = payload
             results[name] = {"count": len(disc), "discoveries": disc}
+            if name in TERMS_FENCED:
+                # A terms-fenced miner (libs/data/terms_fence.py) is listed as fenced, never as
+                # a miner that merely found nothing this hour.
+                results[name].update({"status": "BLOCKED_WITH_SUBSTITUTE",
+                                      "reason": TERMS_FENCED[name]})
             total += len(disc)
             print(f"  {name}: {len(disc)} discoveries")
         elif status == "timeout":

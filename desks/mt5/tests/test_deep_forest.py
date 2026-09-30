@@ -604,7 +604,9 @@ def test_feed_reddit_foreign_papers_wayback_nitter_youtube_and_telegram_routes_r
     doc = _run_grounds(monkeypatch, tmp_path, grounds)
     st = {g["ground"]: g for g in doc["grounds"]}
     assert st["Medium"]["status"] == "PRODUCTIVE" and st["Medium"]["items"] == 1
-    assert st["reddit"]["status"] == "PRODUCTIVE" and st["reddit"]["subs"] == 1
+    # FENCED 2026-09-30 (Reddit terms): the ground is refused by name, never fetched.
+    assert st["reddit"]["status"] == "BLOCKED_WITH_SUBSTITUTE" and st["reddit"]["claims"] == 0
+    assert "agreement" in st["reddit"]["reason"] and st["reddit"]["substitutes"]
     assert st["Qiita"]["status"] == "PRODUCTIVE"
     assert st["arXiv"]["status"] == "PRODUCTIVE" and st["arXiv"]["papers"] == 1
     assert st["Quantopian"]["status"] == "PRODUCTIVE" and "web.archive.org" in st["Quantopian"]["snapshot"]

@@ -1236,6 +1236,16 @@ def _work(argv: list[str] | None = None) -> int:
 
     queue = json.loads(DEEPEN.read_text("utf-8")) if DEEPEN.exists() else {}
     tasks = [t for t in (queue.get("tasks") or []) if isinstance(t, dict)]
+    # THE PLATFORM TERMS FENCE (2026-09-30). A queued row from a fenced platform (Reddit's User
+    # Agreement and Data API terms; libs/data/terms_fence.py) is never worked into a NEW cell --
+    # the compiler no longer queues them, and this drops any a queue written before the fence
+    # still carries. Counted by name in the log and on the output, never silently.
+    from libs.data import terms_fence as _tf
+    terms_fenced = sum(1 for t in tasks if _tf.fenced_row(t, str(t.get("source") or "")))
+    if terms_fenced:
+        tasks = [t for t in tasks if not _tf.fenced_row(t, str(t.get("source") or ""))]
+        dlog(f"terms fence: {terms_fenced} queued row(s) from a fenced platform refused "
+             f"(libs/data/terms_fence.py); not worked, not charged")
     if not tasks:
         dlog("queue empty or unreadable -- nothing to work")
         return 0
@@ -1401,11 +1411,16 @@ def _work(argv: list[str] | None = None) -> int:
             prior = (json.loads(OUT.read_text("utf-8")) or {}).get("candidates") or []
         except ValueError:
             prior = []
+    # EXISTING CELLS FROM A FENCED PLATFORM KEEP THEIR PLACE AND THEIR VERDICTS; they carry
+    # `provenance_label` (e.g. reddit_fenced) so the lineage is visible. Stamped here because
+    # this organ writes the file -- never by hand on the box.
+    labelled = sum(1 for c in prior + recovered if isinstance(c, dict) and _tf.label_row(c))
     OUT.write_text(json.dumps({
         "built_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "candidates": prior + recovered,
         "recovered_this_run": len(recovered),
         "dispositions": counts,
+        "terms_fence": {"queued_rows_refused": terms_fenced, "candidates_labelled": labelled},
     }, indent=1), encoding="utf-8")
 
     elapsed = max(1e-6, time.monotonic() - pass_started)
