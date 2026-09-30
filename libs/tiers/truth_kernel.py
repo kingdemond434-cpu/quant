@@ -294,6 +294,105 @@ def constitution_status(sealed: Mapping[str, Any], live: Mapping[str, Any],
             "why": "rules loosened without a principal ratification of this exact hash"}
 
 
+#: where the live rule set and the principal's ratifications live, relative to the repo root
+CONSTITUTION_REL = ("docs", "research", "tier_s_constitution.json")
+RATIFICATIONS_REL = ("docs", "research", "tier_s_ratifications.jsonl")
+
+
+def in_force(live: Mapping[str, Any] | None,
+             ratifications: Iterable[Mapping[str, Any]] = ()) -> dict[str, Any]:
+    """The rule set IN FORCE, as {rule: value}, with the status that put it there.
+
+      no live file            SEALED_DEFAULT -- DEFAULT_CONSTITUTION binds
+      SEALED / RATIFIED       the live file's values (RATIFIED may loosen: the principal said so)
+      TIGHTENED               the live file's values (stricter needs no ratification)
+      VIOLATION               the SEALED values: a loosening nobody ratified has no force
+
+    A validator reads its thresholds from here (S01) through `binding_value`."""
+    sealed = constitution_doc()
+    default = {k: float(v) for k, (v, _d) in DEFAULT_CONSTITUTION.items()}
+    if live is None:
+        return {"status": "SEALED_DEFAULT", "hash": sealed["hash"], "rules": default}
+    rules = live.get("rules")
+    if not isinstance(rules, Mapping):
+        raise ValueError("the live constitution carries no rules object")
+    st = constitution_status(sealed, live, ratifications)
+    if st["status"] == "VIOLATION":
+        return {**st, "rules": default,
+                "why": f"{st.get('why')}: the loosening has no force, the sealed rules bind"}
+    return {**st, "rules": {str(k): float(spec["value"]) for k, spec in rules.items()}}
+
+
+def read_in_force(root: Path) -> dict[str, Any]:
+    """`in_force` over the repository's own files. RAISES when a present file is unreadable, so
+    a caller can fall back to its own constants rather than to a guess."""
+    live_p = root.joinpath(*CONSTITUTION_REL)
+    rat_p = root.joinpath(*RATIFICATIONS_REL)
+    live = json.loads(live_p.read_text("utf-8")) if live_p.exists() else None
+    if live is not None and not isinstance(live, Mapping):
+        raise ValueError(f"{live_p.name} is not an object")
+    ratifs: list[Mapping[str, Any]] = []
+    if rat_p.exists():
+        for line in rat_p.read_text("utf-8").splitlines():
+            if line.strip():
+                row = json.loads(line)
+                if not isinstance(row, Mapping):
+                    raise ValueError(f"{rat_p.name} holds a non-object row")
+                ratifs.append(row)
+    return in_force(live, ratifs)
+
+
+def binding_value(rule: str, constant: float, law: Mapping[str, Any] | None
+                  ) -> tuple[float, str]:
+    """The threshold a validator APPLIES for `rule`: the law in force, never looser than the
+    validator's own `constant` unless the principal RATIFIED the rule set that says so.
+
+    `law` None (the constitution could not be read), a rule the law does not carry, or a value
+    that is not a finite number: the validator's constant stands, exactly as before."""
+    import math
+    if law is None or rule not in DEFAULT_CONSTITUTION:
+        return float(constant), "constant (constitution unread)"
+    try:
+        v = float((law.get("rules") or {})[rule])
+    except (KeyError, TypeError, ValueError):
+        return float(constant), f"constant ({rule} not in the law in force)"
+    if not math.isfinite(v):
+        return float(constant), f"constant ({rule} is not a finite number)"
+    status = str(law.get("status") or "")
+    if status == "RATIFIED":
+        return v, f"{rule}={v} (principal-ratified rule set)"
+    up = DEFAULT_CONSTITUTION[rule][1] == "up"
+    bound = max(v, float(constant)) if up else min(v, float(constant))
+    src = "law" if bound == v else "validator constant (stricter than the law)"
+    return bound, f"{rule}={bound} ({src}; law {status})"
+
+
+def gauntlet_thresholds(root: Path, *, dsr_threshold: float, gates_required: float,
+                        lockbox_min_fraction: float) -> dict[str, Any]:
+    """The three constitution rules the external gauntlet binds (S01), resolved ONCE per sweep.
+
+    Each argument is the gauntlet's own current constant, which stands whenever the law cannot
+    be read (status UNREADABLE) and which the law may only TIGHTEN unless the principal ratified
+    the rule set in force. The result is published beside the sweep so a verdict names the law
+    it was judged under."""
+    try:
+        law: dict[str, Any] | None = read_in_force(root)
+        status, law_hash = str(law["status"]), law.get("hash")
+        law_why = str(law.get("why") or "")
+    except Exception as exc:  # unreadable: the gauntlet's constants stand
+        law, status, law_hash = None, "UNREADABLE", None
+        law_why = f"{type(exc).__name__}: {exc}"
+    out: dict[str, Any] = {"status": status, "hash": law_hash, "why": {}}
+    if law_why:
+        out["law_why"] = law_why
+    for key, rule, const in (("dsr_threshold", "cert.dsr_threshold", dsr_threshold),
+                             ("gates_required", "cert.gates_required", gates_required),
+                             ("lockbox_min_fraction", "lockbox.min_fraction",
+                              lockbox_min_fraction)):
+        out[key], out["why"][key] = binding_value(rule, const, law)
+    return out
+
+
 # ------------------------------------------------------------------------------------------------
 # The evidence seal (append-only proof for historical ledgers)
 # ------------------------------------------------------------------------------------------------
