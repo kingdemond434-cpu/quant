@@ -115,6 +115,66 @@
     "threshold": 2,
     "after": "the archive collapses to a single niche"
    }
+  },
+  "committees": {
+   "hypothesis": "Two LLM committees arguing competing explanations for a candidate, settled later against the gauntlet's own verdict, kill wrong cells more often than right ones and so save gauntlet compute; their kill precision is measured, never assumed.",
+   "metric": {
+    "gain": "FALSIFICATION",
+    "metric": "committees.scientific_committee.value.kill_precision",
+    "better": "up",
+    "organ": "report:COMMITTEES.json"
+   },
+   "falsifier": {
+    "metric": "committees.scientific_committee.value.kill_precision",
+    "op": "<",
+    "threshold": 0.5,
+    "after": "50 settled kills (committees.MIN_SETTLED): the committee's kills are wrong more often than right, its own scrap rule"
+   }
+  },
+  "decay_monitor": {
+   "hypothesis": "Judging every LIVE sleeve's trailing live trades by promotion's own thresholds with the sign flipped retires a decayed sleeve before its drawdown compounds, and a fitted half-life queues its successor hunt before the edge fades.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "live_sleeves",
+    "better": "up",
+    "organ": "report:../data/decay_live.json"
+   },
+   "falsifier": {
+    "metric": "live_sleeves",
+    "op": "<",
+    "threshold": 1,
+    "after": "7 days with LIVE rows on the roster (roster_rows_seen > 0) and none judged: the verdict loop is not reading the roster the promoter writes"
+   }
+  },
+  "fill_markout": {
+   "hypothesis": "Joining every order intent to its fill and its closing deal measures the slippage the book actually pays in R, so execution drag is a number the desk can drive down instead of an assumption in the backtest.",
+   "metric": {
+    "gain": "EXECUTION_CAPTURE",
+    "metric": "attributed_share",
+    "better": "up",
+    "organ": "report:markout.json"
+   },
+   "falsifier": {
+    "metric": "n_matched",
+    "op": "<",
+    "threshold": 1,
+    "after": "7 days with deals on the ledger and no intent matched to a fill: the markout measures nothing"
+   }
+  },
+  "kelly_survival": {
+   "hypothesis": "Solving each gold window's size for maximum ruin-counted E[log W] subject to P(death) <= eps grows the book faster than today's floor book at no more ruin, so survival takes size away only where that raises growth.",
+   "metric": {
+    "gain": "OPERATIONAL_RISK",
+    "metric": "fusion.chosen.p_death",
+    "better": "down",
+    "organ": "report:KELLY_SURVIVAL.json"
+   },
+   "falsifier": {
+    "metric": "fusion.vs_today.delta_elog_per_day",
+    "op": "<",
+    "threshold": 0,
+    "after": "30 days of readings in which the solved book grows slower than today's: survival is costing growth rather than protecting it (growth governance Rule 1)"
+   }
   }
  },
  "grandfathered_note": "Legs registered uncontracted on 2026-09-30, when the fence was built. The list may only shrink (grandfathered_max is its ratchet); a NEW leg must be born with a contract.",

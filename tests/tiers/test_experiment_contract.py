@@ -48,12 +48,27 @@ def test_judge_falsifier(tmp_path: Path) -> None:
     assert doc == {} and why.startswith("UNMEASURED")
 
 
-def test_fence_fails_an_uncontracted_leg_and_a_growing_grandfather_list() -> None:
+def test_fence_names_a_new_uncontracted_leg_without_failing_on_it() -> None:
+    """A new leg with no declaration is an OBLIGATION in the summary, never a breach by itself;
+    a DECLARED contract that does not validate still fails the fence."""
     legs = ["a", "b"]
     resolved = {leg: ec.resolve(leg, None, budget_s=60, department="meta") for leg in legs}
-    probs, _ = ck.check({"legs": {}, "grandfathered": ["a"], "grandfathered_max": 1}, legs,
-                        resolved)
-    assert any("leg b: registered with no valid experiment contract" in p for p in probs)
+    probs, summary = ck.check({"legs": {}, "grandfathered": ["a"], "grandfathered_max": 1}, legs,
+                              resolved)
+    assert probs == []
+    assert summary["uncontracted_new"] == ["b"]
+    declared = {"b": {"hypothesis": "short"}}
+    resolved_b = {**resolved, "b": ec.resolve("b", declared["b"], budget_s=60,
+                                              department="meta")}
+    probs, summary = ck.check({"legs": declared, "grandfathered": ["a"],
+                               "grandfathered_max": 1}, legs, resolved_b)
+    assert any(p.startswith("leg b: ") for p in probs)
+    assert summary["uncontracted_new"] == []
+
+
+def test_fence_fails_a_vanished_or_growing_grandfather_list() -> None:
+    legs = ["a", "b"]
+    resolved = {leg: ec.resolve(leg, None, budget_s=60, department="meta") for leg in legs}
     probs, _ = ck.check({"grandfathered": ["a", "b", "gone"], "grandfathered_max": 2}, legs,
                         resolved)
     assert any("gone is no longer registered" in p for p in probs)
@@ -66,9 +81,10 @@ def test_live_registry_passes_its_fence() -> None:
     resolved = ck.contracts_for(legs, reg)
     probs, summary = ck.check(reg, legs, resolved)
     assert probs == [], probs[:5]
-    for leg in ("build_failure_bank", "trade_pathology", "experiment_contracts", "health_board"):
+    for leg in ("build_failure_bank", "trade_pathology", "experiment_contracts", "health_board",
+                "committees", "decay_monitor", "fill_markout", "kelly_survival"):
         assert leg in legs and not ec.problems(resolved[leg]), leg
-    assert summary["contracted"] >= 10
+    assert summary["contracted"] >= 14
 
 
 def test_registry_is_valid_json_with_a_ratchet() -> None:

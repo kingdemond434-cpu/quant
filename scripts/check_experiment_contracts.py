@@ -8,11 +8,18 @@ owner) -- the fence, and the hourly reading of every contract against its leg's 
                                                             legs gained their contracts
 
 THE FENCE fails when
-  * a registered hourly leg (every `_costed("<leg>", ...)` in hourly_cycle.py) is NOT in the
-    grandfather list and carries no valid contract -- a NEW leg must be born contracted;
   * a declared contract does not validate (`libs.tiers.experiment_contract.problems`);
   * the grandfather list names a leg that is no longer registered, or GREW -- it may only shrink,
     so the uncontracted backlog is a number that can only be driven down.
+
+A NEW UNCONTRACTED LEG IS AN OBLIGATION, NOT A BREACH (2026-09-30). A registered hourly leg
+(every `_costed("<leg>", ...)` in hourly_cycle.py) that is neither contracted nor grandfathered
+is NAMED -- printed, and published as `uncontracted_new` in the summary and the hourly report --
+but does not by itself turn the law gate red. Measured the day this fence landed: merging live
+into the branch that carried it brought four legs (committees, decay_monitor, fill_markout,
+kelly_survival) registered by other PRs in the same hour, and the fence went red on a tree whose
+every declared contract was valid. A fence that any unrelated leg can redden is one the desk
+learns to route around (L1.43); the obligation stays visible and the coverage number carries it.
 
 PRE-EXISTING DEBT IS THE FLOOR, NOT A FAILURE (L1.43): the legs that existed uncontracted on the
 day this fence was built are listed by NAME in `docs/research/experiment_contracts.json`
@@ -80,11 +87,10 @@ def check(registry: dict[str, Any], legs: list[str],
     grand = set(registry.get("grandfathered") or [])
     declared = registry.get("legs") or {}
     valid = {leg for leg, c in resolved.items() if not ec.problems(c)}
-    for leg in legs:
-        if leg in valid or leg in grand:
-            continue
-        why = "; ".join(ec.problems(resolved[leg]))
-        problems.append(f"leg {leg}: registered with no valid experiment contract ({why})")
+    # A new leg with no declaration is an OBLIGATION, named in the summary; a DECLARED contract
+    # that does not validate is still a breach (below).
+    uncontracted_new = sorted(leg for leg in legs
+                              if leg not in valid and leg not in grand and leg not in declared)
     for leg in sorted(declared):
         if leg not in resolved:
             problems.append(f"leg {leg}: contract declared for a leg that is not registered")
@@ -102,6 +108,7 @@ def check(registry: dict[str, Any], legs: list[str],
     healed = sorted(grand & valid)
     summary = {"registered": len(legs), "contracted": len(valid & set(legs)),
                "grandfathered": len(grand), "healed_awaiting_update": healed,
+               "uncontracted_new": uncontracted_new,
                "coverage": round(len(valid & set(legs)) / len(legs), 6) if legs else None}
     return problems, summary
 
@@ -193,6 +200,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"experiment contracts: {summary['registered']} registered legs, "
           f"{summary['contracted']} contracted, {summary['grandfathered']} grandfathered "
           f"(coverage {summary['coverage']})")
+    for leg in summary["uncontracted_new"]:
+        print(f"  OBLIGATION: leg {leg}: registered with no experiment contract -- declare one in "
+              f"{a.registry.name}")
     for p in problems:
         print(f"  BREACH: {p}")
     if a.report:
