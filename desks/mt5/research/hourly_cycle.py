@@ -305,12 +305,18 @@ def publish_state() -> dict:
     publish; that is reported as a skip, never as a failure, so it cannot become noise that
     trains a reader to ignore this leg.
     """
+    # STEP 1 -- THE GATE VERDICT DIGEST, written just before the publisher runs so the push
+    # carries this hour's reasons (2026-09-30). The ledger and the sweep report it digests are
+    # gitignored; the digest is the small committed answer to "which gate killed what, and why".
+    digest = _gate_verdict_digest()
     script = BASE / "scripts" / "sync_shadow_to_git.ps1"
     if not script.exists():
-        return {"skipped": "sync_shadow_to_git.ps1 is absent on this host"}
+        return {"skipped": "sync_shadow_to_git.ps1 is absent on this host",
+                "gate_verdict_digest": digest}
     powershell = shutil.which("powershell") or shutil.which("pwsh")
     if not powershell:
-        return {"skipped": "no PowerShell on this host -- publishing is the trading box's job"}
+        return {"skipped": "no PowerShell on this host -- publishing is the trading box's job",
+                "gate_verdict_digest": digest}
     try:
         r = subprocess.run([powershell, "-NoProfile", "-NonInteractive",
                             "-ExecutionPolicy", "Bypass", "-File", str(script)],
@@ -318,14 +324,50 @@ def publish_state() -> dict:
                            timeout=600, check=False)
     except Exception as exc:
         print(f"publish_state FAILED to start: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
+        return {"error": f"{type(exc).__name__}: {exc}", "gate_verdict_digest": digest,
+                "state_flow": _state_flow()}
     tail = (r.stdout or r.stderr or "").strip().splitlines()[-3:]
     if r.returncode != 0:
         # LOUD, because this is the leg that decides whether anybody can SEE the desk. A silent
         # publisher failure is the one that costs eleven days.
         print(f"publish_state FAILED rc={r.returncode}: {' | '.join(tail)}", flush=True)
+    # STEP 3 -- did the state actually leave the box? Measured on origin, not on the exit code.
     return {"exit_code": r.returncode, "tail": tail,
-            "at": datetime.now(UTC).isoformat(timespec="seconds")}
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "gate_verdict_digest": digest, "state_flow": _state_flow()}
+
+
+def _gate_verdict_digest() -> dict:
+    """Write desks/mt5/reports/GATE_VERDICT_DIGEST.json; report its shape. Never raises."""
+    try:
+        import gate_verdict_digest
+        doc = gate_verdict_digest.build()
+        gate_verdict_digest.write(doc)
+        return {"status": doc.get("status"),
+                "ledger_rows": (doc.get("ledger") or {}).get("rows"),
+                "sweep_verdicts": (doc.get("latest_sweep") or {}).get("verdicts")}
+    except Exception as exc:
+        print(f"gate verdict digest FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def _state_flow() -> dict:
+    """DID THE STATE ACTUALLY LEAVE THE BOX? (2026-09-30).
+
+    The publisher's exit code is not the answer: the last box state sync reached origin on
+    2026-09-12 and the box went on committing locally and exiting for two weeks. This measures
+    the outcome on origin itself, writes desks/mt5/reports/BOX_STATE_FLOW.json (read by
+    stall_watch every ten minutes) and emits STATE_FLOW_STALLED when local state is fresh and
+    origin's copy is not. Never raises.
+    """
+    try:
+        from libs.ops import state_publication
+        doc = state_publication.publish_flow(REPO)
+        return {k: doc.get(k) for k in ("verdict", "why", "published_age_h",
+                                        "local_commits_not_on_origin")}
+    except Exception as exc:
+        print(f"state flow meter FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
 
 
 def _tape_main() -> int:
@@ -826,6 +868,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # A SILENT HALT COSTS A WINDOW AN HOUR (PR #130 audit): the placement-interlock fence ran only
+    # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
+    # It reads three small files and writes one, so it runs on BOTH plans, every hour.
+    "placement_interlock",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -2589,6 +2635,15 @@ def compile_candidates() -> dict:
                      "--budget-s", "600")
 
 
+def placement_interlock() -> dict:
+    """`placement_interlock`: has any sleeve been refused in a run with no placement since, or
+    has the release identity stopped allowing new risk? `scripts/check_placement_interlock.py`
+    writes `data/placement_interlock.json`, an alert-ledger entry and a PLACEMENT_* event; on the
+    trading box (by machine id, libs/ops/host_identity) an UNMEASURED verdict fails and is written
+    too. Hourly here, and still in the law gate's rotation (`_STATE_FENCES`)."""
+    return _producer("placement_interlock", "scripts/check_placement_interlock.py")
+
+
 def pit_canaries() -> dict:
     """`pit_canaries`: planted past/now/future rows read point-in-time every hour; green only
     when the future row is invisible at now (closed-loop `truth.pit_canaries_green`)."""
@@ -3435,6 +3490,7 @@ def main() -> None:
     bs = _costed("breadth_sweep", breadth_sweep)
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
+    pil = _costed("placement_interlock", placement_interlock)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
     # to the scientist that proposed each cell, live when the live ledger is thick enough,
@@ -5176,7 +5232,8 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
+                    "pit_canaries": pcn, "placement_interlock": pil,
+                    "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
                     "research_tree": rtr, "representation_discovery": rpd,

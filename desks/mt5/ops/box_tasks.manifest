@@ -158,6 +158,18 @@ TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="desks/m
 
 # -------------------------------------------------------------------------------------- ops
 TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="NONE" lane="ops"
+# MT5-BoxHeartbeat (2026-09-30): the box's outside alarm. Pings its own healthchecks.io check
+# (data/secrets/box_heartbeat_url.json), /fail when research, gateway, watchdog or disk go stale;
+# writes desks/mt5/reports/BOX_HEARTBEAT.json. NOT_ARMED without the secret.
+TASK name="MT5-BoxHeartbeat"       trigger="every 5 minutes"  runs="desks/mt5/scripts/box_heartbeat.py" installer="desks/mt5/scripts/install_box_heartbeat_task.ps1" lane="ops"
+# MT5-OffsiteBackup (2026-09-30): restic, encrypted client-side, of the box-only data (bronze ticks,
+# tape, terminal profile; secrets and accounts.dat excluded). Report OFFSITE_BACKUP.json feeds
+# the encrypted_offbox_backup row of OPS_REDUNDANCY.json.
+TASK name="MT5-OffsiteBackup"      trigger="every 6 hours"    runs="desks/mt5/scripts/offsite_backup.py" installer="desks/mt5/scripts/install_offsite_backup_task.ps1" lane="ops"
+# MT5-PrivateNetAudit (2026-09-30): AUDIT mode only -- writes desks/mt5/data/private_net.json
+# (EXPOSED / PRIVATE) and changes nothing. -Enforce is an operator act with a 15-minute dead-man
+# rollback and is never scheduled. Register: the same script with no switch, daily.
+TASK name="MT5-PrivateNetAudit"    trigger="daily at 06:40"   runs="desks/mt5/scripts/install_private_net.ps1" installer="NONE" lane="ops"
 TASK name="MT5-ReapGitWriters"     trigger="every 15 minutes" runs="scripts/reap_hung_git_writers.py" installer="desks/mt5/scripts/install_reap_git_writers_task.ps1" lane="ops"
 # The post-reboot drill (2026-09-08): read-only apart from re-enabling a Disabled task; records
 # PASS/FAIL to desks/mt5/reports/REBOOT_DRILL.json and raises data/REBOOT_DRILL_ALARM.txt on FAIL.

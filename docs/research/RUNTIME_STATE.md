@@ -2,157 +2,222 @@
 
 <!-- DERIVED. Written by desks/mt5/research/runtime_attestation.py on the clock `hourly_cycle:runtime_attestation`. Edit the organ, never this file. -->
 
-**This document attests to ONE host: `vm` (Linux 6.18.44-fc-v50), and describes no other machine.** Role measured as `non_trading_host`: gateway_state.json is 343.0h old -- no live trading loop is attested by this document.
+**This document attests to ONE host: `vm` (Linux 6.18.44-fc-v50), and describes no other machine.** Role measured as `non_trading_host`: gateway_state.json is 342.9h old -- no live trading loop is attested by this document.
 
-- Measured at **2026-09-30T19:47:31+00:00** (cadence 60 min; stale past 120 min)
-- Tree: `UNMEASURED` on `UNMEASURED`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **921** of 1345 registry components (424 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
-- Pass cost 1.4s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
+- Measured at **2026-09-30T19:42:05+00:00** (cadence 60 min; stale past 120 min)
+- Tree: `e01cbdb1f3f9` on `live-control-room`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
+- Organs attested **937** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Pass cost 1.39s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
 |---|---:|---|
-| **LIVE** | 128 | artifact present and newer than the organ's derived max silence |
-| **STALE** | 0 | artifact present but older than the organ's derived max silence |
-| **MISSING** | 0 | artifact absent while this host recorded the organ running |
-| **NEVER** | 761 | no artifact and no run record on this host |
-| **UNMEASURED** | 32 | artifact present, cadence undeclared -- nothing here may call it late |
+| **LIVE** | 90 | artifact present and newer than the organ's derived max silence |
+| **STALE** | 46 | artifact present but older than the organ's derived max silence |
+| **MISSING** | 47 | artifact absent while this host recorded the organ running |
+| **NEVER** | 720 | no artifact and no run record on this host |
+| **UNMEASURED** | 34 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
 
-## LIVE (128)
+## LIVE (90)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
-| `cron:130:build_event_calendar` | `crontab:130` | UNMEASURED UNMEASURED | `data/event_calendar.json` | 0.1h | 5K | `b20b74c1945b78c6` | UNMEASURED |
-| `cron:174:build_enforcement_matrix` | `crontab:174` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `6c911e5d06dc8bbb` | UNMEASURED |
-| `cron:1964:mine_research_queue` | `crontab:1964` | UNMEASURED UNMEASURED | `desks/mt5/data/research_queue.json` | 0.1h | 24.3M | `a3ea64587b1332bd` | UNMEASURED (artifact 24.3 MB, not parsed within budget) |
-| `cron:2196:run_cot_screen` | `crontab:2196` | UNMEASURED UNMEASURED | `data/cot_screen_summary.json` | 0.1h | 6K | `b4c93887efbcb7aa` | UNMEASURED |
-| `cron:3238:cost_surface` | `crontab:3238` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_surface.json` | 0.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
-| `cron:3263:carry_state` | `crontab:3263` | UNMEASURED UNMEASURED | `desks/mt5/data/carry_state.json` | 0.1h | 389K | `5b7bf54671f0651c` | UNMEASURED |
-| `cron:561:check_enforcement_execution` | `crontab:561` | UNMEASURED UNMEASURED | `data/enforcement_execution.json` | 0.0h | 48K | `783df9a74a737a4d` | status=OK |
-| `cron:693:check_timidity_language` | `crontab:693` | UNMEASURED UNMEASURED | `data/timidity_audit.json` | 0.0h | 15K | `a3ed9835f8afe285` | UNMEASURED |
-| `executable:desks/mt5/scripts/refresh_cost_fields.py` | `daily_cycle:cost_fields` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_field_refresh.json` | 0.1h | 221B | `d65946ecda4d1d22` | rows=251 |
-| `fence:check_adoption_freshness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_allocator_liveness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_autostash` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_bare_excepts` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_birth_obligations` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_birth_properties` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_box_reversion` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_build_standard` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_calibration` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_certificate_clock_law` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_certificate_truth` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_change_window` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_clock_liveness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_clock_provenance` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_component_registry` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_constitution_core` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_conversion` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_conversion_debt` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_cost_surface` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_cost_truth` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_coverage_drain` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_dead_architecture` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_enforcement_execution` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_excitation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_exemption_falsifiers` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_exploration` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_external_federation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_extractor_invariants` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_family_evaluability` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_formal_claim` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_forward_enrolment` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_grid_occupancy` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_growth_governance` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_heat_floor_wiring` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_immutable_evaluator` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_immutable_rails` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_ingestion_exploitation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_judge_coverage` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_judging_coverage` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_law_families` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_leg_rotation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_live_sleeve_cost` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_mechanism_attribution` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_no_queues` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_no_retirement_on_absence` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_no_staleness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_organ_census` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_organ_liveness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_own_clock_legs` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_plumbing_invariants` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_plumbing_watchdog` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_producer_yield` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_productivity_census` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_promotion_gate` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_recommendation_flow` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_region_ratchet` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_regional_parity` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_replacement_rate` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_return_targeting` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_runtime_attestation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_sandbox_liveness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_scheduler_manifest` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_seat_health` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_self_repair` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_sizing_derivation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_source_drain` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_strategy_breadth` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_throughput_ratchet` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_tier5_audit` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_tier_s_program` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_timidity_language` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_universe_integrity` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `fence:check_write_or_explain` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `leg:certificate_truth` | `hourly_cycle:certificate_truth` | UNMEASURED UNMEASURED | `desks/mt5/reports/CERTIFICATE_TRUTH.json` | 0.0h | 41K | `df6d0b4d114225d7` | ok=False; n_divergences=118; n_fatal=118 |
-| `leg:clock_liveness` | `hourly_cycle:clock_liveness` | UNMEASURED UNMEASURED | `docs/research/CLOCK_LIVENESS.md` | 0.1h | 4K | `e6449055c4563a97` | UNMEASURED (not a readable JSON object) |
-| `leg:compile_candidates` | `hourly_cycle:compile_candidates` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/miner_candidates.json` | 0.1h | 70.6M | `7d4ae862dd7f7a10` | UNMEASURED (artifact 70.6 MB, not parsed within budget) |
-| `leg:cost_to_edge` | `hourly_cycle:cost_to_edge` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_surface.json` | 0.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
-| `leg:cost_truth` | `hourly_cycle:cost_truth` | UNMEASURED UNMEASURED | `data/data_universe_map.json` | 0.1h | 415K | `c01ae1013e7e504c` | UNMEASURED |
-| `leg:daily` | `hourly_cycle:daily` | UNMEASURED UNMEASURED | `desks/mt5/data/research_budget.json` | 0.1h | 641B | `1190d787871233e1` | UNMEASURED |
-| `leg:decay_monitor` | `hourly_cycle:decay_monitor` | UNMEASURED UNMEASURED | `desks/mt5/data/decay_live.json` | 0.1h | 711B | `6e7e39ad54f7f4c7` | UNMEASURED |
-| `leg:deep_forest` | `hourly_cycle:deep_forest` | UNMEASURED UNMEASURED | `desks/mt5/data/deep_forest_frontier.json` | 0.1h | 122K | `cde2bd267e645e76` | UNMEASURED |
-| `leg:engine_registry` | `hourly_cycle:engine_registry` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/miner_candidates.json` | 0.1h | 70.6M | `7d4ae862dd7f7a10` | UNMEASURED (artifact 70.6 MB, not parsed within budget) |
-| `leg:enrol_clocks` | `hourly_cycle:enrol_clocks` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_state.json` | 0.1h | 1.1M | `172d6743d74f3d52` | UNMEASURED |
-| `leg:excursions` | `hourly_cycle:excursions` | UNMEASURED UNMEASURED | `desks/mt5/data/excursions.jsonl` | 0.1h | 54K | `f4fdb1d0a64756fd` | UNMEASURED (not a readable JSON object) |
-| `leg:execution_twin` | `hourly_cycle:execution_twin` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_surface.json` | 0.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
-| `leg:external_gauntlet` | `hourly_cycle:external_gauntlet` | UNMEASURED UNMEASURED | `desks/mt5/reports/UNIVERSAL_SURVIVORS.json` | 0.1h | 115K | `129c395f42767225` | n=58 |
-| `leg:fill_attribution` | `hourly_cycle:fill_attribution` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_surface.json` | 0.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
-| `leg:forward_reconcile` | `hourly_cycle:forward_reconcile` | UNMEASURED UNMEASURED | `desks/mt5/data/forward_reconcile.json` | 0.1h | 39K | `eef8f4d39f4ed0c6` | UNMEASURED |
-| `leg:heal_clocks` | `hourly_cycle:heal_clocks` | UNMEASURED UNMEASURED | `desks/mt5/data/forward_reconcile.json` | 0.1h | 39K | `eef8f4d39f4ed0c6` | UNMEASURED |
-| `leg:health` | `hourly_cycle:health` | UNMEASURED UNMEASURED | `data/duplicate_organs.json` | 0.0h | 36K | `067a2ec39c281458` | UNMEASURED |
-| `leg:implementer` | `hourly_cycle:implementer` | UNMEASURED UNMEASURED | `docs/research/recommendation_ledger.json` | 0.1h | 1.4M | `94fcf9fc5cab5317` | UNMEASURED |
-| `leg:input_identity` | `hourly_cycle:input_identity` | UNMEASURED UNMEASURED | `desks/mt5/data/input_identity.json` | 0.1h | 99K | `6ddaaf948698a0d4` | UNMEASURED |
-| `leg:kimi_hunt` | `hourly_cycle:kimi_hunt` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/miner_candidates.json` | 0.1h | 70.6M | `7d4ae862dd7f7a10` | UNMEASURED (artifact 70.6 MB, not parsed within budget) |
-| `leg:loop_liveness` | `hourly_cycle:loop_liveness` | UNMEASURED UNMEASURED | `docs/research/LOOP_LIVENESS.md` | 0.1h | 4K | `c6262c80ce5224b7` | UNMEASURED (not a readable JSON object) |
-| `leg:macro_state_engine` | `hourly_cycle:macro_state_engine` | UNMEASURED UNMEASURED | `desks/mt5/data/state_vector.json` | 0.1h | 12K | `298d8b9c819d1a21` | UNMEASURED |
-| `leg:microstructure_census` | `hourly_cycle:microstructure_census` | UNMEASURED UNMEASURED | `data/data_universe_map.json` | 0.1h | 415K | `c01ae1013e7e504c` | UNMEASURED |
-| `leg:mine` | `hourly_cycle:mine` | UNMEASURED UNMEASURED | `data/data_universe_map.json` | 0.1h | 415K | `c01ae1013e7e504c` | UNMEASURED |
-| `leg:moat_miner` | `hourly_cycle:moat_miner` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/moat_candidates.json` | 0.1h | 365B | `b435352a9491a8f3` | UNMEASURED |
-| `leg:proposer_seat` | `hourly_cycle:proposer_seat` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/miner_candidates.json` | 0.1h | 70.6M | `7d4ae862dd7f7a10` | UNMEASURED (artifact 70.6 MB, not parsed within budget) |
-| `leg:publish_dashboard` | `hourly_cycle:publish_dashboard` | UNMEASURED UNMEASURED | `web/desk_state.json` | 0.1h | 463K | `c449d4e6774e4427` | UNMEASURED |
-| `leg:publish_state` | `hourly_cycle:publish_state` | UNMEASURED UNMEASURED | `web/desk_state.json` | 0.1h | 463K | `c449d4e6774e4427` | UNMEASURED |
-| `leg:queue_census` | `hourly_cycle:queue_census` | UNMEASURED UNMEASURED | `desks/mt5/data/events.jsonl` | 0.1h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
-| `leg:queue_cycle` | `hourly_cycle:queue_cycle` | UNMEASURED UNMEASURED | `desks/mt5/data/events.jsonl` | 0.1h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
-| `leg:recertify_canon` | `hourly_cycle:recertify_canon` | UNMEASURED UNMEASURED | `desks/mt5/data/events.jsonl` | 0.1h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
-| `leg:refresh_bars` | `hourly_cycle:refresh_bars` | UNMEASURED UNMEASURED | `desks/mt5/data/universe/derived_series.json` | 0.1h | 4K | `1386a01c1249a37a` | UNMEASURED |
-| `leg:regime_monitor` | `hourly_cycle:regime_monitor` | UNMEASURED UNMEASURED | `desks/mt5/data/state_vector.json` | 0.1h | 12K | `298d8b9c819d1a21` | UNMEASURED |
-| `leg:research_dashboard` | `hourly_cycle:research_dashboard` | UNMEASURED UNMEASURED | `docs/research/RESEARCH_DASHBOARD.md` | 0.1h | 2K | `f584849771ecc211` | UNMEASURED (not a readable JSON object) |
-| `leg:residual_factors` | `hourly_cycle:residual_factors` | UNMEASURED UNMEASURED | `desks/mt5/data/research_queue.json` | 0.1h | 24.3M | `a3ea64587b1332bd` | UNMEASURED (artifact 24.3 MB, not parsed within budget) |
-| `leg:search` | `hourly_cycle:search` | UNMEASURED UNMEASURED | `libs/research/alpha_grammar.py` | 0.1h | 69K | `5052630772e28aba` | UNMEASURED (not a readable JSON object) |
-| `leg:state_admission` | `hourly_cycle:state_admission` | UNMEASURED UNMEASURED | `desks/mt5/reports/STATE_ADMISSION.json` | 0.1h | 1K | `512f70de8f00e3c8` | UNMEASURED |
-| `leg:sweep` | `hourly_cycle:sweep` | UNMEASURED UNMEASURED | `desks/mt5/mt5desk/families_orthogonal.py` | 0.1h | 115K | `98cdb8542c3386dc` | UNMEASURED (not a readable JSON object) |
-| `systemd:quant-mt5-suite.timer` | `quant-mt5-suite.timer` | UNMEASURED UNMEASURED | `desks/mt5/reports/mt5_suite.json` | 0.1h | 452B | `d459f7fec791a7c1` | verdict=OK |
-| `systemd:quant-universe-registry.timer` | `quant-universe-registry.timer` | UNMEASURED UNMEASURED | `desks/mt5/reports/universe_registry_repair.json` | 0.1h | 1K | `7acc04b9cfddf893` | UNMEASURED |
-| `task:MT5-Deepening` | `MT5-Deepening` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/deepened_candidates.json` | 0.1h | 7K | `ae4a0a35fe675962` | UNMEASURED |
-| `task:MT5-DeskState` | `MT5-DeskState` | UNMEASURED UNMEASURED | `web/desk_state.json` | 0.1h | 463K | `c449d4e6774e4427` | UNMEASURED |
-| `task:MT5-ForwardReconcile` | `MT5-ForwardReconcile` | UNMEASURED UNMEASURED | `desks/mt5/data/forward_reconcile.json` | 0.1h | 39K | `eef8f4d39f4ed0c6` | UNMEASURED |
-| `task:MT5-Shadow` | `MT5-Shadow` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 0.1h | 3K | `9583b625e9b7d9c0` | status=FAILED |
-| `task:MT5-Universe` | `MT5-Universe` | UNMEASURED UNMEASURED | `desks/mt5/data/universe_expansion.json` | 0.1h | 24K | `c4e001c1a7b63e53` | UNMEASURED |
-| `timer:quant-mt5-suite` | `quant-mt5-suite` | UNMEASURED UNMEASURED | `desks/mt5/reports/mt5_suite.json` | 0.1h | 452B | `d459f7fec791a7c1` | verdict=OK |
+| `cron:130:build_event_calendar` | `crontab:130` | UNMEASURED UNMEASURED | `data/event_calendar.json` | 6.1h | 5K | `b20b74c1945b78c6` | UNMEASURED |
+| `cron:174:build_enforcement_matrix` | `crontab:174` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `f241fb63c24206d8` | UNMEASURED |
+| `cron:1964:mine_research_queue` | `crontab:1964` | UNMEASURED UNMEASURED | `desks/mt5/data/research_queue.json` | 6.1h | 24.3M | `a3ea64587b1332bd` | UNMEASURED (artifact 24.3 MB, not parsed within budget) |
+| `cron:2196:run_cot_screen` | `crontab:2196` | UNMEASURED UNMEASURED | `data/cot_screen_summary.json` | 6.1h | 6K | `b4c93887efbcb7aa` | UNMEASURED |
+| `cron:3238:cost_surface` | `crontab:3238` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_surface.json` | 6.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
+| `cron:3263:carry_state` | `crontab:3263` | UNMEASURED UNMEASURED | `desks/mt5/data/carry_state.json` | 6.1h | 389K | `5b7bf54671f0651c` | UNMEASURED |
+| `cron:561:check_enforcement_execution` | `crontab:561` | UNMEASURED UNMEASURED | `data/enforcement_execution.json` | 0.0h | 48K | `9344acd6c43cd6f7` | status=OK |
+| `cron:693:check_timidity_language` | `crontab:693` | UNMEASURED UNMEASURED | `data/timidity_audit.json` | 0.0h | 15K | `8227d4866bab1d54` | UNMEASURED |
+| `fence:check_adoption_freshness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_allocator_liveness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_autostash` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_bare_excepts` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_birth_obligations` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_birth_properties` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_box_reversion` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_build_standard` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_calibration` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_certificate_clock_law` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_certificate_truth` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_change_window` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_clock_liveness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_clock_provenance` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_component_registry` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_constitution_core` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_conversion` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_conversion_debt` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_cost_surface` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_cost_truth` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_coverage_drain` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_dead_architecture` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_enforcement_execution` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_excitation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_exemption_falsifiers` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_exploration` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_external_federation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_extractor_invariants` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_family_evaluability` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_formal_claim` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_forward_enrolment` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_grid_occupancy` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_growth_governance` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_heat_floor_wiring` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_immutable_evaluator` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_immutable_rails` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_ingestion_exploitation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_judge_coverage` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_judging_coverage` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_law_families` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_leg_rotation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_live_sleeve_cost` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_mechanism_attribution` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_no_queues` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_no_retirement_on_absence` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_no_staleness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_organ_census` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_organ_liveness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_own_clock_legs` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_plumbing_invariants` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_plumbing_watchdog` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_producer_yield` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_productivity_census` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_promotion_gate` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_recommendation_flow` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_region_ratchet` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_regional_parity` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_replacement_rate` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_return_targeting` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_runtime_attestation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_sandbox_liveness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_scheduler_manifest` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_seat_health` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_self_repair` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_sizing_derivation` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_source_drain` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_strategy_breadth` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_throughput_ratchet` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_tier5_audit` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_tier_s_program` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_timidity_language` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_universe_integrity` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `fence:check_write_or_explain` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `leg:certificate_truth` | `hourly_cycle:certificate_truth` | UNMEASURED UNMEASURED | `desks/mt5/reports/CERTIFICATE_TRUTH.json` | 0.0h | 41K | `04cb580e9ea84994` | ok=False; n_divergences=118; n_fatal=118 |
+| `leg:health` | `hourly_cycle:health` | 2026-09-12T08:57:21+00:00 ok | `data/duplicate_organs.json` | 0.0h | 36K | `192f93bfafe176c0` | UNMEASURED |
+| `leg:queue_census` | `hourly_cycle:queue_census` | UNMEASURED UNMEASURED | `desks/mt5/data/events.jsonl` | 0.0h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
+| `leg:queue_cycle` | `hourly_cycle:queue_cycle` | 2026-09-12T09:15:47+00:00 ok | `desks/mt5/data/events.jsonl` | 0.0h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
+| `leg:recertify_canon` | `hourly_cycle:recertify_canon` | 2026-09-12T10:36:49+00:00 ok | `desks/mt5/data/events.jsonl` | 0.0h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
+| `systemd:quant-mt5-suite.timer` | `quant-mt5-suite.timer` | UNMEASURED UNMEASURED | `desks/mt5/reports/mt5_suite.json` | 6.1h | 452B | `d459f7fec791a7c1` | verdict=OK |
+| `task:MT5-ForwardReconcile` | `MT5-ForwardReconcile` | UNMEASURED UNMEASURED | `desks/mt5/data/forward_reconcile.json` | 6.1h | 39K | `eef8f4d39f4ed0c6` | UNMEASURED |
+| `timer:quant-mt5-suite` | `quant-mt5-suite` | UNMEASURED UNMEASURED | `desks/mt5/reports/mt5_suite.json` | 6.1h | 452B | `d459f7fec791a7c1` | verdict=OK |
+| `task:MT5-GatewayResident` | `MT5-GatewayResident` | UNMEASURED UNMEASURED | `desks/mt5/data/gateway_state.json` | 0.1h | 12K | `22a58e88eeb912ef` | UNMEASURED |
 
-## NEVER (761)
+## STALE (46)
+
+| organ | clock | last run | artifact | age | size | sha256 | published |
+|---|---|---|---|---:|---:|---|---|
+| `leg:clock_liveness` | `hourly_cycle:clock_liveness` | UNMEASURED UNMEASURED | `docs/research/CLOCK_LIVENESS.md` | 6.1h | 4K | `e6449055c4563a97` | UNMEASURED (not a readable JSON object) |
+| `leg:compile_candidates` | `hourly_cycle:compile_candidates` | 2026-09-12T09:44:10+00:00 ok | `desks/mt5/data/hypotheses/miner_candidates.json` | 6.1h | 70.6M | `7d4ae862dd7f7a10` | UNMEASURED (artifact 70.6 MB, not parsed within budget) |
+| `leg:cost_to_edge` | `hourly_cycle:cost_to_edge` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_surface.json` | 6.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
+| `leg:cost_truth` | `hourly_cycle:cost_truth` | UNMEASURED UNMEASURED | `data/data_universe_map.json` | 6.1h | 415K | `c01ae1013e7e504c` | UNMEASURED |
+| `leg:cycle_pricing` | `hourly_cycle:cycle_pricing` | UNMEASURED UNMEASURED | `desks/mt5/reports/CYCLE_PRICING.json` | 3.6h | 103K | `b8e496ea5fa5f259` | UNMEASURED |
+| `leg:daily` | `hourly_cycle:daily` | 2026-09-12T09:13:22+00:00 TIMEOUT | `desks/mt5/data/research_budget.json` | 6.1h | 641B | `1190d787871233e1` | UNMEASURED |
+| `leg:decay_monitor` | `hourly_cycle:decay_monitor` | UNMEASURED UNMEASURED | `desks/mt5/data/decay_live.json` | 6.1h | 711B | `6e7e39ad54f7f4c7` | UNMEASURED |
+| `leg:deep_forest` | `hourly_cycle:deep_forest` | 2026-09-12T10:56:55+00:00 exit_code=1 | `desks/mt5/data/deep_forest_frontier.json` | 6.1h | 122K | `cde2bd267e645e76` | UNMEASURED |
+| `leg:engine_registry` | `hourly_cycle:engine_registry` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/miner_candidates.json` | 6.1h | 70.6M | `7d4ae862dd7f7a10` | UNMEASURED (artifact 70.6 MB, not parsed within budget) |
+| `leg:enrol_clocks` | `hourly_cycle:enrol_clocks` | 2026-09-12T10:48:51+00:00 TIMEOUT | `desks/mt5/reports/shadow/shadow_state.json` | 6.1h | 1.1M | `172d6743d74f3d52` | UNMEASURED |
+| `leg:event_response_atlas` | `hourly_cycle:event_response_atlas` | UNMEASURED UNMEASURED | `desks/mt5/reports/hour_surface.json` | 3.6h | 5K | `185e0f743625e5a6` | gap=SystemExit: REFUSING to project |
+| `leg:event_sleeves` | `hourly_cycle:event_sleeves` | UNMEASURED UNMEASURED | `desks/mt5/reports/hour_surface.json` | 3.6h | 5K | `185e0f743625e5a6` | gap=SystemExit: REFUSING to project |
+| `leg:excursions` | `hourly_cycle:excursions` | UNMEASURED UNMEASURED | `desks/mt5/data/excursions.jsonl` | 6.1h | 54K | `f4fdb1d0a64756fd` | UNMEASURED (not a readable JSON object) |
+| `leg:execution_twin` | `hourly_cycle:execution_twin` | 2026-09-12T10:55:34+00:00 ok | `desks/mt5/data/cost_surface.json` | 6.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
+| `leg:external_gauntlet` | `hourly_cycle:external_gauntlet` | 2026-09-12T10:14:49+00:00 TIMEOUT | `desks/mt5/reports/UNIVERSAL_SURVIVORS.json` | 6.1h | 115K | `129c395f42767225` | n=58 |
+| `leg:fill_attribution` | `hourly_cycle:fill_attribution` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_surface.json` | 6.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
+| `leg:forward_reconcile` | `hourly_cycle:forward_reconcile` | UNMEASURED UNMEASURED | `desks/mt5/data/forward_reconcile.json` | 6.1h | 39K | `eef8f4d39f4ed0c6` | UNMEASURED |
+| `leg:heal_clocks` | `hourly_cycle:heal_clocks` | 2026-09-12T09:13:22+00:00 ok | `desks/mt5/data/forward_reconcile.json` | 6.1h | 39K | `eef8f4d39f4ed0c6` | UNMEASURED |
+| `leg:implementer` | `hourly_cycle:implementer` | UNMEASURED UNMEASURED | `docs/research/recommendation_ledger.json` | 6.1h | 1.4M | `94fcf9fc5cab5317` | UNMEASURED |
+| `leg:input_identity` | `hourly_cycle:input_identity` | 2026-09-12T11:04:11+00:00 ok | `desks/mt5/data/input_identity.json` | 6.1h | 99K | `6ddaaf948698a0d4` | UNMEASURED |
+| `leg:kimi_hunt` | `hourly_cycle:kimi_hunt` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/miner_candidates.json` | 6.1h | 70.6M | `7d4ae862dd7f7a10` | UNMEASURED (artifact 70.6 MB, not parsed within budget) |
+| `leg:loop_liveness` | `hourly_cycle:loop_liveness` | UNMEASURED UNMEASURED | `docs/research/LOOP_LIVENESS.md` | 6.1h | 4K | `c6262c80ce5224b7` | UNMEASURED (not a readable JSON object) |
+| `leg:macro_state_engine` | `hourly_cycle:macro_state_engine` | UNMEASURED UNMEASURED | `desks/mt5/data/state_vector.json` | 6.1h | 12K | `298d8b9c819d1a21` | UNMEASURED |
+| `leg:microstructure_census` | `hourly_cycle:microstructure_census` | 2026-09-12T09:14:40+00:00 ok | `data/data_universe_map.json` | 6.1h | 415K | `c01ae1013e7e504c` | UNMEASURED |
+| `leg:mine` | `hourly_cycle:mine` | 2026-09-12T09:18:37+00:00 ok | `data/data_universe_map.json` | 6.1h | 415K | `c01ae1013e7e504c` | UNMEASURED |
+| `leg:moat_miner` | `hourly_cycle:moat_miner` | 2026-09-12T09:18:36+00:00 ok | `desks/mt5/data/hypotheses/moat_candidates.json` | 6.1h | 365B | `b435352a9491a8f3` | UNMEASURED |
+| `leg:news_event_stream` | `hourly_cycle:news_event_stream` | UNMEASURED UNMEASURED | `desks/mt5/reports/hour_surface.json` | 3.6h | 5K | `185e0f743625e5a6` | gap=SystemExit: REFUSING to project |
+| `leg:proposer_seat` | `hourly_cycle:proposer_seat` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/miner_candidates.json` | 6.1h | 70.6M | `7d4ae862dd7f7a10` | UNMEASURED (artifact 70.6 MB, not parsed within budget) |
+| `leg:publish_dashboard` | `hourly_cycle:publish_dashboard` | 2026-09-12T10:58:02+00:00 ok | `web/desk_state.json` | 6.1h | 463K | `c449d4e6774e4427` | UNMEASURED |
+| `leg:publish_state` | `hourly_cycle:publish_state` | 2026-09-12T04:47:33+00:00 FAILED: TimeoutExpired:  | `web/desk_state.json` | 6.1h | 463K | `c449d4e6774e4427` | UNMEASURED |
+| `leg:refresh_bars` | `hourly_cycle:refresh_bars` | 2026-09-12T08:57:01+00:00 ok | `desks/mt5/data/universe/derived_series.json` | 6.1h | 4K | `1386a01c1249a37a` | UNMEASURED |
+| `leg:regime_monitor` | `hourly_cycle:regime_monitor` | 2026-09-12T08:58:22+00:00 ok | `desks/mt5/data/state_vector.json` | 6.1h | 12K | `298d8b9c819d1a21` | UNMEASURED |
+| `leg:research_dashboard` | `hourly_cycle:research_dashboard` | UNMEASURED UNMEASURED | `docs/research/RESEARCH_DASHBOARD.md` | 6.1h | 2K | `f584849771ecc211` | UNMEASURED (not a readable JSON object) |
+| `leg:research_diversity_archive` | `hourly_cycle:research_diversity_archive` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_DIVERSITY_ARCHIVE.json` | 3.5h | 2K | `012f253d5b07c456` | UNMEASURED |
+| `leg:residual_factors` | `hourly_cycle:residual_factors` | UNMEASURED UNMEASURED | `desks/mt5/data/research_queue.json` | 6.1h | 24.3M | `a3ea64587b1332bd` | UNMEASURED (artifact 24.3 MB, not parsed within budget) |
+| `leg:search` | `hourly_cycle:search` | 2026-09-12T09:30:38+00:00 TIMEOUT | `libs/research/alpha_grammar.py` | 6.1h | 69K | `5052630772e28aba` | UNMEASURED (not a readable JSON object) |
+| `leg:state_admission` | `hourly_cycle:state_admission` | UNMEASURED UNMEASURED | `desks/mt5/reports/STATE_ADMISSION.json` | 6.1h | 1K | `512f70de8f00e3c8` | UNMEASURED |
+| `leg:sweep` | `hourly_cycle:sweep` | 2026-09-12T09:42:38+00:00 TIMEOUT | `desks/mt5/mt5desk/families_orthogonal.py` | 3.4h | 117K | `d7817f9baf57737a` | UNMEASURED (not a readable JSON object) |
+| `resident:gateway` | `MT5-GatewayResident` | UNMEASURED UNMEASURED | `desks/mt5/reports/DESK_STALE.json` | 3.7h | 379B | `1f7ccbe6658a9003` | status=MEASURED; verdict=OK |
+| `systemd:quant-universe-registry.timer` | `quant-universe-registry.timer` | UNMEASURED UNMEASURED | `desks/mt5/reports/universe_registry_repair.json` | 6.1h | 1K | `7acc04b9cfddf893` | UNMEASURED |
+| `task:MT5-Deepening` | `MT5-Deepening` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/deepened_candidates.json` | 6.1h | 7K | `ae4a0a35fe675962` | UNMEASURED |
+| `task:MT5-DeskState` | `MT5-DeskState` | UNMEASURED UNMEASURED | `web/desk_state.json` | 6.1h | 463K | `c449d4e6774e4427` | UNMEASURED |
+| `task:MT5-Frontier` | `MT5-Frontier` | UNMEASURED UNMEASURED | `desks/mt5/reports/FRONTIER_INTELLIGENCE.json` | 3.7h | 10K | `6f085e29aaf6b103` | UNMEASURED |
+| `task:MT5-ResearchReports` | `MT5-ResearchReports` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_REPORT_CLOCK.json` | 3.5h | 5K | `25036ba7ddc95c5b` | failed=0 |
+| `task:MT5-Shadow` | `MT5-Shadow` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 6.1h | 3K | `9583b625e9b7d9c0` | status=FAILED |
+| `task:MT5-Universe` | `MT5-Universe` | UNMEASURED UNMEASURED | `desks/mt5/data/universe_expansion.json` | 6.1h | 24K | `c4e001c1a7b63e53` | UNMEASURED |
+
+## MISSING (47)
+
+| organ | clock | last run | artifact | age | size | sha256 | published |
+|---|---|---|---|---:|---:|---|---|
+| `leg:acceptance` | `hourly_cycle:acceptance` | 2026-09-12T11:03:43+00:00 ok | `desks/mt5/reports/acceptance_properties.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:adversaries` | `hourly_cycle:adversaries` | 2026-09-12T10:55:44+00:00 ok | `desks/mt5/reports/ADVERSARY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:alpha_breadth` | `hourly_cycle:alpha_breadth` | 2026-09-12T09:14:15+00:00 ok | `desks/mt5/reports/pf_allocation.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:archive_tape` | `hourly_cycle:archive_tape` | 2026-09-12T10:57:36+00:00 ok | `desks/mt5/reports/TAPE_ARCHIVE.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:arena` | `hourly_cycle:arena` | 2026-09-12T11:03:44+00:00 exit_code=1 | `desks/mt5/reports/ARM_VERDICTS.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
+| `leg:burn_in` | `hourly_cycle:burn_in` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/burn_in.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:capacity` | `hourly_cycle:capacity` | 2026-09-12T10:57:59+00:00 ok | `desks/mt5/reports/CAPACITY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:causal_graph` | `hourly_cycle:causal_graph` | 2026-09-12T10:55:36+00:00 exit_code=1 | `desks/mt5/reports/CAUSAL_GRAPH.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
+| `leg:dead_architecture` | `hourly_cycle:dead_architecture` | 2026-09-12T11:04:05+00:00 ok | `desks/mt5/reports/dead_architecture.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:deepen` | `hourly_cycle:deepen` | 2026-09-12T09:44:10+00:00 ok | `desks/mt5/data/research_queue.jsonl` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:edge_confidence` | `hourly_cycle:edge_confidence` | 2026-09-12T10:58:06+00:00 ok | `desks/mt5/reports/EDGE_CONFIDENCE.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:edge_reliability` | `hourly_cycle:edge_reliability` | 2026-09-12T11:03:44+00:00 ok | `desks/mt5/reports/edge_reliability.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:execution_resolver` | `hourly_cycle:execution_resolver` | 2026-09-12T10:59:27+00:00 ok | `desks/mt5/reports/EXECUTION_INTELLIGENCE.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:exit_study` | `hourly_cycle:exit_study` | 2026-09-12T10:59:37+00:00 ok | `desks/mt5/reports/MUTATION_YIELD.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:experiment_cache` | `hourly_cycle:experiment_cache` | 2026-09-12T10:59:26+00:00 ok | `desks/mt5/reports/EXPERIMENT_CACHE.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:experiment_design` | `hourly_cycle:experiment_design` | 2026-09-12T10:58:07+00:00 ok | `desks/mt5/reports/EXPERIMENT_DESIGN.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:falsifier_run` | `hourly_cycle:falsifier_run` | 2026-09-12T10:25:20+00:00 ok | `desks/mt5/reports/FALSIFIER_VERDICTS.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:forecast_contract` | `hourly_cycle:forecast_contract` | 2026-09-12T10:55:37+00:00 ok | `desks/mt5/reports/FORECAST_CONTRACT.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:frontier_unknowns` | `hourly_cycle:frontier_unknowns` | 2026-09-12T10:59:30+00:00 exit_code=1 | `desks/mt5/reports/STANDING_QUESTIONS.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
+| `leg:futures_lead_lag` | `hourly_cycle:futures_lead_lag` | 2026-09-12T09:14:51+00:00 ok | `desks/mt5/reports/WORLD_CAUSAL_GRAPH.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:graveyard_model` | `hourly_cycle:graveyard_model` | 2026-09-12T10:59:37+00:00 ok | `desks/mt5/reports/GRAVEYARD_MODEL.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:issue_board` | `hourly_cycle:issue_board` | 2026-09-12T10:58:06+00:00 ok | `desks/mt5/reports/ISSUE_BOARD.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:layer_census` | `hourly_cycle:layer_census` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/layer_census.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:miner_conversion` | `hourly_cycle:miner_conversion` | 2026-09-12T10:57:58+00:00 ok | `data/agent_value.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:ml_layer` | `hourly_cycle:ml_layer` | 2026-09-12T10:59:25+00:00 ok | `desks/mt5/reports/ML_LAYER.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:model_league` | `hourly_cycle:model_league` | 2026-09-12T10:55:37+00:00 ok | `desks/mt5/reports/MODEL_ZOO.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:model_skill` | `hourly_cycle:model_skill` | 2026-09-12T10:55:37+00:00 exit_code=2 | `desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=2 |
+| `leg:opportunity_cost` | `hourly_cycle:opportunity_cost` | 2026-09-12T11:03:42+00:00 ok | `desks/mt5/reports/opportunity_cost.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:opportunity_forecast` | `hourly_cycle:opportunity_forecast` | 2026-09-12T11:03:44+00:00 ok | `desks/mt5/reports/opportunity_forecast.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:opportunity_gap` | `hourly_cycle:opportunity_gap` | 2026-09-12T10:59:26+00:00 ok | `desks/mt5/reports/RESEARCH_MISSIONS.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:pf_allocator` | `hourly_cycle:pf_allocator` | 2026-09-12T10:55:31+00:00 ok | `desks/mt5/reports/pf_allocation.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:promoter` | `hourly_cycle:promoter` | 2026-09-12T10:55:34+00:00 ok | `data/alpha_state_ledger.jsonl` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:prosecutor` | `hourly_cycle:prosecutor` | 2026-09-12T11:03:52+00:00 ok | `desks/mt5/reports/prosecutor_census.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:rebalance_trigger` | `hourly_cycle:rebalance_trigger` | 2026-09-12T10:58:06+00:00 ok | `desks/mt5/reports/REBALANCE_TRIGGER.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:reclaim_disk` | `hourly_cycle:reclaim_disk` | 2026-09-12T09:15:59+00:00 ok | `desks/mt5/reports/DISK_RECLAIM.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:regime_coverage` | `hourly_cycle:regime_coverage` | 2026-09-12T09:14:39+00:00 ok | `desks/mt5/reports/REGIME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:release_identity` | `hourly_cycle:release_identity` | 2026-09-12T11:03:41+00:00 exit_code=1 | `desks/mt5/data/LIVE_SYSTEM_STATE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
+| `leg:requeue_unrunnable` | `hourly_cycle:requeue_unrunnable` | 2026-09-12T09:15:47+00:00 ok | `desks/mt5/reports/REQUEUED_UNRUNNABLE.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:research_org` | `hourly_cycle:research_org` | 2026-09-12T10:58:06+00:00 ok | `desks/mt5/reports/FEATURE_ROI.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:scaling_laws` | `hourly_cycle:scaling_laws` | 2026-09-12T11:03:52+00:00 ok | `desks/mt5/reports/scaling_laws.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:session_capital` | `hourly_cycle:session_capital` | 2026-09-12T11:04:12+00:00 ok | `desks/mt5/reports/session_capital.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:spread_provenance` | `hourly_cycle:spread_provenance` | 2026-09-12T09:14:48+00:00 ok | `desks/mt5/reports/SPREAD_PROVENANCE.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:state_vector` | `hourly_cycle:state_vector` | 2026-09-12T08:58:21+00:00 TIMEOUT | `desks/mt5/data/state_admission.json` | UNMEASURED | - | `UNMEASURED` | outcome=TIMEOUT |
+| `leg:tape_features` | `hourly_cycle:tape_features` | 2026-09-12T09:14:49+00:00 exit_code=1 | `desks/mt5/reports/TAPE_FEATURES.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
+| `leg:time_joins` | `hourly_cycle:time_joins` | 2026-09-12T09:14:56+00:00 ok | `desks/mt5/reports/LAKE_PROMOTION.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+| `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
+| `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
+
+## NEVER (720)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -330,36 +395,38 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:desks/mt5/research/allocator_attribution.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/allocator_attribution.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/alpha_genome.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALPHA_GENOME.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/anomaly_factory.py` | `invoked:libs/ops/module_rent.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/ANOMALY_FACTORY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/bench_bridge.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/BENCH_BRIDGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/book_forensics.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOOK_FORENSICS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/budget_market.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/BUDGET_MARKET.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/research/build_allocator.py` | `daily_cycle:build_allocator` | UNMEASURED UNMEASURED | `desks/mt5/reports/BUILD_ALLOCATOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/build_allocator.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/BUILD_ALLOCATOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/capacity_frontier.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAPACITY_FRONTIER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/causal_discovery.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAUSAL_DISCOVERY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/cb_tone_screen.py` | `invoked:desks/mt5/research/scout_roster.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCOUT_ROSTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/certificate_hygiene.py` | `invoked:libs/ops/reference_freshness.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/CERTIFICATE_HYGIENE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/certificate_provenance.py` | `invoked:desks/mt5/research/issue_board.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/ISSUE_BOARD.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/chart_allocator.py` | `invoked:desks/mt5/research/fund_playbook.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/CHART_ALLOCATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/research/conservation_ledger.py` | `daily_cycle:conservation` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/conservation_ledger.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/control_room_mechanisms.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_ROOM_MECHANISMS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/counterfactual_replay.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/COUNTERFACTUAL_WORLD.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/crowding_miner.py` | `invoked:desks/mt5/research/fund_playbook.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/FUND_PLAYBOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/research/curve_strategy_screen.py` | `daily_cycle:curve_strategies` | UNMEASURED UNMEASURED | `desks/mt5/reports/curve_strategy_screen.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/research/daily_research_os.py` | `daily_cycle:daily_research_os` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/curve_strategy_screen.py` | `invoked:desks/mt5/research/fund_playbook.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/curve_strategy_screen.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/daily_research_os.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/data_axis_miner.py` | `invoked:desks/mt5/research/scout_roster.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DATA_AXES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/data_prospector.py` | `invoked:desks/mt5/research/fund_playbook.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DATA_PROSPECTOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/deep_forest_miner.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DEEP_FOREST.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/research/deepen_universe.py` | `daily_cycle:deepen_bars` | UNMEASURED UNMEASURED | `desks/mt5/data/universe/venue_history_depth.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/deepen_universe.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `desks/mt5/data/universe/venue_history_depth.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/diagnose.py` | `invoked:desks/mt5/research/research_loop.py` | UNMEASURED UNMEASURED | `data/research_review.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/drawdown_alpha.py` | `invoked:libs/ops/module_rent.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DRAWDOWN_ALPHA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/drift_monitor.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DRIFT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/evidence_vault.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVIDENCE_VAULT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/execution_intelligence.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/ABSOLUTE_CEILING_STATUS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/exit_sweep.py` | `invoked:scripts/check_private_bisection.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/exit_sweep.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/research/export_aurum_findings.py` | `daily_cycle:export_aurum` | UNMEASURED UNMEASURED | `desks/mt5/reports/aurum_findings.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/export_aurum_findings.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/aurum_findings.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/feature_roi.py` | `invoked:libs/data/feature_store.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/FEATURE_ROI.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/fetch_alfred.py` | `invoked:desks/mt5/research/data_scout.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DATA_SCOUT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/fetch_dukascopy.py` | `invoked:desks/mt5/research/fund_playbook.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/FUND_PLAYBOOK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/fetch_fred.py` | `invoked:desks/mt5/research/scout_roster.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCOUT_ROSTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/research/fetch_futures_curves.py` | `daily_cycle:futures_curves` | UNMEASURED UNMEASURED | `desks/mt5/reports/futures_curve_coverage.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/fetch_futures_curves.py` | `invoked:desks/mt5/research/fund_playbook.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/futures_curve_coverage.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/fetch_gld.py` | `invoked:desks/mt5/research/data_scout.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/DATA_SCOUT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/formal_invariants.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/FORMAL_INVARIANTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/forward_cure_route.py` | `invoked:libs/ops/reference_freshness.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/FORWARD_CURE_ROSTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -384,8 +451,11 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:desks/mt5/research/placebo_test.py` | `invoked:desks/mt5/research/research_supervisor.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCOUT_ROSTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/plumbing_miner.py` | `invoked:libs/ops/module_rent.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/plumbing_miner.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/portfolio_gap.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/portfolio_gap.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/practitioner_processes.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRACTITIONER_PROCESSES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/push_ceiling.py` | `invoked:scripts/check_private_bisection.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/push_ceiling.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/pyramid_sweep.py` | `invoked:scripts/check_private_bisection.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/pyramid_sweep.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/regime_allocation_contract.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/REGIME_ALLOCATION_CONTRACT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/regime_split_miner.py` | `invoked:desks/mt5/mt5desk/families_orthogonal.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/regime_split_miner.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/repo_miner.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/REPO_MINER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/research_pnl.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_PNL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/research_productivity.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_PRODUCTIVITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -395,13 +465,14 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:desks/mt5/research/revival_engine.py` | `invoked:libs/ops/module_rent.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/REVIVAL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/run_cot_macro_sweep.py` | `invoked:desks/mt5/research/export_aurum_findings.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/aurum_findings.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/run_dip_buy_sweep.py` | `invoked:desks/mt5/research/export_aurum_findings.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/aurum_findings.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/run_gateway_loop.py` | `invoked:desks/mt5/scripts/Install-QuantWindows.ps1` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/run_hunt14.py` | `invoked:desks/mt5/mt5desk/position_manager.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/hunt14.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/run_hunt16.py` | `invoked:desks/mt5/research/research_supervisor.py` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/run_macro_conditioned_sweep.py` | `invoked:desks/mt5/research/export_aurum_findings.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/aurum_findings.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/run_macro_swing_sweep.py` | `invoked:desks/mt5/research/export_aurum_findings.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/aurum_findings.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/scientist_tournament.py` | `invoked:ops/run_scientist_tournament.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCIENTIST_TOURNAMENT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/session_structure_miner.py` | `invoked:desks/mt5/research/hourly_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/SESSION_STRUCTURE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/research/simplifier.py` | `daily_cycle:simplifier` | UNMEASURED UNMEASURED | `desks/mt5/reports/SIMPLIFIER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/research/simplifier.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/SIMPLIFIER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/style_premia_sweep.py` | `invoked:libs/ops/module_rent.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/style_premia_sweep.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/subhour_counterfactuals.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/SUBHOUR_COUNTERFACTUALS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/survivor_distiller.py` | `invoked:libs/ops/module_rent.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/SURVIVOR_DISTILLER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -411,16 +482,16 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:desks/mt5/research/transition_alpha.py` | `invoked:libs/ops/module_rent.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/transition_alpha.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/research/world_causal_graph.py` | `invoked:libs/ops/module_rent.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/WORLD_CAUSAL_GRAPH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/scripts/check_after_reboot.py` | `invoked:desks/mt5/research/daily_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/REBOOT_VERIFY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/scripts/check_gold_live.py` | `invoked:desks/mt5/scripts/Adopt-Release.ps1` | UNMEASURED UNMEASURED | `data/alpha_state_ledger.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/scripts/download_remaining.py` | `invoked:desks/mt5/research/nightly_catchup.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/NIGHTLY_CATCHUP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/scripts/check_gold_live.py` | `invoked:ops/migrate_to_new_box.ps1` | UNMEASURED UNMEASURED | `data/alpha_state_ledger.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/scripts/download_remaining.py` | `invoked:ops/box-repair.ps1` | UNMEASURED UNMEASURED | `desks/mt5/reports/NIGHTLY_CATCHUP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/scripts/dr_drill.py` | `invoked:ops/run_frontier_audit.cmd` | UNMEASURED UNMEASURED | `desks/mt5/reports/DR_DRILL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/scripts/refresh_tail.py` | `daily_cycle:refresh_bars` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/scripts/refresh_tail.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/scripts/restart_for_capacity.py` | `invoked:desks/mt5/research/daily_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAPACITY_RESTART.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:desks/mt5/scripts/scalp_gauntlet.py` | `daily_cycle:scalp_gauntlet` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCALP_GAUNTLET.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:desks/mt5/scripts/scalp_gauntlet.py` | `invoked:desks/mt5/research/scalp_shadow.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCALP_GAUNTLET.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:desks/mt5/scripts/smoke_release.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:libs/ops/allocators.py` | `invoked:desks/mt5/research/feature_roi.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/FEATURE_ROI.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:libs/ops/completion.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `executable:libs/ops/module_rent.py` | `daily_cycle:module_rent` | UNMEASURED UNMEASURED | `desks/mt5/reports/TRIAL_ALLOCATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:libs/ops/module_rent.py` | `invoked:desks/mt5/research/trial_allocator.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/TRIAL_ALLOCATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/acquire_data.py` | `invoked:desks/mt5/research/productivity_census.py` | UNMEASURED UNMEASURED | `data/acquisition_plan.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/alpha_lifecycle.py` | `invoked:scripts/daily_research_cycle.py` | UNMEASURED UNMEASURED | `data/alpha_lifecycle.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/asymmetry_ledger.py` | `invoked:libs/research/perishability.py` | UNMEASURED UNMEASURED | `data/asymmetry_ledger.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -512,17 +583,14 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `executable:scripts/vault_search.py` | `invoked:desks/mt5/research/wiring_ceo.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/ATTRIBUTION_RECONCILE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/verify_deployment.py` | `invoked:ops/deploy_vps.sh` | UNMEASURED UNMEASURED | `data/deployment_verification.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `executable:scripts/watch_pnl.py` | `invoked:scripts/run_cadence.py` | UNMEASURED UNMEASURED | `data/pnl_watch.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:acceptance` | `hourly_cycle:acceptance` | UNMEASURED UNMEASURED | `desks/mt5/reports/acceptance_properties.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:acquire_datasets` | `hourly_cycle:acquire_datasets` | UNMEASURED UNMEASURED | `desks/mt5/reports/dataset_acquisition.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:actor_atlas` | `hourly_cycle:actor_atlas` | UNMEASURED UNMEASURED | `desks/mt5/reports/ACTOR_ATLAS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:actor_pressure` | `hourly_cycle:actor_pressure` | UNMEASURED UNMEASURED | `desks/mt5/reports/ACTOR_PRESSURE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:adversaries` | `hourly_cycle:adversaries` | UNMEASURED UNMEASURED | `desks/mt5/reports/ADVERSARY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:adversary_evolution` | `hourly_cycle:adversary_evolution` | UNMEASURED UNMEASURED | `desks/mt5/reports/ADVERSARY_EVOLUTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:algorithm_db` | `hourly_cycle:algorithm_db` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALGORITHM_DB.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:allocator_join` | `hourly_cycle:allocator_join` | UNMEASURED UNMEASURED | `desks/mt5/reports/pf_allocation.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:allocator_liveness` | `hourly_cycle:allocator_liveness` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALLOCATOR_LIVENESS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:allocator_trigger` | `hourly_cycle:allocator_trigger` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALLOCATOR_REACTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:alpha_breadth` | `hourly_cycle:alpha_breadth` | UNMEASURED UNMEASURED | `desks/mt5/reports/pf_allocation.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:alpha_evolution` | `hourly_cycle:alpha_evolution` | UNMEASURED UNMEASURED | `desks/mt5/reports/alpha_evolution.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:alpha_lineage` | `hourly_cycle:alpha_lineage` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALPHA_LINEAGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:alpha_rank` | `hourly_cycle:alpha_rank` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALPHA_RANK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -531,8 +599,6 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:alpha_rl` | `hourly_cycle:alpha_rl` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALPHA_RL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:analyst_pipeline` | `hourly_cycle:analyst_pipeline` | UNMEASURED UNMEASURED | `desks/mt5/reports/ANALYST_PIPELINE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:archaeology` | `hourly_cycle:archaeology` | UNMEASURED UNMEASURED | `desks/mt5/reports/TRADING_ARCHAEOLOGY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:archive_tape` | `hourly_cycle:archive_tape` | UNMEASURED UNMEASURED | `desks/mt5/reports/TAPE_ARCHIVE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:arena` | `hourly_cycle:arena` | UNMEASURED UNMEASURED | `desks/mt5/reports/ARM_VERDICTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:artifact_chain` | `hourly_cycle:artifact_chain` | UNMEASURED UNMEASURED | `desks/mt5/data/research_artifacts.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:asia_collector` | `hourly_cycle:asia_collector` | UNMEASURED UNMEASURED | `desks/mt5/reports/ASIA_COLLECTOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:asia_parser` | `hourly_cycle:asia_parser` | UNMEASURED UNMEASURED | `desks/mt5/reports/ASIA_PARSER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -545,12 +611,9 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:bottleneck_attack` | `hourly_cycle:bottleneck_attack` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOTTLENECK_ATTACK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:bottleneck_law` | `hourly_cycle:bottleneck_law` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOTTLENECK_LAW.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:breadth_ladder` | `hourly_cycle:breadth_ladder` | UNMEASURED UNMEASURED | `desks/mt5/reports/BREADTH_LADDER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:burn_in` | `hourly_cycle:burn_in` | UNMEASURED UNMEASURED | `desks/mt5/reports/burn_in.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:candidate_conservation` | `hourly_cycle:candidate_conservation` | UNMEASURED UNMEASURED | `desks/mt5/reports/CANDIDATE_CONSERVATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:canon_publication` | `hourly_cycle:canon_publication` | UNMEASURED UNMEASURED | `desks/mt5/reports/CANON_PUBLICATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:capacity` | `hourly_cycle:capacity` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAPACITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:card_explosion` | `hourly_cycle:card_explosion` | UNMEASURED UNMEASURED | `desks/mt5/reports/MOAT_CARD_EXPLOSION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:causal_graph` | `hourly_cycle:causal_graph` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAUSAL_GRAPH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:causal_invariance` | `hourly_cycle:causal_invariance` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAUSAL_INVARIANCE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:causal_lab` | `hourly_cycle:causal_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/CAUSAL_LAB.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:certificate_clock_law` | `hourly_cycle:certificate_clock_law` | UNMEASURED UNMEASURED | `desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -571,11 +634,8 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:credit_assignment` | `hourly_cycle:credit_assignment` | UNMEASURED UNMEASURED | `desks/mt5/reports/CREDIT_ASSIGNMENT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cross_asset_graph` | `hourly_cycle:cross_asset_graph` | UNMEASURED UNMEASURED | `desks/mt5/reports/cross_asset_graph.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:cross_sectional_breadth` | `hourly_cycle:cross_sectional_breadth` | UNMEASURED UNMEASURED | `desks/mt5/reports/CROSS_SECTIONAL_BREADTH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:cycle_pricing` | `hourly_cycle:cycle_pricing` | UNMEASURED UNMEASURED | `desks/mt5/reports/CYCLE_PRICING.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:data_acquisition_scientist` | `hourly_cycle:data_acquisition_scientist` | UNMEASURED UNMEASURED | `desks/mt5/reports/DATA_ACQUISITION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:data_scout` | `hourly_cycle:data_scout` | UNMEASURED UNMEASURED | `desks/mt5/reports/DATA_SCOUT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:dead_architecture` | `hourly_cycle:dead_architecture` | UNMEASURED UNMEASURED | `desks/mt5/reports/dead_architecture.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:deepen` | `hourly_cycle:deepen` | UNMEASURED UNMEASURED | `desks/mt5/data/research_queue.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:descendants` | `hourly_cycle:descendants` | UNMEASURED UNMEASURED | `desks/mt5/reports/DESCENDANTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:desk_dashboard_state` | `hourly_cycle:desk_dashboard_state` | UNMEASURED UNMEASURED | `desks/mt5/reports/DESK_DASHBOARD_STATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:desk_self_heal` | `hourly_cycle:desk_self_heal` | UNMEASURED UNMEASURED | `desks/mt5/reports/DESK_SELF_HEAL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -586,26 +646,18 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:drawdown_alpha_miner` | `hourly_cycle:drawdown_alpha_miner` | UNMEASURED UNMEASURED | `desks/mt5/reports/DRAWDOWN_ALPHA_MINER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:dukascopy_backfill` | `hourly_cycle:dukascopy_backfill` | UNMEASURED UNMEASURED | `desks/mt5/reports/DUKASCOPY_BACKFILL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:duty_cycle` | `hourly_cycle:duty_cycle` | UNMEASURED UNMEASURED | `desks/mt5/reports/DUTY_CYCLE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:edge_confidence` | `hourly_cycle:edge_confidence` | UNMEASURED UNMEASURED | `desks/mt5/reports/EDGE_CONFIDENCE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:edge_reliability` | `hourly_cycle:edge_reliability` | UNMEASURED UNMEASURED | `desks/mt5/reports/edge_reliability.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:effective_trials` | `hourly_cycle:effective_trials` | UNMEASURED UNMEASURED | `desks/mt5/reports/EFFECTIVE_TRIALS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:evaluator_lab` | `hourly_cycle:evaluator_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVALUATOR_LAB.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:event_graph_lab` | `hourly_cycle:event_graph_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/WORLD_CAUSAL_GRAPH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:event_response_atlas` | `hourly_cycle:event_response_atlas` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVENT_RESPONSE_ATLAS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:event_sleeves` | `hourly_cycle:event_sleeves` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVENT_RESPONSE_ATLAS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:event_surprise` | `hourly_cycle:event_surprise` | UNMEASURED UNMEASURED | `desks/mt5/reports/PIT_CENSUS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:evidence_chain` | `hourly_cycle:evidence_chain` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVIDENCE_CHAIN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:evidence_router` | `hourly_cycle:evidence_router` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVIDENCE_ROUTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:evidence_watchtower` | `hourly_cycle:evidence_watchtower` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVIDENCE_WATCHTOWER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:evig_acquisition` | `hourly_cycle:evig_acquisition` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVIG_ACQUISITION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:execution_alpha` | `hourly_cycle:execution_alpha` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXECUTION_ALPHA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:execution_resolver` | `hourly_cycle:execution_resolver` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXECUTION_INTELLIGENCE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:execution_science` | `hourly_cycle:execution_science` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXECUTION_SCIENCE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:exit_accounts` | `hourly_cycle:exit_accounts` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXIT_ACCOUNTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:exit_study` | `hourly_cycle:exit_study` | UNMEASURED UNMEASURED | `desks/mt5/reports/MUTATION_YIELD.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:exogenous_search` | `hourly_cycle:exogenous_search` | UNMEASURED UNMEASURED | `desks/mt5/reports/STANDING_QUESTIONS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:experiment_cache` | `hourly_cycle:experiment_cache` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXPERIMENT_CACHE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:experiment_design` | `hourly_cycle:experiment_design` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXPERIMENT_DESIGN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:experiment_spine` | `hourly_cycle:experiment_spine` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXPERIMENT_SPINE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:experimental_budget` | `hourly_cycle:experimental_budget` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXPERIMENTAL_BUDGET.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:exposure_decomposition` | `hourly_cycle:exposure_decomposition` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXPOSURE_DECOMPOSITION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -613,14 +665,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:external_federation` | `hourly_cycle:external_federation` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXTERNAL_FEDERATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:factory_contracts` | `hourly_cycle:factory_contracts` | UNMEASURED UNMEASURED | `desks/mt5/reports/FACTORY_CONTRACTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:failure_prior` | `hourly_cycle:failure_prior` | UNMEASURED UNMEASURED | `desks/mt5/reports/FAILURE_PRIOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:falsifier_run` | `hourly_cycle:falsifier_run` | UNMEASURED UNMEASURED | `desks/mt5/reports/FALSIFIER_VERDICTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:fast_admission` | `hourly_cycle:fast_admission` | UNMEASURED UNMEASURED | `desks/mt5/reports/ADMISSION_SCREEN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:feature_compiler` | `hourly_cycle:feature_compiler` | UNMEASURED UNMEASURED | `desks/mt5/reports/FEATURE_COMPILER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:federation_ops` | `hourly_cycle:federation_ops` | UNMEASURED UNMEASURED | `desks/mt5/data/federation_registry.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:fence_battery` | `hourly_cycle:fence_battery` | UNMEASURED UNMEASURED | `desks/mt5/reports/BATTERY_FENCES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:fill_recorder` | `hourly_cycle:fill_recorder` | UNMEASURED UNMEASURED | `desks/mt5/reports/FILL_RECORDER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forced_flow_calendar` | `hourly_cycle:forced_flow_calendar` | UNMEASURED UNMEASURED | `desks/mt5/data/forced_flow_calendar.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:forecast_contract` | `hourly_cycle:forecast_contract` | UNMEASURED UNMEASURED | `desks/mt5/reports/FORECAST_CONTRACT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_africa` | `hourly_cycle:forest_africa` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_KOREA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_asean` | `hourly_cycle:forest_asean` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_KOREA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:forest_china` | `hourly_cycle:forest_china` | UNMEASURED UNMEASURED | `desks/mt5/reports/FOREST_KOREA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -641,11 +691,8 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:fred_macro` | `hourly_cycle:fred_macro` | UNMEASURED UNMEASURED | `desks/mt5/reports/PIT_CENSUS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:frontier_ceo` | `hourly_cycle:frontier_ceo` | UNMEASURED UNMEASURED | `desks/mt5/reports/CEO_DOCKET.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:frontier_map` | `hourly_cycle:frontier_map` | UNMEASURED UNMEASURED | `desks/mt5/reports/FRONTIER_MAP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:frontier_unknowns` | `hourly_cycle:frontier_unknowns` | UNMEASURED UNMEASURED | `desks/mt5/reports/STANDING_QUESTIONS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:futures_lead_lag` | `hourly_cycle:futures_lead_lag` | UNMEASURED UNMEASURED | `desks/mt5/reports/WORLD_CAUSAL_GRAPH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:gauntlet_backpressure` | `hourly_cycle:gauntlet_backpressure` | UNMEASURED UNMEASURED | `desks/mt5/reports/GAUNTLET_BACKPRESSURE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:global_research_os` | `hourly_cycle:global_research_os` | UNMEASURED UNMEASURED | `desks/mt5/reports/KR_DATA_PLANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:graveyard_model` | `hourly_cycle:graveyard_model` | UNMEASURED UNMEASURED | `desks/mt5/reports/GRAVEYARD_MODEL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:graveyard_resurrection` | `hourly_cycle:graveyard_resurrection` | UNMEASURED UNMEASURED | `desks/mt5/reports/GRAVEYARD_RESURRECTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:ground_depth` | `hourly_cycle:ground_depth` | UNMEASURED UNMEASURED | `desks/mt5/reports/GROUND_DEPTH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:hazard_engine` | `hourly_cycle:hazard_engine` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALPHA_HAZARD.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -653,14 +700,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:independence_intake` | `hourly_cycle:independence_intake` | UNMEASURED UNMEASURED | `desks/mt5/reports/INDEPENDENCE_INTAKE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:ingestion_exploitation` | `hourly_cycle:ingestion_exploitation` | UNMEASURED UNMEASURED | `desks/mt5/reports/INGESTION_EXPLOITATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:ingestion_ledger` | `hourly_cycle:ingestion_ledger` | UNMEASURED UNMEASURED | `desks/mt5/reports/INGESTION_EXPLOITATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:issue_board` | `MT5-ResearchReports` | UNMEASURED UNMEASURED | `desks/mt5/reports/ISSUE_BOARD.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:judge_coverage` | `hourly_cycle:judge_coverage` | UNMEASURED UNMEASURED | `desks/mt5/reports/JUDGE_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:judging_burndown` | `hourly_cycle:judging_burndown` | UNMEASURED UNMEASURED | `desks/mt5/reports/JUDGING_BURNDOWN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:judging_throughput` | `hourly_cycle:judging_throughput` | UNMEASURED UNMEASURED | `desks/mt5/reports/JUDGING_THROUGHPUT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:kelly_survival` | `hourly_cycle:kelly_survival` | UNMEASURED UNMEASURED | `desks/mt5/reports/KELLY_SURVIVAL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:knowledge_graph` | `hourly_cycle:knowledge_graph` | UNMEASURED UNMEASURED | `desks/mt5/reports/KNOWLEDGE_GRAPH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:lake_promote` | `hourly_cycle:lake_promote` | UNMEASURED UNMEASURED | `desks/mt5/reports/LAKE_PROMOTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:layer_census` | `hourly_cycle:layer_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/layer_census.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:lead_replication` | `hourly_cycle:lead_replication` | UNMEASURED UNMEASURED | `desks/mt5/reports/LEAD_REPLICATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:live_calibration_posterior` | `hourly_cycle:live_calibration_posterior` | UNMEASURED UNMEASURED | `desks/mt5/reports/LIVE_CALIBRATION_POSTERIOR.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:live_system_state` | `hourly_cycle:live_system_state` | UNMEASURED UNMEASURED | `desks/mt5/data/LIVE_SYSTEM_STATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -672,34 +717,25 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:math_lab` | `hourly_cycle:math_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/MATH_LAB.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:meta_controller` | `hourly_cycle:meta_controller` | UNMEASURED UNMEASURED | `desks/mt5/reports/META_CONTROLLER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:meta_rnd` | `hourly_cycle:meta_rnd` | UNMEASURED UNMEASURED | `desks/mt5/reports/META_RND.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:miner_conversion` | `hourly_cycle:miner_conversion` | UNMEASURED UNMEASURED | `data/agent_value.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:miner_specialisation` | `hourly_cycle:miner_specialisation` | UNMEASURED UNMEASURED | `desks/mt5/reports/MINER_SPECIALISATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:mining_objective` | `hourly_cycle:mining_objective` | UNMEASURED UNMEASURED | `desks/mt5/reports/MINING_OBJECTIVE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:missed_trade_archaeologist` | `hourly_cycle:missed_trade_archaeologist` | UNMEASURED UNMEASURED | `desks/mt5/reports/MISSED_TRADES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:mission_control` | `hourly_cycle:mission_control` | UNMEASURED UNMEASURED | `desks/mt5/reports/MISSION_CONTROL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:ml_layer` | `hourly_cycle:ml_layer` | UNMEASURED UNMEASURED | `desks/mt5/reports/ML_LAYER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:moat_candidate_compiler` | `hourly_cycle:moat_candidate_compiler` | UNMEASURED UNMEASURED | `desks/mt5/reports/MOAT_FACTORY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:moat_collectors` | `hourly_cycle:moat_collectors` | UNMEASURED UNMEASURED | `desks/mt5/reports/MOAT_COLLECTORS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:moat_series` | `hourly_cycle:moat_series` | UNMEASURED UNMEASURED | `desks/mt5/reports/MOAT_SERIES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:model_league` | `hourly_cycle:model_league` | UNMEASURED UNMEASURED | `desks/mt5/reports/MODEL_ZOO.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:model_role_benchmark` | `hourly_cycle:model_role_benchmark` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_ORG.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:model_search` | `hourly_cycle:model_search` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_BANDIT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:model_skill` | `hourly_cycle:model_skill` | UNMEASURED UNMEASURED | `desks/mt5/reports/MODEL_SELF_IMPROVEMENT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:mutation_yield` | `hourly_cycle:mutation_yield` | UNMEASURED UNMEASURED | `desks/mt5/reports/CREDIT_ASSIGNMENT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:net_edge` | `hourly_cycle:net_edge` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXECUTION_ALPHA.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:netting_report` | `hourly_cycle:netting_report` | UNMEASURED UNMEASURED | `desks/mt5/reports/NETTING.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:news_event_stream` | `hourly_cycle:news_event_stream` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVENT_RESPONSE_ATLAS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:novelty_gate` | `hourly_cycle:novelty_gate` | UNMEASURED UNMEASURED | `desks/mt5/reports/NOVELTY_GATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:opportunity_cost` | `hourly_cycle:opportunity_cost` | UNMEASURED UNMEASURED | `desks/mt5/reports/opportunity_cost.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:opportunity_forecast` | `hourly_cycle:opportunity_forecast` | UNMEASURED UNMEASURED | `desks/mt5/reports/opportunity_forecast.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:opportunity_gap` | `hourly_cycle:opportunity_gap` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_MISSIONS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:ops_redundancy` | `hourly_cycle:ops_redundancy` | UNMEASURED UNMEASURED | `desks/mt5/reports/OPS_REDUNDANCY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:organ_census` | `hourly_cycle:organ_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/ORGAN_CENSUS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:orthogonality` | `hourly_cycle:orthogonality` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESIDUAL_GATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:orthogonality_yield` | `hourly_cycle:orthogonality_yield` | UNMEASURED UNMEASURED | `desks/mt5/reports/ORTHOGONALITY_YIELD.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:pack_cells` | `hourly_cycle:pack_cells` | UNMEASURED UNMEASURED | `desks/mt5/reports/PACK_CELLS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:paradigm_router` | `hourly_cycle:paradigm_router` | UNMEASURED UNMEASURED | `desks/mt5/reports/PARADIGM_ROUTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:pf_allocator` | `hourly_cycle:pf_allocator` | UNMEASURED UNMEASURED | `desks/mt5/reports/pf_allocation.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:physics_lab` | `hourly_cycle:physics_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/PHYSICS_LAB.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:pit_canaries` | `hourly_cycle:pit_canaries` | UNMEASURED UNMEASURED | `desks/mt5/reports/LAKE_PROMOTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:placebo_audit` | `hourly_cycle:placebo_audit` | UNMEASURED UNMEASURED | `desks/mt5/reports/PLACEBO_AUDIT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -712,33 +748,24 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:producer_census` | `hourly_cycle:producer_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_CENSUS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:productivity_census` | `hourly_cycle:productivity_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCTIVITY_CENSUS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:program_alpha_lane` | `hourly_cycle:program_alpha_lane` | UNMEASURED UNMEASURED | `desks/mt5/reports/PROGRAM_ALPHA_LANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:promoter` | `hourly_cycle:promoter` | UNMEASURED UNMEASURED | `data/alpha_state_ledger.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:prosecutor` | `hourly_cycle:prosecutor` | UNMEASURED UNMEASURED | `desks/mt5/reports/prosecutor_census.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:qd_frontier` | `hourly_cycle:qd_frontier` | UNMEASURED UNMEASURED | `desks/mt5/reports/QD_FRONTIER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:quantbench` | `hourly_cycle:quantbench` | UNMEASURED UNMEASURED | `desks/mt5/reports/QUANTBENCH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:rank_recovery` | `hourly_cycle:rank_recovery` | UNMEASURED UNMEASURED | `desks/mt5/reports/RANK_RECOVERY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:rebalance_trigger` | `hourly_cycle:rebalance_trigger` | UNMEASURED UNMEASURED | `desks/mt5/reports/REBALANCE_TRIGGER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:reclaim_disk` | `hourly_cycle:reclaim_disk` | UNMEASURED UNMEASURED | `desks/mt5/reports/DISK_RECLAIM.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:regime_coverage` | `hourly_cycle:regime_coverage` | UNMEASURED UNMEASURED | `desks/mt5/reports/REGIME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:regime_hierarchy` | `hourly_cycle:regime_hierarchy` | UNMEASURED UNMEASURED | `desks/mt5/reports/REGIME_HIERARCHY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:regime_router` | `hourly_cycle:regime_router` | UNMEASURED UNMEASURED | `desks/mt5/reports/REGIME_ROUTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:registry_sync` | `hourly_cycle:registry_sync` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:release_authority` | `hourly_cycle:release_authority` | UNMEASURED UNMEASURED | `desks/mt5/reports/RELEASE_AUTHORITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:release_identity` | `hourly_cycle:release_identity` | UNMEASURED UNMEASURED | `desks/mt5/data/LIVE_SYSTEM_STATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:replication_civilization` | `hourly_cycle:replication_civilization` | UNMEASURED UNMEASURED | `desks/mt5/reports/REPLICATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:representation_discovery` | `hourly_cycle:representation_discovery` | UNMEASURED UNMEASURED | `desks/mt5/reports/REPRESENTATION_DISCOVERY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:representation_forge` | `hourly_cycle:representation_forge` | UNMEASURED UNMEASURED | `desks/mt5/reports/REPRESENTATION_FORGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:requeue_unrunnable` | `hourly_cycle:requeue_unrunnable` | UNMEASURED UNMEASURED | `desks/mt5/reports/REQUEUED_UNRUNNABLE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_api_status` | `hourly_cycle:research_api_status` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_API.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_artifacts` | `hourly_cycle:research_artifacts` | UNMEASURED UNMEASURED | `desks/mt5/data/research_artifacts.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_auction` | `hourly_cycle:research_auction` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_AUCTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_debt` | `hourly_cycle:research_debt` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_DEBT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_departments` | `hourly_cycle:research_departments` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_DEPARTMENTS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:research_diversity_archive` | `hourly_cycle:research_diversity_archive` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_DIVERSITY_ARCHIVE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_evolution` | `hourly_cycle:research_evolution` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_EVOLUTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_gap_map` | `hourly_cycle:research_gap_map` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_GAP_MAP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_latency` | `hourly_cycle:research_latency` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_LATENCY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:research_org` | `hourly_cycle:research_org` | UNMEASURED UNMEASURED | `desks/mt5/reports/FEATURE_ROI.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_os_archive` | `hourly_cycle:research_os_archive` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_OS_ARCHIVE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_roi` | `hourly_cycle:research_roi` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_ROI.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:research_tree` | `hourly_cycle:research_tree` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_TREE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -751,7 +778,6 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:sandbox_roster` | `hourly_cycle:sandbox_roster` | UNMEASURED UNMEASURED | `desks/mt5/reports/SANDBOX_ROSTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:sandbox_runner` | `hourly_cycle:sandbox_runner` | UNMEASURED UNMEASURED | `desks/mt5/reports/SANDBOX_RUNNER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:sares` | `hourly_cycle:sares` | UNMEASURED UNMEASURED | `desks/mt5/reports/SARES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:scaling_laws` | `hourly_cycle:scaling_laws` | UNMEASURED UNMEASURED | `desks/mt5/reports/scaling_laws.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:science_controller` | `hourly_cycle:science_controller` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCIENCE_CONTROLLER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:scientist_standings` | `hourly_cycle:scientist_standings` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCIENTIST_STANDINGS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:scout_roster` | `hourly_cycle:scout_roster` | UNMEASURED UNMEASURED | `desks/mt5/reports/SCOUT_ROSTER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -759,7 +785,6 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:search_paradigm_census` | `hourly_cycle:search_paradigm_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_BANDIT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:semantic_memory` | `hourly_cycle:semantic_memory` | UNMEASURED UNMEASURED | `desks/mt5/data/semantic_memory/manifest.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:session_allocation` | `hourly_cycle:session_allocation` | UNMEASURED UNMEASURED | `desks/mt5/reports/SESSION_ALLOCATION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:session_capital` | `hourly_cycle:session_capital` | UNMEASURED UNMEASURED | `desks/mt5/reports/session_capital.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:session_chart_expansion` | `hourly_cycle:session_chart_expansion` | UNMEASURED UNMEASURED | `desks/mt5/reports/SESSION_CHART_EXPANSION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:shadow_discovery` | `hourly_cycle:shadow_discovery` | UNMEASURED UNMEASURED | `desks/mt5/reports/SHADOW_DISCOVERY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:shadow_institutional` | `hourly_cycle:shadow_institutional` | UNMEASURED UNMEASURED | `desks/mt5/reports/SHADOW_INSTITUTIONAL.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -772,20 +797,15 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:source_frontier` | `hourly_cycle:source_frontier` | UNMEASURED UNMEASURED | `desks/mt5/reports/SOURCE_FRONTIER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:source_registry` | `hourly_cycle:source_registry` | UNMEASURED UNMEASURED | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:source_routes` | `hourly_cycle:source_routes` | UNMEASURED UNMEASURED | `desks/mt5/reports/SOURCE_ROUTES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:spread_provenance` | `hourly_cycle:spread_provenance` | UNMEASURED UNMEASURED | `desks/mt5/reports/SPREAD_PROVENANCE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:stamp_freshness` | `hourly_cycle:stamp_freshness` | UNMEASURED UNMEASURED | `desks/mt5/reports/STAMP_FRESHNESS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:standing_questions` | `hourly_cycle:standing_questions` | UNMEASURED UNMEASURED | `desks/mt5/reports/STANDING_QUESTIONS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:state_replay_audit` | `hourly_cycle:state_replay_audit` | UNMEASURED UNMEASURED | `desks/mt5/reports/STATE_REPLAY_PARITY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:state_vector` | `hourly_cycle:state_vector` | UNMEASURED UNMEASURED | `desks/mt5/data/state_admission.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:stop_reverse` | `hourly_cycle:stop_reverse` | UNMEASURED UNMEASURED | `desks/mt5/reports/STOP_REVERSE_CENSUS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:strategy_paths` | `hourly_cycle:strategy_paths` | UNMEASURED UNMEASURED | `desks/mt5/data/strategy_paths.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:swap_rejudge` | `hourly_cycle:swap_rejudge` | UNMEASURED UNMEASURED | `desks/mt5/reports/SWAP_REJUDGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:synthetic_regimes` | `hourly_cycle:synthetic_regimes` | UNMEASURED UNMEASURED | `desks/mt5/reports/SYNTHETIC_REGIMES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:synthetic_usdx` | `hourly_cycle:synthetic_usdx` | UNMEASURED UNMEASURED | `desks/mt5/reports/SYNTHETIC_USDX.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:tape_features` | `hourly_cycle:tape_features` | UNMEASURED UNMEASURED | `desks/mt5/reports/TAPE_FEATURES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:tier1_scorecard` | `hourly_cycle:tier1_scorecard` | UNMEASURED UNMEASURED | `desks/mt5/reports/TIER1_SCORECARD.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:time_joins` | `hourly_cycle:time_joins` | UNMEASURED UNMEASURED | `desks/mt5/reports/LAKE_PROMOTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | UNMEASURED UNMEASURED | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:timeframe_fanout` | `hourly_cycle:timeframe_fanout` | UNMEASURED UNMEASURED | `desks/mt5/reports/TIMEFRAME_FANOUT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:trade_autopsy` | `hourly_cycle:trade_autopsy` | UNMEASURED UNMEASURED | `desks/mt5/data/autopsies.jsonl` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:trajectory_evolution` | `hourly_cycle:trajectory_evolution` | UNMEASURED UNMEASURED | `desks/mt5/reports/TRAJECTORY_EVOLUTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -798,12 +818,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:weak_signals` | `hourly_cycle:weak_signals` | UNMEASURED UNMEASURED | `desks/mt5/reports/weak_signal_compiler.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:why_not_report` | `hourly_cycle:why_not_report` | UNMEASURED UNMEASURED | `desks/mt5/reports/WHY_NOT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:wiring_ceo` | `hourly_cycle:wiring_ceo` | UNMEASURED UNMEASURED | `desks/mt5/reports/ATTRIBUTION_RECONCILE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:world_crawler` | `hourly_cycle:world_crawler` | UNMEASURED UNMEASURED | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:world_lab` | `hourly_cycle:world_lab` | UNMEASURED UNMEASURED | `desks/mt5/reports/WORLD_LAB.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:world_model` | `hourly_cycle:world_model` | UNMEASURED UNMEASURED | `desks/mt5/reports/COUNTERFACTUAL_ATTRIBUTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/adversary.py` | `import:desks/mt5/research/tier_s.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/ADVERSARY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/audit_intake.py` | `import:desks/mt5/research/scientist_tournament.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/AUDIT_INTAKE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/axis_ingest.py` | `import:desks/mt5/research/axis_ingest_all.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/AXIS_INGEST.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `library:desks/mt5/research/control_room.py` | `import:desks/mt5/mt5desk/families_orthogonal.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/CONTROL_ROOM.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/countries/ar/data_plane.py` | `import:desks/mt5/research/forest_runner.py (dynamic research.countries.ar.data_plane)` | UNMEASURED UNMEASURED | `desks/mt5/reports/SOUTH_AMERICA_AR_PLANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/countries/br/data_plane.py` | `import:desks/mt5/research/forest_runner.py (dynamic research.countries.br.data_plane)` | UNMEASURED UNMEASURED | `desks/mt5/reports/SOUTH_AMERICA_BR_PLANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/countries/cl/data_plane.py` | `import:desks/mt5/research/forest_runner.py (dynamic research.countries.cl.data_plane)` | UNMEASURED UNMEASURED | `desks/mt5/reports/SOUTH_AMERICA_CL_PLANE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -812,13 +832,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `library:desks/mt5/research/fusion_spread_tape.py` | `import:desks/mt5/scripts/repair_universe_spreads.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/SPREAD_PROVENANCE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/global_research_acceptance.py` | `import:desks/mt5/research/global_research_os.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/GLOBAL_RESEARCH_ACCEPTANCE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/hunt_deflate.py` | `import:desks/mt5/research/full_hunt.py` | UNMEASURED UNMEASURED | `desks/mt5/data/hunt_candidates.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `library:desks/mt5/research/module_rent.py` | `daily_cycle:module_rent_research` | UNMEASURED UNMEASURED | `desks/mt5/reports/MODULE_RENT_RESEARCH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `library:desks/mt5/research/module_rent.py` | `import:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/MODULE_RENT_RESEARCH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/multiplicity.py` | `import:desks/mt5/research/proposer_common.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/ANOMALY_FACTORY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `library:desks/mt5/research/portfolio_evidence.py` | `daily_cycle:portfolio` | UNMEASURED UNMEASURED | `desks/mt5/reports/portfolio_evidence.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `library:desks/mt5/research/portfolio_evidence.py` | `import:desks/mt5/research/allocator_attribution.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/portfolio_evidence.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/portfolio_projection.py` | `import:desks/mt5/research/allocation.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/pf_allocation.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/queue_store.py` | `import:desks/mt5/research/opportunity_cost.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/QUEUE_STORE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/registry.py` | `import:libs/research/region_mandate.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/MODULE_RENT_RESEARCH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `library:desks/mt5/research/run_gateway_loop.py` | `import:desks/mt5/research/gateway_resident.py` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/run_hunt10.py` | `import:desks/mt5/research/run_gateway_loop.py` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/run_hunt11.py` | `import:desks/mt5/research/book_reality.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/pyramid_sweep.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `library:desks/mt5/research/run_hunt17.py` | `import:desks/mt5/research/universal_gate.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/pf_allocation.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -892,17 +911,17 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `task:E8-Gold` | `E8-Gold` | UNMEASURED UNMEASURED | `desks/mt5/reports/E8_GOLD.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-AllocatorFast` | `MT5-AllocatorFast` | UNMEASURED UNMEASURED | `desks/mt5/reports/pf_allocation.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-AllocatorPulse` | `MT5-AllocatorPulse` | UNMEASURED UNMEASURED | `desks/mt5/reports/ALLOCATOR_REACTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `task:MT5-BoxHeartbeat` | `MT5-BoxHeartbeat` | UNMEASURED UNMEASURED | `desks/mt5/reports/BOX_HEARTBEAT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-CacheWarm` | `MT5-CacheWarm` | UNMEASURED UNMEASURED | `desks/mt5/reports/WARM_GAUNTLET.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-ClockFixer` | `MT5-ClockFixer` | UNMEASURED UNMEASURED | `desks/mt5/reports/CLOCK_FIXER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `task:MT5-Frontier` | `MT5-Frontier` | UNMEASURED UNMEASURED | `desks/mt5/reports/FRONTIER_INTELLIGENCE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-Moat-Exploit` | `MT5-Moat-Exploit` | UNMEASURED UNMEASURED | `desks/mt5/reports/MOAT_SWARMS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-Moat-Explore` | `MT5-Moat-Explore` | UNMEASURED UNMEASURED | `desks/mt5/reports/MOAT_SWARMS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-Moat-Resurrect` | `MT5-Moat-Resurrect` | UNMEASURED UNMEASURED | `desks/mt5/reports/MOAT_SWARMS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-MoatCapture` | `MT5-MoatCapture` | UNMEASURED UNMEASURED | `desks/mt5/reports/MOAT_CAPTURE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-NoLog` | `MT5-NoLog` | UNMEASURED UNMEASURED | `desks/mt5/reports/NO_LOG.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `task:MT5-OffsiteBackup` | `MT5-OffsiteBackup` | UNMEASURED UNMEASURED | `desks/mt5/reports/OFFSITE_BACKUP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-PlumbingWatchdog` | `MT5-PlumbingWatchdog` | UNMEASURED UNMEASURED | `desks/mt5/reports/PLUMBING_WATCHDOG.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-ReapGitWriters` | `MT5-ReapGitWriters` | UNMEASURED UNMEASURED | `desks/mt5/reports/GIT_WRITER_REAP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `task:MT5-ResearchReports` | `MT5-ResearchReports` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_REPORT_CLOCK.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-RiskUnitsFence` | `MT5-RiskUnitsFence` | UNMEASURED UNMEASURED | `data/risk_units.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-ShiftWatch` | `MT5-ShiftWatch` | UNMEASURED UNMEASURED | `desks/mt5/reports/DIST_SHIFT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `task:MT5-TapeFeatures` | `MT5-TapeFeatures` | UNMEASURED UNMEASURED | `desks/mt5/reports/TAPE_FEATURES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
@@ -917,41 +936,48 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `timer:quant-prompt-prefix` | `quant-prompt-prefix` | UNMEASURED UNMEASURED | `data/prompt_prefix.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-sameday-fence` | `quant-sameday-fence` | UNMEASURED UNMEASURED | `data/sameday_pipeline.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-unit-parity` | `quant-unit-parity` | UNMEASURED UNMEASURED | `data/unit_parity.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `executable:libs/ops/state_publication.py` | `invoked:desks/mt5/scripts/stall_watch.ps1` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `fence:check_box_state_freshness` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `library:desks/mt5/research/free_shadows.py` | `import:desks/mt5/research/run_gateway_loop.py` | UNMEASURED UNMEASURED | `data/desk_module_drift.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `library:desks/mt5/research/gate_verdict_digest.py` | `import:desks/mt5/research/hourly_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/GATE_VERDICT_DIGEST.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `fence:check_placement_interlock` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
-## UNMEASURED (32)
+## UNMEASURED (34)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
-| `executable:desks/mt5/research/action_counterfactuals.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/data/action_counterfactuals.jsonl` | 0.1h | 236K | `598a17f9d6906da2` | UNMEASURED (not a readable JSON object) |
-| `executable:desks/mt5/research/backfill_coverage.py` | `invoked:scripts/auto_fixers.py` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/coverage_search_results.json` | 0.1h | 91B | `4a3d658b249aef33` | UNMEASURED |
-| `executable:desks/mt5/research/book_sizing.py` | `invoked:desks/mt5/mt5desk/risk_units.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `executable:desks/mt5/research/certifier_launcher.py` | `invoked:desks/mt5/research/research_supervisor.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/QQUANT_GATES.json` | 0.1h | 3.6M | `ae4aeacafb4ae496` | UNMEASURED |
-| `executable:desks/mt5/research/compile_anomalies.py` | `invoked:desks/mt5/research/nightly_catchup.py` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/anomaly_candidates.json` | 0.1h | 342K | `a9f5b0a98819f4f5` | UNMEASURED |
-| `executable:desks/mt5/research/conversion_ledger.py` | `invoked:desks/mt5/research/scalp_family_expansion.py` | UNMEASURED UNMEASURED | `desks/mt5/data/conversion_ledger.json` | 0.1h | 16K | `bec8406345e7bb1d` | UNMEASURED |
-| `executable:desks/mt5/research/measure_broker_clock.py` | `invoked:desks/mt5/research/session_phase.py` | UNMEASURED UNMEASURED | `desks/mt5/data/broker_clock_measured.json` | 0.1h | 3K | `1e47450bbe6f5ad6` | status=MEASURED |
-| `executable:desks/mt5/research/state_vector_build.py` | `invoked:desks/mt5/research/world_causal_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/data/state_vector.json` | 0.1h | 12K | `298d8b9c819d1a21` | UNMEASURED |
-| `executable:desks/mt5/research/swap_exposure.py` | `invoked:desks/mt5/mt5desk/risk_units.py` | UNMEASURED UNMEASURED | `desks/mt5/swap_exposure.json` | 0.1h | 7K | `64446e6573c7b69c` | UNMEASURED |
-| `executable:scripts/backfill_hypothesis_graph.py` | `invoked:desks/mt5/research/conversion_ledger.py` | UNMEASURED UNMEASURED | `desks/mt5/data/conversion_ledger.json` | 0.1h | 16K | `bec8406345e7bb1d` | UNMEASURED |
-| `executable:scripts/check_doctrine_diff.py` | `invoked:scripts/daily_research_cycle.py` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `6c911e5d06dc8bbb` | UNMEASURED |
-| `executable:scripts/check_row_atomicity.py` | `invoked:scripts/check_birth_properties.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `executable:scripts/derive_walcl_clock.py` | `invoked:scripts/daily_research_cycle.py` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `6c911e5d06dc8bbb` | UNMEASURED |
-| `executable:scripts/gpt_hunter.py` | `invoked:desks/mt5/research/scout_roster.py` | UNMEASURED UNMEASURED | `data/intelligence/public_strategy_items.json` | 0.1h | 266K | `43ddb06ccf3cddc6` | UNMEASURED |
-| `executable:scripts/harvest_rfb_vintages.py` | `invoked:scripts/daily_research_cycle.py` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `6c911e5d06dc8bbb` | UNMEASURED |
-| `executable:scripts/record_capital_event.py` | `invoked:scripts/check_change_window.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `executable:scripts/requeue_named_mechanisms.py` | `invoked:desks/mt5/research/merge_hypotheses.py` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/requeue_named.json` | 0.1h | 1.0M | `29fd56170ce42f27` | UNMEASURED (not a readable JSON object) |
-| `executable:scripts/run_alpha_frontier.py` | `invoked:ops/run_research_cycle.sh` | UNMEASURED UNMEASURED | `data/intelligence/daily_alpha_frontier.json` | 0.1h | 582K | `f3546b15de6b2225` | UNMEASURED |
-| `executable:scripts/run_cost_identification.py` | `invoked:scripts/check_idle_cost.py` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_surface.json` | 0.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
-| `executable:scripts/run_execution_intel.py` | `invoked:scripts/daily_research_cycle.py` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `6c911e5d06dc8bbb` | UNMEASURED |
-| `executable:scripts/run_external_intel.py` | `invoked:ops/run_research_cycle.sh` | UNMEASURED UNMEASURED | `data/intelligence/external_intel.json` | 0.1h | 43K | `7979132fb9ee7f9e` | UNMEASURED |
-| `executable:scripts/run_external_intelligence.py` | `invoked:ops/run_research_cycle.sh` | UNMEASURED UNMEASURED | `data/intelligence/external_frontier.json` | 0.1h | 1.3M | `99d0e1f1bfc16758` | UNMEASURED |
-| `executable:scripts/run_mutation.py` | `invoked:scripts/check_ratchets.py` | UNMEASURED UNMEASURED | `data/mutation_score.json` | 0.1h | 201K | `5020ad078f8c6910` | UNMEASURED |
-| `executable:scripts/run_trade_forensics.py` | `invoked:scripts/check_excitation.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `executable:scripts/study_absorbing_kelly.py` | `invoked:libs/risk/kelly_shrink.py` | UNMEASURED UNMEASURED | `docs/research/absorbing_kelly_study.json` | 0.1h | 26K | `57be6341e83acda5` | status=MEASURED |
-| `library:desks/mt5/research/external_shadow.py` | `import:desks/mt5/research/shadow_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 0.1h | 3K | `9583b625e9b7d9c0` | status=FAILED |
-| `library:desks/mt5/research/fetch_gold_scalp.py` | `import:desks/mt5/research/shadow_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 0.1h | 3K | `9583b625e9b7d9c0` | status=FAILED |
-| `library:desks/mt5/research/scalp_family_expansion.py` | `import:desks/mt5/research/scalp_shadow.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/scalp_family_expansion.json` | 0.1h | 54K | `b786b42b2a50059a` | verdict=SHADOW_CANDIDATES |
-| `library:desks/mt5/research/scalp_reverse_engineering.py` | `import:desks/mt5/research/scalp_shadow.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/scalp_reverse_engineering.json` | 0.1h | 16K | `bf509dbf3c70deee` | verdict=REJECTED: no costed untouched-OOS arm cleared th |
-| `library:desks/mt5/research/scalp_shadow.py` | `import:desks/mt5/research/shadow_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 0.1h | 3K | `9583b625e9b7d9c0` | status=FAILED |
-| `library:libs/ops/repair_mode.py` | `import:scripts/check_conversion.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 9K | `f3d9c2651ef45b32` | ok=False |
-| `timer:quant-universe-registry` | `quant-universe-registry` | UNMEASURED UNMEASURED | `desks/mt5/reports/universe_registry_repair.json` | 0.1h | 1K | `7acc04b9cfddf893` | UNMEASURED |
+| `executable:desks/mt5/research/action_counterfactuals.py` | `invoked:libs/ops/capability_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/data/action_counterfactuals.jsonl` | 6.1h | 236K | `598a17f9d6906da2` | UNMEASURED (not a readable JSON object) |
+| `executable:desks/mt5/research/backfill_coverage.py` | `invoked:scripts/auto_fixers.py` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/coverage_search_results.json` | 6.1h | 91B | `4a3d658b249aef33` | UNMEASURED |
+| `executable:desks/mt5/research/book_sizing.py` | `invoked:desks/mt5/mt5desk/risk_units.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `executable:desks/mt5/research/certifier_launcher.py` | `invoked:desks/mt5/research/research_supervisor.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/QQUANT_GATES.json` | 6.1h | 3.6M | `ae4aeacafb4ae496` | UNMEASURED |
+| `executable:desks/mt5/research/compile_anomalies.py` | `invoked:desks/mt5/research/nightly_catchup.py` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/anomaly_candidates.json` | 6.1h | 342K | `a9f5b0a98819f4f5` | UNMEASURED |
+| `executable:desks/mt5/research/conversion_ledger.py` | `invoked:desks/mt5/research/scalp_family_expansion.py` | UNMEASURED UNMEASURED | `desks/mt5/data/conversion_ledger.json` | 6.1h | 16K | `bec8406345e7bb1d` | UNMEASURED |
+| `executable:desks/mt5/research/measure_broker_clock.py` | `invoked:desks/mt5/research/session_phase.py` | UNMEASURED UNMEASURED | `desks/mt5/data/broker_clock_measured.json` | 6.1h | 3K | `1e47450bbe6f5ad6` | status=MEASURED |
+| `executable:desks/mt5/research/state_vector_build.py` | `invoked:desks/mt5/research/world_causal_graph.py` | UNMEASURED UNMEASURED | `desks/mt5/data/state_vector.json` | 6.1h | 12K | `298d8b9c819d1a21` | UNMEASURED |
+| `executable:desks/mt5/research/swap_exposure.py` | `invoked:desks/mt5/mt5desk/risk_units.py` | UNMEASURED UNMEASURED | `desks/mt5/swap_exposure.json` | 6.1h | 7K | `64446e6573c7b69c` | UNMEASURED |
+| `executable:desks/mt5/scripts/refresh_cost_fields.py` | `invoked:scripts/check_desk_module_drift.py` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_field_refresh.json` | 6.1h | 221B | `d65946ecda4d1d22` | rows=251 |
+| `executable:scripts/backfill_hypothesis_graph.py` | `invoked:desks/mt5/research/conversion_ledger.py` | UNMEASURED UNMEASURED | `desks/mt5/data/conversion_ledger.json` | 6.1h | 16K | `bec8406345e7bb1d` | UNMEASURED |
+| `executable:scripts/check_doctrine_diff.py` | `invoked:scripts/daily_research_cycle.py` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `f241fb63c24206d8` | UNMEASURED |
+| `executable:scripts/check_row_atomicity.py` | `invoked:scripts/check_birth_properties.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `executable:scripts/derive_walcl_clock.py` | `invoked:scripts/daily_research_cycle.py` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `f241fb63c24206d8` | UNMEASURED |
+| `executable:scripts/gpt_hunter.py` | `invoked:desks/mt5/research/scout_roster.py` | UNMEASURED UNMEASURED | `data/intelligence/public_strategy_items.json` | 6.1h | 266K | `43ddb06ccf3cddc6` | UNMEASURED |
+| `executable:scripts/harvest_rfb_vintages.py` | `invoked:scripts/daily_research_cycle.py` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `f241fb63c24206d8` | UNMEASURED |
+| `executable:scripts/record_capital_event.py` | `invoked:scripts/check_change_window.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `executable:scripts/requeue_named_mechanisms.py` | `invoked:desks/mt5/research/merge_hypotheses.py` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/requeue_named.json` | 6.1h | 1.0M | `29fd56170ce42f27` | UNMEASURED (not a readable JSON object) |
+| `executable:scripts/run_alpha_frontier.py` | `invoked:ops/run_research_cycle.sh` | UNMEASURED UNMEASURED | `data/intelligence/daily_alpha_frontier.json` | 6.1h | 582K | `f3546b15de6b2225` | UNMEASURED |
+| `executable:scripts/run_cost_identification.py` | `invoked:scripts/check_idle_cost.py` | UNMEASURED UNMEASURED | `desks/mt5/data/cost_surface.json` | 6.1h | 968K | `b6b83a29c8256a34` | UNMEASURED |
+| `executable:scripts/run_execution_intel.py` | `invoked:scripts/daily_research_cycle.py` | UNMEASURED UNMEASURED | `data/enforcement_matrix.json` | 0.0h | 49K | `f241fb63c24206d8` | UNMEASURED |
+| `executable:scripts/run_external_intel.py` | `invoked:ops/run_research_cycle.sh` | UNMEASURED UNMEASURED | `data/intelligence/external_intel.json` | 6.1h | 43K | `7979132fb9ee7f9e` | UNMEASURED |
+| `executable:scripts/run_external_intelligence.py` | `invoked:ops/run_research_cycle.sh` | UNMEASURED UNMEASURED | `data/intelligence/external_frontier.json` | 6.1h | 1.3M | `99d0e1f1bfc16758` | UNMEASURED |
+| `executable:scripts/run_mutation.py` | `invoked:scripts/check_ratchets.py` | UNMEASURED UNMEASURED | `data/mutation_score.json` | 6.1h | 201K | `5020ad078f8c6910` | UNMEASURED |
+| `executable:scripts/run_trade_forensics.py` | `invoked:scripts/check_excitation.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `executable:scripts/study_absorbing_kelly.py` | `invoked:libs/risk/kelly_shrink.py` | UNMEASURED UNMEASURED | `docs/research/absorbing_kelly_study.json` | 6.1h | 26K | `57be6341e83acda5` | status=MEASURED |
+| `library:desks/mt5/research/external_shadow.py` | `import:desks/mt5/research/shadow_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 6.1h | 3K | `9583b625e9b7d9c0` | status=FAILED |
+| `library:desks/mt5/research/fetch_gold_scalp.py` | `import:desks/mt5/research/shadow_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 6.1h | 3K | `9583b625e9b7d9c0` | status=FAILED |
+| `library:desks/mt5/research/scalp_family_expansion.py` | `import:desks/mt5/research/scalp_shadow.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/scalp_family_expansion.json` | 6.1h | 54K | `b786b42b2a50059a` | verdict=SHADOW_CANDIDATES |
+| `library:desks/mt5/research/scalp_reverse_engineering.py` | `import:desks/mt5/research/scalp_shadow.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/scalp_reverse_engineering.json` | 6.1h | 16K | `bf509dbf3c70deee` | verdict=REJECTED: no costed untouched-OOS arm cleared th |
+| `library:desks/mt5/research/scalp_shadow.py` | `import:desks/mt5/research/shadow_cycle.py` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 6.1h | 3K | `9583b625e9b7d9c0` | status=FAILED |
+| `library:libs/ops/repair_mode.py` | `import:scripts/check_conversion.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `76f2c577e3082639` | ok=True |
+| `timer:quant-universe-registry` | `quant-universe-registry` | UNMEASURED UNMEASURED | `desks/mt5/reports/universe_registry_repair.json` | 6.1h | 1K | `7acc04b9cfddf893` | UNMEASURED |
+| `library:libs/ops/host_identity.py` | `import:scripts/check_placement_interlock.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | 0.0h | 8K | `147714b65a5e8cb2` | ok=True |
 
