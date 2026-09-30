@@ -22,6 +22,11 @@ WHY THIS IS RIGHT AND NOT MERELY A PREFERENCE, recorded because a later reader w
   the multiple-testing charge, spent on the asset class least suited to the method, and paid for
   by the classes best suited to it.
 
+AMENDED BY THE PRINCIPAL 2026-09-30: "do cross sectional add cross sectional and news not js news
+change my order". Share CFDs now ALSO mint hypotheses in the cross-sectional class books
+(`CROSS_SECTIONAL_FAMILIES`, ranked within the `equity` peer class), alongside the event lane.
+Every other statistical family remains event-lane-only for them, for the two reasons above.
+
 So this is not a reduction in breadth. It is the same evidence budget spent where the mechanism
 being modelled is the mechanism actually present.
 
@@ -186,9 +191,33 @@ def lane(symbol: str) -> str:
     return UNCLASSIFIED
 
 
-def may_hypothesise(symbol: str) -> bool:
-    """True only for instruments whose edge is sought statistically."""
-    return lane(symbol) == HYPOTHESIS
+#: THE PRINCIPAL'S AMENDMENT OF 2026-09-30 to the two-lane order: "do cross sectional add cross
+#: sectional and news not js news change my order". Single-name equities keep their news and
+#: earnings lane AND are now ranked in cross-sectional class books. Only these families may mint
+#: a hypothesis on a share CFD; every other statistical family stays event-lane-only for them,
+#: because the single-name time-series argument above (a path dominated by its own disclosures,
+#: and the shared trial budget) still holds for those. A cross-sectional book is a different
+#: bet: it ranks a share against its peers on the same date, so each name's own disclosures are
+#: the idiosyncratic noise the class book diversifies, not the signal.
+#: Pinned to `mt5desk.families_cross_sectional.CROSS_SECTIONAL_FAMILIES` by a test.
+CROSS_SECTIONAL_FAMILIES = frozenset({
+    "cross_sectional_class_momentum", "cross_sectional_class_reversal",
+    "cross_sectional_class_value", "cross_sectional_class_low_vol",
+    "crisis_only_class_defensive", "lead_lag_class_catchup",
+})
+
+
+def is_equity(symbol: str) -> bool:
+    """True for a share CFD: the event lane's own asset class, from the broker's registry."""
+    return lane(symbol) == EVENT and asset_class_of(symbol) in EVENT_DRIVEN_CLASSES
+
+
+def may_hypothesise(symbol: str, family: object = None) -> bool:
+    """True for instruments whose edge is sought statistically -- and, for a share CFD, only when
+    `family` is one of the cross-sectional class books (principal 2026-09-30)."""
+    if lane(symbol) == HYPOTHESIS:
+        return True
+    return (str(family or "") in CROSS_SECTIONAL_FAMILIES) and is_equity(symbol)
 
 
 def split(symbols) -> dict[str, list[str]]:
@@ -210,9 +239,10 @@ def split(symbols) -> dict[str, list[str]]:
 # same broker registry the lane is, and never from a symbol list: a Fusion instrument listed
 # tomorrow joins its class the day it appears.
 #
-# ONLY THE HYPOTHESIS LANE HAS PEER CLASSES. A single-name equity is traded on its own news and is
-# never ranked (the two-lane order of 2026-09-06), and an UNCLASSIFIED symbol is ranked against
-# nothing -- absence is not a permission here either.
+# THE HYPOTHESIS LANE AND SHARE CFDs HAVE PEER CLASSES. Share CFDs rank as one `equity` class
+# (the principal's amendment of 2026-09-30 to the two-lane order: cross-sectional books AND the
+# news lane for single names). An UNCLASSIFIED symbol is ranked against nothing -- absence is not
+# a permission here either.
 #
 # FIVE CLASSES, AND THE CONSTRUCTION RULES THAT KEEP ONE BET FROM BEING COUNTED TWICE:
 #   fx_usd     every pair with a USD leg, read as the NON-USD CURRENCY's value in dollars
@@ -242,7 +272,8 @@ _BOND_CLASSES = _norm_set({"bond", "bonds"})
 _CRYPTO_CLASSES = _norm_set({"crypto", "cryptocurrency"})
 
 #: The peer classes, in the order reports list them.
-PEER_CLASSES: tuple[str, ...] = ("fx_usd", "fx_cross", "index", "commodity", "bond", "crypto")
+PEER_CLASSES: tuple[str, ...] = ("fx_usd", "fx_cross", "index", "commodity", "bond", "crypto",
+                                 "equity")
 
 
 def _pair_legs(symbol: str) -> tuple[str, str] | None:
@@ -255,10 +286,13 @@ def _pair_legs(symbol: str) -> tuple[str, str] | None:
 def peer_class(symbol: str) -> str | None:
     """The cross-sectional class `symbol` is ranked within, or None. Never raises.
 
-    None for every symbol outside the hypothesis lane, and for the two constructions that would
+    `equity` for a share CFD. None for every other symbol outside the hypothesis lane, and for the
+    two constructions that would
     count one bet twice (a metal quoted in a second currency, the dollar basket among indices).
     """
     try:
+        if is_equity(symbol):
+            return "equity"
         if lane(symbol) != HYPOTHESIS:
             return None
         klass = asset_class_of(symbol)

@@ -366,7 +366,7 @@ def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
         import sys as _sys
         if str(BASE) not in _sys.path:
             _sys.path.insert(0, str(BASE))
-        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane
+        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane, may_hypothesise
     except Exception as exc:
         return None, (f"universe_policy unavailable ({type(exc).__name__}: {exc}): NOTHING was "
                       f"routed by lane this run (UNMEASURED, not clean)")
@@ -376,12 +376,24 @@ def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
                       f"lane -- it cannot see the registry from here, so NOTHING was routed by "
                       f"lane this run (UNMEASURED, not clean)")
 
-    def refusal(symbol: str) -> str:
+    def refusal(symbol: str, family: object = None) -> str:
+        # A share CFD in a cross-sectional class book reaches the judge (principal 2026-09-30);
+        # every other family on a share CFD stays in the event lane.
+        if may_hypothesise(symbol, family):
+            return ""
         verdict = lane(symbol)
         return "" if verdict == HYPOTHESIS else verdict
 
     return refusal, (f"universe_policy.lane, proved on {placed} of {len(tradeable)} tradeable "
                      f"symbol(s); only lane={HYPOTHESIS!r} reaches the judge")
+
+
+def _refuse(refusal: Any, symbol: str, family: object) -> str:
+    """Ask the door with the row's family when it takes one; a one-argument door still works."""
+    try:
+        return str(refusal(symbol, family) or "")
+    except TypeError:
+        return str(refusal(symbol) or "")
 
 
 def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
@@ -411,7 +423,7 @@ def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
         # be in the wrong lane, and refusing it would turn a missing field into a policy breach.
         # A row that DOES name one and whose class the desk has never seen is a different thing --
         # that is UNCLASSIFIED, and absence of a rule about a real instrument is not a permission.
-        verdict = refusal(symbol) if symbol else ""
+        verdict = _refuse(refusal, symbol, row.get("family")) if symbol else ""
         if not verdict:
             judged.append(row)
             continue

@@ -161,12 +161,17 @@ def test_peer_classes_follow_the_registry(tmp_path, monkeypatch):
     assert up.peer_class("XAUEUR") is None                 # the metal times an FX rate
     assert up.peer_class("NAS100") == "index" and up.peer_class("USDX") is None
     assert up.peer_class("BTCUSD") == "crypto" and up.peer_class("UST10Y") == "bond"
-    assert up.peer_class("AAPL") is None                   # the event lane is never ranked
+    # principal 2026-09-30: share CFDs are ranked in their own class, and only there
+    assert up.peer_class("AAPL") == "equity"
+    assert up.may_hypothesise("AAPL", "cross_sectional_class_momentum")
+    assert not up.may_hypothesise("AAPL", "session_range_breakout")
+    assert not up.may_hypothesise("AAPL")
     assert up.peer_class("NOTREAL") is None                # absent is not a permission
     assert up.usd_orientation("USDJPY") == -1 and up.usd_orientation("EURUSD") == 1
     classes = up.peer_classes()
     assert classes["fx_usd"] == ["EURUSD", "USDJPY", "USDTRY"]
-    assert all("AAPL" not in v for v in classes.values())
+    assert classes["equity"] == ["AAPL"]
+    assert all("AAPL" not in v for k, v in classes.items() if k != "equity")
 
 
 def test_registered_through_the_one_door():
@@ -318,13 +323,47 @@ def test_sealed_gauntlet_rebuilds_every_family_through_its_own_import_path(unive
         assert cell["sigs"], f"{fam} rebuilt by the gauntlet with no signals"
 
 
-def test_real_registry_keeps_share_cfds_out_of_every_class():
-    """On the desk's own registry: single names are never ranked; indices are."""
+def test_real_registry_ranks_share_cfds_only_in_their_own_class():
+    """On the desk's own registry: single names rank only against single names (principal
+    2026-09-30); every other class is hypothesis-lane only, and indices are ranked too."""
     from research import universe_policy as up
     classes = up.peer_classes()
-    ranked = {s for v in classes.values() for s in v}
+    ranked = {s for k, v in classes.items() if k != "equity" for s in v}
     if not ranked:
         pytest.skip("registry absent on this host -- UNMEASURED, not a pass")
     assert all(up.lane(s) == up.HYPOTHESIS for s in ranked)
-    assert all(up.asset_class_of(s) not in up.EVENT_DRIVEN_CLASSES for s in ranked)
-    assert classes.get("index"), "indices are the equity cross-section"
+    assert all(up.is_equity(s) for s in classes.get("equity", []))
+    assert classes.get("index"), "indices are ranked too"
+
+
+def test_equity_admission_is_pinned_to_the_class_book_families():
+    from mt5desk.families_cross_sectional import CROSS_SECTIONAL_FAMILIES
+
+    from research import universe_policy as up
+    assert set(CROSS_SECTIONAL_FAMILIES) == set(up.CROSS_SECTIONAL_FAMILIES)
+
+def test_merge_door_admits_a_share_cfd_only_in_a_class_book(tmp_path, monkeypatch):
+    """The docket door passes the row's family, so AAPL momentum reaches the judge and AAPL
+    breakout stays in the event lane (principal 2026-09-30)."""
+    from research import merge_hypotheses as mh
+    from research import universe_policy as up
+    reg = {"EURUSD": {"asset_class": "Forex"}, "AAPL": {"asset_class": "Equities"}}
+    path = tmp_path / "universe.json"
+    path.write_text(json.dumps(reg), "utf-8")
+    monkeypatch.setattr(up, "UNIVERSE", path)
+    refusal, _why = mh.lane_router({"EURUSD": "EURUSD", "AAPL": "AAPL"})
+    assert refusal is not None
+    rows = [{"symbol": "AAPL", "family": "cross_sectional_class_momentum"},
+            {"symbol": "AAPL", "family": "session_range_breakout"},
+            {"symbol": "EURUSD", "family": "session_range_breakout"}]
+    judged, off, _, _ = mh.split_by_lane(rows, refusal, "now")
+    assert [(r["symbol"], r["family"]) for r in judged] == [
+        ("AAPL", "cross_sectional_class_momentum"), ("EURUSD", "session_range_breakout")]
+    assert [(r["symbol"], r["family"]) for r in off] == [("AAPL", "session_range_breakout")]
+
+
+def test_one_argument_doors_still_work():
+    from research import merge_hypotheses as mh
+    judged, off, _, _ = mh.split_by_lane([{"symbol": "X", "family": "f"}],
+                                         lambda s: "event", "now")
+    assert not judged and len(off) == 1
