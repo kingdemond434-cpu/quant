@@ -2307,3 +2307,20 @@ for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
         "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
         "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
 del _av_name
+
+# ALT-DATA RELEASE DRIFT (2026-09-30): the event lane's executor for the alt_proxies equity
+# hand-off. A free alt-data release (Korean 20-day exports, TSA throughput, GDELT country tone)
+# bearing on a share with a declared prior sign; the family loads the lake series itself and
+# fires only on each release's first vintage, placed on the broker clock (New York + 7h). Its
+# `source` and `prior_sign` are REQUIRED, so the sweep names it unsuppliable.
+from mt5desk.family_alt_release import family_alt_release_drift  # noqa: E402
+
+ORTHOGONAL_FAMILIES["alt_release_drift"] = family_alt_release_drift
+FAMILY_INPUTS["alt_release_drift"] = (
+    "a point-in-time alt-data lake series named by the alt_proxies equity hand-off, placed at "
+    "each release's first available_time (research/alt_equity_handoff.py)",
+    "desks/mt5/data/lake/series/<source>.csv")
+FAMILY_TIMEFRAMES["alt_release_drift"] = (
+    ("H1",),
+    "a release is a daily-or-slower event whose hold is counted in H1 bars per trading day; "
+    "entry is the first H1 bar opening after the release instant on the broker clock")

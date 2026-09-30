@@ -965,7 +965,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "conversion_maximiser", "trend_core",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
-                     "cross_sectional_breadth"),
+                     "cross_sectional_breadth",
+                     # the alt_proxies equity hand-off minted into the event lane and the
+                     # class books (share CFDs never mint anywhere else)
+                     "alt_equity_handoff"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -1728,6 +1731,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "alpha_capture": 420,
     # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
     "alt_proxies": 400,
+    # The hand-off consumer stops itself at --budget-s 240 and writes; the cap sits above it.
+    "alt_equity_handoff": 300,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -3590,6 +3595,14 @@ def main() -> None:
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
+    # THE ALT-PROXIES EQUITY HAND-OFF'S CONSUMER (2026-09-30). alt_proxies writes the share CFDs
+    # each free alt-data series bears on (data/digests/alt_proxies_equity_handoff.json) and mints
+    # nothing on them (two-lane order). This mints them in the two lanes a share may use: the
+    # news lane's alt_release_drift, and every class-book family conditioned on the series as a
+    # ranking input; measures firing, charges every measured cell, donates through the one door
+    # and writes reports/ALT_EQUITY_HANDOFF.json.
+    aeh = _costed("alt_equity_handoff", lambda: _producer(
+        "alt_equity_handoff", "research/alt_equity_handoff.py", "--once", "--budget-s", "240"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -5202,6 +5215,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
+                    "alt_equity_handoff": aeh,
                     "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,

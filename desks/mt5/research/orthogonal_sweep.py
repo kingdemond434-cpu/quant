@@ -535,6 +535,10 @@ NOT_SOURCED_HERE = {
                              "clock; a sweep enumerating them over bars would be inventing which "
                              "pack series conditions which instrument. Called blind it has no "
                              "source and returns [] on every symbol",
+    "alt_release_drift": "its lake series and prior sign are named by the alt_proxies equity "
+                         "hand-off (research/alt_equity_handoff.py), which mints and charges "
+                         "each (series, share) cell; called blind it has no series and returns "
+                         "[] on every symbol",
     # The within-class rank legs (mt5desk/families_cross_sectional.py). Each loads its own class
     # panel from `symbol`, so nothing is unsuppliable -- but the grid is (class member x family x
     # params) and research/cross_sectional_breadth enumerates it, measures every cell's firing

@@ -179,7 +179,7 @@ _FAMILY_GROUPS: dict[str, str] = {
     # The Alpha Capture substitute (2026-09-30): a dated public view ABOUT the instrument drifts
     # because holders under-react (trend_persistence's payer); another market's view leads the
     # instrument because the slow venue reprices late (cross_market_lead's payer).
-    "trend_persistence event market": "analyst_revision_drift",
+    "trend_persistence event market": "analyst_revision_drift alt_release_drift",
     "cross_market_lead event market": "analyst_cross_market_lead",
     # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
     # against its own peer class on the same date.
