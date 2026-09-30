@@ -86,9 +86,13 @@ def test_alpha101_style_ternary_transpiles_exactly() -> None:
     assert any("exact" in t for t in g.translations)
 
 
-def test_grammar_check_fails_closed() -> None:
-    ok, why = E.grammar_valid(["no_such_op", "close"])
-    assert ok is False and why
+def test_grammar_check_fails_closed(monkeypatch: Any) -> None:
+    assert E.grammar_valid(["no_such_op", "close"])[0] is False
+    import libs.research as pkg
+    monkeypatch.delattr(pkg, "alpha_grammar", raising=False)
+    monkeypatch.setitem(sys.modules, "libs.research.alpha_grammar", None)
+    ok, why = E.grammar_valid(["zscore", "ret", 24])       # valid, but nobody could ask
+    assert ok is False and "not importable" in why
 
 
 # ------------------------------------------------------------------------ RenTec scope
