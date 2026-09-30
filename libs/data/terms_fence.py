@@ -176,8 +176,8 @@ def fenced_row(row: Mapping[str, Any], source: str = "") -> str | None:
         if p:
             return p
     route = str(row.get("route") or "").split(":", 1)[0].lower()
-    for name, p in PLATFORMS.items():
-        if _active(name) and route in p["routes"]:
+    for name, spec in PLATFORMS.items():
+        if _active(name) and route in spec["routes"]:
             return name
     for f in _URL_FIELDS:
         v = row.get(f)
