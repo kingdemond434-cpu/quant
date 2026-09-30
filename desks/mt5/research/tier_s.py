@@ -74,6 +74,7 @@ from libs.tiers import (  # noqa: E402
     opportunity_exchange,
     prediction_accounting,
     red_queen,
+    regression_stop,
     replay,
     researcher_market,
     review_panel,
@@ -3881,8 +3882,22 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
     arena = _judge_validators(out, st.get("challengers") or [],
                               bool(sealed_now.get("blocked")))
     rb = twin.rollback_plan(_release_history())
+    # THE AUTOMATIC REGRESSION STOP (gap B): the current sealed release judged on its forward
+    # residual R against the previous one; a regression stops promotion under it, rolls back the
+    # unsealed code in one commit and writes the sealed remainder as a patch
+    # (libs/tiers/regression_stop.py -> data/tier_s/RELEASE_STOP.json)
+    try:
+        stop = regression_stop.run(live_rows(), _release_history(), shadow_rows())
+        stop_view = {k: stop.get(k) for k in ("state", "release", "why", "rollback",
+                                              "sealed_patch")}
+        stop_view["regression"] = {k: (stop.get("regression") or {}).get(k)
+                                   for k in ("verdict", "n_current", "n_previous", "t",
+                                             "difference", "why")}
+    except Exception as exc:                       # never costs the twin
+        stop_view = {"state": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
     runs = shadow.get("runs") or []
     return {"challengers": out[-30:], "rollback": rb, "shadow_desk": shadow,
+            "regression_stop": stop_view,
             "shadow_consumer": consumed, "validator_arena": arena,
             "metric": {"challengers": len(out),
                        "shadow_rejected": len(consumed.get("rejected") or []),
