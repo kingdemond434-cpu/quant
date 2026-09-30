@@ -87,6 +87,7 @@ import json
 import math
 import sys
 import time
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -270,6 +271,81 @@ def measured_capacity(judged_total: dict[str, int], ledger: Path | None = None,
     if per_hour:
         best = max(per_hour.values())
     return max(best, CAPACITY_FLOOR, sum(judged_total.values()) // 24)
+
+
+def sustained_rate(ledger: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
+    """Cells the judge ACTUALLY rules on per hour, averaged over 24 h and 7 d. The drain meter.
+
+    WHY THE PEAK HOUR CANNOT BE THE DRAIN RATE (measured 2026-09-30 on the box). The sweep stamps
+    every verdict of one pass with ONE `at`, so a single large pass lands in a single hour and
+    `measured_capacity` reads that hour as the judge's hourly speed. JUDGE_COVERAGE then published
+    `hours_to_drain 25.1` on 1,398,253 unjudged cells while the same box's JUDGING_RATE counted
+    ~220 verdicts/hour -- a true drain of ~265 days, and in fact no drain at all, because the desk
+    creates ~8,300 cells a day against ~5,300 verdicts. The peak stays the ALLOCATION size (how far
+    down the docket one pass can reach); the drain is the average, and it is net of creation.
+    """
+    t = now or datetime.now(tz=UTC)
+    cuts = {"24h": t.timestamp() - 24 * 3600.0, "7d": t.timestamp() - 168 * 3600.0}
+    counts = {"24h": 0, "7d": 0}
+    try:
+        with (ledger or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict):
+                    continue
+                if str(row.get("downstream_status") or "").startswith(NOT_JUDGED_PREFIX):
+                    continue
+                at = _ts(row.get("at"))
+                if at is None:
+                    continue
+                for w, cut in cuts.items():
+                    if at.timestamp() >= cut:
+                        counts[w] += 1
+    except OSError:
+        return {"status": "UNMEASURED", "why": "gate ledger unreadable"}
+    return {"status": "MEASURED", "counts": counts,
+            "per_hour_24h": round(counts["24h"] / 24.0, 3),
+            "per_hour_7d": round(counts["7d"] / 168.0, 3)}
+
+
+def drain(backlog_now: int, per_hour: float | None, *, prior_backlog: int | None,
+          prior_at: datetime | None, now: datetime) -> dict[str, Any]:
+    """Hours to drain on the SUSTAINED rate, and whether the backlog is falling at all.
+
+    The backlog's own movement between two readings is the net of judging and creation, so it
+    needs no separate creation meter: growing means no finite ETA exists, and saying so is the
+    measurement (a large finite number would be a lie of a different size).
+    """
+    out: dict[str, Any] = {"sustained_per_hour": per_hour}
+    growth = None
+    if prior_backlog is not None and prior_at is not None:
+        hours = (now.timestamp() - prior_at.timestamp()) / 3600.0
+        if hours >= 0.25:
+            growth = (backlog_now - prior_backlog) / hours
+    out["backlog_growth_per_hour"] = round(growth, 3) if growth is not None else None
+    if not per_hour or per_hour <= 0:
+        out.update(status="UNMEASURED", hours=None,
+                   why="no judged verdicts in the last 24 h: the drain rate is unmeasured")
+        return out
+    out["hours_at_zero_creation"] = round(backlog_now / per_hour, 1)
+    if backlog_now == 0:
+        out.update(status="DRAINED", hours=0.0)
+    elif growth is not None and growth >= 0:
+        out.update(status="GROWING", hours=None,
+                   net_per_day=round(growth * 24.0, 1),
+                   why="the backlog rose since the last reading: creation outpaces the judge")
+    elif growth is not None:
+        out.update(status="DRAINING", hours=round(backlog_now / -growth, 1))
+    else:
+        out.update(status="DRAINING_GROSS", hours=out["hours_at_zero_creation"],
+                   why="no prior reading: ETA ignores creation")
+    return out
 
 
 #: Judge cost is BUDGETED IN BARS, not in cells -- the sealed gauntlet says so in its own
@@ -587,12 +663,69 @@ UNRUNNABLE_BANK = HYP / "unrunnable_specs.json"
 UNIVERSE = BASE / "data" / "universe"
 
 
-def _bar_bytes(sym: str) -> int:
-    """The symbol's H1 bar file size -- the cheap monotone proxy for "the history grew"."""
+def _bar_bytes(sym: str, tf: str = "H1") -> int:
+    """The symbol's bar file size on `tf` -- the cheap monotone proxy for "the history grew"."""
     try:
-        return (UNIVERSE / f"{sym}_H1.parquet").stat().st_size
+        return (UNIVERSE / f"{sym}_{tf or 'H1'}.parquet").stat().st_size
     except OSError:
         return 0
+
+
+#: THE OTHER HALF OF THE PERMANENT CELL LEAK (2026-09-30). A cell the judge could not BUILD --
+#: its bars absent on its own chart, or its signal construction failing -- is recorded
+#: `passed: None, downstream_status: NOT_RUN_*`, which `judged_index` rightly refuses to call
+#: judged. So it stayed "never judged", which is the FIRST key of the docket order, and came back
+#: at the head of every sweep to fail again: measured on the box, 20,247 of 29,466 pre-warm
+#: builds failed on build/data in one sweep. Those cells are parked here with a named reason and
+#: re-admitted on the one event that could change the outcome -- their bars appearing or growing,
+#: or, for a construction failure, the passage of BUILD_FAILED_RETRY_DAYS (code ships in between).
+#: Deferrals for budget (NOT_RUN_BUILD_BUDGET_DEFERRED) are work not yet done and are never parked.
+PARKED_NOT_RUN = {"NOT_RUN_DATA_MISSING": "data_missing",
+                  "NOT_RUN_BUILD_FAILED": "build_failed"}
+BUILD_FAILED_RETRY_DAYS = 7.0
+
+
+def _prewarm_share(path: Path | None = None) -> float | None:
+    """The share of the last sweep's pre-warm builds that failed on build or data."""
+    doc = _read(path or GATES_REPORT)
+    pw = (doc or {}).get("prewarm") if isinstance(doc, dict) else None
+    if not isinstance(pw, dict):
+        return None
+    sub = int(pw.get("submitted") or 0)
+    fails = pw.get("failures") if isinstance(pw.get("failures"), dict) else {}
+    bad = sum(int(v or 0) for k, v in fails.items()
+              if str(k) in ("NOT_RUN_DATA_MISSING", "NOT_RUN_BUILD_FAILED", "FAIL_3X", "ERROR",
+                            "SAVE_FAILED"))
+    return round(bad / sub, 6) if sub else None
+
+
+def name_not_run(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """Every cell the judge could not build, with its named reason and the bars it needs."""
+    doc = _read(path or GATES_REPORT)
+    out: dict[str, dict[str, Any]] = {}
+    verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
+    if not isinstance(verdicts, list):
+        return out
+    for v in verdicts:
+        if not isinstance(v, dict):
+            continue
+        reason = PARKED_NOT_RUN.get(str(v.get("downstream_status") or ""))
+        cell = str(v.get("cell") or "")
+        if not reason or not cell:
+            continue
+        sym = str(v.get("sym") or "")
+        tf = _tf_of(v)
+        why = str(v.get("why") or "")
+        for cand in ("M1", "M5", "M15", "M30", "H4", "D1"):
+            if f" {cand} parquet" in f" {why}":
+                tf = cand
+        out[cell] = {"reason": reason, "sym": sym, "family": v.get("family"), "tf": tf,
+                     "days": 0, "bar_bytes": _bar_bytes(sym, tf), "why": why[:200],
+                     "route": ("bars absent on the cell's own chart: re-admitted the moment "
+                               "they appear" if reason == "data_missing" else
+                               "signal construction failed: re-admitted on bar growth or after "
+                               f"{BUILD_FAILED_RETRY_DAYS:.0f} days of code changes")}
+    return out
 
 
 def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
@@ -642,13 +775,56 @@ def unrunnable_bank(path: Path | None = None) -> dict[str, dict[str, Any]]:
     return {str(k): v for k, v in doc.items() if isinstance(v, dict)}
 
 
+#: HOW MUCH THE HISTORY MUST GROW BEFORE A PARKED CELL IS WORTH THE JUDGE AGAIN.
+#:
+#: THE DEFECT THIS REPLACES (2026-09-30). Re-admission fired on `bar_bytes > parked bar_bytes`,
+#: and the bar refresh rewrites every H1 parquet many times a day (238 of 239 symbols fresh inside
+#: 48 h on the box), so every parked cell was re-admitted within hours and judged again -- a spec
+#: that fired on 0 of ~2,100 days does not reach 60 because one more hour of bars arrived. The box
+#: meanwhile read 43% of a week's verdicts as UNKNOWN (53,460 of 124,342). The judge was paying
+#: for the same never-firing cells over and over; the ledger's cell|key de-duplication hid the
+#: repeats from the verdict count, not from the compute.
+#:
+#: The rule now: a never-firing cell returns when its history has grown by a quarter; a too-rare
+#: cell that fired on d days returns when the history has grown by the factor that would carry d
+#: to the 60 observations CPCV needs (capped, so nothing waits longer than tripling); and every
+#: parked cell returns after READMIT_MAX_DAYS regardless, so a new regime is always re-asked.
+READMIT_GROWTH = 1.25
+READMIT_GROWTH_CAP = 3.0
+READMIT_MAX_DAYS = 90.0
+CPCV_MIN_DAYS = 60
+
+
+def readmit_due(row: dict[str, Any], *, now: datetime | None = None) -> bool:
+    """True when a parked cell's history has grown enough, or it has waited long enough."""
+    parked_bytes = int(row.get("bar_bytes") or 0)
+    bars = _bar_bytes(str(row.get("sym") or ""), str(row.get("tf") or "H1"))
+    if parked_bytes <= 0:
+        return bars > 0
+    if row.get("reason") == "build_failed":
+        _at = _ts(row.get("parked_at"))
+        _t = now or datetime.now(tz=UTC)
+        if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
+                >= BUILD_FAILED_RETRY_DAYS:
+            return True
+    days = int(row.get("days") or 0)
+    need = READMIT_GROWTH if days <= 0 else min(
+        READMIT_GROWTH_CAP, max(READMIT_GROWTH, CPCV_MIN_DAYS / float(days)))
+    if bars >= parked_bytes * need:
+        return True
+    parked_at = _ts(row.get("parked_at"))
+    t = now or datetime.now(tz=UTC)
+    return (parked_at is not None
+            and (t.timestamp() - parked_at.timestamp()) / 86400.0 >= READMIT_MAX_DAYS)
+
+
 def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
                            path: Path | None = None) -> dict[str, Any]:
     """Park every newly-named unrunnable cell, and RE-ADMIT any whose bars have since grown."""
     target = path or UNRUNNABLE_BANK
     bank = unrunnable_bank(target)
-    readmitted = [cell for cell, row in bank.items()
-                  if _bar_bytes(str(row.get("sym") or "")) > int(row.get("bar_bytes") or 0)]
+    now_ts = _ts(at)
+    readmitted = [cell for cell, row in bank.items() if readmit_due(row, now=now_ts)]
     for cell in readmitted:
         bank.pop(cell, None)
     added = 0
@@ -1115,7 +1291,14 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     realised_seen = realised_pass_rates(ledger)
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()
-    unrunnable = update_unrunnable_bank(named_unknowns, at=at.isoformat(timespec="seconds"))
+    not_run = name_not_run()
+    unrunnable = update_unrunnable_bank({**named_unknowns, **not_run},
+                                        at=at.isoformat(timespec="seconds"))
+    bars_wanted: dict[str, int] = {}
+    for _r in not_run.values():
+        if _r.get("reason") == "data_missing":
+            _k = f"{_r.get('sym')}_{_r.get('tf')}"
+            bars_wanted[_k] = bars_wanted.get(_k, 0) + 1
     # MARGINAL k_eff, STAMPED BEFORE THE RANKING READS IT (research/docket_keff.py). Reorders
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
@@ -1220,9 +1403,14 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     value_deferred = sum(ev_cell.get(f, 0.0) * max(0, n - quota.get(f, 0))
                          for f, n in backlog.items())
     total_backlog = sum(backlog.values())
-    hours_to_drain = (total_backlog / float(capacity)) if capacity > 0 else None
-    forgone_per_hour = (value_deferred / max(hours_to_drain or 1.0, 1.0)
-                        if hours_to_drain else 0.0)
+    rate = sustained_rate(ledger, now=at)
+    _prior_total = (sum(int(v.get("unjudged", 0)) for v in prior_fams.values()
+                        if isinstance(v, dict)) if prior_at is not None else None)
+    drain_eta = drain(total_backlog, rate.get("per_hour_24h"), prior_backlog=_prior_total,
+                      prior_at=prior_at, now=at)
+    hours_to_drain = drain_eta.get("hours")
+    _h_gross = drain_eta.get("hours_at_zero_creation")
+    forgone_per_hour = (value_deferred / max(_h_gross or 1.0, 1.0) if _h_gross else 0.0)
     for row in ranking:
         fam = str(row["family"])
         row["quota"] = quota.get(fam, 0)
@@ -1263,8 +1451,15 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "value_at_risk": value_at_risk,
         "value_deferred": value_deferred,
         "value_forgone_per_hour": forgone_per_hour,
+        # capacity_measured above is the PEAK hour (the allocation size); these are the drain.
+        "capacity_sustained_per_hour": rate.get("per_hour_24h"),
+        "capacity_sustained_per_hour_7d": rate.get("per_hour_7d"),
+        "drain_status": drain_eta.get("status"),
+        "backlog_growth_per_hour": drain_eta.get("backlog_growth_per_hour"),
         "hours_to_drain": round(hours_to_drain, 3) if hours_to_drain else None,
-        "capacity_short": bool(hours_to_drain and hours_to_drain > 1.0),
+        "hours_to_drain_at_zero_creation": drain_eta.get("hours_at_zero_creation"),
+        "capacity_short": bool(drain_eta.get("status") in ("GROWING", "UNMEASURED")
+                               or (hours_to_drain and hours_to_drain > 1.0)),
         # THE LARGEST SINGLE WASTE IN THE DESK, named and ratcheted: the share of the judge's own
         # verdicts that return no gate at all. Driven DOWN by the compiler that stops minting
         # never-firing specs, never by judging less.
@@ -1275,6 +1470,12 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                               or {}).get("cells"),
         "unknown_unnamed": max(0, int(unknown.get("unknown_total") or 0)
                                - int(unknown.get("named_cells") or 0)),
+        "not_run_named": len(not_run),
+        "not_run_by_reason": dict(Counter(str(r.get("reason")) for r in not_run.values())),
+        "prewarm_fail_share": _prewarm_share(),
+        "prior_prewarm_fail_share": (prior.get("prewarm_fail_share")
+                                     if isinstance(prior, dict) else None),
+        "prior_drain_status": (prior.get("drain_status") if isinstance(prior, dict) else None),
         "unrunnable_parked": unrunnable.get("parked_this_pass"),
         "unrunnable_bank": unrunnable.get("bank_size"),
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
@@ -1320,6 +1521,9 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "unrunnable": unrunnable,
         "keff_order": _keff_summary(keff),
         "_keff_detail": keff,
+        # THE BARS THE JUDGE ASKED FOR AND DID NOT HAVE, per symbol and chart: the demand the
+        # bar refresh reads (research/refresh_bars.py) so a missing chart is fetched, not waited on.
+        "bars_wanted": dict(sorted(bars_wanted.items(), key=lambda kv: -kv[1])),
         "value_ranking": ranking,
         "value_rule": ("remainder after every family's floor goes down expected value per "
                        "judge-second: p_optimistic (upper credible bound of the desk's own Beta "
@@ -1342,6 +1546,48 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                     "rows are kept, never deleted"),
         },
     }
+
+
+#: A (family, symbol) pair whose parked cells include at least this many that NEVER fired, and
+#: which has never produced one cell the judge could rule on, is a ground this family's rule
+#: grammar does not reach on this instrument. Its remaining unseen cells go to the TAIL of the
+#: docket -- still there, still judged whenever the head is exhausted, never dropped -- so the
+#: hour's judge goes to cells that can fire first.
+SIBLING_NEVER_FIRES_MIN = 20
+
+
+def fired_pairs(path: Path | None = None) -> set[tuple[str, str]]:
+    """(family, sym) pairs holding at least one verdict with a named gate -- they CAN fire."""
+    out: set[tuple[str, str]] = set()
+    try:
+        with (path or GATE_LEDGER).open("r", encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if '"UNKNOWN"' in line or not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(row, dict) and row.get("terminal_gate"):
+                    out.add((str(row.get("family") or ""), str(row.get("sym") or "")))
+    except OSError:
+        pass
+    return out
+
+
+def never_fire_pairs(bank: dict[str, dict[str, Any]],
+                     fired: set[tuple[str, str]]) -> set[tuple[str, str]]:
+    counts: dict[tuple[str, str], int] = {}
+    for row in bank.values():
+        if row.get("reason") != "never_fires":
+            continue
+        key = (str(row.get("family") or ""), str(row.get("sym") or ""))
+        counts[key] = counts.get(key, 0) + 1
+    return {k for k, n in counts.items() if n >= SIBLING_NEVER_FIRES_MIN and k not in fired}
+
+
+def _row_sym(row: dict[str, Any]) -> str:
+    return str(row.get("sym") or row.get("symbol") or "")
 
 
 def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
@@ -1385,6 +1631,19 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
         before = coverage_order(judgeable, quota, ids, demote_variants=False, use_keff=False)
         ordered_j = coverage_order(judgeable, quota, ids)
+        # NEVER-FIRING GROUND TO THE TAIL (2026-09-30). Order only; every row stays.
+        dead = never_fire_pairs(bank, fired_pairs())
+        if dead:
+            _live = [r for r in ordered_j
+                     if (str(r.get("family") or ""), _row_sym(r)) not in dead]
+            _tail = [r for r in ordered_j
+                     if (str(r.get("family") or ""), _row_sym(r)) in dead]
+            ordered_j = _live + _tail
+            doc["never_fire_ground"] = {
+                "pairs": len(dead), "rows_to_tail": len(_tail),
+                "min_never_fires": SIBLING_NEVER_FIRES_MIN,
+                "rule": ("a (family, symbol) with this many parked never-firing cells and no "
+                         "verdict with a named gate ranks after every other row; nothing dropped")}
         ordered = ordered_j + study
         was, now_ = _unseen_in_prefix(before, cap), _unseen_in_prefix(ordered_j, cap)
         # THE ORDERING EVIDENCE: what the judge's measured capacity head holds under the shipped
@@ -1444,6 +1703,8 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                      for f, r in fams.items()},
         "unjudged_total": (doc.get("totals") or {}).get("unjudged_total"),
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
+        "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),
+        "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
                 "this backlog and still unjudged at the next reading were STARVED, because a "

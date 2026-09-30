@@ -349,6 +349,9 @@ def _describe(root: Path, commit: str | None) -> dict[str, Any]:
         "dependency_hash": _dependency_hash(root, commit),
         "seal_rule": SEAL_RULE, "non_code": sorted(NON_CODE),
     }
+    # The signature covers `immutable_hash` by name (release_signing.SIGNED_FIELDS); the record
+    # only ever carried it nested, so every signature would have pinned "" for the judge core.
+    doc["immutable_hash"] = (doc["immutable_manifest"] or {}).get("sha256_16")
     # The stamped id keeps its 2026-09-04 formula so an unchanged tree keeps its release_id.
     doc["release_id"] = hashlib.sha256(json.dumps(
         {k: doc[k] for k in ("live_sha", "config_hash", "survivor_registry_hash",
@@ -416,9 +419,91 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
                tested_sha=head if tested else None, worktree_dirty=dirty_code,
                worktree_dirty_scope="release_code_paths",
                previous_code_sha=prev_sha, previous_release_id=prev_id)
+    doc = _sign(doc, r)
     if write:
         _write(doc, root)
     return doc
+
+
+# ------------------------------------------------------------------------------------ signing
+def _sign(doc: dict[str, Any], root: Path) -> dict[str, Any]:
+    """Stamp the record with this box's release key, or record plainly why it is unsigned.
+
+    MEASURED 2026-09-30: every RELEASE.json the desk ever wrote was UNSIGNED, because `seal()`
+    never called `release_signing` -- the audit's "unsigned release" flag was true by
+    construction, not by accident. A machine without the key (CI) still seals, unsigned, with
+    the reason written into the record; only a box that was given the key signs."""
+    from libs.ops import release_signing
+    out, why = release_signing.stamp(doc, root)
+    if release_signing.SIG_FIELD not in out:
+        out["signature_note"] = why
+    else:
+        out.pop("signature_note", None)
+    return out
+
+
+def ensure_signed(*, root: Path | None = None) -> dict[str, Any]:
+    """Sign the release already on disk when it is unsigned or its signature does not verify --
+    but only a release this box is demonstrably running. Returns what it did and why.
+
+    WHY THIS EXISTS. `seal()` signs only when it runs, and on the box it runs only when HEAD is
+    NOT already the sealed code. A box whose release was sealed before it held a key -- every box,
+    on 2026-09-30 -- takes the "already sealed" exit forever and its record stays unsigned until
+    the next code change. This closes that gap without re-sealing.
+
+    WHAT IT WILL SIGN, and nothing looser. The signature attests (code_sha, money_path_hash,
+    immutable_hash). Signing a record is only honest when all three are what this box runs:
+      * HEAD is accepted by `accepts()` against the record (the sealed commit, or it plus
+        seal/state commits only),
+      * the money path ON DISK hashes to the record's `money_path_hash`,
+      * the judge manifest ON DISK hashes to the record's `immutable_hash`.
+    Any other case is refused with the reason: a signature over code the box is not running is
+    worse than none, because it is believed.
+
+    NEVER COMMITS, NEVER RAISES, NEVER BLOCKS. It rewrites RELEASE.json in the working tree (a
+    NON_CODE path) and returns; every failure is a reason in the result, not an exception, so a
+    caller on the release path can log it and carry on.
+    """
+    try:
+        from libs.ops import release_signing
+        r = _root(root)
+        rec = load(root)
+        if rec is None:
+            return {"signed": False, "state": "ABSENT", "why": "no RELEASE.json"}
+        ok, why = release_signing.verify(rec, r)
+        if ok:
+            return {"signed": False, "state": "VALID", "why": why}
+        if release_signing.load_key(r) is None:
+            return {"signed": False, "state": "NO_KEY", "why": why}
+        head = git_head(r)
+        ok_sha, why_sha, _code = accepts(head, rec, root=root)
+        if not ok_sha:
+            return {"signed": False, "state": "REFUSED", "why": f"HEAD not accepted: {why_sha}"}
+        money_now = hash_paths(MONEY_PATH, r, None)
+        if rec.get("money_path_hash") != money_now:
+            return {"signed": False, "state": "REFUSED",
+                    "why": (f"money path on disk {money_now} differs from the record "
+                            f"{rec.get('money_path_hash')}")}
+        # Records sealed before 2026-09-30 carry the judge digest only nested; the top-level
+        # field is what the signature covers, so it is filled in from the nested one -- and then
+        # held to the disk exactly like a record that always had it.
+        imm_rec = rec.get("immutable_hash") or (rec.get("immutable_manifest") or {}).get(
+            "sha256_16")
+        imm_now = (_immutable_manifest(r, None) or {}).get("sha256_16")
+        if not imm_rec or imm_rec != imm_now:
+            return {"signed": False, "state": "REFUSED",
+                    "why": f"judge manifest on disk {imm_now} differs from the record {imm_rec}"}
+        doc = dict(rec, immutable_hash=imm_rec)
+        doc = _sign(doc, r)
+        if release_signing.SIG_FIELD not in doc:
+            return {"signed": False, "state": "NO_KEY", "why": doc.get("signature_note")}
+        doc["signed_utc"] = datetime.now(tz=UTC).isoformat()
+        doc["signed_via"] = "ensure_signed"
+        _write(doc, root)
+        return {"signed": True, "state": "SIGNED",
+                "why": f"signed release {doc.get('release_id')} ({why}; {why_sha})"}
+    except Exception as exc:  # never block the release path
+        return {"signed": False, "state": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
 
 
 def load(root: Path | None = None) -> dict[str, Any] | None:
@@ -561,6 +646,10 @@ def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None =
                    f"{code_sha[:12]} never named: {code[:6]}"), code
 
 
+#: Record keys `verify()` REPORTS when they move but never fails on: the survivor canon digests.
+STATE_MOVED_KEYS: tuple[str, ...] = ("survivor_registry_hash", "canon_sha256")
+
+
 def verify(root: Path | None = None) -> dict[str, Any]:
     """Does the running tree match the written release? The one-live-SHA fence.
 
@@ -577,6 +666,12 @@ def verify(root: Path | None = None) -> dict[str, Any]:
     keys += [k for k in ("canon_sha256", "dependency_hash") if k in rec]
     diffs: dict[str, tuple[Any, Any]] = {k: (rec.get(k), now[k]) for k in keys
                                          if rec.get(k) != now[k]}
+    # THE SURVIVOR CANON MOVES ON THE RESEARCH CLOCK, ON THIS BOX, BY DESIGN (2026-09-30). The
+    # promoter rewrites it between seals, so counting it as drift failed `verify()` within the
+    # hour of every seal, while the gateway's own fence (mt5desk/release_identity.py) already
+    # reports canon movement and does not refuse on it. Reported the same way here: moved state,
+    # not a failed release.
+    state_moved = {k: diffs.pop(k) for k in STATE_MOVED_KEYS if k in diffs}
     imm_rec = (rec.get("immutable_manifest") or {}).get("sha256_16")
     imm_now = (now.get("immutable_manifest") or {}).get("sha256_16")
     if "immutable_manifest" in rec and imm_rec != imm_now:
@@ -585,6 +680,8 @@ def verify(root: Path | None = None) -> dict[str, Any]:
     if not ok_sha:
         diffs["live_sha"] = (rec.get("code_sha") or rec.get("live_sha"), now["live_sha"])
     return {"ok": not diffs, "release_id": rec.get("release_id"), "diffs": diffs,
-            "identity": why_sha, "sealed": bool(rec.get("sealed")),
+            "state_moved": state_moved, "identity": why_sha, "sealed": bool(rec.get("sealed")),
             "why": ("tree matches the written release" if not diffs else
-                    f"{len(diffs)} component(s) differ from the written release")}
+                    f"{len(diffs)} component(s) differ from the written release")
+                   + (f"; {len(state_moved)} state digest(s) moved (reported only)"
+                      if state_moved else "")}
