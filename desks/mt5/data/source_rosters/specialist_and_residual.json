@@ -1,0 +1,21 @@
+{
+ "note": "The specialist-and-residual lane's producers as registry sources. They read the desk's own bars, book and residuals, not the web, and donate through proposer_common.donate under the seat named here, so the registry credits a judged docket cell to them by that seat (`miner:<id>`). Owned: each organ runs on its own clock.",
+ "sources": [
+  {"id": "specialist_cell", "name": "Specialist research cells (per-asset-class mechanism generators)",
+   "fetcher": "owned", "owner": "breadth/specialist_and_residual", "kind": "code",
+   "uses": ["direct_cells", "indirect_cells"], "consumer": "desks/mt5/research/specialist_cell.py",
+   "region": "global", "licence": "internal: desk bars and registry", "cadence": "hourly"},
+  {"id": "residual_search", "name": "Residual search and counterfactual policy (book residual as conditioned cells)",
+   "fetcher": "owned", "owner": "breadth/specialist_and_residual", "kind": "text",
+   "uses": ["direct_cells", "indirect_cells"], "consumer": "desks/mt5/research/residual_search.py",
+   "region": "global", "licence": "internal: the desk's own trades and factors", "cadence": "daily"},
+  {"id": "residual_queue", "name": "Q11 residual queue (everything the desk cannot explain)",
+   "fetcher": "owned", "owner": "breadth/specialist_and_residual", "kind": "text",
+   "uses": ["direct_cells", "indirect_cells"], "consumer": "desks/mt5/research/residual_queue.py",
+   "region": "global", "licence": "internal: residual producers", "cadence": "hourly"},
+  {"id": "video_anchor_exit", "name": "HTF anchor / ATR-at-entry exit mechanism (public video walkthrough, 2026-09-23)",
+   "fetcher": "owned", "owner": "breadth/specialist_and_residual", "kind": "code",
+   "uses": ["direct_cells", "indirect_cells"], "consumer": "desks/mt5/research/htf_anchor_proposer.py",
+   "region": "global", "licence": "concept only, from a public video", "cadence": "daily"}
+ ]
+}
