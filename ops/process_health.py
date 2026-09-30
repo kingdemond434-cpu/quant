@@ -224,9 +224,12 @@ def build() -> dict[str, Any]:
         elif artifact and max_age and age is not None and age > max_age:
             verdict, why = "STALE", f"{age:.0f} min old against a {max_age} min contract"
         elif existence_only:
-            verdict, why = ("OK" if artifact else "UNMEASURED",
-                            "scheduled (task file present); run result UNMEASURED -- "
-                            + str(sched.get("why") or ""))
+            # A file name proves the task exists; it says nothing about how its last run ended.
+            # A fresh artifact is one fact of three, and the verdict is the worst of the facts it
+            # has, so the run result stays UNMEASURED rather than being read as OK (audit R-ph).
+            verdict, why = ("UNMEASURED",
+                            "scheduled (task file present), artifact current; run result "
+                            "UNMEASURED -- " + str(sched.get("why") or ""))
         elif code not in (0, 267009, 267011):
             verdict, why = "FAILING", RESULT_MEANING.get(code, f"exit code {code}")
         elif not artifact:
@@ -272,6 +275,13 @@ def build() -> dict[str, Any]:
             else:
                 verdict, why = "UNMEASURED", ("artifact current; scheduler unreadable -- "
                                               + str(sched.get("why") or ""))
+        elif owner != organ and owner in seen and existence_only:
+            verdict, why = (("NO_ARTIFACT", f"{artifact} does not exist") if age is None else
+                            ("STALE", f"{age:.0f} min old against a {max_age} min contract")
+                            if stale else
+                            ("UNMEASURED", f"owned by {owner}, which is scheduled; its run "
+                                           "result is UNMEASURED -- "
+                                           + str(sched.get("why") or "")))
         elif owner != organ and owner in seen:
             # An ASPECT of a task that is scheduled: judged on its own artifact only.
             if age is None:
@@ -318,8 +328,7 @@ def build() -> dict[str, Any]:
         "counts": counts,
         # The headline is the WORST row, never the proportion that are fine. "38 of 41 healthy"
         # is how a dead gateway hides behind a green majority.
-        "status": ("ATTENTION" if bad else
-                   "UNMEASURED" if not sched.get("read") and not existence_only else "OK"),
+        "status": ("ATTENTION" if bad else "UNMEASURED" if not sched.get("read") else "OK"),
         "n_needing_attention": len(bad),
         "processes": rows,
     }

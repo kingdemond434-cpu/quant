@@ -103,8 +103,6 @@ def test_the_task_directory_is_the_second_opinion(box: Path,
     doc = ph.build()
     rows = _rows(doc)
     assert doc["scheduler"]["existence_only"] is True
-    assert rows["MT5-Hourly"]["verdict"] == "OK"
-    assert rows["MT5-FrontierAudit (orthogonality)"]["verdict"] == "OK"
     assert rows["MT5-Missing"]["verdict"] == "NOT_SCHEDULED"
 
 
@@ -115,3 +113,30 @@ def test_every_contract_owner_is_a_task_the_box_manifest_declares() -> None:
     declared = set(re.findall(r'^TASK\s+name="([^"]+)"', text, re.M))
     orphans = sorted(k for k in oc.CONTRACTS if ph.owner_task(k) not in declared)
     assert orphans == [], f"contracts with no declared box task: {orphans}"
+
+
+def test_existence_only_never_reads_a_fresh_artifact_as_ok(box: Path,
+                                                           monkeypatch: pytest.MonkeyPatch) -> None:
+    """Audit: a task file plus a fresh artifact is not a known run result -- UNMEASURED."""
+    tasks_dir = box / "Tasks"
+    tasks_dir.mkdir()
+    for n in ("MT5-Hourly", "MT5-FrontierAudit"):
+        (tasks_dir / n).write_text("<Task/>", encoding="utf-8")
+    monkeypatch.setattr(ph, "TASKS_DIR", tasks_dir)
+
+    def _no_schtasks(*_a: Any, **_k: Any) -> Any:
+        raise FileNotFoundError("schtasks")
+    monkeypatch.setattr(ph.subprocess, "run", _no_schtasks)
+    doc = ph.build()
+    rows = _rows(doc)
+    assert rows["MT5-Hourly"]["verdict"] == "UNMEASURED"
+    assert rows["MT5-FrontierAudit (orthogonality)"]["verdict"] == "UNMEASURED"
+    assert doc["status"] != "OK"
+
+
+def test_no_code_still_names_the_retired_gateway_task() -> None:
+    """Audit R4: MT5-Gateway is Disabled; the monitors must name MT5-GatewayResident."""
+    for rel in ("desks/mt5/scripts/check_desk_health.py", "desks/mt5/research/implementer.py",
+                "ops/organ_contract.py"):
+        text = (ROOT / rel).read_text(encoding="utf-8")
+        assert not re.search(r'"MT5-Gateway"', text), rel

@@ -21,6 +21,7 @@ def _load() -> ModuleType:
 
 
 so = _load()
+so.NEVER_STALE = Path("/nonexistent/NEVER_STALE.json")
 
 
 def _w(path: Path, doc: object) -> Path:
@@ -94,3 +95,51 @@ def test_main_exits_two_on_red(tmp_path: Path, monkeypatch) -> None:
     _inputs(tmp_path, {"z": {"status": "MISSING", "why": "gone"}}, [])
     assert so.main(["--out", str(out)]) == so.RED_EXIT
     assert json.loads(out.read_text())["new_silent"] == ["leg:z"]
+
+
+# ---------------------------------------------------------------- audit R1 / R1b / R2 (2026-09-30)
+def _health(tmp: Path, rows: list, read: bool = True) -> Path:
+    sched = {"read": read, "why": "" if read else "schtasks /query did not answer within 180s"}
+    return _w(tmp / "process_health.json", {"at": "t", "scheduler": sched, "processes": rows})
+
+
+def test_audit_R1_simulation_scheduler_timeout_never_reads_green_or_clears(tmp_path: Path) -> None:
+    """3 NOT_SCHEDULED, then a scheduler timeout: the audit saw GREEN, 3 cleared, exit 0."""
+    m = _w(tmp_path / "sync_marker.json", {"last_cycle": "t"})
+    ns = [{"name": f"MT5-X{i}", "verdict": "NOT_SCHEDULED", "why": "absent"} for i in range(3)]
+    first = so.build(health_path=_health(tmp_path, ns), marker_path=m,
+                     never_stale_path=tmp_path / "none.json")
+    assert first["n_silent"] == 3
+    unread = [{"name": f"MT5-X{i}", "verdict": "UNMEASURED"} for i in range(3)]
+    second = so.build(health_path=_health(tmp_path, unread, read=False), marker_path=m,
+                      previous=first, never_stale_path=tmp_path / "none.json")
+    assert second["status"] == "UNMEASURED"
+    assert second["cleared"] == []
+    assert second["n_silent"] is None and second["n_silent_floor"] == 3
+    out = tmp_path / "SILENT_ORGANS.json"
+    _w(out, first)
+    so.PROCESS_HEALTH, so.SYNC_MARKER = tmp_path / "process_health.json", m
+    so.NEVER_STALE = tmp_path / "none.json"
+    assert so.main(["--out", str(out)]) == 0          # nothing NEW; but never GREEN
+    assert json.loads(out.read_text())["status"] == "UNMEASURED"
+
+
+def test_audit_R1b_carried_rows_keep_streak_and_first_seen(tmp_path: Path) -> None:
+    h, m = _inputs(tmp_path, {"x": {"status": "LEG_FAILED", "error": "boom"}}, [])
+    first = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
+    second = so.build(health_path=h, marker_path=tmp_path / "gone.json", previous=first,
+                      never_stale_path=tmp_path / "n.json")
+    row = {r["organ"]: r for r in second["organs"]}["leg:x"]
+    assert row["verdict"] == "UNMEASURED" and row["carried"] is True
+    assert row["first_seen"] == first["organs"][0]["first_seen"]
+    assert row["passes_silent"] == 1 and second["cleared"] == []
+
+
+def test_audit_R2_a_watchdog_escalation_is_a_red_fence_item(tmp_path: Path) -> None:
+    h, m = _inputs(tmp_path, {}, [{"name": "MT5-A", "verdict": "FAILING", "why": "x"}])
+    ns = _w(tmp_path / "NEVER_STALE.json", {"escalated": [
+        {"task": "(scheduler)", "verdict": "UNMEASURED", "diagnosis": "schtasks hung"},
+        {"task": "MT5-A", "verdict": "FAILING", "diagnosis": "dup of the task row"}]})
+    doc = so.build(health_path=h, marker_path=m, never_stale_path=ns)
+    assert doc["fence"] == "RED" and doc["escalated"] == ["escalated:(scheduler)"]
+    assert [r["organ"] for r in doc["organs"]].count("escalated:MT5-A") == 0

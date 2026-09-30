@@ -47,6 +47,9 @@ DESK = ROOT / "desks" / "mt5"
 PROCESS_HEALTH = DESK / "reports" / "process_health.json"
 SYNC_MARKER = DESK / "data" / "sync_marker.json"
 OUT = DESK / "reports" / "SILENT_ORGANS.json"
+#: The watchdog's escalations (ops/never_stale.py). It pages nobody on its own -- nothing read
+#: NEVER_STALE.json -- so its NEEDS_HUMAN rows are carried here as fence items (audit R2).
+NEVER_STALE = DESK / "reports" / "NEVER_STALE.json"
 
 SILENT_TASK_VERDICTS = frozenset({"NOT_SCHEDULED", "FAILING", "NO_ARTIFACT", "STALE"})
 SILENT_LEG_STATUSES = frozenset({"LEG_FAILED", "TIMEOUT", "MISSING"})
@@ -82,6 +85,19 @@ def task_silences(doc: Any) -> list[dict[str, Any]]:
     return out
 
 
+def escalation_silences(doc: Any) -> list[dict[str, Any]]:
+    """never_stale's NEEDS_HUMAN rows that no task row already names -- each one a RED item."""
+    out: list[dict[str, Any]] = []
+    for e in (doc.get("escalated") if isinstance(doc, dict) else None) or []:
+        if not isinstance(e, dict):
+            continue
+        out.append({"organ": f"escalated:{e.get('task') or '?'}", "source": "escalation",
+                    "verdict": f"NEEDS_HUMAN:{e.get('verdict') or '?'}",
+                    "why": str(e.get("diagnosis") or e.get("why") or "")[:240],
+                    "artifact": None})
+    return out
+
+
 def leg_verdict(leg: Any) -> tuple[str, str] | None:
     """(verdict, why) for a silent leg outcome, or None when the leg is not silent."""
     if not isinstance(leg, dict):
@@ -111,7 +127,8 @@ def leg_silences(marker: Any) -> list[dict[str, Any]]:
 
 
 def build(*, health_path: Path | None = None, marker_path: Path | None = None,
-          previous: Any = None, now: datetime | None = None) -> dict[str, Any]:
+          previous: Any = None, now: datetime | None = None,
+          never_stale_path: Path | None = None) -> dict[str, Any]:
     now = now or datetime.now(UTC)
     health_path = health_path or PROCESS_HEALTH
     marker_path = marker_path or SYNC_MARKER
@@ -131,12 +148,30 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
                            "why": f"{marker_path.name} is absent or unreadable -- the hourly "
                                   "cycle has not completed a pass on this host"})
 
+    health_unread = not isinstance(health, dict)
+    scheduler_unread = (not health_unread and isinstance(health.get("scheduler"), dict)
+                        and not health["scheduler"].get("read")
+                        and not health["scheduler"].get("existence_only"))
+    marker_unread = not isinstance(marker, dict)
+    # What each organ reads as NOW in process_health, so a row whose verdict went UNMEASURED can
+    # be told apart from a row that recovered.
+    now_task_verdict = {str(r.get("name") or ""): str(r.get("verdict") or "")
+                        for r in ((health or {}).get("processes") or [] if not health_unread
+                                  else []) if isinstance(r, dict)}
     silent = task_silences(health) + leg_silences(marker)
-    prev_rows = {}
+    # An escalation about a task already on the list is the same organ twice; only the ones no
+    # other row names (the scheduler itself, a capital fault) are added.
+    named = {r["organ"] for r in silent}
+    silent += [e for e in escalation_silences(_read(never_stale_path or NEVER_STALE))
+               if e["organ"].split(":", 1)[1] not in named]
+    prev_rows: dict[str, dict[str, Any]] = {}
     if isinstance(previous, dict):
         prev_rows = {str(r.get("organ")): r for r in previous.get("organs") or []
                      if isinstance(r, dict)}
-    has_baseline = isinstance(previous, dict) and previous.get("status") != "UNMEASURED"
+    # ANY previous reading is a baseline, including an UNMEASURED one: its rows are what was
+    # known to be silent, and a box whose scheduler never answers must still be able to go RED
+    # on a leg that newly failed.
+    has_baseline = isinstance(previous, dict) and isinstance(previous.get("organs"), list)
     stamp = now.isoformat(timespec="seconds")
     new: list[str] = []
     for row in silent:
@@ -146,7 +181,33 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
         if has_baseline and before is None:
             new.append(row["organ"])
     now_names = {r["organ"] for r in silent}
-    cleared = sorted(n for n in prev_rows if n not in now_names)
+
+    def _unmeasured_now(prev: dict[str, Any]) -> bool:
+        """A previously silent row whose source could not be read this pass is NOT cleared --
+        nobody looked. (Audit R1: a scheduler timeout marked three NOT_SCHEDULED rows cleared.)"""
+        src = str(prev.get("source") or "")
+        if src == "leg":
+            return marker_unread
+        if src == "task":
+            if health_unread:
+                return True
+            verdict = now_task_verdict.get(str(prev.get("organ") or ""))
+            return verdict in (None, "UNMEASURED") and (scheduler_unread or verdict is not None)
+        return src != "escalation"
+
+    cleared: list[str] = []
+    for name, prev in sorted(prev_rows.items()):
+        if name in now_names:
+            continue
+        if _unmeasured_now(prev):
+            # CARRIED FORWARD with its streak and first-seen intact (audit R1b): the organ is
+            # still on the list, now marked UNMEASURED, until a reading says otherwise.
+            silent.append({**prev, "verdict": "UNMEASURED", "carried": True,
+                           "last_verdict": prev.get("last_verdict") or prev.get("verdict"),
+                           "why": "silent at the last reading; its source was unreadable this "
+                                  "pass, so it cannot be called cleared"})
+        else:
+            cleared.append(name)
 
     by_verdict: dict[str, int] = {}
     by_source: dict[str, int] = {}
@@ -154,9 +215,15 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
         by_verdict[r["verdict"]] = by_verdict.get(r["verdict"], 0) + 1
         by_source[r["source"]] = by_source.get(r["source"], 0) + 1
 
-    if not isinstance(health, dict) and not isinstance(marker, dict):
+    escalated = [r["organ"] for r in silent if r["source"] == "escalation"]
+    # THE FENCE is separate from the STATUS. Status says what is known (UNMEASURED whenever any
+    # source was unreadable -- audit R1); the fence says whether a person must act now: a NEW
+    # silent organ, or a watchdog escalation nothing else pages (audit R2).
+    fence = "RED" if (new or escalated) else ("UNMEASURED" if unmeasured else
+                                             ("AMBER" if silent else "GREEN"))
+    if unmeasured:
         status = "UNMEASURED"
-    elif new:
+    elif new or escalated:
         status = "RED"
     elif silent:
         status = "AMBER"
@@ -167,6 +234,8 @@ def build(*, health_path: Path | None = None, marker_path: Path | None = None,
         "measured_at": stamp,
         "at": stamp,
         "status": status,
+        "fence": fence,
+        "escalated": escalated,
         # A count is only a count when every source was read; otherwise it is a floor.
         "n_silent": len(silent) if not unmeasured else None,
         "n_silent_floor": len(silent),
@@ -208,7 +277,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(doc, indent=1))
     else:
         n = doc["n_silent"] if doc["n_silent"] is not None else f">={doc['n_silent_floor']}"
-        print(f"silent organs: {n}  status {doc['status']}  new {len(doc['new_silent'])}  "
+        print(f"silent organs: {n}  status {doc['status']}  fence {doc['fence']}  new {len(doc['new_silent'])}  "
               f"cleared {len(doc['cleared'])}  {doc['by_verdict']}")
         for r in doc["organs"]:
             flag = "NEW " if r["organ"] in doc["new_silent"] else "    "
@@ -217,7 +286,7 @@ def main(argv: list[str] | None = None) -> int:
         for u in doc["unmeasured"]:
             print(f"  UNMEASURED {u['what']}: {u['why']}")
         print(f"-> {a.out}")
-    return RED_EXIT if doc["status"] == "RED" else 0
+    return RED_EXIT if doc["fence"] == "RED" else 0
 
 
 if __name__ == "__main__":
