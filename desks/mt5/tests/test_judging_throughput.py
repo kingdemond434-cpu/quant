@@ -163,7 +163,7 @@ def test_the_env_carries_exactly_what_the_sealed_file_reads(tmp_path) -> None:
     assert env["GAUNTLET_WORKERS"] == str(decision["workers"])
     assert int(env["GAUNTLET_MEMORY_BUDGET_MB"]) >= decision["workers"] * 768
     assert int(env["GAUNTLET_HEADROOM_CAP_MB"]) >= decision["workers"] * 768
-    assert env["WARM_WORKERS"] == str(decision["warm_workers"])
+    assert "WARM_WORKERS" not in env, "the warmer sizes itself from psutil; nothing pins it"
     path = tmp_path / "judging_throughput.env.json"
     jt.write_env(decision, path)
     target: dict[str, str] = {}

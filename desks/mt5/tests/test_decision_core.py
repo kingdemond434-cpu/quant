@@ -250,6 +250,7 @@ def test_ramped_fraction_is_the_one_ladder() -> None:
     assert dc.ramped_fraction("junk", 500) == pytest.approx(sizing.BASE_RISK_FRAC)
 
 
+@pytest.mark.usefixtures("legacy_floors")
 def test_promoted_lot_ramps_fades_floors_and_ceils(monkeypatch) -> None:
     monkeypatch.setattr(dc, "auto_lot", lambda equity, dist, symbol, info, q: q * 100.0)
     lot = dc.promoted_lot
@@ -275,6 +276,7 @@ def test_promoted_lot_ramps_fades_floors_and_ceils(monkeypatch) -> None:
     assert lot(1000.0, 500, 10.0, "EURUSD", None, 0.03, None) == pytest.approx(dc.min_lot())
 
 
+@pytest.mark.usefixtures("legacy_floors")
 def test_the_books_fraction_reaches_the_venue_unshrunk(monkeypatch) -> None:
     """`from_book=True` applies neither the 3% floor clamp nor the authority ramp: the
     allocator's h_i was solved on worlds that already shrink by evidence. Only the fade and
@@ -939,3 +941,12 @@ def test_the_artifact_age_uses_the_clock_it_is_given(tmp_path) -> None:
     assert dc.allocator_heat(tmp_path, now=fresh)[0] == pytest.approx(0.2)
     assert dc.allocator_rank(tmp_path, now=fresh) is not None
     assert time.time() - f.stat().st_mtime < dc._ALLOC_MAX_AGE_S
+
+
+@pytest.fixture
+def legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pins the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}); see test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")
