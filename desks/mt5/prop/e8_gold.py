@@ -61,10 +61,16 @@ from mt5desk.decision_core import (  # noqa: E402
     window_end_hour,
     window_session_ended,
 )
+from mt5desk.kelly_sizing import load_kelly_survival  # noqa: E402
 
 SYMBOL = "XAUUSD"
 #: Per-trade risk on the prop account, as a fraction of equity (docs/PROP_FIRM_E8.md).
 RISK_FRAC = 0.005
+#: The survival-constrained growth solve (research/kelly_survival.py; principal 2026-09-30:
+#: "maximum aggressiveness within survival"). Its `e8` block names each window's risk fraction:
+#: the fastest median pass whose P(floor) + P(daily breach) stays under EPS_STOP. Absent, stale
+#: or not OK -> every window keeps RISK_FRAC, exactly as before the solve existed.
+KELLY_FILE = DESK / "reports" / "KELLY_SURVIVAL.json"
 STATE = DESK / "data" / "e8_gold_state.json"
 OUT = DESK / "reports" / "E8_GOLD.json"
 INTENTS = DESK / "data" / "e8_gold_intents.jsonl"
@@ -88,6 +94,17 @@ def log(msg: str) -> None:
 
 
 # ------------------------------------------------------------------ pure decisions
+
+def window_risk(name: str, kelly: dict[str, float] | None) -> tuple[float, str]:
+    """(risk fraction of equity for window `name`, where it came from). Pure.
+
+    The solve's number when it holds one for this window -- 0 means the window stands aside
+    because every size it could send lowers the pass rate or breaks survival -- else RISK_FRAC.
+    """
+    if kelly is not None and name in kelly:
+        return float(kelly[name]), "kelly_survival"
+    return RISK_FRAC, "policy RISK_FRAC"
+
 
 def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
          stops_level: int = 0) -> list[dict]:
@@ -384,7 +401,10 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     acct = venue.account()
     equity = float(acct.get("equity") or acct.get("balance") or 0.0)
     risk_usd = equity * RISK_FRAC
-    doc.update({"equity": equity, "risk_usd": round(risk_usd, 2)})
+    kelly = load_kelly_survival(KELLY_FILE, "e8")
+    doc.update({"equity": equity, "risk_usd": round(risk_usd, 2),
+                "sizing_source": "kelly_survival" if kelly is not None else "policy RISK_FRAC",
+                "kelly_risk": kelly})
     guard = _read_json(GUARD, {})
     stood_down = bool(guard.get("stood_down"))
     if stood_down:
@@ -441,6 +461,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         due_now = []
     for due in due_now:
         name, spec = due["window"], due["spec"]
+        frac, frac_src = window_risk(name, kelly)
+        if not frac > 0:
+            doc["skipped"].append({"window": name, "why": (
+                "stands aside: the survival-constrained growth solve "
+                "(reports/KELLY_SURVIVAL.json) funds this window at 0 risk")})
+            continue
+        risk_usd = equity * frac
         legs: dict[str, dict] = {}
         for side in ("buy_stop", "sell_stop"):
             if side == blocked:
@@ -462,7 +489,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                    "price": float(s["price"]), "sl": float(s["sl"]), "tp": float(s["tp"]),
                    "lot": lot, "stop_dist": round(dist, 2), "risk_usd": round(risk_usd, 2),
-                   "sizing": basis, "armed": bool(armed)}
+                   "sizing": basis, "risk_frac": frac, "risk_source": frac_src,
+                   "armed": bool(armed)}
             if not (lot > 0):
                 row["status"] = "UNSIZEABLE"
                 doc["skipped"].append(row)
