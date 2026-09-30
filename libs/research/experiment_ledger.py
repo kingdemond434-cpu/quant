@@ -80,10 +80,10 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             if not ln.strip():
                 continue
             row = json.loads(ln)
-            fams = row.get("by_family") if isinstance(row, dict) else None
-            if not isinstance(fams, dict):
+            widths = row.get("by_family") if isinstance(row, dict) else None
+            if not isinstance(widths, dict):
                 continue
-            for fam, k in fams.items():
+            for fam, k in widths.items():
                 n = int(k or 0)
                 total += n
                 by_fam[str(fam)] = by_fam.get(str(fam), 0) + n
