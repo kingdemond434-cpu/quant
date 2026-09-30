@@ -86,7 +86,8 @@ def test_the_exchange_reads_the_factory_the_writer_scored(desk: Path) -> None:
 def _bids(monkeypatch: Any) -> dict[str, Any]:
     monkeypatch.setattr(ts, "_first", lambda paths: None)
     monkeypatch.setattr(ts, "_jsonl", lambda *a, **k: [])
-    monkeypatch.setattr(ts, "_read", lambda p: None)
+    real = ts._read          # the honesty state is read for real; no execution science here
+    monkeypatch.setattr(ts, "_read", lambda p: None if "EXECUTION" in str(p) else real(p))
     monkeypatch.setattr(ts, "names", lambda: SimpleNamespace(group=lambda k: str(k)))
     monkeypatch.setattr(ts, "shadow_rows", dict)           # no forward yet: mu is the prior
     bids, _live = ts._posterior_bids()

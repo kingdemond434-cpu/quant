@@ -44,7 +44,7 @@ def _worlds(base: float | None = 0.2, closure: dict[str, Any] | None = None,
 
 
 def _kinds(ev: dict[str, Any]) -> dict[str, str]:
-    return {c.kind: c.severity for c in rp.review("k", ev)}
+    return {c.kind: c.severity for c in rp.review("k", ev) if c.reviewer == "ecologist"}
 
 
 def test_the_reviewer_lists_match_the_world_modules() -> None:
@@ -108,7 +108,7 @@ def test_losing_in_every_agent_ecology_is_high() -> None:
 
 def test_an_untouched_certificate_is_named_and_a_clean_one_raises_nothing() -> None:
     assert _kinds(_worlds(0.2)) == {"WORLDS_UNMEASURED": "LOW"}
-    (ch,) = rp.review("k", _worlds(0.2))
+    (ch,) = rp.ecologist("k", _worlds(0.2))
     assert rp.resolve(ch, _worlds(0.2)) == "OPEN"
     clean = _worlds(0.2, closure={w: _m(0.1) for w in closure_worlds.NAMES},
                     agents={w: _m(0.1) for w in agent_worlds.NAMES})
