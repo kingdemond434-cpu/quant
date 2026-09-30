@@ -752,6 +752,37 @@ def production_immune(budget_s: float = PROD_BUDGET_S) -> dict[str, Any]:
 PROD_MIN_TRAPS = 200
 
 
+#: the real-episode suite: every kind at this many seeds on the desk's own H1 bars
+REAL_PER_KIND = 30
+
+
+def real_episode_immune(cfg: meta_benchmark.ValidatorConfig,
+                        synthetic: Mapping[str, Any]) -> dict[str, Any]:
+    """Layer 34's second suite: the same kinds planted on direction-free REAL H1 episodes
+    (`libs/tiers/real_episodes.py`), scored by the same incumbent validator, sealed by its own
+    hash, with its history kept apart and its gap to the synthetic suite published per kind."""
+    from libs.tiers import real_episodes
+    rets, _c, _v = _returns_panel(max_symbols=20, bars=3000)
+    if len(rets) < 2:
+        return {"status": "UNMEASURED", "why": f"{len(rets)} eligible H1 series on this host"}
+    suite = real_episodes.RealSuite(panel=rets, per_kind=REAL_PER_KIND)
+    rows = list(suite.cases())
+    seal = suite.seal(rows)
+    res = meta_benchmark.score(meta_benchmark.reference_validator(cfg), cases=rows)
+    st = _state("immune_real")
+    hist = list(st.get("history") or [])
+    verdict = meta_benchmark.immune_verdict(res, hist, floor=0.0, seal=seal)
+    hist.append({"at": NOW.isoformat(), "seal": seal, "immune_score": res["immune_score"],
+                 "power": res["power"]})
+    _save_state("immune_real", {"history": hist[-500:]})
+    return {"status": "MEASURED", "seal": seal, **res,
+            "symbols": sorted(rets), "episodes": len(suite.episodes),
+            "drift_verdict": verdict, "vs_synthetic": real_episodes.compare(res, synthetic),
+            "note": "real H1 magnitudes, signs randomised: no-edge is true by construction; "
+                    "the drift verdict is published, and the promotion freeze stays the "
+                    "sealed synthetic/production suite's"}
+
+
 def organ_immune() -> dict[str, Any]:
     suite = meta_benchmark.Suite(per_kind=IMMUNE_PER_KIND)
     cfg = _incumbent_validator()
@@ -789,11 +820,14 @@ def organ_immune() -> dict[str, Any]:
         power_alarm = (f"the production certifier accepted {prod['power']:.1%} of {n_gen} genuine "
                        "positive controls (incl. an AR(0.25) edge): its immunity is uninformative "
                        "and it is rejecting real edges")
+    real = real_episode_immune(cfg, res)
     return {"score": res, "production": prod, "judge": judge, "seal": seal, "verdict": verdict,
-            "power_alarm": power_alarm,
+            "power_alarm": power_alarm, "real_episode": real,
             "floor": floor, "validator": cfg.genome(),
             "metric": {"immune_score": judged["immune_score"], "power": judged["power"],
                        "balanced": res["balanced"],
+                       "real_immune": real.get("immune_score"), "real_power": real.get("power"),
+                       "real_balanced": real.get("balanced"),
                        "production_immune": prod.get("immune_score"),
                        "production_power": prod.get("power"),
                        "production_coverage": prod.get("coverage")}}
@@ -1152,9 +1186,108 @@ def organ_topology() -> dict[str, Any]:
     # orthogonal directions -> hypotheses: the least-occupied mechanisms on new symbols
     # a SUSPENDED topology organ still emits; its weights stop ordering what it emits
     emitted = _emit_orthogonal({} if authority.suspended("topology") else steer, descs)
+    sims = _topology_simulations(sleeve_names, descs, rank)
     return {"rank": rank, "steering": steer, "ancestry": eff, "emitted": emitted,
+            "simulations": sims,
             "metric": {"effective_rank": rank.get("combined"), "n_sleeves": len(sleeve_names),
-                       "effective_discoveries": eff.get("effective")}}
+                       "effective_discoveries": eff.get("effective"),
+                       "effective_rank_simulated": sims["combined"].get("combined"),
+                       "trade_overlap_rank": sims["trade_overlap"].get("trade_overlap"),
+                       "exposure_sim_rank": sims["exposure_sim"].get("combined")}}
+
+
+EXCURSIONS = DESK / "data" / "excursions.jsonl"
+
+
+def _epoch(t: Any) -> float:
+    p = replay.parse_t(str(t or "").replace(" ", "T"))
+    return p.timestamp() if p is not None else float("nan")
+
+
+def _recorded_trades() -> dict[str, list[topology.Trade]]:
+    """SYM.window -> recorded trades: shadow excursions (entry/exit/side) and live fills whose
+    opening order the intents ledger holds (open = the intent's time, side = the intent's)."""
+    nm = names()
+    out: dict[str, list[topology.Trade]] = defaultdict(list)
+    for r in _jsonl(EXCURSIONS, 200_000):
+        g = nm.group(r.get("sleeve"))
+        s, e = _epoch(r.get("entry_time")), _epoch(r.get("exit_time"))
+        if g and r.get("symbol") and math.isfinite(s) and math.isfinite(e):
+            out[g].append((s, e, float(r.get("side") or 0.0), str(r["symbol"])))
+    opened: dict[str, tuple[float, float]] = {}
+    for r in _jsonl(ORDER_INTENTS, 200_000):
+        t = str(r.get("ticket") or "")
+        side = str(r.get("side") or "").lower()
+        if t and t != "0" and side:
+            opened[t] = (_epoch(r.get("time")), -1.0 if side.startswith("sell") else 1.0)
+    for r in live_rows():
+        op = next((opened[str(r.get(k))] for k in ("entry_order", "position_id", "order")
+                   if str(r.get(k) or "") in opened), None)
+        e = _epoch(r.get("time"))
+        if op is not None and r.get("symbol") and math.isfinite(op[0]) and e >= op[0]:
+            out[r["_group"]].append((op[0], e, op[1], str(r["symbol"])))
+    return out
+
+
+def _h1_returns(symbols: Iterable[str], bars: int = 4000) -> dict[str, Any]:
+    """symbol -> H1 log returns (pandas Series on the bars' UTC index), last `bars` bars."""
+    out: dict[str, Any] = {}
+    try:
+        import pandas as pd
+    except ImportError:
+        return out
+    for sym in sorted(set(symbols)):
+        p = UNIVERSE / f"{sym}_H1.parquet"
+        if not p.exists():
+            continue
+        try:
+            c = pd.read_parquet(p, columns=["close"])["close"].astype(float).iloc[-bars - 1:]
+        except Exception:
+            continue
+        c = c[np.isfinite(c) & (c > 0)]
+        if len(c) > 50 and isinstance(c.index, pd.DatetimeIndex):
+            out[sym] = np.log(c).diff().dropna()
+    return out
+
+
+def _topology_simulations(sleeve_names: list[str], descs: list[dict[str, Any]],
+                          rank: Mapping[str, Any]) -> dict[str, Any]:
+    """Layer 15's trade-overlap and exposure-simulation ranks, beside the descriptor and live-P&L
+    ranks, and the conservative combination of all of them over the registry's sleeves."""
+    from session_allocator import SESSION_HOURS
+    extra: dict[str, tuple[list[str], np.ndarray]] = {}
+    tr = topology.trade_overlap(_recorded_trades())
+    if tr.get("status") == "MEASURED":
+        # the trade grain is SYM.window; lift it onto every registry sleeve of that group
+        nm = names()
+        grp = [nm.group(n) for n in sleeve_names]
+        sub = [n for n, g in zip(sleeve_names, grp, strict=True) if g in tr["names"]]
+        gi = {g: i for i, g in enumerate(tr["names"])}
+        sim_g = tr["similarity"]
+        m = np.eye(len(sub))
+        for a, na in enumerate(sub):
+            for b, nb in enumerate(sub):
+                if a != b:
+                    ga, gb = nm.group(na), nm.group(nb)
+                    m[a, b] = 1.0 if ga == gb else float(sim_g[gi[ga], gi[gb]])
+        extra["trade_overlap"] = (sub, m)
+    trade = {k: v for k, v in tr.items() if k not in ("names", "similarity")}
+    sl = [{"name": n, "symbol": d.get("symbol"), "direction": d.get("direction"),
+           "selector": d.get("selector")} for n, d in zip(sleeve_names, descs, strict=True)]
+    rets = _h1_returns(str(d.get("symbol")) for d in descs if d.get("symbol"))
+    sim_names, panel = topology.simulate_exposure(sl, rets, SESSION_HOURS)
+    if len(sim_names) >= 2 and panel.shape[0] >= 10:
+        expo = {"status": "MEASURED", **topology.rank_report(panel, sim_names, None),
+                "symbols_with_bars": len(rets),
+                "left_out": len(sleeve_names) - len(sim_names)}
+        expo.pop("uniqueness", None)
+        extra["exposure_sim"] = (sim_names, topology.pnl_similarity(panel))
+    else:
+        expo = {"status": "UNMEASURED", "combined": None,
+                "why": f"{len(sim_names)} sleeve(s) simulable on {len(rets)} H1 series here"}
+    comb = (topology.combined_with(rank, sleeve_names, descs, extra) if extra
+            else {"combined": None, "why": "neither simulation measured"})
+    return {"trade_overlap": trade, "exposure_sim": expo, "combined": comb}
 
 
 def _emit_orthogonal(steer: Mapping[str, Mapping[str, float]],
@@ -2505,63 +2638,54 @@ def organ_data_os() -> dict[str, Any]:
             intel_rows.extend(r for r in rows[:200] if isinstance(r, dict))
     audits["intelligence"] = bitemporal.pit_audit(intel_rows)
     # ONE RECORD PER SOURCE: data_registry x ingestion_ledger x vintage, and each source's gate
-    # yield (`libs/tiers/data_os.py`). The acquisition ledger is scored on gate yield.
+    # yield (`libs/tiers/data_os.py`).
     yields, sources = _data_os_sources()
+    # THE ACQUISITION LEDGER, TWO HALVES. Each of the four rankers registers and resolves its
+    # predictions on ITS OWN metric from its own report (`libs/tiers/acquisition_resolution.py`),
+    # compared in normalised gain (S35). Every other open prediction -- the legacy pit_share rows
+    # and anything registered against a dataset landing -- is scored on the GATE YIELD of the
+    # item's information class (S02), never on pit_share.
+    from libs.tiers import acquisition_resolution as acq
     st = _state("acquisition")
     preds = [bitemporal.Prediction(**p) for p in st.get("predictions") or []]
-    known = {p.item for p in preds}
+    own_metrics = {spec.metric for spec in acq.SPECS}
+    own = [p for p in preds if p.metric in own_metrics]
+    landed = [p for p in preds if p.metric not in own_metrics]
     metric_now = data_os.metric_now(yields)
-    for ranker, fname in (("data_acquisition_scientist", "DATA_ACQUISITION.json"),
-                          ("evig_acquisition", "EVIG_ACQUISITION.json"),
-                          ("source_evig", "SOURCE_EVIG.json"),
-                          ("value_of_data", "VALUE_OF_DATA.json")):
-        d = _read(REPORTS / fname)
-        rows = []
-        if isinstance(d, dict):
-            for k in ("ranking", "rows", "targets", "candidates", "top"):
-                if isinstance(d.get(k), list):
-                    rows = d[k]
-                    break
-        for r in rows[:20]:
-            if not isinstance(r, dict):
-                continue
-            item = str(r.get("item") or r.get("dataset") or r.get("source") or r.get("name")
-                       or r.get("id") or "")
-            if not item or item in known:
-                continue
-            gain = r.get("evig") or r.get("value") or r.get("expected_gain") or r.get("score")
-            try:
-                g = float(gain)
-            except (TypeError, ValueError):
-                continue
-            preds.append(bitemporal.Prediction(item=item, kind=str(r.get("kind") or "dataset"),
-                                               ranker=ranker, predicted_gain=g,
-                                               cost_eur=float(r.get("cost_eur") or 0.0),
-                                               cost_cpu_h=float(r.get("cost_cpu_h") or 0.1),
-                                               metric=data_os.yield_metric(
-                                                   data_os.info_class(item, r.get("kind"))),
-                                               metric_before=None, at=NOW.isoformat()))
-            known.add(item)
+    obs_by: dict[str, dict[str, dict[str, Any]]] = {}
+    reports_seen: dict[str, bool] = {}
+    for spec in acq.SPECS:
+        d = _read(REPORTS / spec.report)
+        reports_seen[spec.ranker] = d is not None
+        obs_by[spec.ranker] = acq.observe(spec.ranker, d)
+    n_res = acq.resolve(own, obs_by, NOW.isoformat())
+    made = sum(acq.register(own, spec.ranker, obs_by[spec.ranker], NOW.isoformat())
+               for spec in acq.SPECS)
+    cal = acq.calibration(own)
+    ranking = acq.rank(own, cal)
+    for row in ranking:
+        cls = data_os.info_class(row.get("item"), row.get("kind"))
+        row["info_class"] = cls
+        row["class_gate_yield"] = (yields.get(cls) or {}).get("yield")
     acquired: dict[str, datetime] = {}
     acq_dir = DESK / "data" / "acquired"
     if acq_dir.exists():
         for p in acq_dir.iterdir():
             acquired[p.stem] = datetime.fromtimestamp(p.stat().st_mtime, UTC)
-    moved = data_os.retarget(preds, metric_now)
-    n_res = bitemporal.resolve(preds, acquired, metric_now, NOW.isoformat())
-    cal = bitemporal.calibration(preds)
-    ranking = bitemporal.rank(preds, cal)
-    for row in ranking:
-        cls = data_os.info_class(row["item"], row["kind"])
-        row["info_class"] = cls
-        row["class_gate_yield"] = (yields.get(cls) or {}).get("yield")
-    _save_state("acquisition", {"predictions": [p.to_dict() for p in preds][-3000:]})
+    moved = data_os.retarget(landed, metric_now)
+    n_landed = bitemporal.resolve(landed, acquired, metric_now, NOW.isoformat())
+    _save_state("acquisition", {"predictions": [p.to_dict() for p in landed + own][-3000:]})
     return {"pit_audits": audits, "sources": sources, "gate_yield": yields,
-            "acquisition": {"open": len(ranking), "resolved_now": n_res, **moved,
-                            "scored_on": "gate_yield", "calibration": cal,
-                            "top": ranking[:25]},
+            "acquisition": {"open": len(ranking), "registered_now": made,
+                            "resolved_now": n_res, "calibration": cal, "top": ranking[:25],
+                            "reports_present": reports_seen,
+                            "landed_on_gate_yield": {"n": len(landed), **moved,
+                                                     "resolved_now": n_landed,
+                                                     "calibration":
+                                                         bitemporal.calibration(landed)}},
             "metric": {"pit_share": audits["intelligence"].get("pit_share"),
-                       "calibrated_rankers": len(cal),
+                       "calibrated_rankers": sum(1 for v in cal.values()
+                                                 if v.get("status") == "MEASURED"),
                        "sources": sources.get("n_sources"),
                        "sources_fully_joined": sources.get("fully_joined"),
                        "gate_yield": (yields.get("all") or {}).get("yield")}}
@@ -2630,6 +2754,12 @@ def xsci_expression(hit: Mapping[str, Any]) -> str | None:
     if lab == "bayesian":
         phi = float((hit.get("posterior") or {}).get("mean") or 0.0)
         return "mean(ret, 2)" if phi > 0 else "neg(mean(ret, 2))"
+    if lab == "constraint" and hit.get("atoms"):          # the satisfying clause, as a gate
+        return cross_science.constraint_expression(list(hit["atoms"]),
+                                                   float(hit.get("direction") or 1.0))
+    if lab == "gaussian_process":                         # the feature the GP leans on
+        return cross_science.gp_expression(str(hit.get("feature") or ""),
+                                           float(hit.get("direction") or 1.0))
     return None
 
 
@@ -2745,6 +2875,9 @@ def organ_world_and_science() -> dict[str, Any]:
     return {"edges": census, "broken_relationships": resid[:20], "listed_graph": listed,
             "macro_world": {**macro, "emitted": macro_emitted},
             "labs": {k: len(v) for k, v in labs.items()}, "emitted": emitted,
+            # a SAT clause or GP feature the grammar cannot hold is counted, never re-shaped
+            "inexpressible": {lab: sum(1 for h in labs.get(lab) or [] if xsci_expression(h)
+                                       is None) for lab in ("constraint", "gaussian_process")},
             "expressions_queued": queued, "expressions_offered": len(exprs),
             "sample": {k: v[:3] for k, v in labs.items()},
             "metric": {"stable_edges": census.get("STABLE", 0),
@@ -3020,10 +3153,82 @@ def organ_predictions() -> dict[str, Any]:
     cutoff = (NOW - timedelta(days=30)).isoformat()
     _save_state("forecasts", {"forecasts": [f.__dict__ for f in ledger
                                             if f.made_at >= cutoff][-20_000:]})
+    qty = _quantity_accounting(groups, horizon, cutoff)
     return {"registered_now": made, "score": sc, "coverage": cov, "honesty": hon,
+            "quantities": qty,
             "metric": {"crps": sc["crps"], "coverage90": sc["coverage90"],
                        "accounted_share": cov["accounted_share"],
-                       "overconfidence": sc["overconfidence"]}}
+                       "overconfidence": sc["overconfidence"],
+                       "quantities_scored": sum(
+                           1 for v in qty["prequential"].values() if v.get("n_scored")),
+                       **{f"{q}_crps": qty["prequential"][q].get("crps")
+                          for q in prediction_accounting.QUANTITIES}}}
+
+
+def _quantity_history() -> dict[str, dict[str, list[tuple[str, float]]]]:
+    """quantity -> SYM.window -> [(outcome time, value)] from the desk's own ledgers."""
+    nm = names()
+    hist: dict[str, dict[str, list[tuple[str, float]]]] = {
+        q: defaultdict(list) for q in prediction_accounting.QUANTITIES}
+    for r in _jsonl(EXCURSIONS, 200_000):
+        g, t = nm.group(r.get("sleeve")), str(r.get("exit_time") or "").replace(" ", "T")
+        if not g or not t:
+            continue
+        for q in ("mae_r", "mfe_r"):
+            v = r.get(q)
+            if isinstance(v, (int, float)) and math.isfinite(float(v)):
+                hist[q][g].append((t, float(v)))
+        s, e = _epoch(r.get("entry_time")), _epoch(r.get("exit_time"))
+        if math.isfinite(s) and math.isfinite(e) and e >= s:
+            hist["hold_h"][g].append((t, (e - s) / 3600.0))
+    intents: dict[str, dict[str, Any]] = {}
+    for r in _jsonl(ORDER_INTENTS, 200_000):
+        tk = str(r.get("ticket") or "")
+        if tk and tk != "0":
+            intents[tk] = r
+    for r in live_rows():
+        it = next((intents[str(r.get(k))] for k in ("entry_order", "position_id", "order")
+                   if str(r.get(k) or "") in intents), None)
+        if it is None:
+            continue
+        side = str(it.get("side") or "").lower()
+        sgn = -1.0 if side.startswith("sell") else 1.0
+        t = str(r.get("time") or "")
+        try:
+            want, fill, stop = (float(it["intended"]), float(r["entry_price"]),
+                                float(it["sl"]))
+        except (KeyError, TypeError, ValueError):
+            want = fill = stop = float("nan")
+        if all(math.isfinite(x) for x in (want, fill, stop)) and abs(want - stop) > 0:
+            hist["slip_r"][r["_group"]].append((t, (fill - want) * sgn / abs(want - stop)))
+        # a pending order's intent time is its PLACEMENT, not its fill: only market orders
+        # give a hold time
+        s, e = _epoch(it.get("time")), _epoch(t)
+        if "_" not in side and math.isfinite(s) and math.isfinite(e) and e >= s:
+            hist["hold_h"][r["_group"]].append((t, (e - s) / 3600.0))
+    return {q: dict(v) for q, v in hist.items()}
+
+
+def _quantity_accounting(groups: set[str], horizon: str, cutoff: str) -> dict[str, Any]:
+    """Layer 26: MAE/MFE, hold and slippage forecasts registered before their outcomes and
+    scored beside R, plus the same forecaster's prequential score on the recorded history."""
+    hist = _quantity_history()
+    st = _state("quantity_forecasts")
+    ledger = [prediction_accounting.Forecast(**f) for f in st.get("forecasts") or []]
+    # the live windows, plus any key that recorded an outcome in the last week
+    recent = (NOW - timedelta(days=7)).isoformat()
+    keys = set(groups) | {k for v in hist.values() for k, xs in v.items()
+                          if any(str(t) >= recent for t, _x in xs)}
+    made = prediction_accounting.register_quantities(ledger, hist, sorted(keys),
+                                                     NOW.isoformat(), horizon)
+    reg = prediction_accounting.score_quantities(ledger, hist)
+    preq = prediction_accounting.prequential(hist)
+    _save_state("quantity_forecasts", {"forecasts": [f.__dict__ for f in ledger
+                                                     if f.made_at >= cutoff][-40_000:]})
+    return {"registered_now": made, "registered": reg, "prequential": preq,
+            "outcomes": {q: sum(len(v) for v in hist[q].values()) for q in hist},
+            "scale": {q: ("log1p" if q in prediction_accounting.LOG_QUANTITIES else "raw")
+                      for q in prediction_accounting.QUANTITIES}}
 
 
 def _register_challenger(component: str, name: str, genome: Any,
@@ -3308,13 +3513,113 @@ def epistemic_census(reports: Mapping[str, Any]) -> dict[str, Any]:
                                          source="shadow"))
         else:
             qs.append(epistemic.Quantity(f"forward_edge:{key}", None, n=0, source="shadow"))
-    cen = epistemic.census(qs, {q.name: 0.0 for q in qs if q.name.startswith("forward_edge")})
+    # the contract's metric keeps its definition (the quantities it has always counted), so
+    # adding the certifier's quantities cannot read as a calibration regression
+    cen_contract = epistemic.census(
+        qs, {q.name: 0.0 for q in qs if q.name.startswith("forward_edge")})
+    gate_qs, thr = _certifier_quantities()
+    qs.extend(gate_qs)
+    thr.update({q.name: 0.0 for q in qs if q.name.startswith("forward_edge")})
+    cen = epistemic.census(qs, thr)
     undecided = sum(1 for q in qs if q.name.startswith("forward_edge") and
                     epistemic.decide(q, 0.0) == epistemic.Decision.INSUFFICIENT_EVIDENCE)
-    return {**cen, "forward_edges_undecided": undecided,
+    fams: dict[str, list[epistemic.Quantity]] = defaultdict(list)
+    for q in qs:
+        fams[q.name.split(":")[0]].append(q)
+    by_family = {f: epistemic.census(v, thr) for f, v in sorted(fams.items())}
+    undecided_by = {f: sum(1 for q in v if epistemic.decide(
+        q, thr.get(q.name, 0.0), greater=not f.startswith("pbo"))
+        == epistemic.Decision.INSUFFICIENT_EVIDENCE) for f, v in fams.items()
+        if f in ("dsr_excess", "pbo", "cost_x3", "cost_model")}
+    return {**cen, "forward_edges_undecided": undecided, "by_family": by_family,
+            "certifier_undecided": undecided_by,
             "statement": f"{undecided} certificates' forward edge cannot yet be decided from "
                          "their evidence -- there is not enough evidence to decide them",
-            "metric": {"decidable_share": cen["decidable_share"]}}
+            "metric": {"decidable_share": cen_contract["decidable_share"],
+                       "decidable_share_all": cen["decidable_share"],
+                       **{f"decidable_{f}": by_family[f]["decidable_share"]
+                          for f in ("dsr_excess", "pbo", "cost_x3", "cost_model")
+                          if f in by_family}}}
+
+
+COST_SURFACE = DESK / "data" / "cost_surface.json"
+
+
+def _certifier_quantities() -> tuple[list[epistemic.Quantity], dict[str, float]]:
+    """Layer 37: every certificate's DSR excess, PBO and 3x-cost EV as labelled quantities,
+    plus the cost model's error per live symbol against the measured spread surface."""
+    qs: list[epistemic.Quantity] = []
+    thr: dict[str, float] = {}
+    for key, row in list(survivors().items())[:500]:
+        if not isinstance(row, dict):
+            continue
+        g = row.get("gates") or {}
+        days = row.get("days")
+        sr = (g.get("in_sample_screen") or {}).get("sharpe")
+        ds = g.get("deflated_sharpe") or {}
+        qs.append(epistemic.dsr_quantity(f"dsr_excess:{key}", sr, ds.get("sr0"), days))
+        thr[f"dsr_excess:{key}"] = 0.0
+        pb = g.get("pbo") or {}
+        qs.append(epistemic.pbo_quantity(f"pbo:{key}", pb.get("pbo"),
+                                         (g.get("cpcv") or {}).get("folds") or pb.get("splits")))
+        thr[f"pbo:{key}"] = 0.5
+        qs.append(epistemic.cost_stress_quantity(
+            f"cost_x3:{key}", (g.get("stress_costs") or {}).get("exp_x3"),
+            (g.get("expected_value") or {}).get("ev"), sr, days))
+        thr[f"cost_x3:{key}"] = 0.0
+    surf = ((_read(COST_SURFACE) or {}).get("symbols") or {})
+    seen: set[str] = set()
+    for v in registry().values():
+        if not isinstance(v, dict) or v.get("status") != "LIVE":
+            continue
+        sym = str((v.get("identity") or {}).get("symbol") or "")
+        cf = v.get("cost_fields") or {}
+        if not sym or sym in seen:
+            continue
+        seen.add(sym)
+        s = surf.get(sym) if isinstance(surf, dict) else None
+        name = f"cost_model:{sym}"
+        thr[name] = 0.0
+        if not isinstance(s, dict) or not s.get("tick_size") or not cf.get("contract_oz"):
+            qs.append(epistemic.Quantity(name, None, n=0, source="cost_surface"))
+            continue
+        modelled = float(cf.get("spread_per_lot") or 0.0) / float(cf["contract_oz"]) / float(
+            s["tick_size"])
+        measured = [float(h["p50"]) for h in (s.get("hours") or {}).values()
+                    if isinstance(h, dict) and h.get("status") == "MEASURED" and h.get("p50")]
+        qs.append(epistemic.cost_model_quantity(name, measured, modelled))
+    return qs, thr
+
+
+RESEARCH_QUEUE = DESK / "data" / "research_queue.json"
+#: the window the gate's verdict rate and the compute ledger's timeouts are read over
+SELF_FACT_WINDOW = timedelta(days=7)
+
+
+def _operational_self_facts() -> dict[str, Any]:
+    """Layer 29's three missing inventory inputs, read from the artifacts that own them."""
+    since = NOW - SELF_FACT_WINDOW
+    q = _read(RESEARCH_QUEUE)
+    status: dict[str, int] | None = None
+    oldest: float | None = None
+    if isinstance(q, list):
+        status = dict(Counter(str(r.get("status") or "?") for r in q if isinstance(r, dict)))
+        ages = [replay.parse_t(r.get("created_at")) for r in q if isinstance(r, dict)
+                and str(r.get("status")) in self_model.GATE_WAITING]
+        ages = [a for a in ages if a is not None]
+        oldest = round((NOW - min(ages)).total_seconds() / 3600.0, 1) if ages else None
+    # the gate's measured rate: verdicts it recorded over the window (none recorded while a
+    # ledger exists is a rate of zero; no ledger at all is UNMEASURED)
+    rate: float | None = None
+    if GATE_LEDGER.exists():
+        ts_ = [replay.parse_t(r.get("at") or r.get("judged_at") or r.get("time"))
+               for r in _jsonl(GATE_LEDGER, 400_000)]
+        n_recent = sum(1 for t in ts_ if t is not None and t >= since)
+        rate = round(n_recent / (SELF_FACT_WINDOW.total_seconds() / 3600.0), 3)
+    comp = [r for r in _jsonl(COMPUTE, 200_000)
+            if (replay.parse_t(r.get("at")) or NOW) >= since] if COMPUTE.exists() else None
+    return {"queue_status": status, "oldest_waiting_h": oldest, "verdicts_per_h": rate,
+            "compute": comp, "allocation": _first(PF_ALLOCATION)}
 
 
 def organ_self_model(reports: dict[str, Any]) -> dict[str, Any]:
@@ -3322,7 +3627,8 @@ def organ_self_model(reports: dict[str, Any]) -> dict[str, Any]:
     st = _state("self_model")
     prev = st.get("scorecard") or {}
     reg = self_model.regression(prev, card)
-    defs = self_model.rank(self_model.inventory(reports))
+    ops_rows, ops_facts = self_model.operational_inventory(**_operational_self_facts())
+    defs = self_model.rank(self_model.inventory(reports) + ops_rows)
     best = st.get("best") or {}
     for k, better in self_model.SEALED_METRICS.items():
         v = card.get(k)
@@ -3338,6 +3644,7 @@ def organ_self_model(reports: dict[str, Any]) -> dict[str, Any]:
     _write(STATE / "SELF_MODEL_DOCKET.json", {"generated_utc": NOW.isoformat(),
                                                "tasks": docket})
     return {"scorecard": card, "best_ever": best, "regression": reg,
+            "operations": ops_facts,
             "largest_deficiency": defs[0] if defs else None, "deficiencies": defs[:25],
             "metric": {"top_expected_improvement": defs[0]["expected_improvement"] if defs
                        else None, "regressed": len(reg["regressed"])}}

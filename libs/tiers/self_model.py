@@ -121,6 +121,121 @@ def inventory(reports: Mapping[str, Mapping[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+#: research-queue statuses that are WAITING for the gate (anything else has been judged/closed)
+GATE_WAITING: frozenset[str] = frozenset({"QUEUED_CANONICAL_GAUNTLET", "PENDING", "QUEUED"})
+#: a backlog that takes this many hours to drain at the measured verdict rate is a full gap
+BACKLOG_FULL_GAP_H = 168.0
+#: allocator bindings that hold the book BELOW what it solved for (the free optimum)
+BELOW_OPTIMUM_BINDINGS: frozenset[str] = frozenset({"cap", "ceiling", "ruin_guard",
+                                                     "measurement_edge", "survival"})
+
+
+def operational_inventory(*, queue_status: Mapping[str, int] | None,
+                          oldest_waiting_h: float | None,
+                          verdicts_per_h: float | None,
+                          compute: Sequence[Mapping[str, Any]] | None,
+                          allocation: Mapping[str, Any] | None) -> tuple[list[dict[str, Any]],
+                                                                         dict[str, Any]]:
+    """The three self-facts the organ reports never carried, as deficiency rows (same shape as
+    `inventory`) plus the measurements behind them. Each is UNMEASURED (half weight) when its
+    artifact is absent -- never a zero.
+
+      gate backlog      cells waiting for the gauntlet / cells it has cleared per hour = hours
+                        to drain; gap = drain hours / BACKLOG_FULL_GAP_H (capped at 1)
+      compute timeouts  the share of recorded leg runs that ended in a timeout or were
+                        interrupted -- each is compute spent with no verdict
+      allocator binding the constraint that bound the allocator's book and the growth it left
+                        on the table: (free optimum - deployed) / free optimum when the binding
+                        is one that holds the book below its own solve; the fact, never a
+                        recommendation to loosen anything (sizing is outside this organ)."""
+    rows: list[dict[str, Any]] = []
+    facts: dict[str, Any] = {}
+
+    def add(area: str, gap: float | None, gain: str, why: str, p_fix: float = 0.5,
+            cost: float = 1.0) -> None:
+        if gap is None:
+            gap, why = 0.5, why + " (UNMEASURED: counted at half weight, never as zero)"
+        rows.append({"area": area, "gap": round(max(0.0, min(1.0, float(gap))), 4),
+                     "gain": gain, "p_fix": p_fix, "cost": cost, "why": why})
+
+    # gate backlog
+    if queue_status is None:
+        facts["gate_backlog"] = {"status": "UNMEASURED", "why": "no research queue"}
+        add("throughput.gate_backlog", None, "PRODUCTIVITY", "cells waiting for the gauntlet")
+    else:
+        waiting = sum(int(v) for k, v in queue_status.items() if k in GATE_WAITING)
+        drain_h = (waiting / verdicts_per_h) if verdicts_per_h and verdicts_per_h > 0 else None
+        facts["gate_backlog"] = {"status": "MEASURED", "waiting": waiting,
+                                 "by_status": dict(queue_status),
+                                 "verdicts_per_h": verdicts_per_h, "drain_h": drain_h,
+                                 "oldest_waiting_h": oldest_waiting_h}
+        if waiting == 0:
+            gap: float | None = 0.0
+        elif drain_h is None:
+            gap = 1.0 if verdicts_per_h == 0 else None       # a gate that clears nothing
+        else:
+            gap = drain_h / BACKLOG_FULL_GAP_H
+        add("throughput.gate_backlog", gap, "PRODUCTIVITY",
+            f"{waiting} cells wait for the gauntlet at {verdicts_per_h} verdicts/h "
+            f"(drain {'unknown' if drain_h is None else f'{drain_h:.0f}h'}, oldest "
+            f"{'unknown' if oldest_waiting_h is None else f'{oldest_waiting_h:.0f}h'})",
+            p_fix=0.6)
+    # compute timeouts
+    if not compute:
+        facts["compute_timeouts"] = {"status": "UNMEASURED", "why": "no compute ledger rows"}
+        add("compute.timeouts", None, "INFO_PER_COMPUTE", "leg runs that time out")
+    else:
+        def bad(o: str) -> bool:
+            low = o.lower()
+            return "timeout" in low or "timed out" in low or low == "interrupted"
+        outs = [str(r.get("outcome") or "") for r in compute]
+        by_run: dict[str, int] = {}
+        wasted = 0.0
+        for r, o in zip(compute, outs, strict=True):
+            if bad(o):
+                by_run[str(r.get("run") or "?")] = by_run.get(str(r.get("run") or "?"), 0) + 1
+                wasted += float(r.get("wall_s") or 0.0)
+        n_bad = sum(by_run.values())
+        facts["compute_timeouts"] = {"status": "MEASURED", "runs": len(outs),
+                                     "timeouts": n_bad, "wasted_wall_s": round(wasted, 1),
+                                     "by_run": dict(sorted(by_run.items(),
+                                                           key=lambda kv: -kv[1])[:15])}
+        add("compute.timeouts", n_bad / len(outs), "INFO_PER_COMPUTE",
+            f"{n_bad} of {len(outs)} recorded leg runs timed out or were interrupted "
+            f"({wasted:.0f}s of wall time with no verdict); worst "
+            f"{', '.join(list(facts['compute_timeouts']['by_run'])[:3]) or 'none'}", p_fix=0.7)
+    # allocator binding constraints
+    heat = (allocation or {}).get("heat") if isinstance(allocation, Mapping) else None
+    if not isinstance(heat, Mapping):
+        facts["allocator_binding"] = {"status": "UNMEASURED", "why": "no allocator artifact"}
+        add("allocator.binding", None, "ALPHA_DISCOVERY", "the allocator's binding constraint")
+    else:
+        binding = str(heat.get("binding") or "")
+        held = bool(heat.get("held"))
+        free = heat.get("free_optimum")
+        total = heat.get("total")
+        facts["allocator_binding"] = {
+            "status": "MEASURED", "binding": binding or None, "held_book": held,
+            "free_optimum": free, "deployed": total, "resolved": heat.get("resolved"),
+            "shortfall": heat.get("shortfall"),
+            "operative_ceiling": (heat.get("envelope") or {}).get("operative_ceiling")
+            if isinstance(heat.get("envelope"), Mapping) else None}
+        try:
+            fo, tt = float(free), float(total)  # type: ignore[arg-type]
+            left = max(0.0, fo - tt) / fo if fo > 0 else 0.0
+        except (TypeError, ValueError):
+            left = None
+        gap_a = (left if left is not None and (binding in BELOW_OPTIMUM_BINDINGS or held)
+                 else (0.0 if left is not None else None))
+        facts["allocator_binding"]["growth_left_share"] = None if left is None else round(
+            left, 4)
+        add("allocator.binding", gap_a, "ALPHA_DISCOVERY",
+            f"the book is bound by '{binding or 'nothing'}'{' (held book)' if held else ''}: "
+            f"deployed {total} of a free optimum {free} -- more independent positive-Elog "
+            "sleeves inside the same heat is what moves this", p_fix=0.3)
+    return rows, facts
+
+
 def rank(deficiencies: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for d in deficiencies:

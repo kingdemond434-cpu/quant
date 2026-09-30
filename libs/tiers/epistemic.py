@@ -147,3 +147,75 @@ def census(quantities: list[Quantity], thresholds: dict[str, float] | None = Non
     decided = counts["KNOWN"] + counts["ESTIMATED"]
     return {"n": total, "by_label": counts,
             "decidable_share": (decided / total) if total else None}
+
+
+# ------------------------------------------------------------------------------------------------
+# THE CERTIFIER'S OWN NUMBERS AS QUANTITIES (2026-09-30): DSR, PBO and the cost model.
+# A certificate's deflated Sharpe, its probability of backtest overfitting and its cost stress
+# are published as pass/fail. Each is an ESTIMATE with an interval, and the census labels it by
+# that interval exactly as it labels a forward edge.
+# ------------------------------------------------------------------------------------------------
+
+Z95 = 1.959964
+
+
+def _num(x: Any) -> float | None:
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return v if math.isfinite(v) else None
+
+
+def dsr_quantity(name: str, sharpe: Any, sr0: Any, n_obs: Any, *, source: str = "gate"
+                 ) -> Quantity:
+    """The Sharpe in excess of the deflated bar (SR - SR0; the DSR is Phi of its z), with the
+    Lo (2002) normal-approximation interval se = sqrt((1 + SR^2 / 2) / (T - 1)). Decision
+    threshold 0. n_required is the minimum track record length at which that interval would
+    exclude 0 -- the number of observations the desk must reach to decide it."""
+    sr, s0, t = _num(sharpe), _num(sr0), _num(n_obs)
+    if sr is None or s0 is None or t is None or t < 2:
+        return Quantity(name, None, n=0, source=source)
+    se = math.sqrt((1.0 + 0.5 * sr * sr) / (t - 1.0))
+    ex = sr - s0
+    need = None if ex == 0 else 1.0 + (1.0 + 0.5 * sr * sr) * (Z95 / ex) ** 2
+    return Quantity(name, ex, ex - Z95 * se, ex + Z95 * se, n=int(t), source=source,
+                    n_required=need, notes=("SR - SR0 per period; se Lo (2002)",))
+
+
+def pbo_quantity(name: str, pbo: Any, splits: Any, *, source: str = "gate") -> Quantity:
+    """PBO as a rate with a Wilson interval over the number of CSCV splits -- the combinations
+    share blocks, so the SPLIT count, not the combination count, is the effective sample.
+    Decision threshold 0.5 (below: not overfit)."""
+    p, s = _num(pbo), _num(splits)
+    if p is None or s is None or s < 1:
+        return Quantity(name, None, n=0, source=source)
+    q = beta_quantity(name, round(max(0.0, min(1.0, p)) * s), int(s), source=source)
+    return Quantity(name, p, q.lo, q.hi, n=int(s), source=source,
+                    notes=("Wilson over CSCV splits",))
+
+
+def cost_stress_quantity(name: str, ev_stressed: Any, ev: Any, sharpe: Any, n_obs: Any, *,
+                         source: str = "gate") -> Quantity:
+    """The expected value per trade at 3x costs, with the se the certificate's own signal-to-
+    noise implies: se(EV) = |EV| / (|SR| sqrt(T)) (the EV's t-statistic taken as the Sharpe's).
+    Threshold 0: does the edge survive tripled costs? No usable Sharpe: no interval (WEAK)."""
+    x, e, sr, t = _num(ev_stressed), _num(ev), _num(sharpe), _num(n_obs)
+    if x is None or t is None or t < 1:
+        return Quantity(name, None, n=0, source=source)
+    if e is None or sr is None or sr == 0:
+        return Quantity(name, x, n=int(t), source=source, notes=("no interval",))
+    se = abs(e) / (abs(sr) * math.sqrt(t))
+    return Quantity(name, x, x - Z95 * se, x + Z95 * se, n=int(t), source=source,
+                    notes=("se from the certificate's Sharpe",))
+
+
+def cost_model_quantity(name: str, measured: list[float], modelled: Any, *,
+                        source: str = "cost_surface") -> Quantity:
+    """log(measured spread / modelled spread) over the hours the surface measured: 0 is a
+    correct cost model, > 0 the model undercharges, < 0 it overcharges. Threshold 0."""
+    m = _num(modelled)
+    xs = [math.log(v / m) for v in measured if m and m > 0 and v and v > 0]
+    q = mean_quantity(name, xs, source=source)
+    return Quantity(q.name, q.value, q.lo, q.hi, n=q.n, source=source,
+                    notes=("log(measured / modelled spread) per measured hour",))

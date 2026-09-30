@@ -195,3 +195,168 @@ def effective_discoveries(nov: Mapping[str, float]) -> dict[str, Any]:
     n = len(nov)
     s = float(sum(nov.values()))
     return {"n_nodes": n, "effective": round(s, 3), "ratio": (s / n) if n else None}
+
+
+# ------------------------------------------------------------------------------------------------
+# TRADE-OVERLAP AND EXPOSURE SIMULATIONS (layer 15's remaining half, 2026-09-30)
+#
+# The descriptor rank is computable before a return exists and the live-P&L rank waits on fills.
+# Between them sit two readings the desk can take NOW from what it already holds:
+#
+#   trade_overlap   the recorded trades (shadow excursions + live fills joined to the order that
+#                   opened them) as signed exposure on CURRENCY LEGS per UTC hour. Two sleeves
+#                   are as dependent as the exposure they held at the same time on the same legs:
+#                   |sum over shared hours of side_i * side_j * cos(legs_i, legs_j)| / sqrt(|A||B|)
+#                   -- long EURUSD and short USDCHF in the same hour are ONE bet on the dollar.
+#   exposure_sim    every registered sleeve replayed on the desk's own H1 bars as the exposure its
+#                   identity declares (symbol, direction, the UTC hours of its window); the
+#                   simulated hourly P&L panel is ranked under every concept rank_report knows
+#                   (linear, rank, tail, drawdown). It needs no fill and no forward clock.
+# ------------------------------------------------------------------------------------------------
+
+#: codes read as currency legs; anything else is its own leg (an index, a share, an energy CFD)
+LEG_CODES: frozenset[str] = frozenset({
+    "USD", "EUR", "GBP", "JPY", "CHF", "AUD", "NZD", "CAD", "ZAR", "NOK", "SEK", "DKK", "MXN",
+    "SGD", "HKD", "TRY", "PLN", "HUF", "CZK", "CNH", "ILS", "THB", "XAU", "XAG", "XPT", "XPD",
+    "BTC", "ETH", "LTC", "XRP", "SOL", "ADA", "DOT", "BCH"})
+
+
+def legs(symbol: str) -> dict[str, float]:
+    """Signed unit exposure per leg of one long unit of `symbol`: EURUSD -> {EUR: +1, USD: -1}."""
+    s = "".join(ch for ch in str(symbol).upper().split(".")[0] if ch.isalnum())
+    if len(s) >= 6 and s[:3] in LEG_CODES and s[3:6] in LEG_CODES and s[:3] != s[3:6]:
+        return {s[:3]: 1.0, s[3:6]: -1.0}
+    return {s or "?": 1.0}
+
+
+def leg_cosine(a: str, b: str) -> float:
+    la, lb = legs(a), legs(b)
+    dot = sum(v * lb.get(k, 0.0) for k, v in la.items())
+    na = math.sqrt(sum(v * v for v in la.values()))
+    nb = math.sqrt(sum(v * v for v in lb.values()))
+    return dot / (na * nb) if na > 0 and nb > 0 else 0.0
+
+
+#: (start epoch s, end epoch s, side +-1, symbol)
+Trade = tuple[float, float, float, str]
+
+#: one trade occupies at most this many hours (a stuck record must not own the whole clock)
+MAX_TRADE_HOURS = 24 * 14
+
+
+def _hour_side(trades: Sequence[Trade]) -> dict[int, list[tuple[float, str]]]:
+    out: dict[int, list[tuple[float, str]]] = {}
+    for start, end, side, sym in trades:
+        if not (math.isfinite(start) and math.isfinite(end)) or end < start or side == 0:
+            continue
+        h0, h1 = int(start // 3600), int(end // 3600)
+        for h in range(h0, min(h1, h0 + MAX_TRADE_HOURS) + 1):
+            out.setdefault(h, []).append((float(np.sign(side)), str(sym)))
+    return out
+
+
+def trade_overlap(trades_by: Mapping[str, Sequence[Trade]], min_trades: int = 3
+                  ) -> dict[str, Any]:
+    """Signed leg co-exposure and plain co-occupancy of recorded trades, with their ranks.
+    `names` / `similarity` are returned for the caller to combine; they are not JSON."""
+    names = sorted(k for k, v in trades_by.items() if len(v) >= min_trades)
+    n = len(names)
+    if n < 2:
+        return {"status": "UNMEASURED", "n_sleeves": n,
+                "why": f"{n} sleeve(s) with >= {min_trades} recorded trades"}
+    hs = [_hour_side(trades_by[k]) for k in names]
+    exp = np.eye(n)
+    occ = np.eye(n)
+    for i in range(n):
+        for j in range(i + 1, n):
+            shared = set(hs[i]) & set(hs[j])
+            den = math.sqrt(len(hs[i]) * len(hs[j]))
+            if not shared or den <= 0:
+                continue
+            tot = 0.0
+            for h in shared:
+                for si, ai in hs[i][h]:
+                    for sj, aj in hs[j][h]:
+                        tot += si * sj * leg_cosine(ai, aj)
+            exp[i, j] = exp[j, i] = min(1.0, abs(tot) / den)
+            occ[i, j] = occ[j, i] = min(1.0, len(shared) / den)
+    uniq = 1.0 - np.max(exp - np.eye(n), axis=1)
+    pairs = sorted(({"a": names[i], "b": names[j], "overlap": round(float(exp[i, j]), 4)}
+                    for i in range(n) for j in range(i + 1, n) if exp[i, j] > 0),
+                   key=lambda r: -float(r["overlap"]))  # type: ignore[arg-type]
+    return {"status": "MEASURED", "n_sleeves": n,
+            "n_trades": int(sum(len(trades_by[k]) for k in names)),
+            "trade_overlap": round(participation_ratio(exp), 4),
+            "co_occupancy": round(participation_ratio(occ), 4),
+            "uniqueness": {names[i]: round(float(uniq[i]), 4) for i in range(n)},
+            "most_overlapped": pairs[:10], "names": names, "similarity": exp}
+
+
+def simulate_exposure(sleeves: Sequence[Mapping[str, Any]], returns: Mapping[str, Any],
+                      session_hours: Mapping[str, Sequence[int]]) -> tuple[list[str], F]:
+    """(names, T x N simulated hourly P&L). `sleeves`: {name, symbol, direction, selector};
+    `returns`: symbol -> pandas Series of H1 log returns on a UTC DatetimeIndex. A sleeve is
+    exposed at its direction's sign in its window's UTC hours ('continuous'/'all': every hour);
+    a window the desk cannot place in hours is LEFT OUT, never guessed as always-on."""
+    import pandas as pd
+    cols: dict[str, Any] = {}
+    for s in sleeves:
+        r = returns.get(str(s.get("symbol")))
+        if r is None or len(r) == 0:
+            continue
+        sel = str(s.get("selector") or "").lower()
+        hours: list[int] | None
+        if sel in ("continuous", "all"):
+            hours = None
+        elif sel in session_hours:
+            hours = sorted({int(h) for h in session_hours[sel]})
+        else:
+            continue
+        sign = -1.0 if str(s.get("direction") or "").upper() in ("SHORT", "SELL", "-1") else 1.0
+        mask = (np.ones(len(r), dtype=bool) if hours is None
+                else np.isin(np.asarray(r.index.hour), hours))
+        cols[str(s["name"])] = pd.Series(np.where(mask, sign * r.to_numpy(dtype=float), 0.0),
+                                         index=r.index)
+    if len(cols) < 2:
+        return list(cols), np.zeros((0, len(cols)))
+    df = pd.DataFrame(cols).fillna(0.0)
+    df = df.loc[(df != 0.0).any(axis=1)]
+    return [str(c) for c in df.columns], df.to_numpy(dtype=float)
+
+
+def pnl_similarity(pnl: F) -> F:
+    """The elementwise max of the four return-based similarities rank_report reads."""
+    x = np.nan_to_num(pnl.astype(float))
+    out: F = np.maximum.reduce([np.abs(_corr(x)), np.abs(_corr(_rank(x))), tail_similarity(x),
+                                drawdown_similarity(x)])
+    return out
+
+
+def combined_with(rank: Mapping[str, Any], names: Sequence[str],
+                  descriptors: Sequence[Mapping[str, Any]] | None,
+                  extra: Mapping[str, tuple[Sequence[str], F]]) -> dict[str, Any]:
+    """The conservative combination over the registry's sleeves once the simulated readings
+    are added: each extra similarity (on its own subset of names) is lifted onto the full name
+    list -- a sleeve it could not read keeps the identity row there, i.e. contributes no
+    dependence it did not measure -- and the elementwise max is taken with the descriptor
+    similarity. `rank` is the descriptor/P&L report this refines; it is not modified."""
+    n = len(names)
+    idx = {k: i for i, k in enumerate(names)}
+    mats: list[F] = []
+    if descriptors is not None and len(descriptors) == n:
+        mats.append(descriptor_similarity(descriptors))
+    used: dict[str, int] = {}
+    for label, (sub, sim) in extra.items():
+        full = np.eye(n)
+        pos = [(a, idx[k]) for a, k in enumerate(sub) if k in idx]
+        for a, i in pos:
+            for b, j in pos:
+                if i != j:
+                    full[i, j] = max(full[i, j], float(sim[a, b]))
+        used[label] = len(pos)
+        mats.append(full)
+    if not mats:
+        return {"combined": None, "why": "no similarity to combine"}
+    comb = np.maximum.reduce(mats)
+    return {"combined": round(participation_ratio(comb), 4),
+            "descriptor_only": rank.get("combined"), "readings": used, "n_sleeves": n}
