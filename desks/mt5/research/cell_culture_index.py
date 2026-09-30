@@ -114,11 +114,15 @@ def _atomic(path: Path, doc: Any) -> None:
     os.replace(tmp, path)
 
 
-def _head_sig(path: Path) -> str:
-    """A fingerprint of the file's first 4 KiB: a replaced log is a different log."""
+HEAD_BYTES = 4096
+
+
+def _head_sig(path: Path, n: int = HEAD_BYTES) -> str:
+    """A fingerprint of the file's first ``n`` bytes: a replaced log is a different log. Only
+    bytes already consumed are fingerprinted, so an append never looks like a replacement."""
     try:
         with path.open("rb") as fh:
-            return hashlib.sha256(fh.read(4096)).hexdigest()[:16]
+            return hashlib.sha256(fh.read(max(0, n))).hexdigest()[:16]
     except OSError:
         return ""
 
@@ -284,11 +288,11 @@ def scan_graph(p: Pass, deadline: float, path: Path = GRAPH) -> dict[str, Any]:
     except OSError:
         note["status"] = "ABSENT"
         return note
-    head = _head_sig(path)
-    if st.get("head") and (st["head"] != head or size < int(st.get("offset") or 0)):
+    prev = int(st.get("offset") or 0)
+    head_n = int(st.get("head_n") or 0)
+    if st.get("head") and (size < prev or st["head"] != _head_sig(path, head_n)):
         note["reset"] = "the graph was replaced or shrank: aggregates restart from line one"
         st.update({"offset": 0, "agg": _blank_agg()})
-    st["head"] = head
     agg = st["agg"]
     offset = int(st.get("offset") or 0)
     lines = 0
@@ -321,6 +325,8 @@ def scan_graph(p: Pass, deadline: float, path: Path = GRAPH) -> dict[str, Any]:
                 p.write_index(_index_row(str(row.get("id") or ""), "graph", row, fields,
                                          fate=fate or "BORN"))
     st["offset"] = offset
+    st["head_n"] = min(offset, HEAD_BYTES)
+    st["head"] = _head_sig(path, st["head_n"])
     note.update({"status": "READ", "lines_this_pass": lines, "offset": offset, "size": size,
                  "complete": offset >= size})
     return note
@@ -594,6 +600,18 @@ def _source_fields(p: Pass, row: dict[str, Any]) -> dict[str, Any] | None:
     return fields if CC.is_source_derived(fields[CC.DERIVATION_FIELD]) else None
 
 
+def _lineage_ids(t: dict[str, Any]) -> list[str]:
+    """The ids a docket row may carry for this target: the certificate's own cell id and the
+    gauntlet's executable id of its spec (`SYM.family.p=<hash>`), which a hash-less
+    certificate key does not spell."""
+    out = [str(t["cell_id"])]
+    fid = frontier_cell_id({"symbol": t.get("symbol"), "family": t.get("family"),
+                            "params": t.get("params") or {}, "timeframe": t.get("timeframe")})
+    if fid and fid not in out:
+        out.append(fid)
+    return out
+
+
 def resolve(p: Pass, t: dict[str, Any], lin: Lineage, registry: Path = REGISTRY
             ) -> tuple[dict[str, Any], list[str], str]:
     """(fields, lineage hops, reason) for one survivor / live / forward cell.
@@ -607,7 +625,8 @@ def resolve(p: Pass, t: dict[str, Any], lin: Lineage, registry: Path = REGISTRY
     got = _source_fields(p, own)
     if got is not None:
         return got, ["own row"], ""
-    for row in lin.docket_by_cell.get(t["cell_id"], []):
+    rows = [r for c in _lineage_ids(t) for r in lin.docket_by_cell.get(c, [])]
+    for row in rows:
         hops.append(f"docket:{row.get('source')}")
         got = _source_fields(p, row)
         if got is not None:
@@ -950,7 +969,7 @@ def run(budget_s: float = 240.0, *, graph: Path = GRAPH, docket: Path = DOCKET,
     try:
         # TIERS (a) AND (b) FIRST, IN FULL: the certificates, then LIVE and forward-clock cells.
         tgts = targets(certificates, sleeves, shadow_dir)
-        want = {t["cell_id"] for t in tgts}
+        want = {c for t in tgts for c in _lineage_ids(t)}
         # the docket is read before the backlog because it IS the lineage of (a) and (b)
         d_agg, d_note = scan_docket(p, docket, lineage=lin, want=want)
         lin.walk_donations(t0 + max(5.0, (budget_s - WRITE_RESERVE_S) / 3), donations)

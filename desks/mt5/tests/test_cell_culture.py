@@ -63,7 +63,9 @@ def test_symbol_home_is_the_weakest_rule_and_always_named() -> None:
 @pytest.mark.parametrize(("row", "culture", "rule"), [
     ({"source_id": "pack:ru:official:ru_cbr"}, "RU/ru", "inferred:ground_position"),
     ({"source": "miner:asia:safe_fx_settlement"}, "CN/zh", "inferred:asia_sources"),
-    ({"source_url": "https://www.boj.or.jp/en/stat"}, "JP/en", "inferred:url_tld"),
+    ({"source_url": "https://www.boj.or.jp/statistics/index.htm"}, "JP/ja",
+     "inferred:deep_forest_host"),
+    ({"source_url": "https://unregistered-example.co.jp/stat"}, "JP/ja", "inferred:url_tld"),
     ({"claim": "Банк России держит ставку"}, "RU/ru", "inferred:script_cyrillic"),
     ({"claim": "日銀の介入でドル円が反落"}, "JP/ja", "inferred:script_kana"),
     ({"claim": "央行中间价连续走强"}, "CN/zh", "inferred:script_han"),
