@@ -900,6 +900,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # tracker, which reads it.
     "live_calibration_posterior", "constrained_book", "experimental_budget",
     "ops_redundancy", "forward_evidence_tracker",
+    # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
+    # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
+    "kelly_survival",
 })
 
 
@@ -5171,6 +5174,12 @@ def main() -> None:
         "live_calibration_posterior", "research/live_calibration_posterior.py"))
     cbk = _costed("constrained_book", lambda: _producer(
         "constrained_book", "research/constrained_book.py"))
+    # MAXIMUM AGGRESSION INSIDE SURVIVAL (principal 2026-09-30): per gold window, the Fusion lot
+    # and the E8 risk fraction with the highest ruin-counted growth (Fusion) or fastest pass (E8)
+    # whose P(death) stays under EPS_STOP. Read by prop/e8_gold.py; absent or stale -> today's
+    # sizing, unchanged.
+    kls = _costed("kelly_survival", lambda: _producer(
+        "kelly_survival", "research/kelly_survival.py"))
     xbg = _costed("experimental_budget", lambda: _producer(
         "experimental_budget", "research/experimental_budget.py"))
     opr = _costed("ops_redundancy", lambda: _producer(
@@ -5388,6 +5397,7 @@ def main() -> None:
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
+                    "kelly_survival": kls,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,

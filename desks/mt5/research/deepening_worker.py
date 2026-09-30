@@ -515,6 +515,32 @@ def validate_expression(found: dict, universe: set[str]) -> tuple[dict, str]:
             "evidence": f"generated: {mechanism} [{ag.to_str(expr)}]"}, ""
 
 
+#: THE COMPLETION CAP, AND IT WAS THROWING AWAY HALF THE DAY'S SEAT CALLS (measured 2026-09-25).
+#:
+#: This was 700. A/B on twelve real queue rows, same prompts, same model, only the cap varying --
+#: and `response_format: json_object` crossed with it to separate "the model will not emit JSON"
+#: from "the model was cut off before it finished emitting JSON":
+#:
+#:     max_tokens=700,  no response_format    6/12 parsed   (50%)
+#:     max_tokens=700,  response_format json  7/12 parsed   (58%)
+#:     max_tokens=3000, no response_format   12/12 parsed  (100%)
+#:     max_tokens=3000, response_format json 12/12 parsed  (100%)
+#:
+#: THE CAUSE IS TRUNCATION, NOT COMPLIANCE. Structured output barely moves it (+8pp) while the
+#: cap moves it to perfect. The seat asks for `reasoning_effort: high` and OpenAI-compatible
+#: endpoints charge reasoning tokens against the completion cap, so a reasoning model spends the
+#: allowance thinking and is cut off mid-object; `_parse` then finds no closing brace and the
+#: caller records "reply was not a JSON object" -- which reads like a model that refused.
+#: Measured live the day before: 456 of 789 completed calls (58%) died exactly that way, the
+#: single largest loss in the lane.
+#:
+#: IT COSTS NOTHING. The free tier is capped in REQUESTS PER DAY, not tokens (see
+#: `llm_seat.provider_free_quota`), so the same thousand requests simply come back usable. This
+#: is the cheapest capacity on the desk: no purchase, no permission, no gate touched -- the
+#: recovered rows face the identical ten gates they always did.
+EXTRACT_MAX_TOKENS = int(os.environ.get("DEEPEN_EXTRACT_MAX_TOKENS", "3000"))
+
+
 def extract(task: dict, *, chat=None) -> tuple[dict, str]:
     """Ask the seat what the row's own text states. ({}, reason) on any doubt."""
     if chat is None:
@@ -524,7 +550,8 @@ def extract(task: dict, *, chat=None) -> tuple[dict, str]:
     kind = str(task.get("kind") or "")
     system = _SYSTEM_BY_KIND.get(kind, _SYSTEM)
     contract = _CONTRACT_EXPR if kind == "alpha_expression" else _CONTRACT
-    reply, err = chat(f"{text}\n\n{contract}", system=system, max_tokens=700, temperature=0.0)
+    reply, err = chat(f"{text}\n\n{contract}", system=system, max_tokens=EXTRACT_MAX_TOKENS,
+                      temperature=0.0)
     if err:
         return {}, f"seat error: {err}"
     found = _parse(reply)
