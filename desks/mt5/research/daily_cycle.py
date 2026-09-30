@@ -595,6 +595,24 @@ def _zentech() -> None:
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
+def _control_room_module(name: str) -> object:
+    """Each control-room organ by an explicit import, so the component registry sees this step
+    as the clock that fires it (a name passed to `__import__` is invisible to it)."""
+    if name == "control_room":
+        import control_room as mod
+    elif name == "regime_allocation_contract":
+        import regime_allocation_contract as mod
+    elif name == "control_room_mechanisms":
+        import control_room_mechanisms as mod
+    elif name == "bench_bridge":
+        import bench_bridge as mod
+    elif name == "practitioner_processes":
+        import practitioner_processes as mod
+    else:
+        raise ModuleNotFoundError(name)
+    return mod
+
+
 def _control_room() -> None:
     """THE LIVE CONTROL ROOM (2026-09-30): regime now, its admission contract, the bench bridge.
 
@@ -626,8 +644,7 @@ def _control_room() -> None:
         jobs.insert(1, ("regime_allocation_contract", ["--worlds", "256", "--rows", "384"]))
     for name, args in jobs:
         try:
-            mod = __import__(name)
-            rc = mod.main(args)
+            rc = _control_room_module(name).main(args)  # type: ignore[attr-defined]
             dlog(f"{name}: rc={rc}")
         except Exception as exc:
             failed.append(name)
