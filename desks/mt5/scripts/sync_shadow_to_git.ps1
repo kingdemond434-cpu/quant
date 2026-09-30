@@ -468,7 +468,11 @@ $relPaths = @(
     "desks/mt5/data/decision_ledger.jsonl",
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
-    "desks/mt5/reports/attribution_chain.json"
+    "desks/mt5/reports/attribution_chain.json",
+    # THE SEAL THE BOX RUNS (2026-09-30). Adopt-And-Seal commits RELEASE.json locally on every
+    # seal, but it was never on this list, so origin's copy stayed at 2026-09-15 while the box
+    # re-sealed daily: no reader off the box could tell which release the gateway was running.
+    "desks/mt5/data/RELEASE.json"
 )
 # THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
 # breadth review all read these from the branch, and none had ever been committed from the box:
