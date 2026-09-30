@@ -230,7 +230,7 @@ def test_every_country_pack_carries_the_common_schema() -> None:
         assert set(fp["classes"]) == set(onto.CLASS_IDS), code
         assert set(fp["roles"]) == set(onto.JURISDICTION_ROLES), code
     us = importlib.import_module("research.countries.us.pack").INSTITUTIONAL_FOOTPRINT
-    assert "institutional.us.cftc.cot_tff" in us["sources"]
+    assert "pack_us_us_cftc_cot" in us["sources"]
 
 
 def test_regimes_react_to_crossings_not_drift() -> None:

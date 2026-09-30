@@ -69,13 +69,36 @@ SEARCH_QUEUE = STATE_DIR / "search_queue.json"
 
 LEG = "institutional_footprint"
 STATE_SERIES_PREFIX = "institutional_state"
-#: The charts and transforms a state conditioner is asked on -- the same set pack_cells mints.
+#: The charts a conditioner is asked on -- the same set pack_cells mints.
 CHARTS: tuple[str, ...] = ("H1", "H4", "D1")
-TRANSFORMS: tuple[str, ...] = ("level_z", "delta")
-SIDES: tuple[int, ...] = (1, -1)
+#: (transform, threshold) per cell kind, each threshold IN THE UNITS THE FAMILY READS. A state is a
+#: probability, so its `delta` extreme is a move of STATE_DELTA_THRESHOLD in p (the family's 1.0
+#: default is a move no probability can make: every such cell was dead on arrival, audit
+#: 2026-09-30). A raw series carries arbitrary units, so it is read as `delta_z`, never `delta`.
+STATE_DELTA_THRESHOLD = 0.10
+TRANSFORMS_STATE: tuple[tuple[str, float], ...] = (("level_z", 1.0),
+                                                   ("delta", STATE_DELTA_THRESHOLD))
+TRANSFORMS_RAW: tuple[tuple[str, float], ...] = (("level_z", 1.0), ("delta_z", 1.0))
+#: ONE side per cell. The family is symmetric (side_when_high when high, its negation when low),
+#: so +1 and -1 are the same bet mirrored and minting both charged every trial twice. The side is
+#: LEARNED on the first TRAIN_FRACTION of the joint history and stated in the mechanism; the
+#: cell key carries no side, so a cell is charged once whichever side it learned.
+TRAIN_FRACTION = 0.5
+MIN_TRAIN_EVENTS = 30
 #: Observations the rolling percentile and z are measured over (156 weeks ~ 3 years of COT).
 ROLL = 156
 MIN_OBS = 20
+#: Distinct published vintages a series needs before it may mint a cell (the #133 swap rule).
+MIN_VINTAGES = 60
+#: A latent state older than this is UNMEASURED in every published block (CRO D37: < 7 days).
+STATE_MAX_AGE = pd.Timedelta(days=7)
+#: ACTIVE decays: a source is ACTIVE only while its frame was refreshed AND fed within this window.
+ACTIVE_WINDOW = timedelta(days=30)
+#: pit_grade of a frame. FIRST_RELEASE: every value is what was published at available_time.
+#: LATEST_REVISED: a revisable series fetched as its latest vintage -- stored and reported, but
+#: UNMEASURED for anything point-in-time (features, states, cells) until a vintage recipe runs.
+FIRST_RELEASE = "FIRST_RELEASE"
+LATEST_REVISED = "LATEST_REVISED"
 
 
 def _ontology() -> Any:
@@ -128,19 +151,31 @@ def series_path(sid: str) -> Path:
     return SERIES / f"{sid}.csv"
 
 
-def write_frame(sid: str, df: pd.DataFrame, *, lag_hours: float) -> int:
-    """Stamp and write one frame. `available_time` is event_time plus the publication lag,
-    never earlier: history is reconstructed as the desk COULD have known it, not as it was
-    revised later. Numeric columns only beside the stamp."""
+def write_frame(sid: str, df: pd.DataFrame, *, lag_hours: float,
+                pit_grade: str = FIRST_RELEASE) -> int:
+    """Stamp and write one frame. `available_time` is event_time plus the publication lag, or
+    the recipe's own per-row release stamp when it carries one, whichever is LATER.
+
+    The stamp fixes WHEN a value could be known; it does not fix WHICH value. A recipe that reads
+    the latest vintage of a revisable series (FRED's fredgraph.csv, the OFR API) gets today's
+    revised number at yesterday's stamp, so it writes pit_grade LATEST_REVISED and nothing
+    point-in-time reads it. Only a first-release recipe (ALFRED vintages, operation results,
+    auction results, exchange files that are never restated) writes FIRST_RELEASE."""
     if df is None or df.empty or "event_time" not in df.columns:
         return 0
     out = df.copy()
     out["event_time"] = pd.to_datetime(out["event_time"], utc=True, errors="coerce")
     out = out.dropna(subset=["event_time"]).sort_values("event_time")
-    out["available_time"] = out["event_time"] + pd.Timedelta(hours=float(lag_hours))
+    lagged = out["event_time"] + pd.Timedelta(hours=float(lag_hours))
+    if "available_time" in out.columns:
+        own = pd.to_datetime(out["available_time"], utc=True, errors="coerce")
+        out["available_time"] = own.where(own > lagged, lagged).fillna(lagged)
+    else:
+        out["available_time"] = lagged
     out["source_id"] = sid
     out["retrieval_time"] = now_utc().isoformat(timespec="seconds")
-    stamp = ["event_time", "available_time", "source_id", "retrieval_time"]
+    out["pit_grade"] = pit_grade
+    stamp = ["event_time", "available_time", "source_id", "retrieval_time", "pit_grade"]
     keep = stamp + [c for c in out.columns
                     if c not in stamp and pd.api.types.is_numeric_dtype(out[c])]
     out = out[keep].drop_duplicates(subset=["event_time"], keep="last")
@@ -162,6 +197,30 @@ def read_frame(sid: str) -> pd.DataFrame | None:
     df["available_time"] = pd.to_datetime(df["available_time"], utc=True, errors="coerce")
     df["event_time"] = pd.to_datetime(df.get("event_time"), utc=True, errors="coerce")
     return df.dropna(subset=["available_time"]).sort_values("available_time")
+
+
+def pit_ok(df: pd.DataFrame | None, row: Mapping[str, Any] | None = None) -> bool:
+    """May a point-in-time consumer read this frame? Only a FIRST_RELEASE frame. A frame written
+    before the grade existed falls back to the row's declared `pit_grade`, and fails closed."""
+    if df is None:
+        return False
+    if "pit_grade" in df.columns:
+        return bool((df["pit_grade"].astype(str) == FIRST_RELEASE).all())
+    return str((row or {}).get("pit_grade") or LATEST_REVISED) == FIRST_RELEASE
+
+
+#: Every column that is a stamp, never a signal (the family's STAMP_COLUMNS plus the grade).
+STAMP = ("event_time", "available_time", "source_id", "retrieval_time", "vintage_id",
+         "pit_grade", "published_time", "revision_time", "ingested_time")
+
+
+def signal_columns(df: pd.DataFrame) -> list[str]:
+    return [c for c in df.columns if c not in STAMP and pd.api.types.is_numeric_dtype(df[c])]
+
+
+def vintages(df: pd.DataFrame, col: str) -> int:
+    """Distinct published readings of one column: the minting gate counts these, not rows."""
+    return int(df.loc[df[col].notna(), "available_time"].nunique()) if col in df else 0
 
 
 def lag_hours_of(row: Mapping[str, Any]) -> float:
@@ -208,7 +267,61 @@ def _ok(status: int | None, err: str) -> bool:
     return status is not None and 200 <= status < 300 and not err
 
 
+#: ALFRED's observation endpoint returns every vintage of a series; the first vintage per date is
+#: the value as first published, stamped with the day it was published. The key is the box's own
+#: (FRED_API_KEY, set with setx /M); it is read from the environment and never logged.
+ALFRED = ("https://api.stlouisfed.org/fred/series/observations?series_id={series}"
+          "&realtime_start=1776-07-04&realtime_end=9999-12-31&observation_start={start}"
+          "&file_type=json&api_key={key}")
+
+
+def _alfred_first_release(series: str, col: str, get: HttpGet, key: str
+                          ) -> tuple[pd.DataFrame | None, str]:
+    start = (now_utc() - timedelta(days=365 * 12)).date().isoformat()
+    st, body, err = get(ALFRED.format(series=series, start=start, key=key))
+    if not _ok(st, err):
+        return None, f"ALFRED {series}: HTTP {st} {err.replace(key, '***')}"[:160]
+    try:
+        obs = json.loads(body.decode("utf-8")).get("observations") or []
+    except ValueError:
+        return None, f"ALFRED {series}: not JSON"
+    df = pd.DataFrame(obs)
+    if df.empty or not {"date", "value", "realtime_start"} <= set(df.columns):
+        return None, f"ALFRED {series}: no vintages"
+    df[col] = pd.to_numeric(df["value"], errors="coerce")
+    df = df.dropna(subset=[col]).sort_values(["date", "realtime_start"])
+    first = df.groupby("date", as_index=False).first()
+    # Known from the END of the publication day (ET), so never before the release itself.
+    avail = pd.to_datetime(first["realtime_start"], utc=True) + pd.Timedelta(hours=28)
+    return pd.DataFrame({"event_time": first["date"], col: first[col],
+                         "available_time": avail}), ""
+
+
 def _fred_csv(row: Mapping[str, Any], get: HttpGet) -> tuple[pd.DataFrame | None, str]:
+    """A FRED series. A series that is NEVER revised (an operation's result) is read from
+    fredgraph.csv as FIRST_RELEASE. A revisable one (`revisable: true`, the default: fail closed)
+    is read from ALFRED's first vintages when the box holds FRED_API_KEY, else from fredgraph.csv
+    as LATEST_REVISED, which no point-in-time consumer reads."""
+    import os
+    revisable = bool(row["fetch"].get("revisable", True))
+    key = os.environ.get("FRED_API_KEY", "").strip()
+    if revisable and key:
+        frames_v = []
+        for col, series in (row["fetch"].get("series") or {}).items():
+            df, why = _alfred_first_release(str(series), str(col), get, key)
+            if df is None:
+                return None, why
+            frames_v.append(df)
+        if not frames_v:
+            return None, "no series named"
+        out_v = frames_v[0]
+        for f in frames_v[1:]:
+            out_v = out_v.merge(f, on="event_time", how="outer", suffixes=("", "_r"))
+            if "available_time_r" in out_v:
+                out_v["available_time"] = out_v[["available_time", "available_time_r"]].max(axis=1)
+                out_v = out_v.drop(columns=["available_time_r"])
+        out_v.attrs["pit_grade"] = FIRST_RELEASE
+        return out_v, ""
     frames = []
     for col, series in (row["fetch"].get("series") or {}).items():
         st, body, err = get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}")
@@ -223,6 +336,7 @@ def _fred_csv(row: Mapping[str, Any], get: HttpGet) -> tuple[pd.DataFrame | None
     if not frames:
         return None, "no series named"
     out = pd.concat(frames, axis=1).reset_index()
+    out.attrs["pit_grade"] = LATEST_REVISED if revisable else FIRST_RELEASE
     return out, ""
 
 
@@ -372,6 +486,16 @@ def _finra_regsho(row: Mapping[str, Any], get: HttpGet) -> tuple[pd.DataFrame | 
     return g, ""
 
 
+def ftd_available(month_start: Any, half: str) -> pd.Timestamp:
+    """When one half-month FTD file is public. The SEC posts the first half (days 1-15) around the
+    end of that month and the second half around the middle of the next; a flat lag from each
+    settlement date made the 1st of the month ~13 days early. Every row of a file is stamped at
+    the file's period end plus 21 days, which is never before the posting."""
+    m = pd.Timestamp(month_start).tz_localize(None).normalize().replace(day=1)
+    end = m.replace(day=15) if half == "a" else m + pd.offsets.MonthEnd(0)
+    return (end + pd.Timedelta(days=21)).tz_localize("UTC")
+
+
 def _sec_ftd(row: Mapping[str, Any], get: HttpGet) -> tuple[pd.DataFrame | None, str]:
     f = row["fetch"]
     out = []
@@ -389,8 +513,10 @@ def _sec_ftd(row: Mapping[str, Any], get: HttpGet) -> tuple[pd.DataFrame | None,
                 df["event_time"] = pd.to_datetime(df.iloc[:, 0].astype(str), format="%Y%m%d",
                                                   errors="coerce", utc=True)
                 df["qty"] = pd.to_numeric(df.iloc[:, 3], errors="coerce")
-                out.append(df.groupby("event_time", as_index=False)["qty"].sum()
-                           .rename(columns={"qty": "fails_shares"}))
+                g = (df.groupby("event_time", as_index=False)["qty"].sum()
+                     .rename(columns={"qty": "fails_shares"}))
+                g["available_time"] = ftd_available(d, half)
+                out.append(g)
     if not out:
         return None, "no FTD file fetched"
     return pd.concat(out, ignore_index=True), ""
@@ -416,9 +542,12 @@ def fetch_all(rows: list[dict[str, Any]], *, get: HttpGet | None, deadline: floa
         sid = str(r["id"])
         try:
             df, why = RECIPES[r["fetch"]["kind"]](r, get)
-            n = write_frame(sid, df, lag_hours=lag_hours_of(r)) if df is not None else 0
+            grade = str((df.attrs.get("pit_grade") if df is not None else None)
+                        or r.get("pit_grade") or LATEST_REVISED)
+            n = (write_frame(sid, df, lag_hours=lag_hours_of(r), pit_grade=grade)
+                 if df is not None else 0)
             state[sid] = {"at": now_utc().isoformat(timespec="seconds"), "rows": n,
-                          "outcome": "OK" if n else (why or "EMPTY")}
+                          "outcome": "OK" if n else (why or "EMPTY"), "pit_grade": grade}
         except Exception as exc:
             state[sid] = {"at": now_utc().isoformat(timespec="seconds"), "rows": 0,
                           "outcome": f"ERROR {type(exc).__name__}: {str(exc)[:120]}"}
@@ -456,8 +585,66 @@ COT_MAP: dict[str, tuple[str, str, int]] = {
     "cot_tff/nasdaq100": ("tff", "NAS100", 1),
     "cot_disagg/gold": ("disagg", "XAUUSD", 1), "cot_disagg/silver": ("disagg", "XAGUSD", 1),
 }
-#: Tuesday snapshot -> Friday 15:30 ET release: +3 days 20 hours covers both DST regimes.
-COT_AVAILABLE_OFFSET = pd.Timedelta(days=3, hours=20)
+#: The CFTC's release calendar exceptions: shutdown backlogs and any exact release dates the box
+#: learns. Committed beside the ontology; a report date it cannot place is UNMEASURED, never early.
+COT_CALENDAR = Path(__file__).resolve().parent / "countries" / "institutional" / \
+    "cftc_release_calendar.json"
+#: Friday 15:30 ET is 19:30 UTC in summer and 20:30 UTC in winter; 21:00 UTC covers both.
+COT_RELEASE_HOUR_UTC = 21
+
+
+def _us_holidays(lo: pd.Timestamp, hi: pd.Timestamp) -> set[pd.Timestamp]:
+    from pandas.tseries.holiday import USFederalHolidayCalendar
+    return {pd.Timestamp(d).normalize() for d in
+            USFederalHolidayCalendar().holidays(lo.tz_localize(None), hi.tz_localize(None))}
+
+
+def cot_release_times(report_dates: pd.Series, calendar: Mapping[str, Any] | None = None
+                      ) -> pd.Series:
+    """When each Tuesday snapshot was PUBLIC, on the CFTC's real calendar.
+
+    Normal week: the Friday of the snapshot's week, 21:00 UTC. A federal holiday from the
+    Monday to the Friday of that week moves the release to the next business day after the
+    Friday (the CFTC publishes the following Monday), and a holiday on that Monday moves it again.
+    A report date inside a declared disruption (the 2013, 2018-19 and Oct-Nov 2025 shutdowns, whose
+    backlogs came out over weeks) is stamped at the disruption's `available_not_before`, the date
+    the backlog was fully out; an `exact` entry wins over everything. Late is safe; early is
+    lookahead, so every rule here errs late."""
+    cal = dict(calendar if calendar is not None else _read_json(COT_CALENDAR, {}))
+    exact = {pd.Timestamp(k).normalize(): pd.Timestamp(v) for k, v in
+             (cal.get("exact") or {}).items()}
+    delays = [(pd.Timestamp(d["report_date_from"]).normalize(),
+               pd.Timestamp(d["report_date_to"]).normalize(),
+               pd.Timestamp(d["available_not_before"]))
+              for d in cal.get("disruptions") or []]
+    rd = pd.to_datetime(report_dates, utc=True, errors="coerce").dt.tz_localize(None).dt.normalize()
+    valid = rd.dropna()
+    if valid.empty:
+        return pd.Series(pd.NaT, index=report_dates.index, dtype="datetime64[ns, UTC]")
+    hol = _us_holidays(valid.min() - pd.Timedelta(days=7), valid.max() + pd.Timedelta(days=14))
+    out = []
+    for d in rd:
+        if pd.isna(d):
+            out.append(pd.NaT)
+            continue
+        if d in exact:
+            t = exact[d]
+            out.append(t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC"))
+            continue
+        monday = d - pd.Timedelta(days=d.weekday())
+        friday = monday + pd.Timedelta(days=4)
+        rel = friday
+        if any(monday + pd.Timedelta(days=i) in hol for i in range(5)):
+            rel = friday + pd.Timedelta(days=3)
+            while rel in hol or rel.weekday() >= 5:
+                rel += pd.Timedelta(days=1)
+        t = rel + pd.Timedelta(hours=COT_RELEASE_HOUR_UTC)
+        for lo, hi, nb in delays:
+            if lo <= d <= hi:
+                nb = nb.tz_localize(None) if nb.tzinfo is not None else nb
+                t = max(t, nb)
+        out.append(t.tz_localize("UTC"))
+    return pd.Series(out, index=report_dates.index, dtype="datetime64[ns, UTC]")
 
 
 def _main_market(df: pd.DataFrame) -> pd.DataFrame:
@@ -495,7 +682,10 @@ def cot_features(data_dir: Path = DESK / "data") -> dict[str, pd.DataFrame]:
             dealer = swap
             am = pd.Series(np.nan, index=df.index)
             conc = df["conc_net_le_4_tdr_long_all"].astype(float)
-        f = pd.DataFrame({"available_time": df["report_date"] + COT_AVAILABLE_OFFSET})
+        # A rolling feature at row i reads rows <= i, so row i is usable only once ALL of them
+        # are public: the running max, or a backlog's early rows would leak into a later read.
+        rel = cot_release_times(df["report_date"]).cummax()
+        f = pd.DataFrame({"available_time": rel})
         f["cot.lev_net_pct"] = pct_rank(sign * lev).to_numpy()
         f["cot.lev_net_z"] = zscore(sign * lev).to_numpy()
         f["cot.dealer_net_pct"] = pct_rank(sign * dealer).to_numpy()
@@ -504,14 +694,16 @@ def cot_features(data_dir: Path = DESK / "data") -> dict[str, pd.DataFrame]:
         f["cot.am_net_chg_z"] = zscore((sign * am).diff()).to_numpy()
         f["cot.oi_chg_z"] = zscore(oi.pct_change(fill_method=None)).to_numpy()
         f["cot.conc_top4_pct"] = pct_rank(conc).to_numpy()
-        out[asset] = f.set_index("available_time")
+        out[asset] = f.dropna(subset=["available_time"]).set_index("available_time")
     return out
 
 
 #: Macro features: (atlas id, column regex, feature key, transform). The column is found by regex
 #: so an OFR or NY Fed rename that keeps the meaning keeps the feature.
 _US = "institutional.us."
-MACRO_FEATURES: tuple[tuple[str, str, str, str], ...] = tuple((_US + a, b, c, d) for a, b, c, d in (
+#: A leading "=" marks an absolute id another lane registered first (one canonical id per dataset).
+MACRO_FEATURES: tuple[tuple[str, str, str, str], ...] = tuple((
+    a[1:] if a.startswith("=") else _US + a, b, c, d) for a, b, c, d in (
     ("nyfed.repo_reverse_repo_operations", r"reverse", "nyfed.rrp_chg_z", "chg_z"),
     ("fed.rrp_overnight", r"on_rrp", "nyfed.rrp_chg_z", "chg_z"),
     ("nyfed.securities_lending_soma", r".", "nyfed.seclending_demand_z", "z"),
@@ -522,7 +714,7 @@ MACRO_FEATURES: tuple[tuple[str, str, str, str], ...] = tuple((_US + a, b, c, d)
     ("ofr.short_term_funding_monitor", r"vol", "ofr.repo_volume_chg_z", "chg_z"),
     ("ofr.hedge_fund_monitor", r"lev", "ofr.hf_leverage_z", "z"),
     ("ofr.hedge_fund_monitor", r"repo", "ofr.hf_repo_borrowing_z", "z"),
-    ("fed.h41_foreign_custody", r"custody_total", "fed.custody_chg_z", "chg_z"),
+    ("=fed_h41", r"custody_total", "fed.custody_chg_z", "chg_z"),
     ("fed.h8_bank_balance_sheet", r"bank_securities", "h8.securities_chg_z", "chg_z"),
     ("treasury.auction_investor_class", r"indirect_share", "treasury.auction_indirect_z", "z"),
     ("finra.regsho_daily_short_volume", r"short_volume_ratio", "finra.short_volume_ratio_z", "z"),
@@ -530,18 +722,19 @@ MACRO_FEATURES: tuple[tuple[str, str, str, str], ...] = tuple((_US + a, b, c, d)
 ))
 
 
-def macro_features() -> dict[str, tuple[pd.Series, str]]:
-    """Asset-independent features: key -> (series on available_time, source id)."""
+def macro_features(rows: Iterable[Mapping[str, Any]] | None = None
+                   ) -> dict[str, tuple[pd.Series, str]]:
+    """Asset-independent features: key -> (series on available_time, source id). A frame that is
+    not FIRST_RELEASE (a revised series read at its latest vintage) is UNMEASURED here."""
+    by_id = {str(r.get("id")): r for r in (load_roster() if rows is None else rows)}
     out: dict[str, tuple[pd.Series, str]] = {}
     for sid, rx, key, how in MACRO_FEATURES:
         if key in out:
             continue          # the first measured source for a key wins; the next is a fallback
         df = read_frame(sid)
-        if df is None or len(df) < MIN_OBS:
+        if df is None or len(df) < MIN_OBS or not pit_ok(df, by_id.get(sid)):
             continue
-        cols = [c for c in df.columns if c not in ("event_time", "available_time", "source_id",
-                                                   "retrieval_time", "vintage_id")
-                and re.search(rx, c, re.I) and pd.api.types.is_numeric_dtype(df[c])]
+        cols = [c for c in signal_columns(df) if re.search(rx, c, re.I)]
         if not cols:
             continue
         s = df.set_index("available_time")[cols].astype(float)
@@ -604,7 +797,10 @@ def fuse(state: Mapping[str, Any], inputs: Mapping[str, float]) -> dict[str, Any
 
     Every UNMEASURED input still costs its weight in variance: an input the desk cannot see is a
     N(0,1) unknown, so a state built on one of four inputs is wide and says so. `coverage` is the
-    measured share of total weight. Below `min_inputs` the state is not emitted at all."""
+    measured share of total weight. Below `min_inputs` the state is not emitted at all, and a
+    calendar input never counts toward it: the calendar is known for every date ever, so a state
+    that rested on it alone (passive_forced_flow before the ICI flow is ingested) could never read
+    UNMEASURED and would publish a date as if it were an observation of the actor."""
     logit = 0.0
     var = 0.0
     wsum = wmeas = 0.0
@@ -615,7 +811,8 @@ def fuse(state: Mapping[str, Any], inputs: Mapping[str, float]) -> dict[str, Any
         if v is None or not math.isfinite(v):
             var += w * w
             continue
-        n += 1
+        if not key.startswith("calendar."):
+            n += 1
         wmeas += w
         logit += sign * w * _as_z(key, v)
         var += (0.35 * w) ** 2                  # a measured input is itself a noisy proxy
@@ -672,6 +869,28 @@ def carry_forward(s: pd.Series, idx: pd.DatetimeIndex) -> pd.Series:
     return out.where((idx - pd.DatetimeIndex(stamp)) <= horizon)
 
 
+#: The atlas id the COT features are credited to (one canonical id: the US pack's COT spine).
+COT_SOURCE_ID = "pack_us_us_cftc_cot"
+#: Feature prefixes that are not an atlas source: the desk's own bars and the calendar.
+DERIVED_SOURCES = {"price.": "desk_bars", "calendar.": "calendar"}
+
+
+def state_attribution(state: Mapping[str, Any], panel: pd.DataFrame,
+                      feature_source: Mapping[str, str]) -> dict[str, Any]:
+    """The sources a state cell is TRULY built from: the evidence inputs measured on at least
+    MIN_VINTAGES dates, each mapped to its atlas id. The primary source is the heaviest measured
+    input from the atlas (the desk's bars and the calendar are inputs, never a credited source)."""
+    measured = []
+    for key, _sign, w in state["evidence"]:
+        if key in panel.columns and int(panel[key].notna().sum()) >= MIN_VINTAGES:
+            measured.append((w, key, feature_source.get(key, "")))
+    atlas = [(w, k, sid) for w, k, sid in measured if sid and sid not in DERIVED_SOURCES.values()]
+    atlas.sort(key=lambda t: -t[0])
+    return {"source_id": atlas[0][2] if atlas else "",
+            "source_ids": sorted({sid for _w, _k, sid in atlas}),
+            "inputs": sorted(k for _w, k, _sid in measured)}
+
+
 def build_states(assets: Iterable[str] | None = None) -> dict[str, pd.DataFrame]:
     """One state frame per MT5 asset on the PIT clock, written to the lake."""
     onto = _ontology()
@@ -681,14 +900,13 @@ def build_states(assets: Iterable[str] | None = None) -> dict[str, pd.DataFrame]
     out: dict[str, pd.DataFrame] = {}
     for asset in sorted(want):
         cols: dict[str, pd.Series] = {}
-        srcs: set[str] = set()
+        fsrc: dict[str, str] = {}
         if asset in cot:
             cols.update({k: cot[asset][k] for k in cot[asset].columns})
-            srcs.add("institutional.us.cftc.cot_tff" if asset not in ("XAUUSD", "XAGUSD")
-                     else "institutional.us.cftc.cot_disaggregated")
+            fsrc.update({k: COT_SOURCE_ID for k in cot[asset].columns})
         for key, (s, sid) in macro.items():
             cols[key] = s
-            srcs.add(sid)
+            fsrc[key] = sid
         cols.update(price_features(asset, cot.get(asset)))
         if not cols:
             continue
@@ -699,10 +917,16 @@ def build_states(assets: Iterable[str] | None = None) -> dict[str, pd.DataFrame]
         cols.update(calendar_features(idx))
         # A value older than its staleness horizon is UNMEASURED, not carried forever.
         panel = pd.DataFrame({k: carry_forward(v, idx) for k, v in cols.items()})
+        for k in panel.columns:
+            for pre, name in DERIVED_SOURCES.items():
+                if k.startswith(pre):
+                    fsrc[k] = name
         rec = {}
+        attribution: dict[str, dict[str, Any]] = {}
         for st in onto.LATENT_STATES:
             if asset not in st["assets"]:
                 continue
+            attribution[f"p_{st['id']}"] = state_attribution(st, panel, fsrc)
             ps, lo, hi, cov = [], [], [], []
             for _t, row in panel.iterrows():
                 r = fuse(st, {k: row[k] for k in panel.columns if pd.notna(row[k])})
@@ -728,11 +952,13 @@ def build_states(assets: Iterable[str] | None = None) -> dict[str, pd.DataFrame]
         frame.index.name = "event_time"
         sid = f"{STATE_SERIES_PREFIX}.{asset}"
         f2 = frame.reset_index()
-        f2.attrs["sources"] = sorted(srcs)
-        # States are computed from inputs already on their PIT clock: available == event.
+        # States are computed from inputs already on their PIT clock: available == event. Every
+        # input passed pit_ok, so the state is first-release too.
         write_frame(sid, f2, lag_hours=0.0)
         f2 = f2.set_index("event_time")
-        f2.attrs["sources"] = sorted(srcs)
+        f2.attrs["attribution"] = attribution
+        f2.attrs["sources"] = sorted({s_ for a_ in attribution.values()
+                                      for s_ in a_["source_ids"]})
         out[asset] = f2
     return out
 
@@ -758,98 +984,183 @@ def _may_hunt(symbol: str) -> bool:
 def planned_cells(states: Mapping[str, pd.DataFrame], rows: list[dict[str, Any]]
                   ) -> list[dict[str, Any]]:
     """Every conditioner cell this pass owes: the latent states on their assets, and every raw
-    atlas frame on disk against its declared targets (the dataset rule: no frame goes unfed)."""
+    atlas frame on disk against its declared targets (the dataset rule: no frame goes unfed).
+
+    A column mints only with MIN_VINTAGES published readings, only from a FIRST_RELEASE frame,
+    and each state cell is credited to the sources that state is actually built from."""
     by_id = {r["id"]: r for r in rows}
     plans: list[dict[str, Any]] = []
     for asset, frame in states.items():
         if not _may_hunt(asset):
             continue
-        srcs = list(frame.attrs.get("sources") or [])
-        culture = _culture(by_id.get(srcs[0]) if srcs else None)
-        culture["participant_structure"] = "institutional"
+        attribution = frame.attrs.get("attribution") or {}
         for col in frame.columns:
             if not col.startswith("p_") or col.endswith(("_lo", "_hi")):
                 continue
+            if int(frame[col].notna().sum()) < MIN_VINTAGES:
+                continue
+            att = attribution.get(col) or {"source_id": "", "source_ids": [], "inputs": []}
+            culture = _culture(by_id.get(att["source_id"]))
+            culture["participant_structure"] = "institutional"
             plans.append({"source": f"{STATE_SERIES_PREFIX}.{asset}", "signal": col,
-                          "symbol": asset, "source_id": srcs[0] if srcs else LEG,
-                          "source_ids": srcs, "culture": culture, "kind": "state"})
+                          "symbol": asset, "source_id": att["source_id"] or LEG,
+                          "source_ids": list(att["source_ids"]), "inputs": list(att["inputs"]),
+                          "culture": culture, "kind": "state"})
     for r in rows:
         df = read_frame(str(r["id"]))
-        if df is None or len(df) < MIN_OBS:
+        if df is None or len(df) < MIN_VINTAGES or not pit_ok(df, r):
             continue
-        sigs = [c for c in df.columns if c not in ("event_time", "available_time", "source_id",
-                                                   "retrieval_time", "vintage_id")
-                and pd.api.types.is_numeric_dtype(df[c])][:6]
+        sigs = [c for c in signal_columns(df) if vintages(df, c) >= MIN_VINTAGES][:6]
         for sym in r.get("targets") or []:
             if not _may_hunt(sym):
                 continue
             for sig in sigs:
                 plans.append({"source": str(r["id"]), "signal": sig, "symbol": sym,
                               "source_id": str(r["id"]), "source_ids": [str(r["id"])],
-                              "culture": _culture(r), "kind": "raw"})
+                              "inputs": [sig], "culture": _culture(r), "kind": "raw"})
     return plans
 
 
-def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = False
-               ) -> dict[str, Any]:
-    """Through the one door, once per cell key, ever. The emitted set is the charge ledger's
-    guard: a key already enqueued is never re-sent, so no pass inflates a search count."""
+def _conditioner_fn() -> Callable[..., pd.Series | None] | None:
+    for name in ("mt5desk.family_exogenous_conditioner", "family_exogenous_conditioner"):
+        with contextlib.suppress(ImportError):
+            import importlib
+            return importlib.import_module(name).conditioner  # type: ignore[no-any-return]
+    return None
+
+
+def _bars(symbol: str) -> pd.DataFrame | None:
+    with contextlib.suppress(Exception):
+        from research import proposer_common as pc
+        b = pc.bars(symbol)
+        return b if b is not None and not b.empty else None
+    return None
+
+
+def learn_side(source: str, signal: str, transform: str, threshold: float, symbol: str, *,
+               bars: pd.DataFrame | None = None, cond: pd.Series | None = None,
+               horizon_bars: int = 24) -> dict[str, Any] | None:
+    """The side a cell trades, learned on the TRAINING span only.
+
+    The family reads the conditioner exactly as `conditioner()` builds it (same transform, same
+    publication-day lag) and goes `side_when_high` when it is above +threshold and the opposite
+    below -threshold. So the edge is side_when_high * E[sign(m) * forward return | |m| >= thr];
+    its sign on the first TRAIN_FRACTION of the joint history is the side. The span after
+    `train_end` never touches the choice, so the gauntlet's out-of-sample stays out of sample.
+    None -- no cell this pass -- when the family, the bars or MIN_TRAIN_EVENTS are missing."""
+    if cond is None:
+        fn = _conditioner_fn()
+        cond = fn(source, signal, transform) if fn is not None else None
+    bars = _bars(symbol) if bars is None else bars
+    if cond is None or bars is None or bars.empty or "close" not in bars:
+        return None
+    close = bars["close"].astype(float)
+    close = close[~close.index.duplicated(keep="last")].sort_index()
+    fwd = np.log(close.shift(-horizon_bars) / close)
+    try:
+        m = cond.reindex(cond.index.union(close.index)).ffill().reindex(close.index)
+    except (TypeError, ValueError):
+        return None
+    joint = pd.DataFrame({"m": m, "fwd": fwd}).dropna()
+    if joint.empty:
+        return None
+    cut = joint.index[0] + (joint.index[-1] - joint.index[0]) * TRAIN_FRACTION
+    train = joint[joint.index <= cut]
+    ev = train[train["m"].abs() >= abs(float(threshold))]
+    if len(ev) < MIN_TRAIN_EVENTS:
+        return None
+    edge = float((np.sign(ev["m"]) * ev["fwd"]).mean())
+    return {"side": 1 if edge >= 0 else -1, "train_end": pd.Timestamp(cut).isoformat(),
+            "train_events": int(len(ev)), "train_edge": round(edge, 6)}
+
+
+def _credit(credited: dict[str, str], ids: Iterable[str]) -> None:
+    at = now_utc().isoformat(timespec="seconds")
+    for i in ids:
+        if i:
+            credited[i] = at
+
+
+def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = False,
+               side_fn: Callable[..., dict[str, Any] | None] | None = None) -> dict[str, Any]:
+    """Through the one door, once per cell key, ever. The key carries no side (a cell is ONE
+    bet with its learned side), so no pass inflates a search count and no mirror is charged.
+
+    `credited` maps each atlas id to the last time it was FED: a cell enqueued from it, or a
+    pass that found every cell it owes already enqueued. ACTIVE reads that stamp (30 days)."""
+    side_fn = side_fn or learn_side
     prev = _read_json(EMITTED, {})
     done = set(prev.get("keys") or [])
-    credited = set(prev.get("credited") or [])
-    made = created = skipped = 0
+    raw_credit = prev.get("credited") or {}
+    credited: dict[str, str] = (dict(raw_credit) if isinstance(raw_credit, Mapping)
+                                else {}) # a list from the pre-decay ledger carries no time
+    made = created = skipped = unlearned = 0
     errors: list[str] = []
     culture_rows: list[dict[str, Any]] = []
     for p in plans:
-        for tf in TRANSFORMS:
-            for side in SIDES:
-                for chart in CHARTS:
-                    key = f"{p['source']}|{p['signal']}|{tf}|{side}|{p['symbol']}|{chart}"
-                    if key in done:
-                        skipped += 1
-                        continue
-                    if time.monotonic() > deadline:
+        grid = TRANSFORMS_STATE if p["kind"] == "state" else TRANSFORMS_RAW
+        owed = fed = 0
+        for tf, thr in grid:
+            learned: dict[str, Any] | None = None
+            for chart in CHARTS:
+                key = f"{p['source']}|{p['signal']}|{tf}|{p['symbol']}|{chart}"
+                owed += 1
+                if key in done:
+                    skipped += 1
+                    fed += 1
+                    continue
+                if time.monotonic() > deadline:
+                    break
+                if learned is None:
+                    learned = side_fn(p["source"], p["signal"], tf, thr, p["symbol"])
+                    if learned is None:
+                        unlearned += 1
                         break
-                    made += 1
-                    if dry_run:
-                        continue
-                    try:
-                        from libs.moat.registry import enqueue_candidate
-                        mech = (f"{p['signal']} of {p['source']} (public institutional footprint) "
-                                f"conditions {p['symbol']}: side {side:+d} when high")
-                        cid, new = enqueue_candidate(
-                            family="exogenous_conditioner", symbol=p["symbol"],
-                            params={"source": p["source"], "signal": p["signal"],
-                                    "transform": tf, "side_when_high": side},
-                            origin=LEG, mechanism=mech, chart=chart, horizon=chart,
-                            source_id=p["source_id"], generator=LEG, department="information",
-                            asset_class="", transformation="institutional_state"
-                            if p["kind"] == "state" else "institutional_series",
-                            required_data=[f"desks/mt5/data/lake/series/{p['source']}.csv"],
-                            pit_status="STAMPED", causal_rationale=mech,
-                            falsifier=(f"the {tf} of {p['source']}.{p['signal']} has no "
-                                       f"measurable relation to {p['symbol']} at {chart} out of "
-                                       "sample"), **p["culture"])
-                        created += int(bool(new))
-                        done.add(key)
-                        credited.update(p["source_ids"])
-                        culture_rows.append({"cell_id": cid, "source_id": p["source_id"],
-                                             "source_ids": p["source_ids"], "origin": LEG,
-                                             **p["culture"]})
-                    except Exception as exc:
-                        errors.append(f"{key}: {type(exc).__name__}: {str(exc)[:60]}")
+                made += 1
+                if dry_run:
+                    continue
+                side = int(learned["side"])
+                try:
+                    from libs.moat.registry import enqueue_candidate
+                    mech = (f"{p['signal']} of {p['source']} (public institutional footprint) "
+                            f"conditions {p['symbol']}: side {side:+d} when high, the side "
+                            f"learned on data through {learned['train_end'][:10]} "
+                            f"({learned['train_events']} events); only later data judges it")
+                    cid, new = enqueue_candidate(
+                        family="exogenous_conditioner", symbol=p["symbol"],
+                        params={"source": p["source"], "signal": p["signal"],
+                                "transform": tf, "threshold": thr, "side_when_high": side},
+                        origin=LEG, mechanism=mech, chart=chart, horizon=chart,
+                        source_id=p["source_id"], generator=LEG, department="information",
+                        asset_class="", transformation="institutional_state"
+                        if p["kind"] == "state" else "institutional_series",
+                        required_data=[f"desks/mt5/data/lake/series/{p['source']}.csv"],
+                        pit_status="STAMPED", causal_rationale=mech,
+                        falsifier=(f"the {tf} of {p['source']}.{p['signal']} beyond {thr:g} has "
+                                   f"no measurable relation to {p['symbol']} at {chart} after "
+                                   f"{learned['train_end'][:10]}"), **p["culture"])
+                    created += int(bool(new))
+                    done.add(key)
+                    fed += 1
+                    culture_rows.append({"cell_id": cid, "source_id": p["source_id"],
+                                         "source_ids": p["source_ids"], "inputs": p["inputs"],
+                                         "side_fit": learned, "origin": LEG, **p["culture"]})
+                except Exception as exc:
+                    errors.append(f"{key}: {type(exc).__name__}: {str(exc)[:60]}")
+        if owed and fed == owed and not dry_run:
+            _credit(credited, p["source_ids"])
     if not dry_run:
         _write_json(EMITTED, {"at": now_utc().isoformat(timespec="seconds"),
-                              "keys": sorted(done), "credited": sorted(credited)})
+                              "keys": sorted(done), "credited": dict(sorted(credited.items()))})
         if culture_rows:
             CULTURE_LOG.parent.mkdir(parents=True, exist_ok=True)
             with CULTURE_LOG.open("a", encoding="utf-8") as fh:
                 for c in culture_rows:
                     fh.write(json.dumps(c, ensure_ascii=False) + "\n")
     return {"cells_attempted": made, "cells_created": created, "already_enqueued": skipped,
-            "errors": errors[:5], "n_errors": len(errors),
+            "side_not_learned": unlearned, "errors": errors[:5], "n_errors": len(errors),
             "sources_planned": sorted({p["source_id"] for p in plans}),
-            "sources_credited": sorted(credited)}
+            "sources_credited": dict(sorted(credited.items()))}
 
 
 # =========================================================================== watcher
@@ -878,17 +1189,44 @@ def watch(rows: list[dict[str, Any]], get: HttpGet | None, deadline: float) -> d
 
 
 # =========================================================================== coverage
+def _fresh(ts: Any, now: datetime) -> bool:
+    try:
+        t = pd.Timestamp(ts)
+    except (ValueError, TypeError):
+        return False
+    if pd.isna(t):
+        return False
+    t = t.tz_localize("UTC") if t.tzinfo is None else t
+    return bool(now - t.to_pydatetime() <= ACTIVE_WINDOW)
+
+
+def frame_refreshed_at(r: Mapping[str, Any]) -> datetime | None:
+    """When the row's frame was last written: its lake CSV, or the newest file of an existing
+    lane's glob (the COT parquet). None when there is no frame."""
+    f = r.get("fetch") or {}
+    paths = ([q for g in (f.get("globs") or [f.get("glob")]) if g for q in ROOT.glob(str(g))]
+             if f.get("kind") == "lake_parquet" else [series_path(str(r["id"]))])
+    times = []
+    for q in paths:
+        with contextlib.suppress(OSError):
+            times.append(q.stat().st_mtime)
+    return datetime.fromtimestamp(max(times), tz=UTC) if times else None
+
+
 def row_status(r: Mapping[str, Any], fetch_state: Mapping[str, Any],
-               watch_state: Mapping[str, Any], emitted_sources: set[str]) -> str:
-    """Measured, not declared: ACTIVE needs a frame on disk AND cells enqueued from it."""
+               watch_state: Mapping[str, Any], credited: Mapping[str, Any] | set[str],
+               *, now: datetime | None = None) -> str:
+    """Measured, not declared, and it DECAYS: ACTIVE needs a frame refreshed within 30 days AND
+    the source fed (a cell enqueued, or every owed cell already in) within 30 days. A source that
+    stopped updating or stopped feeding falls back to its declared status on day 31."""
     sid = str(r["id"])
+    now = now or now_utc()
     declared = str(r.get("declared_status") or "DISCOVERED_NOT_INGESTED")
     if declared == "WATCH":
         return str((watch_state.get(sid) or {}).get("status") or "WATCH")
-    has_frame = series_path(sid).exists()
-    if (r.get("fetch") or {}).get("kind") == "lake_parquet":
-        has_frame = any(ROOT.glob(str(r["fetch"]["glob"])))
-    if has_frame and sid in emitted_sources:
+    refreshed = frame_refreshed_at(r)
+    fed_at = credited.get(sid) if isinstance(credited, Mapping) else None
+    if refreshed is not None and _fresh(refreshed, now) and fed_at and _fresh(fed_at, now):
         return "ACTIVE"
     if declared in ("PAID_PUBLIC_PROXY", "BLOCKED_SUBSTITUTE", "NOT_PUBLISHED",
                     "TESTED_NO_INFORMATION", "NOT_RELEVANT"):
@@ -898,14 +1236,14 @@ def row_status(r: Mapping[str, Any], fetch_state: Mapping[str, Any],
 
 def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | None = None,
              watch_state: Mapping[str, Any] | None = None,
-             emitted_sources: set[str] | None = None,
+             emitted_sources: Mapping[str, Any] | None = None,
              rulings: Mapping[str, Any] | None = None) -> dict[str, Any]:
     """The jurisdiction x class grid, one status per cell; the role grid; triangulation; the
     equivalence-search queue that asks each jurisdiction for what its peers publish."""
     onto = _ontology()
     fs = fetch_state or {}
     ws = watch_state or {}
-    em = emitted_sources or set()
+    em = emitted_sources or {}
     rul = dict(rulings if rulings is not None else _read_json(RULINGS, {}))
     rank = {s: i for i, s in enumerate(("ACTIVE", "TESTED_NO_INFORMATION",
                                         "DISCOVERED_NOT_INGESTED", "PAID_PUBLIC_PROXY",
@@ -985,14 +1323,26 @@ def state_ages(states: Mapping[str, pd.DataFrame]) -> dict[str, dict[str, Any]]:
             s = f[col].dropna()
             if s.empty:
                 continue
-            t = s.index[-1]
+            t = pd.Timestamp(s.index[-1])
+            t = t.tz_localize("UTC") if t.tzinfo is None else t
             sid = col[2:]
-            out[asset][sid] = {
-                "p": round(float(s.iloc[-1]), 4),
-                "lo": _last(f, f"{col}_lo"), "hi": _last(f, f"{col}_hi"),
-                "coverage": _last(f, f"cov_{sid}"),
-                "as_of": pd.Timestamp(t).isoformat(),
-                "age_hours": round((now - pd.Timestamp(t)).total_seconds() / 3600.0, 1)}
+            age = now - t
+            last = {"p": round(float(s.iloc[-1]), 4),
+                    "lo": _last(f, f"{col}_lo"), "hi": _last(f, f"{col}_hi"),
+                    "coverage": _last(f, f"cov_{sid}")}
+            row: dict[str, Any] = {"as_of": t.isoformat(),
+                                   "age_hours": round(age.total_seconds() / 3600.0, 1)}
+            if age > STATE_MAX_AGE:
+                # Past its age limit a state is UNMEASURED everywhere it is published; the last
+                # reading stays visible for the audit, never as a live p.
+                row.update({"p": None, "lo": None, "hi": None, "coverage": None,
+                            "status": "UNMEASURED",
+                            "reason": f"stale: {row['age_hours']}h > "
+                                      f"{STATE_MAX_AGE.total_seconds() / 3600:.0f}h",
+                            "last_reading": last})
+            else:
+                row.update({**last, "status": "MEASURED"})
+            out[asset][sid] = row
     return out
 
 
@@ -1005,17 +1355,20 @@ def regimes(ages: Mapping[str, Mapping[str, Mapping[str, Any]]]) -> dict[str, di
     out: dict[str, dict[str, str]] = {}
     for asset, states in ages.items():
         row: dict[str, str] = {}
-        gamma = {k: v["p"] for k, v in states.items() if k in scen}
+        gamma = {k: v["p"] for k, v in states.items() if k in scen and v.get("p") is not None}
         for sid, v in states.items():
             if sid in scen:
                 continue
             p, lo, hi = v.get("p"), v.get("lo"), v.get("hi")
             if p is None:
+                row[sid] = "UNMEASURED"
                 continue
             row[sid] = ("HIGH" if lo is not None and lo > 0.5 and p > 0.7 else
                         "LOW" if hi is not None and hi < 0.5 and p < 0.3 else "NEUTRAL")
         if gamma:
             row["dealer_gamma"] = max(gamma, key=lambda k: gamma[k])
+        elif any(k in scen for k in states):
+            row["dealer_gamma"] = "UNMEASURED"
         out[asset] = row
     return out
 
@@ -1048,7 +1401,7 @@ def run(budget_s: float = 300.0, *, offline: bool = False, dry_run: bool = False
     states = build_states()
     plans = planned_cells(states, rows)
     cells = emit_cells(plans, deadline=deadline, dry_run=dry_run)
-    emitted_sources = set(cells["sources_credited"])
+    emitted_sources = dict(cells["sources_credited"])
     cov = coverage(rows, fetch_state=fs, watch_state=ws, emitted_sources=emitted_sources)
     ages = state_ages(states or load_states())
     fetched = {k: v for k, v in fs.items() if isinstance(v, Mapping)}
@@ -1075,10 +1428,16 @@ def run(budget_s: float = 300.0, *, offline: bool = False, dry_run: bool = False
         "fetch": fetched, "watch": ws, "latent_state_age": ages,
         "cells": cells, "unfed": unfed, "unfed_count": len(unfed),
         "offline": bool(offline and get is None), "elapsed_s": round(time.monotonic() - t0, 1),
-        "rule": ("one status per jurisdiction x class cell; ACTIVE is measured (frame on disk "
-                 "and cells enqueued), never declared; UNSEARCHED is red and every UNSEARCHED "
-                 "cell a peer jurisdiction covers is in search_queue; states are probabilities "
-                 "with 95% intervals and dealer gamma is a scenario posterior"),
+        "rule": ("one status per jurisdiction x class cell; ACTIVE is measured (a frame "
+                 "refreshed AND fed within 30 days), never declared, and decays; UNSEARCHED is "
+                 "red and every UNSEARCHED cell a peer jurisdiction covers is in search_queue; "
+                 "states are probabilities with 95% intervals, UNMEASURED past 7 days; dealer "
+                 "gamma is a scenario posterior; only FIRST_RELEASE frames reach a state or a "
+                 "cell"),
+        "pit": {"state_max_age_hours": STATE_MAX_AGE.total_seconds() / 3600,
+                "min_vintages": MIN_VINTAGES,
+                "latest_revised_frames": sorted(k for k, v in fetched.items()
+                                                if v.get("pit_grade") == LATEST_REVISED)},
     }
     if not dry_run:
         _write_json(SEARCH_QUEUE, {"at": report["at"], "queue": cov["search_queue"]})

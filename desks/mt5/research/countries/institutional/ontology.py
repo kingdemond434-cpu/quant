@@ -168,6 +168,8 @@ JURISDICTIONS: tuple[dict[str, Any], ...] = (
 JURISDICTION_CODES: tuple[str, ...] = tuple(j["code"] for j in JURISDICTIONS)
 PACK_OF: dict[str, str] = {j["code"]: j["pack"] for j in JURISDICTIONS}
 JURISDICTION_OF_PACK: dict[str, str] = {j["pack"]: j["code"] for j in JURISDICTIONS}
+#: The `global` region pack is the same jurisdiction as the institutional layer: one column.
+JURISDICTION_OF_PACK.setdefault("global", "global")
 
 
 def coverage_jurisdictions() -> tuple[str, ...]:
@@ -177,7 +179,8 @@ def coverage_jurisdictions() -> tuple[str, ...]:
     from pathlib import Path
     here = Path(__file__).resolve().parents[1]
     extra = sorted(p.parent.name for p in here.glob("*/pack.py")
-                   if p.parent.name not in JURISDICTION_OF_PACK)
+                   if p.parent.name not in JURISDICTION_OF_PACK
+                   and p.parent.name not in JURISDICTION_CODES)
     return JURISDICTION_CODES + tuple(extra)
 
 #: Classes that are, by construction, not a per-jurisdiction publication: the global layer
@@ -288,37 +291,37 @@ FEATURE_FAMILY: tuple[str, ...] = (
 #: that each view has at least one ACTIVE or DISCOVERED row and names the gap when not.
 COMMODITY_TRIANGULATION: dict[str, dict[str, tuple[str, ...]]] = {
     "gold": {
-        "financial": ("institutional.us.cftc.cot_disaggregated",
-                      "institutional.cn.shfe.daily_ranking",
+        "financial": ("pack_us_us_cftc_cot",
+                      "shfe_member_rank",
                       "institutional.jp.jpx.investor_type_derivatives",
                       "institutional.ind.mcx.participant_oi"),
         "physical": ("institutional.us.cme.comex_warehouse_stocks",
-                     "institutional.global.lbma.vault_holdings",
+                     "lbma_vault",
                      "institutional.global.lbma.clearing_statistics",
-                     "institutional.cn.sge.delivery_volume", "institutional.cn.shfe.warrants"),
+                     "institutional.cn.sge.delivery_volume", "shfe_warehouse"),
         "commercial": ("institutional.global.wgc.central_bank_purchases",
-                       "institutional.global.wgc.etf_flows",
-                       "institutional.global.imf.ifs_reserves_gold"),
+                       "wgc_etf_flows",
+                       "imf_ifs"),
     },
     "silver": {
-        "financial": ("institutional.us.cftc.cot_disaggregated",),
+        "financial": ("pack_us_us_cftc_cot",),
         "physical": ("institutional.us.cme.comex_warehouse_stocks",
-                     "institutional.global.lbma.vault_holdings", "institutional.cn.shfe.warrants"),
+                     "lbma_vault", "shfe_warehouse"),
         "commercial": ("institutional.global.silver_institute.balance",),
     },
     "crude": {
-        "financial": ("institutional.us.cftc.cot_disaggregated",
-                      "institutional.global.ice.cot_brent",
+        "financial": ("pack_us_us_cftc_cot",
+                      "dataset:ice_futures_europe_commitments_of_traders",
                       "institutional.cn.ine.daily_ranking"),
         "physical": ("institutional.us.eia.weekly_petroleum_status",
-                     "institutional.global.jodi.oil",
+                     "jodi_oil_global",
                      "institutional.cn.ine.warrants"),
-        "commercial": ("institutional.global.opec.momr",),
+        "commercial": ("opec_momr",),
     },
     "copper": {
-        "financial": ("institutional.us.cftc.cot_disaggregated", "institutional.global.lme.cot",
-                      "institutional.cn.shfe.daily_ranking"),
-        "physical": ("institutional.global.lme.warehouse_stocks", "institutional.cn.shfe.warrants",
+        "financial": ("pack_us_us_cftc_cot", "dataset:lme_commitments_of_traders_report",
+                      "shfe_member_rank"),
+        "physical": ("lme_warehouse", "shfe_warehouse",
                      "institutional.us.cme.comex_warehouse_stocks"),
         "commercial": ("institutional.global.icsg.balance",),
     },
@@ -329,8 +332,8 @@ COMMODITY_TRIANGULATION: dict[str, dict[str, tuple[str, ...]]] = {
     },
     "palm_oil": {
         "financial": ("institutional.my.bursa.fcpo_oi",),
-        "physical": ("institutional.my.mpob.stocks_production_exports",),
-        "commercial": ("institutional.my.mpob.stocks_production_exports",),
+        "physical": ("mpob_palm",),
+        "commercial": ("mpob_palm",),
     },
 }
 

@@ -1,0 +1,15 @@
+{
+ "rule": "Normal week: Friday of the Tuesday snapshot's week, 21:00 UTC; a federal holiday Monday-Friday moves it to the next business day after Friday. A report date inside a disruption is public no earlier than available_not_before (the backlog's last release, chosen LATE where the exact schedule is not on file). An `exact` entry (report_date -> UTC release time) wins; the box adds them as it reads cftc.gov. Late is safe, early is lookahead.",
+ "exact": {},
+ "disruptions": [
+  {"name": "2013 lapse in appropriations", "report_date_from": "2013-09-24", "report_date_to": "2013-10-29",
+   "available_not_before": "2013-11-30T00:00:00Z",
+   "why": "CFTC closed 1-16 Oct 2013; the missed reports were published as a backlog through November"},
+  {"name": "2018-19 lapse in appropriations", "report_date_from": "2018-12-18", "report_date_to": "2019-03-05",
+   "available_not_before": "2019-03-16T00:00:00Z",
+   "why": "CFTC closed 22 Dec 2018 - 25 Jan 2019; the backlog was published on an accelerated schedule completed in early March 2019"},
+  {"name": "Oct-Nov 2025 lapse in appropriations", "report_date_from": "2025-09-30", "report_date_to": "2026-01-13",
+   "available_not_before": "2026-01-31T00:00:00Z",
+   "why": "CFTC closed 1 Oct - 12 Nov 2025; the backlog came out over the following weeks. The exact schedule is not on file here, so every report date in the window is stamped at the end of January 2026 until `exact` entries replace it"}
+ ]
+}

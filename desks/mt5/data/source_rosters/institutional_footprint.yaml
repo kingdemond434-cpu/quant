@@ -6,7 +6,11 @@
 # through its `desks/mt5/data/source_rosters/*.yaml` glob; `fetcher: owned` means the engine
 # fetches and consumes the row and the registry never fetches it twice.
 #
-#   id                 institutional.<jurisdiction>.<publisher>.<dataset>  (never reused, never renamed)
+#   id                 institutional.<jurisdiction>.<publisher>.<dataset>, or the id another lane already
+#                      registered for the SAME dataset (then `atlas_id` keeps the atlas name and
+#                      `aliases` lists every other lane id for it): one canonical id per dataset
+#   pit_grade          FIRST_RELEASE (what was published is what is stored) or LATEST_REVISED (a
+#                      revisable series at its latest vintage: UNMEASURED for anything point-in-time)
 #   declared_status    what a human or scout established: DISCOVERED_NOT_INGESTED, PAID_PUBLIC_PROXY,
 #                      BLOCKED_SUBSTITUTE, NOT_PUBLISHED, WATCH (a future regime the watcher probes),
 #                      ACTIVE_CANDIDATE (a fetch recipe or an existing lane feeds it). ACTIVE is never
@@ -18,11 +22,11 @@
 #
 # Public, lawful, free data only. No crypto venue is ever a source; public chains are a sensor.
 sources:
-- id: institutional.us.cftc.cot_tff
-  name: CFTC Traders in Financial Futures (dealer / asset manager / leveraged funds)
+- id: pack_us_us_cftc_cot
+  name: 'CFTC Commitments of Traders: TFF, Disaggregated and legacy reports'
   jurisdiction: us
   publisher: cftc
-  dataset: cot_tff
+  dataset: cot
   source_class: futures_positioning
   role: regulator
   url: https://www.cftc.gov/MarketReports/CommitmentsofTraders/
@@ -33,12 +37,16 @@ sources:
   - dealers_intermediaries
   - asset_managers
   - leveraged_funds_ctas
+  - commercial_hedgers
   features:
   - cot.lev_net_pct
   - cot.lev_net_z
   - cot.dealer_net_pct
   - cot.am_net_chg_z
   - cot.oi_chg_z
+  - cot.swap_net_pct
+  - cot.swap_net_z
+  - cot.conc_top4_pct
   targets:
   - EURUSD
   - USDJPY
@@ -52,56 +60,6 @@ sources:
   - NAS100
   - US30
   - US2000
-  fetcher: owned
-  owner: institutional_footprint
-  consumer: desks/mt5/research/institutional_footprint.py
-  kind: mechanics
-  uses:
-  - indirect_cells
-  - allocation_intel
-  cadence_minutes: 1440
-  region: us
-  auth: none
-  licence: public free publication; unconfirmed terms fail closed
-  language: en
-  source_culture: US/en
-  participant_structure: institutional
-  failure_mode_hypothesis: positioning extremes resolve by continuation when OI is still rising; the crowding read fails without
-    an unwind trigger.
-  crowding_prior: high
-  culture_derivation:
-    source_culture: declared
-    participant_structure: declared
-    failure_mode_hypothesis: declared
-    crowding_prior: declared
-  fetch:
-    kind: lake_parquet
-    glob: desks/mt5/data/cot_tff/*.parquet
-    owner_lane: desks/mt5/mt5desk/fetch_tff.py
-  pack_source_ids:
-  - pack_us_us_cftc_cot
-- id: institutional.us.cftc.cot_disaggregated
-  name: CFTC Disaggregated COT (producer/merchant, swap dealer, managed money, other reportables)
-  jurisdiction: us
-  publisher: cftc
-  dataset: cot_disaggregated
-  source_class: futures_positioning
-  role: regulator
-  url: https://www.cftc.gov/MarketReports/CommitmentsofTraders/
-  frequency: weekly
-  publication_lag_days: 3
-  declared_status: ACTIVE_CANDIDATE
-  actors:
-  - commercial_hedgers
-  - leveraged_funds_ctas
-  - dealers_intermediaries
-  features:
-  - cot.lev_net_pct
-  - cot.swap_net_pct
-  - cot.swap_net_z
-  - cot.oi_chg_z
-  - cot.conc_top4_pct
-  targets:
   - XAUUSD
   - XAGUSD
   - XTIUSD
@@ -137,62 +95,25 @@ sources:
     crowding_prior: declared
   fetch:
     kind: lake_parquet
-    glob: desks/mt5/data/cot_disagg/*.parquet
-    owner_lane: desks/mt5/research existing COT lane
-  pack_source_ids:
-  - pack_us_us_cftc_cot
-- id: institutional.us.cftc.cot_legacy
-  name: CFTC legacy COT (commercial / non-commercial), 1986+
-  jurisdiction: us
-  publisher: cftc
-  dataset: cot_legacy
-  source_class: futures_positioning
-  role: regulator
-  url: https://www.cftc.gov/MarketReports/CommitmentsofTraders/
-  frequency: weekly
-  publication_lag_days: 3
-  declared_status: DISCOVERED_NOT_INGESTED
-  actors:
-  - leveraged_funds_ctas
-  - commercial_hedgers
-  features:
-  - cot.lev_net_pct
-  targets:
-  - EURUSD
-  - USDJPY
-  - GBPUSD
-  - AUDUSD
-  - USDCAD
-  - USDCHF
-  - NZDUSD
-  - USDX
-  - XAUUSD
-  - XAGUSD
-  - XTIUSD
-  - XBRUSD
-  - XNGUSD
-  fetcher: owned
-  owner: institutional_footprint
-  consumer: desks/mt5/research/institutional_footprint.py
-  kind: mechanics
-  uses:
-  - indirect_cells
-  - allocation_intel
-  cadence_minutes: 1440
-  region: us
-  auth: none
-  licence: public free publication; unconfirmed terms fail closed
-  language: en
-  source_culture: US/en
-  participant_structure: institutional
-  failure_mode_hypothesis: positioning extremes resolve by continuation when OI is still rising; the crowding read fails without
-    an unwind trigger.
-  crowding_prior: high
-  culture_derivation:
-    source_culture: declared
-    participant_structure: declared
-    failure_mode_hypothesis: declared
-    crowding_prior: declared
+    glob: desks/mt5/data/cot_tff/*.parquet
+    owner_lane: desks/mt5/mt5desk/fetch_tff.py
+    globs:
+    - desks/mt5/data/cot_tff/*.parquet
+    - desks/mt5/data/cot_disagg/*.parquet
+  pit_grade: FIRST_RELEASE
+  pit_note: 'released on the CFTC calendar: Friday 21:00 UTC, holiday weeks the next business day, shutdown backlogs per countries/institutional/cftc_release_calendar.json'
+  atlas_id: institutional.us.cftc.cot_tff
+  aliases:
+  - cftc_cot
+  - ground:institutional:cftc_cot
+  - dataset:cftc_traders_in_financial_futures_tff_disaggregated_full_con
+  - firm:publicreporting_cftc_gov_resource_gpe5_46if_json
+  - pack_au_au_apra_cftc
+  - pack_nz_nz_cftc
+  atlas_ids:
+  - institutional.us.cftc.cot_tff
+  - institutional.us.cftc.cot_disaggregated
+  - institutional.us.cftc.cot_legacy
   pack_source_ids:
   - pack_us_us_cftc_cot
 - id: institutional.us.cftc.bank_participation
@@ -491,7 +412,7 @@ sources:
     crowding_prior: declared
   pack_source_ids:
   - pack_us_us_cme_ice_cboe
-- id: institutional.us.cme.volume_open_interest
+- id: ground:institutional:cme_volume_and_open_interest
   name: CME daily volume and open interest by contract
   jurisdiction: us
   publisher: cme
@@ -547,6 +468,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.us.cme.volume_open_interest
+  aliases: []
   pack_source_ids:
   - pack_us_us_cme_ice_cboe
 - id: institutional.us.cme.comex_warehouse_stocks
@@ -598,6 +521,7 @@ sources:
       gold: https://www.cmegroup.com/delivery_reports/Gold_Stocks.xls
       silver: https://www.cmegroup.com/delivery_reports/Silver_stocks.xls
       copper: https://www.cmegroup.com/delivery_reports/Copper_Stocks.xls
+  pit_grade: LATEST_REVISED
   pack_source_ids:
   - pack_us_us_cme_ice_cboe
 - id: institutional.us.cme.delivery_notices
@@ -739,7 +663,7 @@ sources:
   dataset: ats_otc_weekly
   source_class: participant_type_flow
   role: regulator
-  url: https://otctransparency.finra.org/
+  url: https://otctransparency.finra.org/otctransparency/AtsIssueData
   frequency: weekly
   publication_lag_days: 14
   declared_status: DISCOVERED_NOT_INGESTED
@@ -820,6 +744,7 @@ sources:
     kind: finra_regsho_daily
     url: https://cdn.finra.org/equity/regsho/daily/CNMSshvol{yyyymmdd}.txt
     days: 20
+  pit_grade: FIRST_RELEASE
   pack_source_ids:
   - pack_us_us_finra_retail_flow
 - id: institutional.us.finra.short_interest
@@ -865,7 +790,7 @@ sources:
     crowding_prior: declared
   pack_source_ids:
   - pack_us_us_finra_retail_flow
-- id: institutional.us.finra.margin_statistics
+- id: pack_us_us_finra_retail_flow
   name: FINRA margin debt and free credit balances
   jurisdiction: us
   publisher: finra
@@ -907,6 +832,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.us.finra.margin_statistics
+  aliases: []
   pack_source_ids:
   - pack_us_us_finra_retail_flow
 - id: institutional.us.finra.trace_aggregates
@@ -1000,6 +927,7 @@ sources:
     - SLATE data is now available
     - securities lending data download
     - dissemination began
+  pit_grade: LATEST_REVISED
   pack_source_ids:
   - pack_us_us_finra_retail_flow
 - id: institutional.us.sec.form_13f
@@ -1183,6 +1111,7 @@ sources:
   fetch:
     kind: owner_lane
     owner_lane: desks/mt5/side_channels/sec_edgar_miner.py
+  pit_grade: LATEST_REVISED
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1230,6 +1159,7 @@ sources:
   fetch:
     kind: owner_lane
     owner_lane: desks/mt5/side_channels/sec_edgar_miner.py
+  pit_grade: LATEST_REVISED
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1278,6 +1208,7 @@ sources:
   fetch:
     kind: owner_lane
     owner_lane: desks/mt5/side_channels/sec_edgar_miner.py
+  pit_grade: LATEST_REVISED
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1326,6 +1257,7 @@ sources:
   fetch:
     kind: owner_lane
     owner_lane: desks/mt5/side_channels/sec_edgar_miner.py
+  pit_grade: LATEST_REVISED
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1375,6 +1307,8 @@ sources:
     kind: sec_ftd_zip
     url: https://www.sec.gov/files/data/fails-deliver-data/cnsfails{yyyymm}{half}.zip
     periods: 6
+  pit_grade: FIRST_RELEASE
+  pit_note: each half-month file is stamped at its period end + 21 days (posting schedule)
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1556,6 +1490,7 @@ sources:
     - Form SHO
     - short position data
     - 13f-2 data
+  pit_grade: LATEST_REVISED
   pack_source_ids:
   - pack_mo_mo_operator_disclosure
   - pack_us_us_sec_edgar_aggregate
@@ -1653,6 +1588,8 @@ sources:
     - leverage
     - repo borrowing
     max_series: 12
+  pit_grade: LATEST_REVISED
+  pit_note: Form PF aggregates are revised
 - id: institutional.us.ofr.short_term_funding_monitor
   name: 'OFR Short-term Funding Monitor: cleared, tri-party and bilateral repo rates and volumes'
   jurisdiction: us
@@ -1709,6 +1646,8 @@ sources:
     - DVP repo rate
     - GCF repo rate
     max_series: 12
+  pit_grade: LATEST_REVISED
+  pit_note: OFR series are served at their latest vintage
 - id: institutional.us.ofr.bilateral_repo_ncc
   name: OFR non-centrally cleared bilateral repo collection (public aggregates as released)
   jurisdiction: us
@@ -1753,6 +1692,7 @@ sources:
     markers:
     - NCCBR
     - non-centrally cleared bilateral
+  pit_grade: LATEST_REVISED
 - id: institutional.us.nyfed.primary_dealer_statistics
   name: 'NY Fed primary dealer statistics: positions, transactions, financing, fails'
   jurisdiction: us
@@ -1807,6 +1747,7 @@ sources:
     - PDPOSGST-TOT
     - PDFTD-UST
     - PDFTR-UST
+  pit_grade: FIRST_RELEASE
   pack_source_ids:
   - pack_us_us_regional_feds
 - id: institutional.us.nyfed.repo_reverse_repo_operations
@@ -1863,6 +1804,7 @@ sources:
     date: operationDate
     value: totalAmtAccepted
     group: operationType
+  pit_grade: FIRST_RELEASE
   pack_source_ids:
   - pack_us_us_regional_feds
 - id: institutional.us.nyfed.securities_lending_soma
@@ -1914,6 +1856,7 @@ sources:
     - operations
     date: operationDate
     value: totalParAmtAccepted
+  pit_grade: FIRST_RELEASE
   pack_source_ids:
   - pack_us_us_regional_feds
 - id: institutional.us.nyfed.reference_rates
@@ -1965,6 +1908,7 @@ sources:
     date: effectiveDate
     value: percentRate
     group: type
+  pit_grade: FIRST_RELEASE
   pack_source_ids:
   - pack_us_us_regional_feds
 - id: institutional.us.nyfed.tri_party_repo
@@ -2128,7 +2072,7 @@ sources:
     crowding_prior: declared
   pack_source_ids:
   - pack_us_us_regional_feds
-- id: institutional.us.fed.h41_foreign_custody
+- id: fed_h41
   name: Fed H.4.1 securities held in custody for foreign official and international accounts
   jurisdiction: us
   publisher: fed
@@ -2174,6 +2118,12 @@ sources:
     series:
       custody_total: WMTSECL1
       custody_ust: WFCDA
+    revisable: true
+    available_offset_hours: 70
+  pit_grade: LATEST_REVISED
+  pit_note: 'H.4.1 is released Thursday 16:30 ET for the Wednesday: +1d 22h, +24h for holiday weeks'
+  atlas_id: institutional.us.fed.h41_foreign_custody
+  aliases: []
   pack_source_ids:
   - pack_us_us_fed
   - pack_us_us_fraser_archive
@@ -2229,6 +2179,10 @@ sources:
       bank_credit: TOTBKCR
       bank_securities: SBCACBW027SBOG
       bank_deposits: DPSACBW027SBOG
+    revisable: true
+    available_offset_hours: 262
+  pit_grade: LATEST_REVISED
+  pit_note: 'H.8 is released Friday 16:15 ET of the week AFTER its Wednesday: +9d 22h, +24h for holiday weeks'
   pack_source_ids:
   - pack_us_us_fed
   - pack_us_us_fraser_archive
@@ -2326,6 +2280,9 @@ sources:
     kind: fred_csv
     series:
       on_rrp: RRPONTSYD
+    revisable: false
+  pit_grade: FIRST_RELEASE
+  pit_note: an operation's result is never revised
   pack_source_ids:
   - pack_us_us_apps_apis
 - id: institutional.us.treasury.auction_investor_class
@@ -2380,6 +2337,7 @@ sources:
     - direct_bidder_accepted
     - primary_dealer_accepted
     - total_accepted
+  pit_grade: FIRST_RELEASE
   pack_source_ids:
   - pack_us_us_treasury_fiscaldata
 - id: institutional.us.treasury.investor_class_allotments
@@ -3193,7 +3151,7 @@ sources:
   dataset: cofer
   source_class: official_reserves
   role: central_bank
-  url: https://data.imf.org/?sk=e6a5f467-c14b-4aa8-9f6d-5a09ec4e62a4
+  url: https://data.imf.org/en/datasets/IMF.STA:COFER
   frequency: quarterly
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -3231,14 +3189,14 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.global.imf.ifs_reserves_gold
+- id: imf_ifs
   name: IMF IFS official reserve assets incl. gold holdings by country
   jurisdiction: global
   publisher: imf
   dataset: ifs_reserves_gold
   source_class: official_reserves
   role: central_bank
-  url: https://data.imf.org/
+  url: https://data.imf.org/en/datasets/IMF.STA:IRFCL
   frequency: monthly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -3267,6 +3225,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.global.imf.ifs_reserves_gold
+  aliases: []
 - id: institutional.global.cls.fx_volume
   name: CLS free aggregate FX settlement activity (spot, forwards, swaps)
   jurisdiction: global
@@ -3351,7 +3311,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.global.lbma.vault_holdings
+- id: lbma_vault
   name: LBMA London vault holdings
   jurisdiction: global
   publisher: lbma
@@ -3391,6 +3351,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.global.lbma.vault_holdings
+  aliases: []
 - id: institutional.global.lbma.trade_data
   name: LBMA trade data (OTC bullion trading reported volumes)
   jurisdiction: global
@@ -3428,7 +3390,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.global.lme.cot
+- id: dataset:lme_commitments_of_traders_report
   name: LME Commitments of Traders by participant class
   jurisdiction: global
   publisher: lme
@@ -3473,7 +3435,10 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.global.lme.warehouse_stocks
+  atlas_id: institutional.global.lme.cot
+  aliases:
+  - firm:lme_com_en_market_data_reports_and_data_commitments_of_trade
+- id: lme_warehouse
   name: LME warehouse stocks and cancelled warrants
   jurisdiction: global
   publisher: lme
@@ -3517,6 +3482,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.global.lme.warehouse_stocks
+  aliases: []
 - id: institutional.global.lme.positions_banding
   name: LME positions reports and banding (large holder concentration)
   jurisdiction: global
@@ -3559,7 +3526,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.global.ice.cot_brent
+- id: dataset:ice_futures_europe_commitments_of_traders
   name: ICE Futures Europe COT (Brent, gasoil)
   jurisdiction: global
   publisher: ice
@@ -3601,6 +3568,12 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.global.ice.cot_brent
+  aliases:
+  - firm:ice_com_report_122
+  atlas_ids:
+  - institutional.global.ice.cot_brent
+  - institutional.uk.ice_endex.ttf_cot
   pack_source_ids:
   - pack_us_us_cme_ice_cboe
 - id: institutional.global.wgc.central_bank_purchases
@@ -3641,7 +3614,7 @@ sources:
     crowding_prior: declared
   pack_source_ids:
   - pack_caucasus_central_asia_cca_mining_physical
-- id: institutional.global.wgc.etf_flows
+- id: wgc_etf_flows
   name: World Gold Council gold ETF holdings and flows by region
   jurisdiction: global
   publisher: wgc
@@ -3680,6 +3653,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.global.wgc.etf_flows
+  aliases: []
   pack_source_ids:
   - pack_caucasus_central_asia_cca_mining_physical
 - id: institutional.global.silver_institute.balance
@@ -3689,7 +3664,7 @@ sources:
   dataset: balance
   source_class: physical_inventory
   role: fund_filings
-  url: https://www.silverinstitute.org/
+  url: https://silverinstitute.org/silver-supply-demand/
   frequency: annual
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -3725,7 +3700,7 @@ sources:
   dataset: balance
   source_class: physical_inventory
   role: fund_filings
-  url: https://icsg.org/
+  url: https://icsg.org/copper-market-forecast/
   frequency: monthly
   publication_lag_days: 90
   declared_status: DISCOVERED_NOT_INGESTED
@@ -3758,7 +3733,7 @@ sources:
   - pack_copperbelt_cb_metals_practitioner
   - pack_mn_mn_banks_icsg
   - pack_pe_pe_world_metal_bodies
-- id: institutional.global.jodi.oil
+- id: jodi_oil_global
   name: JODI oil world database (production, demand, stocks by country)
   jurisdiction: global
   publisher: jodi
@@ -3798,10 +3773,13 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.global.jodi.oil
+  aliases:
+  - ground:institutional:jodi_oil_data
   pack_source_ids:
   - pack_gulf_gulf_energy_physical
   - pack_gulf_gulf_multilateral
-- id: institutional.global.opec.momr
+- id: opec_momr
   name: OPEC Monthly Oil Market Report (secondary-source production)
   jurisdiction: global
   publisher: opec
@@ -3839,6 +3817,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.global.opec.momr
+  aliases: []
   pack_source_ids:
   - pack_atlantic_energy_ae_opec_iea
   - pack_ec_ec_multilateral
@@ -3854,7 +3834,7 @@ sources:
   dataset: enforcement
   source_class: enforcement_archaeology
   role: regulator
-  url: https://www.iosco.org/
+  url: https://www.iosco.org/news/
   frequency: event
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -4173,46 +4153,6 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.uk.ice_endex.ttf_cot
-  name: ICE Endex TTF COT (MiFID II position reports)
-  jurisdiction: uk
-  publisher: ice_endex
-  dataset: ttf_cot
-  source_class: futures_positioning
-  role: exchange
-  url: https://www.ice.com/report/122
-  frequency: weekly
-  publication_lag_days: 3
-  declared_status: DISCOVERED_NOT_INGESTED
-  actors:
-  - leveraged_funds_ctas
-  - commercial_hedgers
-  features: []
-  targets:
-  - XNGUSD
-  fetcher: owned
-  owner: institutional_footprint
-  consumer: desks/mt5/research/institutional_footprint.py
-  kind: mechanics
-  uses:
-  - allocation_intel
-  cadence_minutes: 1440
-  region: uk
-  auth: none
-  licence: public free publication; unconfirmed terms fail closed
-  language: en
-  source_culture: GB/en
-  participant_structure: institutional
-  failure_mode_hypothesis: positioning extremes resolve by continuation when OI is still rising; the crowding read fails without
-    an unwind trigger.
-  crowding_prior: medium
-  culture_derivation:
-    source_culture: declared
-    participant_structure: declared
-    failure_mode_hypothesis: declared
-    crowding_prior: declared
-  pack_source_ids:
-  - pack_us_us_cme_ice_cboe
 - id: institutional.uk.ons.trade_flows
   name: ONS balance of payments and trade
   jurisdiction: uk
@@ -4296,7 +4236,7 @@ sources:
   dataset: bop_portfolio
   source_class: cross_border_capital
   role: central_bank
-  url: https://data.ecb.europa.eu/
+  url: https://data.ecb.europa.eu/data/datasets/BP6
   frequency: monthly
   publication_lag_days: 50
   declared_status: DISCOVERED_NOT_INGESTED
@@ -4372,7 +4312,7 @@ sources:
   dataset: investment_fund_statistics
   source_class: fund_flows
   role: fund_filings
-  url: https://data.ecb.europa.eu/
+  url: https://data.ecb.europa.eu/data/datasets/IVF
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -4480,7 +4420,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.ea.eurex.volume_oi
+- id: ground:de:eurex_volume_and_oi
   name: Eurex daily volume and OI (Bund, Bobl, Schatz, DAX, Stoxx)
   jurisdiction: ea
   publisher: eurex
@@ -4520,6 +4460,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.ea.eurex.volume_oi
+  aliases: []
 - id: institutional.ea.euronext.cot_commodities
   name: 'Euronext commitments of traders (MiFID II): milling wheat, rapeseed, corn'
   jurisdiction: ea
@@ -4559,14 +4501,14 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.ea.eex.transparency
+- id: gie_agsi_storage
   name: EEX/ENTSOG gas storage and power fundamentals (AGSI+)
   jurisdiction: ea
   publisher: eex
   dataset: transparency
   source_class: physical_inventory
   role: exchange
-  url: https://agsi.gie.eu/
+  url: https://agsi.gie.eu/data-overview
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -4597,10 +4539,12 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.ea.eex.transparency
+  aliases: []
   pack_source_ids:
   - pack_black_sea_energy_physical
   - pack_maghreb_energy_mgb_gas_flows
-- id: institutional.jp.jpx.investor_type_equities
+- id: dataset:jpx_trading_by_type_of_investors_weekly
   name: JPX weekly trading by investor type (foreigners, individuals, trust banks, proprietary)
   jurisdiction: jp
   publisher: jpx
@@ -4641,6 +4585,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.jp.jpx.investor_type_equities
+  aliases: []
 - id: institutional.jp.jpx.investor_type_derivatives
   name: JPX/OSE derivatives trading and OI by investor type (incl. TOCOM gold, platinum)
   jurisdiction: jp
@@ -4717,7 +4663,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.jp.mof.fx_intervention
+- id: jp_mof_intervention
   name: MOF foreign exchange intervention operations (monthly totals, quarterly day-by-day)
   jurisdiction: jp
   publisher: mof
@@ -4756,6 +4702,9 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.jp.mof.fx_intervention
+  aliases:
+  - dataset:japan_mof_foreign_exchange_intervention_operations
 - id: institutional.jp.mof.international_securities
   name: MOF weekly international transactions in securities (portfolio flows)
   jurisdiction: jp
@@ -4798,7 +4747,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.jp.mof.jgb_auctions
+- id: jp_mof_bond_auctions
   name: MOF JGB auction results
   jurisdiction: jp
   publisher: mof
@@ -4836,6 +4785,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.jp.mof.jgb_auctions
+  aliases: []
 - id: institutional.jp.boj.money_markets
   name: BOJ money market operations and current account balances
   jurisdiction: jp
@@ -4872,7 +4823,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.jp.gpif.allocation
+- id: jp_gpif_allocation
   name: GPIF quarterly asset allocation (the world's largest pension)
   jurisdiction: jp
   publisher: gpif
@@ -4909,6 +4860,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.jp.gpif.allocation
+  aliases: []
 - id: institutional.jp.tfx.click_kabu
   name: TFX Click 365 FX and retail positioning statistics
   jurisdiction: jp
@@ -4947,7 +4900,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.cn.shfe.daily_ranking
+- id: shfe_member_rank
   name: SHFE daily member ranking (top-20 volume, long OI, short OI by futures company)
   jurisdiction: cn
   publisher: shfe
@@ -4993,7 +4946,9 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.cn.shfe.warrants
+  atlas_id: institutional.cn.shfe.daily_ranking
+  aliases: []
+- id: shfe_warehouse
   name: SHFE warehouse warrants and delivery statistics
   jurisdiction: cn
   publisher: shfe
@@ -5036,6 +4991,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.cn.shfe.warrants
+  aliases: []
 - id: institutional.cn.ine.daily_ranking
   name: INE daily member ranking (top-20 volume, long OI, short OI by futures company)
   jurisdiction: cn
@@ -5284,7 +5241,7 @@ sources:
   dataset: daily_ranking
   source_class: futures_positioning
   role: exchange
-  url: http://www.gfex.com.cn/
+  url: http://www.gfex.com.cn/gfex/rcjccpm/hqsj_tjsj.shtml
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5319,14 +5276,14 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.cn.cffex.member_ranking
+- id: cffex_member_rank
   name: CFFEX index and bond futures member rankings
   jurisdiction: cn
   publisher: cffex
   dataset: member_ranking
   source_class: futures_positioning
   role: exchange
-  url: http://www.cffex.com.cn/
+  url: http://www.cffex.com.cn/ccpm/
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5358,6 +5315,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.cn.cffex.member_ranking
+  aliases: []
 - id: institutional.cn.sge.delivery_volume
   name: Shanghai Gold Exchange delivery (withdrawal) volumes and premiums
   jurisdiction: cn
@@ -5365,7 +5324,7 @@ sources:
   dataset: delivery_volume
   source_class: physical_inventory
   role: exchange
-  url: https://en.sge.com.cn/
+  url: https://en.sge.com.cn/data/data_DailyMarket
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5518,7 +5477,7 @@ sources:
   dataset: imports
   source_class: physical_inventory
   role: treasury
-  url: http://english.customs.gov.cn/
+  url: http://english.customs.gov.cn/statics/report/monthly.html
   frequency: monthly
   publication_lag_days: 20
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5712,7 +5671,7 @@ sources:
   dataset: investor_type
   source_class: participant_type_flow
   role: exchange
-  url: https://data.krx.co.kr/
+  url: https://data.krx.co.kr/contents/MDC/MDI/mdiLoader/index.cmd?menuId=MDC0201020101
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5752,7 +5711,7 @@ sources:
   dataset: ecos
   source_class: cross_border_capital
   role: central_bank
-  url: https://ecos.bok.or.kr/
+  url: https://ecos.bok.or.kr/api/
   frequency: monthly
   publication_lag_days: 30
   declared_status: DISCOVERED_NOT_INGESTED
@@ -5825,7 +5784,7 @@ sources:
   dataset: allocation
   source_class: pension_insurance
   role: regulator
-  url: https://fund.nps.or.kr/
+  url: https://fund.nps.or.kr/eng/fdmgmt/fdmgmt_02.jsp
   frequency: quarterly
   publication_lag_days: 60
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6064,7 +6023,7 @@ sources:
   dataset: warehouse
   source_class: physical_inventory
   role: exchange
-  url: https://ncdex.com/
+  url: https://ncdex.com/markets/warehousestock
   frequency: daily
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6101,7 +6060,7 @@ sources:
   dataset: fx_reserves_forward_book
   source_class: official_reserves
   role: central_bank
-  url: https://www.rbi.org.in/
+  url: https://www.rbi.org.in/Scripts/BS_ViewWSSExtractdata.aspx
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6140,7 +6099,7 @@ sources:
   dataset: fpi_flows
   source_class: cross_border_capital
   role: custodian_settlement
-  url: https://www.fpi.nsdl.co.in/
+  url: https://www.fpi.nsdl.co.in/web/Reports/Latest.aspx
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6179,7 +6138,7 @@ sources:
   dataset: money_fx
   source_class: money_market_plumbing
   role: clearing_house
-  url: https://www.ccilindia.com/
+  url: https://www.ccilindia.com/web/ccil/fx-statistics
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6323,14 +6282,14 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.my.mpob.stocks_production_exports
+- id: mpob_palm
   name: MPOB palm oil stocks, production and exports
   jurisdiction: my
   publisher: mpob
   dataset: stocks_production_exports
   source_class: physical_inventory
   role: regulator
-  url: https://bepi.mpob.gov.my/
+  url: https://bepi.mpob.gov.my/index.php/en/statistics
   frequency: monthly
   publication_lag_days: 10
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6361,6 +6320,9 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.my.mpob.stocks_production_exports
+  aliases:
+  - ground:my:mpob_palm_oil_statistics
 - id: institutional.my.bnm.fx_reserves
   name: Bank Negara reserves and interbank FX volumes
   jurisdiction: my
@@ -6548,7 +6510,7 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.au.aemo.energy
+- id: au_aemo_gas
   name: AEMO electricity and gas market data
   jurisdiction: au
   publisher: aemo
@@ -6585,6 +6547,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.au.aemo.energy
+  aliases: []
 - id: institutional.nz.rbnz.liquidity_fx
   name: RBNZ FX turnover, liquidity and reserves
   jurisdiction: nz
@@ -6621,14 +6585,14 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
-- id: institutional.nz.gdt.dairy_auction
+- id: gdt_auction
   name: Global Dairy Trade auction results
   jurisdiction: nz
   publisher: gdt
   dataset: dairy_auction
   source_class: physical_inventory
   role: exchange
-  url: https://www.globaldairytrade.info/
+  url: https://www.globaldairytrade.info/en/product-results/
   frequency: biweekly
   publication_lag_days: 0
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6657,6 +6621,9 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.nz.gdt.dairy_auction
+  aliases:
+  - ground:nz:global_dairy_trade_results
 - id: institutional.ca.ciro.short_positions
   name: CIRO consolidated short position reports
   jurisdiction: ca
@@ -6664,7 +6631,7 @@ sources:
   dataset: short_positions
   source_class: securities_lending_short
   role: regulator
-  url: https://www.ciro.ca/
+  url: https://www.ciro.ca/markets/market-data/short-position-reports
   frequency: semi-monthly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6745,7 +6712,7 @@ sources:
   dataset: intl_securities
   source_class: cross_border_capital
   role: treasury
-  url: https://www150.statcan.gc.ca/
+  url: https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=3610002801
   frequency: monthly
   publication_lag_days: 45
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6779,7 +6746,7 @@ sources:
   - pack_ca_ca_apps_apis
   - pack_ca_ca_archives
   - pack_ca_ca_statcan_cbsa
-- id: institutional.br.b3.investor_type
+- id: b3_investor_flow
   name: B3 participation by investor type (foreign, institutional, individual) and DOL futures OI
   jurisdiction: br
   publisher: b3
@@ -6816,6 +6783,8 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+  atlas_id: institutional.br.b3.investor_type
+  aliases: []
 - id: institutional.br.bcb.fx_flow
   name: BCB weekly FX flow (financial and commercial), swaps and reserves
   jurisdiction: br
@@ -6897,7 +6866,7 @@ sources:
   dataset: volume_oi
   source_class: futures_positioning
   role: exchange
-  url: https://www.mexder.com.mx/
+  url: https://www.mexder.com.mx/wb/MEX/estadisticas
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6934,7 +6903,7 @@ sources:
   dataset: fx_interventions
   source_class: central_bank_operations
   role: central_bank
-  url: https://data.snb.ch/
+  url: https://data.snb.ch/en/topics/snb/cube/snbfxint
   frequency: weekly
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -6973,7 +6942,7 @@ sources:
   dataset: gold_trade
   source_class: physical_inventory
   role: treasury
-  url: https://www.bazg.admin.ch/
+  url: https://www.bazg.admin.ch/bazg/en/home/topics/swiss-impex.html
   frequency: monthly
   publication_lag_days: 20
   declared_status: DISCOVERED_NOT_INGESTED
@@ -7083,7 +7052,7 @@ sources:
   dataset: derivatives
   source_class: futures_positioning
   role: exchange
-  url: https://www.jse.co.za/
+  url: https://www.jse.co.za/trade/derivative-market/statistics
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -7196,7 +7165,7 @@ sources:
   dataset: volume_oi
   source_class: futures_positioning
   role: exchange
-  url: https://www.dgcx.ae/
+  url: https://www.dgcx.ae/market-data/daily-reports
   frequency: daily
   publication_lag_days: 1
   declared_status: DISCOVERED_NOT_INGESTED
@@ -7234,7 +7203,7 @@ sources:
   dataset: fx_positions
   source_class: cross_border_capital
   role: central_bank
-  url: https://evds2.tcmb.gov.tr/
+  url: https://evds2.tcmb.gov.tr/index.php?/evds/serieMarket
   frequency: weekly
   publication_lag_days: 7
   declared_status: DISCOVERED_NOT_INGESTED
