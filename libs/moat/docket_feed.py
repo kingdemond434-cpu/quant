@@ -88,6 +88,10 @@ def _row(c: Mapping[str, Any]) -> dict[str, Any] | None:
         # CULTURE PROVENANCE RIDES ONTO THE DOCKET (libs/research/cell_culture.py): stamped at
         # the registry door, carried here so the judged cell and its certificate keep it.
         **_culture_of(c),
+        # LINEAGE RIDES WITH IT: the registry's `lineage_json` (the producer's chain -- parent
+        # family, island, genome, swarm producer) verbatim, so a judged cell can still be traced
+        # to what minted it and Tier S can group verdicts by culture AND by parent.
+        **_lineage_of(c),
     }
 
 
@@ -112,6 +116,22 @@ def _culture_of(c: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
+#: The registry's lineage column, carried verbatim (the stored JSON text) when present.
+LINEAGE_COLUMNS: tuple[str, ...] = ("lineage_json",)
+
+
+def _lineage_of(c: Mapping[str, Any]) -> dict[str, Any]:
+    v = c.get("lineage_json")
+    if v in (None, "", "{}", "null"):
+        return {}
+    if not isinstance(v, str):
+        try:
+            v = json.dumps(v, sort_keys=True, default=str)
+        except (TypeError, ValueError):
+            return {}
+    return {"lineage_json": v}
+
+
 def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | None = None,
                    banned: frozenset[str] | None = None,
                    batch: int = 20000) -> Iterator[dict[str, Any]]:
@@ -125,8 +145,8 @@ def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | N
         have = {str(r[1]) for r in conn.execute("PRAGMA table_info(research_candidates)")}
     except sqlite3.Error:
         have = set()
-    extra = "".join(f", {k}" for k in CULTURE_COLUMNS if k in have)
-    # `extra` is built from CULTURE_COLUMNS, never from input
+    extra = "".join(f", {k}" for k in (*CULTURE_COLUMNS, *LINEAGE_COLUMNS) if k in have)
+    # `extra` is built from CULTURE_COLUMNS and LINEAGE_COLUMNS, never from input
     cur = conn.execute(
         "SELECT id, symbol, family, params_json, chart, origin, mechanism, grid_cell, score,"  # noqa: S608
         f" created_at, content_hash{extra} FROM research_candidates "
