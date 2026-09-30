@@ -26,14 +26,14 @@
   "LIVE": 123,
   "STALE": 0,
   "MISSING": 47,
-  "NEVER": 675,
+  "NEVER": 676,
   "UNMEASURED": 29
  },
  "scope": {
-  "attested": 874,
+  "attested": 875,
   "excluded": 454,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
-  "registry_components": 1328,
+  "registry_components": 1329,
   "declaration_defects": 4,
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
@@ -2143,6 +2143,31 @@
    },
    "progress_metric": "leg_completions",
    "consumer": "scripts/check_certificate_truth.py, registered in scripts/run_law_gate.py:163 an"
+  },
+  {
+   "organ": "leg:clock_accrual",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/clock_accrual.py"
+   ],
+   "clock": "hourly_cycle:clock_accrual",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CLOCK_ACCRUAL.json",
+   "artifact_declared": "desks/mt5/reports/CLOCK_ACCRUAL.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
   },
   {
    "organ": "leg:clock_liveness",
@@ -22165,9 +22190,9 @@
  "ratchet": {
   "STALE": 0,
   "MISSING": 47,
-  "NEVER": 675,
+  "NEVER": 676,
   "at": "2026-09-30T11:20:18+00:00",
   "git_sha": "UNMEASURED",
-  "attested": 874
+  "attested": 875
  }
 }
