@@ -14,6 +14,11 @@ WHAT MAY WITHHOLD, AND WHY SO LITTLE OF IT DOES.
                        every certificate at once, so it withholds none of them (it is the
                        immune FREEZE's business); replication and online FDR already have their
                        own door verdicts, so they are not counted twice.
+                       The closure/agent-world reviewer's two HIGH challenges count too:
+                       `closure_gap_survives` (the candidate's own positive edge turns
+                       negative when the venue shuts and reopens gapped) and
+                       `agent_worlds_survive` (it loses in all three agent ecologies). Both
+                       are the candidate's own replays, never a program-level fact.
   THEORY_REFUTED       the certificate's mechanism is REFUTED on OUT-OF-SAMPLE evidence alone
                        (forward, live and replication, weighted as the theory graph weights
                        them), with at least MIN_OOS pieces of it. Backtest failures are left out
@@ -32,7 +37,8 @@ from typing import Any
 from libs.tiers.theory import EVIDENCE_WEIGHT
 
 #: the panel resolvers whose verdict is a fact about the candidate itself
-CANDIDATE_SPECIFIC = frozenset({"forward_n_40", "stress_x5_positive"})
+CANDIDATE_SPECIFIC = frozenset({"forward_n_40", "stress_x5_positive",
+                                "closure_gap_survives", "agent_worlds_survive"})
 OOS_SOURCES = frozenset({"forward", "live", "replication"})
 MIN_OOS = 10
 

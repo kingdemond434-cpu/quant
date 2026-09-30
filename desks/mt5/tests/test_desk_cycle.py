@@ -248,6 +248,7 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
         "Hypothesis volume", "Breadth of the book", "Machinery gaps to tier-1",
         "Fully wired or it does not count", "No forced or fake work",
         "Every item fully completed this pass",
+        "Every producer maximally broad, unknown-unknowns mined",
     ), start=1):
         assert f"| D{n} | **{duty}** |" in step, duty
     for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
