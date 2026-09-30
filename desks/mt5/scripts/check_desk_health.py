@@ -15,6 +15,12 @@ WHAT IT REPORTS, and nothing more:
   * whether `py -3` resolves, since a launcher pointing at a Python that does not exist on this
     machine is exactly the failure that started all of this.
 
+ON A CLOCK, WITH AN ARTIFACT (2026-09-30). It used to print and nothing else, and nothing ran it:
+a diagnostic only a person at the box ever saw. It now runs as the core-plan hourly leg
+`desk_health` with `--out`, which also writes every finding as JSON to
+desks/mt5/reports/DESK_HEALTH.json (published by sync_shadow_to_git.ps1), so a reader off the box
+gets the same answer. Exit 0 always: it is a report, and every PROBLEM is in the document.
+
 WHAT IT DOES NOT DO. It starts nothing, stops nothing, kills nothing, and writes nothing outside
 its own report. It is safe to run while the desk is trading, which is the point: a diagnostic
 you hesitate to run is a diagnostic you do not run.
@@ -25,15 +31,23 @@ thing this must never do is print a reassuring line about something it could not
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 DESK = Path(__file__).resolve().parent.parent
 ROOT = DESK.parent.parent
+OUT = DESK / "reports" / "DESK_HEALTH.json"
+
+#: Every finding of this run, in order: (section, level, message). The JSON report is this list.
+_FINDINGS: list[dict[str, str]] = []
+_SECTION = [""]
 
 #: task name -> what it drives, and how stale its evidence may be before it is a finding.
 TASKS: tuple[tuple[str, str], ...] = (
@@ -64,15 +78,27 @@ ARTIFACTS: tuple[tuple[str, str, float], ...] = (
 )
 
 
+def _section(title: str) -> None:
+    _SECTION[0] = title
+    print(title)
+
+
+def _note(level: str, msg: str) -> None:
+    _FINDINGS.append({"section": _SECTION[0], "level": level, "message": msg})
+
+
 def _ok(msg: str) -> None:
+    _note("OK", msg)
     print(f"  [ OK ]      {msg}")
 
 
 def _bad(msg: str) -> None:
+    _note("PROBLEM", msg)
     print(f"  [PROBLEM]   {msg}")
 
 
 def _unknown(msg: str) -> None:
+    _note("UNKNOWN", msg)
     print(f"  [UNKNOWN]   {msg}")
 
 
@@ -85,7 +111,7 @@ def _run(args: list[str], timeout: int = 30) -> tuple[int, str]:
 
 
 def check_python() -> None:
-    print("PYTHON")
+    _section("PYTHON")
     print(f"  running as: {sys.executable}")
     rc, out = _run(["py", "-3", "-c", "import sys; print(sys.executable)"])
     if rc == 0 and out.strip():
@@ -97,7 +123,7 @@ def check_python() -> None:
 
 
 def check_tasks() -> None:
-    print("SCHEDULED TASKS  (what drives the desk)")
+    _section("SCHEDULED TASKS  (what drives the desk)")
     for name, what in TASKS:
         rc, out = _run(["schtasks", "/Query", "/TN", name, "/FO", "LIST", "/V"])
         if rc != 0:
@@ -123,11 +149,27 @@ def check_tasks() -> None:
     print()
 
 
+def _process_blob() -> tuple[int, str]:
+    """Every process name and command line. psutil first: CIM has HUNG on the trading box
+    (CLAUDE.md), and this now runs on an hourly clock; PowerShell/CIM only when psutil is absent."""
+    try:
+        import psutil
+    except ImportError:
+        return _run(["powershell", "-NoProfile", "-Command",
+                     "Get-CimInstance Win32_Process | ForEach-Object { $_.Name + ' ' + "
+                     "$_.CommandLine }"], timeout=90)
+    lines = []
+    for p in psutil.process_iter(["name", "cmdline"]):
+        try:
+            lines.append(f"{p.info.get('name') or ''} {' '.join(p.info.get('cmdline') or [])}")
+        except Exception:  # a process that vanished mid-walk is not a finding
+            continue
+    return 0, "\n".join(lines)
+
+
 def check_processes() -> None:
-    print("RUNNING NOW")
-    rc, out = _run(["powershell", "-NoProfile", "-Command",
-                    "Get-CimInstance Win32_Process | ForEach-Object { $_.Name + ' ' + "
-                    "$_.CommandLine }"], timeout=90)
+    _section("RUNNING NOW")
+    rc, out = _process_blob()
     if rc != 0:
         _unknown("could not read the process list, so nothing below is claimed either way")
         print()
@@ -142,7 +184,7 @@ def check_processes() -> None:
 
 
 def check_artifacts() -> None:
-    print("WHAT THE DESK HAS ACTUALLY PRODUCED")
+    _section("WHAT THE DESK HAS ACTUALLY PRODUCED")
     now = time.time()
     for rel, producer, max_h in ARTIFACTS:
         p = DESK / rel
@@ -166,7 +208,7 @@ def check_artifacts() -> None:
 
 def check_state_flow() -> None:
     """A FRESH meter that says STALLED is still a stall: read its verdict, not only its age."""
-    print("IS THE BOX'S STATE REACHING ORIGIN")
+    _section("IS THE BOX'S STATE REACHING ORIGIN")
     p = DESK / "reports" / "BOX_STATE_FLOW.json"
     try:
         doc = json.loads(p.read_text("utf-8"))
@@ -200,8 +242,34 @@ def check_state_flow() -> None:
     print()
 
 
+def check_stall_watch_alerts() -> None:
+    """stall_watch.json's alerts_* keys (the ten-minute watcher's reading) had no reader."""
+    _section("DOES A STALL PAGE ANYONE  (stall_watch.json, every ten minutes)")
+    p = DESK / "data" / "stall_watch.json"
+    try:
+        doc = json.loads(p.read_text("utf-8-sig"))
+    except FileNotFoundError:
+        _unknown("data/stall_watch.json is absent -- MT5-StallWatch has not run here")
+        print()
+        return
+    except (OSError, ValueError) as exc:
+        _unknown(f"data/stall_watch.json unreadable ({exc})")
+        print()
+        return
+    if not isinstance(doc, dict) or ("alerts_armed" not in doc and "alerts_line" not in doc):
+        _unknown("stall_watch.json carries no alerts_* keys -- stall_watch.ps1 predates the "
+                 "state flow watcher; arming is UNMEASURED")
+    elif doc.get("alerts_line"):
+        _bad(f"{doc['alerts_line']} (stall_watch {doc.get('checked_at')}, watcher verdict "
+             f"{doc.get('state_flow_watch')})")
+    else:
+        _ok(f"alerts armed: {doc.get('alerts_armed')} channel(s) (stall_watch "
+            f"{doc.get('checked_at')})")
+    print()
+
+
 def check_gateway_state() -> None:
-    print("THE GATEWAY'S OWN LAST WORD")
+    _section("THE GATEWAY'S OWN LAST WORD")
     p = DESK / "data" / "gateway_state.json"
     if not p.exists():
         _bad("data/gateway_state.json is absent -- the gateway has never written state here")
@@ -236,7 +304,23 @@ def check_gateway_state() -> None:
     print()
 
 
-def main() -> int:
+def report(checked_at: str) -> dict[str, Any]:
+    """The run's findings as a document; PROBLEM and UNKNOWN counted, never folded into OK."""
+    counts = {lvl: sum(1 for f in _FINDINGS if f["level"] == lvl)
+              for lvl in ("OK", "PROBLEM", "UNKNOWN")}
+    verdict = ("PROBLEM" if counts["PROBLEM"] else "UNMEASURED" if counts["UNKNOWN"] or not
+               _FINDINGS else "OK")
+    return {"schema": "desk_health/1", "checked_at": checked_at, "desk_root": str(DESK),
+            "verdict": verdict, "counts": counts, "findings": list(_FINDINGS)}
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="Is the desk actually running?")
+    ap.add_argument("--out", nargs="?", const=str(OUT), default=None,
+                    help=f"also write the findings as JSON (default path {OUT})")
+    args = ap.parse_args(argv)
+    _FINDINGS.clear()
+    checked_at = datetime.now(UTC).isoformat(timespec="seconds")
     os.chdir(DESK)
     print(f"desk root: {DESK}")
     print(f"checked  : {time.strftime('%Y-%m-%d %H:%M:%S')} local\n")
@@ -245,9 +329,18 @@ def main() -> int:
     check_processes()
     check_artifacts()
     check_state_flow()
+    check_stall_watch_alerts()
     check_gateway_state()
     print("Every [PROBLEM] line above is a thing to fix. [UNKNOWN] means this could not check,")
     print("which is a finding too -- it is never the same as OK.")
+    if args.out:
+        out = Path(args.out)
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(json.dumps(report(checked_at), indent=2), "utf-8")
+            print(f"report: {out}")
+        except OSError as exc:
+            print(f"report NOT written ({exc})", file=sys.stderr)
     return 0
 
 
