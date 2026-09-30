@@ -47,8 +47,7 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     total = 0
     by_fam: dict[str, int] = {}
     intel = DESK / "data" / "intelligence"
-    if not intel.exists():
-        return 0, {}
+    # No early return when there is no intelligence dir: the side ledgers below still count.
     for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
