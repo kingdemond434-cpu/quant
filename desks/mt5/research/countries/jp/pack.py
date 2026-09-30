@@ -66,8 +66,10 @@ MISSION = ("hold the jurisdiction so its already-crawled grounds -- the BoJ time
            "instruments the Japan department already knows they move. The mechanisms live in "
            "research/japan/; this pack is the declaration the conversion path reads.")
 
-#: The department that owns Japan's research. Named here so nothing re-implements it.
+#: The department that owns Japan's research. Named here so nothing re-implements it. The box's
+#: untracked `research.japan` wins where it exists; the in-git rebuild is the fallback.
 DEPARTMENT_MODULE = "research.japan.mandate"
+DEPARTMENT_FALLBACK = "research.countries.jp.mandate"
 
 
 def _quoted() -> tuple[str, ...]:
@@ -88,10 +90,16 @@ def _yen_pairs(quoted: tuple[str, ...]) -> tuple[str, ...]:
 
 def _department_instruments(quoted: tuple[str, ...]) -> tuple[str, ...]:
     """What the Japan department's own actor map names, kept only where the broker quotes it."""
+    # THE BOX'S OWN DEPARTMENT FIRST, THE IN-GIT REBUILD SECOND (2026-09-30). `research/japan/`
+    # was never committed; `countries/jp/mandate.py` is the rebuild, kept at a path the box's
+    # untracked originals cannot collide with (see its docstring).
     try:
         from research.japan import mandate
     except Exception:
-        return ()
+        try:
+            from research.countries.jp import mandate  # type: ignore[no-redef]
+        except Exception:
+            return ()
     seen: list[str] = []
     for actor in (getattr(mandate, "ACTORS", ()) or ()):
         if not isinstance(actor, dict):

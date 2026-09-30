@@ -921,6 +921,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "dukascopy_backfill", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
+                     # the dedicated collector for primary corporate disclosures
+                     "corporate_disclosure",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1714,6 +1716,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
     "event_surprise": 400,
+    # The disclosure moat stops itself at --budget-s 600 (fetch share 75%) and writes; the cap
+    # sits above it.
+    "corporate_disclosure": 700,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -3581,6 +3586,14 @@ def main() -> None:
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
     esur = _costed("event_surprise", lambda: _producer(
         "event_surprise", "research/event_surprise.py", "--once", "--budget-s", "300"))
+    # THE PRIMARY-DISCLOSURE MOAT (2026-09-30): TDnet, EDINET, J-Quants, DART, cninfo, SSE, SZSE
+    # and EDGAR 8-K/6-K, read in the issuers' own languages, dated at publication, mapped to MT5
+    # instruments through the registry. Event rows for the news lane (read by news_event_stream
+    # below), a PIT disclosure-flow series per source and country (pack_cells), the allocation
+    # state file, and event_reaction / news_reaction / exogenous_gate donations for the compiler.
+    # Keyed sources with no key report BLOCKED_NO_KEY; nothing here sizes or judges.
+    cdis = _costed("corporate_disclosure", lambda: _producer(
+        "corporate_disclosure", "research/corporate_disclosure.py", "--once", "--budget-s", "600"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -5161,7 +5174,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
-                    "event_surprise": esur,
+                    "event_surprise": esur, "corporate_disclosure": cdis,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,

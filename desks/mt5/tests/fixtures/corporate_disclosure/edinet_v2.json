@@ -1,0 +1,35 @@
+{
+ "_fixture": "FIXTURE -- constructed from the provider's documented response shape, NOT a network recording: this build container's egress proxy refuses every one of these hosts (CONNECT rejected, 2026-09-30). Values are illustrative; the shape is what is tested.",
+ "metadata": {
+  "title": "提出された書類を把握するためのAPI",
+  "status": "200",
+  "message": "OK",
+  "resultset": {
+   "count": 2
+  }
+ },
+ "results": [
+  {
+   "seqNumber": 1,
+   "docID": "S100FIX1",
+   "edinetCode": "E02144",
+   "secCode": "72030",
+   "filerName": "トヨタ自動車株式会社",
+   "docTypeCode": "220",
+   "submitDateTime": "2026-09-29 09:15",
+   "docDescription": "自己株券買付状況報告書（法２４条の６第１項に基づくもの）",
+   "withdrawalStatus": "0"
+  },
+  {
+   "seqNumber": 2,
+   "docID": "S100FIX2",
+   "edinetCode": "E99999",
+   "secCode": null,
+   "filerName": "ファンド運用株式会社",
+   "docTypeCode": "350",
+   "submitDateTime": "2026-09-29 10:00",
+   "docDescription": "大量保有報告書",
+   "withdrawalStatus": "0"
+  }
+ ]
+}

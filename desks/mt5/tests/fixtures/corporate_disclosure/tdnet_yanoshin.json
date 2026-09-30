@@ -1,0 +1,51 @@
+{
+ "_fixture": "FIXTURE -- constructed from the provider's documented response shape, NOT a network recording: this build container's egress proxy refuses every one of these hosts (CONNECT rejected, 2026-09-30). Values are illustrative; the shape is what is tested.",
+ "total_count": 4,
+ "condition_desc": "20260929",
+ "items": [
+  {
+   "Tdnet": {
+    "id": "1402026092900001",
+    "pubdate": "2026-09-29 15:00:00",
+    "company_code": "72030",
+    "company_name": "トヨタ自動車",
+    "title": "2027年3月期 業績予想の上方修正に関するお知らせ",
+    "document_url": "https://webapi.yanoshin.jp/rd.php?https://www.release.tdnet.info/inbs/140120260929000001.pdf",
+    "markets_string": "東名"
+   }
+  },
+  {
+   "Tdnet": {
+    "id": "1402026092900002",
+    "pubdate": "2026-09-29 15:30:00",
+    "company_code": "80350",
+    "company_name": "東京エレクトロン",
+    "title": "自己株式の取得状況に関するお知らせ",
+    "document_url": "",
+    "markets_string": "東"
+   }
+  },
+  {
+   "Tdnet": {
+    "id": "1402026092900003",
+    "pubdate": "2026-09-29 16:00:00",
+    "company_code": "99990",
+    "company_name": "テスト商事",
+    "title": "2027年3月期 第2四半期決算短信〔日本基準〕(連結)",
+    "document_url": "",
+    "markets_string": "東"
+   }
+  },
+  {
+   "Tdnet": {
+    "id": "1402026092900004",
+    "pubdate": "2026-09-29 17:10:00",
+    "company_code": "99980",
+    "company_name": "サンプル工業",
+    "title": "業績予想の下方修正及び特別損失の計上に関するお知らせ",
+    "document_url": "",
+    "markets_string": "東"
+   }
+  }
+ ]
+}

@@ -1,0 +1,44 @@
+{
+ "_fixture": "FIXTURE -- constructed from the provider's documented response shape, NOT a network recording: this build container's egress proxy refuses every one of these hosts (CONNECT rejected, 2026-09-30). Values are illustrative; the shape is what is tested.",
+ "status": "000",
+ "message": "정상",
+ "page_no": 1,
+ "page_count": 100,
+ "total_count": 3,
+ "total_page": 1,
+ "list": [
+  {
+   "corp_code": "00126380",
+   "corp_name": "삼성전자",
+   "stock_code": "005930",
+   "corp_cls": "Y",
+   "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)",
+   "rcept_no": "20260929800001",
+   "flr_nm": "삼성전자",
+   "rcept_dt": "20260929",
+   "rm": "유"
+  },
+  {
+   "corp_code": "00164779",
+   "corp_name": "SK하이닉스",
+   "stock_code": "000660",
+   "corp_cls": "Y",
+   "report_nm": "주요사항보고서(자기주식취득결정)",
+   "rcept_no": "20260929000002",
+   "flr_nm": "SK하이닉스",
+   "rcept_dt": "20260929",
+   "rm": ""
+  },
+  {
+   "corp_code": "00999999",
+   "corp_name": "테스트",
+   "stock_code": "999999",
+   "corp_cls": "K",
+   "report_nm": "단일판매ㆍ공급계약체결",
+   "rcept_no": "20260929000003",
+   "flr_nm": "테스트",
+   "rcept_dt": "20260929",
+   "rm": "코"
+  }
+ ]
+}

@@ -137,6 +137,7 @@ def family_event_reaction(
     ttl_bars: int = 48,
     cooldown_bars: int = 12,
     clock: str = "bars",
+    event_stream: str = "",
 ) -> list[Signal]:
     """Trade the bars after a dated event, entering only once the market could know about it.
 
@@ -167,6 +168,16 @@ def family_event_reaction(
     # `len()` answers for a list, a tuple, a dict, a Series and an Index alike, and the `is None`
     # guard keeps the one shape that has no length at all. An input this function cannot measure
     # is still refused -- it is refused as a verdict rather than as a crash.
+    # A CELL THAT NAMES ITS OWN EVENT STREAM LOADS IT (2026-09-30). The sealed gauntlet hands
+    # every event_reaction cell the one calendar index it knows; a cell minted from a corporate
+    # disclosure stream (`research/corporate_disclosure.py`) carries `event_stream` in its params
+    # and reads its own dated filings here instead. Those stamps are genuinely UTC (the exchange's
+    # or regulator's publication time), so the clock is declared rather than assumed. An empty
+    # `event_stream` changes nothing for any existing cell.
+    if event_stream:
+        from mt5desk.disclosure_events import load_events
+        events = load_events(event_stream, symbol)
+        clock = "utc"
     if events is None or mode not in MODES or side not in (1, -1) or symbol == "":
         return []
     try:

@@ -1,0 +1,35 @@
+{
+ "_fixture": "FIXTURE -- constructed from the provider's documented response shape, NOT a network recording: this build container's egress proxy refuses every one of these hosts (CONNECT rejected, 2026-09-30). Values are illustrative; the shape is what is tested.",
+ "totalAnnouncement": 3,
+ "totalRecordNum": 3,
+ "hasMore": false,
+ "announcements": [
+  {
+   "secCode": "002594",
+   "secName": "比亚迪",
+   "orgId": "gssz0002594",
+   "announcementId": "1224000001",
+   "announcementTitle": "关于回购公司股份的进展公告",
+   "announcementTime": 1790611200000,
+   "adjunctUrl": "finalpage/2026-09-29/1224000001.PDF"
+  },
+  {
+   "secCode": "300750",
+   "secName": "宁德时代",
+   "orgId": "GD165627",
+   "announcementId": "1224000002",
+   "announcementTitle": "2026年前三季度业绩预告（预增）",
+   "announcementTime": 1790611200000,
+   "adjunctUrl": "finalpage/2026-09-29/1224000002.PDF"
+  },
+  {
+   "secCode": "000001",
+   "secName": "平安银行",
+   "orgId": "gssz0000001",
+   "announcementId": "1224000003",
+   "announcementTitle": "关于收到<em>问询函</em>的公告",
+   "announcementTime": 1790611200000,
+   "adjunctUrl": ""
+  }
+ ]
+}
