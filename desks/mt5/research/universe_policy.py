@@ -199,3 +199,108 @@ def split(symbols) -> dict[str, list[str]]:
     for key in out:
         out[key] = sorted(set(out[key]))
     return out
+
+
+# =============================================================================================
+# PEER CLASSES FOR CROSS-SECTIONAL FAMILIES (2026-09-30).
+#
+# A cross-sectional hypothesis ranks an instrument AGAINST ITS CLASS at a point in time, so it
+# needs an answer to "which instruments is this one ranked against", and that answer has to be
+# the same in the gauntlet, the forward clock and the live executor. It is derived here, from the
+# same broker registry the lane is, and never from a symbol list: a Fusion instrument listed
+# tomorrow joins its class the day it appears.
+#
+# ONLY THE HYPOTHESIS LANE HAS PEER CLASSES. A single-name equity is traded on its own news and is
+# never ranked (the two-lane order of 2026-09-06), and an UNCLASSIFIED symbol is ranked against
+# nothing -- absence is not a permission here either.
+#
+# FIVE CLASSES, AND THE CONSTRUCTION RULES THAT KEEP ONE BET FROM BEING COUNTED TWICE:
+#   fx_usd     every pair with a USD leg, read as the NON-USD CURRENCY's value in dollars
+#              (EURUSD as-is, USDJPY inverted), so the rank is a rank of currencies -- the
+#              construction in Menkhoff, Sarno, Schmeling & Schrimpf (2012).
+#   fx_cross   pairs with no USD leg, ranked as pairs. Each is the difference of two USD legs, so
+#              they are their own cross-section rather than extra members of the first one.
+#   index      equity indices. The dollar basket (a symbol spelled USD...) is a currency and is
+#              left out: ranking it beside NAS100 would be ranking an FX bet as an equity one.
+#   commodity  metals, energy and softs as one class (Asness, Moskowitz & Pedersen 2013 rank
+#              commodities as one book). A metal quoted in a second currency (XAUEUR, XAGEUR,
+#              XAUAUD) is the metal times an FX rate and is left out for the same reason.
+#   crypto     Fusion's crypto CFDs.
+# Bonds have their own class but three members in the registry; below MIN_CLASS_MEMBERS a rank is
+# a sort of three, and the class reports as too small rather than borrowing members.
+# =============================================================================================
+
+#: Members a class must have present on a date before any member of it is ranked on that date.
+MIN_CLASS_MEMBERS = 5
+
+_FX_CLASSES = _norm_set({"forex", "forex majors", "forex crosses", "forex exotics", "fx",
+                         "fx_major", "fx_cross", "fx_exotic"})
+_INDEX_CLASSES = _norm_set({"indices", "index"})
+_COMMODITY_CLASSES = _norm_set({"commodity", "commodities", "soft commodity", "soft commodities",
+                                "soft", "metal", "metals", "precious metals", "energy"})
+_BOND_CLASSES = _norm_set({"bond", "bonds"})
+_CRYPTO_CLASSES = _norm_set({"crypto", "cryptocurrency"})
+
+#: The peer classes, in the order reports list them.
+PEER_CLASSES: tuple[str, ...] = ("fx_usd", "fx_cross", "index", "commodity", "bond", "crypto")
+
+
+def _pair_legs(symbol: str) -> tuple[str, str] | None:
+    s = str(symbol).strip().upper()
+    if len(s) == 6 and s.isalpha():
+        return s[:3], s[3:]
+    return None
+
+
+def peer_class(symbol: str) -> str | None:
+    """The cross-sectional class `symbol` is ranked within, or None. Never raises.
+
+    None for every symbol outside the hypothesis lane, and for the two constructions that would
+    count one bet twice (a metal quoted in a second currency, the dollar basket among indices).
+    """
+    try:
+        if lane(symbol) != HYPOTHESIS:
+            return None
+        klass = asset_class_of(symbol)
+    except Exception:
+        return None
+    legs = _pair_legs(symbol)
+    if klass in _FX_CLASSES:
+        if legs is None:
+            return None
+        return "fx_usd" if "USD" in legs else "fx_cross"
+    if klass in _INDEX_CLASSES:
+        return None if str(symbol).strip().upper().startswith("USD") else "index"
+    if klass in _COMMODITY_CLASSES:
+        if legs is not None and legs[0].startswith("X") and legs[1] != "USD":
+            return None
+        return "commodity"
+    if klass in _BOND_CLASSES:
+        return "bond"
+    if klass in _CRYPTO_CLASSES:
+        return "crypto"
+    return None
+
+
+def usd_orientation(symbol: str) -> int:
+    """+1 when the pair's price IS the non-USD currency in dollars (XXXUSD), -1 when it must be
+    inverted to read that way (USDXXX), +1 for anything that is not a USD pair."""
+    legs = _pair_legs(symbol)
+    if legs is not None and legs[0] == "USD" and legs[1] != "USD":
+        return -1
+    return 1
+
+
+def peer_classes() -> dict[str, list[str]]:
+    """{class: members} over the whole registry, in the registry's own casing, one pass."""
+    out: dict[str, list[str]] = {k: [] for k in PEER_CLASSES}
+    for k, v in _registry().items():
+        c = peer_class(k)
+        if c is not None:
+            out.setdefault(c, []).append(str(v.get("symbol") or k))
+    return {k: sorted(set(v)) for k, v in out.items()}
+
+
+def class_members(klass: str) -> list[str]:
+    """Every registry symbol whose peer class is `klass`, sorted."""
+    return list(peer_classes().get(str(klass), []))
