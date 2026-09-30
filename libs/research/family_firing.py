@@ -12,10 +12,19 @@ fires.
 TWO CLOCKS (2026-09-30, the MT5-losses thread). Bars are broker stamps on New York + 7h
 (`libs/regime/session_clock.py`), and the shared
 filter compares their SERVER hour with its windows; the markets keep their own local clocks. So
-every verdict is taken on both: DEAD means the market's own session (Tokyo / London / New York
-08:00-16:00 local, DST included) never holds a signal; SESSION_TZ_MISMATCH means it does and only
-today's server-hour window misses them -- counted apart and never remapped, because the shared
-filter's fix (desk pass 2) makes that variant live as it stands.
+every verdict is taken on both, and DEAD needs BOTH to be empty:
+  LIVE                 both clocks hold signals;
+  LIVE_FILTER_ONLY     today's server-hour filter holds signals, the market session holds none --
+                       the variant TRADES as the desk runs it today (two ten-gate certificates,
+                       CHFDKK and EURZAR overnight_gap_decay asia, are exactly this). Kept, never
+                       remapped, never sorted last;
+  SESSION_TZ_MISMATCH  the market session holds signals and only today's server-hour window
+                       misses them -- counted apart and never remapped (pass 2 fixes the filter);
+  DEAD                 NEITHER clock holds a signal: the only class a stand-in answers.
+THE AUDIT OF #145 (2026-09-30) is why: DEAD was first judged on the market clock alone and so
+marked variants dead that fire under the live filter, certified sleeves among them. A guard now
+reads the certificate canon and the verdict evidence (`protected`) and never lets a certified,
+passed or net-positive cell be DEAD, whatever the hours say.
 
 WHAT IT ANSWERS. For (family, chart, the params that move the hour) it returns the hours the
 family's signals land on, MEASURED once on cached bars through the same call the gauntlet makes
@@ -63,11 +72,21 @@ UNIVERSE = DESK / "data" / "universe"
 CACHE = DESK / "data" / "family_firing_hours.json"
 
 #: Bump when the measurement changes meaning; a cache written under another version is ignored
-#: (read as UNMEASURED), never trusted.
-VERSION = 3
+#: (read as UNMEASURED), never trusted. The full version also carries the CONTENT HASH of
+#: `libs/regime/session_clock.py` (see `VERSION` below the clock import), so a change to the one
+#: clock conversion re-measures every key instead of serving market counts taken on the old clock.
+SCHEMA_VERSION = 4
 UNMEASURED = "UNMEASURED"
 LIVE = "LIVE"
 DEAD = "DEAD"
+#: Fires under the filter the desk applies TODAY (`family_call.SESSIONS`, server hours) and never
+#: in the market's own session. It trades as it stands, so it is kept, never remapped, never
+#: written to the dead sidecar and never sorted last.
+LIVE_FILTER_ONLY = "LIVE_FILTER_ONLY"
+#: The oracle's hours alone would say DEAD, but the cell holds a ten-gate certificate, a passed
+#: gate verdict or a net-positive verdict. Evidence of trading outranks a measured firing set:
+#: kept exactly as it is and counted, so a nonzero count is a defect in the oracle to chase.
+PROTECTED = "PROTECTED_BY_EVIDENCE"
 #: Dead ONLY because of the clock: the market's own session holds signals, the server-hour
 #: window the shared filter applies today (`family_call.SESSIONS`) holds none. Not remapped --
 #: the fix to the shared filter (desk pass 2) makes it live -- and counted apart.
@@ -122,6 +141,22 @@ Slot = tuple[str, dict[str, Any], dict[str, Any] | None]
 from libs.regime import session_clock  # noqa: E402
 
 MARKET_SESSIONS: dict[str, tuple[str, int, int]] = dict(session_clock.MARKET_SESSIONS)
+
+
+def clock_hash(path: Path | None = None) -> str:
+    """Content hash of the clock module, line endings normalised (the box checks out CRLF)."""
+    src = Path(path or session_clock.__file__)
+    try:
+        raw = src.read_bytes().replace(b"\r\n", b"\n")
+    except OSError:
+        return "unreadable"
+    import hashlib
+    return hashlib.sha256(raw).hexdigest()[:16]
+
+
+#: The cache version: schema + the clock's content. A cache written under any other clock is
+#: read as empty (UNMEASURED) and re-measured, never trusted.
+VERSION = f"{SCHEMA_VERSION}+clock:{clock_hash()}"
 #: Server hours inside each market session in EVERY week of the year under New York + 7h:
 #: Tokyo 08-16 is server 01-09 (US winter) or 02-10 (US summer); London 08-16 is server 10-18,
 #: or 09-17 in the weeks US and UK DST disagree; New York 08-16 is always server 15-23. These
@@ -270,12 +305,13 @@ def current_cache(path: Path | None = None) -> dict[str, Any]:
 def save_cache(doc: dict[str, Any], path: Path | None = None) -> None:
     target = Path(path or CACHE)
     target.parent.mkdir(parents=True, exist_ok=True)
-    doc = {**doc, "version": VERSION,
+    doc = {**doc, "version": VERSION, "clock_hash": clock_hash(),
            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
            "method": ("signals of fn(bars, side=1, **params) on the last "
                       f"{BAR_TAIL} bars of up to {MAX_SYMBOLS} cached symbols per key; DEAD "
-                      f"needs >= {N_MIN} pooled signals and none in the MARKET session; "
-                      f"{TZ_MISMATCH} when only the server-hour window is empty"),
+                      f"needs >= {N_MIN} pooled signals and none in EITHER the market session "
+                      f"or today's server-hour window; {LIVE_FILTER_ONLY} when only the market "
+                      f"session is empty; {TZ_MISMATCH} when only the server-hour window is"),
            "clock": CLOCK_BASIS}
     fd, tmp = tempfile.mkstemp(dir=str(target.parent), suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
@@ -483,11 +519,12 @@ def market_count(rec: dict[str, Any] | None, session: str) -> int | None:
 
 
 def verdict(rec: dict[str, Any] | None, session: str) -> str:
-    """LIVE / DEAD / SESSION_TZ_MISMATCH / UNMEASURED for one session of a measured record.
+    """LIVE / LIVE_FILTER_ONLY / SESSION_TZ_MISMATCH / DEAD / UNMEASURED for one session.
 
-    DEAD is judged on the MARKET clock (the session in its own local time); a variant whose
-    market session holds signals but whose server-hour window -- the one the shared filter applies
-    today -- holds none is SESSION_TZ_MISMATCH, never DEAD."""
+    DEAD only when NEITHER clock holds a signal: never on today's server-hour filter and never in
+    the market's own session. Filter-only is LIVE_FILTER_ONLY (it trades today); market-only is
+    SESSION_TZ_MISMATCH. The evidence guard (`protected`) is applied by the callers that know the
+    cell's symbol, on top of this."""
     s = str(session or "all").lower()
     if s == "all" or s not in sessions():
         return LIVE if rec and rec.get("status") == "MEASURED" else UNMEASURED
@@ -495,9 +532,9 @@ def verdict(rec: dict[str, Any] | None, session: str) -> str:
     market = market_count(rec, s) if s in MARKET_SESSIONS else naive
     if naive is None or market is None:
         return UNMEASURED
-    if market == 0:
-        return DEAD
-    return LIVE if naive > 0 else TZ_MISMATCH
+    if market > 0:
+        return LIVE if naive > 0 else TZ_MISMATCH
+    return LIVE_FILTER_ONLY if naive > 0 else DEAD
 
 
 def lookup(family: str, params: dict[str, Any] | None,
@@ -526,6 +563,140 @@ def classify(family: str, params: dict[str, Any] | None, session: str | None = N
     s = str(session or p.get("session") or "all").lower()
     rec = firing(family, p, cache=cache, measure_missing=measure_missing, symbol=symbol)
     return verdict(rec, s)
+
+
+# ------------------------------------------------------------------------------ evidence guard
+#
+# NEVER DEAD WHAT HAS TRADED OR PASSED (the audit of #145, 2026-09-30). The oracle judges hours;
+# the desk also holds direct evidence that a cell does fire and earn: a ten-gate certificate in
+# the canon, a PASSED row in the judge's verdict ledger, a NET_POSITIVE net verdict on a docket
+# row. Any of those outranks a measured firing set, so such a cell is PROTECTED, never DEAD.
+# A source that cannot be read is recorded as UNMEASURED in the guard, never as "no evidence
+# exists" -- and the rule `DEAD needs both clocks empty` still stands on its own without it.
+
+CANON = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+GATE_LEDGER = DESK / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+NET_POSITIVE_PREFIX = "NET_POSITIVE"
+
+
+def cell_key(symbol: Any, family: Any, params: dict[str, Any] | None,
+             session: str | None = None) -> str:
+    """(symbol, family, session, params without session): one name for a session variant, the
+    canon's (`selector`) and the docket's (`params.session`) spellings alike."""
+    raw = dict(params or {})
+    s = str(session or raw.get("session") or "all").lower()
+    p = {k: v for k, v in raw.items() if k != "session"}
+    return json.dumps([str(symbol), str(family), s, p], sort_keys=True, default=str,
+                      separators=(",", ":"))
+
+
+def gauntlet_cell_id(symbol: Any, family: Any, params: dict[str, Any] | None) -> str | None:
+    """The judge's own cell id (`frontier_identity.cell_id`), the key its verdict ledger uses."""
+    try:
+        _ensure_path()
+        from research.frontier_identity import cell_id
+        return str(cell_id({"sym": str(symbol), "family": str(family),
+                            "params": dict(params or {})}))
+    except Exception:
+        return None
+
+
+def load_guard(canon: Path | None = None, ledger: Path | None = None) -> dict[str, Any]:
+    """The evidence a DEAD verdict may never contradict: {certified, passed, net_positive,
+    sources}. `net_positive` is filled by whoever streams the docket (`note_net_verdict`)."""
+    guard: dict[str, Any] = {"certified": set(), "certified_ids": set(), "passed": set(),
+                             "net_positive": set(), "sources": {}}
+    cpath = Path(canon or CANON)
+    try:
+        doc = json.loads(cpath.read_text(encoding="utf-8"))
+        survivors = (doc.get("survivors") if isinstance(doc, dict) else None) or {}
+        for name, row in survivors.items():
+            if not isinstance(row, dict):
+                continue
+            spec = row.get("shadow_spec") if isinstance(row.get("shadow_spec"), dict) else {}
+            sym = spec.get("symbol") or row.get("sym")
+            fam = spec.get("family")
+            sel = str(spec.get("selector") or "all").lower()
+            if sym and fam:
+                guard["certified"].add(cell_key(sym, fam, spec.get("params") or {},
+                                                sel if sel in SESSION_NAMES else "all"))
+            guard["certified_ids"].add(str(row.get("cell") or str(name).removeprefix("external.")))
+        guard["sources"]["canon"] = {"path": cpath.name, "certificates": len(survivors)}
+    except Exception as exc:
+        guard["sources"]["canon"] = {"path": cpath.name,
+                                     "status": f"{UNMEASURED}: {type(exc).__name__}"}
+    lpath = Path(ledger or GATE_LEDGER)
+    last: dict[str, bool] = {}
+    try:
+        with lpath.open("r", encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(r, dict) and r.get("cell"):
+                    last[str(r["cell"])] = bool(r.get("passed"))
+        guard["passed"] = {c for c, ok in last.items() if ok}
+        guard["sources"]["gate_verdict_ledger"] = {"path": lpath.name, "cells": len(last),
+                                                   "passed": len(guard["passed"])}
+    except OSError as exc:
+        guard["sources"]["gate_verdict_ledger"] = {
+            "path": lpath.name, "status": f"{UNMEASURED}: {type(exc).__name__} (box state)"}
+    return guard
+
+
+def note_net_verdict(guard: dict[str, Any], row: dict[str, Any]) -> None:
+    """Record a docket row's own net verdict when it is net-positive."""
+    if str(row.get("net_verdict") or "").upper().startswith(NET_POSITIVE_PREFIX):
+        guard["net_positive"].add(cell_key(row.get("symbol"), row.get("family"),
+                                           row.get("params") if isinstance(row.get("params"),
+                                                                           dict) else {}))
+
+
+def protected(guard: dict[str, Any] | None, symbol: Any, family: Any,
+              params: dict[str, Any] | None, session: str | None = None) -> str | None:
+    """Why this cell may never be DEAD, or None."""
+    if not guard or not symbol:
+        return None
+    k = cell_key(symbol, family, params, session)
+    if k in guard.get("certified", ()):
+        return "ten-gate certificate (canon)"
+    if k in guard.get("net_positive", ()):
+        return "net-positive verdict"
+    p = dict(params or {})
+    s = str(session or p.get("session") or "all").lower()
+    if s != "all":
+        p["session"] = s
+    cid = gauntlet_cell_id(symbol, family, p)
+    if cid and cid in guard.get("passed", ()):
+        return "passed gate verdict"
+    return None
+
+
+_GUARD_MEMO: dict[str, Any] = {}
+
+
+def current_guard() -> dict[str, Any]:
+    """`load_guard`, re-read only when the canon or the ledger changed: producers ask per cell."""
+    stamp = []
+    for pth in (CANON, GATE_LEDGER):
+        try:
+            stamp.append(pth.stat().st_mtime)
+        except OSError:
+            stamp.append(-1.0)
+    if _GUARD_MEMO.get("stamp") != stamp:
+        _GUARD_MEMO.update(stamp=stamp, guard=load_guard())
+    return _GUARD_MEMO["guard"]
+
+
+def guarded_verdict(rec: dict[str, Any] | None, session: str, *, symbol: Any = None,
+                    family: Any = None, params: dict[str, Any] | None = None,
+                    guard: dict[str, Any] | None = None) -> str:
+    """`verdict`, with the evidence guard: a DEAD answer on a protected cell is PROTECTED."""
+    v = verdict(rec, session)
+    if v == DEAD and protected(guard, symbol, family, params, session):
+        return PROTECTED
+    return v
 
 
 # ------------------------------------------------------------------------------ remapping
@@ -665,7 +836,9 @@ def session_cells(family: str, base: dict[str, Any] | None, session_axis: Iterab
         seen.add(_identity(p))
     out: list[tuple[str, dict[str, Any], dict[str, Any] | None]] = []
     for s, p in zip(axis, planned, strict=True):
-        v = "all" if s == "all" else verdict(firing(family, b, cache=doc), s)
+        v = "all" if s == "all" else guarded_verdict(
+            firing(family, b, cache=doc), s, symbol=symbol, family=family, params=b,
+            guard=_safe_guard() if symbol else None)
         if v == TZ_MISMATCH:
             out.append((s, p, {"dead_session": s, "remapped": False, "cause": TZ_MISMATCH,
                                "why": "the market session holds signals; only the server-hour "
@@ -692,6 +865,13 @@ def session_cells(family: str, base: dict[str, Any] | None, session_axis: Iterab
                                else "rehomed"),
                      "census": "new cell, charged to the trial census when judged"}))
     return out
+
+
+def _safe_guard() -> dict[str, Any] | None:
+    try:
+        return current_guard()
+    except Exception:
+        return None
 
 
 def standin(family: str, params: dict[str, Any] | None, session: str | None = None, *,

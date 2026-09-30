@@ -6,6 +6,11 @@ The load-bearing pins:
   * `test_unmeasured_is_never_dead` -- a family the oracle cannot measure keeps its variant;
   * `test_tz_mismatch_is_counted_apart_and_never_remapped` -- a variant dead only because the
     shared filter reads the server clock is SESSION_TZ_MISMATCH, not DEAD;
+  * `test_live_filter_only_is_kept_and_never_remapped` -- DEAD needs BOTH clocks empty; a variant
+    that fires under today's filter is LIVE_FILTER_ONLY and trades as it stands;
+  * `test_certified_chfdkk_eurzar_asia_are_never_dead` -- the audit's case: two ten-gate
+    certificates the market-clock-only rule marked DEAD;
+  * `test_cache_version_follows_the_clock_module` -- a change to session_clock re-measures;
   * `test_leg_marks_donates_and_is_idempotent` -- the docket is read, never written; stand-ins go
     through the registry door once.
 """
@@ -44,6 +49,99 @@ def test_verdicts_on_both_clocks() -> None:
     assert ff.verdict(rec, "ny") == ff.LIVE               # server window [14, 22) and NY's own
     assert ff.verdict(rec, "london") == ff.TZ_MISMATCH    # London's own clock yes, server no
     assert ff.verdict(rec, "all") == ff.LIVE
+    # Fires at server 00: inside today's asia filter [0, 8), outside Tokyo 08-16 (server 1/2-9).
+    late = _rec({0: 100}, {})
+    assert ff.verdict(late, "asia") == ff.LIVE_FILTER_ONLY
+    assert ff.verdict(late, "london") == ff.DEAD          # neither clock
+
+
+def test_live_filter_only_is_kept_and_never_remapped() -> None:
+    fam = "overnight_gap_decay"
+    cache = _cache({ff.key(fam, {}): _rec({0: 269}, {})})
+    slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache)
+    by = {s: (p, n) for s, p, n in slots}
+    assert by["asia"] == ({"session": "asia"}, None)      # minted exactly as proposed, no mark
+    assert by["london"][1] and by["london"][1]["cause"] == ff.NEVER_FIRES
+    assert ff.replacements(fam, {}, "asia", cache=cache) == []
+    assert ff.standin(fam, {}, "asia", cache=cache) == ({"session": "asia"}, None)
+
+
+def _canon(path: Path, cells: list[tuple[str, str, str]]) -> Path:
+    survivors = {f"external.{sym}.{fam}.p=44136fa355b3678a": {
+        "cell": f"{sym}.{fam}.p=44136fa355b3678a", "sym": sym,
+        "shadow_spec": {"symbol": sym, "selector": sel, "family": fam, "params": {}}}
+        for sym, fam, sel in cells}
+    path.write_text(json.dumps({"survivors": survivors}), encoding="utf-8")
+    return path
+
+
+def test_certified_chfdkk_eurzar_asia_are_never_dead(tmp_path: Path) -> None:
+    fam = "overnight_gap_decay"
+    canon = _canon(tmp_path / "canon.json", [("CHFDKK", fam, "asia"), ("EURZAR", fam, "asia")])
+    guard = ff.load_guard(canon, tmp_path / "no_ledger.jsonl")
+    # The measured shape (fires at server 00 only): LIVE_FILTER_ONLY on the rule alone.
+    measured = _rec({0: 269}, {})
+    for sym in ("CHFDKK", "EURZAR"):
+        assert ff.guarded_verdict(measured, "asia", symbol=sym, family=fam,
+                                  params={"session": "asia"}, guard=guard) == ff.LIVE_FILTER_ONLY
+    # Even a firing set that says DEAD on both clocks cannot overrule the certificate.
+    nowhere = _rec({23: 269}, {})
+    assert ff.verdict(nowhere, "asia") == ff.DEAD
+    for sym in ("CHFDKK", "EURZAR"):
+        assert ff.guarded_verdict(nowhere, "asia", symbol=sym, family=fam,
+                                  params={"session": "asia"}, guard=guard) == ff.PROTECTED
+    assert ff.guarded_verdict(nowhere, "asia", symbol="EURUSD", family=fam,
+                              params={"session": "asia"}, guard=guard) == ff.DEAD
+    assert ff.guarded_verdict(nowhere, "london", symbol="CHFDKK", family=fam,
+                              params={"session": "london"}, guard=guard) == ff.DEAD
+
+
+def test_the_real_canon_protects_its_certified_session_sleeves() -> None:
+    guard = ff.load_guard()
+    doc = json.loads(ff.CANON.read_text(encoding="utf-8")) if ff.CANON.exists() else {}
+    specs = [r.get("shadow_spec") or {} for r in (doc.get("survivors") or {}).values()]
+    session_specs = [s for s in specs if str(s.get("selector") or "") in ff.SESSION_NAMES]
+    if not session_specs:
+        pytest.skip("no session-selected certificate in this tree's canon")
+    for spec in session_specs:
+        assert ff.protected(guard, spec["symbol"], spec["family"], spec.get("params") or {},
+                            spec["selector"])
+
+
+def test_net_positive_and_passed_verdicts_are_never_dead(tmp_path: Path) -> None:
+    fam = "london_close_momentum"
+    ledger = tmp_path / "gate_verdict_ledger.jsonl"
+    cid = ff.gauntlet_cell_id("GBPUSD", fam, {"session": "asia"})
+    assert cid
+    ledger.write_text(json.dumps({"cell": cid, "passed": True}) + "\n", encoding="utf-8")
+    guard = ff.load_guard(tmp_path / "no_canon.json", ledger)
+    ff.note_net_verdict(guard, {"symbol": "EURUSD", "family": fam, "params": {"session": "asia"},
+                                "net_verdict": "NET_POSITIVE_UNCONFIRMED"})
+    dead = _rec({16: 100}, {"london": 100, "ny": 100})
+    for sym in ("EURUSD", "GBPUSD"):
+        assert ff.guarded_verdict(dead, "asia", symbol=sym, family=fam,
+                                  params={"session": "asia"}, guard=guard) == ff.PROTECTED
+    assert ff.guarded_verdict(dead, "asia", symbol="USDJPY", family=fam,
+                              params={"session": "asia"}, guard=guard) == ff.DEAD
+
+
+def test_cache_version_follows_the_clock_module(tmp_path: Path) -> None:
+    from libs.regime import session_clock
+    assert ff.VERSION.endswith(ff.clock_hash())
+    assert ff.clock_hash() == ff.clock_hash(Path(session_clock.__file__))
+    moved = tmp_path / "session_clock.py"
+    src = Path(session_clock.__file__).read_bytes()
+    moved.write_bytes(src.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+    assert ff.clock_hash(moved) == ff.clock_hash()        # line endings are not a clock change
+    moved.write_bytes(src + b"\n# SERVER_SHIFT_H changed\n")
+    assert ff.clock_hash(moved) != ff.clock_hash()
+    cache_path = tmp_path / "firing.json"
+    ff.save_cache(_cache({"k": _rec({1: 40}, {})}), cache_path)
+    assert ff.load_cache(cache_path)["keys"] == {"k": _rec({1: 40}, {})}
+    doc = json.loads(cache_path.read_text(encoding="utf-8"))
+    doc["version"] = f"{ff.SCHEMA_VERSION}+clock:{ff.clock_hash(moved)}"
+    cache_path.write_text(json.dumps(doc), encoding="utf-8")
+    assert ff.load_cache(cache_path)["keys"] == {}         # another clock: re-measure
 
 
 def test_unmeasured_is_never_dead() -> None:
@@ -78,7 +176,7 @@ def test_market_clock_follows_dst() -> None:
 def test_the_oracle_uses_the_one_session_clock() -> None:
     from libs.regime import session_clock
     assert ff.session_clock is session_clock
-    assert ff.MARKET_SESSIONS == dict(session_clock.MARKET_SESSIONS)
+    assert dict(session_clock.MARKET_SESSIONS) == ff.MARKET_SESSIONS
     assert "Athens" not in ff.CLOCK_BASIS
 
 
@@ -199,7 +297,8 @@ def test_leg_marks_donates_and_is_idempotent(tmp_path: Path,
     registry.set_path(tmp_path / "registry.sqlite")
     try:
         kw = {"budget_s": 30.0, "docket": docket, "cache_path": cache_path,
-              "sidecar": tmp_path / "DEAD.jsonl", "out": tmp_path / "REMAP.json"}
+              "sidecar": tmp_path / "DEAD.jsonl", "out": tmp_path / "REMAP.json",
+              "canon": tmp_path / "no_canon.json", "ledger": tmp_path / "no_ledger.jsonl"}
         doc = svr.run(**kw)
         assert docket.read_text(encoding="utf-8") == before       # box state untouched
         assert doc["session_variants"] == 3
@@ -211,6 +310,7 @@ def test_leg_marks_donates_and_is_idempotent(tmp_path: Path,
         for m in marks:
             for k in svr.CULTURE_KEYS:
                 assert m[k]
+        assert doc["guard"]["certified_or_positive_dead"] == 0
         again = svr.run(**kw)
         assert again["donation"]["created"] == 0 and again["donation"]["already_present"] == 1
     finally:
@@ -223,3 +323,25 @@ def test_leg_is_wired() -> None:
     src = (BASE / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
     assert '_costed("session_variant_remap"' in src
     assert '"session_variant_remap": 300' in src
+
+
+def test_leg_keeps_certified_and_filter_only_variants_out_of_the_sidecar(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import session_variant_remap as svr
+    fam = "overnight_gap_decay"
+    cache_path = tmp_path / "firing.json"
+    ff.save_cache(_cache({ff.key(fam, {}): {**_rec({0: 269}, {}), "host": ff._host(),
+                                            "measured_at": 1e12}}), cache_path)
+    docket = tmp_path / "external_survivors.json"
+    rows = [{"genome_id": f"{sym}{s}", "symbol": sym, "family": fam, "params": {"session": s}}
+            for sym in ("CHFDKK", "EURZAR") for s in ("asia", "london", "ny")]
+    docket.write_text(json.dumps(rows), encoding="utf-8")
+    canon = _canon(tmp_path / "canon.json", [("CHFDKK", fam, "asia"), ("EURZAR", fam, "asia")])
+    doc = svr.run(budget_s=30.0, donate_rows=False, docket=docket, cache_path=cache_path,
+                  sidecar=tmp_path / "DEAD.jsonl", out=tmp_path / "REMAP.json", canon=canon,
+                  ledger=tmp_path / "no_ledger.jsonl")
+    assert doc["live_filter_only"] == 2 and doc["dead_found"] == 4
+    assert doc["guard"]["certified_or_positive_dead"] == 0
+    assert doc["dead_but_server_window_fires"] == 0
+    marks = [json.loads(x) for x in (tmp_path / "DEAD.jsonl").read_text().splitlines()]
+    assert all(m["session"] != "asia" for m in marks)

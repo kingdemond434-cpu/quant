@@ -11,7 +11,12 @@ WHAT ONE PASS DOES, bounded by rows and by seconds:
   1. streams the docket and collects every session variant;
   2. measures the oracle keys it has never measured (cache `data/family_firing_hours.json`,
      versioned), within `--measure-s`;
-  3. classifies each variant LIVE / DEAD / UNMEASURED. UNMEASURED is never DEAD and is left alone;
+  3. classifies each variant LIVE / LIVE_FILTER_ONLY / SESSION_TZ_MISMATCH / DEAD / UNMEASURED.
+     DEAD needs BOTH clocks empty (never on today's server-hour filter, never in the market's own
+     session); UNMEASURED is never DEAD; and the evidence guard (`family_firing.protected`: the
+     certificate canon, the judge's verdict ledger, the docket's own net verdicts) turns any DEAD
+     answer on a certified, passed or net-positive cell into PROTECTED_BY_EVIDENCE. Only DEAD is
+     remapped; LIVE_FILTER_ONLY trades as the desk runs today and is never marked or sorted last;
   4. writes every DEAD variant to the sidecar `data/hypotheses/DEAD_SESSION_VARIANTS.jsonl`, with
      the hours its family fires and its stand-in -- the file a feeder (the cache warmer, the
      two-stage judge) reads to skip a slot it would otherwise spend on an empty signal list;
@@ -99,9 +104,10 @@ def _culture(row: dict, family: str, dead: str, home: str,
     return out
 
 
-def scan(docket: Path = DOCKET, *, max_rows: int = MAX_ROWS) -> tuple[list[dict], set[bytes],
-                                                                       dict[str, int]]:
-    """(session variant rows, identity of every docket cell, census) in one streaming pass."""
+def scan(docket: Path = DOCKET, *, max_rows: int = MAX_ROWS,
+         guard: dict | None = None) -> tuple[list[dict], set[bytes], dict[str, int]]:
+    """(session variant rows, identity of every docket cell, census) in one streaming pass. Every
+    row's own net verdict is noted in `guard` on the way past."""
     variants: list[dict] = []
     idents: set[bytes] = set()
     census = {"rows": 0, "session_variants": 0, "truncated": 0}
@@ -117,6 +123,8 @@ def scan(docket: Path = DOCKET, *, max_rows: int = MAX_ROWS) -> tuple[list[dict]
         sym, fam = str(row.get("symbol") or ""), str(row.get("family") or "")
         params = row.get("params") if isinstance(row.get("params"), dict) else {}
         idents.add(_ident(sym, fam, params))
+        if guard is not None:
+            ff.note_net_verdict(guard, row)
         sess = str(params.get("session") or "").lower()
         if sess in ff.SESSION_NAMES and sym and fam:
             census["session_variants"] += 1
@@ -126,7 +134,8 @@ def scan(docket: Path = DOCKET, *, max_rows: int = MAX_ROWS) -> tuple[list[dict]
     return variants, idents, census
 
 
-def classify_all(variants: list[dict], cache: dict, *, measure_s: float) -> dict[str, Any]:
+def classify_all(variants: list[dict], cache: dict, *, measure_s: float,
+                 guard: dict | None = None) -> dict[str, Any]:
     """Measure missing keys (bounded) and classify every variant in place."""
     started = time.monotonic()
     measured = 0
@@ -143,7 +152,12 @@ def classify_all(variants: list[dict], cache: dict, *, measure_s: float) -> dict
         measured += 1
     first_sym = first
     for v in variants:
-        v["verdict"] = ff.verdict(ff.lookup(v["family"], v["params"], cache), v["session"])
+        rec = ff.lookup(v["family"], v["params"], cache)
+        v["verdict"] = ff.guarded_verdict(rec, v["session"], symbol=v["symbol"],
+                                          family=v["family"], params=v["params"], guard=guard)
+        if v["verdict"] == ff.PROTECTED:
+            v["protected_by"] = ff.protected(guard, v["symbol"], v["family"], v["params"],
+                                             v["session"])
     return {"keys": len(first_sym), "measured_now": measured,
             "unmeasured_keys": sum(1 for k in first_sym if (cache["keys"].get(k) or {})
                                    .get("status") != "MEASURED"),
@@ -158,6 +172,8 @@ def plan(variants: list[dict], idents: set[bytes], cache: dict, *,
     chosen: set[bytes] = set()
     stamp = _now()
     for v in variants:
+        # LIVE_FILTER_ONLY and PROTECTED_BY_EVIDENCE never reach the sidecar: the sealed patch
+        # sorts every sidecar row last, and both of those trade as the desk runs today.
         if v.get("verdict") not in (ff.DEAD, ff.TZ_MISMATCH):
             continue
         fam, sym, sess = v["family"], v["symbol"], v["session"]
@@ -189,8 +205,7 @@ def plan(variants: list[dict], idents: set[bytes], cache: dict, *,
             "genome_id": v.get("genome_id"), "symbol": sym, "family": fam,
             "params": v["params"], "session": sess, "chart": ff.chart_of(fam, v["params"]),
             "verdict": ff.DEAD, "cause": ff.NEVER_FIRES,
-            # Today's server-hour filter DOES pass signals for this variant -- at the wrong
-            # clock hours. Dead on the market clock all the same, and remapped.
+            # DEAD needs both clocks empty, so this is False on every row; kept as the check.
             "server_window_fires": bool(ff.window_count(rec, sess)),
             "fires_at_hours": sorted(int(h) for h in rec.get("hours") or {}),
             "n_signals_measured": rec.get("n"), "marked_at": stamp,
@@ -260,8 +275,27 @@ def donate(rows: list[dict], *, budget_s: float, max_donate: int = MAX_DONATE) -
             "elapsed_s": round(time.monotonic() - started, 2)}
 
 
+def guard_check(variants: list[dict], guard: dict) -> dict[str, Any]:
+    """Independent re-check: how many DEAD variants the evidence says fire. Must be 0."""
+    bad = [v for v in variants if v.get("verdict") == ff.DEAD
+           and ff.protected(guard, v["symbol"], v["family"], v["params"], v["session"])]
+    lfo_or_prot = [v for v in variants if v.get("verdict") in (ff.LIVE_FILTER_ONLY, ff.PROTECTED)]
+    evid = [v for v in variants
+            if ff.protected(guard, v["symbol"], v["family"], v["params"], v["session"])]
+    return {"sources": guard.get("sources"),
+            "certified_cells": len(guard.get("certified") or ()),
+            "passed_cells": len(guard.get("passed") or ()),
+            "net_positive_cells": len(guard.get("net_positive") or ()),
+            "session_variants_with_evidence": len(evid),
+            "evidence_variants_by_verdict": dict(Counter(str(v.get("verdict")) for v in evid)),
+            "certified_or_positive_dead": len(bad),
+            "certified_or_positive_dead_sample": [
+                {k: v[k] for k in ("symbol", "family", "params", "session")} for v in bad[:10]],
+            "live_filter_only_or_protected": len(lfo_or_prot)}
+
+
 def report(variants: list[dict], rows: list[dict], census: dict, cls: dict,
-           don: dict) -> dict[str, Any]:
+           don: dict, guard: dict | None = None) -> dict[str, Any]:
     by: dict[str, Counter] = defaultdict(Counter)
     for v in variants:
         by[v["family"]]["variants"] += 1
@@ -274,7 +308,8 @@ def report(variants: list[dict], rows: list[dict], census: dict, cls: dict,
             by[r["family"]][r["replacement"]["remap"]] += 1
     fams = {}
     for f, c in sorted(by.items(), key=lambda kv: -kv[1]["dead"]):
-        judged = c["dead"] + c["live"] + c["session_tz_mismatch"]
+        judged = (c["dead"] + c["live"] + c["session_tz_mismatch"] + c["live_filter_only"]
+                  + c["protected_by_evidence"])
         fams[f] = {**dict(c), "dead_share_of_variants": round(c["dead"] / c["variants"], 4),
                    "dead_share_of_measured": (round(c["dead"] / judged, 4) if judged
                                               else ff.UNMEASURED)}
@@ -282,21 +317,28 @@ def report(variants: list[dict], rows: list[dict], census: dict, cls: dict,
     dead = sum(1 for v in variants if v.get("verdict") == ff.DEAD)
     live = sum(1 for v in variants if v.get("verdict") == ff.LIVE)
     tzm = sum(1 for v in variants if v.get("verdict") == ff.TZ_MISMATCH)
-    unm = n - dead - live - tzm
+    lfo = sum(1 for v in variants if v.get("verdict") == ff.LIVE_FILTER_ONLY)
+    prot = sum(1 for v in variants if v.get("verdict") == ff.PROTECTED)
+    unm = n - dead - live - tzm - lfo - prot
+    judged = dead + live + tzm + lfo + prot
     dead_rows = [r for r in rows if r.get("verdict") == ff.DEAD]
     return {
         "generated_at": _now(), "oracle_version": ff.VERSION,
         "docket": {**census, "path": str(DOCKET.relative_to(BASE))},
         "session_variants": n, "dead_found": dead, "live": live, "unmeasured": unm,
-        "session_tz_mismatch": tzm,
+        "session_tz_mismatch": tzm, "live_filter_only": lfo, "protected_by_evidence": prot,
         "dead_share": round(dead / n, 4) if n else ff.UNMEASURED,
-        "dead_share_of_measured": (round(dead / (dead + live + tzm), 4) if dead + live + tzm
-                                   else ff.UNMEASURED),
-        "dead_by_cause": {ff.NEVER_FIRES: dead, ff.TZ_MISMATCH: tzm},
+        "dead_share_of_measured": round(dead / judged, 4) if judged else ff.UNMEASURED,
+        "dead_rule": ("DEAD only when NEITHER clock holds a signal (never on today's server-hour "
+                      "filter, never in the market's own session); filter-only is "
+                      f"{ff.LIVE_FILTER_ONLY}, market-only is {ff.TZ_MISMATCH}"),
+        "dead_by_cause": {ff.NEVER_FIRES: dead},
+        "guard": guard_check(variants, guard) if guard is not None else ff.UNMEASURED,
         "dead_but_server_window_fires": sum(1 for r in dead_rows
                                             if r.get("server_window_fires")),
         "dead_today_on_server_window": (sum(1 for r in dead_rows
                                             if not r.get("server_window_fires")) + tzm),
+        "oracle_clock_hash": ff.clock_hash(),
         "clock": ff.CLOCK_BASIS,
         "remapped": sum(1 for r in dead_rows if r.get("replacement")),
         "remapped_by_kind": dict(Counter(r["replacement"]["remap"] for r in dead_rows
@@ -316,11 +358,13 @@ def report(variants: list[dict], rows: list[dict], census: dict, cls: dict,
 
 def run(*, budget_s: float = 240.0, donate_rows: bool = True, docket: Path = DOCKET,
         cache_path: Path | None = None, sidecar: Path = SIDECAR,
-        out: Path = REPORT) -> dict[str, Any]:
+        out: Path = REPORT, canon: Path | None = None,
+        ledger: Path | None = None) -> dict[str, Any]:
     started = time.monotonic()
     cache = ff.load_cache(cache_path)
-    variants, idents, census = scan(docket)
-    cls = classify_all(variants, cache, measure_s=budget_s * 0.45)
+    guard = ff.load_guard(canon, ledger)
+    variants, idents, census = scan(docket, guard=guard)
+    cls = classify_all(variants, cache, measure_s=budget_s * 0.45, guard=guard)
     left = max(5.0, budget_s * 0.7 - (time.monotonic() - started))
     rows = plan(variants, idents, cache, measure_s=left * 0.5)
     ff.save_cache(cache, cache_path)
@@ -329,7 +373,7 @@ def run(*, budget_s: float = 240.0, donate_rows: bool = True, docket: Path = DOC
     don = (donate(rows, budget_s=left) if donate_rows
            else {"available": True, "dry_run": True,
                  "planned": sum(1 for r in rows if r.get("replacement"))})
-    doc = report(variants, rows, census, cls, don)
+    doc = report(variants, rows, census, cls, don, guard)
     doc["elapsed_s"] = round(time.monotonic() - started, 2)
     out.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(out.parent), suffix=".tmp")
@@ -348,6 +392,7 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     doc = run(budget_s=a.budget_s, donate_rows=not a.no_donate)
     print(f"session_variant_remap: {doc['session_variants']} variants, {doc['dead_found']} dead, "
+          f"{doc['live_filter_only']} live-filter-only, {doc['session_tz_mismatch']} tz-mismatch, "
           f"{doc['live']} live, {doc['unmeasured']} unmeasured, {doc['remapped']} remapped "
           f"in {doc['elapsed_s']}s")
     return 0
