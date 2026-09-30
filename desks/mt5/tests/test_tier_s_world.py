@@ -159,15 +159,21 @@ def test_organ_data_os_publishes_the_source_records(monkeypatch: Any, tmp_path: 
     monkeypatch.setattr(ts, "STATE", tmp_path / "state")
     monkeypatch.setattr(ts, "REPORTS", tmp_path / "reports")
     monkeypatch.setattr(ts, "HGRAPH", tmp_path / "none.jsonl")
+    (tmp_path / "state").mkdir()
+    (tmp_path / "state" / "acquisition.json").write_text(json.dumps({"predictions": [
+        {"item": "cot_tff", "kind": "dataset", "ranker": "legacy", "predicted_gain": 0.1,
+         "cost_eur": 0.0, "cost_cpu_h": 0.1, "metric": "pit_share", "metric_before": 0.4,
+         "at": "2026-09-01T00:00:00+00:00"}]}), "utf-8")
     out = ts.organ_data_os()
-    assert out["acquisition"]["scored_on"] == "gate_yield"
+    assert out["acquisition"]["scored_on"]["landed"] == "gate_yield"
     assert out["gate_yield"]["positioning"]["yield"] == 1.0
     assert out["metric"]["sources"] == out["sources"]["n_sources"] >= 5
-    top = out["acquisition"]["top"][0]
-    assert top["info_class"] == "positioning" and top["class_gate_yield"] == 1.0
+    for top in out["acquisition"]["top"]:   # ranker rows (own metric) carry their class yield
+        assert "info_class" in top and "class_gate_yield" in top
     saved = json.loads((tmp_path / "state" / "acquisition.json").read_text("utf-8"))
-    assert saved["predictions"][0]["metric"] == "gate_yield:positioning"
-    assert saved["predictions"][0]["metric_before"] == 1.0
+    legacy = [p for p in saved["predictions"] if p["ranker"] == "legacy"]
+    assert legacy[0]["metric"] == "gate_yield:positioning", "pit_share rows move to gate yield"
+    assert legacy[0]["metric_before"] == 1.0
 
 
 # ------------------------------------------------------------------------------------------ S03

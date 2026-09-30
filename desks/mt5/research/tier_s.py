@@ -2676,7 +2676,8 @@ def organ_data_os() -> dict[str, Any]:
     n_landed = bitemporal.resolve(landed, acquired, metric_now, NOW.isoformat())
     _save_state("acquisition", {"predictions": [p.to_dict() for p in landed + own][-3000:]})
     return {"pit_audits": audits, "sources": sources, "gate_yield": yields,
-            "acquisition": {"open": len(ranking), "registered_now": made,
+            "acquisition": {"scored_on": {"rankers": "own_metric", "landed": "gate_yield"},
+                            "open": len(ranking), "registered_now": made,
                             "resolved_now": n_res, "calibration": cal, "top": ranking[:25],
                             "reports_present": reports_seen,
                             "landed_on_gate_yield": {"n": len(landed), **moved,

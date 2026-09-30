@@ -306,19 +306,19 @@
     "libs/tiers/topology.py",
     "desks/mt5/research/tier_s.py",
     "libs/research/hypothesis_graph.py",
-    "libs/tiers/control_arm.py"
+    "libs/tiers/control_arm.py",
+    "desks/mt5/tests/test_tier_s_measurement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TOPOLOGY.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.effective_rank",
     "better": "up",
     "organ": "topology"
-   },
-   "remaining": "trade-overlap and exposure simulations beside the descriptor and live-P&L ranks"
+   }
   },
   {
    "id": "S16",
@@ -384,19 +384,19 @@
    "title": "Non-LLM intelligence: information, spectral, Kalman, queueing, ecology, network, MCMC labs",
    "files": [
     "libs/tiers/cross_science.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "desks/mt5/tests/test_tier_s_measurement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.hypotheses",
     "better": "up",
     "organ": "world_science"
-   },
-   "remaining": "a SAT/constraint lab and a Gaussian-process lab beside the eight running traditions"
+   }
   },
   {
    "id": "S20",
@@ -521,19 +521,19 @@
    "title": "Live prediction accounting: CRPS, PIT, coverage, honesty shrinkage",
    "files": [
     "libs/tiers/prediction_accounting.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "desks/mt5/tests/test_tier_s_measurement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/PREDICTIONS.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.accounted_share",
     "better": "up",
     "organ": "predictions"
-   },
-   "remaining": "MAE/MFE, hold and slippage forecasts scored beside R"
+   }
   },
   {
    "id": "S27",
@@ -580,19 +580,19 @@
    "title": "Self-model: deficiency ranking and sealed scorecard regression",
    "files": [
     "libs/tiers/self_model.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "desks/mt5/tests/test_tier_s_measurement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/SELF_MODEL.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.regressed",
     "better": "down",
     "organ": "self_model"
-   },
-   "remaining": "inventory rows for gate backlog, compute timeouts and allocator binding constraints"
+   }
   },
   {
    "id": "S30",
@@ -683,38 +683,40 @@
    "title": "Immutable meta-benchmark suite: sealed hash of generator, seeds and prices",
    "files": [
     "libs/tiers/meta_benchmark.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/real_episodes.py",
+    "desks/mt5/tests/test_tier_s_measurement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/IMMUNE.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.balanced",
     "better": "up",
     "organ": "immune"
-   },
-   "remaining": "a real-episode suite beside the synthetic one (the per-kind production suite is 150)"
+   }
   },
   {
    "id": "S35",
    "title": "Active information acquisition: acquisition predictions calibrated on arrival",
    "files": [
     "libs/tiers/bitemporal.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/acquisition_resolution.py",
+    "desks/mt5/tests/test_tier_s_measurement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/DATA_OS.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.calibrated_rankers",
     "better": "up",
     "organ": "data_os"
-   },
-   "remaining": "resolve each ranker on its own metric; normalised gain"
+   }
   },
   {
    "id": "S36",
@@ -741,19 +743,19 @@
    "title": "Epistemic uncertainty engine: known .. unknowable, 'not enough evidence to decide'",
    "files": [
     "libs/tiers/epistemic.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "desks/mt5/tests/test_tier_s_measurement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/EPISTEMIC.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.decidable_share",
     "better": "up",
     "organ": "epistemic"
-   },
-   "remaining": "DSR, PBO and cost-model quantities in the census beside forward edges and the immune score"
+   }
   },
   {
    "id": "S38",
