@@ -121,6 +121,18 @@ CREATE TABLE IF NOT EXISTS cell_events (
 CREATE INDEX IF NOT EXISTS cell_events_cell ON cell_events(cell_id, at);
 CREATE INDEX IF NOT EXISTS cell_events_at ON cell_events(at);
 CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL);
+-- The docket cells one mining cell becomes once the compiler expands it over chart x session
+-- (`miner_candidate_compiler.expand_axes`), and the gauntlet's verdict on each as it arrives.
+CREATE TABLE IF NOT EXISTS gauntlet_aliases (
+    gauntlet_cell TEXT NOT NULL, cell_id TEXT NOT NULL, axis TEXT NOT NULL,
+    PRIMARY KEY (gauntlet_cell, cell_id)
+);
+CREATE TABLE IF NOT EXISTS axis_verdicts (
+    cell_id TEXT NOT NULL, gauntlet_cell TEXT NOT NULL, axis TEXT NOT NULL, at TEXT NOT NULL,
+    passed INTEGER NOT NULL, terminal_gate TEXT NOT NULL DEFAULT '',
+    reason TEXT NOT NULL DEFAULT '', PRIMARY KEY (cell_id, gauntlet_cell)
+);
+CREATE INDEX IF NOT EXISTS axis_verdicts_at ON axis_verdicts(at);
 """
 
 
@@ -215,7 +227,41 @@ class CellRegistry:
             c.execute("INSERT INTO kv VALUES (?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v",
                       (k, v))
 
+    def add_aliases(self, cell_id: str, aliases: list[tuple[str, str]]) -> None:
+        """(gauntlet_cell, axis) pairs the docket may judge this cell under."""
+        with self._conn() as c:
+            c.executemany("INSERT OR IGNORE INTO gauntlet_aliases VALUES (?,?,?)",
+                          [(g, cell_id, a) for g, a in aliases if g])
+
+    def record_axis_verdict(self, cell_id: str, gauntlet_cell: str, axis: str, at: str,
+                            passed: bool, terminal_gate: str, reason: str) -> bool:
+        """True when this docket cell's verdict is new for the mining cell."""
+        with self._conn() as c:
+            cur = c.execute("INSERT OR IGNORE INTO axis_verdicts VALUES (?,?,?,?,?,?,?)",
+                            (cell_id, gauntlet_cell, axis, at, int(passed), terminal_gate,
+                             reason))
+            return bool(cur.rowcount)
+
+    def axis_verdicts_since(self, since: datetime) -> list[dict[str, Any]]:
+        with self._conn() as c:
+            rows = c.execute("SELECT * FROM axis_verdicts WHERE at >= ?",
+                             (iso(since),)).fetchall()
+        return [dict(r) for r in rows]
+
     # ---------------------------------------------------------------------------- reads
+    def by_alias(self, gauntlet_cell: str) -> list[tuple[Cell, str]]:
+        """Cells (awaiting or already holding a verdict) that this docket cell belongs to."""
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT cells.doc AS doc, a.axis AS axis FROM gauntlet_aliases a JOIN cells "
+                "ON cells.cell_id = a.cell_id WHERE a.gauntlet_cell=? AND cells.status IN "
+                "('EVALUATING','QUEUED','EVALUATED')", (gauntlet_cell,)).fetchall()
+            if not rows:                                  # a cell sealed before aliases existed
+                rows = c.execute("SELECT doc, 'as_donated' AS axis FROM cells WHERE "
+                                 "gauntlet_cell=? AND status IN ('EVALUATING','QUEUED')",
+                                 (gauntlet_cell,)).fetchall()
+        return [(Cell(**json.loads(str(r["doc"]))), str(r["axis"])) for r in rows]
+
     def get(self, cell_id: str) -> Cell | None:
         with self._conn() as c:
             row = c.execute("SELECT doc FROM cells WHERE cell_id=?", (cell_id,)).fetchone()

@@ -28,6 +28,7 @@ promoter and allocator decide what happens to it, through their own sealed paths
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
@@ -36,7 +37,7 @@ import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +55,15 @@ from libs.mining.registry import Cell, CellRegistry  # noqa: E402
 SOURCE = "global_mining"
 DATA = _DESK / "data" / "mining"
 REPORTS = _DESK / "reports" / "mining"
+#: The organ's own artifact (read by the component registry and the runtime attestation).
+REPORT = REPORTS / "MINING_METRICS.json"
+#: THE COMMITTED DIGEST. reports/ and data/mining/ are box-only; this one small file is tracked,
+#: sits under a state prefix, and is pushed by the box's hourly capture commit, so a reader on
+#: GitHub sees the day's metrics, the latest rejections and every source -> cell -> prereg ->
+#: verdict chain (the six-event trace's event 1-3 evidence) without the box.
+DIGEST = _DESK / "data" / "mining_digest.json"
+DIGEST_REJECTIONS = 300
+DIGEST_CHAINS = 300
 UNI = _DESK / "data" / "universe"
 HYP = _DESK / "data" / "hypotheses"
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
@@ -65,6 +75,33 @@ QUEUE_AGE_LIMIT_DAYS = 7.0
 DEGRADED_SHARE = 0.5
 DEEPENING_CAP = 400
 DONATE_BATCH = 5_000
+
+#: THE DOCKET'S AXIS EXPANSION, mirrored. `miner_candidate_compiler.expand_axes` turns every
+#: donated H1 row that names no chart or session into one docket cell per intraday chart (with
+#: bars) x session, H1 last -- up to 16 gauntlet cells per mining cell. Every one is sealed into
+#: the preregistration up front and joined back, so the verdict counts are the docket's.
+try:
+    from research.miner_candidate_compiler import INTRADAY_CHARTS as _CHARTS
+    from research.miner_candidate_compiler import SESSION_AXIS as _SESSIONS
+except Exception:                                          # tests and a bare checkout
+    _CHARTS, _SESSIONS = ("M5", "M15", "M30"), ("all", "asia", "london", "ny")
+
+
+def axis_variants(spec: Mapping[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    """(axis label, spec) for every docket cell `expand_axes` can make from this spec."""
+    params = dict(spec.get("params") or {})
+    if "timeframe" in params or "session" in params:
+        return [("as_donated", dict(spec))]
+    out = []
+    for tf in (*_CHARTS, "H1"):
+        for sess in _SESSIONS:
+            p = dict(params)
+            if tf != "H1":
+                p["timeframe"] = tf
+            if sess != "all":
+                p["session"] = sess
+            out.append((f"{tf}/{sess}", {**spec, "params": p}))
+    return out
 
 
 # ============================================================================ wiring
@@ -159,8 +196,11 @@ class PassReport:
 class Pipeline:
     def __init__(self, data_dir: Path = DATA, reports_dir: Path = REPORTS, *,
                  roster: list[acq.Source] | None = None, hooks: Hooks | None = None,
-                 gate_ledger: Path = GATE_LEDGER, root: Path = _ROOT) -> None:
+                 gate_ledger: Path = GATE_LEDGER, root: Path = _ROOT,
+                 digest: Path | None = None) -> None:
         self.data = Path(data_dir)
+        # beside data_dir: desks/mt5/data/mining -> desks/mt5/data/mining_digest.json (DIGEST)
+        self.digest = Path(digest) if digest is not None else self.data.parent / DIGEST.name
         self.reports = Path(reports_dir)
         self.root = root
         db = self.data / "mining.db"
@@ -366,10 +406,17 @@ class Pipeline:
                     "required_data": cell.required_data, "source_uri": cell.source_uri,
                     "available_for_decision_at": cell.available_for_decision_at,
                     "gauntlet_cell": cell.gauntlet_cell,
+                    "gauntlet_cells_expanded": self._expanded(spec),
                     "evaluator": "desks/mt5/scripts/external_gauntlet.py (sealed)"}
         sha = self.prereg.seal(contract, now=now)
+        self.cells.add_aliases(cell.cell_id, [(cell.gauntlet_cell, "as_donated"),
+                                              *[(g, a) for a, g in
+                                                contract["gauntlet_cells_expanded"].items()]])
         self.cells.transition(cell.cell_id, "QUEUED", stage="preregister",
                               updates={"preregistration_id": sha}, now=now)
+
+    def _expanded(self, spec: Mapping[str, Any]) -> dict[str, str]:
+        return {axis: self.hooks.gauntlet_cell(v) for axis, v in axis_variants(spec)}
 
     def _claim_cell(self, rec: Mapping[str, Any], ex: extractor.Extraction,
                     claim: Mapping[str, Any], *, handoff: bool) -> int:
@@ -456,7 +503,7 @@ class Pipeline:
                 "published_at": c.publication_time or c.acquisition_time,
                 "preregistration_id": c.preregistration_id, "mining_cell_id": c.cell_id,
                 "trial_family_id": c.trial_family_id, "parent_cell_id": c.parent_cell_id,
-                "source_uri": c.source_uri})
+                "source_uri": c.source_uri, "url": c.source_uri})
         ok, detail = self.hooks.donate(rows)
         if not ok:
             # The door refused the batch (stamping or lane); the cells stay QUEUED and the
@@ -490,29 +537,48 @@ class Pipeline:
                     continue
                 if not isinstance(v, dict):
                     continue
-                for cell in self.cells.by_gauntlet_cell(str(v.get("cell") or "")):
-                    if cell.status == "EVALUATING":
-                        joined += self._apply_verdict(cell, v, now=now)
+                for cell, axis in self.cells.by_alias(str(v.get("cell") or "")):
+                    if cell.status in ("EVALUATING", "EVALUATED"):
+                        joined += self._apply_verdict(cell, v, axis=axis, now=now)
         self.cells.kv_set("gate_ledger_offset", str(off))
         return joined
 
-    def _apply_verdict(self, cell: Cell, v: Mapping[str, Any],
+    def _apply_verdict(self, cell: Cell, v: Mapping[str, Any], *, axis: str = "as_donated",
                        now: datetime | None = None) -> int:
+        """One docket cell's verdict onto its mining cell.
+
+        The FIRST judged docket cell settles the mining cell (EVALUATED, with that gate's reason
+        or as a survivor). Every later one is recorded per axis, and a later pass on any axis
+        makes the mining cell a survivor -- the docket judged it, so the count is the docket's.
+        A docket cell outside the sealed expansion is FAILS_PREREG."""
         reason, gate = rejection.reason_for_verdict(v)
         if gate == "DEFERRED":
             return 0
+        g = str(v.get("cell") or "")
         try:
             contract = self.prereg.load(cell.cell_id)
-            sealed_g = str(contract.get("gauntlet_cell") or "")
-            recomputed = self.hooks.gauntlet_cell(prereg.spec_of(contract))
-            ok = sealed_g == str(v.get("cell")) == recomputed
-            why = "" if ok else (f"judged {v.get('cell')} but sealed {sealed_g} / "
-                                 f"recomputed {recomputed}")
+            sealed = {str(contract.get("gauntlet_cell") or ""),
+                      *[str(x) for x in (contract.get("gauntlet_cells_expanded") or {}).values()]}
+            spec = prereg.spec_of(contract)
+            recomputed = {self.hooks.gauntlet_cell(spec), *self._expanded(spec).values()}
+            ok = g in sealed and g in recomputed
+            why = "" if ok else (f"judged {g}, which is not in the sealed expansion "
+                                 f"({len(sealed)} cells) or its recomputation")
         except (OSError, ValueError, prereg.PreregMutationError) as exc:
             ok, why = False, str(exc)
-        verdict = {"gauntlet_cell": v.get("cell"), "passed": bool(v.get("passed")),
+        at = str(v.get("at") or iso(now or utcnow()))
+        if not self.cells.record_axis_verdict(cell.cell_id, g, axis, at, bool(v.get("passed")),
+                                              str(v.get("terminal_gate") or ""),
+                                              "" if reason is None else reason.value):
+            return 0                                          # this docket cell already joined
+        verdict = {"gauntlet_cell": g, "axis": axis, "passed": bool(v.get("passed")),
                    "terminal_gate": v.get("terminal_gate"), "at": v.get("at"),
                    "downstream_status": v.get("downstream_status")}
+        if cell.status == "EVALUATED":
+            if ok and reason is None and not (cell.verdict or {}).get("survivor"):
+                self.cells.update_doc(cell.cell_id, {"verdict": {
+                    **(cell.verdict or {}), "survivor": True, "survivor_axis": verdict}})
+            return 1
         if not ok:
             self.cells.transition(cell.cell_id, "EVALUATED", stage="preregister",
                                   reason="FAILS_PREREG", now=now, updates={"verdict": verdict})
@@ -526,7 +592,8 @@ class Pipeline:
         self.cells.transition(cell.cell_id, "EVALUATED", stage="gauntlet",
                               reason=reason.value, now=now, updates={"verdict": verdict})
         self.ledger.reject(cell.cell_id, reason.value, "gauntlet", source_id=cell.source_id,
-                           detail=f"terminal gate {gate}", kill_class=rejection.kill_class(gate))
+                           detail=f"terminal gate {gate} ({axis})",
+                           kill_class=rejection.kill_class(gate))
         return 1
 
     # --------------------------------------------------------------------- deepening
@@ -593,8 +660,9 @@ class Pipeline:
         evaluated = entered(lambda s: s == "EVALUATED")
         by_reason_eval = self.ledger.counts(day, stages=rejection.EVALUATION_STAGES)
         rejected = sum(by_reason_eval.values())
+        axis_rows = self.cells.axis_verdicts_since(day)
         survived = len({e["cell_id"] for e in events if e["to_status"] == "EVALUATED"
-                        and not e["reason"]})
+                        and not e["reason"]} | {r["cell_id"] for r in axis_rows if r["passed"]})
         lat = self._latency_hours(t)
         ages = self.cells.open_ages(t)
         p95 = {stage: (_pct(v, 95) if v else None) for stage, v in ages.items()}
@@ -626,6 +694,8 @@ class Pipeline:
                              if s not in rejection.EVALUATION_STAGES]),
             "gauntlet_kills_24h_by_class": self.ledger.kill_classes(day),
             "cells_survived_24h": survived,
+            "docket_cells_judged_24h": len(axis_rows),
+            "docket_cells_passed_24h": sum(1 for r in axis_rows if r["passed"]),
             "cells_by_use_24h": self._by_use(day),
             "rejection_rate": round(rate, 4) if rate is not None else None,
             "median_time_source_to_evaluation_hours": lat,
@@ -733,7 +803,58 @@ class Pipeline:
         (self.reports / "MINING_METRICS.json").write_text(text, "utf-8")
         (self.reports / "MINING_TRACE.json").write_text(
             json.dumps(m["trace"], indent=1, ensure_ascii=False, default=str), "utf-8")
+        self.write_digest(m, t)
         return m
+
+    def chains(self, now: datetime, limit: int = DIGEST_CHAINS) -> list[dict[str, Any]]:
+        """Source URL -> mining cell -> sealed prereg (hash, time) -> docket cell -> verdict,
+        newest verdicts first. Every field is read from the record, the cell or the sealed
+        contract; nothing is reconstructed."""
+        rows = sorted(self.cells.axis_verdicts_since(now - ACTIVE_WINDOW),
+                      key=lambda r: str(r["at"]), reverse=True)[:limit]
+        out: list[dict[str, Any]] = []
+        sealed: dict[str, tuple[str, str]] = {}
+        for r in rows:
+            c = self.cells.get(str(r["cell_id"]))
+            if c is None:
+                continue
+            if c.cell_id not in sealed:
+                try:
+                    k = self.prereg.load(c.cell_id)
+                    sealed[c.cell_id] = (self.prereg.sha(c.cell_id), str(k.get("sealed_at")))
+                except (OSError, ValueError, prereg.PreregMutationError):
+                    sealed[c.cell_id] = ("", "")
+            sha, sealed_at = sealed[c.cell_id]
+            out.append({"source_id": c.source_id, "source_url": c.source_uri,
+                        "collected_at": c.acquisition_time,
+                        "available_for_decision_at": c.available_for_decision_at,
+                        "cell_id": c.cell_id, "use": c.use,
+                        "trial_family_id": c.trial_family_id,
+                        "prereg_sha256": sha, "prereg_sealed_at": sealed_at,
+                        "gauntlet_cell": r["gauntlet_cell"], "axis": r["axis"],
+                        "verdict_at": r["at"], "passed": bool(r["passed"]),
+                        "terminal_gate": r["terminal_gate"], "reason": r["reason"] or None})
+        return out
+
+    def write_digest(self, m: Mapping[str, Any], now: datetime) -> None:
+        """The committed digest (DIGEST): bounded, scalars and short rows only."""
+        rej = list(self.ledger.rows())[-DIGEST_REJECTIONS:]
+        doc = {"schema": "mining_digest/1", "generated_at": iso(now),
+               "metrics": {k: v for k, v in m.items() if k not in ("trace", "last_pass",
+                                                                   "sources")},
+               "sources": {sid: {k: v.get(k) for k in ("status", "uses", "cold_reason",
+                                                        "last_outcome", "evaluated_cells_30d")}
+                           for sid, v in (m.get("sources") or {}).items()},
+               "trace": m.get("trace"),
+               "chains": self.chains(now),
+               "rejections_latest": rej}
+        self.digest.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.digest.with_suffix(".tmp")
+        tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str) + "\n",
+                       "utf-8")
+        with contextlib.suppress(OSError):
+            os.chmod(self.digest, 0o644)                  # Windows: never replace a read-only file
+        os.replace(tmp, self.digest)
 
     # --------------------------------------------------------------------- one pass
     def run_pass(self, budget_s: float, *, http_get: acq.HttpGet | None = None,
@@ -791,7 +912,7 @@ def fixture_trace(data_dir: Path) -> dict[str, Any]:
     src = acq.Source(id="fixture_mql5_codebase", fetcher="external_feed", kind="code",
                      priority=1, name="fixture", uses=list(acq.DEFAULT_USES["code"]))
     pipe = Pipeline(data_dir, data_dir / "reports", roster=[src], hooks=hooks,
-                    gate_ledger=ledger)
+                    gate_ledger=ledger, digest=data_dir / "mining_digest.json")
     body = ("//+ RSI Reversal EA for EURUSD H1\n"
             "input int RSI_Period = 14;\ninput int RSI_Oversold = 25;\n"
             "input int RSI_Overbought = 75;\n"
@@ -818,7 +939,7 @@ def fixture_trace(data_dir: Path) -> dict[str, Any]:
         built.setdefault("params", dict(spec.get("params") or {}))
         out = eg.run_gauntlet([built], "global-mining-fixture-trace", meta)
         for v in out.get("verdicts") or []:
-            rows.append({"at": iso(utcnow()), "cell": c.gauntlet_cell,
+            rows.append({"at": utcnow().isoformat(), "cell": c.gauntlet_cell,
                          "sym": v.get("sym"), "family": v.get("family"),
                          "passed": bool(v.get("passed")),
                          "terminal_gate": v.get("terminal_gate") or "UNKNOWN",

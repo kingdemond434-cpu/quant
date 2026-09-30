@@ -692,3 +692,53 @@ def test_gauntlet_kills_carry_the_asia_kill_class() -> None:
     assert rejection.kill_class("economic_prior") == "screen_reject"
     assert rejection.kill_class("not_run") == "unconfident"
     assert rejection.GATE_REASON["swap_cost"] is rejection.Reason.INSUFFICIENT_SAMPLE
+
+
+def test_fixture_trace_runs_the_real_sealed_gauntlet(tmp_path: Path) -> None:
+    """No fabricated verdict: `external_gauntlet.build_cell` / `run_gauntlet` judge the cell."""
+    m = MS.fixture_trace(tmp_path / "fx")
+    tr = m["trace"]
+    assert tr["complete"] and tr["source_uri"].startswith("fixture://mql5.com/")
+    assert tr["preregistration_sha256"]
+    assert tr["verdict"]["terminal_gate"] not in ("", "UNKNOWN", None)
+    assert tr["outcome"] == "SURVIVOR" or tr["outcome"] in rejection.REASON_CODES
+    digest = json.loads((tmp_path / "fx" / "mining_digest.json").read_text("utf-8"))
+    ch = digest["chains"]
+    assert ch and all(c["source_url"].startswith("fixture://") for c in ch)
+    assert all(datetime.fromisoformat(c["prereg_sealed_at"])
+               < datetime.fromisoformat(c["verdict_at"]) for c in ch)
+    assert digest["metrics"]["docket_cells_judged_24h"] == len(ch)
+
+
+def test_join_follows_the_docket_axis_expansion(tmp_path: Path) -> None:
+    donated: list[dict[str, Any]] = []
+    pipe = _pipe(tmp_path)
+    pipe.hooks.donate = lambda rows: (donated.extend(rows) or True, "{}")
+    _put(pipe, "codebase", "https://www.mql5.com/en/code/9", EA_RSI + "// EURUSD only",
+         title="RSI EA for EURUSD")
+    pipe.process(now=T0)
+    pipe.donate(now=T0)
+    assert donated and all(r["url"] == "https://www.mql5.com/en/code/9" for r in donated)
+    c = next(x for x in pipe.cells.by_status("EVALUATING") if x.use == "direct_cells")
+    expanded = pipe.prereg.load(c.cell_id)["gauntlet_cells_expanded"]
+    assert len(expanded) == 16 and "M15/london" in expanded
+    stranger = pipe.hooks.gauntlet_cell({**(c.spec or {}), "params": {"rsi_n": 99}})
+    rows = [{"at": iso(T0), "cell": expanded["M5/asia"], "passed": False,
+             "terminal_gate": "walk_forward"},
+            {"at": iso(T0 + timedelta(minutes=1)), "cell": expanded["M15/london"],
+             "passed": True, "terminal_gate": "PASSED"},
+            {"at": iso(T0 + timedelta(minutes=2)), "cell": expanded["M15/london"],
+             "passed": True, "terminal_gate": "PASSED"},            # a replayed row
+            {"at": iso(T0), "cell": stranger, "passed": True, "terminal_gate": "PASSED"}]
+    (tmp_path / "gate_verdict_ledger.jsonl").write_text(
+        "".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+    assert pipe.join_verdicts(now=T0) == 2
+    got = pipe.cells.get(c.cell_id)
+    assert got is not None and got.status == "EVALUATED"
+    assert got.rejection_reason == "REGIME_FRAGILE"                  # the first judged axis
+    assert got.verdict["survivor"] and got.verdict["survivor_axis"]["axis"] == "M15/london"
+    m = pipe.metrics(T0 + timedelta(hours=1))
+    assert m["docket_cells_judged_24h"] == 2 and m["docket_cells_passed_24h"] == 1
+    assert m["cells_survived_24h"] == 1
+    kills = [r for r in pipe.ledger.rows() if r["stage"] == "gauntlet"]
+    assert [r["kill_class"] for r in kills] == ["confident_kill"]
