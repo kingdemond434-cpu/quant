@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 719,
+  "NEVER": 720,
   "UNMEASURED": 33
  },
  "scope": {
-  "attested": 935,
+  "attested": 936,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -49,6 +49,14 @@
      "fence:check_box_state_freshness",
      "library:desks/mt5/research/free_shadows.py",
      "library:desks/mt5/research/gate_verdict_digest.py"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:08:23+00:00",
+    "host": "vm",
+    "on_attesting_host": true,
+    "organs": [
+     "leg:silent_organs"
     ]
    }
   ]
@@ -23719,6 +23727,33 @@
    "summary": {},
    "progress_metric": "UNMEASURED",
    "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:silent_organs",
+   "kind": "leg",
+   "code": [
+    "scripts/check_silent_organs.py"
+   ],
+   "clock": "hourly_cycle:silent_organs",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/SILENT_ORGANS.json",
+   "artifact_declared": "desks/mt5/reports/SILENT_ORGANS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_at": "2026-09-30T20:08:23+00:00"
   }
  ],
  "ratchet": {
