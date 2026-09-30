@@ -8,16 +8,22 @@ Two failures, and only two, because this fence guards the evidence rather than t
   * STALE. The attestation is older than its own cadence (`runtime_attestation.MAX_SILENCE_S`).
     A committed file that says what ran is worse than no file at all once it is quietly out of
     date: it reads like current runtime state and is a photograph of a machine's past. Judged
-    ONLY on the host the document names -- a checkout elsewhere is holding a report ABOUT that
-    host, and its age there is the box's business, not the reader's.
+    ONLY on the TRADING BOX, and only when the document is the box's own: this machine is the
+    host the document names AND that host's measured role (`host.role`, derived by
+    `runtime_attestation.host_identity` from the gateway's heartbeat) is `trading_host`. Anywhere
+    else -- a checkout holding a report ABOUT the box, or a cloud container (hostname `vm`) that
+    attested itself as `non_trading_host` -- the age is printed as UNMEASURED with the age and the
+    host, never as a clean verdict. Measured 2026-09-30: judging it on any attesting host made
+    every PR's law gate red ~2h after the last cloud re-attestation, because every cloud
+    container is named `vm` and so "was" the attesting host.
   * HOST DRIFT. The document claims one host and describes another: `attests_to_host` disagreeing
     with `host.hostname`, or the file having been written on a machine other than the one it
     names. That is the specific lie this whole organ exists to make impossible, so it fails
     EVERYWHERE -- in CI, in a fresh clone, on either box -- because it is a fact about the
     document's own internals and needs no desk state to judge.
 
-STATE FENCE. On any machine that is not the attesting host the freshness half reads UNMEASURED
-and passes (L1.28a): the reader cannot re-measure a box they are not on. `--require-state` (the
+STATE FENCE. On any machine that is not the attesting trading box the freshness half reads
+UNMEASURED and passes (L1.28a): the reader cannot re-measure a box they are not on. `--require-state` (the
 box's hourly law gate passes it) makes an absent or stale attestation a failure there, which is
 where an absent one IS a defect.
 
@@ -60,6 +66,8 @@ def measure(root: Path | None = None) -> dict[str, Any]:
         "age_s": None,
         "max_silence_s": ra.MAX_SILENCE_S,
         "on_attesting_host": False,
+        "age_judged": False,
+        "staleness": ra.UNMEASURED,
         "failures": [],
         "census": {},
     }
@@ -94,7 +102,23 @@ def measure(root: Path | None = None) -> dict[str, Any]:
     except ValueError:
         out["failures"].append(f"generated_at {out['generated_at']!r} is not a timestamp")
         age = None
-    if age is not None and age > ra.MAX_SILENCE_S and out["on_attesting_host"]:
+    # THE AGE IS JUDGED ON THE BOX ONLY. Structural checks above and the ratchet below fail
+    # everywhere; wall-clock staleness is a fact about the box's hourly leg, so it is judged only
+    # where that leg is supposed to run: on the host the document names, when that host measured
+    # itself as the trading box. Elsewhere it is UNMEASURED (L1.28a), printed with age and host.
+    out["age_judged"] = bool(out["on_attesting_host"] and out["role"] == "trading_host")
+    if age is None:
+        out["staleness"] = f"{ra.UNMEASURED}: no readable generated_at"
+    elif not out["age_judged"]:
+        out["staleness"] = (
+            f"{ra.UNMEASURED}: attested {age / 3600:.1f}h ago on host {measured} "
+            f"(role {out['role']}); this machine is {here} -- wall-clock staleness is judged "
+            f"only on the trading box that owns the organs")
+    elif age > ra.MAX_SILENCE_S:
+        out["staleness"] = f"STALE: {age / 3600:.1f}h > {ra.MAX_SILENCE_S / 3600:.1f}h"
+    else:
+        out["staleness"] = f"fresh: {age / 3600:.1f}h <= {ra.MAX_SILENCE_S / 3600:.1f}h"
+    if age is not None and age > ra.MAX_SILENCE_S and out["age_judged"]:
         out["failures"].append(
             f"stale on its own host: attested {age / 3600:.1f}h ago, past its "
             f"{ra.MAX_SILENCE_S / 3600:.1f}h max silence -- the hourly leg "
@@ -161,8 +185,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"runtime attestation: host {v['attests_to_host']} ({v.get('role')}), "
           f"{v.get('organs', 0)} organ(s) LIVE {c.get('LIVE', '?')} / STALE {c.get('STALE', '?')} "
           f"/ MISSING {c.get('MISSING', '?')} / NEVER {c.get('NEVER', '?')}, attested {age_h} ago"
-          + ("" if v["on_attesting_host"] else
+          + ("" if v["age_judged"] else
              f" -- this machine is {v['this_host']}, so its freshness is UNMEASURED here"))
+    print(f"   staleness: {v['staleness']}")
     print("   ratchet: " + str(v.get("ratchet")
                                or "; ".join(v.get("ratchet_regressions") or [])
                                or "UNMEASURED (the document carries no census to ratchet)"))

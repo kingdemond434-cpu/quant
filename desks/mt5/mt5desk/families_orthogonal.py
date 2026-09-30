@@ -1191,6 +1191,63 @@ def family_drawdown_conditional(
     return signals
 
 
+def family_regime_split(
+    df: pd.DataFrame,
+    *,
+    base_family: str = "",
+    vol: str = "",
+    trend: str = "",
+    liq: str = "",
+    **base_params: object,
+) -> list[Signal]:
+    """A price-only family traded ONLY inside one market regime of its own instrument.
+
+    THE REGIME-SPLIT PIPELINE, AS A FAMILY THE GAUNTLET CAN EXECUTE (2026-09-30). Reverse-
+    engineered from a solo operator's autonomous research loop: label every bar by regime, split
+    the dataset by regime, never fit on blended regimes, generate candidates per regime, kill
+    them with purged walk-forward, and send only survivors on. "Most strategies fail not because
+    the logic is wrong but because they are optimised across mixed regimes where the edge
+    disappears." `research/regime_split_miner.py` does the search; this is the executable half,
+    so a regime-conditioned survivor reaches the ten gates through the one existing door.
+
+    THE REGIME is `libs.regime.control_room`'s label of the LAST COMPLETED DAY before the
+    signal -- realised-vol tercile, efficiency-ratio trend/range and spread/activity liquidity,
+    each ranked against the instrument's own trailing year. Causal by construction: no fitted
+    parameters, so no label can carry information from after the bar it gates. An empty axis
+    means "any". An unknown base family, or bars too short to label, return NO SIGNALS.
+    """
+    fn = getattr(_families_mod(), f"family_{base_family}", None) or \
+        ORTHOGONAL_FAMILIES.get(str(base_family))
+    if fn is None or base_family == "regime_split":
+        return []
+    want = {"vol": vol, "trend": trend, "liq": liq}
+    want = {k: v for k, v in want.items() if v}
+    try:
+        from libs.regime.control_room import daily_frame, label_days
+        lab = label_days(daily_frame(df))
+    except Exception:
+        return []
+    lab = lab[lab["vol"] != ""]
+    if lab.empty:
+        return []
+    days = lab.index.to_numpy(dtype=str)
+    cols = {k: lab[k].to_numpy(dtype=object) for k in want}
+    out: list[Signal] = []
+    for s in fn(df, **base_params):
+        day = str(pd.Timestamp(s.time).date())
+        k = int(np.searchsorted(days, day, side="left")) - 1
+        if k < 0:
+            continue
+        if all(cols[a][k] == v for a, v in want.items()):
+            out.append(s)
+    return out
+
+
+def _families_mod():
+    from mt5desk import families as _fam
+    return _fam
+
+
 ORTHOGONAL_FAMILIES.update({
     "turn_of_month": family_turn_of_month,
     "calendar_month": family_calendar_month,
@@ -1202,6 +1259,7 @@ ORTHOGONAL_FAMILIES.update({
     "macro_conditional": family_macro_conditional,
     "event_reaction": family_event_reaction,
     "drawdown_conditional": family_drawdown_conditional,
+    "regime_split": family_regime_split,
 })
 
 #: What each family NEEDS. The router uses this to route a discovery to a family that can
@@ -1226,6 +1284,7 @@ FAMILY_INPUTS = {
     "calendar_month": ("source-specified calendar month and direction", None),
     "overnight_gap_decay": ("price only", None),
     "drawdown_conditional": ("price only", None),
+    "regime_split": ("price only (its base family's own inputs, which must be price only)", None),
 }
 
 
