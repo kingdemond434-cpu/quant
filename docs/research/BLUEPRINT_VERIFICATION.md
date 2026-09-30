@@ -134,6 +134,24 @@ Still short:
 
 Row verdicts for T20, T22, T29, H13, H14 and ADM stay PARTIAL until #55 is merged and a box run is evidenced. Their wiring gaps above are closed.
 
+### 2026-09-30 00:45Z: Tier S batch 3, self-grading (PR #55 at `d5bb50d6`)
+
+Checked in the code. The organ and kernel tests pass. I ran `tier_s.production_immune()` myself in a clean worktree.
+
+| Gap | Now | Evidence |
+|---|---|---|
+| Traps and Red Queen scored a toy validator | **Fixed** | `production_immune` hands blind, hash-named dockets to the real `run_gauntlet` certifier. The Red Queen uses the same path. |
+| Meta-benchmark had 132 cases, not thousands | **Fixed** | `traps.py` has 17 kinds × 150 = 2,550 sealed cases, with new placebos (information delay, timestamp scramble, sign reversal, spread perturbation, label randomisation) and 4 positive controls. 4 fill, universe, factor and stale-price kinds cannot be expressed to the certifier and are counted apart. |
+| Test invention used only the toy validator | **Fixed** | `test_invention.invent_from` now learns from the cases that fooled the production certifier. |
+| Architecture adoption judged on the training suite | **Fixed** | Validator challengers are re-scored on the sealed suite before adoption (`REJECTED_ON_SEALED` otherwise). |
+| Traps not injected blind into the live research stream | **Open** | The builder says it waits on a promoter trap registry. |
+| Formal conformance is a keyword grep | **Open** | Not touched in this batch. |
+| FREEZE and `power_alarm` have no consumer | **Open** | Nothing outside `tier_s.py` reads either. |
+
+**New critical finding (reproduced):** the production certifier has **zero power**. It judged 2,100 expressible cases and rejected every trap (immune score 1.0). It also rejected all 600 genuine positive controls (power 0.0), including the strong AR(0.25) edge.
+
+For the genuine controls, `deflated_sharpe` is the only failing gate on 351 of 600, and it fails on all 600. The cause is the constant variance of Sharpes, 0.014863, against a measured value near 0.0008. Until the DSR variance is measured rather than fixed, no new genuine edge can pass the ten gates. This belongs to the institutional thread's DSR item (CS1/I3). #52 still carries the constant in `effective_trials.py:309` and `gate_policy.py:84`.
+
 ## A1 — Audit critical sequence (CS), named defects (D), 10/10 acceptance table (AC)
 
 LIVE = origin/claude/llm-auto-upgrade-verify-gcjac3 @ adaba442. INST = owner "Institutional truth discipline fixes"; TS = owner "Tier S research institution build". I ran the law-gate fences on clean worktrees of LIVE, #52 and #53. I also ran the #52 lockbox tests (23 passed) and the #53 sovereignty/cost-basis/min-lot tests (34 passed).
