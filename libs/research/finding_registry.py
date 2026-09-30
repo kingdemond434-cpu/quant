@@ -259,9 +259,24 @@ def update_coverage_ratchet(
 
 _RERANK_RE = re.compile(r"Re-ranked\s+(\d{4}-\d{2}-\d{2})")
 #: A register row: | id | **title** | mechanism | plan | owner | added | status |
+#: THE CLASSES ARE WIDE ON PURPOSE, AND THE NARROW ONES COST THE DESK ITS WHOLE MODERN QUEUE.
+#: Measured 2026-09-24 against the live register: this expression saw **121 of 225** rows, and the
+#: 100 it could not see were ids 130-212 almost without a break -- EVERY row the MT5 desk has
+#: opened since the pivot. `owner` was `[a-z+ ]`, so `gap-fixer`, `gap-wirer`, `cro-cycle`,
+#: `box-session`, `brain->principal` and the em-dash-unowned rows were all invisible; `title`
+#: demanded the closing `**` sit against the cell pipe; `added` had to be nothing but a date.
+#: Everything that DRIVES the register reads through here -- `max_audit.check_gap_register_health`,
+#: `scripts/rerank_gaps.py`, `research_cycle._register_row_closed` and the strategic director's
+#: dossier -- so all four were reporting on the retired crypto backlog and omitting the live one.
+#: A row the expression cannot match is not an error; it is an absence, and absence read green.
+#: `owner` is now "not a pipe and not a digit": the digit exclusion is load-bearing because
+#: `added` is date-shaped and may be EMPTY, so an owner class admitting digits could let the two
+#: cells trade places and turn a miss into a confident wrong split.
+#: `tests/research/test_finding_registry_rows.py` pins this against a naive pipe-split of the real
+#: file, so a row shape this cannot read fails the suite instead of disappearing.
 _ROW_RE = re.compile(
-    r"^\|\s*(?P<id>\d+)\s*\|\s*\*\*(?P<title>.+?)\*\*\s*\|(?P<body>.*?)\|\s*(?P<owner>[a-z+ ]*?)"
-    r"\s*\|\s*(?P<added>[\d-]*)\s*\|\s*(?P<status>[^|]*?)\s*\|\s*$",
+    r"^\|\s*(?P<id>\d+)\s*\|\s*\*\*(?P<title>.+?)\*\*[^|]*\|(?P<body>.*?)"
+    r"\|\s*(?P<owner>[^|\d]*?)\s*\|\s*(?P<added>[\d-]*)[^|]*?\|\s*(?P<status>[^|]*?)\s*\|\s*$",
     re.MULTILINE | re.IGNORECASE,
 )
 _OPEN_STATUS = ("open", "in-progress", "in progress", "queued", "watch", "pending")
