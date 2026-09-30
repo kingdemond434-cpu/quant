@@ -268,18 +268,8 @@ def accept_language(lang: str) -> str:
 
 # ------------------------------------------------------------------------------- fetching
 def fenced_ground(g: dict[str, Any]) -> str | None:
-    """The fenced platform a ground belongs to (its route, url or site), or None."""
-    if str(g.get("route") or "").lower() in ("reddit", "stocktwits"):
-        return str(g.get("route")).lower()
-    for k in ("url", "site", "feed"):
-        p = _tf.platform_of_url(str(g.get(k) or ""))
-        if p:
-            return p
-    for f in g.get("feeds") or []:
-        p = _tf.platform_of_url(str(f or ""))
-        if p:
-            return p
-    return None
+    """The fenced platform a ground belongs to (its route, url, site or feeds), or None."""
+    return _tf.fenced_ground(g)
 
 
 def _http(url: str, *, timeout: float = 20.0, referer: str = "", lang: str = "") -> str:
@@ -686,25 +676,51 @@ def _fair_order(grounds: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+#: THE DAILY FLOOR (2026-09-30): a ground not attempted inside this many hours is scheduled ahead
+#: of every ground that was, whatever its cooldown says. The 45-day covered cooldown and the
+#: 10-day blocked retry decide the order of FRONTIER work; they may never let a registered ground
+#: go a day unattempted while the pass still has budget (`research/forest_attempts.py`).
+DAILY_FLOOR_H = 24.0
+N_BUCKETS = 6
+
+
 def _frontier_bucket(g: dict[str, Any], frontier_state: Any | None,
-                     now: datetime) -> int:
-    vector = getattr(frontier_state, "vectors", {}).get(str(g.get("name") or "")) \
+                     now: datetime, retired: set[str] | frozenset[str] = frozenset()) -> int:
+    """0 NAMED_ONLY, 1 retry-due BLOCKED, 2 cooldown-due covered, 3 not attempted in 24h (the
+    daily floor), 4 attempted in 24h, 5 LOW_EV_RETIRED and not reopen-due (still scheduled --
+    last, never dropped)."""
+    name = str(g.get("name") or "")
+    vector = getattr(frontier_state, "vectors", {}).get(name) \
         if frontier_state is not None else None
     if vector is None or str(getattr(vector, "outcome", "NAMED_ONLY")) == "NAMED_ONLY":
         return 0
-    if str(getattr(vector, "outcome", "")) == "BLOCKED":
-        return 1 if vector.huntable(now)[0] else 3
-    return 2 if vector.huntable(now)[0] else 3
+    if name in retired:
+        return 5
+    if str(getattr(vector, "outcome", "")) == "BLOCKED" and vector.huntable(now)[0]:
+        return 1
+    if str(getattr(vector, "outcome", "")) != "BLOCKED" and vector.huntable(now)[0]:
+        return 2
+    try:
+        last = datetime.fromisoformat(str(getattr(vector, "last_attempt", "") or ""))
+        last = last if last.tzinfo else last.replace(tzinfo=UTC)
+        recent = (now - last).total_seconds() < DAILY_FLOOR_H * 3600.0
+    except ValueError:
+        recent = False                    # an unreadable stamp is overdue, never exempt
+    return 4 if recent else 3
 
 
 def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] | None = None,
-             region: str | None = None, frontier_state: Any | None = None
-             ) -> list[dict[str, Any]]:
+             region: str | None = None, frontier_state: Any | None = None,
+             retired: set[str] | frozenset[str] = frozenset()) -> list[dict[str, Any]]:
     """The order a run works grounds in: round-robin across clusters (heaviest weight first
     inside each), rotated by the cursor the previous run left, so every forest gets its turn
     across runs and no region is worked only because it sorts first in a file."""
     picked = []
     for g in grounds:
+        # A TERMS-FENCED ground (Reddit, 2026-09-30; libs/data/terms_fence.py) is never
+        # scheduled: it is registered, reported by name under `terms_fenced`, and not fetched.
+        if fenced_ground(g):
+            continue
         if region and str(g.get("region")) != region and cluster_of(g) != region:
             continue
         if only and not ({str(g.get("name")), str(g.get("route")), str(g.get("region")),
@@ -718,10 +734,10 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
     # regional fairness and the ROI weights, but rotate each frontier bucket independently and
     # place uncovered/retry-due ground first.  A mapping row can therefore never masquerade as a
     # completed hunt or starve behind already-covered ground.
-    buckets: list[list[dict[str, Any]]] = [[], [], [], []]
+    buckets: list[list[dict[str, Any]]] = [[] for _ in range(N_BUCKETS)]
     now = datetime.now(tz=UTC)
     for g in picked:
-        buckets[_frontier_bucket(g, frontier_state, now)].append(g)
+        buckets[_frontier_bucket(g, frontier_state, now, retired)].append(g)
     # LEAST-RECENTLY-ATTEMPTED FIRST (2026-09-30). Inside a bucket the fair, cursor-rotated
     # order is then sorted -- stably -- by the vector's last attempt, oldest first. Never-tried
     # ground has no attempt and sorts first; ground tried an hour ago sorts behind ground tried a
@@ -763,7 +779,7 @@ class _Run:
         self.counts = {"queries": 0, "pages": 0, "transcripts": 0, "rendered": 0,
                        "dropped_venue": 0, "dropped_unmappable": 0, "duplicate_mechanisms": 0,
                        "claims_seen_before": 0, "net_failures": 0, "dataset_pages": 0,
-                       "dataset_endpoints": 0, "feeds": 0}
+                       "dataset_endpoints": 0, "feeds": 0, "urls_new": 0}
         #: Shared by every fork of this run: the network verdict and its failure streak.
         self._shared: dict[str, Any] = {"network": None, "fails": 0}
         self._lock = threading.RLock()
@@ -949,6 +965,9 @@ class _Run:
             if url in self.seen_urls:
                 return
             self.seen_urls.add(url)
+        # THE DELTA SCAN: a fork works one ground, so this count is THAT ground's new URLs
+        # against the durable seen-set -- what the attempt found that no earlier pass had.
+        self.counts["urls_new"] = self.counts.get("urls_new", 0) + 1
         self.frontier.append((url, via, self.lang))
 
     # ---------------------------------------------------------------- routes per ground
@@ -1374,6 +1393,7 @@ class _Run:
             return
         self.ground, self.ground_claims = g, []
         seen_before = self.counts["claims_seen_before"]
+        urls_before = self.counts.get("urls_new", 0)
         t0 = time.monotonic()
         self.g_end = min(self.started + self.budget_s, t0 + (share_s or self.budget_s))
         try:
@@ -1425,7 +1445,12 @@ class _Run:
                             "elapsed_s": round(time.monotonic() - t0, 1), "classes": classes,
                             # ORTHOGONALITY: a ground that yields only momentum says so.
                             "momentum_only": bool(classes) and set(classes) <= {"momentum"},
-                            "datasets": sum(1 for d in self.datasets if d.get("ground") == name)})
+                            "datasets": sum(1 for d in self.datasets if d.get("ground") == name),
+                            # the per-ground DELTA against the durable seen-sets
+                            "delta": {"urls_new": self.counts.get("urls_new", 0) - urls_before,
+                                      "claims_new": n_claims,
+                                      "claims_seen_before": (self.counts["claims_seen_before"]
+                                                             - seen_before)}})
 
 
 def _feed_frontier(urls: list[tuple[str, str, str]]) -> int:
@@ -1495,7 +1520,8 @@ def _record_frontier(grounds_status: list[dict[str, Any]],
     state = hf.load(path)
     for g in grounds:
         name = str(g.get("name") or "")
-        if name and name not in state.vectors:
+        # A terms-fenced ground is not frontier work waiting to happen: never seeded NAMED_ONLY.
+        if name and name not in state.vectors and not fenced_ground(g):
             hf.record(state, name, outcome="NAMED_ONLY", language=str(g.get("language") or ""),
                       region=str(g.get("region") or ""))
     for s in grounds_status:
@@ -1656,8 +1682,16 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         frontier_state = _hf.load(_frontier_path())
     except Exception:  # a damaged accounting file may never stop the miner
         frontier_state = None
+    # LOW_EV_RETIRED is derived from the counters every pass (`research/forest_attempts.py`):
+    # retired grounds are scheduled LAST, never dropped, and reopen on a named condition.
+    try:
+        from research import forest_attempts as _fa
+        retired = _fa.retired_names(grounds, frontier=_frontier_path(),
+                                    stats=_vector_stats_path())
+    except Exception:  # a damaged accounting file may never stop the miner
+        retired = set()
     order = schedule(grounds, cursor, only=r.only, region=region,
-                     frontier_state=frontier_state)
+                     frontier_state=frontier_state, retired=retired)
     # THE PROPOSER SEAT, OPTIONAL: which registered GROUND is worth this pass's seconds first.
     # An ORDER over the grounds the registry already holds -- the seat may reorder the crawl and
     # may never widen it, so a name it invents is discarded and no unregistered ground can be
@@ -1681,7 +1715,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
             now = datetime.now(tz=UTC)
             # frontier bucket first, then least-recently-attempted, the seat's rank breaking ties
             order = sorted(seat_order,
-                           key=lambda g: (_frontier_bucket(g, frontier_state, now),
+                           key=lambda g: (_frontier_bucket(g, frontier_state, now, retired),
                                           _last_attempt(g, frontier_state)))
     except Exception as _exc:                             # pragma: no cover - optional seat
         seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
@@ -1827,16 +1861,19 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "productive": sum(1 for s in grounds_status if s.get("status") == "PRODUCTIVE"),
            "blocked": [s.get("ground") for s in grounds_status
                        if s.get("status") in ("BLOCKED", "NO_NETWORK", "UNREACHABLE")],
-           "terms_fenced": [s.get("ground") for s in grounds_status
-                            if s.get("status") in ("BLOCKED_WITH_SUBSTITUTE", "BLOCKED_TERMS")],
+           # Registered grounds on a terms-fenced platform: never scheduled, never fetched,
+           # named here with the ruling so the gap is visible (libs/data/terms_fence.py).
+           "terms_fenced": sorted({str(g.get("name")) for g in grounds if fenced_ground(g)}),
            "momentum_only_grounds": [s.get("ground") for s in grounds_status
                                      if s.get("momentum_only")],
            "by_region": by_region,
            "languages": sorted({str(g.get("language")) for g in grounds if g.get("language")}),
            "frontier": frontier,
            "scheduler": {"policy": ("NAMED_ONLY -> retry-due BLOCKED -> cooldown-due covered "
-                                    "-> picked-over; inside each bucket least-recently-"
+                                    "-> not attempted in 24h (daily floor) -> attempted in 24h "
+                                    "-> LOW_EV_RETIRED; inside each bucket least-recently-"
                                     "attempted first over a regional round-robin"),
+                         "retired_scheduled_last": len(retired),
                          "frontier_state_loaded": frontier_state is not None,
                          "workers": n_workers, "requested_budget_s": requested_s,
                          "cycle_cap_s": cap,
@@ -1949,6 +1986,25 @@ def _record_vector_stats(statuses: list[dict[str, Any]]) -> None:
                 e["last_success"] = now
             if err or s.get("status") in ("BLOCKED", "NO_ADDRESS", "UNREACHABLE"):
                 e["last_error"] = str(err or s.get("status"))[:200]
+            # THE STANDING failure reason: this attempt's, or none when the route answered.
+            # `last_error` stays sticky -- it is history; this is the current state.
+            e["failure_reason"] = (str(err or s.get("status"))[:200]
+                                   if err or s.get("status") not in ("PRODUCTIVE",
+                                                                    "REACHED_NO_CLAIMS")
+                                   else "")
+            # THE DURABLE DELTA CURSOR. The seen-sets (deep_forest_seen.json) are the scan's
+            # memory; this is its per-ground reading: what the last attempt added, when the
+            # ground last showed anything new, and how many attempts running it showed nothing.
+            delta = s.get("delta") if isinstance(s.get("delta"), dict) else None
+            if delta is not None:
+                e["last_delta"] = delta
+                fresh = int(delta.get("urls_new") or 0) + int(delta.get("claims_new") or 0) \
+                    + dsets
+                if fresh:
+                    e["last_new_content_at"] = now
+                    e["empty_delta_streak"] = 0
+                else:
+                    e["empty_delta_streak"] = int(e.get("empty_delta_streak") or 0) + 1
         _atomic_text(p, json.dumps({"updated": now, "vectors": vec,
                                     "note": "per-vector cumulative counts since counted_since; "
                                             "written by deep_forest_miner at each ground's "

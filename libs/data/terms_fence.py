@@ -188,6 +188,27 @@ def fenced_row(row: Mapping[str, Any], source: str = "") -> str | None:
     return None
 
 
+def fenced_ground(g: Mapping[str, Any]) -> str | None:
+    """The fenced platform a registered GROUND belongs to -- its route, url, site or feeds -- or
+    None. Read by the deep-forest miner (never fetch it, never schedule it) and by
+    `research/forest_attempts.py` (a fenced ground is neither never-attempted nor overdue)."""
+    if not isinstance(g, Mapping):
+        return None
+    route = str(g.get("route") or "").lower()
+    for name, spec in PLATFORMS.items():
+        if _active(name) and route in spec["routes"]:
+            return name
+    for k in ("url", "site", "feed"):
+        p = platform_of_url(str(g.get(k) or ""))
+        if p:
+            return p
+    for f in g.get("feeds") or []:
+        p = platform_of_url(str(f or ""))
+        if p:
+            return p
+    return None
+
+
 def touched_row(row: Mapping[str, Any]) -> str | None:
     """`fenced_row`, plus any contributing source -- the LABELLER's test (a cell one fenced
     platform helped propose carries the label even when another miner proposed it too)."""

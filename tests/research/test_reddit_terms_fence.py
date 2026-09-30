@@ -310,3 +310,41 @@ def test_an_unreachable_door_is_a_named_status_and_mints_nothing(
     doc = A.run(fetch=lambda url: (503, "HTTP 503"), paths=paths, now=NOW, dry_run=True)
     assert {r["status"] for r in doc["series"].values()} == {"HTTP 503"}
     assert doc["cells"]["grid"] == 0 and doc["cells"]["minted"] == 0
+
+
+# ------------------------------------------------- the fenced grounds and the scheduler (#158) --
+def test_fenced_grounds_are_never_scheduled_nor_never_attempted_nor_overdue(tmp_path: Path) -> None:
+    """The six registered subreddit grounds: the miner never schedules them, and
+    forest_attempts counts them as BLOCKED_WITH_SUBSTITUTE -- not NEVER_ATTEMPTED, not overdue,
+    not attempted -- so the never-attempted fence is not held red by a ruling."""
+    import deep_forest_miner as dfm
+    import forest_attempts as fa
+
+    grounds = [{"name": "r/merval", "region": "ar", "language": "es", "route": "reddit",
+                "subs": ["merval"]},
+               {"name": "CA subs", "region": "ca", "language": "en", "route": "http",
+                "url": "https://www.reddit.com/r/CanadianInvestor/"},
+               {"name": "valuepickr", "region": "in", "language": "en", "route": "http",
+                "url": "https://forum.valuepickr.com/"}]
+    order = [g["name"] for g in dfm.schedule(grounds)]
+    assert order == ["valuepickr"]
+    src, fr, st = tmp_path / "s.json", tmp_path / "f.json", tmp_path / "v.json"
+    src.write_text(json.dumps({"grounds": grounds}), "utf-8")
+    fr.write_text(json.dumps({"vectors": {}}), "utf-8")
+    st.write_text(json.dumps({"updated": NOW.isoformat(), "vectors": {}}), "utf-8")
+    doc = fa.build(sources=src, frontier=fr, stats=st, now=NOW)
+    s = doc["summary"]
+    assert s["terms_fenced"] == 2 and s["never_attempted"] == 1 and s["overdue_24h"] == 1
+    assert s["attempted_ever"] == 0
+    row = doc["grounds"]["r/merval"]
+    assert row["state"] == "BLOCKED_WITH_SUBSTITUTE" and row["terms_fence"] == "reddit"
+    assert row["overdue_24h"] is False
+
+
+def test_the_registered_deep_forest_file_has_exactly_the_six_subreddit_grounds_fenced() -> None:
+    import deep_forest_miner as dfm
+    doc = json.loads((DESK / "data" / "deep_forest_sources.json").read_text("utf-8"))
+    fenced = [g["name"] for g in doc["grounds"] if dfm.fenced_ground(g)]
+    assert len([g for g in doc["grounds"] if g.get("route") == "reddit"]) == 6
+    assert set(fenced) >= {g["name"] for g in doc["grounds"] if g.get("route") == "reddit"}
+    assert not [g for g in dfm.schedule(doc["grounds"]) if dfm.fenced_ground(g)]
