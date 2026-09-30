@@ -67,10 +67,12 @@ TIER_RUIN = 3          #: the ruin rail; a script may NEVER restart it -- operat
 #: entry script -> (unit, tier). MUST agree with ``scripts/watchdog.py``'s ``_UNITS``; a test
 #: asserts they match, because two copies of the same supervision map is how the desk's previous
 #: four capacity constants drifted apart (§42's lesson, applied to a different map).
+#:
+#: run_cashcarry_executor.py and liquidation_listener.py were removed 2026-09-05 (universe mandate)
+#: with their scripts, and `scripts/watchdog.py` dropped them from `_UNITS` then; this copy kept
+#: them for three weeks, which is exactly the fork the test exists to catch (resynced 2026-09-29).
 _OWNED: dict[str, tuple[str, int]] = {
-    "scripts/run_cashcarry_executor.py": ("quant-cashcarry.service", TIER_RESTART),
     "scripts/run_deadman_switch.py": ("quant-deadman.service", TIER_RUIN),
-    "scripts/liquidation_listener.py": ("quant-liquidations.service", TIER_RESTART),
     "scripts/serve_dashboard.py": ("quant-dashboard.service", TIER_RESTART),
 }
 

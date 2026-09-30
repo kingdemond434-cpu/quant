@@ -155,7 +155,11 @@ def test_a_seal_is_not_refused_by_the_ledger_an_organ_rewrote_a_minute_ago(tmp_p
     (repo / "desks" / "mt5" / "data" / "ledger.json").write_text("[1, 2]\n")
     doc = release.seal(root=repo, by="test", write=False)
     assert doc["sealed"] is True
-    assert doc["worktree_dirty"] == ["desks/mt5/data/ledger.json"]
+    # ab5b2e88 (2026-09-27) scoped the recorded dirt to RELEASE_CODE_PATHS: stat-ing the box's
+    # tracked evidence lake cost minutes under the release mutex. State dirt is therefore not
+    # listed, and the record says which scope it measured so the omission is declared.
+    assert doc["worktree_dirty"] == []
+    assert doc["worktree_dirty_scope"] == "release_code_paths"
 
 
 def test_a_seal_still_refuses_a_dirty_code_path(tmp_path) -> None:
