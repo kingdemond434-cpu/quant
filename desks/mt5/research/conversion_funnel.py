@@ -73,6 +73,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 SEAT = "conversion_funnel"
+#: The artifact, bound at module level so the component registry reads it off the organ itself.
+OUT = DESK / "reports" / "CONVERSION_FUNNEL.json"
 UNMEASURED = "UNMEASURED"
 STAGE_COMPLETE = "COMPLETE"
 BUDGET_S = 240.0
@@ -147,7 +149,7 @@ class Paths:
                    cure=desk / "reports" / "POWER_CURE_CANDIDATES.json",
                    canon_pub=desk / "reports" / "CANON_PUBLICATION.json",
                    maximiser=desk / "reports" / "CONVERSION_MAXIMISER.json",
-                   out=desk / "reports" / "CONVERSION_FUNNEL.json")
+                   out=desk / "reports" / OUT.name)
 
 
 # ------------------------------------------------------------------------------ utilities
@@ -473,7 +475,8 @@ def distribution(values: Iterable[float | None], *, basis: str) -> dict[str, Any
         return round(vals[i], 3)
 
     return {"status": "MEASURED", "n": len(vals), "p50_h": q(0.5), "p90_h": q(0.9),
-            "max_h": round(vals[-1], 3), "negative_excluded": neg, "basis": basis}
+            "p95_h": q(0.95), "max_h": round(vals[-1], 3), "negative_excluded": neg,
+            "basis": basis}
 
 
 def _sql_pairs(conn: sqlite3.Connection | None, sql: str, args: tuple[Any, ...],
@@ -565,6 +568,46 @@ def latency_stage(conn: sqlite3.Connection | None, stream: Mapping[str, Any], pa
 
 
 # ------------------------------------------------------------------------------- the pass
+def _ratio(num: Any, den: Any) -> float | None:
+    if not isinstance(num, (int, float)) or not isinstance(den, (int, float)) or den <= 0:
+        return None
+    return round(float(num) / float(den), 4)
+
+
+def cro_duties(reg: Mapping[str, Any], verdicts: Mapping[str, Any],
+               certs: Mapping[str, Any], clocks: Mapping[str, Any],
+               latency: Mapping[str, Any]) -> dict[str, Any]:
+    """The CRO cycle's D5 and D6 metrics under the names docs/cro/CRO_CYCLE.md gives them, so the
+    pass reads one block instead of re-deriving them. None is UNMEASURED, never zero."""
+    v2c = latency.get("pass_to_certificate") or {}
+    c2k = latency.get("certificate_to_clock") or {}
+    lost_c = certs.get("lost") if isinstance(certs.get("lost"), Mapping) else None
+    lost_k = clocks.get("lost") if isinstance(clocks.get("lost"), Mapping) else None
+    pass_n = (verdicts.get("by_class") or {}).get("PASS")
+    return {
+        "D5": {"verdict_to_cert_hours": {"median": v2c.get("p50_h"), "p95": v2c.get("p95_h"),
+                                         "n": v2c.get("n"), "status": v2c.get("status")},
+               "cert_to_clock_hours": {"median": c2k.get("p50_h"), "p95": c2k.get("p95_h"),
+                                       "n": c2k.get("n"), "status": c2k.get("status")},
+               "passing_cells_without_cert": (sum(lost_c.values()) if lost_c is not None
+                                              else None),
+               "passing_cells_without_cert_unexplained": (lost_c or {}).get("UNEXPLAINED")
+               if lost_c is not None else None,
+               "certs_without_clock": (lost_k or {}).get("CLOCKLESS") if lost_k else None,
+               "certs_not_accruing": (lost_k or {}).get("NOT_ACCRUING") if lost_k else None},
+        "D6": {"conv_mined_to_judged": _ratio(reg.get("judged_in_registry"), reg.get("mined")),
+               "conv_judged_to_cert": _ratio(certs.get("certified"),
+                                             verdicts.get("cells_judged")),
+               "conv_pass_to_cert": _ratio(certs.get("certified"), pass_n),
+               "conv_cert_to_forward": _ratio(clocks.get("on_clock"),
+                                              clocks.get("certificates")),
+               "conv_ingested_to_mined": None, "conv_forward_to_live": None,
+               "unmeasured_here": "ingested->mined is the ingestion ledger's; forward->live is "
+                                  "the promoter's -- this funnel does not re-derive them"},
+        "source": "docs/cro/CRO_CYCLE.md duties D5 and D6",
+    }
+
+
 def build(paths: Paths, conn: sqlite3.Connection | None, *, budget_s: float,
           now: datetime | None = None, banned: Iterable[str] | None = None) -> dict[str, Any]:
     t = now or _now()
@@ -598,6 +641,7 @@ def build(paths: Paths, conn: sqlite3.Connection | None, *, budget_s: float,
          "accruing": clocks.get("accruing"), "lost": clocks.get("lost")},
     ]
     return {"generated_utc": t.isoformat(timespec="seconds"), "organ": SEAT,
+            "cro_duties": cro_duties(reg, verdicts, certs, clocks, latency),
             "pass_status": "PARTIAL" if stream.get("partial") else STAGE_COMPLETE,
             "budget_s": budget_s, "spent_s": round(time.monotonic() - t0, 2),
             "funnel": funnel, "registry": reg, "verdicts": verdicts,

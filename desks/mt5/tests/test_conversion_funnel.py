@@ -212,3 +212,16 @@ def test_latency_without_a_registry_is_unmeasured(desk) -> None:
     lat = cf.build(desk, None, budget_s=30, now=NOW, banned=set())["latency"]
     for step in ("idea_to_cell", "donation_to_docket", "docket_to_first_verdict"):
         assert lat[step]["status"] == cf.UNMEASURED
+
+
+def test_the_cro_duties_d5_and_d6_are_published_under_their_own_names(desk) -> None:
+    duties = cf.build(desk, None, budget_s=30, now=NOW, banned={"discovered"})["cro_duties"]
+    d5, d6 = duties["D5"], duties["D6"]
+    assert d5["passing_cells_without_cert"] == 4
+    assert d5["passing_cells_without_cert_unexplained"] == 1
+    assert d5["certs_without_clock"] == 0 and d5["certs_not_accruing"] == 1
+    assert set(d5["verdict_to_cert_hours"]) >= {"median", "p95", "n"}
+    assert d6["conv_pass_to_cert"] == 0.2 and d6["conv_cert_to_forward"] == 1.0
+    assert d6["conv_mined_to_judged"] is None, "no registry is UNMEASURED, never zero"
+    src = (cf.ROOT / "docs" / "cro" / "CRO_CYCLE.md").read_text(encoding="utf-8")
+    assert "CONVERSION_FUNNEL.json" in src, "the CRO procedure is this artifact's consumer"
