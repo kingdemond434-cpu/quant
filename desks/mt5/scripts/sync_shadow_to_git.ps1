@@ -350,6 +350,13 @@ $relPaths = @(
     # release, and whether new risk is allowed. It is the one line that answers "is the box
     # running the code that was tested" from any machine that can read this branch.
     "desks/mt5/data/release_identity.json",
+    # WHY CELLS DIE, AND WHETHER THIS WIRE WORKS (2026-09-30). Both written by the hourly
+    # `publish_state` leg just before it runs this script. The digest is the bounded committed
+    # summary of the gitignored gate_verdict_ledger.jsonl + universal_gates_external.json (per-gate
+    # and per-family rejection counts, verbatim stage reasons, the newest verdicts); the flow
+    # meter says whether the box's state is actually reaching origin (STALLED when it is not).
+    "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
+    "desks/mt5/reports/BOX_STATE_FLOW.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two

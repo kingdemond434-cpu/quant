@@ -17,6 +17,22 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "reports" / "shadow" / "shadow_health.json"
 
+
+def _resilient_writers():
+    """`libs.ops.win_write`, with the repo root put on sys.path if the .pth is missing.
+
+    THE LAST CENSUS THE BOX PUBLISHED (2026-09-16T16:37Z) WAS FAILED ON TWO WINDOWS SHARING
+    VIOLATIONS, not on a clock: `XAUUSD_M1.parquet` and `external_shadow_state.json` were
+    overwritten in place while other organs held them open, Python raised PermissionError 13, and
+    MT5-Shadow exited 1 every run while `legacy_shadow` itself had succeeded. See win_write.
+    """
+    import sys
+    root = str(BASE.parent.parent)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.ops import win_write
+    return win_write
+
 #: EVERY BASIS ON WHICH THIS DESK ENROLS A FORWARD CLOCK. One place, because the alternative is
 #: an `==` against one member scattered through the readers -- which is how the cure lane's 86
 #: clocks came to be reported as missing for a day.
@@ -156,18 +172,25 @@ def _refresh_scalp_bars() -> None:
                 frame = pd.DataFrame(rates)
                 frame.index = pd.to_datetime(frame.pop("time"), unit="s", utc=True)
                 frame.index.name = "timestamp"
-                frame.to_parquet(out_dir / f"XAUUSD_{label}.parquet")
+                # SERIALISED FIRST, THEN SWAPPED IN: an in-place to_parquet over a file the scalp
+                # lane is reading is a sharing violation on Windows (PermissionError 13).
+                import io as _io
+                _buf = _io.BytesIO()
+                frame.to_parquet(_buf)
+                _resilient_writers().write_bytes_resilient(
+                    out_dir / f"XAUUSD_{label}.parquet", _buf.getvalue())
                 result[label] = len(frame)
             terminal_info = mt5.terminal_info()
             server = str(account.server)
-            (out_dir / "XAUUSD_scalp_source.json").write_text(_json.dumps({
+            _resilient_writers().write_text_resilient(
+                out_dir / "XAUUSD_scalp_source.json", _json.dumps({
                 "fetched_at": _datetime.now(_UTC).isoformat(timespec="seconds"),
                 "source_server": server,
                 "source_company": str(terminal_info.company if terminal_info else ""),
                 "account_trade_allowed": bool(account.trade_allowed),
                 "symbol": "XAUUSD", "rows": result,
                 "promotion_authority": "fusion" in server.casefold(),
-            }, indent=2), "utf-8")
+            }, indent=2))
             if all(result.values()):
                 return
             failures.append(f"{terminal}: incomplete {result}")
