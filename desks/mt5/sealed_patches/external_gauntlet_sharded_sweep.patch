@@ -1,27 +1,28 @@
 diff --git a/desks/mt5/scripts/external_gauntlet.py b/desks/mt5/scripts/external_gauntlet.py
-index 10e44e5..c98d888 100644
+index 8476a437d..388e7cc34 100644
 --- a/desks/mt5/scripts/external_gauntlet.py
 +++ b/desks/mt5/scripts/external_gauntlet.py
-@@ -2296,15 +2296,22 @@ def certificate_annotations(v: dict, cell: dict | None, meta: dict, *, priors: d
-     return out
+@@ -2387,15 +2387,23 @@ def charged_lifetime_trials(campaign: int, family: str, lifetime: dict,
+     return max(int(campaign), fam_n), f"lifetime family trials {fam_n}"
  
  
 -def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
 -    """Run full 10-gate gauntlet on a list of cells."""
 -    print(f"\n=== GAUNTLET: {hunt_name} ({len(cells)} cells) ===")
 +def _cell_series(cells: list, meta: dict) -> tuple[list, int]:
-+    """Each cell's 1x daily series, and its 3x arm stashed on the cell, in ONE pass per cell.
++    """Each cell's FULL 1x daily series, and its 3x arm stashed on the cell, in ONE pass per cell.
  
 -    # Build daily series
 +    PER-CELL AND MATRIX-FREE: nothing here reads another cell, so it may run inside a shard of
 +    a sharded sweep (`shard_worker`) and give exactly what the unsharded sweep computes. Returns
 +    the series in the order of `cells` (None where none could be built) and the cache-hit count.
++    The lockbox carve happens after, on the union, in `run_gauntlet`.
 +    """
      daily = []
      hits = 0
      for c in cells:
          try:
-+            # SHARDED SWEEP: the owning shard already computed this cell's series (possibly
++            # SHARDED SWEEP: the owning shard already computed this cell's FULL series (possibly
 +            # None) with this same function, and the merge takes it exactly as computed.
 +            if "_shard_ds" in c:
 +                daily.append(c["_shard_ds"])
@@ -29,7 +30,7 @@ index 10e44e5..c98d888 100644
              if c.get("_cached_ds") is not None:
                  daily.append(c["_cached_ds"])
                  hits += 1
-@@ -2336,6 +2343,147 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
+@@ -2427,6 +2435,156 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
              # RELEASE. `df` is a shared LRU frame and costs nothing to drop; `sigs` is this
              # cell's own signal list and is the thing that accumulates.
              c["df"] = c["sigs"] = c["costs"] = None
@@ -37,7 +38,7 @@ index 10e44e5..c98d888 100644
 +
 +
 +def _cell_series_x3(cells: list) -> list:
-+    """The 3x-cost series collected from `_cell_series`'s pass, caching fresh pairs. Per-cell."""
++    """The FULL 3x-cost series collected from `_cell_series`'s pass, caching fresh pairs."""
 +    # 3x cost series
 +    # ALREADY COMPUTED ABOVE, in the same pass that had the frames in hand. This loop now only
 +    # collects and caches; it holds no bars and builds no signals.
@@ -59,22 +60,25 @@ index 10e44e5..c98d888 100644
 +    return daily_x3
 +
 +
-+#: THE PER-CELL GATES, IN THE ORDER THEY SIT IN A VERDICT'S `stages` AFTER THE PROGRAM-LEVEL
-+#: THREE. `stages` is insertion-ordered and `terminal_gate` is its FIRST failure, so this order
-+#: is part of the verdict and `run_gauntlet` rebuilds `stages` in exactly the sequence below.
++#: THE PER-CELL GATES, IN THE ORDER THEY SIT IN A VERDICT'S `stages`. `stages` is
++#: insertion-ordered and `terminal_gate` is its FIRST failure, so this order is part of the
++#: verdict: `run_gauntlet` rebuilds `stages` as HEAD, deflated_sharpe, pbo, reality_check_spa,
++#: MID, lockbox, TAIL -- exactly the sequence the gates were always evaluated in.
 +CELL_LOCAL_HEAD = ("economic_prior", "in_sample_screen")
-+CELL_LOCAL_TAIL = ("cpcv", "walk_forward", "stress_costs", "lockbox", "expected_value",
-+                   "swap_cost")
++CELL_LOCAL_MID = ("cpcv", "walk_forward", "stress_costs")
++CELL_LOCAL_TAIL = ("expected_value", "swap_cost")
 +
 +
-+def _cell_local_stages(c: dict, arr: np.ndarray, x3_ds) -> dict:
-+    """Every gate that reads ONE cell's own series and nothing of the sweep's matrix.
++def _cell_local_stages(c: dict, arr: np.ndarray, x3_ds, meta: dict) -> dict:
++    """Every gate that reads ONE cell's own development-window series and nothing of the sweep.
 +
-+    THE LINE THE SHARDED SWEEP IS DRAWN ON. `deflated_sharpe` (the trial charge and the variance
-+    of Sharpes), `pbo` and `reality_check_spa` are PROGRAM-LEVEL: they read the whole sweep's
-+    matrix, so they are never computed here and never inside a shard -- `run_gauntlet` computes
-+    them once, on the union. Everything returned here is a function of (cell, its 1x series, its
-+    3x series) alone, which is what lets a shard compute it and the merge use it unchanged.
++    THE LINE THE SHARDED SWEEP IS DRAWN ON. `deflated_sharpe` (the trial charge, the lifetime
++    ledger and the variance of Sharpes), `pbo`, `reality_check_spa` and `lockbox` (judged at the
++    union's DSR hurdle `sr0`, on the tail after the union's calendar cut) are PROGRAM-LEVEL: they
++    are never computed here and never inside a shard -- `run_gauntlet` computes them once, on the
++    union. Everything returned here is a function of (cell, its 1x development series, its 3x
++    development series, meta) alone, which is what lets a shard compute it and the merge use it
++    unchanged.
 +    """
 +    # In-sample
 +    sr = sharpe_ratio(arr)
@@ -111,13 +115,9 @@ index 10e44e5..c98d888 100644
 +    }
 +
 +    # Stress costs (3x)
-+    # x3_ds is this cell's 3x-cost series (argument)
++    # x3_ds: this cell's 3x-cost series on the development window (argument)
 +    exp3 = float(x3_ds.to_numpy(float).mean()) if x3_ds is not None and len(x3_ds) > 0 else 0.0
 +    stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
-+
-+    # Lockbox
-+    stages["lockbox"] = {"passed": bool(wf_oos >= 0.0),
-+                         "lockbox_sharpe": round(wf_oos, 4)}
 +
 +    # Expected Value
 +    ev = float(arr.mean())
@@ -142,29 +142,39 @@ index 10e44e5..c98d888 100644
 +    # A CERTIFICATE JUDGED AT COSTS THE BROKER DOES NOT CHARGE IS NOT EVIDENCE. It is a
 +    # well-documented opinion.
 +    #
-+    # UNMEASURED PASSES, and that is deliberate rather than lax. This needs a live terminal to
-+    # read a swap rate; the gauntlet also runs where there is none, and refusing every cell on
-+    # a host without MT5 would halt certification entirely instead of charging a cost. The
-+    # verdict says UNMEASURED, which is a reading, and the fence binds where it can measure.
++    # UNKNOWN COST IS UNKNOWN EDGE (principal, 2026-09-29). This stage used to PASS whenever
++    # the live terminal could not be read, which is every host the gauntlet runs on without
++    # one -- so an unpriced instrument certified as though financing were free. Two readings
++    # now, and the cell needs one of them to be a real measurement:
++    #   1. the REGISTRY basis the engine itself charged: `Costs.from_symbol` prices spread,
++    #      commission (via tick_value) and swap (worse side, per night held) from
++    #      universe.json, so a symbol carrying all of those was backtested net of them;
++    #   2. the live-terminal cost-to-edge fence, which can still REFUSE on a measured cost.
++    # A symbol missing any registry field is UNMEASURED, and UNMEASURED fails closed.
++    _basis = registry_cost_basis(str(c.get("sym") or c.get("symbol") or ""), meta)
 +    try:
 +        from research.cost_to_edge import verdict as _cost_verdict
 +        _refuse, _why, _cost = _cost_verdict(
 +            str(c.get("sym") or c.get("symbol") or ""),
 +            str(c.get("family") or ""), ev)
-+        stages["swap_cost"] = {
-+            "passed": not _refuse,
-+            "measured": bool(_cost.get("measured")),
-+            "total_cost_r": _cost.get("total_cost_r"),
-+            "swap_r": _cost.get("swap_r"),
-+            "holds_overnight": _cost.get("holds_overnight"),
-+            "why": _why or ("cost within the bar" if _cost.get("measured")
-+                            else str(_cost.get("why") or "UNMEASURED")),
-+        }
 +    except Exception as _exc:
-+        stages["swap_cost"] = {"passed": True, "measured": False,
-+                               "why": f"UNMEASURED ({type(_exc).__name__}): "
-+                                      f"cost could not be priced on this host"}
-+
++        _refuse, _why, _cost = False, "", {
++            "measured": False, "why": f"terminal unreadable ({type(_exc).__name__})"}
++    _live_measured = bool(_cost.get("measured"))
++    stages["swap_cost"] = {
++        "passed": bool((_basis["measured"] or _live_measured) and not _refuse),
++        "measured": bool(_basis["measured"] or _live_measured),
++        "registry_basis": _basis,
++        "live_measured": _live_measured,
++        "total_cost_r": _cost.get("total_cost_r"),
++        "swap_r": _cost.get("swap_r"),
++        "holds_overnight": _cost.get("holds_overnight"),
++        "why": (_why if _refuse else
++                "cost within the bar" if _live_measured else
++                "priced by the registry basis the engine charged" if _basis["measured"] else
++                f"UNMEASURED cost fails closed: {_basis['why']}; "
++                f"live: {_cost.get('why') or 'unread'}"),
++    }
 +    return stages
 +
 +
@@ -177,7 +187,7 @@ index 10e44e5..c98d888 100644
      if hits:
          print(f"  series cache: {hits}/{len(cells)} cell(s) loaded (unchanged data-day); "
                f"{len(cells) - hits} computed fresh")
-@@ -2446,20 +2594,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
+@@ -2551,20 +2709,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
          print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
  
      # 3x cost series
@@ -197,17 +207,22 @@ index 10e44e5..c98d888 100644
 -            daily_x3.append(None)
 +    daily_x3 = _cell_series_x3(cells)
  
-     # Per-cell verdicts
-     verdicts = []
-@@ -2467,13 +2602,14 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
+     # The stress arm is judged on the same development window as the baseline, never the tail.
+     if _lock_cut is not None:
+@@ -2579,13 +2724,19 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
          c = cells[orig_i]
          arr = ds.to_numpy(float)
          cid = cell_id(c)
 +        # THE CELL-LOCAL GATES: computed here, or -- in a sharded sweep -- by the shard that owned
-+        # the cell, with the same function on the same series (`_cell_local_stages`).
++        # the cell, with the same function on the same development window (`_cell_local_stages`).
++        # A shard's stages are used only when it carved at THIS sweep's cut; anything else is a
++        # merge fault and refuses the sweep before a single record is written.
 +        _local = c.get("_local_stages")
++        if _local is not None and c.get("_local_cut") != _lock_cut:
++            raise ShardMergeError(f"{cid}: shard ruled at cut {c.get('_local_cut')!r}, "
++                                  f"the union's cut is {_lock_cut!r}")
 +        if _local is None:
-+            _local = _cell_local_stages(c, arr, daily_x3[orig_i])
++            _local = _cell_local_stages(c, arr, daily_x3[orig_i], meta)
  
          # In-sample
 -        sr = sharpe_ratio(arr)
@@ -217,9 +232,9 @@ index 10e44e5..c98d888 100644
 -        }
 +        stages = {k: _local[k] for k in CELL_LOCAL_HEAD}
  
-         # Deflated Sharpe
-         dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
-@@ -2490,87 +2626,9 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
+         # Deflated Sharpe, charged the LARGER of the campaign charge and the family's lifetime
+         # trial count (policy v3): every trial the desk ever ran in this mechanism raises the bar.
+@@ -2606,98 +2757,17 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
          stages["pbo"] = {"passed": pbo_ok, "pbo": round(pbo_val, 4)}
          stages["reality_check_spa"] = {"passed": spa_ok, "p_value": round(spa_p, 4)}
  
@@ -254,11 +269,14 @@ index 10e44e5..c98d888 100644
 -        x3_ds = daily_x3[orig_i]
 -        exp3 = float(x3_ds.to_numpy(float).mean()) if x3_ds is not None and len(x3_ds) > 0 else 0.0
 -        stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
--
--        # Lockbox
--        stages["lockbox"] = {"passed": bool(wf_oos >= 0.0),
--                             "lockbox_sharpe": round(wf_oos, 4)}
--
++        # CPCV, walk-forward, stress costs (cell-local)
++        for _k in CELL_LOCAL_MID:
++            stages[_k] = _local[_k]
+ 
+         # Lockbox: the reserved tail, which no gate above has read (policy v3).
+         stages["lockbox"] = lockbox_stage(lock_daily[orig_i], sharpe_ratio, dev=arr,
+                                           sr0=float(dsr.sr0_threshold))
+ 
 -        # Expected Value
 -        ev = float(arr.mean())
 -        stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
@@ -282,35 +300,46 @@ index 10e44e5..c98d888 100644
 -        # A CERTIFICATE JUDGED AT COSTS THE BROKER DOES NOT CHARGE IS NOT EVIDENCE. It is a
 -        # well-documented opinion.
 -        #
--        # UNMEASURED PASSES, and that is deliberate rather than lax. This needs a live terminal to
--        # read a swap rate; the gauntlet also runs where there is none, and refusing every cell on
--        # a host without MT5 would halt certification entirely instead of charging a cost. The
--        # verdict says UNMEASURED, which is a reading, and the fence binds where it can measure.
+-        # UNKNOWN COST IS UNKNOWN EDGE (principal, 2026-09-29). This stage used to PASS whenever
+-        # the live terminal could not be read, which is every host the gauntlet runs on without
+-        # one -- so an unpriced instrument certified as though financing were free. Two readings
+-        # now, and the cell needs one of them to be a real measurement:
+-        #   1. the REGISTRY basis the engine itself charged: `Costs.from_symbol` prices spread,
+-        #      commission (via tick_value) and swap (worse side, per night held) from
+-        #      universe.json, so a symbol carrying all of those was backtested net of them;
+-        #   2. the live-terminal cost-to-edge fence, which can still REFUSE on a measured cost.
+-        # A symbol missing any registry field is UNMEASURED, and UNMEASURED fails closed.
+-        _basis = registry_cost_basis(str(c.get("sym") or c.get("symbol") or ""), meta)
 -        try:
 -            from research.cost_to_edge import verdict as _cost_verdict
 -            _refuse, _why, _cost = _cost_verdict(
 -                str(c.get("sym") or c.get("symbol") or ""),
 -                str(c.get("family") or ""), ev)
--            stages["swap_cost"] = {
--                "passed": not _refuse,
--                "measured": bool(_cost.get("measured")),
--                "total_cost_r": _cost.get("total_cost_r"),
--                "swap_r": _cost.get("swap_r"),
--                "holds_overnight": _cost.get("holds_overnight"),
--                "why": _why or ("cost within the bar" if _cost.get("measured")
--                                else str(_cost.get("why") or "UNMEASURED")),
--            }
 -        except Exception as _exc:
--            stages["swap_cost"] = {"passed": True, "measured": False,
--                                   "why": f"UNMEASURED ({type(_exc).__name__}): "
--                                          f"cost could not be priced on this host"}
-+        # CPCV, walk-forward, stress costs, lockbox, expected value, swap (cell-local)
+-            _refuse, _why, _cost = False, "", {
+-                "measured": False, "why": f"terminal unreadable ({type(_exc).__name__})"}
+-        _live_measured = bool(_cost.get("measured"))
+-        stages["swap_cost"] = {
+-            "passed": bool((_basis["measured"] or _live_measured) and not _refuse),
+-            "measured": bool(_basis["measured"] or _live_measured),
+-            "registry_basis": _basis,
+-            "live_measured": _live_measured,
+-            "total_cost_r": _cost.get("total_cost_r"),
+-            "swap_r": _cost.get("swap_r"),
+-            "holds_overnight": _cost.get("holds_overnight"),
+-            "why": (_why if _refuse else
+-                    "cost within the bar" if _live_measured else
+-                    "priced by the registry basis the engine charged" if _basis["measured"] else
+-                    f"UNMEASURED cost fails closed: {_basis['why']}; "
+-                    f"live: {_cost.get('why') or 'unread'}"),
+-        }
++        # Expected value, swap (cell-local)
 +        for _k in CELL_LOCAL_TAIL:
 +            stages[_k] = _local[_k]
  
          passed = all(s["passed"] for s in stages.values())
          # WHICH GATE ACTUALLY STOPPED IT, AND WITHOUT THIS THE FUNNEL IS INVISIBLE.
-@@ -3129,71 +3187,28 @@ def main():
+@@ -3256,71 +3326,29 @@ def main():
      # append-only ledger carry the decisions. Fresh builds are counted as unjudged-before-build.
      _stage0 = stage0_new_summary()
      _stage0_verdicts: dict[str, dict] = {}
@@ -383,10 +412,11 @@ index 10e44e5..c98d888 100644
 +    if _SHARD is not None:
 +        # THE SHARDED SWEEP (`run_sharded`). The pool above has warmed the docket exactly as it
 +        # always does; the docket -- ordered, allocated, final -- is then written as ONE plan,
-+        # and N shards each run the loop below and the cell-local gates on their stable-hash
-+        # share of it. This process verifies every planned cell came back from exactly one
-+        # shard and restores the plan's order. No shard computes a program-level number:
-+        # `run_gauntlet` below does, once, on the union.
++        # and N shards build their stable-hash share of it, the union's lockbox cut is taken
++        # from every shard's dates, and the shards then rule their cells' cell-local gates on
++        # the development window. This process verifies every planned cell came back from
++        # exactly one shard and restores the plan's order. No shard computes a program-level
++        # number: `run_gauntlet` below does, once, on the union.
 +        _sh = _run_shards(eligible_specs, meta, _build_t0)
 +        cell_objs, deferred = _sh["cell_objs"], _sh["deferred"]
 +        blocked_build.extend(_sh["blocked"])
@@ -404,7 +434,7 @@ index 10e44e5..c98d888 100644
      if cache_hits:
          print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
                f"{len(eligible_specs) - cache_hits} to compute")
-@@ -3252,6 +3267,8 @@ def main():
+@@ -3379,6 +3407,8 @@ def main():
      # be read against "N workers warmed M cells" rather than guessed at from wall time.
      result["workers"] = WORKERS
      result["prewarm"] = _prewarm
@@ -413,7 +443,7 @@ index 10e44e5..c98d888 100644
      result["peak_rss_mb"] = round(_rss_mb(), 1)
      _save_build_cursor(_cursor, _built_syms)
      # A CELL COUNTS AS SEEN ONLY WHEN IT WAS JUDGED, never when it was deferred or blocked.
-@@ -3773,5 +3790,368 @@ def _cli_main() -> int:
+@@ -3900,5 +3930,437 @@ def _cli_main() -> int:
              return 0
  
  
@@ -431,6 +461,15 @@ index 10e44e5..c98d888 100644
 +#:     program-level number, are computed ONCE, by `run_gauntlet` in the merging process, on the
 +#:     union matrix in the plan's own column order -- no shard is ever judged against a smaller
 +#:     family, because no shard judges anything that reads the family at all.
++#: THE LOCKBOX CUT IS PROGRAM-LEVEL TOO (policy v3/v4). `gate_policy.lockbox_cut` is one calendar
++#: key derived from the UNION of every cell's dates, and every cell-local gate reads only the
++#: development window before it; the lockbox itself is judged at the union's DSR hurdle `sr0`.
++#: So a shard runs in TWO PHASES: `build` (series for its cells, and their dates), then -- after
++#: the merge has computed the one cut from the union of all shards' dates -- `rule` (the
++#: cell-local gates on the carved series). The lockbox gate is computed in the merge, never in a
++#: shard, and `run_gauntlet` re-derives the cut itself and recomputes any cell whose shard used a
++#: different one.
++#:
 +#: A cell passes only when its cell-local gates (computed in its shard) AND the union's
 +#: program-level gates pass, which is the unsharded rule verbatim: the verdict row is assembled by
 +#: the same code in the same stage order either way.
@@ -447,8 +486,9 @@ index 10e44e5..c98d888 100644
 +#: certification lane `run_sharded` holds for the whole sweep. A shard that dies, is killed or
 +#: writes a stale file fails the merge closed: nothing is published and the next trigger retries.
 +#:
-+#: Its presence is the feature flag an unsealed launcher tests for (`SHARD_PROTOCOL`).
-+SHARD_PROTOCOL = 1
++#: Its presence is the feature flag an unsealed launcher tests for (`SHARD_PROTOCOL`). Version 2 is
++#: the two-phase protocol (`dispatch(shard_dir, n, phase)`); a launcher must refuse any other.
++SHARD_PROTOCOL = 2
 +
 +#: Set ONLY by `run_sharded`. None means the ordinary sweep, byte-for-byte as before.
 +_SHARD: dict[str, object] | None = None
@@ -493,13 +533,16 @@ index 10e44e5..c98d888 100644
 +        return pickle.load(fh)  # noqa: S301
 +
 +
-+def shard_worker(shard_dir: Path | str, k: int) -> dict:
-+    """Build and rule shard `k` of the plan in `shard_dir`; write `shard_<k>.pkl`. No lock.
++def shard_worker(shard_dir: Path | str, k: int, phase: str = "build") -> dict:
++    """Phase `build` or `rule` of shard `k` of the plan in `shard_dir`; writes `shard_<k>.pkl`.
++
++    No lock: the merging process holds the lane for the whole sweep. `build` needs only the
++    plan; `rule` needs the union's lockbox cut, which the merge writes to `cut.pkl` in between.
 +
 +    Runs the SAME code the unsharded sweep runs after its pre-warm pool, on its share of the plan
 +    and in the plan's order: `_build_specs` (one spec at a time, so the outcome of each is known),
-+    `_cell_series`, `_cell_series_x3` and `_cell_local_stages`. It computes NO program-level
-+    quantity and writes no shared record; the merging `main` does both, once.
++    `_cell_series`, `_cell_series_x3` (phase `build`) and `_cell_local_stages` (phase `rule`). It
++    computes NO program-level quantity and writes no shared record; the merging `main` does both.
 +    """
 +    shard_dir = Path(shard_dir)
 +    t0 = time.time()
@@ -511,6 +554,10 @@ index 10e44e5..c98d888 100644
 +    if not 0 <= k < n:
 +        raise ValueError(f"shard {k} outside 0..{n - 1}")
 +    meta = plan["meta"]
++    if phase == "rule":
++        return _shard_rule(shard_dir, plan, k, meta, t0)
++    if phase != "build":
++        raise ValueError(f"unknown shard phase {phase!r}")
 +    build_t0 = float(plan["build_t0"])
 +    mine = [(i, sp) for i, sp in enumerate(plan["specs"]) if shard_of(sp, n) == k]
 +    # NO POOL HERE. The merging process ran the pre-warm pool over the WHOLE plan before any shard
@@ -545,27 +592,57 @@ index 10e44e5..c98d888 100644
 +    cells = acc["cell_objs"]
 +    daily, _hits = _cell_series(cells, meta)
 +    daily_x3 = _cell_series_x3(cells)
-+    n_local = 0
++    dates: set = set()
 +    for c, d, d3 in zip(cells, daily, daily_x3, strict=True):
-+        # `valid` in run_gauntlet is exactly this predicate, so the merge finds local stages on
-+        # every cell it judges and on no other.
-+        if d is not None and len(d) >= 60:
-+            c["_local_stages"] = _cell_local_stages(c, d.to_numpy(float), d3)
-+            n_local += 1
 +        c["_shard_ds"] = d
-+        # The 3x arm is read only by the cell-local stress gate, which is already computed; the
-+        # cache holds the pair. Dropped here so the intermediate file carries one series a cell.
-+        c["_shard_ds3"] = None
++        c["_shard_x3_full"] = d3            # carved and dropped in phase `rule`
 +        c.pop("_cached_ds3", None)
 +        c.pop("_fresh_ds3", None)
++        if d is not None:
++            dates.update(d.index)
 +    out = {"protocol": SHARD_PROTOCOL, "token": plan["token"], "k": k, "n": n, "pid": os.getpid(),
-+           "rows": rows, "built_syms": sorted(built_syms), "cells_ruled": n_local,
-+           "seconds": round(time.time() - t0, 3),
-+           "peak_rss_mb": round(_rss_mb(), 1)}
++           "phase": "build", "rows": rows, "built_syms": sorted(built_syms),
++           "dates": list(dates), "build_seconds": round(time.time() - t0, 3)}
 +    _pickle_atomic(shard_dir / f"shard_{k}.pkl", out)
-+    print(f"SHARD {k}/{n}: {len(rows)} planned cell(s), {len(cells)} built, {n_local} ruled "
-+          f"cell-locally in {out['seconds']:.1f}s")
-+    return {key: out[key] for key in ("k", "n", "cells_ruled", "seconds", "peak_rss_mb")}
++    print(f"SHARD {k}/{n} build: {len(rows)} planned cell(s), {len(cells)} built in "
++          f"{out['build_seconds']:.1f}s")
++    return {"k": k, "n": n, "phase": "build", "seconds": out["build_seconds"]}
++
++
++def _shard_rule(shard_dir: Path, plan: dict, k: int, meta: dict, t0: float) -> dict:
++    """Phase `rule`: the cell-local gates on each cell's DEVELOPMENT window, cut at the union's
++    lockbox key exactly as `run_gauntlet` cuts it."""
++    got = _unpickle(shard_dir / "cut.pkl")
++    if got.get("token") != plan["token"]:
++        raise ShardMergeError("cut.pkl belongs to another plan")
++    cut = got["cut"]
++    out = _unpickle(shard_dir / f"shard_{k}.pkl")
++    if out.get("token") != plan["token"] or out.get("phase") != "build":
++        raise ShardMergeError(f"shard {k} has no build output for this plan")
++    n_local = 0
++    for row in out["rows"]:
++        if row["kind"] != "cell":
++            continue
++        c = row["obj"]
++        full, x3 = c.get("_shard_ds"), c.pop("_shard_x3_full", None)
++        dev = full if (full is None or cut is None) else full[full.index < cut]
++        if x3 is not None and cut is not None:
++            x3 = x3[x3.index < cut]
++        # `valid` in run_gauntlet is exactly this predicate on the carved series, so the merge
++        # finds local stages on every cell it judges and on no other.
++        if dev is not None and len(dev) >= 60:
++            c["_local_stages"] = _cell_local_stages(c, dev.to_numpy(float), x3, meta)
++            c["_local_cut"] = cut
++            n_local += 1
++        # The 3x arm is read only by the cell-local stress gate, which is now computed; the cache
++        # holds the pair. Dropped so the file carries one series a cell into the merge.
++        c["_shard_ds3"] = None
++    out.update(phase="rule", cut=cut, cells_ruled=n_local,
++               seconds=round(out.get("build_seconds", 0.0) + time.time() - t0, 3),
++               peak_rss_mb=round(_rss_mb(), 1))
++    _pickle_atomic(shard_dir / f"shard_{k}.pkl", out)
++    print(f"SHARD {k}/{plan['n']} rule: {n_local} cell(s) ruled cell-locally")
++    return {"k": k, "phase": "rule", "cells_ruled": n_local}
 +
 +
 +def _stage0_fold(summary: dict, verdicts: dict, parts: list) -> None:
@@ -587,20 +664,25 @@ index 10e44e5..c98d888 100644
 +        verdicts.update(s0v)
 +
 +
-+def _shard_collect(shard_dir: Path, plan: dict) -> dict:
++def _shard_collect(shard_dir: Path, plan: dict, phase: str = "rule") -> dict:
 +    """Read every shard's file and restore the plan's order, or refuse. Fails CLOSED."""
 +    n, specs = int(plan["n"]), list(plan["specs"])
 +    rows_by_idx: dict[int, dict] = {}
 +    reports: list[dict] = []
 +    built_syms: set[str] = set()
++    dates: set = set()
 +    for k in range(n):
 +        f = shard_dir / f"shard_{k}.pkl"
 +        if not f.exists():
 +            raise ShardMergeError(f"shard {k}/{n} wrote no output; nothing is published")
 +        out = _unpickle(f)
 +        if (out.get("protocol") != SHARD_PROTOCOL or out.get("token") != plan["token"]
-+                or int(out.get("k", -1)) != k or int(out.get("n", -1)) != n):
-+            raise ShardMergeError(f"shard {k}/{n} output is stale or belongs to another plan")
++                or int(out.get("k", -1)) != k or int(out.get("n", -1)) != n
++                or out.get("phase") != phase):
++            raise ShardMergeError(f"shard {k}/{n} output is stale, unfinished ({out.get('phase')}"
++                                  f" != {phase}) or belongs to another plan")
++        if phase == "rule" and out.get("cut") != plan.get("cut"):
++            raise ShardMergeError(f"shard {k} ruled on a different lockbox cut")
 +        for row in out["rows"]:
 +            i = int(row["idx"])
 +            if not 0 <= i < len(specs) or shard_of(specs[i], n) != k:
@@ -613,6 +695,7 @@ index 10e44e5..c98d888 100644
 +                raise ShardMergeError(f"cell {i} came back as a different cell")
 +            rows_by_idx[i] = row
 +        built_syms |= set(out.get("built_syms") or ())
++        dates.update(out.get("dates") or ())
 +        reports.append({"k": k, "planned": len(out["rows"]), "ruled": out.get("cells_ruled"),
 +                        "seconds": out.get("seconds"), "peak_rss_mb": out.get("peak_rss_mb")})
 +    missing = len(specs) - len(rows_by_idx)
@@ -633,7 +716,7 @@ index 10e44e5..c98d888 100644
 +        mem += int(row["mem_deferred"])
 +    return {"cell_objs": cell_objs, "deferred": deferred, "blocked": blocked,
 +            "stage0_parts": parts, "cache_hits": hits, "built_fresh": fresh,
-+            "mem_deferred": mem, "built_syms": built_syms,
++            "mem_deferred": mem, "built_syms": built_syms, "dates": dates,
 +            "report": {"protocol": SHARD_PROTOCOL, "n_shards": n, "planned_cells": len(specs),
 +                       "each_cell_ruled_once": True,
 +                       "program_level": "computed once on the union matrix by the merge",
@@ -646,7 +729,8 @@ index 10e44e5..c98d888 100644
 +    n = int(cfg["n"])
 +    shard_dir = Path(cfg.get("dir") or SHARD_DIR)
 +    shard_dir.mkdir(parents=True, exist_ok=True)
-+    for f in list(shard_dir.glob("shard_*.pkl")) + list(shard_dir.glob("*.tmp")):
++    for f in (list(shard_dir.glob("shard_*.pkl")) + list(shard_dir.glob("*.tmp"))
++              + [shard_dir / "cut.pkl"]):
 +        f.unlink(missing_ok=True)
 +    token = hashlib.sha256(f"{os.getpid()}:{time.time_ns()}:{len(eligible_specs)}".encode()
 +                           ).hexdigest()[:16]
@@ -656,10 +740,24 @@ index 10e44e5..c98d888 100644
 +    print(f"SHARDED SWEEP: {len(eligible_specs)} planned cell(s) across {n} shard(s)")
 +    t0 = time.time()
 +    dispatch = cfg["dispatch"]
-+    dispatch(shard_dir, n)  # type: ignore[operator]
-+    got = _shard_collect(shard_dir, plan)
-+    got["report"]["dispatch_seconds"] = round(time.time() - t0, 3)
-+    for f in shard_dir.glob("shard_*.pkl"):
++    dispatch(shard_dir, n, "build")  # type: ignore[operator]
++    t_build = time.time() - t0
++    built = _shard_collect(shard_dir, plan, phase="build")
++    # THE ONE LOCKBOX CUT, from the union of every shard's dates -- the same calendar
++    # `run_gauntlet` builds from the same series (`lockbox_cut` reads only each series' index).
++    from research.gate_policy import lockbox_cut
++
++    class _Dates:
++        def __init__(self, index: list) -> None:
++            self.index = index
++
++    plan["cut"] = lockbox_cut([_Dates(list(built["dates"]))])
++    _pickle_atomic(shard_dir / "cut.pkl", {"token": token, "cut": plan["cut"]})
++    dispatch(shard_dir, n, "rule")  # type: ignore[operator]
++    got = _shard_collect(shard_dir, plan, phase="rule")
++    got["report"].update(dispatch_seconds=round(time.time() - t0, 3),
++                         build_phase_seconds=round(t_build, 3), lockbox_cut=str(plan["cut"]))
++    for f in [*shard_dir.glob("shard_*.pkl"), shard_dir / "cut.pkl"]:
 +        f.unlink(missing_ok=True)
 +    return got
 +
@@ -668,8 +766,9 @@ index 10e44e5..c98d888 100644
 +                need_mb: int | None = None) -> int:
 +    """The certifying sweep, sharded N ways, under the SAME two locks `_cli_main` takes.
 +
-+    `dispatch(shard_dir, n)` must run `shard_worker(shard_dir, k)` for every k in 0..n-1 (in
-+    any order, concurrently or not) and return when all have finished; the merge verifies the
++    `dispatch(shard_dir, n, phase)` must run `shard_worker(shard_dir, k, phase)` for every k in
++    0..n-1 (in any order, concurrently or not) and return when all have finished. It is called
++    twice, `build` then `rule`; the merge verifies the
 +    result rather than trusting it. Returns 0 after a sweep and 75 when the lane was not granted.
 +    `need_mb` is the admission ask for the whole sharded sweep (default: this process's budget).
 +    """

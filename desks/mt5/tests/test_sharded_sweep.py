@@ -1,9 +1,11 @@
 """A sharded sweep rules EXACTLY what the unsharded sweep rules -- verdicts, census, program stats.
 
 `sealed_patches/external_gauntlet_sharded_sweep.patch` lets the sealed judge run as N shards:
-each shard builds its stable-hash share of ONE plan and computes only the cell-local gates, and
-one merge computes every program-level number (the trial census, the deflated-Sharpe charge,
-PBO, SPA) once, on the union matrix, before anything is written. The binding constraint is that
+each shard builds its stable-hash share of ONE plan (phase `build`), the merge takes the ONE
+lockbox cut from the union of every shard's dates, each shard then computes only the cell-local
+gates on the development window (phase `rule`), and the merge computes every program-level number
+(the trial census, the deflated-Sharpe charge, PBO, SPA, the lockbox at the union's DSR hurdle)
+once, on the union, before anything is written. The binding constraint is that
 this is VERDICT-IDENTICAL to today's single sweep on the same docket. This file proves it by
 applying the patch to a TEMP COPY of the sealed file (never the repo copy), running the ORIGINAL
 sealed sweep, the patched sweep with N=1 and the patched sweep with N=3 on one synthetic docket
@@ -98,12 +100,14 @@ def _desk_tree(root: Path, patched: bool) -> Path:
     if patched and "SHARD_PROTOCOL" not in SEALED.read_text("utf-8"):
         subprocess.run(["git", "apply", "--whitespace=nowarn", str(PATCH)], cwd=root,
                        check=True, capture_output=True)
-        assert "SHARD_PROTOCOL = 1" in dst.read_text("utf-8")
+        assert "SHARD_PROTOCOL = 2" in dst.read_text("utf-8")
     uni = root / "desks" / "mt5" / "data" / "universe"
     uni.mkdir(parents=True, exist_ok=True)
     syms = [f"SYN{s:03d}" for s in range(30)] + ["NOBARS"]
-    (uni / "universe.json").write_text(json.dumps({s: {"tradeable": True} for s in syms}),
-                                       "utf-8")
+    # Every registry cost field `swap_cost` needs, so a cell can be priced and pass all ten.
+    row = {"tradeable": True, "median_spread_pts": 10, "tick_size": 0.00001, "tick_value": 1.0,
+           "contract_size": 100000, "swap_long": -1.0, "swap_short": 0.5}
+    (uni / "universe.json").write_text(json.dumps({s: dict(row) for s in syms}), "utf-8")
     for s in syms:
         (uni / f"{s}_H1.parquet").write_bytes(b"")      # exists(): gate 0's parquet limb
     hyp = root / "desks" / "mt5" / "data" / "hypotheses"
@@ -162,9 +166,10 @@ def _lane(*_a: Any, **_k: Any) -> Iterator[bool]:
 
 def _fork_dispatch(mod: types.ModuleType):
     """Every shard at once, as its own process, when the platform can fork."""
-    def dispatch(shard_dir: Path, n: int) -> None:
+    def dispatch(shard_dir: Path, n: int, phase: str) -> None:
         ctx = mp.get_context("fork")
-        procs = [ctx.Process(target=mod.shard_worker, args=(shard_dir, k)) for k in range(n)]
+        procs = [ctx.Process(target=mod.shard_worker, args=(shard_dir, k, phase))
+                 for k in range(n)]
         for p in procs:
             p.start()
         for p in procs:
@@ -176,9 +181,9 @@ def _fork_dispatch(mod: types.ModuleType):
 
 
 def _inline_dispatch(mod: types.ModuleType):
-    def dispatch(shard_dir: Path, n: int) -> None:
+    def dispatch(shard_dir: Path, n: int, phase: str) -> None:
         for k in range(n):
-            mod.shard_worker(shard_dir, k)
+            mod.shard_worker(shard_dir, k, phase)
     return dispatch
 
 
@@ -269,6 +274,10 @@ def test_n1_and_n3_are_verdict_identical_to_the_unsharded_sweep(
     assert {v.get("downstream_status") for v in rep["verdicts"]} >= {
         "NOT_RUN_DATA_MISSING", "NOT_RUN_BUILD_FAILED", "NOT_RUN_UNTRADEABLE_SYMBOL"}
     assert not [v for v in judged if v["family"] == "discovered"], "discovered stays banned"
+    # the lockbox is live: a real cut, and every judged cell carries gate 9 at its DSR hurdle
+    assert all("lockbox" in v["stages"] for v in judged)
+    assert any(v["stages"]["lockbox"]["passed"] for v in judged)
+    assert any(v["stages"]["swap_cost"]["passed"] for v in judged)
 
     for got in (one, three):
         r = got["report"]
@@ -314,9 +323,9 @@ def test_a_missing_shard_fails_closed_and_publishes_nothing(
     import research.job_lock as jl
     env.setattr(jl, "exclusive_job", _lane)
 
-    def lossy(shard_dir: Path, n: int) -> None:
+    def lossy(shard_dir: Path, n: int, phase: str) -> None:
         for k in range(n - 1):                          # the last shard never reports
-            mod.shard_worker(shard_dir, k)
+            mod.shard_worker(shard_dir, k, phase)
 
     with pytest.raises(mod.ShardMergeError):
         mod.run_sharded(3, lossy, shard_dir=tmp_path / "m" / "shards")
@@ -336,15 +345,43 @@ def test_a_shard_returning_a_cell_it_does_not_own_is_refused(
     import research.job_lock as jl
     env.setattr(jl, "exclusive_job", _lane)
 
-    def tamper(shard_dir: Path, n: int) -> None:
+    def tamper(shard_dir: Path, n: int, phase: str) -> None:
         for k in range(n):
-            mod.shard_worker(shard_dir, k)
+            mod.shard_worker(shard_dir, k, phase)
+        if phase != "rule":
+            return
         a, b = mod._unpickle(shard_dir / "shard_0.pkl"), mod._unpickle(shard_dir / "shard_1.pkl")
         a["rows"].append(b["rows"][0])                  # shard 0 claims a shard-1 cell
         mod._pickle_atomic(shard_dir / "shard_0.pkl", a)
 
     with pytest.raises(mod.ShardMergeError):
         mod.run_sharded(3, tamper, shard_dir=tmp_path / "t" / "shards")
+
+
+def test_a_shard_ruling_at_another_lockbox_cut_is_refused(
+        tmp_path: Path, env: pytest.MonkeyPatch) -> None:
+    """The cut is program-level: a shard that carved anywhere but the union's cut fails closed."""
+    tree = _desk_tree(tmp_path / "c", True)
+    mod = _load(tree, "eg_cut", env)
+    import research.job_lock as jl
+    env.setattr(jl, "exclusive_job", _lane)
+
+    def skew(shard_dir: Path, n: int, phase: str) -> None:
+        if phase == "rule":                             # shard 1 is handed an earlier cut
+            got = mod._unpickle(shard_dir / "cut.pkl")
+            for k in range(n):
+                if k == 1:
+                    mod._pickle_atomic(shard_dir / "cut.pkl",
+                                       {**got, "cut": got["cut"] - pd.Timedelta(days=30)})
+                mod.shard_worker(shard_dir, k, phase)
+                mod._pickle_atomic(shard_dir / "cut.pkl", got)
+            return
+        for k in range(n):
+            mod.shard_worker(shard_dir, k, phase)
+
+    with pytest.raises(mod.ShardMergeError):
+        mod.run_sharded(3, skew, shard_dir=tmp_path / "c" / "shards")
+    assert not (tree.parents[3] / "desks/mt5/reports/universal_gates_external.json").exists()
 
 
 def test_the_partition_is_stable_and_total(tmp_path: Path, env: pytest.MonkeyPatch) -> None:
@@ -378,7 +415,14 @@ def test_the_launcher_falls_back_to_the_unsharded_sweep_without_the_patch(
     assert doc["mode"] == "unsharded" and "SHARD_PROTOCOL" in doc["why"]
 
     # patched, but a reproduction: never sharded
-    fake2 = types.SimpleNamespace(**{**vars(fake), "SHARD_PROTOCOL": 1,
+    # a judge carrying another protocol version is not spoken to
+    fake1 = types.SimpleNamespace(**{**vars(fake), "SHARD_PROTOCOL": 1,
+                                     "run_sharded": lambda *a, **k: calls.append("sharded"),
+                                     "shard_worker": lambda *a: None,
+                                     "shard_of": lambda *a: 0})
+    assert sg.supports_sharding(fake1) is False
+
+    fake2 = types.SimpleNamespace(**{**vars(fake), "SHARD_PROTOCOL": 2,
                                      "run_sharded": lambda *a, **k: calls.append("sharded"),
                                      "shard_worker": lambda *a: None,
                                      "shard_of": lambda *a: 0})
@@ -406,7 +450,7 @@ def test_the_burndown_reads_how_the_last_sweep_ran(monkeypatch: pytest.MonkeyPat
     assert jb.sharding()["status"] == "UNMEASURED"
     (tmp_path / "SHARDED_SWEEP.json").write_text(json.dumps({
         "at": "2026-09-30T12:00:00+00:00", "mode": "sharded", "why": "sharded sweep ran",
-        "decision": {"n_shards": 3}, "wall_seconds": 90.0, "sealed_protocol": 1,
+        "decision": {"n_shards": 3}, "wall_seconds": 90.0, "sealed_protocol": 2,
         "merge": {"dispatch_seconds": 60.0, "shards": [{"k": 0, "seconds": 40.0},
                                                        {"k": 1, "seconds": 58.5}]}}), "utf-8")
     got = jb.sharding()

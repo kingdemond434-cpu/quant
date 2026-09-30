@@ -4,11 +4,13 @@ WHY. One sweep holds the exclusive `certification_lane` and, after the pre-warm 
 the cold cells, rules the whole docket on ONE core: loading every cached series pair, CPCV,
 walk-forward, the swap price, cell after cell. The trading box has 18 cores. `external_gauntlet`
 (sealed) grows a sharded sweep in `sealed_patches/external_gauntlet_sharded_sweep.patch`:
-`run_sharded(n, dispatch)` plans the docket once, hands the plan to `dispatch`, verifies that
-every planned cell came back from exactly one shard, and then computes every program-level
-number -- the trial census, the deflated-Sharpe charge, PBO, SPA -- ONCE, on the union matrix,
-before writing anything. This file is the unsealed half: it decides N, runs the shards as
-subprocesses, and records what happened.
+`run_sharded(n, dispatch)` plans the docket once and dispatches it TWICE: phase `build` (each
+shard's series and their dates), then -- after the merge takes the one lockbox cut from the union
+of every shard's dates -- phase `rule` (the cell-local gates on the development window). It
+verifies every planned cell came back from exactly one shard, and then computes every
+program-level number -- the trial census, the deflated-Sharpe charge, PBO, SPA, the lockbox at the
+union's DSR hurdle -- ONCE, on the union, before writing anything. This file is the unsealed
+half: it decides N, runs the shards as subprocesses, and records what happened.
 
 IT NEVER CHANGES A VERDICT AND IT NEVER BLOCKS THE JUDGE.
   * The sealed file without the patch has no `SHARD_PROTOCOL`: this launcher then runs
@@ -23,7 +25,7 @@ IT NEVER CHANGES A VERDICT AND IT NEVER BLOCKS THE JUDGE.
     python scripts/external_gauntlet_sharded.py              # the MT5-Gauntlet entry point
     python scripts/external_gauntlet_sharded.py --shards 6   # force N
     python scripts/external_gauntlet_sharded.py --plan       # print the decision, run nothing
-    python scripts/external_gauntlet_sharded.py --worker DIR K   # one shard (the launcher's)
+    python scripts/external_gauntlet_sharded.py --worker DIR K PHASE   # one shard phase
 
 THE NAME CARRIES `external_gauntlet` ON PURPOSE. `judging_throughput._is_judge` and
 `stall_watch.ps1` find the judge by that substring in a process's command line; a launcher (or a
@@ -69,9 +71,14 @@ def _import_judge() -> Any:
     return eg
 
 
+#: The sealed shard protocol this launcher speaks: 2 is the two-phase `dispatch(dir, n, phase)`.
+#: Any other version (none, or one this file predates) runs the unsharded sweep.
+PROTOCOL = 2
+
+
 def supports_sharding(eg: Any) -> bool:
     """Feature detection: the patched judge exposes the protocol and its three entry points."""
-    return (int(getattr(eg, "SHARD_PROTOCOL", 0) or 0) >= 1
+    return (int(getattr(eg, "SHARD_PROTOCOL", 0) or 0) == PROTOCOL
             and all(callable(getattr(eg, f, None))
                     for f in ("run_sharded", "shard_worker", "shard_of")))
 
@@ -119,15 +126,17 @@ def _shard_env(decision: dict[str, Any]) -> dict[str, str]:
 
 
 def make_dispatch(decision: dict[str, Any], timeout_s: float):
-    """`dispatch(shard_dir, n)`: one subprocess per shard, all at once; raise if any fails."""
+    """`dispatch(shard_dir, n, phase)`: one subprocess per shard, all at once; raise if any
+    fails. Called twice per sweep (`build`, then `rule`), each with the full timeout."""
     env = _shard_env(decision)
 
-    def dispatch(shard_dir: Path, n: int) -> None:
+    def dispatch(shard_dir: Path, n: int, phase: str = "build") -> None:
         procs = []
         for k in range(n):
-            log = open(Path(shard_dir) / f"shard_{k}.log", "w", encoding="utf-8")  # noqa: SIM115
+            log = open(Path(shard_dir) / f"shard_{k}.{phase}.log", "w",  # noqa: SIM115
+                       encoding="utf-8")
             p = subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "--worker",
-                                  str(shard_dir), str(k)], stdout=log,
+                                  str(shard_dir), str(k), phase], stdout=log,
                                  stderr=subprocess.STDOUT, env=env, cwd=str(DESK))
             procs.append((k, p, log))
         deadline = time.time() + timeout_s
@@ -140,13 +149,13 @@ def make_dispatch(decision: dict[str, Any], timeout_s: float):
                 rc = -9
             log.close()
             if rc != 0:
-                failed.append(f"shard {k} rc={rc}")
+                failed.append(f"shard {k} {phase} rc={rc}")
         for k, _p, _log in procs:
             try:
-                tail = (Path(shard_dir) / f"shard_{k}.log").read_text(
+                tail = (Path(shard_dir) / f"shard_{k}.{phase}.log").read_text(
                     "utf-8", errors="replace").splitlines()[-3:]
                 for line in tail:
-                    print(f"  [shard {k}] {line}")
+                    print(f"  [shard {k} {phase}] {line}")
             except OSError:
                 pass
         if failed:
@@ -183,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv[:1] == ["--worker"]:
         eg = _import_judge()
-        eg.shard_worker(Path(argv[1]), int(argv[2]))
+        eg.shard_worker(Path(argv[1]), int(argv[2]), argv[3] if len(argv) > 3 else "build")
         return 0
     requested: int | None = None
     if "--shards" in argv:
@@ -200,7 +209,8 @@ def main(argv: list[str] | None = None) -> int:
     why = None
     decision: dict[str, Any] | None = None
     if not supports_sharding(eg):
-        why = "sealed judge has no SHARD_PROTOCOL (patch not applied): unsharded sweep"
+        why = (f"sealed judge has no SHARD_PROTOCOL {PROTOCOL} (patch not applied, or another "
+               f"version): unsharded sweep")
     elif any(a.startswith("--only") for a in argv):
         why = "reproduction (--only) is never sharded"
     else:
