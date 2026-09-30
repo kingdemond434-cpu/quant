@@ -77,9 +77,15 @@ def _ruff_discovered_paths(py: str) -> tuple[list[str], str]:
 
 
 def _tracked_test_manifest(paths: list[str]) -> tuple[Path | None, str]:
-    """Materialize pytest's exact tracked-test population without crawling runtime data."""
+    """Materialize pytest's tracked ``testpaths`` population without crawling runtime data."""
     tests = []
     for rel in paths:
+        normalized = Path(rel).as_posix()
+        # pyproject.toml declares testpaths=["tests"]. Operational scripts elsewhere may be
+        # named test_*.py but are executable probes, not pytest modules; importing one during a
+        # gate once opened a real SSH miner. Preserve pytest's canonical discovery boundary.
+        if not normalized.startswith("tests/"):
+            continue
         name = Path(rel).name
         if name.startswith("test_") or name.endswith("_test.py"):
             tests.append(rel)

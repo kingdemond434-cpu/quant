@@ -35,8 +35,7 @@ def test_gate_collection_manifest_contains_only_tracked_pytest_patterns(
     paths, error = module._tracked_python_paths()
     manifest, error = module._tracked_test_manifest(paths)
     assert error == "" and manifest == module.TEST_MANIFEST
-    assert manifest.read_text("utf-8").splitlines() == [
-        "tests/test_alpha.py", "research/placebo_test.py"]
+    assert manifest.read_text("utf-8").splitlines() == ["tests/test_alpha.py"]
 
 
 def test_ruff_population_uses_canonical_discovery_and_rejects_outside_paths(
