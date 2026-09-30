@@ -406,7 +406,8 @@ def test_the_gateway_reconciles_before_placing_and_logs_why():
     main = src.split("\ndef main(", 1)[1]
     at = main.index("venue_holds_bracket(")
     assert "mt5.positions_get(symbol=" in main[:at] and "mt5.history_deals_get(" in main[:at]
-    assert main.index("if not NEW_RISK_OK:") > at, "reconcile before the send path"
+    assert main.index("place_bracket(", at) > at, "reconcile before the bracket is placed"
+    assert "if _held:" in main[at:main.index("place_bracket(", at)]
     assert "matches = [" not in main, "the price-only match is back"
 
 
