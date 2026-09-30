@@ -1576,6 +1576,9 @@ def _catalogue() -> dict[str, OpSpec]:
     cat["div"] = OpSpec("div", "math", 2, False, "(x: T[u], y: S[v]) -> [u / v]; T/T -> RATIO")
     cat["trade_when"] = OpSpec("trade_when", "logic", 2, False,
                                "(gate: bool|Z[1], x: T[u]) -> T[u] held where gate <= 0")
+    cat["if_pos"] = OpSpec("if_pos", "logic", 3, False,
+                           "(gate: Z[1], x: T[u], y: T[u]) -> T[u]  x where gate > 0, else y "
+                           "(the paper's cond ? x : y; a literal 0 branch is unit-free)")
     for op in ("gt", "lt", "and", "or"):
         cat[op] = OpSpec(op, "logic", 2, False, "(a: T[u], b: T[u]) -> bool",
                          ag.to_str(_LOGIC_MACROS[op](["a", "b"])))
