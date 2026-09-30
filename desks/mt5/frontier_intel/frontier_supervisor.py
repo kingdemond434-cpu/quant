@@ -54,6 +54,7 @@ for _p in (str(_DESK), str(_ROOT)):
         sys.path.insert(0, _p)
 
 from frontier_intel import claims, ontology, queue, registry, roi, unknowns  # noqa: E402
+from libs.research.source_provenance import source_url_of as _source_url_of  # noqa: E402
 
 #: GROWTH GOVERNANCE, carried verbatim on this surface because it is one (principal 2026-09-04,
 #: fenced by scripts/check_growth_governance.py G7). A frontier miner is exactly the organ most
@@ -121,7 +122,7 @@ def scout(now: datetime | None = None) -> list[dict[str, Any]]:
                 if not hit:
                     continue
                 out.append({"firm": hit, "text": text[:2000],
-                            "url": str(r.get("url") or r.get("link") or ""),
+                            "url": str(_source_url_of(r) or ""),
                             "source": str(r.get("source") or path.parent.name)})
                 if len(out) >= MAX_ROWS:
                     return out

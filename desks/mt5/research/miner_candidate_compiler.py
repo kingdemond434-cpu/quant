@@ -10,6 +10,7 @@ guessed from a buzzword.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
@@ -26,6 +27,10 @@ if str(BASE) not in sys.path:
     # ``desks/mt5/`` to sys.path, so exact recipes otherwise cannot see the family registry and
     # are silently routed to deepening instead of the gauntlet.
     sys.path.insert(0, str(BASE))
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+from libs.research import source_provenance as _sp  # noqa: E402
+
 UNIVERSE = BASE / "data" / "universe"
 INTEL_ROOTS = (BASE / "data" / "intelligence", ROOT / "data" / "intelligence")
 OUT = BASE / "data" / "hypotheses" / "miner_candidates.json"
@@ -45,7 +50,7 @@ SEAT_SOURCES = frozenset({"deepseek", "kimi_k3_deep_forest"})
 def _deepening_task_id(source: str, row: dict) -> str:
     """Use the deepening worker's durable row identity exactly."""
     title = str(row.get("title") or row.get("description") or "")[:300]
-    url = row.get("url") or row.get("link") or ""
+    url = _sp.source_url_of(row)
     return hashlib.sha256(f"{source}|{url}|{title}".encode()).hexdigest()[:16]
 
 
@@ -339,6 +344,14 @@ _CLOCK: dict[str, float] = {}
 #: (path, row_index) of every row `recent_rows` returned, parallel to its list, so a compile-time
 #: stop can place the cursor on the exact row it did not reach.
 _POSITIONS: list[tuple[str, int]] = []
+#: The dedupe digest of each row in `_POSITIONS` order: the row's content hash, reused as its
+#: provenance so a candidate names the exact bytes it was minted from
+#: (libs.research.source_provenance).
+_DIGESTS: list[str] = []
+#: Where a candidate's own provenance floor lives. Floors only rise (source_provenance.ratchet).
+PROVENANCE_FLOOR = BASE / "data" / "hypotheses" / "provenance_floor.json"
+#: The identities of the previous pass's candidates, so the fenced share is over NEW candidates.
+PROVENANCE_SEEN = BASE / "logs" / "provenance_seen.json"        # box-local, hourly churn
 
 
 def _set_budget(budget_s: float | None) -> None:
@@ -478,6 +491,7 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
     cutoff = saved_cutoff or current_cutoff
     _LAST_INTAKE["cycle_cutoff_utc"] = cutoff.isoformat(timespec="seconds")
     _POSITIONS.clear()
+    _DIGESTS.clear()
     if all_paths:
         all_paths = [*all_paths[start:], *all_paths[:start]]
         _LAST_INTAKE["cursor_start"] = str(all_paths[0])
@@ -508,6 +522,7 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
             source = str(row.get("source") or path.parent.name or "unknown")
             found.append((source, row))
             _POSITIONS.append((str(path), row_index))
+            _DIGESTS.append(digest)
             if len(found) >= MAX_ROWS_PER_PASS:
                 # THE SHORTFALL IS RECORDED, NOT ONLY PRINTED: the files this pass never opened
                 # are research the desk chose not to do this hour, and the compiled artifact
@@ -671,6 +686,23 @@ def _genome_id(symbol: str, family: str, params: dict) -> str | None:
 
 def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
                mechanism: str) -> dict:
+    """One compiled candidate, carrying the donor row's CULTURE PROVENANCE (principal
+    2026-09-30): `source_culture`, `participant_structure`, `failure_mode_hypothesis`,
+    `crowding_prior` and `culture_derivation`, declared by the donor where it knew them and
+    inferred from the donor's own evidence (its URL, ground, language, claim text) otherwise, by
+    the one rule in `libs/research/cell_culture.py`. Every compiled cell -- donations, the
+    deepening worker's story_mechanism re-compiles, the deep-forest claims -- passes here, so this
+    is the door that makes the fields ride onto the docket."""
+    cand = _candidate_core(symbol, family, params, source, row, mechanism)
+    try:
+        from libs.research import cell_culture as _cc
+        return _cc.carry(cand, row)
+    except Exception:  # provenance may never cost the desk a cell
+        return cand
+
+
+def _candidate_core(symbol: str, family: str, params: dict, source: str, row: dict,
+                    mechanism: str) -> dict:
     gid = _genome_id(symbol, family, params)
     return {
         **({"genome_id": gid} if gid else {}),
@@ -682,7 +714,7 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         "family": family,
         "params": params,
         "source": f"miner:{source}",
-        "source_url": row.get("url") or row.get("link") or "",
+        "source_url": _sp.source_url_of(row),
         "source_title": str(row.get("title") or row.get("description") or "")[:300],
         "mechanism_status": "NAMED",
         "mechanism_note": mechanism,
@@ -1380,6 +1412,55 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
     return [], "NEEDS_EXACT_RULE_EXTRACTION"
 
 
+def _row_provenance(k: int, row: dict) -> dict:
+    """The provenance of the k-th intake row: its own URL/time/hash, else its coordinate."""
+    path_s, idx = _POSITIONS[k] if k < len(_POSITIONS) else ("", None)
+    rel, mtime = "", None
+    if path_s:
+        p = Path(path_s)
+        try:
+            rel = p.relative_to(ROOT).as_posix()
+        except ValueError:
+            rel = p.as_posix()
+        with contextlib.suppress(OSError):
+            mtime = p.stat().st_mtime
+    return _sp.extract(row, artifact=rel or None, row_index=idx,
+                       digest=_DIGESTS[k] if k < len(_DIGESTS) else None, artifact_mtime=mtime)
+
+
+def _provenance_block(ordered: list[dict], now: datetime) -> dict:
+    """Coverage over every candidate and over NEW ones (absent from the previous pass), with the
+    new-candidate share ratcheted against PROVENANCE_FLOOR. Never raises."""
+    try:
+        allc = _sp.coverage(ordered)
+        ident = {hashlib.sha256(json.dumps([c.get("symbol"), c.get("family"), c.get("params")],
+                                           sort_keys=True, default=str).encode()).hexdigest()[:16]:
+                 c for c in ordered}
+        prior = _read(PROVENANCE_SEEN)
+        seen = set(prior.get("ids") or []) if isinstance(prior, dict) else set()
+        fresh = [c for i, c in ident.items() if i not in seen]
+        newc = _sp.coverage(fresh)
+        floor = _sp.ratchet(PROVENANCE_FLOOR, newc["share"], now=now)
+        # THE SECOND FLOOR (audit 2026-09-30): the first is met by construction, since an
+        # artifact coordinate counts as a source id. This one counts only http(s) source URLs,
+        # windowed so an hour of internal-generator donations is not read as a regression.
+        url_floor = _sp.ratchet_window(PROVENANCE_FLOOR.with_name("provenance_url_floor.json"),
+                                       newc["share_source_url"], now=now)
+        with contextlib.suppress(OSError):
+            PROVENANCE_SEEN.parent.mkdir(parents=True, exist_ok=True)
+            PROVENANCE_SEEN.write_text(json.dumps({"at": now.isoformat(timespec="seconds"),
+                                                   "ids": sorted(ident)}), "utf-8")
+        return {"all": allc, "new": {k: v for k, v in newc.items() if k != "by_source"},
+                "floor": floor, "url_floor": url_floor,
+                "definition": ("provenanced = content_hash + retrieved_at + (source_url or "
+                               "source_id); source_id falls back to the artifact coordinate "
+                               "<path>#<row>, so that share is met by construction. "
+                               "share_source_url counts http(s) source URLs only and is fenced "
+                               "by url_floor, which rises to the worst of the last 24 passes")}
+    except Exception as exc:                         # the compiler must never die on a report
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
 def structurally_untestable_families() -> dict[str, str]:
     """Families the gauntlet has MEASURED as producing zero judgeable cells, from its own report.
 
@@ -1484,6 +1565,11 @@ def main() -> int:
             produced = [dict(candidate) for candidate in recovered_for_row]
             disposition = "RECOVERED_BY_DEEPENING"
         produced = expand_axes(produced)
+        # PROVENANCE RIDES ONTO EVERY CANDIDATE (six-event trace 2026-09-30: 0 of 53,174 carried
+        # a source_url). The row's own URL/time/hash when it states them, else its coordinate.
+        row_prov = _row_provenance(_row_k, row)
+        for _c in produced:
+            _sp.stamp_candidate(_c, row_prov)
         stats = per_source.setdefault(source, {
             "rows": 0, "candidates": 0, "deepening": 0, "convertible_rows": 0,
             "converted_rows": 0, "valid_refusals": 0, "invalid_cells": 0,
@@ -1492,7 +1578,7 @@ def main() -> int:
         stats["rows"] = int(stats["rows"]) + 1
         deepening_disposition = terminal_deepening.get(task_identity, "")
         terminal_refusal = (not produced and bool(deepening_disposition)
-                            and not deepening_disposition.startswith("ERROR:"))
+                            and not deepening_disposition.startswith(("ERROR:", "RECOVERED_")))
         refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY"}
                    or terminal_refusal)
         if refusal:
@@ -1548,12 +1634,23 @@ def main() -> int:
                 "source": source,
                 "disposition": disposition,
                 "title": str(row.get("title") or row.get("description") or "")[:300],
-                "url": row.get("url") or row.get("link") or "",
+                "url": _sp.source_url_of(row),
                 "symbols": resolve_symbols(row, universe),
                 "mechanism_tags": row.get("mechanism_tags") or row.get("patterns") or [],
             }
             key = hashlib.sha256(
                 json.dumps(compact, sort_keys=True, default=str).encode()).hexdigest()
+            # The task carries its provenance and its BODY, so a reader (seat or rule-based)
+            # sees the text and a recovered cell names its source. Added after the dedupe key,
+            # which therefore still folds identical rows from different files into one task.
+            compact.update({k: row_prov[k] for k in ("source_url", "source_id", "retrieved_at",
+                                                     "content_hash") if row_prov.get(k)})
+            _body = _body_text(row)
+            if _body:
+                compact["description"] = _body[:1500]
+            for _k in ("lang", "language", "region", "country", "kind"):
+                if row.get(_k) and _k not in compact:
+                    compact[_k] = row[_k]
             # FIRST WRITER WINS (theirs, 2026-09-10). A later row for the same key was
             # overwriting an earlier deepening task and still counting it, so `stats` told
             # the seat census it had queued work it had actually discarded.
@@ -1759,6 +1856,7 @@ def main() -> int:
                                     -(c.get("net_edge") or 0.0), str(c.get("symbol") or "")))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    provenance_note = _provenance_block(ordered, now)
     convertible_total = sum(int(v["convertible_rows"]) for v in per_source.values())
     converted_total = sum(int(v["converted_rows"]) for v in per_source.values())
     invalid_total = sum(int(v["invalid_cells"]) for v in per_source.values())
@@ -1785,6 +1883,7 @@ def main() -> int:
         | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
                                    if d.get("rows_with_outcomes")}},
         "graph": graph_note,
+        "provenance": provenance_note,
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),

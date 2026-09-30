@@ -355,7 +355,11 @@ def row_cell_key(row: Mapping[str, Any], seat: str = "") -> str:
     """
     source = str(row.get("source") or seat or "unknown")
     title = row.get("title") or row.get("description") or ""
-    url = row.get("url") or row.get("link") or ""
+    # THE ONE READER (libs.research.source_provenance.source_url_of): url, link, source_url,
+    # source_uri. The compiler's candidate `source_url` is read through the same function, so a
+    # row that names its page only as `source_url`/`source_uri` no longer breaks this join.
+    from libs.research.source_provenance import source_url_of
+    url = source_url_of(row)
     return compiler_parent_key(source, title, url)
 
 

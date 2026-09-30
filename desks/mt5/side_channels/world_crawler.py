@@ -622,6 +622,12 @@ def to_discovery(url: str, page: dict[str, Any], digest: str, terms_note: str = 
         "n_endpoints": len(page.get("endpoints") or []),
         "vault_sha": digest,
         "host": urlparse(url).netloc,
+        # SOURCE PROVENANCE in the desk's one vocabulary (libs.research.source_provenance), so the
+        # compiler carries the page, the fetch time and the vaulted bytes' hash onto every cell.
+        "source_url": url,
+        "retrieved_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+        "content_hash": digest,
+        "ground": urlparse(url).netloc,
         # THE CLAIMS THEMSELVES, verbatim with their instrument mapping, so the compiler's
         # deepening path can ask the seat about the sentence rather than the page title.
         "claims": [{k: c.get(k) for k in ("claim", "lang", "quantities", "direction", "horizon",

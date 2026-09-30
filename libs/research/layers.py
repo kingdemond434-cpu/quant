@@ -464,6 +464,7 @@ LEG_LAYER: dict[str, str] = {
     # machine measuring and widening its own independence, which is meta.
     "rank_recovery": "meta",
     "attribution_census": "meta",
+    "cell_culture_index": "meta",
     # sizing: how much
     "capacity": "sizing", "ensemble_optimizer": "sizing",
     # portfolio: how the book is composed
