@@ -1299,6 +1299,8 @@ class Factory:
         #: say what share of the population a model prior supplied -- zero is the normal reading
         #: on a box with no panel, and it is a measurement rather than an absence.
         self.seat_cells = 0
+        #: cross-science cells drained this pass, per `cross_science:<lab>` generator
+        self.xsci_cells: dict[str, int] = {}
 
     # ---- bookkeeping
     def say(self, msg: str) -> None:
@@ -1690,6 +1692,14 @@ class Factory:
         return expr
 
     def invent(self) -> Cell:
+        # CROSS-SCIENCE FIRST (Tier S, 2026-09-30). A lab hit the Tier S organ could not state as
+        # a registered family is parked as a grammar expression on its own symbol; it is drained
+        # here as an ordinary invention cell -- same screens, nulls, ladder and trial charge --
+        # under the generator `cross_science:<lab>`, so each lab's conversion is measured apart
+        # from the random draw. An empty queue falls through to exactly the old path.
+        xs = self._xsci_cell()
+        if xs is not None:
+            return xs
         syms = list(self.lake.worlds)
         sym = syms[int(self.rng.integers(len(syms)))]
         terms = ag.available_terminals(self.lake.worlds[sym].frames)
@@ -1706,6 +1716,41 @@ class Factory:
         expr = ag.random_expr(self.rng, max_depth=3, terminals=terms, **_bias())
         return Cell(expr, sym, int(self.rng.choice(HORIZONS)), "none", "invention", "",
                     "random", self.lake.worlds[sym].asset_class, ["invent"])
+
+    def _xsci_cell(self) -> Cell | None:
+        """One parked cross-science expression whose symbol this lake holds, drained, or None."""
+        path = self.paths.desk / "data" / "tier_s" / "xsci_expressions.json"
+        try:
+            have = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            return None
+        if not isinstance(have, list) or not have:
+            return None
+        for i, row in enumerate(have):
+            if not isinstance(row, dict) or row.get("symbol") not in self.lake.worlds:
+                continue
+            world = self.lake.worlds[row["symbol"]]
+            try:
+                expr = ag.from_str(str(row.get("expr")))
+                ok = ag.is_valid(expr, terminals=list(ag.available_terminals(world.frames)))
+            except Exception:
+                ok = False
+            if not ok:
+                continue
+            if not self.dry_run:
+                rest = have[:i] + have[i + 1:]
+                try:
+                    tmp = path.with_suffix(".json.tmp")
+                    tmp.write_text(json.dumps(rest, indent=1), "utf-8")
+                    os.replace(tmp, path)
+                except OSError:
+                    pass
+            self.xsci_cells[str(row.get("generator") or "cross_science")] = \
+                self.xsci_cells.get(str(row.get("generator") or "cross_science"), 0) + 1
+            return Cell(expr, row["symbol"], int(self.rng.choice(HORIZONS)), "none", "invention",
+                        "", str(row.get("generator") or "cross_science"), world.asset_class,
+                        ["invent"])
+        return None
 
     def _seat_skeleton(self, terms: Sequence[str]) -> Expr | None:
         """One parked seat proposal, re-validated against THIS world's terminals, or None.
@@ -1900,6 +1945,7 @@ class Factory:
                                                      if p.transferred]),
                             "mutations": n_mut, "inventions": n_inv,
                             "seat_seeded_inventions": self.seat_cells,
+                            "cross_science_inventions": dict(self.xsci_cells),
                             "order": "HARVEST -> TRANSFER -> LIGHT MUTATION -> NEW INVENTION"}
         report["status"] = "RAN"
         return self.finish(report)

@@ -250,7 +250,7 @@ def network_lab(panel: Mapping[str, F], top: int = 5) -> list[dict[str, Any]]:
             rows.append(_row("network", [tgt, names[hub]], z, "no hub lead",
                              f"network hub {names[hub]} (centrality {cent[hub]:.2f}) leads "
                              f"{tgt} by one bar (corr {cc:+.3f})", "lead corr insignificant "
-                             "next window", hub=names[hub]))
+                             "next window", hub=names[hub], corr=round(cc, 5)))
     return rows
 
 

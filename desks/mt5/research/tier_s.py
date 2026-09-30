@@ -953,6 +953,39 @@ def _gate_by_symfam() -> dict[str, list[tuple[str, bool]]]:
     return out
 
 
+#: THE falsify_order GENE'S PHENOTYPE. Each allele names the gates whose kills it tries to avoid
+#: spending the genome's rows on: its candidates are ORDERED by the measured share of their
+#: family's verdicts that died at those gates (lowest first), so two genomes identical but for this
+#: gene emit different cells and selection sees the difference. Ordering, never a filter.
+FALSIFY_GATES: dict[str, tuple[str, ...]] = {
+    "cost_first": ("stress_costs", "swap_cost", "expected_value"),
+    "lookahead_first": ("walk_forward", "lockbox", "cpcv"),
+    "stability_first": ("pbo", "cpcv", "walk_forward"),
+    "dsr_first": ("deflated_sharpe", "reality_check_spa", "in_sample_screen"),
+}
+
+
+def _family_gate_kills(rows: Iterable[Mapping[str, Any]] | None = None) -> dict[str, Counter[str]]:
+    """family -> Counter(terminal_gate) over every judged verdict (`_total` holds the count)."""
+    out: dict[str, Counter[str]] = defaultdict(Counter)
+    for r in rows if rows is not None else _jsonl(GATE_LEDGER):
+        fam = str(r.get("family") or "")
+        if not fam:
+            continue
+        out[fam]["_total"] += 1
+        if not r.get("passed"):
+            out[fam][str(r.get("terminal_gate") or "")] += 1
+    return out
+
+
+def falsify_rank(family: str, allele: str, kills: Mapping[str, Counter[str]]) -> float:
+    """Share of this family's verdicts that died at the allele's gates; 0.5 when unjudged."""
+    c = kills.get(family)
+    if not c or not c.get("_total"):
+        return 0.5
+    return sum(c.get(g, 0) for g in FALSIFY_GATES.get(allele, ())) / float(c["_total"])
+
+
 def _gauntlet_s_per_verdict() -> float:
     """Measured CPU seconds the desk spends per gate verdict (compile + sweep + gauntlet legs)."""
     cpu = 0.0
@@ -972,8 +1005,9 @@ def organ_genomes() -> dict[str, Any]:
     Every gene reaches the row: operator_set and feature_language pick the families, horizon
     the chart, data_policy the asset classes, source where the (symbol, family) pair comes
     from, novelty which pairs are preferred, complexity_cap how many parameters leave their
-    defaults, exploration how many rows, falsify_order the gate the row asks to be judged on
-    first. Fitness uses the gate ledger AFTER the emission only, with measured compute per
+    defaults, exploration how many rows, falsify_order WHICH candidates it spends them on
+    (ordered by the measured kill share of the gates it names, `FALSIFY_GATES`).
+    Fitness uses the gate ledger AFTER the emission only, with measured compute per
     verdict, duplicates (pairs the ledger had already judged) and false discoveries (pairs that
     passed and later failed) as penalties."""
     st = _state("genomes")
@@ -984,6 +1018,7 @@ def organ_genomes() -> dict[str, Any]:
                                               for x in v]
                                           for k, v in (st.get("emitted") or {}).items()}
     by_sf = _gate_by_symfam()
+    kills = _family_gate_kills()
     s_per = _gauntlet_s_per_verdict()
     fwd = shadow_rows()
     scored: list[tuple[dict[str, Any], float]] = []
@@ -1077,12 +1112,16 @@ def organ_genomes() -> dict[str, Any]:
             cand = [(s, f) for s in pool for f in fams]
         if str(g.get("novelty")) == "species":
             cand = [c for c in cand if c not in held] or cand
-        elif str(g.get("novelty")) == "exposure":
+        occ: Counter[str] = Counter()
+        if str(g.get("novelty")) == "exposure":
             occ = Counter(cls.get(s, "?") for s, _f in held)
-            cand.sort(key=lambda c: occ.get(cls.get(c[0], "?"), 0))
         if not cand:
             continue
-        idx = rng.choice(len(cand), size=min(k, len(cand)), replace=False)
+        allele = str(g.get("falsify_order") or "")
+        jitter = rng.random(len(cand))
+        idx = sorted(range(len(cand)),
+                     key=lambda i: (occ.get(cls.get(cand[i][0], "?"), 0),
+                                    falsify_rank(cand[i][1], allele, kills), jitter[i]))[:k]
         for i in idx:
             s, f = cand[int(i)]
             spec = FAMILY_REGISTRY.get(f) or {}
@@ -1100,6 +1139,8 @@ def organ_genomes() -> dict[str, Any]:
             row: dict[str, Any] = {
                 "kind": "hypothesis", "family": f, "symbols": [s], "genome": gid,
                 "falsify_first": g.get("falsify_order"),
+                "falsify_first_gates": list(FALSIFY_GATES.get(allele, ())),
+                "falsify_first_kill_share": round(falsify_rank(f, allele, kills), 4),
                 "text": f"tier_s researcher genome {gid} ({g.get('operator_set')}, "
                         f"{g.get('data_policy')}, {lang}, {src}, {g.get('horizon')}) proposes "
                         f"{f} on {s}"}
@@ -1898,6 +1939,105 @@ def organ_data_os() -> dict[str, Any]:
                        "calibrated_rankers": len(cal)}}
 
 
+#: THE CROSS-SCIENCE QUEUE. Hits whose mechanism no registered family states go to the expression
+#: factory as grammar expressions, drained one per invention draw (`expression_factory.invent`)
+#: under the generator `cross_science:<lab>`, so each lab is its own species with its own trial
+#: charge -- never relabelled as range_reversion or momentum_volgate.
+XSCI_QUEUE = STATE / "xsci_expressions.json"
+XSCI_CAP = 400
+
+
+def _nearest_window(x: float) -> int:
+    from libs.research.alpha_grammar import WINDOWS
+    return int(min(WINDOWS, key=lambda w: abs(w - x)))
+
+
+def xsci_expression(hit: Mapping[str, Any]) -> str | None:
+    """The lab's own mechanism as an alpha-grammar expression on the hit's symbol, or None when
+    the mechanism is cross-instrument (those go to the compiler as lead_lag instead)."""
+    lab = str(hit.get("lab") or "")
+    if lab == "signal":
+        half = _nearest_window(max(2.0, float(hit.get("period") or 16.0) / 2.0))
+        return f"neg(delta(close, {half}))"          # half a cycle up -> the next half is down
+    if lab == "control":
+        dev = "zscore(sub(close, decay(close, 24)), 120)"
+        return dev if float(hit.get("ac") or 0.0) > 0 else f"neg({dev})"   # lost vs overshoot
+    if lab == "queueing":
+        return "mul(zscore(activity, 120), sign(mean(ret, 3)))"            # congestion release
+    if lab == "ecology":
+        mom = "mul(sign(sum(ret, 24)), ts_rank(abs(sum(ret, 24)), 120))"
+        return mom if float(hit.get("coupling") or 0.0) > 0 else f"neg({mom})"
+    if lab == "dynamical":
+        return "mul(sign(mean(ret, 3)), ts_rank(abs(mean(ret, 3)), 120))"  # deterministic path
+    if lab == "bayesian":
+        phi = float((hit.get("posterior") or {}).get("mean") or 0.0)
+        return "mean(ret, 2)" if phi > 0 else "neg(mean(ret, 2))"
+    return None
+
+
+def enqueue_xsci(rows: list[dict[str, Any]], path: Path | None = None) -> int:
+    path = path or XSCI_QUEUE
+    try:
+        have = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        have = []
+    have = have if isinstance(have, list) else []
+    seen = {(r.get("symbol"), r.get("expr")) for r in have if isinstance(r, dict)}
+    landed = 0
+    for r in rows:
+        if (r["symbol"], r["expr"]) in seen:
+            continue
+        have.append(r)
+        seen.add((r["symbol"], r["expr"]))
+        landed += 1
+    _write(path, have[-XSCI_CAP:])
+    return landed
+
+
+def science_rows(labs: Mapping[str, list[dict[str, Any]]],
+                 resid: list[dict[str, Any]]) -> tuple[list[dict[str, Any]],
+                                                       list[dict[str, Any]]]:
+    """(compiler rows, expression-queue rows). Every hit is tested AS ITS OWN MECHANISM:
+      * a broken relationship is a RESIDUAL: `cross_asset_residual` on the target with the
+        driver as its factor (causal betas, `mt5desk.causal_residual`), faded as the claim says;
+      * information / network hits are LEADS: `lead_lag` with the measured driver and lag 1;
+      * every other lab becomes a grammar expression the expression factory judges under the
+        generator `cross_science:<lab>`."""
+    rows: list[dict[str, Any]] = []
+    exprs: list[dict[str, Any]] = []
+    for r in resid:
+        tgt, drv = str(r.get("target")), str(r.get("driver"))
+        if not _may_hypothesise(tgt):
+            continue
+        rows.append({**r, "family": "cross_asset_residual", "symbols": [tgt],
+                     "params": {"factor_symbols": [drv], "side_mode": "revert"},
+                     "text": r.get("claim")})
+    for lab, hits in labs.items():
+        for h in hits:
+            if lab in ("information", "network"):
+                drv = str(h.get("driver") or h.get("hub") or "")
+                syms = [s for s in h.get("symbols") or [] if s != drv]
+                if not drv or not syms or not _may_hypothesise(syms[0]):
+                    continue
+                c = h.get("corr")
+                dirs = (["opposite" if float(c) < 0 else "same"] if isinstance(c, (int, float))
+                        else ["same", "opposite"])     # TE has no sign: both are the claim
+                for d in dirs:
+                    rows.append({**h, "family": "lead_lag", "lab_family": h.get("family"),
+                                 "symbols": [syms[0]],
+                                 "params": {"driver_symbol": drv, "lag": 1, "direction": d},
+                                 "text": h.get("claim")})
+                continue
+            expr = xsci_expression(h)
+            for s in h.get("symbols") or []:
+                if expr and _may_hypothesise(str(s)):
+                    exprs.append({"symbol": str(s), "expr": expr, "lab": lab,
+                                  "generator": f"cross_science:{lab}",
+                                  "claim": h.get("claim"), "falsifier": h.get("falsifier"),
+                                  "at": NOW.isoformat()})
+    return rows, exprs
+
+
 def organ_world_and_science() -> dict[str, Any]:
     rets, closes, vols = _returns_panel()
     if len(rets) < 3:
@@ -1906,31 +2046,16 @@ def organ_world_and_science() -> dict[str, Any]:
     edges = world_edges.classify_all(rets, lags=(1,), max_pairs=300)
     resid = world_edges.residuals(rets, edges)
     labs = cross_science.run_all(rets, closes, vols)
-    # map to registered families the compiler can build (the lab stays on the row)
-    fam_map = {"control": {"lost": "trend_ma_cross", "over": "mean_reversion_bollinger"},
-               "signal": "range_reversion", "queueing": "volatility_squeeze",
-               "ecology": "momentum_volgate", "dynamical": "range_reversion",
-               "information": "london_close_momentum", "network": "london_close_momentum",
-               "bayesian": {"persistence": "trend_ma_cross", "reversion": "mean_reversion_rsi"}}
-    rows: list[dict[str, Any]] = []
-    for lab, hits in labs.items():
-        for h in hits:
-            m = fam_map.get(lab)
-            if isinstance(m, dict):
-                claim = str(h.get("claim"))
-                fam = next((v for k, v in m.items() if k in claim), next(iter(m.values())))
-            else:
-                fam = str(m)
-            rows.append({**h, "family": fam, "lab_family": h.get("family"),
-                         "text": h.get("claim")})
-    for r in resid:
-        rows.append({**r, "family": "range_reversion", "text": r.get("claim")})
+    rows, exprs = science_rows(labs, resid)
     emitted = _emit("cross_science", rows)
+    queued = enqueue_xsci(exprs)
     census = world_edges.census(edges)
     return {"edges": census, "broken_relationships": resid[:20],
             "labs": {k: len(v) for k, v in labs.items()}, "emitted": emitted,
+            "expressions_queued": queued, "expressions_offered": len(exprs),
             "sample": {k: v[:3] for k, v in labs.items()},
-            "metric": {"stable_edges": census.get("STABLE", 0), "hypotheses": len(rows)}}
+            "metric": {"stable_edges": census.get("STABLE", 0),
+                       "hypotheses": len(rows) + len(exprs)}}
 
 
 def organ_worlds() -> dict[str, Any]:
