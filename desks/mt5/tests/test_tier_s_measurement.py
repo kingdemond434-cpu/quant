@@ -129,8 +129,9 @@ def test_constraint_expressions_are_grammar_valid_or_none() -> None:
 def test_literal_signs_are_causal() -> None:
     rng = np.random.default_rng(2)
     px = 100 * np.exp(np.cumsum(rng.normal(0, 1e-3, 700)))
-    full = cross_science.literal_signs(px, rng.random(700))
-    cut = cross_science.literal_signs(px[:500], rng.random(500))
+    vol = rng.random(700)
+    full = cross_science.literal_signs(px, vol)
+    cut = cross_science.literal_signs(px[:500], vol[:500])
     for k in cut:
         a, b = full[k][:499], cut[k]
         ok = np.isfinite(a) & np.isfinite(b)
@@ -370,7 +371,10 @@ def test_pbo_and_cost_quantities_label_from_their_evidence() -> None:
     assert p.lo is not None and p.lo < 0.14 < p.hi and p.n == 15
     assert p.label(0.5) == epistemic.Label.WEAK, "15 CSCV splits is a small sample"
     c = epistemic.cost_stress_quantity("cost_x3:x", 0.11, 0.39, 0.32, 179)
-    assert c.lo is not None and c.lo > 0
+    assert c.lo is not None and c.lo < 0 < c.hi, "a 0.32 Sharpe cannot decide 0.11 at 3x cost"
+    assert epistemic.decide(c, 0.0) == epistemic.Decision.INSUFFICIENT_EVIDENCE
+    strong = epistemic.cost_stress_quantity("cost_x3:y", 0.11, 0.39, 0.6, 179)
+    assert epistemic.decide(strong, 0.0) == epistemic.Decision.YES
     assert epistemic.cost_stress_quantity("c", 0.1, None, None, 50).label() == \
         epistemic.Label.WEAK
     m = epistemic.cost_model_quantity("cost_model:EURZAR", [217.0] * 24, 912.0)
