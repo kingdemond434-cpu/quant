@@ -138,11 +138,46 @@ BLOCKED_NO_SUBSTITUTE = "BLOCKED_NO_SUBSTITUTE"
 #: replace it. A committed copy of the mining thread's map, provenance recorded in the file.
 #: Absent, its counts are UNMEASURED -- never zero coverage.
 TE_CATALOGUE = DESK / "data" / "tradingeconomics_free_substitutes.json"
-#: The terms fence's verdict word. A substitute whose terms are not `confirmed` reads
-#: `BLOCKED_ON_TERMS:<verdict>` (the Asia export's own status vocabulary) and is never admitted:
-#: an absent or unknown verdict is `to_confirm` -- the gate fails closed.
-BLOCKED_ON_TERMS = "BLOCKED_ON_TERMS"
+#: THE TERMS FENCE HAS ONE SOURCE OF TRUTH: `libs/data/terms_fence.py` (#162), whose fail-closed
+#: gate speaks CONFIRMED_OK / REFUSED / UNCONFIRMED and blocks everything but CONFIRMED_OK as
+#: BLOCKED_ON_TERMS. This engine imports that vocabulary whenever the module exports it, and keeps
+#: the local words below ONLY as the fallback for a tree #162 has not reached, with IDENTICAL
+#: semantics (pinned by test_terms_gate_shared_and_fallback_agree). Once #162 lands the fallback
+#: is dead code by construction; nothing here may diverge from the shared gate.
+#:
+#: A substitute record carries the Asia export's own verdict word (`confirmed` / `refused` /
+#: `to_confirm`); it is mapped confirmed->CONFIRMED_OK, refused->REFUSED, anything else (absent,
+#: empty, `to_confirm`, a word the fence does not know)->UNCONFIRMED. Not CONFIRMED_OK reads
+#: `BLOCKED_ON_TERMS:<status>` and is never admitted -- the gate fails closed.
 TERMS_VERDICTS: tuple[str, ...] = ("confirmed", "refused", "to_confirm")
+_LOCAL_TERMS = {
+    "CONFIRMED_OK": "CONFIRMED_OK",
+    "REFUSED": "REFUSED",
+    "UNCONFIRMED": "UNCONFIRMED",
+    "BLOCKED_ON_TERMS": "BLOCKED_ON_TERMS",
+}
+
+
+def _shared_terms_vocabulary() -> tuple[dict[str, str], str]:
+    """The terms gate's words from `libs/data/terms_fence.py` when it exports all four, else the
+    local fallback. Returns (vocabulary, source) so the report names which path decided."""
+    try:
+        import importlib
+
+        _tf = importlib.import_module("libs.data.terms_fence")
+    except Exception:  # an absent or broken module is the fallback, never a crash
+        return dict(_LOCAL_TERMS), "local_fallback"
+    got = {k: getattr(_tf, k, None) for k in _LOCAL_TERMS}
+    if all(isinstance(v, str) and v for v in got.values()):
+        return {k: str(v) for k, v in got.items()}, "libs.data.terms_fence"
+    return dict(_LOCAL_TERMS), "local_fallback"
+
+
+_TERMS, TERMS_SOURCE = _shared_terms_vocabulary()
+CONFIRMED_OK = _TERMS["CONFIRMED_OK"]
+REFUSED = _TERMS["REFUSED"]
+UNCONFIRMED = _TERMS["UNCONFIRMED"]
+BLOCKED_ON_TERMS = _TERMS["BLOCKED_ON_TERMS"]
 #: A TE field's status, best first. COVERED needs a MEASURED correlation to TE's own release,
 #: which no row has yet; until then a field reaches MATCHED_UNVERIFIED at most.
 TE_STATUSES: tuple[str, ...] = (
@@ -1366,16 +1401,35 @@ def asia_named_candidates(
 
 # ------------------------------------------------------------------- Trading Economics
 def terms_verdict(sub: Mapping[str, Any]) -> str:
-    """The terms fence: `confirmed`, `refused` or `to_confirm`. Anything else -- absent, empty, a
-    word the fence does not know -- is `to_confirm`, so an unconfirmed source is never admitted."""
+    """The record's own verdict word: `confirmed`, `refused` or `to_confirm`. Anything else --
+    absent, empty, a word the fence does not know -- is `to_confirm`, so it can never admit."""
     t = str(sub.get("terms") or "").strip().lower()
     return t if t in TERMS_VERDICTS else "to_confirm"
 
 
-def terms_fence(sub: Mapping[str, Any]) -> str | None:
-    """None when the substitute's terms are confirmed, else `BLOCKED_ON_TERMS:<verdict>`."""
-    v = terms_verdict(sub)
-    return None if v == "confirmed" else f"{BLOCKED_ON_TERMS}:{v}"
+def terms_gate(verdict: str, vocab: Mapping[str, str] | None = None) -> str:
+    """A verdict word mapped onto the shared gate: confirmed->CONFIRMED_OK, refused->REFUSED,
+    everything else->UNCONFIRMED. `vocab` defaults to the one this process bound at import
+    (the shared module's when present); the test passes each path explicitly."""
+    v = vocab or _TERMS
+    w = str(verdict or "").strip().lower()
+    if w == "confirmed":
+        return v["CONFIRMED_OK"]
+    if w == "refused":
+        return v["REFUSED"]
+    return v["UNCONFIRMED"]
+
+
+def terms_status(sub: Mapping[str, Any], vocab: Mapping[str, str] | None = None) -> str:
+    """The substitute's gate status: CONFIRMED_OK, REFUSED or UNCONFIRMED (fails closed)."""
+    return terms_gate(terms_verdict(sub), vocab)
+
+
+def terms_fence(sub: Mapping[str, Any], vocab: Mapping[str, str] | None = None) -> str | None:
+    """None when the substitute's terms are CONFIRMED_OK, else `BLOCKED_ON_TERMS:<status>`."""
+    v = vocab or _TERMS
+    st = terms_status(sub, v)
+    return None if st == v["CONFIRMED_OK"] else f"{v['BLOCKED_ON_TERMS']}:{st}"
 
 
 def load_te_catalogue(path: Path | None = None) -> dict[str, Any] | None:
@@ -1481,7 +1535,8 @@ def te_section(
                 "correlation": correlation(paid, sub, lake=lake, acquired=acquired),
                 "usable": ok,
                 "usable_reason": why,
-                "terms": terms_verdict(sub),
+                "terms": terms_status(sub),
+                "terms_verdict": terms_verdict(sub),
                 "terms_status": terms_fence(sub),
             }
             c["metadata_match"] = is_match(c)
@@ -1518,6 +1573,7 @@ def te_section(
         "pairs_metadata_match": sum(1 for p in pairs if p.get("metadata_match")),
         "pairs_blocked_on_terms": ps.get(BLOCKED_ON_TERMS, 0),
         "pairs_terms": dict(Counter(str(p.get("terms")) for p in pairs if p.get("terms"))),
+        "terms_gate_source": TERMS_SOURCE,
         "correlation_measured_pairs": sum(
             1 for p in pairs if isinstance(p.get("correlation"), (int, float))
         ),

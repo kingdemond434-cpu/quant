@@ -151,6 +151,10 @@ _ALLOWED: dict[str, str] = {
     "desks/mt5/tests/test_scout_swarm.py":
         "Pins that the scout swarm REFUSES crypto-exchange ground by mandate (refused_by_mandate "
         "== 2, nothing registered), which it can only prove by offering it a venue URL.",
+    "desks/mt5/tests/test_paid_substitute_engine.py":
+        "Pins that the paid-substitute engine REFUSES crypto-exchange ground by mandate "
+        "(`banned()` is true for a venue URL, and the catalogue crawler drops a venue link from a "
+        "listing page), which it can only prove by offering it a venue URL. Nothing is fetched.",
     "desks/mt5/research/shadow_institutional.py":
         "CRYPTO AS REFERENCE DATA INFORMING AN MT5 INSTRUMENT -- the one use the 2026-08-18 "
         "mandate permits. Enforced in code, not prose: every crypto sensor must declare MT5 "

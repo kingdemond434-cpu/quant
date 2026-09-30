@@ -768,9 +768,52 @@ def test_committed_te_catalogue_is_the_supplied_map_with_provenance() -> None:
 
 def test_terms_fence_fails_closed() -> None:
     assert pse.terms_fence({"terms": "confirmed"}) is None
-    assert pse.terms_fence({"terms": "refused"}) == "BLOCKED_ON_TERMS:refused"
+    assert pse.terms_status({"terms": "confirmed"}) == "CONFIRMED_OK"
+    assert pse.terms_fence({"terms": "refused"}) == "BLOCKED_ON_TERMS:REFUSED"
     for t in (None, "", "to_confirm", "ok", "CONFIRMED-ish"):
-        assert pse.terms_fence({"terms": t}) == "BLOCKED_ON_TERMS:to_confirm"
+        assert pse.terms_fence({"terms": t}) == "BLOCKED_ON_TERMS:UNCONFIRMED"
+        assert pse.terms_status({"terms": t}) == "UNCONFIRMED"
+
+
+_TERMS_CASES = (None, "", "confirmed", "CONFIRMED", " Confirmed ", "refused", "REFUSED",
+                "to_confirm", "ok", "CONFIRMED-ish", "confirmed_ok", "yes", 1)
+
+
+def test_terms_gate_shared_and_fallback_agree(monkeypatch: pytest.MonkeyPatch) -> None:
+    """ONE SOURCE OF TRUTH: the shared `libs/data/terms_fence` gate (#162) and the local fallback
+    give the identical status for every record. The shared path is exercised with the real module
+    when this tree carries it, else with a module exporting exactly its four names."""
+    import types
+
+    try:
+        import importlib
+
+        real = importlib.import_module("libs.data.terms_fence")
+    except Exception:
+        real = None
+    fake = types.ModuleType("libs.data.terms_fence")
+    for k in ("CONFIRMED_OK", "REFUSED", "UNCONFIRMED", "BLOCKED_ON_TERMS"):
+        setattr(fake, k, getattr(real, k, k) if real is not None else k)
+    monkeypatch.setitem(sys.modules, "libs.data.terms_fence", fake)
+    shared, src = pse._shared_terms_vocabulary()
+    assert src == "libs.data.terms_fence"
+    monkeypatch.setitem(sys.modules, "libs.data.terms_fence", None)   # import now fails
+    local, src2 = pse._shared_terms_vocabulary()
+    assert src2 == "local_fallback"
+    assert shared == local
+    for t in _TERMS_CASES:
+        sub = {"terms": t}
+        assert pse.terms_status(sub, shared) == pse.terms_status(sub, local), t
+        assert pse.terms_fence(sub, shared) == pse.terms_fence(sub, local), t
+    # the vocabulary map, verbatim
+    assert pse.terms_gate("confirmed", local) == "CONFIRMED_OK"
+    assert pse.terms_gate("refused", local) == "REFUSED"
+    assert pse.terms_gate("to_confirm", local) == "UNCONFIRMED"
+    # a module that lacks any of the four names is not half-trusted: the fallback decides
+    partial = types.ModuleType("libs.data.terms_fence")
+    partial.CONFIRMED_OK = "CONFIRMED_OK"  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "libs.data.terms_fence", partial)
+    assert pse._shared_terms_vocabulary()[1] == "local_fallback"
 
 
 def test_unconfirmed_te_substitutes_read_blocked_on_terms_never_admitted(tmp_path: Path) -> None:
@@ -782,7 +825,8 @@ def test_unconfirmed_te_substitutes_read_blocked_on_terms_never_admitted(tmp_pat
     for r in te["rows"]:
         for p in r["substitutes"]:
             assert p["status"] == pse.BLOCKED_ON_TERMS
-            assert p["terms_status"] == "BLOCKED_ON_TERMS:to_confirm"
+            assert p["terms_status"] == "BLOCKED_ON_TERMS:UNCONFIRMED"
+            assert p["terms"] == "UNCONFIRMED" and p["terms_verdict"] == "to_confirm"
             assert p["metadata_match"] is True     # blocked on terms, not on metadata
 
 
@@ -809,7 +853,7 @@ def test_te_covered_needs_a_measured_correlation_from_a_usable_source() -> None:
         "MATCHED_UNVERIFIED")
     assert pse.te_pair_status({**base, "correlation": 0.1}) == "CONTRADICTED"
     assert pse.te_pair_status({**base, "correlation": 0.8,
-                               "terms_status": "BLOCKED_ON_TERMS:refused"}) == pse.BLOCKED_ON_TERMS
+                               "terms_status": "BLOCKED_ON_TERMS:REFUSED"}) == pse.BLOCKED_ON_TERMS
     assert pse.te_pair_status({**base, "components": {"class": 0.0, "region": 1.0}}) == "UNMATCHED"
 
 
@@ -827,7 +871,7 @@ def test_te_counts_surface_in_the_coverage_report(tmp_path: Path) -> None:
     assert on_disk["headline"]["te_blocked_on_terms"] == 2
     md = Path(p["report_md"]).read_text("utf-8")
     assert "## Trading Economics" in md and "BLOCKED_ON_TERMS 2" in md
-    assert "BLOCKED_ON_TERMS:to_confirm" in md
+    assert "BLOCKED_ON_TERMS:UNCONFIRMED" in md
 
 
 def test_absent_te_catalogue_is_unmeasured_not_zero(tmp_path: Path) -> None:
