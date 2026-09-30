@@ -1,6 +1,6 @@
 {
  "schema": "birth_obligations_floor/1",
- "at": "2026-09-30T13:12:05+00:00",
+ "at": "2026-09-30T13:36:51+00:00",
  "note": "The names known to be incomplete on each axis. An object that ACQUIRES its obligation drops out of this file automatically (the ratchet falling); an object that ARRIVES incomplete fails scripts/check_birth_obligations.py. Pre-existing debt is the floor, not a pass -- drive it down on purpose.",
  "axes": {
   "executable": {
@@ -66,6 +66,7 @@
     "desks/mt5/research/qquant_gates.py",
     "desks/mt5/research/qquant_shadow.py",
     "desks/mt5/research/regime_discovery.py",
+    "desks/mt5/research/research_bandit.py",
     "desks/mt5/research/run_edges_macro_fusion_sweep.py",
     "desks/mt5/research/run_hunt12.py",
     "desks/mt5/research/run_hunt18.py",
@@ -248,7 +249,7 @@
     "scripts/track_findings.py",
     "scripts/unobserved.py"
    ],
-   "count": 242,
+   "count": 243,
    "names_dropped": 0,
    "obligation": "a clock, an artifact, a named consumer and a row in the runtime attestation",
    "verdict": "measured"
