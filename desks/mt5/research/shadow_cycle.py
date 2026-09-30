@@ -391,7 +391,9 @@ def run() -> tuple[dict, int]:
                 _row["forward_start"] = datetime.now(UTC).isoformat()
                 _stamped += 1
         if _stamped:
-            _p.write_text(json.dumps(_d, indent=2), "utf-8")
+            # Same Windows sharing-violation class as the census writes above: shadow_forward and
+            # the sync publisher hold these files open, so a bare overwrite raised Errno 13.
+            _resilient_writers().write_text_resilient(_p, json.dumps(_d, indent=2))
             print(f"stamped forward_start on {_stamped} row(s) in {_sf}")
 
     legacy = _read(BASE / "reports" / "shadow" / "shadow_state.json")
@@ -570,7 +572,9 @@ def run() -> tuple[dict, int]:
     else:
         health["status"] = "OPERATING"
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(health, indent=2), "utf-8")
+    # shadow_health.json is read by stall_watch, the publisher and the census every few minutes;
+    # an in-place overwrite while one of them holds it is a Windows sharing violation (Errno 13).
+    _resilient_writers().write_text_resilient(OUT, json.dumps(health, indent=2))
     print(json.dumps(health, indent=2))
     return health, {"OPERATING": 0, "EVIDENCE_BLOCKED": 2,
                     "ENROLMENT_GAP": 3}.get(health["status"], 1)
