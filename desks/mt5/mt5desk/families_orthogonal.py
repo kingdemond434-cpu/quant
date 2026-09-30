@@ -2336,3 +2336,24 @@ FAMILY_TIMEFRAMES["dataset_conditioned"] = (
     ("H1",),
     "the base family is rebuilt on H1 bars and the dataset is joined to the H1 clock a "
     "publication day late; on another chart the base would change meaning")
+
+# THE SIX EMPTY ALPHA CLUSTERS (2026-09-30): options_implied, positioning_flow, execution_entry,
+# news_reaction, event_surprise and cross_asset_lead_lag. Measured on LIVE, every one was empty
+# because the SEALED gauntlet could not build its families -- `lead_lag` gets driver=None,
+# `event_reaction` a bare index, the `cot_*` families a positional frame nobody passes, and three
+# clusters had no family at all. Each family in `mt5desk.families_empty_clusters` loads its own
+# input from `symbol` (and `cond_symbol` / `base_family` where it has one), so `build_cell`'s
+# ordinary `fn(h1, side=1, **params)` builds it. `symbol` is required, so a default-parameter sweep
+# sets them aside; `research/empty_cluster_breadth` enumerates, measures and charges the grid.
+from mt5desk.families_empty_clusters import EMPTY_CLUSTER_FAMILIES  # noqa: E402
+from mt5desk.families_empty_clusters import INPUTS as _EC_INPUTS  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(EMPTY_CLUSTER_FAMILIES)
+for _ec_name in EMPTY_CLUSTER_FAMILIES:
+    FAMILY_INPUTS[_ec_name] = _EC_INPUTS[_ec_name]
+    FAMILY_TIMEFRAMES[_ec_name] = (
+        ("H1",),
+        "decides on broker HOURS (a daily decision hour, a release's bar, a session open) and "
+        "joins its external series to the H1 clock; on another chart the hour it reads does not "
+        "exist or the external series is joined to a clock it does not carry")
+del _ec_name

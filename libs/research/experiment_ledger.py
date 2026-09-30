@@ -188,6 +188,12 @@ def _swarm_counts(judged: set[str] | frozenset[str] = frozenset(),
     return total, by_fam, skipped
 
 
+#: THE EMPTY-CLUSTER SEEDER'S TRIAL LEDGER (desks/mt5/research/empty_cluster_breadth.py): every
+#: cell it MEASURES -- clearing the gauntlet's floor or held back under it -- is a trial of its
+#: family, keyed by graph node id. Same row shape and dedup as the swarm's ledger.
+EMPTY_CLUSTER_TRIALS = DESK / "data" / "EMPTY_CLUSTER_TRIALS.jsonl"
+
+
 def _prereg_counts() -> int:
     try:
         from libs.research.preregistration import cards
@@ -200,6 +206,10 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     g_total, g_fam, g_ids = _graph_judged()
     p_total, p_fam = _proposer_counts()
     s_total, s_fam, s_judged = _swarm_counts(g_ids)
+    e_total, e_fam, e_judged = _swarm_counts(g_ids, EMPTY_CLUSTER_TRIALS)
+    for fam, k in e_fam.items():
+        p_fam[fam] = p_fam.get(fam, 0) + k
+    p_total += e_total
     del g_ids
     for fam, k in s_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
@@ -226,6 +236,8 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "regime_split_union_cells": r_total,
            "producer_swarm_cells": s_total,
            "producer_swarm_cells_already_judged": s_judged,
+           "empty_cluster_cells": e_total,
+           "empty_cluster_cells_already_judged": e_judged,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and every "
@@ -233,7 +245,9 @@ def lifetime(write: bool = True) -> dict[str, Any]:
                     "regime-split cell of the lifetime union in REGIME_SPLIT_TRIALS.jsonl, and "
                     "every "
                     "producer-swarm cell at GENERATION from PRODUCER_SWARM_TRIALS.jsonl, "
-                    "deduplicated by graph node id against the judged cells); "
+                    "deduplicated by graph node id against the judged cells, and every "
+                    "empty-cluster seeder cell MEASURED, from EMPTY_CLUSTER_TRIALS.jsonl, the "
+                    "same way); "
                     "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)

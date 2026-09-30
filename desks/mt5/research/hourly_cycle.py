@@ -966,7 +966,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
                      "conversion_maximiser", "trend_core",
                      # the anchor/exit grid and the empty-cluster forcer: both mint cells
-                     "htf_anchor", "empty_cluster_forcer",
+                     "htf_anchor", "empty_cluster_forcer", "empty_cluster_breadth",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth"),
@@ -1807,6 +1807,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "htf_anchor": 900,
     # The forcer reads two reports and writes at most CELLS_PER_CLUSTER rows per cluster.
     "empty_cluster_forcer": 180,
+    # The six-cluster seeder stops itself at --budget-s 900 and resumes from its state file (each
+    # cell measured at most once a day); the refresh of the free observables it may run first is
+    # capped at 300 s inside it, so the cap sits above both.
+    "empty_cluster_breadth": 1_300,
     # The north star reads ~60 certificates and their instruments' daily bars (measured ~1 s
     # here); the contracts join three JSON artifacts. Both caps are generous and never bind.
     "alpha_rank": 240,
@@ -3802,6 +3806,16 @@ def main() -> None:
     # branch a cluster needs when every family it has is unbuildable. It had no caller either.
     ecf = _costed("empty_cluster_forcer", lambda: _producer(
         "empty_cluster_forcer", "research/empty_cluster_forcer.py", "--donate"))
+    # THE SIX EMPTY CLUSTERS, MINTED (2026-09-30): cross_asset_lead_lag, event_surprise,
+    # execution_entry, news_reaction, options_implied and positioning_flow. Every one was empty
+    # because the SEALED gauntlet could not build its families; mt5desk/families_empty_clusters
+    # loads each input itself. This measures every (instrument x family x params) cell's firing,
+    # charges every measured cell to the census, donates those clearing the gauntlet's floor with
+    # their cluster and culture fields, reads the forcer's artifact beside its own count, and
+    # writes reports/EMPTY_CLUSTER_BREADTH.json. Runs AFTER the forcer so it reads this hour's.
+    ecb = _costed("empty_cluster_breadth", lambda: _producer(
+        "empty_cluster_breadth", "research/empty_cluster_breadth.py", "--once",
+        "--budget-s", "900"))
     # THE FORWARD SLOT RANKER (C15/W10): slots ranked by P(certify) x dElogW x diversification
     # / time to maturity; REPLACEABLE clocks reported with their missed-growth line, never acted.
     fsr = _costed("forward_slot_ranker", lambda: _producer("forward_slot_ranker",
@@ -5303,6 +5317,7 @@ def main() -> None:
                     "research_os_archive": roa, "regime_router": rgr, "moat_series": mos,
                     "scout_roster": scr, "descendants": dsc, "forward_slot_ranker": fsr,
                     "htf_anchor": htf, "empty_cluster_forcer": ecf,
+                    "empty_cluster_breadth": ecb,
                     "analyst_pipeline": anp, "knowledge_graph": kng, "card_explosion": mce,
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,

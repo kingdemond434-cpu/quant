@@ -129,6 +129,8 @@ LEG_LAYER: dict[str, str] = {
     "asia_parser": "information",
     "index_discovery": "information",
     "empty_cluster_forcer": "prediction",
+    # Mints cells into the six empty alpha clusters: a new-hypothesis producer, like the forcer.
+    "empty_cluster_breadth": "prediction",
     "asia_transmission": "information",
     # Whether a data endpoint still serves what it claims is an INFORMATION property -- it decides
     # whether any input exists at all, before any signal is derived from it.

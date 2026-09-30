@@ -1060,6 +1060,24 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "cross_sectional_class_reversal": "liquidity_provision_immediacy",
     "lead_lag_class_catchup": "relative_value_convergence",
     "crisis_only_class_defensive": "positioning_crowding_unwind",
+    # THE SIX EMPTY CLUSTERS' FAMILIES (desks/mt5/mt5desk/families_empty_clusters.py, 2026-09-30),
+    # declared by construction so each grid is charged to the class whose payer it names rather
+    # than to UNCLASSIFIED (five of the fifteen had no census vocabulary at all).
+    "implied_vol_risk_premium": "volatility_risk_premium",
+    "implied_vol_shock_fade": "volatility_risk_premium",
+    "implied_vol_term_inversion": "volatility_risk_premium",
+    "positioning_crowding_unwind": "positioning_crowding_unwind",
+    "positioning_hedging_pressure": "producer_hedging_flow",
+    "positioning_flow_momentum": "informed_order_flow",
+    "entry_alpha_limit_pullback": "liquidity_provision_immediacy",
+    "entry_alpha_spread_gate": "orderbook_microstructure_state",
+    "entry_alpha_open_offset": "session_fix_liquidity",
+    "cb_tone_speech_reaction": "central_bank_event_surprise",
+    "news_reaction_unscheduled_shock": "attention_sentiment_overreaction",
+    "event_surprise_impact_drift": "central_bank_event_surprise",
+    "event_surprise_consensus": "scheduled_event_diffusion",
+    "cross_asset_lead_lag": "macro_liquidity_transmission",
+    "lead_lag_session_handoff": "macro_liquidity_transmission",
 }
 
 

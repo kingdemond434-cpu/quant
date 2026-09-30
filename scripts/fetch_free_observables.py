@@ -59,6 +59,14 @@ SOURCES: dict[str, dict[str, str]] = {
         "unblocks": "implied volatility, realised-vs-implied divergence",
         "kind": "history",
     },
+    # THE OTHER IMPLIED-VOL INDICES (2026-09-30), same CSV endpoint as VIX: the options_implied
+    # cluster's families (desks/mt5/mt5desk/families_empty_clusters.py) map gold to GVZ, crude to
+    # OVX, EURUSD to EVZ, and read the VIX term structure from VIX9D/VIX3M. History is real for
+    # all of them, so the cluster is testable on the full sample, not forward-only.
+    **{f"cboe_{ix.lower()}_history": {
+        "url": f"https://cdn.cboe.com/api/global/us_indices/daily_prices/{ix}_History.csv",
+        "unblocks": f"options_implied ({ix}: implied vol, realised-vs-implied, term structure)",
+        "kind": "history"} for ix in ("OVX", "GVZ", "EVZ", "VIX3M", "VIX9D")},
     "fomc_calendar": {
         "url": "https://www.federalreserve.gov/json/calendar.json",
         "unblocks": "macro_release (scheduled FOMC dates)",
@@ -135,8 +143,12 @@ def fetch_cboe_options(raw: bytes, now: datetime) -> dict[str, Any]:
 
 
 def fetch_vix_history(raw: bytes, now: datetime) -> dict[str, Any]:
+    """A CBOE daily-price CSV. VIX carries DATE,OPEN,HIGH,LOW,CLOSE; some indices publish one
+    value column named after the index -- the close is `CLOSE` when present, else the last one."""
     rows = list(csv.DictReader(io.StringIO(raw.decode("utf-8", "replace"))))
-    keep = [{"date": r.get("DATE"), "close": r.get("CLOSE")} for r in rows if r.get("DATE")]
+    keep = [{"date": r.get("DATE"),
+             "close": r.get("CLOSE") if r.get("CLOSE") is not None else list(r.values())[-1]}
+            for r in rows if r.get("DATE")]
     return {"fetched_at": now.isoformat(timespec="seconds"), "rows": len(keep),
             "first": keep[0]["date"] if keep else None,
             "last": keep[-1]["date"] if keep else None,
@@ -173,6 +185,8 @@ _PARSERS = {
     "treasury_rates": fetch_treasury,
     "cboe_spx_options": fetch_cboe_options,
     "cboe_vix_history": fetch_vix_history,
+    **{f"cboe_{ix.lower()}_history": fetch_vix_history
+       for ix in ("OVX", "GVZ", "EVZ", "VIX3M", "VIX9D")},
     "fomc_calendar": fetch_fomc,
     "cftc_cot_live": fetch_cot,
 }
