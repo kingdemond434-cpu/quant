@@ -1188,15 +1188,6 @@ def reach_specs(reg: Registry, root: Path | None = None,
         if rel not in claimed and rel not in reached:
             reached[rel] = ("library", via)
             frontier.append(rel)
-    # THE WALK IS DETERMINISTIC AND EVERY REACHER IS KEPT (2026-09-30). `_import_stems` returns
-    # a SET, so its iteration order followed PYTHONHASHSEED and the FIRST reacher of a file --
-    # the one whose artifact it inherits -- changed from run to run. Measured: two attestation
-    # runs on one tree named `retire_untradeable.py` as reached by `formal_invariants.py` (which
-    # writes FORMAL_INVARIANTS.json) and then by `reference_freshness.py` (which writes nothing),
-    # so the organ dropped out of runtime_state.json and the birth-obligation fence went red on a
-    # tree nobody had touched. The walk now pops in sorted order and every reacher is recorded, so
-    # the artifact inheritance below can take the first reacher that actually declares one.
-    frontier.sort(reverse=True)
     while frontier:
         rel = frontier.pop()
         if rel in walked:
@@ -1205,22 +1196,20 @@ def reach_specs(reg: Registry, root: Path | None = None,
         text = _read_text(base / rel)
         if not text:
             continue
-        found: list[tuple[str, str]] = []
         if rel.endswith(".py"):
-            for stem in sorted(_import_stems(text)):
-                for target in sorted(by_stem.get(stem, ())):
-                    found.append((target, "library"))
-        found.extend((target, "executable") for target in scripts_named_in(text, base))
-        for target, kind in found:
-            if target == rel or target in claimed:
-                continue
-            reachers = _REACHERS.setdefault(target, [])
-            if rel not in reachers:
-                reachers.append(rel)
-            if target not in reached:
-                reached[target] = (kind, rel)
-                frontier.append(target)
-        frontier.sort(reverse=True)
+            for stem in _import_stems(text):
+                for target in by_stem.get(stem, ()):
+                    if target != rel and target not in claimed:
+                        _REACHERS.setdefault(target, []).append(rel)
+                        if target not in reached:
+                            reached[target] = ("library", rel)
+                            frontier.append(target)
+        for target in scripts_named_in(text, base):
+            if target != rel and target not in claimed:
+                _REACHERS.setdefault(target, []).append(rel)
+                if target not in reached:
+                    reached[target] = ("executable", rel)
+                    frontier.append(target)
     out: list[ComponentSpec] = []
     for rel, (kind, via) in sorted(reached.items()):
         if rel not in exes:
