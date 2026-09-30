@@ -236,6 +236,21 @@ Standing rules for every duty: never cut mining, ingestion or research generatio
 
 Write the table, the duty statuses, the tier verdict, the ranked gaps, the change since the last pass and each fix's wiring proof to `desks/mt5/reports/TIER1_BREADTH_REVIEW.json` (append to its `history` array). Carry `tier_verdict`, `k_eff`, `top_breadth_gaps` and `duties_missed` in the cycle ledger row.
 
+## STEP 4C — SIX-EVENT REALITY TRACE (principal's standing test, 2026-09-30)
+
+The desk is real only if six events have happened, each provable from recorded artifacts by ids and timestamps, never by code or documents that claim them:
+
+1. one source mined end-to-end into one cell;
+2. one cell preregistered with a sealed contract before its judgement;
+3. one gauntlet verdict with its rejection reason logged;
+4. one survivor forward-observed over real wall-clock time;
+5. one live allocation with a reconciled fill;
+6. one decay detection that retired something (and was not later voided).
+
+The `six_event_trace` step of `daily_cycle` writes `desks/mt5/reports/six_event_trace.json` once a UTC day. Each pass, read it on the box, or re-run it with `python -m libs.ops.six_event_trace`. Each event reads PROVEN (latest instance within 7 days), STALE (older) or MISSING (never recorded).
+
+Every STALE or MISSING event is a defect in the organ that should produce it, and it competes in STEP 7. Name the organ, fix it this pass or record it BLOCKED with the exact reason, and never mark an event PROVEN from anything but the trace. Carry `six_events` (the six verdicts) in the cycle ledger row.
+
 ---
 
 ## STEP 5 — PREREGISTRATION / EVIDENCE-INTEGRITY CHECK

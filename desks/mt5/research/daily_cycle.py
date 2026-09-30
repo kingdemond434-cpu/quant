@@ -591,6 +591,17 @@ def _zentech() -> None:
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
+def _six_event_trace() -> None:
+    """Is the system real? The principal's six-event test (2026-09-30), re-derived from recorded
+    artifacts: a source mined into a cell, a preregistered cell, a logged REJECT, a survivor
+    forward-observed, a reconciled live fill, a decay retirement. Read-only; writes
+    reports/six_event_trace.json for the CRO pass (STEP 4C) to route every non-PROVEN event."""
+    from libs.ops import six_event_trace
+    rc = six_event_trace.main([])
+    if rc != 0:
+        raise RuntimeError(f"six_event_trace returned {rc}")
+
+
 STEPS = (("research_gap_map", _research_gap_map),
          ("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
@@ -608,7 +619,8 @@ STEPS = (("research_gap_map", _research_gap_map),
          ("wiring_ceo", _wiring_ceo), ("probation", _probation),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
          ("simplifier", _simplifier),
-         ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
+         ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os),
+         ("six_event_trace", _six_event_trace))
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
