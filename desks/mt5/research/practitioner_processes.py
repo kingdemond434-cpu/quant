@@ -12,6 +12,8 @@ organ that performs it and the artifact that organ writes, and checks the WHOLE 
     RUNNING        the stage's artifact exists, is fresh, and says it did its job
     NOT_ADMITTED   built and running, but its admission contract has not shown gain, so it
                    does not reach capital (a real state, never a failure to hide)
+    NOT_WIRED      its contract admits, but the consumer that would size from it is not applied
+                   yet (the allocator's reader ships as a desktop-pass money-path patch)
     STALE          the artifact exists and is older than the stage's clock allows
     UNMEASURED     the artifact is absent on this host (the box holds most of them)
     GAP            no organ performs this stage
@@ -106,7 +108,15 @@ def _contract(doc: Any) -> tuple[str, dict[str, Any]]:
         return "UNMEASURED", {"why": "contract unreadable"}
     info = {"verdict": doc.get("verdict"), "universe": _n(doc, "design", "universe"),
             "headline_annual": _n(doc, "headline", "annual")}
-    return ("RUNNING" if doc.get("admits") else "NOT_ADMITTED"), info
+    if not doc.get("admits"):
+        return "NOT_ADMITTED", info
+    # An admitting contract sizes nothing until the allocator reads it: the reader ships as the
+    # desktop-pass patch, and its mark is the `control_room_kernel` field in pf_allocation.json.
+    alloc = _load(R / "pf_allocation.json")
+    if not (isinstance(alloc, dict) and "control_room_kernel" in alloc):
+        return "NOT_WIRED", {**info, "why": "contract admits, but the allocator does not read it "
+                                            "yet (desktop-pass patch not applied)"}
+    return "RUNNING", info
 
 
 def _control_room(doc: Any) -> tuple[str, dict[str, Any]]:

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 for _p in (str(ROOT), str(ROOT / "desks" / "mt5"), str(ROOT / "desks" / "mt5" / "research")):
@@ -130,3 +131,15 @@ def test_daily_cycle_publishes_the_practitioner_processes():
 
     import daily_cycle
     assert "practitioner_processes" in inspect.getsource(daily_cycle._control_room)
+
+
+def test_admitting_contract_is_not_running_until_the_allocator_reads_it(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sys.path.insert(0, str(ROOT / "desks" / "mt5" / "research"))
+    import practitioner_processes as pp
+    monkeypatch.setattr(pp, "R", tmp_path)
+    doc = {"admits": True, "verdict": "GAIN"}
+    assert pp._contract(doc)[0] == "NOT_WIRED"
+    (tmp_path / "pf_allocation.json").write_text(json.dumps({"control_room_kernel": {}}))
+    assert pp._contract(doc)[0] == "RUNNING"
+    assert pp._contract({"admits": False})[0] == "NOT_ADMITTED"

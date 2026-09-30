@@ -36,6 +36,12 @@ THE UNIVERSE. On the box the books are solved over the allocator's OWN daily-R m
 kernel (`admits`). Off the box it falls back to a bench of trend/range pairs built from bars,
 which shows whether the kernel moves composition the right way but cannot license sizing.
 
+WHO READS `admits`. Nothing on this branch. The reader is the allocator, a money-path file, so it
+ships as the desktop-pass patch `patches/control_room/control_room_regime_kernel.patch`: once
+applied, `pf_allocator._control_room_admitted()` multiplies the kernel in only while this file
+says `admits: true` and is under 14 days old. Until that patch lands the switch is MANUAL -- a
+GAIN here changes no sizing by itself.
+
 HEADLINE, DECLARED BEFORE THE RUN: geo_asset minus geo, mean daily log growth, stationary block
 bootstrap (mean block 10 days). GAIN needs the 90% interval above zero AND geo_asset above equal.
 Every arm is reported, the headline is never swapped for the best one, and the arm count is

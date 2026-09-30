@@ -8,7 +8,8 @@ contract's core set and every symbol a LIVE or STANDBY sleeve trades, so a sleev
 adds tomorrow is read tomorrow without an edit here. Each LIVE sleeve is listed under its
 instrument's state so the operator sees, in one file, which of the live book is trading into a
 trend, a range, high volatility or thin liquidity. It sizes nothing; the allocator reads the same
-labels through `libs.regime.control_room.sleeve_weights` once the contract admits it.
+labels through `libs.regime.control_room.sleeve_weights` only after the desktop-pass allocator
+patch is applied AND the contract admits it; nothing on this branch reads `admits` yet.
 """
 from __future__ import annotations
 
