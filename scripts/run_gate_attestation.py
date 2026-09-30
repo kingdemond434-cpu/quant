@@ -52,7 +52,12 @@ def main() -> int:
     verdict = "pass" if all(rc == 0 for rc, _, _ in results.values()) else "fail"
     rc, tail, _ = _run([py, "scripts/gate_attestation.py", "--gates", "fast", "--result", verdict],
                        timeout=ATTEST_RECORD_TIMEOUT_S)
-    print(f"attestation: {verdict} ({tail[:120]})")
+    print(f"attestation: {verdict} rc={rc} ({tail[:120]})")
+    # A verdict that was never persisted is not an attestation.  Previously the wrapper ignored
+    # recorder failure and returned the gate verdict, so the task looked like an ordinary red
+    # gate while consumers kept reading yesterday's file.  Distinguish infrastructure failure.
+    if rc != 0:
+        return 2
     return 0 if verdict == "pass" else 1
 
 

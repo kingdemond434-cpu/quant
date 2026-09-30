@@ -29,8 +29,10 @@ def test_tracked_python_census_runs_once_for_many_untracked_files(monkeypatch, t
 
     def fake_git(*args: str) -> str:
         calls.append(args)
-        if args == ("status", "--porcelain"):
-            return "?? scratch_a.py\n?? scratch_b.py\n"
+        if args == ("status", "--porcelain", "--untracked-files=no"):
+            return ""
+        if args == ("ls-files", "--others", "--exclude-standard", "--", "*.py"):
+            return "scratch_a.py\nscratch_b.py\n"
         if args == ("ls-files", "*.py"):
             return "real_module.py\n"
         if args == ("rev-parse", "HEAD"):
@@ -46,3 +48,16 @@ def test_tracked_python_census_runs_once_for_many_untracked_files(monkeypatch, t
 
     assert calls.count(("ls-files", "*.py")) == 1
     assert payload["tree_clean"] is True
+
+
+def test_working_tree_census_does_not_request_all_untracked_state(monkeypatch) -> None:
+    path = ROOT / "scripts" / "gate_attestation.py"
+    spec = importlib.util.spec_from_file_location("gate_attestation_fast_census", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    calls: list[tuple[str, ...]] = []
+    monkeypatch.setattr(module, "_git", lambda *args: calls.append(args) or "")
+    module._working_tree_rows()
+    assert ("status", "--porcelain", "--untracked-files=no") in calls
+    assert ("status", "--porcelain") not in calls

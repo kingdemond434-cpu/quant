@@ -64,6 +64,23 @@ def _tracked_py() -> set[str]:
     return {ln.strip() for ln in _git("ls-files", "*.py").splitlines() if ln.strip()}
 
 
+def _working_tree_rows() -> list[str]:
+    """Tracked changes plus untracked Python, without crawling runtime state as untracked data.
+
+    Plain ``git status --porcelain`` traversed the trading checkout's enormous generated-data
+    tree.  The gates finished, then their recorder spent minutes enumerating irrelevant parquet,
+    logs and ledgers and was killed by the task timeout, leaving a day-old attestation.  Tracked
+    changes and import-shadowing Python are the only two classes this policy consumes, so ask Git
+    for exactly those classes.
+    """
+    rows = _git("status", "--porcelain", "--untracked-files=no").splitlines()
+    for rel in _git("ls-files", "--others", "--exclude-standard", "--", "*.py").splitlines():
+        rel = rel.strip()
+        if rel:
+            rows.append(f"?? {rel}")
+    return rows
+
+
 def code_hash(ref: str = "HEAD") -> str:
     """The hash of the CODE TREE at `ref`: every tracked non-state blob, by path and blob id.
 
@@ -152,7 +169,7 @@ def attest(gates: str, result: str) -> dict[str, object]:
     # every one made verdict recording take many minutes (or time out) after the gates themselves
     # had completed. Resolve it lazily once, only if an untracked Python file is encountered.
     tracked_py: set[str] | None = None
-    for ln in _git("status", "--porcelain").splitlines():
+    for ln in _working_tree_rows():
         if not ln.strip():
             continue
         code, rel = ln[:2], ln[3:].strip().strip('"')
