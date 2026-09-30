@@ -187,7 +187,7 @@ def parse_stream(lines: Iterable[str]) -> StreamSummary:
         if not line:
             continue
         out.lines += 1
-        if not line.startswith("{"):
+        if not line.startswith(("{", "[")):
             out.non_json.append(line[:300])
             continue
         try:

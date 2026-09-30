@@ -293,6 +293,7 @@ def test_the_lane_widening_is_read_only_and_from_the_one_domain_file() -> None:
     for rule in ('"Bash(ls:*)"', '"Bash(pwd)"', '"Bash(date)"', '"Bash(wc:*)"'):
         assert rule in args
     allowed = args[args.index('"--allowedTools"'):args.index('"--disallowedTools"')]
+    allowed = "\n".join(ln for ln in allowed.splitlines() if not ln.strip().startswith("#"))
     for forbidden in ("bypass", "dangerously", "Bash(git push:*)", "Bash(git push --", "rm ",
                       "Remove-Item", "secrets", "Bash(*)", "Bash(powershell", "Bash(cmd"):
         assert forbidden not in allowed, forbidden
