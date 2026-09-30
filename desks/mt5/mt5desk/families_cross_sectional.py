@@ -134,6 +134,16 @@ def class_symbols(klass: str) -> list[str]:
         return []
 
 
+def sector_proxies(klass: str | None) -> frozenset[str]:
+    """The declared proxy legs of sector book `klass` (upper-cased), empty for any other class.
+    Read from the policy's static declaration, so it holds whether or not a registry is readable."""
+    try:
+        spec = (_policy().SECTOR_BOOKS or {}).get(str(klass)) or {}
+    except Exception:
+        return frozenset()
+    return frozenset(str(s).upper() for s in (spec.get("proxies") or {}))
+
+
 def orientation(symbol: str, klass: str | None) -> int:
     """-1 when the pair must be inverted to read as a currency's dollar value (USDXXX in fx_usd,
     or a USDXXX proxy leg of a sector book such as USDKRW in `semis`)."""
@@ -239,7 +249,15 @@ def class_panel(d: pd.DataFrame, symbol: str, *, decision_hour: int = 22,
         roster = class_symbols(klass)
         if symbol.upper() not in {s.upper() for s in roster}:
             return None
-    members = [s for s in roster if s.upper() != symbol.upper()]
+    # A SECTOR BOOK'S PROXY LEGS ARE NEVER RANKED AGAINST (principal's ruling, 2026-09-30).
+    # The book ranks its ISSUERS against their equity peers; USDKRW and JPN225 are tradable proxy
+    # legs and conditioners, never part of the cross-section a share is benchmarked against. So
+    # a proxy is dropped from every panel's peer columns, and when `symbol` IS a proxy the panel
+    # is flagged: its own column rides along for pricing, but the families read the ISSUERS'
+    # aggregate, never a rank of the proxy among them.
+    proxies = sector_proxies(klass)
+    is_proxy = symbol.upper() in proxies
+    members = [s for s in roster if s.upper() != symbol.upper() and s.upper() not in proxies]
     pos, stamps = _decision_rows(d, decision_hour, max_stale_h)
     if pos.size == 0:
         return None
@@ -261,7 +279,7 @@ def class_panel(d: pd.DataFrame, symbol: str, *, decision_hour: int = 22,
             continue
         cols.append(v)
         names.append(peer)
-    if len(names) + 1 < MIN_MEMBERS:
+    if len(names) + (0 if is_proxy else 1) < MIN_MEMBERS:
         return None
     own_close = d["close"].to_numpy(dtype="float64")[pos]
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -269,7 +287,7 @@ def class_panel(d: pd.DataFrame, symbol: str, *, decision_hour: int = 22,
     logv = np.column_stack([own, *cols])
     return {"klass": klass, "members": [symbol, *names], "own": 0, "pos": pos,
             "logv": logv, "orient": orientation(symbol, klass), "close": own_close,
-            "stamps": stamps}
+            "stamps": stamps, "proxy": is_proxy}
 
 
 # ------------------------------------------------------------------------------ primitives ---

@@ -10,15 +10,21 @@ semis books, measured as MISSING in reports/asia_quant_gap_2026-09-30.md row 10)
 MEMBERS, FROM THE REGISTRY, NEVER FAKED. `research.universe_policy.SECTOR_BOOKS["semis"]` declares
 the issuers (NVIDIA, AMD, Intel, Micron, TSMC, Qualcomm, Broadcom, Texas Instruments, Applied
 Materials) and the broker spellings each may carry; `sector_resolution` resolves them against the
-broker registry on every read and reports any that are absent. USDKRW joins as the KOREA PROXY
-LEG (read inverted, as the won in dollars: Samsung and SK Hynix make memory the largest line in
-Korea's exports), so the book carries its Korean exposure through the one Korean instrument the
-broker quotes.
+broker registry on every read and reports any that are absent.
 
-THE LEGS ARE VOLATILITY-SCALED BEFORE THEY ARE RANKED. The won moves a fifth as much as a memory
-maker; a raw-return rank would park the proxy leg in the middle of every cross-section forever.
-Every score here is in units of the member's own trailing daily volatility, which is what makes a
-currency and a share comparable members of one book.
+THE ISSUERS ARE RANKED AGAINST THEIR EQUITY PEERS, AND ONLY AGAINST THEM (principal's ruling,
+2026-09-30). USDKRW (the Korea leg, read inverted as the won in dollars: Samsung and SK Hynix make
+memory the largest line in Korea's exports) and JPN225 (the Japanese equipment leg) are TRADABLE
+PROXY LEGS AND CONDITIONERS, never the ranking benchmark: they are left out of every issuer's
+cross-section (`families_cross_sectional.class_panel`), and a proxy cell never ranks itself among
+the issuers either. It trades the ISSUERS' aggregate view instead -- the sign of the book's mean
+score on that date (its own causal leader-basket prediction for the catch-up family) -- so the
+book carries its Korean and Japanese exposure without a currency or an index ever setting the bar
+a share is judged against.
+
+EVERY SCORE IS VOLATILITY-SCALED, in units of the member's own trailing daily volatility, so the
+issuers' ranks are not dominated by the most volatile names and the proxy's aggregate is a mean of
+comparable quantities.
 
 THE FAMILIES AND THEIR PRIORS (written before any data was looked at):
 
@@ -85,6 +91,24 @@ def _prepare(df: pd.DataFrame, symbol: str, decision_hour: int, max_stale_h: flo
     return xs._prepare(df, symbol, decision_hour, max_stale_h, klass=BOOK)
 
 
+def _sides(score: np.ndarray, panel: dict, quantile: float) -> np.ndarray:
+    """+1 / -1 / 0 per decision row.
+
+    An ISSUER is ranked within the issuers (the panel carries no proxy column for it). A PROXY leg
+    is never ranked: it takes the sign of the issuers' mean score on the row, and only when at
+    least MIN_MEMBERS issuers are scored and its own price is known."""
+    if not panel.get("proxy"):
+        return xs._rank_sides(score, panel["own"], quantile)
+    issuers = np.delete(score, panel["own"], axis=1)
+    mean, _ = xs._row_mean_std(issuers, min_n=MIN_MEMBERS)
+    own_ok = np.isfinite(panel["logv"][:, panel["own"]])
+    side = np.zeros(score.shape[0], dtype="int64")
+    ok = own_ok & np.isfinite(mean)
+    side[ok & (mean > 0)] = 1
+    side[ok & (mean < 0)] = -1
+    return side
+
+
 def family_semis_sector_momentum(
     df: pd.DataFrame, *, symbol: str = "", lookback_d: int = 60, hold_d: int = 20,
     quantile: float = 1 / 3, decision_hour: int = 22, max_stale_h: float = 12.0,
@@ -102,7 +126,7 @@ def family_semis_sector_momentum(
     ret = lv - xs._shift(lv, int(lookback_d))
     with np.errstate(divide="ignore", invalid="ignore"):
         score = ret / (_vol(xs._returns(lv)) * math.sqrt(int(lookback_d)))
-    side = xs._rank_sides(score, panel["own"], quantile)
+    side = _sides(score, panel, quantile)
     return xs._signals(d, panel, side, hold_d=hold_d, stop_sd=stop_sd, rr=rr,
                        tag=f"semis_momentum:{lookback_d}")
 
@@ -124,7 +148,7 @@ def family_semis_sector_reversal(
     ret = lv - xs._shift(lv, int(lookback_d))
     with np.errstate(divide="ignore", invalid="ignore"):
         score = ret / (_vol(xs._returns(lv)) * math.sqrt(int(lookback_d)))
-    side = xs._rank_sides(-score, panel["own"], quantile)
+    side = _sides(-score, panel, quantile)
     return xs._signals(d, panel, side, hold_d=hold_d, stop_sd=stop_sd, rr=rr,
                        tag=f"semis_reversal:{lookback_d}")
 
@@ -148,7 +172,7 @@ def family_semis_sector_value(
     sd = xs._rolling(prior, int(anchor_d), "std")
     with np.errstate(divide="ignore", invalid="ignore"):
         z = np.where(sd > 0, (lv - mu) / sd, np.nan)
-    side = xs._rank_sides(-z, panel["own"], quantile)
+    side = _sides(-z, panel, quantile)
     return xs._signals(d, panel, side, hold_d=hold_d, stop_sd=stop_sd, rr=rr,
                        tag=f"semis_value:{anchor_d}")
 
@@ -184,6 +208,12 @@ def family_semis_leader_catchup(
         nn = n - valid                                  # the basket EX-SELF for a leader
         with np.errstate(divide="ignore", invalid="ignore"):
             x = np.where(nn >= 1, (s - vals) / np.maximum(nn, 1), np.nan)
+    elif panel.get("proxy"):
+        # the proxy's "book" is the issuers' mean; each issuer's is the issuers ex-self. The
+        # proxy's own return never enters an issuer's basket.
+        iss = np.delete(r, panel["own"], axis=1)
+        own_x, _ = xs._row_mean_std(iss, min_n=1)
+        x = np.insert(xs._ew_ex_self(iss), panel["own"], own_x, axis=1)
     else:
         x = xs._ew_ex_self(r)
     x_lag = xs._shift(x, 1)
@@ -193,8 +223,16 @@ def family_semis_leader_catchup(
     with np.errstate(divide="ignore", invalid="ignore"):
         b = np.where(den > 0, num / den, np.nan)
         pred = b * x / _vol(r)
-    side = xs._rank_sides(pred, panel["own"], quantile)
     own_pred = pred[:, panel["own"]]
+    if panel.get("proxy"):
+        # a proxy leg is never ranked among the issuers: it trades the sign of its OWN causal
+        # prediction from the leader basket (a conditioner on the leaders, not a rank)
+        side = np.zeros(pred.shape[0], dtype="int64")
+        side[np.isfinite(own_pred) & (own_pred > 0)] = 1
+        side[np.isfinite(own_pred) & (own_pred < 0)] = -1
+        return xs._signals(d, panel, side, hold_d=hold_d, stop_sd=stop_sd, rr=rr,
+                           tag=f"semis_leader_catchup:{leaders}:{window_d}")
+    side = xs._rank_sides(pred, panel["own"], quantile)
     side[(side > 0) & ~(own_pred > 0)] = 0
     side[(side < 0) & ~(own_pred < 0)] = 0
     return xs._signals(d, panel, side, hold_d=hold_d, stop_sd=stop_sd, rr=rr,

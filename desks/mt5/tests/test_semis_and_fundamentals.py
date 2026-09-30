@@ -132,11 +132,46 @@ def test_semis_family_builds_from_symbol_alone_and_is_causal(semis, tmp_path_fac
     assert before and (trunc == before or trunc == before[:-1])
 
 
-def test_korea_proxy_leg_reads_the_won_in_dollars(semis):
-    """The won strengthens, so USDKRW falls: read as the won in dollars it is the book's
-    momentum WINNER, which trades as SHORT USDKRW."""
-    sigs = sector.family_semis_sector_momentum(semis["USDKRW"], symbol="USDKRW", lookback_d=60)
-    assert sigs and sum(s.side < 0 for s in sigs) > 0.8 * len(sigs)
+def test_issuers_are_ranked_against_issuers_never_the_proxy_legs(semis, tmp_path, monkeypatch):
+    """Principal's ruling 2026-09-30: issuers rank against their equity peers; USDKRW and JPN225
+    are proxy legs and conditioners, never the ranking benchmark. An issuer's panel carries no
+    proxy column, so rewriting the proxies' bars cannot move a single issuer signal."""
+    d = xs._h1(semis["AMD"])
+    panel = xs.class_panel(d, "AMD", klass="semis")
+    assert panel is not None and not panel["proxy"]
+    assert not {"USDKRW", "JPN225"} & {m.upper() for m in panel["members"]}
+    fams = sorted(sector.SECTOR_FAMILIES)
+    before = {f: _key(sector.SECTOR_FAMILIES[f](semis["AMD"], symbol="AMD", **_first(f)))
+              for f in fams}
+    for sym, seed in (("USDKRW", 900), ("JPN225", 901)):
+        _bars(seed, drift=0.05, vol=0.02).to_parquet(tmp_path / f"{sym}_H1.parquet")
+    xs._SERIES_CACHE.clear()
+    after = {f: _key(sector.SECTOR_FAMILIES[f](semis["AMD"], symbol="AMD", **_first(f)))
+             for f in fams}
+    assert before == after
+
+
+def test_proxy_legs_trade_the_issuers_aggregate_not_a_rank(semis, tmp_path, monkeypatch):
+    """A proxy is never ranked among the issuers: it takes the sign of the issuers' mean score.
+    Every issuer rallies, so the book's momentum is positive: the won-in-dollars leg is LONG the
+    won (SHORT USDKRW, the pair read inverted) and the Nikkei leg is LONG -- whatever the proxies'
+    own paths did."""
+    for i, sym in enumerate(SEMIS):
+        if sym in ("USDKRW", "JPN225"):
+            continue
+        _bars(i + 1, drift=0.01).to_parquet(tmp_path / f"{sym}_H1.parquet")
+    xs._SERIES_CACHE.clear()
+    d = xs._h1(semis["USDKRW"])
+    panel = xs.class_panel(d, "USDKRW", klass="semis")
+    assert panel is not None and panel["proxy"]
+    assert not {"JPN225"} & {m.upper() for m in panel["members"][1:]}
+    krw = sector.family_semis_sector_momentum(semis["USDKRW"], symbol="USDKRW", lookback_d=60)
+    jp = sector.family_semis_sector_momentum(semis["JPN225"], symbol="JPN225", lookback_d=60)
+    assert krw and sum(s.side < 0 for s in krw) > 0.9 * len(krw)
+    assert jp and sum(s.side > 0 for s in jp) > 0.9 * len(jp)
+    # the reversal family fades the same aggregate
+    rev = sector.family_semis_sector_reversal(semis["JPN225"], symbol="JPN225", lookback_d=5)
+    assert rev and sum(s.side < 0 for s in rev) > 0.5 * len(rev)
 
 
 def test_leader_catchup_needs_the_leader_basket(semis, monkeypatch):
