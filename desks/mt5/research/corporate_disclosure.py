@@ -536,7 +536,8 @@ def read_keys(path: Path | None = None) -> dict[str, str]:
                 out[str(k)] = got.strip()
     env_alias = {"EDINET_API_KEY": ("EDINET_API_KEY",), "DART_API_KEY": ("DART_API_KEY",),
                  "JQUANTS_REFRESH_TOKEN": ("JQUANTS_REFRESH_TOKEN", "JQUANTS_TOKEN"),
-                 "SEC_EDGAR_UA": ("SEC_EDGAR_UA", "QUANT_EDGAR_UA")}
+                 "SEC_EDGAR_UA": ("SEC_EDGAR_UA", "QUANT_EDGAR_UA"),
+                 "JQUANTS_MAIL": ("JQUANTS_MAIL",), "JQUANTS_PASSWORD": ("JQUANTS_PASSWORD",)}
     for name, envs in env_alias.items():
         if name not in out:
             for e in envs:
@@ -872,8 +873,21 @@ def request_for(src: Mapping[str, Any], day: date, page: int, keys: Mapping[str,
 def _jquants_id_token(http: Http, keys: dict[str, str]) -> str:
     """Refresh token -> ID token (J-Quants v1). The token is held in memory for the pass only."""
     rt = keys.get("JQUANTS_REFRESH_TOKEN", "")
+    # A refresh token lives one week; the account's mail and password mint a fresh one each pass,
+    # so a box holding those never goes BLOCKED on an expired token.
+    if keys.get("JQUANTS_MAIL") and keys.get("JQUANTS_PASSWORD"):
+        body = json.dumps({"mailaddress": keys["JQUANTS_MAIL"],
+                           "password": keys["JQUANTS_PASSWORD"]}).encode()
+        status, _ct, raw, _err = http("https://api.jquants.com/v1/token/auth_user", data=body,
+                                      headers={"Content-Type": "application/json"})
+        if status == 200:
+            try:
+                rt = str(_json_body(raw).get("refreshToken") or "") or rt
+            except (ValueError, AttributeError):
+                pass
     if not rt:
         return ""
+    http.secrets.append(rt)
     url = "https://api.jquants.com/v1/token/auth_refresh?refreshtoken=" + urllib.parse.quote(rt)
     status, _ct, body, _err = http(url, data=b"")
     if status != 200:
@@ -1383,7 +1397,8 @@ def run(*, budget_s: float = 600.0, fixtures: Path | None = None, dry_run: bool 
     res = Resolver(reg)
     keys = read_keys()
     http = None if fixtures is not None else Http(keys.values())
-    if fixtures is None and keys.get("JQUANTS_REFRESH_TOKEN") and http is not None:
+    if fixtures is None and http is not None and (
+            keys.get("JQUANTS_REFRESH_TOKEN") or keys.get("JQUANTS_MAIL")):
         tok = _jquants_id_token(http, keys)
         if tok:
             keys["_JQUANTS_ID_TOKEN"] = tok
@@ -1391,6 +1406,8 @@ def run(*, budget_s: float = 600.0, fixtures: Path | None = None, dry_run: bool 
     cursor = _read(CURSOR, {}) or {}
     per_source: list[dict[str, Any]] = []
     want = set(only)
+    if keys.get("_JQUANTS_ID_TOKEN"):
+        keys.setdefault("JQUANTS_REFRESH_TOKEN", "(minted from the account this pass)")
     for src in SOURCES:
         if want and src["id"] not in want:
             continue
