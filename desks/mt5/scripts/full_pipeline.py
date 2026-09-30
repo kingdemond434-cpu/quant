@@ -401,7 +401,10 @@ def step_gauntlet(survivors):
         x3_ds = daily_x3[orig_i]
         exp3 = float(x3_ds.to_numpy(float).mean()) if x3_ds is not None and len(x3_ds) > 0 else 0.0
         stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
-        stages["lockbox"] = {"passed": bool(wf_oos >= 0.0), "lockbox_sharpe": round(wf_oos, 4)}
+        stages["lockbox"] = {"passed": False, "lockbox_sharpe": None,
+                         "why": ("this lane reserves no held-out window; since policy v3 the "
+                                 "reserved lockbox of scripts/external_gauntlet.py is the only "
+                                 "certification path")}
         ev = float(arr.mean())
         stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
         passed = all(s["passed"] for s in stages.values())

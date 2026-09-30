@@ -135,33 +135,15 @@ def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
     return Costs.from_symbol(meta.get(sym, {}), mult=mult)
 
 
-#: Fraction of the campaign calendar reserved as lockbox -- untouched by every other gate, read
-#: exactly once, at the end. 20% of a multi-year daily series is enough rows to measure a Sharpe
-#: while leaving the development window long enough for CPCV's six groups and walk-forward's
-#: splits to remain meaningful.
-LOCKBOX_FRAC = 0.20
-#: Below this many held-out rows a lockbox Sharpe is noise, and the gate FAILS rather than passes.
-#: Absence of evidence is not permission: a campaign too short to hold anything back has not
-#: earned the tenth hurdle, and saying so is the honest answer.
-LOCKBOX_MIN_DAYS = 40
+# ONE DEFINITION (policy v3): the fraction, the floor and the cut live in gate_policy, which the
+# certificate authority (scripts/external_gauntlet.py) reads too.
+from gate_policy import LOCKBOX_FRAC, LOCKBOX_MIN_DAYS
+from gate_policy import lockbox_cut as _shared_lockbox_cut
 
 
 def _lockbox_cut(series: list[pd.Series], frac: float = LOCKBOX_FRAC) -> pd.Timestamp | None:
-    """The single calendar date at which every cell's lockbox begins, or None when too short.
-
-    Derived from the UNION of every cell's dates so one cut serves the whole campaign. Returning
-    None leaves the caller with no lockbox at all, which the verdict then fails closed on -- it
-    must never silently degrade into 'no held-out data, therefore fine'.
-    """
-    if not series:
-        return None
-    cal = pd.DatetimeIndex(sorted({d for s in series for d in s.index}))
-    if len(cal) < LOCKBOX_MIN_DAYS * 2:
-        return None
-    idx = int(len(cal) * (1.0 - frac))
-    if len(cal) - idx < LOCKBOX_MIN_DAYS:
-        return None
-    return cal[idx]
+    """The single calendar date at which every cell's lockbox begins, or None when too short."""
+    return _shared_lockbox_cut(series, frac)
 
 
 def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:

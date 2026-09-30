@@ -1,0 +1,66 @@
+{
+ "rules": {
+  "capital.allocator_zero_means_no_order": {
+   "value": 1.0,
+   "stricter": "up"
+  },
+  "capital.certificate_required": {
+   "value": 1.0,
+   "stricter": "up"
+  },
+  "cert.dsr_threshold": {
+   "value": 0.95,
+   "stricter": "up"
+  },
+  "cert.gates_required": {
+   "value": 10.0,
+   "stricter": "up"
+  },
+  "costs.fail_closed": {
+   "value": 1.0,
+   "stricter": "up"
+  },
+  "costs.stress_multiplier": {
+   "value": 3.0,
+   "stricter": "up"
+  },
+  "immune.min_trap_rejection": {
+   "value": 0.9,
+   "stricter": "up"
+  },
+  "lockbox.min_fraction": {
+   "value": 0.2,
+   "stricter": "up"
+  },
+  "lockbox.single_use": {
+   "value": 1.0,
+   "stricter": "up"
+  },
+  "pit.max_lookahead_bars": {
+   "value": 0.0,
+   "stricter": "down"
+  },
+  "pit.require_knowledge_time": {
+   "value": 1.0,
+   "stricter": "up"
+  },
+  "provenance.content_addressed": {
+   "value": 1.0,
+   "stricter": "up"
+  },
+  "reproducibility.seeded": {
+   "value": 1.0,
+   "stricter": "up"
+  },
+  "trials.lifetime_accounting": {
+   "value": 1.0,
+   "stricter": "up"
+  },
+  "trials.min_counted_per_family": {
+   "value": 1.0,
+   "stricter": "up"
+  }
+ },
+ "hash": "ce7fc520f6aff2540f5b6cd62f15328d60931fa49486c5824dd7a924349d28aa",
+ "doc": "The live Tier S constitution. It equals the sealed DEFAULT_CONSTITUTION in libs/tiers/truth_kernel.py. Any edit is classified hourly: a tightening is accepted, a loosening is a VIOLATION unless a principal ratification for this exact hash is appended to tier_s_ratifications.jsonl."
+}

@@ -273,3 +273,13 @@ def test_the_heat_ledger_bills_gold_at_its_own_floor() -> None:
             assert lot >= dc.gold_min_lot() - 1e-12, (dist, h_i, lot)
     assert '_floor = gold_min_lot() if s.get("lot") == "auto" else min_lot()' in src, (
         "the floor-binding log line reports the wrong floor for the gold lane")
+
+
+@pytest.fixture(autouse=True)
+def _legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These pin the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}). Sovereign behaviour is pinned in
+    test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")

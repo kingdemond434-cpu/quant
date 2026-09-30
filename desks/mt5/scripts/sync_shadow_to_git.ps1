@@ -472,7 +472,14 @@ $relPaths = @(
     # THE SEAL THE BOX RUNS (2026-09-30). Adopt-And-Seal commits RELEASE.json locally on every
     # seal, but it was never on this list, so origin's copy stayed at 2026-09-15 while the box
     # re-sealed daily: no reader off the box could tell which release the gateway was running.
-    "desks/mt5/data/RELEASE.json"
+    "desks/mt5/data/RELEASE.json",
+    # THE TIER S BOX ATTESTATION (2026-09-30). Every tier_s pass writes it: per layer, whether
+    # its artifact is fresh on THIS host and its contract not REJECTED, plus digests of TIER_S,
+    # ALPHA_RANK, ONLINE_FDR_ROWS, IMMUNE, allocator_tilts, research_budget, the door verdicts
+    # and CONTRACTS (all gitignored or box-local where written). A Tier S layer is DONE only on
+    # this file as committed from the trading box (scripts/check_tier_s_program.py).
+    "desks/mt5/data/tier_s/box_evidence.json",
+    "desks/mt5/data/tier_s/live_door.json"
 )
 # THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
 # breadth review all read these from the branch, and none had ever been committed from the box:

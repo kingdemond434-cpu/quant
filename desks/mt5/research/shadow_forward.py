@@ -46,6 +46,55 @@ LOG_PATH = BASE / "logs" / "shadow.log"
 
 SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
 
+
+def _write_state(path: Path, state: dict) -> None:
+    """Atomically publish a forward ledger; readers never see torn JSON.
+
+    Merge-on-write when `state` is the pass's tracked working copy (only the rows this pass
+    assigned replace the disk's), else the whole snapshot -- both through the Windows-safe
+    replace in `_atomic_write_text`.
+    """
+    _persist_state(path, state, final=True)
+
+
+def checkpoint_enrolments(enrolled: list, state: dict, state_path: Path) -> int:
+    """Persist every new certified clock before expensive evidence replay begins."""
+    seen: set[str] = set()
+    added = 0
+    changed = 0
+    stamp = datetime.now(UTC).isoformat(timespec="seconds")
+    for row in enrolled:
+        sym, win, params = row[0], row[1], row[2]
+        fam = row[3] if len(row) > 3 else "session_range_breakout"
+        side = row[4] if len(row) > 4 else "LONG"
+        key = sleeve_key(sym, win, params, fam, side)
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            from family_policy import family_banned
+            if family_banned(fam):
+                continue
+        except Exception:
+            pass
+        if key in state:
+            if "enrolled_at" not in state[key]:
+                state[key]["enrolled_at"] = stamp
+                changed += 1
+            continue
+        state[key] = {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
+                      "first_entry": None, "last_entry": None, "status": "ACTIVE",
+                      "enrolled_at": stamp, "promotion_authority": False,
+                      "order_authority": False,
+                      "evidence_note": "clock enrolled; forward replay pending"}
+        added += 1
+    if added or changed:
+        state["configured_sleeves"] = len(seen)
+        state["updated_at"] = stamp
+        _write_state(state_path, state)
+        slog(f"enrolment checkpoint: {added} new certified clock(s) persisted before replay")
+    return added
+
 #: Verdicts that END a row. A blocked evaluation must never overwrite one of these: a KILL that
 #: turns back into an unevaluated row would re-enter the book, and a PROMOTION CANDIDATE that
 #: loses its verdict to a transient cost-map miss loses a decision the desk already made.
@@ -719,6 +768,9 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
     breached = clock_breaches()
     if breached:
         slog(f"forward-clock ratchet: {len(breached)} breached key(s) will be quarantined")
+    # Clock creation is cheap and grants no capital.  Persist the complete enrolment set before
+    # replaying any bars so a timeout cannot repeatedly strand the same tail of certificates.
+    checkpoint_enrolments(enrolled, state, state_path)
     seen: set[str] = set()
     for i_row, row in enumerate(enrolled):
         if time.monotonic() - last_save >= CHECKPOINT_S and state.touched:
@@ -821,7 +873,7 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
         # deliberately rather than drifting back in.
         try:
             from universe_policy import lane, may_hypothesise
-            _allowed, _lane = may_hypothesise(sym), lane(sym)
+            _allowed, _lane = may_hypothesise(sym, fam), lane(sym)
         except Exception:
             _allowed, _lane = True, ""      # no policy module: enrol exactly as before
         if not _allowed:
