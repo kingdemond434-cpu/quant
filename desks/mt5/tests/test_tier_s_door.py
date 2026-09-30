@@ -135,3 +135,14 @@ def test_attest_reads_freshness_and_the_contract_verdict(tmp_path: Path) -> None
     assert ok == {"S01"}, doc
     assert be.attested(doc) == {"S01"}
     assert be.attested({**doc, "host": "runsc"}) == set()
+
+
+def test_freeze_tilts_heat_toward_out_of_sample_evidence_heat_neutrally() -> None:
+    from libs.tiers import allocator_tilts as at
+    book = {"a": 0.1, "b": 0.1}
+    calm = at.build(book, {}, {}, {}, freeze=False, oos_n_by_group={"a": 200, "b": 0})
+    assert calm["a"]["freeze_factor"] == calm["b"]["freeze_factor"] == 1.0
+    fz = at.build(book, {}, {}, {}, freeze=True, oos_n_by_group={"a": 200, "b": 0})
+    assert fz["a"]["freeze_factor"] > 1.0 > fz["b"]["freeze_factor"]
+    mean = (fz["a"]["freeze_factor"] + fz["b"]["freeze_factor"]) / 2
+    assert abs(mean - 1.0) < 1e-6, "the book's total heat is untouched"
