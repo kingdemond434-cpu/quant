@@ -1,0 +1,116 @@
+{
+ "note": "FIXTURES for desks/mt5/tests/test_cell_emitter.py and `cell_emitter.py --fixtures`. RECORDED_FIXTURE = fetched verbatim from the url on the date given (MIT-licensed vn.py code, licence notice in LICENSE.vnpy). SYNTHETIC_FIXTURE = written by the desk in the idiom of a ground whose code is GPL (not copied) or unreachable from the recording container. A run over these files is a FIXTURE run and is never a live yield.",
+ "files": [
+  {
+   "ground": "vnpy CTA strategies",
+   "file": "vnpy_vnpy_ctastrategy__atr_rsi_strategy.py",
+   "path": "vnpy_ctastrategy/strategies/atr_rsi_strategy.py",
+   "url": "https://raw.githubusercontent.com/vnpy/vnpy_ctastrategy/master/vnpy_ctastrategy/strategies/atr_rsi_strategy.py",
+   "kind": "RECORDED_FIXTURE",
+   "recorded_utc": "2026-09-30",
+   "http_status": 200,
+   "license": "MIT (see LICENSE.vnpy)",
+   "sha256": "843531a10ea86df042b53ffdd4e4a0ff3ac4eae9d82fc2ac7287c65cc187a603"
+  },
+  {
+   "ground": "vnpy CTA strategies",
+   "file": "vnpy_vnpy_ctastrategy__boll_channel_strategy.py",
+   "path": "vnpy_ctastrategy/strategies/boll_channel_strategy.py",
+   "url": "https://raw.githubusercontent.com/vnpy/vnpy_ctastrategy/master/vnpy_ctastrategy/strategies/boll_channel_strategy.py",
+   "kind": "RECORDED_FIXTURE",
+   "recorded_utc": "2026-09-30",
+   "http_status": 200,
+   "license": "MIT (see LICENSE.vnpy)",
+   "sha256": "65f92b096b345359906423704a9d2204f676c02986e159d60b66ec6d24fa9b46"
+  },
+  {
+   "ground": "vnpy CTA strategies",
+   "file": "vnpy_vnpy_ctastrategy__double_ma_strategy.py",
+   "path": "vnpy_ctastrategy/strategies/double_ma_strategy.py",
+   "url": "https://raw.githubusercontent.com/vnpy/vnpy_ctastrategy/master/vnpy_ctastrategy/strategies/double_ma_strategy.py",
+   "kind": "RECORDED_FIXTURE",
+   "recorded_utc": "2026-09-30",
+   "http_status": 200,
+   "license": "MIT (see LICENSE.vnpy)",
+   "sha256": "77ddaa51905ecf00fc132cc8844ddc9936a848d3352d6fd2c450892ecb0abce8"
+  },
+  {
+   "ground": "vnpy CTA strategies",
+   "file": "vnpy_vnpy_ctastrategy__dual_thrust_strategy.py",
+   "path": "vnpy_ctastrategy/strategies/dual_thrust_strategy.py",
+   "url": "https://raw.githubusercontent.com/vnpy/vnpy_ctastrategy/master/vnpy_ctastrategy/strategies/dual_thrust_strategy.py",
+   "kind": "RECORDED_FIXTURE",
+   "recorded_utc": "2026-09-30",
+   "http_status": 200,
+   "license": "MIT (see LICENSE.vnpy)",
+   "sha256": "aa99efa35b0ebca3420d900e3f95dcd1924a19cc7bb6e37b8a293d987f64ad0d"
+  },
+  {
+   "ground": "vnpy CTA strategies",
+   "file": "vnpy_vnpy_ctastrategy__king_keltner_strategy.py",
+   "path": "vnpy_ctastrategy/strategies/king_keltner_strategy.py",
+   "url": "https://raw.githubusercontent.com/vnpy/vnpy_ctastrategy/master/vnpy_ctastrategy/strategies/king_keltner_strategy.py",
+   "kind": "RECORDED_FIXTURE",
+   "recorded_utc": "2026-09-30",
+   "http_status": 200,
+   "license": "MIT (see LICENSE.vnpy)",
+   "sha256": "a5607be4d276fbddce1787073b8e5b81bdb04c26f4124aac182359aaf7218ae7"
+  },
+  {
+   "ground": "vnpy CTA strategies",
+   "file": "vnpy_vnpy_ctastrategy__turtle_signal_strategy.py",
+   "path": "vnpy_ctastrategy/strategies/turtle_signal_strategy.py",
+   "url": "https://raw.githubusercontent.com/vnpy/vnpy_ctastrategy/master/vnpy_ctastrategy/strategies/turtle_signal_strategy.py",
+   "kind": "RECORDED_FIXTURE",
+   "recorded_utc": "2026-09-30",
+   "http_status": 200,
+   "license": "MIT (see LICENSE.vnpy)",
+   "sha256": "7f4c31b425ca290505a10c8c062feb045ced0dc18f7f87e53065b5332a9875ec"
+  },
+  {
+   "ground": "everget Pine indicators",
+   "file": "synthetic_pine_ema_cross.pine",
+   "path": "synthetic_pine_ema_cross.pine",
+   "url": "",
+   "kind": "SYNTHETIC_FIXTURE",
+   "license": "desk-authored",
+   "sha256": "e887a21e7ca06ce566e9b259dcf7d35c03a93a417d6f00bc7afe81b0707d8510"
+  },
+  {
+   "ground": "EA31337 RSI",
+   "file": "synthetic_mql5_rsi_reversion.mq5",
+   "path": "synthetic_mql5_rsi_reversion.mq5",
+   "url": "",
+   "kind": "SYNTHETIC_FIXTURE",
+   "license": "desk-authored",
+   "sha256": "1e5ebbf42483d5702fd91b6e7d0eaa0e97870611b4616279570fd04c3fe6a1d5"
+  },
+  {
+   "ground": "freqtrade strategies",
+   "file": "synthetic_freqtrade_ema.py",
+   "path": "synthetic_freqtrade_ema.py",
+   "url": "",
+   "kind": "SYNTHETIC_FIXTURE",
+   "license": "desk-authored",
+   "sha256": "f90b798ac942f127061816401705898b4e84806d8855c321f10c806d43fe74b5"
+  },
+  {
+   "ground": "freqtrade strategies",
+   "file": "synthetic_freqtrade_funding.py",
+   "path": "synthetic_freqtrade_funding.py",
+   "url": "",
+   "kind": "SYNTHETIC_FIXTURE",
+   "license": "desk-authored",
+   "sha256": "f234a3a1ba384355eac1894e4b1cbfdc67df08c0fbe9f12e358bea1b9ca379a8"
+  },
+  {
+   "ground": "backtrader samples",
+   "file": "synthetic_backtrader_stoch.py",
+   "path": "synthetic_backtrader_stoch.py",
+   "url": "",
+   "kind": "SYNTHETIC_FIXTURE",
+   "license": "desk-authored",
+   "sha256": "a6388a675ff500de63b149adf55f68a098f35d6812ceac5d51f7c0b805f9e787"
+  }
+ ]
+}
