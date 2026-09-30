@@ -23,7 +23,6 @@ for _p in (str(_DESK / "research"), str(_DESK / "scripts"), str(_DESK), str(_ROO
         sys.path.insert(0, _p)
 
 import cell_equivalence as E  # noqa: E402
-
 from desks.mt5.scripts import external_gauntlet as G  # noqa: E402
 
 FAMILIES = ("engulfing_reversal", "range_reversion", "momentum_volgate", "trend_ma_cross",
