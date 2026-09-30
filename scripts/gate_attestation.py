@@ -147,6 +147,11 @@ def attest(gates: str, result: str) -> dict[str, object]:
     # sessions; treating those as "the tree is dirty" would make this field permanently useless,
     # which is how a check ends up being ignored rather than fixed.
     dirty = []
+    # `git ls-files` is a repository census, not a per-row question. The trading checkout can
+    # carry dozens of harmless untracked diagnostics; recomputing the same tracked-Python set for
+    # every one made verdict recording take many minutes (or time out) after the gates themselves
+    # had completed. Resolve it lazily once, only if an untracked Python file is encountered.
+    tracked_py: set[str] | None = None
     for ln in _git("status", "--porcelain").splitlines():
         if not ln.strip():
             continue
@@ -159,7 +164,9 @@ def attest(gates: str, result: str) -> dict[str, object]:
             # `_shadows_a_real_module`. Anything else is a scratch file nothing imports.
             if not rel.endswith(".py"):
                 continue
-            if not _shadows_a_real_module(rel, _tracked_py()):
+            if tracked_py is None:
+                tracked_py = _tracked_py()
+            if not _shadows_a_real_module(rel, tracked_py):
                 continue
         dirty.append(ln)
     return {
