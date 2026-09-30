@@ -419,12 +419,18 @@ def _dataset_producers(reg: dict[str, Any], fams: list[str], bars: dict[str, set
     on_chart = bars.get(chart, set())
     bases = [b for b in fams if base_ok(b)]
     usable = [d for d in datasets if (d.get("pit") or {}).get("usable")]
+    sh = short_history_conf(dc)
+    short = [d for d in datasets if short_history_ok(d, sh)]
     census.update({"status": "MEASURED", "datasets_seen": len(datasets),
-                   "usable": len(usable), "base_families": len(bases),
+                   "usable": len(usable), "short_history": len(short),
+                   "base_families": len(bases),
                    "rule": "usable = a stamped series with enough readings and history "
-                           "(research/dataset_census); fields capped per dataset"})
+                           "(research/dataset_census); fields capped per dataset. SHORT HISTORY "
+                           "= stamped, >= min_points readings, under min_span_days: conditioner "
+                           "and event-style direct cells on a short z window now, the full "
+                           "trials when the history crosses the floor"})
     out: list[Producer] = []
-    for d in usable:
+    for d, mode in [*((x, "") for x in usable), *((x, "short") for x in short)]:
         ds = str(d["id"])
         tag = str(d.get("source_culture") or UNMEASURED)
         c = cults.get(tag) or {}
@@ -449,29 +455,70 @@ def _dataset_producers(reg: dict[str, Any], fams: list[str], bars: dict[str, set
                      "threshold": float(dc.get("threshold") or 1.0)}
                 if match:
                     p["match"] = match
+                if mode:
+                    # A SHORT-WINDOW z: a distinct, honest question on the history there is --
+                    # and a distinct cell id, so the full-window trial is still minted and judged
+                    # on the full history once it exists.
+                    p["z_window"] = int(sh["z_window"])
                 if cell_verdict(fam, p)[0] != BUILDABLE:
                     skipped["dataset_producer_unbuildable"] += 1
                     continue
                 key = f"{fld}|{match}" if match else fld
                 out.append(Producer(
-                    pid=f"{fam}.{ds}.{key}.{base}", family=fam, klass="dataset",
+                    pid=f"{fam}.{ds}.{key}.{base}" + (f".{mode}" if mode else ""),
+                    family=fam, klass="dataset",
                     chart=chart, session="all", transform="conditioned", mods=(), lane=lane,
                     cluster=cluster_of(base), quota=quota, base=p, culture=tag,
                     participant=part,
                     failure_mode=why, dataset=ds, use="conditioner",
                     moves=tuple((("state", st),) for st in states)))
     out += _direct_producers(dc, usable, on_chart, quota, skipped, cults, chart)
+    out += _direct_producers(dc, short, on_chart, quota, skipped, cults, chart, short=sh)
+    census["short_history_producers"] = sum(1 for p in out if p.pid.endswith(".short"))
     census["producers"] = len(out)
     census["direct_producers"] = sum(1 for p in out if p.use == "direct")
     census["datasets_wired"] = len({p.dataset for p in out})
     return out
 
 
+#: SHORT-HISTORY LANE defaults (overridable in the registry's
+#: `dataset_conditioning.short_history`). A dataset stamped and growing but under
+#: `min_span_days` of history was given NO cell at all -- 56 seats sat PARTIAL on the D18 fence
+#: with a world-state entry and nothing else, starved until a calendar date. The families already
+#: refuse a series under 30 readings; this lane asks the questions a short history CAN answer:
+#: the conditioner on a short z window, and an EVENT stance (a jump in the reading, delta_z past
+#: `threshold`, held `ttl_bars`) that needs few readings. Every cell is minted through the same
+#: registry door and charged to the census like any other trial; nothing is back-filled and no
+#: history is invented. The full-window trials follow when the census calls the dataset usable.
+SHORT_HISTORY_DEFAULTS: dict[str, Any] = {"min_points": 30, "z_window": 48,
+                                          "direct_transform": "delta_z",
+                                          "direct_threshold": 2.0, "direct_ttl_bars": 24}
+
+
+def short_history_conf(dc: dict[str, Any]) -> dict[str, Any]:
+    raw = dc.get("short_history")
+    conf = dict(SHORT_HISTORY_DEFAULTS)
+    if isinstance(raw, dict):
+        conf.update({k: v for k, v in raw.items() if not str(k).startswith("_")})
+    return conf
+
+
+def short_history_ok(d: dict[str, Any], conf: dict[str, Any]) -> bool:
+    """Stamped, ACCUMULATING (under the span floor) and holding at least `min_points` readings."""
+    pit = d.get("pit") or {}
+    if pit.get("usable") or conf.get("enabled") is False:
+        return False
+    return (str(pit.get("why") or "").startswith("ACCUMULATING")
+            and int(pit.get("points") or 0) >= int(conf.get("min_points") or 30)
+            and bool(d.get("fields")))
+
+
 def _direct_producers(dc: dict[str, Any], usable: list[dict[str, Any]], on_chart: set[str],
                       quota: int, skipped: Counter[str], cults: dict[str, dict[str, Any]],
-                      chart: str) -> list[Producer]:
+                      chart: str, short: dict[str, Any] | None = None) -> list[Producer]:
     """The DIRECT use: the dataset's reading alone picks the side (`direct_family`), on every
-    hypothesis-lane symbol the chart holds bars for, both orientations as the producer's moves."""
+    hypothesis-lane symbol the chart holds bars for, both orientations as the producer's moves.
+    With `short`, the event-style stance of the short-history lane (see SHORT_HISTORY_DEFAULTS)."""
     fam = str(dc.get("direct_family") or "")
     if not fam:
         return []
@@ -504,6 +551,11 @@ def _direct_producers(dc: dict[str, Any], usable: list[dict[str, Any]], on_chart
                 continue
             p = {"dataset": ds, "field": fld, "transform": str(dc.get("transform") or "level_z"),
                  "threshold": float(dc.get("threshold") or 1.0)}
+            if short is not None:
+                p.update({"transform": str(short["direct_transform"]),
+                          "threshold": float(short["direct_threshold"]),
+                          "z_window": int(short["z_window"]),
+                          "ttl_bars": int(short["direct_ttl_bars"])})
             if match:
                 p["match"] = match
             if cell_verdict(fam, p)[0] != BUILDABLE:
@@ -511,7 +563,8 @@ def _direct_producers(dc: dict[str, Any], usable: list[dict[str, Any]], on_chart
                 continue
             key = f"{fld}|{match}" if match else fld
             out.append(Producer(
-                pid=f"{fam}.{ds}.{key}", family=fam, klass="dataset", chart=chart,
+                pid=f"{fam}.{ds}.{key}" + (".short" if short is not None else ""),
+                family=fam, klass="dataset", chart=chart,
                 session="all", transform="direct", mods=(), lane=d_lane,
                 cluster=cluster_of(fam), quota=quota, base=p, culture=tag, participant=part,
                 failure_mode=(f"{ds}.{fld}{' [' + match + ']' if match else ''} alone decides "

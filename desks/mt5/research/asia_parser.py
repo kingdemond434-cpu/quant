@@ -576,7 +576,226 @@ def _stamp_pit(rec: dict[str, Any], source_id: str, meta: dict[str, Any],
                              else "UNSTAMPED")}
 
 
+#: Vault blobs folded into a source's history per pass (oldest unfolded first). Each blob is
+#: parsed once ever: the fold records its hash, so a pass costs only the new vintages.
+MAX_FOLD_PER_PASS = 40
+#: PIT envelope columns that differ between two readings of the SAME published row.
+_VINTAGE_ONLY = ("ingested_time", "retrieval_time", "vintage_id", "revision_time")
+
+
+def _all_blobs(source_dir: Path) -> list[tuple[str, Path, dict[str, Any]]]:
+    """Every vaulted blob of one source, oldest first by its own fetch stamp."""
+    out: list[tuple[str, Path, dict[str, Any]]] = []
+    for meta in source_dir.glob("*.meta.json"):
+        m = _read(meta, {})
+        blob = meta.with_name(meta.name.replace(".meta.json", ".gz"))
+        if blob.exists() and m.get("fetched_utc"):
+            out.append((str(m["fetched_utc"]), blob, m))
+    return sorted(out, key=lambda t: t[0])
+
+
+def _canonical_frame(series: Path, source_id: str) -> Any:
+    import pandas as pd
+    for ext in (".parquet", ".csv"):
+        f = series / f"{source_id}{ext}"
+        if f.exists():
+            try:
+                return pd.read_parquet(f) if ext == ".parquet" else pd.read_csv(f)
+            except Exception:
+                return None
+    return None
+
+
+def fold_vintages(source_id: str, registry: dict[str, dict[str, Any]],
+                  max_fold: int = MAX_FOLD_PER_PASS) -> dict[str, Any]:
+    """Every vintage of a source, not only the newest, as ONE dated series.
+
+    THE BREAK THIS CLOSES (2026-09-30). `parse_all` parses the NEWEST blob and writes the
+    canonical `<id>.parquet` from it alone. A page with no period column is stamped at its fetch
+    instant (pit_stamp's cross-section fallback), so the canonical frame held ONE reading, stamped
+    once, and the next pass REPLACED it with the next single reading: a snapshot source could be
+    fetched every day for a year and never hold more than one point, never reach the census's 30
+    readings, never feed a cell. The vault already keeps every distinct payload under its hash;
+    this reads them all.
+
+    HONEST BY CONSTRUCTION: each vintage is parsed and stamped exactly as the newest is (its own
+    fetch time, the registry's lag), then the vintages are stacked. A row every vintage repeats
+    (a dated table re-published whole) is kept ONCE, at its FIRST sighting -- the earliest time
+    the desk could have read it; a snapshot row, stamped at its fetch, is a new reading each
+    time. Nothing is interpolated and no row is visible before the desk fetched it.
+    Incremental: `<id>__hist.json` lists the folded blob hashes; `<id>__hist.parquet` is the
+    stacked history (the `__` suffix keeps it a fragment of the pack, never a pack of its own)."""
+    import tempfile
+
+    import pandas as pd
+    global SERIES
+    d = VAULT / source_id
+    if not d.is_dir():
+        return {"status": "NO_VAULT"}
+    real = SERIES
+    hist_p = real / f"{source_id}__hist.parquet"
+    led_p = real / f"{source_id}__hist.json"
+    led = _read(led_p, {}) or {}
+    folded = set(led.get("folded") or [])
+    todo = [t for t in _all_blobs(d) if t[1].name not in folded][:max(0, int(max_fold))]
+    frames: list[Any] = []
+    if hist_p.exists():
+        try:
+            frames.append(pd.read_parquet(hist_p))
+        except Exception:
+            frames = []
+            folded = set()
+    newly = 0
+    for _stamp, blob, meta in todo:
+        folded.add(blob.name)
+        try:
+            body = gzip.decompress(blob.read_bytes())
+        except Exception:
+            continue
+        with tempfile.TemporaryDirectory() as tmp:
+            SERIES = Path(tmp)
+            try:
+                rec = _dispatch(body, str(meta.get("content_type") or "").lower(),
+                                str(meta.get("url") or ""), source_id)
+                _stamp_pit(rec, source_id, meta, registry)
+                f = _canonical_frame(SERIES, source_id) if rec.get("status") == "PARSED" else None
+            except Exception:
+                f = None
+            finally:
+                SERIES = real
+        if f is None or getattr(f, "empty", True) or "available_time" not in f.columns:
+            continue
+        frames.append(f)
+        newly += 1
+    if not frames:
+        _write_led(led_p, source_id, folded, 0)
+        return {"status": "NOTHING_STAMPED", "folded": len(folded)}
+    try:
+        h = pd.concat(frames, ignore_index=True, sort=False)
+        h.columns = [str(c) for c in h.columns]
+        h["_first_seen"] = pd.to_datetime(h.get("ingested_time"), errors="coerce", utc=True)
+        h = h.sort_values("_first_seen", kind="stable")
+        key = [c for c in h.columns if c not in _VINTAGE_ONLY and c != "_first_seen"]
+        h = _numeric_text(h)
+        h = h.astype({c: "string" for c in h.columns if pd.api.types.is_object_dtype(h[c])})
+        h = h.drop_duplicates(subset=key, keep="first").drop(columns=["_first_seen"])
+        h = h.reset_index(drop=True)
+        real.mkdir(parents=True, exist_ok=True)
+        h.to_parquet(hist_p)
+    except Exception as exc:
+        return {"status": "FOLD_ERROR", "why": f"{type(exc).__name__}: {str(exc)[:80]}"}
+    readings = int(pd.to_datetime(h["available_time"], errors="coerce", utc=True).nunique())
+    # THE CANONICAL FRAME BECOMES THE HISTORY once the history says more than the newest frame:
+    # every reader (the census, dataset_series, the drain) addresses `<id>.parquet`.
+    cur = _canonical_frame(real, source_id)
+    cur_readings = (int(pd.to_datetime(cur["available_time"], errors="coerce", utc=True)
+                        .nunique()) if cur is not None and "available_time" in cur.columns else 0)
+    wrote = False
+    if readings >= cur_readings:
+        for ext in (".csv",):
+            stale = real / f"{source_id}{ext}"
+            if stale.exists():
+                stale.unlink()
+        h.to_parquet(real / f"{source_id}.parquet")
+        wrote = True
+    _write_led(led_p, source_id, folded, len(h))
+    return {"status": "FOLDED", "vintages_new": newly, "vintages_folded": len(folded),
+            "rows": len(h), "readings": readings, "canonical_from_history": wrote}
+
+
+_NUM_TEXT = re.compile(r"^[\s+\-]*[\d.,]+\s*%?$")
+
+
+def _numeric_text(df: Any, min_share: float = 0.8) -> Any:
+    """Text columns that are numbers as published (`1,234.5`, `3.2%`, ` -0.4 `) as numbers, so a
+    parsed HTML table has fields a family can read. A column converts only when at least
+    `min_share` of its non-empty cells parse; the PIT envelope columns are never touched."""
+    import pandas as pd
+
+    from libs.data.pit_stamp import PIT_FIELDS
+    for c in df.columns:
+        if c in PIT_FIELDS or not (pd.api.types.is_object_dtype(df[c])
+                                   or pd.api.types.is_string_dtype(df[c])):
+            continue
+        v = df[c].dropna().astype(str).str.strip()
+        v = v[v != ""]
+        if v.empty or v.str.match(_NUM_TEXT).mean() < min_share:
+            continue
+        df[c] = pd.to_numeric(df[c].astype(str).str.replace(",", "", regex=False)
+                              .str.replace("%", "", regex=False).str.strip(), errors="coerce")
+    return df
+
+
+def _write_led(p: Path, source_id: str, folded: set[str], rows: int) -> None:
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps({"source_id": source_id, "folded": sorted(folded), "rows": rows,
+                             "at": datetime.now(UTC).isoformat(timespec="seconds")}, indent=1),
+                 encoding="utf-8")
+
+
+def alias_parents(registry: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    """An INDEX page's series is its children's. `asia_collector` fetches the data files an index
+    page links as `<parent>__ep<hash>` sources, and each parses to its own canonical frame -- but
+    the registered pack is `<parent>`, and nothing ever wrote `<parent>.parquet`, so the census
+    listed the pack as having no series while its data sat one name away. A registered parent
+    with no frame of its own takes its LARGEST stamped child's frame (never a fragment's), and
+    says which in `<parent>.pit.json`. A parent that parses on its own is never touched."""
+    import pandas as pd
+    out: list[dict[str, Any]] = []
+    if not SERIES.is_dir():
+        return out
+    kids: dict[str, list[Path]] = {}
+    for f in SERIES.glob("*__ep*"):
+        stem = f.name.split(".")[0]
+        if f.suffix not in (".parquet", ".csv") or stem.count("__") != 1:
+            continue
+        kids.setdefault(stem.split("__ep")[0], []).append(f)
+    for parent, files in sorted(kids.items()):
+        if parent not in registry or any((SERIES / f"{parent}{e}").exists()
+                                         for e in (".parquet", ".csv")):
+            continue
+        best, best_n = None, 0
+        for f in files:
+            try:
+                df = pd.read_parquet(f) if f.suffix == ".parquet" else pd.read_csv(f)
+            except Exception:
+                continue
+            if "available_time" in df.columns and len(df) > best_n:
+                best, best_n = f, len(df)
+        if best is None:
+            continue
+        (SERIES / f"{parent}{best.suffix}").write_bytes(best.read_bytes())
+        (SERIES / f"{parent}.pit.json").write_text(json.dumps({
+            "source_id": parent, "alias_of": best.name, "n_rows": best_n,
+            "why": "an index page: its series is the data file it links",
+            "stamped_at": datetime.now(UTC).isoformat(timespec="seconds")}, indent=1),
+            encoding="utf-8")
+        out.append({"parent": parent, "from": best.name, "rows": best_n})
+    return out
+
+
+def fold_deadline(env: dict[str, str] | None = None, now: float | None = None) -> float:
+    """Monotonic time after which no further history is folded this pass: inside the cycle cap
+    the leg is told (QUANT_LEG_BUDGET_S) by a minute for the newest-blob parses and the report,
+    else FOLD_BUDGET_S. The fold is incremental, so a pass that stops early loses nothing."""
+    import os
+    import time
+    env = os.environ if env is None else env
+    t = time.monotonic() if now is None else now
+    try:
+        cap = float(env.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    return t + (max(30.0, 0.6 * cap - 60.0) if cap > 0 else FOLD_BUDGET_S)
+
+
+#: Seconds of history folding per pass when the cycle exports no cap.
+FOLD_BUDGET_S = 420.0
+
+
 def parse_all(only: list[str] | None = None) -> dict[str, Any]:
+    import time
+    deadline = fold_deadline()
     rows: list[dict[str, Any]] = []
     endpoints_out: list[dict[str, str]] = []
     registry = _registry_rows()
@@ -595,6 +814,14 @@ def parse_all(only: list[str] | None = None) -> dict[str, Any]:
         _stamp_pit(rec, sid, meta, registry)
         rec.update({"id": sid, "url": url, "bytes": meta.get("bytes"),
                     "fetched_utc": meta.get("fetched_utc")})
+        if rec.get("status") == "PARSED" and time.monotonic() > deadline:
+            rec["history"] = {"status": "FOLD_DEFERRED",
+                              "why": "fold budget spent this pass; incremental, resumes next"}
+        elif rec.get("status") == "PARSED":
+            try:
+                rec["history"] = fold_vintages(sid, registry)
+            except Exception as exc:                      # the newest parse still stands
+                rec["history"] = {"status": "FOLD_ERROR", "why": f"{type(exc).__name__}"}
         rows.append(rec)
         for u in rec.get("endpoints") or []:
             endpoints_out.append({"kind": "address", "url": u, "route": f"asia_parser:{sid}"})
@@ -605,8 +832,12 @@ def parse_all(only: list[str] | None = None) -> dict[str, Any]:
         (FOUND / f"endpoints_{stamp}.json").write_text(
             json.dumps(endpoints_out, indent=1), encoding="utf-8")
 
+    aliased = [] if only else alias_parents(registry)
     census = Counter(str(r.get("status")) for r in rows)
     return {
+        "history": dict(Counter(str((r.get("history") or {}).get("status") or "n/a")
+                                for r in rows)),
+        "parents_aliased_from_children": aliased,
         "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "rule": ("keyed by payload SHAPE sniffed from the bytes, never by the registry's guess: "
                  "html tables, json, xml rows, csv, xlsx sheets, zip members and pdf text; "

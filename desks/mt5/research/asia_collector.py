@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures as cf
+import contextlib
 import gzip
 import hashlib
 import json
@@ -151,6 +152,15 @@ def _key_present(src: dict[str, Any]) -> bool:
     return bool(env and os.environ.get(env))
 
 
+#: robots.txt readings for this pass, by robots URL: {url: RobotFileParser | None (unreadable)}.
+#: ONE READ PER HOST PER PASS. Before this every source re-fetched its host's robots.txt with a
+#: 12-second timeout ahead of its own 25-second fetch, so a slow government host cost up to 37s
+#: per source -- 242 sources over 8 workers is ~19 minutes against a 10-minute budget, and the
+#: half that never started was the SAME half every hour (see `starvation_order`).
+_ROBOTS: dict[str, Any] = {}
+_ROBOTS_LOCK = threading.Lock()
+
+
 def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool, str]:
     """Ask the host's robots.txt and RECORD what it said. The answer is a LABEL, not a gate.
 
@@ -165,16 +175,26 @@ def _robots_allows(url: str, agent: str = "quant-desk-collector") -> tuple[bool,
     untouched and none of them is robots.txt: a login, a paywall, a credential or an access
     control is still never crossed (see the auth/subscription branch above this call).
     """
+    parts = urllib.parse.urlsplit(url)
+    robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
+    with _ROBOTS_LOCK:
+        cached = _ROBOTS.get(robots, "")
+    if cached != "":
+        if cached is None:
+            return True, "robots.txt unreadable earlier this pass; treated as allowing"
+        return (bool(cached.can_fetch(agent, url)), "robots.txt consulted (cached this pass)")
     try:
         from urllib.robotparser import RobotFileParser
-        parts = urllib.parse.urlsplit(url)
         rp = RobotFileParser()
-        robots = f"{parts.scheme}://{parts.netloc}/robots.txt"
         req = urllib.request.Request(robots, headers={"User-Agent": agent})
         with urllib.request.urlopen(req, timeout=12, context=_TLS) as r:
             rp.parse(r.read(200_000).decode("utf-8", errors="replace").splitlines())
+        with _ROBOTS_LOCK:
+            _ROBOTS[robots] = rp
         return (bool(rp.can_fetch(agent, url)), "robots.txt consulted")
     except Exception as exc:
+        with _ROBOTS_LOCK:
+            _ROBOTS[robots] = None
         return True, f"robots.txt unreadable ({type(exc).__name__}); treated as allowing"
 
 
@@ -502,6 +522,101 @@ def _derived_sources(sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+#: A source whose last attempt is older than its due window by more than this is STARVED.
+STARVED_GRACE_S = 2 * 3600
+#: Seconds kept back from the cycle's cap (QUANT_LEG_BUDGET_S) for the in-flight fetches to land
+#: and for the state and report to be written. Measured shape: one fetch is at most the robots
+#: read (12s, once per host) plus the transport timeout.
+WRITE_MARGIN_S = 30.0
+#: Completed fetches between state checkpoints: a pass killed by its cap keeps its progress.
+CHECKPOINT_EVERY = 10
+
+
+def due_window(src: dict[str, Any]) -> float:
+    return float(DUE_AFTER.get(str(src.get("cadence") or ""), DEFAULT_DUE_S))
+
+
+def starvation_order(todo: list[dict[str, Any]], state: dict[str, Any], now: float,
+                     evig: list[str] | None = None) -> list[dict[str, Any]]:
+    """The fetch order: NEVER-ATTEMPTED first, then the STARVED (overdue past their window by
+    STARVED_GRACE_S, most-deferred and oldest first), then everything else in EVIG order.
+
+    WHY THIS AND NOT EVIG ALONE (2026-09-30). `source_evig.fetch_order` puts every source it has
+    not priced AFTER the priced ones -- and a source it has not priced is, above all, one that has
+    never been collected. With a pass that cannot reach the end of the list (see `_robots_allows`
+    and `effective_budget`), EVIG order made "never collected" a stable property: the same tail
+    was DEFERRED every hour, and a DEFERRED row wrote no state, so nothing ever recorded that it
+    was being starved. 242 registered packs, 0 series on the census. EVIG still orders the
+    remainder, and inside each tier; nothing is dropped, only the tail can no longer be the same
+    sources forever: a source's wait is bounded by its window + grace + one pass."""
+    rank = {sid: i for i, sid in enumerate(evig or [])}
+
+    def key(s: dict[str, Any]) -> tuple[int, int, float, int]:
+        st = state.get(str(s.get("id"))) or {}
+        last = st.get("last_attempt_epoch") if isinstance(st, dict) else None
+        streak = int((st.get("deferred_streak") or 0) if isinstance(st, dict) else 0)
+        ev = rank.get(str(s.get("id")), 10**6)
+        if not isinstance(last, (int, float)):
+            return (0, -streak, 0.0, ev)
+        over = (now - float(last)) - due_window(s)
+        if over >= STARVED_GRACE_S or streak > 0:
+            return (1, -streak, float(last), ev)
+        return (2, 0, 0.0, ev)
+    return sorted(todo, key=key)
+
+
+def effective_budget(requested: float, timeout: float, env: dict[str, str] | None = None
+                     ) -> tuple[float, str]:
+    """The seconds this pass may START fetches for: its own --budget, capped INSIDE the cycle's
+    kill (QUANT_LEG_BUDGET_S, exported to every leg) by one fetch and the write margin.
+
+    The collector used to read only its own 600s default while the cycle's pricer can cap the leg
+    lower; a pass killed by the cap wrote NO state and NO report (both were written only at the
+    end), so the next hour began from the identical order and the identical prefix was fetched
+    again. Now the pass stops itself inside the cap, and checkpoints its state as it goes."""
+    env = os.environ if env is None else env
+    try:
+        cap = float(env.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    if cap <= 0:
+        return float(requested), "own --budget (no cycle cap exported)"
+    inside = cap - (timeout + 12.0) - WRITE_MARGIN_S
+    if inside < requested:
+        return max(30.0, inside), f"inside the cycle cap {cap:.0f}s (one fetch + write margin)"
+    return float(requested), f"own --budget (inside the cycle cap {cap:.0f}s)"
+
+
+def coverage(sources: list[dict[str, Any]], state: dict[str, Any], now: float
+             ) -> dict[str, Any]:
+    """Every registered, collectable source's wait since its last attempt against its bound:
+    the due window + grace. A source past it is STARVED and named; a never-attempted one is
+    named too. This is the measurement the census could not make from the lake alone."""
+    rows = [s for s in sources if str(s.get("role") or "mechanism") != "transport"
+            and not s.get("derived_from")]
+    never: list[str] = []
+    starved: list[dict[str, Any]] = []
+    status: Counter[str] = Counter()
+    for s in rows:
+        st = state.get(str(s.get("id"))) or {}
+        last = st.get("last_attempt_epoch") if isinstance(st, dict) else None
+        status[str((st or {}).get("last_status") or "NEVER_ATTEMPTED")] += 1
+        if not isinstance(last, (int, float)):
+            never.append(str(s.get("id")))
+            continue
+        wait = now - float(last)
+        if wait > due_window(s) + STARVED_GRACE_S:
+            starved.append({"id": s.get("id"), "wait_h": round(wait / 3600, 1),
+                            "bound_h": round((due_window(s) + STARVED_GRACE_S) / 3600, 1),
+                            "deferred_streak": int(st.get("deferred_streak") or 0)})
+    return {"registered": len(rows), "never_attempted": never, "starved": starved,
+            "n_never_attempted": len(never), "n_starved": len(starved),
+            "last_status": dict(status),
+            "rule": ("every registered source is attempted within its due window + "
+                     f"{STARVED_GRACE_S // 3600}h grace; never-attempted and starved sources "
+                     "are fetched first (starvation_order)")}
+
+
 def due(src: dict[str, Any], state: dict[str, Any], now: float) -> bool:
     last = (state.get(str(src.get("id"))) or {}).get("last_attempt_epoch")
     if not isinstance(last, (int, float)):
@@ -544,10 +659,13 @@ def main(argv: list[str] | None = None) -> int:
     # a missing artifact leaves the order exactly as it was.
     try:
         from research.source_evig import fetch_order
-        _rank = {sid: i for i, sid in enumerate(fetch_order([str(s.get("id")) for s in todo]))}
-        todo.sort(key=lambda s: _rank.get(str(s.get("id")), 10**6))
+        evig = fetch_order([str(s.get("id")) for s in todo])
     except Exception:                                          # absence is never a demotion
-        pass
+        evig = [str(s.get("id")) for s in todo]
+    # STARVATION FIRST (2026-09-30): never-attempted and overdue sources lead; EVIG orders the
+    # rest and breaks ties inside each tier. See `starvation_order`.
+    todo = starvation_order(todo, state, now, evig)
+    budget, budget_basis = effective_budget(float(args.budget), float(args.timeout))
 
     if args.dry_run:
         print(f"asia collector: {len(todo)} of {len(sources)} source(s) due")
@@ -581,10 +699,25 @@ def main(argv: list[str] | None = None) -> int:
         with guard:
             return host_locks.setdefault(host, threading.Lock())
 
+    done = [0]
+
+    def _checkpoint() -> None:
+        with guard:
+            text = json.dumps(state, indent=1)
+        with contextlib.suppress(OSError):
+            _write_atomic(STATE, text)
+
     def _one(i: int, s: dict[str, Any]) -> None:
-        if time.monotonic() - started > args.budget:
+        if time.monotonic() - started > budget:
             rows[i] = {"id": s.get("id"), "status": "DEFERRED",
-                       "why": "pass budget exhausted; due again next pass"}
+                       "why": "pass budget exhausted; due again next pass, ahead of the rest"}
+            # A DEFERRAL IS RECORDED: it leaves the source due (no attempt stamp) and raises its
+            # streak, which `starvation_order` reads to put it first next pass.
+            with guard:
+                prev_d = dict(state.get(str(s.get("id"))) or {})
+                prev_d["deferred_streak"] = int(prev_d.get("deferred_streak") or 0) + 1
+                prev_d["last_deferred_epoch"] = time.time()
+                state[str(s.get("id"))] = prev_d
             return
         host = urllib.parse.urlsplit(str(s.get("url") or "")).netloc
         with _slot(host):
@@ -601,8 +734,13 @@ def main(argv: list[str] | None = None) -> int:
         # them with nothing would make the next pass unconditional for no reason.
         keep["validators"] = (rec.get("validators")
                               or (prev.get("validators") if isinstance(prev, dict) else None) or {})
+        keep["deferred_streak"] = 0
         with guard:
             state[str(s.get("id"))] = keep
+            done[0] += 1
+            tick = done[0] % CHECKPOINT_EVERY == 0
+        if tick:
+            _checkpoint()
 
     with cf.ThreadPoolExecutor(max_workers=WORKERS) as pool:
         list(pool.map(lambda t: _one(*t), list(enumerate(todo))))
@@ -617,6 +755,9 @@ def main(argv: list[str] | None = None) -> int:
                 "the 90th source is not blocked on the day it is added."),
         "n_sources": len(sources), "n_attempted": len(rows),
         "census": dict(census),
+        "budget_s": round(budget, 1), "budget_basis": budget_basis,
+        "robots_hosts_read": len(_ROBOTS),
+        "coverage": coverage([s for s in sources if not args.id], state, time.time()),
         "series_written": [r["parse"]["path"] for r in rows
                            if isinstance(r.get("parse"), dict) and r["parse"].get("path")],
         "rows": rows,

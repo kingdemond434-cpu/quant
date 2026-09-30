@@ -79,6 +79,14 @@ def _read(p: Path, default: Any = None) -> Any:
         return default
 
 
+def _relp(p: Path) -> str:
+    """Repo-relative when under the repo, else the path as given (a test's tmp dir)."""
+    try:
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
+
+
 def _iso(t: Any) -> str | None:
     try:
         return t.isoformat(timespec="seconds") if t is not None else None
@@ -154,15 +162,26 @@ def lake_datasets(series_dir: Path | None = None) -> list[dict[str, Any]]:
                   if isinstance(r, dict) and r.get("id")}
     out: list[dict[str, Any]] = []
     on_disk: set[str] = set()
-    for p in sorted(base.glob("*")) if base.is_dir() else []:
-        if p.suffix not in (".parquet", ".csv"):
-            continue
+    files = [p for p in sorted(base.glob("*")) if p.suffix in (".parquet", ".csv")] \
+        if base.is_dir() else []
+    stems = {p.stem for p in files}
+    for p in files:
         pack = p.stem
+        # A FRAGMENT IS PART OF ITS PACK, NOT A DATASET (2026-09-30). The parser writes a pack's
+        # tables as `<pack>__t<i>`, sheets as `__s<i>`, records as `__records`, its stacked
+        # vintages as `__hist`, and an index page's data files as `<pack>__ep<hash>` -- and
+        # writes the pack's canonical frame under its bare name. Listing each fragment as its own
+        # `lake:` dataset enrolled dozens of datasets nobody declared (each UNFED by
+        # construction) while the declared pack read "no series file". A fragment whose pack is
+        # registered, or has its own frame, folds into it.
+        head = pack.split("__", 1)[0]
+        if "__" in pack and (head in registered or head in stems):
+            continue
         on_disk.add(pack)
         try:
             df = pd.read_parquet(p) if p.suffix == ".parquet" else pd.read_csv(p)
         except Exception as exc:
-            out.append({"id": f"lake:{pack}", "kind": "lake", "path": str(p.relative_to(ROOT)),
+            out.append({"id": f"lake:{pack}", "kind": "lake", "path": _relp(p),
                         "fields": [], "country": (registered.get(pack) or {}).get("country"),
                         "pit": _pit(False, f"unreadable ({type(exc).__name__})")})
             continue
@@ -175,7 +194,7 @@ def lake_datasets(series_dir: Path | None = None) -> list[dict[str, Any]]:
         why = ("" if usable else "no available_time stamp: no honest join" if not stamped
                else "no numeric column" if not fields
                else f"{facts.get('points', 0)} reading(s), under {MIN_OBSERVATIONS}")
-        out.append({"id": f"lake:{pack}", "kind": "lake", "path": str(p.relative_to(ROOT)),
+        out.append({"id": f"lake:{pack}", "kind": "lake", "path": _relp(p),
                     "fields": fields, "country": (registered.get(pack) or {}).get("country"),
                     "source_names": [pack], "pit": _pit(usable, why, facts)})
     for pack, r in sorted(registered.items()):
@@ -199,19 +218,19 @@ def cot_datasets(data: Path | None = None) -> list[dict[str, Any]]:
         try:
             df = pd.read_parquet(p)
         except Exception as exc:
-            out.append({"id": f"cot:{rel}", "kind": "cot", "path": str(p.relative_to(ROOT)),
+            out.append({"id": f"cot:{rel}", "kind": "cot", "path": _relp(p),
                         "fields": [], "pit": _pit(False, f"unreadable ({type(exc).__name__})")})
             continue
         cols = _numeric_cols(df)
         fields = [{"field": f, "match": ""} for f in DS.pair_fields(cols) + cols]
         if "report_date" not in df.columns or not fields:
-            out.append({"id": f"cot:{rel}", "kind": "cot", "path": str(p.relative_to(ROOT)),
+            out.append({"id": f"cot:{rel}", "kind": "cot", "path": _relp(p),
                         "fields": fields, "pit": _pit(False, "no report_date or no numeric "
                                                              "column")})
             continue
         facts = _series_facts(DS.raw(f"cot:{rel}", fields[0]["field"], root=base))
         usable = facts["points"] >= MIN_OBSERVATIONS
-        out.append({"id": f"cot:{rel}", "kind": "cot", "path": str(p.relative_to(ROOT)),
+        out.append({"id": f"cot:{rel}", "kind": "cot", "path": _relp(p),
                     "fields": fields, "source_names": [p.stem, p.parent.name],
                     "pit": _pit(usable, "" if usable else
                                 f"{facts['points']} reading(s), under {MIN_OBSERVATIONS}",
@@ -232,6 +251,15 @@ def intel_fields(dirs: list[Path]) -> tuple[list[dict[str, str]], set[str]]:
             files.insert(0, t_p)
             if len(files) >= FIELD_SAMPLE_FILES:
                 break
+    if not files:
+        # THE NEWEST 120 ARE ALL EMPTY, NOT THE SEAT (2026-09-30): `correlations` holds 70 rows
+        # in 8 older files behind 400 empty `[]` snapshots, and sampling only the tail called it
+        # "no row at all". Walk the rest, oldest-to-newest order kept.
+        for t_p in reversed(stamped[:-FIELD_SAMPLE_SCAN]):
+            if next(iter(DS.rows_in(t_p[1])), None) is not None:
+                files.insert(0, t_p)
+                if len(files) >= FIELD_SAMPLE_FILES:
+                    break
     keys: Counter[str] = Counter()
     per_symbol: Counter[str] = Counter()
     sources: set[str] = set()
@@ -306,25 +334,61 @@ def intel_datasets(roots: tuple[Path, ...] | None = None) -> list[dict[str, Any]
 
 
 def file_datasets(data: Path | None = None) -> list[dict[str, Any]]:
-    """Macro axis records and grounds files: listed, never conditioned on (no series inside)."""
+    """Macro axis records and grounds files.
+
+    AN AXIS RECORD CARRIES ITS SERIES (2026-09-30). `data/axes/bis.json` holds 464,803 policy-
+    rate rows stamped `knowable_at`, `cot.json` 4,060 positioning rows, `ecb.json` three dated
+    series -- this used to call every one "not a stored series" and feed nothing. They are read
+    through `dataset_series` (kind `macro`) on the axis organ's own knowability stamp. A record
+    whose fetch failed (`fred.json`, n_series 0) still has no series and says so.
+
+    A GROUNDS JOURNAL (`*.jsonl`, rows stamped when recorded) is a daily activity series (kind
+    `grounds`); a grounds LIST (`*.json`, no row stamps) is not, and its use is its members'
+    (libs/research/dataset_exploitation.MEMBERS)."""
+    from mt5desk import dataset_series as DS
     base = data or DATA
     out: list[dict[str, Any]] = []
     for p in sorted((base / "axes").glob("*.json")) if (base / "axes").is_dir() else []:
         doc = _read(p, {}) or {}
         n = doc.get("n_series") if isinstance(doc, dict) else None
-        out.append({"id": f"macro:{p.stem}", "kind": "macro", "path": str(p.relative_to(ROOT)),
-                    "fields": [], "source_names": [p.stem, str(doc.get("id") or p.stem)],
-                    "pit": _pit(False, f"an axis probe record (n_series={n}), not a stored "
-                                       "series: the series it names must land in the lake "
-                                       "first")})
+        names = [p.stem, str(doc.get("id") or p.stem)] if isinstance(doc, dict) else [p.stem]
+        fields = DS.macro_fields(p.stem, root=base / "axes")
+        if not fields:
+            failed = doc.get("failed") if isinstance(doc, dict) else None
+            why = (f"an axis record with no series inside (n_series={n}"
+                   + (f"; its fetch failed for {len(failed)} series: "
+                      f"{sorted(failed)[:4]}" if failed else "") + ")")
+            out.append({"id": f"macro:{p.stem}", "kind": "macro",
+                        "path": _relp(p), "fields": [],
+                        "source_names": names, "pit": _pit(False, why)})
+            continue
+        f0 = fields[0]
+        facts = _series_facts(DS.macro_raw(p.stem, f0["field"], match=f0["match"],
+                                           root=base / "axes"))
+        usable = facts.get("points", 0) >= MIN_OBSERVATIONS
+        out.append({"id": f"macro:{p.stem}", "kind": "macro", "path": _relp(p),
+                    "fields": fields, "source_names": names,
+                    "pit": _pit(usable, "" if usable else
+                                f"{facts.get('points', 0)} reading(s) of {f0['field']}, under "
+                                f"{MIN_OBSERVATIONS}", facts)})
     grounds = sorted({*base.glob("*sources*.json"), *base.glob("*sources*.jsonl"),
                       *base.glob("*grounds*.json")})
     for p in grounds:
-        out.append({"id": f"grounds:{p.stem}", "kind": "grounds",
-                    "path": str(p.relative_to(ROOT)), "fields": [],
-                    "source_names": [p.stem],
-                    "pit": _pit(False, "a list of grounds a miner walks, not a series: its use "
-                                       "is the cells its miners' claims compile into")})
+        row: dict[str, Any] = {"id": f"grounds:{p.stem}", "kind": "grounds",
+                               "path": _relp(p), "fields": [],
+                               "source_names": [p.stem]}
+        s = DS.grounds_raw(p.stem, root=base) if p.suffix == ".jsonl" else None
+        if s is not None and len(s):
+            facts = _series_facts(s)
+            usable = facts["points"] >= MIN_OBSERVATIONS
+            row["fields"] = [{"field": DS.ROW_COUNT_FIELD, "match": ""}]
+            row["pit"] = _pit(usable, "" if usable else
+                              f"{facts['points']} day(s) of journal activity, under "
+                              f"{MIN_OBSERVATIONS}", facts)
+        else:
+            row["pit"] = _pit(False, "a list of grounds a miner walks, with no row stamps: its "
+                                     "use is its members' (the datasets its grounds feed)")
+        out.append(row)
     return out
 
 
@@ -349,7 +413,7 @@ def _corpus() -> dict[str, dict[str, str]]:
         got: dict[str, str] = {}
         for p in paths:
             try:
-                got[str(p.relative_to(ROOT)).replace("\\", "/")] = p.read_text("utf-8", "replace")
+                got[_relp(p).replace("\\", "/")] = p.read_text("utf-8", "replace")
             except OSError:
                 continue
         return got

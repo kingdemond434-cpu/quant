@@ -494,7 +494,7 @@ def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dic
     return rows, scope
 
 
-def _trim(doc: dict[str, Any]) -> dict[str, Any]:
+def _trim(doc: dict[str, Any], only: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Hold the file under MAX_JSON_BYTES BY CONSTRUCTION, and say so when it bites.
 
     Summaries are the only variable-width field here, so they are what goes -- from the LIVE tail
@@ -508,15 +508,27 @@ def _trim(doc: dict[str, Any]) -> dict[str, Any]:
     # non-empty dict, so `r.get("summary")` kept selecting the row it had just trimmed: whenever
     # the document could not be brought under the cap, this loop never ended. It surfaced the day
     # the registry began declaring each organ's own artifact and the attested set doubled.
+    # `only` (--only-missing): the rows this pass appended are the ONLY ones it may touch, so the
+    # victims are drawn from them -- LIVE first, as in a full pass, then any other appended row --
+    # and the published count is ADDED to the committed one rather than replacing it.
+    pool = doc["organs"] if only is None else only
+    ids = {id(r) for r in pool}
+    order = [r for r in reversed(doc["organs"]) if id(r) in ids]
+    if only is not None:
+        order = ([r for r in order if r["state"] == "LIVE"]
+                 + [r for r in order if r["state"] != "LIVE"])
     while len(json.dumps(doc, default=str)) > MAX_JSON_BYTES:
-        victim = next((r for r in reversed(doc["organs"])
-                       if r["state"] == "LIVE" and r.get("summary")
+        victim = next((r for r in order
+                       if (only is not None or r["state"] == "LIVE") and r.get("summary")
                        and r["summary"] != mark), None)
         if victim is None:
             break
         victim["summary"] = dict(mark)
         trimmed += 1
-    doc["scope"]["summaries_trimmed"] = trimmed
+    if only is None:
+        doc["scope"]["summaries_trimmed"] = trimmed
+    else:
+        doc["scope"]["summaries_trimmed"] = int(doc["scope"].get("summaries_trimmed", 0)) + trimmed
     return doc
 
 
@@ -591,6 +603,77 @@ def ratchet_update(paths: Paths, host: str, census: dict[str, int],
     with contextlib.suppress(OSError):                       # pragma: no cover - disk only
         _atomic(paths.ratchet, json.dumps(doc, indent=1, sort_keys=False))
     return {"floor": floor, "lowered": lowered}
+
+
+def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]:
+    """APPEND rows for organs the committed attestation has no row for, and touch nothing else.
+
+    WHY THIS EXISTS (2026-09-30). A PR that adds organs must also add their attestation rows, or
+    `scripts/check_birth_obligations.py` fails the merge. Resolving `runtime_state.json` by taking
+    one side wholesale either drops the PR's new rows (take LIVE) or rewrites every shared row
+    with the PR author's machine state (take the PR, or re-run a full pass on a sparse tree --
+    which flipped 89 shared rows on #140). Splicing rows in by hand is audit tampering. This is
+    the third way: LIVE's committed file is the base, and the only thing added to it is a row
+    WRITTEN BY THIS ORGAN for each organ the registry declares that the file does not yet name.
+
+    Guarantees, pinned by tests: every existing row is left byte-identical (never rewritten,
+    re-attested or flipped); rows are only appended; census and `scope.attested` move by the
+    added rows alone; the host stamp, `generated_at` and the ratchet are left as the attesting
+    host wrote them; a second run adds nothing; appended rows carry `measured_on`/`measured_at`
+    and, off the attesting host, read NEVER or UNMEASURED rather than this machine's mtimes; the
+    size trim runs over the appended rows only. Run it on a FULL tree -- on a sparse one the
+    registry cannot see every organ's source, and absence there would be read as NEVER.
+    """
+    _doc = _read_json(paths.out_json, max_bytes=MAX_JSON_BYTES * 8)
+    if _doc is None or not isinstance(_doc.get("organs"), list):
+        raise FileNotFoundError(f"{paths.out_json}: no committed attestation to append to -- "
+                                f"run a full --once pass on the attesting host first")
+    doc: dict[str, Any] = _doc
+    have = {str(r.get("organ")) for r in doc["organs"] if isinstance(r, dict)}
+    rows, _scope = organ_rows(paths, budget_s)
+    added = [r for r in rows if str(r["organ"]) not in have]
+    if not added:
+        return {"doc": doc, "added": []}
+    # A ROW'S STATE IS A FACT ABOUT THE HOST THAT MEASURED IT. LIVE/STALE/MISSING are read off
+    # file mtimes and run records on whatever machine runs this pass, so the same organ could
+    # read LIVE here and STALE on the box. Every appended row is stamped with where and when it
+    # was measured, and OFF the attesting host (the one the document's `host` stamp names) its
+    # state is not taken from this machine at all: NEVER when nothing of it exists here either,
+    # UNMEASURED otherwise -- this host cannot say whether the box ran it or how fresh it is.
+    here = socket.gethostname()
+    _h = doc.get("host")
+    attesting = str((_h if isinstance(_h, dict) else {}).get("hostname")
+                    or doc.get("attests_to_host") or UNMEASURED)
+    on_host = attesting == here
+    at = _iso(_now())
+    for r in added:
+        r["measured_on"] = here
+        r["measured_at"] = at
+        if not on_host:
+            local = r["state"]
+            r["state"] = "NEVER" if local == "NEVER" else UNMEASURED
+            r["why"] = (f"appended by --only-missing on {here}, not the attesting host "
+                        f"{attesting}: its state there is unmeasured (read {local} here)"
+                        if r["state"] == UNMEASURED else
+                        f"appended by --only-missing on {here}: no artifact and no run record "
+                        f"here, and the attesting host {attesting} has never attested it")
+    doc["organs"].extend(added)
+    _c = doc.get("census")
+    census: dict[str, Any] = _c if isinstance(_c, dict) else {}
+    for r in added:
+        census[r["state"]] = int(census.get(r["state"], 0)) + 1
+    doc["census"] = census
+    _s = doc.get("scope")
+    scope: dict[str, Any] = _s if isinstance(_s, dict) else {}
+    scope["attested"] = int(scope.get("attested", 0)) + len(added)
+    log = scope.get("only_missing_appended")
+    log = list(log) if isinstance(log, list) else []
+    log.append({"at": at, "host": here, "on_attesting_host": on_host,
+                "organs": [str(r["organ"]) for r in added]})
+    scope["only_missing_appended"] = log
+    doc["scope"] = scope
+    _trim(doc, only=added)
+    return {"doc": doc, "added": added}
 
 
 def _age(seconds: Any) -> str:
@@ -674,8 +757,31 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--budget-s", type=float, default=180.0)
     ap.add_argument("--root", type=Path, default=ROOT, help="repo root (tests)")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--only-missing", action="store_true",
+                    help="append rows ONLY for organs the committed attestation lacks; every "
+                         "existing row, the host stamp and the ratchet are left untouched "
+                         "(merge resolution -- run on a FULL tree)")
     a = ap.parse_args(argv)
     paths = Paths.at(Path(a.root))
+    if a.only_missing:
+        try:
+            res = attest_only_missing(paths, budget_s=float(a.budget_s))
+        except FileNotFoundError as exc:
+            print(f"runtime_attestation --only-missing: NOT written ({exc})")
+            return 1
+        if res["added"]:
+            try:
+                _atomic(paths.out_json,
+                        json.dumps(res["doc"], indent=1, default=str, sort_keys=False))
+                _atomic(paths.out_md, render(res["doc"]))
+            except OSError as exc:
+                print(f"runtime_attestation --only-missing: NOT written "
+                      f"({type(exc).__name__}: {exc})")
+                return 1
+        names = ", ".join(f"{r['organ']} ({r['state']})" for r in res["added"])
+        print(f"runtime_attestation --only-missing: appended {len(res['added'])} row(s)"
+              + (f": {names}" if names else " -- every registry organ already has a row"))
+        return 0
     doc = attest(paths, budget_s=float(a.budget_s))
     rat = ratchet_update(paths, doc["attests_to_host"], doc["census"],
                          str(doc["host"].get("git_sha") or UNMEASURED))
