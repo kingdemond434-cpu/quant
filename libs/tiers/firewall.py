@@ -66,6 +66,12 @@ ROLES: tuple[Role, ...] = (
          ("desks/mt5/research/pf_allocator.py",),
          forbid_tokens=("gauntlet_candidates", "hypothesis_graph", "intelligence/"),
          sentence="Allocator accepts certificates only."),
+    Role("promoter",
+         ("desks/mt5/research/promoter.py", "libs/tiers/promotion_authority.py"),
+         forbid_tokens=("gauntlet_candidates", "hypothesis_graph", "intelligence/"),
+         forbid_writes=("pf_allocation", "allocation.json"),
+         sentence="Promoter reads certificates and verdicts only; it cannot write the "
+                  "allocator's capital allocation."),
     Role("execution",
          ("desks/mt5/mt5desk/gateway.py", "desks/mt5/mt5desk/gateway_*.py",
           "desks/mt5/mt5desk/scalp_exec.py", "desks/mt5/mt5desk/netting.py"),

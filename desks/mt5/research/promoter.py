@@ -1566,6 +1566,28 @@ def blind_review_veto(name: str, verdicts: dict[str, str] | None = None) -> str 
     return None
 
 
+def tier_s_block(name: str) -> str | None:
+    """The Tier S verifiers' refusal for this certificate, or None (principal 2026-09-29: every
+    blueprint wired live, no approvals). Same door and limits as `blind_review_veto`: it withholds
+    a NEW live row only. Replication MISMATCH, an online-FDR over-budget certificate, or a
+    production-judged immune DROP -- see `libs/tiers/promotion_authority.py`, billed as the rail
+    `tier_s_evidence_block`. An unimportable module withholds nothing."""
+    try:
+        root = str(Path(__file__).resolve().parents[3])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.tiers import promotion_authority
+        return promotion_authority.block(name)
+    except Exception:
+        return None
+
+
+def _record_tier_s_block(name: str, why: str, lane: str, row: dict) -> None:
+    with suppress(Exception):
+        from libs.tiers import promotion_authority
+        promotion_authority.record(name, why, lane=lane, exp_r=row.get("exp_r"), n=row.get("n"))
+
+
 def regrade_block(name: str, fails: dict[str, dict]) -> dict | None:
     """The failing audit row for `name`, matched exactly or across the canon's prefixing
     convention (`external.<cell>`, `<hunt>.<cell>` on one side, the bare cell on the other)."""
@@ -1795,6 +1817,14 @@ def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
             plog(f"{key}: candidate refused -- {row['gate_reason']}")
             changed = True
             continue
+        _ts = tier_s_block(key)
+        if _ts:
+            row["status"] = "BLOCKED_TIER_S"
+            row["gate_reason"] = _ts
+            plog(f"{key}: candidate refused -- {_ts}")
+            _record_tier_s_block(key, _ts, "qquant", row)
+            changed = True
+            continue
         tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
                str(spec["family"]), spec.get("is_universe") is True)
         row["certificate_drift"] = bool(gate_authority) and tup not in gate_authority
@@ -1930,6 +1960,15 @@ def main() -> None:
             st["gate_reason"] = (f"the blind reviewer could not reproduce certificate {_veto} "
                                  f"from the data (VETO)")
             plog(f"{key}: live promotion refused -- {st['gate_reason']}")
+            changed = True
+            continue
+        _ts = tier_s_block(key)
+        if _ts:
+            st["status"] = "BLOCKED_TIER_S"
+            st["promotion_authority"] = False
+            st["gate_reason"] = _ts
+            plog(f"{key}: live promotion refused -- {_ts}")
+            _record_tier_s_block(key, _ts, "main", st)
             changed = True
             continue
         cap = capital_verdict(view, key, symbol=sym, family=family, selector=win)
