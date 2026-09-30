@@ -42,7 +42,8 @@ def test_stage1_is_a_late_key_that_never_overrides_the_principal_order() -> None
     k = O.SEALED_SORT_KEY_SOURCE_STAGE1
     at = [k.find(x) for x in ("_is_new(sp)", "_tf_rank(sp)", "_ceo_rank(sp)",
                               "_judged_in_bucket.get(", "_cursor.get(", "str(sp.get(\"sym\")",
-                              "timeframe_of(", "_stage1_rank(sp)", "str(sp.get(\"family\")")]
+                              "timeframe_of(", "_stage1_rank(sp)")]
+    at.append(k.rfind("str(sp.get(\"family\")"))                # the LAST key: the family name
     assert all(a >= 0 for a in at) and at == sorted(at)
     fake = SimpleNamespace(timeframe_of=G.timeframe_of, _build_cursor=lambda: {},
                            BASE=Path("/nonexistent"))
