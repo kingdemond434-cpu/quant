@@ -38,7 +38,7 @@ import tempfile
 import time
 from collections.abc import Iterable
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -282,7 +282,12 @@ def run(con, judged_specs: list[dict[str, Any]], *, workers: int, budget_s: floa
     measured = {r[0]: r[1] for r in con.execute(
         "SELECT cid, span FROM rollover_span WHERE measured_at >= ? AND span IS NOT NULL",
         (since,))}
-    todo = [sp for sp in judged_specs if sp["cid"] not in measured]
+    # an unmeasurable cell (unbuildable here) is retried once a day, not every hour
+    retry_after = _iso((now or _now()) - timedelta(hours=24))
+    tried = {r[0] for r in con.execute(
+        "SELECT cid FROM rollover_span WHERE span IS NULL AND measured_at >= ?",
+        (max(since, retry_after),))}
+    todo = [sp for sp in judged_specs if sp["cid"] not in measured and sp["cid"] not in tried]
     t0 = time.monotonic()
     got = _pool(todo, workers, budget_s)
     ts = _iso()
