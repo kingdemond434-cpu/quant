@@ -70,10 +70,11 @@ def renormalise_clipped(tilt: Mapping[str, float], heat: Mapping[str, float], *,
                         held: frozenset[str] = frozenset(), lo: float = EXCHANGE_LO,
                         hi: float = TILT_HI) -> tuple[dict[str, float], dict[str, Any]]:
     """Make a CLIPPED tilt heat-neutral again (pass the UNCLIPPED product; the clip happens
-    here, inside the solve, so the solver knows which sleeves the bounds pinned): the heat-weighted mean over the funded treated book
-    is restored to exactly 1.0 after the bounds bite (verifier 2026-09-30: the combined
-    exchange x capture x freeze tilt was clipped to [0, 2] and never renormalised, so a clip at
-    2.0 silently REMOVED heat from the book and a clip at the floor silently ADDED it).
+    here, inside the solve, so the solver knows which sleeves the bounds pinned): the
+    heat-weighted mean over the funded treated book is restored to exactly 1.0 after the bounds
+    bite (verifier 2026-09-30: the combined exchange x capture x freeze tilt was clipped to
+    [0, 2] and never renormalised, so a clip at 2.0 silently REMOVED heat from the book and a
+    clip at the floor silently ADDED it).
 
     Water-filling: sleeves pinned at a bound keep it, and ONLY the unclipped remainder is scaled
     by one common factor until sum(heat x tilt) == sum(heat); a scale that pushes a further sleeve
