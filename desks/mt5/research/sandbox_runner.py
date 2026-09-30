@@ -586,18 +586,15 @@ def production_rows(plans: list[Plan], tried: list[dict[str, Any]],
         counts = row.get("counts") or {}
         cands = int(ing.get("candidates") or 0)
         cells = sorted(set(st.get("cells") or []))
-        # A SYSTEM THAT RAN HAS A ROW, WHATEVER THE STOPWATCH SAYS (measured 2026-09-25). This
-        # read `bool(row.get("seconds"))`, and `seconds` is `round(monotonic() - t0, 1)` -- so a
-        # system that finished in under 0.05s recorded 0.0, `bool(0.0)` is False, and it was
+        # A SYSTEM THAT RAN HAS A ROW, WHATEVER THE STOPWATCH SAYS (measured 2026-09-25).
+        # This read `bool(row.get("seconds"))`, and `seconds` is `round(monotonic() - t0, 1)` --
+        # so a system finishing in under 0.05s recorded 0.0, `bool(0.0)` is False, and it was
         # reported as "RUNNABLE but not reached this pass: queued behind higher-ROI and more
-        # overdue systems". It had been reached. It ran, it donated, and on the live box 20 of
-        # the 29 systems carrying that sentence had full rows in `systems_tried` with
-        # `run_status="PRODUCED"` -- three of them were that pass's own SCOUTS, the systems the
-        # rotation had explicitly guaranteed an hour. A fast adapter was indistinguishable from
-        # a starved one, and the sentence blamed a budget that had in fact paid.
-        #
-        # The row's EXISTENCE is the fact being asked for: `by_id` is built from the rows the
-        # pass actually tried, so presence is the measurement and the stopwatch is not.
+        # overdue systems". It HAD been reached: on the live box 20 of the 29 systems carrying
+        # that sentence had full rows in `systems_tried` with `run_status="PRODUCED"`, and three
+        # were that pass's own SCOUTS -- the systems the rotation had explicitly guaranteed an
+        # hour. A fast adapter was indistinguishable from a starved one and the sentence blamed a
+        # budget that had in fact paid. The row's EXISTENCE is the fact being asked for.
         ran = sid in by_id and plan.status == "RUNNABLE"
         produced = bool(cands or cells)
         if produced:

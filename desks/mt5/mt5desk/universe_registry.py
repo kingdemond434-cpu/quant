@@ -160,7 +160,7 @@ def scale_bars(n_bars: float, timeframe: str, *, minimum: int = 1) -> int:
     cannot be expressed on it, and rounding to zero would silently delete the parameter.
     """
     scaled = float(n_bars) * REFERENCE_MINUTES / float(timeframe_minutes(timeframe))
-    return max(int(minimum), round(scaled))
+    return max(int(minimum), int(round(scaled)))
 
 
 def min_bars_for(timeframe: str, *, h1_floor: int = H1_ADMISSION_BARS) -> int:
@@ -456,49 +456,26 @@ def defects(registry: dict[str, Any], *, parquet_bars: dict[str, int] | None = N
     return out
 
 
-#: WHY A UNIVERSE FRAME IS NEVER WRITTEN IN PLACE (measured 2026-09-24).
-#:
-#: `to_parquet` straight onto the destination TRUNCATES it and refills it over seconds. The
-#: sealed judge (scripts/external_gauntlet.py) reads these frames in `_bars_for` with
-#: `pd.read_parquet` and NO error handling, so a read landing in that window raises
-#: `pyarrow.lib.ArrowInvalid: Parquet magic bytes not found` -- or "file size is 0 bytes" -- and
-#: the exception propagates out of `main()` and kills the ENTIRE sweep. Measured in
-#: MT5-Gauntlet.log: 19 passes died exactly that way, each losing a whole judging phase.
-#: 320 of 1,736 frames are rewritten in any five-minute window, so the race is not rare.
-#:
-#: Writing beside the destination and renaming means a concurrent reader sees either the old
-#: frame or the new one, never half of one. Four other writers on this desk already do this
-#: (moat_silver, tape_features, conversion_maximiser, fetch_dukascopy); the universe writers,
-#: whose readers include the judge, were the ones that did not.
-def publish_frame(frame: Any, path: Any, attempts: int = 5) -> bool:
-    """Publish a bar frame to `path` so a CONCURRENT READER NEVER SEES A PARTIAL FILE.
+def publish_frame(frame: Any, path: Any) -> bool:
+    """Publish a bar frame to `path` atomically: write a sibling temp file, then `os.replace`.
 
-    Returns True when the frame is now at `path`.
-
-    `os.replace` can still lose to an open handle on Windows (WinError 5/32) when a reader holds
-    the destination. That is the SAFE failure and it is reported, never silent: the previous
-    frame stays valid and complete, and this symbol is refreshed on the next pass. A stale-but-
-    whole frame costs one refresh; a torn one costs a whole judging pass.
+    A reader never sees a torn parquet -- `fetch_universe` once wrote straight onto the
+    destination and a read landing mid-rewrite raised `ArrowInvalid` out of the judge, killing 19
+    passes. On Windows a destination held open by a reader refuses the rename; that is returned as
+    False (a reported miss the next pass retries), never raised and never a half-written file.
     """
     import contextlib
-    import os as _os
-    import time as _time
-    from pathlib import Path as _Path
+    import os
+    from pathlib import Path
 
-    path = _Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.{_os.getpid()}.tmp")
-    frame.to_parquet(tmp)
-    for i in range(max(1, attempts)):
-        try:
-            _os.replace(tmp, path)
-            return True
-        except OSError as exc:
-            if i == attempts - 1:
-                with contextlib.suppress(OSError):
-                    tmp.unlink()
-                print(f"  {path.name}: NOT republished ({type(exc).__name__}: {exc}); the "
-                      f"previous frame stands and the next pass retries", flush=True)
-                return False
-            _time.sleep(0.4 * (i + 1))
-    return False
+    dest = Path(path)
+    tmp = dest.with_name(f"{dest.name}.{os.getpid()}.tmp")
+    try:
+        frame.to_parquet(tmp)
+        os.replace(tmp, dest)
+        return True
+    except PermissionError:
+        return False
+    finally:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
