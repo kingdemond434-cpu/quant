@@ -1136,6 +1136,14 @@ def dynamic_reach_roots(root: Path | None = None) -> dict[str, str]:
     return out
 
 
+#: EVERY reacher of a reached file, in walk order -- not only the first, which names its schedule.
+#: The walk is a stack, so WHICH reacher arrives first moves whenever a leg is added anywhere; an
+#: organ whose first reacher binds no artifact then lost the artifact another reacher would have
+#: lent it, and dropped out of the runtime attestation with no change of its own (measured
+#: 2026-09-30: retire_untradeable.py, reached by formal_invariants.py and reference_freshness.py).
+_REACHERS: dict[str, list[str]] = {}
+
+
 def reach_specs(reg: Registry, root: Path | None = None,
                 extra_roots: dict[str, str] | None = None) -> list[ComponentSpec]:
     """A spec for every executable a CLOCKED organ reaches -- by import (kind `library`,
@@ -1152,6 +1160,7 @@ def reach_specs(reg: Registry, root: Path | None = None,
         by_stem.setdefault(p.stem, []).append(rel)
     claimed = reg.claimed_paths()
     reached: dict[str, tuple[str, str]] = {}
+    _REACHERS.clear()
     # DEDUPED, and re-reading is refused below: a thousand scheduled specs name a few hundred
     # distinct files (every daily step names daily_cycle.py, every forest names forest_runner.py),
     # and parsing the same large file thirty times is where a 216 s registry build came from.
@@ -1174,13 +1183,17 @@ def reach_specs(reg: Registry, root: Path | None = None,
         if rel.endswith(".py"):
             for stem in _import_stems(text):
                 for target in by_stem.get(stem, ()):
-                    if target != rel and target not in claimed and target not in reached:
-                        reached[target] = ("library", rel)
-                        frontier.append(target)
+                    if target != rel and target not in claimed:
+                        _REACHERS.setdefault(target, []).append(rel)
+                        if target not in reached:
+                            reached[target] = ("library", rel)
+                            frontier.append(target)
         for target in scripts_named_in(text, base):
-            if target != rel and target not in claimed and target not in reached:
-                reached[target] = ("executable", rel)
-                frontier.append(target)
+            if target != rel and target not in claimed:
+                _REACHERS.setdefault(target, []).append(rel)
+                if target not in reached:
+                    reached[target] = ("executable", rel)
+                    frontier.append(target)
     out: list[ComponentSpec] = []
     for rel, (kind, via) in sorted(reached.items()):
         if rel not in exes:
@@ -1228,6 +1241,10 @@ def _path_expr(node: ast.AST, here: Path, env: dict[str, Path]) -> Path | None:
             return here
         if isinstance(f, ast.Attribute) and f.attr in ("resolve", "absolute") and not node.args:
             return _path_expr(f.value, here, env)
+        # `mt5desk.config.desk_root()` -- the desk's single path authority -- is `desks/mt5`.
+        if isinstance(f, ast.Name) and f.id == "desk_root" and not node.args:
+            return next((p for p in here.parents
+                         if p.name == "mt5" and p.parent.name == "desks"), None)
         return None
     if isinstance(node, ast.Attribute) and node.attr == "parent":
         base = _path_expr(node.value, here, env)
@@ -1323,10 +1340,16 @@ def _declare_own_artifacts(reg: Registry, root: Path | None = None) -> None:
             if s.outputs or s.kind not in ("library", "executable"):
                 continue
             prefix, _, via = s.schedule.partition(":")
-            if prefix not in ("import", "invoked") or via not in by_code:
+            if prefix not in ("import", "invoked"):
                 continue
-            reg.add(replace(s, outputs=by_code[via],
-                            notes=f"{s.notes}; artifact inherited from its reacher {via}"),
+            # The scheduling reacher first; any other reacher that binds an artifact otherwise,
+            # so the proof does not depend on which reacher the walk happened to pop first.
+            alts = [v for c in s.code_paths for v in _REACHERS.get(c, ()) if v != via]
+            lender = next((v for v in (via, *alts) if v in by_code), None)
+            if lender is None:
+                continue
+            reg.add(replace(s, outputs=by_code[lender],
+                            notes=f"{s.notes}; artifact inherited from its reacher {lender}"),
                     replace=True)
             changed = True
         if not changed:

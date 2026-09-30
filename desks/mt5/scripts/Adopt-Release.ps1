@@ -643,6 +643,50 @@ Write-Host ("  target {0}" -f $target.Substring(0, 12))
 
 if ($head -eq $target) { Write-Host "  already at target -- nothing to adopt"; exit 0 }
 
+# ORIGIN BEHIND THE BOX IS NOT A RELEASE, AND ADOPTING IT IS A MASS REVERT (2026-09-24).
+#
+# The line above is the only short-circuit this script had, and it fires on EXACT EQUALITY only.
+# So when `$target` is an ANCESTOR of HEAD -- origin strictly behind, carrying not one commit the
+# box lacks -- the full adoption still ran and wrote origin's OLDER blobs over the box's newer
+# code (step 3 writes `Get-WorktreeBytes -Rev $target` for every differing CODE path; only STATE
+# paths are kept as the box's). There is nothing to deliver in that direction. The only thing
+# such a pass can do is undo.
+#
+# MEASURED THE DAY THIS WAS WRITTEN. `git push` of the box's backlog had been failing with
+# `RPC failed; HTTP 408` -- 506 commits of large parquet blobs will not go through one request --
+# so origin sat 500+ commits behind for weeks while this script "adopted" it every hour. At
+# 17:12Z it reverted a seal fix that had been committed at 17:13Z, and the 17:20Z seal then died
+# on `AttributeError: module 'libs.ops.release' has no attribute 'seal_blocking_paths'` -- the
+# function had been in HEAD seven minutes earlier and the adoption had written it back out.
+#
+# That is also why the release identity could never settle. Every hour this pass reverted the
+# box's newer code and committed the revert, so HEAD moved again, so HEAD stopped matching the
+# seal, so `release_identity` refused new risk -- 1,200 `release_identity_refused` rows since
+# 2026-09-07 and 19 gold sleeve-days with no placement. The churn was manufactured here.
+#
+# UNMEASURED ANCESTRY CHANGES NOTHING. If the check itself cannot be run, the pass proceeds
+# exactly as it did before rather than refusing: a code-delivery path that stops on its own
+# diagnostics is the failure this file already exists to prevent.
+$ancestorRc = 2
+try {
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & git -C $RepoRoot merge-base --is-ancestor $target $head 2>$null | Out-Null
+    $ancestorRc = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
+} catch { $ancestorRc = 2 }
+if ($ancestorRc -eq 0) {
+    $aheadBy = "?"
+    try { $aheadBy = (& git -C $RepoRoot rev-list --count "$target..$head" 2>$null | Out-String).Trim() } catch { }
+    Write-Host ("  target {0} is an ANCESTOR of HEAD -- origin carries no commit this box lacks" -f $target.Substring(0, 12))
+    Write-Host ("  the box is {0} commit(s) AHEAD. Adopting would write origin's OLDER blobs over" -f $aheadBy)
+    Write-Host   "  newer code, which is a revert, not a release. Nothing to adopt."
+    exit 0
+}
+if ($ancestorRc -ne 1) {
+    Write-Host "  WARNING: could not measure whether origin is behind HEAD; adopting as before"
+}
+
 # ---- 1. THE BOX'S OWN UNCOMMITTED STATE, COMMITTED AS ITSELF -----------------
 # The sync commits state every fifteen minutes, so a dirty tree here means a pass
 # was interrupted -- which is exactly the situation this script is run in. Those

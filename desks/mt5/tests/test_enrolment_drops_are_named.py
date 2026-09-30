@@ -155,3 +155,41 @@ class TestTheReportDescribesThisPass:
         sa.authorized_runs(mismatch, lanes=("h1",))
         assert sa.DROPPED_CERTIFICATES != before
         assert len(sa.DROPPED_CERTIFICATES) == 1
+
+
+class TestAnAlreadyEvictedCertificateIsNotReAnnounced:
+    """Measured 2026-09-30: six certificates gated 2026-08-23 with no recorded `params` were
+    evicted from the SEALED canon by `certificate_hygiene`, yet still stood in the judge's report,
+    so every pass re-announced them as fresh ENROL-GAP drops and a verifier read them as a live
+    data defect. An eviction the seal already records is listed apart, by key, not re-reported."""
+
+    _KEY = "external.XAUUSD.session_range_breakout"
+
+    def _base(self, tmp_path: Path, spec: dict, evicted: list[str]) -> Path:
+        base = _exact_canon_or_skip(tmp_path, {
+            self._KEY: {"gates": _passing_gates(), "shadow_spec": spec}})
+        (base / "data").mkdir(exist_ok=True)
+        (base / "data" / "UNIVERSAL_SURVIVORS.canon.json").write_text(
+            json.dumps({"survivors": {}, "unrunnable_evicted": evicted}), "utf-8")
+        return base
+
+    def test_an_evicted_unrunnable_row_is_listed_as_evicted_not_dropped(self, tmp_path) -> None:
+        base = self._base(tmp_path, _spec("XAUUSD", params=None), [self._KEY])
+        assert sa.authorized_runs(base, lanes=("h1",)) == []
+        assert not sa.DROPPED_CERTIFICATES
+        assert sa.EVICTED_CERTIFICATES == [self._KEY]
+
+    def test_an_unrunnable_row_the_seal_never_evicted_is_still_a_named_drop(self, tmp_path
+                                                                            ) -> None:
+        base = self._base(tmp_path, _spec("XAUUSD", params=None), [])
+        sa.authorized_runs(base, lanes=("h1",))
+        assert any(d["certificate"] == self._KEY for d in sa.DROPPED_CERTIFICATES)
+        assert not sa.EVICTED_CERTIFICATES
+
+    def test_an_evicted_key_recertified_with_params_enrols(self, tmp_path) -> None:
+        """Eviction is keyed to the unrunnable row; a re-certification that records params is a
+        runnable certificate and gets its clock like any other."""
+        base = self._base(tmp_path, _spec("XAUUSD", params={"rr": 2.0}), [self._KEY])
+        runs = sa.authorized_runs(base, lanes=("h1",))
+        assert [r["symbol"] for r in runs] == ["XAUUSD"]
+        assert not sa.EVICTED_CERTIFICATES
