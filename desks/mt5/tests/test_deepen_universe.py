@@ -220,3 +220,20 @@ def test_the_deepener_is_on_its_daily_step_clock_and_has_no_orphan_wrapper() -> 
     assert spec.schedule == "daily_cycle:deepen_bars"
     assert spec.cadence_s == 86_400
     assert not (repo / "ops" / "run_deepen_universe.cmd").exists()
+
+
+def test_module_rent_and_issue_board_carry_their_real_clocks() -> None:
+    """#104 re-score: `research/module_rent.py` was declared on step `module_rent` (which imports
+    `libs.ops.module_rent`) instead of `module_rent_research`, and `leg:issue_board` on the long
+    cycle instead of the box task MT5-ResearchReports that actually refreshes it."""
+    repo = _DESK.parents[1]
+    if str(repo) not in sys.path:
+        sys.path.insert(0, str(repo))
+    from desks.mt5.ops import components
+
+    assert components.daily_step_of("desks/mt5/research/module_rent.py") == "module_rent_research"
+    assert components.daily_step_of("libs/ops/module_rent.py") == "module_rent"
+    reg = components.build_registry(repo)
+    assert reg.get("leg:issue_board").schedule == "MT5-ResearchReports"
+    spec = next(s for s in reg.all() if s.code_paths == ("desks/mt5/research/module_rent.py",))
+    assert spec.schedule == "daily_cycle:module_rent_research"

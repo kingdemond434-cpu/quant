@@ -232,6 +232,14 @@ def leg_names() -> list[str]:
     return sorted(set(re.findall(r'_costed\("([^"]+)"', _hourly_source())))
 
 
+#: A LEG WHOSE REAL CLOCK IS A BOX TASK (2026-09-30). `issue_board` is still costed in the hourly
+#: cycle, but it sits behind the forty-odd legs before it and the #104 re-score read it silent
+#: since 09-12; the run that lands is MT5-ResearchReports (`scripts/run_research_reports.py`,
+#: BOARD_NAME), which refreshes the board after its producers every pass. The schedule is written
+#: as the registry writes every box task -- the bare task name, as `MT5-ClockFixer` is.
+LEG_TASK_CLOCK: dict[str, str] = {"issue_board": "MT5-ResearchReports"}
+
+
 def hourly_leg_specs() -> list[ComponentSpec]:
     """One spec per hourly leg. Cadence is the cycle's own hour; the budget is the leg's."""
     mod = _hourly_module()
@@ -278,9 +286,11 @@ def hourly_leg_specs() -> list[ComponentSpec]:
                 if producer_file else f"restart:resident:dept_{department}"),
             criticality="optional",
             resource_budget={"budget_s": timeout, "cpu": "below_normal"},
-            schedule=f"hourly_cycle:{leg}",
+            schedule=LEG_TASK_CLOCK.get(leg, f"hourly_cycle:{leg}"),
             artifact_class="hourly",
-            notes=f"department {department}"))
+            notes=(f"department {department}; clocked by box task {LEG_TASK_CLOCK[leg]} "
+                   f"(also costed as hourly leg {leg})" if leg in LEG_TASK_CLOCK
+                   else f"department {department}")))
     return specs
 
 
@@ -298,7 +308,14 @@ def daily_step_names() -> tuple[str, ...]:
 
 @lru_cache(maxsize=1)
 def daily_step_imports() -> dict[str, str]:
-    """module stem -> the daily STEP whose function imports it (first step wins, STEPS order).
+    """dotted import -> the daily STEP whose function imports it (first step wins, STEPS order).
+
+    KEYED BY THE DOTTED NAME, NOT THE STEM (2026-09-30). `_module_rent` runs
+    `from libs.ops import module_rent` and `_module_rent_research` runs a bare `import
+    module_rent` (the research directory is on the step's path). Keyed by stem, both collapsed to
+    `module_rent`, the first step won, and `research/module_rent.py` was declared on
+    `daily_cycle:module_rent` -- a step that never imports it. The keys are now
+    `libs.ops.module_rent` and `module_rent`; `daily_step_of` picks the most-qualified match.
 
     THE CLOCK A DAILY STEP LENDS IS THE STEP, NOT WHOEVER THE WALK POPPED FIRST (#104 re-score,
     2026-09-30). `research/deepen_universe.py` runs once a day as `daily_cycle:deepen_bars`, which
@@ -314,15 +331,16 @@ def daily_step_imports() -> dict[str, str]:
     fn_imports: dict[str, list[str]] = {}
     for node in tree.body:
         if isinstance(node, ast.FunctionDef):
-            stems: list[str] = []
+            names: list[str] = []
             for sub in ast.walk(node):
                 if isinstance(sub, ast.Import):
-                    stems += [a.name.rsplit(".", 1)[-1] for a in sub.names]
+                    names += [a.name for a in sub.names]
                 elif isinstance(sub, ast.ImportFrom):
                     if sub.module:
-                        stems.append(sub.module.rsplit(".", 1)[-1])
-                    stems += [a.name for a in sub.names]
-            fn_imports[node.name] = stems
+                        names.append(sub.module)
+                    prefix = f"{sub.module}." if sub.module else ""
+                    names += [prefix + a.name for a in sub.names]
+            fn_imports[node.name] = names
     step_fn: list[tuple[str, str]] = []
     for node in tree.body:
         if isinstance(node, ast.Assign) and any(
@@ -335,9 +353,25 @@ def daily_step_imports() -> dict[str, str]:
                     step_fn.append((str(elt.elts[0].value), elt.elts[1].id))
     out: dict[str, str] = {}
     for step, fn in step_fn:
-        for stem in fn_imports.get(fn, ()):
-            out.setdefault(stem, step)
+        for name in fn_imports.get(fn, ()):
+            out.setdefault(name, step)
     return out
+
+
+def daily_step_of(rel: str) -> str | None:
+    """The daily step that imports the file at `rel`, by its most-qualified dotted match.
+
+    `libs/ops/module_rent.py` matches `libs.ops.module_rent` (step `module_rent`) ahead of the
+    bare `module_rent` (step `module_rent_research`); `desks/mt5/research/module_rent.py` matches
+    only the bare name, which is the import that actually runs it."""
+    dotted = rel[:-3] if rel.endswith(".py") else rel
+    dotted = dotted.replace("/", ".")
+    best: tuple[int, str] | None = None
+    for name, step in daily_step_imports().items():
+        if dotted == name or dotted.endswith("." + name):
+            if best is None or len(name) > best[0]:
+                best = (len(name), step)
+    return best[1] if best else None
 
 
 def daily_step_specs() -> list[ComponentSpec]:
@@ -1240,11 +1274,10 @@ def reach_specs(reg: Registry, root: Path | None = None,
                     frontier.append(target)
     out: list[ComponentSpec] = []
     daily_rel = DAILY.relative_to(ROOT).as_posix() if DAILY.is_relative_to(ROOT) else ""
-    step_of = daily_step_imports()
     for rel, (kind, via) in sorted(reached.items()):
         if rel not in exes:
             continue                     # a pure library: not an executable, nothing to claim
-        step = step_of.get(Path(rel).stem)
+        step = daily_step_of(rel)
         if step and daily_rel and daily_rel in _REACHERS.get(rel, ()):
             # A daily step imports it: that step IS its clock (see `daily_step_imports`).
             out.append(ComponentSpec(
