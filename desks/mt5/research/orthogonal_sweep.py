@@ -506,6 +506,15 @@ NOT_SOURCED_HERE = {
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
+    "gnn_propagation": "the peer panel and the model configuration are named by "
+                       "research/learned_miners, which walk-forwards every configuration once "
+                       "per panel and charges configurations x symbols x thresholds as trials; "
+                       "enumerating it here would refit the same panel model per symbol and "
+                       "charge the same search twice",
+    "attention_ts": "the peer panel and the (heads, lookback) configuration are named by "
+                    "research/learned_miners, which trains each configuration once per panel "
+                    "and charges its whole grid; a per-symbol sweep here would be an uncharged "
+                    "second search and a full attention training per symbol",
     "style_premia": "style_premia_sweep supplies the instrument's own rollover (broker_swaps) and "
                     "the risk driver and charges the whole style x instrument grid itself",
     "event_reaction": "its events are DATED FACTS FROM OUTSIDE THE TAPE -- an insider cluster's "

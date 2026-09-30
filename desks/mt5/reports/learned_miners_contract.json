@@ -1,0 +1,417 @@
+{
+ "generated_at": "2026-09-30T14:40:52.692399+00:00",
+ "data": {
+  "bars": "desks/mt5/universe/*_H1.parquet (in git)",
+  "resample": "broker-date daily closes, Monday-Friday grid",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPAUD",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDCAD",
+   "NZDJPY",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "n_symbols": 24,
+  "first_date": "2018-01-02",
+  "last_date": "2026-08-17",
+  "n_days": 2244
+ },
+ "protocol": {
+  "walk_forward": {
+   "min_train_days": 500,
+   "refit_every_days": 21,
+   "rolling_train_window_days": 1000
+  },
+  "target": "next broker-day log return, volatility-scaled for fitting",
+  "ic": "daily cross-sectional Pearson of forecast vs realised next-day return, mean and t over days",
+  "portfolio": "dollar-neutral, demeaned forecast ranks / sigma_t, gross 1, daily rebalance; cost = |dw| x (half the day's median H1 spread from the bars' spread column / price + 0.25bp commission) per side",
+  "no_tuning": "every constant and both grids were fixed before the first run; every configuration is reported and charged"
+ },
+ "miners": {
+  "gnn": {
+   "family": "gnn_propagation",
+   "primary_config (declared before any result)": "gnn:adjacency=lead_lag,layers=1",
+   "primary": {
+    "ic_mean": 0.00014,
+    "ic_t": 0.019,
+    "rank_ic_mean": -0.00015,
+    "rank_ic_t": -0.019,
+    "hit_rate": 0.5056,
+    "ls_sharpe_gross": -0.054,
+    "ls_sharpe_net": -1.067
+   },
+   "baseline": "ridge_own_lags",
+   "baseline_metrics": {
+    "ic_mean": -0.00643,
+    "ic_t": -0.819,
+    "rank_ic_mean": -0.01195,
+    "rank_ic_t": -1.322,
+    "hit_rate": 0.5031,
+    "ls_sharpe_gross": -0.451,
+    "ls_sharpe_net": -1.147
+   },
+   "primary_minus_baseline": {
+    "ic_mean": 0.00657,
+    "rank_ic_mean": 0.0118,
+    "hit_rate": 0.0025,
+    "ls_sharpe_net": 0.08
+   },
+   "best_of_grid_by_ic_t": "gnn:adjacency=lead_lag,layers=2",
+   "best_of_grid_ic_t": 0.174,
+   "best_of_grid_ic_t_deflated": -0.633,
+   "configs_tried_trials_charged": 4,
+   "verdict": "NO_GAIN: IC t 0.019 < 2; net Sharpe -1.067 not > 0 and above baseline (directionally above baseline on ic_mean, ls_sharpe_net, not significant)"
+  },
+  "attention": {
+   "family": "attention_ts",
+   "primary_config (declared before any result)": "attention:heads=1,lookback=20",
+   "primary": {
+    "ic_mean": 2e-05,
+    "ic_t": 0.002,
+    "rank_ic_mean": -0.00342,
+    "rank_ic_t": -0.418,
+    "hit_rate": 0.505,
+    "ls_sharpe_gross": 0.087,
+    "ls_sharpe_net": -0.709
+   },
+   "baseline": "ridge_lags_L20",
+   "baseline_metrics": {
+    "ic_mean": -0.00044,
+    "ic_t": -0.06,
+    "rank_ic_mean": -0.00569,
+    "rank_ic_t": -0.698,
+    "hit_rate": 0.502,
+    "ls_sharpe_gross": -0.227,
+    "ls_sharpe_net": -1.243
+   },
+   "primary_minus_baseline": {
+    "ic_mean": 0.00046,
+    "rank_ic_mean": 0.00227,
+    "hit_rate": 0.003,
+    "ls_sharpe_net": 0.534
+   },
+   "best_of_grid_by_ic_t": "attention:heads=2,lookback=20",
+   "best_of_grid_ic_t": 0.012,
+   "best_of_grid_ic_t_deflated": -0.795,
+   "configs_tried_trials_charged": 4,
+   "verdict": "NO_GAIN: IC t 0.002 < 2; net Sharpe -0.709 not > 0 and above baseline (directionally above baseline on ic_mean, ls_sharpe_net, not significant)"
+  }
+ },
+ "falsification_control": {
+  "what": "gnn primary on a panel with each instrument's returns permuted in time",
+  "ic_mean": -0.00558,
+  "ic_t": -1.126,
+  "rank_ic_t": -0.418,
+  "hit_rate": 0.5013,
+  "ls_sharpe_net": -1.888
+ },
+ "all_models": {
+  "zero": {
+   "model": "zero",
+   "config": {},
+   "oos_days": 1738,
+   "ic_mean": null,
+   "ic_t": null,
+   "rank_ic_mean": null,
+   "rank_ic_t": null,
+   "hit_rate": null,
+   "n_predictions_scored": 0,
+   "ls_sharpe_gross": null,
+   "ls_sharpe_net": null,
+   "ls_sharpe_net_first_half": null,
+   "ls_sharpe_net_second_half": null,
+   "ls_mean_daily_net_bp": 0.0,
+   "ls_mean_daily_turnover": 0.0,
+   "ls_annual_cost_bp": 0.0
+  },
+  "naive_last": {
+   "model": "naive_last",
+   "config": {},
+   "oos_days": 1733,
+   "ic_mean": 0.00034,
+   "ic_t": 0.043,
+   "rank_ic_mean": -0.01364,
+   "rank_ic_t": -1.488,
+   "hit_rate": 0.4916,
+   "n_predictions_scored": 41431,
+   "ls_sharpe_gross": -0.196,
+   "ls_sharpe_net": -1.101,
+   "ls_sharpe_net_first_half": -0.705,
+   "ls_sharpe_net_second_half": -1.587,
+   "ls_mean_daily_net_bp": -1.673,
+   "ls_mean_daily_turnover": 1.3268,
+   "ls_annual_cost_bp": 346.4
+  },
+  "ridge_own_lags": {
+   "model": "ridge",
+   "config": {},
+   "oos_days": 1738,
+   "ic_mean": -0.00643,
+   "ic_t": -0.819,
+   "rank_ic_mean": -0.01195,
+   "rank_ic_t": -1.322,
+   "hit_rate": 0.5031,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.451,
+   "ls_sharpe_net": -1.147,
+   "ls_sharpe_net_first_half": -1.162,
+   "ls_sharpe_net_second_half": -1.144,
+   "ls_mean_daily_net_bp": -1.761,
+   "ls_mean_daily_turnover": 1.0341,
+   "ls_annual_cost_bp": 269.5
+  },
+  "ridge_lags_L20": {
+   "model": "ridge_lags",
+   "config": {
+    "lookback": 20
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00044,
+   "ic_t": -0.06,
+   "rank_ic_mean": -0.00569,
+   "rank_ic_t": -0.698,
+   "hit_rate": 0.502,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.227,
+   "ls_sharpe_net": -1.243,
+   "ls_sharpe_net_first_half": -1.142,
+   "ls_sharpe_net_second_half": -1.365,
+   "ls_mean_daily_net_bp": -1.686,
+   "ls_mean_daily_turnover": 1.3158,
+   "ls_annual_cost_bp": 347.4
+  },
+  "ridge_lags_L10": {
+   "model": "ridge_lags",
+   "config": {
+    "lookback": 10
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.0077,
+   "ic_t": -1.055,
+   "rank_ic_mean": -0.00863,
+   "rank_ic_t": -1.059,
+   "hit_rate": 0.5011,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.272,
+   "ls_sharpe_net": -1.278,
+   "ls_sharpe_net_first_half": -1.181,
+   "ls_sharpe_net_second_half": -1.42,
+   "ls_mean_daily_net_bp": -1.762,
+   "ls_mean_daily_turnover": 1.3333,
+   "ls_annual_cost_bp": 349.5
+  },
+  "gnn:adjacency=lead_lag,layers=1": {
+   "model": "gnn",
+   "config": {
+    "adjacency": "lead_lag",
+    "layers": 1
+   },
+   "oos_days": 1738,
+   "ic_mean": 0.00014,
+   "ic_t": 0.019,
+   "rank_ic_mean": -0.00015,
+   "rank_ic_t": -0.019,
+   "hit_rate": 0.5056,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.054,
+   "ls_sharpe_net": -1.067,
+   "ls_sharpe_net_first_half": -1.521,
+   "ls_sharpe_net_second_half": -0.576,
+   "ls_mean_daily_net_bp": -1.405,
+   "ls_mean_daily_turnover": 1.258,
+   "ls_annual_cost_bp": 336.0
+  },
+  "gnn:adjacency=lead_lag,layers=2": {
+   "model": "gnn",
+   "config": {
+    "adjacency": "lead_lag",
+    "layers": 2
+   },
+   "oos_days": 1738,
+   "ic_mean": 0.00129,
+   "ic_t": 0.174,
+   "rank_ic_mean": 0.00106,
+   "rank_ic_t": 0.133,
+   "hit_rate": 0.5041,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.045,
+   "ls_sharpe_net": -1.056,
+   "ls_sharpe_net_first_half": -1.396,
+   "ls_sharpe_net_second_half": -0.682,
+   "ls_mean_daily_net_bp": -1.401,
+   "ls_mean_daily_turnover": 1.2664,
+   "ls_annual_cost_bp": 337.9
+  },
+  "gnn:adjacency=corr,layers=1": {
+   "model": "gnn",
+   "config": {
+    "adjacency": "corr",
+    "layers": 1
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00927,
+   "ic_t": -1.152,
+   "rank_ic_mean": -0.01331,
+   "rank_ic_t": -1.415,
+   "hit_rate": 0.4999,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.43,
+   "ls_sharpe_net": -1.124,
+   "ls_sharpe_net_first_half": -1.057,
+   "ls_sharpe_net_second_half": -1.208,
+   "ls_mean_daily_net_bp": -1.79,
+   "ls_mean_daily_turnover": 1.0641,
+   "ls_annual_cost_bp": 278.6
+  },
+  "gnn:adjacency=corr,layers=2": {
+   "model": "gnn",
+   "config": {
+    "adjacency": "corr",
+    "layers": 2
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00749,
+   "ic_t": -0.923,
+   "rank_ic_mean": -0.01221,
+   "rank_ic_t": -1.278,
+   "hit_rate": 0.4973,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.362,
+   "ls_sharpe_net": -1.068,
+   "ls_sharpe_net_first_half": -0.922,
+   "ls_sharpe_net_second_half": -1.241,
+   "ls_mean_daily_net_bp": -1.716,
+   "ls_mean_daily_turnover": 1.0907,
+   "ls_annual_cost_bp": 285.8
+  },
+  "attention:heads=1,lookback=20": {
+   "model": "attention",
+   "config": {
+    "heads": 1,
+    "lookback": 20
+   },
+   "oos_days": 1738,
+   "ic_mean": 2e-05,
+   "ic_t": 0.002,
+   "rank_ic_mean": -0.00342,
+   "rank_ic_t": -0.418,
+   "hit_rate": 0.505,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": 0.087,
+   "ls_sharpe_net": -0.709,
+   "ls_sharpe_net_first_half": -0.755,
+   "ls_sharpe_net_second_half": -0.673,
+   "ls_mean_daily_net_bp": -0.972,
+   "ls_mean_daily_turnover": 1.0659,
+   "ls_annual_cost_bp": 274.9
+  },
+  "attention:heads=2,lookback=20": {
+   "model": "attention",
+   "config": {
+    "heads": 2,
+    "lookback": 20
+   },
+   "oos_days": 1738,
+   "ic_mean": 9e-05,
+   "ic_t": 0.012,
+   "rank_ic_mean": -0.00372,
+   "rank_ic_t": -0.455,
+   "hit_rate": 0.5048,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": 0.04,
+   "ls_sharpe_net": -0.724,
+   "ls_sharpe_net_first_half": -0.759,
+   "ls_sharpe_net_second_half": -0.705,
+   "ls_mean_daily_net_bp": -0.991,
+   "ls_mean_daily_turnover": 1.0237,
+   "ls_annual_cost_bp": 263.6
+  },
+  "attention:heads=1,lookback=10": {
+   "model": "attention",
+   "config": {
+    "heads": 1,
+    "lookback": 10
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00612,
+   "ic_t": -0.82,
+   "rank_ic_mean": -0.00573,
+   "rank_ic_t": -0.714,
+   "hit_rate": 0.5046,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.052,
+   "ls_sharpe_net": -0.859,
+   "ls_sharpe_net_first_half": -0.965,
+   "ls_sharpe_net_second_half": -0.749,
+   "ls_mean_daily_net_bp": -1.181,
+   "ls_mean_daily_turnover": 1.0733,
+   "ls_annual_cost_bp": 279.5
+  },
+  "attention:heads=2,lookback=10": {
+   "model": "attention",
+   "config": {
+    "heads": 2,
+    "lookback": 10
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00682,
+   "ic_t": -0.911,
+   "rank_ic_mean": -0.0057,
+   "rank_ic_t": -0.713,
+   "hit_rate": 0.5039,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.055,
+   "ls_sharpe_net": -0.83,
+   "ls_sharpe_net_first_half": -0.904,
+   "ls_sharpe_net_second_half": -0.769,
+   "ls_mean_daily_net_bp": -1.138,
+   "ls_mean_daily_turnover": 1.0267,
+   "ls_annual_cost_bp": 267.7
+  }
+ },
+ "fit_seconds": {
+  "zero": 0.0,
+  "naive_last": 0.0,
+  "ridge_own_lags": 0.27,
+  "ridge_lags_L20": 3.58,
+  "ridge_lags_L10": 1.22,
+  "gnn:adjacency=lead_lag,layers=1": 1.76,
+  "gnn:adjacency=lead_lag,layers=2": 2.41,
+  "gnn:adjacency=corr,layers=1": 1.74,
+  "gnn:adjacency=corr,layers=2": 2.43,
+  "attention:heads=1,lookback=20": 17.84,
+  "attention:heads=2,lookback=20": 54.45,
+  "attention:heads=1,lookback=10": 9.18,
+  "attention:heads=2,lookback=10": 28.68
+ },
+ "trials_charged": {
+  "gnn_configs": 4,
+  "attention_configs": 4,
+  "baselines_not_charged": [
+   "zero",
+   "naive_last",
+   "ridge_own_lags",
+   "ridge_lags_L20",
+   "ridge_lags_L10"
+  ],
+  "cell_level": "the miner charges configs x symbols x 2 entry thresholds per model = 192 per miner run"
+ }
+}
