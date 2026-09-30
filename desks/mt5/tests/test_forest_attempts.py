@@ -149,16 +149,36 @@ def test_the_scheduler_holds_the_daily_floor_and_puts_retired_last(tmp_path):
     now = datetime.now(tz=UTC)
     state = hf.VectorState()
     for name, outcome, ago_h in (("fresh", "EMPTY", 1.0), ("stale", "EMPTY", 30.0),
-                                 ("retired", "EMPTY", 48.0), ("blocked", "BLOCKED", 50.0)):
+                                 ("retired", "EMPTY", 48.0), ("blocked", "BLOCKED", 50.0),
+                                 ("blocked_due", "BLOCKED", 24.0 * 11)):
         state.upsert(hf.Vector(name=name, outcome=outcome, attempts=3,
                                last_attempt=_iso(now - timedelta(hours=ago_h))))
-    grounds = [_g(n) for n in ("fresh", "retired", "stale", "blocked", "new")]
+    grounds = [_g(n) for n in ("fresh", "retired", "stale", "blocked", "new", "blocked_due")]
     order = [g["name"] for g in dfm.schedule(grounds, frontier_state=state,
                                              retired={"retired"})]
     assert order[0] == "new"                                  # NAMED_ONLY first
     assert order.index("stale") < order.index("fresh")        # overdue before attempted-today
-    assert order.index("blocked") < order.index("fresh")      # a 2-day-old block is overdue
-    assert order[-1] == "retired" and len(order) == 5         # retired last, never dropped
+    # THE 10-DAY BLOCKED RETRY HOLDS: a 2-day-old block is NOT re-probed by the daily floor --
+    # it waits behind every overdue ground -- while an 11-day-old block is retry-due and leads.
+    assert order.index("stale") < order.index("blocked")
+    assert order.index("blocked_due") < order.index("stale")
+    assert order[-1] == "retired" and len(order) == 6         # retired last, never dropped
+
+
+def test_a_blocked_ground_inside_its_retry_window_is_not_overdue(tmp_path):
+    grounds = [_g("blk"), _g("blk_old"), _g("empty")]
+    vectors = {"blk": {"outcome": "BLOCKED", "attempts": 2,
+                       "last_attempt": _iso(NOW - timedelta(days=3))},
+               "blk_old": {"outcome": "BLOCKED", "attempts": 2,
+                           "last_attempt": _iso(NOW - timedelta(days=11))},
+               "empty": {"outcome": "EMPTY", "attempts": 1,
+                         "last_attempt": _iso(NOW - timedelta(days=3))}}
+    doc = fa.build(now=NOW, **_files(tmp_path, grounds, vectors, {}))
+    rows = doc["grounds"]
+    assert not rows["blk"]["overdue_24h"] and rows["blk"]["blocked_retry_at"]
+    assert rows["blk_old"]["overdue_24h"] and "blocked_retry_at" not in rows["blk_old"]
+    assert rows["empty"]["overdue_24h"]
+    assert doc["summary"]["overdue_24h"] == 2
 
 
 def test_the_vector_stats_carry_the_delta_cursor_and_standing_failure(tmp_path, monkeypatch):

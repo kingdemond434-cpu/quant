@@ -63,6 +63,14 @@ UNMEASURED = "UNMEASURED"
 
 #: The daily floor: a ground not attempted inside this many hours is OVERDUE.
 DAILY_H = 24.0
+#: THE BLOCKED RETRY WINDOW, the frontier's own (`hunt_frontier.BLOCKED_RETRY_D`, 10 days): a
+#: ground whose last attempt was BLOCKED is re-tried on that clock, not daily, so inside the
+#: window it is not OVERDUE. Read from the frontier module; 10 if it cannot be imported.
+try:
+    from libs.research.hunt_frontier import BLOCKED_RETRY_D as _BLOCKED_RETRY_D
+    BLOCKED_RETRY_D = float(_BLOCKED_RETRY_D)
+except Exception:  # pragma: no cover - the frontier module is part of this tree
+    BLOCKED_RETRY_D = 10.0
 #: Retirement evidence: this many counted attempts, spread over this many days, zero yield.
 RETIRE_MIN_ATTEMPTS = 6
 RETIRE_MIN_SPAN_D = 7.0
@@ -247,6 +255,11 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
         recent = la is not None and now - la <= day
         attempted_24h += int(recent)
         exempt = ret is not None and not ret["reopen_due"]
+        blocked_until = ""
+        if str(v.get("outcome") or "") == "BLOCKED" and la is not None \
+                and now - la < timedelta(days=BLOCKED_RETRY_D):
+            exempt = True                   # inside the blocked retry window: not due daily
+            blocked_until = (la + timedelta(days=BLOCKED_RETRY_D)).isoformat(timespec="seconds")
         is_overdue = not exempt and not recent
         overdue += int(is_overdue)
         reopen_due += int(bool(ret and ret["reopen_due"]))
@@ -269,6 +282,7 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
                                                      "empty_delta_streak") if k in s}
                              if s is not None else UNMEASURED),
             "overdue_24h": is_overdue,
+            **({"blocked_retry_at": blocked_until} if blocked_until else {}),
             **({"retirement": ret} if ret is not None else {}),
         }
     registered = set(rows)
@@ -290,12 +304,15 @@ def build(*, sources: Path | None = None, frontier: Path | None = None,
     return {"generated_utc": now.isoformat(timespec="seconds"), "status": "MEASURED",
             "summary": summary, "by_region": by_region, "grounds": rows,
             "orphan_frontier_vectors": orphans[:50], "unmeasured": gaps,
-            "policy": {"daily_h": DAILY_H, "retire_min_attempts": RETIRE_MIN_ATTEMPTS,
+            "policy": {"daily_h": DAILY_H, "blocked_retry_d": BLOCKED_RETRY_D,
+                       "retire_min_attempts": RETIRE_MIN_ATTEMPTS,
                        "retire_min_span_d": RETIRE_MIN_SPAN_D, "reopen_after_d": REOPEN_AFTER_D,
                        "reopen_condition": REOPEN_CONDITION,
                        "schedule": ("NAMED_ONLY -> retry-due BLOCKED -> cooldown-due covered -> "
                                     "any ground not attempted in 24h (the daily floor) -> "
-                                    "attempted in 24h -> LOW_EV_RETIRED not reopen-due; "
+                                    "attempted in 24h or BLOCKED inside its "
+                                    f"{BLOCKED_RETRY_D:g}-day retry window (not overdue) -> "
+                                    "LOW_EV_RETIRED not reopen-due; "
                                     "least-recently-attempted first inside each")},
             "sources": {"grounds": str(sources), "frontier": str(frontier),
                         "stats": str(stats)}}

@@ -681,8 +681,8 @@ N_BUCKETS = 6
 def _frontier_bucket(g: dict[str, Any], frontier_state: Any | None,
                      now: datetime, retired: set[str] | frozenset[str] = frozenset()) -> int:
     """0 NAMED_ONLY, 1 retry-due BLOCKED, 2 cooldown-due covered, 3 not attempted in 24h (the
-    daily floor), 4 attempted in 24h, 5 LOW_EV_RETIRED and not reopen-due (still scheduled --
-    last, never dropped)."""
+    daily floor), 4 attempted in 24h OR BLOCKED inside its retry window, 5 LOW_EV_RETIRED and not
+    reopen-due (still scheduled -- last, never dropped)."""
     name = str(g.get("name") or "")
     vector = getattr(frontier_state, "vectors", {}).get(name) \
         if frontier_state is not None else None
@@ -690,8 +690,11 @@ def _frontier_bucket(g: dict[str, Any], frontier_state: Any | None,
         return 0
     if name in retired:
         return 5
-    if str(getattr(vector, "outcome", "")) == "BLOCKED" and vector.huntable(now)[0]:
-        return 1
+    if str(getattr(vector, "outcome", "")) == "BLOCKED":
+        # THE 10-DAY BLOCKED RETRY HOLDS (PR #158 audit residual). A retry-due block leads; one
+        # still inside its window sits with the grounds attempted today -- scheduled, never
+        # dropped, but NOT re-probed daily by the floor (a blocker is re-tried on its clock).
+        return 1 if vector.huntable(now)[0] else 4
     if str(getattr(vector, "outcome", "")) != "BLOCKED" and vector.huntable(now)[0]:
         return 2
     try:
@@ -1849,6 +1852,7 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "frontier": frontier,
            "scheduler": {"policy": ("NAMED_ONLY -> retry-due BLOCKED -> cooldown-due covered "
                                     "-> not attempted in 24h (daily floor) -> attempted in 24h "
+                                    "or BLOCKED inside its retry window "
                                     "-> LOW_EV_RETIRED; inside each bucket least-recently-"
                                     "attempted first over a regional round-robin"),
                          "retired_scheduled_last": len(retired),
