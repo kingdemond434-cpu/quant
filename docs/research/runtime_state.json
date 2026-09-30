@@ -23,14 +23,14 @@
   }
  },
  "census": {
-  "LIVE": 90,
+  "LIVE": 91,
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 719,
   "UNMEASURED": 33
  },
  "scope": {
-  "attested": 935,
+  "attested": 936,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -49,6 +49,13 @@
      "fence:check_box_state_freshness",
      "library:desks/mt5/research/free_shadows.py",
      "library:desks/mt5/research/gate_verdict_digest.py"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:04:04+00:00",
+    "host": "vm",
+    "organs": [
+     "leg:session_variant_remap"
     ]
    }
   ]
@@ -23718,6 +23725,31 @@
    "artifact_sha256": "UNMEASURED",
    "summary": {},
    "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:session_variant_remap",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/session_variant_remap.py"
+   ],
+   "clock": "hourly_cycle:session_variant_remap",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "LIVE",
+   "why": "artifact 0.0h old, inside its cadence",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/SESSION_VARIANT_REMAP.json",
+   "artifact_declared": "desks/mt5/reports/SESSION_VARIANT_REMAP.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 64,
+   "artifact_bytes": 12718,
+   "artifact_sha256": "77382b6b203dc358acebb7f3c05509dcaac58eb3138f441a117d043b248178fc",
+   "summary": {},
+   "progress_metric": "leg_completions",
    "consumer": "UNMEASURED"
   }
  ],

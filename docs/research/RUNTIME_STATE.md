@@ -6,12 +6,12 @@
 
 - Measured at **2026-09-30T19:42:05+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `e01cbdb1f3f9` on `live-control-room`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **935** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **936** of 1357 registry components (427 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 1.39s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
 |---|---:|---|
-| **LIVE** | 90 | artifact present and newer than the organ's derived max silence |
+| **LIVE** | 91 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 46 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
 | **NEVER** | 719 | no artifact and no run record on this host |
@@ -19,7 +19,7 @@
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
 
-## LIVE (90)
+## LIVE (91)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -113,6 +113,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `task:MT5-ForwardReconcile` | `MT5-ForwardReconcile` | UNMEASURED UNMEASURED | `desks/mt5/data/forward_reconcile.json` | 6.1h | 39K | `eef8f4d39f4ed0c6` | UNMEASURED |
 | `timer:quant-mt5-suite` | `quant-mt5-suite` | UNMEASURED UNMEASURED | `desks/mt5/reports/mt5_suite.json` | 6.1h | 452B | `d459f7fec791a7c1` | verdict=OK |
 | `task:MT5-GatewayResident` | `MT5-GatewayResident` | UNMEASURED UNMEASURED | `desks/mt5/data/gateway_state.json` | 0.1h | 12K | `22a58e88eeb912ef` | UNMEASURED |
+| `leg:session_variant_remap` | `hourly_cycle:session_variant_remap` | UNMEASURED UNMEASURED | `desks/mt5/reports/SESSION_VARIANT_REMAP.json` | 0.0h | 13K | `77382b6b203dc358` | UNMEASURED |
 
 ## STALE (46)
 
