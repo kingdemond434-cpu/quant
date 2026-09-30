@@ -1632,6 +1632,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
+    # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
+    # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
+    "duty_cycle": 480,
+    "forward_enrolment": 400,
     # THE MASS SCREEN stops starting symbols at its own --budget-s (MASS_SCREEN_BUDGET_S) and
     # always writes its artifact; the cap sits above it for the reason `enrol_clocks` was raised.
     "mass_screen": 1_080,
@@ -1642,11 +1647,6 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # measured 2026-09-30) and writes at most `hourly_cell_ceiling` (2,000) rows through the
     # registry in 1,000-row chunks; measured 3.6 s for a dry pass of 8,060 producers here.
     "producer_swarm": 600,
-    # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
-    # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
-    # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
-    "duty_cycle": 480,
-    "forward_enrolment": 400,
     # Reads canon, five lane state files and its own history, then writes two files. No market
     # data, no venue, no terminal call -- it is arithmetic over rows the enrolment leg just wrote.
     "certificate_clock_law": 180,
