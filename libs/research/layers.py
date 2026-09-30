@@ -496,6 +496,7 @@ LEG_LAYER: dict[str, str] = {
     # CYCLE PRICING is meta for the same reason the control plane is: it decides how much of the
     # hour each of the other layers gets, and predicts, sizes and times nothing itself.
     "cycle_pricing": "meta",
+    "research_bandit": "meta",
     # CAUSAL INVARIANCE asks whether a cell's effect is the same number in a different session,
     # year or volatility regime. That is a property of the PREDICTION -- whether the claim about
     # returns holds outside the environment it was fitted in -- so it is billed there.
