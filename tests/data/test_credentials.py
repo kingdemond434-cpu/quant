@@ -64,7 +64,8 @@ def test_absent_is_blocked_auth_never_zero() -> None:
 def test_canonical_name_is_set() -> None:
     st = cred.status(cred.BY_ENV["EIA_API_KEY"], environ={"EIA_API_KEY": SENTINEL},
                      root=Path("/nonexistent"))
-    assert st == {"status": cred.SET, "present_as": ["EIA_API_KEY"], "dark_consumers": []}
+    assert st == {"status": cred.SET, "present_as": ["EIA_API_KEY"], "dark_consumers": [],
+                  "resolved_on_merge": []}
 
 
 def test_a_name_one_consumer_does_not_read_is_mismatched() -> None:
@@ -108,7 +109,7 @@ def test_keyed_estimates_are_derived_from_the_roster() -> None:
     e = cred.estimate_for(cred.BY_ENV["EIA_API_KEY"])
     roster = json.loads(cred.KS_ROSTER.read_text("utf-8"))
     pairs = sum(len(s["instruments"]) for r in roster["sources"]
-                if r["key_env"][0] == "EIA_API_KEY" for s in r["series"].values())
+                if r["key_env"][:1] == ["EIA_API_KEY"] for s in r["series"].values())
     assert e.series == pairs and e.cells_per_pair == cred.KS_CELLS_PER_PAIR
     assert e.cells_per_day == min(pairs * cred.KS_CELLS_PER_PAIR, cred.KS_PER_PASS * 24)
 

@@ -150,7 +150,9 @@ def test_a_keyed_source_fetches_stores_pit_publishes_and_mints(tmp_path: Path) -
         seen.append(req.url)
         if "api.eia.gov" in req.url and "petroleum" in req.url:
             return _weekly_eia(40, date(2026, 9, 18), 415000.0)
-        raise OSError(f"offline in tests ({SENTINEL} must be redacted)")
+        # The error quotes the URL, which carries the key when the row is keyed: the leg
+        # must redact it before anything is written.
+        raise OSError(f"offline in tests: {req.url}")
 
     doc = K.run(paths, environ={"EIA_API_KEY": SENTINEL}, get=get, donate=don, now=NOW)
     rec = doc["sources"]["eia_petroleum_weekly"]
