@@ -145,8 +145,10 @@ def test_breadth_sweep_consults_the_memory_and_keeps_every_cell(monkeypatch: Any
                         lambda f: ("breakout" if f == "dead_fam" else "carry", "x", "y"))
     monkeypatch.setattr(universe_policy, "asset_class_of", lambda s: "FX_MAJOR")
     now = datetime.now(UTC).isoformat()
-    cells = [bs._cell("EURUSD", fam, {"session": "asia", **({"timeframe": tf} if tf else {})},
-                      {"why": "t"}, now)
+    # the theorem is (breakout, FX_MAJOR, asia); `live_fam` shares only the asset class, which
+    # is one axis of three and below the neighbourhood's two-axis match
+    cells = [bs._cell("EURUSD", fam, {"session": "asia" if fam == "dead_fam" else "ny",
+                                      **({"timeframe": tf} if tf else {})}, {"why": "t"}, now)
              for tf in ("M5", None) for fam in ("dead_fam", "live_fam")]
     out, st = bs.order_by_failure_memory(list(cells), memory=_memory())
     assert len(out) == len(cells) and all(any(c is o for o in out) for c in cells)
