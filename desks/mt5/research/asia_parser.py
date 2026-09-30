@@ -774,7 +774,28 @@ def alias_parents(registry: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def fold_deadline(env: dict[str, str] | None = None, now: float | None = None) -> float:
+    """Monotonic time after which no further history is folded this pass: inside the cycle cap
+    the leg is told (QUANT_LEG_BUDGET_S) by a minute for the newest-blob parses and the report,
+    else FOLD_BUDGET_S. The fold is incremental, so a pass that stops early loses nothing."""
+    import os
+    import time
+    env = os.environ if env is None else env
+    t = time.monotonic() if now is None else now
+    try:
+        cap = float(env.get("QUANT_LEG_BUDGET_S") or 0)
+    except ValueError:
+        cap = 0.0
+    return t + (max(30.0, 0.6 * cap - 60.0) if cap > 0 else FOLD_BUDGET_S)
+
+
+#: Seconds of history folding per pass when the cycle exports no cap.
+FOLD_BUDGET_S = 420.0
+
+
 def parse_all(only: list[str] | None = None) -> dict[str, Any]:
+    import time
+    deadline = fold_deadline()
     rows: list[dict[str, Any]] = []
     endpoints_out: list[dict[str, str]] = []
     registry = _registry_rows()
@@ -793,7 +814,10 @@ def parse_all(only: list[str] | None = None) -> dict[str, Any]:
         _stamp_pit(rec, sid, meta, registry)
         rec.update({"id": sid, "url": url, "bytes": meta.get("bytes"),
                     "fetched_utc": meta.get("fetched_utc")})
-        if rec.get("status") == "PARSED":
+        if rec.get("status") == "PARSED" and time.monotonic() > deadline:
+            rec["history"] = {"status": "FOLD_DEFERRED",
+                              "why": "fold budget spent this pass; incremental, resumes next"}
+        elif rec.get("status") == "PARSED":
             try:
                 rec["history"] = fold_vintages(sid, registry)
             except Exception as exc:                      # the newest parse still stands
