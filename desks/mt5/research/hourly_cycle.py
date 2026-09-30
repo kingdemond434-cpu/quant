@@ -928,6 +928,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
+    "decay_monitor", "fill_markout",
 })
 
 
@@ -4719,6 +4721,14 @@ def main() -> None:
     # admission law, no streak, no threshold: it makes the readings hourly, which is the cadence
     # the allocator's own artifact expiry (`decision_core._ALLOC_MAX_AGE_S` = 3600) assumes.
     pr = _costed("promoter", lambda: _producer("promoter", "research/promoter.py"))
+    # THE DEMOTION HALF, ON THE PROMOTION HALF'S CLOCK (2026-09-30). `decay_monitor` had exactly
+    # one clock, `daily_cycle.STEPS`, where it sits behind research steps measured at 9,056 s
+    # under a 900 s hourly budget: `data/decay_live.json` still read 2026-09-04 ("sleeves.json does
+    # not exist") with 40 LIVE rows on the book. It reads the ledger and the roster, applies the
+    # same FADE / RETIRE thresholds it always did, and runs straight after the promoter so the two
+    # writers of `data/sleeves.json` never overlap. No threshold moves; the readings get fresh.
+    dmo = _costed("decay_monitor", lambda: _producer(
+        "decay_monitor", "research/decay_monitor.py"))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
@@ -4801,6 +4811,12 @@ def main() -> None:
     wse = _costed("weak_signals", weak_signal_ensembles)
     rfx = _costed("residual_factors", residual_factors)
     mko = _costed("markout", markout)
+    # THE FILL JOIN, HOURLY (2026-09-30). `reports/markout.json` -- intents joined to live deals,
+    # n_matched, slippage against the ENTRY -- and `reports/attribution_chain.json` had one
+    # writer, `daily_cycle._markout`, behind the same 900 s-starved chain: n_matched=0 at
+    # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
+    fmk = _costed("fill_markout", lambda: _producer(
+        "fill_markout", "research/daily_cycle.py", "--step", "markout"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -5348,6 +5364,7 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
+                    "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
