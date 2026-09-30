@@ -180,42 +180,71 @@ except Exception:                                      # pragma: no cover - depe
     _HAVE_NUMBA = False
 
 
-def _thin_py(pos: np.ndarray, hold: int) -> np.ndarray:
-    """Greedy single-position thinning: keep a fire only when it is more than `hold` bars after
-    the previous kept fire. Iterates KEPT fires only (bisect jumps over the blocked ones)."""
-    from bisect import bisect_left
+def entry_days(index: pd.DatetimeIndex | np.ndarray) -> np.ndarray:
+    """UTC day number of each bar's ENTRY (a fire at bar i enters at bar i + 1), which is the
+    date the gauntlet's daily series keys a trade by (`pd.Timestamp(entry_time).date()`)."""
+    ns = np.asarray(pd.DatetimeIndex(index).as_unit("ns").asi8 if not isinstance(
+        index, np.ndarray) else index, dtype="int64")
+    day = np.floor_divide(ns, 86_400 * 10**9)
+    out = np.empty(len(day), dtype="int64")
+    if len(day):
+        out[:-1] = day[1:]
+        out[-1] = day[-1] + 1
+    return out
+
+
+def _thin_py(pos: np.ndarray, hold: int, day: np.ndarray) -> np.ndarray:
+    """The thinning law in plain Python (bisect over KEPT fires only). See `thin`."""
+    from bisect import bisect_left, bisect_right
     p = pos.tolist()
+    fd = day[pos].tolist()
     out: list[int] = []
     j, n = 0, len(p)
     while j < n:
         v = p[j]
         out.append(v)
-        j = bisect_left(p, v + hold + 1, j + 1)
+        j = max(bisect_left(p, v + hold + 1, j + 1), bisect_right(fd, fd[j], j + 1))
     return np.asarray(out, dtype=np.int64)
 
 
 if _HAVE_NUMBA:
     @_njit(cache=False)
-    def _thin_nb(pos, hold):                           # pragma: no cover - compiled
+    def _thin_nb(pos, hold, day):                      # pragma: no cover - compiled
         out = np.empty(pos.shape[0], dtype=np.int64)
         k = 0
         last = -(1 << 60)
+        last_day = -(1 << 60)
         for i in range(pos.shape[0]):
             v = pos[i]
-            if v > last + hold:
+            if v > last + hold and day[v] != last_day:
                 out[k] = v
                 k += 1
                 last = v
+                last_day = day[v]
         return out[:k]
 
 
-def thin(pos: np.ndarray, hold: int) -> np.ndarray:
+def thin(pos: np.ndarray, hold: int, day: np.ndarray) -> np.ndarray:
+    """Greedy, causal thinning: keep a fire only when it is more than `hold` bars after the
+    previous kept fire (the engine's single-position discipline, so every emitted signal fills)
+    AND on a later entry day than it (at most one trade per entry day).
+
+    THE ONE-A-DAY HALF IS NOT A THROTTLE, IT CLOSES A LOOK-AHEAD IN THE SEALED JUDGE.
+    `external_gauntlet.daily_series` keys trades by entry date in a dict, so only the LAST trade
+    of a day survives into every gate. Which trade is last depends on whether the rule fired
+    AGAIN later that day -- i.e. on the price path after the trade was entered. Measured on pure
+    synthetic noise (test_mass_screen): a "buy after an 8-bar drop, hold 1" cell reads +0.018 R
+    per trade over all its trades, +0.06 on the first trade of each day and +0.46 on the last,
+    with a 76% day hit rate -- the judge would certify noise. With one trade a day the dict holds
+    every trade and the day's value is that trade, exactly and without selection.
+    """
     pos = np.ascontiguousarray(pos, dtype=np.int64)
     if pos.size == 0:
         return pos
+    day = np.ascontiguousarray(day, dtype=np.int64)
     if _HAVE_NUMBA:
-        return _thin_nb(pos, int(hold))
-    return _thin_py(pos, int(hold))
+        return _thin_nb(pos, int(hold), day)
+    return _thin_py(pos, int(hold), day)
 
 
 @lru_cache(maxsize=16)
@@ -230,8 +259,8 @@ def load_bars(symbol: str, timeframe: str = "H1") -> pd.DataFrame | None:
         return None
 
 
-#: Replaceable in tests: symbol -> bars frame (or None).
-LEADER_LOADER = load_bars
+#: Replaceable in tests: symbol -> bars frame (or None). None means `load_bars`.
+LEADER_LOADER = None
 
 
 def rule_signals(df: pd.DataFrame, *, feat: str, op: str, thr: float, direction: int,
@@ -244,14 +273,15 @@ def rule_signals(df: pd.DataFrame, *, feat: str, op: str, thr: float, direction:
         return []
     feats = features(h1, atr_n=atr_n)
     if leader:
-        feats.update(lead_features(h1, LEADER_LOADER(str(leader))))
+        loader = LEADER_LOADER or load_bars
+        feats.update(lead_features(h1, loader(str(leader))))
     hr, wd = clock_arrays(h1)
     m = condition_mask(feats, hr, wd, feat=feat, op=op, thr=thr, cond_feat=cond_feat,
                        cond_lo=cond_lo, cond_hi=cond_hi, hour=hour, weekday=weekday)
     atr = _atr(h1, atr_n).to_numpy(dtype="float64")
     close = h1["close"].to_numpy(dtype="float64")
     m &= np.isfinite(atr) & (atr > 0) & np.isfinite(close)
-    kept = thin(np.flatnonzero(m), int(hold))
+    kept = thin(np.flatnonzero(m), int(hold), entry_days(h1.index))
     side = 1 if int(direction) >= 0 else -1
     idx = h1.index
     sigs: list[Signal] = []

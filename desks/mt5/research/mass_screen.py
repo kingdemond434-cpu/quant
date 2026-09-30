@@ -211,10 +211,7 @@ class Prepared:
         t0, t1 = self.t_ns[0], self.t_ns[-1]
         self.cut = int(np.searchsorted(self.t_ns, t0 + int(TRAIN_FRAC * (t1 - t0))))
         # entry day of a fire at bar i is the day of bar i + 1
-        day = np.floor_divide(self.t_ns, NS_DAY)
-        self.entry_day = np.empty(n, dtype="int64")
-        self.entry_day[:-1] = day[1:]
-        self.entry_day[-1] = day[-1] + 1
+        self.entry_day = MR.entry_days(self.t_ns)
         cm = cost_model(meta or {})
         self.costs = cm
         pts = np.full(n, cm["median_pts"], dtype="float64")
@@ -384,12 +381,11 @@ def cell_stats(R1: np.ndarray, R3: np.ndarray, kept: np.ndarray, days: np.ndarra
                ) -> dict[str, np.ndarray] | None:
     """Per-variant daily-series statistics over the kept fires (None when < MIN_DAYS days).
 
-    THE DAY'S VALUE IS ITS LAST TRADE'S R, NOT THE SUM, because that is what the sealed judge
-    computes: `external_gauntlet.daily_series` builds `pd.Series({entry_date: r for t in trades})`,
-    a dict keyed by date, so every earlier trade on the same entry day is overwritten before its
-    `.groupby(level=0).sum()` runs. The screen measures what the judge will measure (pinned by
-    test_screen_r_equals_engine_r_on_the_gauntlets_own_build_path); the discrepancy itself is a
-    defect in the sealed file, reported rather than edited.
+    ONE TRADE PER ENTRY DAY BY CONSTRUCTION (`mass_screen_rules.thin`), so the day's value is that
+    trade's R -- the sum, the last and the only trade all agree, and the sealed judge's
+    `daily_series` (a dict keyed by entry date, last trade wins) reproduces it exactly. The
+    last-of-day slice below is therefore the identity; it is written as the judge's arithmetic so
+    a future relaxation of the thinning law cannot silently diverge from what the judge computes.
     """
     if kept.size == 0:
         return None
@@ -430,7 +426,7 @@ def screen_symbol(P: Prepared, meta: dict[str, Any] | None = None, *, q: float =
             agg["cells"] += len(allowed)
             if pos_all.size < MIN_DAYS:
                 continue
-            kept_full = MR.thin(pos_all[pos_all <= P.n - 2 - h], h)
+            kept_full = MR.thin(pos_all[pos_all <= P.n - 2 - h], h, P.entry_day)
             kept, _wf = cell_days(P, kept_full, h)
             if kept.size < MIN_DAYS:
                 continue

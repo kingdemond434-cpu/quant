@@ -66,7 +66,7 @@ def test_screen_r_equals_engine_r_on_the_gauntlets_own_build_path() -> None:
     res = run_backtest(h1, sigs, Costs.from_symbol(META))
     assert len(res.trades) == len(sigs) > 100        # thinning == single-position discipline
     cond = {k: params[k] for k in ("feat", "op", "thr")}
-    kept = MR.thin(np.flatnonzero(P.mask(cond)), 8)
+    kept = MR.thin(np.flatnonzero(P.mask(cond)), 8, P.entry_day)
     kept = kept[kept <= P.n - 2 - 8]
     vi = MS.VARIANTS.index((-1, 1.0))
     screen_r = P.R1[8][vi, kept]
@@ -81,7 +81,7 @@ def test_screen_r_equals_engine_r_on_the_gauntlets_own_build_path() -> None:
     st = MS.cell_stats(P.R1[8], P.R3[8], kept, days)
     assert st is not None and int(st["n_days"][0]) == len(theirs)
     assert st["mean"][vi] == pytest.approx(float(theirs.mean()), abs=1e-9)
-    assert len(theirs) < len(trades)            # the case where sum and last-wins differ
+    assert len(theirs) == len(trades)           # one trade a day: the dict drops nothing
 
 
 def test_swap_nights_match_the_engine() -> None:
@@ -111,7 +111,7 @@ def test_training_window_never_reaches_the_walk_forward_or_lockbox_region() -> N
     P = MS.Prepared("SYN", bars(600), META, {})
     for cond in ({"grammar": "clock", "hour": 3}, {"feat": "z_24", "op": "lt", "thr": -1.0}):
         for h in (1, 24):
-            full = MR.thin(np.flatnonzero(P.mask(cond)), h)
+            full = MR.thin(np.flatnonzero(P.mask(cond)), h, P.entry_day)
             full = full[full <= P.n - 2 - h]
             kept, wf_day = MS.cell_days(P, full, h)
             assert kept.size
@@ -225,3 +225,32 @@ def test_workers_are_derived_from_measurement() -> None:
     w, info = MS.derive_workers()
     assert w >= 1 and info["workers"] == w
     assert "basis" in info
+
+
+def test_thinning_is_causal_one_a_day_and_the_fallback_agrees() -> None:
+    P = MS.Prepared("SYN", bars(300, seed=2), META, {})
+    pos = np.flatnonzero(P.mask({"feat": "ret_8", "op": "lt", "thr": -0.5}))
+    for h in (1, 4, 24):
+        kept = MR.thin(pos, h, P.entry_day)
+        assert (np.diff(kept) > h).all()
+        assert (np.diff(P.entry_day[kept]) > 0).all()
+        assert np.array_equal(kept, MR._thin_py(pos, h, P.entry_day))
+
+
+def test_the_sealed_judges_last_trade_per_day_is_a_look_ahead_on_noise() -> None:
+    """Why the thinning is one-a-day: without it, the judge's dict-keyed daily series keeps the
+    LAST trade of each day, and which trade is last depends on the path after entry."""
+    P = MS.Prepared("NOISE", bars(700, seed=5), META, {})
+    pos = np.flatnonzero(P.mask({"feat": "ret_8", "op": "lt", "thr": -1.2}))
+    pos = pos[pos <= P.cut - 3]
+    greedy = [pos[0]]
+    for v in pos[1:]:
+        if v > greedy[-1] + 1:
+            greedy.append(v)
+    k = np.asarray(greedy)
+    d = P.entry_day[k]
+    last = k[np.flatnonzero(np.r_[d[1:] != d[:-1], True])]
+    r = P.R1[1][MS.VARIANTS.index((1, 1.0))]
+    assert np.nanmean(r[last]) > np.nanmean(r[k]) + 0.2      # selection on the future
+    one_a_day = MR.thin(pos, 1, P.entry_day)
+    assert abs(np.nanmean(r[one_a_day])) < 0.2
