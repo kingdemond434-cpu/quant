@@ -180,8 +180,8 @@ def process_kill_drill(root: Path, *, orders: int = 400, kills: int = 5, seed: i
                 except subprocess.TimeoutExpired:
                     proc.kill()
                     proc.wait()
+            text, _ = proc.communicate()             # drains and closes the pipe
             rc = proc.returncode
-            text = proc.stdout.read() if proc.stdout else ""
             if rc == 3 or '"load_error"' in (text or ""):
                 out["load_failures"] += 1
                 break                               # the desk could not restart: a finding
@@ -191,7 +191,7 @@ def process_kill_drill(root: Path, *, orders: int = 400, kills: int = 5, seed: i
             out["restarts"] += 1
         if proc.poll() is None:
             proc.kill()
-            proc.wait()
+        proc.communicate()
         ver = truth_kernel_verify(jp)
         seqs: list[int] = []
         if ver.get("ok"):
