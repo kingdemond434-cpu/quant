@@ -220,7 +220,8 @@ def test_axis_records_are_series_on_their_own_knowability_stamp(tmp_path) -> Non
     # a month is knowable at its END, never its first day
     assert s.index[0] == pd.Timestamp("2026-02-01", tz=UTC)
     e = DS.macro_raw("ecb", "eur_usd_ref", root=axes)
-    assert e.index[0] == pd.Timestamp("2026-09-02", tz=UTC)      # a day after its date
+    # a daily print is read at the END of its next business day (Tue 09-01 -> end of Wed)
+    assert e.index[0] == pd.Timestamp("2026-09-03", tz=UTC)
     assert DS.macro_fields("fred", root=axes) == []
     got = {d["id"]: d for d in DC.file_datasets(tmp_path)}
     assert got["macro:bis"]["fields"] and not got["macro:fred"]["fields"]
