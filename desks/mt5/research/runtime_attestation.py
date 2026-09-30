@@ -40,8 +40,8 @@ is never rendered as a pass, a zero or an empty cell.
 IT ATTESTS TO ONE HOST AND REFUSES TO DESCRIBE ANOTHER. The document stamps the hostname,
 platform and git SHA it was measured on, and every row carries that same host. A checkout on
 another machine reads the file as a report ABOUT the box, never as a claim about itself, and
-`scripts/check_runtime_attestation.py` fails on a document that mixes hosts or that goes stale on
-the host it names. The role is measured too, not assumed: a host with no fresh gateway state says
+`scripts/check_runtime_attestation.py` fails on a document that mixes hosts everywhere, and on one
+that goes stale only on the trading box it names (off the box its age reads UNMEASURED). The role is measured too, not assumed: a host with no fresh gateway state says
 so in its first line, so a build box attesting to itself can never read as the trading box.
 
 Clock: `hourly_cycle:runtime_attestation` (department `meta`, layer `meta`).
