@@ -300,6 +300,14 @@ def _proposers() -> None:
                  "fund_playbook", "microstructure_miner", "alpha_evolution",
                  "style_premia_sweep", "cross_asset_graph", "anomaly_factory",
                  "tail_alpha_search", "survivor_distiller", "factor_model_coevolution",
+                 # Reflective factor timing (IBK 2026 design): publishes its own admission
+                 # contract, desks/mt5/reports/REFLECTIVE_TIMING.json. Sizes nothing.
+                 "reflective_timing_contract",
+                 # Text-derived indices (event/policy factors from collected news, JP/KR/CN
+                 # retail blog attention and mood): the gain test against a shuffled-date
+                 # placebo, then the pre-declared exogenous_conditioner cells through the donor
+                 # door. Writes desks/mt5/reports/NLP_SOCIAL_CELLS.json.
+                 "nlp_social_cells",
                  # THE NEGATIVE HALF OF EXPERIENCE (Tier-1 Q17). `survivor_distiller` was
                  # already here and `negative_knowledge` -- the model of what KILLS a cell --
                  # ran on no clock at all, which is the classic defect: the organ existed and
