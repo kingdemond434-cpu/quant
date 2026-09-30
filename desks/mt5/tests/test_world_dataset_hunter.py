@@ -65,6 +65,7 @@ def box(tmp_path, monkeypatch):
     monkeypatch.setattr(W, "DESK", tmp_path)
     monkeypatch.setattr(W, "MIN_REQUEST_GAP_S", 0.0)
     monkeypatch.setattr(up, "UNIVERSE", uni)
+    monkeypatch.setattr(W, "_free_disk_ok", lambda: (True, {"free_gb": 99.0}))
     up._registry.cache_clear()
     W._universe_at.cache_clear()
     W._exposure_at.cache_clear()
@@ -363,3 +364,11 @@ def test_edge_search_resolve_inputs_asks_the_hunter():
     assert "world_series_for(symbol, index)" in src
     fam = (DESK / "mt5desk" / "families_orthogonal.py").read_text("utf-8")
     assert "world_feature(str(feature), d.index)" in fam
+
+
+def test_low_disk_stands_fetching_down_and_says_so(box, monkeypatch):
+    monkeypatch.setattr(W, "_free_disk_ok", lambda: (False, {"free_gb": 0.5, "floor_gb": 3.0}))
+    rep = W.run(budget_s=30, fetch=_fake(_dbnomics_routes()), now=NOW)
+    assert "stood down" in rep["pass"]["stood_down"]
+    assert rep["totals"]["datasets_discovered"] == 2          # discovery still ran
+    assert rep["totals"]["datasets_fetched"] == 0

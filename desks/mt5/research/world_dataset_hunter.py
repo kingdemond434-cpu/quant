@@ -103,9 +103,10 @@ PROVIDERS_REFRESH_H = 24.0
 DATASETS_RELIST_D = 7.0
 DIRECT_REFRESH_H = 24.0
 LEGACY_RETRY_H = 24.0
-#: Free disk kept for everything else on the box: the larger of 5 GB and 5% of the volume.
-MIN_FREE_BYTES = 5 * 1024 ** 3
-MIN_FREE_SHARE = 0.05
+#: Free disk kept for everything else on the box: the larger of 3 GB and 3% of the volume.
+#: Below it fetching STANDS DOWN (reported, never silent) while discovery continues.
+MIN_FREE_BYTES = 3 * 1024 ** 3
+MIN_FREE_SHARE = 0.03
 #: Rows of the DISCOVERED-only population written into data_registry.json. The catalog holds
 #: every dataset; the registry is a git-tracked state file and is kept to what a reader can load.
 REGISTRY_DISCOVERED_CAP = 1500
