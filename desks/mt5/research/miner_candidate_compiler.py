@@ -700,6 +700,11 @@ def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
         # top-level `parent` of an arbitrary crawler row is NOT lineage and is not read here.
         **{k: row[k] for k in ("lineage", "operator", "mutated_from", "parent_ids")
            if row.get(k)},
+        # WHERE A DERIVED ROW CAME FROM (2026-09-30): `discovery_compiler` names its parent's seat
+        # and intake, so the docket can credit the source behind a derived cell by its DECLARED
+        # seat instead of leaving it unattributed.
+        **{k: str(row[k]) for k in ("origin_seat", "origin_intake")
+           if isinstance(row.get(k), str) and row.get(k)},
     }
 
 

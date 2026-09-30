@@ -36,7 +36,7 @@
   {
    "id": "youtube_video_corpus",
    "name": "YouTube trading videos (transcript corpus)",
-   "url": "https://www.youtube.com/watch",
+   "url": "",
    "seats": [
     "miner:youtube"
    ],
@@ -62,11 +62,14 @@
     "direct_cells",
     "indirect_cells"
    ],
-   "consumer": "desks/mt5/research/deep_forest_miner.py",
+   "consumer": "desks/mt5/side_channels/world_crawler.py",
    "licence": "MQL5.com terms; concept only, code never copied",
    "fetcher": "owned",
    "cadence": "daily",
-   "region": "global"
+   "region": "global",
+   "seats": [
+    "miner:world_crawler"
+   ]
   },
   {
    "id": "quantifiable_edges_blog",
@@ -107,7 +110,7 @@
    "seats": [
     "miner:broker_swaps"
    ],
-   "owner": "scout:broker_swaps",
+   "owner": "scout:seed_miners",
    "kind": "text",
    "uses": [
     "direct_cells",

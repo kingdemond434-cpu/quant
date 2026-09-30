@@ -330,6 +330,21 @@ def _record(source_id: str, source_type: str, spec: dict[str, Any], *, mechanism
         economic_rationale=str(spec.get("why") or "")[:800], payload=spec, conn=conn)
 
 
+def _url_of(row: Mapping[str, Any]) -> str:
+    """The page an intake row cites, under any of the spellings the seats use."""
+    for k in ("source_url", "url", "link", "source_uri"):
+        v = row.get(k)
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+    return ""
+
+
+def _origin_seat(parent: Mapping[str, Any]) -> str:
+    """The seat (or organ) a discovery came from: `seat:<name>` generators name the seat."""
+    gen = str(parent.get("lineage_generator") or "")
+    return gen.removeprefix("seat:") if gen else ""
+
+
 def _spec_from_row(row: Mapping[str, Any]) -> dict[str, Any]:
     """One intake row, whatever seat wrote it, normalised into the miners' parent shape."""
     params = row.get("params") if isinstance(row.get("params"), dict) else {}
@@ -379,9 +394,14 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
         return deadline is not None and time.monotonic() > deadline
 
     def add(source_id: str, source_type: str, spec: dict[str, Any], *, origin: str,
-            generator: str) -> None:
+            generator: str, url: Any = "") -> None:
         if len(got) >= limit:
             return
+        # LINEAGE rides BESIDE the spec, never inside it: the spec is what the discovery's
+        # content hash and payload are made of, and a new key there would re-mint every
+        # discovery the registry already holds as a new trial.
+        lineage = {"source_url": str(url or ""), "lineage_intake": source_id,
+                   "lineage_generator": generator}
         mech = spec.get("declared_mechanism") or spec.get("why") or source_type
         if not record:
             key = R.content_hash(source_id, str(spec.get("symbol") or ""), spec,
@@ -390,13 +410,14 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
                 return
             seen.add(key)
             got.append({"discovery_id": f"dry_{key}", "source_type": source_type,
-                        "origin": origin, **spec})
+                        "origin": origin, **spec, **lineage})
             by_source[source_type] = by_source.get(source_type, 0) + 1
             return
         did, created = _record(source_id, source_type, spec, mechanism=str(mech), origin=origin,
                                generator=generator, conn=conn)
         if created:
-            got.append({"discovery_id": did, "source_type": source_type, "origin": origin, **spec})
+            got.append({"discovery_id": did, "source_type": source_type, "origin": origin, **spec,
+                        **lineage})
             by_source[source_type] = by_source.get(source_type, 0) + 1
 
     for row in R.discoveries(state="UNPROCESSED", limit=limit, conn=conn):
@@ -411,7 +432,10 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
             with contextlib.suppress(ValueError, TypeError):
                 merged["symbols"] = [s for s in json.loads(row["assets_json"]) if s]
         got.append({"discovery_id": str(row["discovery_id"]), "source_type": "registry",
-                    "origin": row.get("origin"), **_spec_from_row(merged)})
+                    "origin": row.get("origin"), **_spec_from_row(merged),
+                    "source_url": _url_of(merged),
+                    "lineage_intake": str(row.get("source_id") or ""),
+                    "lineage_generator": str(row.get("generator") or "")})
         by_source["registry_unprocessed"] = by_source.get("registry_unprocessed", 0) + 1
         if len(got) >= limit:
             return got, by_source, unmeasured
@@ -430,7 +454,8 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
                 doc = _read_json(path)
             for row in rows_of(doc)[:MAX_ROWS_PER_FILE]:
                 add(f"intel:{path.parent.name}:{path.name}", "intelligence", _spec_from_row(row),
-                    origin=R.origin_of(path.parent.name), generator=f"seat:{path.parent.name}")
+                    origin=R.origin_of(path.parent.name), generator=f"seat:{path.parent.name}",
+                    url=_url_of(row))
             _mark(cursor, path)
     else:
         unmeasured.append({"what": "data/intelligence", "why": "the seat donation tree is absent "
@@ -449,7 +474,7 @@ def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVE
                 spec = _spec_from_row(row)
                 spec["why"] = f"{row.get('firm', '')} {row.get('capability', '')} {spec['why']}"
                 add(f"frontier:{row.get('candidate_id') or row.get('at')}", "frontier_queue", spec,
-                    origin="EXTERNAL", generator="frontier_intel")
+                    origin="EXTERNAL", generator="frontier_intel", url=_url_of(row))
             _mark(cursor, FRONTIER_QUEUE)
     else:
         unmeasured.append({"what": str(FRONTIER_QUEUE), "why": "no frontier queue on this host"})
@@ -755,7 +780,12 @@ def _donation_row(child: Mapping[str, Any], parent: Mapping[str, Any]) -> dict[s
             "title": (f"{child.get('transformation')} of {parent.get('symbol') or 'a discovery'}"
                       f" -> {child.get('symbol')} {child.get('chart')} {child.get('session')}"),
             "why": child.get("why"), "parent_discovery_ids": child.get("parent_discovery_ids"),
-            "discovery_id": parent.get("discovery_id")}
+            "discovery_id": parent.get("discovery_id"),
+            # LINEAGE TO THE DOCKET (audit 2026-09-30: 25,760 docket rows from this organ had no
+            # URL and no seat, so no source could be credited for them). `url` is the field the
+            # candidate compiler reads into `source_url`; `origin_seat` is the parent's seat.
+            "url": parent.get("source_url") or "", "origin_seat": _origin_seat(parent),
+            "origin_intake": parent.get("lineage_intake") or ""}
 
 
 # --------------------------------------------------------------------------- the organ

@@ -94,8 +94,25 @@ def canonical_url(url: Any) -> str:
     host = (parts.hostname or "").lower().removeprefix("www.")
     if not host or "." not in host:
         return ""
-    q = urllib.parse.urlencode(sorted(urllib.parse.parse_qsl(parts.query)))
-    return host + parts.path.rstrip("/").lower() + (f"?{q}" if q else "")
+    path, query = parts.path, parts.query
+    # ONE VIDEO, ONE KEY: m.youtube.com, youtu.be/<id> and /shorts/<id> are youtube.com/watch?v=
+    # spelled three more ways. The id is case-sensitive, so it keeps its case; only v= survives.
+    if host in _YOUTUBE_HOSTS:
+        vid = ""
+        if host == "youtu.be":
+            vid = path.strip("/").split("/", 1)[0]
+        elif path.rstrip("/").lower() == "/watch":
+            vid = dict(urllib.parse.parse_qsl(query)).get("v", "")
+        elif path.lower().startswith("/shorts/"):
+            vid = path[len("/shorts/"):].strip("/").split("/", 1)[0]
+        if vid:
+            return f"youtube.com/watch?v={vid}"
+        host = "youtube.com"
+    q = urllib.parse.urlencode(sorted(urllib.parse.parse_qsl(query)))
+    return host + path.rstrip("/").lower() + (f"?{q}" if q else "")
+
+
+_YOUTUBE_HOSTS = frozenset({"youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"})
 
 
 def _row_urls(row: Mapping[str, Any]) -> list[str]:
@@ -318,8 +335,11 @@ def roster_files(path: Path = ROSTER, *, root: Path | None = None) -> list[dict[
         e = entry if isinstance(entry, Mapping) else {"path": entry}
         if e.get("packs"):
             n = len(list((base / str(e["packs"])).glob("*/pack.py")))
+            errs: list[dict[str, str]] = []
+            pack_rows(base / str(e["packs"]), errs)
             out.append({"path": str(e["packs"]), "files": n,
-                        "state": "OK" if n else "MISSING"})
+                        "state": "BROKEN" if errs else "OK" if n else "MISSING",
+                        **({"errors": errs[:20], "failed": len(errs)} if errs else {})})
             continue
         n = len(glob.glob(str(base / str(e.get("path"))), recursive=True))
         state = "OK" if n else ("PENDING" if e.get("pending") else
@@ -329,21 +349,39 @@ def roster_files(path: Path = ROSTER, *, root: Path | None = None) -> list[dict[
     return out
 
 
-def pack_rows(countries: Path) -> list[dict[str, Any]]:
+_EXPORTS_PACK = re.compile(r"^(?:PACK\b|def pack\()", re.M)
+
+
+def pack_rows(countries: Path, errors: list[dict[str, str]] | None = None
+              ) -> list[dict[str, Any]]:
     """Every country department's declared sources as roster rows (`pack_<cc>_<id>`), owned by
-    that department. A layer the pack DECLARES absent is not a source; a pack that will not load
-    contributes nothing and breaks nothing."""
+    that department. A layer the pack DECLARES absent is not a source.
+
+    A pack that will not load (or a country_lab that will not import) breaks no other pack, but
+    it is NEVER silent: each failure goes into `errors`, and `roster_files` reports the entry
+    BROKEN. The audit of 2026-09-30 measured the roster falling 2,658 -> 1,242 on an import
+    error while this entry still read OK."""
     rows: list[dict[str, Any]] = []
+    errs = errors if errors is not None else []
     try:
         from libs.research import country_lab
-    except Exception:
+    except Exception as exc:
+        errs.append({"pack": "*", "error": f"{type(exc).__name__}: {exc}"[:200]})
         return rows
     for pf in sorted(countries.glob("*/pack.py")):
         cc = pf.parent.name
+        # A pack_cells-shape pack (jp, institutional, global) exports no country_lab PACK: its
+        # KNOWN_GROUNDS are documentation of grounds the crawler's registry already holds, so it
+        # declares no sources here. That is its shape, not a failure.
+        if not _EXPORTS_PACK.search(pf.read_text("utf-8", errors="replace")):
+            continue
         try:
             pack = country_lab.resolve_pack(cc)
-            srows = country_lab.source_rows(pack) if pack is not None else []
-        except Exception:
+            if pack is None:
+                raise LookupError(f"country_lab.resolve_pack({cc!r}) returned None")
+            srows = country_lab.source_rows(pack)
+        except Exception as exc:
+            errs.append({"pack": cc, "error": f"{type(exc).__name__}: {exc}"[:200]})
             continue
         for r in srows:
             if getattr(r, "absent_reason", "") or not getattr(r, "id", ""):
