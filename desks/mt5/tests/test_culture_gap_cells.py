@@ -169,9 +169,8 @@ def test_recipe_to_donation_to_compiler_to_a_docket_row_with_all_four_fields(
     data/intelligence/culture_gap/ -> the compiler reads that file with its own reader and
     compiles each row EXACT_RECIPE -> the docket candidate carries all four culture fields,
     the two the recipe knows as declared and the other two inferred by the one rule."""
-    from research import miner_candidate_compiler as MC
-
     from libs.moat import registry as R
+    from research import miner_candidate_compiler as MC
     intel = _isolate_door(tmp_path, monkeypatch)
     recs = [r for r in _REC if r["id"] == "cn_pboc_fix"]
     rp = tmp_path / "recipes.json"
