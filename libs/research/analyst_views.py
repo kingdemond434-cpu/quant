@@ -705,7 +705,8 @@ def _t_of(values: np.ndarray) -> float | None:
 def placebo_contract(obs: Sequence[Observation], bars: Mapping[str, DailyBars | None], *,
                      horizon: int = 5, n_placebo: int = 200, min_shift: int = 30,
                      max_shift: int = 250, seed: int = 0, clock: Clock = identity_clock,
-                     floor: int = MIN_EVENTS, alpha: float = 0.05, t_bar: float = 2.0
+                     floor: int = MIN_EVENTS, alpha: float = 0.05, t_bar: float = 2.0,
+                     key: Callable[[Observation], str] | None = None
                      ) -> dict[str, dict[str, Any]]:
     """THE ADMISSION TEST, per source: is the post-publication drift information or calendar?
 
@@ -715,6 +716,10 @@ def placebo_contract(obs: Sequence[Observation], bars: Mapping[str, DailyBars | 
     unconditionally (a trending sample, a direction imbalance) is in the placebo too, and only
     what is tied to the publication date is not. Admit when n >= floor, |t| >= t_bar and the
     two-sided placebo p <= alpha. Below the floor the verdict is UNMEASURED, never a pass.
+
+    `key` groups the observations (default: by source). `cell_key` groups them per direct cell
+    -- (target, source, relation, lead) -- so each cell a pass would donate is judged against
+    its own shifted-date placebo, not only its source's.
     """
     rng = np.random.default_rng(seed)
     by_source: dict[str, list[tuple[DailyBars, int, int]]] = defaultdict(list)
@@ -725,7 +730,7 @@ def placebo_contract(obs: Sequence[Observation], bars: Mapping[str, DailyBars | 
             continue
         pos = entry_index(b, moved)
         if pos + horizon < len(b.close):
-            by_source[o.source].append((b, pos, o.direction))
+            by_source[key(o) if key is not None else o.source].append((b, pos, o.direction))
     out: dict[str, dict[str, Any]] = {}
     for source, items in sorted(by_source.items()):
         real = np.asarray([d * math.log(b.close[p + horizon] / b.close[p]) for b, p, d in items])
@@ -768,6 +773,11 @@ def placebo_contract(obs: Sequence[Observation], bars: Mapping[str, DailyBars | 
                        "p_placebo": round(p_value, 4),
                        "rule": f"|t| >= {t_bar} and placebo p <= {alpha} at n >= {floor}"}
     return out
+
+
+def cell_key(o: Observation) -> str:
+    """The direct-cell grouping `alpha_capture.cell_rows` donates on."""
+    return f"{o.target}|{o.source}|{o.relation}|{o.lead}"
 
 
 def rows_by_day(rows: Iterable[Mapping[str, Any]], *, universe: set[str] | None = None,

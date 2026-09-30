@@ -164,3 +164,77 @@ def release_gain(events: Sequence[tuple[Any, float]], close: pd.Series, *,
     return GainResult("PASS" if ok else "FAIL", round(ic, 4), n, round(t, 3), p_t, round(p_pl, 4),
                       round(float(np.median(arr)), 4), round(float(np.quantile(arr, 0.95)), 4),
                       int(arr.size), horizon_bars, why, dropped)
+
+
+#: Random-regime masks a conditioned child is compared against. Enough that the smallest
+#: reachable p (1/(N+1)) clears a Bonferroni charge over a full pass of children.
+REGIME_MASKS = 2000
+#: A child with fewer in-regime parent signals than this is UNMEASURED, not a verdict.
+MIN_IN_REGIME = 20
+
+
+def regime_placebo(sig_pos: Sequence[int] | np.ndarray, sig_ret: Sequence[float] | np.ndarray,
+                   bar_mask: Sequence[bool] | np.ndarray, *, n_trials: int = 1,
+                   n_masks: int = REGIME_MASKS, min_in: int = MIN_IN_REGIME,
+                   min_shift_frac: float = 0.05, alpha: float = ALPHA_FAMILY,
+                   seed: int = 0) -> dict[str, Any]:
+    """THE PLACEBO-CONDITIONED TEST for a child that trades its parent only inside a regime.
+
+    `sig_pos` are the bar positions of the PARENT's signals, `sig_ret` their forward returns
+    (already signed by the signal's side), `bar_mask` the regime on every bar (True where the
+    child would trade). The statistic is the mean return of the parent's signals inside the
+    regime. The null is the same statistic under N random regimes WITH THE SAME DUTY CYCLE AND
+    THE SAME RUN STRUCTURE: the mask circularly shifted by a random offset of at least
+    `min_shift_frac` of the history, so a slow regime stays slow and only its alignment with the
+    signals is destroyed. p is one-sided (the child must BEAT random regimes), with the +1
+    correction, and is charged Bonferroni over `n_trials` -- every child tested this pass.
+
+    PASS needs the in-regime mean > 0, n_in >= min_in and charged p <= alpha. Fewer in-regime
+    signals, a regime that is always or never on, or too short a history is UNMEASURED.
+    """
+    pos = np.asarray(sig_pos, dtype=int)
+    ret = np.asarray(sig_ret, dtype=float)
+    mask = np.asarray(bar_mask, dtype=bool)
+    ok = np.isfinite(ret) & (pos >= 0) & (pos < mask.size)
+    pos, ret = pos[ok], ret[ok]
+    T = int(mask.size)
+    duty = float(mask.mean()) if T else 0.0
+    base: dict[str, Any] = {"n_signals": int(pos.size), "duty_cycle": round(duty, 4),
+                            "n_trials": int(max(1, n_trials)), "n_masks": 0}
+    if T < 20 or duty <= 0.0 or duty >= 1.0:
+        return {**base, "verdict": "UNMEASURED", "n_in": int(mask[pos].sum()) if T else 0,
+                "why": "the regime is never or always on over the history: nothing to condition"}
+    inside = mask[pos]
+    n_in = int(inside.sum())
+    if n_in < min_in:
+        return {**base, "verdict": "UNMEASURED", "n_in": n_in,
+                "why": f"{n_in} parent signals inside the regime < {min_in}"}
+    real = float(ret[inside].mean())
+    rng = np.random.default_rng(seed)
+    lo = max(1, int(T * min_shift_frac))
+    shifts = rng.integers(lo, T - lo + 1, size=int(n_masks)) if T - lo >= lo else \
+        rng.integers(1, T, size=int(n_masks))
+    # mask shifted right by k: shifted[i] = mask[(i - k) mod T], read at every signal position.
+    cnt = np.empty(shifts.size, dtype=float)
+    sums = np.empty(shifts.size, dtype=float)
+    for a in range(0, shifts.size, 128):                       # bounded memory per chunk
+        hits = mask[(pos[None, :] - shifts[a:a + 128, None]) % T]
+        cnt[a:a + 128] = hits.sum(axis=1)
+        sums[a:a + 128] = hits.astype(float) @ ret
+    valid = cnt >= max(1, min_in // 2)
+    null = sums[valid] / cnt[valid]
+    if null.size < 100:
+        return {**base, "verdict": "UNMEASURED", "n_in": n_in, "mean_in": round(real, 6),
+                "why": f"only {null.size} placebo regimes held enough signals"}
+    p = float((1 + int((null >= real).sum())) / (1 + null.size))
+    charged = min(1.0, p * max(1, int(n_trials)))
+    passed = real > 0 and charged <= alpha
+    return {**base, "verdict": "PASS" if passed else "FAIL", "n_in": n_in,
+            "n_masks": int(null.size), "mean_in": round(real, 6),
+            "mean_all": round(float(ret.mean()), 6),
+            "placebo_mean": round(float(null.mean()), 6),
+            "placebo_p95": round(float(np.quantile(null, 0.95)), 6),
+            "p_placebo": round(p, 5), "p_charged": round(charged, 5),
+            "why": (f"in-regime mean {real:+.5f} over {n_in} parent signals vs {null.size} "
+                    f"circularly shifted regimes of duty {duty:.2f}: p {p:.4f}, Bonferroni over "
+                    f"{max(1, int(n_trials))} children -> {charged:.4f}")}

@@ -248,7 +248,7 @@ def _loader(sym: str) -> pd.DataFrame:
 
 @pytest.fixture
 def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
-    for name in ("STORE", "STATE", "AXIS", "REPORT", "CONTRACT", "INTEL"):
+    for name in ("STORE", "STATE", "AXIS", "REPORT", "CONTRACT", "INTEL", "DIGEST"):
         monkeypatch.setattr(ac, name, tmp_path / f"{name.lower()}.out")
     (tmp_path / "axes").mkdir()
     monkeypatch.setattr(ac, "AXIS", tmp_path / "axes" / "analyst_views.json")

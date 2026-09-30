@@ -23,7 +23,7 @@ WHAT IT WRITES -- one signal, three uses (the principal's direct / indirect / al
              the allocator MAY read; it sizes nothing and no allocator code is touched
 
 POINT IN TIME. A news item enters on the UTC day it was FIRST SEEN by the desk (stamped once in
-`data/intelligence/nlp_events/first_seen.json` and never overwritten); a historical corpus with no
+`data/text_store/nlp_events/first_seen.json` and never overwritten); a historical corpus with no
 first-seen stamp enters one full day after its publication (a BIS review's date is parsed from its
 own `rYYMMDD` URL, which is when the BIS published it -- often weeks after the speech). A day's row
 is available at the following 00:00 UTC.
@@ -51,10 +51,12 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.research import asia_alt_digest  # noqa: E402
 from libs.research import event_factors as ef  # noqa: E402
 from libs.research import event_factors_llm as efl  # noqa: E402
 
-STORE = DESK / "data" / "intelligence" / "nlp_events"
+#: NOT under `data/intelligence/` (the compiler globs that tree as seat output); gitignored.
+STORE = DESK / "data" / "text_store" / "nlp_events"
 FIRST_SEEN = STORE / "first_seen.json"
 LLM_CACHE = STORE / "llm_cache.jsonl"
 AXIS_OUT = DESK / "data" / "axes" / "nlp_events.json"
@@ -317,7 +319,8 @@ def run(now: datetime | None = None, *, llm_max: int = efl.DEFAULT_MAX_DOCS,
         paths: dict[str, Path] | None = None) -> dict[str, Any]:
     now = now or _now()
     p = {"store": STORE, "axis": AXIS_OUT, "series": SERIES_DIR, "report": REPORT,
-         "intel": INTEL, "cb": CB_DOCS, "bis": BIS_TITLES, **(paths or {})}
+         "intel": INTEL, "cb": CB_DOCS, "bis": BIS_TITLES, "digest": asia_alt_digest.DIGEST,
+         **(paths or {})}
     first_seen_path = p["store"] / "first_seen.json"
     cache_path = p["store"] / "llm_cache.jsonl"
     first_seen: dict[str, str] = _read_json(first_seen_path, {}) or {}
@@ -352,6 +355,15 @@ def run(now: datetime | None = None, *, llm_max: int = efl.DEFAULT_MAX_DOCS,
         report["lake_rows"] = write_lake(series_lex, p["series"])
         _atomic(p["intel"], json.dumps(intel, indent=1))
         _atomic(p["report"], json.dumps(report, indent=1, default=str))
+        by_src = report["docs_by_source"] or {}
+        asia_alt_digest.publish(SOURCE, asia_alt_digest.section(
+            at=report["generated_at"], status="MEASURED" if report["n_docs"] else UNMEASURED,
+            rows=int(report["panel_rows"]["lexicon"]),
+            measured=[k for k, v in by_src.items() if v], unmeasured=[k for k, v in
+                                                                       by_src.items() if not v],
+            gain={}, countries=report["countries"], n_docs=report["n_docs"],
+            llm_tier=str(report["llm_tier"].get("state") or UNMEASURED),
+            gain_tested_by="nlp_social_cells"), p["digest"])
     return report
 
 

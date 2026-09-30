@@ -26,8 +26,11 @@ before any data is seen, run by `family_exogenous_conditioner` on the lake frame
   attention_shock_reversal  retail attention z times the sign of the mood change, z-scored; the
                             side FADES the crowd when attention spikes (side_when_high = -1)
 
-A cell is donated once its series holds MIN_HISTORY_DAYS observations; before that it is listed as
-WAITING_FOR_HISTORY -- a count of days, not a verdict. Single-name share CFDs (the semis names)
+A cell is donated only when its series holds MIN_HISTORY_DAYS observations AND its own
+(index, instrument) passed the shuffled-date placebo gate above (`gain` in the grid: BH q <= alpha
+over every test run, bootstrap interval excluding zero). Before the history exists it is listed as
+WAITING_FOR_HISTORY -- a count of days, not a verdict; with the history but no gain it is listed
+as FAILED_GAIN and not donated. Single-name share CFDs (the semis names)
 are never donated: the two-lane mandate keeps them in the event lane, where the allocation-intel
 artifact still carries their crowd context.
 """
@@ -50,6 +53,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 import pandas as pd  # noqa: E402
 
+from libs.research import asia_alt_digest  # noqa: E402
 from libs.research import event_factors as ef  # noqa: E402
 from libs.research import nlp_gain_test as gt  # noqa: E402
 
@@ -213,9 +217,17 @@ def _evidence(grid: dict[str, Any], index: str, sym: str) -> list[dict[str, Any]
             for t in grid["tests"] if t.get("index") == index and t.get("instrument") == sym]
 
 
+def _passed_gain(grid: dict[str, Any], index: str, sym: str) -> bool:
+    """True only when some horizon of this (index, instrument) passed the placebo gate."""
+    return any(t.get("gain") is True for t in grid.get("tests") or []
+               if t.get("index") == index and t.get("instrument") == sym)
+
+
 def declared_cells(history: dict[str, int], grid: dict[str, Any]) -> tuple[list[dict[str, Any]],
                                                                          list[dict[str, Any]]]:
-    """(ready cells, waiting cells). A cell is ready once its series has the history to judge."""
+    """(ready cells, not-ready cells). A cell is ready once its series has the history to judge
+    AND its own (index, instrument) passed the shuffled-date placebo gain test. A not-ready cell
+    carries `not_ready` = WAITING_FOR_HISTORY or FAILED_GAIN."""
     ready: list[dict[str, Any]] = []
     waiting: list[dict[str, Any]] = []
     for country, sym, side in POLICY_CELLS:
@@ -236,7 +248,7 @@ def declared_cells(history: dict[str, int], grid: dict[str, Any]) -> tuple[list[
             "information_source": "event",
             **culture,
         }
-        (ready if history.get(name, 0) >= MIN_HISTORY_DAYS else waiting).append(cell)
+        _sort(cell, name, sym, history, grid, ready, waiting)
     for sym in ATTENTION_SYMBOLS:
         name = f"blog:{sym}.attention_shock_signed"
         culture = CULTURE[_SYMBOL_CULTURE[sym]]
@@ -255,11 +267,24 @@ def declared_cells(history: dict[str, int], grid: dict[str, Any]) -> tuple[list[
             "information_source": "event",
             **culture,
         }
-        (ready if history.get(name, 0) >= MIN_HISTORY_DAYS else waiting).append(cell)
+        _sort(cell, name, sym, history, grid, ready, waiting)
     for c in ready + waiting:
         c["evidence"] = _evidence(grid, c["index"], c["symbol"])
         c["history_days"] = history.get(c["index"], 0)
     return ready, waiting
+
+
+def _sort(cell: dict[str, Any], name: str, sym: str, history: dict[str, int],
+          grid: dict[str, Any], ready: list[dict[str, Any]],
+          waiting: list[dict[str, Any]]) -> None:
+    if history.get(name, 0) < MIN_HISTORY_DAYS:
+        cell["not_ready"] = "WAITING_FOR_HISTORY"
+        waiting.append(cell)
+    elif not _passed_gain(grid, name, sym):
+        cell["not_ready"] = "FAILED_GAIN"
+        waiting.append(cell)
+    else:
+        ready.append(cell)
 
 
 def to_candidates(cells: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -310,7 +335,7 @@ def ingest(*, fetch: bool = True, budget_s: float = 110.0) -> dict[str, Any]:
 
 def run(budget_s: float = 900.0, *, dry_run: bool = False, refresh: bool = True,
         series_dir: Path = SERIES_DIR, out: Path = REPORT, n_placebo: int = 200,
-        n_boot: int = 300) -> dict[str, Any]:
+        n_boot: int = 300, digest_path: Path = asia_alt_digest.DIGEST) -> dict[str, Any]:
     now = datetime.now(tz=UTC)
     rep: dict[str, Any] = {"generated_at": now.isoformat(timespec="seconds"),
                            "budget_s": budget_s}
@@ -335,7 +360,12 @@ def run(budget_s: float = 900.0, *, dry_run: bool = False, refresh: bool = True,
         "cells_proposed": len(cands),
         "cells_waiting_for_history": [{"cell": c["cell_name"], "symbol": c["symbol"],
                                        "history_days": c["history_days"],
-                                       "needs": MIN_HISTORY_DAYS} for c in waiting],
+                                       "needs": MIN_HISTORY_DAYS} for c in waiting
+                                      if c.get("not_ready") == "WAITING_FOR_HISTORY"],
+        "cells_failed_gain": [{"cell": c["cell_name"], "symbol": c["symbol"],
+                               "history_days": c["history_days"],
+                               "why": "no horizon passed the shuffled-date placebo gate"}
+                              for c in waiting if c.get("not_ready") == "FAILED_GAIN"],
         "dry_run": dry_run,
     })
     if cands and not dry_run:
@@ -347,7 +377,26 @@ def run(budget_s: float = 900.0, *, dry_run: bool = False, refresh: bool = True,
         tmp = out.with_suffix(".tmp")
         tmp.write_text(json.dumps(rep, indent=1, default=_safe), "utf-8")
         os.replace(tmp, out)
+        asia_alt_digest.publish(SOURCE, digest_section(rep, grid), digest_path)
     return rep
+
+
+def digest_section(rep: dict[str, Any], grid: dict[str, Any]) -> dict[str, Any]:
+    """This organ's section of the committed digest: the admission verdict and every test's."""
+    def key(t: dict[str, Any]) -> str:
+        return f"{t.get('index')}|{t.get('instrument')}|h{t.get('horizon')}"
+
+    tests = grid.get("tests") or []
+    gain = {key(t): ("GAIN" if t.get("gain") else "NO_GAIN")
+            if t.get("state") == "MEASURED" else gt.UNMEASURED for t in tests}
+    return asia_alt_digest.section(
+        at=str(rep["generated_at"]), status=str(rep["admission"]["verdict"]),
+        rows=int(rep["admission"]["n_trials"]),
+        measured=[key(t) for t in tests if t.get("state") == "MEASURED"],
+        unmeasured=[key(t) for t in tests if t.get("state") != "MEASURED"], gain=gain,
+        cells_proposed=int(rep["cells_proposed"]),
+        cells_waiting_for_history=len(rep["cells_waiting_for_history"]),
+        cells_failed_gain=len(rep["cells_failed_gain"]), tests_run=int(rep["tests_run"]))
 
 
 def _safe(x: Any) -> Any:
@@ -369,7 +418,8 @@ def main(argv: list[str] | None = None) -> int:
     rep = run(dry_run=a.dry_run)
     print(f"nlp_social_cells: admission {rep['admission']['verdict']} over "
           f"{rep['admission']['n_trials']} trials; {rep['cells_proposed']} cell(s) proposed, "
-          f"{len(rep['cells_waiting_for_history'])} waiting for history")
+          f"{len(rep['cells_waiting_for_history'])} waiting for history, "
+          f"{len(rep['cells_failed_gain'])} failed the placebo gate")
     return 0
 
 

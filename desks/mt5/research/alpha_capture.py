@@ -32,7 +32,9 @@ ONE PASS, FIVE STEPS, EVERY ONE WRITING SOMETHING.
                          factory and `causal_lab` conditions on
        allocation_intel  `reports/ALPHA_CAPTURE_ALLOCATION_INTEL.json`, a per-instrument, per-day
                          summary the allocator MAY read (nothing here sizes)
-  5. REPORT `reports/ALPHA_CAPTURE.json` and the contract `reports/ALPHA_CAPTURE_CONTRACT.json`.
+  5. REPORT `reports/ANALYST_VIEWS.json` and the contract `reports/ANALYST_VIEWS_CONTRACT.json`.
+     (Not `ALPHA_CAPTURE.json`: that name belongs to `execution_intelligence.py`'s fill-capture
+     report, which `libs/ops/module_rent.py` reads. Two writers on one path clobber each other.)
 
 LIVE YIELD IS UNMEASURED UNTIL THE TRADING BOX RUNS IT. It was built in a container whose network
 policy refuses all five hosts; the parsers are proven on recorded payload shapes (tests), and every
@@ -65,6 +67,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.research import analyst_views as av  # noqa: E402
+from libs.research import asia_alt_digest  # noqa: E402
 from libs.research.analyst_views import UNMEASURED, AnalystView  # noqa: E402
 
 SOURCE = "alpha_capture"
@@ -72,10 +75,12 @@ DATA = DESK / "data" / "alpha_capture"
 STORE = DATA / "analyst_views.jsonl"
 STATE = DATA / "collector_state.json"
 AXIS = DESK / "data" / "axes" / "analyst_views.json"
-REPORT = DESK / "reports" / "ALPHA_CAPTURE.json"
-CONTRACT = DESK / "reports" / "ALPHA_CAPTURE_CONTRACT.json"
+REPORT = DESK / "reports" / "ANALYST_VIEWS.json"
+CONTRACT = DESK / "reports" / "ANALYST_VIEWS_CONTRACT.json"
 INTEL = DESK / "reports" / "ALPHA_CAPTURE_ALLOCATION_INTEL.json"
 UNIVERSE = DESK / "data" / "universe" / "universe.json"
+#: The small COMMITTED digest (reports/ is gitignored): status, rows, gain verdicts.
+DIGEST = asia_alt_digest.DIGEST
 
 UNMEASURED_LIVE_YIELD = "UNMEASURED_LIVE_YIELD"
 MAX_DONATIONS = 20
@@ -869,6 +874,11 @@ def measure(rows: Sequence[Mapping[str, Any]], *, loader: Callable[[str], Any],
     vtracked, _ = av.track(vnet, bars, bench=bench, clock=clock)
     contract = av.placebo_contract(net, bars, horizon=CONTRACT_HORIZON_D, clock=clock,
                                    n_placebo=n_placebo)
+    # THE PER-CELL PLACEBO GATE: every (target, source, relation, lead) at every horizon, against
+    # the same views at randomly shifted dates. `cell_rows` donates nothing that did not ADMIT.
+    cell_placebo = {f"{h}d": av.placebo_contract(net, bars, horizon=h, clock=clock,
+                                                 n_placebo=n_placebo, key=av.cell_key)
+                    for h in av.HORIZONS_D}
     return {
         "observations": {"views_with_direction_first_seen": len(obs), "daily_net": len(net),
                          "refused": census, "tracked": len(tracked), "tracker": tcensus,
@@ -878,6 +888,7 @@ def measure(rows: Sequence[Mapping[str, Any]], *, loader: Callable[[str], Any],
         "by_group": av.aggregate(tracked, ("target", "source", "relation", "lead")),
         "by_relation": av.aggregate(tracked, ("source", "relation")),
         "contract": contract,
+        "cell_placebo": cell_placebo,
         "research_only_vendor_dated": {
             "rule": ("NOT POINT-IN-TIME FOR THIS DESK: returns from the vendor's own published_at "
                      "(+ precision lag) on views first seen later. Research reading only; it feeds "
@@ -889,9 +900,13 @@ def measure(rows: Sequence[Mapping[str, Any]], *, loader: Callable[[str], Any],
 
 # ------------------------------------------------------------------------------ direct cells
 def cell_rows(by_group: Sequence[Mapping[str, Any]], contract: Mapping[str, Any], *,
+              cell_placebo: Mapping[str, Mapping[str, Any]] | None = None,
               limit: int = MAX_DONATIONS) -> tuple[list[dict[str, Any]], int, list[dict[str, Any]]]:
     """(candidates, trials charged, refusals). One cell per (target, source, relation, lead): its
-    strongest horizon, when |t| clears Bonferroni over every measured (group, horizon) and 2.0."""
+    strongest horizon, when |t| clears Bonferroni over every measured (group, horizon) and 2.0
+    AND that (cell, horizon) was ADMITTED by its own shifted-date placebo (`cell_placebo`,
+    keyed "<h>d" -> "target|source|relation|lead"). A t without a placebo verdict is not a pass:
+    no `cell_placebo` means nothing is donated."""
     measured: list[tuple[Mapping[str, Any], int, Mapping[str, Any]]] = []
     for g in by_group:
         for h in av.HORIZONS_D:
@@ -901,14 +916,20 @@ def cell_rows(by_group: Sequence[Mapping[str, Any]], contract: Mapping[str, Any]
     trials = len(measured)
     bar = max(PROPOSE_T, _bonferroni_t(trials))
     best: dict[tuple[str, ...], tuple[Mapping[str, Any], int, Mapping[str, Any]]] = {}
+    refused: list[dict[str, Any]] = []
     for g, h, s in measured:
         if abs(float(s["t"])) < bar:
             continue
         key = (str(g["target"]), str(g["source"]), str(g["relation"]), str(g["lead"]))
+        gate = ((cell_placebo or {}).get(f"{h}d") or {}).get("|".join(key)) or {}
+        if gate.get("status") != "ADMIT":
+            refused.append({"cell": "|".join(key), "horizon_d": h,
+                            "why": f"placebo gate {gate.get('status', UNMEASURED)}: the drift "
+                                   "is not shown to be tied to the publication date"})
+            continue
         if key not in best or abs(float(s["t"])) > abs(float(best[key][2]["t"])):
             best[key] = (g, h, s)
     out: list[dict[str, Any]] = []
-    refused: list[dict[str, Any]] = []
     for (target, src, relation, lead), (_g, h, s) in sorted(
             best.items(), key=lambda kv: -abs(float(kv[1][2]["t"]))):
         if len(out) >= limit:
@@ -954,8 +975,11 @@ def cell_rows(by_group: Sequence[Mapping[str, Any]], contract: Mapping[str, Any]
             "evidence": {"n": s["n"], "t": s["t"], "mean_bp": s["mean_bp"], "sd_bp": s["sd_bp"],
                          "hit": s["hit"], "horizon_d": h, "bonferroni_t": round(bar, 3),
                          "trials": trials, "contract_status": verdict,
+                         "cell_placebo": dict((cell_placebo or {}).get(f"{h}d", {}).get(
+                             f"{target}|{src}|{relation}|{lead}") or {}),
                          "screen": "signed CAR after first_seen_at, daily-netted, Bonferroni "
-                                   "over every measured (group, horizon)"}})
+                                   "over every measured (group, horizon), and the cell's own "
+                                   "shifted-date placebo ADMIT"}})
     return out, trials, refused
 
 
@@ -1011,6 +1035,22 @@ def intel_doc(rows: Sequence[Mapping[str, Any]], measured: Mapping[str, Any],
             "n_instruments": len(out), "instruments": out}
 
 
+def digest_section(report: Mapping[str, Any]) -> dict[str, Any]:
+    """This organ's section of the committed digest: live yield per source, the per-source
+    placebo contract verdicts, and what the cell gate let through."""
+    sources = report.get("sources") or {}
+    live = [s for s, r in sources.items() if (r.get("live_yield") or {}).get("status")
+            == "MEASURED"]
+    contract = report.get("contract") or {}
+    gain = {s: (contract.get(s) or {}).get("status", UNMEASURED) for s in sources}
+    cells = report.get("cells") or {}
+    return asia_alt_digest.section(
+        at=str(report.get("at")), status="LIVE" if live else UNMEASURED_LIVE_YIELD,
+        rows=int((report.get("store") or {}).get("rows_total") or 0),
+        measured=live, unmeasured=[s for s in sources if s not in live], gain=gain,
+        cells={k: cells.get(k) for k in ("trials_charged", "candidates", "donated")})
+
+
 def roster_rows() -> list[dict[str, Any]]:
     """The roster rows for the shared sources.yaml, one per source."""
     out = []
@@ -1054,7 +1094,8 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
     universe = set(udoc) if udoc else None
     measured = measure(rows, loader=loader or _bars_loader(), universe_doc=udoc, clock=clock,
                        n_placebo=n_placebo)
-    cands, trials, refused = cell_rows(measured["by_group"], measured["contract"])
+    cands, trials, refused = cell_rows(measured["by_group"], measured["contract"],
+                                       cell_placebo=measured["cell_placebo"])
     path = _donate(cands, max(trials, len(cands))) if (apply and cands) else None
     axis = axis_doc(rows, universe, now)
     intel = intel_doc(rows, measured, universe, now)
@@ -1105,6 +1146,7 @@ def run(*, budget_s: float = 300.0, apply: bool = True, collect_enabled: bool = 
         _atomic(INTEL, json.dumps(intel, indent=1, ensure_ascii=False, default=str))
         _atomic(CONTRACT, json.dumps(contract_doc, indent=1, default=str))
         _atomic(REPORT, json.dumps(report, indent=1, ensure_ascii=False, default=str))
+        asia_alt_digest.publish(SOURCE, digest_section(report), DIGEST)
     report["contract_doc"] = contract_doc
     return report
 

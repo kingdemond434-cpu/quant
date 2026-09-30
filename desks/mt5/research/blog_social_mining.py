@@ -20,9 +20,11 @@ OBSERVED DAYS ARE RECORDED, NOT ASSUMED. A UTC day enters the index only if at l
 answered OK that day (`observed_days.json`); a day the box was off is UNMEASURED, never a
 zero-attention day that would read as a crowd going quiet.
 
-THE STORE: `desks/mt5/data/intelligence/blog_social/posts.jsonl` (titles and snippets only, the
+THE STORE: `desks/mt5/data/text_store/blog_social/posts.jsonl` (titles and snippets only, the
 same rule as every forest miner) and `seen.json` -- the (source, ident) cursor whose first stamp
-is never moved.
+is never moved. NOT under `data/intelligence/`: the candidate compiler globs that whole tree as
+seat output, and raw post text is not a hypothesis. `text_store/` is gitignored; the store is
+bounded by MAX_POSTS.
 """
 from __future__ import annotations
 
@@ -44,9 +46,10 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from libs.data import blog_social_sources as bss  # noqa: E402
+from libs.research import asia_alt_digest  # noqa: E402
 from libs.research import social_mood as sm  # noqa: E402
 
-STORE = DESK / "data" / "intelligence" / "blog_social"
+STORE = DESK / "data" / "text_store" / "blog_social"
 FEEDS_CFG = DESK / "data" / "blog_social_feeds.json"
 AXIS_OUT = DESK / "data" / "axes" / "blog_social.json"
 SERIES_DIR = DESK / "data" / "lake" / "series"
@@ -234,7 +237,8 @@ def build(now: datetime, *, store: Path = STORE, axis_out: Path = AXIS_OUT,
 
 
 def run(now: datetime | None = None, *, fetch: bool = True, budget_s: float = 110.0,
-        dry_run: bool = False, get: bss.Getter | None = None) -> dict[str, Any]:
+        dry_run: bool = False, get: bss.Getter | None = None,
+        digest_path: Path = asia_alt_digest.DIGEST) -> dict[str, Any]:
     now = now or datetime.now(tz=UTC)
     rep: dict[str, Any] = {"generated_at": now.isoformat(timespec="seconds")}
     if fetch and not dry_run:
@@ -246,7 +250,23 @@ def run(now: datetime | None = None, *, fetch: bool = True, budget_s: float = 11
                          else "MEASURED_THIS_PASS")
     if not dry_run:
         _atomic(REPORT, json.dumps(rep, indent=1, default=str))
+        asia_alt_digest.publish(SOURCE, digest_section(rep), digest_path)
     return rep
+
+
+def digest_section(rep: dict[str, Any]) -> dict[str, Any]:
+    """This organ's section of the committed digest: posture per ground, index rows, bot drops.
+    The gain verdicts for these indices are `nlp_social_cells`' section."""
+    postures = (rep.get("fetch") or {}).get("postures") or {}
+    ok = [s for s, v in postures.items() if v.get("posture") == bss.POSTURE_OK]
+    return asia_alt_digest.section(
+        at=str(rep.get("generated_at")), status=str(rep.get("live_yield")),
+        rows=int(rep.get("index_rows") or 0), measured=ok,
+        unmeasured=[s.id for s in bss.SOURCES if s.id not in ok], gain={},
+        postures={s: str(v.get("posture")) for s, v in sorted(postures.items())},
+        n_posts=int(rep.get("n_posts") or 0), n_kept=int(rep.get("n_kept") or 0),
+        bot_dropped=dict(sorted((rep.get("bot_dropped") or {}).items())),
+        gain_tested_by="nlp_social_cells")
 
 
 def main(argv: list[str] | None = None) -> int:
