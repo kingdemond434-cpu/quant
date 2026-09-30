@@ -606,7 +606,10 @@ def retire(state: dict[str, Any], seats: Sequence[Specialist], day: str) -> dict
         value = w["unique"] + w["sole"]
         if sp.name in retired:
             if value > 0:
-                retired.pop(sp.name)
+                # A RE-OPENING on positive evidence (a unique catch), recorded, never an erasure.
+                state.setdefault("reopened", {})[sp.name] = \
+                    retired[sp.name] | {"reopened_at": now()}
+                retired = state["retired"] = {k: v for k, v in retired.items() if k != sp.name}
                 out["reopened"].append(sp.name)
             continue
         if w["history_days"] >= RETIRE_WINDOW_DAYS and w["measured"] >= \
