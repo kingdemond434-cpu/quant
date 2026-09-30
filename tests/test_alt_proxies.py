@@ -419,7 +419,8 @@ def test_roster_rows_carry_uses_status_and_the_regional_schema() -> None:
     assert len(rows) == len(A.SOURCES) >= 10
     for r in rows:
         assert set(r["uses"]) == {"direct_cells", "indirect_cells", "allocation_intel"}
-        assert r["status"] in ("UNMEASURED_LIVE_YIELD", f"BLOCKED_ON_KEY:{r['auth'][9:]}")
+        assert (r["status"] in ("UNMEASURED_LIVE_YIELD", f"BLOCKED_ON_KEY:{r['auth'][9:]}")
+                or r["status"].startswith("ARCHIVE_ENDED:"))
         for k in (*REQUIRED_META, "id", "name", "url", "region", "language", "cadence", "auth",
                                   "licence", "cursor", "pit", "consumer"):
             assert r.get(k), (r["id"], k)

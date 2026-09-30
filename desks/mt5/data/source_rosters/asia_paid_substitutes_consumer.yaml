@@ -1,0 +1,671 @@
+# Paid-dataset substitutes (RavenPack / card-spend / foot-traffic / satellite panels),
+# built by the asia_gap_thread in desks/mt5/research/alt_proxies.py, which FETCHES
+# every row itself (fetcher: owned). Generated from alt_proxies.substitute_roster_rows();
+# regenerate rather than hand-edit. Live yield is UNMEASURED except where the status
+# says otherwise.
+sources:
+- id: gdelt_events_country
+  name: 'GDELT 2.0 Events: country x day x theme tone panel'
+  url: http://data.gdeltproject.org/gdeltv2/{slot}.export.CSV.zip
+  region: GLOBAL
+  language: multi
+  cadence: daily
+  auth: none
+  licence: GDELT Project open data (unrestricted use with citation); no key
+  cursor: fwd/back 15-minute slot cursors (12+12 slots/pass, 730d deep); open days held in state.acc
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: GLOBAL/multi
+  participant_structure:
+  - institutional
+  - retail_heavy
+  - policy_driven
+  failure_mode_hypothesis: fails when a single mega-story (a war, an election) dominates every country's
+    coverage, and when GDELT's source list or translation pipeline changes, which moves tone for no reason
+    in the markets
+  crowding_prior: medium
+  substitutes_for: RavenPack-style news analytics (event counts, tone, themes per entity)
+  mechanism: 'machine-coded events from the world''s broadcast, print and web news in 100+ languages,
+    every 15 minutes: the article-weighted tone and conflict share of what is happening IN a country is
+    the news-flow state a RavenPack sentiment feed sells, computed from the same kind of text'
+  payer: holders of EM and Asian FX/index risk who reprice on the headline they read, not on the day's
+    aggregate flow of local-language coverage
+  constraint: a desk reads a handful of English wires; GDELT's translated local press is too large to
+    read, so its aggregate state is not in the price by hand
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 1440
+  kind: mechanics
+- id: wiki_asia_attention
+  name: Asian-language Wikipedia attention (ja/zh/ko pageviews)
+  url: https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/all-access/user/{title}/daily/{start}/{end}
+  region: ASIA
+  language: ja/zh/ko
+  cadence: daily
+  auth: none
+  licence: Wikimedia pageviews API (CC0 data); no key
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: JP/ja,CN/zh,KR/ko
+  participant_structure:
+  - retail_heavy
+  failure_mode_hypothesis: fails when bots or a main-page feature inflate views, and zh.wikipedia is blocked
+    in mainland China so its readers are TW/HK/diaspora, not the onshore retail base
+  crowding_prior: low
+  substitutes_for: RavenPack-style news analytics (event counts, tone, themes per entity)
+  mechanism: a Japanese, Chinese or Korean reader looks up the central bank, the currency or the index
+    in their own language before acting; an attention spike in the local language is local retail attention
+    the English Wikipedia list misses
+  payer: local retail positioning that chases the move after the attention spike
+  constraint: retail acts on attention with a lag; institutions ignore pageviews
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 1440
+  kind: mechanics
+- id: us_oi_card_spend
+  name: Opportunity Insights / Affinity card spend (US, by sector)
+  url: https://raw.githubusercontent.com/OpportunityInsights/EconomicTracker/main/data/Affinity%20-%20National%20-%20Daily.csv
+  region: US
+  language: en
+  cadence: weekly
+  auth: none
+  licence: Opportunity Insights Economic Tracker (CC BY 4.0, cite Chetty et al.)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: ARCHIVE_ENDED:2024-06
+  source_culture: US/en
+  participant_structure:
+  - retail_heavy
+  - institutional
+  failure_mode_hypothesis: 'fails because the feed ENDED (last rows 2024-06): it is a 2020-2024 backfill
+    for history-only tests, and it over-weights the pandemic regime in any fit'
+  crowding_prior: high
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: de-identified credit and debit card spend from Affinity Solutions by sector and income quartile,
+    seasonally adjusted against 2019 -- the same kind of panel Second Measure and Earnest sell, published
+    free by Opportunity Insights
+  payer: consumer-equity and index holders who wait for Census retail sales
+  constraint: the official receipts survey is monthly and two weeks late
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 10080
+  kind: mechanics
+  live_yield: 'MEASURED 2026-09-30 from the authoring container: 6,867 obs, 2020-01-13..2024-06-16 (feed
+    ended); corr to Google mobility retail visits r=0.61 levels / 0.42 7d-changes (n=851/844)'
+- id: kr_bok_card_spend
+  name: BOK ECOS card spending (Korea, one configured item)
+  url: https://ecos.bok.or.kr/api/StatisticSearch/<key>/json/kr/1/1000/601Y002/M/201801/{yyyymm}/X
+  region: KR
+  language: ko
+  cadence: monthly
+  auth: key
+  licence: BOK ECOS Open API (free key; attribution to the Bank of Korea)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: BLOCKED_ON_KEY:ECOS_API_KEY
+  source_culture: KR/ko
+  participant_structure:
+  - retail_heavy
+  - policy_driven
+  failure_mode_hypothesis: fails around Chuseok/Lunar New Year month shifts and government consumption-voucher
+    programmes
+  crowding_prior: low
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: Korean card use is near-universal, so the BOK's card-spending series is household consumption
+    itself, printed a month before the national accounts
+  payer: won holders and Korea-exposed books waiting for GDP and retail surveys
+  constraint: BOK policy and won positioning reprice at the monthly data calendar
+  fetcher: owned
+  owner: asia_gap_thread
+  auth_env: ECOS_API_KEY
+  cadence_minutes: 43200
+  kind: mechanics
+- id: jp_meti_retail
+  name: 'METI commercial dynamics flash: retail sales YoY (Japan)'
+  url: https://www.meti.go.jp/statistics/tyo/syoudou/result/sokuho_2.html
+  region: JP
+  language: ja
+  cadence: monthly
+  auth: none
+  licence: METI statistics (Government of Japan standard terms, attribution)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: JP/ja
+  participant_structure:
+  - policy_driven
+  - retail_heavy
+  failure_mode_hypothesis: fails when fuel subsidies or a consumption-tax change move nominal sales mechanically
+  crowding_prior: medium
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: METI's survey of retailers' sales is Japan's monthly consumption print; a firm print feeds
+    BoJ normalisation pricing and domestic-demand equities
+  payer: yen-funded carry and JPN225 holders leaning on weak Japanese demand
+  constraint: BoJ-path positioning reprices at data and meeting dates only
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: cn_nbs_retail
+  name: NBS retail sales of consumer goods (China)
+  url: https://www.stats.gov.cn/sj/zxfb/
+  region: CN
+  language: zh
+  cadence: monthly
+  auth: none
+  licence: National Bureau of Statistics of China releases (public)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: CN/zh
+  participant_structure:
+  - policy_driven
+  - institutional
+  failure_mode_hypothesis: fails when the January-February combined print and base effects dominate, and
+    when stimulus is already announced
+  crowding_prior: high
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: 'China''s official consumption print against its own run-rate: a miss is stimulus odds up
+    and a China-demand repricing in AUD, copper and HK equity'
+  payer: China-proxy holders (AUD, copper, HK50) pricing on PMI headlines alone
+  constraint: stimulus expectations move only at State Council and data dates
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: cn_holiday_spend
+  name: MCT holiday tourism spend and UnionPay holiday payments
+  url: https://www.mct.gov.cn/whzx/whyw/
+  region: CN
+  language: zh
+  cadence: event
+  auth: none
+  licence: Ministry of Culture and Tourism / UnionPay public releases
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: CN/zh
+  participant_structure:
+  - retail_heavy
+  - policy_driven
+  failure_mode_hypothesis: fails when holiday length changes (the calendar is set by the State Council
+    each year) and when official tallies are managed upward
+  crowding_prior: medium
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: the Golden Week and Spring Festival tallies (trips and spend, YoY) are the only same-week
+    read of Chinese discretionary spending; spend PER TRIP is consumer confidence net of the travel-count
+    headline
+  payer: HK and China-consumer holders reading the trip-count headline only
+  constraint: onshore data is monthly; the holiday tally lands the evening it ends
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 1440
+  kind: mechanics
+- id: in_npci_upi
+  name: NPCI UPI monthly volumes and value (India)
+  url: https://www.npci.org.in/what-we-do/upi/product-statistics
+  region: IN
+  language: en
+  cadence: monthly
+  auth: none
+  licence: NPCI public product statistics
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: IN/en
+  participant_structure:
+  - retail_heavy
+  - policy_driven
+  failure_mode_hypothesis: fails because structural adoption growth dominates YoY; a surprise is small
+    against the trend and festivals shift it
+  crowding_prior: low
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: UPI carries most Indian retail payments; its monthly value is a card-panel substitute for
+    the whole economy, out on day one of the next month
+  payer: INR and India-exposed holders waiting for MOSPI and RBI data
+  constraint: RBI manages INR volatility, so flow information reprices slowly
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: tr_bkm_card
+  name: BKM card payments (Turkey), nominal YoY
+  url: https://bkm.com.tr/en/press-releases/
+  region: TR
+  language: tr
+  cadence: monthly
+  auth: none
+  licence: BKM public press releases
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: TR/tr
+  participant_structure:
+  - retail_heavy
+  - policy_driven
+  failure_mode_hypothesis: 'fails because nominal growth is mostly inflation: the surprise is dominated
+    by CPI, not demand'
+  crowding_prior: low
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: Turkish card spend in nominal lira is inflation plus demand; a hot print is pressure on the
+    CBRT and the lira before CPI prints
+  payer: lira carry holders who price on the policy rate alone
+  constraint: CBRT-managed lira and capital-flow rules slow the repricing
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: br_cielo_icva
+  name: Cielo ICVA retail card sales (Brazil)
+  url: https://www.cielo.com.br/icva/
+  region: BR
+  language: pt
+  cadence: monthly
+  auth: none
+  licence: Cielo public ICVA releases
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: BR/pt
+  participant_structure:
+  - retail_heavy
+  - institutional
+  failure_mode_hypothesis: fails when calendar (working-day) effects and Black Friday timing dominate
+    the month
+  crowding_prior: low
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: 'Cielo''s acquirer data is Brazil''s card panel: deflated retail card sales YoY, out weeks
+    before IBGE''s PMC retail survey'
+  payer: BRL carry holders waiting for IBGE retail and Copom
+  constraint: Copom and BRL positioning reprice on official data dates
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: mx_antad_sss
+  name: ANTAD same-store sales (Mexico)
+  url: https://antad.net/indicadores/
+  region: MX
+  language: es
+  cadence: monthly
+  auth: none
+  licence: ANTAD public monthly indicator
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: MX/es
+  participant_structure:
+  - retail_heavy
+  - institutional
+  failure_mode_hypothesis: fails around Easter and El Buen Fin timing shifts
+  crowding_prior: low
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: the retailers' association prints same-store sales two weeks after month end, a month before
+    INEGI retail; Walmex dominates the panel
+  payer: MXN carry holders waiting for INEGI and Banxico
+  constraint: Banxico-path positioning reprices at data dates
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: za_beti
+  name: BankservAfrica/PayInc economic transactions index (South Africa)
+  url: https://www.payinc.co.za/beti/
+  region: ZA
+  language: en
+  cadence: monthly
+  auth: none
+  licence: BankservAfrica / PayInc public releases
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: ZA/en
+  participant_structure:
+  - institutional
+  - physical_flow
+  failure_mode_hypothesis: fails under load-shedding months and payday-calendar shifts
+  crowding_prior: low
+  substitutes_for: card-spend panels (Second Measure, Earnest, Bank of America card data)
+  mechanism: the interbank clearing house's count and value of electronic transactions is South African
+    activity read from the payments rail, weeks before Stats SA
+  payer: ZAR carry holders pricing on commodity terms of trade alone
+  constraint: Stats SA GDP and retail are quarterly/monthly and late
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: us_oi_google_mobility
+  name: Google mobility via Opportunity Insights (US)
+  url: https://raw.githubusercontent.com/OpportunityInsights/EconomicTracker/main/data/Google%20Mobility%20-%20National%20-%20Daily.csv
+  region: US
+  language: en
+  cadence: daily
+  auth: none
+  licence: Google COVID-19 Community Mobility Reports via Opportunity Insights (free use)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: ARCHIVE_ENDED:2022-10
+  source_culture: US/en
+  participant_structure:
+  - retail_heavy
+  - physical_flow
+  failure_mode_hypothesis: 'fails because the feed ENDED (2022-10): a pandemic-era history for history-only
+    tests'
+  crowding_prior: high
+  substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
+  mechanism: phone-location visits to retail and transit places against a pre-2020 base -- the product
+    SafeGraph and Placer.ai sell, published free by Google
+  payer: consumer and travel holders waiting for earnings and monthly surveys
+  constraint: visit counts were never part of any official calendar
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 1440
+  kind: mechanics
+  live_yield: 'MEASURED 2026-09-30 from the authoring container: 3,860 obs, 2020-02-24..2022-10-15 (feed
+    ended)'
+- id: kr_kobis_box_office
+  name: KOBIS daily box office (Korea, top 10)
+  url: https://www.kobis.or.kr/kobisopenapi/webservice/rest/boxoffice/searchDailyBoxOfficeList.json
+  region: KR
+  language: ko
+  cadence: daily
+  auth: key
+  licence: KOBIS Open API (free key; Korean Film Council)
+  cursor: last 7 days (lag 1d) re-read each pass + backfill_to walking back 14 days/pass, 1095d deep
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: BLOCKED_ON_KEY:KOBIS_API_KEY
+  source_culture: KR/ko
+  participant_structure:
+  - retail_heavy
+  failure_mode_hypothesis: fails when one blockbuster release dominates a week and holiday dates shift
+    against the 364-day comparison
+  crowding_prior: low
+  substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
+  mechanism: cinema admissions are a daily count of discretionary outings, the foot-traffic panel for
+    Korean leisure spend
+  payer: won and Korea-consumer holders waiting for monthly retail data
+  constraint: nothing official prints Korean leisure spend daily
+  fetcher: owned
+  owner: asia_gap_thread
+  auth_env: KOBIS_API_KEY
+  cadence_minutes: 1440
+  kind: mechanics
+- id: kr_seoul_subway
+  name: Seoul subway boardings by day (card taps, all stations)
+  url: http://openapi.seoul.go.kr:8088/<key>/json/CardSubwayStatsNew/1/1000/{date}
+  region: KR
+  language: ko
+  cadence: daily
+  auth: key
+  licence: Seoul Open Data Plaza (free key; KOGL type 1)
+  cursor: last 5 days (lag 4d) re-read each pass + backfill_to walking back 10 days/pass, 1095d deep
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: BLOCKED_ON_KEY:SEOUL_API_KEY
+  source_culture: KR/ko
+  participant_structure:
+  - retail_heavy
+  - physical_flow
+  failure_mode_hypothesis: fails on public-holiday misalignment and fare changes that move ridership mechanically
+  crowding_prior: low
+  substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
+  mechanism: 'every Seoul subway card tap, summed per day: commuting and outing volume in the capital,
+    the location panel for Korean activity'
+  payer: Korea-exposed holders waiting for monthly activity data
+  constraint: no official daily activity measure exists
+  fetcher: owned
+  owner: asia_gap_thread
+  auth_env: SEOUL_API_KEY
+  cadence_minutes: 1440
+  kind: mechanics
+- id: cn_maoyan_box_office
+  name: Maoyan Pro national box office (China, daily)
+  url: https://piaofang.maoyan.com/dashboard-ajax
+  region: CN
+  language: zh
+  cadence: daily
+  auth: none
+  licence: Maoyan Pro public dashboard (terms to confirm; read-only daily total)
+  cursor: last 3 days (lag 1d) re-read each pass + backfill_to walking back 7 days/pass, 1095d deep
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: CN/zh
+  participant_structure:
+  - retail_heavy
+  failure_mode_hypothesis: fails when release-slate timing (Spring Festival films) dominates, and when
+    the dashboard's anti-scraping changes the response
+  crowding_prior: low
+  substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
+  mechanism: China's national box office by day is discretionary spending read from the ticketing platform,
+    weeks before NBS retail
+  payer: China-consumer and HK equity holders waiting for NBS
+  constraint: onshore consumption data is monthly
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 1440
+  kind: mechanics
+- id: cn_baidu_migration
+  name: 'Baidu migration index: move-in by city (China)'
+  url: https://huiyan.baidu.com/migration/historycurve.jsonp
+  region: CN
+  language: zh
+  cadence: daily
+  auth: none
+  licence: Baidu Huiyan public migration map (terms to confirm)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: CN/zh
+  participant_structure:
+  - physical_flow
+  - policy_driven
+  failure_mode_hypothesis: fails around the lunar calendar (Spring Festival moves each year) and when
+    Baidu suspends the map, as it has before
+  crowding_prior: low
+  substitutes_for: foot-traffic / location panels (SafeGraph, Placer.ai)
+  mechanism: phone-location migration into China's tier-1 cities is the return-to-work and travel pulse
+    after holidays, the location panel no Western vendor sells
+  payer: China-demand holders (AUD, copper, HK) waiting for PMI and NBS activity
+  constraint: onshore activity data is monthly and three weeks late
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 1440
+  kind: mechanics
+- id: kr_busan_port
+  name: Busan Port Authority monthly container throughput
+  url: https://www.busanpa.com/kor/Board.do
+  region: KR
+  language: ko
+  cadence: monthly
+  auth: none
+  licence: Busan Port Authority public releases
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: KR/ko
+  participant_structure:
+  - physical_flow
+  failure_mode_hypothesis: fails when transhipment re-routing (Red Sea, US tariffs) moves Busan's share
+    rather than total trade
+  crowding_prior: low
+  substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
+  mechanism: 'Busan is the world''s second transhipment hub: its monthly boxes are North Asian trade volume
+    counted at the quay, the AIS/satellite port panel''s output as an official number'
+  payer: trade-cycle holders waiting for customs totals
+  constraint: official trade data is value-based and late
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: sg_port_throughput
+  name: 'SingStat sea cargo: Singapore container throughput'
+  url: https://tablebuilder.singstat.gov.sg/api/table/tabledata/M650631
+  region: SG
+  language: en
+  cadence: monthly
+  auth: none
+  licence: SingStat Table Builder API (Singapore Open Data Licence)
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: SG/en
+  participant_structure:
+  - physical_flow
+  - policy_driven
+  failure_mode_hypothesis: fails under route shifts (Red Sea diversions) that add transhipment
+  crowding_prior: low
+  substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
+  mechanism: Singapore's container throughput is Asia-Europe and intra-Asia trade at the Malacca chokepoint,
+    monthly and official
+  payer: SGD and Asian trade-cycle holders waiting for NODX and customs
+  constraint: MAS manages SGD on a policy band; trade data reprices it slowly
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 43200
+  kind: mechanics
+- id: cn_mot_port_weekly
+  name: China MOT weekly port cargo and container throughput
+  url: https://www.mot.gov.cn/tongjishuju/
+  region: CN
+  language: zh
+  cadence: weekly
+  auth: none
+  licence: Ministry of Transport of the PRC public bulletins
+  cursor: vintage store keyed series|period (append-only)
+  pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
+    = vault fetch instant
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  consumer: desks/mt5/research/alt_proxies.py
+  status: UNMEASURED_LIVE_YIELD
+  source_culture: CN/zh
+  participant_structure:
+  - physical_flow
+  - policy_driven
+  failure_mode_hypothesis: fails around Spring Festival and typhoon port closures
+  crowding_prior: low
+  substitutes_for: satellite / AIS activity panels (Orbital Insight, SpaceKnow)
+  mechanism: 'the transport ministry''s weekly national port tally is China''s trade volume a month before
+    customs: the port-activity reading a satellite panel sells'
+  payer: China-trade proxies (AUD, copper, HK) waiting for monthly customs
+  constraint: customs data is monthly and value-based
+  fetcher: owned
+  owner: asia_gap_thread
+  cadence_minutes: 10080
+  kind: mechanics

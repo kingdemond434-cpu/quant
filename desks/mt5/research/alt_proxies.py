@@ -1,5 +1,13 @@
 """FREE PUBLIC PROXIES FOR POS / CARD / RECEIPT / LOCATION / SATELLITE DATA, AS PIT SERIES.
 
+PAID SUBSTITUTES (SUBSTITUTE_SOURCES). Twenty more rows stand in for four paid panel classes --
+RavenPack news analytics (GDELT 2.0 country x day x theme, ja/zh/ko Wikipedia attention), card
+panels (Opportunity Insights/Affinity, BOK ECOS, METI, NBS, MCT/UnionPay holidays, NPCI UPI, BKM,
+Cielo ICVA, ANTAD, BETI), foot traffic (Google mobility, KOBIS, Seoul subway, Maoyan, Baidu
+migration) and satellite/AIS (Busan, SingStat, China MOT ports). Each row names what it
+`substitutes_for`; `substitute_agreement` measures each against an overlapping free series on the
+same keys (the paid originals are not held). They ride this organ's hourly clock unchanged.
+
 WHAT THIS IS. Ten public (keyless or free-key) alternative-data sources, each parsed into a
 point-in-time series and published through the doors the desk already has, so the same series
 feeds all three uses at once:
@@ -50,6 +58,7 @@ import gzip
 import hashlib
 import html as _html
 import io
+import itertools
 import json
 import math
 import os
@@ -92,7 +101,7 @@ INDIRECT_PER_PASS = 24
 PARENTS_PER_SYMBOL = 3
 #: A component older than this (days since its release) no longer describes "now" in the
 #: allocation-intel artifact. Keyed by cadence.
-STALE_DAYS = {"daily": 10, "weekly": 21, "10-daily": 25, "monthly": 45}
+STALE_DAYS = {"daily": 10, "weekly": 21, "10-daily": 25, "monthly": 45, "event": 30}
 
 
 @dataclass(frozen=True)
@@ -138,6 +147,11 @@ class Paths:
     @property
     def sge_premium(self) -> Path:
         return self.desk / "data" / "lake" / "sge_premium.parquet"
+
+    @property
+    def nlp_series(self) -> Path:
+        """`nlp_event_factors` writes its per-country tagger panel here (nlp_events_<CC>)."""
+        return self.series
 
 
 DEFAULT_PATHS = Paths(DESK)
@@ -551,6 +565,696 @@ def read_sge_premium(paths: Paths) -> list[Obs]:
     return out
 
 
+
+# ============================================================================ paid substitutes
+# FREE SUBSTITUTES FOR FOUR PAID PANEL CLASSES. Each parser below reads a public page or API
+# whose numbers stand in for a vendor panel (the `substitutes_for` field of its Source row):
+#
+#   news analytics (RavenPack)       GDELT 2.0 Events, 15-minute export files, folded into a
+#                                    country x day x theme panel; Asian-language Wikipedia
+#                                    attention read from the bronze files `ingest_axes` fetches
+#   card-spend panels (Second        Opportunity Insights / Affinity card spend (archive), BOK
+#   Measure, Earnest, BofA)          ECOS card series, METI commercial dynamics, NBS retail
+#                                    sales, MCT/UnionPay holiday spend, NPCI UPI, BKM (TR),
+#                                    Cielo ICVA (BR), ANTAD (MX), BankservAfrica BETI (ZA)
+#   foot traffic (SafeGraph,         Google mobility via Opportunity Insights (archive), KOBIS
+#   Placer.ai)                       box office, Seoul subway card taps, Maoyan box office,
+#                                    Baidu migration
+#   satellite / AIS (Orbital         Busan Port Authority, SingStat sea cargo, China MOT weekly
+#   Insight, SpaceKnow)              port throughput (FIRMS and PortWatch were already here)
+#
+# A text parser reads the number and the page's own publication stamp and nothing else; a page
+# whose wording does not match emits nothing, never a guess.
+
+GDELT_URL = "http://data.gdeltproject.org/gdeltv2/{slot}.export.CSV.zip"
+#: FIPS 10-4 country code (GDELT's ActionGeo_CountryCode) -> ISO code used for series names.
+GDELT_COUNTRIES: dict[str, str] = {
+    "CH": "CN", "HK": "HK", "JA": "JP", "KS": "KR", "TW": "TW", "IN": "IN", "US": "US",
+    "BR": "BR", "RS": "RU", "SF": "ZA", "MX": "MX", "TU": "TR", "AS": "AU"}
+#: A day is emitted only when this many of its 96 slots were read (a 404 slot counts as read,
+#: empty -- GDELT has gaps); more gaps than this and the day is dropped, not guessed.
+GDELT_MAX_MISSING_SLOTS = 8
+GDELT_MIN_EVENTS = 20
+GDELT_FWD_PER_PASS = 12
+GDELT_BACK_PER_PASS = 12
+GDELT_BACK_DEPTH_D = 730
+#: CAMEO themes counted per country-day. Keyed on root code (2 chars) or base code (3 chars).
+GDELT_THEMES: dict[str, tuple[str, ...]] = {
+    "protest": ("14",), "coerce": ("17",), "violence": ("18", "19", "20"),
+    "sanction": ("163",), "econ_coop": ("061",)}
+
+
+def _gdelt_rows(body: bytes) -> list[list[str]]:
+    import zipfile
+    raw = body
+    if body[:2] == b"PK":
+        try:
+            with zipfile.ZipFile(io.BytesIO(body)) as zf:
+                names = zf.namelist()
+                if not names:
+                    return []
+                raw = zf.read(names[0])
+        except (zipfile.BadZipFile, OSError):
+            return []
+    out = []
+    for line in raw.decode("utf-8", errors="replace").splitlines():
+        cols = line.split("\t")
+        if len(cols) >= 60 and cols[0].isdigit():
+            out.append(cols)
+    return out
+
+
+def parse_gdelt_events(body: bytes, ctx: Ctx) -> list[Obs]:
+    """ONE GDELT 2.0 Events export file (15 minutes) -> per-country PARTIAL SUMS.
+
+    Series are `<ISO>|<sum>`; they are never merged as values. `gdelt_accumulate` adds them into
+    the day they were added to GDELT (DATEADDED) and `gdelt_complete_days` turns a day whose 96
+    slots have all been read into the country x day x theme panel. Columns (0-based, GDELT 2.0):
+    26 EventCode, 27 EventBaseCode, 28 EventRootCode, 29 QuadClass, 30 GoldsteinScale,
+    33 NumArticles, 34 AvgTone, 53 ActionGeo_CountryCode, 59 DATEADDED."""
+    sums: dict[tuple[str, date], float] = {}
+    for c in _gdelt_rows(body):
+        iso = GDELT_COUNTRIES.get(c[53].strip())
+        added = c[59].strip()
+        if not iso or len(added) < 8 or not added[:8].isdigit():
+            continue
+        try:
+            d = date(int(added[:4]), int(added[4:6]), int(added[6:8]))
+        except ValueError:
+            continue
+        art = _num(c[33]) or 0.0
+        tone, gold = _num(c[34]), _num(c[30])
+        if art <= 0 or tone is None or gold is None:
+            continue
+        quad = c[29].strip()
+
+        def add(k: str, v: float, iso: str = iso, d: date = d) -> None:
+            sums[(f"{iso}|{k}", d)] = sums.get((f"{iso}|{k}", d), 0.0) + v
+
+        add("n", 1.0)
+        add("art", art)
+        add("tone_art", tone * art)
+        add("gold_art", gold * art)
+        add("conflict_art", art if quad in ("3", "4") else 0.0)
+        root, base = c[28].strip().zfill(2), c[27].strip()
+        for theme, codes in GDELT_THEMES.items():
+            if root in codes or base in codes:
+                add(f"theme_{theme}", 1.0)
+    return [Obs(k, d, v) for (k, d), v in sums.items()]
+
+
+def gdelt_slots(start: datetime, end: datetime) -> list[str]:
+    """15-minute slot ids from `start` to `end` inclusive (both floored to the quarter hour)."""
+    t = start.replace(minute=start.minute - start.minute % 15, second=0, microsecond=0)
+    out = []
+    while t <= end:
+        out.append(t.strftime("%Y%m%d%H%M%S"))
+        t += timedelta(minutes=15)
+    return out
+
+
+def gdelt_accumulate(acc: dict[str, Any], slot: str, obs: Iterable[Obs] | None) -> None:
+    """Add one slot's partial sums to its day. `obs=None` is a slot GDELT does not have (404):
+    read, empty, and counted against the day's gap allowance. Idempotent per slot."""
+    day = f"{slot[:4]}-{slot[4:6]}-{slot[6:8]}"
+    e = acc.setdefault(day, {"slots": [], "missing": [], "sums": {}})
+    if slot in e["slots"] or slot in e["missing"]:
+        return
+    if obs is None:
+        e["missing"].append(slot)
+        return
+    e["slots"].append(slot)
+    for o in obs:
+        e["sums"][o.series] = e["sums"].get(o.series, 0.0) + o.value
+
+
+def gdelt_complete_days(acc: dict[str, Any]) -> tuple[list[Obs], list[str]]:
+    """Obs for every day whose 96 slots are read; the day leaves the accumulator either way.
+    Returns (panel obs, days dropped for too many gaps)."""
+    out: list[Obs] = []
+    dropped: list[str] = []
+    for day in sorted(acc):
+        e = acc[day]
+        if len(e["slots"]) + len(e["missing"]) < 96:
+            continue
+        del acc[day]
+        if len(e["missing"]) > GDELT_MAX_MISSING_SLOTS:
+            dropped.append(day)
+            continue
+        d = date.fromisoformat(day)
+        by: dict[str, dict[str, float]] = {}
+        for k, v in e["sums"].items():
+            iso, _, name = k.partition("|")
+            by.setdefault(iso, {})[name] = v
+        for iso, s in sorted(by.items()):
+            n, art = s.get("n", 0.0), s.get("art", 0.0)
+            if n < GDELT_MIN_EVENTS or art <= 0:
+                continue
+            out.append(Obs(f"{iso}_events", d, n))
+            out.append(Obs(f"{iso}_tone", d, round(s.get("tone_art", 0.0) / art, 6)))
+            out.append(Obs(f"{iso}_goldstein", d, round(s.get("gold_art", 0.0) / art, 6)))
+            out.append(Obs(f"{iso}_conflict_share", d,
+                           round(s.get("conflict_art", 0.0) / art, 6)))
+            for theme in GDELT_THEMES:
+                out.append(Obs(f"{iso}_theme_{theme}", d, s.get(f"theme_{theme}", 0.0)))
+    return out, dropped
+
+
+#: Asian-language articles read for local attention: (label, project, exact title). The English
+#: macro list stays with `scripts/ingest_axes.py` (VPS bronze); these are different articles for a
+#: consumer on the trading box, so nothing is fetched twice.
+WIKI_ASIA_ARTICLES: tuple[tuple[str, str, str], ...] = (
+    ("ja_boj", "ja.wikipedia", "日本銀行"), ("ja_nikkei", "ja.wikipedia", "日経平均株価"),
+    ("zh_pboc", "zh.wikipedia", "中国人民银行"), ("zh_rmb", "zh.wikipedia", "人民币"),
+    ("zh_hsi", "zh.wikipedia", "恒生指数"), ("ko_bok", "ko.wikipedia", "한국은행"),
+    ("ko_kospi", "ko.wikipedia", "코스피"))
+WIKI_URL = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/{project}/"
+            "all-access/user/{title}/daily/{start}/{end}")
+
+
+def parse_wikimedia(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Wikimedia pageviews per-article JSON (`items[].timestamp YYYYMMDD00`, `views`).
+    `ctx.part` is the article label; the API serves complete days only."""
+    try:
+        items = json.loads(body.decode("utf-8", errors="replace")).get("items")
+    except (ValueError, AttributeError):
+        return []
+    label = ctx.part or "article"
+    out: list[Obs] = []
+    for it in items if isinstance(items, list) else []:
+        ts = str((it or {}).get("timestamp") or "")
+        v = _num(str((it or {}).get("views") if isinstance(it, dict) else ""))
+        with contextlib.suppress(ValueError):
+            if len(ts) >= 8 and ts[:8].isdigit() and v is not None:
+                out.append(Obs(f"{label}_views", date(int(ts[:4]), int(ts[4:6]), int(ts[6:8])),
+                               v))
+    return out
+
+
+def _oi_csv(body: bytes, cols: dict[str, str]) -> list[Obs]:
+    """Opportunity Insights EconomicTracker CSV (year,month,day,...; '.' is missing)."""
+    import csv
+    text = body.decode("utf-8", errors="replace")
+    if not text.startswith("year,month,day"):
+        return []
+    out: list[Obs] = []
+    for r in csv.DictReader(io.StringIO(text)):
+        try:
+            d = date(int(r["year"]), int(r["month"]), int(r["day"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        for col, name in cols.items():
+            v = _num(str(r.get(col) or ""))
+            if v is not None:
+                out.append(Obs(name, d, v))
+    return out
+
+
+OI_SPEND_COLS = {"spend_all": "spend_all", "spend_retail_no_grocery": "spend_retail_no_grocery",
+                 "spend_inperson": "spend_inperson", "spend_acf": "spend_food_accommodation",
+                 "spend_aer": "spend_arts_entertainment", "spend_all_q1": "spend_low_income",
+                 "spend_all_q4": "spend_high_income"}
+OI_MOBILITY_COLS = {"gps_retail_and_recreation": "retail_and_recreation",
+                    "gps_transit_stations": "transit_stations", "gps_workplaces": "workplaces",
+                    "gps_grocery_and_pharmacy": "grocery_and_pharmacy"}
+
+
+def parse_oi_spend(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Affinity card spend (7-day average, seasonally adjusted, change vs January 2020)."""
+    return _oi_csv(body, OI_SPEND_COLS)
+
+
+def parse_oi_mobility(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Google community-mobility visits by place category (change vs the Jan-Feb 2020 base)."""
+    return _oi_csv(body, OI_MOBILITY_COLS)
+
+
+def parse_ecos(body: bytes, ctx: Ctx) -> list[Obs]:
+    """BOK ECOS StatisticSearch JSON for ONE item (the URL filters to it). TIME is YYYYMM
+    (monthly) or YYYYMMDD; an ECOS error document (RESULT.CODE) parses to nothing."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    rows = ((doc or {}).get("StatisticSearch") or {}).get("row") if isinstance(doc, dict) else None
+    out: list[Obs] = []
+    for r in rows if isinstance(rows, list) else []:
+        if not isinstance(r, dict):
+            continue
+        t, v = str(r.get("TIME") or ""), _num(str(r.get("DATA_VALUE") or ""))
+        if v is None or not t.isdigit():
+            continue
+        with contextlib.suppress(ValueError):
+            if len(t) == 6:
+                out.append(Obs("card_spend", _month_end(int(t[:4]), int(t[4:])), v))
+            elif len(t) == 8:
+                out.append(Obs("card_spend", date(int(t[:4]), int(t[4:6]), int(t[6:])), v))
+    return out
+
+
+def _page_date_after(text: str, period: date, pat: re.Pattern[str],
+                     hour_utc: int = 0) -> datetime | None:
+    """The first full date on a page later than the period it describes (the release stamp)."""
+    for dm in pat.finditer(text):
+        with contextlib.suppress(ValueError):
+            cand = _utc(int(dm.group(1)), int(dm.group(2)), int(dm.group(3)), hour_utc)
+            if period < cand.date() <= period + timedelta(days=MAX_PUB_LAG_D):
+                return cand
+    return None
+
+
+_METI_RETAIL = re.compile(r"小売業(?:販売額)?[^。]{0,80}?前年同月比\s*([▲△\-]?)\s*([\d.]+)\s*%"
+                          r"\s*(?:の)?\s*(増加|減少|上昇|低下)?")
+_JP_MONTH = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月")
+
+
+def parse_meti_retail(body: bytes, ctx: Ctx) -> list[Obs]:
+    """METI 商業動態統計 (commercial dynamics) flash: retail sales, year on year. `▲` is minus.
+    The month is the LAST `YYYY年M月` written before the retail sentence (a release names the
+    month once, then says `うち小売業販売額は...` in the next sentence)."""
+    text = _text(body)
+    out: list[Obs] = []
+    for m in _METI_RETAIL.finditer(text):
+        months = list(_JP_MONTH.finditer(text, 0, m.start()))
+        if not months:
+            continue
+        y, mo = int(months[-1].group(1)), int(months[-1].group(2))
+        v = _num(m.group(2))
+        if v is None or not 1 <= mo <= 12:
+            continue
+        neg = m.group(1) in ("▲", "△", "-") or m.group(3) in ("減少", "低下")
+        period = _month_end(y, mo)
+        out.append(Obs("retail_yoy", period, -v if neg else v,
+                       _page_date_after(text, period, _JP_DATE)))
+    return _first_per_key(out)
+
+
+def _first_per_key(obs: list[Obs]) -> list[Obs]:
+    seen: set[tuple[str, date]] = set()
+    out = []
+    for o in obs:
+        if (o.series, o.period) not in seen:
+            seen.add((o.series, o.period))
+            out.append(o)
+    return out
+
+
+_CN_DATE = re.compile(r"(\d{4})[-年/.]\s*(\d{1,2})[-月/.]\s*(\d{1,2})日?")
+_NBS_RETAIL = re.compile(r"(\d{4})\s*年\s*(\d{1,2})\s*月份?\s*[，,]?\s*社会消费品零售总额\s*"  # noqa: RUF001
+                         r"([\d.]+)\s*亿元\s*[，,]?\s*同比(增长|下降)\s*([\d.]+)\s*%")  # noqa: RUF001
+
+
+def parse_nbs_retail(body: bytes, ctx: Ctx) -> list[Obs]:
+    """NBS monthly release: total retail sales of consumer goods, level (100m yuan) and YoY.
+    A cumulative `1—8月份` figure is not matched (the month must stand alone)."""
+    text = _text(body)
+    out: list[Obs] = []
+    for m in _NBS_RETAIL.finditer(text):
+        y, mo = int(m.group(1)), int(m.group(2))
+        lvl, yoy = _num(m.group(3)), _num(m.group(5))
+        if not 1 <= mo <= 12 or lvl is None or yoy is None:
+            continue
+        # "1-8月份" ends in "8月份" too: a dash or 至 right before the month is cumulative.
+        if re.search(r"[—\-－~至]\s*$", text[max(0, m.start(2) - 2): m.start(2)]):  # noqa: RUF001
+            continue
+        period = _month_end(y, mo)
+        pub = _page_date_after(text, period, _CN_DATE, 2)
+        out.append(Obs("retail_level_100m_cny", period, lvl, pub))
+        out.append(Obs("retail_yoy", period, -yoy if m.group(4) == "下降" else yoy, pub))
+    return _first_per_key(out)
+
+
+_CN_HOLIDAY = re.compile(r"(春节|清明节?|劳动节|五一|端午节?|中秋节?|国庆节?)[^。]{0,120}?"
+                         r"国内(?:旅游)?出游\s*([\d.]+)\s*(亿|万)人次\s*[，,]?\s*同比增长\s*"  # noqa: RUF001
+                         r"([\d.]+)\s*%[^。]{0,120}?(?:国内游客)?出游总花费\s*([\d.]+)\s*亿元\s*"
+                         r"[，,]?\s*同比增长\s*([\d.]+)\s*%")  # noqa: RUF001
+_CN_UNIONPAY = re.compile(r"(?:银联|网联)[^。]{0,80}?(?:金额|交易额)[^。]{0,30}?同比增长\s*"
+                          r"([\d.]+)\s*%")
+
+
+def parse_cn_holiday(body: bytes, ctx: Ctx) -> list[Obs]:
+    """MCT (文旅部) holiday tourism tally and the UnionPay/NetsUnion holiday payment release.
+
+    The period is the day BEFORE the page's own date (the holiday's last day; MCT publishes that
+    evening or the next day) and the release instant is the page date. A page with no date emits
+    nothing: the holiday calendar moves with the lunar year and is not guessed."""
+    text = _text(body)
+    dm = _CN_DATE.search(text)
+    if not dm:
+        return []
+    try:
+        pub = _utc(int(dm.group(1)), int(dm.group(2)), int(dm.group(3)), 12)
+    except ValueError:
+        return []
+    period = pub.date() - timedelta(days=1)
+    out: list[Obs] = []
+    h = _CN_HOLIDAY.search(text)
+    if h:
+        ty, sy = _num(h.group(4)), _num(h.group(6))
+        if ty is not None and sy is not None:
+            out.append(Obs("trips_yoy", period, ty, pub))
+            out.append(Obs("spend_yoy", period, sy, pub))
+            out.append(Obs("spend_per_trip_yoy", period,
+                           round(((1 + sy / 100) / (1 + ty / 100) - 1) * 100, 4), pub))
+    u = _CN_UNIONPAY.search(text)
+    if u and (uv := _num(u.group(1))) is not None:
+        out.append(Obs("unionpay_amount_yoy", period, uv, pub))
+    return out
+
+
+_EN_MONTHS3 = {m[:3]: i for m, i in _MONTHS.items()}
+_NPCI_ROW = re.compile(r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s\-']+"
+                       r"(\d{2}|\d{4})\b\s+(\d{1,4})\s+([\d,]+\.\d+)\s+([\d,]+\.\d+)", re.I)
+
+
+def parse_npci_upi(body: bytes, ctx: Ctx) -> list[Obs]:
+    """NPCI UPI product statistics table: month | banks live | volume (Mn) | value (Cr)."""
+    text = _text(body)
+    out: list[Obs] = []
+    for m in _NPCI_ROW.finditer(text):
+        mo = _EN_MONTHS3.get(m.group(1).lower()[:3])
+        y = int(m.group(2)) + (2000 if len(m.group(2)) == 2 else 0)
+        vol, val = _num(m.group(4)), _num(m.group(5))
+        if mo and vol is not None and val is not None:
+            out.append(Obs("upi_volume_mn", _month_end(y, mo), vol))
+            out.append(Obs("upi_value_cr", _month_end(y, mo), val))
+    return _first_per_key(out)
+
+
+_TR_MONTHS = {m: i for i, m in enumerate(("ocak", "şubat", "mart", "nisan", "mayıs", "haziran",  # noqa: RUF001
+                                          "temmuz", "ağustos", "eylül", "ekim", "kasım",  # noqa: RUF001
+                                          "aralık"), start=1)}  # noqa: RUF001
+_BKM = re.compile(r"(Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)"  # noqa: RUF001
+                  r"\s+(?:ayında\s+)?(\d{4})?[^.]{0,220}?kartl[ıi]\s+ödeme[^.]{0,160}?"  # noqa: RUF001
+                  r"%\s*([\d]+(?:[.,]\d+)?)\s*(artış|art|azal|düş)", re.I)  # noqa: RUF001
+_TR_YEAR = re.compile(r"\b(20\d{2})\b")
+_TR_DATE = re.compile(r"(\d{1,2})[./](\d{1,2})[./](\d{4})")
+
+
+def parse_bkm(body: bytes, ctx: Ctx) -> list[Obs]:
+    """BKM (Interbank Card Center, Turkey) monthly card-payment release, NOMINAL YoY %. Turkish
+    decimals use a comma. Year: the one in the phrase, else the first year on the page."""
+    text = _text(body)
+    out: list[Obs] = []
+    for m in _BKM.finditer(text):
+        mo = _TR_MONTHS.get(m.group(1).lower().replace("i̇", "i"))
+        yr = m.group(2) or (_TR_YEAR.search(text) or [None, None])[1]
+        v = _num((m.group(3) or "").replace(",", "."))
+        if not mo or not yr or v is None:
+            continue
+        period = _month_end(int(yr), mo)
+        pub = None
+        for dm in _TR_DATE.finditer(text):
+            with contextlib.suppress(ValueError):
+                c = _utc(int(dm.group(3)), int(dm.group(2)), int(dm.group(1)), 12)
+                if period < c.date() <= period + timedelta(days=MAX_PUB_LAG_D):
+                    pub = c
+                    break
+        neg = m.group(4).lower().startswith(("azal", "düş"))
+        out.append(Obs("card_payments_nominal_yoy", period, -v if neg else v, pub))
+    return _first_per_key(out)
+
+
+_PT_MONTHS = {m: i for i, m in enumerate(("janeiro", "fevereiro", "março", "abril", "maio",
+                                          "junho", "julho", "agosto", "setembro", "outubro",
+                                          "novembro", "dezembro"), start=1)}
+_ICVA_MONTH = re.compile(r"(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|"
+                         r"outubro|novembro|dezembro)\s+(?:de\s+)?(\d{4})", re.I)
+_ICVA_DEF = re.compile(r"ICVA\s+deflacionado[^.]{0,120}?(alta|crescimento|aumento|avanço|queda|"
+                       r"recuo|retração)\s+de\s+([\d]+(?:,\d+)?)\s*%", re.I)
+_ICVA_NOM = re.compile(r"ICVA\s+nominal[^.]{0,120}?(alta|crescimento|aumento|avanço|queda|"
+                       r"recuo|retração)\s+de\s+([\d]+(?:,\d+)?)\s*%", re.I)
+_BR_DATE = re.compile(r"(\d{1,2})/(\d{1,2})/(\d{4})")
+
+
+def parse_icva(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Cielo ICVA (Índice Cielo do Varejo Ampliado): retail card-sales index, YoY, deflated and
+    nominal, from Cielo's monthly Portuguese release."""
+    text = _text(body)
+    mm = _ICVA_MONTH.search(text)
+    if not mm:
+        return []
+    period = _month_end(int(mm.group(2)), _PT_MONTHS[mm.group(1).lower()])
+    pub = None
+    for dm in _BR_DATE.finditer(text):
+        with contextlib.suppress(ValueError):
+            c = _utc(int(dm.group(3)), int(dm.group(2)), int(dm.group(1)), 12)
+            if period < c.date() <= period + timedelta(days=MAX_PUB_LAG_D):
+                pub = c
+                break
+    out = []
+    for pat, name in ((_ICVA_DEF, "icva_deflated_yoy"), (_ICVA_NOM, "icva_nominal_yoy")):
+        m = pat.search(text)
+        if m and (v := _num(m.group(2).replace(",", "."))) is not None:
+            neg = m.group(1).lower() in ("queda", "recuo", "retração")
+            out.append(Obs(name, period, -v if neg else v, pub))
+    return out
+
+
+_ES_MONTHS = {m: i for i, m in enumerate(("enero", "febrero", "marzo", "abril", "mayo", "junio",
+                                          "julio", "agosto", "septiembre", "octubre",
+                                          "noviembre", "diciembre"), start=1)}
+_ANTAD = re.compile(r"(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|"
+                    r"noviembre|diciembre)\s+(?:de\s+)?(\d{4})[^.]{0,200}?tiendas\s+iguales"
+                    r"[^.]{0,80}?(crecimiento|incremento|aumento|alza|caída|decremento|baja)?"
+                    r"\s*(?:de|del)?\s*(-?[\d]+(?:\.\d+)?)\s*%", re.I)
+
+
+def parse_antad(body: bytes, ctx: Ctx) -> list[Obs]:
+    """ANTAD (Mexico) monthly same-store (`tiendas iguales`) sales growth, nominal YoY %."""
+    text = _text(body)
+    out: list[Obs] = []
+    for m in _ANTAD.finditer(text):
+        v = _num(m.group(4))
+        if v is None:
+            continue
+        period = _month_end(int(m.group(2)), _ES_MONTHS[m.group(1).lower()])
+        neg = (m.group(3) or "").lower() in ("caída", "decremento", "baja") and v > 0
+        out.append(Obs("same_store_sales_yoy", period, -v if neg else v))
+    return _first_per_key(out)
+
+
+_BETI = re.compile(r"BETI[^.]{0,200}?(increased|rose|grew|gained|decreased|fell|declined|"
+                   r"dropped|contracted)\s+(?:by\s+)?([\d.]+)\s*%\s*(?:month[- ]on[- ]month|m/m)"
+                   r"[^.]{0,80}?\bin\s+(January|February|March|April|May|June|July|August|"
+                   r"September|October|November|December)\s+(\d{4})?", re.I)
+
+
+def parse_beti(body: bytes, ctx: Ctx) -> list[Obs]:
+    """BankservAfrica / PayInc Economic Transactions Index (South Africa), month-on-month %."""
+    text = _text(body)
+    out: list[Obs] = []
+    for m in _BETI.finditer(text):
+        v = _num(m.group(2))
+        yr = m.group(4) or (_TR_YEAR.search(text) or [None, None])[1]
+        if v is None or not yr:
+            continue
+        period = _month_end(int(yr), _MONTHS[m.group(3).lower()])
+        neg = m.group(1).lower() in ("decreased", "fell", "declined", "dropped", "contracted")
+        out.append(Obs("beti_mom", period, -v if neg else v))
+    return _first_per_key(out)
+
+
+def parse_kobis(body: bytes, ctx: Ctx) -> list[Obs]:
+    """KOBIS daily box office (top 10): summed audience and sales for the day in showRange."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    res = (doc or {}).get("boxOfficeResult") if isinstance(doc, dict) else None
+    if not isinstance(res, dict):
+        return []
+    rng = str(res.get("showRange") or "")[:8]
+    rows = res.get("dailyBoxOfficeList")
+    if not rng.isdigit() or not isinstance(rows, list) or not rows:
+        return []
+    try:
+        d = date(int(rng[:4]), int(rng[4:6]), int(rng[6:8]))
+    except ValueError:
+        return []
+    aud = sum(_num(str(r.get("audiCnt") or "")) or 0.0 for r in rows if isinstance(r, dict))
+    sales = sum(_num(str(r.get("salesAmt") or "")) or 0.0 for r in rows if isinstance(r, dict))
+    return [Obs("audience_top10", d, aud), Obs("sales_top10_krw", d, sales)]
+
+
+def parse_seoul_subway(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Seoul open data CardSubwayStatsNew: boardings per station per day, summed to the city.
+    A page that does not hold every row of the day (list_total_count) emits nothing -- a partial
+    sum frozen as a first vintage would be a false low. Old and new field names both read."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    blk = (doc or {}).get("CardSubwayStatsNew") if isinstance(doc, dict) else None
+    rows = (blk or {}).get("row") if isinstance(blk, dict) else None
+    if not isinstance(rows, list) or not rows:
+        return []
+    total = int(_num(str((blk or {}).get("list_total_count") or "")) or 0)
+    if total and len(rows) < total:
+        return []
+    days: dict[date, float] = {}
+    regs: dict[date, date] = {}
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        ds = str(r.get("USE_YMD") or r.get("USE_DT") or "")
+        v = _num(str(r.get("GTON_TNOPE") if r.get("GTON_TNOPE") is not None
+                     else r.get("RIDE_PASGR_NUM") or ""))
+        if len(ds) != 8 or not ds.isdigit() or v is None:
+            continue
+        with contextlib.suppress(ValueError):
+            d = date(int(ds[:4]), int(ds[4:6]), int(ds[6:]))
+            days[d] = days.get(d, 0.0) + v
+            rs = str(r.get("REG_YMD") or r.get("WORK_DT") or "")
+            if len(rs) == 8 and rs.isdigit():
+                regs[d] = date(int(rs[:4]), int(rs[4:6]), int(rs[6:]))
+    # REG_YMD is the registration DATE in KST; its end (15:00 UTC) is late by construction.
+    return [Obs("boardings", d, v,
+                _utc(regs[d].year, regs[d].month, regs[d].day, 15) if d in regs else None)
+            for d, v in sorted(days.items())]
+
+
+def parse_maoyan(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Maoyan Pro daily dashboard: the national box office of the day the response names.
+
+    LENIENT, SHAPE UNCONFIRMED AGAINST A LIVE RESPONSE: reads `nationBoxSplitUnit {num, unit}`
+    (unit 万/亿) and the day from `showDate`/`selectDate`; anything else emits nothing. Only a
+    day already over (before `ctx.fetched_at`'s date) is emitted -- today's number is partial."""
+    raw = body.decode("utf-8", errors="replace")
+    dm = re.search(r'"(?:showDate|selectDate|queryDate)"\s*:\s*"?(\d{4})-?(\d{2})-?(\d{2})', raw)
+    bm = re.search(r'"nationBoxSplitUnit"\s*:\s*\{\s*"num"\s*:\s*"?([\d.]+)"?\s*,\s*'
+                   r'"unit"\s*:\s*"(万|亿)"', raw)
+    if not dm or not bm:
+        return []
+    try:
+        d = date(int(dm.group(1)), int(dm.group(2)), int(dm.group(3)))
+    except ValueError:
+        return []
+    v = _num(bm.group(1))
+    if v is None or d >= ctx.fetched_at.date():
+        return []
+    return [Obs("box_office_cny_10k", d, v * (10_000.0 if bm.group(2) == "亿" else 1.0))]
+
+
+BAIDU_CITIES: dict[str, str] = {"beijing": "110000", "shanghai": "310000",
+                                "guangzhou": "440100", "shenzhen": "440300", "wuhan": "420100"}
+
+
+def parse_baidu_migration(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Baidu migration (百度迁徙) history curve, JSONP: `cb({"data":{"list":{"YYYYMMDD": v}}})`.
+    `ctx.part` names the city."""
+    raw = body.decode("utf-8", errors="replace").strip()
+    m = re.search(r"\{.*\}", raw, re.S)
+    if not m:
+        return []
+    try:
+        doc = json.loads(m.group(0))
+    except ValueError:
+        return []
+    lst = ((doc or {}).get("data") or {}).get("list") if isinstance(doc, dict) else None
+    if not isinstance(lst, dict):
+        return []
+    city = ctx.part if ctx.part in BAIDU_CITIES else "city"
+    out: list[Obs] = []
+    for k, v in lst.items():
+        x = _num(str(v))
+        with contextlib.suppress(ValueError):
+            if len(str(k)) == 8 and x is not None:
+                d = date(int(str(k)[:4]), int(str(k)[4:6]), int(str(k)[6:]))
+                if d < ctx.fetched_at.date():
+                    out.append(Obs(f"{city}_move_in", d, x))
+    return out
+
+
+_BUSAN = re.compile(r"(\d{4})\s*년\s*(\d{1,2})\s*월[^.]{0,120}?(?:물동량|처리\s*실적|처리량)"
+                    r"[^.]{0,40}?([\d,.]+)\s*만\s*(?:TEU|teu)[^.]{0,80}?전년\s*동월\s*대비\s*"
+                    r"([\d.]+)\s*%\s*(증가|감소)")
+
+
+def parse_busan_port(body: bytes, ctx: Ctx) -> list[Obs]:
+    """Busan Port Authority monthly container throughput (Korean release): 10k TEU and YoY."""
+    text = _text(body)
+    out: list[Obs] = []
+    for m in _BUSAN.finditer(text):
+        y, mo = int(m.group(1)), int(m.group(2))
+        lvl, yoy = _num(m.group(3)), _signed(m.group(4), m.group(5))
+        if not 1 <= mo <= 12 or lvl is None or yoy is None:
+            continue
+        period = _month_end(y, mo)
+        pub = None
+        dm = _KR_DATE.search(text)
+        if dm:
+            with contextlib.suppress(ValueError):
+                c = _utc(int(dm.group(1)), int(dm.group(2)), int(dm.group(3)))
+                pub = c if c.date() > period else None
+        out.append(Obs("container_10k_teu", period, lvl, pub))
+        out.append(Obs("container_yoy", period, yoy, pub))
+    return _first_per_key(out)
+
+
+_SS_MONTH = re.compile(r"^(\d{4})\s*([A-Za-z]{3})")
+
+
+def parse_singstat_port(body: bytes, ctx: Ctx) -> list[Obs]:
+    """SingStat TableBuilder JSON (`Data.row[].rowText`, `columns[].key 'YYYY Mon'`): Singapore
+    container throughput and total cargo, monthly."""
+    try:
+        doc = json.loads(body.decode("utf-8", errors="replace"))
+    except ValueError:
+        return []
+    rows = ((doc or {}).get("Data") or {}).get("row") if isinstance(doc, dict) else None
+    out: list[Obs] = []
+    for r in rows if isinstance(rows, list) else []:
+        name = str((r or {}).get("rowText") or "").lower()
+        series = ("container_throughput_k_teu" if "container" in name else
+                  "total_cargo_kt" if "total cargo" in name else None)
+        if series is None:
+            continue
+        for c in (r or {}).get("columns") or []:
+            m = _SS_MONTH.match(str((c or {}).get("key") or ""))
+            v = _num(str((c or {}).get("value") or ""))
+            mo = _EN_MONTHS3.get(m.group(2).lower()) if m else None
+            if m and mo and v is not None:
+                out.append(Obs(series, _month_end(int(m.group(1)), mo), v))
+    return _first_per_key(out)
+
+
+_MOT_WEEK = re.compile(r"(\d{1,2})\s*月\s*(\d{1,2})\s*日\s*[—\-－~至]+\s*(?:(\d{1,2})\s*月\s*)?"  # noqa: RUF001
+                       r"(\d{1,2})\s*日")
+_MOT_CARGO = re.compile(r"港口(?:完成)?货物吞吐量\s*([\d.]+)\s*亿吨\s*[，,]?\s*环比(增长|下降)\s*"  # noqa: RUF001
+                        r"([\d.]+)\s*%")
+_MOT_BOX = re.compile(r"集装箱吞吐量\s*([\d.]+)\s*万标箱\s*[，,]?\s*环比(增长|下降)\s*([\d.]+)\s*%")  # noqa: RUF001
+
+
+def parse_mot_port(body: bytes, ctx: Ctx) -> list[Obs]:
+    """China MOT weekly logistics bulletin: national port cargo (100m t) and container (10k TEU)
+    throughput with week-on-week %. The week's last day is the period; the year comes from the
+    page's own date, which is also the release stamp."""
+    text = _text(body)
+    wk, dm = _MOT_WEEK.search(text), _CN_DATE.search(text)
+    if not wk or not dm:
+        return []
+    try:
+        pub = _utc(int(dm.group(1)), int(dm.group(2)), int(dm.group(3)), 12)
+        end_m = int(wk.group(3) or wk.group(1))
+        y = pub.year - (1 if end_m > pub.month else 0)
+        period = date(y, end_m, int(wk.group(4)))
+    except ValueError:
+        return []
+    if not period < pub.date() <= period + timedelta(days=MAX_PUB_LAG_D):
+        pub = None                                            # type: ignore[assignment]
+    out: list[Obs] = []
+    c = _MOT_CARGO.search(text)
+    if c and (lv := _num(c.group(1))) is not None and (w := _num(c.group(3))) is not None:
+        out.append(Obs("port_cargo_100m_t", period, lv, pub))
+        out.append(Obs("port_cargo_wow", period, -w if c.group(2) == "下降" else w, pub))
+    b = _MOT_BOX.search(text)
+    if b and (lv2 := _num(b.group(1))) is not None and (w2 := _num(b.group(3))) is not None:
+        out.append(Obs("container_10k_teu", period, lv2, pub))
+        out.append(Obs("container_wow", period, -w2 if b.group(2) == "下降" else w2, pub))
+    return out
+
+
 # ============================================================================ the sources
 @dataclass(frozen=True)
 class Source:
@@ -576,6 +1280,12 @@ class Source:
     key_env: str | None = None
     series_instruments: dict[str, dict[str, int]] = field(default_factory=dict)
     note: str = ""
+    #: A local read in place of a fetch (a series another organ already fetches).
+    reader: Callable[[Paths], list[Obs]] | None = None
+    #: The paid panel this free source stands in for (roster `substitutes_for`).
+    substitutes_for: str = ""
+    #: The publisher stopped updating: history only, and the status says so.
+    archive_until: str | None = None
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -792,14 +1502,408 @@ SOURCES: tuple[Source, ...] = (
                                                         "settlement_constrained"),
         failure_mode_hypothesis=("fails when PBoC quota decisions, not demand, move the premium "
                                  "-- a policy clock unrelated to the Fed"),
-        crowding_prior="low", note="no fetch: fetch_sge_premium already records it"),
+        crowding_prior="low", note="no fetch: fetch_sge_premium already records it",
+        reader=read_sge_premium),
 )
+
+# ---------------------------------------------------------------------------- paid substitutes
+def _gdelt_series_map() -> dict[str, dict[str, int]]:
+    """Per-country instrument legs. Tone up = risk-on for that country's assets; the conflict
+    share takes the opposite leg. The prior is only a starting sign: a PASSING gain test's
+    measured IC sign replaces it everywhere it is used."""
+    legs: dict[str, dict[str, int]] = {
+        "CN": {"AUDUSD": 1, "CHINAH": 1, "HK50": 1, "XCUUSD": 1, "USDCNH": -1},
+        "HK": {"HK50": 1, "CHINAH": 1}, "JP": {"JPN225": 1, "USDJPY": 1},
+        "KR": {"USDKRW": -1}, "TW": {"TSMC": 1}, "US": {"US500": 1, "NAS100": 1},
+        "IN": {"USDINR": -1}, "BR": {"USDBRL": -1}, "RU": {"USDRUB": -1, "EURRUB": -1},
+        "ZA": {"USDZAR": -1, "ZARJPY": 1}, "MX": {"USDMXN": -1, "MXNJPY": 1},
+        "TR": {"USDTRY": -1, "EURTRY": -1}, "AU": {"AUDUSD": 1, "AUS200": 1}}
+    out: dict[str, dict[str, int]] = {}
+    for iso, m in legs.items():
+        out[f"{iso}_conflict_share"] = {k: -v for k, v in m.items()}
+        out[f"{iso}_"] = m
+    return out
+
+
+_NEWS = "RavenPack-style news analytics (event counts, tone, themes per entity)"
+_CARD = "card-spend panels (Second Measure, Earnest, Bank of America card data)"
+_FOOT = "foot-traffic / location panels (SafeGraph, Placer.ai)"
+_SAT = "satellite / AIS activity panels (Orbital Insight, SpaceKnow)"
+
+SUBSTITUTE_SOURCES: tuple[Source, ...] = (
+    Source(
+        id="gdelt_events_country", name="GDELT 2.0 Events: country x day x theme tone panel",
+        url=GDELT_URL, region="GLOBAL", language="multi", cadence="daily",
+        parse=parse_gdelt_events, rule=_lag_rule(1, 1), transform="level_dev",
+        instruments={"US500": 1}, series_instruments=_gdelt_series_map(),
+        signal_series=tuple(f"{iso}_{s}" for iso in sorted(set(GDELT_COUNTRIES.values()))
+                            for s in ("tone", "conflict_share")),
+        mechanism=("machine-coded events from the world's broadcast, print and web news in 100+ "
+                   "languages, every 15 minutes: the article-weighted tone and conflict share of "
+                   "what is happening IN a country is the news-flow state a RavenPack sentiment "
+                   "feed sells, computed from the same kind of text"),
+        payer=("holders of EM and Asian FX/index risk who reprice on the headline they read, "
+               "not on the day's aggregate flow of local-language coverage"),
+        constraint=("a desk reads a handful of English wires; GDELT's translated local press is "
+                    "too large to read, so its aggregate state is not in the price by hand"),
+        licence="GDELT Project open data (unrestricted use with citation); no key",
+        source_culture="GLOBAL/multi",
+        participant_structure=("institutional", "retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails when a single mega-story (a war, an election) dominates "
+                                 "every country's coverage, and when GDELT's source list or "
+                                 "translation pipeline changes, which moves tone for no reason "
+                                 "in the markets"),
+        crowding_prior="medium", substitutes_for=_NEWS,
+        note=("15-minute export files are read forward and back from resumable cursors, summed "
+              "per slot and published only for days whose 96 slots were all read (<= 8 gaps). "
+              "GKG themes are not read (files are 10x larger); CAMEO roots stand in for themes")),
+    Source(
+        id="wiki_asia_attention", name="Asian-language Wikipedia attention (ja/zh/ko pageviews)",
+        url=WIKI_URL, region="ASIA",
+        language="ja/zh/ko", cadence="daily", parse=parse_wikimedia,
+        rule=_lag_rule(1, 12), transform="anomaly_daily",
+        instruments={"USDJPY": -1},
+        series_instruments={"ja_boj": {"USDJPY": -1, "EURJPY": -1},
+                            "ja_nikkei": {"JPN225": -1},
+                            "zh_": {"USDCNH": 1, "HK50": -1, "CHINAH": -1},
+                            "ko_": {"USDKRW": 1}},
+        signal_series=("ja_boj_views", "ja_nikkei_views", "zh_pboc_views", "zh_rmb_views",
+                       "zh_hsi_views", "ko_bok_views", "ko_kospi_views"),
+        mechanism=("a Japanese, Chinese or Korean reader looks up the central bank, the currency "
+                   "or the index in their own language before acting; an attention spike in the "
+                   "local language is local retail attention the English Wikipedia list misses"),
+        payer="local retail positioning that chases the move after the attention spike",
+        constraint="retail acts on attention with a lag; institutions ignore pageviews",
+        licence="Wikimedia pageviews API (CC0 data); no key",
+        source_culture="JP/ja,CN/zh,KR/ko", participant_structure=("retail_heavy",),
+        failure_mode_hypothesis=("fails when bots or a main-page feature inflate views, and "
+                                 "zh.wikipedia is blocked in mainland China so its readers are "
+                                 "TW/HK/diaspora, not the onshore retail base"),
+        crowding_prior="low", substitutes_for=_NEWS,
+        note=("full history once, then the last 45 days each pass; the English macro list "
+              "stays in scripts/ingest_axes.py")),
+    Source(
+        id="us_oi_card_spend", name="Opportunity Insights / Affinity card spend (US, by sector)",
+        url=("https://raw.githubusercontent.com/OpportunityInsights/EconomicTracker/main/data/"
+             "Affinity%20-%20National%20-%20Daily.csv"),
+        region="US", language="en", cadence="weekly", parse=parse_oi_spend,
+        rule=_lag_rule(10, 0, weekday=True), transform="level_dev",
+        instruments={"US500": 1, "Visa": 1, "Mastercard": 1, "AmericanExpress": 1,
+                     "Walmart": 1, "Target": 1},
+        series_instruments={"spend_food": {"McDonalds": 1, "Starbucks": 1},
+                            "spend_arts": {"Netflix": 1, "Booking": 1}},
+        signal_series=("spend_all", "spend_retail_no_grocery", "spend_food_accommodation"),
+        mechanism=("de-identified credit and debit card spend from Affinity Solutions by sector "
+                   "and income quartile, seasonally adjusted against 2019 -- the same kind of "
+                   "panel Second Measure and Earnest sell, published free by Opportunity Insights"),
+        payer="consumer-equity and index holders who wait for Census retail sales",
+        constraint="the official receipts survey is monthly and two weeks late",
+        licence="Opportunity Insights Economic Tracker (CC BY 4.0, cite Chetty et al.)",
+        source_culture="US/en", participant_structure=("retail_heavy", "institutional"),
+        failure_mode_hypothesis=("fails because the feed ENDED (last rows 2024-06): it is a "
+                                 "2020-2024 backfill for history-only tests, and it over-weights "
+                                 "the pandemic regime in any fit"),
+        crowding_prior="high", substitutes_for=_CARD, archive_until="2024-06",
+        note="live-measured here: the GitHub raw host was reachable from the authoring box"),
+    Source(
+        id="kr_bok_card_spend", name="BOK ECOS card spending (Korea, one configured item)",
+        url=("https://ecos.bok.or.kr/api/StatisticSearch/{key}/json/kr/1/1000/"
+             + os.environ.get("ALT_ECOS_CARD_STAT", "601Y002") + "/M/201801/{yyyymm}/"
+             + os.environ.get("ALT_ECOS_CARD_ITEM", "X")),
+        region="KR", language="ko", cadence="monthly", parse=parse_ecos,
+        rule=_lag_rule(25, 0, weekday=True), transform="yoy_monthly", key_env="ECOS_API_KEY",
+        instruments={"USDKRW": -1},
+        signal_series=("card_spend",),
+        mechanism=("Korean card use is near-universal, so the BOK's card-spending series is "
+                   "household consumption itself, printed a month before the national accounts"),
+        payer="won holders and Korea-exposed books waiting for GDP and retail surveys",
+        constraint="BOK policy and won positioning reprice at the monthly data calendar",
+        licence="BOK ECOS Open API (free key; attribution to the Bank of Korea)",
+        source_culture="KR/ko", participant_structure=("retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails around Chuseok/Lunar New Year month shifts and "
+                                 "government consumption-voucher programmes"),
+        crowding_prior="low", substitutes_for=_CARD,
+        note=("minimal ECOS reader (no ECOS reader exists in the repo); stat/item codes are "
+              "overridable with ALT_ECOS_CARD_STAT / ALT_ECOS_CARD_ITEM and must be confirmed "
+              "against ECOS StatisticItemList on the box")),
+    Source(
+        id="jp_meti_retail", name="METI commercial dynamics flash: retail sales YoY (Japan)",
+        url=os.environ.get("ALT_METI_RETAIL_URL",
+                           "https://www.meti.go.jp/statistics/tyo/syoudou/result/sokuho_2.html"),
+        region="JP", language="ja", cadence="monthly", parse=parse_meti_retail,
+        rule=_lag_rule(33, 0, weekday=True), transform="given",
+        instruments={"JPN225": 1, "USDJPY": -1, "EURJPY": -1},
+        signal_series=("retail_yoy",),
+        mechanism=("METI's survey of retailers' sales is Japan's monthly consumption print; a "
+                   "firm print feeds BoJ normalisation pricing and domestic-demand equities"),
+        payer="yen-funded carry and JPN225 holders leaning on weak Japanese demand",
+        constraint="BoJ-path positioning reprices at data and meeting dates only",
+        licence="METI statistics (Government of Japan standard terms, attribution)",
+        source_culture="JP/ja", participant_structure=("policy_driven", "retail_heavy"),
+        failure_mode_hypothesis=("fails when fuel subsidies or a consumption-tax change move "
+                                 "nominal sales mechanically"),
+        crowding_prior="medium", substitutes_for=_CARD,
+        note="page URL overridable (ALT_METI_RETAIL_URL); confirm route on the box"),
+    Source(
+        id="cn_nbs_retail", name="NBS retail sales of consumer goods (China)",
+        url=os.environ.get("ALT_NBS_RETAIL_URL", "https://www.stats.gov.cn/sj/zxfb/"),
+        region="CN", language="zh", cadence="monthly", parse=parse_nbs_retail,
+        rule=_lag_rule(17, 2, weekday=True), transform="given",
+        instruments={"AUDUSD": 1, "CHINAH": 1, "HK50": 1, "XCUUSD": 1, "USDCNH": -1},
+        signal_series=("retail_yoy",),
+        mechanism=("China's official consumption print against its own run-rate: a miss is "
+                   "stimulus odds up and a China-demand repricing in AUD, copper and HK equity"),
+        payer="China-proxy holders (AUD, copper, HK50) pricing on PMI headlines alone",
+        constraint="stimulus expectations move only at State Council and data dates",
+        licence="National Bureau of Statistics of China releases (public)",
+        source_culture="CN/zh", participant_structure=("policy_driven", "institutional"),
+        failure_mode_hypothesis=("fails when the January-February combined print and base "
+                                 "effects dominate, and when stimulus is already announced"),
+        crowding_prior="high", substitutes_for=_CARD),
+    Source(
+        id="cn_holiday_spend", name="MCT holiday tourism spend and UnionPay holiday payments",
+        url=os.environ.get("ALT_CN_HOLIDAY_URL", "https://www.mct.gov.cn/whzx/whyw/"),
+        region="CN", language="zh", cadence="event", parse=parse_cn_holiday,
+        rule=_lag_rule(2, 0, weekday=True), transform="given",
+        instruments={"CHINAH": 1, "HK50": 1, "AUDUSD": 1, "Baidu": 1},
+        signal_series=("spend_per_trip_yoy", "spend_yoy"),
+        mechanism=("the Golden Week and Spring Festival tallies (trips and spend, YoY) are the "
+                   "only same-week read of Chinese discretionary spending; spend PER TRIP is "
+                   "consumer confidence net of the travel-count headline"),
+        payer="HK and China-consumer holders reading the trip-count headline only",
+        constraint="onshore data is monthly; the holiday tally lands the evening it ends",
+        licence="Ministry of Culture and Tourism / UnionPay public releases",
+        source_culture="CN/zh", participant_structure=("retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails when holiday length changes (the calendar is set by the "
+                                 "State Council each year) and when official tallies are "
+                                 "managed upward"),
+        crowding_prior="medium", substitutes_for=_CARD),
+    Source(
+        id="in_npci_upi", name="NPCI UPI monthly volumes and value (India)",
+        url="https://www.npci.org.in/what-we-do/upi/product-statistics",
+        region="IN", language="en", cadence="monthly", parse=parse_npci_upi,
+        rule=_lag_rule(2, 0, weekday=True), transform="yoy_monthly",
+        instruments={"USDINR": -1},
+        signal_series=("upi_value_cr",),
+        mechanism=("UPI carries most Indian retail payments; its monthly value is a card-panel "
+                   "substitute for the whole economy, out on day one of the next month"),
+        payer="INR and India-exposed holders waiting for MOSPI and RBI data",
+        constraint="RBI manages INR volatility, so flow information reprices slowly",
+        licence="NPCI public product statistics",
+        source_culture="IN/en", participant_structure=("retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails because structural adoption growth dominates YoY; "
+                                 "a surprise is small against the trend and festivals shift it"),
+        crowding_prior="low", substitutes_for=_CARD),
+    Source(
+        id="tr_bkm_card", name="BKM card payments (Turkey), nominal YoY",
+        url=os.environ.get("ALT_BKM_URL", "https://bkm.com.tr/en/press-releases/"),
+        region="TR", language="tr", cadence="monthly", parse=parse_bkm,
+        rule=_lag_rule(20, 0, weekday=True), transform="given",
+        instruments={"USDTRY": 1, "EURTRY": 1},
+        signal_series=("card_payments_nominal_yoy",),
+        mechanism=("Turkish card spend in nominal lira is inflation plus demand; a hot print is "
+                   "pressure on the CBRT and the lira before CPI prints"),
+        payer="lira carry holders who price on the policy rate alone",
+        constraint="CBRT-managed lira and capital-flow rules slow the repricing",
+        licence="BKM public press releases",
+        source_culture="TR/tr", participant_structure=("retail_heavy", "policy_driven"),
+        failure_mode_hypothesis=("fails because nominal growth is mostly inflation: the "
+                                 "surprise is dominated by CPI, not demand"),
+        crowding_prior="low", substitutes_for=_CARD),
+    Source(
+        id="br_cielo_icva", name="Cielo ICVA retail card sales (Brazil)",
+        url=os.environ.get("ALT_ICVA_URL", "https://www.cielo.com.br/icva/"),
+        region="BR", language="pt", cadence="monthly", parse=parse_icva,
+        rule=_lag_rule(15, 0, weekday=True), transform="given",
+        instruments={"USDBRL": -1},
+        signal_series=("icva_deflated_yoy",),
+        mechanism=("Cielo's acquirer data is Brazil's card panel: deflated retail card sales "
+                   "YoY, out weeks before IBGE's PMC retail survey"),
+        payer="BRL carry holders waiting for IBGE retail and Copom",
+        constraint="Copom and BRL positioning reprice on official data dates",
+        licence="Cielo public ICVA releases",
+        source_culture="BR/pt", participant_structure=("retail_heavy", "institutional"),
+        failure_mode_hypothesis=("fails when calendar (working-day) effects and Black Friday "
+                                 "timing dominate the month"),
+        crowding_prior="low", substitutes_for=_CARD),
+    Source(
+        id="mx_antad_sss", name="ANTAD same-store sales (Mexico)",
+        url=os.environ.get("ALT_ANTAD_URL", "https://antad.net/indicadores/"),
+        region="MX", language="es", cadence="monthly", parse=parse_antad,
+        rule=_lag_rule(12, 0, weekday=True), transform="given",
+        instruments={"USDMXN": -1, "MXNJPY": 1, "Walmart": 1},
+        signal_series=("same_store_sales_yoy",),
+        mechanism=("the retailers' association prints same-store sales two weeks after month "
+                   "end, a month before INEGI retail; Walmex dominates the panel"),
+        payer="MXN carry holders waiting for INEGI and Banxico",
+        constraint="Banxico-path positioning reprices at data dates",
+        licence="ANTAD public monthly indicator",
+        source_culture="MX/es", participant_structure=("retail_heavy", "institutional"),
+        failure_mode_hypothesis=("fails around Easter and El Buen Fin timing shifts"),
+        crowding_prior="low", substitutes_for=_CARD),
+    Source(
+        id="za_beti", name="BankservAfrica/PayInc economic transactions index (South Africa)",
+        url=os.environ.get("ALT_BETI_URL", "https://www.payinc.co.za/beti/"),
+        region="ZA", language="en", cadence="monthly", parse=parse_beti,
+        rule=_lag_rule(12, 0, weekday=True), transform="given",
+        instruments={"USDZAR": -1, "ZARJPY": 1},
+        signal_series=("beti_mom",),
+        mechanism=("the interbank clearing house's count and value of electronic transactions "
+                   "is South African activity read from the payments rail, weeks before Stats SA"),
+        payer="ZAR carry holders pricing on commodity terms of trade alone",
+        constraint="Stats SA GDP and retail are quarterly/monthly and late",
+        licence="BankservAfrica / PayInc public releases",
+        source_culture="ZA/en", participant_structure=("institutional", "physical_flow"),
+        failure_mode_hypothesis="fails under load-shedding months and payday-calendar shifts",
+        crowding_prior="low", substitutes_for=_CARD),
+    Source(
+        id="us_oi_google_mobility", name="Google mobility via Opportunity Insights (US)",
+        url=("https://raw.githubusercontent.com/OpportunityInsights/EconomicTracker/main/data/"
+             "Google%20Mobility%20-%20National%20-%20Daily.csv"),
+        region="US", language="en", cadence="daily", parse=parse_oi_mobility,
+        rule=_lag_rule(5, 0), transform="level_dev",
+        instruments={"US500": 1, "Uber": 1, "Lyft": 1, "Booking": 1},
+        series_instruments={"retail": {"US500": 1, "Target": 1, "Walmart": 1}},
+        signal_series=("retail_and_recreation", "transit_stations"),
+        mechanism=("phone-location visits to retail and transit places against a pre-2020 base "
+                   "-- the product SafeGraph and Placer.ai sell, published free by Google"),
+        payer="consumer and travel holders waiting for earnings and monthly surveys",
+        constraint="visit counts were never part of any official calendar",
+        licence="Google COVID-19 Community Mobility Reports via Opportunity Insights (free use)",
+        source_culture="US/en", participant_structure=("retail_heavy", "physical_flow"),
+        failure_mode_hypothesis=("fails because the feed ENDED (2022-10): a pandemic-era "
+                                 "history for history-only tests"),
+        crowding_prior="high", substitutes_for=_FOOT, archive_until="2022-10"),
+    Source(
+        id="kr_kobis_box_office", name="KOBIS daily box office (Korea, top 10)",
+        url=("https://www.kobis.or.kr/kobisopenapi/webservice/rest/boxoffice/"
+             "searchDailyBoxOfficeList.json?key={key}&targetDt={date}"),
+        region="KR", language="ko", cadence="daily", parse=parse_kobis, rule=_lag_rule(1, 0),
+        transform="yoy_daily", key_env="KOBIS_API_KEY",
+        instruments={"USDKRW": -1},
+        signal_series=("audience_top10",),
+        mechanism=("cinema admissions are a daily count of discretionary outings, the "
+                   "foot-traffic panel for Korean leisure spend"),
+        payer="won and Korea-consumer holders waiting for monthly retail data",
+        constraint="nothing official prints Korean leisure spend daily",
+        licence="KOBIS Open API (free key; Korean Film Council)",
+        source_culture="KR/ko", participant_structure=("retail_heavy",),
+        failure_mode_hypothesis=("fails when one blockbuster release dominates a week and "
+                                 "holiday dates shift against the 364-day comparison"),
+        crowding_prior="low", substitutes_for=_FOOT),
+    Source(
+        id="kr_seoul_subway", name="Seoul subway boardings by day (card taps, all stations)",
+        url="http://openapi.seoul.go.kr:8088/{key}/json/CardSubwayStatsNew/1/1000/{date}",
+        region="KR", language="ko", cadence="daily", parse=parse_seoul_subway,
+        rule=_lag_rule(4, 0), transform="yoy_daily", key_env="SEOUL_API_KEY",
+        instruments={"USDKRW": -1},
+        signal_series=("boardings",),
+        mechanism=("every Seoul subway card tap, summed per day: commuting and outing volume in "
+                   "the capital, the location panel for Korean activity"),
+        payer="Korea-exposed holders waiting for monthly activity data",
+        constraint="no official daily activity measure exists",
+        licence="Seoul Open Data Plaza (free key; KOGL type 1)",
+        source_culture="KR/ko", participant_structure=("retail_heavy", "physical_flow"),
+        failure_mode_hypothesis=("fails on public-holiday misalignment and fare changes that "
+                                 "move ridership mechanically"),
+        crowding_prior="low", substitutes_for=_FOOT),
+    Source(
+        id="cn_maoyan_box_office", name="Maoyan Pro national box office (China, daily)",
+        url="https://piaofang.maoyan.com/dashboard-ajax?showDate={date}",
+        region="CN", language="zh", cadence="daily", parse=parse_maoyan, rule=_lag_rule(1, 0),
+        transform="yoy_daily",
+        instruments={"CHINAH": 1, "HK50": 1},
+        signal_series=("box_office_cny_10k",),
+        mechanism=("China's national box office by day is discretionary spending read from the "
+                   "ticketing platform, weeks before NBS retail"),
+        payer="China-consumer and HK equity holders waiting for NBS",
+        constraint="onshore consumption data is monthly",
+        licence="Maoyan Pro public dashboard (terms to confirm; read-only daily total)",
+        source_culture="CN/zh", participant_structure=("retail_heavy",),
+        failure_mode_hypothesis=("fails when release-slate timing (Spring Festival films) "
+                                 "dominates, and when the dashboard's anti-scraping changes "
+                                 "the response"),
+        crowding_prior="low", substitutes_for=_FOOT,
+        note="response shape UNCONFIRMED against a live reply; the parser emits nothing on a miss"),
+    Source(
+        id="cn_baidu_migration", name="Baidu migration index: move-in by city (China)",
+        url="https://huiyan.baidu.com/migration/historycurve.jsonp?dt=city&id={city}&type=move_in",
+        region="CN", language="zh", cadence="daily", parse=parse_baidu_migration,
+        rule=_lag_rule(1, 12), transform="anomaly_daily",
+        instruments={"CHINAH": 1, "HK50": 1, "AUDUSD": 1, "XCUUSD": 1},
+        signal_series=tuple(f"{c}_move_in" for c in BAIDU_CITIES),
+        mechanism=("phone-location migration into China's tier-1 cities is the return-to-work "
+                   "and travel pulse after holidays, the location panel no Western vendor sells"),
+        payer="China-demand holders (AUD, copper, HK) waiting for PMI and NBS activity",
+        constraint="onshore activity data is monthly and three weeks late",
+        licence="Baidu Huiyan public migration map (terms to confirm)",
+        source_culture="CN/zh", participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails around the lunar calendar (Spring Festival moves each "
+                                 "year) and when Baidu suspends the map, as it has before"),
+        crowding_prior="low", substitutes_for=_FOOT),
+    Source(
+        id="kr_busan_port", name="Busan Port Authority monthly container throughput",
+        url=os.environ.get("ALT_BUSAN_PORT_URL", "https://www.busanpa.com/kor/Board.do?mCode=MN1003"),
+        region="KR", language="ko", cadence="monthly", parse=parse_busan_port,
+        rule=_lag_rule(20, 0, weekday=True), transform="given",
+        instruments={"USDKRW": -1, "XCUUSD": 1, "CHINAH": 1},
+        signal_series=("container_yoy",),
+        mechanism=("Busan is the world's second transhipment hub: its monthly boxes are North "
+                   "Asian trade volume counted at the quay, the AIS/satellite port panel's "
+                   "output as an official number"),
+        payer="trade-cycle holders waiting for customs totals",
+        constraint="official trade data is value-based and late",
+        licence="Busan Port Authority public releases",
+        source_culture="KR/ko", participant_structure=("physical_flow",),
+        failure_mode_hypothesis=("fails when transhipment re-routing (Red Sea, US tariffs) moves "
+                                 "Busan's share rather than total trade"),
+        crowding_prior="low", substitutes_for=_SAT,
+        note="board URL overridable (ALT_BUSAN_PORT_URL); confirm route on the box"),
+    Source(
+        id="sg_port_throughput", name="SingStat sea cargo: Singapore container throughput",
+        url=("https://tablebuilder.singstat.gov.sg/api/table/tabledata/"
+             + os.environ.get("ALT_SINGSTAT_PORT_TABLE", "M650631")),
+        region="SG", language="en", cadence="monthly", parse=parse_singstat_port,
+        rule=_lag_rule(20, 0, weekday=True), transform="yoy_monthly",
+        instruments={"USDSGD": -1, "SGDJPY": 1, "CHINAH": 1},
+        signal_series=("container_throughput_k_teu",),
+        mechanism=("Singapore's container throughput is Asia-Europe and intra-Asia trade at the "
+                   "Malacca chokepoint, monthly and official"),
+        payer="SGD and Asian trade-cycle holders waiting for NODX and customs",
+        constraint="MAS manages SGD on a policy band; trade data reprices it slowly",
+        licence="SingStat Table Builder API (Singapore Open Data Licence)",
+        source_culture="SG/en", participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis=("fails under route shifts (Red Sea diversions) that add "
+                                 "transhipment"),
+        crowding_prior="low", substitutes_for=_SAT,
+        note="table id overridable (ALT_SINGSTAT_PORT_TABLE); confirm the id on the box"),
+    Source(
+        id="cn_mot_port_weekly", name="China MOT weekly port cargo and container throughput",
+        url=os.environ.get("ALT_CN_MOT_PORT_URL", "https://www.mot.gov.cn/tongjishuju/"),
+        region="CN", language="zh", cadence="weekly", parse=parse_mot_port,
+        rule=_lag_rule(3, 0, weekday=True), transform="anomaly_monthly",
+        instruments={"AUDUSD": 1, "XCUUSD": 1, "CHINAH": 1, "USDCNH": -1},
+        signal_series=("container_10k_teu", "port_cargo_100m_t"),
+        mechanism=("the transport ministry's weekly national port tally is China's trade volume "
+                   "a month before customs: the port-activity reading a satellite panel sells"),
+        payer="China-trade proxies (AUD, copper, HK) waiting for monthly customs",
+        constraint="customs data is monthly and value-based",
+        licence="Ministry of Transport of the PRC public bulletins",
+        source_culture="CN/zh", participant_structure=("physical_flow", "policy_driven"),
+        failure_mode_hypothesis="fails around Spring Festival and typhoon port closures",
+        crowding_prior="low", substitutes_for=_SAT,
+        note="bulletin URL overridable (ALT_CN_MOT_PORT_URL); confirm route on the box"),
+)
+
+SOURCES = (*SOURCES, *SUBSTITUTE_SOURCES)
 BY_ID = {s.id: s for s in SOURCES}
 
 
 def status_of(src: Source) -> str:
     if src.key_env and not os.environ.get(src.key_env):
         return f"BLOCKED_ON_KEY:{src.key_env}"
+    if src.archive_until:
+        return f"ARCHIVE_ENDED:{src.archive_until}"
     return "UNMEASURED_LIVE_YIELD"
 
 
@@ -882,12 +1986,75 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
                 "resultOffset": offset, "resultRecordCount": 2000, "f": "json"})
             reqs.append(Request(f"{src.url}?{q}", Ctx(part=f"page{offset}", fetched_at=now)))
         return reqs
+    if src.id == "gdelt_events_country":
+        return _gdelt_requests(src, now, state)
+    if src.id in DATED_SOURCES:
+        recent, lag, back = DATED_SOURCES[src.id]
+        return _dated_requests(src, key, now, state, recent=recent, lag=lag, back=back)
+    if src.id == "wiki_asia_attention":
+        wstart = ((now - timedelta(days=45)).strftime("%Y%m%d") if state.get("full_done")
+                  else "20150701")
+        state["full_done_next"] = True
+        return [Request(WIKI_URL.format(project=proj, title=urllib.parse.quote(title, safe=""),
+                                        start=wstart, end=now.strftime("%Y%m%d")),
+                        Ctx(part=label, fetched_at=now))
+                for label, proj, title in WIKI_ASIA_ARTICLES]
+    if src.id == "cn_baidu_migration":
+        return [Request(src.url.replace("{city}", cid), Ctx(part=city, fetched_at=now))
+                for city, cid in BAIDU_CITIES.items()]
     if src.id == "us_tsa_throughput":
         # The current page carries this year only; the year-on-year comparison needs last year's
         # page, which TSA publishes at /<year>.
         return [Request(src.url, Ctx(fetched_at=now)),
                 Request(f"{src.url}/{now.year - 1}", Ctx(part="prior_year", fetched_at=now))]
-    return [Request(src.url.replace("{key}", key), Ctx(fetched_at=now))]
+    return [Request(src.url.replace("{key}", key).replace("{yyyymm}", now.strftime("%Y%m")),
+                    Ctx(fetched_at=now))]
+
+
+#: Per-date sources: (recent days re-read each pass, publication lag in days, backfill days per
+#: pass). The backfill walks back from `backfill_to` and commits only on an error-free pass.
+DATED_SOURCES: dict[str, tuple[int, int, int]] = {
+    "kr_kobis_box_office": (7, 1, 14), "kr_seoul_subway": (5, 4, 10),
+    "cn_maoyan_box_office": (3, 1, 7)}
+DATED_BACKFILL_DEPTH_D = 3 * 365
+
+
+def _dated_requests(src: Source, key: str, now: datetime, state: dict[str, Any], *,
+                    recent: int, lag: int, back: int) -> list[Request]:
+    end = (now - timedelta(days=lag)).date()
+    days = [end - timedelta(days=i) for i in range(recent)]
+    cur = state.get("backfill_to")
+    bf_end = date.fromisoformat(cur) if cur else days[-1] - timedelta(days=1)
+    if bf_end > (now - timedelta(days=DATED_BACKFILL_DEPTH_D)).date():
+        bf = [bf_end - timedelta(days=i) for i in range(back)]
+        days += bf
+        state["backfill_to_next"] = (bf[-1] - timedelta(days=1)).isoformat()
+    return [Request(src.url.replace("{key}", key).replace("{date}", d.strftime("%Y%m%d")),
+                    Ctx(part=d.isoformat(), start=d, end=d, fetched_at=now)) for d in days]
+
+
+def _gdelt_requests(src: Source, now: datetime, state: dict[str, Any]) -> list[Request]:
+    """Forward from `fwd` (next unread slot) to 30 minutes ago, then back from `back`, a fixed
+    number of slots each way per pass. Cursors move in `collect_gdelt`, only over slots read."""
+    last = now - timedelta(minutes=30)
+    day0 = (now - timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    fwd = _t(state.get("fwd")) or day0
+    fwd_slots = gdelt_slots(fwd, last)[:GDELT_FWD_PER_PASS]
+    back_to = _t(state.get("back")) or (day0 - timedelta(minutes=15))
+    floor = now - timedelta(days=GDELT_BACK_DEPTH_D)
+    back_slots: list[str] = []
+    t = back_to
+    while len(back_slots) < GDELT_BACK_PER_PASS and t > floor:
+        back_slots.append(t.strftime("%Y%m%d%H%M%S"))
+        t -= timedelta(minutes=15)
+    return ([Request(src.url.replace("{slot}", s), Ctx(part=f"fwd:{s}", fetched_at=now))
+             for s in fwd_slots]
+            + [Request(src.url.replace("{slot}", s), Ctx(part=f"back:{s}", fetched_at=now))
+               for s in back_slots])
+
+
+def _slot_time(slot: str) -> datetime:
+    return datetime.strptime(slot, "%Y%m%d%H%M%S").replace(tzinfo=UTC)
 
 
 # ============================================================================ the vintage store
@@ -993,6 +2160,11 @@ def build_points(src: Source, store: dict[str, Any]) -> dict[str, list[dict[str,
                         raw.append(vals[j] / vals[back] - 1.0)
                 mr = _mean(raw) if len(raw) >= 4 else None
                 x = mr * 100.0 if mr is not None else None
+            elif src.transform == "yoy_monthly":
+                p0 = periods[i]
+                back = pos.get(_month_end(p0.year - 1, p0.month))
+                x = ((v / vals[back] - 1.0) * 100.0 if back is not None and back < i
+                     and vals[back] > 0 else None)
             elif src.transform == "mom_monthly":
                 x = (v / vals[i - 1] - 1.0) * 100.0 if i >= 1 and vals[i - 1] > 0 else None
             elif src.transform == "anomaly_daily":
@@ -1373,11 +2545,11 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     rec: dict[str, Any] = {"id": src.id, "status": status_of(src)}
     store_p = paths.obs_dir / f"{src.id}.json"
     store = _read_json(store_p, {})
-    if src.parse is None:                                    # the SGE premium: a local read
-        obs = read_sge_premium(paths)
+    if src.parse is None:                  # a local read of a series another organ fetches
+        obs = src.reader(paths) if src.reader is not None else []
         rec.update({"requests": 0, "parsed": len(obs),
-                    "why": "read from fetch_sge_premium's parquet" if obs else
-                    "sge_premium.parquet absent or empty here: UNMEASURED"})
+                    "why": f"read locally ({src.url})" if obs else
+                    f"{src.url} absent or empty here: UNMEASURED"})
         rec["merge"] = merge_vintages(store, src, obs, now)
         _atomic(store_p, store)
         rec["store_rows"] = len(store)
@@ -1388,6 +2560,12 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
+    if src.id == "gdelt_events_country":
+        rec.update(collect_gdelt(paths, src, sst, store, now, fetch=fetch, fixtures=fixtures,
+                                 deadline=deadline, getter=getter))
+        _atomic(store_p, store)
+        rec["store_rows"] = len(store)
+        return rec
     reqs = requests_for(src, now, sst)
     parsed = fetched = 0
     errors: list[str] = []
@@ -1420,12 +2598,168 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
             break                                              # paging exhausted
     if src.id == "cn_firms_industrial" and "firms_backfill_to_next" in sst and not errors:
         sst["firms_backfill_to"] = sst.pop("firms_backfill_to_next")
+    for k in ("backfill_to_next", "full_done_next"):
+        if k in sst:
+            nxt = sst.pop(k)
+            if not errors and fixtures is None and fetch:
+                sst[k[: -len("_next")]] = nxt
     rec.update({"requests": len(reqs), "fetched": fetched, "parsed": parsed,
                 "errors": errors[:6], "store_rows": len(store)})
     if not parsed and not errors:
         rec["why"] = "nothing parsed this pass (no fetch, or the page carried no rows)"
     _atomic(store_p, store)
     return rec
+
+
+def collect_gdelt(paths: Paths, src: Source, sst: dict[str, Any], store: dict[str, Any],
+                  now: datetime, *, fetch: bool, fixtures: Path | None, deadline: float,
+                  getter: Callable[[str], tuple[bytes, str]] = http_get) -> dict[str, Any]:
+    """GDELT's own loop: read slots, fold them into their day, publish the days that closed.
+
+    A 404 is a slot GDELT does not have (read, empty); any other error stops that direction for
+    this pass so its cursor never skips an unread slot. With fixtures, the fixture files are the
+    slots (`gdelt_events_country[.N].csv`) and no cursor moves."""
+    acc: dict[str, Any] = sst.setdefault("acc", {})
+    errors: list[str] = []
+    fetched = parsed = 0
+    if fixtures is not None:
+        for fp in sorted(fixtures.glob(f"{src.id}*.csv")):
+            obs = parse_gdelt_events(fp.read_bytes(), Ctx(fetched_at=now))
+            parsed += len(obs)
+            for day in sorted({o.period for o in obs}):
+                for k in range(96):                      # a fixture file stands for its day
+                    slot = f"{day:%Y%m%d}{k // 4:02d}{(k % 4) * 15:02d}00"
+                    gdelt_accumulate(acc, slot, [o for o in obs if o.period == day]
+                                     if k == 0 else [])
+        reqs: list[Request] = []
+    else:
+        reqs = requests_for(src, now, sst)
+    stopped: set[str] = set()
+    for req in reqs if fetch else []:
+        direction, _, slot = req.ctx.part.partition(":")
+        if direction in stopped:
+            continue
+        if time.monotonic() > deadline:
+            errors.append("budget reached: the remaining slots are owed to the next pass")
+            break
+        try:
+            body, ctype = getter(req.url)
+            fetched += 1
+            vault(paths, src, body, req.url, ctype, now)
+            obs2: list[Obs] | None = parse_gdelt_events(body, req.ctx)
+            parsed += len(obs2 or [])
+        except Exception as exc:
+            if getattr(exc, "code", None) != 404:
+                errors.append(f"{slot}: {type(exc).__name__}: {str(exc)[:100]}")
+                stopped.add(direction)
+                continue
+            obs2 = None
+        gdelt_accumulate(acc, slot, obs2)
+        if direction == "fwd":
+            sst["fwd"] = (_slot_time(slot) + timedelta(minutes=15)).isoformat()
+        else:
+            sst["back"] = (_slot_time(slot) - timedelta(minutes=15)).isoformat()
+    done, dropped = gdelt_complete_days(acc)
+    m = merge_vintages(store, src, done, now)
+    return {"requests": len(reqs), "fetched": fetched, "parsed": parsed, "merge": m,
+            "days_published": sorted({o.period.isoformat() for o in done}),
+            "days_dropped_for_gaps": dropped, "days_open": len(acc), "errors": errors[:6]}
+
+
+# ============================================================================ agreement
+def _vals(per: dict[str, list[dict[str, Any]]] | None, series: str) -> dict[date, float]:
+    return {date.fromisoformat(p["d"]): float(p["value"]) for p in (per or {}).get(series, [])
+            if p.get("value") is not None}
+
+
+def _monthly_mom(daily: dict[date, float], *, index_base: float = 0.0) -> dict[Any, float]:
+    """Month mean, then month-on-month % change of (index_base + mean), keyed (year, month)."""
+    by: dict[tuple[int, int], list[float]] = {}
+    for d, v in daily.items():
+        by.setdefault((d.year, d.month), []).append(index_base + v)
+    months = sorted(by)
+    means = {k: sum(v) / len(v) for k, v in by.items()}
+    out: dict[Any, float] = {}
+    for a, b in itertools.pairwise(months):
+        if (b[0] * 12 + b[1]) - (a[0] * 12 + a[1]) == 1 and means[a] > 0:
+            out[b] = (means[b] / means[a] - 1.0) * 100.0
+    return out
+
+
+def _weekly_change(daily: dict[date, float]) -> dict[Any, float]:
+    return {d: v - daily[d - timedelta(days=7)] for d, v in daily.items()
+            if d - timedelta(days=7) in daily}
+
+
+def _nlp_panel(paths: Paths, iso: str, column: str) -> dict[date, float]:
+    fp = paths.nlp_series / f"nlp_events_{iso}.parquet"
+    if not fp.exists():
+        return {}
+    try:
+        import pandas as pd
+        df = pd.read_parquet(fp)
+    except Exception:
+        return {}
+    if column not in df.columns or "period" not in df.columns:
+        return {}
+    out: dict[date, float] = {}
+    for d, v in zip(df["period"], df[column], strict=True):
+        with contextlib.suppress(ValueError, TypeError):
+            if v == v:
+                out[date.fromisoformat(str(d)[:10])] = float(v)
+    return out
+
+
+def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, Any]]]]
+                         ) -> dict[str, Any]:
+    """Each free substitute against the paid original where it is held (never, here) or against
+    an OVERLAPPING free series on the same keys. `event_factors.agreement` is the one metric."""
+    from libs.research.event_factors import agreement
+    oi, gm = pts.get("us_oi_card_spend"), pts.get("us_oi_google_mobility")
+    out: dict[str, Any] = {}
+    # 1. card panel vs the official receipts survey, monthly MoM (both seasonally adjusted).
+    card_m = _monthly_mom(_vals(oi, "spend_all"), index_base=1.0)
+    official = _monthly_mom(_vals(pts.get("us_census_marts_ex_autos"), "sales_ex_autos_gas"))
+    out["oi_card_vs_census_marts_mom"] = {
+        "what": "OI/Affinity spend_all month-mean MoM vs Census MARTS ex-autos-and-gas MoM",
+        **(agreement(card_m, official, min_n=12) if card_m and official else {
+            "verdict": UNMEASURED,
+            "why": ("no Census MARTS vintages on this box (api.census.gov unreachable from the "
+                    "authoring container)" if not official else "no OI card-spend points")})}
+    # 2. card panel vs foot traffic (Google mobility), daily levels and 7-day changes.
+    spend = _vals(oi, "spend_retail_no_grocery")
+    visits = _vals(gm, "retail_and_recreation")
+    for name, a, b in (("oi_card_vs_google_mobility_level", spend, visits),
+                       ("oi_card_vs_google_mobility_7d_change", _weekly_change(spend),
+                        _weekly_change(visits))):
+        out[name] = {"what": ("OI spend_retail_no_grocery vs Google retail_and_recreation "
+                              "visits on the same days"),
+                     **(agreement(a, b, min_n=30) if a and b else {
+                         "verdict": UNMEASURED, "why": "one of the two archives is not held"})}
+    # 3. GDELT vs this desk's own event tagger on the same country-days.
+    g = pts.get("gdelt_events_country") or {}
+    ours_c: dict[Any, float] = {}
+    theirs_c: dict[Any, float] = {}
+    theirs_t: dict[Any, float] = {}
+    for iso in sorted(set(GDELT_COUNTRIES.values())):
+        for d, v in _nlp_panel(paths, iso, "geopolitical_risk_intensity").items():
+            ours_c[(d, iso)] = v
+        for d, v in _vals(g, f"{iso}_conflict_share").items():
+            theirs_c[(d, iso)] = v
+        for d, v in _vals(g, f"{iso}_tone").items():
+            theirs_t[(d, iso)] = -v
+    for name, theirs in (("gdelt_conflict_share_vs_tagger_geopolitical_risk", theirs_c),
+                         ("gdelt_negative_tone_vs_tagger_geopolitical_risk", theirs_t)):
+        out[name] = {"what": "pooled country-days where both GDELT and nlp_events have a value",
+                     **(agreement(ours_c, theirs, min_n=30) if ours_c and theirs else {
+                         "verdict": UNMEASURED,
+                         "why": ("no GDELT days on this box (data.gdeltproject.org answered 403 "
+                                 "to the authoring container)" if not theirs else
+                                 "no nlp_events_<CC>.parquet tagger panel on this box")})}
+    out["vs_paid_original"] = {"verdict": UNMEASURED,
+                               "why": ("no paid panel (RavenPack, Second Measure, SafeGraph, "
+                                       "Orbital Insight) is licensed on this desk to compare")}
+    return out
 
 
 def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = True,
@@ -1472,6 +2806,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
                                     "params.conditioner, applied by mt5desk.cell_modifiers")},
         "allocation_intel": {"path": str(paths.allocation_intel),
                              "n_instruments": len(intel["instruments"])},
+        "substitute_agreement": substitute_agreement(paths, points_by_source),
         "keys": {s.key_env: bool(os.environ.get(s.key_env)) for s in SOURCES if s.key_env},
         "live_yield": ("UNMEASURED until the trading box runs this leg: the fetchers were built "
                        "against fixtures because the authoring container cannot reach the hosts"),
@@ -1484,26 +2819,45 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
     return report
 
 
-def roster_rows() -> list[dict[str, Any]]:
+def _cursor(s: Source) -> str:
+    if s.id == "cn_firms_industrial":
+        return "firms_backfill_to (10 days/cluster/pass, archive product)"
+    if s.id.startswith("imf_portwatch"):
+        return "resultOffset paging; 800-day window"
+    if s.id == "gdelt_events_country":
+        return (f"fwd/back 15-minute slot cursors ({GDELT_FWD_PER_PASS}+{GDELT_BACK_PER_PASS} "
+                f"slots/pass, {GDELT_BACK_DEPTH_D}d deep); open days held in state.acc")
+    if s.id in DATED_SOURCES:
+        r, lag, b = DATED_SOURCES[s.id]
+        return (f"last {r} days (lag {lag}d) re-read each pass + backfill_to walking back "
+                f"{b} days/pass, {DATED_BACKFILL_DEPTH_D}d deep")
+    return "vintage store keyed series|period (append-only)"
+
+
+def roster_rows(sources: Iterable[Source] = SOURCES) -> list[dict[str, Any]]:
     """One roster row per source, for the mining roster (the same metadata the cells carry)."""
     rows = []
-    for s in SOURCES:
+    for s in sources:
         uses = ["direct_cells", "indirect_cells", "allocation_intel"]
-        rows.append({"id": s.id, "name": s.name, "url": s.url.split("?")[0].replace("{key}",
-                                                                                   "<key>"),
+        rows.append({"id": s.id, "name": s.name,
+                     "url": s.url.split("?")[0].replace("{key}", "<key>"),
                      "region": s.region, "language": s.language, "cadence": s.cadence,
                      "auth": f"free_key:{s.key_env}" if s.key_env else "none",
                      "licence": s.licence,
-                     "cursor": ("firms_backfill_to (10 days/cluster/pass, archive product)"
-                                if s.id == "cn_firms_industrial" else
-                                "resultOffset paging; 800-day window"
-                                if s.id.startswith("imf_portwatch") else
-                                "vintage store keyed series|period (append-only)"),
+                     "cursor": _cursor(s),
                      "pit": ("available_time = page publication stamp else release-calendar rule "
                              "(late-biased); first_seen_at = vault fetch instant"),
                      "uses": uses, "consumer": "desks/mt5/research/alt_proxies.py",
                      "status": status_of(s), **_meta(s)})
+        if s.substitutes_for:
+            rows[-1].update({"substitutes_for": s.substitutes_for, "fetcher": "owned",
+                             "owner": "asia_gap_thread"})
     return rows
+
+
+def substitute_roster_rows() -> list[dict[str, Any]]:
+    """Roster rows for the paid-substitute sources only (the repo roster file's content)."""
+    return roster_rows(SUBSTITUTE_SOURCES)
 
 
 def main(argv: list[str] | None = None) -> int:
