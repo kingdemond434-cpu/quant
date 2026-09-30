@@ -44,7 +44,10 @@ def test_specs_are_derived_from_every_declared_clock():
     assert leg.production_args == ("--once", "--budget-s", "600")
     assert "desks/mt5/research/control_plane.py" in leg.code_paths
     assert REG.get("daily:promoter") is not None
-    assert REG.get("task:MT5-GatewayResident").criticality == "required"
+    # ONE ORGAN, ONE ID: the resident is `resident:gateway`; the manifest task is not a second row.
+    assert REG.get("resident:gateway").criticality == "required"
+    assert REG.get("resident:gateway").schedule == "MT5-GatewayResident"
+    assert REG.get("task:MT5-GatewayResident") is None
     assert REG.get("component:control_plane").schedule == "MT5-ClockFixer"
     gauntlet = REG.get("leg:external_gauntlet")
     # DERIVED, NEVER ASSERTED. This read `== 2 * 3600` -- a literal that happened to equal the
