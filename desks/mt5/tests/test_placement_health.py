@@ -349,3 +349,41 @@ def test_the_gateway_tags_only_the_doors_own_refusals():
     assert dup.door_own is True and door.is_door_own_refusal(dup) is True
     assert door.is_door_own_refusal(SimpleNamespace(retcode=10006)) is False
     door._MEMORY_IN_DOUBT.clear()
+
+
+def test_two_passes_of_broker_check_rejections_pause_the_desk(gw):
+    """A venue whose `order_check` refuses every new order still pauses the desk. The door's
+    `broker_check_rejected` refusal carries the broker's retcode and is not the door's own, so
+    two such passes, shaped exactly as `place_bracket` records them, reach the pause."""
+    from types import SimpleNamespace
+
+    from mt5desk import order_door as door
+
+    class _Venue:
+        TRADE_ACTION_DEAL = 1
+        def order_check(self, req):
+            return SimpleNamespace(retcode=10017, comment="Trade disabled")
+        def order_send(self, req):
+            raise AssertionError("a refused open must never reach order_send")
+
+    def _pass():
+        legs = []
+        for side, typ in (("buy_stop", 4), ("sell_stop", 5)):
+            res = door.send(_Venue(), {"action": 5, "symbol": "X", "volume": 0.1, "type": typ,
+                                       "price": 1.0, "sl": 0.9, "magic": 1,
+                                       "comment": f"c-{side}"})
+            assert res.door_reason == "broker_check_rejected" and res.door_own is False
+            legs.append({"side": side, "retcode": res.retcode, "comment": res.comment,
+                         "door_refused": getattr(res, "door_own", False) is True,
+                         "door_reason": getattr(res, "door_reason", None)})
+        return legs
+
+    st = {"placement_pass": "p1"}
+    assert gw["note_placement"](st, "asia", _pass()) is True
+    assert not gw["PAUSED"].exists()
+    st["placement_pass"] = "p2"
+    assert gw["note_placement"](st, "asia", _pass()) is False
+    assert gw["PAUSED"].exists()
+    assert st["placement_health"]["consecutive_total_rejections"] == gw["MAX_TOTAL_REJECTIONS"]
+    assert not any("ORDER DOOR REFUSED" in ln for ln in gw["_logged"])
+    door._MEMORY_IN_DOUBT.clear()
