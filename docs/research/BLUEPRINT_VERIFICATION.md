@@ -200,6 +200,49 @@ Still short:
 - **The certifier has zero power** (see batch 3). The new promotion door only ever withholds, so no new certificate reaches it until the DSR variance is fixed.
 - **Not live.** Not merged, CI not green, and no box run evidenced.
 
+### 2026-09-30 03:20Z: institutional rows on the live branch after #65 (merge `36f91d63`)
+
+#65 landed #54, #57, #58, #60, #61, #62 and #64. #52 (lockbox) and #53 (allocator sovereignty) are **not** on the live branch.
+
+What I checked:
+
+- **Tests.** The test files of 16 new or changed organs (106 tests) pass on a clean worktree of the live branch.
+- **Fences.** `check_certificate_truth`, `check_productivity_census` and `check_birth_properties` all exit 0 off the box.
+- **Wiring.** I found each organ's scheduler and every caller of its output.
+
+**Moved forward (code landed, scheduled, tested):**
+
+| Item | Organ | Authority |
+|---|---|---|
+| I1 research identity | `identity_chain.py` + `libs/research/trade_identity.py` (hourly) | Report: it audits the chain, and fills are not yet stamped with it |
+| I9 / CS9 effective breadth | `libs/research/independence_graph.py` + `alpha_rank.py` (hourly) | Feeds `factory_contracts` → research budget |
+| I11 factory contracts | `factory_contracts.py` (hourly) | **Consumed** by `cycle_pricing` (compute) |
+| I15 independent verifier | `independent_verifier.py` + `libs/validation/independent_replica.py` (FrontierAudit, daily) | Report |
+| I16 placebo / adversarial | `placebo_audit.py` (hourly) | Report: no consumer |
+| I17 live attribution posterior | `live_calibration_posterior.py` (hourly) | **Consumed** by `credit_assignment` and `bandit` (research priors) |
+| I20 forward evidence | `forward_evidence_tracker.py` (hourly) | Report (TIME-BOUND) |
+| I6 risk as constraints inside E[log W] | `libs/portfolio/constrained_elog.py` + `constrained_book.py` (hourly) | **Shadow**: `FEEDS_LIVE = False`, and nothing on the money path reads it |
+| I18 experimental sleeve | `experimental_budget.py` (hourly) | **Shadow**: the separated book is computed, but the overrides still sit in the institutional book |
+| I19 redundancy / DR | `ops_redundancy.py` (hourly) + `dr_drill.py` (daily) | Report: no standby or failover; `dr_drill.py` has no test |
+| I7 cost surfaces | `cost_surfaces.py` (hourly) | Report: no consumer |
+| I8 judging | `JUDGING_RATE.json` + measured workers | Wired; drain unproven on the box |
+| I14 CI | Local law gate 38/38; root failures 166→14, desk failures 146→57 | Not fully green |
+
+**Unchanged on the live branch:**
+
+- **CS1/I2.** `external_gauntlet.py:2500` still writes `lockbox_sharpe = wf_oos`, because #52 has not merged.
+- **CS1/I3.** The DSR variance is still the constant 0.014863 (`effective_trials.py:309`, `gate_policy.py:84`). The certifier has zero power (batch 3). The audit ledger now *measures* this cost (`833c18a4`) but does not fix it.
+- **CS3/I5.** The min-lot and gold floors still override a zero allocation, because #53 has not merged.
+- **CS4/I4.**
+  - The "restore the fences" commits landed, but off the box `check_certificate_truth` still exits 0 with `SNAPSHOT`. That is 474 fatal divergences: 48 banned certificates, 45 banned clocks and 357 unbacked clocks.
+  - The hourly leg never runs `--apply`, and nothing in the repo runs `--require-state` for this fence. So the migration is still a manual one-off, and nothing enforces it.
+  - The committed `sleeves.json` still has 40 LIVE rows, 24 of them banned `discovered`.
+- **CS5/D7.** UNMEASURED marginal admission still keeps capital. No change.
+- **CS10/I10.** `research_budget.json` still has `authoritative: false`.
+- **D15.** No master sync mechanism.
+
+**Principal conflict to surface:** I6 and CS7 ask for margin and survival constraints to sit above aggressiveness preferences. CLAUDE.md records P1 and P13 as REFUSED under the never-reduce-aggressiveness order, and `constrained_book` is held as a shadow for that reason. The 2026-09-29 blueprint explicitly asks for the opposite, so this is the principal's call, not a builder's.
+
 ## A1 — Audit critical sequence (CS), named defects (D), 10/10 acceptance table (AC)
 
 LIVE = origin/claude/llm-auto-upgrade-verify-gcjac3 @ adaba442. INST = owner "Institutional truth discipline fixes"; TS = owner "Tier S research institution build". I ran the law-gate fences on clean worktrees of LIVE, #52 and #53. I also ran the #52 lockbox tests (23 passed) and the #53 sovereignty/cost-basis/min-lot tests (34 passed).
