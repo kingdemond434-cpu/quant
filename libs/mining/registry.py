@@ -307,6 +307,32 @@ class CellRegistry:
                 max(0.0, (t - entered).total_seconds() / 86_400))
         return out
 
+    def trial_families(self) -> dict[str, dict[str, Any]]:
+        """Per trial family: cells, cells sealed, docket cells judged and passed, and the
+        registered gauntlet families it spans. Read by `experiment_ledger` (trial accounting)."""
+        out: dict[str, dict[str, Any]] = {}
+        with self._conn() as c:
+            for r in c.execute("SELECT trial_family_id AS t, status, doc FROM cells "
+                               "WHERE trial_family_id != ''").fetchall():
+                d = out.setdefault(str(r["t"]), {"cells": 0, "sealed": 0, "docket_judged": 0,
+                                                 "docket_passed": 0, "families": set()})
+                doc = json.loads(str(r["doc"]))
+                d["cells"] += 1
+                d["sealed"] += int(bool(doc.get("preregistration_id")))
+                fam = (doc.get("spec") or {}).get("family")
+                if fam:
+                    d["families"].add(str(fam))
+            for r in c.execute("SELECT c.trial_family_id AS t, COUNT(*) AS n, SUM(a.passed) AS p "
+                               "FROM axis_verdicts a JOIN cells c ON c.cell_id=a.cell_id "
+                               "WHERE c.trial_family_id != '' GROUP BY c.trial_family_id"
+                               ).fetchall():
+                got = out.get(str(r["t"]))
+                if got is not None:
+                    got["docket_judged"], got["docket_passed"] = int(r["n"]), int(r["p"] or 0)
+        for d in out.values():
+            d["families"] = sorted(d["families"])
+        return out
+
     def evaluated_by_source(self, since: datetime) -> dict[str, int]:
         """Cells that reached EVALUATED since `since`, per source: the consumer receipt."""
         with self._conn() as c:

@@ -818,3 +818,30 @@ def test_digest_carries_the_whole_rejection_ledger(tmp_path: Path) -> None:
     assert d["rows"] == 5 and d["sha256"] == hashlib.sha256(raw).hexdigest()
     assert d["by"]["reason"] == {"COST_EXCEEDS_EDGE": 3, "DUPLICATE_MECHANISM": 2}
     assert d["by"]["kill_class"] == {"confident_kill": 3}
+
+
+def test_experiment_ledger_reads_mining_trial_families(tmp_path: Path,
+                                                        monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.research import experiment_ledger as el
+    pipe = _pipe(tmp_path)
+    _put(pipe, "codebase", "https://www.mql5.com/en/code/7", EA_RSI + "// EURUSD only")
+    pipe.process(now=T0)
+    pipe.donate(now=T0)
+    c = next(x for x in pipe.cells.by_status("EVALUATING") if x.use == "direct_cells")
+    (tmp_path / "gate_verdict_ledger.jsonl").write_text(json.dumps(
+        {"at": iso(T0), "cell": c.gauntlet_cell, "passed": False,
+         "terminal_gate": "pbo"}) + "\n", "utf-8")
+    pipe.run_pass(60, fetch=False, now=T0)
+    fams = pipe.cells.trial_families()
+    assert fams[c.trial_family_id]["docket_judged"] == 1
+    assert fams[c.trial_family_id]["families"] == ["mean_reversion_rsi"]
+    desk = tmp_path / "desk"
+    (desk / "data").mkdir(parents=True)
+    (desk / "data" / "mining_digest.json").write_bytes(
+        (tmp_path / "mining_digest.json").read_bytes())
+    monkeypatch.setattr(el, "DESK", desk)
+    got = el._mining_trial_families()
+    assert got["status"] == "MEASURED" and got["docket_judged"] == 1
+    assert got["trial_families"] == len(fams)
+    monkeypatch.setattr(el, "DESK", tmp_path / "absent")
+    assert el._mining_trial_families()["status"].startswith("UNMEASURED")

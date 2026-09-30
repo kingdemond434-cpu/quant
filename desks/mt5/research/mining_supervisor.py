@@ -1008,6 +1008,10 @@ class Pipeline:
         except Exception as exc:
             ledger_digest = {"error": f"{type(exc).__name__}: {exc}"[:300]}
         try:
+            tfams: dict[str, Any] = self.cells.trial_families()
+        except Exception as exc:
+            tfams = {"error": f"{type(exc).__name__}: {exc}"[:300]}
+        try:
             conds = json.loads(self.cells.kv_get("conditioners", "{}") or "{}")
         except ValueError:
             conds = {}
@@ -1020,6 +1024,7 @@ class Pipeline:
                "trace": m.get("trace"),
                "rejection_ledger": ledger_digest,
                "conditioner_series": conds,
+               "trial_families": tfams,
                "chains": chains,
                "rejections_latest": rej}
         self.digest.parent.mkdir(parents=True, exist_ok=True)
