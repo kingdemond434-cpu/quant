@@ -399,6 +399,9 @@ LEG_LAYER: dict[str, str] = {
     "prediction_markets": "information",
     "archaeology": "information",
     "sares": "information",
+    # THE TWO ADVERSARIAL COMMITTEES argue explanations and run the falsifiers the judge picks:
+    # they decide which experiments a hypothesis meets, so prediction, like falsifier_run.
+    "committees": "prediction",
     # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
     # fence over the machine's own bookkeeping -- meta, like every other fence.
     "certificate_truth": "meta",
