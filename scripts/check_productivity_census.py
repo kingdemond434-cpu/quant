@@ -421,16 +421,14 @@ def check(require_state: bool = False, tighten: bool = False) -> dict[str, Any]:
     failures: list[str] = out["failures"]
 
     if not CENSUS.exists():
-        # NO DESK STATE IS NOT A BROKEN LAW. A clean checkout has no census artifact -- and it
-        # DOES have a reports directory, because tracked reports live there, so keying this on
-        # the directory's absence made the portable half fail every CI run on a clean clone
-        # (measured 2026-09-29, run 36633930539). Only the state half treats absence as failure.
-        if not require_state:
+        # NO DESK STATE IS NOT A BROKEN LAW. A clean checkout has no reports directory at all;
+        # saying so is the verdict, and only the state half treats it as a failure.
+        if not require_state and not CENSUS.parent.exists():
             out["ok"] = True
             out["verdict"] = "UNMEASURED"
-            out["why"] = (f"no census artifact on this host ({out['artifact']}): the census "
-                          "cannot be judged here, which is a verdict and not a pass. Run with "
-                          "--require-state on the box or the VPS, where the state lives")
+            out["why"] = (f"no desk state on this host ({CENSUS.parent} does not exist): the "
+                          "census cannot be judged here, which is a verdict and not a pass. Run "
+                          "with --require-state on the box or the VPS, where the state lives")
             return out
         failures.append(
             f"no census artifact at {out['artifact']}: the leg `productivity_census` has never "
