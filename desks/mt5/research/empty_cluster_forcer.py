@@ -128,7 +128,6 @@ def _families_by_cluster() -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     was simply false.
     """
     from libs.research.alpha_clusters import classify_family
-
     from research.miner_candidate_compiler import _FAMILY_VOCAB, _registered_cached
     donatable: dict[str, list[str]] = {}
     registered: dict[str, list[str]] = {}
@@ -178,8 +177,7 @@ def _symbols_for(family: str, universe: dict[str, Any], turn: int) -> list[str]:
     (CELLS_PER_CLUSTER); the window slides one width per hour, so a lap reaches the whole lane.
     PREFERRED stays as the fallback when the lane cannot be read here."""
     try:
-        from research.breadth_rotation import (hypothesis_symbols, orthogonal_ring,
-                                               rotating_window)
+        from research.breadth_rotation import hypothesis_symbols, orthogonal_ring, rotating_window
         lane = [s for s in hypothesis_symbols() if not universe or s in universe]
         if lane:
             return rotating_window(orthogonal_ring(lane, family), CELLS_PER_CLUSTER, turn=turn)

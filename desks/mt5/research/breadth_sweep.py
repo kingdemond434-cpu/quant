@@ -405,7 +405,8 @@ def write_report(new: list[dict], syms: list[str], added: int | None, total: int
         "set_aside_untestable": sorted(LAST_SET_ASIDE.values(),
                                        key=lambda r: (-int(r["cells"]), r["family"])),
         "set_aside_cells": sum(int(r["cells"]) for r in LAST_SET_ASIDE.values()),
-        "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its family "
+        "rule": ("a cell the sealed gauntlet cannot build with its inputs, or on a chart its "
+                 "family "
                  "declares it cannot express, is set aside BY NAME and counted here -- never "
                  "minted to be judged as a market 'no' the market never gave"),
     }

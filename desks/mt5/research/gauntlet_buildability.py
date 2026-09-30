@@ -11,7 +11,7 @@ is a test of the fallback, which is the rule `breadth_sweep` already states for 
 families, applied here to every producer.
 
 MEASURED 2026-09-30 by building real cells through the sealed `build_cell` on this tree's bars
-(pinned by `tests/test_gauntlet_buildability.py`, so the day the gauntlet is re-signed with the
+(pinned by `desks/mt5/tests/test_producer_breadth`, so the day the gauntlet is re-signed with the
 missing branch the test fails and this table is corrected rather than silently stale):
 
     lead_lag         the gauntlet has no `lead_lag` branch, so `driver` is never loaded: 0 signals

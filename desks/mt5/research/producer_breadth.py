@@ -13,7 +13,7 @@ a buildable family nobody mints.
 IT READS, IT NEVER WRITES A LEDGER. Sources, in order of authority:
 
     1. the canonical registry (`data/alpha_registry.sqlite`, `research_candidates` joined to
-       `discoveries` exactly as `scripts/check_producer_yield.py` joins them, crediting the
+       `discoveries` exactly as `scripts/check_producer_yield` joins them, crediting the
        producer that CAUSED the cell rather than the compiler that stamped it);
     2. the producer's seat under `data/intelligence/<seat>/` (the donation contract every
        proposer writes), read newest-first under a byte budget;
@@ -75,9 +75,11 @@ MAX_ARTIFACT_BYTES = 48 * 1024 * 1024
 #: (already at the breadth its data allows), LEFT_UNTESTABLE (its family cannot be built by the
 #: sealed gauntlet, so widening would mint more zero-signal cells), LEFT_BANNED (it mints the
 #: permanently banned `discovered`), LEFT_BY_DESIGN (the bound is the mechanism, not a slice).
+#: `module` is a STEM on purpose: a `research/<x>.py` literal here reads to the component
+#: registry's reach walk as this file INVOKING that organ, and would hand it a false clock.
 INVENTORY: dict[str, dict[str, Any]] = {
     "breadth_sweep": {
-        "module": "research/breadth_sweep.py", "seats": [], "report": "BREADTH_SWEEP.json",
+        "module": "breadth_sweep", "seats": [], "report": "BREADTH_SWEEP.json",
         "cap": ("every hypothesis-lane symbol with bars x every chart on disk x 4 sessions; "
                 "READY grids for peer/factor/COT/tape/macro families on fixed pair and factor "
                 "lists; MAX_NEW_PER_RUN 40,000 taken alphabetically; minted lead_lag, "
@@ -92,21 +94,21 @@ INVENTORY: dict[str, dict[str, Any]] = {
                    "attacked cluster (1,596 cells, 0 certificates)"),
     },
     "qd_frontier": {
-        "module": "research/qd_frontier.py", "seats": ["qd_frontier"],
+        "module": "qd_frontier", "seats": ["qd_frontier"],
         "cap": "PROPOSAL_SYMBOLS=3 taken as the FIRST three of each asset class, every pass",
         "status": "WIDENED",
         "change": ("a rotating window of 3 over the whole class, least-judged first, one window "
                    "further per proposal and per hour; the per-pass count is unchanged"),
     },
     "htf_anchor_proposer": {
-        "module": "research/htf_anchor_proposer.py", "seats": ["video_anchor_exit"],
+        "module": "htf_anchor_proposer", "seats": ["video_anchor_exit"],
         "cap": "on NO clock (III.16); charts H1/H4/D1 only; symbols walked by name",
         "status": "WIRED",
         "change": ("hourly leg `htf_anchor`; M15/M30 minted wherever that chart's bars exist; "
                    "symbols walked least-judged first; the 1,200-row rotating slice is unchanged"),
     },
     "empty_cluster_forcer": {
-        "module": "research/empty_cluster_forcer.py", "seats": ["breadth"],
+        "module": "empty_cluster_forcer", "seats": ["breadth"],
         "cap": ("on NO clock (III.16); a fixed 12-name PREFERRED tuple; called clusters owned by "
                 "untestable families PROPOSER_OWNED"),
         "status": "WIRED",
@@ -116,7 +118,7 @@ INVENTORY: dict[str, dict[str, Any]] = {
                    "only buildable families are minted"),
     },
     "cross_asset_graph": {
-        "module": "research/cross_asset_graph.py", "seats": ["cross_asset_graph"],
+        "module": "cross_asset_graph", "seats": ["cross_asset_graph"],
         "cap": "book_symbols()[:12] (alphabetical prefix of the live book)",
         "status": "LEFT_UNTESTABLE",
         "change": ("NOT widened: it mints lead_lag, and external_gauntlet.build_cell has no "
@@ -125,13 +127,14 @@ INVENTORY: dict[str, dict[str, Any]] = {
                    "signal cells. Remedy: a sealed-gauntlet lead_lag branch (principal-gated)"),
     },
     "asia_transmission": {
-        "module": "research/asia_transmission.py", "seats": ["asia_transmission"],
+        "module": "asia_transmission", "seats": ["asia_transmission"],
         "cap": "on no hourly clock; lead_lag only",
         "status": "LEFT_UNTESTABLE",
-        "change": "NOT wired: lead_lag is unbuildable by the sealed gauntlet (see cross_asset_graph)",
+        "change": ("NOT wired: lead_lag is unbuildable by the sealed gauntlet "
+                   "(see cross_asset_graph)"),
     },
     "event_surprise": {
-        "module": "research/event_surprise.py", "seats": ["event_surprise"],
+        "module": "event_surprise", "seats": ["event_surprise"],
         "cap": "MAX_DONATIONS=10, MAX_SOURCES_PER_PASS=16; event_reaction only",
         "status": "LEFT_UNTESTABLE",
         "change": ("NOT widened: the sealed gauntlet hands event_reaction a bare DatetimeIndex "
@@ -139,79 +142,79 @@ INVENTORY: dict[str, dict[str, Any]] = {
                    "builds with 0 signals. Remedy: the event_reaction branch (principal-gated)"),
     },
     "event_response_atlas": {
-        "module": "research/event_response_atlas.py", "seats": ["event_response_atlas"],
+        "module": "event_response_atlas", "seats": ["event_response_atlas"],
         "cap": "event_reaction only", "status": "LEFT_UNTESTABLE",
         "change": "as event_surprise: the sealed event_reaction branch feeds the wrong shape",
     },
     "edge_search": {
-        "module": "research/edge_search.py", "artifact": "edge_search_results.json",
+        "module": "edge_search", "artifact": "edge_search_results.json",
         "cap": "family `discovered` only", "status": "LEFT_BANNED",
         "change": "NOT fed: `discovered` is PERMANENTLY banned and the gauntlet discards its cells",
     },
     "backfill_coverage": {
-        "module": "research/backfill_coverage.py", "artifact": "coverage_search_results.json",
+        "module": "backfill_coverage", "artifact": "coverage_search_results.json",
         "cap": "PER_CLASS=3 prefix; family `discovered` only; on no clock", "status": "LEFT_BANNED",
         "change": "NOT fed or wired: every row it writes is the banned `discovered` family",
     },
     "anomaly_factory": {
-        "module": "research/anomaly_factory.py", "seats": ["anomaly_factory", "anomalies"],
+        "module": "anomaly_factory", "seats": ["anomaly_factory", "anomalies"],
         "cap": "family `discovered`", "status": "LEFT_BANNED",
         "change": "NOT fed: the banned family",
     },
     "orthogonal_sweep": {
-        "module": "research/orthogonal_sweep.py", "artifact": "orthogonal_candidates.json",
+        "module": "orthogonal_sweep", "artifact": "orthogonal_candidates.json",
         "cap": ("every (symbol, chart) with bars, yield-interleaved by class and chart; "
                 "timeframe_refusal already honoured"),
         "status": "LEFT_FULL", "change": "none needed: sweeps every pair and refuses by name",
     },
     "moat_miner": {
-        "module": "research/moat_miner.py", "artifact": "moat_candidates.json",
+        "module": "moat_miner", "artifact": "moat_candidates.json",
         "cap": "symbols with >= 30 days of recorded tick tape (the desk's own moat)",
         "status": "LEFT_FULL", "change": "bounded by the tape it owns, not by a slice",
     },
     "session_structure_miner": {
-        "module": "research/session_structure_miner.py", "seats": ["session_structure"],
+        "module": "session_structure_miner", "seats": ["session_structure"],
         "cap": "every registry instrument's own derived session; RR x wait sweep",
         "status": "LEFT_FULL", "change": "none needed",
     },
     "descendants": {
-        "module": "research/descendants.py", "seats": ["descendants"],
+        "module": "descendants", "seats": ["descendants"],
         "cap": "MAX_PER_ROOT=4, MAX_NEIGHBOURS=3 around each survivor; chart ladder M5..D1",
         "status": "LEFT_BY_DESIGN",
         "change": "the bound is one axis-step from a survivor; it inherits survivors' breadth",
     },
     "trajectory_evolution": {
-        "module": "research/trajectory_evolution.py", "seats": ["trajectory_evolution"],
+        "module": "trajectory_evolution", "seats": ["trajectory_evolution"],
         "cap": "evolves failed trajectories at their failing step", "status": "LEFT_BY_DESIGN",
         "change": "breadth is inherited from the verdict ledger it evolves",
     },
     "graveyard_resurrection": {
-        "module": "research/graveyard_resurrection.py", "seats": ["graveyard_resurrection"],
+        "module": "graveyard_resurrection", "seats": ["graveyard_resurrection"],
         "cap": "MAX_CANDIDATES=60, MAX_FAMILY_SHARE=0.5", "status": "LEFT_BY_DESIGN",
         "change": "a per-pass bound over the graveyard with a family-share floor on diversity",
     },
     "alpha_recombination": {
-        "module": "research/alpha_recombination.py", "seats": ["alpha_recombination"],
+        "module": "alpha_recombination", "seats": ["alpha_recombination"],
         "cap": "MAX_COMBINATIONS=40, MAX_GENES=3 over live/certified genes",
         "status": "LEFT_BY_DESIGN", "change": "recombines what already survived",
     },
     "axis_proposer": {
-        "module": "research/axis_proposer.py", "seats": ["axis_registry"],
+        "module": "axis_proposer", "seats": ["axis_registry"],
         "cap": "MAX_HARVEST=4 per source", "status": "LEFT_BY_DESIGN",
         "change": "the per-source bound is its multiplicity budget; sources rotate",
     },
     "pack_cells": {
-        "module": "research/pack_cells.py", "seats": [],
+        "module": "pack_cells", "seats": [],
         "cap": "SIGNALS_PER_PACK_PER_PASS=6; targets named by the pack", "status": "LEFT_FULL",
         "change": "cursor-rotated over packs already",
     },
     "timeframe_fanout": {
-        "module": "research/timeframe_fanout.py", "seats": [],
+        "module": "timeframe_fanout", "seats": [],
         "cap": "PARENTS_PER_LANE_PER_PASS=40, every chart of the ladder", "status": "LEFT_FULL",
         "change": "rotates parents; already fans every chart",
     },
     "style_premia_sweep": {
-        "module": "research/style_premia_sweep.py", "seats": ["style_premia"],
+        "module": "style_premia_sweep", "seats": ["style_premia"],
         "cap": "H1 only (declared in FAMILY_TIMEFRAMES)", "status": "LEFT_BY_DESIGN",
         "change": "the family's windows are inline hourly bar counts; H1 is its only honest chart",
     },
@@ -273,7 +276,7 @@ def discovered_producers() -> dict[str, dict[str, Any]]:
         if "donate(" not in src or path.stem in ("proposer_common", "producer_breadth"):
             continue
         seats = sorted(set(const.findall(src)))
-        out[path.stem] = {"module": f"research/{path.name}", "seats": seats,
+        out[path.stem] = {"module": path.stem, "seats": seats,
                           "cap": UNMEASURED, "status": "NOT_INVENTORIED",
                           "change": "not inventoried by hand; measured below"}
     for name, row in INVENTORY.items():
@@ -383,9 +386,14 @@ def _verdict(fam: str, params: dict[str, Any] | None, tf: str) -> str:
     """The sealed gauntlet's verdict on a cell. `params=None` means the source does not carry
     them (a registry group): the family and the chart are judged, the parameters are not."""
     try:
-        from research.gauntlet_buildability import (BUILDABLE, TIMEFRAME_REFUSED, cell_verdict,
-                                                    family_verdict)
         from mt5desk.families_orthogonal import timeframe_refusal
+
+        from research.gauntlet_buildability import (
+            BUILDABLE,
+            TIMEFRAME_REFUSED,
+            cell_verdict,
+            family_verdict,
+        )
     except Exception:
         return UNMEASURED
     need = "?" if params is None else "|".join(sorted(params))
@@ -606,7 +614,7 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
                     fed_by.setdefault(c, set()).add(name)
         measured_ok = tally.n7 > 0 or not str(measured).startswith(UNMEASURED)
         rows[name] = {
-            "module": row.get("module"),
+            "module": f"desks/mt5/research/{row.get('module')}.py",
             "seats": row.get("seats") or [],
             "scheduled": bool(clocks), "clocks": clocks,
             "last_run": tally.last.isoformat(timespec="seconds") if tally.last else None,

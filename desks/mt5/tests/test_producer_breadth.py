@@ -32,7 +32,7 @@ from research import producer_breadth as pb  # noqa: E402
 def _seen(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, keys: list[str]) -> None:
     """Point both import spellings of the rotation module at one judged-cells file."""
     p = tmp_path / "gauntlet_seen_cells.json"
-    p.write_text(json.dumps({k: "2026-09-30T00:00:00+00:00" for k in keys}), "utf-8")
+    p.write_text(json.dumps(dict.fromkeys(keys, "2026-09-30T00:00:00+00:00")), "utf-8")
     monkeypatch.setattr(br, "SEEN_CELLS", p)
     monkeypatch.setattr(br_top, "SEEN_CELLS", p)
 
@@ -114,9 +114,9 @@ def test_the_sealed_gauntlet_builds_lead_lag_and_event_reaction_with_no_signals(
     `gauntlet_buildability` must be corrected rather than left stale."""
     sys.path.insert(0, str(_DESK / "scripts"))
     import external_gauntlet as eg
-
     from mt5desk.family_event_reaction import family_event_reaction
     from mt5desk.family_lead_lag import family_lead_lag
+
     from research import orthogonal_sweep as osw
     tgt, drv = _frame(1), _frame(2)
     frames = {"GGGHHH": tgt, "DRV": drv}
@@ -175,7 +175,7 @@ def test_breadth_sweep_spends_its_cap_on_the_least_judged_pairs_first(
     _seen(tmp_path, monkeypatch, [f"AUDUSD.vol_transition.p={i}" for i in range(9)])
     monkeypatch.setattr(bs, "_with_bars", lambda: ["AUDUSD", "ZARJPY"])
     monkeypatch.setattr(bs, "_charts_for", lambda sym: ["H1"])
-    rows = [r for r in bs.cells("vol_transition")]
+    rows = bs.cells("vol_transition")
     assert rows[0]["symbol"] == "ZARJPY", "the unjudged instrument leads, not the alphabet"
 
 
