@@ -294,6 +294,14 @@ MODULES = [
     "desks/mt5/research/run_hunt16.py",
     "desks/mt5/research/qquant_gates.py",
     "desks/mt5/research/universal_gate.py",
+    # THE CONTROL ROOM (2026-09-30): the daily `control_room` step imports these; the contract's
+    # verdict is what the allocator patch reads, so a stale copy would publish a stale admission.
+    "desks/mt5/research/control_room.py",
+    "desks/mt5/research/regime_allocation_contract.py",
+    "desks/mt5/research/control_room_mechanisms.py",
+    "desks/mt5/research/bench_bridge.py",
+    "desks/mt5/research/practitioner_processes.py",
+    "libs/regime/control_room.py",
     "libs/portfolio/robust_elog.py",
     "libs/portfolio/allocator_proof.py",
     "libs/portfolio/posterior_growth.py",

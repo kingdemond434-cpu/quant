@@ -69,7 +69,7 @@ header.page .sub{font-family:var(--mono);font-size:11px;color:var(--ink-3)}
          letter-spacing:.07em;margin-bottom:7px}
 .stat .v{font-family:var(--mono);font-size:22px;font-weight:600;letter-spacing:-.01em}
 .stat .n{font-family:var(--mono);font-size:10px;color:var(--ink-3);margin-top:5px}
-.pos{color:var(--good)} .neg{color:var(--bad)} .muted{color:var(--ink-3)}
+.pos{color:var(--good)} .neg{color:var(--bad)} .muted{color:var(--ink-3)} .v.warn{color:var(--warn)}
 
 .panel{background:var(--card);border:1px solid var(--line);border-radius:9px;margin-bottom:14px;overflow:hidden}
 .panel > h2{margin:0;padding:11px 15px;font-size:12px;font-weight:600;letter-spacing:.05em;
@@ -110,6 +110,7 @@ td.num{text-align:right}
   <button data-p="execution">Execution</button>
   <button data-p="monitor">Monitoring</button>
   <div class="foot" id="nav-foot">—</div>
+  <div class="foot">source web/desk_state.json, rebuilt by scripts/build_zentech_state.py</div>
 </nav>
 
 <main>
@@ -185,10 +186,22 @@ function table(cols, rows, emptyMsg){
 }
 
 /* ------------------------------------------------------------------ pages */
+/* IS THE BOX THAT HOLDS THE CAPITAL STILL REPORTING? A board of ten-day-old numbers and a live
+   one are pixel-identical; only this line tells them apart, so it is the first stat on the page.
+   build_zentech_state.py publishes it as health.box: REPORTING / LATE / SILENT / UNMEASURED. */
+const BOX_CLS = {REPORTING:'pos', LATE:'warn', SILENT:'neg', UNMEASURED:'neg'};
+function boxStat(h){
+  const box = (h && h.box) || {};
+  const st = box.status || 'UNMEASURED';
+  const why = box.why || 'this payload carries no box liveness block';
+  return stat('Trading box', esc(st), why, BOX_CLS[st] || 'neg');
+}
+
 function pageExec(){
   const a = S.account||{}, h = S.health||{}, r = S.research||{}, b = S.breadth||{};
   const bb = b.book_breadth||{};
   const g = `<div class="grid">
+    ${boxStat(h)}
     ${stat('Equity', (a.currency||'')+' '+num(a.equity), 'balance '+num(a.balance))}
     ${stat('Today P&L', num(a.today_pnl), 'open '+num(a.open_pnl), sign(a.today_pnl))}
     ${stat('Open positions', (S.execution&&S.execution.open_trades? S.execution.open_trades.length : 0), 'margin '+num(a.margin))}
