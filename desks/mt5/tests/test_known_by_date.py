@@ -150,6 +150,9 @@ def test_lint_fails_only_on_arrival_and_floor_only_shrinks(
     floor = tmp_path / "floor.json"
     monkeypatch.setattr(kbd, "FLOOR", floor)
     monkeypatch.setattr(kbd, "OUT", tmp_path / "out.json")
+    monkeypatch.setattr(kbd, "LAG_OUT", tmp_path / "lag.json")
+    monkeypatch.setattr(kbd, "certificate_fence",
+                        lambda root=None: {"providers": {}, "failures": [], "verdict": "OK"})
     monkeypatch.setattr(kbd, "ROOT", root)
     real_scan = kbd.scan
     monkeypatch.setattr(kbd, "scan", lambda: real_scan(root))
