@@ -430,12 +430,29 @@ def axis_chart(card: dict[str, Any], note: list[dict[str, Any]]) -> list[dict[st
     return out[:MAX_PER_AXIS]
 
 
+def _live_spec(s: dict[str, Any], k: str) -> tuple[dict[str, Any], dict | None]:
+    """`spec` for session `k`, or the firing-hours oracle's stand-in when the family can never
+    fire in that window (`libs/research/family_firing.py`). One child either way."""
+    try:
+        from libs.research.family_firing import live_session
+        p, landed, remap = live_session(s["family"], s["params"], k)
+    except ImportError:
+        return spec(s["symbol"], s["family"], s["params"], s["chart"], k), None
+    return spec(s["symbol"], s["family"], p, s["chart"], landed), remap
+
+
 def axis_session(card: dict[str, Any], _note: list[dict[str, Any]]) -> list[dict[str, Any]]:
     s = card["spec"]
-    return [_child(card, "session", spec(s["symbol"], s["family"], s["params"], s["chart"], k),
-                   f"the same rule fired only in the {k} window: the participants differ by "
-                   f"session and so does the constraint they trade under")
-            for k in sessions() if k != s["session"]][:MAX_PER_AXIS]
+    out = []
+    for k in [k for k in sessions() if k != s["session"]][:MAX_PER_AXIS]:
+        child_spec, remap = _live_spec(s, k)
+        why = (f"the same rule fired only in the {k} window: the participants differ by "
+               f"session and so does the constraint they trade under")
+        if remap and remap.get("remapped"):
+            why += (f" -- {k} never fires for {s['family']}, so the child is "
+                    f"{remap['remap']} into {child_spec['session']}")
+        out.append(_child(card, "session", child_spec, why))
+    return out
 
 
 def axis_knob(card: dict[str, Any], axis: str, note: list[dict[str, Any]]

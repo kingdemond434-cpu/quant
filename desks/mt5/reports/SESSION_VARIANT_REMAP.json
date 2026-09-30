@@ -1,0 +1,455 @@
+{
+ "by_family": {
+  "adx_channel_hybrid": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 192,
+   "variants": 192
+  },
+  "asia_momentum": {
+   "dead": 307,
+   "dead_share_of_measured": 0.6688,
+   "dead_share_of_variants": 0.6688,
+   "live": 150,
+   "rehomed": 267,
+   "remapped": 267,
+   "session_tz_mismatch": 2,
+   "variants": 459
+  },
+  "calendar_month": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 9,
+   "variants": 9
+  },
+  "carry": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 90,
+   "variants": 90
+  },
+  "clock_transition": {
+   "dead": 30,
+   "dead_share_of_measured": 1.0,
+   "dead_share_of_variants": 0.7143,
+   "reanchored": 30,
+   "remapped": 30,
+   "unmeasured": 12,
+   "variants": 42
+  },
+  "comex_settlement": {
+   "dead": 47,
+   "dead_share_of_measured": 0.7966,
+   "dead_share_of_variants": 0.7966,
+   "live": 12,
+   "reanchored": 47,
+   "remapped": 47,
+   "variants": 59
+  },
+  "correlation_regime": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 1542,
+   "variants": 1542
+  },
+  "cot_change_momentum": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 3,
+   "variants": 3
+  },
+  "cot_comm_follow": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 15,
+   "variants": 15
+  },
+  "cot_positioning": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 6,
+   "variants": 6
+  },
+  "cross_asset_residual": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 1593,
+   "variants": 1593
+  },
+  "dow_effect": {
+   "dead": 18,
+   "dead_share_of_measured": 1.0,
+   "dead_share_of_variants": 1.0,
+   "rehomed": 18,
+   "remapped": 18,
+   "variants": 18
+  },
+  "drawdown_conditional": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 24,
+   "unmeasured": 285,
+   "variants": 309
+  },
+  "engulfing_reversal": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 243,
+   "variants": 243
+  },
+  "event_reaction": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 30,
+   "variants": 30
+  },
+  "execution_state": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 486,
+   "variants": 486
+  },
+  "failed_breakout": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 41,
+   "session_tz_mismatch": 16,
+   "variants": 57
+  },
+  "forced_flow": {
+   "dead": 62,
+   "dead_share_of_measured": 0.3333,
+   "dead_share_of_variants": 0.3333,
+   "live": 124,
+   "rehomed": 49,
+   "remapped": 49,
+   "variants": 186
+  },
+  "formula": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 705,
+   "variants": 705
+  },
+  "fx_fixing_reversal": {
+   "dead": 26,
+   "dead_share_of_measured": 0.6667,
+   "dead_share_of_variants": 0.6667,
+   "live": 13,
+   "reanchored": 26,
+   "remapped": 26,
+   "variants": 39
+  },
+  "hedging_demand_close": {
+   "dead": 24,
+   "dead_share_of_measured": 0.6667,
+   "dead_share_of_variants": 0.6667,
+   "rehomed": 24,
+   "remapped": 24,
+   "session_tz_mismatch": 12,
+   "variants": 36
+  },
+  "ict_fvg": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 180,
+   "variants": 180
+  },
+  "jump": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 717,
+   "variants": 717
+  },
+  "lead_lag": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 642,
+   "variants": 642
+  },
+  "level_breakout": {
+   "dead": 8,
+   "dead_share_of_measured": 0.381,
+   "dead_share_of_variants": 0.381,
+   "live": 13,
+   "reanchored": 8,
+   "remapped": 8,
+   "variants": 21
+  },
+  "liquidity_gamma_reversal": {
+   "dead": 458,
+   "dead_share_of_measured": 0.297,
+   "dead_share_of_variants": 0.2678,
+   "live": 700,
+   "rehomed": 354,
+   "remapped": 354,
+   "session_tz_mismatch": 384,
+   "unmeasured": 168,
+   "variants": 1710
+  },
+  "liquidity_regime": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 486,
+   "variants": 486
+  },
+  "london_close_momentum": {
+   "dead": 44,
+   "dead_share_of_measured": 0.4074,
+   "dead_share_of_variants": 0.4074,
+   "live": 32,
+   "rehomed": 44,
+   "remapped": 44,
+   "session_tz_mismatch": 32,
+   "variants": 108
+  },
+  "macro_conditional": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 90,
+   "variants": 90
+  },
+  "mean_reversion_bollinger": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 195,
+   "variants": 195
+  },
+  "mean_reversion_rsi": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 222,
+   "variants": 222
+  },
+  "momentum_volgate": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 339,
+   "variants": 339
+  },
+  "monday_gap": {
+   "dead": 6,
+   "dead_share_of_measured": 1.0,
+   "dead_share_of_variants": 0.5,
+   "rehomed": 6,
+   "remapped": 6,
+   "unmeasured": 6,
+   "variants": 12
+  },
+  "multi_speed_trend": {
+   "dead": 214,
+   "dead_share_of_measured": 0.9907,
+   "dead_share_of_variants": 0.8492,
+   "live": 2,
+   "rehomed": 193,
+   "remapped": 193,
+   "unmeasured": 36,
+   "variants": 252
+  },
+  "opening_range": {
+   "dead": 10,
+   "dead_share_of_measured": 0.3704,
+   "dead_share_of_variants": 0.3704,
+   "live": 17,
+   "reanchored": 10,
+   "remapped": 10,
+   "variants": 27
+  },
+  "orderflow_imbalance": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 417,
+   "variants": 417
+  },
+  "overnight_drift": {
+   "dead": 70,
+   "dead_share_of_measured": 0.9722,
+   "dead_share_of_variants": 0.8974,
+   "reanchored": 62,
+   "rehomed": 8,
+   "remapped": 70,
+   "session_tz_mismatch": 2,
+   "unmeasured": 6,
+   "variants": 78
+  },
+  "overnight_gap_decay": {
+   "dead": 104,
+   "dead_share_of_measured": 0.8966,
+   "dead_share_of_variants": 0.8966,
+   "live": 12,
+   "rehomed": 104,
+   "remapped": 104,
+   "variants": 116
+  },
+  "pca_residual": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 1230,
+   "variants": 1230
+  },
+  "pin_bar_reversal": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 249,
+   "unmeasured": 21,
+   "variants": 270
+  },
+  "pullback_entry": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 267,
+   "variants": 267
+  },
+  "range_reversion": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 654,
+   "unmeasured": 12,
+   "variants": 666
+  },
+  "regime_transition": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 213,
+   "variants": 213
+  },
+  "relative_value": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 1464,
+   "variants": 1464
+  },
+  "retail_overlap_reversal": {
+   "dead": 15,
+   "dead_share_of_measured": 0.3333,
+   "dead_share_of_variants": 0.3333,
+   "live": 30,
+   "reanchored": 15,
+   "remapped": 15,
+   "variants": 45
+  },
+  "session_range_breakout": {
+   "dead": 74,
+   "dead_share_of_measured": 0.5736,
+   "dead_share_of_variants": 0.5736,
+   "live": 55,
+   "reanchored": 64,
+   "rehomed": 10,
+   "remapped": 74,
+   "variants": 129
+  },
+  "spread_state": {
+   "dead": 3,
+   "dead_share_of_measured": 0.0059,
+   "dead_share_of_variants": 0.0059,
+   "live": 507,
+   "rehomed": 3,
+   "remapped": 3,
+   "variants": 510
+  },
+  "style_premia": {
+   "dead": 1197,
+   "dead_share_of_measured": 1.0,
+   "dead_share_of_variants": 0.941,
+   "rehomed": 721,
+   "remapped": 721,
+   "unmeasured": 75,
+   "variants": 1272
+  },
+  "trend_ma_cross": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 762,
+   "variants": 762
+  },
+  "triangle": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 1347,
+   "variants": 1347
+  },
+  "turn_of_month": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 30,
+   "variants": 30
+  },
+  "usd_session_shock": {
+   "dead_share_of_measured": "UNMEASURED",
+   "dead_share_of_variants": 0.0,
+   "unmeasured": 12,
+   "variants": 12
+  },
+  "vol_mean_reversion": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 609,
+   "variants": 609
+  },
+  "vol_transition": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 309,
+   "variants": 309
+  },
+  "volatility_squeeze": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 732,
+   "variants": 732
+  },
+  "volume_spike": {
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live": 123,
+   "variants": 123
+  }
+ },
+ "clock": "bars are broker EET/EEST stamps (Europe/Athens, UTC+2 winter / +3 summer); market sessions are Tokyo/London/New York 08:00-16:00 local, DST included",
+ "consumers": [
+  "libs/research/family_firing.session_cells <- miner_candidate_compiler.expand_axes, breadth_sweep.cells, axis_registry, qd_frontier, trajectory_evolution, moat_card_explosion",
+  "registry door -> research_candidates (origin session_variant_remap)"
+ ],
+ "dead_but_server_window_fires": 601,
+ "dead_by_cause": {
+  "NEVER_FIRES_IN_SESSION": 2717,
+  "SESSION_TZ_MISMATCH": 448
+ },
+ "dead_found": 2717,
+ "dead_share": 0.1251,
+ "dead_share_of_measured": 0.2535,
+ "dead_today_on_server_window": 2564,
+ "dead_without_standin": 654,
+ "docket": {
+  "path": "data/hypotheses/external_survivors.json",
+  "rows": 57538,
+  "session_variants": 21721,
+  "truncated": 0
+ },
+ "donation": {
+  "available": true,
+  "dry_run": true,
+  "planned": 2063
+ },
+ "elapsed_s": 4.12,
+ "generated_at": "2026-09-30T15:29:34+00:00",
+ "law": "NOTHING REMOVED: a dead variant stays in the docket and is only marked; UNMEASURED is never DEAD; every stand-in is a new cell charged to the census",
+ "live": 7555,
+ "oracle": {
+  "elapsed_s": 2.43,
+  "keys": 434,
+  "measured_now": 0,
+  "unmeasured_keys": 182
+ },
+ "oracle_version": 2,
+ "remapped": 2063,
+ "remapped_by_kind": {
+  "reanchored": 262,
+  "rehomed": 1801
+ },
+ "sealed_need": "/mnt/project-files/patches/session_variants/: the sealed sort in external_gauntlet.main cannot read DEAD_SESSION_VARIANTS.jsonl; the patch there sorts a dead variant last (never drops it). The two-stage judge (claude/two-stage-judge) should read the sidecar in stage 0 and spend no build on a listed genome_id.",
+ "session_tz_mismatch": 448,
+ "session_variants": 21721,
+ "sidecar": "data/hypotheses/DEAD_SESSION_VARIANTS.jsonl",
+ "unmeasured": 11001
+}

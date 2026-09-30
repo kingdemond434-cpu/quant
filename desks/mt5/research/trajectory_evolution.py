@@ -540,7 +540,18 @@ def mutate_params(g: Genome, step: str) -> tuple[dict[str, Any] | None, str]:
             params[key] = moved
             return params, f"{step}: {key} {g.params[key]} -> {moved}"
     if step == "condition" and "session" not in params and g.information_axes["chart"] != "D1":
-        params["session"] = window = ("asia", "london", "ny")[_salt(g.cell) % 3]
+        window = ("asia", "london", "ny")[_salt(g.cell) % 3]
+        params["session"] = window
+        # A window the family never fires in is an empty signal list, not a condition: mint the
+        # oracle's stand-in instead (`libs/research/family_firing.py`); UNMEASURED keeps it.
+        try:
+            from libs.research.family_firing import live_session
+            params, landed, remap = live_session(g.family, params, window)
+        except ImportError:
+            landed, remap = window, None
+        if remap and remap.get("remapped"):
+            return params, (f"condition: unconditional -> {remap['remap']} into {landed} "
+                            f"(its {window} window never fires)")
         return params, f"condition: unconditional -> fires only in {window}"
     return None, (f"no parameter on this cell expresses its {step}, and moving one that does not "
                   f"would change something the failure never indicted")
