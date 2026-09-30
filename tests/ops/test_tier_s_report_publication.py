@@ -23,7 +23,7 @@ REPORTS = {
     "desks/mt5/reports/NULL_LAB.json": "desks/mt5/research/null_lab.py",
     "desks/mt5/reports/KNOWN_BY_DATE.json": "scripts/check_known_by_date.py",
     "desks/mt5/reports/PIT_LAG_CENSUS.json": "scripts/check_known_by_date.py",
-    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json": "desks/mt5/scripts/unknown_share_census.py",
+    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json": "desks/mt5/research/daily_cycle.py",
     "desks/mt5/reports/OCCUPANCY_MAP.json": "desks/mt5/research/occupancy_map.py",
     "desks/mt5/reports/CULTURE_ORTHOGONALITY.json": "desks/mt5/research/culture_orthogonality.py",
     "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json":
