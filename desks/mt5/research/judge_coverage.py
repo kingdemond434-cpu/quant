@@ -99,6 +99,8 @@ STUDY_BANK = HYP / "study_bank.json"
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
 REPORTS = BASE / "reports"
 REPORT = REPORTS / "JUDGE_COVERAGE.json"
+#: research/occupancy_map.py's hourly artifact: target cells and per-candidate orthogonality.
+OCCUPANCY_REPORT = REPORTS / "OCCUPANCY_MAP.json"
 RATCHET = BASE / "data" / "judge_backlog_ratchet.json"
 
 #: The judging window every family is measured against: one hour, because the principal's order
@@ -952,6 +954,39 @@ def keff_stamp(rows: list[dict[str, Any]]) -> dict[str, Any]:
         return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
 
 
+def _occupancy_map() -> Any:
+    """The occupancy map + orthogonality scorer (research/occupancy_map.py), or None."""
+    for mod in ("research.occupancy_map", "occupancy_map"):
+        try:
+            return __import__(mod, fromlist=["stamp"])
+        except Exception:
+            continue
+    return None
+
+
+def occupancy_stamp(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Stamp `_occ` (the row's cell is an EMPTY/UNDER-TRIED target next to proven ground) and
+    `_orth` (its expected orthogonality to the LIVE book and the certified set, centred on par)
+    on every row, plus the published `orthogonality` score, from reports/OCCUPANCY_MAP.json.
+
+    Read as a published artifact, like `producer_signals`: an absent or stale map stamps nothing
+    and every row ranks exactly as before. Never raises, never removes a row (L1.28a).
+    """
+    om = _occupancy_map()
+    if om is None:
+        return {"status": "UNMEASURED", "why": "research/occupancy_map.py did not import"}
+    try:
+        doc, why = om.load(OCCUPANCY_REPORT)
+        if doc is None:
+            return {"status": "UNMEASURED", "why": why, "rows": len(rows)}
+        return dict(om.stamp(rows, doc))
+    except Exception as exc:
+        for r in rows:
+            r.pop("_occ", None)
+            r.pop("_orth", None)
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
 def _keff_summary(keff: dict[str, Any]) -> dict[str, Any]:
     """The compact k_eff block JUDGE_COVERAGE.json carries; the full table has its own report."""
     if keff.get("status") != "MEASURED":
@@ -1162,7 +1197,8 @@ def _unseen_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
 def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
                    unjudged_ids: set[str] | None = None, *,
                    demote_variants: bool = True,
-                   use_keff: bool = True) -> list[dict[str, Any]]:
+                   use_keff: bool = True,
+                   use_occupancy: bool = True) -> list[dict[str, Any]]:
     """Weighted interleave of the families, so EVERY PREFIX of the docket is family-balanced.
 
     Each family is emitted on its own virtual clock ticking at 1/quota, and the family whose next
@@ -1178,6 +1214,13 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     cluster add the most independent bets to the book goes first (`_keff`, stamped by
     `keff_stamp`), and only then the oldest. A row with no stamp scores 0 and keeps its old place;
     `use_keff=False` reproduces the order before this term existed.
+
+    OCCUPANCY AND ORTHOGONALITY (2026-09-30): the same tie-break term also carries `_occ` (the
+    row's cell is an empty or under-tried cell one axis from proven ground, research/
+    occupancy_map.py) and `_orth` (the row's expected orthogonality to the LIVE book and the
+    certified set, centred on par). Both are in the same effective-bet units as `_keff` and are
+    simply added to it; unstamped rows score 0 and keep their place. `use_occupancy=False`
+    reproduces the order before these two terms existed.
 
     No row is dropped. A family with no quota still ships, after the quota'd stream, because the
     docket this returns is the whole docket and the judge's budget -- not this order -- decides
@@ -1195,6 +1238,8 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         # dropped and the stream is never shortened; only the order changes.
         variant = int(row.get("_variant") or 0) if demote_variants else 0
         keff = -float(row.get("_keff") or 0.0) if use_keff else 0.0
+        if use_occupancy:
+            keff -= float(row.get("_occ") or 0.0) + float(row.get("_orth") or 0.0)
         return (fresh, variant, keff, str(row.get("first_seen") or "9999"))
 
     streams: dict[str, list[dict[str, Any]]] = {}
@@ -1303,6 +1348,8 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
     # rows inside each family stream. Nothing is removed and the floor is untouched.
     keff = keff_stamp(rows)
+    # OCCUPANCY + ORTHOGONALITY, stamped beside k_eff (research/occupancy_map.py). Reorders only.
+    occ = occupancy_stamp(rows)
     ranking = rank_by_value(backlog, rows, capacity)
     quota = allocate(backlog, capacity, ranking=ranking)
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
@@ -1521,6 +1568,7 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
         "unrunnable": unrunnable,
         "keff_order": _keff_summary(keff),
         "_keff_detail": keff,
+        "occupancy_order": occ,
         # THE BARS THE JUDGE ASKED FOR AND DID NOT HAVE, per symbol and chart: the demand the
         # bar refresh reads (research/refresh_bars.py) so a missing chart is fetched, not waited on.
         "bars_wanted": dict(sorted(bars_wanted.items(), key=lambda kv: -kv[1])),
@@ -1629,7 +1677,8 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         # dropped in either order: both hold every row.
         split = variant_split(judgeable, ids)
         cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
-        before = coverage_order(judgeable, quota, ids, demote_variants=False, use_keff=False)
+        before = coverage_order(judgeable, quota, ids, demote_variants=False, use_keff=False,
+                                use_occupancy=False)
         ordered_j = coverage_order(judgeable, quota, ids)
         # NEVER-FIRING GROUND TO THE TAIL (2026-09-30). Order only; every row stays.
         dead = never_fire_pairs(bank, fired_pairs())
@@ -1657,6 +1706,11 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
                             "shipped": dk.head_census(ordered_j, cap, terms),
                             "legacy": dk.head_census(before, cap, terms)}
             doc["keff_order"] = _keff_summary(keff)
+        occ = doc.get("occupancy_order") or {}
+        om = _occupancy_map()
+        if occ.get("status") == "MEASURED" and om is not None:
+            occ["head"] = {"capacity": cap, "shipped": om.head_census(ordered_j, cap),
+                           "legacy": om.head_census(before, cap)}
         doc["variant_demotion"] = {
             **split, "capacity": cap,
             "unseen_in_capacity_before": was, "unseen_in_capacity_after": now_,
@@ -1667,12 +1721,12 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         }
         doc["unrunnable_filtered_from_docket"] = len(blocked)
         for _b in blocked:
-            _b.pop("_cell", None)
-            _b.pop("_keff", None)
+            for _k in ("_cell", "_keff", "_occ", "_orth"):
+                _b.pop(_k, None)
+        # `orthogonality` (the published per-row score) is KEPT on the row; the ordering terms go.
         for row in ordered:
-            row.pop("_cell", None)
-            row.pop("_variant", None)
-            row.pop("_keff", None)
+            for _k in ("_cell", "_variant", "_keff", "_occ", "_orth"):
+                row.pop(_k, None)
         if publish:
             write(doc)
         return ordered, doc

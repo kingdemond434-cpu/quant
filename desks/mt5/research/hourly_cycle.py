@@ -929,7 +929,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "cost_construction", "swap_rejudge", "sge_premium", "moat_series",
                      "unused_information", "ingestion_ledger", "representation_forge",
                      "feature_compiler", "data_acquisition_scientist", "coverage_drain",
-                     "judge_coverage", "orthogonality_yield", "effective_trials"), "data"),
+                     "judge_coverage", "orthogonality_yield", "effective_trials",
+                     "occupancy_map"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
     **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
@@ -1742,6 +1743,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # the trading box against 323,313 registry rows and 146,359 ledger rows: under a minute. The
     # cap sits above that for the reason every other leg's does.
     "orthogonality_yield": 300,
+    # The occupancy map reads the docket (~76 MB JSON), the gate ledger, the canon, the forward
+    # clocks and the sleeves, then one daily-return correlation matrix over the docket's symbols.
+    # Measured 2026-09-30 on the build box against 57,538 docket rows: ~8 seconds. The cap sits
+    # above that for the reason every other leg's does.
+    "occupancy_map": 300,
     # Effective trials stops itself at --budget-s 300; its cost is one O(m^2) similarity matrix
     # per grid cell, and grid cells are small (the live docket's largest holds ~470 rows). The cap
     # sits above its own budget for the reason every other leg's does.
@@ -3882,6 +3888,16 @@ def main() -> None:
     # removed, and certificates per judge-hour from the gate ledger -- and publishes one factor
     # per axis. Both factors are one-sided at or above par, so this can lift a producer's
     # priority and can never lower it, and the 25% floor below is untouched. Data department.
+    # THE OCCUPANCY MAP RUNS BEFORE JUDGE COVERAGE, because the docket order reads it. It grids
+    # strategy space (family x asset class x timeframe x session x horizon), counts tried /
+    # judged / certified / forward / LIVE per cell with the best forward exp_r and hours since
+    # last tried, names the EMPTY and UNDER-TRIED cells next to proven ground, and scores every
+    # docket (family, symbol) by expected correlation to the LIVE book and the certified set.
+    # judge_coverage adds both terms beside marginal k_eff inside each family stream (reorder
+    # only), and this leg donates rows for the best EMPTY cells into the compiler's intake
+    # (add only). Data department, information layer.
+    ocm = _costed("occupancy_map", lambda: _producer("occupancy_map",
+                                                     "research/occupancy_map.py", "--once"))
     oyz = _costed("orthogonality_yield",
                   lambda: _producer("orthogonality_yield",
                                     "research/orthogonality_yield.py",
@@ -5184,6 +5200,7 @@ def main() -> None:
                     "evidence_router": evr, "research_roi": rroi,
                     "coverage_tensor": cov, "coverage_drain": cdr, "judge_coverage": jcv,
                     "orthogonality_yield": oyz, "effective_trials": eft,
+                    "occupancy_map": ocm,
                     "gauntlet_backpressure": gbp, "miner_specialisation": msp,
                     "portfolio_bounty": pbt, "research_auction": rau,
                     "bottleneck_law": btl, "drawdown_alpha_miner": dam,
