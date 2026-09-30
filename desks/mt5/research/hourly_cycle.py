@@ -838,6 +838,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
     "producer_census", "productivity_census", "preregistration",
+    # The north star over certified edges and the per-producer contracts it feeds (Tier-1
+    # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
+    "alpha_rank", "factory_contracts",
     "cycle_pricing", "causal_invariance",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
@@ -1015,6 +1018,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # least-credited producers' rules carried onto ground the desk already
                      # reached. The machine widening its own independence: meta.
                      "rank_recovery",
+                     # THE NORTH STAR over certified edges and the factory contracts that
+                     # price spare compute by measured yield (Tier-1 #9/#11): meta.
+                     "alpha_rank", "factory_contracts",
                      # ATTRIBUTION AT BIRTH: who produced every cell and from which
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
@@ -1744,6 +1750,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # compute ledger; it finishes in seconds and its own --budget-s 300 bounds a pathological
     # registry, so the cap only has to sit above that.
     "productivity_census": 400,
+    # The north star reads ~60 certificates and their instruments' daily bars (measured ~1 s
+    # here); the contracts join three JSON artifacts. Both caps are generous and never bind.
+    "alpha_rank": 240,
+    "factory_contracts": 120,
     # The sandbox runner stops itself at --budget-s 900 (each system inside its ROI share) and
     # writes SANDBOX_RUNNER.json; the cap sits above it so it is never cut at the same prefix.
     "sandbox_runner": 1_000,
@@ -4911,6 +4921,15 @@ def main() -> None:
     # of producers that burned compute for no unique cell, ranked by compute.
     prodc = _costed("productivity_census", lambda: _producer(
         "productivity_census", "research/productivity_census.py", "--once", "--budget-s", "300"))
+    # THE NORTH STAR AND THE CONTRACTS (Tier-1 #9/#11, 2026-09-29). `alpha_rank` builds the
+    # eight-channel independence graph over every CERTIFIED edge and publishes the effective
+    # independent alpha rank with each certificate's marginal contribution, credited to the
+    # producer that made it; `factory_contracts` joins that credit with the census funnel and the
+    # ROI's credited dE[log W] into one seven-term contract per producer, whose per-hour yield
+    # `cycle_pricing` spends SPARE seconds against. Both are cheap artifact readers.
+    arank = _costed("alpha_rank", lambda: _producer("alpha_rank", "research/alpha_rank.py"))
+    fcon = _costed("factory_contracts", lambda: _producer(
+        "factory_contracts", "research/factory_contracts.py"))
     # THE BARS THE VERDICTS WERE MEASURED ON (Tier-1 item V16). The release seal pins the code a
     # verdict came from; this pins its inputs, so a re-run can tell a code change from a data one.
     iid = _costed("input_identity", lambda: _producer(
@@ -5083,6 +5102,7 @@ def main() -> None:
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
                     "productivity_census": prodc, "input_identity": iid,
+                    "alpha_rank": arank, "factory_contracts": fcon,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,

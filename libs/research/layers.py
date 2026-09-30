@@ -87,6 +87,9 @@ LEG_LAYER: dict[str, str] = {
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
     "producer_census": "meta", "productivity_census": "meta",
+    # The north star over certified edges and the per-producer contracts that price spare compute
+    # (Tier-1 #9/#11): the machine measuring what its research bought, which is meta.
+    "alpha_rank": "meta", "factory_contracts": "meta",
     # timing: when a claim becomes a trade
     "enrol_clocks": "timing", "heal_clocks": "timing", "promoter": "timing",
     "rebalance_trigger": "timing", "entry_timing": "timing",
