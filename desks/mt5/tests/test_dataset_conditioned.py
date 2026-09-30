@@ -262,9 +262,13 @@ def test_dataset_producers_mint_buildable_conditioned_cells_state_by_state():
     reg = _reg(cultures={})
     ds = [_ds("cot:cot/gbp"), _ds("intel:dead", usable=False)]
     roster, census = ps.instantiate(reg, bars=BARS, datasets=ds)
-    dp = [p for p in roster if p.dataset]
+    dp = [p for p in roster if p.dataset and p.use == "conditioner"]
     assert dp and {p.dataset for p in dp} == {"cot:cot/gbp"}      # an unusable one: none
     assert {p.base["base_family"] for p in dp} == set(KEEP)
+    # the DIRECT use beside it (CRO D18): one dataset_stance producer per field, same dataset
+    direct = [p for p in roster if p.dataset and p.use == "direct"]
+    assert direct and {p.family for p in direct} == {"dataset_stance"}
+    assert {p.dataset for p in direct} == {"cot:cot/gbp"}
     assert census["datasets"]["datasets_wired"] == 1
     p = dp[0]
     cells, outcome = ps.visit(p, 10, reg, set(), ({}, {}))
