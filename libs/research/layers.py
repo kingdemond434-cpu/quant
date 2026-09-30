@@ -182,6 +182,9 @@ LEG_LAYER: dict[str, str] = {
     # The breadth sweep mints cells for every unbanned family on every chart the desk holds bars
     # for -- a predictor search, scheduled hourly since the discovery hunt was banned (2026-09-16).
     "breadth_sweep": "prediction",
+    # The mass screen generates and screens rule cells by the million and forwards the FDR
+    # survivors to the judge -- a predictor search at scale: prediction.
+    "mass_screen": "prediction",
     # Whether the allocator's book reaches the sleeves it funds is a measurement of the desk's
     # own wiring, like `wiring_audit`: meta.
     "allocator_join": "meta",
