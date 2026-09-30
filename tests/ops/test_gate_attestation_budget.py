@@ -19,23 +19,10 @@ def test_attestation_record_budget_covers_three_bounded_git_reads() -> None:
     assert module.ATTEST_RECORD_TIMEOUT_S >= 3 * 60
 
 
-def test_gate_collection_manifest_contains_only_tracked_pytest_patterns(
-        monkeypatch, tmp_path) -> None:
-    path = ROOT / "scripts" / "run_gate_attestation.py"
-    spec = importlib.util.spec_from_file_location("run_gate_attestation_manifest", path)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    monkeypatch.setattr(module, "TEST_MANIFEST", tmp_path / "gate_tests.txt")
-    monkeypatch.setattr(module.subprocess, "run", lambda *a, **kw: SimpleNamespace(
-        returncode=0,
-        stdout="tests/test_alpha.py\nlibs/research/model.py\nresearch/placebo_test.py\n",
-        stderr="",
-    ))
-    paths, error = module._tracked_python_paths()
-    manifest, error = module._tracked_test_manifest(paths)
-    assert error == "" and manifest == module.TEST_MANIFEST
-    assert manifest.read_text("utf-8").splitlines() == ["tests/test_alpha.py"]
+def test_gate_collection_uses_canonical_test_root() -> None:
+    source = (ROOT / "scripts" / "run_gate_attestation.py").read_text("utf-8")
+    assert '"no:cacheprovider", "tests/"' in source
+    assert "gate_test_manifest" not in source
 
 
 def test_ruff_population_uses_canonical_discovery_and_rejects_outside_paths(
@@ -57,6 +44,11 @@ def test_ruff_population_uses_canonical_discovery_and_rejects_outside_paths(
     paths, error = module._ruff_discovered_paths("python")
     assert paths == []
     assert "outside the release root" in error
+
+
+def test_ruff_population_is_intersected_with_tracked_files() -> None:
+    source = (ROOT / "scripts" / "run_gate_attestation.py").read_text("utf-8")
+    assert "ruff_paths = [rel for rel in ruff_paths if rel in tracked]" in source
 
 
 def test_tracked_python_census_runs_once_for_many_untracked_files(monkeypatch, tmp_path) -> None:

@@ -21,7 +21,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN_REPORT = ROOT / "data" / "gate_attestation_run.json"
-TEST_MANIFEST = ROOT / "data" / "gate_test_manifest.txt"
 
 # The recorder performs multiple independent Git reads. On the Windows trading checkout each is
 # deliberately bounded at 60 seconds, so a 120-second wrapper could kill an otherwise completed
@@ -76,26 +75,6 @@ def _ruff_discovered_paths(py: str) -> tuple[list[str], str]:
     return paths, "" if paths else "Ruff discovery manifest is empty"
 
 
-def _tracked_test_manifest(paths: list[str]) -> tuple[Path | None, str]:
-    """Materialize pytest's tracked ``testpaths`` population without crawling runtime data."""
-    tests = []
-    for rel in paths:
-        normalized = Path(rel).as_posix()
-        # pyproject.toml declares testpaths=["tests"]. Operational scripts elsewhere may be
-        # named test_*.py but are executable probes, not pytest modules; importing one during a
-        # gate once opened a real SSH miner. Preserve pytest's canonical discovery boundary.
-        if not normalized.startswith("tests/"):
-            continue
-        name = Path(rel).name
-        if name.startswith("test_") or name.endswith("_test.py"):
-            tests.append(rel)
-    if not tests:
-        return None, "tracked test manifest is empty"
-    TEST_MANIFEST.parent.mkdir(parents=True, exist_ok=True)
-    TEST_MANIFEST.write_text("\n".join(tests) + "\n", encoding="utf-8")
-    return TEST_MANIFEST, ""
-
-
 def _run_tracked_ruff(py: str, paths: list[str], chunk_size: int = 180) -> tuple[int, str, float]:
     """Lint Ruff's canonical discovery population in Windows-safe command-line chunks."""
     started = time.time()
@@ -111,10 +90,17 @@ def _run_tracked_ruff(py: str, paths: list[str], chunk_size: int = 180) -> tuple
 
 def main() -> int:
     py = sys.executable
-    tracked_paths, tracked_error = _tracked_python_paths()
+    tracked_paths, _tracked_error = _tracked_python_paths()
     ruff_paths, ruff_error = _ruff_discovered_paths(py)
-    manifest, manifest_error = (_tracked_test_manifest(tracked_paths)
-                                if tracked_paths else (None, tracked_error))
+    if tracked_paths and ruff_paths:
+        tracked = {Path(rel).as_posix() for rel in tracked_paths}
+        # Ruff discovery carries the repository's configured excludes; the tracked intersection
+        # removes operator scratch files at the root. Both constraints are required: explicit
+        # git paths alone reintroduced excluded research artifacts, while discovery alone admitted
+        # untracked .codex_* diagnostics on the production box.
+        ruff_paths = [rel for rel in ruff_paths if rel in tracked]
+        if not ruff_paths:
+            ruff_error = "tracked Ruff discovery intersection is empty"
     gates = {
         "mypy": [py, "-m", "mypy"],
     }
@@ -131,16 +117,16 @@ def main() -> int:
             results[name] = (1, f"{type(exc).__name__}: {exc}", 0.0)
         rc, tail, s = results[name]
         print(f"{name}: rc={rc} in {s}s -- {tail.replace(chr(10), ' | ')[:160]}")
-    if manifest is None:
-        results["collect"] = (1, f"manifest unavailable: {manifest_error}", 0.0)
-    else:
-        try:
-            results["collect"] = _run(
-                [py, "-m", "pytest", "--co", "-q", "-p", "no:cacheprovider",
-                 f"@{manifest}"],
-            )
-        except Exception as exc:
-            results["collect"] = (1, f"{type(exc).__name__}: {exc}", 0.0)
+    try:
+        # pyproject.toml declares testpaths=["tests"]. Passing the canonical root preserves
+        # conftest.py's platform-specific collect_ignore rules. Enumerating individual files
+        # bypasses those rules; the Windows box then imported POSIX-only lock tests and failed
+        # collection even though normal pytest correctly excludes them.
+        results["collect"] = _run(
+            [py, "-m", "pytest", "--co", "-q", "-p", "no:cacheprovider", "tests/"],
+        )
+    except Exception as exc:
+        results["collect"] = (1, f"{type(exc).__name__}: {exc}", 0.0)
     rc, tail, seconds = results["collect"]
     print(f"collect: rc={rc} in {seconds}s -- {tail.replace(chr(10), ' | ')[:160]}")
     verdict = "pass" if all(rc == 0 for rc, _, _ in results.values()) else "fail"
