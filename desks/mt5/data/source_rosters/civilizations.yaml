@@ -295,8 +295,8 @@ sources:
                         "brain api simulate alpha", "worldquant consultant", "alpha factor genetic programming",
                         "gplearn alpha factor", "formulaic alpha mining", "alpha mining llm",
                         "alpha158 qlib", "factor mining symbolic regression"]}}
-  - {id: wq_repo_frontier, civilization: worldquant, owner: civilizations/worldquant,
-     consumer: libs/civilizations/resident.py, lane: wq_repository_civilization, priority: 3,
+  - {id: wq_repo_frontier, civilization: worldquant,
+     lane: wq_repository_civilization, priority: 3,
      name: "Frontier holder: repos discovered by wq_repos (the resident promotes them to git_mirror rows)",
      kind: code, fetcher: owned, owner: civilizations/frontier, cadence_minutes: 60,
      cadence_class: hourly, uses: [direct_cells], ontology_hint: [ALPHA_MECHANISM],
@@ -507,17 +507,24 @@ sources:
      licence: "public record only", region: us, language: en, source_culture: US/en,
      participant_structure: institutional, crowding_prior: low,
      failure_mode_hypothesis: "short-horizon reversion folklore; only the mechanism class is portable",
-     config: {engine: ddg, queries: ["Renaissance Technologies patent", "Medallion fund court filing",
-              "Renaissance Technologies senate report basket options",
-              "Berlekamp Laufer interview Medallion", "Jim Simons interview mathematics trading",
-              "Renaissance Technologies researcher paper arXiv"]}}
+     # SCOPE (audit 2026-09-30): papers, patents, court records and interviews only. The
+     # queries are pinned to those hosts and the resident drops any hit outside `scope_hosts`
+     # unless its title names an interview.
+     scope_hosts: [arxiv.org, ssrn.com, papers.ssrn.com, patents.google.com, uspto.gov,
+                   courtlistener.com, law.justia.com, casetext.com, supremecourt.gov, uscourts.gov],
+     scope_title_regex: "(?i)\\binterview\\b",
+     config: {engine: ddg, queries: ["site:patents.google.com \"Renaissance Technologies\"",
+              "site:courtlistener.com \"Renaissance Technologies\"",
+              "site:courtlistener.com Medallion Fund", "site:arxiv.org \"Renaissance Technologies\"",
+              "site:ssrn.com \"Renaissance Technologies\"",
+              "Jim Simons interview mathematics trading", "Berlekamp interview Medallion"]}}
   - {id: rentec_papers, civilization: renaissance, url: "http://export.arxiv.org/api/query?search_query=all:%22Renaissance%20Technologies%22&sortBy=submittedDate&max_results=50", owner: civilizations/renaissance,
      consumer: libs/civilizations/resident.py, lane: rentec_archaeology, priority: 4,
      name: "arXiv papers by RenTec-affiliated authors (public)", kind: text, fetcher: rss,
      cadence_minutes: 10080, cadence_class: weekly, immutable_time: true,
      uses: [indirect_cells], ontology_hint: [RESEARCH_METHOD], region: us, language: en,
      source_culture: US/en, participant_structure: institutional, crowding_prior: low,
-     failure_mode_hypothesis: "methods, not rules",
+     failure_mode_hypothesis: "methods, not rules", scope_hosts: [arxiv.org],
      config: {feeds: ["http://export.arxiv.org/api/query?search_query=all:%22Renaissance%20Technologies%22&sortBy=submittedDate&max_results=50"]}}
 
   # ================================================================ KAGGLE (competition archaeology)

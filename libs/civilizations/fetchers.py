@@ -21,10 +21,11 @@ import re
 import subprocess
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Any
 
+from libs.civilizations import licence as LIC
 from libs.mining import acquirer as acq
 
 MIRRORS = Path("desks/mt5/data/civilizations/git_mirrors")
@@ -32,9 +33,17 @@ GIT_TIMEOUT_S = 600
 MAX_FILE_BYTES = 400_000
 #: data files are never read from a mirror: a competition's or vendor's dataset is licensed for
 #: its own use, and only the code and prose around it (method, features, validation) are mined
-DATA_EXCLUDE: tuple[str, ...] = ("*.csv", "*.parquet", "*.feather", "*.h5", "*.hdf5", "*.zip",
-                                 "*.gz", "*.pkl", "*.pickle", "*.npy", "*.npz", "*.arrow",
-                                 "*.xlsx", "*.db", "*.sqlite")
+DATA_EXCLUDE: tuple[str, ...] = (
+    # tabular and serialised data
+    "*.csv", "*.tsv", "*.json", "*.jsonl", "*.ndjson", "*.txt", "*.dat", "*.parquet", "*.feather",
+    "*.arrow", "*.h5", "*.hdf5", "*.pkl", "*.pickle", "*.npy", "*.npz", "*.xls", "*.xlsx",
+    "*.db", "*.sqlite", "*.sqlite3", "*.mat", "*.rds", "*.RData",
+    # model weights
+    "*.pt", "*.pth", "*.ckpt", "*.onnx", "*.safetensors", "*.bin", "*.joblib", "*.model",
+    "*.pb", "*.tflite", "*.weights",
+    # archives
+    "*.zip", "*.gz", "*.tgz", "*.tar", "*.bz2", "*.xz", "*.7z", "*.rar", "*.zst")
+NOTICES = Path("desks/mt5/data/civilizations/notices")
 
 
 def _git(args: list[str], cwd: Path | None, timeout: float) -> tuple[int, str]:
@@ -114,6 +123,13 @@ def _fetch_git_mirror(src: acq.Source, cursor: dict[str, Any], ctx: acq.FetchCon
         ctx.blocked.append(f"{repo} -> no HEAD")
         return
     ctx.ok_fetches += 1
+    spdx, lic_text = _licence(d, head, cfg)
+    if lic_text:
+        n = Path(ctx.root) / NOTICES / (re.sub(r"[^\w.-]", "_", web.split("github.com/")[-1])
+                                         + ".txt")
+        n.parent.mkdir(parents=True, exist_ok=True)
+        if not n.exists():
+            n.write_text(f"{web}\nSPDX: {spdx}\n\n{lic_text}", "utf-8")
     last = str(cursor.get("last_sha") or "")
     walk_pos = int(cursor.get("walk_pos") or 0)
     backfill_done = bool(cursor.get("backfill_done"))
@@ -153,9 +169,10 @@ def _fetch_git_mirror(src: acq.Source, cursor: dict[str, Any], ctx: acq.FetchCon
             continue                                   # deleted in the delta
         if len(body) > MAX_FILE_BYTES:
             body = body[:MAX_FILE_BYTES]
+        body, lmeta = LIC.keep(path, body, spdx, lic_text, web)
         yield acq.Item(uri=f"{web}/blob/{head}/{path}", title=path, body=body,
                        cursor_update={}, meta={"item_kind": "file", "path": path, "sha": head,
-                                               "scan": kind, "repo": web})
+                                               "scan": kind, "repo": web, **lmeta})
     if cfg.get("commits") and last and backfill_done:
         rc, log = _git(["log", "--format=%H%x1f%aI%x1f%s%x1f%b%x1e", "--name-only",
                         f"{last}..{head}"], d, 120)
@@ -165,10 +182,27 @@ def _fetch_git_mirror(src: acq.Source, cursor: dict[str, Any], ctx: acq.FetchCon
                 if len(parts) < 4:
                     continue
                 sha, when, subj, rest = parts[0], parts[1], parts[2], parts[3]
-                yield acq.Item(uri=f"{web}/commit/{sha}", title=subj, body=f"{subj}\n{rest}",
+                keep_body = f"{subj}\n{rest}" if LIC.is_permissive(spdx) else subj
+                yield acq.Item(uri=f"{web}/commit/{sha}", title=subj, body=keep_body,
                                publication_time=when, cursor_update={},
                                meta={"item_kind": "commit", "sha": sha, "repo": web})
-    yield acq.Item(uri="", body="", cursor_update=upd_base)
+    yield acq.Item(uri="", body="", cursor_update={**upd_base, "licence": spdx})
+
+
+def _licence(d: Path, head: str, cfg: Mapping[str, Any]) -> tuple[str, str]:
+    """(SPDX, licence text) of the repository at `head`. A lane may DECLARE its licence
+    (`config.licence`) only to name one the file states in words this detector misses; an
+    undetectable, absent or unreadable licence is NOASSERTION/NONE, which keeps metadata only."""
+    rc, top = _git(["ls-tree", "--name-only", head], d, 60)
+    names = [n for n in top.splitlines() if LIC.LICENCE_FILE.match(n)] if rc == 0 else []
+    if not names:
+        return "NONE", ""
+    rc, text = _git(["show", f"{head}:{names[0]}"], d, 60)
+    if rc != 0:
+        return "NONE", ""
+    found = LIC.detect(text)
+    return (str(cfg.get("licence")) if found == "NOASSERTION" and cfg.get("licence")
+            else found), text[:20_000]
 
 
 _LOC = re.compile(r"(?is)<url>\s*<loc>\s*([^<\s]+)\s*</loc>(?:.*?<lastmod>\s*([^<\s]+)\s*"

@@ -784,7 +784,10 @@ class Pipeline:
                 "published_at": c.publication_time or c.acquisition_time,
                 "preregistration_id": c.preregistration_id, "mining_cell_id": c.cell_id,
                 "trial_family_id": c.trial_family_id, "parent_cell_id": c.parent_cell_id,
-                "source_uri": c.source_uri, "url": c.source_uri})
+                "source_uri": c.source_uri, "url": c.source_uri, "source_id": c.source_id,
+                # the four culture fields (#139 schema) a civilization lane declared for its
+                # source; docket_feed / miner_candidate_compiler read them from the donor row
+                **(self.civ.culture_for(c.source_id) if self.civ is not None else {})})
         ok, detail = self.hooks.donate(rows)
         if not ok:
             # The door refused the batch (stamping or lane); the cells stay QUEUED and the

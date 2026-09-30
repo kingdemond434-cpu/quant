@@ -81,6 +81,21 @@ def culture_of(meta: Mapping[str, Any]) -> dict[str, Any]:
     return row
 
 
+def _in_scope(meta: Mapping[str, Any], uri: str, title: str) -> bool:
+    """A lane that declares `scope_hosts` keeps only hits on those hosts (or a subdomain), or
+    whose title matches `scope_title_regex` (the Renaissance lanes: papers, patents, court
+    records, interviews). A lane that declares neither is unscoped."""
+    hosts = [str(h).lower() for h in meta.get("scope_hosts") or []]
+    rx = str(meta.get("scope_title_regex") or "")
+    if not hosts and not rx:
+        return True
+    m = re.match(r"https?://([^/]+)", uri or "")
+    host = re.sub(r"^www\.", "", m.group(1).lower()) if m else ""
+    if any(host == h or host.endswith("." + h) for h in hosts):
+        return True
+    return bool(rx and re.search(rx, title or ""))
+
+
 def _dsl_transpile(pid: str, text: str) -> Any:
     """libs.research.alpha_dsl.transpile, or None where it cannot be imported (no numpy)."""
     try:
@@ -140,6 +155,11 @@ class Resident:
         self.pass_stats: dict[str, Counter[str]] = defaultdict(Counter)
         self.compute: dict[str, float] = defaultdict(float)
         self.untranslated: list[dict[str, Any]] = []
+        try:
+            self.repo_meta: dict[str, Any] = json.loads(
+                (self.data / "repo_meta.json").read_text("utf-8"))
+        except (OSError, ValueError):
+            self.repo_meta = {}
         self.implementations: dict[str, dict[int, str]] = defaultdict(dict)
         self._load_tensor()
 
@@ -180,6 +200,8 @@ class Resident:
         meta = self.meta.get(sid, {})
         civ = str(meta.get("civilization") or "unknown")
         rmeta = rec.get("meta") or {}
+        if meta.get("fetcher") == "github_search":
+            self._note_repo(rec)
         title = str(rec.get("title") or "")
         body = str(rec.get("body") or "")
         uri = str(rec.get("source_uri") or "")
@@ -191,6 +213,10 @@ class Resident:
             outs = [O.Outcome(O.NO_VALUE, 0.0, ["crypto venue (MT5 mandate 2026-08-18)"])]
             self._ledger(rec, meta, outs, {"excluded": "crypto_venue"})
             return RouteResult(False, outs, reason="crypto venue excluded")
+        if not _in_scope(meta, uri, title):
+            outs = [O.Outcome(O.NO_VALUE, 0.0, ["outside the lane's declared scope"])]
+            self._ledger(rec, meta, outs, {"excluded": "out_of_scope"})
+            return RouteResult(False, outs, reason="outside declared scope")
         extra: dict[str, Any] = {}
         rules: list[dict[str, Any]] = []
         kind = L.lean_record_kind(rmeta)
@@ -234,8 +260,10 @@ class Resident:
         if extra["method_tags"] and not any(o.kind == O.RESEARCH_METHOD for o in outs) and \
                 O.RESEARCH_METHOD in hints:
             outs.append(O.Outcome(O.RESEARCH_METHOD, O.THRESHOLD, ["method_tags"]))
-        # --- the expression archaeologist runs on EVERY civilization record
-        found = E.extract_formulas(text)
+        # --- the expression archaeologist runs on EVERY civilization record except a
+        #     methods-only lane's: its formulas would otherwise CLAIM genomes (and block the
+        #     lane that may keep them) before the methods-only drop below removes its rules
+        found = [] if methods_only else E.extract_formulas(text)
         if found:
             st["formulas"] += len(found)
             expr_rules, expr_info = self._expression_rules(rec, meta, found)
@@ -347,6 +375,21 @@ class Resident:
             self.pass_stats[sid]["expr_ts_variant"] += 1
             info.append(row)
         return rules, info
+
+    def culture_for(self, source_id: str) -> dict[str, Any]:
+        """The four #139 culture fields for a civilization source, {} for any other source."""
+        m = self.meta.get(str(source_id))
+        return culture_of(m) if m else {}
+
+    def _note_repo(self, rec: Mapping[str, Any]) -> None:
+        """A github_search hit's stars and licence, kept so a promoted frontier lane carries a
+        crowding prior measured from its source instead of a constant."""
+        uri = str(rec.get("source_uri") or "")
+        m = re.match(r"https://github\.com/([\w.-]+/[\w.-]+)/?$", uri)
+        if not m:
+            return
+        meta = rec.get("meta") or {}
+        self.repo_meta[m.group(1)] = {"stars": meta.get("stars"), "licence": meta.get("licence")}
 
     def _is_paper_alpha(self, label: str, g: Any) -> bool:
         if not label.startswith("alpha#"):
@@ -572,6 +615,7 @@ class Resident:
         self._write("FIELD_TAXONOMY.json", self.fields.to_json())
         (self.data / "genome_index.json").write_text(json.dumps(self.genomes.to_json()),
                                                      "utf-8")
+        (self.data / "repo_meta.json").write_text(json.dumps(self.repo_meta), "utf-8")
         gaps = WQ.representation_gaps(self.untranslated)
         self._write("REPRESENTATION_GAPS.json", {"generated_at": _iso(_now()),
                                                  "blockers": gaps})
@@ -635,6 +679,10 @@ class Resident:
             sid = "wqf_" + re.sub(r"[^\w]", "_", full.lower())[:60]
             if sid in have or sid in self.meta or CRYPTO_VENUE.search(full):
                 continue
+            rm = self.repo_meta.get(full) or {}
+            stars = rm.get("stars")
+            crowd = ("UNMEASURED" if not isinstance(stars, int) else "high" if stars >= 1000
+                     else "medium" if stars >= 100 else "low")
             rows.append({"id": sid, "civilization": "worldquant",
                          "lane": "wq_repository_civilization", "priority": 4,
                          "name": f"frontier repo {full}", "kind": "code",
@@ -643,10 +691,13 @@ class Resident:
                          "uses": ["direct_cells", "indirect_cells"],
                          "ontology_hint": ["ALPHA_MECHANISM", "RESEARCH_METHOD"],
                          "source_culture": "GLOBAL", "participant_structure": "mixed",
-                         "crowding_prior": "medium",
+                         # measured from the source: GitHub stars at discovery (>=1000 high,
+                         # >=100 medium, else low; no reading is UNMEASURED, never a default)
+                         "crowding_prior": crowd, "stars_at_discovery": stars,
+                         "licence_at_discovery": rm.get("licence"),
                          "failure_mode_hypothesis": "public consultant tooling",
                          "config": {"repo": f"https://github.com/{full}", "files_per_run": 80,
-                                    "paths": ["*.py", "*.md", "*.ipynb", "*.txt", "*.json"],
+                                    "paths": ["*.py", "*.md", "*.ipynb", "*.r", "*.R"],
                                     "exclude": ["*/node_modules/*", "*.min.*"]}})
             added += 1
             if added >= FRONTIER_PER_PASS:
