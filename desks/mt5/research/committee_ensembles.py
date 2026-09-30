@@ -355,9 +355,64 @@ _falsifier_seat("placebo_battery", 4, "LEAKAGE", 20.0,
                 lambda: _cell(_bars(seed=19), _oracle(_bars(seed=19)), 0.0), "")
 
 
+@seat(SCIENTIFIC, "cell", 2, "DRIFT_EXPLAINED", 0.2, settles_by="fate",
+      trap=lambda: _cell(_bars(seed=31, drift=0.002), _longs(_bars(seed=31, drift=0.002), 4),
+                         0.0),
+      clean=lambda: _cell(_bars(seed=32), _oracle(_bars(seed=32)), 0.0))
+def drift_explanation(sp: ce.Specialist, cell: Mapping[str, Any], key: str) -> ce.Result:
+    """THE ALTERNATIVE EXPLAINER: would holding the instrument's own drift, on the signals'
+    side mix and holding time, have earned most of the edge?"""
+    import numpy as np
+
+    from libs.validation.falsifiers import _trade_returns
+    df, sigs = cell["df"], list(cell["signals"])
+    r, _ = _trade_returns(df, sigs)
+    if r.size < 20:
+        return _r(sp, UNMEASURED, 0.0, "", n=int(r.size))
+    bar = np.diff(np.log(df["close"].to_numpy(dtype=float)))
+    side = float(np.mean([int(x.side) for x in sigs]))
+    # The battery's trade runs from the next bar's open to the close `ttl` bars later.
+    ttl = float(np.mean([max(1, int(x.ttl_bars)) for x in sigs])) + 1.0
+    implied = side * float(np.nanmean(bar)) * ttl
+    edge = float(r.mean())
+    if edge > 0 and implied >= 0.7 * edge:
+        return _r(sp, FAIL, 0.85 if implied >= edge else 0.6, "placebo_battery",
+                  edge=round(edge, 8), drift_implied=round(implied, 8), net_side=round(side, 3))
+    return _r(sp, PASS, 0.5, "placebo_battery", edge=round(edge, 8),
+              drift_implied=round(implied, 8))
+
+
+def survivor_subjects() -> list[ce.Subject]:
+    """THE GAUNTLET'S OWN SURVIVORS, red-teamed after certification ("where did this leak").
+
+    Each certificate becomes a Scientific subject on the cell the gauntlet built, entering at
+    L1 (no mechanism text to screen) and climbing the whole battery while it survives. A FAIL
+    here is a dated defect report beside the certificate; it withdraws nothing (L1.60)."""
+    try:
+        import falsifier_run as fr  # type: ignore[import-not-found]
+        certs, _src = fr.load_certificates()
+    except Exception:
+        return []
+    out = []
+    for cid, c in sorted((certs or {}).items()):
+        spec = (c or {}).get("shadow_spec") or {}
+        sym, fam = str(spec.get("symbol") or ""), str(spec.get("family") or "")
+        params: dict[str, Any] = spec["params"] if isinstance(spec.get("params"), dict) else {}
+        if not (sym and fam):
+            continue
+        out.append(ce.Subject(
+            SCIENTIFIC, f"survivor:{cid}",
+            {"cell": ce.Lazy(_gauntlet_cell(sym, fam, params)),
+             "certificate": {"id": cid, "spec": {"symbol": sym, "family": fam,
+                                                 "params": params}}},
+            keys={"symbol": sym, "cell": _node_id(sym, fam, params)}, level=1,
+            claim=f"certified survivor {fam} on {sym} {json.dumps(params, sort_keys=True)}"))
+    return out
+
+
 def _gauntlet_cell(symbol: str, family: str, params: Mapping[str, Any]) -> Callable[[], Any]:
     def load() -> Any:
-        import falsifier_run as fr  # type: ignore[import-not-found]
+        import falsifier_run as fr
         build, meta = _builder_cache()
         inputs, why = fr.build_inputs({"shadow_spec": {"symbol": symbol, "family": family,
                                                        "params": dict(params)}}, meta, build)
@@ -1613,7 +1668,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         if subjects is not None:
             pool = list(subjects.get(name) or [])
         elif name == SCIENTIFIC:
-            pool = scientific_subjects()
+            # Survivors first: a leak in a certified cell costs more than one in the bank.
+            pool = survivor_subjects() + scientific_subjects()
         elif name == FORENSIC:
             pool = forensic_subjects()
         elif name == PORTFOLIO:

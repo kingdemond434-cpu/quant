@@ -339,3 +339,20 @@ def test_the_six_run_every_hour():
     assert '"committee_ensembles": cme' in src
     from libs.research import layers
     assert layers.LEG_LAYER["committee_ensembles"] == "prediction"
+
+
+def test_the_gauntlets_survivors_are_red_teamed_first_from_l1(monkeypatch):
+    import types
+    fake = types.SimpleNamespace(load_certificates=lambda: (
+        {"c1": {"shadow_spec": {"symbol": "EURUSD", "family": "carry", "params": {"k": 1}}},
+         "c2": {"shadow_spec": {}}}, "stub"))
+    monkeypatch.setitem(sys.modules, "falsifier_run", fake)
+    subs = ens.survivor_subjects()
+    assert [s.key for s in subs] == ["survivor:c1"] and subs[0].level == 1
+    assert subs[0].committee == ens.SCIENTIFIC and "mechanism" not in subs[0].evidence
+    state = ce.blank_state()
+    bank = ce.Subject(ens.SCIENTIFIC, "b", {"mechanism": {"note": ""}})
+    subs[0].evidence["cell"] = ens._cell(ens._bars(seed=12), ens._oracle(ens._bars(seed=12)),
+                                         0.0)
+    ex, counts = ens._examine_committee(ens.SCIENTIFIC, [bank, subs[0]], state, 60.0, 0.0)
+    assert ex[0]["key"] == "survivor:c1" and ex[0]["levels"][0] == 1
