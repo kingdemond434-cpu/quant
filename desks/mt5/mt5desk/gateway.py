@@ -1670,8 +1670,8 @@ def _round_trip_per_price_unit(info: object, symbol: str) -> float | None:
     """The round-trip commission expressed in PRICE units, or None if it cannot be derived.
 
     THE UNIT TRAP THIS EXISTS TO AVOID. Commission is quoted in ACCOUNT currency per lot
-    (`fusion_cost.COMMISSION_PER_LOT_PER_SIDE = 2.00`, measured -- p10 = p50 = p90 over all 433
-    deals on 495044); a break-even stop is a PRICE. Converting between them by hand is where a
+    (`fusion_cost.COMMISSION_PER_LOT_PER_SIDE = 2.00`, measured -- p10 = p50 = p90 over all 433 live
+    deals); a break-even stop is a PRICE. Converting between them by hand is where a
     EUR-denominated account trading a USD-quoted instrument quietly books a small loss on every
     scratch. `trade_tick_value / trade_tick_size` is the venue's own answer to "how much account
     currency is one price unit worth, per lot", so the quote-currency conversion is the broker's

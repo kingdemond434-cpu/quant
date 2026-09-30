@@ -47,7 +47,7 @@ from mt5desk.multiplicity import deflation, sweep_size           # noqa: E402
 import run_hunt12 as h12                                         # noqa: E402
 
 #: MEASURED, not published: 2.00 in ACCOUNT CURRENCY per lot per side, over all 433
-#: deals account 495044 has ever done (reports/COST_TRUTH.json, 2026-09-23, p10=p50=p90).
+#: deals the live Fusion account has ever done (reports/COST_TRUTH.json, 2026-09-23, p10=p50=p90).
 #: Mirrors `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 2.25 this
 #: replaced was the brochure's USD figure fed to a field `Costs.from_symbol` converts as
 #: ACCOUNT currency -- a 1.125x overcharge on the term that is ~98% of this book's cost.

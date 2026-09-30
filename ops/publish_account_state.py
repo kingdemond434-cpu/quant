@@ -70,7 +70,10 @@ def main() -> int:
         "source": "ops/publish_account_state.py",
         "venue": str(getattr(info, "company", "") or "") or None,
         "server": str(getattr(info, "server", "") or "") or None,
-        "login": int(info.login),
+        # The login is WITHHELD: this file is committed by the box, and a tracked file must never
+        # name the live account (tests/ops/test_live_infrastructure_is_not_published.py). No
+        # reader takes it from here; provenance reads mt5.account_info().login from the terminal.
+        "login_withheld": info.login is not None,
         "currency": str(info.currency),
         "balance": round(float(info.balance), 2),
         "equity": round(float(info.equity), 2),
