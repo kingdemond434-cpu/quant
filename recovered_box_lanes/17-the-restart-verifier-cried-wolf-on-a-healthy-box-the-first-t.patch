@@ -1,0 +1,99 @@
+From d53dc3af5a94dcb287768c15ea02bbea7478be7e Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:39:58 +0200
+Subject: [PATCH] The restart verifier cried wolf on a healthy box the first
+ time it ran
+
+Its own dry run found the defect, which is the point of running one. The baseline captured
+`check_blueprint_coverage.py` and `data_vitals.py` -- two hourly legs that happened to be mid-pass
+at capture -- and the verify forty seconds later reported both as having failed to return, on a
+box that had not restarted. A verifier that cries wolf on a good box is worse than no verifier,
+because the one time it matters nobody reads it. A process must now have been alive for
+MIN_AGE_S (300s) to count as something that must come back, unless it is one of the named seeds
+(terminal64, the gateway resident, the department residents, the judge), which are checked
+whatever their age.
+
+Also: the seal test asserted the string `Get-CimInstance` is absent from the module, which its
+own docstring contains in order to explain why CIM is never used -- CIM has hung on this box. The
+test now asserts the ROUTE rather than the word: the module reaches neither PowerShell nor wmic,
+which are the only ways to CIM here. It uses schtasks and psutil only.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/scripts/check_after_reboot.py    | 17 +++++++++++++++--
+ desks/mt5/tests/test_check_after_reboot.py | 15 ++++++++++++++-
+ 2 files changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/desks/mt5/scripts/check_after_reboot.py b/desks/mt5/scripts/check_after_reboot.py
+index 06e2041616f..889c2ce782c 100644
+--- a/desks/mt5/scripts/check_after_reboot.py
++++ b/desks/mt5/scripts/check_after_reboot.py
+@@ -36,6 +36,7 @@ import os
+ import re
+ import subprocess
+ import sys
++import time
+ from datetime import UTC, datetime
+ from pathlib import Path
+ 
+@@ -47,12 +48,21 @@ VERDICT = REPORTS / "REBOOT_VERIFY.json"
+ #: Long-lived processes identified by a fragment of their command line. A resident that is
+ #: restarted by its own keep-alive trigger still has to APPEAR, so absence is reportable either
+ #: way; this list is only the seed, and `--capture` adds whatever else is actually running.
+-SEED_PROCESSES: tuple[str, ...] = (
++SEED_PROCESSES: frozenset[str] = frozenset({
+     "terminal64.exe",
+     "gateway_resident.py",
+     "department_resident.py",
+     "external_gauntlet.py",
+-)
++})
++
++#: How long a process must already have been alive to count as something that MUST come back.
++#:
++#: MEASURED THE FIRST TIME THIS RAN: the baseline captured `check_blueprint_coverage.py` and
++#: `data_vitals.py` -- two hourly legs that happened to be mid-run -- and the verify forty seconds
++#: later reported them as having failed to return, on a box that had not restarted. A verifier
++#: that cries wolf on a healthy box is worse than none, because the one time it matters nobody
++#: reads it. A leg that runs for a minute an hour is not an inventory item; a resident is.
++MIN_AGE_S = 300.0
+ 
+ #: Task name prefixes the desk owns. Everything matching is captured; nothing is filtered by
+ #: hand, because a task nobody listed is exactly the one that will not come back.
+@@ -111,6 +121,9 @@ def running_processes() -> dict[str, dict]:
+                 key = m.group(1)
+         if not key:
+             continue
++        age = time.time() - float(info["create_time"] or 0)
++        if age < MIN_AGE_S and key not in SEED_PROCESSES:
++            continue
+         seen[key] = seen.get(key, 0) + 1
+         prev = out.get(key)
+         if prev is None or info["create_time"] < prev["started_epoch"]:
+diff --git a/desks/mt5/tests/test_check_after_reboot.py b/desks/mt5/tests/test_check_after_reboot.py
+index 0e1b0403368..5dc653cc2c0 100644
+--- a/desks/mt5/tests/test_check_after_reboot.py
++++ b/desks/mt5/tests/test_check_after_reboot.py
+@@ -103,4 +103,17 @@ def test_it_never_starts_stops_or_repairs_anything():
+     for forbidden in (".terminate(", ".kill(", "taskkill", "schtasks\", \"/run",
+                       "/change", "Restart-Computer", "shutdown"):
+         assert forbidden not in src, f"check_after_reboot must never {forbidden}"
+-    assert "Get-CimInstance" not in src, "CIM has hung on this box"
++    # CIM is reachable only through PowerShell or wmic here, and this module uses neither --
++    # asserting on the STRING would fail on the docstring that explains why it is avoided.
++    assert "powershell" not in src.lower(), "CIM has hung on this box; schtasks and psutil only"
++    assert "wmic" not in src.lower()
++
++
++def test_a_leg_that_merely_happened_to_be_running_is_not_an_inventory_item():
++    """The first real run captured two hourly legs mid-pass and then reported them missing on a
++    box that had not restarted. Only residents and the named seeds belong in the inventory."""
++    assert car.MIN_AGE_S >= 60.0
++    assert "gateway_resident.py" in car.SEED_PROCESSES
++    assert "terminal64.exe" in car.SEED_PROCESSES
++    src = Path(car.__file__).read_text(encoding="utf-8")
++    assert "if age < MIN_AGE_S and key not in SEED_PROCESSES:" in src
+-- 
+2.47.1.windows.1
+

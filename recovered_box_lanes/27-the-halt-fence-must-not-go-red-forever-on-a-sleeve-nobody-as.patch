@@ -1,0 +1,117 @@
+From 1f790c2398c497506ef3f90834f0d22777a1299d Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 20:39:43 +0200
+Subject: [PATCH] The halt fence must not go red forever on a sleeve nobody
+ asks any more
+
+Caught by this fence's own first live run. The decision ledger never forgets, so a sleeve whose
+last row is a refusal keeps that trailing run FOREVER unless it places again -- and
+`gold_london_am_v2/v3/v4` last refused on 2026-09-11 and may never trade again. The fence would
+have gone red that day and stayed red for the life of the desk.
+
+That is the same failure `test_a_placement_clears_the_run` guards the other side of, reintroduced
+one condition to the left: a gate that is always red is a gate somebody switches off (L1.43), and
+then the next real halt is silent again -- which is the entire defect this file exists to end.
+
+A run now breaches only while it is STILL HAPPENING: its most recent row inside MAX_RUN_AGE_H
+(6h), which every gold window re-enters daily. An older run is reported as history, by name, not
+hidden. Breach (b) still reads the release identity verdict directly, so a gateway that stops
+writing rows altogether is caught by that half rather than quietly ageing out of this one.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ scripts/check_placement_interlock.py          | 26 +++++++++++++++
+ .../test_placement_interlock_fence.py         | 32 +++++++++++++++++++
+ 2 files changed, 58 insertions(+)
+
+diff --git a/scripts/check_placement_interlock.py b/scripts/check_placement_interlock.py
+index 5a8400f2004..649abf0637d 100644
+--- a/scripts/check_placement_interlock.py
++++ b/scripts/check_placement_interlock.py
+@@ -79,6 +79,24 @@ TRAILING_REFUSALS_MAX = 30
+ #: ...or the same run measured in time, for a gateway whose pass interval is longer.
+ TRAILING_HOURS_MAX = 1.0
+ 
++#: HOW RECENT THE LAST REFUSAL MUST BE FOR THE RUN TO BE A HALT THAT IS STILL HAPPENING.
++#:
++#: Caught by this fence's first live run, minutes after it was written. The ledger never forgets,
++#: so a sleeve whose last row is a refusal keeps that trailing run FOREVER unless it places again
++#: -- and `gold_london_am_v2/v3/v4` last refused on 2026-09-11 and may simply never trade again.
++#: Without this the fence would have gone red on 2026-09-11 and stayed red for the life of the
++#: desk, which is precisely the failure `test_a_placement_clears_the_run` exists to prevent and
++#: which this file would otherwise have reintroduced one condition to the left: a gate that is
++#: always red is a gate somebody switches off (L1.43), and then the next real halt is silent
++#: again.
++#:
++#: Six hours spans the whole gold book -- gold_asia 04:00Z to gold_afternoon 14:00Z is ten, but
++#: each sleeve's own window recurs daily -- so a sleeve that is genuinely being refused right now
++#: re-reports within one window, while one that stopped being asked months ago does not. Breach
++#: (b) still reads the identity verdict directly, so a gateway that stops writing rows ALTOGETHER
++#: is caught by that half rather than by a run that quietly ages out.
++MAX_RUN_AGE_H = 6.0
++
+ #: Reasons that are the VENUE's answer rather than the desk's own refusal. A broker rejection or
+ #: a freeze-band skip is the market saying no to one order; it is not the desk declining to
+ #: trade, and a run of them means something different. They are reported, never breached on.
+@@ -245,6 +263,14 @@ def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str,
+         long_by_time = isinstance(span, (int, float)) and span >= TRAILING_HOURS_MAX
+         if not (long_by_count or long_by_time):
+             continue
++        # STILL HAPPENING, not merely recorded. See MAX_RUN_AGE_H.
++        age = run.get("age_h")
++        if age is None or age > MAX_RUN_AGE_H:
++            doc["notes"].append(
++                f"{sleeve}: {run['count']} consecutive '{run['reason']}' rows, but the last is "
++                f"{'of unknown age' if age is None else f'{age:.1f}h old'} -- history, not a halt "
++                "that is still happening; this sleeve has not been asked since")
++            continue
+         if run["venue_reason"]:
+             doc["notes"].append(
+                 f"{sleeve}: {run['count']} consecutive '{run['reason']}' rows -- the VENUE's "
+diff --git a/tests/governance/test_placement_interlock_fence.py b/tests/governance/test_placement_interlock_fence.py
+index 2f69db0080c..4d9ca437761 100644
+--- a/tests/governance/test_placement_interlock_fence.py
++++ b/tests/governance/test_placement_interlock_fence.py
+@@ -128,6 +128,38 @@ def test_a_placement_clears_the_run(box: Path) -> None:
+     assert "gold_asia" not in doc["runs"]
+ 
+ 
++def test_an_ancient_refusal_run_is_history_not_a_live_halt(box: Path) -> None:
++    """CAUGHT BY THIS FENCE'S OWN FIRST LIVE RUN. The ledger never forgets, so a sleeve whose
++    last row is a refusal keeps that trailing run forever unless it places again --
++    `gold_london_am_v2/v3/v4` last refused on 2026-09-11 and may never trade again. Without a
++    recency bound the fence would have gone red that day and stayed red for the life of the desk,
++    which is the same "always red, therefore switched off" failure `test_a_placement_clears_the_run`
++    guards the other side of."""
++    _write(box, LEDGER, "\n".join(_rows(
++        200, sleeve="gold_london_am_v2", reason="release_identity_refused",
++        start=NOW - timedelta(days=13))) + "\n")
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is True, doc["problems"]
++    assert doc["runs"]["gold_london_am_v2"]["count"] == 200
++    assert any("history, not a halt" in n for n in doc["notes"]), doc["notes"]
++
++
++def test_a_refusal_run_that_is_still_firing_is_not_excused_by_recency(box: Path) -> None:
++    """The other side of the same rule: a run whose last row is minutes old still breaches, so
++    the recency bound can never be read as a licence to ignore a live halt."""
++    _write(box, LEDGER, "\n".join(_rows(
++        200, sleeve="gold_asia", reason="release_identity_refused",
++        start=NOW - timedelta(hours=3, minutes=20))) + "\n")
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is False
++    assert doc["runs"]["gold_asia"]["age_h"] < fence.MAX_RUN_AGE_H
++    assert any("gold_asia" in p for p in doc["problems"])
++
++
+ def test_the_venues_own_answer_is_reported_not_breached(box: Path) -> None:
+     """A run of broker rejections is the market saying no, not the desk declining to trade.
+     Breaching on it would teach the desk to treat a rail as a bug."""
+-- 
+2.47.1.windows.1
+

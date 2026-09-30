@@ -1,0 +1,479 @@
+From 401c5e57ade947fe4f9294b17592d08c804c95d7 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 03:34:18 +0200
+Subject: [PATCH] The judge ruled on 228,469 cells and the registry learned
+ 1,278 of them
+
+MEASURED ON THE TRADING BOX 2026-09-25. `judged_at` was set on 1,278 candidates in the
+desk's entire history, every one of them stamped at the same instant, while the gauntlet
+had written 228,469 verdicts. The `gate_verdicts` cursor sat at byte 226,198 of a
+54,119,184-byte ledger: 0.42% read, 227,497 verdicts unpoured, and the input growing 113x
+faster than the cursor advanced. That is not a lag, it is a divergence -- it never
+recovers and every hour makes it worse.
+
+THE CAUSE IS ONE MISSING INDEX. `mark_candidate` is the only writer of `judged_at` and it
+matches `WHERE id=? OR donated_cell=?`. `id` has the PK autoindex; `donated_cell` had
+nothing, and an OR across one indexed and one unindexed column can use NEITHER, so
+EXPLAIN read `SCAN research_candidates` -- 740,357 rows per verdict. Measured on the box:
+2.09 rows/s against 87,931 rows/s with the index, a 50,772x fall, and the 227,497-row
+backlog goes from 36.5 hours to 2.6 seconds. The index builds in 0.9s.
+
+This is the THIRD instance of one disease. `ix_candidates_gridcell` and `ix_disc_hash`
+cured the two WRITE doors; this is the same scan on the READ-BACK door, and it cost the
+desk every verdict it ever earned. The forward path was healthy throughout -- 372,563
+registry rows reached the docket and the sandbox families were in front of the judge --
+so the cells were generated, donated, compiled, judged, and the verdict then evaporated.
+
+WHAT IT WAS WEARING. `registry_sync` ran every hour, exited zero, advanced its cursor and
+rewrote its report every pass. Its SELF channel was perfect and its PRODUCT channel moved
+too, because the pass really did pour rows: 203 of them, against ~3,500 arriving an hour.
+rc=0 with a receipt is this desk's signature failure and neither existing channel in
+`check_organ_cadence` could ever have seen it.
+
+SO THE FIX SHIPS WITH THE BREACH CLASS THAT CATCHES IT. `stream_backlogs` measures every
+cursored stream as an unread FRACTION of its input -- the honest question for a cursor is
+not whether it moved but whether it is keeping up -- and raises STREAM_DIVERGING at 25%
+unread on a host that runs the clocks, NO_CURSOR where a receipt is missing entirely. The
+real break measured 99.58% unread, four times past the line. A mirror host is not
+convicted, a new stream under 2 MB is not convicted, and UNMEASURED stays a verdict.
+
+`VERDICT_ROWS_MULTIPLE` lifts the verdict stream's row cap, which was sized when every
+stream cost the same per row. With the index the verdicts are the cheapest stream on the
+pass and the wall-clock deadline is still the real guard.
+
+Nothing here caps, shrinks or vetoes anything: it moves earned verdicts back to the rows
+that earned them, and every threshold added can only ever demand that MORE cells be
+judged.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/sandbox_runner.py         |  14 +-
+ libs/moat/registry.py                        |  35 ++++-
+ libs/research/sandbox_rotation.py            |  24 ++-
+ scripts/check_organ_cadence.py               | 116 ++++++++++++++
+ tests/governance/test_organ_cadence_fence.py | 156 +++++++++++++++++++
+ 5 files changed, 342 insertions(+), 3 deletions(-)
+
+diff --git a/desks/mt5/research/sandbox_runner.py b/desks/mt5/research/sandbox_runner.py
+index 1156d9f5c25..0eeb661bd84 100644
+--- a/desks/mt5/research/sandbox_runner.py
++++ b/desks/mt5/research/sandbox_runner.py
+@@ -586,7 +586,19 @@ def production_rows(plans: list[Plan], tried: list[dict[str, Any]],
+         counts = row.get("counts") or {}
+         cands = int(ing.get("candidates") or 0)
+         cells = sorted(set(st.get("cells") or []))
+-        ran = bool(row.get("seconds")) and plan.status == "RUNNABLE"
++        # A SYSTEM THAT RAN HAS A ROW, WHATEVER THE STOPWATCH SAYS (measured 2026-09-25). This
++        # read `bool(row.get("seconds"))`, and `seconds` is `round(monotonic() - t0, 1)` -- so a
++        # system that finished in under 0.05s recorded 0.0, `bool(0.0)` is False, and it was
++        # reported as "RUNNABLE but not reached this pass: queued behind higher-ROI and more
++        # overdue systems". It had been reached. It ran, it donated, and on the live box 20 of
++        # the 29 systems carrying that sentence had full rows in `systems_tried` with
++        # `run_status="PRODUCED"` -- three of them were that pass's own SCOUTS, the systems the
++        # rotation had explicitly guaranteed an hour. A fast adapter was indistinguishable from
++        # a starved one, and the sentence blamed a budget that had in fact paid.
++        #
++        # The row's EXISTENCE is the fact being asked for: `by_id` is built from the rows the
++        # pass actually tried, so presence is the measurement and the stopwatch is not.
++        ran = sid in by_id and plan.status == "RUNNABLE"
+         produced = bool(cands or cells)
+         if produced:
+             reason = ""
+diff --git a/libs/moat/registry.py b/libs/moat/registry.py
+index bd347dbbc04..485294fc90b 100644
+--- a/libs/moat/registry.py
++++ b/libs/moat/registry.py
+@@ -524,6 +524,29 @@ def _evolve(conn: sqlite3.Connection) -> dict[str, int]:
+     # that uses it, and it is invisible because nothing reports it as a limit.
+     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_gridcell ON research_candidates"
+                  "(grid_cell)")
++    # THE THIRD SCAN, AND THE ONE THAT BROKE REGISTRY -> JUDGE (measured on the trading box
++    # 2026-09-25). The two indexes above cured the WRITE doors; this is the same disease on the
++    # READ-BACK door, and it cost the desk every verdict it ever earned. `mark_candidate` is the
++    # ONLY writer of `judged_at`, and it matches `WHERE id=? OR donated_cell=?` -- `id` has the
++    # PK autoindex, `donated_cell` had nothing, and an OR across one indexed and one unindexed
++    # column cannot use either: EXPLAIN read `SCAN research_candidates` over 740,357 rows for
++    # every verdict poured. Measured on the box: 2.09 rows/s on the OR form against 78,094 rows/s
++    # on `id` alone. So `sync_from_desk` managed 203 verdict rows in a 300 s pass while the
++    # gauntlet appended ~3,500 an hour, and the `gate_verdicts` cursor sat at byte 226,198 of a
++    # 54,119,184-byte ledger -- 0.42% read, 227,497 verdicts unpoured, the file growing 113x
++    # faster than the cursor advanced. That is not a lag, it is a divergence: `judged_at` was set
++    # on 1,278 rows IN THE DESK'S WHOLE HISTORY, all of them at one instant (2026-09-12T17:06:46),
++    # and every candidate the sandboxes ever donated arrived, was claimed, was judged by the
++    # gauntlet -- and the registry never learned the verdict. With this index the planner reads
++    # `MULTI-INDEX OR` over both branches (11,131x on a 200k-row synthetic, both branches still
++    # matching), and the backlog drains in a single pass.
++    #
++    # THE GENERALISATION, now three times paid for: a door that scans the whole table on every
++    # call is a throttle on everything upstream of it, and it is invisible because nothing
++    # reports it as a limit -- the leg exits rc=0 with a cursor receipt and a report that says
++    # `rows: 203`, which reads like a quiet hour rather than a severed funnel.
++    conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_donated_cell ON research_candidates"
++                 "(donated_cell)")
+     # THE SECOND SCAN, AND THE ONE THAT SET THE DESK'S WHOLE MINT RATE (measured on the box
+     # 2026-09-23). `record_discovery` asks "have I seen this discovery?" -- `SELECT discovery_id
+     # FROM discoveries WHERE content_hash=?` -- and `discoveries.content_hash` carried no index,
+@@ -1774,6 +1797,15 @@ SYNC_CYCLE_S = 3600.0
+ #: stream (28 MB) and it runs first because a verdict marks the candidate it enqueues -- so it is
+ #: bounded by a SHARE, never by the whole pass, and the verdicts behind it can never be starved.
+ GRAPH_BUDGET_SHARE = 0.4
++#: THE VERDICT STREAM'S OWN ROW CAP, as a multiple of `max_rows` (measured 2026-09-25). The shared
++#: 20,000-row cap was sized when every stream cost the same per row; the verdicts did not, because
++#: `mark_candidate` scanned the whole candidate table per row (see `ix_candidates_donated_cell`).
++#: With that index the verdicts are the CHEAPEST stream on the pass, and a cap sized for the
++#: expensive case is now the only thing standing between a 227,497-row backlog and a single pass.
++#: The wall-clock deadline is still the real guard -- this only stops the ROW COUNT being the
++#: binding constraint on the funnel's last stage. Raising it can never cost another stream time:
++#: the verdicts run inside the same `over()` deadline every other stream respects.
++VERDICT_ROWS_MULTIPLE = 25
+ #: How often a stream persists its cursor mid-loop. The leg runs as a subprocess under the hour's
+ #: budget and is SIGKILLed when it overruns, and a kill between the last row and the cursor write
+ #: replays every row of the batch -- so progress is durable every this many rows, not once.
+@@ -2162,7 +2194,8 @@ def sync_from_desk(desk: Path | None = None, *, max_rows: int = 20000,
+             n = 0
+             for r, at_pos in _iter_new_lines(
+                     c, "gate_verdicts",
+-                    d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl", max_rows):
++                    d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl",
++                    max_rows * VERDICT_ROWS_MULTIPLE):
+                 pos = at_pos
+                 cell = str(r.get("cell") or "")
+                 if not cell:
+diff --git a/libs/research/sandbox_rotation.py b/libs/research/sandbox_rotation.py
+index c12abdcc27e..8c0858cab75 100644
+--- a/libs/research/sandbox_rotation.py
++++ b/libs/research/sandbox_rotation.py
+@@ -171,8 +171,30 @@ def plan(runnable: Sequence[str], state_rows: Mapping[str, Any], *, budget_s: fl
+               for sid, w in weighted.items()}
+     for sid in scouts:
+         shares[sid] = max(shares.get(sid, floor_s), floor_s)
++    # THE TIEBREAK IS AGE, NEVER THE ALPHABET (measured on the live box 2026-09-25).
++    #
++    # `shares` above is floored at `floor_s` and the exploit budget is far smaller than
++    # `len(ids) * floor_s` -- measured, 446s of exploit budget across 85 systems is 5.2s each,
++    # so `max(floor_s, 5)` returns 90 for EVERY system and the shares map is a constant. The ROI
++    # term and the breadth term both vanish into that floor: the allocation histogram on the box
++    # is literally `[(90, 85)]`. With `-shares` tied for all 81 non-scouts and `-marginal` 0.0
++    # for about 65 of them, the only key left with any information in it was `s` -- the system
++    # id, ascending -- and the pass is then cut by the wall clock at whatever it has reached.
++    #
++    # So the systems whose names sort last were cut on EVERY pass, for ever. `skipped_budget` on
++    # the box was byte-for-byte the alphabetical tail of the roster (`tensorly`, `tigramite`,
++    # `tradingagents_*`, `tsfresh`, `valuecell`, `verumtrade`, `vietnam_alpha`,
++    # `worldquant_brain_public`, `wq_research_engine`), and the reason published beside them named
++    # ROI and overdueness -- neither of which had entered the decision. Their only route to an
++    # hour was ageing past `window_s * 0.5` into a scout slot, four of which exist per pass.
++    #
++    # Ordering the tail by AGE makes the cut ROTATE: the systems that missed last pass sort
++    # first on this one, which is what the rule at the bottom of this function has always
++    # claimed. It rations nothing and funds nothing less -- the same budget, the same floor and
++    # the same scouts -- it only stops the cut landing on the same nine names every hour.
+     order = scouts + sorted((s for s in ids if s not in set(scouts)),
+-                            key=lambda s: (-shares.get(s, 0), -float(marginal.get(s, 0.0)), s))
++                            key=lambda s: (-shares.get(s, 0), -ages[s],
++                                           -float(marginal.get(s, 0.0)), s))
+     return {
+         "order": order, "shares": shares, "scouts": scouts, "n_scout_slots": n_scouts,
+         "window_s": window_s, "cadence_s": cadence_s, "scout_budget_s": round(scout_cost, 1),
+diff --git a/scripts/check_organ_cadence.py b/scripts/check_organ_cadence.py
+index d8ae765485e..24b85f468d8 100644
+--- a/scripts/check_organ_cadence.py
++++ b/scripts/check_organ_cadence.py
+@@ -490,6 +490,106 @@ def seal_duty_cycle(path: Path, now: datetime) -> dict[str, Any]:
+     return out
+ 
+ 
++# ------------------------------------------------- 4b. THE STREAMS (a cursor that stopped moving)
++
++#: How much of a cursored stream may sit unread before the funnel is severed rather than busy.
++#:
++#: A THIRD SHAPE THIS FENCE COULD NOT SEE, AND IT COST THE DESK EVERY VERDICT IT EARNED (measured
++#: 2026-09-25). `registry_sync` ran every hour, exited zero, advanced its cursor and rewrote its
++#: report every single pass -- so its SELF channel was perfect AND its PRODUCT channel moved too,
++#: because the pass really did pour rows. It poured 203 of them. The gate verdict ledger was
++#: growing by ~3,500 rows an hour and the `gate_verdicts` cursor sat at byte 226,198 of a
++#: 54,119,184-byte file: 0.42% read, 227,497 verdicts unpoured, the input growing 113x faster
++#: than the cursor advanced. `judged_at` had been set on 1,278 candidates in the desk's whole
++#: history, all at one instant, while the sandboxes donated, the docket carried them and the
++#: judge ruled on them. The cause was a missing index making the read-back door scan 740,357 rows
++#: per verdict at 2.09 rows/s (see `ix_candidates_donated_cell`).
++#:
++#: NEITHER EXISTING CHANNEL CAN EVER CATCH THAT. "It ran" was true, "its output moved" was true,
++#: and the funnel was still severed -- because for a CURSORED stream the honest question is not
++#: whether the cursor moved but whether it is KEEPING UP with its input. A pipeline whose input
++#: grows faster than its cursor is diverging, and divergence is monotone: it never recovers on
++#: its own and every hour makes it worse. So the measurement is the unread FRACTION, not an age.
++#:
++#: 25%: a stream that has read three quarters of its input is working through a backlog; one that
++#: has read less than that, on a host that runs the clocks, is not going to catch up. The real
++#: break measured 99.58% unread, four times past this line, so this is sized well inside the
++#: failure it exists for.
++STREAM_UNREAD_MAX_FRACTION = 0.25
++
++#: Below this an unread tail is one pass's normal lag, not a severed funnel, whatever the ratio.
++STREAM_UNREAD_MIN_BYTES = 2_000_000
++
++
++def stream_backlogs(base: Path) -> dict[str, Any]:
++    """Every cursored stream: how much of its input the registry has actually read.
++
++    UNMEASURED IS A VERDICT (L1.28a). A host with no registry, no cursor table or no stream file
++    reports exactly that and convicts nobody -- the build box legitimately has none of this. What
++    this can never do is report a severed stream as healthy because the organ above it exited
++    zero, which is the whole reason it exists.
++    """
++    out: dict[str, Any] = {"status": UNMEASURED, "streams": [], "breaches": []}
++    try:
++        sys.path.insert(0, str(base))
++        from libs.moat import registry as R
++    except Exception as exc:                       # pragma: no cover - import guard
++        out["why"] = f"libs.moat.registry not importable here: {type(exc).__name__}: {exc}"
++        return out
++    if not R.path().exists():
++        out["why"] = f"no registry at {R.path()}: this host holds no cursored stream"
++        return out
++    try:
++        conn = R.connect()
++    except Exception as exc:                       # pragma: no cover - locked/absent db
++        out["why"] = f"registry not readable: {type(exc).__name__}: {exc}"
++        return out
++    try:
++        for key, rel in R.SYNC_STREAMS:
++            path = R.stream_path(key, desk=base / "desks" / "mt5")
++            if path is None or not Path(path).exists():
++                path = base / Path(*rel.split("/"))
++            row = conn.execute("SELECT value FROM sync_cursor WHERE key=?", (key,)).fetchone()
++            cursor = None
++            if row is not None:
++                try:
++                    cursor = int(row["value"])
++                except (TypeError, ValueError):
++                    cursor = None
++            size = Path(path).stat().st_size if Path(path).exists() else None
++            rec: dict[str, Any] = {"stream": key, "path": str(path), "cursor": cursor,
++                                   "size_bytes": size}
++            if size is None:
++                rec["verdict"] = UNMEASURED
++                rec["why"] = "no input file on this host"
++            elif cursor is None:
++                rec["verdict"] = "NO_CURSOR"
++                rec["why"] = (f"the registry holds no '{key}' cursor: every row on disk is "
++                              "invisible to it, and nothing says so")
++                out["breaches"].append(rec)
++            else:
++                unread = max(0, size - min(cursor, size))
++                frac = (unread / size) if size else 0.0
++                rec.update(unread_bytes=unread, unread_fraction=round(frac, 4))
++                if unread >= STREAM_UNREAD_MIN_BYTES and frac > STREAM_UNREAD_MAX_FRACTION:
++                    rec["verdict"] = "STREAM_DIVERGING"
++                    rec["why"] = (
++                        f"{unread:,} of {size:,} bytes ({frac:.1%}) of {key} have never been "
++                        "read. The organ above this cursor can run, exit zero and advance it "
++                        "every pass while the funnel stays severed -- a cursor that moves is not "
++                        "a cursor that keeps up")
++                    out["breaches"].append(rec)
++                else:
++                    rec["verdict"] = "OK"
++            out["streams"].append(rec)
++        out["status"] = "MEASURED"
++    except Exception as exc:                       # pragma: no cover - schema drift
++        out["why"] = f"{type(exc).__name__}: {exc}"
++    finally:
++        conn.close()
++    return out
++
++
+ # --------------------------------------------------------------------------- 5. THE RATCHET
+ 
+ DEBT_REL = "docs/research/organ_cadence_debt.json"
+@@ -633,6 +733,22 @@ def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str,
+         if r["verdict"] in _BREACH and r["organ"] in known:
+             doc["notes"].append(f"{r['organ']}: {r['verdict']}, declared in {DEBT.name}")
+ 
++    # THE CURSORED STREAMS. Judged only where the clocks actually run: on a mirror a stale cursor
++    # is the mirror being a mirror, exactly as for every other verdict in this file.
++    streams = stream_backlogs(base)
++    doc["streams"] = streams
++    if streams.get("status") != "MEASURED":
++        doc["notes"].append(
++            f"stream backlogs UNMEASURED: {streams.get('why') or 'no reason recorded'}")
++    elif here:
++        for rec in streams.get("breaches") or []:
++            doc["ok"] = False
++            doc["problems"].append(f"{rec['stream']}: {rec['verdict']} -- {rec['why']}")
++    else:
++        doc["notes"].append(
++            "stream backlogs measured but not judged: this host does not run the clocks, so a "
++            "cursor behind its input is a mirror, not a severed funnel")
++
+     doc["verdict"] = "OK" if doc["ok"] else "DARK"
+     return doc
+ 
+diff --git a/tests/governance/test_organ_cadence_fence.py b/tests/governance/test_organ_cadence_fence.py
+index f4c7e123388..6c862c16534 100644
+--- a/tests/governance/test_organ_cadence_fence.py
++++ b/tests/governance/test_organ_cadence_fence.py
+@@ -342,3 +342,159 @@ def test_thresholds_catch_the_day_it_happens() -> None:
+     assert fence.WINDOW_H <= 24.0
+     assert fence.PRODUCT_STALE_CADENCES <= 12.0
+     assert fence.MIN_OK_RUNS >= 2, "one clean run is not evidence that an organ runs fine"
++
++
++# ------------------------------- 6. THE STREAM THAT KEPT ITS CURSOR AND STOPPED KEEPING UP
++#
++# The shape neither existing channel can see. On 2026-09-25 `registry_sync` ran hourly, exited
++# zero, advanced its cursor and rewrote its report every pass -- self channel perfect, product
++# channel moving -- while the `gate_verdicts` cursor sat at byte 226,198 of a 54,119,184-byte
++# ledger. 227,497 verdicts unpoured, the input growing 113x faster than the cursor advanced, and
++# `judged_at` set on 1,278 candidates in the desk's whole history. "It ran" was true and "its
++# output moved" was true and the funnel was still severed.
++
++
++def _registry_at(tmp: Path, cursors: dict[str, int]):
++    """A real registry at a temp path carrying the given cursor values."""
++    import sys as _sys
++    _sys.path.insert(0, str(ROOT))
++    from libs.moat import registry as R
++    R.set_path(tmp / "data" / "alpha_registry.sqlite")
++    (tmp / "data").mkdir(parents=True, exist_ok=True)
++    conn = R.connect()
++    for key, value in cursors.items():
++        conn.execute("INSERT OR REPLACE INTO sync_cursor(key, value, updated_at) VALUES(?,?,?)",
++                     (key, str(value), "2026-09-25T00:00:00+00:00"))
++    conn.commit()
++    conn.close()
++    return R
++
++
++@pytest.fixture
++def registry_box(box: Path):
++    """A clock-running host with a real registry, restored to the canonical path afterwards."""
++    import sys as _sys
++    _sys.path.insert(0, str(ROOT))
++    from libs.moat import registry as R
++    before = R.path()
++    yield box
++    R.set_path(before)
++
++
++def test_a_cursor_that_moves_but_never_keeps_up_is_a_severed_funnel(registry_box: Path) -> None:
++    """THE REGRESSION. A cursor 0.42% through its input, on a host that runs the clocks."""
++    led = "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"
++    _write(registry_box, led, "x" * 54_000_000)
++    _registry_at(registry_box, {"gate_verdicts": 226_198})
++
++    got = fence.stream_backlogs(registry_box)
++    assert got["status"] == "MEASURED", got
++    rec = next(r for r in got["streams"] if r["stream"] == "gate_verdicts")
++    assert rec["verdict"] == "STREAM_DIVERGING", rec
++    assert rec["unread_fraction"] > 0.99
++    assert any(b["stream"] == "gate_verdicts" for b in got["breaches"])
++
++
++def test_a_stream_that_is_keeping_up_is_not_a_defect(registry_box: Path) -> None:
++    """A cursor near the end of its input is a stream doing its job; convicting it would make the
++    fence fire on every healthy pass and it would be off within the week."""
++    led = "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"
++    _write(registry_box, led, "x" * 54_000_000)
++    _registry_at(registry_box, {"gate_verdicts": 53_900_000})
++
++    rec = next(r for r in fence.stream_backlogs(registry_box)["streams"]
++               if r["stream"] == "gate_verdicts")
++    assert rec["verdict"] == "OK", rec
++
++
++def test_a_small_unread_tail_is_one_passs_lag_whatever_the_ratio(registry_box: Path) -> None:
++    """A brand-new stream is 100% unread and is not broken. The byte floor is what says so."""
++    led = "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"
++    _write(registry_box, led, "x" * 1000)
++    _registry_at(registry_box, {"gate_verdicts": 0})
++
++    rec = next(r for r in fence.stream_backlogs(registry_box)["streams"]
++               if r["stream"] == "gate_verdicts")
++    assert rec["verdict"] == "OK", rec
++
++
++def test_a_stream_with_no_cursor_at_all_is_a_breach(registry_box: Path) -> None:
++    """A restore wiped all four cursor keys once and nothing said so; every row on disk was then
++    invisible to the registry. A missing receipt is a defect, never a fresh start."""
++    led = "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"
++    _write(registry_box, led, "x" * 54_000_000)
++    _registry_at(registry_box, {"hypothesis_graph": 10})
++
++    got = fence.stream_backlogs(registry_box)
++    rec = next(r for r in got["streams"] if r["stream"] == "gate_verdicts")
++    assert rec["verdict"] == "NO_CURSOR", rec
++
++
++def test_a_host_with_no_registry_is_unmeasured_not_clean(tmp_path: Path) -> None:
++    """UNMEASURED is a verdict (L1.28a). The build box holds no live registry and must not be
++    reported as a host whose streams are healthy."""
++    import sys as _sys
++    _sys.path.insert(0, str(ROOT))
++    from libs.moat import registry as R
++    before = R.path()
++    try:
++        R.set_path(tmp_path / "data" / "nothing.sqlite")
++        got = fence.stream_backlogs(tmp_path)
++        assert got["status"] == fence.UNMEASURED
++        assert got["why"]
++    finally:
++        R.set_path(before)
++
++
++def test_a_diverging_stream_fails_the_scan_on_a_clock_host(registry_box: Path) -> None:
++    """WIRED, not merely measured: the breach must reach `scan`'s verdict, or it is a number in a
++    report nobody acts on."""
++    _write(registry_box, "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl", "x" * 54_000_000)
++    _registry_at(registry_box, {"gate_verdicts": 1000})
++    _declare_ledger(registry_box, {"alpha": "desks/mt5/reports/alpha.json"})
++    ok_runs = [("alpha", NOW - timedelta(hours=h), True) for h in (1, 2, 3)]
++    _write(registry_box, EVENTS, _events(ok_runs))
++    _touch(registry_box / "desks" / "mt5" / "reports" / "alpha.json", NOW)
++
++    doc = fence.scan(registry_box, now=NOW)
++    assert doc["ok"] is False
++    assert doc["verdict"] == "DARK"
++    assert any("STREAM_DIVERGING" in p for p in doc["problems"]), doc["problems"]
++
++
++def test_a_mirror_host_is_not_convicted_for_a_stale_cursor(registry_box: Path,
++                                                           monkeypatch: pytest.MonkeyPatch
++                                                           ) -> None:
++    """On a host that does not run the clocks a cursor behind its input is the mirror being a
++    mirror -- the same rule every other verdict in this file already follows."""
++    monkeypatch.setattr(fence, "runs_clocks_here", lambda _root: False)
++    _write(registry_box, "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl", "x" * 54_000_000)
++    _registry_at(registry_box, {"gate_verdicts": 1000})
++    _declare_ledger(registry_box, {"alpha": "desks/mt5/reports/alpha.json"})
++    _write(registry_box, EVENTS, _events([("alpha", NOW - timedelta(hours=1), True)]))
++
++    doc = fence.scan(registry_box, now=NOW)
++    assert not any("STREAM_DIVERGING" in p for p in doc["problems"]), doc["problems"]
++
++
++def test_the_read_back_door_is_indexed(registry_box: Path) -> None:
++    """THE FIX ITSELF, PINNED. `mark_candidate` matches `WHERE id=? OR donated_cell=?`; with no
++    index on `donated_cell` an OR across one indexed and one unindexed column can use neither,
++    and SQLite reads `SCAN research_candidates` -- 740,357 rows per verdict, measured at 2.09
++    rows/s on the trading box against 87,931 rows/s with the index. That single missing index is
++    why the desk stamped `judged_at` on 1,278 candidates in its whole history while the gauntlet
++    ruled on 228,469 cells."""
++    R = _registry_at(registry_box, {})
++    conn = R.connect()
++    try:
++        names = {r["name"] for r in conn.execute("PRAGMA index_list('research_candidates')")}
++        assert "ix_candidates_donated_cell" in names, (
++            "no index on research_candidates(donated_cell): the verdict read-back door is a full "
++            "table scan again, and judged_at will silently stop advancing")
++        plan = " ".join(str(r[-1]) for r in conn.execute(
++            "EXPLAIN QUERY PLAN UPDATE research_candidates SET status=? "
++            "WHERE id=? OR donated_cell=?", ("judged", "a", "b")))
++        assert "SCAN research_candidates" not in plan, plan
++        assert "MULTI-INDEX OR" in plan or "SEARCH" in plan, plan
++    finally:
++        conn.close()
+-- 
+2.47.1.windows.1
+

@@ -1,0 +1,465 @@
+From cf00d7a3692dceac078a6fef977cac1e7f39366d Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Mon, 21 Sep 2026 19:35:27 +0200
+Subject: [PATCH] isolate research workers from the live MT5 terminal
+
+Prevent SYSTEM-session research processes from launching a competing terminal and taking the MCP listener from the authenticated execution session. Targeted session-isolation tests pass; commit is scoped to the guard, callers, and tests.
+---
+ desks/mt5/data/RELEASE.json                   | 69 +++----------------
+ desks/mt5/research/cost_to_edge.py            | 12 +++-
+ desks/mt5/research/discover_universe.py       |  3 +-
+ desks/mt5/research/expand_universe.py         |  3 +-
+ desks/mt5/research/fetch_gold_scalp.py        |  3 +-
+ desks/mt5/research/fetch_triangle.py          |  3 +-
+ desks/mt5/research/fetch_universe.py          |  3 +-
+ desks/mt5/research/h1_source.py               |  3 +-
+ desks/mt5/research/mt5_session.py             | 48 +++++++++++++
+ desks/mt5/research/pf_allocator.py            |  3 +-
+ desks/mt5/research/probe_terminal.py          |  5 +-
+ desks/mt5/research/promoter.py                |  3 +-
+ desks/mt5/research/shadow_cycle.py            |  3 +-
+ desks/mt5/research/stop_reverse_census.py     |  6 +-
+ desks/mt5/research/validate_fusion.py         |  3 +-
+ .../test_cost_to_edge_session_isolation.py    | 28 ++++++++
+ desks/mt5/tests/test_mt5_session.py           | 36 ++++++++++
+ 17 files changed, 159 insertions(+), 75 deletions(-)
+ create mode 100644 desks/mt5/research/mt5_session.py
+ create mode 100644 desks/mt5/tests/test_cost_to_edge_session_isolation.py
+ create mode 100644 desks/mt5/tests/test_mt5_session.py
+
+diff --git a/desks/mt5/data/RELEASE.json b/desks/mt5/data/RELEASE.json
+index f6e6680d2d5..92a00f58715 100644
+--- a/desks/mt5/data/RELEASE.json
++++ b/desks/mt5/data/RELEASE.json
+@@ -1,9 +1,9 @@
+ {
+- "generated_utc": "2026-09-17T20:22:02.401350+00:00",
+- "live_sha": "99072a6c79886374efaa7c14b990dc540fff93d4",
+- "code_sha": "99072a6c79886374efaa7c14b990dc540fff93d4",
+- "parent_sha": "8338360978a2056b0956e585a4e08ec02322fb93",
+- "tree_sha": "21cbc800c44218fe9a8a54171b2775e7f0b8a569",
++ "generated_utc": "2026-09-18T00:42:36.853699+00:00",
++ "live_sha": "020dbcdc2772087fb85a999ffc5882ba310afa52",
++ "code_sha": "020dbcdc2772087fb85a999ffc5882ba310afa52",
++ "parent_sha": "43d6f20b534a0766ceae5660915636ee44ea43a3",
++ "tree_sha": "6ff919c4d80dd94d4c146e8661910d0f244caec4",
+  "config_hash": "e0d1bfe75cb0d2c3",
+  "survivor_registry_hash": "73af09354b56a690",
+  "allocator_hash": "93d0c44217db7b4f",
+@@ -84,62 +84,13 @@
+   "desks/mt5/reports/shadow/shadow_health.json",
+   "desks/mt5/reports/shadow/shadow_state.json"
+  ],
+- "release_id": "ac9a9a52a887",
++ "release_id": "c2bb3e27aa9c",
+  "sealed": true,
+- "sealed_at": "2026-09-17T20:22:02.401350+00:00",
++ "sealed_at": "2026-09-18T00:42:36.853699+00:00",
+  "sealed_by": "Seal-IfClean",
+  "ci_run_id": null,
+  "tested_sha": null,
+- "worktree_dirty": [
+-  "desks/mt5/data/LIVE_MANIFEST.jsonl",
+-  "desks/mt5/data/account_state.json",
+-  "desks/mt5/data/broker_clock_measured.json",
+-  "desks/mt5/data/compute_ledger.jsonl",
+-  "desks/mt5/data/conversion_ledger.json",
+-  "desks/mt5/data/decision_dataset.jsonl",
+-  "desks/mt5/data/decision_dataset_watermark.json",
+-  "desks/mt5/data/events.jsonl",
+-  "desks/mt5/data/fusion_deadman_state.json",
+-  "desks/mt5/data/gateway_state.json",
+-  "desks/mt5/data/hypotheses/external_survivors.json",
+-  "desks/mt5/data/hypotheses/local_candidates.json",
+-  "desks/mt5/data/hypotheses/miner_deepening_queue.json",
+-  "desks/mt5/data/hypotheses/orthogonal_candidates.json",
+-  "desks/mt5/data/hypothesis_graph.jsonl",
+-  "desks/mt5/data/intelligence/blocked_sources.json",
+-  "desks/mt5/data/intelligence/coverage_registry.json",
+-  "desks/mt5/data/intelligence/frontier_coverage.json",
+-  "desks/mt5/data/intelligence/frontier_state.json",
+-  "desks/mt5/data/intelligence/world/vault/www.R-project.org/37dde7f2e3a19127dc9f.gz",
+-  "desks/mt5/data/intelligence/world/vault/www.R-project.org/4309c409b8ec7ece577e.gz",
+-  "desks/mt5/data/intelligence/world/vault/www.R-project.org/5d8dc3ffb147344b9b3f.gz",
+-  "desks/mt5/data/intelligence/world/vault/www.R-project.org/a37d29fe7ff524c0fb1b.gz",
+-  "desks/mt5/data/intelligence/world/vault/www.R-project.org/d0c6be33737ece5aa2a4.gz",
+-  "desks/mt5/data/intelligence/world/vault/www.R-project.org/fd8ac07874ffec0c9f11.gz",
+-  "desks/mt5/data/macro/MACRO_INTEL.json",
+-  "desks/mt5/data/macro/multiplicity.json",
+-  "desks/mt5/data/macro/source_credibility.json",
+-  "desks/mt5/data/macro/taxonomy.json",
+-  "desks/mt5/data/moat_coverage.json",
+-  "desks/mt5/data/moat_miner_state.json",
+-  "desks/mt5/data/pf_forecast_log.jsonl",
+-  "desks/mt5/data/preregistrations.jsonl",
+-  "desks/mt5/data/release_identity.json",
+-  "desks/mt5/data/sleeves.json",
+-  "desks/mt5/data/stall_watch.json",
+-  "desks/mt5/data/sync_marker.json",
+-  "desks/mt5/data/universe/XAUUSD_M1.parquet",
+-  "desks/mt5/data/universe/XAUUSD_M15.parquet",
+-  "desks/mt5/data/universe/XAUUSD_M5.parquet",
+-  "desks/mt5/data/universe/XAUUSD_scalp_source.json",
+-  "desks/mt5/reports/shadow/external_shadow_state.json",
+-  "desks/mt5/reports/shadow/qquant_shadow_state.json",
+-  "desks/mt5/reports/shadow/scalp_shadow_state.json",
+-  "desks/mt5/reports/shadow/shadow_health.json",
+-  "desks/mt5/reports/shadow/shadow_state.json",
+-  "web/desk_state.json",
+-  "web/equity_history.jsonl"
+- ],
+- "previous_code_sha": "2cd867b36359084aa78df38c784a128be8351b03",
+- "previous_release_id": "f94e528827fa"
++ "worktree_dirty": [],
++ "previous_code_sha": "99072a6c79886374efaa7c14b990dc540fff93d4",
++ "previous_release_id": "ac9a9a52a887"
+ }
+\ No newline at end of file
+diff --git a/desks/mt5/research/cost_to_edge.py b/desks/mt5/research/cost_to_edge.py
+index 167491fb453..47cc882e18b 100644
+--- a/desks/mt5/research/cost_to_edge.py
++++ b/desks/mt5/research/cost_to_edge.py
+@@ -41,6 +41,8 @@ from datetime import UTC, datetime
+ from pathlib import Path
+ from typing import Any
+ 
++from mt5_session import attach_or_initialize
++
+ BASE = Path(__file__).resolve().parents[1]
+ SLEEVES = BASE / "data" / "sleeves.json"
+ OUT = BASE / "reports" / "COST_TO_EDGE.json"
+@@ -84,8 +86,14 @@ def symbol_cost_r(sym: str, family: str = "", mt5: Any = None) -> dict[str, Any]
+         except ImportError:
+             out["why"] = "MetaTrader5 unavailable on this host"
+             return out
+-    if mt5.terminal_info() is None and not mt5.initialize():
+-        out["why"] = "terminal not initialised"
++    # Research residents run as SYSTEM in Windows Session 0.  Calling initialize() here
++    # launches a second terminal in that isolated session.  That terminal then takes MT5's
++    # local MCP port from the authenticated, interactive execution terminal and silently
++    # disables both the live gateway and E8 Gold.  Cost telemetry is optional input; it must
++    # never create or own execution infrastructure.  Use an already-attached terminal when
++    # one exists in this worker's session, otherwise leave the observation UNMEASURED.
++    if not attach_or_initialize(mt5, allow_autostart=False):
++        out["why"] = "no terminal attached in research session; autostart prohibited"
+         return out
+     info = mt5.symbol_info(sym)
+     tick = mt5.symbol_info_tick(sym)
+diff --git a/desks/mt5/research/discover_universe.py b/desks/mt5/research/discover_universe.py
+index 7f1dfa24f77..32cb45e9e9b 100644
+--- a/desks/mt5/research/discover_universe.py
++++ b/desks/mt5/research/discover_universe.py
+@@ -135,7 +135,8 @@ def main(argv: list[str] | None = None) -> int:
+               "terminal -- it is the only place that can be asked what the broker offers.")
+         return 2
+ 
+-    if mt5.terminal_info() is None and not mt5.initialize(path=terminal_path()):
++    from mt5_session import attach_or_initialize
++    if not attach_or_initialize(mt5, path=terminal_path()):
+         print(f"REFUSED: terminal initialize failed: {mt5.last_error()}")
+         return 2
+ 
+diff --git a/desks/mt5/research/expand_universe.py b/desks/mt5/research/expand_universe.py
+index 045f97a27c6..fbbc53a7966 100644
+--- a/desks/mt5/research/expand_universe.py
++++ b/desks/mt5/research/expand_universe.py
+@@ -238,7 +238,8 @@ def main() -> int:
+     from mt5desk.universe_registry import cost_fields_from_symbol_info
+ 
+     now = datetime.now(tz=UTC)
+-    if not mt5.initialize():
++    from mt5_session import attach_or_initialize
++    if not attach_or_initialize(mt5):
+         print(f"MT5 initialize failed: {_explain(mt5.last_error())}")
+         return 1
+ 
+diff --git a/desks/mt5/research/fetch_gold_scalp.py b/desks/mt5/research/fetch_gold_scalp.py
+index a49f55d55ec..68f66113a20 100644
+--- a/desks/mt5/research/fetch_gold_scalp.py
++++ b/desks/mt5/research/fetch_gold_scalp.py
+@@ -37,7 +37,8 @@ def _paged_rates(mt5, symbol: str, timeframe: int, bars: int):  # type: ignore[n
+ def fetch(terminal: str, symbol: str, out_dir: Path, bars: int = 90_000) -> dict[str, int]:
+     import MetaTrader5 as mt5
+ 
+-    if not mt5.initialize(path=terminal, timeout=15_000):
++    from mt5_session import attach_or_initialize
++    if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
+         raise RuntimeError(f"MT5 initialize failed: {mt5.last_error()}")
+     try:
+         account = mt5.account_info()
+diff --git a/desks/mt5/research/fetch_triangle.py b/desks/mt5/research/fetch_triangle.py
+index 1cd55d0834a..260a3476dd9 100644
+--- a/desks/mt5/research/fetch_triangle.py
++++ b/desks/mt5/research/fetch_triangle.py
+@@ -37,7 +37,8 @@ def fetch_range(sym: str, tf, start, end, tries: int = 4) -> pd.DataFrame | None
+ 
+ def main() -> None:
+     if mt5.terminal_info() is None:
+-        if not mt5.initialize(path=TERMINAL):
++        from mt5_session import attach_or_initialize
++        if not attach_or_initialize(mt5, path=TERMINAL):
+             print(f"initialize failed: {_explain(mt5.last_error())}")
+             return
+     print(f"terminal: {mt5.terminal_info().name} | account {mt5.account_info().login}")
+diff --git a/desks/mt5/research/fetch_universe.py b/desks/mt5/research/fetch_universe.py
+index 33dac28d29b..58a2844a6ad 100644
+--- a/desks/mt5/research/fetch_universe.py
++++ b/desks/mt5/research/fetch_universe.py
+@@ -258,7 +258,8 @@ def _refresh_order(candidates: list[str]) -> list[str]:
+ 
+ def main() -> None:
+     if mt5.terminal_info() is None:
+-        if not mt5.initialize(path=TERMINAL):
++        from mt5_session import attach_or_initialize
++        if not attach_or_initialize(mt5, path=TERMINAL):
+             print(f"initialize failed: {mt5.last_error()}")
+             return
+     print(f"terminal: {mt5.terminal_info().name} | account {mt5.account_info().login}")
+diff --git a/desks/mt5/research/h1_source.py b/desks/mt5/research/h1_source.py
+index a9f10b2f39d..fb20c1fa134 100644
+--- a/desks/mt5/research/h1_source.py
++++ b/desks/mt5/research/h1_source.py
+@@ -312,7 +312,8 @@ def from_mt5(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
+         try:
+             if terminal is not None:
+                 mt5.shutdown()
+-                if not mt5.initialize(path=terminal, timeout=15_000):
++                from mt5_session import attach_or_initialize
++                if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
+                     continue
+             account = mt5.account_info()
+             server = str(getattr(account, "server", "unknown"))
+diff --git a/desks/mt5/research/mt5_session.py b/desks/mt5/research/mt5_session.py
+new file mode 100644
+index 00000000000..1b493e546ad
+--- /dev/null
++++ b/desks/mt5/research/mt5_session.py
+@@ -0,0 +1,48 @@
++"""Keep research workers from launching a competing MT5 terminal in Session 0."""
++from __future__ import annotations
++
++import os
++from typing import Any
++
++
++def windows_session_id() -> int | None:
++    """Return the current Windows session, or None off Windows/when unreadable."""
++    if os.name != "nt":
++        return None
++    try:
++        import ctypes
++
++        value = ctypes.c_ulong()
++        ok = ctypes.windll.kernel32.ProcessIdToSessionId(os.getpid(), ctypes.byref(value))
++        return int(value.value) if ok else None
++    except (AttributeError, OSError, ValueError):
++        return None
++
++
++def attach_or_initialize(
++    mt5: Any,
++    *,
++    path: str | None = None,
++    timeout: int | None = None,
++    allow_autostart: bool = True,
++) -> bool:
++    """Attach to MT5 without ever spawning it from Windows Session 0.
++
++    MT5's Python bridge is session-local while its MCP listener is machine-global.  A SYSTEM
++    research worker that calls ``initialize`` therefore launches an unauthenticated Session-0
++    terminal which can take the listener from the authenticated execution terminal.  Research
++    must report its input as unavailable in that situation, never disable execution.
++    """
++    try:
++        if mt5.terminal_info() is not None:
++            return True
++    except Exception:
++        pass
++    if not allow_autostart or windows_session_id() == 0:
++        return False
++    kwargs: dict[str, Any] = {}
++    if path:
++        kwargs["path"] = path
++    if timeout is not None:
++        kwargs["timeout"] = timeout
++    return bool(mt5.initialize(**kwargs))
+diff --git a/desks/mt5/research/pf_allocator.py b/desks/mt5/research/pf_allocator.py
+index b4d017e03ef..ebea1e38370 100644
+--- a/desks/mt5/research/pf_allocator.py
++++ b/desks/mt5/research/pf_allocator.py
+@@ -1239,7 +1239,8 @@ def account_margin() -> tuple[float | None, float | None, str]:
+                 path = terminal_path()
+             except Exception:
+                 path = ""
+-            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
++            from mt5_session import attach_or_initialize
++            opened = attach_or_initialize(mt5, path=path)
+             if not opened:
+                 return None, None, f"terminal unreachable ({mt5.last_error()})"
+         acc = mt5.account_info()
+diff --git a/desks/mt5/research/probe_terminal.py b/desks/mt5/research/probe_terminal.py
+index d29ebf60a89..d0f258c32c6 100644
+--- a/desks/mt5/research/probe_terminal.py
++++ b/desks/mt5/research/probe_terminal.py
+@@ -14,7 +14,8 @@ import MetaTrader5 as mt5
+ 
+ allow_send = "allow_send=1" in " ".join(sys.argv[1:])
+ 
+-ok = mt5.initialize(path=terminal_path())
++from mt5_session import attach_or_initialize
++ok = attach_or_initialize(mt5, path=terminal_path())
+ print("init:", ok, mt5.last_error())
+ if not ok:
+     sys.exit(2)
+@@ -42,4 +43,4 @@ if allow_send:
+                 print("probe deleted:", o.ticket)
+         sys.exit(0)
+     sys.exit(1)
+-mt5.shutdown()
+\ No newline at end of file
++mt5.shutdown()
+diff --git a/desks/mt5/research/promoter.py b/desks/mt5/research/promoter.py
+index 0e84369d080..e2e9f22c015 100644
+--- a/desks/mt5/research/promoter.py
++++ b/desks/mt5/research/promoter.py
+@@ -686,7 +686,8 @@ def account_in_hand() -> dict:
+                 path = terminal_path()
+             except Exception:
+                 path = ""
+-            opened = bool(mt5.initialize(path=path) if path else mt5.initialize())
++            from mt5_session import attach_or_initialize
++            opened = attach_or_initialize(mt5, path=path)
+             if not opened:
+                 plog(f"account in hand: terminal unreachable ({mt5.last_error()}); UNKNOWN")
+                 return provenance.current_account(None)
+diff --git a/desks/mt5/research/shadow_cycle.py b/desks/mt5/research/shadow_cycle.py
+index 3c0eeecbccc..efd39dd96b3 100644
+--- a/desks/mt5/research/shadow_cycle.py
++++ b/desks/mt5/research/shadow_cycle.py
+@@ -81,7 +81,8 @@ def _refresh_scalp_bars() -> None:
+     for terminal in h1_source._terminal_candidates():
+         if not Path(terminal).exists():
+             continue
+-        if not mt5.initialize(path=terminal, timeout=15_000):
++        from mt5_session import attach_or_initialize
++        if not attach_or_initialize(mt5, path=terminal, timeout=15_000):
+             failures.append(f"{terminal}: initialize failed: {mt5.last_error()}")
+             continue
+         try:
+diff --git a/desks/mt5/research/stop_reverse_census.py b/desks/mt5/research/stop_reverse_census.py
+index bee65da5324..bc3b5f220a0 100644
+--- a/desks/mt5/research/stop_reverse_census.py
++++ b/desks/mt5/research/stop_reverse_census.py
+@@ -44,6 +44,8 @@ from datetime import UTC, datetime, timedelta
+ from pathlib import Path
+ from typing import Any
+ 
++from mt5_session import attach_or_initialize
++
+ BASE = Path(__file__).resolve().parents[1]
+ OUT = BASE / "reports" / "STOP_REVERSE_CENSUS.json"
+ 
+@@ -95,8 +97,8 @@ def census(mt5: Any = None) -> dict[str, Any]:
+         except ImportError:
+             out["why"] = "MetaTrader5 unavailable on this host"
+             return out
+-    if mt5.terminal_info() is None and not mt5.initialize():
+-        out["why"] = "terminal not initialised"
++    if not attach_or_initialize(mt5, allow_autostart=False):
++        out["why"] = "no terminal attached in research session; autostart prohibited"
+         return out
+     try:
+         import pandas as pd
+diff --git a/desks/mt5/research/validate_fusion.py b/desks/mt5/research/validate_fusion.py
+index ca0907e2079..a251d61dda1 100644
+--- a/desks/mt5/research/validate_fusion.py
++++ b/desks/mt5/research/validate_fusion.py
+@@ -52,7 +52,8 @@ FUSION_COMMISSION = 2.25
+ def connect() -> bool:
+     import MetaTrader5 as mt5  # noqa: PLC0415
+     if mt5.terminal_info() is None:
+-        if not mt5.initialize(path=terminal_path()):
++        from mt5_session import attach_or_initialize
++        if not attach_or_initialize(mt5, path=terminal_path()):
+             print(f"init failed: {mt5.last_error()} (is the Fusion terminal logged in?)")
+             return False
+     ti = mt5.terminal_info()
+diff --git a/desks/mt5/tests/test_cost_to_edge_session_isolation.py b/desks/mt5/tests/test_cost_to_edge_session_isolation.py
+new file mode 100644
+index 00000000000..7aa656a33c4
+--- /dev/null
++++ b/desks/mt5/tests/test_cost_to_edge_session_isolation.py
+@@ -0,0 +1,28 @@
++from __future__ import annotations
++
++import importlib.util
++from pathlib import Path
++import sys
++
++
++MODULE = Path(__file__).resolve().parents[1] / "research" / "cost_to_edge.py"
++sys.path.insert(0, str(MODULE.parent))
++SPEC = importlib.util.spec_from_file_location("cost_to_edge_under_test", MODULE)
++assert SPEC is not None and SPEC.loader is not None
++cost_to_edge = importlib.util.module_from_spec(SPEC)
++SPEC.loader.exec_module(cost_to_edge)
++
++
++class DetachedTerminal:
++    def terminal_info(self):
++        return None
++
++    def initialize(self):  # pragma: no cover - calling this is the regression
++        raise AssertionError("research telemetry must not launch an MT5 terminal")
++
++
++def test_detached_research_session_never_autostarts_terminal() -> None:
++    result = cost_to_edge.symbol_cost_r("XAUUSD", mt5=DetachedTerminal())
++
++    assert result["measured"] is False
++    assert result["why"] == "no terminal attached in research session; autostart prohibited"
+diff --git a/desks/mt5/tests/test_mt5_session.py b/desks/mt5/tests/test_mt5_session.py
+new file mode 100644
+index 00000000000..988a18703ff
+--- /dev/null
++++ b/desks/mt5/tests/test_mt5_session.py
+@@ -0,0 +1,36 @@
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "research"))
++import mt5_session  # noqa: E402
++
++
++class FakeMT5:
++    def __init__(self) -> None:
++        self.initialize_calls: list[dict] = []
++
++    def terminal_info(self):
++        return None
++
++    def initialize(self, **kwargs):
++        self.initialize_calls.append(kwargs)
++        return True
++
++
++def test_session_zero_cannot_launch_terminal(monkeypatch) -> None:
++    fake = FakeMT5()
++    monkeypatch.setattr(mt5_session, "windows_session_id", lambda: 0)
++
++    assert mt5_session.attach_or_initialize(fake, path="terminal64.exe") is False
++    assert fake.initialize_calls == []
++
++
++def test_interactive_session_can_launch_terminal(monkeypatch) -> None:
++    fake = FakeMT5()
++    monkeypatch.setattr(mt5_session, "windows_session_id", lambda: 2)
++
++    assert mt5_session.attach_or_initialize(fake, path="terminal64.exe", timeout=15000) is True
++    assert fake.initialize_calls == [{"path": "terminal64.exe", "timeout": 15000}]
+-- 
+2.47.1.windows.1
+

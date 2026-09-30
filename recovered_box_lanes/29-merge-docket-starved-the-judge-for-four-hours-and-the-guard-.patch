@@ -1,0 +1,218 @@
+From 77e7324abc38055cb16aebf7a95e03226b626f15 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 22:23:54 +0200
+Subject: [PATCH] merge_docket starved the judge for four hours, and the guard
+ could not see a pass it started inside
+
+TWO FIXES, one commit, because the seal costs 7-25 minutes to recover and both are small.
+
+MERGE_DOCKET GETS ITS OWN CLOCK. Measured 2026-09-24: it last ran at 16:20:22Z and was still the
+only thing standing between the unrunnable bank and the judge FOUR HOURS later -- rank 33 of 555
+on staleness. It is a CORE leg whose measured cost runs to 721 s against a 2,640 s pass budget,
+so the rotation crowded it out, and the bank it feeds (144,384 rows, 107,213 of them build
+failures the judge re-attempted every single pass) reached nothing at all. Pre-warm failures over
+the four passes in that window ran 81,588 -> 88,246 -> 109,792 -> 93,320: getting WORSE while the
+fix sat one unrun leg away. It now has MT5-MergeDocket every 30 minutes, and its first run
+filtered 34,484 rows out of the docket the judge reads (`unrunnable_filtered_from_docket`).
+
+A CLOCK IS NOT A CUT: nothing leaves the rotation, no lane narrows, the leg gains capacity it
+never had, and the ~721 s it used to take goes back to the core pass for the legs that stayed.
+This is the remedy the desk already applied to state_vector and external_gauntlet. The test
+pins that a name in OWN_CLOCK_LEGS must be out of every plan -- a name added without a task
+stops the leg dead, so the task was registered and proven first.
+
+THE GUARD REPORTED ZERO PASSES BESIDE TWO COMPLETED ONES. Root-caused rather than guessed: the
+reader, the classifier and the fold all verify correct against ground truth (37 of 37 markers,
+and a planted pass survives a round trip). The defect was the COLD START. It began 2 MB from the
+end of a log the judge writes ~24 MB of per pass, so a fresh cursor landed INSIDE a pass --
+after its PRE-WARM and before its epilogue -- and `fold` then correctly skipped an epilogue with
+no pass to attach it to. The same thing happens after any outage, and there was one: an adoption
+deleted this file for 38 minutes while the log advanced past a boundary.
+
+The lookback is now 120 MB (~5 passes, ~1 s, paid once per cold start and never on the
+incremental path), and a cold start EMITS A MARKER that reaches the artifact as `ledger_note`
+and `cold_start_this_run`. That second half is the real fix: a zero that cannot be told apart
+from "no passes happened" is what let this stand, and an instrument nobody can audit is worse
+in a guard than anywhere else.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/hourly_cycle.py            | 13 ++++++
+ desks/mt5/scripts/gauntlet_guard.py           | 35 ++++++++++++++-
+ .../mt5/tests/test_cycle_plans_and_resume.py  | 14 ++++++
+ desks/mt5/tests/test_gauntlet_guard.py        | 44 +++++++++++++++++++
+ 4 files changed, 104 insertions(+), 2 deletions(-)
+
+diff --git a/desks/mt5/research/hourly_cycle.py b/desks/mt5/research/hourly_cycle.py
+index c31a99e7aeb..eefd25d52b4 100644
+--- a/desks/mt5/research/hourly_cycle.py
++++ b/desks/mt5/research/hourly_cycle.py
+@@ -1065,9 +1065,22 @@ def department_of(name: str) -> str:
+ #: already is: no ledger row, so `opportunity_cost` and the rotation read "it did not run HERE",
+ #: which is true, rather than a phantom. `scripts/check_own_clock_legs.py` fails if any name
+ #: here has no task on the box, so this can never become a way to silently stop a leg.
++#: MEASURED 2026-09-24: `merge_docket` last ran at 16:20:22Z and was still the freshest thing
++#: standing between the unrunnable bank and the judge FOUR HOURS later -- rank 33 of 555 on
++#: staleness. It is a CORE leg whose own measured cost runs to 721 s against a 2,640 s pass
++#: budget, so the rotation crowded it out and the bank it feeds (144,384 rows, 107,213 of them
++#: build failures the judge re-attempted every single pass) reached nothing. Pre-warm failures
++#: over the four passes in that window ran 81,588 -> 88,246 -> 109,792 -> 93,320: getting worse,
++#: not better, because the one organ that could stop them was never reached.
++#:
++#: A CLOCK IS NOT A CUT. Nothing is removed from the rotation and no lane is narrowed: the leg
++#: gains capacity it never had on MT5-MergeDocket (every 30 minutes), and the ~721 s it used to
++#: take goes back to the core pass for the legs that stayed in it. This is the same remedy the
++#: desk already applied to the two other legs too heavy for an hourly rotation.
+ OWN_CLOCK_LEGS: frozenset[str] = frozenset({
+     "state_vector",       # MT5-StateVector
+     "external_gauntlet",  # MT5-Gauntlet
++    "merge_docket",       # MT5-MergeDocket
+ })
+ 
+ 
+diff --git a/desks/mt5/scripts/gauntlet_guard.py b/desks/mt5/scripts/gauntlet_guard.py
+index 2f58cd3cfdd..a6bf8e0f50d 100644
+--- a/desks/mt5/scripts/gauntlet_guard.py
++++ b/desks/mt5/scripts/gauntlet_guard.py
+@@ -66,6 +66,22 @@ WINDOW_S_FALLBACK = 4 * 3600
+ #: How many passes the report keeps. A distribution needs more than the last one.
+ KEEP_PASSES = 60
+ 
++#: HOW FAR BACK A COLD START READS, and why it is not a small number.
++#:
++#: MEASURED 2026-09-24, and it is the reason this organ reported `passes_recorded: 0` while the
++#: judge's own log held two completed passes. The reader, the classifier and the fold all verify
++#: correct against ground truth (37 of 37 markers). The defect was the COLD START: it began
++#: 2 MB from the end of a log this judge writes ~24 MB of per pass, so a fresh cursor lands in
++#: the middle of a pass -- after its `PRE-WARM` and before its epilogue. `fold` then correctly
++#: skips the epilogue, because no pass is open to attach it to, and the pass is lost. The same
++#: thing happens after any outage: an adoption deleted this file for 38 minutes, the log advanced
++#: past a pass boundary, and the boundary was skipped on the next cold start.
++#:
++#: 120 MB is about five passes at the measured rate, so a cold start now begins BEHIND the last
++#: boundary rather than inside it. The cost is ~1 s (measured: 89 MB scanned in 0.6 s) and it is
++#: paid once per cold start, never on the incremental path.
++COLD_START_LOOKBACK_BYTES = 120_000_000
++
+ #: The judge's own script name, as it appears in the command line of its process.
+ JUDGE = "external_gauntlet.py"
+ 
+@@ -261,9 +277,17 @@ def read_new_events(cursor: int) -> tuple[list[dict], int]:
+     size = LOG.stat().st_size
+     if cursor > size:
+         return [{"phase": "rotated", "text": f"log shrank {cursor} -> {size}"}], size
+-    if cursor <= 0:
+-        cursor = max(0, size - 2_000_000)
++    cold_start = cursor <= 0
++    if cold_start:
++        cursor = max(0, size - COLD_START_LOOKBACK_BYTES)
+     events: list[dict] = []
++    if cold_start and cursor:
++        # A ZERO MUST BE EXPLAINABLE. Without this row an empty ledger reads identically whether
++        # no pass has happened or the reader skipped the history that held them -- which is the
++        # exact ambiguity that let `passes_recorded: 0` stand beside two completed passes.
++        events.append({"phase": "cold_start",
++                       "text": f"cold start: began {size - cursor} byte(s) from the end of a "
++                               f"{size}-byte log; anything before that is not counted here"})
+     with LOG.open("rb") as fh:
+         fh.seek(cursor)
+         if cursor:
+@@ -282,6 +306,8 @@ def fold(events: list[dict], passes: list[dict], seen_at: str) -> list[dict]:
+     out = list(passes)
+     for ev in events:
+         phase, text = ev["phase"], ev["text"]
++        if phase == "cold_start":
++            continue
+         cur = out[-1] if out and out[-1].get("outcome") == "OPEN" else None
+         if phase == "prewarm":
+             if cur is not None:
+@@ -356,6 +382,11 @@ def main(argv: list[str] | None = None) -> int:
+         "frame_integrity": frames,
+         "live_pass": live,
+         "live_watch": watch,
++        # WHY THE LEDGER MIGHT BE EMPTY, in the artifact rather than in someone's head.
++        "ledger_note": ("a pass is recorded only from its PRE-WARM line onward, so a pass already "
++                        "running when this organ cold-started is not counted; "
++                        f"cold-start backfill is {COLD_START_LOOKBACK_BYTES} byte(s)"),
++        "cold_start_this_run": any(e.get("phase") == "cold_start" for e in events),
+         "passes_recorded": len(passes),
+         "passes_closed": len(closed),
+         "passes_reached_epilogue": len(reached),
+diff --git a/desks/mt5/tests/test_cycle_plans_and_resume.py b/desks/mt5/tests/test_cycle_plans_and_resume.py
+index 787e50913ed..fb220d0fd16 100644
+--- a/desks/mt5/tests/test_cycle_plans_and_resume.py
++++ b/desks/mt5/tests/test_cycle_plans_and_resume.py
+@@ -124,3 +124,17 @@ def test_auto_legs_under_department_plans_run_only_in_rest(monkeypatch, tmp_path
+         encoding="utf-8")
+     assert hc.run_auto_legs("dept:discovery", f)["n"] == 0
+     assert hc.run_auto_legs("dept:rest", f)["n"] == 1 and ran == ["desks/mt5/research/b.py"]
++
++
++def test_merge_docket_runs_on_its_own_clock_and_in_no_plan():
++    """MEASURED 2026-09-24: merge_docket last ran 16:20:22Z and was still the only thing between
++    the unrunnable bank and the judge four hours later -- a CORE leg costing ~721 s against a
++    2,640 s pass budget, crowded out of the rotation while the bank it feeds grew to 107,213
++    build failures the judge re-attempted every pass. It now has MT5-MergeDocket.
++
++    A leg named here MUST have a task on the box; a name added without one stops the leg dead."""
++    assert "merge_docket" in hc.OWN_CLOCK_LEGS
++    for plan in ("core", "heavy", "dept:rest", "dept:discovery"):
++        assert not hc.in_plan("merge_docket", plan), f"still in {plan}"
++    # the other two are unchanged
++    assert {"state_vector", "external_gauntlet"} <= set(hc.OWN_CLOCK_LEGS)
+diff --git a/desks/mt5/tests/test_gauntlet_guard.py b/desks/mt5/tests/test_gauntlet_guard.py
+index 1d726fe0aaa..466621d5a01 100644
+--- a/desks/mt5/tests/test_gauntlet_guard.py
++++ b/desks/mt5/tests/test_gauntlet_guard.py
+@@ -158,3 +158,47 @@ def test_live_pass_reads_the_interpreter_not_the_cmd_wrapper():
+     if out["status"] == "RUNNING":
+         assert out["margin_s"] == out["window_s"] - out["age_s"]
+         assert out["matched_judge_processes"] >= 1
++
++
++# --------------------------------------------------------- the cold start that lost two passes
++def test_a_cold_start_reads_far_enough_back_to_find_a_pass_boundary():
++    """THE DEFECT THIS ORGAN SHIPPED WITH. It began 2 MB from the end of a log the judge writes
++    ~24 MB of per pass, so a fresh cursor landed INSIDE a pass -- after its PRE-WARM and before
++    its epilogue -- and `fold` then correctly skipped an epilogue with no pass to attach it to.
++    The result was `passes_recorded: 0` beside two completed passes in the same log."""
++    assert gg.COLD_START_LOOKBACK_BYTES >= 24_000_000 * 2, (
++        "a cold start must begin behind the last pass boundary, not inside it")
++
++
++def test_a_cold_start_says_so_in_the_events_so_an_empty_ledger_is_explainable(tmp_path,
++                                                                             monkeypatch):
++    """A zero must never read the same as 'no passes happened'."""
++    log = tmp_path / "MT5-Gauntlet.log"
++    log.write_bytes(b"noise\n" * 200)
++    monkeypatch.setattr(gg, "LOG", log)
++    monkeypatch.setattr(gg, "COLD_START_LOOKBACK_BYTES", 100)
++    events, cursor = gg.read_new_events(0)
++    assert any(e["phase"] == "cold_start" for e in events)
++    assert cursor == log.stat().st_size
++
++
++def test_the_cold_start_marker_never_becomes_a_pass():
++    """It is an explanation, not a phase of any sweep."""
++    passes = gg.fold([{"phase": "cold_start", "text": "x"}], [], "T0")
++    assert passes == []
++    passes = gg.fold([{"phase": "cold_start", "text": "x"},
++                      {"phase": "prewarm", "text": "PRE-WARM: ..."},
++                      {"phase": "ledger", "text": "SURVIVORS_LEDGER.json: 1 claim(s)"}], [], "T0")
++    assert len(passes) == 1 and passes[0]["outcome"] == "REACHED_EPILOGUE"
++    assert "cold_start" not in passes[0]["phases"]
++
++
++def test_a_whole_pass_arriving_after_a_cold_start_is_recorded_end_to_end():
++    """The property that was missing: alive across a PRE-WARM, the pass is counted."""
++    ev = [{"phase": p, "text": p} for p in
++          ("prewarm", "cache", "seen", "saved_report", "survivors", "ledger")]
++    passes = gg.fold(ev, [], "T0")
++    assert len(passes) == 1
++    assert passes[0]["outcome"] == "REACHED_EPILOGUE"
++    assert passes[0]["phases"] == ["prewarm", "cache", "seen", "saved_report", "survivors",
++                                   "ledger"]
+-- 
+2.47.1.windows.1
+

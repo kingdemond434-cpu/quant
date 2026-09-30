@@ -1,0 +1,53 @@
+From 16d6035970ccf54e1fc8bb58042246a1d395202f Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 01:27:05 +0200
+Subject: [PATCH] Register the liveness fence on the box that runs the organs
+
+The fence landed in c183fd42b and its registration did not: this box's
+run_law_gate.py has diverged from the build box's, so the hunk had no anchor and
+applied nowhere. An unwired fence is a claim the desk cannot cash (L1.49), and it
+is the exact state test_the_fence_runs_on_a_clock exists to fail on -- so it was
+caught by verifying at HEAD BY CONTENT rather than by trusting the apply's rc=0.
+
+Anchored on the one line both copies share.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ scripts/run_law_gate.py | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/scripts/run_law_gate.py b/scripts/run_law_gate.py
+index a88b2f8d8ef..9e18d32ae19 100644
+--- a/scripts/run_law_gate.py
++++ b/scripts/run_law_gate.py
+@@ -516,6 +516,26 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
+     # carry a different one. It caps nothing and gates no capital; if anything it makes the book
+     # trade MORE, by ending halts in minutes rather than days.
+     ("check_placement_interlock.py", ()),
++    # RUNNING IS NOT PRODUCING (2026-09-25). The third question in the same family, and the one
++    # nothing asked. The fence above asks whether the box PLACES; `check_leg_rotation` asks
++    # whether a leg RAN; `check_seat_health` asks whether a seat is OVERDUE. None of them joins
++    # "it ran" to "its output moved", and that join is the whole diagnosis: twelve intelligence
++    # seats had gone dark, five of them after hundreds of artifacts, and four of those five
++    # logged `LEG_DONE outcome=ok` EVERY HOUR while donating nothing -- rewriting their own
++    # reports faithfully on the way past, so the reports directory looked alive to the minute.
++    # The fifth logged `LEG_FAILED TIMEOUT` on every run for a day and a half and was counted as
++    # attendance. This reads the liveness contract the desk ALREADY declares (tier1_program.json's
++    # `scheduled_by` + `artifact`, which nothing had ever read as one) and separates the SELF
++    # channel (an organ describing its own run) from the PRODUCT channel (what the compiler eats).
++    # Four verdicts, four different repairs: SILENT_NOOP, REPORTS_BUT_PRODUCES_NOTHING,
++    # ALWAYS_FAILING, NO_CONTRACT. A mirror host judges nobody -- measured through
++    # `producer_census.runs_clocks_here`, not guessed -- and today's known-dark organs are
++    # declared by name in `docs/research/organ_cadence_debt.json` on a list that may only shrink,
++    # so the gate is usable tonight and tomorrow's nineteenth fails on the day it appears. It also
++    # publishes the SEAL'S DUTY CYCLE per sleeve-day window, which is how "the rail is green most
++    # of the day and red when a window opens" becomes a number rather than a feeling. It caps
++    # nothing and can only ever demand that MORE organs produce.
++    ("check_organ_cadence.py", ()),
+     # on a schedule and whose artifact no production file reads is BURNING -- an orphan the desk
+     # pays compute for every hour -- and the BURNING count ratchets DOWN only. The clock half is
+     # exact (the four scheduler planes), so BURNING is the one population this census may fence
+-- 
+2.47.1.windows.1
+

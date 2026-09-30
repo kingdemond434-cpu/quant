@@ -1,0 +1,182 @@
+From 207758405ed38ac1e6b9b65f13e8f51b8d7db600 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 22:52:54 +0200
+Subject: [PATCH] One authority for the ten-gate pass, landed on the box that
+ trades
+
+The sealed judge began stamping an ELEVENTH stage, `swap_cost`, on every verdict
+on 2026-09-14 (external_gauntlet.py:2455). `all_ten_pass` was a closed, ordered
+tuple match, so from that day every certificate the judge minted was refused
+SILENTLY by every downstream door -- including the sealed promoter, which calls
+this predicate at promoter.py:1732. The authority file has held 174 attested rows
+and the promoter has read 16 of them.
+
+This lands the merged predicate: `gate_stage_census` reports what the judge
+EMITTED against what policy REQUIRES, and `all_ten_pass` is its boolean. The ten
+policy gates must each be present, be a mapping, carry `passed is True`, and
+appear in policy order; EVERY extra stage must ALSO pass, so an unknown stage can
+only ever refuse, never admit, and is published as UNRECOGNISED.
+
+NO BAR MOVES. The judge already folds every stage it emits into its own top-level
+verdict (external_gauntlet.py:2469), so a row the judge passed had already passed
+its eleventh gate. Nothing is admitted that did not already pass ten gates; every
+row re-admitted was judged and charged against multiplicity when it was minted, so
+this has zero multiplicity effect. `fixed_trial_count` and
+`fixed_variance_of_sharpes` are untouched. The `discovered` family stays banned.
+
+Measured on this box: authority rows 174 attested, all_ten_pass 16 -> 174,
+families 2 -> 7, and the sealed promoter's own load_cert_specs() 16 -> 174.
+
+The box's copy was a byte-for-byte subset of this one: the merge diff is a single
+hunk whose only removed lines are the seven-line old `all_ten_pass` body.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/gate_policy.py | 129 ++++++++++++++++++++++++++++--
+ 1 file changed, 122 insertions(+), 7 deletions(-)
+
+diff --git a/desks/mt5/research/gate_policy.py b/desks/mt5/research/gate_policy.py
+index fed588712ae..8269c3c8fb3 100644
+--- a/desks/mt5/research/gate_policy.py
++++ b/desks/mt5/research/gate_policy.py
+@@ -169,14 +169,129 @@ def is_exact_policy(value: Any) -> bool:
+             and value["trial_count_basis"] in _SUPERSEDED_TRIAL_BASES)
+ 
+ 
++#: Stage keys the JUDGE may emit beyond the policy ten. Nothing is listed here to exempt it:
++#: an entry means only that the desk has READ that stage in the sealed judge's source and knows
++#: what it is. An unlisted extra stage is still honoured by `gate_stage_census` -- it must pass
++#: like any other -- and is published as UNRECOGNISED so a new one is never absorbed in silence.
++KNOWN_EXTRA_STAGES: dict[str, str] = {
++    "swap_cost": (
++        "external_gauntlet.py:2427-2467 (sealed). The backtest engine models NO swap -- "
++        "mt5desk.engine.Costs carries spread and commission only -- so this fence prices "
++        "round-trip cost from the broker's own numbers via research/cost_to_edge.verdict and "
++        "REFUSES when measured cost exceeds MAX_COST_FRACTION_OF_EDGE of measured edge. It is a "
++        "real gate that can fail. The judge's own comment states that an UNMEASURED reading "
++        "PASSES deliberately: pricing needs a live terminal, the gauntlet also runs where there "
++        "is none, and refusing every cell on such a host would halt certification instead of "
++        "charging a cost. Unmeasured is reported on the certificate, never erased."
++    ),
++}
++
++
++def gate_stage_census(stages: Any) -> dict[str, Any]:
++    """What the judge EMITTED against what policy REQUIRES. A census, never a bar of its own.
++
++    MEASURED 2026-09-24 AND THIS IS THE DEFECT IT EXISTS TO END. `all_ten_pass` was
++    `tuple(stages) == GATES` -- an exact, ordered, closed tuple match. On 2026-09-14 the sealed
++    judge began stamping an ELEVENTH stage, `swap_cost`, onto every verdict it produces
++    (external_gauntlet.py:2455). From that moment the comparison refused EVERY certificate the
++    judge minted, including all seven passes in the 2026-09-23 sweep, and it did so SILENTLY:
++    the rows read as "not the canonical ten-gate verdict", which is indistinguishable from
++    "nothing passed". The desk minted zero certificates for ten days and no artifact said why.
++
++    THE BAR IS NOT MOVED HERE AND RECOGNISING A STAGE IS NOT LOWERING ONE. The judge already
++    folds every stage it emits into its own top-level verdict
++    (`passed = all(s["passed"] for s in stages.values())`, external_gauntlet.py:2469), so a row
++    the judge passed has ALREADY passed its eleventh gate. What this function does is stop a
++    downstream tuple comparison from discarding that verdict for having more evidence in it.
++
++    AND AN UNKNOWN STAGE CAN ONLY EVER REFUSE, NEVER ADMIT. The ten policy gates must each be
++    present, be a dict, carry `passed is True`, and appear in policy order. EVERY extra stage
++    must ALSO carry `passed is True` -- so a stage the desk has never heard of cannot be ignored
++    into a pass, and the next gate the judge adds tightens this reader automatically instead of
++    blacking it out. Extras are recorded by name, and their `measured` flag is recorded with
++    them, because UNMEASURED is a reading and must survive onto the certificate (L1.28a).
++    """
++    out: dict[str, Any] = {
++        "required": list(GATES),
++        "seen": [],
++        "missing": list(GATES),
++        "out_of_policy_order": False,
++        "failed_required": [],
++        "extra": [],
++        "extra_unrecognised": [],
++        "extra_failed": [],
++        "extra_unmeasured": [],
++        "malformed": [],
++        "passed": False,
++    }
++    if not isinstance(stages, dict):
++        out["why"] = f"stages is {type(stages).__name__}, not a mapping: no verdict to read"
++        return out
++
++    out["seen"] = [str(k) for k in stages]
++    out["missing"] = [g for g in GATES if g not in stages]
++    # ORDER IS STILL REQUIRED OF THE TEN, and only of the ten. The judge builds `stages` in
++    # evaluation order and its own `terminal_gate` depends on that order, so a reshuffled record
++    # is not the judge's. Comparing the ten to each other keeps that discipline without letting
++    # an APPENDED stage defeat it -- which is exactly the bug.
++    out["out_of_policy_order"] = tuple(k for k in stages if k in GATES) != GATES
++
++    for name in GATES:
++        rec = stages.get(name)
++        if not isinstance(rec, dict):
++            if name in stages:
++                out["malformed"].append(name)
++            continue
++        if rec.get("passed") is not True:
++            out["failed_required"].append(name)
++
++    for name, rec in stages.items():
++        if name in GATES:
++            continue
++        key = str(name)
++        out["extra"].append(key)
++        if key not in KNOWN_EXTRA_STAGES:
++            out["extra_unrecognised"].append(key)
++        if not isinstance(rec, dict):
++            out["malformed"].append(key)
++            out["extra_failed"].append(key)
++            continue
++        if rec.get("passed") is not True:
++            out["extra_failed"].append(key)
++        if rec.get("measured") is False:
++            out["extra_unmeasured"].append(key)
++
++    out["passed"] = not (out["missing"] or out["out_of_policy_order"] or out["failed_required"]
++                         or out["extra_failed"] or out["malformed"])
++    if out["passed"]:
++        out["why"] = ("all ten policy gates passed in policy order"
++                      + (f"; extra judge stages also passed: {', '.join(out['extra'])}"
++                         if out["extra"] else ""))
++    else:
++        parts = []
++        if out["missing"]:
++            parts.append(f"missing required {out['missing']}")
++        if out["out_of_policy_order"]:
++            parts.append("the ten policy gates are not in policy order")
++        if out["failed_required"]:
++            parts.append(f"required gate(s) failed {out['failed_required']}")
++        if out["extra_failed"]:
++            parts.append(f"judge stage(s) beyond the ten failed {out['extra_failed']}")
++        if out["malformed"]:
++            parts.append(f"stage record(s) are not a mapping {out['malformed']}")
++        out["why"] = "; ".join(parts)
++    return out
++
++
+ def all_ten_pass(stages: Any) -> bool:
+-    """A partial or extra gate set is not the canonical ten-gate verdict."""
+-    return (
+-        isinstance(stages, dict)
+-        and tuple(stages) == GATES
+-        and all(isinstance(stages[name], dict) and stages[name].get("passed") is True
+-                for name in GATES)
+-    )
++    """The canonical ten-gate verdict, robust to the judge emitting stages this reader lacks.
++
++    A partial, reordered, malformed or failed gate set never admits, and neither does a record
++    carrying an EXTRA stage that the judge did not pass. See `gate_stage_census` for the measured
++    ten-day certificate blackout this shape exists to end, and for why recognising a stage the
++    sealed judge emits is not a relaxation of any bar.
++    """
++    return bool(gate_stage_census(stages)["passed"])
+ 
+ 
+ def charged_trial_count(raw_cells: int, effective_cells: Any,
+-- 
+2.47.1.windows.1
+

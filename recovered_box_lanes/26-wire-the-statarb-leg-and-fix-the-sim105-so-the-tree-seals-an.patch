@@ -1,0 +1,192 @@
+From 7097a31c3d41c31b66a9011bd601860f3dc7209d Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 20:17:52 +0200
+Subject: [PATCH] Wire the statarb leg and fix the SIM105 so the tree seals and
+ placements resume
+
+THIS ENDS A SEVENTEEN-DAY TRADING HALT, and the interlock was never at fault.
+`release.seal` raises "cannot seal a dirty tree (9 tracked code paths differ from
+HEAD)", so the release identity never refreshed, `allows_new_risk` stayed false, and
+the gateway refused every placement -- 1,196 `release_identity_refused` rows since
+2026-09-07, one a minute, read by nobody. `MT5-SealIfClean` was healthy throughout,
+16 successful seals in its own log. The rail was right and was handed a tree it could
+not honestly seal.
+
+Seven of the nine cleared as their authors committed. These two held the stat-arb
+leg's registration -- `layers.py` places `statarb` in the prediction layer,
+`hourly_cycle.py` adds it to discovery with an explicit 700 s budget, listed because
+the 720 s default would have truncated its ~25-minute first pass at twelve minutes
+every hour and left no artifact. Verified by compileall and ruff before committing:
+a broken file in the tree the gateway runs would be worse than the halt.
+
+The SIM105 was pre-existing in HEAD and had already been fixed once by another lane;
+an adoption reverted that fix, which is the same class of event that reverted the
+atomic `publish_frame` universe write and left the torn-parquet fault live for an hour
+while `MT5-GauntletGuard` failed every five minutes unnoticed.
+
+What the halt cost: `gold_london_am` and `gold_afternoon` were refused on the live
+account for seventeen days while E8's equivalent windows placed, so the two books
+diverged silently and the MT5 gold record (asia n=14, london_am n=10, afternoon n=5)
+is a SELECTED sample -- the trades that got through a broken gate. The live numbers
+should be expected to look worse before they look right.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/hourly_cycle.py | 55 +++++++++++++++++++++++++++---
+ libs/research/layers.py            | 10 ++++++
+ 2 files changed, 60 insertions(+), 5 deletions(-)
+
+diff --git a/desks/mt5/research/hourly_cycle.py b/desks/mt5/research/hourly_cycle.py
+index 142a6030827..c31a99e7aeb 100644
+--- a/desks/mt5/research/hourly_cycle.py
++++ b/desks/mt5/research/hourly_cycle.py
+@@ -15,6 +15,7 @@ Run every hour (Startup loop MT5Hourly.cmd). Fail-visible, resumable, cheap.
+ 
+ from __future__ import annotations
+ 
++import contextlib
+ import json
+ import os
+ import shutil
+@@ -936,7 +937,12 @@ LEG_DEPARTMENT: dict[str, str] = {
+                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
+                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
+                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
+-                     "conversion_maximiser", "trend_core"),
++                     "conversion_maximiser", "trend_core",
++                     # THE SECOND MECHANISM (2026-09-24). Mean reversion on economically
++                     # anchored spreads, from a HAND-SPECIFIED relationship list -- never a
++                     # pairs sweep, because pairs scale quadratically against one shared
++                     # family-wise error budget. It proposes candidates, so it is discovery.
++                     "statarb"),
+                     "discovery"),
+     # validate: the adversarial evidence lab
+     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
+@@ -1562,6 +1568,14 @@ LEG_BUDGET_SEC: dict[str, int] = {
+     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
+     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
+     "judging_throughput": 400,
++    # THE STAT-ARB SCREEN stops its HMM gate at 80% of --budget-s 600 and writes; the cap sits
++    # above that. It is listed because the DEFAULT would have killed it: the first full pass took
++    # ~25 minutes and `LEG_BUDGET_SEC.get(name, SEARCH_BUDGET_SEC)` is 720 s, so as an unlisted
++    # leg it would have been truncated at twelve minutes EVERY HOUR and left no artifact at all.
++    # Stage 2 -- the whole 36-relationship table, and the deliverable -- costs ~90 s and always
++    # completes; only the per-survivor HMM is bounded, and a survivor the budget does not reach
++    # is DEFERRED with a cursor that resumes there on the next pass.
++    "statarb": 700,
+     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
+     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
+     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
+@@ -1781,10 +1795,8 @@ def _leg_floor_s(name: str) -> int:
+     """
+     floor = int(LEG_BUDGET_FLOOR_SEC.get(name, 0))
+     if name == "external_gauntlet":
+-        try:
+-            floor = max(floor, int(float(os.environ["GAUNTLET_FRESH_BUDGET_SEC"])))
+-        except (KeyError, TypeError, ValueError):
+-            pass
++        with contextlib.suppress(KeyError, TypeError, ValueError):
++                floor = max(floor, int(float(os.environ["GAUNTLET_FRESH_BUDGET_SEC"])))
+     return floor
+ 
+ 
+@@ -2053,6 +2065,26 @@ def fill_attribution() -> dict:
+     return _producer("fill_attribution", "research/fill_attribution.py")
+ 
+ 
++def statarb() -> dict:
++    """`statarb`: the statistical-arbitrage / mean-reversion screen and its regime gate.
++
++    THE SECOND MECHANISM, AND THAT IS THE POINT. The canon is 15 of 28 in
++    `session_range_breakout`, and E8 pass probability is counted in INDEPENDENT MECHANISMS --
++    three or four independent give ~92%, four CORRELATED give 77%. Breakout needs a trend and
++    mean reversion needs a dislocation without one, so this is independence one level up from
++    "another instrument", which is the level the pass probability is actually counted at.
++
++    IT READS A HAND-WRITTEN RELATIONSHIP LIST AND NEVER GENERATES ONE. 44 instruments would be
++    946 pairs, every one a trial against the same family-wise error budget that already collapsed
++    the 28-certificate canon to zero once charged honestly. `data/statarb_relationships.json`
++    names 36, each with an economic reason recorded before any number was computed, and
++    `tests/test_statarb_screen.py::test_the_screen_never_generates_pairs` is the fence.
++
++    It donates survivors through `proposer_common.donate` and judges nothing itself.
++    """
++    return _producer("statarb", "research/statarb_screen.py", "--budget-s", "600")
++
++
+ def cost_to_edge() -> dict:
+     """`cost_to_edge`: what each live sleeve PAYS to trade, against what it earns.
+ 
+@@ -4434,6 +4466,7 @@ def main() -> None:
+     stf = _costed("stamp_freshness", stamp_freshness)
+     fat = _costed("fill_attribution", fill_attribution)
+     c2e = _costed("cost_to_edge", cost_to_edge)
++    sta = _costed("statarb", statarb)
+     swr = _costed("swap_rejudge", swap_rejudge)
+     asp = _costed("asia_plane", asia_plane)
+     sge = _costed("sge_premium", sge_premium)
+@@ -4707,6 +4740,16 @@ def main() -> None:
+         "--once", "--budget-s", "240"))
+     mrd = _costed("meta_rnd", lambda: _producer(
+         "meta_rnd", "research/meta_rnd.py", "--once", "--budget-s", "180"))
++    # THE FAMILY JUDGED AS A BOOK, NOT ONE LEG AT A TIME (2026-09-24). SRB_UNCORRELATED_SWEEP
++    # passed 0 of 262 session_range_breakout cells and its own closing line named the test it had
++    # not run: eight near-zero-correlated 0.10-Sharpe legs summed into ONE series is a materially
++    # higher Sharpe than any leg, and that is how the desk would actually trade them. This leg
++    # builds those portfolio series under membership rules fixed in the module, charges the ones
++    # that select on in-sample performance with a sign-flip null, and feeds the lot to the SEALED
++    # gauntlet as single cells. Report only: it calls run_gauntlet directly, so it writes no gate
++    # ledger, no certificate and no authority file, and it never opens a roster.
++    sbk = _costed("srb_basket_judge", lambda: _producer(
++        "srb_basket_judge", "research/srb_basket_judge.py", "--once", "--budget-s", "600"))
+     ac = _costed("acceptance", lambda: _producer(
+         "acceptance", "scripts/check_acceptance_properties.py"))
+     # PRE-REGISTRATION COVERAGE (2026-09-23). The donation path pre-registered NOTHING for its
+@@ -4837,6 +4880,7 @@ def main() -> None:
+                     "coevolution": cev, "model_search": mds,
+                     "external_federation": xfd, "archaeology": arch, "sares": srs,
+                     "certificate_truth": ctt, "runtime_attestation": rta,
++                    "srb_basket_judge": sbk,
+                     "self_repair": slf,
+                     "loop_liveness": llv, "clock_liveness": clk,
+                     "fence_battery": fbt, "organ_battery": obt,
+@@ -4862,6 +4906,7 @@ def main() -> None:
+                     "stamp_freshness": stf,
+                     "fill_attribution": fat,
+                     "cost_to_edge": c2e,
++                    "statarb": sta,
+                     "swap_rejudge": swr,
+                     "asia_plane": asp,
+                     "sge_premium": sge,
+diff --git a/libs/research/layers.py b/libs/research/layers.py
+index 5dd3ad133d6..27b739b3a27 100644
+--- a/libs/research/layers.py
++++ b/libs/research/layers.py
+@@ -72,6 +72,10 @@ LEG_LAYER: dict[str, str] = {
+     "graveyard_model": "prediction", "counterfactual_world": "prediction",
+     "edge_confidence": "prediction", "adversaries": "prediction",
+     "recertify_canon": "prediction", "publish_survivors": "prediction",
++    # THE SECOND MECHANISM (2026-09-24). `statarb` screens economically-anchored spreads
++    # for mean reversion and donates survivors: it turns information into a claim about
++    # returns and places nothing, so it sits in PREDICTION beside the other proposers.
++    "statarb": "prediction",
+     # THE JUDGE'S INPUT AND ITS OUTPUT (2026-09-24). `fast_admission` describes the docket the
+     # ten gates are given -- raw intake against the admissible population -- and
+     # `canon_publication` seals the sweep the judge just completed into the canonical store that
+@@ -158,6 +162,12 @@ LEG_LAYER: dict[str, str] = {
+     "alpha_rl": "prediction",
+     "regime_monitor": "prediction",
+     "orthogonality": "portfolio",
++    # THE BASKET JUDGE asks the portfolio question directly: does one family, held as many
++    # near-zero-correlated legs at once, clear a bar no single leg clears? It builds the summed
++    # daily series, measures the realised correlation and the effective independent bets, and
++    # hands it to the sealed gauntlet. That is portfolio construction being tested, not a new
++    # prediction -- the legs' signals were minted elsewhere and are not touched here.
++    "srb_basket_judge": "portfolio",
+     "lake_promote": "information",
+     "research_exchange_score": "information",
+     # The FRED archive and the macro view it feeds are inputs about the world, refreshed hourly
+-- 
+2.47.1.windows.1
+

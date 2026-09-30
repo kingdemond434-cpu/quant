@@ -1,0 +1,68 @@
+From 8dc29efaca8693963ece4d197d7771f7d2510747 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 30 Sep 2026 13:13:57 +0100
+Subject: [PATCH] Fence scheduled fetches from detached Git maintenance
+
+---
+ desks/mt5/scripts/Adopt-Release.ps1             | 7 ++++++-
+ desks/mt5/scripts/intel_ship_adopt.ps1          | 5 ++++-
+ desks/mt5/tests/test_adoption_never_collides.py | 9 +++++++++
+ 3 files changed, 19 insertions(+), 2 deletions(-)
+
+diff --git a/desks/mt5/scripts/Adopt-Release.ps1 b/desks/mt5/scripts/Adopt-Release.ps1
+index 5ec21d85fad..3e444cd9631 100644
+--- a/desks/mt5/scripts/Adopt-Release.ps1
++++ b/desks/mt5/scripts/Adopt-Release.ps1
+@@ -609,7 +609,12 @@ if (-not $NoFetch) {
+         # held by another process and a permission fault on .git all look exactly the same, and
+         # each has a different remedy. A deployment path that cannot say why it failed is the
+         # same defect this desk keeps finding one level up: activity reported, outcome withheld.
+-        try { $out = & git -C $RepoRoot fetch origin $Branch 2>&1 | Out-String }
++        # A scheduled fetch used to spawn detached `git maintenance run --auto` / `git gc`.
++        # That child outlived this script's writer-mutex phase and then contended with the
++        # adoption commit for index/object locks (measured 2026-09-30: adopter blocked behind
++        # pack-objects for tens of minutes).  Maintenance is an explicit operation on this live
++        # repository; a release fetch may not create an unowned background writer.
++        try { $out = & git -C $RepoRoot -c maintenance.auto=false -c gc.auto=0 fetch origin $Branch 2>&1 | Out-String }
+         finally { $ErrorActionPreference = $prev }
+         if ($LASTEXITCODE -eq 0) { $ok = $true; break }
+         Write-Host ("  fetch attempt {0} failed (exit {1}) -- retrying in {2}s"    `
+diff --git a/desks/mt5/scripts/intel_ship_adopt.ps1 b/desks/mt5/scripts/intel_ship_adopt.ps1
+index ffd484a71d2..94d30f11b2c 100644
+--- a/desks/mt5/scripts/intel_ship_adopt.ps1
++++ b/desks/mt5/scripts/intel_ship_adopt.ps1
+@@ -45,7 +45,10 @@ if (-not (Test-Path (Join-Path $RepoRoot ".git"))) { Log "no .git under $RepoRoo
+ # --no-write-fetch-head prevents this fetch from overwriting FETCH_HEAD while Adopt-Release uses
+ # it as its immutable target.
+ $shipRef = "refs/remotes/intel-ship/send"
+-& git fetch --no-write-fetch-head origin "+refs/heads/intel-ship/send:$shipRef" 2>&1 | Out-Null
++# Do not let transport spawn detached maintenance after this pre-lock phase.  Such a child no
++# longer participates in the named writer mutex and can collide with either this checkout or the
++# canonical adopter's later commit.
++& git -c maintenance.auto=false -c gc.auto=0 fetch --no-write-fetch-head origin "+refs/heads/intel-ship/send:$shipRef" 2>&1 | Out-Null
+ if ($LASTEXITCODE -ne 0) { Log "git fetch failed (rc=$LASTEXITCODE)"; exit 3 }
+ 
+ # 2. wait for MT5-ShadowSync the way Adopt-And-Seal does (sync limit is 10 min; give it 9)
+diff --git a/desks/mt5/tests/test_adoption_never_collides.py b/desks/mt5/tests/test_adoption_never_collides.py
+index b80da983df8..4969aee814f 100644
+--- a/desks/mt5/tests/test_adoption_never_collides.py
++++ b/desks/mt5/tests/test_adoption_never_collides.py
+@@ -48,6 +48,15 @@ import pytest
+ BASE = Path(__file__).resolve().parent.parent
+ ROOT = BASE.parents[1]
+ ADOPT = BASE / "scripts" / "Adopt-Release.ps1"
++
++
++def test_scheduled_fetches_do_not_spawn_detached_git_maintenance():
++    """A fetch's detached gc outlives the writer mutex and blocks the later adoption commit."""
++    adopt = ADOPT.read_text(encoding="utf-8")
++    ship = (BASE / "scripts" / "intel_ship_adopt.ps1").read_text(encoding="utf-8")
++    for src in (adopt, ship):
++        assert "maintenance.auto=false" in src
++        assert "gc.auto=0" in src
+ SEAL = BASE / "scripts" / "Adopt-And-Seal.ps1"
+ 
+ #: The prefixes the discovery corpus lives under, and the organ that delivers it.
+-- 
+2.47.1.windows.1
+

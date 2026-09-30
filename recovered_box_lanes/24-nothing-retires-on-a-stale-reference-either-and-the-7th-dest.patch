@@ -1,0 +1,975 @@
+From f55f929e6d457483bc158fbeecedf242789c145c Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 20:10:20 +0200
+Subject: [PATCH] Nothing retires on a STALE reference either, and the 7th
+ destructive path was undeclared
+
+TWO L1.37 HOLES, ONE OF THEM LIVE ON THIS BOX RIGHT NOW.
+
+certificate_truth.apply's `lane_settled` gate caught the EMPTY half of the 837-row
+incident (n > 0, attestation exact, nothing restorable) and never the STALE half.
+Measured here today: the authority was EXACT with 52 rows and 3.2h old against a 2.0h
+lease -- settled by every clause it checked, its writer silent since -- with 264
+unbacked clocks and 67 ledger claims standing ready to retire on it. A store past its
+lease is UNMEASURED, and UNMEASURED is a verdict about the measurement, never about the
+world. `require_live_reference` now judges the file the audit ACTUALLY used
+(`canon.source`) and its verdict is ANDed into `lane_settled`; the ledger branch, which
+was never behind that gate at all, is gated by the same state. A BANNED_CLAIM still
+leaves on the decision -- a ban is not a measurement. What is withheld is published as
+`skipped.claims_on_unmeasured_canon` and the refusal is appended to
+reports/REFERENCE_STANDDOWNS.jsonl, where an operator meets it without asking.
+
+THE SEVENTH UNDECLARED CANDIDATE, which is what was refusing every push:
+forward_cure_route.accumulate, shipped this morning, pops rows out of a PERSISTED
+roster. Not an in-memory pop, not a false positive -- it has a row now. Declaring it
+found a real absence-inference one field down: a validity gate MISSING from a present
+verdict read as VALIDITY_FAIL, and 32,773 of the 140,090 verdicts in the live gate
+report carry non-empty stages with no validity gate in them at all. A gate now fails
+only when its stage is present and says so. Undeclared is back to 6 against a ceiling
+of 6; the ceiling did not move.
+
+UNGUARDED_CEILING 2 -> 0. Nothing declared removes on an unproved reference any more, so
+the ratchet is now the floor: the next unguarded row fails the gate.
+
+The lint gate was RED IN HEAD for everyone -- 35 I001 import-sort errors in
+tests/scripts, landed by an adoption commit -- so ops/gates.sh refused every push from
+this box regardless of what was being pushed. Fixed with ruff's own --fix; all four fast
+gates are green.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/certificate_truth.py       |  59 ++++++++++-
+ desks/mt5/research/forward_cure_route.py      |  13 ++-
+ desks/mt5/tests/test_certificate_truth.py     |  78 ++++++++++++++
+ desks/mt5/tests/test_forward_cure_route.py    | 100 ++++++++++++++++++
+ libs/ops/reference_freshness.py               |  49 ++++++---
+ scripts/check_no_retirement_on_absence.py     |  18 ++--
+ tests/scripts/test_acquire_data.py            |   1 -
+ tests/scripts/test_acquire_data_writer.py     |   1 +
+ tests/scripts/test_alpha_factory_run.py       |   2 +-
+ tests/scripts/test_ancestor_organs.py         |   1 -
+ .../scripts/test_check_mt5_coverage_floor.py  |   1 +
+ tests/scripts/test_check_pit.py               |   2 +-
+ .../test_check_pit_blocks_certification.py    |   1 -
+ .../test_compute_performance_drawdown.py      |   1 +
+ tests/scripts/test_constitution_reach.py      |   1 -
+ tests/scripts/test_conversion_control.py      |   3 +-
+ tests/scripts/test_coverage_stall.py          |   1 +
+ tests/scripts/test_enforcement.py             |   1 -
+ tests/scripts/test_estimate_contributions.py  |   1 -
+ tests/scripts/test_hypothesis_seats.py        |   1 +
+ .../scripts/test_kimi_hunter_no_giving_up.py  |   1 +
+ .../test_max_audit_channel_and_latch.py       |   1 +
+ tests/scripts/test_max_audit_checks.py        |   1 -
+ .../scripts/test_max_push_input_provenance.py |   1 +
+ .../scripts/test_mechanism_board_fallback.py  |   1 -
+ tests/scripts/test_mine_research_universe.py  |   1 -
+ tests/scripts/test_miner_runway_stub_rung.py  |   2 +-
+ tests/scripts/test_portfolio_admission.py     |   1 +
+ tests/scripts/test_principal_drop.py          |   1 +
+ tests/scripts/test_ratchet_write_guards.py    |   2 +-
+ tests/scripts/test_ratchets.py                |   3 +-
+ tests/scripts/test_rerank_gaps.py             |   1 -
+ .../test_research_allocator_semantics.py      |   1 +
+ tests/scripts/test_research_review.py         |   1 +
+ tests/scripts/test_run_ict_strategy.py        |   1 -
+ tests/scripts/test_run_live_ladder.py         |   1 +
+ tests/scripts/test_run_model_upgrade_state.py |   1 +
+ tests/scripts/test_scheduler_manifest.py      |   1 +
+ tests/scripts/test_stale_daemon_repair.py     |   3 +-
+ tests/scripts/test_state_path_readers.py      |   1 +
+ tests/scripts/test_verify_deployment.py       |   1 +
+ 41 files changed, 315 insertions(+), 47 deletions(-)
+ create mode 100644 desks/mt5/tests/test_forward_cure_route.py
+
+diff --git a/desks/mt5/research/certificate_truth.py b/desks/mt5/research/certificate_truth.py
+index 379adfc9c8d..f65b0eb0a35 100644
+--- a/desks/mt5/research/certificate_truth.py
++++ b/desks/mt5/research/certificate_truth.py
+@@ -80,6 +80,8 @@ for _p in (str(DESK / "research"), str(DESK), str(ROOT)):
+     if _p not in sys.path:
+         sys.path.insert(0, _p)
+ 
++from libs.ops.reference_freshness import lease_for, require_live_reference  # noqa: E402
++
+ #: The family the principal banned on 2026-09-16; banned here whatever `banned_families.json`
+ #: says, because certificate discovery itself is banned (principal, 2026-09-22).
+ DISCOVERED = "discovered"
+@@ -1507,6 +1509,22 @@ def _history(paths: Paths, rows: list[dict[str, Any]]) -> None:
+             fh.write(json.dumps(r, default=str, separators=(",", ":")) + "\n")
+ 
+ 
++#: How long the judge's authority file is worth believing. A lease is the PRODUCER's claim about
++#: its own output, not a property of where the file happens to sit, so it is resolved from the
++#: component registry's row for the canonical store and means the same number when a test builds a
++#: whole desk in tmp_path. The fallback is the desk's standing rule for an hourly leg (cadence x 2)
++#: and is NAMED rather than silent, because a lease nobody has decided authorises nothing at all.
++AUTHORITY_LEASE_FALLBACK_S = 2 * 3600.0
++
++
++def _authority_lease_s() -> float:
++    try:
++        lease_s, _source, _writer = lease_for(DESK / CANONICAL_CERTIFICATE_STORE)
++    except (OSError, ValueError):
++        return AUTHORITY_LEASE_FALLBACK_S
++    return float(lease_s) if lease_s else AUTHORITY_LEASE_FALLBACK_S
++
++
+ def apply(paths: Paths, doc: dict[str, Any] | None = None,
+           now: str | None = None) -> dict[str, Any]:
+     """The one-time migration. Idempotent: a second run finds nothing to move."""
+@@ -1525,14 +1543,36 @@ def apply(paths: Paths, doc: dict[str, Any] | None = None,
+     # other state retires nothing and says so -- absence of evidence is not evidence of absence
+     # (L1.28a), and it is certainly not grounds to destroy a clock that took forward weeks to
+     # earn. Banned-family rows are unaffected: a ban is a decision, not a measurement.
+-    lane_settled = (lane_status == "EXACT" and int(doc["canon"].get("n") or 0) > 0
++    #
++    # AND THE HALF `lane_settled` NEVER COVERED (2026-09-24). The clauses below catch an EMPTY or
++    # degraded authority -- exact attestation, n > 0, nothing restorable. They do NOT catch a
++    # STALE one, and STALE IS AN ABSENCE TOO. Measured on this box the day this landed: the
++    # authority was EXACT with 52 rows and 3.2h old against a 2.0h lease, settled by every clause
++    # here while its writer had not spoken since, with 67 ledger claims and 264 unbacked clocks
++    # standing ready to retire on its authority. A store past its lease is UNMEASURED, and
++    # UNMEASURED is a verdict about the MEASUREMENT, never about the world (L1.28a). So the file
++    # the audit ACTUALLY judged against (`canon.source`: the canonical store, or the seal when
++    # that is what carried the attestation) proves it is live before any evidence-based removal,
++    # and the refusal is recorded where an operator meets it without asking
++    # (`reports/REFERENCE_STANDDOWNS.jsonl`). Banned-family rows are unaffected throughout: a ban
++    # is a decision, not a measurement.
++    authority = paths.base / str(doc["canon"].get("source") or paths.canon_rel)
++    reference = require_live_reference(
++        authority if authority.exists() else paths.canon,
++        actor="certificate_truth.apply", action="retire unbacked rows",
++        min_rows=1, lease_s=_authority_lease_s(), strict=False)
++    claims_withheld = 0
++    lane_settled = (reference.live and lane_status == "EXACT"
++                    and int(doc["canon"].get("n") or 0) > 0
+                     and int(doc["canon"].get("restorable_n") or 0) == 0)
+     if not lane_settled:
+         doc = {**doc, "retirement_withheld": {
+             "reason": ("the canonical lane is not settled (status "
+                        f"{lane_status}, n={doc['canon'].get('n')}, "
+-                       f"restorable={doc['canon'].get('restorable_n')}); an empty or degraded "
++                       f"restorable={doc['canon'].get('restorable_n')}, "
++                       f"reference {reference.verdict}); an empty, stale or degraded "
+                        "authority file is UNMEASURED and never the ground for retiring a clock"),
++            "reference": reference.as_dict(),
+             "unbacked_clocks_not_retired": doc["by_kind"].get("UNBACKED_CLOCK", 0)}}
+     by_store: dict[str, list[dict[str, Any]]] = {}
+     for d in doc["divergences"]:
+@@ -1580,7 +1620,16 @@ def apply(paths: Paths, doc: dict[str, Any] | None = None,
+             row = ledger["claims"].get(d["key"])
+             if not isinstance(row, dict):
+                 continue
+-            reason = BAN_REASON if d["kind"] == "BANNED_CLAIM" else HISTORY_REASON
++            if d["kind"] == "BANNED_CLAIM":
++                reason = BAN_REASON              # a ban is a decision, never a measurement
++            elif reference.live:
++                reason = HISTORY_REASON
++            else:
++                # THE BRANCH THE `lane_settled` GATE NEVER REACHED. "The canon no longer holds
++                # this claim" is a sentence only a canon in a position to speak can say; 837 rows
++                # were retired here against one that said nothing at all.
++                claims_withheld += 1
++                continue
+             note("SURVIVORS_LEDGER", d["key"], row.get("status"), "RETIRED", reason)
+             row.update({"status": "RETIRED", "retire_reason": reason, "retired_at": stamp,
+                         "retired_by": RETIRED_BY})
+@@ -1655,12 +1704,14 @@ def apply(paths: Paths, doc: dict[str, Any] | None = None,
+     return {"at": stamp, "moved": len(moved), "by_store": counts,
+             "history": _rel(paths, paths.history), "lane_status": lane_status,
+             "lane_settled": lane_settled,
++            "reference": reference.as_dict(),
+             "retirement_withheld": doc.get("retirement_withheld"),
+             "skipped": {
+                 "unbacked_protected": doc["migration"]["planned"]["unbacked_clocks_protected"],
+                 "unbacked_on_unmeasured_canon": (
+                     doc["migration"]["planned"]["unbacked_clocks_to_retire"]
+-                    if not lane_settled else 0)},
++                    if not lane_settled else 0),
++                "claims_on_unmeasured_canon": claims_withheld},
+             "after": {"n_divergences": after["n_divergences"], "n_fatal": after["n_fatal"],
+                       "by_kind": after["by_kind"], "ok": after["ok"]}}
+ 
+diff --git a/desks/mt5/research/forward_cure_route.py b/desks/mt5/research/forward_cure_route.py
+index 14eae674461..34e3e79797c 100644
+--- a/desks/mt5/research/forward_cure_route.py
++++ b/desks/mt5/research/forward_cure_route.py
+@@ -93,7 +93,7 @@ def accumulate(base: Path | None = None) -> dict:
+     A row is ADDED or REFRESHED from the snapshot. A row is RETIRED only on positive evidence in
+     the latest gate report: the same cell now passing all ten (CERTIFIED -- it belongs in the
+     canon, not here) or now failing a VALIDITY gate (DEAD -- validity is absolute). Silence
+-    retires nothing.
++    retires nothing, and a validity gate the verdict does not carry is silence too.
+     """
+     root = Path(base) if base is not None else BASE
+     reports = root / "desks" / "mt5" / "reports"
+@@ -140,7 +140,13 @@ def accumulate(base: Path | None = None) -> dict:
+                 continue                       # unjudged this pass: silence retires nothing
+             if v.get("passed"):
+                 retired[key] = "CERTIFIED"
+-            elif any(not (isinstance(st.get(g), dict) and st[g].get("passed") is True)
++            # POSITIVE EVIDENCE ONLY, AND THE SUB-FIELD COUNTS TOO (2026-09-24). This read
++            # `not (present and passed)`, so a validity gate MISSING from a present verdict was a
++            # failure -- retirement on an absence, one field below the one this module guards.
++            # Measured in the live report the day it was fixed: 32,773 of 140,090 verdicts carry
++            # non-empty stages with NO validity gate in them at all. A gate fails when its stage
++            # is there and says so; a gate nobody judged says nothing (L1.28a).
++            elif any(isinstance(st.get(g), dict) and st[g].get("passed") is not True
+                      for g in validity):
+                 retired[key] = "VALIDITY_FAIL"
+     for key in retired:
+@@ -170,7 +176,8 @@ def accumulate(base: Path | None = None) -> dict:
+                       "applied by whatever adjudicates them, never here."),
+         "retirement_rule": ("POSITIVE EVIDENCE ONLY: a row leaves on a later verdict that passes "
+                             "all ten (CERTIFIED) or fails a VALIDITY gate (DEAD). An absent, "
+-                            "short or unreadable verdict never voids a row."),
++                            "short or unreadable verdict never voids a row, and a validity gate "
++                            "ABSENT from a present verdict is UNJUDGED, never failed."),
+     }
+     _write(reports / "FORWARD_CURE_ROSTER.json", {**census, "rows": rows})
+     return census
+diff --git a/desks/mt5/tests/test_certificate_truth.py b/desks/mt5/tests/test_certificate_truth.py
+index 983e02260f7..095552cd642 100644
+--- a/desks/mt5/tests/test_certificate_truth.py
++++ b/desks/mt5/tests/test_certificate_truth.py
+@@ -357,6 +357,84 @@ def test_an_empty_canon_is_unmeasured_and_never_the_ground_for_retiring_a_clock(
+     assert reg["EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24"]["status"] == "RETIRED"
+ 
+ 
++def _standdown_log(monkeypatch, tmp_path: Path) -> Path:
++    """Stand-downs go to a temp log: a test never appends to the desk's own artifact."""
++    log = tmp_path / "standdowns.jsonl"
++    monkeypatch.setenv("QUANT_REFERENCE_STANDDOWN_LOG", str(log))
++    return log
++
++
++def test_a_stale_authority_retires_nothing_even_when_every_other_clause_says_settled(
++        desk: Path, monkeypatch, tmp_path: Path):
++    """LAWS 7, THE HALF `lane_settled` NEVER COVERED. The authority here is EXACT, holds three
++    rows and has nothing restorable -- settled by every clause the migration used to check -- and
++    its own stamp is three weeks old against its lease. That is the shape measured on the trading
++    box on 2026-09-24 (52 rows, EXACT, 3.2h against a 2.0h lease) with 264 unbacked clocks and 67
++    ledger claims standing ready to retire on it. A store past its lease is UNMEASURED, and
++    UNMEASURED never authorises a removal (L1.28a)."""
++    log = _standdown_log(monkeypatch, tmp_path)
++    paths = CT.Paths.at(desk)
++    for p in (paths.canon, paths.seal):
++        d = _r(p)
++        d["swept_at"] = "2026-09-01T00:00:00+00:00"          # older than any lease this desk sets
++        _w(p, d)
++    doc = CT.audit(paths)
++    assert doc["canon"]["status"] == "EXACT" and doc["canon"]["n"] > 0
++    assert doc["canon"]["restorable_n"] == 0
++    out = CT.apply(paths, doc)
++    assert out["reference"]["verdict"] == "STALE" and out["reference"]["live"] is False
++    assert out["lane_settled"] is False
++    # the clocks the settled lane would have retired are all still standing
++    reg = _r(paths.registry)["sleeves"]
++    assert reg["CHFNOK.carry.asia#input_symbol=CHFNOK"]["status"] == "LIVE"
++    assert out["skipped"]["unbacked_on_unmeasured_canon"] > 0
++    assert "stale" in out["retirement_withheld"]["reason"]
++    # and the refusal is on the record where an operator meets it without asking
++    assert log.exists() and "certificate_truth.apply" in log.read_text("utf-8")
++    # the ban is a decision, not a measurement: banned rows still leave
++    assert reg["EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24"]["status"] == "RETIRED"
++
++
++def test_an_empty_authority_never_retires_a_ledger_claim(desk: Path, monkeypatch, tmp_path: Path):
++    """THE SECOND BRANCH, and the one the gate never reached. `CLAIM_NOT_IN_CANON` retired 837
++    rows against a canon holding n=0: "the canon does not hold this claim" is a sentence only a
++    canon in a position to speak can say. A banned claim still leaves -- a ban is a decision."""
++    _standdown_log(monkeypatch, tmp_path)
++    paths = CT.Paths.at(desk)
++    for p in (paths.canon, paths.seal):
++        d = _r(p)
++        d["survivors"] = {}
++        _w(p, d)
++    out = CT.apply(paths)
++    assert out["reference"]["verdict"] == "EMPTY" and out["reference"]["live"] is False
++    claims = _r(paths.ledger)["claims"]
++    assert claims["external.CADJPY.session_range_breakout"]["status"] == "UNIVERSAL"
++    assert claims["external.GBPJPY.session_range_breakout"]["status"] == "UNIVERSAL"
++    assert out["skipped"]["claims_on_unmeasured_canon"] == 2
++    assert claims["external.EURCHF.discovered.p=1"]["status"] == "RETIRED"     # banned, a decision
++
++
++def test_a_live_authority_is_untouched_by_the_guard_and_still_retires(desk: Path):
++    """GROWTH GOVERNANCE, RULE 1 IN THE OTHER DIRECTION. The guard adds no caution to the live
++    path: a fresh, non-empty authority retires exactly what it retired before it existed."""
++    out = CT.apply(CT.Paths.at(desk))
++    assert out["reference"]["live"] is True and out["lane_settled"] is True
++    assert out["skipped"]["claims_on_unmeasured_canon"] == 0
++    assert out["moved"] == 13
++
++
++def test_every_destructive_branch_in_apply_is_declared_and_guarded():
++    """The inventory is not allowed to describe a version of this file that no longer exists."""
++    from libs.ops import reference_freshness as RFR
++    rows = [s for s in RFR.DESTRUCTIVE_PATHS
++            if s.module == "desks/mt5/research/certificate_truth.py" and s.function == "apply"]
++    assert {s.path_id for s in rows} >= {"certificate_truth.apply",
++                                         "certificate_truth.ledger_claims"}
++    assert {s.status for s in rows} <= {"guarded", "positive"}
++    src = (Path(CT.__file__).read_text(encoding="utf-8-sig"))
++    assert "require_live_reference(" in src
++
++
+ def test_the_fence_fails_on_residue_and_passes_once_the_lane_is_the_truth(desk: Path, capsys):
+     assert FENCE.main(["--base", str(desk)]) == 2
+     out = capsys.readouterr().out
+diff --git a/desks/mt5/tests/test_forward_cure_route.py b/desks/mt5/tests/test_forward_cure_route.py
+new file mode 100644
+index 00000000000..ef853f3019d
+--- /dev/null
++++ b/desks/mt5/tests/test_forward_cure_route.py
+@@ -0,0 +1,100 @@
++"""THE ROSTER LEAVES ON POSITIVE EVIDENCE ONLY, and the sub-field counts too.
++
++`accumulate` pops rows out of a PERSISTED roster (`reports/FORWARD_CURE_ROSTER.json`), so it is a
++destructive path and is declared as one in `libs.ops.reference_freshness.DESTRUCTIVE_PATHS`. It is
++`positive` because an absent, unreadable or verdict-less gate report retires nothing -- and because
++a validity gate the verdict does not carry is UNJUDGED rather than failed. That last clause read
++the other way until 2026-09-24, when 32,773 of the 140,090 verdicts in the live report were
++measured carrying non-empty stages with no validity gate in them at all.
++"""
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++_DESK = Path(__file__).resolve().parents[1]
++_ROOT = _DESK.parent.parent
++for _p in (str(_DESK / "research"), str(_DESK), str(_ROOT)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++import forward_cure_route as FCR  # noqa: E402
++
++
++def _w(p: Path, doc: object) -> None:
++    p.parent.mkdir(parents=True, exist_ok=True)
++    p.write_text(json.dumps(doc, indent=1), encoding="utf-8")
++
++
++def _r(p: Path) -> dict:
++    return json.loads(p.read_text(encoding="utf-8"))
++
++
++def _desk(tmp_path: Path, verdicts: object) -> Path:
++    base = tmp_path / "desk"
++    reports = base / "desks" / "mt5" / "reports"
++    _w(reports / "POWER_CURE_CANDIDATES.json", {
++        "swept_at": "2026-09-24T00:00:00+00:00",
++        "candidates": {
++            "external.EURUSD.carry": {"promotion_authority": False},
++            "external.AUDNZD.session_range_breakout": {"promotion_authority": False}}})
++    if verdicts is not None:
++        _w(reports / "universal_gates_external.json", {"verdicts": verdicts})
++    return base
++
++
++def _roster(base: Path) -> dict:
++    return _r(base / "desks" / "mt5" / "reports" / "FORWARD_CURE_ROSTER.json")
++
++
++def test_an_absent_gate_report_retires_nothing(tmp_path: Path):
++    base = _desk(tmp_path, None)
++    census = FCR.accumulate(base)
++    assert census["n_roster"] == 2 and census["retired_this_pass"] == 0
++
++
++def test_a_verdict_with_no_stages_retires_nothing(tmp_path: Path):
++    base = _desk(tmp_path, [{"cell": "EURUSD.carry", "stages": {}, "passed": False}])
++    FCR.accumulate(base)
++    census = FCR.accumulate(base)
++    assert census["retired_this_pass"] == 0
++    assert "external.EURUSD.carry" in _roster(base)["rows"]
++
++
++def test_a_validity_gate_absent_from_a_present_verdict_is_unjudged_never_failed(tmp_path: Path):
++    """THE FIX, PINNED. A verdict that carries stages but not one validity gate -- 32,773 of the
++    140,090 in the live report -- is a cell the judge did not finish, never a cell that failed."""
++    base = _desk(tmp_path, [{"cell": "EURUSD.carry", "passed": False,
++                             "stages": {"observations": {"n": 12}}}])
++    FCR.accumulate(base)
++    census = FCR.accumulate(base)
++    assert census["retired_this_pass"] == 0
++    assert "external.EURUSD.carry" in _roster(base)["rows"]
++
++
++def test_a_validity_gate_that_is_present_and_failed_still_retires_the_row(tmp_path: Path):
++    """AND THE FIX DOES NOT DISARM THE RULE: an explicit validity failure is positive evidence."""
++    base = _desk(tmp_path, [{"cell": "EURUSD.carry", "passed": False,
++                             "stages": {"observations": {"n": 12},
++                                        "pbo": {"passed": False}}}])
++    FCR.accumulate(base)
++    census = FCR.accumulate(base)
++    assert census["retired_this_pass"] == 1
++    assert census["retired_by_reason"] == {"VALIDITY_FAIL": 1}
++    assert "external.EURUSD.carry" not in _roster(base)["rows"]
++
++
++def test_a_cell_that_now_passes_all_ten_leaves_for_the_canon(tmp_path: Path):
++    base = _desk(tmp_path, [{"cell": "EURUSD.carry", "passed": True,
++                             "stages": {"pbo": {"passed": True}}}])
++    FCR.accumulate(base)
++    census = FCR.accumulate(base)
++    assert census["retired_by_reason"] == {"CERTIFIED": 1}
++
++
++def test_the_destructive_path_is_declared():
++    from libs.ops import reference_freshness as RFR
++    row = RFR.by_id("forward_cure_route.accumulate")
++    assert row is not None and row.status == "positive"
++    assert row.module == "desks/mt5/research/forward_cure_route.py"
+diff --git a/libs/ops/reference_freshness.py b/libs/ops/reference_freshness.py
+index fd9f9caf839..75361609807 100644
+--- a/libs/ops/reference_freshness.py
++++ b/libs/ops/reference_freshness.py
+@@ -672,24 +672,32 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
+         function="apply",
+         removes="rows in every derived certificate store (survivor ledger, sleeve registry, "
+                 "shadow/lane states, sleeves.json, forward_reconcile)",
+-        reference="desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+-        status="unguarded",
+-        note="THE PROVING INSTANCE: 837 rows retired against an empty 46.7h-stale canon. Owned "
+-             "by another builder this session (restoring the rows); the guard call lands there, "
+-             "not here. Guard usage: require_live_reference(canon, actor='certificate_truth."
+-             "apply', action='retire unbacked rows', min_rows=1, strict=False).",
++        reference="desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
++        status="guarded",
++        note="THE PROVING INSTANCE: 837 rows retired against an empty 46.7h-stale canon. CLOSED "
++             "2026-09-24. `require_live_reference` at the top of apply() judges the file the "
++             "audit ACTUALLY used (`canon.source`: the canonical store above, or its seal "
++             "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json when that is what carried the "
++             "attestation), and its verdict is ANDed into `lane_settled`. The `n > 0` clause had "
++             "only ever covered the EMPTY half: measured the day the guard landed, the authority "
++             "was EXACT with 52 rows and 3.2h old against a 2.0h lease -- settled by every other "
++             "clause, with its writer silent since, and 264 unbacked clocks standing ready to "
++             "retire on it. Stale is an absence too.",
+     ),
+     DestructivePath(
+         path_id="certificate_truth.ledger_claims",
+         module="desks/mt5/research/certificate_truth.py",
+         function="apply",
+         removes="SURVIVORS_LEDGER.json claims flipped to status=RETIRED (CLAIM_NOT_IN_CANON)",
+-        reference="desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
+-        status="unguarded",
+-        note="The ledger branch is NOT behind the `lane_settled` gate that protects the clock "
+-             "rows two blocks below, so an unsettled or empty canon still retires ledger claims. "
+-             "Same file and same owner as certificate_truth.apply above; one guard at the top of "
+-             "apply() closes both. Reported, not edited, to avoid racing that builder.",
++        reference="desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
++        status="guarded",
++        note="The ledger branch was NOT behind the `lane_settled` gate that protects the clock "
++             "rows two blocks below, so an unsettled, stale or empty canon still retired ledger "
++             "claims. CLOSED 2026-09-24 by the SAME guard, whose state now gates this branch "
++             "too: a CLAIM_NOT_IN_CANON retirement needs a live reference, a BANNED_CLAIM still "
++             "leaves on the decision, and what was withheld is published as "
++             "`skipped.claims_on_unmeasured_canon`. 67 claims stood ready to retire against a "
++             "stale authority on the day it closed.",
+     ),
+     DestructivePath(
+         path_id="certificate_truth.clock_rows",
+@@ -985,6 +993,23 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
+         note="A single-id transition on a positively named card, idempotent through the state "
+              "machine. There is no reference store whose emptiness could widen it.",
+     ),
++    DestructivePath(
++        path_id="forward_cure_route.accumulate",
++        module="desks/mt5/research/forward_cure_route.py",
++        function="accumulate",
++        removes="rows in reports/FORWARD_CURE_ROSTER.json (the cumulative power-cure roster)",
++        reference="desks/mt5/reports/universal_gates_external.json",
++        status="positive",
++        note="DECLARED 2026-09-24, the day the tree scan found it undeclared -- it shipped that "
++             "morning. At the reference level it is positive by construction: an absent, "
++             "unreadable or verdict-less gate report retires nothing (`verdicts` must be a list) "
++             "and an unjudged cell is skipped (`if not st: continue`). ONE SUB-FIELD INFERENCE "
++             "WAS NOT POSITIVE AND WAS FIXED IN THE SAME PASS: a validity gate MISSING from a "
++             "present verdict read as VALIDITY_FAIL, and 32,773 of the 140,090 verdicts in the "
++             "live report carry non-empty stages with no validity gate in them at all -- so the "
++             "roster would have been retired on an absence 32,773 cells wide. A gate now fails "
++             "only when its stage is present and says so.",
++    ),
+     DestructivePath(
+         path_id="external_gauntlet.certificate_purge",
+         module="desks/mt5/scripts/external_gauntlet.py",
+diff --git a/scripts/check_no_retirement_on_absence.py b/scripts/check_no_retirement_on_absence.py
+index 1411dd18c06..837604919ae 100644
+--- a/scripts/check_no_retirement_on_absence.py
++++ b/scripts/check_no_retirement_on_absence.py
+@@ -62,18 +62,22 @@ from libs.ops import reference_freshness as rf  # noqa: E402
+ ARTIFACT = ROOT / "desks" / "mt5" / "reports" / "DESTRUCTIVE_PATHS.json"
+ 
+ #: THE RATCHET. Declared destructive paths that still remove without proving their reference.
+-#: This number may only FALL. 2026-09-23: 2 -- both inside certificate_truth.apply (the row-retire
+-#: branch and the survivor-ledger branch), owned by another builder in the same session (it is
+-#: restoring the 837 rows the empty canon retired). One require_live_reference at the top of
+-#: apply() closes both; it lands in that builder's edit rather than in a second one racing it in
+-#: the same file.
+-UNGUARDED_CEILING = 2
++#: This number may only FALL. 2026-09-24: 0. It was 2 -- both inside certificate_truth.apply (the
++#: row-retire branch and the survivor-ledger branch) -- and one `require_live_reference` at the
++#: top of apply() closed both, exactly as the note predicted: both rows declare `function="apply"`
++#: so the AST check above finds the one call for each. Nothing declared removes on an unproved
++#: reference any more, and this ceiling is now the floor: the next unguarded row fails the gate.
++UNGUARDED_CEILING = 0
+ 
+ #: Undeclared candidates the tree scan finds. Also ratchets down: each one is either given a row
+ #: (and a status) or shown to be a false positive of the two-condition rule. 2026-09-23: 6 --
+ #: certificate_truth.repair and promoter.reconcile_capital/main (owned by other builders or
+ #: sealed), coverage_tensor.observe_world and check_job_manifest.main (in-memory dict pops), and
+-#: make_probe_worktree.remove (scratch teardown).
++#: make_probe_worktree.remove (scratch teardown). 2026-09-24: the scan found a SEVENTH,
++#: `forward_cure_route.accumulate`, which shipped that morning and popped rows out of a PERSISTED
++#: roster -- not an in-memory pop and not a false positive. It has a row now (positive), so the
++#: count is back at 6 and this ceiling has not moved. That is the intended shape: a new removal
++#: is declared, never accommodated.
+ UNDECLARED_CEILING = 6
+ 
+ #: How long the inventory stays believable. The law gate runs at least daily, so a day plus the
+diff --git a/tests/scripts/test_acquire_data.py b/tests/scripts/test_acquire_data.py
+index 7712b38c593..83552c45cbb 100644
+--- a/tests/scripts/test_acquire_data.py
++++ b/tests/scripts/test_acquire_data.py
+@@ -26,7 +26,6 @@ import pytest
+ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+ 
+ import scripts.acquire_data as A
+-
+ from libs.hypmax.ontology import SEED_QUESTIONS, map_dataset
+ 
+ 
+diff --git a/tests/scripts/test_acquire_data_writer.py b/tests/scripts/test_acquire_data_writer.py
+index a112be716b4..69e6d50c59a 100644
+--- a/tests/scripts/test_acquire_data_writer.py
++++ b/tests/scripts/test_acquire_data_writer.py
+@@ -13,6 +13,7 @@ import json
+ from pathlib import Path
+ 
+ import pytest
++
+ import scripts.acquire_data as A
+ 
+ NOW = "2026-09-08T12:00:00+00:00"
+diff --git a/tests/scripts/test_alpha_factory_run.py b/tests/scripts/test_alpha_factory_run.py
+index 1f934bdc0a6..23d95a31acc 100644
+--- a/tests/scripts/test_alpha_factory_run.py
++++ b/tests/scripts/test_alpha_factory_run.py
+@@ -7,8 +7,8 @@ from __future__ import annotations
+ import json
+ 
+ import pytest
+-import scripts.run_alpha_factory as af
+ 
++import scripts.run_alpha_factory as af
+ from libs.alpha_factory.models import AlphaCategory
+ 
+ 
+diff --git a/tests/scripts/test_ancestor_organs.py b/tests/scripts/test_ancestor_organs.py
+index 082c8347ec4..f930c80df37 100644
+--- a/tests/scripts/test_ancestor_organs.py
++++ b/tests/scripts/test_ancestor_organs.py
+@@ -31,7 +31,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+ 
+ import scripts.calibrate_gauntlet as CG
+ import scripts.run_ancestors as RA
+-
+ from libs.hypmax.genealogy import BREEDING_MIN_STAGE, Lineage, Specimen, breed, lineage_report
+ from libs.hypmax.laboratory import detection_floor, false_positive_rate
+ 
+diff --git a/tests/scripts/test_check_mt5_coverage_floor.py b/tests/scripts/test_check_mt5_coverage_floor.py
+index 42131835817..4b19097387b 100644
+--- a/tests/scripts/test_check_mt5_coverage_floor.py
++++ b/tests/scripts/test_check_mt5_coverage_floor.py
+@@ -35,6 +35,7 @@ from pathlib import Path
+ from typing import Any
+ 
+ import pytest
++
+ import scripts.check_mt5_coverage_floor as F
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+diff --git a/tests/scripts/test_check_pit.py b/tests/scripts/test_check_pit.py
+index 9d5374f7302..0f7032f5247 100644
+--- a/tests/scripts/test_check_pit.py
++++ b/tests/scripts/test_check_pit.py
+@@ -29,8 +29,8 @@ from typing import Any
+ import numpy as np
+ import pandas as pd
+ import pytest
+-import scripts.check_pit as P
+ 
++import scripts.check_pit as P
+ from libs.data import pit_certificate as pcert
+ from libs.data.pit import stamp
+ 
+diff --git a/tests/scripts/test_check_pit_blocks_certification.py b/tests/scripts/test_check_pit_blocks_certification.py
+index 3003eb5bd03..4e8fe809d77 100644
+--- a/tests/scripts/test_check_pit_blocks_certification.py
++++ b/tests/scripts/test_check_pit_blocks_certification.py
+@@ -13,7 +13,6 @@ from pathlib import Path
+ from typing import Any
+ 
+ import scripts.check_pit as P
+-
+ from libs.data.pit import is_stamped, stamp
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+diff --git a/tests/scripts/test_compute_performance_drawdown.py b/tests/scripts/test_compute_performance_drawdown.py
+index 76cb092cfed..d476dbe9c6b 100644
+--- a/tests/scripts/test_compute_performance_drawdown.py
++++ b/tests/scripts/test_compute_performance_drawdown.py
+@@ -8,6 +8,7 @@ This pins that the dashboard stats now carry the path-severity trio, finite and
+ from __future__ import annotations
+ 
+ import numpy as np
++
+ import scripts.compute_performance as cp
+ 
+ 
+diff --git a/tests/scripts/test_constitution_reach.py b/tests/scripts/test_constitution_reach.py
+index 7886a7e62f2..ac4c030c10c 100644
+--- a/tests/scripts/test_constitution_reach.py
++++ b/tests/scripts/test_constitution_reach.py
+@@ -20,7 +20,6 @@ import pytest
+ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+ 
+ import scripts.max_audit as M
+-
+ from libs.doctrine import ratchet as R
+ 
+ 
+diff --git a/tests/scripts/test_conversion_control.py b/tests/scripts/test_conversion_control.py
+index c8137f3dde0..ead8e1ba0bc 100644
+--- a/tests/scripts/test_conversion_control.py
++++ b/tests/scripts/test_conversion_control.py
+@@ -4,9 +4,8 @@ import json
+ import sqlite3
+ from pathlib import Path
+ 
+-from scripts.run_conversion_control import build, weakest_transition
+-
+ from libs.research.alpha_state import AlphaStateLedger
++from scripts.run_conversion_control import build, weakest_transition
+ 
+ 
+ def test_weakest_transition_is_dynamic_and_unknown_is_not_zero() -> None:
+diff --git a/tests/scripts/test_coverage_stall.py b/tests/scripts/test_coverage_stall.py
+index c79135f5cdb..0ef53b91f15 100644
+--- a/tests/scripts/test_coverage_stall.py
++++ b/tests/scripts/test_coverage_stall.py
+@@ -32,6 +32,7 @@ from pathlib import Path
+ from typing import Any
+ 
+ import pytest
++
+ import scripts.check_coverage_floors as C
+ 
+ 
+diff --git a/tests/scripts/test_enforcement.py b/tests/scripts/test_enforcement.py
+index f708f7ae9ce..9dc6ee37fe6 100644
+--- a/tests/scripts/test_enforcement.py
++++ b/tests/scripts/test_enforcement.py
+@@ -22,7 +22,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+ 
+ import scripts.enforce_constitution as E
+ import scripts.max_audit as M
+-
+ from libs.doctrine import ratchet as R
+ from libs.ops.remediation import AUTOFIX, BLOCKED, PATCH_READY
+ 
+diff --git a/tests/scripts/test_estimate_contributions.py b/tests/scripts/test_estimate_contributions.py
+index 3d0180d13f4..d292e35b7f5 100644
+--- a/tests/scripts/test_estimate_contributions.py
++++ b/tests/scripts/test_estimate_contributions.py
+@@ -24,7 +24,6 @@ import pytest
+ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+ 
+ import scripts.estimate_contributions as C
+-
+ from libs.doctrine.contribution import Contribution
+ 
+ 
+diff --git a/tests/scripts/test_hypothesis_seats.py b/tests/scripts/test_hypothesis_seats.py
+index b7bb42bc290..85716dbfafa 100644
+--- a/tests/scripts/test_hypothesis_seats.py
++++ b/tests/scripts/test_hypothesis_seats.py
+@@ -20,6 +20,7 @@ import importlib.util
+ from pathlib import Path
+ 
+ import pytest
++
+ from scripts.seats import resolve_ids
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+diff --git a/tests/scripts/test_kimi_hunter_no_giving_up.py b/tests/scripts/test_kimi_hunter_no_giving_up.py
+index 65015b6bd23..18048062f6b 100644
+--- a/tests/scripts/test_kimi_hunter_no_giving_up.py
++++ b/tests/scripts/test_kimi_hunter_no_giving_up.py
+@@ -28,6 +28,7 @@ import sys
+ from pathlib import Path
+ 
+ import pytest
++
+ import scripts.kimi_hunter as K
+ 
+ _SRC = Path("scripts/kimi_hunter.py")
+diff --git a/tests/scripts/test_max_audit_channel_and_latch.py b/tests/scripts/test_max_audit_channel_and_latch.py
+index f35f8356693..aa92b5b0c81 100644
+--- a/tests/scripts/test_max_audit_channel_and_latch.py
++++ b/tests/scripts/test_max_audit_channel_and_latch.py
+@@ -18,6 +18,7 @@ from datetime import UTC, datetime, timedelta
+ from pathlib import Path
+ 
+ import pytest
++
+ import scripts.max_audit as m
+ 
+ 
+diff --git a/tests/scripts/test_max_audit_checks.py b/tests/scripts/test_max_audit_checks.py
+index e68ecc1b019..0b6b469b642 100644
+--- a/tests/scripts/test_max_audit_checks.py
++++ b/tests/scripts/test_max_audit_checks.py
+@@ -9,7 +9,6 @@ import time
+ from pathlib import Path
+ 
+ import scripts.max_audit as m
+-
+ from libs.risk import capital_events
+ 
+ 
+diff --git a/tests/scripts/test_max_push_input_provenance.py b/tests/scripts/test_max_push_input_provenance.py
+index f470d43b29a..e5e6975a853 100644
+--- a/tests/scripts/test_max_push_input_provenance.py
++++ b/tests/scripts/test_max_push_input_provenance.py
+@@ -24,6 +24,7 @@ from pathlib import Path
+ from typing import Any
+ 
+ import pytest
++
+ import scripts.run_max_push as MP
+ 
+ 
+diff --git a/tests/scripts/test_mechanism_board_fallback.py b/tests/scripts/test_mechanism_board_fallback.py
+index c6468ba0d4d..0ffb930d8d0 100644
+--- a/tests/scripts/test_mechanism_board_fallback.py
++++ b/tests/scripts/test_mechanism_board_fallback.py
+@@ -16,7 +16,6 @@ from pathlib import Path
+ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+ 
+ import scripts.mechanism_board as mb
+-
+ from libs.research.mechanism_census import TAXONOMY
+ 
+ _GRAVE = """# graveyard
+diff --git a/tests/scripts/test_mine_research_universe.py b/tests/scripts/test_mine_research_universe.py
+index 6a97ed1e732..7c3376ee4f7 100644
+--- a/tests/scripts/test_mine_research_universe.py
++++ b/tests/scripts/test_mine_research_universe.py
+@@ -10,7 +10,6 @@ is what we SEARCH FOR, not how we rank what comes back.
+ from __future__ import annotations
+ 
+ import scripts.mine_research_queue as m
+-
+ from libs.research.video_triage import SURFACE_THRESHOLD, score_title
+ 
+ _ALL_QUERY_LISTS = ("BILIBILI_QUERIES", "CN_ARTICLE_QUERIES", "SEARCH_QUERIES")
+diff --git a/tests/scripts/test_miner_runway_stub_rung.py b/tests/scripts/test_miner_runway_stub_rung.py
+index b383b707c4e..3f82272eeb0 100644
+--- a/tests/scripts/test_miner_runway_stub_rung.py
++++ b/tests/scripts/test_miner_runway_stub_rung.py
+@@ -17,9 +17,9 @@ import os
+ import time
+ 
+ import pytest
+-from scripts.max_audit import ORGANS
+ 
+ from scripts import check_miner_runway as runway
++from scripts.max_audit import ORGANS
+ 
+ 
+ @pytest.fixture
+diff --git a/tests/scripts/test_portfolio_admission.py b/tests/scripts/test_portfolio_admission.py
+index 8cb2e94e3a1..1568794fedc 100644
+--- a/tests/scripts/test_portfolio_admission.py
++++ b/tests/scripts/test_portfolio_admission.py
+@@ -14,6 +14,7 @@ from pathlib import Path
+ 
+ import numpy as np
+ import pytest
++
+ import scripts.run_portfolio_admission as PA
+ 
+ 
+diff --git a/tests/scripts/test_principal_drop.py b/tests/scripts/test_principal_drop.py
+index 283509ae61c..afe91b4e097 100644
+--- a/tests/scripts/test_principal_drop.py
++++ b/tests/scripts/test_principal_drop.py
+@@ -24,6 +24,7 @@ import json
+ from pathlib import Path
+ 
+ import pytest
++
+ import scripts.ingest_principal_drop as D
+ 
+ # FULLWIDTH PUNCTUATION IS DELIBERATE and RUF001 is silenced rather than obeyed: these are
+diff --git a/tests/scripts/test_ratchet_write_guards.py b/tests/scripts/test_ratchet_write_guards.py
+index 709cc499698..1675d6b5e4d 100644
+--- a/tests/scripts/test_ratchet_write_guards.py
++++ b/tests/scripts/test_ratchet_write_guards.py
+@@ -23,8 +23,8 @@ import json
+ from pathlib import Path
+ 
+ import pytest
+-import scripts.max_audit as m
+ 
++import scripts.max_audit as m
+ from libs.ops import desk_host
+ 
+ 
+diff --git a/tests/scripts/test_ratchets.py b/tests/scripts/test_ratchets.py
+index d4f85a46b7e..7e8e9f8432d 100644
+--- a/tests/scripts/test_ratchets.py
++++ b/tests/scripts/test_ratchets.py
+@@ -184,9 +184,8 @@ def _mine(state: str, days: Any) -> dict[str, Any]:
+ 
+ def test_disk_headroom_is_the_share_of_lead_time_remaining() -> None:
+     """R0331: preparedness, expressed against the lead time the only real fix actually needs."""
+-    from scripts.check_ratchets import _disk_headroom
+-
+     from libs.ops.disk import WARN_DAYS
++    from scripts.check_ratchets import _disk_headroom
+     assert _disk_headroom(_mine("URGENT", 3.0)) == pytest.approx(3.0 / WARN_DAYS)
+     assert _disk_headroom(_mine("OK", WARN_DAYS)) == pytest.approx(1.0)
+ 
+diff --git a/tests/scripts/test_rerank_gaps.py b/tests/scripts/test_rerank_gaps.py
+index 756ebd821e3..364b6be14f0 100644
+--- a/tests/scripts/test_rerank_gaps.py
++++ b/tests/scripts/test_rerank_gaps.py
+@@ -23,7 +23,6 @@ import pytest
+ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+ 
+ import scripts.rerank_gaps as R
+-
+ from libs.research.finding_registry import register_health
+ 
+ HEADER = (
+diff --git a/tests/scripts/test_research_allocator_semantics.py b/tests/scripts/test_research_allocator_semantics.py
+index 6438dc51086..4d4f8ffee72 100644
+--- a/tests/scripts/test_research_allocator_semantics.py
++++ b/tests/scripts/test_research_allocator_semantics.py
+@@ -21,6 +21,7 @@ import json
+ from pathlib import Path
+ 
+ import pytest
++
+ import scripts.research_allocator as ra
+ 
+ 
+diff --git a/tests/scripts/test_research_review.py b/tests/scripts/test_research_review.py
+index 6f234adefb0..b2d81392f07 100644
+--- a/tests/scripts/test_research_review.py
++++ b/tests/scripts/test_research_review.py
+@@ -13,6 +13,7 @@ import sys
+ from pathlib import Path
+ 
+ import pytest
++
+ import scripts.run_research_review as RR
+ 
+ _BOX = {
+diff --git a/tests/scripts/test_run_ict_strategy.py b/tests/scripts/test_run_ict_strategy.py
+index cecdbca41e9..2ab396b7c34 100644
+--- a/tests/scripts/test_run_ict_strategy.py
++++ b/tests/scripts/test_run_ict_strategy.py
+@@ -28,7 +28,6 @@ if str(ROOT) not in sys.path:
+     sys.path.insert(0, str(ROOT))
+ 
+ import scripts.run_ict_strategy as R  # noqa: E402
+-
+ from libs.ict.strategy import ICTParams, schedule  # noqa: E402
+ 
+ 
+diff --git a/tests/scripts/test_run_live_ladder.py b/tests/scripts/test_run_live_ladder.py
+index 3fae9e38f84..2538a35a5bf 100644
+--- a/tests/scripts/test_run_live_ladder.py
++++ b/tests/scripts/test_run_live_ladder.py
+@@ -14,6 +14,7 @@ import sys
+ from pathlib import Path
+ 
+ import pytest
++
+ import scripts.run_live_ladder as RL
+ 
+ 
+diff --git a/tests/scripts/test_run_model_upgrade_state.py b/tests/scripts/test_run_model_upgrade_state.py
+index f6d2cdd9b30..f593ae9bc67 100644
+--- a/tests/scripts/test_run_model_upgrade_state.py
++++ b/tests/scripts/test_run_model_upgrade_state.py
+@@ -14,6 +14,7 @@ from __future__ import annotations
+ import json
+ 
+ import pytest
++
+ import scripts.run_model_upgrade as rmu
+ 
+ 
+diff --git a/tests/scripts/test_scheduler_manifest.py b/tests/scripts/test_scheduler_manifest.py
+index 1d956492d1a..d9f753cd864 100644
+--- a/tests/scripts/test_scheduler_manifest.py
++++ b/tests/scripts/test_scheduler_manifest.py
+@@ -12,6 +12,7 @@ import json
+ from pathlib import Path
+ 
+ import pytest
++
+ import scripts.check_scheduler_manifest as c
+ 
+ ROOT = Path(__file__).resolve().parents[2]
+diff --git a/tests/scripts/test_stale_daemon_repair.py b/tests/scripts/test_stale_daemon_repair.py
+index 61790105aec..f07dbe4aa7a 100644
+--- a/tests/scripts/test_stale_daemon_repair.py
++++ b/tests/scripts/test_stale_daemon_repair.py
+@@ -9,9 +9,8 @@ systemd mock is needed and no refactor can silently widen the repair set.
+ 
+ from __future__ import annotations
+ 
+-from scripts.run_stale_daemon_repair import _money_path, decide
+-
+ from libs.ops.deploy_plan import TIER_RUIN
++from scripts.run_stale_daemon_repair import _money_path, decide
+ 
+ _MONEY = ("scripts/run_cashcarry_executor.py", "libs/execution/",
+           "scripts/run_deadman_switch.py")
+diff --git a/tests/scripts/test_state_path_readers.py b/tests/scripts/test_state_path_readers.py
+index bc36ef3d611..7629cd64cc6 100644
+--- a/tests/scripts/test_state_path_readers.py
++++ b/tests/scripts/test_state_path_readers.py
+@@ -35,6 +35,7 @@ from pathlib import Path
+ from typing import Any
+ 
+ import pytest
++
+ import scripts.check_change_window as cw
+ import scripts.check_mechanism_attribution as ma
+ import scripts.record_capital_event as rce
+diff --git a/tests/scripts/test_verify_deployment.py b/tests/scripts/test_verify_deployment.py
+index 91b58ffa529..0a60b20f725 100644
+--- a/tests/scripts/test_verify_deployment.py
++++ b/tests/scripts/test_verify_deployment.py
+@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
+ from pathlib import Path
+ 
+ import pytest
++
+ import scripts.verify_deployment as V
+ 
+ 
+-- 
+2.47.1.windows.1
+

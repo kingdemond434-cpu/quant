@@ -1,0 +1,1022 @@
+From 670559d6938de5b1d358e58a2fd20aba2afdf531 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 01:09:01 +0200
+Subject: [PATCH] Measure the model seat in the provider's own unit; wire the
+ two censuses
+
+THE SEAT'S DAILY REQUEST ALLOWANCE IS THE DESK'S NOVEL-MECHANISM DISCOVERY RATE. A mechanism with
+no registered family function reaches the gauntlet by one path only -- the compiler labels it
+NEEDS_EXACT_RULE_EXTRACTION and a model call recovers the rule -- so the forests, the championship
+records, the crawler and the arXiv feed all funnel through one account's daily allowance. Nothing
+published that allowance, and what the desk believed about it was wrong.
+
+MEASURED ON THIS BOX 2026-09-24, the provider's counter beside ours in one sitting:
+
+  * THE ALLOWANCE WAS UNDERSTATED BY HALF, IN ITS OWN SOURCE. note_free_limit_hit recorded the
+    desk's COMPLETION count at a 429 and called it "the ceiling"; the provider refuses in
+    REQUESTS. 09-23: ours 460, theirs 1000. 09-24: ours 789, theirs 1008 of a 1000 limit. That
+    460 reading became "the provider refused at 458 calls" in four docstrings and was read as the
+    account's capacity. A budget in the wrong unit does not read as wrong -- it reads as a smaller
+    desk. Both numbers are recorded now, each labelled with its unit, and provider_free_quota()
+    asks /key for the authoritative {used, limit, remaining}.
+
+  * THE GAP IS PURE WASTE AND NOBODY OWNED IT. 219 requests today and 540 on 09-23 produced no
+    completion -- degradation retries, upstream 5xx, empty replies -- so 22% to 54% of the day's
+    research budget bought nothing. It is the cheapest capacity on the desk: recovering it costs
+    no money and needs no permission. LLM_BUDGET_CENSUS.json now names it hourly.
+
+  * A FREE CALL BOOKED PHANTOM DOLLARS AND ARMED A LANDMINE ON THE UPGRADE PATH. _record_spend
+    charged the over-estimate for :free models: $234.26 booked this month against a $20 cap and a
+    true bill of zero. Nothing had failed only because free_tier_only() skips the cap check --
+    which is the exact switch the principal flips to BUY capacity, and flipping it would have
+    taken every organ dark inside one call with "monthly cap reached: $234.26 of $20.00". Free
+    rows charge zero now, and month_spend_usd skips them BY MODEL ID so the append-only history
+    cannot keep the cap tripped by its own past.
+
+  * THE BUDGET HAD NO NAME ON IT. The ledger recorded the PROVIDER (openrouter) and never the
+    CALLER, so "who drained the allowance by 01:42" could not be asked, let alone answered.
+    calling_organ() stamps every row; the census names the largest consumer and its share.
+
+  * TRUNCATION AND REFUSAL LOOKED IDENTICAL. 456 of 789 completed calls (58%) were discarded
+    downstream as "reply was not a JSON object" -- and that parser already strips fences and scans
+    brace-to-brace, so those replies carried no object at all. finish_reason, completion_tokens
+    and reasoning_tokens are recorded per call now, which is the only way to tell a 700-token cap
+    truncating a reasoning model from a model that would not answer. JSON_OBJECT and a
+    response_format seam let a caller ask the provider to guarantee the shape; it degrades ahead
+    of reasoning_effort, so a model without structured output never costs the caller its request.
+
+  * EVERY 4xx LEAKED A TEMPORARY FILE. urllib's HTTPError is itself a response object; unclosed,
+    it emits ResourceWarning from tempfile.__del__ at an arbitrary later moment, and under
+    filterwarnings=error that failed whichever test the collector happened to interrupt --
+    test_a_key_never_appears_in_full_in_a_report, whose own assertions pass. One leak per refusal
+    on a rate-limited day. Closed.
+
+  * THREE TESTS WERE READING THIS BOX'S LIVE STATE. test_llm_seat_free_tier never monkeypatched
+    FREE_CEILING or SPEND_LEDGER, so it asserted against whatever the miners had done that day:
+    green on a quiet build box, red here from the moment the 429 landed at 789 calls. The suite's
+    colour tracked the time of day, which makes a real regression indistinguishable from a
+    productive morning. An autouse fixture isolates them; all 80 seat tests now pass ON THIS BOX
+    with the budget genuinely exhausted.
+
+WIRED, because unwired is a defect (III.16) and both of these were built and left dark:
+
+  * certificate_provenance was written, tested and NEVER RUN -- its artifact existed on neither
+    box. Run here it finished in 89.5s and named all 174 certificates (111 ATTRIBUTED, 63
+    FIRST_CLAIM, coverage 1.0), measuring that 19 of 548 producers have ever earned one. The
+    desk's own capital-allocation question, answered in ninety seconds by code that had been
+    complete and unscheduled. It is NOT a duplicate of attribution_census, already on this clock:
+    that organ reaches coverage 1.0 through the symbol|family fallback certificate_provenance
+    refuses by name, because 105-437 candidates share each pair across six or more producers, and
+    a wrong producer misdirects compute as confidently as a right one.
+
+  * llm_budget_census is new and publishes the above hourly, including whether the audit lane was
+    starved: 7 recommendations raised in the last 7 days and 129 in 30, while the drain kept
+    running and the seat was exhausted by 01:42 daily. That is an audit lane with no seat to call,
+    not one with nothing to say.
+
+Both enter issue_board.CADENCE at 3600s, so MT5-ResearchReports (hourly, SYSTEM) runs them and the
+issue board notices either going quiet. No gate, cap or threshold is changed and nothing is
+rationed; fixed_trial_count is untouched. First census on this box: provider used 1008/1000,
+desk 789 completions, 219 invisible, 15 of 15 seats pinned.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/issue_board.py       |  26 +++
+ desks/mt5/research/llm_budget_census.py | 286 ++++++++++++++++++++++++
+ libs/ops/llm_seat.py                    | 259 +++++++++++++++++++--
+ tests/ops/test_llm_seat_budget_truth.py | 193 ++++++++++++++++
+ tests/ops/test_llm_seat_free_tier.py    |  23 ++
+ 5 files changed, 769 insertions(+), 18 deletions(-)
+ create mode 100644 desks/mt5/research/llm_budget_census.py
+ create mode 100644 tests/ops/test_llm_seat_budget_truth.py
+
+diff --git a/desks/mt5/research/issue_board.py b/desks/mt5/research/issue_board.py
+index ed113ef5f87..25339a1e145 100644
+--- a/desks/mt5/research/issue_board.py
++++ b/desks/mt5/research/issue_board.py
+@@ -136,6 +136,32 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
+      "research/coverage_tensor.py"),
+     ("productivity_census", "desks/mt5/reports/PRODUCTIVITY_CENSUS.json", 3600,
+      "research/productivity_census.py"),
++    # THE TWO ORGANS THAT ANSWER "WHO EARNED ANYTHING" AND "WHO SPENT THE SEAT" (2026-09-24).
++    #
++    # `certificate_provenance` was WRITTEN, TESTED AND NEVER RUN. Its own docstring states the
++    # gap it closes -- "the desk held 174 ten-gate certificates and could not name the producer
++    # that earned a single one" -- and the artifact it writes did not exist on either box. Run by
++    # hand on the trading box it finished in 89.5s and named all 174 (111 ATTRIBUTED, 63
++    # FIRST_CLAIM, coverage 1.0), measuring that 19 of 548 producers have ever earned one. That
++    # is the desk's own capital-allocation question, answered in a minute and a half, by code
++    # that had been sitting complete and unscheduled. UNWIRED IS A DEFECT (III.16): the module
++    # was not missing, its clock was.
++    #
++    # WHY IT MUST NOT BE READ FROM `attribution_census` INSTEAD, which IS on this table already.
++    # That organ reports certificates coverage 1.0 too -- through the `symbol|family -> candidate`
++    # fallback for all 58 it then knew, which `certificate_provenance` refuses BY NAME because
++    # 105-437 candidates share each (symbol, family) pair across six or more producers. The two
++    # numbers look identical and only one is an attribution; a wrong producer name misdirects
++    # compute exactly as confidently as a right one (L1.28a).
++    ("certificate_provenance", "desks/mt5/reports/PRODUCER_CONVERSION.json", 3600,
++     "research/certificate_provenance.py"),
++    # `llm_budget_census` publishes the other half: one account's daily REQUEST allowance is the
++    # rate at which mechanisms with no registered family can reach the gauntlet at all, and until
++    # this organ existed the desk quoted its own COMPLETION count as that allowance -- 458 against
++    # a true 1,000 -- in four docstrings. It also names which organ drained it, which is what
++    # turns "the seat errored" into "this leg spent the audit lane's budget at 01:42".
++    ("llm_budget_census", "desks/mt5/reports/LLM_BUDGET_CENSUS.json", 3600,
++     "research/llm_budget_census.py"),
+ )
+ 
+ #: Alarm files any detector on this tree may raise. Presence IS the issue; the file's first line
+diff --git a/desks/mt5/research/llm_budget_census.py b/desks/mt5/research/llm_budget_census.py
+new file mode 100644
+index 00000000000..bc43d834875
+--- /dev/null
++++ b/desks/mt5/research/llm_budget_census.py
+@@ -0,0 +1,286 @@
++"""WHO SPENT THE MODEL SEAT TODAY, AND WHAT THE SPEND BOUGHT. One artifact, hourly.
++
++    py -3 desks/mt5/research/llm_budget_census.py        # argless: one pass, the only mode
++
++THE QUESTION THIS EXISTS TO ANSWER WITHOUT ANYONE ASKING IT. A genuinely novel mechanism -- one
++with no pre-existing family function -- reaches the gauntlet by exactly one path: the compiler
++labels it NEEDS_EXACT_RULE_EXTRACTION and `deepening_worker` spends a model call recovering the
++rule. Every other door the desk owns is a REGISTERED family being re-parameterised. So the whole
++Chinese, Japanese, Korean and Russian forest, the championship records, the world crawler and the
++arXiv feed all funnel through one account's daily allowance of model requests, and the size of
++that allowance is the desk's novel-mechanism discovery rate. Nothing published it.
++
++WHAT WENT WRONG WITHOUT IT, measured on the trading box 2026-09-24, and every line of this file
++is here because one of these was invisible:
++
++  1. THE ALLOWANCE WAS MISREPORTED IN ITS OWN SOURCE, BY A FACTOR OF TWO. `note_free_limit_hit`
++     recorded the desk's COMPLETION count at the moment of a 429 and called it "the ceiling".
++     The provider counts REQUESTS. On 2026-09-23 those numbers were 460 and 1000; the smaller one
++     then appeared in four docstrings as the account's capacity ("the provider refused at 458
++     calls"), and every plan sized against it was sized against less than half the truth. A
++     budget measured in the wrong unit does not read as wrong -- it reads as a smaller desk.
++
++  2. THE GAP BETWEEN THE TWO IS PURE WASTE AND NOBODY OWNED IT. 219 requests on 2026-09-24 and
++     540 on 2026-09-23 were spent without producing a completion: parameter-degradation retries,
++     upstream 5xx, replies with no content. That is 22% to 54% of the day's research budget,
++     recoverable for nothing, and it was not a number anyone could see.
++
++  3. THE CALLS THAT DID COMPLETE WERE MOSTLY THROWN AWAY. 456 of 789 completed calls (58%) were
++     rejected downstream with "reply was not a JSON object" -- and that parser already strips
++     code fences and scans brace-to-brace, so a rejection means the reply carried no object AT
++     ALL. Empty content and a refusal are indistinguishable once the text is gone, which is why
++     `finish_reason`, `completion_tokens` and `reasoning_tokens` are now recorded per call and
++     summarised here: a 700-token completion cap requested at `reasoning_effort: high` truncates
++     a reasoning model before it writes a character of answer, and that hypothesis is testable
++     only against this table.
++
++  4. ONE ORGAN ATE THE ALLOWANCE AND THE REST WENT DARK BLAMING THE PROVIDER. The allowance was
++     gone by 01:42 UTC. Every audit, panel and recommendation organ scheduled after that hour got
++     a refusal whose text reads exactly like an outage. The recommendation ledger recorded SEVEN
++     new entries in the twenty days to 2026-09-24, against dozens a week before -- the audits did
++     not stop working, they stopped being able to call anything. The ledger could not name the
++     spender because it recorded the PROVIDER's name and never the CALLER's.
++
++NO KEY IS EVER READ, PRINTED OR LOGGED HERE. This reports health, counts and rates. The one
++network call is `/key`, which returns quota metadata and is not a model request, so measuring the
++budget never consumes it.
++
++EXIT CODE IS A VERDICT, NOT A FAULT. 1 means the seat is DARK -- no seat resolves, or the
++provider refused the quota read -- because a desk whose only novel-mechanism door is shut should
++say so in the one place a scheduler looks. A merely exhausted daily budget is exit 0: that is the
++system working as designed and recovering at 00:00 UTC.
++"""
++from __future__ import annotations
++
++import collections
++import json
++import sys
++from datetime import UTC, datetime, timedelta
++from pathlib import Path
++from typing import Any
++
++BASE = Path(__file__).resolve().parent.parent
++ROOT = BASE.parent.parent
++for _p in (str(BASE), str(ROOT)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++REPORT = BASE / "reports" / "LLM_BUDGET_CENSUS.json"
++
++#: The ledger row count is the desk's own view; the provider's `used` is the truth. Anything above
++#: this fraction of the day's requests going to waste is worth naming in the report, because it is
++#: the cheapest budget on the desk: recovering it costs no money and needs no permission.
++WASTE_NOTABLE = 0.10
++
++#: A recommendation-producing organ that has not raised anything in this many days, while the seat
++#: was exhausted daily, is starved rather than idle. Reported, never auto-repaired.
++STARVED_DAYS = 7.0
++
++
++def _rows(path: Path, day: str | None = None) -> list[dict[str, Any]]:
++    """Spend-ledger rows, optionally one UTC day. A malformed line is skipped, never fatal."""
++    out: list[dict[str, Any]] = []
++    if not path.exists():
++        return out
++    try:
++        text = path.read_text("utf-8", errors="ignore")
++    except OSError:
++        return out
++    for line in text.splitlines():
++        line = line.strip()
++        if not line:
++            continue
++        try:
++            row = json.loads(line)
++        except ValueError:
++            continue
++        if not isinstance(row, dict):
++            continue
++        if day and not str(row.get("utc", "")).startswith(day):
++            continue
++        out.append(row)
++    return out
++
++
++def _rate(num: float, den: float) -> float | None:
++    return round(num / den, 4) if den else None
++
++
++def census(now: datetime | None = None) -> dict[str, Any]:
++    """The whole measurement. Never raises: an unreachable provider is UNMEASURED, not an error."""
++    t = now or datetime.now(UTC)
++    today = t.strftime("%Y-%m-%d")
++    out: dict[str, Any] = {
++        "at": t.isoformat(timespec="seconds"),
++        "law": ("the seat's daily REQUEST allowance is the desk's novel-mechanism discovery rate: "
++                "a mechanism with no registered family function reaches the gauntlet only through "
++                "an exact-rule extraction, and every extraction is one request. Measure the "
++                "allowance in the provider's unit, name who spends it, and count what the spend "
++                "converted -- an unattributed budget cannot be allocated (L1.28a)"),
++    }
++    try:
++        from libs.ops import llm_seat
++    except Exception as exc:
++        out["status"] = "DARK"
++        out["blocker"] = f"libs.ops.llm_seat did not import: {type(exc).__name__}: {exc}"
++        return out
++
++    seats = llm_seat.seats()
++    out["seats"] = {
++        "n": len(seats),
++        # Model ids and sources only. A key never appears here, in any form.
++        "pinned": sorted({s.model for s in seats if s.model}),
++        "unpinned": sum(1 for s in seats if not s.model),
++        "sources": dict(collections.Counter(s.source for s in seats)),
++        "note": ("a PINNED seat bypasses `discover_model` entirely, so the auto-upgrade that "
++                 "keeps this desk on the best listed model never runs for it"),
++    }
++    out["free_tier_only"] = llm_seat.free_tier_only()
++    out["month_spend_usd"] = llm_seat.month_spend_usd()
++    out["monthly_cap_usd"] = llm_seat.monthly_cap_usd()
++    if not seats:
++        out["status"] = "DARK"
++        out["blocker"] = ("no seat resolves: every novel-mechanism extraction is refused and the "
++                          "forests, championship records and crawler all funnel into nothing")
++        return out
++
++    # ---- THE PROVIDER'S OWN ARITHMETIC, which is the only one it will refuse against ----------
++    quota = llm_seat.provider_free_quota()
++    out["provider_quota"] = quota or {"status": "UNMEASURED",
++                                      "why": "the provider did not publish a free-request counter"}
++    ledger_today = _rows(llm_seat.SPEND_LEDGER, today)
++    ours = len(ledger_today)
++    used = quota.get("used") if isinstance(quota.get("used"), int) else None
++    limit = quota.get("limit") if isinstance(quota.get("limit"), int) else None
++    out["today"] = {
++        "provider_requests_used": used,
++        "provider_daily_limit": limit,
++        "provider_remaining": quota.get("remaining"),
++        "desk_completions": ours,
++        "desk_ceiling_belief": llm_seat.free_daily_max(),
++        "desk_budget_left_belief": llm_seat.free_budget_left(),
++    }
++    if used is not None:
++        waste = max(0, used - ours)
++        out["today"]["invisible_requests"] = waste
++        out["today"]["waste_rate"] = _rate(waste, used)
++        out["today"]["waste_verdict"] = (
++            "NOTABLE: requests that never became a completion -- degradation retries, upstream "
++            "5xx, empty replies. This is the cheapest budget on the desk: it costs nothing to "
++            "recover and needs no purchase"
++            if used and waste / used > WASTE_NOTABLE else "within tolerance")
++        if limit:
++            out["today"]["exhausted"] = bool(quota.get("remaining") == 0)
++            out["today"]["capacity_understatement"] = (
++                f"the account's allowance is {limit} REQUESTS/day. The desk's own ceiling belief "
++                f"is {llm_seat.free_daily_max()}, which counts COMPLETIONS -- never quote the "
++                f"smaller number as this desk's research capacity")
++
++    # ---- WHO SPENT IT ------------------------------------------------------------------------
++    by_organ = collections.Counter(str(r.get("organ") or "unattributed") for r in ledger_today)
++    out["today_by_organ"] = dict(by_organ.most_common(25))
++    out["today_by_model"] = dict(collections.Counter(
++        str(r.get("model") or "?") for r in ledger_today).most_common(25))
++    if by_organ and set(by_organ) == {"unattributed"}:
++        out["attribution"] = ("UNMEASURED: no row carries an organ. Attribution begins with the "
++                              "first call after libs/ops/llm_seat.calling_organ landed; rows "
++                              "written before it cannot be back-filled and are not guessed")
++    else:
++        top, n = by_organ.most_common(1)[0]
++        out["attribution"] = {
++            "largest_consumer": top, "its_share": _rate(n, ours),
++            "why_it_matters": ("one allowance, first-come-first-served: an organ that drains it "
++                               "early takes every later organ dark with a message that reads like "
++                               "a provider outage"),
++        }
++
++    # ---- WHAT THE SPEND BOUGHT, and where it was thrown away ----------------------------------
++    fr = collections.Counter(str(r.get("finish_reason")) for r in ledger_today
++                             if r.get("finish_reason"))
++    empty = sum(1 for r in ledger_today if r.get("empty_content") is True)
++    measured = sum(1 for r in ledger_today if "empty_content" in r)
++    out["reply_quality"] = {
++        "finish_reason": dict(fr.most_common(10)),
++        "empty_content": empty, "rows_measuring_it": measured,
++        "empty_rate": _rate(empty, measured),
++        "verdict": ("UNMEASURED: no row records finish_reason yet -- the fields land with the "
++                    "first call after the llm_seat change" if not measured else
++                    "an empty completion is reported downstream as 'reply was not a JSON object', "
++                    "which is indistinguishable from a refusal once the text is gone. "
++                    "finish_reason=length with reasoning_tokens at the cap is TRUNCATION, and the "
++                    "remedy is a completion cap that covers the reasoning, not a better prompt"),
++    }
++    reasoning = [int(r["reasoning_tokens"]) for r in ledger_today
++                 if isinstance(r.get("reasoning_tokens"), int)]
++    comp = [int(r["completion_tokens"]) for r in ledger_today
++            if isinstance(r.get("completion_tokens"), int)]
++    if reasoning or comp:
++        out["reply_quality"]["token_shape"] = {
++            "n_reasoning_rows": len(reasoning),
++            "mean_reasoning_tokens": (round(sum(reasoning) / len(reasoning), 1)
++                                      if reasoning else None),
++            "mean_completion_tokens": round(sum(comp) / len(comp), 1) if comp else None,
++        }
++
++    # ---- THE HISTORY, so a trend is visible rather than a single day's reading ----------------
++    allrows = _rows(llm_seat.SPEND_LEDGER)
++    byday = collections.Counter(str(r.get("utc", ""))[:10] for r in allrows)
++    out["completions_by_day_last14"] = dict(sorted(byday.items())[-14:])
++
++    # ---- THE STARVATION LINK: did the budget's exhaustion silence the audit lane? -------------
++    led = ROOT / "docs" / "research" / "recommendation_ledger.json"
++    if led.exists():
++        try:
++            doc = json.loads(led.read_text("utf-8", errors="ignore"))
++            recs = doc.get("recommendations") or []
++            cut = (t - timedelta(days=STARVED_DAYS)).isoformat()
++            cut30 = (t - timedelta(days=30)).isoformat()
++            openish = [r for r in recs
++                       if str(r.get("status")) in ("open", "scheduled", "screened")]
++            done = [r for r in recs if str(r.get("status")) in ("implemented", "done")]
++            out["recommendations"] = {
++                "n": len(recs),
++                "implemented_or_done": len(done),
++                "implementation_rate": _rate(len(done), len(recs)),
++                "open_like": len(openish),
++                "raised_last_7d": sum(1 for r in recs if str(r.get("raised") or "") >= cut),
++                "raised_last_30d": sum(1 for r in recs if str(r.get("raised") or "") >= cut30),
++                "last_drain_at": doc.get("last_drain_at"),
++                "verdict": ("the DRAIN is alive and the PRODUCERS are quiet: a ledger that is "
++                            "being implemented but not replenished is an audit lane with no seat "
++                            "to call, not an audit lane with nothing to say"),
++            }
++        except (OSError, ValueError) as exc:
++            out["recommendations"] = {"status": "UNREADABLE", "why": str(exc)[:160]}
++
++    out["status"] = "EXHAUSTED" if out["today"].get("exhausted") else "OK"
++    return out
++
++
++def main(argv: list[str] | None = None) -> int:
++    doc = census()
++    REPORT.parent.mkdir(parents=True, exist_ok=True)
++    REPORT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
++    today = doc.get("today") or {}
++    print(f"LLM BUDGET CENSUS  {doc.get('at')}  status={doc.get('status')}")
++    print(f"  seats        {(doc.get('seats') or {}).get('n')} "
++          f"(pinned {len((doc.get('seats') or {}).get('pinned') or [])})")
++    print(f"  provider     used {today.get('provider_requests_used')} of "
++          f"{today.get('provider_daily_limit')} REQUESTS, remaining "
++          f"{today.get('provider_remaining')}")
++    print(f"  desk         {today.get('desk_completions')} completions; "
++          f"{today.get('invisible_requests')} request(s) produced nothing "
++          f"({today.get('waste_rate')})")
++    rq = doc.get("reply_quality") or {}
++    print(f"  replies      empty {rq.get('empty_content')} of {rq.get('rows_measuring_it')} "
++          f"measured (rate {rq.get('empty_rate')})")
++    rec = doc.get("recommendations") or {}
++    print(f"  recs         {rec.get('implemented_or_done')}/{rec.get('n')} implemented "
++          f"(rate {rec.get('implementation_rate')}), {rec.get('open_like')} open, "
++          f"{rec.get('raised_last_7d')} raised in 7d")
++    print(f"  -> {REPORT}")
++    return 1 if doc.get("status") == "DARK" else 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/libs/ops/llm_seat.py b/libs/ops/llm_seat.py
+index 1536468a73d..1e3cbfb4890 100644
+--- a/libs/ops/llm_seat.py
++++ b/libs/ops/llm_seat.py
+@@ -52,6 +52,7 @@ import json
+ import os
+ import re
+ import ssl
++import sys
+ import urllib.error
+ import urllib.request
+ from dataclasses import dataclass, field
+@@ -350,7 +351,16 @@ def _generic_rank(model_id: str) -> tuple[int, int, int] | None:
+ 
+ 
+ def month_spend_usd(now: datetime | None = None) -> float:
+-    """This calendar month's estimated spend, read from the append-only ledger."""
++    """This calendar month's estimated spend, read from the append-only ledger.
++
++    FREE ROWS ARE SKIPPED BY MODEL ID, not by the `usd` they carry, and that is deliberate. The
++    ledger is append-only, so the phantom dollars already booked against free calls before
++    `_record_spend` learned the difference cannot be edited out -- $234.26 of them on the trading
++    box the month this was found, against a $20 cap and a true bill of zero. The ROLLUP can be
++    right even when the history cannot be rewritten: a `:free` model charged nothing on the day it
++    ran and charges nothing retroactively. Without this the cap stays tripped by its own past for
++    the rest of the month, and the cap is what gates the paid lane the principal would be buying.
++    """
+     stamp = (now or datetime.now(UTC)).strftime("%Y-%m")
+     total = 0.0
+     if not SPEND_LEDGER.exists():
+@@ -362,8 +372,11 @@ def month_spend_usd(now: datetime | None = None) -> float:
+             row = json.loads(line)
+         except json.JSONDecodeError:
+             continue
+-        if str(row.get("utc", "")).startswith(stamp):
+-            total += float(row.get("usd") or 0.0)
++        if not str(row.get("utc", "")).startswith(stamp):
++            continue
++        if row.get("free") is True or is_free_model(str(row.get("model") or "")):
++            continue
++        total += float(row.get("usd") or 0.0)
+     return round(total, 4)
+ 
+ 
+@@ -380,6 +393,78 @@ DEFAULT_FREE_DAILY_MAX = 900
+ FREE_CEILING = _ROOT / "data" / "llm_free_ceiling.json"
+ 
+ 
++#: THE PROVIDER'S OWN COUNTER, AND IT IS IN A DIFFERENT UNIT FROM OURS (measured 2026-09-24).
++#:
++#: `note_free_limit_hit` records `calls_today()` -- the number of calls that produced a PARSEABLE
++#: COMPLETION and therefore a spend row -- as "the ceiling". OpenRouter counts REQUESTS: every
++#: parameter-degradation retry in `_post_with_degrade`, every 5xx from an overloaded upstream and
++#: every malformed reply is one of the day's thousand, and not one of them writes a ledger row.
++#: The two numbers are therefore never equal and ours is always the smaller.
++#:
++#: MEASURED ON THE TRADING BOX, BOTH SIDES IN ONE SITTING:
++#:     2026-09-23   desk ledger 460 calls   provider counted 1000   540 requests (54%) invisible
++#:     2026-09-24   desk ledger 789 calls   provider counted 1008   219 requests (22%) invisible
++#:
++#: WHAT THE CONFUSION COST, and it is why this function exists rather than a comment. The desk's
++#: own source files went on to quote the 09-23 reading as the account's CAPACITY -- "the provider
++#: refused at 458 calls", in `deepening_worker`'s module docstring, four times over -- and every
++#: plan sized against that number was sized against less than half the truth. A budget measured
++#: in the wrong unit does not read as wrong; it reads as a smaller desk.
++#:
++#: So the authoritative figure is asked for by name. `/key` returns `free_model_daily_requests`
++#: as {used, limit, remaining} and that is the provider's own arithmetic, not our inference from
++#: a refusal. It is a network call, so it is OPTIONAL everywhere: every caller falls back to the
++#: ledger-derived estimate, which is wrong in a known direction (low) rather than unavailable.
++PROVIDER_QUOTA = _ROOT / "data" / "llm_provider_quota.json"
++
++
++def provider_free_quota(seat: Seat | None = None, *, timeout: float = 20.0
++                        ) -> dict[str, Any]:
++    """The PROVIDER's free-request counter for today: {used, limit, remaining}. Never raises.
++
++    This is the only honest answer to "how much budget is left", because it is the number the
++    provider will actually refuse against. `free_budget_left()` derives its answer from the spend
++    ledger, which counts completions rather than requests and therefore over-reports what is left
++    by whatever fraction of the day went to retries and upstream errors -- 22% to 54% of it on the
++    two days measured.
++
++    Returns `{}` when the provider does not answer or does not publish the field, which is a
++    verdict (UNMEASURED) rather than a zero: a caller that cannot reach the provider must not
++    conclude the budget is gone.
++    """
++    s = seat or primary_seat()
++    if s is None:
++        return {}
++    body, err = _get(f"{s.base_url}/key", s.key, timeout=timeout)
++    if err:
++        return {"error": err[:200]}
++    data = body.get("data") if isinstance(body.get("data"), dict) else body
++    quota = data.get("free_model_daily_requests") if isinstance(data, dict) else None
++    if not isinstance(quota, dict):
++        return {}
++    out: dict[str, Any] = {"at": datetime.now(UTC).isoformat(timespec="seconds"),
++                           "date": datetime.now(UTC).strftime("%Y-%m-%d")}
++    for k in ("used", "limit", "remaining"):
++        raw = quota.get(k)
++        if raw is None:
++            continue
++        with contextlib.suppress(TypeError, ValueError):
++            out[k] = int(raw)
++    # The desk's own counter beside it, so the GAP is on the record rather than rediscovered.
++    ours = calls_today()
++    out["ledger_calls_today"] = ours
++    if isinstance(out.get("used"), int):
++        out["invisible_requests"] = max(0, int(out["used"]) - ours)
++        out["why"] = ("`used` counts REQUESTS (degradation retries, upstream 5xx and unparseable "
++                      "replies included); `ledger_calls_today` counts the subset that produced a "
++                      "completion. The difference is the day's waste and is the number to drive "
++                      "down -- it is free budget, recoverable without spending anything.")
++    with contextlib.suppress(OSError, TypeError, ValueError):
++        PROVIDER_QUOTA.parent.mkdir(parents=True, exist_ok=True)
++        PROVIDER_QUOTA.write_text(json.dumps(out, indent=1), encoding="utf-8")
++    return out
++
++
+ def observed_free_ceiling(now: datetime | None = None) -> int | None:
+     """The request count at which the provider refused a free call TODAY, if it has.
+ 
+@@ -410,15 +495,47 @@ def observed_free_ceiling(now: datetime | None = None) -> int | None:
+     return n if n >= 0 else None
+ 
+ 
++#: The provider states its own limit in the 429 body's headers. Reading it is strictly better than
++#: inferring one, and it is the number that ends the "458/day" confusion for good.
++_LIMIT_HEADER = re.compile(r'"X-RateLimit-Limit"\s*:\s*"?(\d+)')
++
++
+ def note_free_limit_hit(detail: str, now: datetime | None = None) -> None:
+-    """Record that the provider refused a FREE call, and at what count. Never raises."""
++    """Record that the provider refused a FREE call, and at what count. Never raises.
++
++    TWO NUMBERS, LABELLED, BECAUSE THEY ARE IN DIFFERENT UNITS. `ceiling` is what the DESK had
++    counted when the refusal landed -- completions, from the spend ledger. `provider_limit` is
++    what the provider says its own allowance is, lifted straight out of the 429 body's
++    `X-RateLimit-Limit`. On 2026-09-23 those read 460 and 1000; the desk's own docstrings then
++    quoted the smaller one as the account's capacity and every plan sized against it was sized
++    against less than half the truth. Recording both, named, is what stops that happening again:
++    `ceiling` still governs the rest of the day (the refusal is real and more calls will not
++    work), but nobody reading the file can mistake it for the account's size.
++    """
+     t = now or datetime.now(UTC)
+-    row = {"date": t.strftime("%Y-%m-%d"), "ceiling": calls_today(t),
+-           "observed_at": t.isoformat(timespec="seconds"), "detail": detail[:300],
+-           "why": ("the provider refused a free request at this count. Until the UTC day rolls, "
+-                   "free_daily_max() believes this number rather than the configured default -- "
+-                   "an organ that keeps calling past a real ceiling spends its cadence on "
+-                   "refusals and goes dark while its scheduler still reports healthy.")}
++    mine = calls_today(t)
++    row: dict[str, Any] = {
++        "date": t.strftime("%Y-%m-%d"), "ceiling": mine,
++        "ceiling_unit": "completions recorded by this desk (data/llm_spend.jsonl rows)",
++        "observed_at": t.isoformat(timespec="seconds"), "detail": detail[:300],
++        "why": ("the provider refused a free request at this count. Until the UTC day rolls, "
++                "free_daily_max() believes this number rather than the configured default -- "
++                "an organ that keeps calling past a real ceiling spends its cadence on "
++                "refusals and goes dark while its scheduler still reports healthy.")}
++    m = _LIMIT_HEADER.search(detail or "")
++    if m:
++        with contextlib.suppress(ValueError):
++            lim = int(m.group(1))
++            row["provider_limit"] = lim
++            row["provider_limit_unit"] = ("REQUESTS the provider counted, retries and upstream "
++                                          "errors included -- always >= `ceiling`")
++            row["invisible_requests"] = max(0, lim - mine)
++            row["read_this_one_for_capacity"] = (
++                f"the account's allowance is {lim} REQUESTS/day, not {mine}. The gap is this "
++                f"day's waste (degradation retries, 5xx, unparseable replies), which is free "
++                f"budget recoverable without spending a penny. Do NOT quote `ceiling` as the "
++                f"size of this desk's daily research allowance -- that error is what put "
++                f"'458 calls/day' into four docstrings.")
+     try:
+         FREE_CEILING.parent.mkdir(parents=True, exist_ok=True)
+         FREE_CEILING.write_text(json.dumps(row, indent=1), encoding="utf-8")
+@@ -486,9 +603,24 @@ def _is_daily_free_refusal(err: str) -> bool:
+     return any(m in low for m in _DAILY_FREE_MARKERS)
+ 
+ 
++#: Ask the PROVIDER to guarantee a JSON object, rather than asking the model nicely in the prompt.
++#:
++#: WHY THIS IS WORTH A PARAMETER. Measured on the trading box 2026-09-24: of 789 completed seat
++#: calls, 456 (58%) were thrown away by the caller with "reply was not a JSON object" -- and the
++#: caller's parser is already lenient, stripping code fences and scanning from the first brace to
++#: the last, so a rejection means the reply contained no object AT ALL. Each of those cost one of
++#: the day's thousand requests and returned nothing. That is the single largest recoverable loss
++#: in this lane and it costs no money to recover: the same allowance, spent on replies that parse.
++#:
++#: It is OPT-IN because not every caller wants JSON, and it degrades rather than fails because a
++#: free model that has never implemented structured output must not go dark over it.
++JSON_OBJECT: dict[str, str] = {"type": "json_object"}
++
++
+ def chat(
+     prompt: str, *, system: str = "", seat: Seat | None = None, max_tokens: int = 8000,
+     timeout: float = 240.0, temperature: float = 0.4, effort: str = DEFAULT_EFFORT,
++    response_format: dict[str, Any] | None = None,
+ ) -> tuple[str, str | None]:
+     """One completion at MAXIMUM reasoning effort. Returns (text, error) -- NEVER raises, so a
+     cadenced organ survives it.
+@@ -543,6 +675,8 @@ def chat(
+                            "temperature": float(temperature)}
+     if effort:
+         req["reasoning_effort"] = effort
++    if response_format:
++        req["response_format"] = dict(response_format)
+     body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
+     if err:
+         # A DAILY FREE-TIER REFUSAL IS EVIDENCE, NOT NOISE. Recording it teaches every later
+@@ -555,13 +689,14 @@ def chat(
+         text = str(body["choices"][0]["message"]["content"] or "")
+     except (KeyError, IndexError, TypeError):
+         return "", f"unparseable response: {json.dumps(body)[:200]}"
+-    _record_spend(s, model, body.get("usage") or {})
++    _record_spend(s, model, body)
+     return text, None
+ 
+ 
+ def chat_messages(
+     messages: list[dict[str, str]], *, seat: Seat | None = None, max_tokens: int = 8000,
+     timeout: float = 240.0, temperature: float = 0.4, effort: str = DEFAULT_EFFORT,
++    response_format: dict[str, Any] | None = None,
+ ) -> tuple[str, str | None]:
+     """chat(), at the MESSAGES level -- the seam the push ladder needs.
+ 
+@@ -601,6 +736,8 @@ def chat_messages(
+                            "temperature": float(temperature)}
+     if effort:
+         req["reasoning_effort"] = effort
++    if response_format:
++        req["response_format"] = dict(response_format)
+     body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
+     if err:
+         # Same refusal, same lesson: chat_messages is the push ladder's seam and
+@@ -612,7 +749,7 @@ def chat_messages(
+         text = str(body["choices"][0]["message"]["content"] or "")
+     except (KeyError, IndexError, TypeError):
+         return "", f"unparseable response: {json.dumps(body)[:200]}"
+-    _record_spend(s, model, body.get("usage") or {})
++    _record_spend(s, model, body)
+     return text, None
+ 
+ 
+@@ -705,7 +842,13 @@ def _get(url: str, key: str, *, timeout: float) -> tuple[dict[str, Any], str | N
+ #: Parameters that a provider may reject, in the order they are given up. Effort goes LAST because
+ #: it is the one the principal asked for; temperature and the token-cap spelling go first because
+ #: their defaults are harmless.
+-_DEGRADABLE = ("temperature", "max_completion_tokens", "reasoning_effort")
++#:
++#: `response_format` sits ahead of effort and behind the harmless two: a free model that does not
++#: implement structured output must not cost the caller its request, and a caller that asked for
++#: JSON still gets a reply it can attempt to parse. EVERY RETRY HERE IS ONE OF THE DAY'S THOUSAND
++#: REQUESTS -- see `provider_free_quota` -- so the ladder is ordered to be short in the common
++#: case, not to be thorough.
++_DEGRADABLE = ("temperature", "max_completion_tokens", "response_format", "reasoning_effort")
+ 
+ 
+ def _post_with_degrade(url: str, key: str, req: dict[str, Any], *, timeout: float
+@@ -756,17 +899,97 @@ def _send(req: urllib.request.Request, timeout: float) -> tuple[dict[str, Any],
+         # that is always actionable.
+         with contextlib.suppress(Exception):
+             detail = exc.read().decode("utf8", errors="ignore")[:300]
++        # AND IT MUST BE CLOSED. `HTTPError` is itself a response object holding a spooled
++        # temporary file; left to the collector it emits `ResourceWarning: Implicitly cleaning up
++        # <HTTPError ...>` from `tempfile.__del__` at an arbitrary later moment. The suite runs
++        # `filterwarnings = error`, so that stray warning fails whichever test happens to be
++        # executing when the collector gets to it -- which is how a genuine assertion
++        # (`test_a_key_never_appears_in_full_in_a_report`, and its assertions PASS) reported red
++        # for a leak that had nothing to do with keys. Every 4xx and 429 this desk takes goes
++        # through here, so on a day of rate-limit refusals it leaks one per refusal.
++        with contextlib.suppress(Exception):
++            exc.close()
+         return {}, f"HTTP {exc.code}: {detail or exc.reason}"
+     except Exception as exc:
+         return {}, f"{type(exc).__name__}: {str(exc)[:160]}"
+ 
+ 
+-def _record_spend(seat: Seat, model: str, usage: dict[str, Any]) -> None:
+-    """Append-only, and it records what the PROVIDER reported rather than what we guessed."""
++def is_free_model(model: str) -> bool:
++    """True when the provider serves this model id at no charge."""
++    return model.lower().endswith((":free", "-free"))
++
++
++def calling_organ() -> str:
++    """Which organ is spending the seat. Env first, else the entry-point script's name.
++
++    WHY THE BUDGET NEEDS A NAME ON IT. One account holds ONE allowance of a thousand requests a
++    day, and every model organ on this desk draws from it first-come-first-served. Measured
++    2026-09-24: the allowance was gone by 01:42 UTC, so every audit, panel and recommendation
++    organ scheduled after that hour got a refusal that reads exactly like a provider outage --
++    and the recommendation ledger duly recorded seven new entries in twenty days, down from
++    dozens a week. Nothing in the ledger said WHO had spent it, because the ledger recorded the
++    provider's name (`openrouter`) and never the caller's, so the question could not even be
++    asked. A budget that cannot be attributed cannot be allocated.
++    """
++    named = os.environ.get("QUANT_LLM_ORGAN", "").strip()
++    if named:
++        return named[:64]
++    with contextlib.suppress(Exception):
++        stem = Path(sys.argv[0]).stem
++        if stem and stem not in ("-c", "", "python", "python3"):
++            return stem[:64]
++    return "unattributed"
++
++
++def _record_spend(seat: Seat, model: str, body: dict[str, Any]) -> None:
++    """Append-only, and it records what the PROVIDER reported rather than what we guessed.
++
++    A FREE CALL COSTS ZERO, AND BOOKING IT AS SPEND BRICKS THE PAID LANE (fixed 2026-09-24).
++    `_USD_PER_1K_TOKENS` is a deliberate over-estimate, which is the right error for a metered
++    call and a catastrophic one for a free model: the desk runs free-tier by default, so every
++    call was accruing phantom dollars against a $20 monthly cap. Measured on the trading box the
++    month this was found: $234.26 booked, $0.00 actually owed. Nothing had failed yet only
++    because `free_tier_only()` skips the cap check -- but that is precisely the switch the
++    principal flips to BUY more capacity, and flipping it would have taken every organ dark
++    inside one call with "monthly cap reached: $234.26 of $20.00". The landmine sat directly on
++    the upgrade path, armed by the safety feature.
++
++    WHAT ELSE IS RECORDED, and why each field is a number the desk was arguing about without it:
++    the ORGAN (so the one allowance can be attributed and therefore allocated), the COMPLETION and
++    REASONING token split, and `finish_reason`. That last pair is the live question: seat calls go
++    out at `reasoning_effort: high` under a 700-token completion cap, and a reasoning model that
++    spends the cap thinking returns empty content -- which every caller reports as "reply was not
++    a JSON object", 456 times on the day this was written, 58% of the day's completed calls.
++    Truncation and refusal are indistinguishable downstream; `finish_reason` distinguishes them at
++    the source, so the next pass measures the cause instead of inferring it.
++    """
++    raw_usage = body.get("usage")
++    usage: dict[str, Any] = raw_usage if isinstance(raw_usage, dict) else {}
+     tok = int(usage.get("total_tokens") or 0)
+-    row = {"utc": datetime.now(UTC).isoformat(timespec="seconds"), "seat": seat.name,
+-           "model": model, "tokens": tok,
+-           "usd": round(tok / 1000.0 * _USD_PER_1K_TOKENS, 5)}
++    free = is_free_model(model)
++    row: dict[str, Any] = {
++        "utc": datetime.now(UTC).isoformat(timespec="seconds"), "seat": seat.name,
++        "organ": calling_organ(), "model": model, "tokens": tok, "free": free,
++        # ZERO for a free model, and it is zero because it IS zero -- not a discount, not an
++        # assumption. The estimate is kept for metered models only, where erring high is right.
++        "usd": 0.0 if free else round(tok / 1000.0 * _USD_PER_1K_TOKENS, 5)}
++    for key in ("prompt_tokens", "completion_tokens"):
++        raw = usage.get(key)
++        if raw is not None:
++            with contextlib.suppress(TypeError, ValueError):
++                row[key] = int(raw)
++    det = usage.get("completion_tokens_details")
++    if isinstance(det, dict) and det.get("reasoning_tokens") is not None:
++        with contextlib.suppress(TypeError, ValueError):
++            row["reasoning_tokens"] = int(det["reasoning_tokens"])
++    choices = body.get("choices")
++    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
++        ch: dict[str, Any] = choices[0]
++        if ch.get("finish_reason"):
++            row["finish_reason"] = str(ch["finish_reason"])[:32]
++        msg = ch.get("message")
++        content = msg.get("content") if isinstance(msg, dict) else None
++        row["empty_content"] = not str(content or "").strip()
+     try:
+         SPEND_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+         with SPEND_LEDGER.open("a", encoding="utf-8") as fh:
+diff --git a/tests/ops/test_llm_seat_budget_truth.py b/tests/ops/test_llm_seat_budget_truth.py
+new file mode 100644
+index 00000000000..cfd9ddf22bf
+--- /dev/null
++++ b/tests/ops/test_llm_seat_budget_truth.py
+@@ -0,0 +1,193 @@
++"""The seat must tell the truth about what it spent and what the provider allows.
++
++Every test here pins a defect MEASURED on the trading box on 2026-09-24, and each one was
++invisible before it was measured rather than merely unfixed:
++
++  * a free call booked phantom dollars against the $20 cap ($234.26 of them that month), which
++    would have taken every organ dark the instant the principal enabled the paid tier;
++  * the day's "ceiling" was recorded in COMPLETIONS while the provider refuses in REQUESTS, and
++    the smaller number then propagated into four docstrings as the desk's research capacity;
++  * nothing recorded WHICH organ spent the one shared allowance, so it could not be allocated;
++  * an empty completion was indistinguishable downstream from a refusal, so a truncated reasoning
++    reply and a model that would not answer produced the same report.
++"""
++from __future__ import annotations
++
++import json
++
++import pytest
++
++from libs.ops import llm_seat
++
++
++@pytest.fixture
++def ledger(tmp_path, monkeypatch):
++    p = tmp_path / "llm_spend.jsonl"
++    monkeypatch.setattr(llm_seat, "SPEND_LEDGER", p)
++    return p
++
++
++def _seat() -> llm_seat.Seat:
++    return llm_seat.Seat(name="openrouter", base_url="https://example.invalid/v1",
++                         key="not-a-real-key", model="", source="test")
++
++
++def _body(tokens: int = 100, *, content: str = "ok", finish: str = "stop") -> dict:
++    return {"choices": [{"finish_reason": finish, "message": {"content": content}}],
++            "usage": {"total_tokens": tokens, "prompt_tokens": 40, "completion_tokens": 60,
++                      "completion_tokens_details": {"reasoning_tokens": 55}}}
++
++
++def _rows(p):
++    return [json.loads(ln) for ln in p.read_text("utf-8").splitlines() if ln.strip()]
++
++
++# --------------------------------------------------------------------- a free call costs nothing
++
++def test_free_model_books_zero_usd(ledger):
++    """The whole paid lane hangs on this: a free call must not accrue estimated spend."""
++    llm_seat._record_spend(_seat(), "nvidia/nemotron-3-ultra-550b-a55b:free", _body(500_000))
++    row = _rows(ledger)[0]
++    assert row["usd"] == 0.0
++    assert row["free"] is True
++    assert row["tokens"] == 500_000, "tokens are still recorded -- only the CHARGE is zero"
++
++
++def test_metered_model_still_books_spend(ledger):
++    """The cap must keep working for calls that genuinely cost money."""
++    llm_seat._record_spend(_seat(), "openai/gpt-5", _body(10_000))
++    row = _rows(ledger)[0]
++    assert row["usd"] > 0.0
++    assert row["free"] is False
++
++
++def test_month_rollup_ignores_free_rows_already_written(ledger, monkeypatch):
++    """The ledger is append-only, so the ROLLUP is where the historic phantom spend is corrected.
++
++    Without this the cap stays tripped by its own past for the rest of the month -- and the cap is
++    exactly what gates the paid tier the principal would be buying.
++    """
++    ledger.write_text(
++        json.dumps({"utc": "2026-09-01T00:00:00+00:00", "model": "x/y:free", "usd": 234.26})
++        + "\n"
++        + json.dumps({"utc": "2026-09-01T00:00:00+00:00", "model": "openai/gpt-5", "usd": 1.5})
++        + "\n", encoding="utf-8")
++    import datetime as _dt
++    got = llm_seat.month_spend_usd(_dt.datetime(2026, 9, 15, tzinfo=_dt.UTC))
++    assert got == pytest.approx(1.5), "a `:free` row charges nothing, retroactively included"
++
++
++@pytest.mark.parametrize("model,free", [
++    ("nvidia/nemotron-3-ultra-550b-a55b:free", True),
++    ("meta/llama-4-405b-free", True),
++    ("openai/gpt-5", False),
++    ("", False),
++])
++def test_is_free_model(model, free):
++    assert llm_seat.is_free_model(model) is free
++
++
++# ----------------------------------------------------- the ceiling is recorded in a labelled unit
++
++def test_limit_hit_records_provider_unit_beside_our_own(tmp_path, monkeypatch, ledger):
++    """`ceiling` (ours, completions) and `provider_limit` (theirs, requests) must both be named.
++
++    The 2026-09-23 reading was 460 and 1000. The desk quoted 458 as its capacity for a day.
++    """
++    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
++    ledger.write_text("".join(
++        json.dumps({"utc": "2026-09-24T01:00:00+00:00", "model": "x:free", "usd": 0.0}) + "\n"
++        for _ in range(460)), encoding="utf-8")
++    import datetime as _dt
++    now = _dt.datetime(2026, 9, 24, 12, tzinfo=_dt.UTC)
++    llm_seat.note_free_limit_hit(
++        'HTTP 429: {"error":{"message":"Rate limit exceeded: free-models-per-day-high-balance.",'
++        '"metadata":{"headers":{"X-RateLimit-Limit":"1000","X-RateLimit-Remaining":"0"}}}}', now)
++    doc = json.loads((tmp_path / "ceiling.json").read_text("utf-8"))
++    assert doc["ceiling"] == 460
++    assert doc["provider_limit"] == 1000
++    assert doc["invisible_requests"] == 540
++    assert "completions" in doc["ceiling_unit"]
++    assert "REQUESTS" in doc["provider_limit_unit"]
++
++
++def test_limit_hit_without_a_header_still_records_our_count(tmp_path, monkeypatch, ledger):
++    """A refusal that names no limit must not lose the observation it DOES carry."""
++    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
++    ledger.write_text("", encoding="utf-8")
++    llm_seat.note_free_limit_hit("HTTP 429: slow down")
++    doc = json.loads((tmp_path / "ceiling.json").read_text("utf-8"))
++    assert doc["ceiling"] == 0
++    assert "provider_limit" not in doc, "absence is UNMEASURED, never a guessed number"
++
++
++def test_free_daily_max_never_rises_above_the_configured_ceiling(tmp_path, monkeypatch):
++    """A measured refusal may only LOWER the day's belief, never raise it."""
++    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
++    monkeypatch.delenv("QUANT_FREE_DAILY_MAX", raising=False)
++    import datetime as _dt
++    today = _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d")
++    (tmp_path / "ceiling.json").write_text(
++        json.dumps({"date": today, "ceiling": 99999}), encoding="utf-8")
++    assert llm_seat.free_daily_max() == llm_seat.DEFAULT_FREE_DAILY_MAX
++
++
++# ------------------------------------------------------------------- the budget carries a name
++
++def test_spend_row_names_the_calling_organ(ledger, monkeypatch):
++    monkeypatch.setenv("QUANT_LLM_ORGAN", "deepening_worker")
++    llm_seat._record_spend(_seat(), "x/y:free", _body())
++    assert _rows(ledger)[0]["organ"] == "deepening_worker"
++
++
++def test_organ_defaults_to_something_rather_than_nothing(ledger, monkeypatch):
++    """An unattributed call is still labelled, so the census can report the share it cannot name."""
++    monkeypatch.delenv("QUANT_LLM_ORGAN", raising=False)
++    llm_seat._record_spend(_seat(), "x/y:free", _body())
++    assert _rows(ledger)[0]["organ"]
++
++
++# ------------------------------------------- truncation and refusal must not look the same
++
++def test_empty_completion_is_recorded_as_such(ledger):
++    """`finish_reason=length` with empty content IS truncation, and downstream cannot see it.
++
++    Every caller reports this as "reply was not a JSON object" -- 456 times on the day measured,
++    58% of that day's completed calls -- which reads like a model that would not answer.
++    """
++    llm_seat._record_spend(_seat(), "x/y:free", _body(content="", finish="length"))
++    row = _rows(ledger)[0]
++    assert row["empty_content"] is True
++    assert row["finish_reason"] == "length"
++    assert row["reasoning_tokens"] == 55
++    assert row["completion_tokens"] == 60
++
++
++def test_non_empty_completion_is_not_flagged(ledger):
++    llm_seat._record_spend(_seat(), "x/y:free", _body(content='{"a":1}'))
++    assert _rows(ledger)[0]["empty_content"] is False
++
++
++def test_record_spend_survives_a_body_with_no_usage_or_choices(ledger):
++    """A ledger write must never take down the organ, whatever the provider returned."""
++    llm_seat._record_spend(_seat(), "x/y:free", {})
++    row = _rows(ledger)[0]
++    assert row["tokens"] == 0
++    assert "finish_reason" not in row
++
++
++# --------------------------------------------------------------- the JSON contract is expressible
++
++def test_response_format_degrades_rather_than_failing():
++    """A free model with no structured-output support must not cost the caller its request."""
++    assert "response_format" in llm_seat._DEGRADABLE
++    assert (llm_seat._DEGRADABLE.index("response_format")
++            < llm_seat._DEGRADABLE.index("reasoning_effort")), \
++        "effort is the principal's explicit ask and is surrendered last"
++    assert llm_seat.JSON_OBJECT == {"type": "json_object"}
++
++
++def test_provider_free_quota_is_unmeasured_when_dark(monkeypatch):
++    """No seat means UNMEASURED, never a zero budget -- absence is not exhaustion (L1.28a)."""
++    monkeypatch.setattr(llm_seat, "primary_seat", lambda: None)
++    assert llm_seat.provider_free_quota() == {}
+diff --git a/tests/ops/test_llm_seat_free_tier.py b/tests/ops/test_llm_seat_free_tier.py
+index 106eedb94ab..a70655fb425 100644
+--- a/tests/ops/test_llm_seat_free_tier.py
++++ b/tests/ops/test_llm_seat_free_tier.py
+@@ -31,6 +31,29 @@ def _listing(monkeypatch, ids: list[str]) -> None:
+                         lambda url, key, *, timeout: ({"data": [{"id": i} for i in ids]}, None))
+ 
+ 
++@pytest.fixture(autouse=True)
++def _isolate_from_the_live_box(monkeypatch, tmp_path):
++    """Point the two STATE files at an empty tmp dir for every test in this file.
++
++    WHY THIS IS AUTOUSE AND NOT PER-TEST (added 2026-09-24, after it went red on the box that
++    trades). `free_daily_max()` reads `data/llm_free_ceiling.json` and `calls_today()` reads
++    `data/llm_spend.jsonl`. Neither was monkeypatched here, so three tests were silently asserting
++    against whatever the TRADING BOX had done that day: on 2026-09-24 it had taken a 429 at 789
++    calls, so `free_daily_max()` returned min(900, 789) and
++    `test_the_daily_ceiling_is_configurable_and_never_zero` failed `789 == 900`, while
++    `test_the_dollar_cap_cannot_silence_a_free_run` got "budget exhausted" instead of its mocked
++    reply because the real ledger already held the day's calls.
++
++    THAT IS THE WORST KIND OF RED. The suite's colour tracked the time of day: green on a quiet
++    build box, red on a busy trading box, with no code change between them -- so a genuine
++    regression here would have been indistinguishable from "the miners had a productive morning",
++    and the standing advice would become "ignore those three". A test that reads live state is
++    not testing the code (L1.37).
++    """
++    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "llm_free_ceiling.json")
++    monkeypatch.setattr(llm_seat, "SPEND_LEDGER", tmp_path / "llm_spend.jsonl")
++
++
+ def test_free_tier_is_on_by_default(monkeypatch) -> None:
+     """The safe state is the automatic one: spending requires an explicit opt-out."""
+     monkeypatch.delenv("QUANT_FREE_TIER", raising=False)
+-- 
+2.47.1.windows.1
+

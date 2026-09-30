@@ -1,0 +1,95 @@
+From b960824b0629cd8cf73c24f41f67030c017d1962 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 02:56:34 +0200
+Subject: [PATCH] The 700-token completion cap was throwing away half of every
+ seat call
+
+MEASURED BY EXPERIMENT, NOT BY READING. Twelve real rows off the deepening queue, same prompts,
+same model, same temperature; only the completion cap varied, crossed with
+`response_format: json_object` so that "the model will not emit JSON" and "the model was cut off
+before it finished emitting JSON" could be told apart:
+
+    max_tokens=700,  no response_format     6/12 parsed    50%
+    max_tokens=700,  response_format json   7/12 parsed    58%
+    max_tokens=3000, no response_format    12/12 parsed   100%
+    max_tokens=3000, response_format json  12/12 parsed   100%
+
+THE CAUSE IS TRUNCATION, NOT COMPLIANCE. Structured output barely moves the number (+8pp) while
+the cap moves it to perfect, and it is perfect with structured output switched OFF -- so the
+model was always willing to answer and was being cut off mid-object. `extract()` asks for
+`reasoning_effort: high`, OpenAI-compatible endpoints charge reasoning tokens against the
+completion cap, and a reasoning model spends 700 tokens thinking before it writes anything.
+`_parse` then finds no closing brace and the caller records "reply was not a JSON object", which
+reads like a model that refused.
+
+WHAT IT COST, measured live the day before on the trading box: 456 of 789 completed calls -- 58%
+-- died exactly that way. That is the single largest loss in the desk's only novel-mechanism
+lane, and the arm-A failure rate above (50%) reproduces it.
+
+IT COSTS NOTHING TO FIX. The free tier is capped in REQUESTS PER DAY, not tokens -- the provider's
+own counter says so (`llm_seat.provider_free_quota`: free_model_daily_requests {used, limit,
+remaining}) -- so the same thousand requests simply come back usable. At the measured 13.1%
+recovery rate per PARSED reply, recovering those 456 is worth roughly +60 recovered mechanisms a
+day against 30 today: about three times the desk's novel-mechanism discovery rate, for no money,
+no permission and no gate touched. The recovered rows face the identical ten gates; this adds
+arrivals, never leniency, and fixed_trial_count is unchanged.
+
+The number is an env-overridable constant rather than a literal, so the next person to measure it
+can move it without hunting through a call site.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/deepening_worker.py | 29 +++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
+
+diff --git a/desks/mt5/research/deepening_worker.py b/desks/mt5/research/deepening_worker.py
+index d64ac5863da..b6621815ae0 100644
+--- a/desks/mt5/research/deepening_worker.py
++++ b/desks/mt5/research/deepening_worker.py
+@@ -515,6 +515,32 @@ def validate_expression(found: dict, universe: set[str]) -> tuple[dict, str]:
+             "evidence": f"generated: {mechanism} [{ag.to_str(expr)}]"}, ""
+ 
+ 
++#: THE COMPLETION CAP, AND IT WAS THROWING AWAY HALF THE DAY'S SEAT CALLS (measured 2026-09-25).
++#:
++#: This was 700. A/B on twelve real queue rows, same prompts, same model, only the cap varying --
++#: and `response_format: json_object` crossed with it to separate "the model will not emit JSON"
++#: from "the model was cut off before it finished emitting JSON":
++#:
++#:     max_tokens=700,  no response_format    6/12 parsed   (50%)
++#:     max_tokens=700,  response_format json  7/12 parsed   (58%)
++#:     max_tokens=3000, no response_format   12/12 parsed  (100%)
++#:     max_tokens=3000, response_format json 12/12 parsed  (100%)
++#:
++#: THE CAUSE IS TRUNCATION, NOT COMPLIANCE. Structured output barely moves it (+8pp) while the
++#: cap moves it to perfect. The seat asks for `reasoning_effort: high` and OpenAI-compatible
++#: endpoints charge reasoning tokens against the completion cap, so a reasoning model spends the
++#: allowance thinking and is cut off mid-object; `_parse` then finds no closing brace and the
++#: caller records "reply was not a JSON object" -- which reads like a model that refused.
++#: Measured live the day before: 456 of 789 completed calls (58%) died exactly that way, the
++#: single largest loss in the lane.
++#:
++#: IT COSTS NOTHING. The free tier is capped in REQUESTS PER DAY, not tokens (see
++#: `llm_seat.provider_free_quota`), so the same thousand requests simply come back usable. This
++#: is the cheapest capacity on the desk: no purchase, no permission, no gate touched -- the
++#: recovered rows face the identical ten gates they always did.
++EXTRACT_MAX_TOKENS = int(os.environ.get("DEEPEN_EXTRACT_MAX_TOKENS", "3000"))
++
++
+ def extract(task: dict, *, chat=None) -> tuple[dict, str]:
+     """Ask the seat what the row's own text states. ({}, reason) on any doubt."""
+     if chat is None:
+@@ -524,7 +550,8 @@ def extract(task: dict, *, chat=None) -> tuple[dict, str]:
+     kind = str(task.get("kind") or "")
+     system = _SYSTEM_BY_KIND.get(kind, _SYSTEM)
+     contract = _CONTRACT_EXPR if kind == "alpha_expression" else _CONTRACT
+-    reply, err = chat(f"{text}\n\n{contract}", system=system, max_tokens=700, temperature=0.0)
++    reply, err = chat(f"{text}\n\n{contract}", system=system, max_tokens=EXTRACT_MAX_TOKENS,
++                      temperature=0.0)
+     if err:
+         return {}, f"seat error: {err}"
+     found = _parse(reply)
+-- 
+2.47.1.windows.1
+

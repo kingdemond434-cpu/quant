@@ -1,0 +1,78 @@
+From 7e93a1f57b07dde58d36f7125eab46aaca70bf33 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:35:37 +0200
+Subject: [PATCH] The basket judge's own headline named a basket that loses
+ money at 3x costs
+
+`best_honest_basket` ranked honest rules on Sharpe alone, so it crowned `oos_top64` (0.3044,
+0.975x the hurdle) -- which FAILS stress_costs at exp_x3 -0.5894. It buys its extra Sharpe by
+admitting legs the cost stress kills, and a headline that calls that the best result is exactly
+the flattering summary this organ exists to refuse.
+
+The ranking now prefers, among honest membership rules, the baskets whose ONLY failed gate is
+the multiplicity charge -- the ones the gate spec itself marks cure_by_forward -- and falls back
+to raw Sharpe only when none clears everything else, saying which basis it used. The row now
+also carries `failed_gates` and `mean_daily_R_3x` so the reader can see the cost verdict beside
+the Sharpe without opening the basket list.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/srb_basket_judge.py | 26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/desks/mt5/research/srb_basket_judge.py b/desks/mt5/research/srb_basket_judge.py
+index f885dd913e1..f0670ef7437 100644
+--- a/desks/mt5/research/srb_basket_judge.py
++++ b/desks/mt5/research/srb_basket_judge.py
+@@ -588,8 +588,22 @@ def build(budget_s: float = 900.0) -> dict[str, Any]:
+     honest = {"none", "non_performance", "sign_out_of_sample", "ranked_out_of_sample"}
+     promotable = [b for b in baskets
+                   if b["verdict"] and b["verdict"]["passed"] and b["selection"] in honest]
+-    best_honest = max((b for b in baskets if b["selection"] in honest),
+-                      key=lambda b: b["sharpe"], default=None)
++    # THE BEST HONEST BASKET IS THE BEST ONE THAT ONLY MISSES THE MULTIPLICITY CHARGE, not simply
++    # the highest Sharpe. `oos_top64` scores higher than `oos_top32` and LOSES MONEY AT 3x COSTS
++    # (exp_x3 -0.5894): it buys its Sharpe by admitting legs the cost stress kills. Naming it
++    # "best" in the headline would be a flattering summary of exactly the kind this file refuses,
++    # so the ranking is: among honest rules, prefer those whose only failed gate is
++    # `deflated_sharpe` -- a candidate the spec itself marks curable by forward evidence -- and
++    # fall back to raw Sharpe only when no basket clears everything else.
++    def _only_multiplicity(b: dict[str, Any]) -> bool:
++        return bool(b["verdict"]) and b["verdict"]["failed_gates"] == ["deflated_sharpe"]
++
++    honest_rows = [b for b in baskets if b["selection"] in honest]
++    clean = [b for b in honest_rows if _only_multiplicity(b)]
++    best_honest = max(clean or honest_rows, key=lambda b: b["sharpe"], default=None)
++    best_basis = ("highest Sharpe among honest rules whose ONLY failed gate is the multiplicity "
++                  "charge" if clean else
++                  "highest Sharpe among honest rules; NONE cleared every other gate")
+     unselected = [b for b in baskets if b["selection"] in {"none", "non_performance"}]
+     curable = [b["rule"] for b in baskets
+                if b["selection"] in honest and b["verdict"]
+@@ -603,7 +617,8 @@ def build(budget_s: float = 900.0) -> dict[str, Any]:
+             f"{best_honest['correlation'].get('effective_independent_bets')} effective "
+             f"independent bets -- and it is still not enough: "
+             f"{best_honest['sharpe']} against the sealed hurdle 0.3122, "
+-            f"{best_honest['fraction_of_hurdle']}x the bar."
++            f"{best_honest['fraction_of_hurdle']}x the bar. Its only failed gate is the "
++            f"multiplicity charge."
+             if best_honest else "UNMEASURED: no honest basket could be built"),
+         "the_finding": {
+             "diversification_works_and_is_insufficient": (
+@@ -690,8 +705,11 @@ def build(budget_s: float = 900.0) -> dict[str, Any]:
+                                     "recorded rather than worked around.")},
+         "promotable": [b["rule"] for b in promotable],
+         "best_honest_basket": None if best_honest is None else {
+-            "rule": best_honest["rule"], "sharpe": best_honest["sharpe"],
++            "rule": best_honest["rule"], "chosen_by": best_basis,
++            "sharpe": best_honest["sharpe"],
+             "fraction_of_hurdle": best_honest["fraction_of_hurdle"],
++            "failed_gates": (best_honest["verdict"] or {}).get("failed_gates"),
++            "mean_daily_R_3x": best_honest["mean_daily_R_3x"],
+             "effective_independent_bets":
+                 best_honest["correlation"].get("effective_independent_bets")},
+         "seconds": round(time.monotonic() - t0, 1),
+-- 
+2.47.1.windows.1
+

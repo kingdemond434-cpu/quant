@@ -1,0 +1,94 @@
+From 5827eb7588cf3375ef32a81a3f7ecb26eb8b5869 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:15:19 +0200
+Subject: [PATCH] The guard read the cmd.exe wrapper's margin and called it the
+ judge's
+
+MT5-Gauntlet runs the sweep as `cmd.exe /d /s /c ... python.exe ... external_gauntlet.py`, so
+the SHELL's command line names the script too. Matching on the script name alone picked the
+wrapper: the first reading published margin and peak RSS off a 5MB cmd.exe (rss_mb 5,
+workers 2) and presented them as the judge's. A measurement organ that silently measures the
+wrong process is worse than none, because its numbers look right.
+
+`live_pass` now requires a python interpreter, still excludes the `--only` reproduction path
+(which writes no authority file and is not the sweep), measures the OLDEST match because that
+is the pool's root, and publishes `matched_judge_processes` so an ambiguous match is visible
+rather than silently resolved.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/scripts/gauntlet_guard.py    | 19 ++++++++++++++++---
+ desks/mt5/tests/test_gauntlet_guard.py | 13 +++++++++++++
+ 2 files changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/desks/mt5/scripts/gauntlet_guard.py b/desks/mt5/scripts/gauntlet_guard.py
+index 9d6a86be31c..2f58cd3cfdd 100644
+--- a/desks/mt5/scripts/gauntlet_guard.py
++++ b/desks/mt5/scripts/gauntlet_guard.py
+@@ -172,18 +172,30 @@ def live_pass() -> dict:
+         return {"status": "UNMEASURED", "why": "psutil not importable"}
+     win = window_s()
+     now = time.time()
+-    judge = None
++    matched = []
+     workers = 0
+     for proc in psutil.process_iter(["pid", "ppid", "name", "cmdline", "create_time",
+                                      "memory_info"]):
+         try:
+             cmd = " ".join(proc.info["cmdline"] or [])
++            name = (proc.info["name"] or "").lower()
+         except Exception:
+             continue
++        # THE INTERPRETER, NEVER THE WRAPPER. MT5-Gauntlet runs the judge through
++        # `cmd.exe /d /s /c ... python.exe ... scripts\external_gauntlet.py`, so the shell's
++        # command line contains the script name too. Matching on the name alone read the
++        # margin and the peak RSS off a 5MB cmd.exe and reported them as the judge's.
++        if not name.startswith("python"):
++            continue
++        # `--only` is the reproduction path: it writes no authority file and is not the sweep.
+         if JUDGE in cmd and "--only" not in cmd:
+-            judge = proc
+-    if judge is None:
++            matched.append(proc)
++    if not matched:
+         return {"status": "NO_PASS_RUNNING", "window_s": win}
++    # The sweep holds an exclusive job lock, so more than one is a defect worth seeing rather
++    # than a tie to break silently: report the count and measure the oldest, which is the root.
++    matched.sort(key=lambda p: p.info["create_time"])
++    judge = matched[0]
+     try:
+         info = judge.info
+         for proc in psutil.process_iter(["ppid"]):
+@@ -205,6 +217,7 @@ def live_pass() -> dict:
+             "rss_mb": round((mem.rss if mem else 0) / 1024 ** 2),
+             "private_mb": round(getattr(mem, "private", 0) / 1024 ** 2) if mem else None,
+             "workers": workers,
++            "matched_judge_processes": len(matched),
+         }
+     except Exception as exc:
+         return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+diff --git a/desks/mt5/tests/test_gauntlet_guard.py b/desks/mt5/tests/test_gauntlet_guard.py
+index 5fd0e770508..1d726fe0aaa 100644
+--- a/desks/mt5/tests/test_gauntlet_guard.py
++++ b/desks/mt5/tests/test_gauntlet_guard.py
+@@ -145,3 +145,16 @@ def test_the_guard_never_writes_to_or_stops_the_sealed_judge():
+         assert forbidden not in src, f"gauntlet_guard must never {forbidden}"
+     assert 'OUT = REPORTS / "GAUNTLET_PASSES.json"' in src
+     assert src.count("os.replace(") == 1, "the guard writes exactly one file: its own report"
++
++
++def test_live_pass_reads_the_interpreter_not_the_cmd_wrapper():
++    """MT5-Gauntlet runs the judge through cmd.exe, whose command line ALSO names the script.
++    Matching on the name alone reported a 5MB shell's RSS and margin as the judge's."""
++    src = Path(gg.__file__).read_text(encoding="utf-8")
++    assert 'if not name.startswith("python"):' in src
++    assert '"--only" not in cmd' in src, "the reproduction path is never the sweep"
++    out = gg.live_pass()
++    assert out["status"] in {"RUNNING", "NO_PASS_RUNNING", "UNMEASURED"}
++    if out["status"] == "RUNNING":
++        assert out["margin_s"] == out["window_s"] - out["age_s"]
++        assert out["matched_judge_processes"] >= 1
+-- 
+2.47.1.windows.1
+

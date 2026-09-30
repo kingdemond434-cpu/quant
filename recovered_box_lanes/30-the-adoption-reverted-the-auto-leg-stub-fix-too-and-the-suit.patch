@@ -1,0 +1,54 @@
+From d046f9d82b6fb8b930e34901406c548699d6ed04 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 22:26:24 +0200
+Subject: [PATCH] The adoption reverted the _auto_leg stub fix too, and the
+ suite went red again
+
+Same adoption, same class as the organ it deleted: the two 1-arg `_auto_leg` stubs were restored
+to their pre-fix form against HEAD's 2-arg `_auto_leg(e, n)`, so
+`test_auto_legs_under_department_plans_run_only_in_rest` failed with "takes 1 positional argument
+but 2 were given" the moment the suite ran again. Re-applied in both test files.
+
+Also records what the guard's backfill recovered on its first cold start with the new lookback:
+the full pass history folds correctly, including the two consecutive REACHED_EPILOGUE passes
+(pre-warm 1288 s / 81,588 failed, then 1591 s / 88,246 failed) that the 2 MB window had been
+silently stepping over.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/tests/test_cycle_plans_and_resume.py | 3 ++-
+ desks/mt5/tests/test_wiring_ceo.py             | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/desks/mt5/tests/test_cycle_plans_and_resume.py b/desks/mt5/tests/test_cycle_plans_and_resume.py
+index fb220d0fd16..933cb8bdb16 100644
+--- a/desks/mt5/tests/test_cycle_plans_and_resume.py
++++ b/desks/mt5/tests/test_cycle_plans_and_resume.py
+@@ -115,7 +115,8 @@ def test_department_plans_partition_the_heavy_legs():
+ 
+ def test_auto_legs_under_department_plans_run_only_in_rest(monkeypatch, tmp_path):
+     ran: list[str] = []
+-    monkeypatch.setattr(hc, "_auto_leg", lambda e: ran.append(e["organ"]) or {"exit_code": 0})
++    monkeypatch.setattr(hc, "_auto_leg",
++                        lambda e, n=None: ran.append(e["organ"]) or {"exit_code": 0})
+     monkeypatch.setattr(hc, "_costed", lambda name, fn: fn())
+     f = tmp_path / "auto_legs.json"
+     f.write_text(json.dumps({"legs": [
+diff --git a/desks/mt5/tests/test_wiring_ceo.py b/desks/mt5/tests/test_wiring_ceo.py
+index 2930406affd..5c5264a00af 100644
+--- a/desks/mt5/tests/test_wiring_ceo.py
++++ b/desks/mt5/tests/test_wiring_ceo.py
+@@ -298,7 +298,8 @@ def test_an_auto_clocked_organ_counts_as_scheduled_so_the_ratchet_can_fall(monke
+ def test_run_auto_legs_runs_only_the_current_plan(monkeypatch, tmp_path):
+     import hourly_cycle as hc
+     ran: list[str] = []
+-    monkeypatch.setattr(hc, "_auto_leg", lambda e: ran.append(e["organ"]) or {"exit_code": 0})
++    monkeypatch.setattr(hc, "_auto_leg",
++                        lambda e, n=None: ran.append(e["organ"]) or {"exit_code": 0})
+     monkeypatch.setattr(hc, "_costed", lambda name, fn: fn())
+     f = tmp_path / "auto_legs.json"
+     f.write_text(json.dumps({"legs": [
+-- 
+2.47.1.windows.1
+

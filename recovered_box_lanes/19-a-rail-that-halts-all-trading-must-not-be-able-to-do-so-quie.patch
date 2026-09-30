@@ -1,0 +1,896 @@
+From fe09b89b60f711870e4659c0c3e095ac6736febf Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:50:06 +0200
+Subject: [PATCH] A rail that halts all trading must not be able to do so
+ quietly
+
+Re-lands the seal-classification fix the 17:12Z adoption reverted (origin was 506 commits
+behind the box, so Adopt-Release wrote origin's older blobs over it), and adds the fence that
+would have made the original outage audible on the day it started.
+
+WHAT WAS SILENT. `release_identity` refused every gold placement for seventeen days. The desk's
+only record was 1,200 rows in `decision_ledger.jsonl` -- 583 in one day, one a minute, each
+reading `release_identity_refused`. No alert, no dashboard, no human; the principal found it by
+eye. Every other signal was green: the gateway alive and reconciling each minute, a current
+`last_reconcile`, the task table Ready. An absence of orders looks exactly like a quiet market.
+Cost: 19 gold sleeve-days lost against 22 placed since 2026-09-07T07:35:15Z.
+
+`check_placement_interlock.py` reads the HALT, not its cause: a run of one reason repeating for
+one sleeve with no placement in between. Deliberately not keyed to `release_identity_refused` --
+the next halt will carry a different string and a fence built around today's would be just as
+silent for it. Thirty rows or one hour. The VENUE's own answers (broker_rejected,
+entry_inside_freeze_band, margin_guard) are reported, never breached on: a rail doing its job is
+not a bug. It caps nothing and gates no capital. Run against the live ledger it fails at once and
+names all eight halted sleeves, gold_london_am at 416 consecutive refusals over 7.3h.
+
+A FAILED DELIVERY IS NOT A REASON TO STOP THE BOOK. `Adopt-And-Seal.ps1` exited the moment
+`Adopt-Release` returned non-zero, so any delivery failure -- at 16:45Z it was `fatal: cannot
+lock ref 'HEAD'`, a lock race, with nothing wrong with the tree -- left the release unsealed, and
+an unsealed release makes the gateway refuse new risk every pass for the rest of the day. It now
+seals anyway and carries the delivery failure out in its exit code, so the task history and
+`check_adoption_freshness` still redden. This is step 5's own argument applied one stage earlier:
+an unsealed tree is "a halt bought from a slow or unrelated-red gate. That reduces the book by
+fiat, which the principal's standing order (2026-09-08) forbids." It is not a weakening -- a
+half-written tree leaves modified CODE paths uncommitted and `seal_blocking_paths()` refuses on
+exactly those, so the dangerous case is measured directly rather than inferred from an exit code.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/mt5desk/release_identity.py         |  26 +-
+ desks/mt5/scripts/Adopt-And-Seal.ps1          |  39 +-
+ desks/mt5/tests/test_release_identity.py      |  12 +
+ libs/ops/release.py                           |  62 +++-
+ scripts/check_placement_interlock.py          | 349 ++++++++++++++++++
+ scripts/run_law_gate.py                       |  13 +
+ .../test_placement_interlock_fence.py         | 211 +++++++++++
+ 7 files changed, 706 insertions(+), 6 deletions(-)
+ create mode 100644 scripts/check_placement_interlock.py
+ create mode 100644 tests/governance/test_placement_interlock_fence.py
+
+diff --git a/desks/mt5/mt5desk/release_identity.py b/desks/mt5/mt5desk/release_identity.py
+index dc171beb365..76b42607829 100644
+--- a/desks/mt5/mt5desk/release_identity.py
++++ b/desks/mt5/mt5desk/release_identity.py
+@@ -93,16 +93,40 @@ NON_CODE: frozenset[str] = frozenset({
+ #: re-seal. The governed files under these directories -- canon, judge manifest, the money path
+ #: -- are each held to their own hash in step 2 below, so classifying the DIRECTORY as state for
+ #: the SHA check loses nothing.
++#: THE MIRROR HAD SILENTLY FALLEN BEHIND THE THING IT MIRRORS (measured 2026-09-24). The comment
++#: above says `test_hash_and_allowlist_mirror_the_seal` pins these two lists together, and it
++#: asserts exactly that -- but this copy carried EIGHT prefixes while `libs.ops.release` carried
++#: TEN, missing `frontier_intel/data/` and `side_channels/data/`, and it carried no equivalent of
++#: `STATE_FILES` at all. So `desks/mt5/swap_exposure.json` -- a file the box's swap organ rewrites
++#: every hour, named in `release.STATE_FILES` precisely because it kept refusing seals -- was
++#: classified CODE by the verdict the GATEWAY reads. It sat in `changed_paths` on the live box
++#: while the gold book placed nothing. A mirror that can drift is not a mirror; the test now pins
++#: every list, and all three are reproduced verbatim from libs/ops/release.py below.
+ STATE_PREFIXES: tuple[str, ...] = (
+     "desks/mt5/data/", "desks/mt5/reports/", "desks/mt5/logs/",
++    "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
++    "desks/mt5/docs/",
+     "data/", "reports/", "logs/", "web/", "docs/",
+ )
+ 
++#: STATE ARTIFACTS THAT SIT AT THE DESK ROOT INSTEAD OF UNDER data/, verbatim from
++#: libs/ops/release.STATE_FILES (mirrored, not imported -- see PURE ON PURPOSE above).
++STATE_FILES: frozenset[str] = frozenset({
++    "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
++    "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
++    "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",
++    "desks/mt5/swap_exposure.json",
++})
++
++#: Regenerated build output, verbatim from libs/ops/release.BUILD_PREFIXES.
++BUILD_PREFIXES: tuple[str, ...] = ("dist/",)
++
+ 
+ def _is_state_path(rel: str) -> bool:
+     """A repo-relative path that is evidence/record/rendering rather than code."""
+     p = str(rel).replace("\\", "/").lstrip("./")
+-    return any(p.startswith(prefix) for prefix in STATE_PREFIXES)
++    return (p in STATE_FILES or any(p.startswith(prefix) for prefix in STATE_PREFIXES)
++            or any(p.startswith(prefix) for prefix in BUILD_PREFIXES))
+ 
+ 
+ _SHA = re.compile(r"[0-9a-f]{40}")
+diff --git a/desks/mt5/scripts/Adopt-And-Seal.ps1 b/desks/mt5/scripts/Adopt-And-Seal.ps1
+index 8ae686fd2f0..304686c47a4 100644
+--- a/desks/mt5/scripts/Adopt-And-Seal.ps1
++++ b/desks/mt5/scripts/Adopt-And-Seal.ps1
+@@ -134,6 +134,11 @@ function Log([string] $m) {
+ $script:Heartbeat = Join-Path $desk "reports\ADOPTION_HEARTBEAT.json"
+ $script:StartedAt = (Get-Date).ToUniversalTime().ToString('o')
+ $script:HeadBefore = ""
++#: Non-zero when Adopt-Release could not land the branch. The seal proceeds regardless
++#: (the blocker check proves the tree on its own evidence) and every exit carries this
++#: code out, so a delivery failure stays visible to the task history and to
++#: check_adoption_freshness.
++$script:DeliveryFailed = 0
+ try { $script:HeadBefore = (git -C $RepoRoot rev-parse HEAD 2>$null | Out-String).Trim() } catch { }
+ 
+ function Write-Heartbeat([hashtable] $fields) {
+@@ -278,7 +283,28 @@ if ($adoptConsole) {
+ }
+ $adoptExit = $LASTEXITCODE
+ if ($adoptExit -ne 0) {
+-    Log "Adopt-Release exited $adoptExit -- partial adoption; NOT sealing a tree that only half-matches the branch"
++    # A FAILED DELIVERY IS NOT A REASON TO STOP THE BOOK (2026-09-24). This used to `Done` here,
++    # so a delivery that failed for ANY reason -- a lost index.lock race with another writer, a
++    # path .gitignore now covers, a HEAD that moved under us -- left the release unsealed, and an
++    # unsealed release makes `release_identity` refuse NEW risk on every gateway pass for the
++    # rest of the day. Measured that day: gold_london_am (10:00Z) and gold_afternoon (14:00Z)
++    # placed nothing, and the 16:45Z adoption had failed on `cannot lock ref 'HEAD'` -- a race,
++    # with nothing wrong with the tree at all.
++    #
++    # This is the argument step 5 of this script already makes for the gate attestation, applied
++    # one stage earlier: "an unsealed tree means release_identity refuses NEW risk on every
++    # gateway pass -- a halt bought from a slow or unrelated-red gate. That reduces the book by
++    # fiat, which the principal's standing order (2026-09-08) forbids."
++    #
++    # IT IS NOT A WEAKENING, BECAUSE THE SEAL STILL PROVES THE TREE ITSELF. A half-written
++    # adoption leaves modified CODE paths uncommitted, and `release.seal_blocking_paths()` below
++    # refuses on exactly those -- so the dangerous case this guard was written for is caught by
++    # the check that measures it directly, rather than inferred from an exit code that is just as
++    # often a lock race. What we seal is a COMMIT; a tree that is not one cannot get past the
++    # blocker check. The delivery failure is still reported and still carried out in the exit
++    # code below, so `check_adoption_freshness` and the task history see it unchanged.
++    $script:DeliveryFailed = $adoptExit
++    Log "Adopt-Release exited $adoptExit -- partial adoption; the tree is NOT current with the branch"
+     # THE PATHS, IN THIS LOG, NOW. `desks/mt5/reports/ADOPTION_STATE.json` carries the full list
+     # for plumbing_watchdog; the operator reading this file gets the first dozen without having
+     # to know the artifact exists.
+@@ -294,7 +320,8 @@ if ($adoptExit -ne 0) {
+         Log ("    " + $line.Trim())
+     }
+     Log "full console: desks/mt5/logs/adopt_release_console.log; paths: desks/mt5/reports/ADOPTION_STATE.json"
+-    Done $adoptExit "adopt-release-partial"
++    Log "continuing to the seal anyway: an undelivered tree is a stale box, an UNSEALED tree is a"
++    Log "box that refuses every order -- and the seal below proves the tree on its own evidence"
+ }
+ 
+ # ------------------------------------------------------ 2. seal, only if HEAD is not sealed
+@@ -306,7 +333,7 @@ if (Test-Path $release) {
+ }
+ if ($sealed -eq $head) {
+     Log "HEAD $($head.Substring(0,12)) is already the sealed code; nothing to do"
+-    Done 0 "already-sealed"
++    Done $script:DeliveryFailed "already-sealed"
+ }
+ # A SEAL COMMIT OR A STATE-SYNC COMMIT ON TOP OF THE SEALED CODE IS THE SAME RELEASE. After the
+ # first seal HEAD is the seal commit itself, and every quarter-hour sync moves it again, so
+@@ -317,7 +344,7 @@ if ($sealed) {
+     $acc = & $py @pyArgs -c "import sys; from libs.ops import release; ok, why, _ = release.accepts(sys.argv[1], release.load() or {}); print('OK' if ok else 'NO'); print(why)" $head 2>$null
+     if ("$acc" -match '^OK') {
+         Log "HEAD $($head.Substring(0,12)) is the sealed release $($sealed.Substring(0,12)) plus seal/state commits only; nothing to seal"
+-        Done 0 "accepts-nothing-to-seal"
++        Done $script:DeliveryFailed "accepts-nothing-to-seal"
+     }
+ }
+ # `release.seal` refuses a tree with a dirty CODE path. Say so HERE, with the paths, rather than
+@@ -384,4 +411,8 @@ Start-ScheduledTask -TaskName "MT5-GateAttest" -ErrorAction SilentlyContinue
+ # into a veto is the principal's call, not this script's.
+ & $py @pyArgs (Join-Path $desk "research\release_authority.py") --once 2>&1 | ForEach-Object { Log "  $_" }
+ Log "sealed $($head.Substring(0,12)) from $Branch; resident asked to recycle; gate attestation triggered"
++# THE SEAL SUCCEEDED AND THE DELIVERY DID NOT: both facts are carried. The book trades on the
++# tree this box verifiably runs; the task history still shows the delivery failure so
++# `check_adoption_freshness` reddens and somebody fixes the reason the branch did not land.
++if ($script:DeliveryFailed) { Done $script:DeliveryFailed "sealed-after-failed-delivery" }
+ Done 0 "sealed"
+diff --git a/desks/mt5/tests/test_release_identity.py b/desks/mt5/tests/test_release_identity.py
+index 4c082843b96..edb61396155 100644
+--- a/desks/mt5/tests/test_release_identity.py
++++ b/desks/mt5/tests/test_release_identity.py
+@@ -362,8 +362,20 @@ def test_health_summary_reads_the_shadow_cycle_shape(tmp_path: Path,
+ 
+ # ---------------------------------------------------------------------------- parity
+ def test_hash_and_allowlist_mirror_the_seal(tmp_path: Path) -> None:
++    """EVERY list this module mirrors, pinned. The prefix assertion was here and PASSING while
++    the two lists differed by two entries -- because nothing ran it on the box. `STATE_FILES` and
++    `BUILD_PREFIXES` were not pinned at all, which is how `desks/mt5/swap_exposure.json` came to
++    be state to the seal and CODE to the verdict the gateway reads (2026-09-24)."""
+     assert ri.NON_CODE == release.NON_CODE
+     assert ri.STATE_PREFIXES == release.STATE_PREFIXES
++    assert ri.STATE_FILES == release.STATE_FILES
++    assert ri.BUILD_PREFIXES == release.BUILD_PREFIXES
++    # The classification itself, not just the constants: one function, same answer.
++    for rel in ("desks/mt5/swap_exposure.json", "desks/mt5/docs/TRADE_PATH_REPORT.md",
++                "dist/quant-platform.zip", "desks/mt5/frontier_intel/data/q.jsonl",
++                "desks/mt5/mt5desk/gateway.py", "libs/portfolio/rails.py"):
++        assert ri._is_state_path(rel) == (
++            release.is_state_path(rel) or release.is_build_artifact(rel)), rel
+     (tmp_path / "a.py").write_bytes(b"x = 1\r\n")
+     (tmp_path / "b.py").write_bytes(b"y = 2\n")
+     paths = ("a.py", "b.py", "absent.py")
+diff --git a/libs/ops/release.py b/libs/ops/release.py
+index a43328d49ec..24ca91ec0f2 100644
+--- a/libs/ops/release.py
++++ b/libs/ops/release.py
+@@ -363,7 +363,7 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
+     if head == "unknown":
+         raise RuntimeError("cannot seal: git HEAD is unknown here (no git, or not a repository)")
+     dirty = dirty_paths(r)
+-    dirty_code = [p for p in dirty if not is_state_path(p)]
++    dirty_code = seal_blocking_paths(dirty=dirty)
+     if dirty_code and not allow_dirty:
+         raise RuntimeError(f"cannot seal a dirty tree ({len(dirty_code)} tracked code path(s) "
+                            f"differ from HEAD: {dirty_code[:5]}); commit them or pass allow_dirty")
+@@ -435,6 +435,14 @@ STATE_PREFIXES: tuple[str, ...] = (
+     # box ran unsealed code for five batches). A path an hourly organ writes is state
+     # wherever it lives; the seal must never wait on it.
+     "desks/mt5/frontier_intel/data/", "desks/mt5/side_channels/data/",
++    # THE DESK'S OWN GENERATED DOCUMENTATION (measured 2026-09-24). Root `docs/` has been state
++    # since this list was written; `desks/mt5/docs/` is the same category one directory deeper
++    # and was in none of the three copies of this classification. `research/trade_path.py`
++    # rewrites `desks/mt5/docs/TRADE_PATH_REPORT.md` on its clock, so that one file was dirty at
++    # essentially every hourly seal attempt -- it appears by name in the box's refusal at
++    # 15:19:41Z. A markdown report cannot change what the gateway executes; refusing to seal on
++    # it only stopped the book from trading.
++    "desks/mt5/docs/",
+     "data/", "reports/", "logs/", "web/", "docs/",
+ )
+ 
+@@ -483,12 +491,64 @@ STATE_FILES: frozenset[str] = frozenset({
+ })
+ 
+ 
++#: REGENERATED BUILD OUTPUT -- neither code to protect nor state to carry, and the third thing
++#: that has refused every seal on this box.
++#:
++#: IT WAS ALREADY FIXED ONCE, IN THE WRONG FILE (2026-09-24, commit c12e17876f). That fix added
++#: `dist/` to a PRIVATE list inside `Adopt-And-Seal.ps1` and not here, so the script stopped
++#: refusing at its own pre-check and `seal()` raised on the very next line instead: the same
++#: halt, one stage later, recorded as `seal-failed` (exit 4) rather than `dirty-code-path`
++#: (exit 3). Its own commit message was "A regenerated build artifact was refusing every seal,
++#: forever" -- and it still was. That is what a classification living in two places costs.
++BUILD_PREFIXES: tuple[str, ...] = ("dist/",)
++
++
+ def is_state_path(rel: str) -> bool:
+     """A repo-relative path that is evidence/record/rendering rather than code."""
+     p = str(rel).replace("\\", "/").lstrip("./")
+     return p in STATE_FILES or any(p.startswith(prefix) for prefix in STATE_PREFIXES)
+ 
+ 
++def is_build_artifact(rel: str) -> bool:
++    """Regenerated build output: not code to protect, not state to carry -- a third category."""
++    p = str(rel).replace("\\", "/").lstrip("./")
++    return any(p.startswith(prefix) for prefix in BUILD_PREFIXES)
++
++
++def seal_blocking_paths(root: Path | None = None, *,
++                        dirty: list[str] | None = None) -> list[str]:
++    """THE ONE ANSWER TO "what stops a seal": tracked paths that differ from HEAD and are
++    neither desk state nor regenerated build output.
++
++    WHY THIS EXISTS, MEASURED ON THE TRADING BOX 2026-09-24. Three copies of this one
++    classification were live at once -- `STATE_PREFIXES`/`STATE_FILES` here, a private
++    `$statePrefixes`/`$buildArtifacts` pair inside `Adopt-And-Seal.ps1`, and a third list in
++    `mt5desk/release_identity.py` -- and a seal needed ALL THREE to agree. They did not:
++
++        dist/quant-platform.zip        known to Adopt-And-Seal.ps1, unknown here
++                                       -> pre-check passed and seal() raised: exit 4, not exit 3
++        desks/mt5/swap_exposure.json   known to STATE_FILES here, unknown to the script
++                                       -> "refusing to seal", 15:19:41Z and 2026-09-23 06:37Z
++        desks/mt5/docs/*.md            known to NONE of them          -> "refusing to seal"
++        frontier_intel/, side_channels/  known here, not to release_identity's mirror
++                                       -> classified CODE by the verdict the GATEWAY reads
++
++    Every one of those paths is rewritten by an organ on a clock, so every disagreement was
++    PERMANENT. The box sealed at 05:53Z and refused every seal for the rest of that day; the
++    gateway's release interlock therefore refused every placement from 10:00Z onward, and
++    `gold_london_am` and `gold_afternoon` placed nothing. Since 2026-09-07 that pattern cost 19
++    gold sleeve-days against 22 that landed, and 1,200 refusal rows nobody read.
++
++    THIS DOES NOT WIDEN WHAT THE SEAL PROTECTS. Every path it sets aside is one an organ
++    regenerates; the identity verdict still holds the money path, the signed judge manifest and
++    the survivor canon to their own per-file digests, and a real code edit still blocks the seal
++    exactly as before. `dirty` lets a caller that already paid for `git status` reuse it, so the
++    rule cannot drift between the two readings taken in one pass.
++    """
++    paths = dirty_paths(root) if dirty is None else dirty
++    return [p for p in paths if not is_state_path(p) and not is_build_artifact(p)]
++
++
+ def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None = None
+             ) -> tuple[bool, str, list[str]]:
+     """Is `running_sha` the sealed code? (ok, why, the code paths that say otherwise).
+diff --git a/scripts/check_placement_interlock.py b/scripts/check_placement_interlock.py
+new file mode 100644
+index 00000000000..5a8400f2004
+--- /dev/null
++++ b/scripts/check_placement_interlock.py
+@@ -0,0 +1,349 @@
++#!/usr/bin/env python
++"""A RAIL THAT HALTS ALL TRADING MUST NOT BE ABLE TO DO SO QUIETLY.
++
++WHAT HAPPENED, AND WHY THIS FILE EXISTS (2026-09-24).
++
++`mt5desk/release_identity.verdict()` decides whether the box may open new risk. It is a good
++rail and on 2026-09-24 it was right to fire: the box had sealed `dbbbbdcc4d2f` at 05:53Z and
++every hourly re-seal afterwards was refused, so the running tree genuinely was not the sealed
++one. The gateway did exactly what it was built to do -- it kept managing open positions, kept
++ratcheting stops, and opened nothing.
++
++It wrote that decision to `decision_ledger.jsonl` five hundred and eighty-three times that day,
++once a minute, each row reading `release_identity_refused`. `gold_london_am` (10:00Z) and
++`gold_afternoon` (14:00Z) placed nothing. **Not one of those rows reached an alert, a dashboard
++or a human.** The principal found it by eye, and asked why the desk had not.
++
++Walking the ledger backwards afterwards: the first `release_identity_refused` is
++2026-09-07T07:35:15Z, seventeen days earlier. 1,200 rows. 19 gold sleeve-days lost against 22
++placed -- the interlock silently took roughly 46% of the book's placement opportunities over
++two and a half weeks, and the desk's own evidence recorded every one of them.
++
++THE DEFECT IS NOT THE RAIL. It is that a halt could persist indefinitely while every organ
++reported healthy: the gateway was alive and reconciling every minute, `gateway_state.json` had
++a current `last_reconcile`, the task table read Ready, and the ledger filled up with the
++evidence nobody read. An absence of orders looks exactly like a quiet market.
++
++SO THIS FENCE READS THE HALT ITSELF, NOT ITS CAUSE. It does not ask why placement was refused;
++it asks whether one reason has been repeating for one sleeve with no placement in between. That
++generalises past today's instance on purpose -- the next halt will have a different `reason`
++string, and a fence keyed to `release_identity_refused` would miss it exactly as thoroughly.
++
++Two breaches, either sufficient:
++
++  (a) A SLEEVE HAS BEEN REFUSED IN A RUN. `TRAILING_REFUSALS_MAX` consecutive not-taken rows
++      sharing one reason, with no placement since, or a run spanning `TRAILING_HOURS_MAX`. At
++      one row a minute, thirty rows is half an hour of a window that is open and not placing --
++      short enough to catch the day it happens, long enough that a single contended seal or a
++      minute of venue trouble does not page anybody.
++  (b) THE IDENTITY VERDICT ITSELF REFUSES, and has for longer than the same grace. This is the
++      belt to (a)'s braces: it fires even if the gateway stops writing ledger rows at all, which
++      is the one failure mode a ledger-shaped fence cannot see.
++
++IT CAPS NOTHING AND GATES NO CAPITAL. It never touches a sleeve, a lot, a threshold or the heat
++floor; it fails a check when the desk has stopped placing and has not said so. If anything it
++exists to make the book trade MORE, by ending halts in minutes rather than days.
++
++NOT-APPLICABLE IS NOT UNMEASURED (L1.43). A host with no decision ledger and no gateway state
++never places orders -- CI, a fresh clone, the VPS -- and passes saying so. A host that HAS a
++gateway and produces no readable ledger is UNMEASURED and FAILS (L1.28a, WS-005), because "no
++evidence" is precisely what the outage looked like.
++
++Artifact: `desks/mt5/reports/PLACEMENT_INTERLOCK.json`, and an entry in `data/alert_ledger.json`
++so the condition has a lifecycle rather than only a count. Registered in
++`scripts/run_law_gate.py` `_STATE_FENCES`.
++
++    python scripts/check_placement_interlock.py
++    python scripts/check_placement_interlock.py --json
++"""
++from __future__ import annotations
++
++import argparse
++import json
++import sys
++from datetime import UTC, datetime
++from pathlib import Path
++from typing import Any
++
++ROOT = Path(__file__).resolve().parent.parent
++DESK = ROOT / "desks" / "mt5"
++OUT = DESK / "reports" / "PLACEMENT_INTERLOCK.json"
++
++LEDGER_REL = "desks/mt5/data/decision_ledger.jsonl"
++IDENTITY_REL = "desks/mt5/data/release_identity.json"
++GATEWAY_STATE_REL = "desks/mt5/data/gateway_state.json"
++
++#: Consecutive same-reason refusals for one sleeve that count as a halt rather than a hiccup.
++#: The gateway writes one row per pass per sleeve, and a pass is a minute.
++TRAILING_REFUSALS_MAX = 30
++#: ...or the same run measured in time, for a gateway whose pass interval is longer.
++TRAILING_HOURS_MAX = 1.0
++
++#: Reasons that are the VENUE's answer rather than the desk's own refusal. A broker rejection or
++#: a freeze-band skip is the market saying no to one order; it is not the desk declining to
++#: trade, and a run of them means something different. They are reported, never breached on.
++VENUE_REASONS: frozenset[str] = frozenset({
++    "broker_rejected", "entry_inside_freeze_band", "margin_guard",
++})
++
++#: The row's own field names, in the order the ledger has used them.
++_TS_FIELDS = ("decided_at", "ts", "at", "time")
++_TAKEN_REASONS = frozenset({"placed"})
++
++UNMEASURED = "UNMEASURED"
++ALERT_ID = "placement_interlock_halt"
++
++
++def _now() -> datetime:
++    return datetime.now(tz=UTC)
++
++
++def _parse_iso(text: Any) -> datetime | None:
++    raw = str(text or "").strip()
++    if not raw:
++        return None
++    if raw.endswith("Z"):
++        raw = raw[:-1] + "+00:00"
++    try:
++        stamp = datetime.fromisoformat(raw)
++    except ValueError:
++        return None
++    return stamp if stamp.tzinfo else stamp.replace(tzinfo=UTC)
++
++
++def _row_time(row: dict[str, Any]) -> datetime | None:
++    for field in _TS_FIELDS:
++        if row.get(field):
++            stamp = _parse_iso(row[field])
++            if stamp is not None:
++                return stamp
++    return None
++
++
++def _was_taken(row: dict[str, Any]) -> bool:
++    """A row that put an order at the venue. `taken` is authoritative where present; the older
++    rows carry only `reason`/`outcome`, so both are read rather than assumed."""
++    if isinstance(row.get("taken"), bool):
++        return bool(row["taken"])
++    if str(row.get("reason") or "") in _TAKEN_REASONS:
++        return True
++    return str(row.get("outcome") or "").upper() in ("EXECUTED", "PLACED", "FILLED")
++
++
++def read_ledger(path: Path, *, limit: int = 40000) -> tuple[list[dict[str, Any]], str | None]:
++    """The last `limit` decision rows, newest last. Returns (rows, problem)."""
++    try:
++        raw = path.read_text("utf-8", errors="replace").splitlines()
++    except OSError as exc:
++        return [], f"{LEDGER_REL} exists but could not be read ({type(exc).__name__})"
++    rows: list[dict[str, Any]] = []
++    for line in raw[-limit:]:
++        line = line.strip()
++        if not line:
++            continue
++        try:
++            row = json.loads(line)
++        except ValueError:
++            continue
++        if isinstance(row, dict):
++            rows.append(row)
++    return rows, None
++
++
++def trailing_runs(rows: list[dict[str, Any]], now: datetime) -> dict[str, dict[str, Any]]:
++    """Per sleeve: the run of consecutive not-taken rows sharing one reason at the END of its
++    history. A placement, or a row with a different reason, ends the run -- which is what makes
++    this a measure of "still refusing right now" rather than a lifetime count."""
++    by_sleeve: dict[str, list[dict[str, Any]]] = {}
++    for row in rows:
++        by_sleeve.setdefault(str(row.get("sleeve") or row.get("strategy_id") or "?"),
++                             []).append(row)
++    runs: dict[str, dict[str, Any]] = {}
++    for sleeve, history in by_sleeve.items():
++        run: list[dict[str, Any]] = []
++        reason: str | None = None
++        for row in reversed(history):
++            if _was_taken(row):
++                break
++            this = str(row.get("reason") or "")
++            if reason is None:
++                reason = this
++            elif this != reason:
++                break
++            run.append(row)
++        if not run or not reason:
++            continue
++        stamps = [s for s in (_row_time(r) for r in run) if s is not None]
++        first, last = (min(stamps), max(stamps)) if stamps else (None, None)
++        runs[sleeve] = {
++            "reason": reason,
++            "count": len(run),
++            "first_at": first.isoformat(timespec="seconds") if first else UNMEASURED,
++            "last_at": last.isoformat(timespec="seconds") if last else UNMEASURED,
++            "span_h": round((last - first).total_seconds() / 3600.0, 3) if first and last
++            else None,
++            "age_h": round((now - last).total_seconds() / 3600.0, 3) if last else None,
++            "venue_reason": reason in VENUE_REASONS,
++        }
++    return runs
++
++
++def _read_json(path: Path) -> dict[str, Any] | None:
++    try:
++        doc = json.loads(path.read_text("utf-8"))
++    except (OSError, ValueError):
++        return None
++    return doc if isinstance(doc, dict) else None
++
++
++def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
++    base = Path(root or ROOT)
++    t_now = now or _now()
++    ledger = base / Path(*LEDGER_REL.split("/"))
++    identity = base / Path(*IDENTITY_REL.split("/"))
++    gateway_state = base / Path(*GATEWAY_STATE_REL.split("/"))
++
++    doc: dict[str, Any] = {
++        "generated": t_now.isoformat(timespec="seconds"), "root": str(base),
++        "thresholds": {"trailing_refusals_max": TRAILING_REFUSALS_MAX,
++                       "trailing_hours_max": TRAILING_HOURS_MAX},
++        "problems": [], "notes": [], "runs": {}, "ok": True, "verdict": "OK",
++    }
++
++    # NOT APPLICABLE: a host that never places orders has nothing to be silent about.
++    if not ledger.exists() and not gateway_state.exists():
++        doc["verdict"] = "NOT_APPLICABLE"
++        doc["notes"].append(
++            "no decision ledger and no gateway state here -- this host does not place orders, "
++            "so there is no placement halt it could be hiding")
++        return doc
++
++    if not ledger.exists():
++        doc.update(ok=False, verdict="UNMEASURED")
++        doc["problems"].append(
++            f"this host has {GATEWAY_STATE_REL} but no {LEDGER_REL}: a gateway that places "
++            "orders and records no decisions is exactly what a silent halt looks like")
++        return doc
++
++    rows, problem = read_ledger(ledger)
++    if problem:
++        doc.update(ok=False, verdict="UNMEASURED")
++        doc["problems"].append(problem)
++        return doc
++    if not rows:
++        doc.update(ok=False, verdict="UNMEASURED")
++        doc["problems"].append(f"{LEDGER_REL} holds no readable decision rows")
++        return doc
++
++    runs = trailing_runs(rows, t_now)
++    doc["runs"] = runs
++    doc["rows_scanned"] = len(rows)
++
++    for sleeve, run in sorted(runs.items()):
++        long_by_count = run["count"] >= TRAILING_REFUSALS_MAX
++        span = run.get("span_h")
++        long_by_time = isinstance(span, (int, float)) and span >= TRAILING_HOURS_MAX
++        if not (long_by_count or long_by_time):
++            continue
++        if run["venue_reason"]:
++            doc["notes"].append(
++                f"{sleeve}: {run['count']} consecutive '{run['reason']}' rows -- the VENUE's "
++                "answer, not the desk declining to trade; reported, not breached")
++            continue
++        doc["ok"] = False
++        doc["problems"].append(
++            f"{sleeve} has been refused {run['count']} times in a row on '{run['reason']}' "
++            f"since {run['first_at']}"
++            + (f" ({span:.1f}h)" if isinstance(span, (int, float)) else "")
++            + " with no placement in between -- a halt this long has to be visible somewhere, "
++              "and until this fence existed it was not")
++
++    # (b) The verdict itself, for the case where the gateway stops writing rows entirely.
++    ident = _read_json(identity)
++    if ident is None:
++        doc["notes"].append(f"{IDENTITY_REL} unreadable; the ledger half of this fence still ran")
++    else:
++        doc["identity"] = {
++            "verdict": ident.get("verdict"), "allows_new_risk": ident.get("allows_new_risk"),
++            "at": ident.get("at"), "reason": str(ident.get("reason") or "")[:400],
++        }
++        stamp = _parse_iso(ident.get("at"))
++        age_h = (t_now - stamp).total_seconds() / 3600.0 if stamp else None
++        doc["identity"]["age_h"] = round(age_h, 3) if age_h is not None else UNMEASURED
++        if ident.get("allows_new_risk") is False and (age_h is None
++                                                      or age_h <= TRAILING_HOURS_MAX * 3):
++            doc["ok"] = False
++            doc["problems"].append(
++                "the release identity currently refuses new risk "
++                f"({ident.get('verdict')}): {str(ident.get('reason') or '')[:220]}")
++
++    doc["verdict"] = "OK" if doc["ok"] else "HALTED"
++    return doc
++
++
++def record_alert(doc: dict[str, Any], root: Path | None = None) -> str | None:
++    """Give the condition a LIFECYCLE, not just a count. A halt that opens and is never closed
++    is the shape this whole file is about; `AlertLedger` is where the desk already keeps that."""
++    base = Path(root or ROOT)
++    try:
++        sys.path.insert(0, str(base))
++        from libs.ops.alert_ledger import AlertLedger
++    except Exception:
++        return None
++    try:
++        ledger = AlertLedger(base / "data" / "alert_ledger.json")
++        if doc.get("ok") or doc.get("verdict") == "NOT_APPLICABLE":
++            alert = ledger.alerts.get(ALERT_ID)
++            if alert is not None and alert.open:
++                # `verify` and not an absence: this scan IS the re-run of the check, which is the
++                # only evidence `AlertLedger` accepts for closing something (and rightly).
++                ledger.verify(ALERT_ID, still_firing=False)
++                ledger.save()
++                return "FIXED"
++            return None
++        ledger.observe(ALERT_ID, "; ".join(str(p) for p in doc.get("problems", []))[:600],
++                       scope="RUNTIME")
++        ledger.save()
++        return "OPEN"
++    except Exception:
++        return None
++
++
++def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
++    path = Path(target or OUT)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(json.dumps(doc, indent=2, default=str) + "\n", encoding="utf-8")
++    return path
++
++
++def main(argv: list[str] | None = None) -> int:
++    ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
++    ap.add_argument("--json", action="store_true", help="print the artifact as JSON")
++    ap.add_argument("--no-write", action="store_true", help="do not write the artifact")
++    args = ap.parse_args(argv)
++
++    doc = scan()
++    if not args.no_write:
++        write_artifact(doc)
++        doc["alert"] = record_alert(doc)
++    if args.json:
++        print(json.dumps(doc, indent=2, default=str))
++        return 0 if doc["ok"] else 2
++
++    print(f"placement interlock: {doc.get('verdict')}; "
++          f"{len(doc.get('runs') or {})} sleeve(s) with a trailing refusal run")
++    for sleeve, run in sorted((doc.get("runs") or {}).items()):
++        print(f"  {sleeve}: {run['count']}x '{run['reason']}' since {run['first_at']}")
++    for note in doc["notes"]:
++        print(f"  note: {note}")
++    for problem in doc["problems"]:
++        print(f"  FAIL: {problem}")
++    if doc["ok"]:
++        print("check_placement_interlock: OK -- no sleeve is silently halted")
++        return 0
++    print("check_placement_interlock: FAILED -- the desk has stopped placing and did not say so")
++    return 2
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/scripts/run_law_gate.py b/scripts/run_law_gate.py
+index 0089964f932..a9eafbf584e 100644
+--- a/scripts/run_law_gate.py
++++ b/scripts/run_law_gate.py
+@@ -497,6 +497,19 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
+     # clone and the VPS stay green (L1.43) -- but on the box, no evidence is UNMEASURED and
+     # UNMEASURED fails, because no evidence is exactly what the outage looked like (L1.28a).
+     ("check_adoption_freshness.py", ()),
++    # THE HALT ITSELF, NOT ITS CAUSE (2026-09-24). The fence above asks whether the box adopted;
++    # this one asks whether the box is still PLACING. They are not the same question and the day
++    # that proved it is the day this was written: adoption had been succeeding or failing by
++    # turns for seventeen days while `release_identity` refused every order, and the gateway
++    # recorded 1,200 `release_identity_refused` rows -- one a minute, 583 of them in a single day
++    # -- that reached no alert, no dashboard and no human. The principal found it by eye. A rail
++    # that halts all trading must not be able to do so quietly, and every other signal the desk
++    # had was green: the gateway was alive, reconciling each minute, task table Ready.
++    # It reads the decision ledger for a run of one reason repeating for one sleeve with no
++    # placement in between, so it is not keyed to today's `reason` string -- the next halt will
++    # carry a different one. It caps nothing and gates no capital; if anything it makes the book
++    # trade MORE, by ending halts in minutes rather than days.
++    ("check_placement_interlock.py", ()),
+     # on a schedule and whose artifact no production file reads is BURNING -- an orphan the desk
+     # pays compute for every hour -- and the BURNING count ratchets DOWN only. The clock half is
+     # exact (the four scheduler planes), so BURNING is the one population this census may fence
+diff --git a/tests/governance/test_placement_interlock_fence.py b/tests/governance/test_placement_interlock_fence.py
+new file mode 100644
+index 00000000000..2f69db0080c
+--- /dev/null
++++ b/tests/governance/test_placement_interlock_fence.py
+@@ -0,0 +1,211 @@
++"""THE TEST THAT FAILS IF A SILENT PERMANENT HALT CAN RECUR.
++
++On 2026-09-24 the live gold book placed nothing at 10:00Z or 14:00Z. The gateway wrote 583
++`release_identity_refused` rows that day -- one a minute -- and not one of them reached an
++alert, a dashboard or a human; the principal found it by eye. The first such row is
++2026-09-07T07:35:15Z, so the condition had been costing windows for seventeen days while every
++organ reported healthy.
++
++Two things are pinned here, and they are different claims:
++
++  1. `scripts/check_placement_interlock.py` SEES the halt -- given the ledger the box actually
++     had that day, it fails.
++  2. The fence is WIRED. A checker nobody runs is the same silence with more files in it, which
++     is the defect this whole area keeps producing (LAWS III.16: unwired or idle is a defect).
++
++The seal-classification half is pinned in `desks/mt5/tests/test_release_identity.py`; this file
++is about the halt being audible, not about why it happened.
++"""
++from __future__ import annotations
++
++import importlib.util
++import json
++from datetime import UTC, datetime, timedelta
++from pathlib import Path
++
++import pytest
++
++ROOT = Path(__file__).resolve().parents[2]
++_SPEC = importlib.util.spec_from_file_location(
++    "check_placement_interlock", ROOT / "scripts" / "check_placement_interlock.py")
++assert _SPEC and _SPEC.loader
++fence = importlib.util.module_from_spec(_SPEC)
++_SPEC.loader.exec_module(fence)
++
++LEDGER = "desks/mt5/data/decision_ledger.jsonl"
++GATEWAY_STATE = "desks/mt5/data/gateway_state.json"
++IDENTITY = "desks/mt5/data/release_identity.json"
++
++NOW = datetime(2026, 9, 24, 16, 50, tzinfo=UTC)
++
++
++def _write(root: Path, rel: str, text: str) -> Path:
++    p = root / Path(*rel.split("/"))
++    p.parent.mkdir(parents=True, exist_ok=True)
++    p.write_text(text, "utf-8")
++    return p
++
++
++def _rows(n: int, *, sleeve: str, reason: str, start: datetime,
++          step_s: int = 60, taken: bool = False) -> list[str]:
++    out = []
++    for i in range(n):
++        out.append(json.dumps({
++            "decided_at": (start + timedelta(seconds=i * step_s)).isoformat(),
++            "sleeve": sleeve, "strategy_id": sleeve, "symbol": "XAUUSD",
++            "reason": reason, "taken": taken,
++            "outcome": "EXECUTED" if taken else "VENUE_UNAVAILABLE",
++        }))
++    return out
++
++
++@pytest.fixture
++def box(tmp_path: Path) -> Path:
++    """A host that places orders: it has a gateway state, so silence is measurable."""
++    _write(tmp_path, GATEWAY_STATE, json.dumps({"armed": True, "last_reconcile": NOW.isoformat()}))
++    return tmp_path
++
++
++# --------------------------------------------------------------- 1. the fence sees the halt
++def test_the_day_the_gold_book_went_quiet_is_a_failure(box: Path) -> None:
++    """The measured shape of 2026-09-24: one placement early, then refusals all day."""
++    rows = _rows(2, sleeve="gold_asia", reason="placed",
++                 start=NOW - timedelta(hours=11), taken=True)
++    rows += _rows(398, sleeve="gold_london_am", reason="release_identity_refused",
++                  start=NOW - timedelta(hours=6, minutes=38))
++    _write(box, LEDGER, "\n".join(rows) + "\n")
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is False, doc
++    assert doc["verdict"] == "HALTED"
++    assert any("gold_london_am" in p for p in doc["problems"]), doc["problems"]
++    run = doc["runs"]["gold_london_am"]
++    assert run["count"] == 398
++    assert run["reason"] == "release_identity_refused"
++    assert run["span_h"] is not None and run["span_h"] > fence.TRAILING_HOURS_MAX
++
++
++def test_a_halt_is_caught_by_duration_even_when_the_row_count_is_small(box: Path) -> None:
++    """A gateway that passes every ten minutes writes far fewer rows for the same outage. A
++    fence that only counted rows would miss it entirely."""
++    _write(box, LEDGER, "\n".join(_rows(
++        6, sleeve="gold_afternoon", reason="release_identity_refused",
++        start=NOW - timedelta(hours=3), step_s=1800)) + "\n")
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is False
++    assert doc["runs"]["gold_afternoon"]["count"] < fence.TRAILING_REFUSALS_MAX
++    assert any("gold_afternoon" in p for p in doc["problems"])
++
++
++def test_the_fence_is_not_keyed_to_todays_reason_string(box: Path) -> None:
++    """The next halt will carry a different `reason`. A fence written around
++    `release_identity_refused` would be silent for it in exactly the same way."""
++    _write(box, LEDGER, "\n".join(_rows(
++        120, sleeve="gold_asia", reason="some_future_veto_nobody_has_written_yet",
++        start=NOW - timedelta(hours=2))) + "\n")
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is False
++    assert any("some_future_veto_nobody_has_written_yet" in p for p in doc["problems"])
++
++
++def test_a_placement_clears_the_run(box: Path) -> None:
++    """Refusals BEFORE a placement are history, not a halt -- otherwise the fence would stay red
++    forever on a ledger that never forgets, and a permanently red fence gets switched off."""
++    rows = _rows(300, sleeve="gold_asia", reason="release_identity_refused",
++                 start=NOW - timedelta(hours=9))
++    rows += _rows(2, sleeve="gold_asia", reason="placed",
++                  start=NOW - timedelta(minutes=5), taken=True)
++    _write(box, LEDGER, "\n".join(rows) + "\n")
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is True, doc["problems"]
++    assert "gold_asia" not in doc["runs"]
++
++
++def test_the_venues_own_answer_is_reported_not_breached(box: Path) -> None:
++    """A run of broker rejections is the market saying no, not the desk declining to trade.
++    Breaching on it would teach the desk to treat a rail as a bug."""
++    _write(box, LEDGER, "\n".join(_rows(
++        90, sleeve="gold_london_am", reason="broker_rejected",
++        start=NOW - timedelta(hours=2))) + "\n")
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is True, doc["problems"]
++    assert any("broker_rejected" in n for n in doc["notes"])
++
++
++def test_a_refusing_identity_fails_even_with_no_ledger_rows(box: Path) -> None:
++    """Breach (b). The one failure a ledger-shaped fence cannot see is a gateway that stops
++    writing rows at all -- so the verdict itself is read directly."""
++    _write(box, LEDGER, "\n".join(_rows(
++        1, sleeve="gold_asia", reason="placed", start=NOW - timedelta(minutes=2),
++        taken=True)) + "\n")
++    _write(box, IDENTITY, json.dumps({
++        "verdict": "REFUSED", "allows_new_risk": False, "ok": False,
++        "at": (NOW - timedelta(minutes=1)).isoformat(),
++        "reason": "running f08c1fcf4ab2 carries 139 path(s) the sealed release never named"}))
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is False
++    assert any("refuses new risk" in p for p in doc["problems"]), doc["problems"]
++
++
++# --------------------------------------------------- 2. applicability: red everywhere is off
++def test_a_host_that_places_nothing_is_not_applicable(tmp_path: Path) -> None:
++    """CI, a fresh clone and the VPS never place an order. A fence red on every machine that was
++    never supposed to trade is a fence somebody switches off (L1.43)."""
++    doc = fence.scan(tmp_path, now=NOW)
++    assert doc["verdict"] == "NOT_APPLICABLE"
++    assert doc["ok"] is True
++
++
++def test_a_gateway_host_with_no_ledger_is_unmeasured_and_fails(box: Path) -> None:
++    """UNMEASURED is a verdict, not a pass (L1.28a, WS-005). No evidence is exactly what the
++    outage looked like."""
++    doc = fence.scan(box, now=NOW)
++    assert doc["verdict"] == "UNMEASURED"
++    assert doc["ok"] is False
++
++
++def test_an_unreadable_ledger_is_unmeasured_not_healthy(box: Path) -> None:
++    _write(box, LEDGER, "")
++    doc = fence.scan(box, now=NOW)
++    assert doc["verdict"] == "UNMEASURED"
++    assert doc["ok"] is False
++
++
++# ------------------------------------------------------------------- 3. the fence is WIRED
++def test_the_fence_runs_on_a_clock() -> None:
++    """A checker nobody runs is the same silence with more files in it (LAWS III.16). This is
++    the assertion that would have failed on 2026-09-23, when the halt was already 17 days old
++    and no registered gate looked at the decision ledger at all."""
++    gate = (ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
++    assert "check_placement_interlock.py" in gate, (
++        "check_placement_interlock.py is not registered in run_law_gate.py -- an unwired fence "
++        "is a claim the desk cannot cash (L1.49)")
++
++
++def test_the_fence_never_caps_or_gates_capital() -> None:
++    """GROWTH GOVERNANCE. This file may make the book trade MORE by ending halts sooner; it must
++    never be the thing that makes it trade less. Nothing here may write a sleeve, a lot or a
++    threshold."""
++    src = (ROOT / "scripts" / "check_placement_interlock.py").read_text("utf-8")
++    for forbidden in ("sleeves.json", "risk_frac", "heat_floor", "gate_spec",
++                      "UNIVERSAL_SURVIVORS"):
++        assert forbidden not in src, f"the halt fence must not touch {forbidden}"
++
++
++def test_thresholds_are_small_enough_to_catch_the_day_it_happens() -> None:
++    """Thirty rows at one a minute is half an hour: short enough that a lost window is caught
++    the same session, long enough that one contended seal does not page anybody. If a later
++    session widens these, it is choosing to be blind for longer and this says so."""
++    assert fence.TRAILING_REFUSALS_MAX <= 60
++    assert fence.TRAILING_HOURS_MAX <= 2.0
+-- 
+2.47.1.windows.1
+

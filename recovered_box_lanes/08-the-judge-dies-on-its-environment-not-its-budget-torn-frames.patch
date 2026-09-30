@@ -1,0 +1,765 @@
+From 7b542ec1fab0301f5acf62a3f7d4134391a0a026 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:10:32 +0200
+Subject: [PATCH] The judge dies on its environment, not its budget: torn
+ frames and a commit ceiling
+
+Measured over the whole 844MB of MT5-Gauntlet.log: 212 passes reached pre-warm, 163 reached
+`Saved to`, 117 reached the survivor write. Of 168 tracebacks, 129 are ONE fault and 19 are a
+second, and neither is inside the sealed judge.
+
+THE COMMIT CEILING. GetPerformanceInfo reports CommitPeak == CommitLimit == 245.95GB exactly
+(96GB RAM + 150GB page file). At the ceiling the allocation that fails first is a freshly
+spawned pool worker importing numpy, which is why the log carries 77 BrokenProcessPool, 23
+`OSError: handle is closed`, 17 MemoryError and 12 `ImportError: DLL load failed ... the paging
+file is too small`. The judge picks 15 workers holding ~1.8GB of private bytes each -- ~30GB of
+commit at spawn -- against pf_allocator/deepening_worker/descendants holding 43.5GB. C: has
+911GB free, so the ceiling is raisable; that is a reboot of a live trading box and is REPORTED,
+never taken unasked.
+
+THE TORN FRAME, fixed here. `fetch_universe` and `expand_universe` wrote bar frames with
+`to_parquet` straight onto the destination, which truncates it and refills it over seconds. The
+sealed `_bars_for` reads those frames with no error handling, so a read landing in that window
+raises `ArrowInvalid: Parquet magic bytes not found` out of `main()` and kills the whole sweep.
+320 of 1,736 frames are rewritten in any five-minute window. `universe_registry.publish_frame`
+writes beside the destination and renames, so a reader sees the old frame or the new one and
+never half of one; a rename that loses to an open handle leaves the previous frame whole and
+says so.
+
+WHAT A STOPPED PASS COSTS, now published rather than assumed. The judge's per-cell BUILD is
+already durable (content-addressed cache, temp + os.replace). Its VERDICTS are not: the build
+cursor, seen-cells, the gate ledger, universal_gates_external.json and UNIVERSAL_SURVIVORS.json
+are one tail after `run_gauntlet` returns -- the same shape that discarded 65 passing cells.
+Making a verdict durable per cell means writing inside `run_gauntlet`, which is in the SEALED
+file. NOT ATTEMPTED. `scripts/gauntlet_guard.py` instead measures the tail's width, the commit
+headroom, the integrity of every frame the judge will read, and the live pass's margin to its
+window, into reports/GAUNTLET_PASSES.json -- so "the judge finishes now" is a reading.
+
+Also: the two stale 1-arg `_auto_leg` stubs against HEAD's 2-arg signature, and the SIM105 at
+hourly_cycle.py:1784. The sealed judge is untouched.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/mt5desk/universe_registry.py        |  50 ++-
+ desks/mt5/research/expand_universe.py         |   4 +-
+ desks/mt5/research/fetch_universe.py          |  13 +-
+ desks/mt5/research/hourly_cycle.py            |   4 +-
+ desks/mt5/scripts/gauntlet_guard.py           | 372 ++++++++++++++++++
+ .../mt5/tests/test_cycle_plans_and_resume.py  |   3 +-
+ desks/mt5/tests/test_gauntlet_guard.py        | 147 +++++++
+ desks/mt5/tests/test_wiring_ceo.py            |   3 +-
+ 8 files changed, 581 insertions(+), 15 deletions(-)
+ create mode 100644 desks/mt5/scripts/gauntlet_guard.py
+ create mode 100644 desks/mt5/tests/test_gauntlet_guard.py
+
+diff --git a/desks/mt5/mt5desk/universe_registry.py b/desks/mt5/mt5desk/universe_registry.py
+index b890a1c4b7f..c3e926388fd 100644
+--- a/desks/mt5/mt5desk/universe_registry.py
++++ b/desks/mt5/mt5desk/universe_registry.py
+@@ -160,7 +160,7 @@ def scale_bars(n_bars: float, timeframe: str, *, minimum: int = 1) -> int:
+     cannot be expressed on it, and rounding to zero would silently delete the parameter.
+     """
+     scaled = float(n_bars) * REFERENCE_MINUTES / float(timeframe_minutes(timeframe))
+-    return max(int(minimum), int(round(scaled)))
++    return max(int(minimum), round(scaled))
+ 
+ 
+ def min_bars_for(timeframe: str, *, h1_floor: int = H1_ADMISSION_BARS) -> int:
+@@ -454,3 +454,51 @@ def defects(registry: dict[str, Any], *, parquet_bars: dict[str, int] | None = N
+         out.append(f"cost: {len(uncosted)}/{len(rows)} symbol(s) cannot be costed in "
+                    f"{ACCOUNT_CCY} at all (e.g. {', '.join(uncosted[:5])})")
+     return out
++
++
++#: WHY A UNIVERSE FRAME IS NEVER WRITTEN IN PLACE (measured 2026-09-24).
++#:
++#: `to_parquet` straight onto the destination TRUNCATES it and refills it over seconds. The
++#: sealed judge (scripts/external_gauntlet.py) reads these frames in `_bars_for` with
++#: `pd.read_parquet` and NO error handling, so a read landing in that window raises
++#: `pyarrow.lib.ArrowInvalid: Parquet magic bytes not found` -- or "file size is 0 bytes" -- and
++#: the exception propagates out of `main()` and kills the ENTIRE sweep. Measured in
++#: MT5-Gauntlet.log: 19 passes died exactly that way, each losing a whole judging phase.
++#: 320 of 1,736 frames are rewritten in any five-minute window, so the race is not rare.
++#:
++#: Writing beside the destination and renaming means a concurrent reader sees either the old
++#: frame or the new one, never half of one. Four other writers on this desk already do this
++#: (moat_silver, tape_features, conversion_maximiser, fetch_dukascopy); the universe writers,
++#: whose readers include the judge, were the ones that did not.
++def publish_frame(frame, path, attempts: int = 5) -> bool:
++    """Publish a bar frame to `path` so a CONCURRENT READER NEVER SEES A PARTIAL FILE.
++
++    Returns True when the frame is now at `path`.
++
++    `os.replace` can still lose to an open handle on Windows (WinError 5/32) when a reader holds
++    the destination. That is the SAFE failure and it is reported, never silent: the previous
++    frame stays valid and complete, and this symbol is refreshed on the next pass. A stale-but-
++    whole frame costs one refresh; a torn one costs a whole judging pass.
++    """
++    import contextlib
++    import os as _os
++    import time as _time
++    from pathlib import Path as _Path
++
++    path = _Path(path)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    tmp = path.with_name(f"{path.name}.{_os.getpid()}.tmp")
++    frame.to_parquet(tmp)
++    for i in range(max(1, attempts)):
++        try:
++            _os.replace(tmp, path)
++            return True
++        except OSError as exc:
++            if i == attempts - 1:
++                with contextlib.suppress(OSError):
++                    tmp.unlink()
++                print(f"  {path.name}: NOT republished ({type(exc).__name__}: {exc}); the "
++                      f"previous frame stands and the next pass retries", flush=True)
++                return False
++            _time.sleep(0.4 * (i + 1))
++    return False
+diff --git a/desks/mt5/research/expand_universe.py b/desks/mt5/research/expand_universe.py
+index 1b776fe9373..3dde848894e 100644
+--- a/desks/mt5/research/expand_universe.py
++++ b/desks/mt5/research/expand_universe.py
+@@ -88,7 +88,7 @@ from pathlib import Path
+ # ONE LADDER, IMPORTED. A second literal spelling of the charts here is how a producer and a
+ # consumer quietly stop agreeing about which charts exist; `universe_registry` owns what the
+ # registry means, and `min_bars` below reads the same module for the floor.
+-from mt5desk.universe_registry import TIMEFRAMES
++from mt5desk.universe_registry import TIMEFRAMES, publish_frame
+ 
+ BASE = Path(__file__).resolve().parent.parent
+ UNIVERSE = BASE / "data" / "universe"
+@@ -337,7 +337,7 @@ def main() -> int:
+             df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
+             df = df.set_index("time").sort_index()
+             try:
+-                df.to_parquet(UNIVERSE / f"{name}_{tf}.parquet")
++                publish_frame(df, UNIVERSE / f"{name}_{tf}.parquet")
+             except Exception as exc:
+                 failed.append({"symbol": name, "tf": tf, "why": f"{type(exc).__name__}: {exc}"})
+                 continue
+diff --git a/desks/mt5/research/fetch_universe.py b/desks/mt5/research/fetch_universe.py
+index e6ad189ceac..ca40bf0a760 100644
+--- a/desks/mt5/research/fetch_universe.py
++++ b/desks/mt5/research/fetch_universe.py
+@@ -34,7 +34,7 @@ import pandas as pd
+ 
+ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ from mt5desk.config import desk_root, terminal_path
+-from mt5desk.universe_registry import may_write_median_spread, merge
++from mt5desk.universe_registry import may_write_median_spread, merge, publish_frame
+ 
+ #: What this collector's `median_spread_pts` IS: the median of the H1 spread column it just
+ #: downloaded. Named so the stamp cannot mean something else, and so the ranking can place it.
+@@ -209,7 +209,7 @@ def _fetch_intraday(mt5, sym: str, info) -> dict[str, dict]:
+         d["time"] = pd.to_datetime(d["time"], unit="s", utc=True)
+         d = d.set_index("time").sort_index()
+         d = d[["open", "high", "low", "close", "tick_volume", "spread", "real_volume"]]
+-        d.to_parquet(OUT / f"{sym}_{label}.parquet")
++        publish_frame(d, OUT / f"{sym}_{label}.parquet")
+         out[label] = {"bars": len(d), "first": str(d.index.min()),
+                       "last": str(d.index.max()),
+                       "median_spread_pts": float(d["spread"].median())}
+@@ -262,10 +262,9 @@ def _refresh_order(candidates: list[str]) -> list[str]:
+ 
+ 
+ def main() -> None:
+-    if mt5.terminal_info() is None:
+-        if not mt5.initialize(path=TERMINAL):
+-            print(f"initialize failed: {mt5.last_error()}")
+-            return
++    if mt5.terminal_info() is None and not mt5.initialize(path=TERMINAL):
++        print(f"initialize failed: {mt5.last_error()}")
++        return
+     print(f"terminal: {mt5.terminal_info().name} | account {mt5.account_info().login}")
+ 
+     # THE REGISTRY IS THE BASE, NOT THE OUTPUT. Read first, refresh into it, write the union.
+@@ -339,7 +338,7 @@ def main() -> None:
+         df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
+         df = df.set_index("time").sort_index()
+         df = df[["open", "high", "low", "close", "tick_volume", "spread", "real_volume"]]
+-        df.to_parquet(OUT / f"{sym}_H1.parquet")
++        publish_frame(df, OUT / f"{sym}_H1.parquet")
+         med_spread = float(df["spread"].median())
+         summary[sym] = {
+             "bars": len(df),
+diff --git a/desks/mt5/research/hourly_cycle.py b/desks/mt5/research/hourly_cycle.py
+index 142a6030827..100e70daffd 100644
+--- a/desks/mt5/research/hourly_cycle.py
++++ b/desks/mt5/research/hourly_cycle.py
+@@ -1781,10 +1781,8 @@ def _leg_floor_s(name: str) -> int:
+     """
+     floor = int(LEG_BUDGET_FLOOR_SEC.get(name, 0))
+     if name == "external_gauntlet":
+-        try:
++        with suppress(KeyError, TypeError, ValueError):
+             floor = max(floor, int(float(os.environ["GAUNTLET_FRESH_BUDGET_SEC"])))
+-        except (KeyError, TypeError, ValueError):
+-            pass
+     return floor
+ 
+ 
+diff --git a/desks/mt5/scripts/gauntlet_guard.py b/desks/mt5/scripts/gauntlet_guard.py
+new file mode 100644
+index 00000000000..9d6a86be31c
+--- /dev/null
++++ b/desks/mt5/scripts/gauntlet_guard.py
+@@ -0,0 +1,372 @@
++"""THE JUDGE'S ENVIRONMENT, MEASURED -- and it changes nothing the judge does.
++
++`scripts/external_gauntlet.py` is SEALED. This organ never touches it, never starts it and never
++stops it. It measures the three things that decided whether a pass reached its epilogue, and
++publishes them as `reports/GAUNTLET_PASSES.json` so "the judge finishes now" is a reading rather
++than an impression.
++
++WHAT KILLED PASSES, measured 2026-09-24 over the whole 844 MB of MT5-Gauntlet.log: 212 passes
++reached pre-warm, 163 reached `Saved to`, and only 117 reached the survivor write. Of 168
++recorded tracebacks:
++
++    77  concurrent.futures.process.BrokenProcessPool  (a pool worker died at spawn)
++    23  OSError: handle is closed                      (the same pool, tearing down)
++    19  pyarrow ArrowInvalid: magic bytes / 0 bytes    (a universe frame read mid-rewrite)
++    17  MemoryError
++    12  ImportError: DLL load failed ... the paging file is too small
++
++The first two, the fourth and the fifth are ONE fault: `CommitPeak == CommitLimit` exactly
++(245.95 GB = 96 GB RAM + 150 GB page file). At the ceiling any allocation fails, and the
++allocation that fails first is a freshly spawned pool worker importing numpy -- which breaks the
++pool and takes the whole sweep with it. The third is a separate fault and is now fixed at the
++writer (`mt5desk.universe_registry.publish_frame`).
++
++So this organ measures, every pass: commit headroom and whether the ceiling was touched, the
++integrity of every frame the judge will read, and how close the live pass is to its window.
++
++THE THREE NUMBERS THAT MATTER, and why each is here rather than inferred:
++  * `margin_s`    -- window seconds left when the pass ended. A pass that finishes with four
++                     seconds to spare is lucky, not fixed, and only a distribution shows which.
++  * `commit_peak_gb_during_pass` -- the box's closest approach to the ceiling while this pass
++                     ran. This is "how close the judge came to being killed", in the units that
++                     actually kill it.
++  * `torn_frames` -- universe frames that were unreadable at check time. Must stay 0.
++
++WHAT A STOPPED PASS COSTS, and the honest limit of what can be fixed from outside. The judge's
++per-cell BUILD is durable: `cache_save` writes each cell's series pair through a temp file and
++`os.replace`, so a killed pass keeps every cell it built and the next pass loads them. The
++judge's VERDICTS are not: `_save_build_cursor`, `_save_seen_cells`, `_append_gate_ledger`,
++`universal_gates_external.json` and `UNIVERSAL_SURVIVORS.json` are all written in one tail after
++`run_gauntlet` returns. Making a verdict durable per cell means writing inside `run_gauntlet`,
++which is inside the sealed file. THIS ORGAN DOES NOT DO THAT AND MUST NOT. What it does instead
++is measure the tail's width (`judged_cells` against `survivors_written`) so the cost of a stop is
++a published number, and remove the causes of the stop at the writer and the box.
++"""
++from __future__ import annotations
++
++import ctypes
++import json
++import os
++import sys
++import time
++from datetime import UTC, datetime
++from pathlib import Path
++
++BASE = Path(__file__).resolve().parents[1]
++REPORTS = BASE / "reports"
++UNIVERSE = BASE / "data" / "universe"
++LOG = BASE / "logs" / "MT5-Gauntlet.log"
++OUT = REPORTS / "GAUNTLET_PASSES.json"
++
++#: MT5-Gauntlet's `Stop Task If Runs X Hours and X Mins`, in seconds. The fallback is the value
++#: read off the box on 2026-09-24; `judging_throughput` owns the task and may lengthen it, so the
++#: live task is asked first and this is only what an unreadable task falls back to.
++WINDOW_S_FALLBACK = 4 * 3600
++
++#: How many passes the report keeps. A distribution needs more than the last one.
++KEEP_PASSES = 60
++
++#: The judge's own script name, as it appears in the command line of its process.
++JUDGE = "external_gauntlet.py"
++
++
++# --------------------------------------------------------------------------- commit
++class _PerfInfo(ctypes.Structure):
++    _fields_ = [("cb", ctypes.c_ulong)] + [
++        (n, ctypes.c_size_t)
++        for n in ("CommitTotal", "CommitLimit", "CommitPeak", "PhysicalTotal",
++                  "PhysicalAvailable", "SystemCache", "KernelTotal", "KernelPaged",
++                  "KernelNonpaged", "PageSize")
++    ] + [("HandleCount", ctypes.c_ulong), ("ProcessCount", ctypes.c_ulong),
++         ("ThreadCount", ctypes.c_ulong)]
++
++
++def commit_info() -> dict:
++    """Commit charge, limit and all-time peak in GB -- the units the judge dies in.
++
++    UNMEASURED where the call is unavailable (this is a Windows counter), never a zero: a zero
++    here would read as "infinite headroom", which is the opposite of the truth it replaced.
++    """
++    if sys.platform != "win32":
++        return {"status": "UNMEASURED", "why": "GetPerformanceInfo is a Windows counter"}
++    try:
++        pi = _PerfInfo()
++        pi.cb = ctypes.sizeof(_PerfInfo)
++        if not ctypes.windll.psapi.GetPerformanceInfo(ctypes.byref(pi), pi.cb):
++            return {"status": "UNMEASURED", "why": "GetPerformanceInfo returned false"}
++        g = float(pi.PageSize) / 1024 ** 3
++        total, limit, peak = pi.CommitTotal * g, pi.CommitLimit * g, pi.CommitPeak * g
++        return {
++            "status": "MEASURED",
++            "commit_total_gb": round(total, 2),
++            "commit_limit_gb": round(limit, 2),
++            "commit_peak_gb": round(peak, 2),
++            "headroom_gb": round(limit - total, 2),
++            "peak_headroom_gb": round(limit - peak, 2),
++            # The exact equality is the diagnosis, not a near-miss: at the ceiling a spawning
++            # worker's DLL load fails and the pool breaks.
++            "peak_touched_ceiling": bool(pi.CommitPeak >= pi.CommitLimit),
++            "processes": int(pi.ProcessCount),
++            "threads": int(pi.ThreadCount),
++        }
++    except Exception as exc:
++        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
++
++
++# --------------------------------------------------------------------------- inputs
++def frame_integrity(root: Path | None = None) -> dict:
++    """Every universe frame the judge may read, checked for the torn-read signature.
++
++    A parquet file begins and ends with the four bytes `PAR1`. A frame caught mid-rewrite has
++    neither, and the sealed `_bars_for` raises on it and kills the sweep. Eight bytes per file
++    over ~1,700 files is a few milliseconds and it is the difference between a named bad frame
++    and a dead pass with a pyarrow traceback.
++    """
++    root = root or UNIVERSE
++    torn: list[str] = []
++    checked = 0
++    if not root.is_dir():
++        return {"status": "UNMEASURED", "why": f"{root} is not a directory"}
++    for path in sorted(root.glob("*.parquet")):
++        checked += 1
++        try:
++            size = path.stat().st_size
++            if size < 12:
++                torn.append(f"{path.name}:{size}B")
++                continue
++            with path.open("rb") as fh:
++                head = fh.read(4)
++                fh.seek(-4, os.SEEK_END)
++                tail = fh.read(4)
++            if head != b"PAR1" or tail != b"PAR1":
++                torn.append(path.name)
++        except OSError as exc:
++            torn.append(f"{path.name}:{type(exc).__name__}")
++    return {"status": "MEASURED", "checked": checked, "torn": torn, "n_torn": len(torn)}
++
++
++# --------------------------------------------------------------------------- live pass
++def window_s() -> int:
++    """MT5-Gauntlet's execution time limit in seconds, from the task itself where it can be read."""
++    try:
++        import re
++        import subprocess
++        xml = subprocess.run(["schtasks", "/query", "/tn", "MT5-Gauntlet", "/xml"],
++                             capture_output=True, text=True, timeout=120).stdout
++        m = re.search(r"<ExecutionTimeLimit>PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", xml)
++        if m:
++            h, mi, s = (int(x or 0) for x in m.groups())
++            got = h * 3600 + mi * 60 + s
++            if got > 0:
++                return got
++    except Exception:
++        pass
++    return WINDOW_S_FALLBACK
++
++
++def live_pass() -> dict:
++    """The judge process right now: age, memory, workers, and seconds left in its window."""
++    try:
++        import psutil
++    except ImportError:
++        return {"status": "UNMEASURED", "why": "psutil not importable"}
++    win = window_s()
++    now = time.time()
++    judge = None
++    workers = 0
++    for proc in psutil.process_iter(["pid", "ppid", "name", "cmdline", "create_time",
++                                     "memory_info"]):
++        try:
++            cmd = " ".join(proc.info["cmdline"] or [])
++        except Exception:
++            continue
++        if JUDGE in cmd and "--only" not in cmd:
++            judge = proc
++    if judge is None:
++        return {"status": "NO_PASS_RUNNING", "window_s": win}
++    try:
++        info = judge.info
++        for proc in psutil.process_iter(["ppid"]):
++            try:
++                if proc.info["ppid"] == info["pid"]:
++                    workers += 1
++            except Exception:
++                continue
++        mem = info["memory_info"]
++        age = now - info["create_time"]
++        return {
++            "status": "RUNNING",
++            "pid": int(info["pid"]),
++            "started_at": datetime.fromtimestamp(info["create_time"], UTC).isoformat(),
++            "age_s": round(age),
++            "window_s": win,
++            "margin_s": round(win - age),
++            "margin_frac": round(max(0.0, win - age) / win, 3) if win else None,
++            "rss_mb": round((mem.rss if mem else 0) / 1024 ** 2),
++            "private_mb": round(getattr(mem, "private", 0) / 1024 ** 2) if mem else None,
++            "workers": workers,
++        }
++    except Exception as exc:
++        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
++
++
++# --------------------------------------------------------------------------- pass ledger
++#: The judge's own phase prints, in the order one pass emits them. The list is the grammar the
++#: reader below parses; a marker the judge stops printing simply stops appearing, which shows up
++#: as a phase that never closes rather than as a wrong number.
++MARKERS: tuple[tuple[str, str], ...] = (
++    ("PRE-WARM:", "prewarm"),
++    ("Cell cache:", "cache"),
++    ("BUILD BUDGET reached", "build_budget"),
++    ("  seen-cells: +", "seen"),
++    ("Saved to ", "saved_report"),
++    ("Updated UNIVERSAL_SURVIVORS.json", "survivors"),
++    ("SURVIVORS_LEDGER.json:", "ledger"),
++    ("Traceback (most recent call last)", "traceback"),
++    ("No candidates advanced", "no_candidates"),
++)
++
++
++def classify(line: str) -> str | None:
++    """Which phase marker this log line is, or None. Pure -- the whole reader is tested on it."""
++    for prefix, name in MARKERS:
++        if line.startswith(prefix):
++            return name
++    return None
++
++
++def read_new_events(cursor: int) -> tuple[list[dict], int]:
++    """Phase markers appended to the judge's log since `cursor`, and the new cursor.
++
++    NEVER READS THE WHOLE LOG. It is 844 MB and grows by ~16 MB per pass; a reader that started
++    at byte zero every ten minutes would cost more than the thing it measures. A cursor past the
++    end of the file (the log was rotated) restarts from the end, which loses the passes in
++    between -- recorded as `rotated`, because a silent reset is how a counter starts lying.
++    """
++    if not LOG.exists():
++        return [], 0
++    size = LOG.stat().st_size
++    if cursor > size:
++        return [{"phase": "rotated", "text": f"log shrank {cursor} -> {size}"}], size
++    if cursor <= 0:
++        cursor = max(0, size - 2_000_000)
++    events: list[dict] = []
++    with LOG.open("rb") as fh:
++        fh.seek(cursor)
++        if cursor:
++            fh.readline()          # never start mid-line
++        for raw in fh:
++            line = raw.decode("utf-8", "replace").rstrip()
++            phase = classify(line)
++            if phase:
++                events.append({"phase": phase, "text": line[:220]})
++        return events, fh.tell()
++
++
++def fold(events: list[dict], passes: list[dict], seen_at: str) -> list[dict]:
++    """Fold new markers into the pass list. A pass CLOSES on `ledger` (complete) or on the next
++    `prewarm` / a `traceback` (died). An open pass stays open and is reported as open."""
++    out = list(passes)
++    for ev in events:
++        phase, text = ev["phase"], ev["text"]
++        cur = out[-1] if out and out[-1].get("outcome") == "OPEN" else None
++        if phase == "prewarm":
++            if cur is not None:
++                cur["outcome"] = "DIED_BEFORE_EPILOGUE"
++                cur["closed_at"] = seen_at
++            out.append({"opened_at": seen_at, "outcome": "OPEN", "phases": [],
++                        "prewarm": text[:200]})
++            cur = out[-1]
++        if cur is None:
++            continue
++        cur["phases"].append(phase)
++        if phase == "seen":
++            cur["seen_line"] = text[:160]
++        elif phase == "survivors":
++            cur["survivors_line"] = text[:160]
++        elif phase == "traceback":
++            cur["outcome"] = "DIED_BEFORE_EPILOGUE"
++            cur["closed_at"] = seen_at
++        elif phase == "ledger":
++            cur["outcome"] = "REACHED_EPILOGUE"
++            cur["closed_at"] = seen_at
++            cur["ledger_line"] = text[:160]
++    return out[-KEEP_PASSES:]
++
++
++def _atomic(path: Path, doc: dict) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
++    tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
++    os.replace(tmp, path)
++
++
++def main(argv: list[str] | None = None) -> int:
++    del argv
++    now = datetime.now(UTC).isoformat(timespec="seconds")
++    prior: dict = {}
++    if OUT.exists():
++        try:
++            prior = json.loads(OUT.read_text("utf-8"))
++        except (OSError, ValueError):
++            prior = {}
++
++    events, cursor = read_new_events(int(prior.get("log_cursor") or 0))
++    passes = fold(events, list(prior.get("passes") or []), now)
++    commit = commit_info()
++    frames = frame_integrity()
++    live = live_pass()
++
++    # The closest approach to the ceiling while the CURRENT pass has been running: the guard sees
++    # the box every ten minutes, so this is a floor on the true peak, never an upper bound.
++    watch = dict(prior.get("live_watch") or {})
++    if live.get("status") == "RUNNING":
++        if watch.get("pid") != live.get("pid"):
++            watch = {"pid": live.get("pid"), "started_at": live.get("started_at"),
++                     "min_headroom_gb": commit.get("headroom_gb"),
++                     "max_rss_mb": live.get("rss_mb"), "observations": 0}
++        watch["observations"] = int(watch.get("observations") or 0) + 1
++        for key, val, better in (("min_headroom_gb", commit.get("headroom_gb"), min),
++                                 ("max_rss_mb", live.get("rss_mb"), max)):
++            if val is not None:
++                watch[key] = val if watch.get(key) is None else better(watch[key], val)
++        watch["last_margin_s"] = live.get("margin_s")
++
++    closed = [p for p in passes if p.get("outcome") != "OPEN"]
++    reached = [p for p in closed if p["outcome"] == "REACHED_EPILOGUE"]
++    doc = {
++        "generated_at": now,
++        "note": ("Measured environment around the SEALED judge. This organ starts nothing, "
++                 "stops nothing and writes no certificate."),
++        "log_cursor": cursor,
++        "commit": commit,
++        "frame_integrity": frames,
++        "live_pass": live,
++        "live_watch": watch,
++        "passes_recorded": len(passes),
++        "passes_closed": len(closed),
++        "passes_reached_epilogue": len(reached),
++        "reach_rate": round(len(reached) / len(closed), 3) if closed else None,
++        # THE STOP COST, published rather than assumed. The judge's cell BUILD is durable per cell
++        # (content-addressed cache, temp + os.replace); its VERDICTS become durable only in the
++        # tail after run_gauntlet returns. So this is the count a stop discards.
++        "stop_cost": {
++            "durable_per_cell": "cell series cache (external_gauntlet.cache_save)",
++            "lost_on_stop": ("every gate verdict of the running pass: build cursor, seen-cells, "
++                             "gate ledger rows, universal_gates_external.json and any survivor"),
++            "why_not_fixed_here": ("per-cell verdict durability requires writing inside "
++                                   "run_gauntlet, which is in the SEALED file. Not attempted."),
++        },
++        "passes": passes,
++    }
++    _atomic(OUT, doc)
++    print(f"gauntlet_guard: {len(reached)}/{len(closed)} closed passes reached the epilogue; "
++          f"commit headroom {commit.get('headroom_gb')}GB "
++          f"(peak touched ceiling: {commit.get('peak_touched_ceiling')}); "
++          f"torn frames {frames.get('n_torn')}; live {live.get('status')} "
++          f"margin {live.get('margin_s')}s -> {OUT}")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/desks/mt5/tests/test_cycle_plans_and_resume.py b/desks/mt5/tests/test_cycle_plans_and_resume.py
+index 787e50913ed..0bac11bc007 100644
+--- a/desks/mt5/tests/test_cycle_plans_and_resume.py
++++ b/desks/mt5/tests/test_cycle_plans_and_resume.py
+@@ -115,7 +115,8 @@ def test_department_plans_partition_the_heavy_legs():
+ 
+ def test_auto_legs_under_department_plans_run_only_in_rest(monkeypatch, tmp_path):
+     ran: list[str] = []
+-    monkeypatch.setattr(hc, "_auto_leg", lambda e: ran.append(e["organ"]) or {"exit_code": 0})
++    monkeypatch.setattr(hc, "_auto_leg",
++                        lambda e, n=None: ran.append(e["organ"]) or {"exit_code": 0})
+     monkeypatch.setattr(hc, "_costed", lambda name, fn: fn())
+     f = tmp_path / "auto_legs.json"
+     f.write_text(json.dumps({"legs": [
+diff --git a/desks/mt5/tests/test_gauntlet_guard.py b/desks/mt5/tests/test_gauntlet_guard.py
+new file mode 100644
+index 00000000000..5fd0e770508
+--- /dev/null
++++ b/desks/mt5/tests/test_gauntlet_guard.py
+@@ -0,0 +1,147 @@
++"""The judge's environment monitor, and the atomic universe write that stopped killing it.
++
++These are the two unsealed halves of "the judge reaches its epilogue": a writer that never hands
++the sealed reader a torn frame, and a reader of the judge's own log that can say how many passes
++reached the end without anyone's impression of it.
++"""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++import pandas as pd
++import pytest
++
++DESK = Path(__file__).resolve().parents[1]
++for _p in (str(DESK), str(DESK / "scripts")):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++import gauntlet_guard as gg  # noqa: E402
++from mt5desk.universe_registry import publish_frame  # noqa: E402
++
++
++# --------------------------------------------------------------- the torn-frame fault
++def test_publish_frame_never_leaves_a_torn_destination(tmp_path):
++    """A universe frame is published whole or not at all -- the fault that killed 19 sweeps.
++
++    `to_parquet` onto the destination truncates it first, so a concurrent `pd.read_parquet`
++    can see 0 bytes. The published file must always carry both PAR1 sentinels.
++    """
++    dest = tmp_path / "EURUSD_H1.parquet"
++    frame = pd.DataFrame({"close": [1.0, 2.0, 3.0]},
++                         index=pd.to_datetime(["2026-01-01", "2026-01-02", "2026-01-03"],
++                                              utc=True))
++    assert publish_frame(frame, dest) is True
++    raw = dest.read_bytes()
++    assert raw[:4] == b"PAR1" and raw[-4:] == b"PAR1"
++    assert pd.read_parquet(dest).shape == (3, 1)
++    # no temp litter left beside the destination
++    assert [p.name for p in tmp_path.iterdir()] == ["EURUSD_H1.parquet"]
++
++
++def test_publish_frame_replaces_in_place_and_keeps_the_old_frame_readable(tmp_path):
++    """A republish over an existing frame leaves ONE valid file, never a half-written one."""
++    dest = tmp_path / "XAUUSD_M15.parquet"
++    idx = pd.to_datetime(["2026-01-01", "2026-01-02"], utc=True)
++    publish_frame(pd.DataFrame({"close": [1.0, 2.0]}, index=idx), dest)
++    publish_frame(pd.DataFrame({"close": [9.0, 8.0]}, index=idx), dest)
++    assert list(pd.read_parquet(dest)["close"]) == [9.0, 8.0]
++    assert dest.read_bytes()[:4] == b"PAR1"
++
++
++# --------------------------------------------------------------- the integrity fence
++def test_frame_integrity_names_the_torn_frames_and_counts_the_whole_directory(tmp_path):
++    good = tmp_path / "AUDUSD_H1.parquet"
++    publish_frame(pd.DataFrame({"close": [1.0]},
++                               index=pd.to_datetime(["2026-01-01"], utc=True)), good)
++    (tmp_path / "EMPTY_H1.parquet").write_bytes(b"")
++    (tmp_path / "HALF_M5.parquet").write_bytes(b"PAR1" + b"\x00" * 40)
++
++    out = gg.frame_integrity(tmp_path)
++    assert out["status"] == "MEASURED"
++    assert out["checked"] == 3
++    assert out["n_torn"] == 2
++    assert any(n.startswith("EMPTY_H1") for n in out["torn"])
++    assert "HALF_M5.parquet" in out["torn"]
++
++
++def test_frame_integrity_on_an_absent_directory_is_unmeasured_not_clean(tmp_path):
++    """An absent directory is UNMEASURED (L1.28a) -- never a zero that reads as 'all fine'."""
++    out = gg.frame_integrity(tmp_path / "nope")
++    assert out["status"] == "UNMEASURED" and "torn" not in out
++
++
++# --------------------------------------------------------------- the pass reader
++@pytest.mark.parametrize(("line", "phase"), [
++    ("PRE-WARM: 15 worker(s) warmed 2399 cell(s) in 1288s", "prewarm"),
++    ("Cell cache: 58502/140090 loaded (same data-day), 81588 to compute", "cache"),
++    ("  seen-cells: +55318 first-judged this sweep (171696 known)", "seen"),
++    ("Saved to C:\\opt\\quant\\desks\\mt5\\reports\\universal_gates_external.json", "saved_report"),
++    ("Updated UNIVERSAL_SURVIVORS.json: 119 total (+91)", "survivors"),
++    ("SURVIVORS_LEDGER.json: 177 claim(s)", "ledger"),
++    ("Traceback (most recent call last):", "traceback"),
++    ("  FAIL GBPZAR@M5.overnight_drift n=350", None),
++])
++def test_classify_reads_the_judges_own_phase_prints(line, phase):
++    assert gg.classify(line) == phase
++
++
++def _ev(*phases):
++    return [{"phase": p, "text": p} for p in phases]
++
++
++def test_a_pass_that_reaches_the_ledger_is_recorded_as_reaching_the_epilogue():
++    passes = gg.fold(_ev("prewarm", "cache", "seen", "saved_report", "survivors", "ledger"),
++                     [], "T0")
++    assert len(passes) == 1
++    assert passes[0]["outcome"] == "REACHED_EPILOGUE"
++
++
++def test_a_pass_that_dies_between_the_gates_and_the_survivor_write_is_recorded_as_died():
++    """The exact shape that discarded 65 passing cells: judged, saved, then killed."""
++    passes = gg.fold(_ev("prewarm", "cache", "seen", "saved_report", "traceback"), [], "T0")
++    assert passes[0]["outcome"] == "DIED_BEFORE_EPILOGUE"
++    assert "survivors" not in passes[0]["phases"]
++
++
++def test_a_new_prewarm_closes_the_previous_pass_as_died():
++    """A pass killed by the task window prints no traceback at all -- the next PRE-WARM is the
++    only evidence it ended, and a reader that waited for a traceback would count it as open
++    for ever."""
++    passes = gg.fold(_ev("prewarm", "cache", "seen", "prewarm", "cache"), [], "T0")
++    assert len(passes) == 2
++    assert passes[0]["outcome"] == "DIED_BEFORE_EPILOGUE"
++    assert passes[1]["outcome"] == "OPEN"
++
++
++def test_fold_keeps_a_bounded_history_so_the_report_cannot_grow_without_end():
++    passes: list[dict] = []
++    for _ in range(gg.KEEP_PASSES + 12):
++        passes = gg.fold(_ev("prewarm", "ledger"), passes, "T")
++    assert len(passes) == gg.KEEP_PASSES
++
++
++def test_commit_info_is_measured_or_says_why_and_never_reports_a_false_ceiling():
++    """A zero headroom must never be manufactured by a failed probe: the ceiling is the
++    diagnosis for a broken worker pool, so a wrong one would misdirect the next session."""
++    out = gg.commit_info()
++    assert out["status"] in {"MEASURED", "UNMEASURED"}
++    if out["status"] == "MEASURED":
++        assert out["commit_limit_gb"] > 0
++        assert out["headroom_gb"] == pytest.approx(
++            out["commit_limit_gb"] - out["commit_total_gb"], abs=0.02)
++        assert isinstance(out["peak_touched_ceiling"], bool)
++    else:
++        assert out["why"]
++
++
++def test_the_guard_never_writes_to_or_stops_the_sealed_judge():
++    """The seal, pinned by a test. This organ may MEASURE the judge; it may never write to it,
++    start it or stop it -- and the only file it writes is its own report."""
++    src = Path(gg.__file__).read_text(encoding="utf-8")
++    assert "SEALED" in src
++    for forbidden in (".terminate(", ".kill(", "taskkill", "Popen("):
++        assert forbidden not in src, f"gauntlet_guard must never {forbidden}"
++    assert 'OUT = REPORTS / "GAUNTLET_PASSES.json"' in src
++    assert src.count("os.replace(") == 1, "the guard writes exactly one file: its own report"
+diff --git a/desks/mt5/tests/test_wiring_ceo.py b/desks/mt5/tests/test_wiring_ceo.py
+index 2930406affd..5c5264a00af 100644
+--- a/desks/mt5/tests/test_wiring_ceo.py
++++ b/desks/mt5/tests/test_wiring_ceo.py
+@@ -298,7 +298,8 @@ def test_an_auto_clocked_organ_counts_as_scheduled_so_the_ratchet_can_fall(monke
+ def test_run_auto_legs_runs_only_the_current_plan(monkeypatch, tmp_path):
+     import hourly_cycle as hc
+     ran: list[str] = []
+-    monkeypatch.setattr(hc, "_auto_leg", lambda e: ran.append(e["organ"]) or {"exit_code": 0})
++    monkeypatch.setattr(hc, "_auto_leg",
++                        lambda e, n=None: ran.append(e["organ"]) or {"exit_code": 0})
+     monkeypatch.setattr(hc, "_costed", lambda name, fn: fn())
+     f = tmp_path / "auto_legs.json"
+     f.write_text(json.dumps({"legs": [
+-- 
+2.47.1.windows.1
+

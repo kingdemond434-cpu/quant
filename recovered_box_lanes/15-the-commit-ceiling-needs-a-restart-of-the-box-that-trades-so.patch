@@ -1,0 +1,417 @@
+From 430b84aeec81e4660d554736b6eeba08ab4381d4 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:36:09 +0200
+Subject: [PATCH] The commit ceiling needs a restart of the box that trades, so
+ prepare it rather than take it
+
+WHY A RESTART, tested rather than assumed. The no-restart path for raising CommitLimit is adding
+a page file to ANOTHER volume. `mountvol` lists C:\ and two more volumes; one reports the same
+1.2 TB / 917.5 GB free as C: (it IS C:'s GUID) and the other is an unformatted system partition.
+`PagingFiles` is `?:\pagefile.sys` -- system-managed on the boot volume -- and switching that to
+an explicit larger size takes effect at boot. There is nothing to add live, so the ceiling of
+245.95 GB (96 GB RAM + 150 GB page file) cannot be raised without a restart. The registry is
+deliberately NOT staged: staging it would apply the change at the next UNPLANNED reboot instead
+of the timed one.
+
+THE CHANGE, ready to execute:
+  HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management
+    PagingFiles = "C:\pagefile.sys 262144 393216"      (256 GB initial / 384 GB maximum)
+  -> CommitLimit 245.95 GB -> ~480 GB, against 911 GB free on C:.
+  Then restart, then `--verify`.
+
+WHAT THIS FILE IS FOR. A restart means terminal64.exe, the gateway resident, every department
+resident and every scheduled task must come back unaided, and if ONE does not the desk goes quiet
+in a way no dashboard shows. A hand-written list of what should be running is a guess about a
+machine nobody re-read, so the inventory is MEASURED on the healthy box (`--capture`) and
+compared afterwards (`--verify`): every process kind and every MT5-/E8-/quant task actually
+present, plus the commit limit the restart exists to raise. Anything that did not return is
+NAMED and the exit code is 1.
+
+It reads only. It never starts, stops, enables or repairs anything -- a verifier that repairs is
+a second unreviewed controller of the box that trades, and the gateway belongs to its owner. It
+uses schtasks and psutil and never CIM, which has hung on this box. `--verify` with no baseline
+REFUSES (rc 2) rather than reporting success: verifying against nothing is not a verification.
+A task that comes back present-but-Disabled is reported as not having come back, because that is
+the quiet shape of a dark desk.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/scripts/check_after_reboot.py    | 251 +++++++++++++++++++++
+ desks/mt5/tests/test_check_after_reboot.py | 106 +++++++++
+ 2 files changed, 357 insertions(+)
+ create mode 100644 desks/mt5/scripts/check_after_reboot.py
+ create mode 100644 desks/mt5/tests/test_check_after_reboot.py
+
+diff --git a/desks/mt5/scripts/check_after_reboot.py b/desks/mt5/scripts/check_after_reboot.py
+new file mode 100644
+index 00000000000..06e2041616f
+--- /dev/null
++++ b/desks/mt5/scripts/check_after_reboot.py
+@@ -0,0 +1,251 @@
++"""WHAT MUST COME BACK AFTER A RESTART OF THE BOX THAT TRADES -- captured, then verified.
++
++THE CHANGE THIS EXISTS FOR. `GetPerformanceInfo` reports `CommitPeak == CommitLimit ==
++245.95 GB` exactly (96 GB RAM + a 150 GB system-managed page file on C:). At the commit ceiling
++the first allocation to fail is a freshly spawned pool worker importing numpy, which breaks the
++sealed judge's `ProcessPoolExecutor` and discards the whole pass: 77 `BrokenProcessPool`, 23
++`OSError: handle is closed`, 17 `MemoryError` and 12 `ImportError: DLL load failed ... the paging
++file is too small` -- 129 of 168 recorded pass deaths (77%). C: has 911 GB free, so the ceiling
++is raisable, and raising it is the single biggest lever on certificate production.
++
++WHY A RESTART IS REQUIRED, measured rather than assumed. The no-restart path is adding a page
++file to ANOTHER volume. This box has one: `mountvol` lists C:\\ plus two volumes, one of which
++reports the same 1.2 TB / 917.5 GB free as C: (it IS C:'s GUID) and the other is an unformatted
++system partition. `PagingFiles` is `?:\\pagefile.sys` -- system-managed on the boot volume -- and
++switching that to an explicit larger size takes effect at boot. So there is nothing to add live.
++
++THE REASON THIS FILE EXISTS RATHER THAN A CHECKLIST IN A COMMIT MESSAGE. A reboot means
++terminal64.exe, the gateway resident, every department resident and every scheduled task must
++come back unaided, and if ONE does not, the desk goes quiet in a way no dashboard shows -- which
++is the failure mode this desk keeps rediscovering. A hand-written list of "what should be
++running" is a guess about a machine nobody re-read. So the inventory is MEASURED while the box is
++healthy (`--capture`) and compared after (`--verify`), and anything that did not return is named.
++
++    python scripts/check_after_reboot.py --capture   # BEFORE, while the box is healthy
++    python scripts/check_after_reboot.py --verify    # AFTER, names whatever did not return
++
++Exit code 1 from --verify means something did not come back. It never starts or stops anything:
++naming the gap is this organ's whole job, and repairing the gateway is the gateway owner's.
++"""
++from __future__ import annotations
++
++import argparse
++import ctypes
++import json
++import os
++import re
++import subprocess
++import sys
++from datetime import UTC, datetime
++from pathlib import Path
++
++BASE = Path(__file__).resolve().parents[1]
++REPORTS = BASE / "reports"
++BASELINE = REPORTS / "REBOOT_BASELINE.json"
++VERDICT = REPORTS / "REBOOT_VERIFY.json"
++
++#: Long-lived processes identified by a fragment of their command line. A resident that is
++#: restarted by its own keep-alive trigger still has to APPEAR, so absence is reportable either
++#: way; this list is only the seed, and `--capture` adds whatever else is actually running.
++SEED_PROCESSES: tuple[str, ...] = (
++    "terminal64.exe",
++    "gateway_resident.py",
++    "department_resident.py",
++    "external_gauntlet.py",
++)
++
++#: Task name prefixes the desk owns. Everything matching is captured; nothing is filtered by
++#: hand, because a task nobody listed is exactly the one that will not come back.
++TASK_PREFIXES: tuple[str, ...] = ("MT5-", "E8-", "quant")
++
++
++def commit_info() -> dict:
++    """Commit charge and limit -- the number the restart exists to raise."""
++    if sys.platform != "win32":
++        return {"status": "UNMEASURED", "why": "GetPerformanceInfo is a Windows counter"}
++
++    class _PI(ctypes.Structure):
++        _fields_ = [("cb", ctypes.c_ulong)] + [
++            (n, ctypes.c_size_t) for n in
++            ("CommitTotal", "CommitLimit", "CommitPeak", "PhysicalTotal", "PhysicalAvailable",
++             "SystemCache", "KernelTotal", "KernelPaged", "KernelNonpaged", "PageSize")
++        ] + [("HandleCount", ctypes.c_ulong), ("ProcessCount", ctypes.c_ulong),
++             ("ThreadCount", ctypes.c_ulong)]
++
++    try:
++        pi = _PI()
++        pi.cb = ctypes.sizeof(_PI)
++        if not ctypes.windll.psapi.GetPerformanceInfo(ctypes.byref(pi), pi.cb):
++            return {"status": "UNMEASURED", "why": "GetPerformanceInfo returned false"}
++        g = float(pi.PageSize) / 1024 ** 3
++        return {"status": "MEASURED",
++                "commit_limit_gb": round(pi.CommitLimit * g, 2),
++                "commit_total_gb": round(pi.CommitTotal * g, 2),
++                "commit_peak_gb": round(pi.CommitPeak * g, 2),
++                "peak_touched_ceiling": bool(pi.CommitPeak >= pi.CommitLimit)}
++    except Exception as exc:
++        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
++
++
++def running_processes() -> dict[str, dict]:
++    """Every desk-relevant process now alive, keyed by the fragment that identifies it."""
++    out: dict[str, dict] = {}
++    try:
++        import psutil
++    except ImportError:
++        return {"__status__": {"status": "UNMEASURED", "why": "psutil not importable"}}
++    seen: dict[str, int] = {}
++    for proc in psutil.process_iter(["pid", "name", "cmdline", "create_time"]):
++        try:
++            info = proc.info
++            name = (info["name"] or "")
++            cmd = " ".join(info["cmdline"] or [])
++        except Exception:
++            continue
++        key = None
++        if name.lower() == "terminal64.exe":
++            key = "terminal64.exe"
++        else:
++            m = re.search(r"([A-Za-z0-9_]+\.py)", cmd)
++            if m and "opt\\quant" in cmd.replace("/", "\\"):
++                key = m.group(1)
++        if not key:
++            continue
++        seen[key] = seen.get(key, 0) + 1
++        prev = out.get(key)
++        if prev is None or info["create_time"] < prev["started_epoch"]:
++            out[key] = {"pid": int(info["pid"]), "started_epoch": float(info["create_time"]),
++                        "started_at": datetime.fromtimestamp(info["create_time"],
++                                                             UTC).isoformat(timespec="seconds")}
++    for key, n in seen.items():
++        out[key]["instances"] = n
++    return out
++
++
++def scheduled_tasks() -> dict[str, dict]:
++    """The desk's scheduled tasks with their state -- from schtasks, which needs no CIM.
++
++    CIM IS NOT USED ANYWHERE IN THIS FILE. `Get-CimInstance` has hung on this box and `wmic` is
++    absent; a verification organ that can hang is not a verification organ.
++    """
++    try:
++        raw = subprocess.run(["schtasks", "/query", "/fo", "LIST", "/v"],
++                             capture_output=True, text=True, timeout=600).stdout
++    except (OSError, subprocess.SubprocessError) as exc:
++        return {"__status__": {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}}
++    out: dict[str, dict] = {}
++    for block in re.split(r"\r?\n\r?\n", raw):
++        fields: dict[str, str] = {}
++        for line in block.splitlines():
++            if ":" in line:
++                k, _, v = line.partition(":")
++                fields[k.strip()] = v.strip()
++        name = fields.get("TaskName", "")
++        short = name.lstrip("\\")
++        if not short or not short.startswith(TASK_PREFIXES):
++            continue
++        out[short] = {"status": fields.get("Status", ""),
++                      "last_run": fields.get("Last Run Time", ""),
++                      "last_result": fields.get("Last Result", ""),
++                      "next_run": fields.get("Next Run Time", "")}
++    return out
++
++
++def snapshot() -> dict:
++    return {"at": datetime.now(UTC).isoformat(timespec="seconds"),
++            "boot_epoch": _boot_epoch(),
++            "commit": commit_info(),
++            "processes": running_processes(),
++            "tasks": scheduled_tasks()}
++
++
++def _boot_epoch() -> float | None:
++    try:
++        import psutil
++        return float(psutil.boot_time())
++    except Exception:
++        return None
++
++
++def compare(base: dict, now: dict) -> dict:
++    """What did NOT come back. Absence is the finding; a new arrival is noted, never a failure."""
++    missing_p = sorted(k for k in (base.get("processes") or {})
++                       if not str(k).startswith("__") and k not in (now.get("processes") or {}))
++    b_tasks, n_tasks = base.get("tasks") or {}, now.get("tasks") or {}
++    missing_t = sorted(k for k in b_tasks if not str(k).startswith("__") and k not in n_tasks)
++    # A task that exists but is Disabled came back in name only, which is not coming back.
++    disabled = sorted(k for k, v in n_tasks.items()
++                      if not str(k).startswith("__")
++                      and str(v.get("status", "")).lower().startswith("disabled")
++                      and not str((b_tasks.get(k) or {}).get("status", "")).lower()
++                      .startswith("disabled"))
++    b_lim = ((base.get("commit") or {}).get("commit_limit_gb"))
++    n_lim = ((now.get("commit") or {}).get("commit_limit_gb"))
++    rebooted = None
++    if base.get("boot_epoch") and now.get("boot_epoch"):
++        rebooted = now["boot_epoch"] > base["boot_epoch"] + 1
++    ok = not missing_p and not missing_t and not disabled
++    return {
++        "at": now["at"],
++        "rebooted_since_capture": rebooted,
++        "commit_limit_before_gb": b_lim,
++        "commit_limit_after_gb": n_lim,
++        "commit_limit_rose": (None if b_lim is None or n_lim is None else n_lim > b_lim + 0.5),
++        "processes_missing": missing_p,
++        "tasks_missing": missing_t,
++        "tasks_newly_disabled": disabled,
++        "processes_returned": sorted(k for k in (base.get("processes") or {})
++                                     if not str(k).startswith("__")
++                                     and k in (now.get("processes") or {})),
++        "verdict": "EVERYTHING RETURNED" if ok else "SOMETHING DID NOT RETURN",
++        "ok": ok,
++    }
++
++
++def _atomic(path: Path, doc: dict) -> None:
++    path.parent.mkdir(parents=True, exist_ok=True)
++    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
++    tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
++    os.replace(tmp, path)
++
++
++def main(argv: list[str] | None = None) -> int:
++    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
++    ap.add_argument("--capture", action="store_true",
++                    help="record the healthy inventory BEFORE the restart")
++    ap.add_argument("--verify", action="store_true",
++                    help="compare the live box against that inventory AFTER the restart")
++    a = ap.parse_args(argv)
++    if a.capture == a.verify:
++        ap.error("choose exactly one of --capture / --verify")
++
++    if a.capture:
++        snap = snapshot()
++        _atomic(BASELINE, snap)
++        print(f"captured {len(snap['processes'])} process kind(s) and {len(snap['tasks'])} "
++              f"task(s); commit limit "
++              f"{(snap['commit'] or {}).get('commit_limit_gb')}GB -> {BASELINE}")
++        return 0
++
++    try:
++        base = json.loads(BASELINE.read_text("utf-8"))
++    except (OSError, ValueError):
++        print(f"REFUSING to verify: no readable baseline at {BASELINE}. Run --capture on a "
++              f"healthy box first; verifying against nothing is not a verification.")
++        return 2
++    out = compare(base, snapshot())
++    _atomic(VERDICT, out)
++    print(f"{out['verdict']}  (rebooted_since_capture={out['rebooted_since_capture']}, "
++          f"commit limit {out['commit_limit_before_gb']}GB -> {out['commit_limit_after_gb']}GB, "
++          f"rose={out['commit_limit_rose']})")
++    for label, rows in (("PROCESS DID NOT RETURN", out["processes_missing"]),
++                        ("TASK DID NOT RETURN", out["tasks_missing"]),
++                        ("TASK CAME BACK DISABLED", out["tasks_newly_disabled"])):
++        for r in rows:
++            print(f"  {label}: {r}")
++    print(f"-> {VERDICT}")
++    return 0 if out["ok"] else 1
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/desks/mt5/tests/test_check_after_reboot.py b/desks/mt5/tests/test_check_after_reboot.py
+new file mode 100644
+index 00000000000..0e1b0403368
+--- /dev/null
++++ b/desks/mt5/tests/test_check_after_reboot.py
+@@ -0,0 +1,106 @@
++"""The restart-readiness check: absence must be the finding, and it must never repair anything."""
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++DESK = Path(__file__).resolve().parents[1]
++for _p in (str(DESK), str(DESK / "scripts")):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++import check_after_reboot as car  # noqa: E402
++
++
++def _snap(procs, tasks, *, limit=245.95, boot=1000.0, at="T"):
++    return {"at": at, "boot_epoch": boot,
++            "commit": {"status": "MEASURED", "commit_limit_gb": limit},
++            "processes": {p: {"pid": 1, "started_epoch": 1.0, "instances": 1} for p in procs},
++            "tasks": {t: {"status": "Ready"} for t in tasks}}
++
++
++def test_everything_returning_is_the_clean_verdict():
++    base = _snap(["terminal64.exe", "gateway_resident.py"], ["MT5-Gauntlet", "MT5-Hourly"])
++    now = _snap(["terminal64.exe", "gateway_resident.py"], ["MT5-Gauntlet", "MT5-Hourly"],
++                limit=400.0, boot=2000.0)
++    out = car.compare(base, now)
++    assert out["ok"] is True
++    assert out["verdict"] == "EVERYTHING RETURNED"
++    assert out["rebooted_since_capture"] is True
++    assert out["commit_limit_rose"] is True
++
++
++def test_a_process_that_did_not_come_back_is_named():
++    """The whole point: the gateway not returning must be a NAME, not a silence."""
++    base = _snap(["terminal64.exe", "gateway_resident.py"], ["MT5-Gauntlet"])
++    now = _snap(["terminal64.exe"], ["MT5-Gauntlet"], boot=2000.0)
++    out = car.compare(base, now)
++    assert out["ok"] is False
++    assert out["processes_missing"] == ["gateway_resident.py"]
++    assert out["processes_returned"] == ["terminal64.exe"]
++
++
++def test_a_task_that_did_not_come_back_is_named():
++    base = _snap(["terminal64.exe"], ["MT5-Gauntlet", "MT5-ReapGitWriters", "MT5-GauntletGuard"])
++    now = _snap(["terminal64.exe"], ["MT5-Gauntlet"], boot=2000.0)
++    out = car.compare(base, now)
++    assert out["tasks_missing"] == ["MT5-GauntletGuard", "MT5-ReapGitWriters"]
++    assert out["ok"] is False
++
++
++def test_a_task_that_came_back_disabled_did_not_come_back():
++    """A task present in name and Disabled in fact is the quiet shape of a dark desk."""
++    base = _snap(["terminal64.exe"], ["MT5-Gauntlet"])
++    now = _snap(["terminal64.exe"], [], boot=2000.0)
++    now["tasks"] = {"MT5-Gauntlet": {"status": "Disabled"}}
++    out = car.compare(base, now)
++    assert out["tasks_newly_disabled"] == ["MT5-Gauntlet"]
++    assert out["ok"] is False
++
++
++def test_a_task_already_disabled_before_the_restart_is_not_a_regression():
++    base = _snap(["terminal64.exe"], [])
++    base["tasks"] = {"MT5-CycleNoon": {"status": "Disabled"}}
++    now = _snap(["terminal64.exe"], [], boot=2000.0)
++    now["tasks"] = {"MT5-CycleNoon": {"status": "Disabled"}}
++    out = car.compare(base, now)
++    assert out["tasks_newly_disabled"] == []
++    assert out["ok"] is True
++
++
++def test_a_commit_limit_that_did_not_rise_is_reported_even_when_everything_returned():
++    """The restart has a PURPOSE. Everything coming back while the ceiling is unchanged means
++    the change did not take, and that must be visible rather than read as success."""
++    base = _snap(["terminal64.exe"], ["MT5-Gauntlet"])
++    now = _snap(["terminal64.exe"], ["MT5-Gauntlet"], boot=2000.0)
++    out = car.compare(base, now)
++    assert out["ok"] is True
++    assert out["commit_limit_rose"] is False
++
++
++def test_verify_without_a_baseline_refuses_rather_than_passing(tmp_path, monkeypatch):
++    """Verifying against nothing is not a verification -- it must not return success."""
++    monkeypatch.setattr(car, "BASELINE", tmp_path / "absent.json")
++    assert car.main(["--verify"]) == 2
++
++
++def test_capture_then_verify_round_trips_on_the_real_box(tmp_path, monkeypatch):
++    monkeypatch.setattr(car, "BASELINE", tmp_path / "base.json")
++    monkeypatch.setattr(car, "VERDICT", tmp_path / "verdict.json")
++    assert car.main(["--capture"]) == 0
++    doc = json.loads((tmp_path / "base.json").read_text("utf-8"))
++    assert doc["commit"]["status"] in {"MEASURED", "UNMEASURED"}
++    assert isinstance(doc["tasks"], dict)
++    car.main(["--verify"])
++    v = json.loads((tmp_path / "verdict.json").read_text("utf-8"))
++    assert v["verdict"] in {"EVERYTHING RETURNED", "SOMETHING DID NOT RETURN"}
++
++
++def test_it_never_starts_stops_or_repairs_anything():
++    """A verifier that repairs is a second, unreviewed controller of the box that trades."""
++    src = Path(car.__file__).read_text(encoding="utf-8")
++    for forbidden in (".terminate(", ".kill(", "taskkill", "schtasks\", \"/run",
++                      "/change", "Restart-Computer", "shutdown"):
++        assert forbidden not in src, f"check_after_reboot must never {forbidden}"
++    assert "Get-CimInstance" not in src, "CIM has hung on this box"
+-- 
+2.47.1.windows.1
+

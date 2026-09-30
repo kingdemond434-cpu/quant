@@ -1,0 +1,91 @@
+From a07f3dad439ed16e28b9c1632fc59bc02514bc11 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 20:00:31 +0200
+Subject: [PATCH] Never adopt an origin the box is already ahead of -- that is
+ a revert, not a release
+
+`Adopt-Release.ps1` short-circuited on `$head -eq $target` and nothing else. When origin is an
+ANCESTOR of HEAD -- strictly behind, carrying not one commit the box lacks -- the full adoption
+still ran and wrote origin's OLDER blobs over the box's newer CODE, keeping only state paths as
+the box's. There is nothing to deliver in that direction; such a pass can only undo.
+
+MEASURED TODAY. `git push` of the backlog fails with `RPC failed; HTTP 408` (506 commits of
+large parquet blobs will not go through one request), so origin has sat 500+ commits behind for
+weeks while this script "adopted" it hourly. At 17:12Z it reverted a seal fix committed at
+17:13Z, and the 17:20Z seal died on `AttributeError: module 'libs.ops.release' has no attribute
+'seal_blocking_paths'` -- a function that had been in HEAD seven minutes earlier.
+
+THAT IS WHY THE RELEASE IDENTITY COULD NEVER SETTLE. Every hour this pass reverted the box's own
+newer code and committed the revert, so HEAD moved, so HEAD stopped matching the seal, so
+`release_identity` refused new risk. 1,200 `release_identity_refused` rows since 2026-09-07 and
+19 gold sleeve-days with no placement. The churn the interlock kept reporting was manufactured
+here.
+
+Unmeasured ancestry changes nothing: if the check cannot run, the pass proceeds exactly as
+before. A code-delivery path that stops on its own diagnostics is the failure this file exists
+to prevent.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/scripts/Adopt-Release.ps1 | 44 +++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+
+diff --git a/desks/mt5/scripts/Adopt-Release.ps1 b/desks/mt5/scripts/Adopt-Release.ps1
+index cdf98247317..dad4f0f813d 100644
+--- a/desks/mt5/scripts/Adopt-Release.ps1
++++ b/desks/mt5/scripts/Adopt-Release.ps1
+@@ -608,6 +608,50 @@ Write-Host ("  target {0}" -f $target.Substring(0, 12))
+ 
+ if ($head -eq $target) { Write-Host "  already at target -- nothing to adopt"; exit 0 }
+ 
++# ORIGIN BEHIND THE BOX IS NOT A RELEASE, AND ADOPTING IT IS A MASS REVERT (2026-09-24).
++#
++# The line above is the only short-circuit this script had, and it fires on EXACT EQUALITY only.
++# So when `$target` is an ANCESTOR of HEAD -- origin strictly behind, carrying not one commit the
++# box lacks -- the full adoption still ran and wrote origin's OLDER blobs over the box's newer
++# code (step 3 writes `Get-WorktreeBytes -Rev $target` for every differing CODE path; only STATE
++# paths are kept as the box's). There is nothing to deliver in that direction. The only thing
++# such a pass can do is undo.
++#
++# MEASURED THE DAY THIS WAS WRITTEN. `git push` of the box's backlog had been failing with
++# `RPC failed; HTTP 408` -- 506 commits of large parquet blobs will not go through one request --
++# so origin sat 500+ commits behind for weeks while this script "adopted" it every hour. At
++# 17:12Z it reverted a seal fix that had been committed at 17:13Z, and the 17:20Z seal then died
++# on `AttributeError: module 'libs.ops.release' has no attribute 'seal_blocking_paths'` -- the
++# function had been in HEAD seven minutes earlier and the adoption had written it back out.
++#
++# That is also why the release identity could never settle. Every hour this pass reverted the
++# box's newer code and committed the revert, so HEAD moved again, so HEAD stopped matching the
++# seal, so `release_identity` refused new risk -- 1,200 `release_identity_refused` rows since
++# 2026-09-07 and 19 gold sleeve-days with no placement. The churn was manufactured here.
++#
++# UNMEASURED ANCESTRY CHANGES NOTHING. If the check itself cannot be run, the pass proceeds
++# exactly as it did before rather than refusing: a code-delivery path that stops on its own
++# diagnostics is the failure this file already exists to prevent.
++$ancestorRc = 2
++try {
++    $prevEap = $ErrorActionPreference
++    $ErrorActionPreference = "Continue"
++    & git -C $RepoRoot merge-base --is-ancestor $target $head 2>$null | Out-Null
++    $ancestorRc = $LASTEXITCODE
++    $ErrorActionPreference = $prevEap
++} catch { $ancestorRc = 2 }
++if ($ancestorRc -eq 0) {
++    $aheadBy = "?"
++    try { $aheadBy = (& git -C $RepoRoot rev-list --count "$target..$head" 2>$null | Out-String).Trim() } catch { }
++    Write-Host ("  target {0} is an ANCESTOR of HEAD -- origin carries no commit this box lacks" -f $target.Substring(0, 12))
++    Write-Host ("  the box is {0} commit(s) AHEAD. Adopting would write origin's OLDER blobs over" -f $aheadBy)
++    Write-Host   "  newer code, which is a revert, not a release. Nothing to adopt."
++    exit 0
++}
++if ($ancestorRc -ne 1) {
++    Write-Host "  WARNING: could not measure whether origin is behind HEAD; adopting as before"
++}
++
+ # ---- 1. THE BOX'S OWN UNCOMMITTED STATE, COMMITTED AS ITSELF -----------------
+ # The sync commits state every fifteen minutes, so a dirty tree here means a pass
+ # was interrupted -- which is exactly the situation this script is run in. Those
+-- 
+2.47.1.windows.1
+

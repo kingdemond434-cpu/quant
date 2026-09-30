@@ -1,0 +1,92 @@
+From 8ec082cb8cfbe030bbf953c60972208e5484202b Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 21:56:55 +0200
+Subject: [PATCH] A single lost git spawn is not "git is absent", and it
+ refused to trade 25 times today
+
+`release_identity._git` gave every call one attempt. On the trading box -- 118 python processes,
+a dozen git processes, one repository -- the spawn sometimes just loses, and the gateway then
+recorded
+
+    RELEASE IDENTITY refuses NEW risk: running <sha> != sealed <sha> and the diff cannot be
+    taken (git absent, or the sealed commit is not in this clone)
+
+25 times on 2026-09-24 alone, at up to 5 an hour. The wording is self-diagnosing: `verdict`
+writes "git absent" only when `source != "git"`, i.e. `git rev-parse HEAD` returned nothing and
+the SHA had to be recovered by reading `.git` directly. git was installed and the sealed commit
+was present every time. One lost spawn skipped the diff entirely and the pass refused new risk.
+
+This is the same class as the stale seal and the ten-second timeout: a rail refusing on a
+question nobody actually answered. Retrying MEASURES more, it does not PERMIT more -- an identity
+that genuinely cannot be measured still refuses, and three consecutive failures on a machine
+where git works is a real fault worth refusing on. Bounded: three attempts, 0.4s then 0.8s apart,
+once per pass.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/mt5desk/release_identity.py | 40 +++++++++++++++++++++++----
+ 1 file changed, 34 insertions(+), 6 deletions(-)
+
+diff --git a/desks/mt5/mt5desk/release_identity.py b/desks/mt5/mt5desk/release_identity.py
+index cc7bea0d5f1..334fb59c079 100644
+--- a/desks/mt5/mt5desk/release_identity.py
++++ b/desks/mt5/mt5desk/release_identity.py
+@@ -41,6 +41,7 @@ import json
+ import os
+ import re
+ import subprocess
++import time
+ from dataclasses import asdict, dataclass, field
+ from datetime import UTC, datetime
+ from pathlib import Path
+@@ -204,13 +205,40 @@ class Identity:
+ DIFF_TIMEOUT_S = 90.0
+ 
+ 
++#: HOW MANY TIMES A GIT CALL IS TRIED BEFORE "git is absent" IS BELIEVED (2026-09-24).
++#:
++#: This function gave up after ONE attempt, and on the trading box that turned a busy moment into
++#: a refusal to trade. Measured across 2026-09-24: TWENTY-FIVE gateway passes recorded
++#:
++#:     RELEASE IDENTITY refuses NEW risk: running <sha> != sealed <sha> and the diff cannot be
++#:     taken (git absent, or the sealed commit is not in this clone)
++#:
++#: and the words are self-diagnosing -- `verdict` writes "git absent" only when `source != "git"`,
++#: which means `git rev-parse HEAD` itself returned nothing and the SHA had to be recovered by
++#: reading `.git` directly. git was installed and the sealed commit was present every single
++#: time; with 118 python processes and a dozen git processes on the box, the spawn simply lost.
++#: One failed spawn then skipped the diff entirely and the pass refused.
++#:
++#: RETRYING MEASURES MORE, IT DOES NOT PERMIT MORE. An identity that genuinely cannot be measured
++#: is still not a licence and still refuses -- three failures in a row on a machine where git
++#: works is a real fault worth refusing on. What changes is that a single lost spawn no longer
++#: counts as one. The cost is bounded: three attempts, 0.4s then 0.8s apart, once per pass.
++_GIT_ATTEMPTS = 3
++_GIT_BACKOFF_S = 0.4
++
++
+ def _git(args: list[str], root: Path, timeout: float = 10.0) -> str | None:
+-    try:
+-        r = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=str(root),
+-                           capture_output=True, text=True, timeout=timeout)
+-    except (OSError, subprocess.SubprocessError):
+-        return None
+-    return r.stdout if r.returncode == 0 else None
++    for attempt in range(_GIT_ATTEMPTS):
++        try:
++            r = subprocess.run(["git", "-c", "core.quotepath=off", *args], cwd=str(root),
++                               capture_output=True, text=True, timeout=timeout)
++        except (OSError, subprocess.SubprocessError):
++            r = None
++        if r is not None and r.returncode == 0:
++            return r.stdout
++        if attempt < _GIT_ATTEMPTS - 1:
++            time.sleep(_GIT_BACKOFF_S * (2 ** attempt))
++    return None
+ 
+ 
+ def _is_sha(s: str) -> bool:
+-- 
+2.47.1.windows.1
+

@@ -1,0 +1,95 @@
+From a7f7597dfc32cbb5aa1a8033ae70306398898362 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 01:30:17 +0200
+Subject: [PATCH] Complete the cadence baseline from the host that owns the
+ clocks
+
+The fence's FIRST live run on the trading box named a dark organ the build-box
+seeding could not see -- market_constitution, 10 clean runs since
+2026-09-24T00:40Z with no output on any channel. A mirror measures nothing, so a
+baseline taken there was necessarily incomplete. Seeding is not an improvement
+claim; it is the number the next run is measured against, and from here the list
+falls only.
+
+Also: declare() rebuilt the debt document from scratch and so would have silently
+DELETED the `handed_over` section beside it -- the measured causes for organs
+whose one-line fix lives in a file another lane holds. A writer that drops a
+neighbour's evidence while recording its own is the same defect class this whole
+file is about, so it now preserves every key it does not own.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ docs/research/organ_cadence_debt.json | 12 +++++++++---
+ scripts/check_organ_cadence.py        | 11 +++++++++--
+ 2 files changed, 18 insertions(+), 5 deletions(-)
+
+diff --git a/docs/research/organ_cadence_debt.json b/docs/research/organ_cadence_debt.json
+index 772fd44468b..2fbaf0419a2 100644
+--- a/docs/research/organ_cadence_debt.json
++++ b/docs/research/organ_cadence_debt.json
+@@ -2,10 +2,10 @@
+  "law": "ORGAN CADENCE DEBT. Every organ here is KNOWN to be dark and carries its reason. The list may only SHRINK: an organ leaves by being REPAIRED, never by being deleted, and a NEW dark organ fails the fence immediately rather than joining a backlog. See scripts/check_organ_cadence.py.",
+  "why_a_debt_and_not_a_red_gate": "A fence that goes red on a backlog it inherited is a fence somebody switches off (L1.43), and then the next real break is silent again. Declaring today's eighteen by name makes the gate usable TONIGHT and makes tomorrow's nineteenth fail on the day it appears -- the only day its diagnosis is cheap.",
+  "seeded_from": "scripts/check_organ_cadence.py run against the TRADING box (vmi3571445) 2026-09-24T22:0xZ, window 24h. The build box is a mirror and measures nothing, so the debt is seeded from the host that owns the clocks.",
+- "declared_max": 18,
++ "declared_max": 19,
+  "windows_lost_max": 13,
+  "windows_lost_note": "8 of 21 sleeve-day windows in the last 7 days closed with a placement; 13 closed with nothing but refusals, 742 of them 'release_identity_refused'. That is the seal being green most of the day and red when a window opens. The ratchet falls only.",
+- "updated_utc": "2026-09-25T01:30:00+00:00",
++ "updated_utc": "2026-09-24T23:30:15+00:00",
+  "handed_over": {
+   "why": "Measured causes for organs whose one-line fix lives in a file this lane was told to stay out of (hourly_cycle.py is being edited by other lanes tonight). Each is a single edit with the file, the line and the replacement named, so the owner applies it without re-deriving anything. These are NOT in `declared` and do NOT count against the ratchet -- they are diagnosed work waiting on a writer, not unexplained darkness.",
+   "axis_registry": {
+@@ -91,6 +91,11 @@
+    "why": "4 runs, 4 failures in 24h.",
+    "owner": "unassigned"
+   },
++  "market_constitution": {
++   "verdict": "SILENT_NOOP",
++   "why": "exited cleanly 10 time(s) since 2026-09-24T00:40:11+00:00 and not one of its output channels has moved since -- rc=0 with no write, which is indistinguishable from healthy on every board the desk has",
++   "owner": "unassigned -- found by the fence's FIRST live run on the host that owns the clocks"
++  },
+   "mining_objective": {
+    "verdict": "ALWAYS_FAILING",
+    "why": "11 runs, 11 failures in 24h; MINING_OBJECTIVE.json 79h stale. The organ that says what the desk is mining FOR has been failing for three days.",
+@@ -136,5 +141,6 @@
+    "why": "10 runs, 10 failures in 24h.",
+    "owner": "unassigned"
+   }
+- }
++ },
++ "baseline_note": "BASELINE COMPLETED 2026-09-25 from the fence's first live run on the TRADING box, which is the host that owns the clocks. The first seeding was taken from a build-box reading and was necessarily incomplete -- a mirror measures nothing, so it could not see every dark organ. Seeding is not an improvement claim; it is the number the NEXT run is measured against. From here the list FALLS ONLY: an organ leaves by being repaired, and any organ that goes dark and is not on this list fails the gate on the day it happens."
+ }
+diff --git a/scripts/check_organ_cadence.py b/scripts/check_organ_cadence.py
+index f27f30fcbb9..d8ae765485e 100644
+--- a/scripts/check_organ_cadence.py
++++ b/scripts/check_organ_cadence.py
+@@ -668,7 +668,14 @@ def declare(doc: dict[str, Any], target: Path | None = None) -> Path:
+             "owner": "unassigned -- a declared organ with no owner is a queue, not a plan",
+         })
+     seal = doc.get("seal_duty_cycle") or {}
+-    out = {
++    # PRESERVE WHAT THIS FUNCTION DOES NOT OWN. The document carries a `handed_over` section --
++    # measured causes whose one-line fix lives in a file another lane holds -- and rebuilding the
++    # dict from scratch silently deleted it on the first re-seed. A writer that drops a neighbour's
++    # evidence while recording its own is the same defect class this whole file is about.
++    out = {k: v for k, v in (
++        json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}).items()
++        if k not in ("law", "declared_max", "windows_lost_max", "updated_utc", "declared")}
++    out.update({
+         "law": ("ORGAN CADENCE DEBT. Every organ here is KNOWN to be dark and carries its reason. "
+                 "The list may only SHRINK: an organ leaves by being repaired, never by being "
+                 "deleted, and a NEW dark organ fails the fence immediately rather than joining a "
+@@ -677,7 +684,7 @@ def declare(doc: dict[str, Any], target: Path | None = None) -> Path:
+         "windows_lost_max": seal.get("windows_lost") if seal.get("available") else None,
+         "updated_utc": doc.get("generated"),
+         "declared": dict(sorted(existing.items())),
+-    }
++    })
+     path.parent.mkdir(parents=True, exist_ok=True)
+     path.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
+     return path
+-- 
+2.47.1.windows.1
+

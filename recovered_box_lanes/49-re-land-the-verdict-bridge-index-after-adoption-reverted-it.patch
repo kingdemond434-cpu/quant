@@ -1,0 +1,144 @@
+From 3723e1ada091617e2835ebab1f5b64c2bd7b5471 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 04:15:53 +0200
+Subject: [PATCH] Re-land the verdict-bridge index after adoption reverted it
+
+The live registry index ix_candidates_donated_cell is intact and working -- judged_at is
+stamped on 17,831 candidates against 1,278 before it, and EXPLAIN reads MULTI-INDEX OR --
+but Adopt-And-Seal landed origin's tree in place and reverted the CODE that recreates it,
+because the push carrying it was blocked by an unrelated lint failure in another lane's
+file. A fix that lives only in the database is one registry restore from being undone, so
+the three source changes are re-applied here by anchor.
+
+mark_candidate is the only writer of judged_at and matches WHERE id=? OR donated_cell=?;
+with no index on donated_cell that OR can use neither branch and scans 740,357 rows per
+verdict -- 2.09 rows/s measured, against 87,931 with the index. The gate_verdicts cursor sat
+at byte 226,198 of a 54,119,184-byte ledger while the file grew 113x faster than the cursor
+advanced. One pass after the index poured 88,886 verdicts where the previous pass managed
+203.
+
+Also re-landed: the sandbox rotation tiebreak now orders the cut tail by AGE rather than by
+system_id, because every share ties at the 90s floor and the alphabet was deciding which
+nine systems were cut every pass for ever; and a system that ran is one with a row rather
+than one with a non-zero stopwatch, which had mislabelled 20 working systems as starved.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/sandbox_runner.py | 11 +++++++++-
+ libs/moat/registry.py                | 31 +++++++++++++++++++++++++++-
+ libs/research/sandbox_rotation.py    | 19 ++++++++++++++++-
+ 3 files changed, 58 insertions(+), 3 deletions(-)
+
+diff --git a/desks/mt5/research/sandbox_runner.py b/desks/mt5/research/sandbox_runner.py
+index 1156d9f5c25..7cb1245d419 100644
+--- a/desks/mt5/research/sandbox_runner.py
++++ b/desks/mt5/research/sandbox_runner.py
+@@ -586,7 +586,16 @@ def production_rows(plans: list[Plan], tried: list[dict[str, Any]],
+         counts = row.get("counts") or {}
+         cands = int(ing.get("candidates") or 0)
+         cells = sorted(set(st.get("cells") or []))
+-        ran = bool(row.get("seconds")) and plan.status == "RUNNABLE"
++        # A SYSTEM THAT RAN HAS A ROW, WHATEVER THE STOPWATCH SAYS (measured 2026-09-25).
++        # This read `bool(row.get("seconds"))`, and `seconds` is `round(monotonic() - t0, 1)` --
++        # so a system finishing in under 0.05s recorded 0.0, `bool(0.0)` is False, and it was
++        # reported as "RUNNABLE but not reached this pass: queued behind higher-ROI and more
++        # overdue systems". It HAD been reached: on the live box 20 of the 29 systems carrying
++        # that sentence had full rows in `systems_tried` with `run_status="PRODUCED"`, and three
++        # were that pass's own SCOUTS -- the systems the rotation had explicitly guaranteed an
++        # hour. A fast adapter was indistinguishable from a starved one and the sentence blamed a
++        # budget that had in fact paid. The row's EXISTENCE is the fact being asked for.
++        ran = sid in by_id and plan.status == "RUNNABLE"
+         produced = bool(cands or cells)
+         if produced:
+             reason = ""
+diff --git a/libs/moat/registry.py b/libs/moat/registry.py
+index bd347dbbc04..b8be81e5017 100644
+--- a/libs/moat/registry.py
++++ b/libs/moat/registry.py
+@@ -524,6 +524,26 @@ def _evolve(conn: sqlite3.Connection) -> dict[str, int]:
+     # that uses it, and it is invisible because nothing reports it as a limit.
+     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_gridcell ON research_candidates"
+                  "(grid_cell)")
++    # THE THIRD SCAN, AND THE ONE THAT BROKE REGISTRY -> JUDGE (measured on the trading box
++    # 2026-09-25). The two indexes above cured the WRITE doors; this is the same disease on the
++    # READ-BACK door, and it cost the desk every verdict it ever earned. `mark_candidate` is the
++    # ONLY writer of `judged_at`, and it matches `WHERE id=? OR donated_cell=?` -- `id` has the
++    # PK autoindex, `donated_cell` had nothing, and an OR across one indexed and one unindexed
++    # column cannot use either: EXPLAIN read `SCAN research_candidates` over 740,357 rows for
++    # every verdict poured. Measured on the box: 2.09 rows/s on the OR form against 87,931 rows/s
++    # on `id` alone. So `sync_from_desk` managed 203 verdict rows in a 300 s pass while the
++    # gauntlet appended ~3,500 an hour, and the `gate_verdicts` cursor sat at byte 226,198 of a
++    # 54,119,184-byte ledger -- 0.42% read, 227,497 verdicts unpoured, the file growing 113x
++    # faster than the cursor advanced. `judged_at` was set on 1,278 rows IN THE DESK'S WHOLE
++    # HISTORY, all at one instant, while the sandboxes donated, the docket carried them and the
++    # judge ruled on them. With this index the planner reads `MULTI-INDEX OR` and one pass poured
++    # 88,886 verdicts and stamped 16,553 candidates judged.
++    #
++    # THE GENERALISATION, now three times paid for: a door that scans the whole table on every
++    # call is a throttle on everything upstream of it, and it is invisible because nothing
++    # reports it as a limit -- the leg exits rc=0 with a cursor receipt and `rows: 203`.
++    conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_donated_cell ON research_candidates"
++                 "(donated_cell)")
+     # THE SECOND SCAN, AND THE ONE THAT SET THE DESK'S WHOLE MINT RATE (measured on the box
+     # 2026-09-23). `record_discovery` asks "have I seen this discovery?" -- `SELECT discovery_id
+     # FROM discoveries WHERE content_hash=?` -- and `discoveries.content_hash` carried no index,
+@@ -1774,6 +1794,14 @@ SYNC_CYCLE_S = 3600.0
+ #: stream (28 MB) and it runs first because a verdict marks the candidate it enqueues -- so it is
+ #: bounded by a SHARE, never by the whole pass, and the verdicts behind it can never be starved.
+ GRAPH_BUDGET_SHARE = 0.4
++#: THE VERDICT STREAM'S OWN ROW CAP, as a multiple of `max_rows` (measured 2026-09-25). The
++#: shared 20,000-row cap was sized when every stream cost the same per row; the verdicts did not,
++#: because `mark_candidate` scanned the whole candidate table per row (`ix_candidates_donated_cell`).
++#: With that index the verdicts are the CHEAPEST stream on the pass, and a cap sized for the
++#: expensive case is the only thing between a 227,497-row backlog and a single pass. The
++#: wall-clock deadline is still the real guard; this only stops the ROW COUNT binding the funnel's
++#: last stage.
++VERDICT_ROWS_MULTIPLE = 25
+ #: How often a stream persists its cursor mid-loop. The leg runs as a subprocess under the hour's
+ #: budget and is SIGKILLed when it overruns, and a kill between the last row and the cursor write
+ #: replays every row of the batch -- so progress is durable every this many rows, not once.
+@@ -2162,7 +2190,8 @@ def sync_from_desk(desk: Path | None = None, *, max_rows: int = 20000,
+             n = 0
+             for r, at_pos in _iter_new_lines(
+                     c, "gate_verdicts",
+-                    d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl", max_rows):
++                    d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl",
++                    max_rows * VERDICT_ROWS_MULTIPLE):
+                 pos = at_pos
+                 cell = str(r.get("cell") or "")
+                 if not cell:
+diff --git a/libs/research/sandbox_rotation.py b/libs/research/sandbox_rotation.py
+index c12abdcc27e..d0381257632 100644
+--- a/libs/research/sandbox_rotation.py
++++ b/libs/research/sandbox_rotation.py
+@@ -171,8 +171,25 @@ def plan(runnable: Sequence[str], state_rows: Mapping[str, Any], *, budget_s: fl
+               for sid, w in weighted.items()}
+     for sid in scouts:
+         shares[sid] = max(shares.get(sid, floor_s), floor_s)
++    # THE TIEBREAK IS AGE, NEVER THE ALPHABET (measured on the live box 2026-09-25).
++    #
++    # `shares` is floored at `floor_s` and the exploit budget is far smaller than
++    # `len(ids) * floor_s` -- 446s across 85 systems is 5.2s each, so `max(floor_s, 5)` returns 90
++    # for EVERY system and the shares map is a constant: the allocation histogram on the box is
++    # literally `[(90, 85)]`. With `-shares` tied for all 81 non-scouts and `-marginal` 0.0 for
++    # about 65 of them, the only key left with information in it was `s` -- the system id,
++    # ascending -- and the pass is then cut by the wall clock at whatever it has reached.
++    #
++    # So the systems whose names sort last were cut on EVERY pass, for ever. `skipped_budget` was
++    # byte-for-byte the alphabetical tail of the roster, and the reason published beside them
++    # named ROI and overdueness, neither of which had entered the decision.
++    #
++    # Ordering the tail by AGE makes the cut ROTATE, which is what the rule at the bottom of this
++    # function has always claimed. It rations nothing and funds nothing less -- same budget, same
++    # floor, same scouts -- it only stops the cut landing on the same nine names every hour.
+     order = scouts + sorted((s for s in ids if s not in set(scouts)),
+-                            key=lambda s: (-shares.get(s, 0), -float(marginal.get(s, 0.0)), s))
++                            key=lambda s: (-shares.get(s, 0), -ages[s],
++                                           -float(marginal.get(s, 0.0)), s))
+     return {
+         "order": order, "shares": shares, "scouts": scouts, "n_scout_slots": n_scouts,
+         "window_s": window_s, "cadence_s": cadence_s, "scout_budget_s": round(scout_cost, 1),
+-- 
+2.47.1.windows.1
+

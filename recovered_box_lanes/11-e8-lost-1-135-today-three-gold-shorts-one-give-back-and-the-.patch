@@ -1,0 +1,195 @@
+From f940005b39546d0dcd7e9aea247d39335e2de315 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:18:25 +0200
+Subject: [PATCH] E8 lost 1,135 today: three gold shorts, one give-back, and
+ the floor that arrived after it
+
+---
+ desks/mt5/reports/E8_LOSS_2026-09-24.json | 174 ++++++++++++++++++++++
+ 1 file changed, 174 insertions(+)
+ create mode 100644 desks/mt5/reports/E8_LOSS_2026-09-24.json
+
+diff --git a/desks/mt5/reports/E8_LOSS_2026-09-24.json b/desks/mt5/reports/E8_LOSS_2026-09-24.json
+new file mode 100644
+index 00000000000..945ff436303
+--- /dev/null
++++ b/desks/mt5/reports/E8_LOSS_2026-09-24.json
+@@ -0,0 +1,174 @@
++{
++ "generated_utc": "2026-09-24T17:17:34.204012+00:00",
++ "account": "E8 prop 2478877 (TradeLocker)",
++ "question": "where did the 2026-09-24 stand-down's -1,135 come from, and was the give-back protection in force on those trades",
++ "verdict": "RECONCILED EXACTLY. Three XAUUSD shorts from the desk's own three gold windows, all opened by intents this desk wrote today. Only ONE of the three was a give-back, and the protection against it reached this box AFTER it happened.",
++ "baseline": {
++  "_source": "venue get_account_state(); desks/mt5/data/e8_guard_state.json; desks/mt5/reports/E8_EXEC.json",
++  "balance_now": 98759.48,
++  "equity_now": 98759.48,
++  "flat": true,
++  "_flat_evidence": "openNetPnL 0.0, positionsCount 0, ordersCount 0",
++  "day_start_the_guard_compared_against": 99894.68,
++  "_day_start_field": "e8_guard_state.json -> day_start (echoed E8_EXEC.json -> guard.day_start)",
++  "peak_equity_today": 100241.88,
++  "_peak_field": "e8_guard_state.json -> peak_equity",
++  "day_pnl": -1135.2,
++  "_day_pnl_field": "E8_EXEC.json -> guard.day_pnl  (= equity_now - day_start)",
++  "programme_start_balance": 100000.0,
++  "_programme_field": "prop/e8_guard.py:60 START_BALANCE",
++  "all_time_vs_programme_baseline": -1240.52,
++  "WHICH_BASELINE": "DAY-START BALANCE, 99,894.68 -- not the 100k programme baseline and not the peak. The account did NOT open above 100k and give back a thousand: it opened at 99,894.68, already 105.32 below the programme baseline.",
++  "peak_was_only": 347.2,
++  "_peak_note": "peak_equity 100,241.88 is day_start + 347.20 of FLOATING profit on the asia short; it was never realised and never a balance."
++ },
++ "limits": {
++  "_source": "prop/e8_guard.py:60-69 and E8_EXEC.json -> guard",
++  "static_floor": 90000.0,
++  "static_drawdown_pct": 10.0,
++  "room_to_static_floor": 8759.48,
++  "daily_floor_today": 97397.31,
++  "daily_drawdown_pct": 2.5,
++  "room_to_daily_floor": 1362.17,
++  "voluntary_stand_down_line": 99145.47,
++  "voluntary_pct": 0.75,
++  "breached": "the VOLUNTARY 0.75% line only. E8's own 2.5% daily floor and 10% static floor are both untouched, by 1,362.17 and 8,759.48 respectively.",
++  "NOTE_8_vs_10_pct": "docs/PROP_FIRM_E8.md and CLAUDE.md describe an E8 *One* 8%/12% arena; the guard this account actually runs is E8 *Pro* at 10% static / 2.5% daily / 10% target. The measured room above is the guard's."
++ },
++ "trades": [
++  {
++   "window": "gold_asia",
++   "sleeve": "E8 gold session-range bracket (XAUUSD)",
++   "position_id": 360287970193246861,
++   "side": "sell",
++   "lot": 0.16,
++   "entry_utc": "2026-09-24T08:15:56Z",
++   "entry": 4272.36,
++   "exit_utc": "2026-09-24T13:03:08Z",
++   "exit": 4283.91,
++   "entry_order": 360287970211059589,
++   "exit_order": 360287970211082260,
++   "exit_kind": "RATCHETED STOP EXECUTED AT MARKET",
++   "initial_stop": 4303.25,
++   "stop_at_exit": 4259.78,
++   "take_profit": 4214.6,
++   "R_points": 30.89,
++   "mfe_price": 4244.03,
++   "mfe_points": 28.33,
++   "mfe_R": 0.92,
++   "mfe_usd": 453.28,
++   "first_touch_0p85R_utc": "2026-09-24T10:25:00Z",
++   "pnl_usd": -184.8,
++   "why": "the gold lane's stop ratchet moved the short's stop from 4303.25 to 4259.78 while the market was at ~4283.5. A buy stop below the market is already through its trigger: the venue accepted it and filled at market, 24.13 points behind. MetaTrader answers 10016 to such a request and changes nothing; TradeLocker executes it."
++  },
++  {
++   "window": "gold_london_am",
++   "sleeve": "E8 gold session-range bracket (XAUUSD)",
++   "position_id": 360287970193260741,
++   "side": "sell",
++   "lot": 0.13,
++   "entry_utc": "2026-09-24T15:01:41Z",
++   "entry": 4250.82,
++   "exit_utc": "2026-09-24T16:17:47Z",
++   "exit": 4282.62,
++   "entry_order": 360287970211114841,
++   "exit_order": 360287970211157214,
++   "exit_kind": "GUARD FLATTEN (market buy)",
++   "initial_stop": 4287.97,
++   "stop_at_exit": 4287.97,
++   "take_profit": 4176.85,
++   "R_points": 37.15,
++   "mfe_price": 4244.6,
++   "mfe_points": 6.22,
++   "mfe_R": 0.17,
++   "mfe_usd": 80.86,
++   "first_touch_0p85R_utc": null,
++   "pnl_usd": -413.4,
++   "why": "never went 0.85R in favour (peak 0.17R). The stand-down guard flattened it at market 4282.62 rather than letting it run to its 4287.97 stop, which SAVED 69.55 USD."
++  },
++  {
++   "window": "gold_afternoon",
++   "sleeve": "E8 gold session-range bracket (XAUUSD)",
++   "position_id": 360287970193260732,
++   "side": "sell",
++   "lot": 0.15,
++   "entry_utc": "2026-09-24T15:01:38Z",
++   "entry": 4251.48,
++   "exit_utc": "2026-09-24T16:16:52Z",
++   "exit": 4287.28,
++   "entry_order": 360287970211130412,
++   "exit_order": 360287970211143167,
++   "exit_kind": "STOP LOSS (slipped 2.23 pts / 33.45 USD)",
++   "initial_stop": 4285.05,
++   "stop_at_exit": 4285.05,
++   "take_profit": 4186.47,
++   "R_points": 33.57,
++   "mfe_price": 4244.6,
++   "mfe_points": 6.88,
++   "mfe_R": 0.2,
++   "mfe_usd": 103.2,
++   "first_touch_0p85R_utc": null,
++   "pnl_usd": -537.0,
++   "why": "never went 0.85R in favour (peak 0.20R). A clean stop-out; no protection of any kind could have improved it."
++  }
++ ],
++ "total_pnl_usd": -1135.2,
++ "reconciles_to_guard": true,
++ "reconciliation": "-1135.2 vs guard day_pnl -1135.2 -- exact to the cent. 99,894.68 - 1,135.20 = 98,759.48 = the venue's reported balance.",
++ "local_ledger_reconciliation": {
++  "file": "desks/mt5/data/e8_gold_intents.jsonl",
++  "rows_stamped_2026-09-24": 6,
++  "at": [
++   "2026-09-24T04:02:10Z x2 (asia)",
++   "2026-09-24T13:07:17Z x2 (london_am)",
++   "2026-09-24T14:07:14Z x2 (afternoon)"
++  ],
++  "all_status": "SENT",
++  "agrees_with_venue": true,
++  "note": "every one of the three losses traces to a row this desk wrote. The earlier report that the ledger held zero rows today was a filter artefact -- these rows carry no 'gold'/'xau' token in any field, only a 'window' name.",
++  "which_leg_filled": "all three windows filled the SELL leg; all three BUY legs were cancelled unfilled. Gold fell into every window and reversed."
++ },
++ "give_back_protection": {
++  "mechanism": "0.85R costed break-even floor (position_manager.BREAKEVEN_TRIGGER_R = 0.85) plus position_manager.stop_rests_at_venue, which refuses a level already through its trigger.",
++  "IN_FORCE_ON_THESE_TRADES": false,
++  "arrival_on_this_box": {
++   "_source": "git log on the trading box, C:/opt/quant",
++   "mt5desk/position_manager.py (stop_rests_at_venue, breakeven_armed/level)": "2026-09-24 15:19 UTC (0aca742997), refreshed 16:45 UTC (ea3344f749)",
++   "prop/e8_executor.py (manage_breakeven)": "2026-09-24 15:19 UTC (0aca742997), refreshed 16:45 UTC (ea3344f749)",
++   "prop/e8_gold.py (the gold lane's stop_rests_at_venue refusal)": "2026-09-24 16:32 UTC (a53bfe0b8a)"
++  },
++  "against_each_trade": {
++   "gold_asia": "CLOSED AT 13:03 UTC -- 2h16m before manage_breakeven reached the box and 3h29m before e8_gold.py's refusal did. The protection POST-DATES this trade. It did not fail; it was not yet here.",
++   "gold_london_am": "MFE 0.17R. Below the 0.85R trigger, so the floor would never have armed even had it been in force.",
++   "gold_afternoon": "MFE 0.20R. Same -- the floor would never have armed."
++  },
++  "what_it_would_have_saved": {
++   "gold_asia_only": "the asia short DID go 0.92R (28.33 pts, 453.28 USD) in favour and first touched the 0.85R trigger at 10:25 UTC, two and a half hours before it closed. This is the one genuine give-back of the day.",
++   "0p85R_floor_prompt_at_10:25": "E8_ROUND_TRIP_PER_PRICE_UNIT is 0.0, so the floor level for this short is the entry itself, 4272.36. A buy stop there rests correctly above a 4244-4252 market. Result: 0.00 instead of -184.80. SAVES 184.80.",
++   "stop_rests_at_venue_alone": "would have REFUSED the 13:03 ratchet, leaving the 4303.25 stop. Gold's high for the rest of the session was 4288.38 -- it never reached 4303.25 -- so the position would have been open at the 16:17 guard flatten and closed at ~4282.62 for -164.16. SAVES 20.64.",
++   "the_386_08_figure": "the code comment's 386.08 USD is measured against the ratchet's OWN level 4259.78 (which would have banked +201.28), not against the 0.85R break-even floor. Both are true; they price different things.",
++   "day_total_with_a_prompt_floor": -950.4,
++   "_day_total_note": "0.00 - 413.40 - 537.00. Still a 0.95% day and still past the 0.75% voluntary line (99,145.47), so the stand-down would have fired anyway -- the floor would have cut the loss by 16%, not prevented the day."
++  }
++ },
++ "what_actually_went_wrong_today": [
++  "1. THE RATCHET, NOT THE MARKET, CLOSED THE ONE WINNER. The asia short was 0.92R in profit and was closed at market 24.13 points the wrong side of its own new stop, because this venue executes a stop that is already through its trigger instead of rejecting it.",
++  "2. THE FLOOR ARRIVED LATE IN THE DAY AND LATE IN THE TRADE. 0.85R was first touched at 10:25; the ratchet fired at 13:03, by which time price had crossed back through the entry.",
++  "3. THE OTHER TWO WERE NOT GIVE-BACKS. Both peaked under 0.21R and lost. Gold reversed ~40 points out of all three windows on the same afternoon -- one direction, three sleeves, which is one bet wearing three names.",
++  "4. THE GUARD WORKED. It flattened at the voluntary 0.75% line with E8's own 2.5% daily floor still 1,362.17 away, and its flatten beat london_am's own stop by 69.55 USD."
++ ],
++ "not_a_cause": [
++  "the account was never left unprotected: every one of the three had a stop attached at entry by the same order that opened it",
++  "no manual close, no venue liquidation, no margin action -- every exit is an order this desk or its guard sent",
++  "the venue's own todayGross/todayNet/todayTradesCount fields (-198.89 / -192.66 / 18) span more than one day and must not be read as a day figure; nothing in the guard reads them"
++ ],
++ "sources": {
++  "venue_order_history": "TLAPI.get_all_orders(history=True), 3-day window, 41 rows",
++  "venue_executions": "TLAPI.get_all_executions(), 6 rows, all 2026-09-24, all XAUUSD iid 6102",
++  "venue_bars": "TLAPI.get_price_history(6102, '1m'), 821 bars 03:30-17:10 UTC",
++  "guard": "desks/mt5/data/e8_guard_state.json, desks/mt5/reports/E8_EXEC.json",
++  "intents": "desks/mt5/data/e8_gold_intents.jsonl, desks/mt5/data/e8_gold_state.json",
++  "code_timeline": "git log on the trading box"
++ },
++ "read_only": "this reconciliation placed, modified and closed nothing; the stand-down was not touched and remains in force until the server day rolls"
++}
+\ No newline at end of file
+-- 
+2.47.1.windows.1
+

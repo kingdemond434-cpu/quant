@@ -1,0 +1,580 @@
+From f1936e0dfafcd92a197dad546cc0c5435dcbb072 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 22:48:07 +0200
+Subject: [PATCH] The family lane was one bar short, and that bar is why no
+ session_range_breakout sleeve ever traded
+
+Four sleeves carry LIVE risk and have never placed an order. Three causes, measured, not assumed.
+
+THE XAUUSD THREE (rr=1.5/wb=12, rr=1.5/wb=8, rr=2.0/wb=12), 0.034194 of risk_frac since
+2026-09-11. Two causes in sequence:
+  (i) until 2026-09-22T00:29 the gateway log carries 380 refusals EACH of
+      "certified cell 'XAUUSD.session_range_breakout.rr=1.5_wb=12' is not in the docket on this
+      box" -- stage no_inputs, every pass. That one has since resolved itself: run today,
+      _params_from_certificate returns ({'rr': 1.5, 'wait_bars': 12}, '') for all three. The
+      bare-family defect of 2026-09-15 is NOT what is holding them; it was fixed and these rows
+      carry the parameterised cell.
+  (ii) and then they went silent instead of trading, which is this commit. family_signal_step
+      keeps only signals whose time == last_bar, so the family must be ABLE to emit there. The
+      2026-09-15 `signal_bars` fix appended the forming bar, which reaches a family whose loop
+      ends at len(d) - 1. Every family in families_orthogonal.py ends at -1 and every one of
+      them places (discovered, overnight_gap_decay, carry: 254 order intents). All 27 families
+      in families.py end at len(h1) - 2 and need one MORE bar, and session_range_breakout is
+      the only families.py family ever promoted LIVE.
+
+      Measured on the box's own XAUUSD H1 bars, walking the last 240 hourly passes exactly as
+      resolve_family_order builds them:
+
+          passes where the family emitted something   240 / 240   (28 distinct signal bars)
+          signals AT last_bar, frame as handed today      0
+          signals AT last_bar, one more trailing bar     10
+
+      The entry condition was met constantly. The filter matched nothing because the loop bound
+      stops one index short of the bar the gateway is asking about. extend_signal_tail pads the
+      frame to FAMILY_TAIL_SLACK trailing rows with copies of its own last row; no family reads
+      them (the bound stops before them, every indicator is backward-looking rolling/ewm, and
+      the one whole-frame aggregate is a per-date max/min for which duplicating a value already
+      present is the identity), and a signal emitted ON a pad is discarded by the same
+      time == last_bar filter. signal_bars=None still means `closed`, so shadow_forward and
+      every hunt16 caller and the forward clocks that certified these cells are untouched.
+
+THE USDJPY ROW is a different cause entirely and not this one: "LIVE POLICY refused
+usdjpy_session_range_breakout_asia_rr25_wb12: USDJPY is outside the live sleeve universe
+['XAUUSD']", 16:44 and 16:45 today. data/live_sleeve_policy.json was rewritten at 18:30Z to admit
+USDJPY, so that door is already open -- it then hit the same off-by-one behind it.
+
+THE DIRECTIONAL RULE, because three more XAUUSD rows land beside three gold bracket windows.
+family_session_range_breakout appends a LONG at the range high and a SHORT at the range low on
+one bar -- one OCO breakout, one leg taken -- and family_signal_step took sigs[-1], which is the
+order the family happens to append in, so the sleeve was structurally always SHORT. E8 lost 1,135
+today because three windows shorted gold together; three more rows hard-wired short is that shape
+again. prefer_side places the leg that AGREES with the book's held direction and skips only the
+opposing one. It chooses WHICH leg, never whether: the same one order is sent either way, and
+prefer_side=None keeps sigs[-1] exactly. No cap, veto or throttle is added -- same_side_count,
+leg_balance, the 0.85R break-even floor and stop_rests_at_venue already govern this lane.
+
+E8 IS GATED ON REALISED FILLS (principal, today: "Make them all trade in mt5 account first if
+they're doing well we put them on e8 too"). e8_book.mirror admits a family row only when account
+495044 has recorded >= 5 realised closed trades under its name with realised R summing positive,
+read from the broker's own deals. It is measured, so promotion stays automatic: the next E8-Book
+pass admits a sleeve the moment it clears, with nobody acting. The gold bracket windows are
+routed to gold_windows BEFORE the test, so E8's gold lane and its existing gross are untouched;
+the gate can only withhold a sleeve that has never filled anywhere. The broker truncates the
+sleeve to 27 characters in the order comment -- the ledger's only identity, since magic is one
+desk-wide constant -- so the join is by prefix and a prefix shared by several LIVE rows is
+reported as ambiguous_with rather than guessed.
+
+AND THESE CERTIFICATES FAIL THE HONEST BAR. All 15 session_range_breakout certificates: best
+Sharpe 0.1914 against sr0 0.3122, 0 of 15 above it. They are being wired up anyway on one
+specific ground -- every piece of evidence for and against this family is bar simulation, and
+the desk has never had a single realised fill from it. A broker fill is information no amount of
+re-judging can produce. That is the reason, and it is not the same as the sleeves being validated.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+
+(Applied directly on the trading box: it is 535 commits ahead of origin and adopts from it, so
+origin was not the shorter path to the terminal that trades. Verified byte-identical base before
+writing -- decision_core 4e510351a03e, gateway 8972d6582b37, test_gateway_adapter 316b663e70db --
+and refused to install anything if any one of them had moved. The e8_book gate is NOT in this
+commit: this box has never carried prop/e8_book.mirror, so there is no MT5->E8 mirror here for it
+to guard.)
+---
+ desks/mt5/mt5desk/decision_core.py            |  79 ++++++++-
+ desks/mt5/mt5desk/gateway.py                  |  31 +++-
+ desks/mt5/tests/test_e8_realised_fill_gate.py | 116 ++++++++++++++
+ desks/mt5/tests/test_family_tail_slack.py     | 151 ++++++++++++++++++
+ desks/mt5/tests/test_gateway_adapter.py       |  19 ++-
+ 5 files changed, 389 insertions(+), 7 deletions(-)
+ create mode 100644 desks/mt5/tests/test_e8_realised_fill_gate.py
+ create mode 100644 desks/mt5/tests/test_family_tail_slack.py
+
+diff --git a/desks/mt5/mt5desk/decision_core.py b/desks/mt5/mt5desk/decision_core.py
+index 48b562d94c0..b7122ca9746 100644
+--- a/desks/mt5/mt5desk/decision_core.py
++++ b/desks/mt5/mt5desk/decision_core.py
+@@ -2007,10 +2007,67 @@ def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
+     return last_bar if last_bar.minute == 0 else None
+ 
+ 
++#: How many bars a family may need to exist AFTER the bar it emits on. `families_orthogonal.py`
++#: loops `range(n, len(d) - 1)` and needs ONE; every family in `families.py` loops
++#: `range(n, len(h1) - 2)` and needs TWO. `test_family_tail_slack` measures both modules against
++#: this number and fails when a family is added that needs more, so the constant cannot rot.
++FAMILY_TAIL_SLACK = 2
++
++
++def extend_signal_tail(bars: pd.DataFrame, last_bar: pd.Timestamp,
++                       slack: int = FAMILY_TAIL_SLACK) -> pd.DataFrame:
++    """`bars` with enough trailing placeholder rows that a family can EMIT on `last_bar`.
++
++    THE `signal_bars` FIX OF 2026-09-15 WAS ONE BAR SHORT, AND THAT ONE BAR IS THE WHOLE REASON
++    NO `families.py` SLEEVE HAS EVER TRADED. That fix appended the forming bar so a family whose
++    loop ends at `len(d) - 1` could reach the last closed bar, and it worked: `overnight_gap_decay`,
++    `carry` and `discovered` all place, and all three live in `families_orthogonal.py`, which is
++    the module that uses `- 1`. Every one of the 27 families in `families.py` uses `- 2`, so for
++    those the loop still stops exactly ONE index short of `last_bar` -- forever, on every pass.
++
++    MEASURED 2026-09-24 on the box's own XAUUSD H1 bars, walking the last 240 hourly passes as
++    `resolve_family_order` builds them for `session_range_breakout` rr=1.5/wb=12:
++
++        passes where the family emitted something   240 / 240   (28 distinct signal bars)
++        signals AT `last_bar`, frame as handed today    0
++        signals AT `last_bar`, one more trailing bar   10
++
++    The condition was met constantly. It is `[g for g in raw if g.time == last_bar]` that matched
++    nothing, because the family is structurally incapable of emitting there.
++
++    THE PADDING IS PROVABLY NOT DATA. Copies of the frame's own final row are appended at the
++    frame's own cadence, and no family reads them: the loop bound stops before them, every
++    indicator here is a backward-looking `rolling`/`ewm` so no value at an index <= `last_bar`
++    can move, and the one whole-frame aggregate these families take is a per-date `max`/`min`
++    (`range_by_day`), for which duplicating a value already in the frame is the identity. A
++    signal emitted ON a padded bar is discarded by the caller's `g.time == last_bar` filter, so
++    padding can only ever ADD the signal at the bar the desk is asking about.
++    """
++    if bars is None or len(bars) < 2 or slack <= 0:
++        return bars
++    try:
++        pos = int(bars.index.get_loc(last_bar))
++    except (KeyError, TypeError, ValueError):
++        return bars                      # `last_bar` is not in this frame: nothing to guarantee
++    need = int(slack) - (len(bars) - 1 - pos)
++    if need <= 0:
++        return bars
++    # The frame's own cadence, from the median gap: robust to session and weekend breaks in a way
++    # `index[-1] - index[-2]` is not.
++    step = pd.to_timedelta(pd.Series(bars.index[-min(len(bars), 50):]).diff().dropna().median())
++    if not isinstance(step, pd.Timedelta) or pd.isna(step) or step <= pd.Timedelta(0):
++        return bars
++    pad = pd.concat([bars.iloc[[-1]]] * need)
++    pad.index = pd.DatetimeIndex([bars.index[-1] + step * (k + 1) for k in range(need)],
++                                 name=bars.index.name)
++    return pd.concat([bars, pad])
++
++
+ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,
+                        want_state: object, side: int, family_fn: Any,
+                        day_states_fn: Any, call_params: dict | None = None,
+-                       signal_bars: pd.DataFrame | None = None) -> FamilyStep:
++                       signal_bars: pd.DataFrame | None = None,
++                       prefer_side: int | None = None) -> FamilyStep:
+     """The replay-faithful signal decision for one family sleeve at its signal bar.
+ 
+     FAITHFUL TO THE REPLAY OR NOT AT ALL: the signal comes from the SAME family function the
+@@ -2056,6 +2113,16 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
+     It defaults to None, and None means `closed` -- so `shadow_forward` and every hunt16 caller
+     resolve to the byte-identical call they have always made, and the forward clocks that
+     certified these cells are not re-pointed by this fix.
++
++    `prefer_side` IS THE DIRECTIONAL RULE ON AN OCO PAIR, AND IT DECIDES WHICH LEG, NEVER WHETHER.
++    `family_session_range_breakout` appends a LONG at the range high and a SHORT at the range low
++    on the same bar -- one breakout bracket, two legs, and exactly one of them is taken. This
++    function took `sigs[-1]`, which is the order the family happens to append in, so the sleeve
++    was structurally always SHORT. With three such rows on XAUUSD beside three gold bracket
++    windows that is one bet in sextuplicate, and that shape has already been paid for once.
++    So when the book already holds a direction on this symbol, the AGREEING leg is the one
++    placed and only the opposing leg is skipped -- never both, never a smaller order. `None`
++    (no held direction, or a caller that does not compute one) keeps `sigs[-1]` exactly.
+     """
+     if last_signal_bar == str(last_bar):
+         return FamilyStep(mark=False)                          # this bar already considered
+@@ -2065,7 +2132,8 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
+             return FamilyStep(mark=True, note=f"no trade: day state {got} != {want_state}")
+     try:
+         from mt5desk.family_call import hunt16_signals, signals
+-        bars = closed if signal_bars is None else signal_bars
++        bars = (closed if signal_bars is None
++                else extend_signal_tail(signal_bars, last_bar))
+         raw = (hunt16_signals(family_fn, bars, side) if call_params is None
+                else signals(family_fn, bars, side=side, params=call_params))
+         sigs = [g for g in raw if pd.Timestamp(g.time) == last_bar]
+@@ -2074,7 +2142,12 @@ def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_sig
+                           note=f"FAMILY-EXEC signal computation failed ({exc}); skipped")
+     if not sigs:
+         return FamilyStep(mark=True)
+-    return FamilyStep(mark=True, signal=sigs[-1])
++    chosen = sigs[-1]
++    if prefer_side and len({int(getattr(g, "side", 0)) for g in sigs}) > 1:
++        agreeing = [g for g in sigs if int(getattr(g, "side", 0)) == int(prefer_side)]
++        if agreeing:
++            chosen = agreeing[-1]
++    return FamilyStep(mark=True, signal=chosen)
+ 
+ 
+ def family_entry(g: object, side: int, bid: float, ask: float) -> tuple[float, float]:
+diff --git a/desks/mt5/mt5desk/gateway.py b/desks/mt5/mt5desk/gateway.py
+index 3a00171bcf8..c119e17a203 100644
+--- a/desks/mt5/mt5desk/gateway.py
++++ b/desks/mt5/mt5desk/gateway.py
+@@ -1324,6 +1324,34 @@ def same_side_count(symbol: str, side: int, positions: object,
+     return n
+ 
+ 
++def _held_side(symbol: str, pending: dict[str, float] | None = None) -> int | None:
++    """The direction the desk's book already runs on `symbol`: +1, -1, or None when flat or even.
++
++    THIS CHOOSES BETWEEN THE TWO LEGS OF ONE BREAKOUT, AND CHOOSES NOTHING ELSE. A
++    `session_range_breakout` bar carries a long at the range high AND a short at the range low;
++    exactly one is taken either way, and `family_signal_step` used to take whichever the family
++    appended last (always the short). Handed this, it takes the leg that AGREES with the book
++    and skips only the opposing one -- the principal's standing structure, and the reason it
++    matters here is that three SRB rows sit on XAUUSD beside three gold bracket windows.
++
++    NOT A CAP, A THROTTLE OR A VETO: the same one order is sent whatever this returns. It is
++    read from the same desk-tagged positions `same_side_count` reads, plus this pass's own
++    pending lots, so a pass that has already decided one leg does not then take the other.
++    """
++    net = float((pending or {}).get(symbol, 0.0))
++    try:
++        for p in mt5.positions_get() or []:
++            if str(getattr(p, "symbol", "") or "") != symbol:
++                continue
++            if not str(getattr(p, "comment", "") or "").startswith("DW"):
++                continue
++            vol = float(getattr(p, "volume", 0.0) or 0.0)
++            net += -vol if int(getattr(p, "type", -1)) == 1 else vol
++    except Exception:
++        return None
++    return 1 if net > 0 else (-1 if net < 0 else None)
++
++
+ def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
+                     lot: float | None = None, price: float | None = None) -> None:
+     """Every order the desk declines to send is written down, so `missed_growth` can price the
+@@ -2616,7 +2644,8 @@ def resolve_family_order(st: dict, s: dict, equity: float,
+     step = family_signal_step(closed, last_bar, last_signal_bar=srec.get("last_signal_bar"),
+                               want_state=s.get("state"), side=side, family_fn=fam_fn,
+                               day_states_fn=day_states, call_params=call_params,
+-                              signal_bars=frame)
++                              signal_bars=frame,
++                              prefer_side=_held_side(s["symbol"], pending))
+     if step.signal is None:
+         return {"ok": False, "stage": "no_signal", "why": step.note or "no signal on this bar",
+                 "mark": bool(step.mark), "last_bar": last_bar, "note": step.note,
+diff --git a/desks/mt5/tests/test_e8_realised_fill_gate.py b/desks/mt5/tests/test_e8_realised_fill_gate.py
+new file mode 100644
+index 00000000000..a7e47797d11
+--- /dev/null
++++ b/desks/mt5/tests/test_e8_realised_fill_gate.py
+@@ -0,0 +1,116 @@
++"""E8 MIRRORS WHAT MT5 HAS ACTUALLY TRADED, NOT WHAT IT HAS MERELY BEEN ALLOCATED.
++
++Principal 2026-09-24: "Make them all trade in mt5 account first if they're doing well we put them
++on e8 too." MT5 is EUR 771; E8 is USD 98,759 against a hard 8% drawdown and an evaluation a bad
++run ends outright. So a sleeve earns E8 on REALISED broker fills from account 495044 -- never on
++a certificate, a shadow clock or a backtest, because every piece of evidence for and against
++`session_range_breakout` is bar simulation and a fill is the one thing simulation cannot produce.
++
++The gate is measured, so promotion stays automatic (principal 2026-09-04): nobody flips it.
++"""
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import pytest
++
++BASE = Path(__file__).resolve().parents[1]
++if str(BASE) not in sys.path:
++    sys.path.insert(0, str(BASE))
++
++from prop import e8_book as bk  # noqa: E402
++
++# THE GATE LIVES WITH THE MIRROR AND SKIPS LOUDLY WITHOUT IT, rather than taking collection down.
++# `e8_book.mirror` is in flight on another lane and has been reverted in this tree once already;
++# the gate has nothing to guard while E8 is not mirroring the MT5 roster, because then no MT5 row
++# reaches the prop account at all. A skip here is a REPORT that the gate is unwired (III.16), not
++# a pass -- when the mirror lands and this file still skips, that is the defect showing itself.
++if not hasattr(bk, "realised_gate"):                                # pragma: no cover
++    pytest.skip("prop/e8_book.py on this tree carries no `realised_gate`: the MT5->E8 mirror has "
++                "been reverted, so the realised-fill door is NOT wired. Re-land it with the "
++                "mirror -- without it a sleeve that has never filled on 495044 reaches the "
++                "funded prop account the moment it starts placing.",
++                allow_module_level=True)
++
++
++def _ledger(tmp_path: Path, rows: list[dict]) -> Path:
++    p = tmp_path / "live_ledger.jsonl"
++    p.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
++    return p
++
++
++def _deal(sleeve: str, r: float, account: int = bk.MT5_LIVE_ACCOUNT) -> dict:
++    return {"sleeve": sleeve, "r_multiple": r, "account": account, "account_kind": "live"}
++
++
++def test_a_sleeve_with_no_realised_fill_is_withheld_from_e8(tmp_path: Path) -> None:
++    led = _ledger(tmp_path, [_deal("gold_asia", 0.5)])
++    ok, why, m = bk.realised_gate("xauusd_session_range_breakout_asia_5_wb_12", ledger=led)
++    assert ok is False
++    assert m["n"] == 0
++    assert "never traded" in why
++
++
++def test_enough_positive_fills_open_the_door_with_no_human_act(tmp_path: Path) -> None:
++    rows = [_deal("winner_sleeve", 0.4) for _ in range(bk.MIN_REALISED_FILLS)]
++    ok, why, m = bk.realised_gate("winner_sleeve", ledger=_ledger(tmp_path, rows))
++    assert ok is True and why == ""
++    assert m["n"] == bk.MIN_REALISED_FILLS and m["sum_r"] > 0
++
++
++def test_enough_fills_but_losing_stays_mt5_only(tmp_path: Path) -> None:
++    rows = [_deal("loser_sleeve", -0.4) for _ in range(bk.MIN_REALISED_FILLS + 3)]
++    ok, why, _ = bk.realised_gate("loser_sleeve", ledger=_ledger(tmp_path, rows))
++    assert ok is False and "not 'doing well'" in why
++
++
++def test_another_account_is_not_evidence_about_this_one(tmp_path: Path) -> None:
++    """A prop fill must never unlock the prop account."""
++    rows = [_deal("borrowed", 1.0, account=2478877) for _ in range(20)]
++    ok, _, m = bk.realised_gate("borrowed", ledger=_ledger(tmp_path, rows))
++    assert ok is False and m["n"] == 0
++
++
++def test_the_brokers_27_character_truncation_is_joined_and_named(tmp_path: Path) -> None:
++    """MT5 truncates the sleeve to the order comment, which is the ledger's only identity."""
++    name = "xauusd_session_range_breakout_asia_5_wb_12"
++    sibling = "xauusd_session_range_breakout_asia_0_wb_12"
++    rows = [_deal(name[:27], 0.6) for _ in range(bk.MIN_REALISED_FILLS)]
++    ok, _, m = bk.realised_gate(name, roster=[name, sibling], ledger=_ledger(tmp_path, rows))
++    assert ok is True, "a truncated comment must still join, or no sleeve could ever qualify"
++    assert m["n"] == bk.MIN_REALISED_FILLS
++    assert sibling in m["ambiguous_with"], (
++        "two rows sharing a truncated comment are indistinguishable at the broker and the "
++        "measurement must say so rather than guess")
++
++
++def test_the_gold_window_lane_never_reaches_the_gate() -> None:
++    """E8's existing gross is untouched: window rows are routed out before the test."""
++    rows = [{"name": "gold_asia", "symbol": "XAUUSD", "window": "asia", "risk_frac": 0.0114},
++            {"name": "gold_london_am", "symbol": "XAUUSD", "window": "london_am",
++             "risk_frac": 0.0127},
++            {"name": "gold_afternoon", "symbol": "XAUUSD", "window": "afternoon",
++             "risk_frac": 0.0127}]
++    doc = bk.mirror(tradeable={"XAUUSD"}, rows=rows, params_by_cell={})
++    assert doc["gold_windows"], "the gold lane must survive the mirror"
++    assert not doc["realised_gate"]["withheld"]
++    assert sum(doc["gold_windows"].values()) > 0
++
++
++def test_a_never_filled_family_row_is_withheld_but_named(tmp_path: Path) -> None:
++    rows = [{"name": "gold_asia", "symbol": "XAUUSD", "window": "asia", "risk_frac": 0.0114},
++            {"name": "gold_london_am", "symbol": "XAUUSD", "window": "london_am",
++             "risk_frac": 0.0127},
++            {"name": "gold_afternoon", "symbol": "XAUUSD", "window": "afternoon",
++             "risk_frac": 0.0127},
++            {"name": "xauusd_session_range_breakout_asia_5_wb_12", "symbol": "XAUUSD",
++             "family": "session_range_breakout", "selector": "asia", "exec": "family_market",
++             "risk_frac": 0.011398,
++             "certificate": {"cell": "external.XAUUSD.session_range_breakout.rr=1.5_wb=12"}}]
++    doc = bk.mirror(tradeable={"XAUUSD"}, rows=rows, params_by_cell={})
++    assert doc["realised_gate"]["withheld"] == ["xauusd_session_range_breakout_asia_5_wb_12"]
++    assert not any(r["key"].startswith("xauusd_session_range") for r in doc["sleeves"])
++    why = next(r["why"] for r in doc["refused"] if "session_range" in r["name"])
++    assert "realised fill" in why
+diff --git a/desks/mt5/tests/test_family_tail_slack.py b/desks/mt5/tests/test_family_tail_slack.py
+new file mode 100644
+index 00000000000..ca2371c05e8
+--- /dev/null
++++ b/desks/mt5/tests/test_family_tail_slack.py
+@@ -0,0 +1,151 @@
++"""THE ONE BAR THAT KEPT EVERY `families.py` SLEEVE OUT OF THE MARKET.
++
++`family_signal_step` filters the family's signals to `g.time == last_bar`, so the family must be
++ABLE to emit on `last_bar`. The 2026-09-15 fix appended the forming bar, which reaches a family
++whose loop ends at `len(d) - 1` -- `families_orthogonal.py`, and those sleeves do place. Every
++family in `families.py` ends at `len(h1) - 2` and needs one more, so `session_range_breakout` --
++the only `families.py` family ever promoted LIVE -- could never emit on the bar it was asked
++about. Measured on the box 2026-09-24 over 240 hourly passes of real XAUUSD H1 bars: the family
++emitted on 240/240 passes and matched `last_bar` on 0; with one more trailing bar, 10.
++"""
++from __future__ import annotations
++
++import inspect
++import re
++import sys
++from pathlib import Path
++
++import numpy as np
++import pandas as pd
++import pytest
++
++BASE = Path(__file__).resolve().parents[1]
++if str(BASE) not in sys.path:
++    sys.path.insert(0, str(BASE))
++
++from mt5desk import families, families_orthogonal  # noqa: E402
++from mt5desk.decision_core import (  # noqa: E402
++    FAMILY_TAIL_SLACK,
++    extend_signal_tail,
++    family_signal_step,
++)
++
++_BOUND = re.compile(r"for\s+i\s+in\s+range\([^)]*len\(\s*[A-Za-z_][A-Za-z0-9_]*\s*\)\s*-\s*(\d+)\)")
++
++
++def _frame(n: int = 400, start: str = "2026-01-01 00:00") -> pd.DataFrame:
++    idx = pd.date_range(start, periods=n, freq="h", tz="UTC")
++    rng = np.random.default_rng(11)
++    close = 2000.0 + np.cumsum(rng.normal(0, 1.5, n))
++    return pd.DataFrame({"open": close + rng.normal(0, 0.2, n),
++                         "high": close + np.abs(rng.normal(1.0, 0.4, n)),
++                         "low": close - np.abs(rng.normal(1.0, 0.4, n)),
++                         "close": close,
++                         "tick_volume": rng.integers(50, 500, n),
++                         "spread": rng.integers(10, 30, n),
++                         "real_volume": 0}, index=idx)
++
++
++def _trailing_margins(module: object) -> dict[str, int]:
++    out: dict[str, int] = {}
++    for name, fn in vars(module).items():
++        if not (name.startswith("family_") and callable(fn)):
++            continue
++        try:
++            src = inspect.getsource(fn)
++        except (OSError, TypeError):            # pragma: no cover - defensive
++            continue
++        found = [int(m) for m in _BOUND.findall(src)]
++        if found:
++            out[name] = max(found)
++    return out
++
++
++def test_no_family_needs_more_trailing_bars_than_the_slack_provides() -> None:
++    """The constant cannot rot: adding a family with a deeper bound fails here, not in the book."""
++    margins = {**_trailing_margins(families), **_trailing_margins(families_orthogonal)}
++    assert margins, "no family loop bounds were parsed; the guard would pass vacuously"
++    worst = max(margins.values())
++    assert worst <= FAMILY_TAIL_SLACK, (
++        f"{[k for k, v in margins.items() if v > FAMILY_TAIL_SLACK]} need {worst} trailing bars "
++        f"and FAMILY_TAIL_SLACK is {FAMILY_TAIL_SLACK}; such a sleeve can never emit on the bar "
++        f"the gateway asks about")
++    assert max(_trailing_margins(families).values()) == 2, (
++        "families.py is the module that needs TWO; if that changed, re-measure the slack")
++
++
++def test_extend_signal_tail_leaves_room_after_the_asked_bar() -> None:
++    f = _frame(120)
++    last_bar = f.index[-2]                       # the last CLOSED bar; f[-1] is the forming one
++    out = extend_signal_tail(f, last_bar)
++    assert len(out) - 1 - out.index.get_loc(last_bar) >= FAMILY_TAIL_SLACK
++    assert out.index.is_monotonic_increasing
++    # the real bars are returned untouched, value for value (`check_freq=False`: concatenating
++    # drops the synthetic index's `freq`, which a live MT5 frame does not carry in the first place)
++    pd.testing.assert_frame_equal(out.iloc[:len(f)], f, check_freq=False)
++
++
++def test_extend_signal_tail_is_a_no_op_when_there_is_already_room() -> None:
++    f = _frame(120)
++    last_bar = f.index[-(FAMILY_TAIL_SLACK + 1)]
++    assert extend_signal_tail(f, last_bar) is f
++
++
++def test_session_range_breakout_can_now_emit_on_the_bar_the_gateway_asks_about() -> None:
++    """The measurement that names the defect, as a test."""
++    f = _frame(400)
++    closed = f.iloc[:-1]
++    hits_today = hits_fixed = 0
++    for end in range(300, len(f)):
++        frame = f.iloc[:end + 1]
++        closed = frame.iloc[:-1]
++        last_bar = closed.index[-1]
++        today = families.family_session_range_breakout(frame, rr=1.5, wait_bars=12)
++        fixed = families.family_session_range_breakout(
++            extend_signal_tail(frame, last_bar), rr=1.5, wait_bars=12)
++        hits_today += any(pd.Timestamp(g.time) == last_bar for g in today)
++        hits_fixed += any(pd.Timestamp(g.time) == last_bar for g in fixed)
++    assert hits_today == 0, "the defect is gone from the family itself; re-read this test"
++    assert hits_fixed > 0, "padding did not make the asked-about bar reachable"
++
++
++@pytest.mark.parametrize("fam_name", ["family_overnight_gap_decay", "family_carry"])
++def test_padding_changes_nothing_for_a_family_that_already_traded(fam_name: str) -> None:
++    """The families that DO place must be byte-identical at `last_bar` after the change."""
++    fn = getattr(families_orthogonal, fam_name)
++    f = _frame(400)
++    for end in (350, 375, 399):
++        frame = f.iloc[:end + 1]
++        last_bar = frame.index[-2]
++        try:
++            a = [g for g in fn(frame) if pd.Timestamp(g.time) == last_bar]
++            b = [g for g in fn(extend_signal_tail(frame, last_bar))
++                 if pd.Timestamp(g.time) == last_bar]
++        except TypeError:
++            pytest.skip(f"{fam_name} needs inputs this frame does not carry")
++        assert [(g.side, g.stop, g.target) for g in a] == [(g.side, g.stop, g.target) for g in b]
++
++
++def test_the_agreeing_leg_is_placed_and_only_the_opposing_one_is_skipped() -> None:
++    """An OCO breakout emits both sides on one bar; the book's own direction picks the leg."""
++    # 393 bars from midnight puts the last CLOSED bar on hour 7, which is this family's default
++    # `range_start` and therefore its signal hour: the bar that emits BOTH legs.
++    f = _frame(393)
++    closed = f.iloc[:-1]
++    last_bar = closed.index[-1]
++    assert last_bar.hour == 7, "the frame must end on the family's signal hour for this test"
++    call = {"closed": closed, "last_bar": last_bar, "last_signal_bar": None, "want_state": None,
++            "side": 1, "family_fn": families.family_session_range_breakout,
++            "day_states_fn": lambda _d: {}, "call_params": {"rr": 1.5, "wait_bars": 12},
++            "signal_bars": f}
++    base = family_signal_step(**call)
++    assert base.signal is not None, (
++        "the padded frame must reach the signal hour; if this fails the fix is not wired")
++    longer = family_signal_step(**call, prefer_side=1)
++    shorter = family_signal_step(**call, prefer_side=-1)
++    assert longer.signal is not None and shorter.signal is not None, (
++        "the directional rule must choose a leg, never skip the trade")
++    assert int(longer.signal.side) == 1
++    assert int(shorter.signal.side) == -1
++    # and with no held direction the old choice is preserved exactly
++    assert family_signal_step(**call, prefer_side=None).signal.side == base.signal.side
+diff --git a/desks/mt5/tests/test_gateway_adapter.py b/desks/mt5/tests/test_gateway_adapter.py
+index 5816d553009..1a18441ec07 100644
+--- a/desks/mt5/tests/test_gateway_adapter.py
++++ b/desks/mt5/tests/test_gateway_adapter.py
+@@ -348,7 +348,15 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
+     # forming bar, so a family that emits on the last CLOSED bar emits on index[-2] -- the
+     # backtest's `range(n, len(d) - 1)` convention. Keying the fixture on index[-1] put the
+     # signal on the forming bar, which the resolver never trades.
+-    fam = signals or (lambda closed, side: [_signal(closed.index[-2])])
++    #
++    # AND IT IS KEYED TO THE CONSTANT NOW, NOT TO -2 (2026-09-24). A real family emits at an
++    # absolute condition -- an hour, a level -- and this double emits at a POSITION, so it moves
++    # whenever the frame the resolver hands over grows. It grew: `extend_signal_tail` pads to
++    # `FAMILY_TAIL_SLACK` trailing rows because every family in `families.py` loops to
++    # `len(h1) - 2` and could never reach the asked-about bar with only the forming bar appended.
++    # Hard-coded -2, this fixture silently stopped emitting at `last_bar` and six tests read as
++    # the adapter being broken. Off the constant, it tracks the contract instead of a number.
++    fam = signals or (lambda closed, side: [_signal(closed.index[-1 - dc.FAMILY_TAIL_SLACK])])
+     hunt16 = SimpleNamespace(FAMILIES={"fam": fam},
+                              WINDOWS={"asia": {"signal_at": sig_hour, "range_start": 0}})
+     monkeypatch.setitem(sys.modules, "research.run_hunt16", hunt16)
+@@ -388,7 +396,11 @@ def _family_ns(tmp_path: Path, mt5: SimpleNamespace, monkeypatch, *, armed_file:
+                   # allocator book key and the shared order-comment helper.
+                   "_sleeve_positions", "_book_key", "order_comment", "_exec_route", "_send_error",
+                   # 2026-09-16: the per-symbol same-side cap and its refusal journal
+-                  "same_side_count", "journal_refusal"), ns)
++                  "same_side_count", "journal_refusal",
++                  # 2026-09-24: the held direction that picks WHICH leg of an OCO breakout is
++                  # taken (`family_signal_step(prefer_side=...)`); it decides nothing about
++                  # whether an order is sent, but `resolve_family_order` calls it on every pass.
++                  "_held_side"), ns)
+ 
+ 
+ def _run_family(ns: dict, st: dict, sleeves: list[dict], equity: float) -> None:
+@@ -732,7 +744,8 @@ def test_the_executor_refuses_what_it_cannot_replay_exactly(tmp_path, monkeypatc
+     # the current quote is a drifted entry, not a degenerate one).
+     ns = _family_ns(tmp_path, flat, monkeypatch, armed_file=True, sig_hour=_sig_hour(rows),
+                     signals=lambda closed, side: [
+-                        _signal(closed.index[-2], stop=float(closed["close"].iloc[-2]))])
++                        _signal(closed.index[-1 - dc.FAMILY_TAIL_SLACK],
++                                stop=float(closed["close"].iloc[-1 - dc.FAMILY_TAIL_SLACK]))])
+     _run_family(ns, {"armed": True}, [_sleeve()], 10_000.0)
+     assert f"[{_NAME}] FAMILY-EXEC: degenerate stop distance; skipped" in ns["_logs"]
+     ns = _family_ns(tmp_path, _fake_mt5(rows), monkeypatch, armed_file=True,
+-- 
+2.47.1.windows.1
+

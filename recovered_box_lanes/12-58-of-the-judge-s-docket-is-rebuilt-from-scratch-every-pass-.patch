@@ -1,0 +1,304 @@
+From 7360891c0e561135b0901287fdb4adfbff4c7ba1 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:29:10 +0200
+Subject: [PATCH] 58% of the judge's docket is rebuilt from scratch every pass
+ because the failure was never banked
+
+MEASURED on the box 2026-09-24, from the judge's own report: of 140,090 cells submitted to the
+pre-warm pool, 81,588 (58.2%) return NOT_RUN_BUILD_FAILED -- "signal construction returned no
+executable cell" -- and all 81,588 are submitted again on the next pass. Work redone because its
+result was never made durable: the same defect shape as the HMM cache that flushed only on the
+last line of build(), and as the judge discarding 65 passing cells on a stop.
+
+THE MECHANISM ALREADY EXISTED AND THE HARVEST WAS BLIND TO THIS CLASS. `judge_coverage` banks
+unrunnable specs in data/hypotheses/unrunnable_specs.json (69,401 rows today), and
+`order_docket` -- which `merge_hypotheses` calls as the last thing before writing the file the
+sealed judge reads -- filters the docket by that bank with no special-casing of the reason. But
+`name_unknowns` only names verdicts carrying `unmeasured`, and a build failure carries
+`downstream_status` instead, so this class was never named and never parked. Nothing new is
+built here: the bank, the filter and the re-open condition are the desk's own.
+
+TWO RE-OPEN CONDITIONS, because one was not enough. Bar growth was already there, and it is now
+read on the CELL'S OWN CHART (`_bar_bytes(sym, timeframe)`, timeframe taken from the judge's own
+`SYM@TF.family.p=` cell id) -- re-admitting an M5 cell because the H1 frame grew is a different
+symbol's answer. And a build failure is a fact about `families.family_<name>` as much as about
+the bars, so each parked row carries a fingerprint of the family modules and goes back to the
+judge the moment that code changes. Without it a fix to a family would leave every cell it would
+now build parked for ever: a permanently-cached failure that should have become a pass, strictly
+worse than the waste it saves.
+
+IT CANNOT MOVE A GATE. A build failure is NOT_RUN -- never a pass, never a fail -- so it carries
+no trial: the report shows n_trials 109 against 140,090 verdicts. Filtering it changes what the
+judge REBUILDS, never what it judges or the bar it judges against. `missing_bars` is named and
+deliberately NOT parked: that belongs to the conversion organ's bar supply.
+
+Measured invalidation sanity before shipping: across all 69,401 existing bank rows, bar file
+sizes were byte-stable hour to hour (grew=0, same=69,401), so the bank bites instead of flushing
+itself every pass.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/judge_coverage.py   |  97 +++++++++++++++++++--
+ desks/mt5/tests/test_judge_coverage.py | 114 +++++++++++++++++++++++++
+ 2 files changed, 206 insertions(+), 5 deletions(-)
+
+diff --git a/desks/mt5/research/judge_coverage.py b/desks/mt5/research/judge_coverage.py
+index 027e50a6835..3ae8a27e475 100644
+--- a/desks/mt5/research/judge_coverage.py
++++ b/desks/mt5/research/judge_coverage.py
+@@ -83,6 +83,7 @@ it first appears in the docket, with no edit to this file.
+ from __future__ import annotations
+ 
+ import argparse
++import hashlib
+ import json
+ import math
+ import sys
+@@ -587,14 +588,55 @@ UNRUNNABLE_BANK = HYP / "unrunnable_specs.json"
+ UNIVERSE = BASE / "data" / "universe"
+ 
+ 
+-def _bar_bytes(sym: str) -> int:
+-    """The symbol's H1 bar file size -- the cheap monotone proxy for "the history grew"."""
++def _bar_bytes(sym: str, timeframe: str = "H1") -> int:
++    """The bar file size on the cell's OWN chart -- the cheap monotone proxy for "history grew".
++
++    Defaults to H1 so a row banked before this took a timeframe is still re-opened against
++    exactly the file it was parked against; a cell judged on M5 is now measured on M5, because
++    re-admitting an M5 cell because the H1 frame grew would be a different symbol's answer.
++    """
++    tf = str(timeframe or "H1").upper()
+     try:
+-        return (UNIVERSE / f"{sym}_H1.parquet").stat().st_size
++        return (UNIVERSE / f"{sym}_{tf}.parquet").stat().st_size
+     except OSError:
+         return 0
+ 
+ 
++#: The signal-construction code a BUILD outcome depends on. A cell that could not be built failed
++#: inside `families.family_<name>` or the orthogonal registry, so the failure is a fact about that
++#: CODE as much as about the bars. Banking it on the bar size alone would park a cell for ever
++#: that the next fix to a family would have built -- a permanently-cached failure that should have
++#: become a pass, which is strictly worse than the waste it saves. The fingerprint is the second
++#: re-open condition and it is why this class may be banked at all.
++_FAMILY_CODE: tuple[str, ...] = ("mt5desk/families.py", "mt5desk/families_orthogonal.py",
++                                 "mt5desk/family_call.py")
++
++
++def _code_fingerprint() -> str:
++    """A digest of the family modules' size and mtime. An unreadable module is named, never
++    skipped: a fingerprint that silently ignores a missing file would stop re-opening the bank
++    the day that file moved."""
++    parts = []
++    for rel in _FAMILY_CODE:
++        try:
++            st = (BASE / rel).stat()
++            parts.append(f"{rel}:{st.st_size}:{st.st_mtime_ns}")
++        except OSError:
++            parts.append(f"{rel}:absent")
++    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:16]
++
++
++def _tf_from_cell(cell: str, row: dict[str, Any]) -> str:
++    """The chart the cell was judged on. The judge's own cell id spells it `SYM@TF.family.p=...`
++    and that is the authority; the verdict row is the fallback."""
++    head = cell.split(".", 1)[0]
++    if "@" in head:
++        tf = head.rsplit("@", 1)[1].strip().upper()
++        if tf:
++            return tf
++    return _tf_of(row)
++
++
+ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
+     """EVERY UNKNOWN GETS A NAMED REASON. The class stops existing as a category.
+ 
+@@ -632,6 +674,43 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
+                                          "about the search, re-admitted when the history grows")
+         out[cell] = {"reason": reason, "route": route, "sym": sym, "family": v.get("family"),
+                      "days": days, "bar_bytes": bars, "why": why[:200]}
++    # THE BUILD FAILURES, which carry no `unmeasured` flag and were therefore invisible to the
++    # loop above (measured 2026-09-24: 81,588 of 140,090 docket cells, 58.2%, every pass). The
++    # judge submits them to its pre-warm pool, `build_cell` returns nothing because signal
++    # construction produced no executable cell, and the next pass submits all 81,588 again --
++    # work redone because its result was never made durable, the same defect shape as the HMM
++    # cache that flushed only on its last line. They are banked here with the same key, the same
++    # bar-growth re-open condition, and the family-code fingerprint that the bar size cannot
++    # supply. NOTHING IS DELETED and no verdict is lost: a build failure is `NOT_RUN`, never a
++    # pass or a fail, so filtering it moves no trial and cannot move a gate.
++    code_fp = _code_fingerprint()
++    for v in verdicts:
++        if not isinstance(v, dict):
++            continue
++        cell = str(v.get("cell") or "")
++        if not cell or cell in out:
++            continue
++        if not str(v.get("downstream_status") or "").startswith("NOT_RUN_BUILD_FAILED"):
++            continue
++        sym = str(v.get("sym") or "")
++        tf = _tf_from_cell(cell, v)
++        bars = _bar_bytes(sym, tf)
++        if not bars:
++            out[cell] = {"reason": "missing_bars", "sym": sym, "family": v.get("family"),
++                         "timeframe": tf, "days": 0, "bar_bytes": 0,
++                         "route": ("no bar file on this cell's own chart: the conversion organ's "
++                                   "bar supply owns it, so it is named and NOT filtered here"),
++                         "why": str(v.get("why") or "")[:200]}
++            continue
++        out[cell] = {
++            "reason": "build_failed", "sym": sym, "family": v.get("family"), "timeframe": tf,
++            "days": 0, "bar_bytes": bars, "code_fp": code_fp,
++            "route": ("signal construction returned no executable cell on bars that ARE "
++                      "present: filtered at intake so the judge stops rebuilding it every "
++                      "pass, and re-admitted the moment this chart's history grows OR the "
++                      "family code changes"),
++            "why": str(v.get("why") or "")[:200],
++        }
+     return out
+ 
+ 
+@@ -647,8 +726,16 @@ def update_unrunnable_bank(named: dict[str, dict[str, Any]], *, at: str,
+     """Park every newly-named unrunnable cell, and RE-ADMIT any whose bars have since grown."""
+     target = path or UNRUNNABLE_BANK
+     bank = unrunnable_bank(target)
+-    readmitted = [cell for cell, row in bank.items()
+-                  if _bar_bytes(str(row.get("sym") or "")) > int(row.get("bar_bytes") or 0)]
++    code_fp = _code_fingerprint()
++    readmitted = [
++        cell for cell, row in bank.items()
++        if _bar_bytes(str(row.get("sym") or ""), str(row.get("timeframe") or "H1"))
++        > int(row.get("bar_bytes") or 0)
++        # A BUILD failure is also a fact about the family code: when that changes, every cell
++        # parked against the old code goes back to the judge rather than staying parked on a
++        # verdict the new code was never asked for.
++        or (row.get("reason") == "build_failed" and str(row.get("code_fp") or "") != code_fp)
++    ]
+     for cell in readmitted:
+         bank.pop(cell, None)
+     added = 0
+diff --git a/desks/mt5/tests/test_judge_coverage.py b/desks/mt5/tests/test_judge_coverage.py
+index 5e723a3893f..ecb6928c729 100644
+--- a/desks/mt5/tests/test_judge_coverage.py
++++ b/desks/mt5/tests/test_judge_coverage.py
+@@ -454,3 +454,117 @@ def test_a_family_the_posterior_never_learned_is_backfilled(tmp_path: Path) -> N
+     out = jc.learn_priors(ledger, since="2026-09-23T11:35:40+00:00", state_dir=tmp_path)
+     assert out["backfilled_families"] == 1
+     assert out["recorded"] == 1
++
++
++# --------------------------------------------------------------- the build-failure bank
++def _gates_report(tmp_path, verdicts):
++    p = tmp_path / "universal_gates_external.json"
++    p.write_text(json.dumps({"verdicts": verdicts}), "utf-8")
++    return p
++
++
++def test_build_failures_are_named_so_they_can_be_banked(tmp_path, monkeypatch):
++    """81,588 of 140,090 docket cells returned NOT_RUN_BUILD_FAILED every pass and were
++    re-attempted from scratch on the next one: they carry `downstream_status`, never
++    `unmeasured`, so the harvest that only read `unmeasured` never saw them at all."""
++    uni = tmp_path / "universe"
++    uni.mkdir()
++    (uni / "US2000_M5.parquet").write_bytes(b"PAR1" + b"x" * 500 + b"PAR1")
++    monkeypatch.setattr(jc, "UNIVERSE", uni)
++
++    rep = _gates_report(tmp_path, [{
++        "cell": "US2000@M5.anti_donchian_breakout.p=840102a22e999484",
++        "sym": "US2000", "family": "anti_donchian_breakout", "days": 0, "passed": None,
++        "stages": {}, "downstream_status": "NOT_RUN_BUILD_FAILED",
++        "why": "signal construction returned no executable cell"}])
++    named = jc.name_unknowns(rep)
++    row = named["US2000@M5.anti_donchian_breakout.p=840102a22e999484"]
++    assert row["reason"] == "build_failed"
++    assert row["timeframe"] == "M5", "the chart comes from the judge's own cell id"
++    assert row["bar_bytes"] == 508
++    assert row["code_fp"], "a build failure is banked against the family code that produced it"
++
++
++def test_a_build_failure_with_no_bars_is_named_but_never_filtered(tmp_path, monkeypatch):
++    """`missing_bars` belongs to the conversion organ's bar supply. Filtering it here would park
++    a cell for a reason this bank does not own."""
++    uni = tmp_path / "universe"
++    uni.mkdir()
++    monkeypatch.setattr(jc, "UNIVERSE", uni)
++    rep = _gates_report(tmp_path, [{
++        "cell": "NOBARS@H4.carry.p=deadbeef", "sym": "NOBARS", "family": "carry",
++        "downstream_status": "NOT_RUN_BUILD_FAILED", "why": "x"}])
++    named = jc.name_unknowns(rep)
++    assert named["NOBARS@H4.carry.p=deadbeef"]["reason"] == "missing_bars"
++    bank = tmp_path / "bank.json"
++    jc.update_unrunnable_bank(named, at="2026-09-24T18:00:00", path=bank)
++    assert jc.unrunnable_bank(bank) == {}, "missing_bars is never parked"
++
++
++def test_a_banked_build_failure_is_re_admitted_when_the_family_code_changes(tmp_path,
++                                                                           monkeypatch):
++    """THE GUARD THE COORDINATOR ASKED FOR: a permanently-cached failure that should have become
++    a pass is worse than the waste. Bar size alone cannot see a fix to a family, so the bank
++    carries the family code's fingerprint and re-opens on it."""
++    uni = tmp_path / "universe"
++    uni.mkdir()
++    (uni / "EURUSD_H1.parquet").write_bytes(b"z" * 900)
++    monkeypatch.setattr(jc, "UNIVERSE", uni)
++    bank = tmp_path / "bank.json"
++    row = {"reason": "build_failed", "sym": "EURUSD", "family": "carry", "timeframe": "H1",
++           "bar_bytes": 900, "code_fp": "stale-fingerprint"}
++    out = jc.update_unrunnable_bank({"EURUSD@H1.carry.p=1": row}, at="T0", path=bank)
++    assert out["bank_size"] == 1
++    # same bars, but the fingerprint on the row no longer matches the live family code
++    out = jc.update_unrunnable_bank({}, at="T1", path=bank)
++    assert out["readmitted_on_bar_growth"] == 1
++    assert jc.unrunnable_bank(bank) == {}
++
++
++def test_a_banked_build_failure_stays_parked_while_bars_and_code_are_unchanged(tmp_path,
++                                                                              monkeypatch):
++    """Measured on the box: bar file sizes are byte-stable hour to hour (grew=0 of 69,401 rows),
++    so the bank actually bites instead of flushing itself every pass."""
++    uni = tmp_path / "universe"
++    uni.mkdir()
++    (uni / "EURUSD_M15.parquet").write_bytes(b"z" * 900)
++    monkeypatch.setattr(jc, "UNIVERSE", uni)
++    bank = tmp_path / "bank.json"
++    row = {"reason": "build_failed", "sym": "EURUSD", "family": "carry", "timeframe": "M15",
++           "bar_bytes": 900, "code_fp": jc._code_fingerprint()}
++    jc.update_unrunnable_bank({"EURUSD@M15.carry.p=1": row}, at="T0", path=bank)
++    out = jc.update_unrunnable_bank({}, at="T1", path=bank)
++    assert out["readmitted_on_bar_growth"] == 0
++    assert set(jc.unrunnable_bank(bank)) == {"EURUSD@M15.carry.p=1"}
++    # and it DOES re-open when that chart's own history grows
++    (uni / "EURUSD_M15.parquet").write_bytes(b"z" * 1200)
++    out = jc.update_unrunnable_bank({}, at="T2", path=bank)
++    assert out["readmitted_on_bar_growth"] == 1
++
++
++def test_bar_bytes_reads_the_cells_own_chart_not_always_h1(tmp_path, monkeypatch):
++    """Re-admitting an M5 cell because the H1 frame grew is a different symbol's answer."""
++    uni = tmp_path / "universe"
++    uni.mkdir()
++    (uni / "XAUUSD_H1.parquet").write_bytes(b"h" * 100)
++    (uni / "XAUUSD_M5.parquet").write_bytes(b"m" * 700)
++    monkeypatch.setattr(jc, "UNIVERSE", uni)
++    assert jc._bar_bytes("XAUUSD") == 100            # default stays H1 for rows banked before
++    assert jc._bar_bytes("XAUUSD", "M5") == 700
++    assert jc._bar_bytes("XAUUSD", "D1") == 0        # absent chart is 0, never an exception
++
++
++def test_the_bank_never_filters_a_judged_verdict(tmp_path, monkeypatch):
++    """A build failure is NOT_RUN -- never a pass and never a fail -- so filtering it moves no
++    trial and cannot move a gate. A verdict that was actually judged must never be banked."""
++    uni = tmp_path / "universe"
++    uni.mkdir()
++    (uni / "EURUSD_H1.parquet").write_bytes(b"z" * 900)
++    monkeypatch.setattr(jc, "UNIVERSE", uni)
++    rep = _gates_report(tmp_path, [
++        {"cell": "EURUSD@H1.carry.p=1", "sym": "EURUSD", "family": "carry", "passed": False,
++         "terminal_gate": "deflated_sharpe", "days": 400},
++        {"cell": "EURUSD@H1.carry.p=2", "sym": "EURUSD", "family": "carry", "passed": True,
++         "terminal_gate": "PASSED", "days": 400},
++    ])
++    assert jc.name_unknowns(rep) == {}
+-- 
+2.47.1.windows.1
+

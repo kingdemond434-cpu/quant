@@ -1,0 +1,171 @@
+From 920cf74265ddb045e44541d95547c88b85f85422 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 02:28:54 +0200
+Subject: [PATCH] The bank and the docket were two key spaces, and their
+ overlap was zero
+
+MEASURED ON THIS BOX 2026-09-24/25, over the live docket and the 111,869-row unrunnable bank.
+`judge_coverage` banks every cell whose build failed (88,488 rows) under the judge's own verdict
+key and filters the docket by that bank at the one funnel every producer flows through. The
+filter matched almost nothing it was built for:
+
+    docket rows keyed differently by the two sides   192,757 of 539,462  (35.7%)
+    bank INTERSECT judge_coverage's keys                   0
+    bank INTERSECT the judge's own keys               78,771
+
+Both sides import the SAME `cell_id`, which is why this survived review. The judge does not call
+it on a docket row: `external_gauntlet.main` folds a non-H1 ROW chart into `params` first and
+names the cell from `params` alone, so the chart rides in the identity DIGEST. `_cell_id` passed
+the chart beside `params`, where `timeframe_of` reads it FIRST and it shapes only the `@TF`
+suffix. Same import, same function, different key space -- sharing the visible half of the name.
+
+Two shapes diverged, in opposite directions, which is why a reader saw a partial overlap:
+
+    chart on the row only      judge GBPAUD@M15.cross_asset_residual.p=6403309d7977b134
+                               was   GBPAUD@M15.cross_asset_residual.p=a7abf4646a7e6aca
+    chart in params, row H1    judge UK100@M1.exogenous_conditioner.p=4174b6f6734b5405
+                               was   UK100.exogenous_conditioner.p=4174b6f6734b5405
+
+So the judge rebuilt tens of thousands of known-unbuildable cells every pass and its pre-warm
+failure count never moved (81,588 -> 88,246 -> 109,792 -> 93,320). The same gap silently told
+the coverage table that every non-H1 cell the desk had ever judged was still unjudged:
+`judged_index` reads the gate ledger, which is in the judge's key space too, which is why
+`unjudged_total` reads 450,458 against a 570,592-row docket.
+
+MEASURED AFTER THE FIX, against the same live docket and bank, before any new pass:
+
+    docket rows the bank removes   2,396  ->  81,275   (65,400 of them build_failed)
+
+`frontier_identity.docket_cell` / `docket_cell_id` is now the one row->cell rule, and it lives
+beside `cell_id` so a reader cannot import one without meeting the other. H1 ids are byte-
+identical to what they have always been -- renaming the H1 canon would orphan every clock.
+
+KNOWN AND MEASURED RESIDUE, named rather than left to be discovered: `lvc_asia_london` is the
+one family the judge pins to a chart internally (`_PINNED_TIMEFRAME`), and 721 docket rows carry
+it with no params `timeframe`. `frontier_identity` cannot import the sealed judge to read that
+pin, so those rows key without the suffix -- which is exactly how `blocked_verdicts` keys them
+too, so a build failure still banks and still filters. The miss, if any, is a cell not removed;
+never a runnable cell wrongly removed, because the params digest makes a wrong match impossible.
+
+THE TEST RUNS THE JUDGE'S OWN SOURCE. `external_gauntlet.py` is sealed and cannot import a
+normaliser, so the rule necessarily exists twice. `test_docket_cell_identity.py` EXTRACTS the
+judge's folding lines out of that file and EXECUTES them, then asserts both sides name every row
+shape identically. A rule change by one character fails the extraction or the comparison; no
+comment can satisfy it (L1.71).
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/frontier_identity.py | 53 +++++++++++++++++++++++++
+ desks/mt5/research/judge_coverage.py    | 23 ++++++++---
+ 2 files changed, 71 insertions(+), 5 deletions(-)
+
+diff --git a/desks/mt5/research/frontier_identity.py b/desks/mt5/research/frontier_identity.py
+index 6f2dbf93e09..de1c24edd2e 100644
+--- a/desks/mt5/research/frontier_identity.py
++++ b/desks/mt5/research/frontier_identity.py
+@@ -65,6 +65,59 @@ def cell_id(cell: dict[str, Any]) -> str:
+     return f"{cell['sym']}{tf}.{cell['family']}.p={digest}"
+ 
+ 
++def docket_cell(row: dict[str, Any]) -> dict[str, Any]:
++    """A DOCKET ROW, normalised into the cell the judge will key its verdict by.
++
++    THE ONE PLACE THE ROW->CELL RULE LIVES, and the reason it has to exist at all. `cell_id`
++    answers "what is this cell called"; it cannot answer "which cell is this ROW", because a
++    producer may carry the chart in `params["timeframe"]`, on the row's own `timeframe` field, or
++    in both. `external_gauntlet.main` groups the docket into cells by folding a non-H1 ROW chart
++    into `params` and then naming the cell from `params` alone -- so the chart is inside the
++    identity DIGEST. Any reader that instead hands `cell_id` a separate `timeframe` key gets the
++    right `@TF` suffix over a digest computed WITHOUT the chart, and lands in a different key
++    space that happens to look identical for H1.
++
++    WHAT THAT COST, MEASURED ON THE BOX 2026-09-24/25. `judge_coverage` banks every cell whose
++    build failed (88,488 rows) under the judge's own verdict key, and filters the docket by that
++    bank under the second key. Overlap of the bank with the 539,462-row docket:
++
++        bank INTERSECT judge_coverage's keys     0
++        bank INTERSECT the judge's own keys  78,771
++
++    So the bank held the answer for 78,771 docket rows and removed none of them: the judge
++    rebuilt every one of them, every pass, and its pre-warm failure count never moved
++    (81,588 -> 88,246 -> 109,792 -> 93,320). 192,757 of 539,462 rows (35.7%) were keyed
++    differently by the two sides. The same gap silently told the coverage table that every
++    non-H1 cell it had ever judged was still unjudged, because `judged_index` reads the gate
++    ledger, which is in the judge's key space too.
++
++    Two shapes diverge, and they diverge in OPPOSITE directions -- which is why a partial
++    overlap, rather than none at all, is what a reader saw:
++
++      * chart on the row only  (row `timeframe` M15, absent from params)
++          judge: GBPAUD@M15.cross_asset_residual.p=6403309d7977b134   (chart IS in the digest)
++          here : GBPAUD@M15.cross_asset_residual.p=a7abf4646a7e6aca   (chart is NOT)
++      * chart in params, row says H1 (the orthogonal sweep writes both, row stamped H1)
++          judge: UK100@M1.exogenous_conditioner.p=4174b6f6734b5405
++          here : UK100.exogenous_conditioner.p=4174b6f6734b5405       (suffix lost entirely)
++
++    `timeframe_of` reads the cell-level field FIRST, so passing `timeframe` beside `params`
++    overrides the chart the params themselves name. Returning a cell with NO separate
++    `timeframe` key is therefore load-bearing, not tidiness: params alone must decide.
++    """
++    params = dict(row.get("params") or {})
++    row_tf = str(row.get("timeframe") or "").upper()
++    if row_tf and row_tf != REFERENCE_TIMEFRAME and "timeframe" not in params:
++        params["timeframe"] = row_tf
++    return {"sym": row.get("symbol") or row.get("sym"), "family": row.get("family"),
++            "params": params}
++
++
++def docket_cell_id(row: dict[str, Any]) -> str:
++    """The judge's identity for a docket ROW. See `docket_cell` for why the row needs its own."""
++    return cell_id(docket_cell(row))
++
++
+ def economic_prior(cell: dict[str, Any]) -> dict[str, Any]:
+     """Fail closed for unconstrained statistical finds; named mechanisms remain hypotheses."""
+     status = str(cell.get("mechanism_status") or "")
+diff --git a/desks/mt5/research/judge_coverage.py b/desks/mt5/research/judge_coverage.py
+index 3ae8a27e475..42dca4a09a9 100644
+--- a/desks/mt5/research/judge_coverage.py
++++ b/desks/mt5/research/judge_coverage.py
+@@ -145,19 +145,32 @@ def _cell_id(row: dict[str, Any]) -> str | None:
+ 
+     Two implementations of an identity are two identities, and the whole measurement here turns
+     on matching a docket row to the verdict the sealed judge recorded for it.
++
++    IMPORTING `cell_id` WAS NOT ENOUGH, and that is the whole lesson of this function's second
++    fix. The gauntlet does not call `cell_id` on a docket row: it first folds a non-H1 ROW chart
++    into `params` and then names the cell from `params` alone, so the chart rides in the identity
++    DIGEST. This function handed `cell_id` a separate `timeframe` key instead -- the same import,
++    the same function, a different key space. It shared the exact `@TF` suffix, which is what made
++    it look right, over a digest that did not carry the chart.
++
++    MEASURED ON THE BOX 2026-09-24/25, over the live 539,462-row docket and the 111,869-row
++    unrunnable bank: 192,757 rows (35.7%) keyed differently, and the bank's intersection with
++    this function's keys was ZERO against 78,771 with the judge's own. The build-failure bank
++    therefore filtered nothing it was built to filter, and the judge's pre-warm rebuilt all
++    78,771 cells every pass. `judged_index` reads the gate ledger, which is in the judge's key
++    space as well, so the same gap also reported every non-H1 cell the desk had ever judged as
++    still unjudged. `docket_cell_id` is now the one row->cell rule, and it lives beside `cell_id`
++    so a reader cannot import one without meeting the other.
+     """
+     try:
+         desk = str(BASE)
+         if desk not in sys.path:
+             sys.path.insert(0, desk)
+-        from research.frontier_identity import cell_id
++        from research.frontier_identity import docket_cell_id
+     except Exception:
+         return None
+     try:
+-        return str(cell_id({"sym": row.get("symbol") or row.get("sym"),
+-                            "family": row.get("family"),
+-                            "params": row.get("params") or {},
+-                            "timeframe": row.get("timeframe")}))
++        return str(docket_cell_id(row))
+     except Exception:
+         return None
+ 
+-- 
+2.47.1.windows.1
+

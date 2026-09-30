@@ -1,0 +1,35 @@
+From 55bd038961e32b66cb4ae0d03f5df159d7893272 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 23:05:55 +0200
+Subject: [PATCH] tests/scripts shadows the scripts package, so the fence's own
+ wiring test could not import the gate
+
+`from scripts import run_law_gate` resolves to `tests/scripts/__init__.py`, so the one test that
+makes the coverage fence worth anything -- the one that fails if it is ever removed from
+_STATE_FENCES -- was itself failing on an ImportError rather than checking anything. Imported by
+module name off sys.path, the way every sibling fence test already does it.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ tests/scripts/test_check_judging_coverage.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/tests/scripts/test_check_judging_coverage.py b/tests/scripts/test_check_judging_coverage.py
+index e170fdd2fd3..de5229ea68e 100644
+--- a/tests/scripts/test_check_judging_coverage.py
++++ b/tests/scripts/test_check_judging_coverage.py
+@@ -127,7 +127,9 @@ def test_totals_without_the_unjudged_count_is_unmeasured_not_zero(tmp_path):
+ def test_the_fence_is_registered_in_the_law_gate_and_cannot_be_quietly_removed():
+     """The property that makes the rest of this file worth anything. Modelled on the placement
+     interlock's own test: a fence nobody runs is a claim the desk cannot cash (L1.49)."""
+-    from scripts import run_law_gate as rlg
++    # `tests/scripts/__init__.py` shadows the top-level `scripts` package, so the gate is
++    # imported by module name off sys.path -- the way every sibling fence test does it.
++    import run_law_gate as rlg
+     names = {n for n, _a in (*rlg._LAW_FENCES, *rlg._STATE_FENCES)}
+     assert "check_judging_coverage.py" in names, (
+         "the judging-coverage fence was removed from the law gate; 87% of the docket once sat "
+-- 
+2.47.1.windows.1
+

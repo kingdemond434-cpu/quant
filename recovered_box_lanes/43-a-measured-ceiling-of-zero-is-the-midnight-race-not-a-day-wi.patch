@@ -1,0 +1,159 @@
+From 575175babffb3a6b58ad01d2513639649c4834a6 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 02:24:35 +0200
+Subject: [PATCH] A measured ceiling of zero is the midnight race, not a day
+ with no budget
+
+CAUGHT LIVE ON THE TRADING BOX, 2026-09-25 at 00:00:03 UTC, and it had the whole day's research
+in it.
+
+An organ made a free call three seconds into the new UTC day. The desk's spend ledger had no rows
+for the new date yet, so `calls_today()` was 0. OpenRouter's own daily counter had NOT rolled --
+the 429 body carried `X-RateLimit-Remaining: 0` with a reset stamp still in the future -- so the
+call was refused. `note_free_limit_hit` recorded that refusal faithfully, at the count it saw:
+`{"date": "2026-09-25", "ceiling": 0}`. `free_daily_max()` then returned min(900, 0) = 0.
+
+FROM THAT MOMENT THE DESK REFUSED ITSELF. `free_budget_left()` returned 0, so every organ was
+turned away by `chat()` BEFORE any HTTP request was made, for twenty-four hours, with
+"free-tier daily request budget exhausted: 0 call(s) today against a 0 ceiling" -- a message that
+reads exactly like a provider limit. Measured eleven minutes later, the provider said
+`free_model_daily_requests: {used: 13, limit: 1000, remaining: 987}`. The budget was entirely
+available and the desk could not see it.
+
+This is the whole novel-mechanism lane. A mechanism with no registered family function reaches
+the gauntlet only through an exact-rule extraction, and every extraction is one of those
+requests, so a day pinned at zero is a day with no possibility of discovering anything the desk
+did not already know. It would have recurred every night the previous day ended exhausted --
+which, at 1,008 of 1,000 requests used, is every night.
+
+ZERO COMPLETIONS IS NOT EVIDENCE ABOUT TODAY. It says the refusal arrived before this desk had
+successfully called anything, which is a fact about YESTERDAY's exhaustion observed through a
+counter that had not yet rolled. So it is UNMEASURED rather than zero (L1.28a) and the configured
+default governs. If the provider really is still refusing, the next call takes its own 429 and
+records a ceiling that means something.
+
+`free_daily_max()` also floors at 1 now. The configured path already had that law -- "a ceiling of
+zero would be a permanently dark desk", which is why QUANT_FREE_DAILY_MAX=0 floors at one -- and
+the measured path reached the same dark desk by a different road. Belt to that brace, so a later
+change reintroducing a zero from anywhere still cannot take the seat out for a day.
+
+FOUND BY THE EXPERIMENT RATHER THAN BY READING. A four-arm A/B was queued to settle whether the
+58% "reply was not a JSON object" loss is truncation; all 48 calls came back refused, and the
+refusal named its own cause. The probe cost nothing and paid for itself before measuring the
+thing it was built for.
+
+Verified on the box after the change: free_budget_left() 0 -> 900, provider remaining 981.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ libs/ops/llm_seat.py                    | 32 +++++++++++++++++--
+ tests/ops/test_llm_seat_budget_truth.py | 42 +++++++++++++++++++++++++
+ 2 files changed, 72 insertions(+), 2 deletions(-)
+
+diff --git a/libs/ops/llm_seat.py b/libs/ops/llm_seat.py
+index 1e3cbfb4890..03de3df796a 100644
+--- a/libs/ops/llm_seat.py
++++ b/libs/ops/llm_seat.py
+@@ -492,7 +492,29 @@ def observed_free_ceiling(now: datetime | None = None) -> int | None:
+         n = int(doc.get("ceiling"))
+     except (TypeError, ValueError):
+         return None
+-    return n if n >= 0 else None
++    # A CEILING OF ZERO IS THE MIDNIGHT RACE, NOT A MEASUREMENT (fixed 2026-09-25, caught live).
++    #
++    # WHAT HAPPENED, to the second. At 00:00:03 UTC an organ made a free call. The desk's ledger
++    # had no rows for the new day yet, so `calls_today()` was 0. OpenRouter's own daily counter
++    # had NOT rolled -- the 429 body carried `X-RateLimit-Remaining: 0` with a reset stamp still
++    # in the future -- so the call was refused. `note_free_limit_hit` duly recorded
++    # `ceiling: 0` against the NEW date, and `free_daily_max()` then returned min(900, 0) = 0.
++    #
++    # THE DESK THEN LOCKED ITSELF OUT OF A WORKING BUDGET FOR TWENTY-FOUR HOURS. Every organ was
++    # refused by `free_budget_left()` before any HTTP request was made, reporting "free-tier
++    # daily request budget exhausted: 0 call(s) today against a 0 ceiling" -- which reads exactly
++    # like a provider limit. Measured eleven minutes later, the provider said `remaining: 987`.
++    # A three-second race at midnight costs the entire day's novel-mechanism discovery, silently,
++    # and it would have recurred every night.
++    #
++    # ZERO COMPLETIONS IS NOT EVIDENCE ABOUT TODAY. It says the refusal arrived before this desk
++    # had successfully called anything, which is a fact about YESTERDAY's exhaustion observed
++    # through a counter that had not yet rolled. So it is UNMEASURED rather than zero (L1.28a),
++    # and the configured default governs. If the provider really is still refusing, the next call
++    # takes its own 429 and records a ceiling that means something.
++    if n <= 0:
++        return None
++    return n
+ 
+ 
+ #: The provider states its own limit in the 429 body's headers. Reading it is strictly better than
+@@ -552,7 +574,13 @@ def free_daily_max() -> int:
+     # The MEASURED ceiling wins whenever it is lower, and only for the UTC day it was measured
+     # on. It never raises the budget: a day that happened to stop early is not evidence the
+     # provider will allow more tomorrow.
+-    return min(configured, seen) if seen is not None else configured
++    resolved = min(configured, seen) if seen is not None else configured
++    # NEVER ZERO, BY THE SAME LAW THAT ALREADY GOVERNS THE CONFIGURED PATH. `QUANT_FREE_DAILY_MAX=0`
++    # floors at one because "a ceiling of zero would be a permanently dark desk"; a MEASURED zero
++    # is the same desk, equally dark, arrived at by a different road. `observed_free_ceiling`
++    # refuses zero outright now, so this is the belt to that braces -- a later change that
++    # reintroduces a zero from anywhere still cannot take the seat dark for a whole day.
++    return max(1, resolved)
+ 
+ 
+ def calls_today(now: datetime | None = None) -> int:
+diff --git a/tests/ops/test_llm_seat_budget_truth.py b/tests/ops/test_llm_seat_budget_truth.py
+index cfd9ddf22bf..fb01316083e 100644
+--- a/tests/ops/test_llm_seat_budget_truth.py
++++ b/tests/ops/test_llm_seat_budget_truth.py
+@@ -121,6 +121,48 @@ def test_limit_hit_without_a_header_still_records_our_count(tmp_path, monkeypatc
+     assert "provider_limit" not in doc, "absence is UNMEASURED, never a guessed number"
+ 
+ 
++def test_a_zero_ceiling_is_unmeasured_not_a_dark_day(tmp_path, monkeypatch, ledger):
++    """THE MIDNIGHT RACE, caught live 2026-09-25 at 00:00:03 UTC.
++
++    An organ called three seconds into the new UTC day. The desk's ledger had no rows yet, so
++    `calls_today()` was 0; OpenRouter's counter had not rolled, so the call took a 429; and
++    `note_free_limit_hit` recorded `ceiling: 0` against the NEW date. `free_daily_max()` returned
++    min(900, 0) = 0 and every organ was refused for the next twenty-four hours BEFORE any request
++    was made -- while the provider reported 987 requests still available.
++
++    Zero completions says the refusal landed before this desk had successfully called anything,
++    which is a fact about yesterday seen through a stale counter. UNMEASURED, not zero.
++    """
++    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
++    monkeypatch.delenv("QUANT_FREE_DAILY_MAX", raising=False)
++    import datetime as _dt
++    today = _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d")
++    (tmp_path / "ceiling.json").write_text(
++        json.dumps({"date": today, "ceiling": 0}), encoding="utf-8")
++    assert llm_seat.observed_free_ceiling() is None
++    assert llm_seat.free_daily_max() == llm_seat.DEFAULT_FREE_DAILY_MAX
++    assert llm_seat.free_budget_left() > 0, "the desk must not be dark for the day"
++
++
++def test_free_daily_max_is_never_zero_from_any_road(tmp_path, monkeypatch):
++    """Belt to the brace above: whatever a ceiling file says, the seat never floors at zero."""
++    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
++    monkeypatch.setenv("QUANT_FREE_DAILY_MAX", "0")
++    assert llm_seat.free_daily_max() >= 1
++
++
++def test_a_real_measured_ceiling_is_still_believed(tmp_path, monkeypatch):
++    """The fix must not throw away the measurement it was built to keep."""
++    monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
++    monkeypatch.delenv("QUANT_FREE_DAILY_MAX", raising=False)
++    import datetime as _dt
++    today = _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d")
++    (tmp_path / "ceiling.json").write_text(
++        json.dumps({"date": today, "ceiling": 789}), encoding="utf-8")
++    assert llm_seat.observed_free_ceiling() == 789
++    assert llm_seat.free_daily_max() == 789
++
++
+ def test_free_daily_max_never_rises_above_the_configured_ceiling(tmp_path, monkeypatch):
+     """A measured refusal may only LOWER the day's belief, never raise it."""
+     monkeypatch.setattr(llm_seat, "FREE_CEILING", tmp_path / "ceiling.json")
+-- 
+2.47.1.windows.1
+

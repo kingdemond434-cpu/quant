@@ -1,0 +1,79 @@
+From 14f1ab6f618326f073ec2e9a5bd6ebd1b73b0246 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 20:16:34 +0200
+Subject: [PATCH] The test that pinned UNGUARDED now pins the closure, and the
+ ceiling is the floor
+
+`test_the_canon_incident_row_names_the_guard_call_its_owner_must_add` asserted
+status == 'unguarded'. That was correct while the guard was owed and is a lie the
+moment it lands, and a test that pins a defect in place is the thing that stops the
+ratchet falling. It now proves the closure from the AST of the declared function --
+an import line is not a guard -- for BOTH rows of the incident, and a second test
+pins UNGUARDED_CEILING at 0 against a measured zero, so the next unguarded row fails
+the gate instead of being absorbed by headroom.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ tests/ops/test_reference_freshness.py | 41 ++++++++++++++++++++++-----
+ 1 file changed, 34 insertions(+), 7 deletions(-)
+
+diff --git a/tests/ops/test_reference_freshness.py b/tests/ops/test_reference_freshness.py
+index ddb63154f9c..1be1b43bb69 100644
+--- a/tests/ops/test_reference_freshness.py
++++ b/tests/ops/test_reference_freshness.py
+@@ -17,6 +17,7 @@ and every reference is planted under tmp_path.
+ """
+ from __future__ import annotations
+ 
++import ast
+ import json
+ import os
+ import sqlite3
+@@ -439,10 +440,36 @@ def test_the_fence_is_registered_in_the_law_gate() -> None:
+     assert '("check_no_retirement_on_absence.py", ())' in src
+ 
+ 
+-def test_the_canon_incident_row_names_the_guard_call_its_owner_must_add() -> None:
+-    """The one UNGUARDED path must hand its owner the exact call, not a description of one."""
+-    row = rf.by_id("certificate_truth.apply")
+-    assert row is not None
+-    assert row.status == "unguarded"
+-    assert "require_live_reference(" in row.note
+-    assert CANON in row.reference
++def test_the_canon_incident_rows_are_closed_and_the_guard_call_is_really_there() -> None:
++    """THIS TEST PINNED THE UNGUARDED STATE UNTIL 2026-09-24 and now pins the closure, which is
++    the only direction the ratchet may move (L1.50). Both rows of the incident -- the clock branch
++    and the ledger branch -- declare `apply`, and one `require_live_reference` there closes both.
++
++    The call is proved from the AST of the function the row declares, never from an import line:
++    "it imports the module" is the shape of every dead safety rail this desk has ever found."""
++    rows = [rf.by_id("certificate_truth.apply"), rf.by_id("certificate_truth.ledger_claims")]
++    assert all(r is not None for r in rows)
++    for row in rows:
++        assert row is not None
++        assert row.status == "guarded", f"{row.path_id} may only ratchet towards guarded"
++        assert "UNIVERSAL_SURVIVORS" in row.reference
++        assert (row.guard_site or row.function) == "apply"
++    module = Path(rf.ROOT) / rows[0].module              # type: ignore[union-attr]
++    fn = next(n for n in ast.walk(ast.parse(module.read_text(encoding="utf-8")))
++              if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "apply")
++    called = {c.func.id for c in ast.walk(fn)
++              if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)}
++    assert "require_live_reference" in called
++    # and the ledger branch is behind that same state, not behind `lane_settled` as it once was
++    body = module.read_text(encoding="utf-8")
++    assert "elif reference.live:" in body
++    assert "claims_on_unmeasured_canon" in body
++
++
++def test_the_ratchet_is_now_the_floor() -> None:
++    """Zero declared paths remove on an unproved reference, so the NEXT unguarded row fails the
++    gate rather than being absorbed by headroom. A ceiling with slack under it is not a ratchet."""
++    import scripts.check_no_retirement_on_absence as fence
++
++    assert fence.UNGUARDED_CEILING == 0
++    assert sum(1 for s in rf.DESTRUCTIVE_PATHS if s.status == "unguarded") == 0
+-- 
+2.47.1.windows.1
+

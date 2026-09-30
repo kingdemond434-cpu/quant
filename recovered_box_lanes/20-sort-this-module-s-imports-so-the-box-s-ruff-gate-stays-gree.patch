@@ -1,0 +1,32 @@
+From fcac4c5fa3ccf986ae24fe41fb61c3725c1a67ee Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:50:57 +0200
+Subject: [PATCH] Sort this module's imports so the box's ruff gate stays green
+
+Pre-existing under the repo's ruff config and unrelated to the interlock change,
+but it sits in a file the seal fix touches, so it would have blocked the push.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/tests/test_release_identity.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/desks/mt5/tests/test_release_identity.py b/desks/mt5/tests/test_release_identity.py
+index edb61396155..90f59bfc12c 100644
+--- a/desks/mt5/tests/test_release_identity.py
++++ b/desks/mt5/tests/test_release_identity.py
+@@ -26,9 +26,9 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
+         sys.path.insert(0, p)
+ 
+ from mt5desk import release_identity as ri  # noqa: E402
+-from research import live_manifest  # noqa: E402
+ 
+ from libs.ops import release  # noqa: E402
++from research import live_manifest  # noqa: E402
+ 
+ pytestmark = pytest.mark.skipif(not shutil.which("git"), reason="git required")
+ 
+-- 
+2.47.1.windows.1
+

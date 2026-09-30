@@ -1,0 +1,48 @@
+From 2240f4a9a9dc31bdf659fac19c53ad211b17cde6 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 03:15:56 +0200
+Subject: [PATCH] A test that asserts on prose breaks when the prose wraps --
+ assert the order instead
+
+Third time this session. The guard being tested is that staging stops the terminal BEFORE it
+edits common.ini, because MetaTrader rewrites that file at shutdown and would discard the edit.
+The test asserted a sentence from the docstring, and the sentence wrapped across a line, so the
+test failed while the property held. The sentence is not the property; the sequence is. It now
+checks that stop_terminal precedes set_maxbars, that the edit is gated on the stop having
+actually worked, and that the restart is gated on staging having succeeded.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/tests/test_restart_for_capacity.py | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/desks/mt5/tests/test_restart_for_capacity.py b/desks/mt5/tests/test_restart_for_capacity.py
+index 3d61a7113b9..667a8c00517 100644
+--- a/desks/mt5/tests/test_restart_for_capacity.py
++++ b/desks/mt5/tests/test_restart_for_capacity.py
+@@ -124,9 +124,17 @@ def test_the_pagefile_target_is_the_authorised_one():
+     assert rfc.PAGEFILE_VALUE == r"C:\pagefile.sys 262144 393216"
+ 
+ 
+-def test_the_order_is_stated_because_the_terminal_rewrites_the_file_at_shutdown():
++def test_staging_stops_the_terminal_before_it_edits_the_ini():
++    """MetaTrader rewrites common.ini at shutdown, so an edit made while it is up is discarded.
++
++    ASSERT THE ORDER, NOT THE PROSE. Three earlier tests in this session failed on a docstring
++    phrase that wrapped across a line; the sentence is not the property, the sequence is.
++    """
+     src = Path(rfc.__file__).read_text(encoding="utf-8")
+-    assert "REWRITES it at shutdown" in src
+-    # staging must stop the terminal before touching the ini
+     body = src.split("if a.stage and", 1)[1]
+-    assert body.index("stop_terminal") < body.index("set_maxbars")
++    assert body.index("stop_terminal") < body.index("set_maxbars"), (
++        "common.ini must not be edited until the terminal is down")
++    # and the edit is gated on the stop actually having worked
++    assert 'if doc["stop_terminal"]["ok"]:' in body
++    # the restart is gated on staging having succeeded
++    assert 'if a.restart and doc["staged"]' in src
+-- 
+2.47.1.windows.1
+

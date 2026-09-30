@@ -1,0 +1,764 @@
+From f2e5f98e17c118096dbb98093fc85b401a0735fb Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 23:12:26 +0200
+Subject: [PATCH] Land the universe deepener on the box that holds the terminal
+
+The ~100k row cap on every bar file was ours, in four places, and nothing ever re-deepened one.
+download_all_symbols SKIPS any (symbol, timeframe) whose parquet exists and refresh_tail only
+appends the new end, so every series was frozen at whatever the producer that first created it
+asked for; on top of that TERMINAL_MAXBARS (common.ini [Charts] MaxBars=100000) caps M1 and M5
+client-side, on every symbol measured, never once at a venue end.
+
+Measured here: EURUSD M30 served 85,712 bars back to 1997-10-10 against 40,136 held; D1 7,789
+against 2,268; M15 100,000 to 2022-09-19 against 60,272. XAUUSD -- the only symbol the scalp
+lane trades -- held 20,441 M5 bars against 99,999 served, and 20,147 M15 against 99,999.
+
+The deepener PREPENDS ONLY and publishes through universe_registry.publish_frame, so no bar the
+judge has read can change under it and it cannot fight refresh_tail over the live end. It floors
+every intraday chart at the DENSE frontier: this venue holds only daily bars before ~2019 and
+MetaTrader renders each as one bar on every chart, so EURUSD reports the same ~260 bars a year
+at M30, H1, H4 and D1 from 1997 to 2018, and splicing that on would be a decade of daily closes
+wearing an M30 label. MT5-DeepenUniverse runs it hourly at :47 as SYSTEM, stands down inside the
+gold placement windows, and checkpoints its cursor every five symbols.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/deepen_universe.py   | 452 ++++++++++++++++++++++++
+ desks/mt5/tests/test_deepen_universe.py | 201 +++++++++++
+ ops/run_deepen_universe.cmd             |  56 +++
+ 3 files changed, 709 insertions(+)
+ create mode 100644 desks/mt5/research/deepen_universe.py
+ create mode 100644 desks/mt5/tests/test_deepen_universe.py
+ create mode 100644 ops/run_deepen_universe.cmd
+
+diff --git a/desks/mt5/research/deepen_universe.py b/desks/mt5/research/deepen_universe.py
+new file mode 100644
+index 00000000000..535c3512fba
+--- /dev/null
++++ b/desks/mt5/research/deepen_universe.py
+@@ -0,0 +1,452 @@
++"""RAISE THE DESK'S DATA CEILING: take every bar the venue will serve, and refuse the fake ones.
++
++THE CEILING WAS OURS, IN FOUR PLACES, AND NOTHING EVER RE-DEEPENED A FILE (measured 2026-09-24).
++
++Every parquet in `data/universe/` held roughly the same ROW COUNT, so the finer the chart the
++shorter the calendar it covered -- three months of M1, sixteen of M5 -- and a fast mechanism
++could never reach the trading days the deflated-Sharpe hurdle needs. That looked like a broker
++limit. It was not. Measured on the live Fusion terminal, per symbol, per timeframe:
++
++  * `scripts/download_all_symbols.py` asks `TIMEFRAME_DEPTH` (M15 80k, M30 60k, H1 50k, D1 10k)
++    in ONE positional call, and it SKIPS any (symbol, timeframe) whose file already exists. So
++    the depth of every series is frozen forever at whatever the producer that first created it
++    happened to ask for, and nothing in the desk ever widens it again. `refresh_tail` only ever
++    appends the NEW end.
++  * `research/expand_universe.py` asks `_WANT` (M15 60k, M30 40k, D1 5k).
++  * `research/fetch_universe.py` asks `INTRADAY_TIMEFRAMES` (M15 60k, M30 40k) and pins H1 to
++    `START = 2018-01-01`.
++  * the TERMINAL itself caps the chart cache at `TERMINAL_MAXBARS` -- `common.ini [Charts]
++    MaxBars=100000` on this box. M1 and M5 stop at exactly 100,000 on EVERY symbol measured and
++    never once on a venue end, so those two charts are bounded by a client-side setting and by
++    nothing else. Raising it needs a terminal restart, which is not this organ's to take.
++
++What Fusion actually serves, measured (EURUSD): M30 85,712 bars to 1997-10-10, H1 49,198 to
++1997-10-10, H4 16,793 to 1997-10-10, D1 7,789 to 1997-10-10. Against that the desk held M30
++40,136 (2023-07-04), D1 2,268 (2018-01-02). M15 serves 100,000 to 2022-09-19 against 60,272 held.
++
++AND THE DEEP END IS NOT WHAT IT LOOKS LIKE, WHICH IS WHY THIS ORGAN HAS A FLOOR.
++Before ~2019 this venue has only DAILY bars, and MetaTrader renders them on every chart as ONE
++BAR PER CALENDAR DAY. EURUSD's M30, H1, H4 and D1 series all report ~260 bars a year from 1997
++to 2018 -- the same 260 bars, four times. Splicing that onto an intraday series would not be
++extra history, it would be a decade of daily bars wearing an M30 label, and it is the single
++easiest way to manufacture an edge that cannot exist. `dense_frontier` finds where a chart
++reaches its own recent density and this organ never reaches behind it.
++
++TWO RULES MAKE THIS SAFE TO RUN BESIDE A LIVE TERMINAL:
++
++  * PREPEND ONLY. A bar the file already holds is never rewritten, so nothing the judge has
++    already read can change under it and this organ can never fight `refresh_tail` over the live
++    end. A killed run loses exactly the symbol it was mid-way through, and the next run resumes.
++  * `universe_registry.publish_frame`. Frames are written to a temp file and `os.replace`d, and a
++    destination held open by a reader is a reported miss, never a torn file -- `fetch_universe`
++    wrote frames straight onto the destination once and a read landing mid-rewrite raised
++    `ArrowInvalid` out of the judge's `main()`, killing 19 passes.
++"""
++from __future__ import annotations
++
++import argparse
++import json
++import sys
++import time
++from collections import Counter
++from datetime import UTC, date, datetime, timedelta
++from pathlib import Path
++from typing import Any
++
++sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
++
++from mt5desk.config import desk_root
++from mt5desk.universe_registry import TIMEFRAMES, publish_frame
++
++UNIVERSE = desk_root() / "data" / "universe"
++REPORT = UNIVERSE / "venue_history_depth.json"
++CURSOR = UNIVERSE / "deepen_cursor.json"
++
++#: Columns a bar frame must carry for the desk to read it. A fetch missing one of these is
++#: recorded and skipped rather than published half-shaped.
++BAR_COLUMNS = ("open", "high", "low", "close", "tick_volume", "spread", "real_volume")
++
++#: Most bars one `copy_rates_*` call will serve. Above it the terminal returns None with
++#: `(-2, 'Terminal: Invalid params')` -- no exception, no partial result, and a shape that reads
++#: exactly like "this venue has no history", which is the wrong conclusion to draw from it.
++MAX_BARS_PER_CALL = 50_000
++
++#: Ceiling on chunks per (symbol, timeframe). At 50,000 a chunk this reaches 500,000 bars, five
++#: times the terminal's current cache cap, so it binds only if MaxBars is raised a long way.
++MAX_CHUNKS = 10
++
++#: Minutes of market time one bar spans. Used only to report calendar reach.
++TF_MINUTES = {"M1": 1, "M5": 5, "M15": 15, "M30": 30, "H1": 60, "H4": 240, "D1": 1440}
++
++#: A month whose bar count falls below this share of the symbol's OWN recent daily density is
++#: before the venue's real intraday history and is refused. Half is deliberately loose: it must
++#: separate ~1 bar/day from ~48 bars/day, not police a quiet August.
++DENSE_RATIO = 0.5
++
++#: Windows (UTC) in which this organ does not touch the terminal at all. The gold book places at
++#: 04:00, 10:00 and 14:00 UTC and a history pull that starves the terminal at that instant is a
++#: real cost, not a theoretical one.
++BLACKOUTS = ((3, 40, 4, 20), (9, 45, 10, 15), (13, 45, 14, 15))
++
++
++def in_blackout(now: datetime) -> str:
++    """The placement window `now` falls in, or "" when the terminal is ours to ask."""
++    mins = now.hour * 60 + now.minute
++    for h0, m0, h1, m1 in BLACKOUTS:
++        if h0 * 60 + m0 <= mins < h1 * 60 + m1:
++            return f"{h0:02d}:{m0:02d}-{h1:02d}:{m1:02d}Z"
++    return ""
++
++
++def dense_frontier(days: Counter[date], tf: str) -> date | None:
++    """The first calendar day from which `tf` runs at its OWN recent density, unbroken.
++
++    THE REFERENCE IS THE SYMBOL'S OWN RECENT DENSITY, never a nominal bars-per-day. A US share
++    CFD trades 6.5 hours and an FX cross 24, so one constant would call every equity chart
++    sparse and refuse history that is perfectly real. The median over the last 60 active days is
++    what the chart looks like when it is working.
++
++    Returns None when the whole series is dense -- the common case for a symbol the venue only
++    began quoting after it had real intraday data to serve.
++    """
++    if tf == "D1" or not days:
++        return None
++    ordered = sorted(days)
++    recent = sorted(days[d] for d in ordered[-60:])
++    ref = recent[len(recent) // 2] if recent else 0
++    if ref <= 1:
++        return None                       # a chart with one bar a day everywhere: nothing to cut
++    per_month: Counter[tuple[int, int]] = Counter()
++    days_month: Counter[tuple[int, int]] = Counter()
++    for d in ordered:
++        per_month[(d.year, d.month)] += days[d]
++        days_month[(d.year, d.month)] += 1
++    months = sorted(per_month)
++    last_sparse = -1
++    for i, m in enumerate(months[:-1]):    # the newest month is partial by construction
++        if per_month[m] < DENSE_RATIO * days_month[m] * ref:
++            last_sparse = i
++    if last_sparse < 0:
++        return None
++    if last_sparse + 1 >= len(months):
++        return ordered[-1]                 # every complete month is sparse: keep nothing older
++    y, mo = months[last_sparse + 1]
++    return date(y, mo, 1)
++
++
++def walk_back(mt5: Any, sym: str, code: Any, cap: int) -> tuple[Any, str]:
++    """Every bar the terminal will serve for one chart, oldest-first, walking backward in chunks.
++
++    Returns the structured array and WHY the walk stopped, which is the whole measurement:
++    "venue-end" means Fusion has no more, "MAXBARS" means the terminal's chart cache refused to
++    hold more and the limit is OURS.
++
++    THE TWO ARE EASY TO CONFUSE AND THE CONFUSION IS THE POINT OF THIS ORGAN. A chart pinned at
++    the cache cap reports its last request as empty, which reads exactly like a venue that ran
++    out -- so a walk that lands within a chunk-anchor of the cap is named MAXBARS whatever the
++    last call did. Chunks also overlap by exactly the bar they are anchored at, so the rows are
++    deduplicated on time before anything counts them.
++    """
++    import numpy as np
++    first = mt5.copy_rates_from_pos(sym, code, 0, min(cap, MAX_BARS_PER_CALL))
++    if first is None or len(first) == 0:
++        return None, f"no-data {mt5.last_error()}"
++    chunks = [first]
++    have = len(first)
++    oldest = int(first[0]["time"])
++    stop = "chunk-ceiling"
++    for _ in range(MAX_CHUNKS - 1):
++        if have >= cap:
++            stop = "MAXBARS"
++            break
++        older = mt5.copy_rates_from(sym, code, datetime.fromtimestamp(oldest, UTC),
++                                    min(cap - have, MAX_BARS_PER_CALL))
++        if older is None or len(older) == 0:
++            stop = "venue-end"
++            break
++        new_oldest = int(older[0]["time"])
++        if new_oldest >= oldest:
++            stop = "venue-end"             # no progress: the venue's history ends here
++            break
++        chunks.append(older)
++        have += len(older)
++        oldest = new_oldest
++    rows = np.concatenate(chunks[::-1]) if len(chunks) > 1 else chunks[0]
++    _, keep = np.unique(rows["time"], return_index=True)
++    rows = rows[keep]
++    if len(rows) >= cap - MAX_CHUNKS:
++        stop = "MAXBARS"
++    return rows, stop
++
++
++def _read_existing(path: Path) -> Any:
++    """The frame on disk, or None. Never raises: a torn or absent file means "nothing to keep"."""
++    import pandas as pd
++    if not path.exists():
++        return None
++    try:
++        df = pd.read_parquet(path)
++    except Exception as exc:
++        print(f"    {path.name}: unreadable ({type(exc).__name__}); leaving it alone", flush=True)
++        return None
++    if not isinstance(df.index, pd.DatetimeIndex) or df.empty:
++        return None
++    return df
++
++
++def _file_rows(path: Path) -> int:
++    """Row count from the parquet footer alone -- no column is read, no frame is built."""
++    import pyarrow.parquet as pq
++    try:
++        return int(pq.ParquetFile(path).metadata.num_rows)  # type: ignore[no-untyped-call]
++    except Exception:
++        return 0
++
++
++def deepen_one(mt5: Any, sym: str, tf: str, *, dry_run: bool) -> dict[str, Any]:
++    """Measure what the venue serves for one chart and PREPEND whatever the file is missing."""
++    import pandas as pd
++
++    code = getattr(mt5, f"TIMEFRAME_{tf}", None)
++    if code is None:
++        return {"status": "TIMEFRAME_UNKNOWN_TO_TERMINAL"}
++    cap = int(getattr(mt5.terminal_info(), "maxbars", 100_000) or 100_000)
++    path = UNIVERSE / f"{sym}_{tf}.parquet"
++
++    # THE FREE SKIP, AND IT IS THE TWO EXPENSIVE CHARTS IT SKIPS. A chart already holding at
++    # least `cap` bars cannot gain one: the cache serves the most recent `cap` bars, so a longer
++    # file ending at the same place necessarily starts at or before the cache's oldest bar.
++    # M1 and M5 hold ~100,000 rows on nearly every symbol and are precisely the two charts whose
++    # first walk forces the terminal to rebuild a timeseries from its .hcc history -- the whole
++    # cost of the first sweep. The footer answers without reading a single column.
++    #
++    # IT IS ALSO SELF-CORRECTING RATHER THAN PERMANENT: raise MaxBars and `cap` rises with it, so
++    # the same file stops qualifying and is walked again on the next pass. A skip that could
++    # outlive its reason would have quietly pinned the store at the cap it was written under.
++    held = _file_rows(path)
++    if held >= cap:
++        return {"status": "AT_FLOOR", "file_rows": held, "cap": cap,
++                "how": "file already holds >= TERMINAL_MAXBARS bars, so the cache cannot "
++                       "serve an older one; no terminal call made",
++                "measured_at": datetime.now(UTC).isoformat(timespec="seconds")}
++
++    rows, stop = walk_back(mt5, sym, code, cap)
++    if rows is None or len(rows) == 0:
++        return {"status": "NO_DATA", "stop": stop}
++
++    times = pd.to_datetime(rows["time"], unit="s", utc=True)
++    served_first = times[0]
++    frontier = dense_frontier(Counter(t.date() for t in times), tf)
++    floor = (pd.Timestamp(frontier, tz="UTC") if frontier is not None
++             else pd.Timestamp(served_first))
++    out: dict[str, Any] = {
++        "served": len(rows), "stop": stop,
++        "venue_first": str(served_first)[:19], "venue_last": str(times[-1])[:19],
++        "dense_first": str(floor)[:19],
++        "dense_served": int((times >= floor).sum()),
++        "bounded_by": "OURS (terminal MaxBars)" if stop == "MAXBARS" else "VENUE",
++        "measured_at": datetime.now(UTC).isoformat(timespec="seconds"),
++    }
++
++    existing = _read_existing(path)
++    if existing is None:
++        out["status"] = "NO_FILE"          # download_all_symbols owns first creation
++        return out
++    file_first = existing.index.min()
++    out |= {"file_rows": len(existing), "file_first": str(file_first)[:19]}
++    # TWO COMPLETELY DIFFERENT THINGS LIVE BEHIND THE FLOOR, AND ONE NAME FOR BOTH IS A LIE.
++    #
++    # A file may reach behind `floor` because its head is DAILY-DERIVED -- the venue's daily bars
++    # rendered one per intraday bar, which EURUSD_H4 carries 5,973 of, 36% of that series.
++    # Measured, reported, and NOT acted on here: trimming a series the judge has already read is
++    # a separate decision from widening it, and this organ only ever adds.
++    #
++    # Or it may reach behind because the desk ARCHIVED bars the terminal's 100,000-bar chart
++    # cache has since rolled past -- EURUSD_M1 holds 4,270 such rows. Those are the desk's own
++    # store already outrunning the cache, which is the opposite of a defect, and prepend-only is
++    # what keeps them. Naming that "daily-derived" would have reported the store's best property
++    # as contamination. The two are told apart by whether a frontier was DETECTED at all.
++    if file_first < floor:
++        behind = int((existing.index < floor).sum())
++        out["daily_derived_head_rows" if frontier is not None
++            else "rows_behind_cache_window"] = behind
++
++    want = times < file_first
++    want &= times >= floor
++    n_new = int(want.sum())
++    if n_new == 0:
++        out["status"] = "AT_FLOOR"
++        return out
++    out["would_prepend"] = n_new
++    if dry_run:
++        out["status"] = "DRY_RUN"
++        return out
++
++    # FROM THE STRUCTURED ARRAY, NOT A LIST OF ITS RECORDS. `pd.DataFrame(list_of_np_void)` builds
++    # a frame with a RangeIndex and NO column names, so the very next line raised KeyError('time')
++    # -- caught by `test_deepen_prepends_and_never_rewrites_a_bar_it_found`, which is why the
++    # fake terminal in that test serves real MT5 record dtypes rather than tidy dicts.
++    add = pd.DataFrame(rows[want])
++    add["time"] = pd.to_datetime(add["time"], unit="s", utc=True)
++    add = add.set_index("time").sort_index()
++    missing = [c for c in existing.columns if c not in add.columns]
++    if missing:
++        out["status"] = f"COLUMNS_MISSING:{','.join(missing)}"
++        return out
++    add = add[list(existing.columns)].astype(existing.dtypes.to_dict())
++    add.index.name = existing.index.name
++    merged = pd.concat([add, existing])
++    merged = merged[~merged.index.duplicated(keep="last")].sort_index()
++    if len(merged) < len(existing):
++        out["status"] = "REFUSED_SHRINK"   # unreachable by construction; asserted anyway
++        return out
++    out["status"] = "DEEPENED" if publish_frame(merged, path) else "PUBLISH_BLOCKED"
++    out["rows_after"] = len(merged)
++    out["first_after"] = str(merged.index.min())[:19]
++    return out
++
++
++def _publish_json(path: Path, doc: dict[str, Any]) -> None:
++    """Write a state file beside its destination and rename, so no reader sees half of one.
++
++    The same rule `publish_frame` applies to the bar frames, for the same reason: these two are
++    read by the next pass to decide what it may skip, and a truncated cursor would hand it a
++    verdict that was never measured.
++    """
++    import os
++    tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
++    tmp.write_text(json.dumps(doc, indent=1, sort_keys=True), encoding="utf-8")
++    os.replace(tmp, path)
++
++
++def _load(path: Path) -> dict[str, Any]:
++    try:
++        doc = json.loads(path.read_text("utf-8"))
++    except (OSError, ValueError):
++        return {}
++    return doc if isinstance(doc, dict) else {}
++
++
++def _fresh(entry: Any, hours: float) -> bool:
++    """True when a cursor row was measured recently enough to trust its AT_FLOOR verdict."""
++    if not isinstance(entry, dict) or entry.get("status") not in {"AT_FLOOR", "NO_FILE"}:
++        return False
++    try:
++        at = datetime.fromisoformat(str(entry.get("measured_at")))
++    except ValueError:
++        return False
++    return datetime.now(UTC) - at < timedelta(hours=hours)
++
++
++def main(argv: list[str] | None = None) -> int:
++    ap = argparse.ArgumentParser(description=__doc__)
++    ap.add_argument("--symbols", default="", help="comma list; default every file on disk")
++    ap.add_argument("--timeframes", default=",".join(TIMEFRAMES))
++    ap.add_argument("--budget-s", type=float, default=1500.0)
++    ap.add_argument("--recheck-hours", type=float, default=20.0)
++    ap.add_argument("--sleep-s", type=float, default=0.15, help="pause between symbols")
++    ap.add_argument("--dry-run", action="store_true")
++    ap.add_argument("--ignore-blackout", action="store_true")
++    args = ap.parse_args(argv)
++
++    started = time.monotonic()
++    now = datetime.now(UTC)
++    window = in_blackout(now)
++    if window and not args.ignore_blackout:
++        print(f"standing down: {now:%H:%M}Z is inside the {window} placement window")
++        return 0
++
++    import MetaTrader5 as mt5
++    if mt5.terminal_info() is None and not mt5.initialize():
++        print(f"initialize failed: {mt5.last_error()}")
++        return 1
++    ti = mt5.terminal_info()
++    print(f"terminal: {ti.name} build {ti.build} | TERMINAL_MAXBARS={ti.maxbars}")
++
++    tfs = [t.strip().upper() for t in args.timeframes.split(",") if t.strip()]
++    if args.symbols:
++        symbols = [s.strip() for s in args.symbols.split(",") if s.strip()]
++    else:
++        symbols = sorted({p.stem.rsplit("_", 1)[0] for p in UNIVERSE.glob("*.parquet")
++                          if "_" in p.stem and p.stem.rsplit("_", 1)[1] in TF_MINUTES})
++    cursor = _load(CURSOR)
++    report = _load(REPORT)
++    report["terminal_maxbars"] = int(ti.maxbars)
++    report["measured_at"] = now.isoformat(timespec="seconds")
++    rows: dict[str, Any] = report.setdefault("symbols", {})
++
++    # WHAT IS MOST BEHIND GOES FIRST. A budget that expires part-way must not re-walk the same
++    # alphabetical prefix every run -- that is the exact failure `_collection_order` was written
++    # for in `expand_universe`, and a cursor without an ordering only records it.
++    def behind(sym: str) -> tuple[int, str]:
++        done = sum(1 for tf in tfs if _fresh((cursor.get(sym) or {}).get(tf),
++                                             args.recheck_hours))
++        return (done, sym)
++
++    symbols.sort(key=behind)
++    print(f"{len(symbols)} symbol(s) x {len(tfs)} chart(s); budget {args.budget_s:.0f}s"
++          + (" [DRY RUN]" if args.dry_run else ""))
++
++    added = 0
++    touched = 0
++    stood_down = ""
++    for sym in symbols:
++        if time.monotonic() - started > args.budget_s:
++            stood_down = "budget"
++            break
++        w = in_blackout(datetime.now(UTC))
++        if w and not args.ignore_blackout:
++            stood_down = f"blackout {w}"
++            break
++        sym_cur = cursor.setdefault(sym, {})
++        sym_row = rows.setdefault(sym, {})
++        did = []
++        for tf in tfs:
++            if _fresh(sym_cur.get(tf), args.recheck_hours):
++                continue
++            res = deepen_one(mt5, sym, tf, dry_run=args.dry_run)
++            sym_cur[tf] = res
++            sym_row[tf] = res
++            status = res.get("status")
++            if status in {"DEEPENED", "DRY_RUN"}:
++                # A DRY RUN HAS NO `rows_after`, so subtracting `file_rows` from a missing key
++                # reported EVERY chart as a large NEGATIVE gain -- "-311,067 bar(s) added" on the
++                # first pass, which is the sort of summary line nobody reads twice and everybody
++                # believes. The published count is the one the run can actually cash.
++                n = (int(res["rows_after"]) - int(res["file_rows"]) if status == "DEEPENED"
++                     else int(res.get("would_prepend", 0)))
++                added += n
++                did.append(f"{tf}+{n:,}")
++        if did:
++            touched += 1
++            print(f"  {sym:14s} {' '.join(did)}", flush=True)
++        # CHECKPOINT, BECAUSE A CURSOR WRITTEN ONLY AT THE END IS NOT A CURSOR. A run killed by
++        # the task scheduler's time limit, a reboot or a Ctrl-C would otherwise lose every
++        # verdict it had measured and re-walk the whole store from the terminal next time -- the
++        # bars are already safe on disk, but the measurement that says so is what makes the next
++        # pass cheap. Both files are published atomically, so a kill mid-checkpoint leaves the
++        # previous cursor whole rather than a truncated one.
++        #
++        # EVERY FIVE, NOT EVERY TWENTY, because the first sweep is exactly when a kill is likely
++        # and exactly when the verdicts are most expensive to re-earn: measured on the box, the
++        # first pass was terminated by its 30-minute limit having deepened 18 symbols, two short
++        # of a checkpoint, and lost all 18 verdicts. The write is a few kilobytes of JSON.
++        if touched and touched % 5 == 0:
++            _publish_json(CURSOR, cursor)
++            _publish_json(REPORT, report)
++
++    report["stood_down"] = stood_down
++    report["note"] = ("`bounded_by` OURS means the terminal's chart cache (common.ini [Charts] "
++                      "MaxBars) refused more, not the broker. `dense_first` is where the chart "
++                      "reaches its own recent density; everything older is the venue's daily "
++                      "bars rendered one per day on an intraday chart, and is never taken.")
++    _publish_json(CURSOR, cursor)
++    _publish_json(REPORT, report)
++    print(f"\n{touched} symbol(s) deepened, {added:,} bar(s) added"
++          + (f"; stood down on {stood_down}" if stood_down else "; swept the whole store")
++          + f" -> {REPORT}")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/desks/mt5/tests/test_deepen_universe.py b/desks/mt5/tests/test_deepen_universe.py
+new file mode 100644
+index 00000000000..30d72a7c40a
+--- /dev/null
++++ b/desks/mt5/tests/test_deepen_universe.py
+@@ -0,0 +1,201 @@
++"""The deepener may not splice daily bars onto an intraday chart, nor rewrite a bar it found.
++
++Both properties are load-bearing for the same reason: `data/universe/*.parquet` is the desk's
++entire research input and the sealed judge reads it with no error handling.
++
++  * THE DENSE FLOOR. Fusion serves M30/H1/H4 back to 1997, but before ~2019 it holds only DAILY
++    bars and MetaTrader renders each of them as ONE bar on every chart. Taking that depth would
++    hand a session mechanism twenty years of "M30" bars that are daily closes, which is the
++    cheapest way there is to manufacture an edge that cannot exist.
++  * PREPEND ONLY. A bar already on disk is one the judge may have judged and `refresh_tail` may
++    own the live end of. Rewriting it would make this organ race two other writers; adding only
++    strictly-older bars cannot.
++"""
++
++from __future__ import annotations
++
++import sys
++from collections import Counter
++from datetime import UTC, date, datetime, timedelta
++from pathlib import Path
++
++import numpy as np
++import pandas as pd
++import pytest
++
++_DESK = Path(__file__).resolve().parents[1]
++if str(_DESK) not in sys.path:
++    sys.path.insert(0, str(_DESK))
++
++from research.deepen_universe import (  # noqa: E402
++    BAR_COLUMNS,
++    deepen_one,
++    dense_frontier,
++    in_blackout,
++    walk_back,
++)
++
++_RATE = np.dtype([("time", "<i8"), ("open", "<f8"), ("high", "<f8"), ("low", "<f8"),
++                  ("close", "<f8"), ("tick_volume", "<u8"), ("spread", "<i4"),
++                  ("real_volume", "<u8")])
++
++
++def _days(start: date, n_days: int, per_day: int) -> Counter[date]:
++    out: Counter[date] = Counter()
++    for i in range(n_days):
++        d = start + timedelta(days=i)
++        if d.weekday() < 5:
++            out[d] = per_day
++    return out
++
++
++def test_dense_frontier_cuts_a_daily_derived_prefix() -> None:
++    """Twenty months at one bar a day, then twenty at forty-eight: the cut lands between them."""
++    days = _days(date(2018, 1, 1), 600, 1)
++    days |= _days(date(2019, 9, 1), 600, 48)
++    cut = dense_frontier(days, "M30")
++    assert cut is not None
++    assert date(2019, 9, 1) <= cut <= date(2019, 11, 1), cut
++
++
++def test_dense_frontier_keeps_a_wholly_dense_series() -> None:
++    assert dense_frontier(_days(date(2022, 1, 3), 900, 48), "M30") is None
++
++
++def test_dense_frontier_is_self_calibrating_for_a_share_cfd() -> None:
++    """A 6.5-hour US equity runs 13 M30 bars a day and is DENSE; a flat nominal would refuse it."""
++    assert dense_frontier(_days(date(2021, 3, 8), 1200, 13), "M30") is None
++
++
++def test_dense_frontier_never_trims_a_daily_chart() -> None:
++    assert dense_frontier(_days(date(1997, 10, 10), 9000, 1), "D1") is None
++
++
++def test_blackout_covers_the_gold_placement_windows() -> None:
++    assert in_blackout(datetime(2026, 9, 24, 4, 0, tzinfo=UTC)) == "03:40-04:20Z"
++    assert in_blackout(datetime(2026, 9, 24, 10, 0, tzinfo=UTC))
++    assert in_blackout(datetime(2026, 9, 24, 14, 0, tzinfo=UTC))
++    assert in_blackout(datetime(2026, 9, 24, 21, 0, tzinfo=UTC)) == ""
++
++
++class _FakeMT5:
++    """A terminal that serves `total` M30 bars and caps its chart cache at `maxbars`."""
++
++    def __init__(self, total: int, maxbars: int, start: datetime) -> None:
++        self._all = np.array(
++            [(int((start + timedelta(minutes=30 * i)).timestamp()), 1.0, 1.0, 1.0, 1.0, 1, 1, 0)
++             for i in range(total)], dtype=_RATE)
++        self._maxbars = maxbars
++        self.TIMEFRAME_M30 = 30
++        self.calls = 0
++
++    def terminal_info(self) -> object:
++        return type("TI", (), {"maxbars": self._maxbars, "name": "fake", "build": 0})()
++
++    def last_error(self) -> tuple[int, str]:
++        return (0, "ok")
++
++    def copy_rates_from_pos(self, _sym: str, _tf: int, start: int,
++                            count: int) -> np.ndarray:
++        self.calls += 1
++        served = self._all[max(0, len(self._all) - self._maxbars):]
++        lo = max(0, len(served) - start - count)
++        return served[lo:len(served) - start]
++
++    def copy_rates_from(self, _sym: str, _tf: int, when: datetime,
++                        count: int) -> np.ndarray:
++        self.calls += 1
++        served = self._all[max(0, len(self._all) - self._maxbars):]
++        cut = int(when.timestamp())
++        older = served[served["time"] <= cut]
++        return older[-count:] if len(older) else older[:0]
++
++
++def test_walk_back_names_the_terminal_cap_as_ours() -> None:
++    """300,000 bars behind a 100,000-bar cache: the CLIENT is what stopped, and it must say so.
++
++    The last request comes back empty exactly as it would from a venue with no more history, so
++    a walk that lands within one chunk-anchor of the cap is named MAXBARS regardless. One bar is
++    lost to the anchor overlap between the two chunks, which the dedupe removes.
++    """
++    mt5 = _FakeMT5(total=300_000, maxbars=100_000, start=datetime(2020, 1, 1, tzinfo=UTC))
++    rows, stop = walk_back(mt5, "EURUSD", mt5.TIMEFRAME_M30, 100_000)
++    assert stop == "MAXBARS"
++    assert len(rows) == 99_999
++    assert len(np.unique(rows["time"])) == len(rows)
++
++
++def test_walk_back_names_a_venue_end_as_theirs() -> None:
++    mt5 = _FakeMT5(total=60_000, maxbars=100_000, start=datetime(2020, 1, 1, tzinfo=UTC))
++    rows, stop = walk_back(mt5, "EURUSD", mt5.TIMEFRAME_M30, 100_000)
++    assert stop == "venue-end"
++    assert len(rows) == 60_000
++
++
++@pytest.fixture()
++def _store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
++    import research.deepen_universe as mod
++    monkeypatch.setattr(mod, "UNIVERSE", tmp_path)
++    return tmp_path
++
++
++def test_deepen_prepends_and_never_rewrites_a_bar_it_found(_store: Path) -> None:
++    mt5 = _FakeMT5(total=40_000, maxbars=100_000, start=datetime(2021, 1, 1, tzinfo=UTC))
++    served = pd.to_datetime(mt5._all["time"], unit="s", utc=True)
++    held = pd.DataFrame(
++        {c: np.full(5_000, 7.0 if c in {"open", "high", "low", "close"} else 7)
++         for c in BAR_COLUMNS}, index=served[-5_000:])
++    held.index.name = "time"
++    held = held.astype({"tick_volume": "uint64", "spread": "int32", "real_volume": "uint64"})
++    path = _store / "EURUSD_M30.parquet"
++    held.to_parquet(path)
++
++    res = deepen_one(mt5, "EURUSD", "M30", dry_run=False)
++    assert res["status"] == "DEEPENED", res
++    after = pd.read_parquet(path)
++    assert len(after) == 40_000
++    assert after.index.min() == served[0]
++    # every bar that was already on disk is byte-identical, values and dtypes alike
++    pd.testing.assert_frame_equal(after.iloc[-5_000:], held)
++
++
++def test_deepen_is_idempotent(_store: Path) -> None:
++    mt5 = _FakeMT5(total=9_000, maxbars=100_000, start=datetime(2021, 1, 1, tzinfo=UTC))
++    served = pd.to_datetime(mt5._all["time"], unit="s", utc=True)
++    held = pd.DataFrame({c: np.ones(1_000) for c in BAR_COLUMNS}, index=served[-1_000:])
++    held.index.name = "time"
++    held = held.astype({"tick_volume": "uint64", "spread": "int32", "real_volume": "uint64"})
++    (_store / "EURUSD_M30.parquet").parent.mkdir(parents=True, exist_ok=True)
++    held.to_parquet(_store / "EURUSD_M30.parquet")
++
++    first = deepen_one(mt5, "EURUSD", "M30", dry_run=False)
++    assert first["status"] == "DEEPENED"
++    second = deepen_one(mt5, "EURUSD", "M30", dry_run=False)
++    assert second["status"] == "AT_FLOOR", second
++    assert len(pd.read_parquet(_store / "EURUSD_M30.parquet")) == 9_000
++
++
++def test_a_file_already_at_the_cap_costs_the_terminal_nothing(_store: Path) -> None:
++    """The free skip, and the assertion that matters is that NO terminal call was made.
++
++    M1 and M5 hold ~100,000 rows on nearly every symbol, and their first walk is what makes the
++    first sweep expensive -- the terminal rebuilds a whole timeseries from its .hcc history. A
++    file already holding at least `maxbars` bars cannot gain one, and the parquet footer says so
++    for free.
++    """
++    mt5 = _FakeMT5(total=9_000, maxbars=1_000, start=datetime(2021, 1, 1, tzinfo=UTC))
++    served = pd.to_datetime(mt5._all["time"], unit="s", utc=True)
++    held = pd.DataFrame({c: np.ones(2_000) for c in BAR_COLUMNS}, index=served[-2_000:])
++    held.index.name = "time"
++    held.to_parquet(_store / "EURUSD_M30.parquet")
++
++    res = deepen_one(mt5, "EURUSD", "M30", dry_run=False)
++    assert res["status"] == "AT_FLOOR", res
++    assert res["file_rows"] == 2_000
++    assert mt5.calls == 0, f"{mt5.calls} terminal call(s) made for a chart that cannot gain one"
++
++
++def test_deepen_leaves_a_symbol_with_no_file_to_its_own_producer(_store: Path) -> None:
++    mt5 = _FakeMT5(total=9_000, maxbars=100_000, start=datetime(2021, 1, 1, tzinfo=UTC))
++    assert deepen_one(mt5, "NOPE", "M30", dry_run=False)["status"] == "NO_FILE"
++    assert not list(_store.glob("*.parquet"))
+diff --git a/ops/run_deepen_universe.cmd b/ops/run_deepen_universe.cmd
+new file mode 100644
+index 00000000000..ff65bcd99c1
+--- /dev/null
++++ b/ops/run_deepen_universe.cmd
+@@ -0,0 +1,56 @@
++@echo off
++rem ===================================================================================
++rem MT5-DeepenUniverse: take every bar Fusion will serve for a chart the desk already has.
++rem
++rem WHY A SEPARATE ORGAN FROM run_universe.cmd. `download_all_symbols` is MISSING-SERIES
++rem incremental -- it skips any (symbol, timeframe) whose parquet exists -- so the depth of
++rem every series on this box is frozen at whatever the producer that first created it asked
++rem for, and `refresh_tail` only ever appends the NEW end. Nothing in the desk had ever
++rem widened a file that already existed. Measured 2026-09-24: XAUUSD, the only symbol the
++rem scalp lane trades, held 20,441 M5 bars while the terminal was serving 99,999.
++rem
++rem PYTHONPATH IS WHAT MAKES `mt5desk` IMPORTABLE. Python puts the SCRIPT'S directory on
++rem sys.path, never the working directory, so neither a bare invocation nor a `cd` into
++rem desks\mt5 is enough -- see the same note in run_universe.cmd, which was failing with
++rem ModuleNotFoundError on every run for an unknown number of days.
++rem
++rem THE BUDGET IS THE POINT, NOT A SAFETY MARGIN. This shares one terminal with the gateway,
++rem the tick recorder and the hourly research cycle. It stops on its own budget and stands
++rem down entirely inside the gold placement windows (03:40-04:20, 09:45-10:15, 13:45-14:15
++rem UTC), and its cursor checkpoints every five symbols so a stop costs the next pass nothing.
++rem
++rem THE SINGLETON CHECK IS NOT TIDINESS, IT IS A SILENT NO-OP THIS TASK HAS ALREADY HAD.
++rem `schtasks /End` kills the cmd.exe wrapper and NOT the python child, so a stopped run leaves
++rem an orphan. That orphan holds "%LOG%" open for append, the next run's `>>` cannot open it,
++rem cmd aborts before the first line -- and the task reports LAST RESULT 0. Measured
++rem 2026-09-24 22:58: a run that did nothing at all, logged nothing at all, and read as success.
++rem The check runs BEFORE any redirection for exactly that reason: once the log is blocked,
++rem nothing written through it can report the problem.
++rem ===================================================================================
++
++set "PYTHONPATH=C:\opt\quant\desks\mt5;C:\opt\quant"
++set "LOG=C:\opt\quant\desks\mt5\logs\MT5-DeepenUniverse.log"
++set "STANDDOWN=C:\opt\quant\desks\mt5\logs\MT5-DeepenUniverse.standdown.log"
++
++rem MATCH THE .py, NEVER THE BARE NAME. The first version of this line looked for
++rem "deepen_universe" and stood down on EVERY run, forever -- because the cmd.exe wrapper
++rem executing THIS FILE has "run_deepen_universe.cmd" on its own command line and matched.
++rem A guard against a silent no-op that is itself a silent no-op leaves no trace at all except
++rem a stand-down log nobody reads; it was caught in one pass only because the stand-down file
++rem was new and therefore worth opening. The ".py" suffix is what tells the worker from its
++rem launcher.
++rem psutil, never Get-CimInstance: CIM has hung on this box and wmic is absent (CLAUDE.md).
++"C:\Program Files\Python314\python.exe" -c "import os,sys,psutil; me=os.getpid(); sys.exit(1 if any(p.pid!=me and 'deepen_universe.py' in ' '.join(p.info.get('cmdline') or []) for p in psutil.process_iter(['cmdline'])) else 0)"
++if errorlevel 1 (
++    echo %DATE% %TIME% a deepen pass is already running; not starting a second>>"%STANDDOWN%"
++    exit /b 0
++)
++
++echo(>>"%LOG%"
++echo ==== run_deepen_universe %DATE% %TIME% ====>>"%LOG%"
++
++"C:\Program Files\Python314\python.exe" -u -W ignore ^
++  "C:\opt\quant\desks\mt5\research\deepen_universe.py" --budget-s 1500 >>"%LOG%" 2>&1
++set RC=%ERRORLEVEL%
++echo deepen_universe rc=%RC%>>"%LOG%"
++exit /b %RC%
+-- 
+2.47.1.windows.1
+

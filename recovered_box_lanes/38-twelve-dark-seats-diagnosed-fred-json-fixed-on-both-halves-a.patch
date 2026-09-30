@@ -1,0 +1,2225 @@
+From c183fd42bfc4dec092fc7f521d33cc449da2c8aa Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Fri, 25 Sep 2026 01:24:07 +0200
+Subject: [PATCH] Twelve dark seats diagnosed, fred.json fixed on both halves,
+ and the liveness fence
+
+Landed on the box that runs the producers, as ONE commit rather than five, to keep
+the seal green in the approach to the 05:00Z window. Full reasoning is in the five
+build-box commits afd70d1, 5e5ae3a, 5027819, 96b6460, b5040af.
+
+1. THE LIVENESS FENCE (scripts/check_organ_cadence.py, 18 tests, registered in
+   run_law_gate _STATE_FENCES). Twelve seats donated nothing in 24h and five were
+   not stubs -- event_response_atlas 258 artifacts then silence, graveyard_
+   resurrection 220, research_tree 138, fbs_tape 82, axis_registry 45. Four of the
+   five logged LEG_DONE outcome=ok EVERY HOUR while producing nothing. Three
+   fences already watched this ground: check_leg_rotation asks whether a leg RAN
+   (one that fails every time ATTENDED), check_seat_health asks whether a seat is
+   OVERDUE (equally true of a seat with no clock and one whose donation door
+   broke), and check_organ_liveness reads the VPS cron plane and on this box
+   judged 0 of 0 rows and exited 0. None of them joins "it ran" to "its output
+   moved". This reads the contract the desk ALREADY declares -- tier1_program.json
+   scheduled_by + artifact, 352 rows nothing had ever read as one -- and separates
+   the SELF channel (an organ describing its own run) from the PRODUCT channel
+   (what the compiler eats). MEASURED HERE over 242 organs: 2 SILENT_NOOP, 5
+   REPORTS_BUT_PRODUCES_NOTHING, 11 ALWAYS_FAILING -- including external_gauntlet
+   (the JUDGE) failing 11 of 11, compile_candidates 10 of 10 and deep_forest 16 of
+   16, none of which anything was watching. It also publishes the SEAL'S DUTY
+   CYCLE per sleeve-day window: 8 of 21 windows in 7 days closed with a placement,
+   13 closed on refusals, 742 of them release_identity_refused. Today's eighteen
+   are declared by name on a list that may only SHRINK, so the gate is usable
+   tonight rather than red on an inherited backlog, and the nineteenth fails on
+   the day it appears.
+
+2. FRED.JSON, BOTH HALVES. The writer was rewriting a populated axis into an empty
+   one every hour, beside bis.json at 85.9 MB on the same clock: ingest_fred
+   swallows every per-series exception so it never raises, the driver's except
+   never fires, and the success path wrote the empty document anyway. An empty
+   fetch can no longer overwrite a populated axis (EMPTY_REFUSED_OVERWRITE, with
+   the count it preserved), and the write is atomic. The fetch itself was a
+   User-Agent: measured back to back on this box, the desk's token draws
+   ConnectionReset after 19.2 s and curl/8.4.0 draws HTTP 200 in 0.04 s. Nothing
+   is bypassed -- fredgraph.csv is keyless and answers plain python-urllib -- and
+   the token is scoped to FRED so the three axes ingesting 85.9 MB, 1.1 MB and
+   786 KB are untouched.
+
+3. THE GIT-WRITER REAPER. HUNG_MIN_AGE_S 1800 -> 600, HUNG_SAMPLE_S 15 -> 60. At
+   1800 s on a 15-minute clock a wedge is invisible for up to 45 minutes, and one
+   was: the reaper reported CLEAR five consecutive times while a push held the
+   writer mutex, SealIfClean could not take the lock, and allows_new_risk stayed
+   False into the approach of a placement window. The delta proof carries the
+   verdict now; the floor's real job is only to clear Adopt-And-Seal's 540 s mutex
+   wait, because a writer BLOCKED WAITING also burns no CPU and moves no bytes.
+   The longer sample makes this strictly LESS likely to kill live work, and five
+   tests cover the trigger-happy direction including a chunked push moving only
+   bytes and a gc moving only CPU.
+
+4. THREE SEATS REPAIRED, each for its own cause. event_response_atlas applied its
+   OWN Bonferroni threshold as a donation filter -- a bar that RISES with
+   generation: at 636 cells t=3.9486 against a best cell of t=-3.617, so it shut
+   itself. RESEARCH.md 6d forbids a producer-private bar in either direction, and
+   the fixed 7x DSR multiplier already prices multiplicity once, downstream.
+   MEASURED: 279 of 300 cells clear cost, 0 clear Bonferroni; donations 0 -> 15.
+   research_tree donated from frontier[:30], a PUBLICATION cut; MEASURED: the
+   published 30 hold 0 nodes with a spec while the full frontier holds 3,292
+   donatable ones; donations 0 -> 20. alpha_periodic_table's __main__ was a
+   print-only demo that never called main(), so its report went 47h stale while
+   the leg exited 0 hourly.
+
+5. FIVE SEATS RETIRED WITH REASONS, and hunt17 buried. brain has NO writer
+   anywhere in the tree; cohorts and scheduled_chatgpt have writers behind a dead
+   import chain or no task; literature and frontier are roster misattributions
+   whose work lands elsewhere. Each carries an inheritor. fbs_tape is NOT retired
+   -- it is a real producer that needs a clock, and retiring a working producer
+   would reduce production. hunt17 exits 1 after 1.0 s on BeyondMeat_H1.parquet, a
+   single-name equity the two-lane mandate correctly removed, so the
+   restart-forever supervisor has been spawning a process to die in one second for
+   91 hours; its clock is withdrawn and nothing is deleted. hunt23_partial and its
+   five siblings are stale CHECKPOINTS beside fresh finals, not unfinished work.
+
+BARS ARE FIXED AND NONE MOVED: gate_spec.yaml, the ten gates and the fixed trial
+count are untouched. Nothing here caps, shrinks or vetoes anything; every change
+makes more reach the judge.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/research/axis_ingest.py             |  32 +-
+ desks/mt5/research/axis_ingest_all.py         | 100 ++-
+ desks/mt5/research/event_response_atlas.py    |  33 +-
+ desks/mt5/research/research_supervisor.py     |  22 +-
+ desks/mt5/research/research_tree.py           |  40 +-
+ .../mt5/side_channels/alpha_periodic_table.py |  53 +-
+ desks/mt5/tests/test_axis_ingest_guard.py     | 153 ++++
+ desks/mt5/tests/test_dark_seat_repairs.py     | 140 ++++
+ docs/research/organ_cadence_debt.json         | 140 ++++
+ libs/ops/git_writer_lock.py                   |  57 +-
+ scripts/check_organ_cadence.py                | 728 ++++++++++++++++++
+ tests/governance/test_organ_cadence_fence.py  | 344 +++++++++
+ tests/ops/test_hung_writer_reaper.py          |  60 +-
+ 13 files changed, 1844 insertions(+), 58 deletions(-)
+ create mode 100644 desks/mt5/tests/test_axis_ingest_guard.py
+ create mode 100644 desks/mt5/tests/test_dark_seat_repairs.py
+ create mode 100644 docs/research/organ_cadence_debt.json
+ create mode 100644 scripts/check_organ_cadence.py
+ create mode 100644 tests/governance/test_organ_cadence_fence.py
+
+diff --git a/desks/mt5/research/axis_ingest.py b/desks/mt5/research/axis_ingest.py
+index 24c363d56b3..4edd995dc25 100644
+--- a/desks/mt5/research/axis_ingest.py
++++ b/desks/mt5/research/axis_ingest.py
+@@ -257,6 +257,35 @@ FRED_SERIES = {
+ }
+ FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={sid}"
+ 
++#: FRED'S EDGE ALLOWLISTS THE CLIENT TOKEN, AND `UA` IS NOT ON IT -- which is why this axis read
++#: 0 series for its entire life while the other three worked on the same clock, the same box and
++#: the same IP.
++#:
++#: MEASURED ON THE TRADING BOX 2026-09-24, one series (DGS10), same URL, same process, back to
++#: back -- the only variable is this header:
++#:
++#:     "quant-desk-axis-ingest/1.0 (research)"      ConnectionResetError 10054 after 19.2 s
++#:     "curl/8.4.0"                                 HTTP 200, 268,823 B, 0.04 s
++#:     "curl/8.4.0 quant-desk-axis-ingest/1.0"      HTTP 200, 268,823 B, 0.04 s
++#:     "quant-desk-axis-ingest/1.0 curl/8.4.0"      TimeoutError after 30.0 s
++#:     "python-urllib/3.14"                         HTTP 200, 268,823 B, 0.11 s
++#:
++#: The FIRST token decides: an Akamai edge accepts the TLS handshake, then tarpits or resets the
++#: response body for a token it does not recognise. No HTTP status is ever returned, so the
++#: failure arrives as a timeout and reads exactly like a network fault -- which is how it survived
++#: as "FRED currently times out and resets from this box's IP (7/7)", a fact about the publisher.
++#: It was a fact about this string.
++#:
++#: NOTHING IS BYPASSED. `fredgraph.csv` is keyless and public, it answers 200 to an ordinary
++#: `python-urllib` token, and no access control, paywall or credential is involved (LAWS 5e's
++#: five refused acts are untouched). The desk's own identity is KEPT as the second token so the
++#: publisher can still see who is asking -- the allowlisted token is prefixed, never substituted.
++#:
++#: SCOPED TO FRED ON PURPOSE. `UA` is shared with BIS, COT and ECB, which were ingesting 85.9 MB,
++#: 1.1 MB and 786 KB on this exact header; changing it globally would put three working axes at
++#: risk to repair a fourth.
++FRED_UA = "curl/8.4.0 quant-desk-axis-ingest/1.0"
++
+ ECB_URL = ("https://data-api.ecb.europa.eu/service/data/{flow}/{key}"
+            "?lastNObservations={n}&format=csvdata")
+ ECB_SERIES = {
+@@ -347,7 +376,8 @@ def ingest_fred():
+     series, failed = {}, {}
+     for sid, what in FRED_SERIES.items():
+         try:
+-            req = urllib.request.Request(FRED_URL.format(sid=sid), headers={"User-Agent": UA})
++            req = urllib.request.Request(FRED_URL.format(sid=sid),
++                                         headers={"User-Agent": FRED_UA})
+             with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+                 text = r.read().decode("utf-8", "replace")
+             hdr = text.splitlines()[0].split(",")
+diff --git a/desks/mt5/research/axis_ingest_all.py b/desks/mt5/research/axis_ingest_all.py
+index 2b7588ca47f..53cf343376f 100644
+--- a/desks/mt5/research/axis_ingest_all.py
++++ b/desks/mt5/research/axis_ingest_all.py
+@@ -14,25 +14,47 @@ then writes BOTH a per-axis file and the shared `AXIS_INGEST.json`. The schedule
+ A report that shows one lane's worst pass and hides three healthy ones is worse than no report:
+ it is the shape that makes an operator distrust the board and stop reading it.
+ 
+-WHY A DRIVER AND NOT AN EDIT TO `axis_ingest.py`. The trading box's copy of that file is 438
+-lines AHEAD of this tree -- it has had work done on it that has not reached here. Editing it from
+-here would have reverted that work, which is the exact failure the moneypath guard exists to stop
+-(1,078 lines once vanished from gateway.py this way). So this IMPORTS whatever version is
+-present and drives its own `INGESTERS` table. New axes added there are picked up here for free,
+-with no second list to keep in sync.
+-
+-FAILURE IS PER-AXIS AND NEVER FATAL. FRED currently times out and resets from this box's IP
+-(7/7). That is a fact about one publisher's edge network, not about the axis lane, and it must
+-never stop COT, BIS or ECB from refreshing. Each ingester is caught individually and recorded as
++WHY A DRIVER AND NOT AN EDIT TO `axis_ingest.py`. This IMPORTS whatever version is present and
++drives its own `INGESTERS` table, so a new axis added there is picked up here for free, with no
++second list to keep in sync.
++
++*(THE ORIGINAL REASON WAS WRONG AND COST TWELVE DAYS, so it is corrected here rather than
++deleted. This docstring said the box's copy of `axis_ingest.py` was "438 lines AHEAD of this
++tree", so editing it from here would revert box work. Measured 2026-09-24: the two files are
++20,698 B on the box and 20,260 B here -- a difference of exactly 438 bytes, which is 438 CR
++characters. The box's checkout is CRLF. Normalise the newlines and the SHA-256 of both is
++`6652f3f6...`: the content is IDENTICAL and always was. A line-ending artifact was read as 438
++lines of unmerged work, and that reading fenced off the one file where the FRED fetch could be
++fixed at source. It has now been fixed there.)*
++
++FAILURE IS PER-AXIS AND NEVER FATAL. Each ingester is caught individually and recorded as
+ UNMEASURED with its error -- a failed fetch is not evidence that an axis is barren (L1.28a).
+ 
++AND AN EMPTY FETCH NEVER OVERWRITES A POPULATED AXIS. That rule is the whole of `_write_axis`
++below, and it is the half of this file that was missing. `ingest_fred` swallows every per-series
++exception, so it NEVER raises: it returns `{"n_series": 0}`, the `except` above it never fires,
++`state` is computed as "EMPTY" by a line nothing consumes, and the write at the bottom of the
++loop replaced the axis with the empty document anyway. Measured 2026-09-24:
++`desks/mt5/data/axes/fred.json` was 893 bytes and thirty minutes old, refreshed faithfully every
++hour, beside `bis.json` at 85.9 MB on the same clock. The lane was not idle -- it was diligently
++rewriting a populated axis into an empty one, which is why nothing read as broken.
++
++This is the shape LAWS calls absence resolving into a confident verdict, and the cost is not
++hypothetical: seven series that nine `shadow_institutional` mechanisms condition on read
++UNMEASURED for the axis's entire life. A refusal to write is recorded as
++`EMPTY_REFUSED_OVERWRITE` with the count it preserved, so the non-write is a positive, dated
++fact rather than a silence -- and an axis that has NEVER landed still writes its failure record,
++because that record is the only evidence the next session gets (it is how this defect was found).
++
+     python desks/mt5/research/axis_ingest_all.py [--apply]
+ """
+ from __future__ import annotations
+ 
+ import argparse
+ import json
++import os
+ import sys
++from contextlib import suppress
+ from datetime import UTC, datetime
+ from pathlib import Path
+ from typing import Any
+@@ -56,6 +78,49 @@ def _count(doc: dict[str, Any]) -> int:
+     return 0
+ 
+ 
++def _on_disk(path: Path) -> int:
++    """How much the axis ALREADY holds. Unreadable is 0, and that is the safe direction here:
++    a file this driver cannot parse is not evidence of data worth protecting, and refusing to
++    refresh an axis because its previous document is corrupt would freeze the lane permanently."""
++    try:
++        doc = json.loads(path.read_text(encoding="utf-8"))
++    except (OSError, ValueError):
++        return 0
++    return _count(doc) if isinstance(doc, dict) else 0
++
++
++def _write_axis(path: Path, doc: dict[str, Any], n: int) -> dict[str, Any]:
++    """Write one axis, and REFUSE when the write would replace data with nothing.
++
++    Returns the fields the report carries for this axis's write. Never raises: an axis whose file
++    cannot be replaced must not take the other three down with it.
++    """
++    prev = _on_disk(path)
++    if n == 0 and prev > 0:
++        # THE RULE. A fetch that came back empty is a fact about this pass, never a new state of
++        # the world, and the previous document is the better estimate of the axis until a
++        # non-empty fetch says otherwise (L1.28a).
++        return {"written": False, "write_state": "EMPTY_REFUSED_OVERWRITE", "preserved_n": prev,
++                "why": (f"this pass returned 0 and the file on disk holds {prev}; an empty fetch "
++                        "never overwrites a populated axis")}
++    # ATOMIC. A direct `write_text` that dies mid-stream truncates the axis, which is the same
++    # loss by a slower route. `os.replace` is atomic on NTFS and POSIX alike.
++    tmp = path.with_suffix(path.suffix + ".tmp")
++    try:
++        tmp.write_text(json.dumps(doc, indent=1), encoding="utf-8")
++        os.replace(tmp, path)
++    except OSError as exc:
++        # Measured lesson (CLAUDE.md): `os.replace` onto a read-only destination is legal on
++        # POSIX and raises WinError 5 here. Report it; never crash the lane.
++        with suppress(OSError):
++            tmp.unlink()
++        return {"written": False, "write_state": "WRITE_FAILED",
++                "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
++    return {"written": True,
++            "write_state": "WRITTEN" if n else "WRITTEN_FIRST_RECORD",
++            "preserved_n": prev}
++
++
+ def run_all(apply: bool) -> dict[str, Any]:
+     import axis_ingest as ai
+ 
+@@ -82,9 +147,11 @@ def run_all(apply: bool) -> dict[str, Any]:
+         }
+         if apply:
+             OUT_DIR.mkdir(parents=True, exist_ok=True)
+-            (OUT_DIR / f"{name}.json").write_text(json.dumps(doc, indent=1), encoding="utf-8")
++            axes[name].update(_write_axis(OUT_DIR / f"{name}.json", doc, n))
+ 
+     ok = [k for k, v in axes.items() if v.get("state") == "OK"]
++    refused = [k for k, v in axes.items()
++               if v.get("write_state") == "EMPTY_REFUSED_OVERWRITE"]
+     return {
+         "at": now.isoformat(timespec="seconds"),
+         "driver": "axis_ingest_all -- every axis, every pass",
+@@ -93,12 +160,19 @@ def run_all(apply: bool) -> dict[str, Any]:
+         "n_unmeasured": sum(1 for v in axes.values() if v.get("state") == "UNMEASURED"),
+         "n_empty": sum(1 for v in axes.values() if v.get("state") == "EMPTY"),
+         "total_rows": sum(int(v.get("n") or 0) for v in axes.values()),
++        "n_write_refused": len(refused),
++        "write_refused": refused,
+         "axes": axes,
+         "rule": ("every axis runs on every pass and each writes its own file. The shared report "
+                  "is a UNION, never the last writer's result -- a board that shows one lane's "
+                  "worst pass and hides three healthy ones teaches the reader to stop looking."),
+         "boundary": ("ingestion is not conditioning. A row here is a dated series a family COULD "
+                      "condition on; whether it earns anything is the gauntlet's verdict."),
++        "write_rule": ("an empty fetch NEVER overwrites a populated axis: a pass that returned 0 "
++                       "against a file that holds data is recorded EMPTY_REFUSED_OVERWRITE with "
++                       "the count it preserved. Writes are atomic, so a crash mid-write cannot "
++                       "truncate an axis either. An axis that has never landed still writes its "
++                       "failure record -- that record is the evidence the next session gets."),
+     }
+ 
+ 
+@@ -114,6 +188,10 @@ def main(argv: list[str] | None = None) -> int:
+             print(f"  {name:<10} UNMEASURED  {str(v.get('error'))[:70]}")
+         else:
+             extra = f"  ({v['n_failed']} sub-fetch failure(s))" if v.get("n_failed") else ""
++            if v.get("write_state") == "EMPTY_REFUSED_OVERWRITE":
++                extra += f"  WRITE REFUSED -- preserved {v.get('preserved_n')} on disk"
++            elif v.get("write_state") == "WRITE_FAILED":
++                extra += f"  WRITE FAILED -- {str(v.get('why'))[:60]}"
+             print(f"  {name:<10} {v['state']:<10} n={v['n']:<8} symbols={v['n_symbols']}{extra}")
+     if not a.apply:
+         print("  --apply not given; nothing written")
+diff --git a/desks/mt5/research/event_response_atlas.py b/desks/mt5/research/event_response_atlas.py
+index d363090a04f..d327778030a 100644
+--- a/desks/mt5/research/event_response_atlas.py
++++ b/desks/mt5/research/event_response_atlas.py
+@@ -640,7 +640,26 @@ def build(days: int = 400, budget_s: float = 240.0, now: datetime | None = None)
+     for row in rows:
+         row["clears_bonferroni"] = bool(abs(row["t"]) >= threshold)
+     rows.sort(key=lambda r: -abs(r["t"]))
+-    clearing = [r for r in rows if r["clears_bonferroni"] and r["verdict"] == "CLEARS_COST"]
++    # A SCREEN HAS NO BAR: IT SORTS AND REPORTS, AND THE TEN GATES DECIDE (RESEARCH.md 6d).
++    #
++    # This line used to read `if row["clears_bonferroni"] and ...`, and that is a producer-private
++    # threshold standing in front of the gauntlet -- the exact thing 6d forbids "in either
++    # direction", and the third time this desk has had to delete one (a sqrt(2 ln N) screen and an
++    # n_trials override inside a gate were removed on 2026-08-26).
++    #
++    # IT IS ALSO SELF-CLOSING, WHICH IS WHY IT WENT SILENT RATHER THAN SELECTIVE. The threshold is
++    # a function of how many cells were tested, so every conditioner or symbol added RAISES it.
++    # Measured on the trading box 2026-09-24: 636 cells -> t = 3.9486, and the strongest cell in
++    # the atlas was t = -3.617. The door did not narrow, it shut -- 258 donated artifacts, then
++    # fifteen consecutive clean runs donating nothing, with the organ reporting `ok` every hour.
++    # That is a bar that rises with generation, which is precisely what the fixed 7x DSR
++    # multiplier exists to make unnecessary: multiplicity is priced ONCE, downstream, as a
++    # constant, and pricing it again here charged the desk twice for the same trials.
++    #
++    # The cell's own `clears_bonferroni` and the pass's `threshold_t` are still computed and still
++    # published on every row, because the information is worth having -- it just has no authority.
++    # `MAX_DONATIONS` still bounds the batch, which is a COMPUTE budget and says so.
++    clearing = [r for r in rows if r["verdict"] == "CLEARS_COST"]
+ 
+     return {
+         "at": now.isoformat(),
+@@ -720,7 +739,10 @@ def donate_clearing(payload: dict[str, Any], max_donations: int) -> dict[str, An
+     """Donate the clearing cells as `event_reaction` hypotheses. Never an equity, never a guess."""
+     clearing = payload.get("clearing") or []
+     if not clearing:
+-        return {"n": 0, "path": None, "status": "no cell cleared both bars", "cells": []}
++        return {"n": 0, "path": None, "cells": [],
++                "status": ("no measured cell's |mean| exceeds its cost proxy this pass -- an "
++                           "economic reality check on the desk's own spreads, not a statistical "
++                           "bar, and the only screen left in front of the gauntlet here")}
+     if not _registered_family(FAMILY):
+         return {"n": 0, "path": None, "cells": [],
+                 "status": f"{FAMILY} is not in ORTHOGONAL_FAMILIES on this tree; donated nothing"}
+@@ -742,9 +764,10 @@ def donate_clearing(payload: dict[str, Any], max_donations: int) -> dict[str, An
+                           f"({row['cost_source']}). The donated cell is the UNCONDITIONAL "
+                           "expression: the family's side is constant and cannot read the "
+                           "first-bar sign the atlas oriented on"),
+-            "why": (f"clears the Bonferroni threshold {payload.get('threshold_t')} over "
+-                    f"{payload.get('n_cells')} cells tested and its |mean| exceeds the cost "
+-                    "proxy -- a hypothesis for the ten gates, not a claim"),
++            "why": (f"|mean| exceeds the cost proxy; |t|={abs(row['t'])} against a Bonferroni "
++                    f"reference of {payload.get('threshold_t')} over {payload.get('n_cells')} "
++                    f"cells, which is REPORTED and carries no authority (RESEARCH.md 6d: a screen "
++                    f"sorts, the ten gates decide) -- a hypothesis for those gates, not a claim"),
+             "n_events": row["n"], "t": row["t"], "horizon": row["horizon"],
+             "conditioner": f"{row['axis']}={row['bucket']}", "event_time": payload.get("at"),
+         })
+diff --git a/desks/mt5/research/research_supervisor.py b/desks/mt5/research/research_supervisor.py
+index 6c55bbd9eba..efdcffc92f7 100644
+--- a/desks/mt5/research/research_supervisor.py
++++ b/desks/mt5/research/research_supervisor.py
+@@ -55,8 +55,26 @@ TARGETS = [
+     dict(name="placebo", args=["-u", "-W", "ignore", "research/placebo_test.py",
+                                "XAUUSD", "AUDCAD", "AUDJPY"],
+          marker="reports/DONE_placebo", match="placebo_test.py"),
+-    dict(name="hunt17", args=["-u", "-W", "ignore", "research/run_hunt17.py"],
+-         marker="reports/DONE_hunt17", match="run_hunt17.py"),
++    # hunt17 RETIRED 2026-09-25, and it is the one target this restart loop could never satisfy.
++    #
++    # MEASURED: `research/run_hunt17.py` exits 1 after 1.0 second with
++    # `FileNotFoundError: ...\data\universe\BeyondMeat_H1.parquet`. It walks a hardcoded symbol
++    # list and BeyondMeat is a single-name equity CFD -- removed from the hypothesis universe by
++    # the two-lane mandate of 2026-09-06, which routes single names to the news lane and never
++    # hunts them for statistical hypotheses. So the symbol is correctly gone and the hunt cannot
++    # finish, ever.
++    #
++    # The loop above restarts anything that died before writing its DONE marker, FOREVER. Every
++    # sibling carries a marker minted in the last two hours; hunt17 has neither a marker nor a
++    # final `reports/hunt17.json`, and `hunt17_partial.json` has been frozen at 977 cells for
++    # ninety-one hours with 0 of 945 rows passing its gate. A restart loop pointed at a job that
++    # dies in one second is not resilience -- it is a process spawned every cycle to fail, and the
++    # `*_partial` it leaves behind is unfinished work wearing the costume of a result.
++    #
++    # Its families now run as gauntlet cells, which is the same disposition seven sibling hunts
++    # took on 2026-09-23 (run_hunt1/2/3/4/6/13/15). The FILE is not deleted and the partial is not
++    # deleted -- evidence never is -- only the clock is withdrawn.
++    # See docs/research/retirements.jsonl.
+     dict(name="fragility", args=["-u", "-W", "ignore", "research/fragility.py"],
+          marker="reports/DONE_fragility", match="fragility.py"),
+     dict(name="qquant_gates",
+diff --git a/desks/mt5/research/research_tree.py b/desks/mt5/research/research_tree.py
+index 941cd62f514..6f7d6d28da1 100644
+--- a/desks/mt5/research/research_tree.py
++++ b/desks/mt5/research/research_tree.py
+@@ -546,7 +546,10 @@ def build() -> dict[str, Any]:
+         "expanded_this_pass": expanded,
+         "pruned_this_pass": pruned_now,
+         "mcts": mcts_doc,
++        # PUBLISHED slice, for a report a human reads. `_full_frontier` beside it is what the
++        # donation walks, because a readability cap must never decide what reaches the judge.
+         "frontier": frontier[:30],
++        "_full_frontier": frontier,
+         "_tree_state": tree,
+         "allocation_rule": (
+             "best-first by EXPECTED INFORMATION GAIN PER CELL-EQUIVALENT. The gain is the exact "
+@@ -575,11 +578,34 @@ def build() -> dict[str, Any]:
+     }
+ 
+ 
+-def _donate(doc: dict[str, Any]) -> dict[str, Any]:
+-    """Frontier nodes that ARE cells, into the gauntlet's intake through the stamped contract."""
+-    rows = [r for r in doc.get("frontier") or []
+-            if r.get("spec") and r["kind"] in ("state_variant", "cross_market_analogue",
+-                                               "execution_variant")]
++#: Frontier kinds that carry a `spec` and are therefore expressible as a cell the gauntlet can
++#: judge. The kinds above them in `KINDS` are questions about a mechanism, not parameterisations
++#: of one, so they have nothing to donate -- that is a fact about the tree's shape, not a filter.
++DONATABLE_KINDS = ("state_variant", "cross_market_analogue", "execution_variant")
++
++
++def _donate(doc: dict[str, Any], frontier: list[dict[str, Any]] | None = None) -> dict[str, Any]:
++    """Frontier nodes that ARE cells, into the gauntlet's intake through the stamped contract.
++
++    IT READS THE WHOLE FRONTIER, NOT THE PUBLISHED SLICE -- and the difference cost this organ its
++    entire output. `doc["frontier"]` is `frontier[:30]`, a PUBLICATION cut sized so the report
++    stays readable, and this function used to read it. The frontier is sorted by information gain
++    per cell-equivalent, so which kinds occupy the top thirty is decided by the scoring, not by
++    what is donatable.
++
++    Measured on the trading box 2026-09-24: when the Tier-5 residual organs landed on 2026-09-23
++    they added 604 `portfolio_residual_variant` nodes, which carry `spec: null` and are not a
++    donatable kind. They scored well, filled the top thirty, and this function found nothing --
++    while 448 state_variants, 2,204 cross_market_analogues and 2,326 execution_variants sat OPEN
++    just below the cut. 138 donated artifacts, then silence, with the organ reporting `ok` every
++    hour and its own report reading "the tree is still at mechanism and experiment depth" beside a
++    `deepest_kind_reached` of `portfolio_residual_variant`, which says the opposite.
++
++    A DISPLAY TRUNCATION BECAME A PRODUCTION DECISION. The cap that remains (`[:20]` below) is a
++    BATCH BUDGET and says so; it bounds one pass's donation, never what the tree may propose.
++    """
++    rows = [r for r in (frontier if frontier is not None else doc.get("frontier") or [])
++            if r.get("spec") and r["kind"] in DONATABLE_KINDS]
+     if not rows:
+         return {"donated": 0, "why": ("no frontier node is yet expressible as a cell -- the tree "
+                                       "is still at mechanism and experiment depth")}
+@@ -648,7 +674,9 @@ def main(argv: list[str] | None = None) -> int:
+     tree = doc.pop("_tree_state")
+     TREE.parent.mkdir(parents=True, exist_ok=True)
+     TREE.write_text(json.dumps(tree, indent=1, default=str), encoding="utf-8")
+-    doc["donation"] = _donate(doc)
++    # Popped, never written: the whole frontier is 6,000+ nodes and belongs to the donation, not
++    # to a report. The published `frontier` slice stays exactly as it was.
++    doc["donation"] = _donate(doc, doc.pop("_full_frontier", None))
+     OUT.parent.mkdir(parents=True, exist_ok=True)
+     OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+     print(f"  donated {doc['donation'].get('donated', 0)} frontier cell(s)"
+diff --git a/desks/mt5/side_channels/alpha_periodic_table.py b/desks/mt5/side_channels/alpha_periodic_table.py
+index ab912ae624b..6efc8dbb602 100644
+--- a/desks/mt5/side_channels/alpha_periodic_table.py
++++ b/desks/mt5/side_channels/alpha_periodic_table.py
+@@ -390,23 +390,46 @@ def main() -> int:
+     return 0
+ 
+ 
++# A MODULE'S `__main__` IS ITS CONTRACT WITH EVERY CLOCK THAT RUNS IT, AND THIS ONE WAS A DEMO.
++#
++# `hourly_cycle` runs this file as a subprocess every hour (leg `alpha_periodic_table`). What it
++# ran, for the life of the leg, was an exploratory print block written while the class was being
++# built: it instantiated the table, printed research targets, discovered cells, priorities and a
++# dataframe shape, and returned 0. `main()` -- the function that calls `run()`, which is the ONLY
++# thing that writes `REPORT` -- was never reached and was dead code.
++#
++# Measured on the trading box 2026-09-24: `LEG_DONE outcome=ok` every hour, and
++# `desks/mt5/reports/ALPHA_PERIODIC_TABLE.json` forty-seven hours stale. The last write came from
++# `daily_cycle`, which invokes the research/ sibling properly and had not completed since. rc=0
++# with no write, in its purest form: the leg was not failing, not slow, not starved -- it was
++# running the wrong entry point, and nothing anywhere compares what a leg runs to what it writes.
++#
++# The demo is not deleted, it is moved behind `--demo`, because it is genuinely useful when
++# working on the table by hand and deleting it would only tempt the next author to re-add it in
++# front of `main()` again.
+ if __name__ == "__main__":
+-    table = AlphaPeriodicTable()
++    import sys as _sys
++
++    if "--demo" in _sys.argv:
++        table = AlphaPeriodicTable()
++
++        print("Research Targets (empty cells):")
++        for mech, axis in table.get_research_targets()[:20]:
++            print(f"  {mech} × {axis.value}")
+ 
+-    print("Research Targets (empty cells):")
+-    for mech, axis in table.get_research_targets()[:20]:
+-        print(f"  {mech} × {axis.value}")
++        print("\nDiscovered Cells:")
++        for mech, axis in table.get_discovered():
++            cell = table.cells[(mech, axis)]
++            print(f"  {mech} × {axis.value}: {cell.metadata.get('description', '')[:60]}")
+ 
+-    print("\nDiscovered Cells:")
+-    for mech, axis in table.get_discovered():
+-        cell = table.cells[(mech, axis)]
+-        print(f"  {mech} × {axis.value}: {cell.metadata.get('description', '')[:60]}")
++        print("\nResearch Priorities:")
++        for mech, axis, priority in table.get_research_priorities(15):
++            print(f"  {mech} × {axis.value}: {priority}")
+ 
+-    print("\nResearch Priorities:")
+-    for mech, axis, priority in table.get_research_priorities(15):
+-        print(f"  {mech} × {axis.value}: {priority}")
++        df = table.to_dataframe()
++        print(f"\nMatrix shape: {df.shape}")
++        print(f"Empty: {(df['status'] == 'empty').sum()}")
++        print(f"Discovered: {(df['status'] == 'discovered').sum()}")
++        raise SystemExit(0)
+ 
+-    df = table.to_dataframe()
+-    print(f"\nMatrix shape: {df.shape}")
+-    print(f"Empty: {(df['status'] == 'empty').sum()}")
+-    print(f"Discovered: {(df['status'] == 'discovered').sum()}")
+\ No newline at end of file
++    raise SystemExit(main())
+diff --git a/desks/mt5/tests/test_axis_ingest_guard.py b/desks/mt5/tests/test_axis_ingest_guard.py
+new file mode 100644
+index 00000000000..d13ecc692d1
+--- /dev/null
++++ b/desks/mt5/tests/test_axis_ingest_guard.py
+@@ -0,0 +1,153 @@
++"""AN EMPTY FETCH MUST NEVER OVERWRITE A POPULATED AXIS.
++
++Measured 2026-09-24: `desks/mt5/data/axes/fred.json` on the trading box was 893 bytes and thirty
++minutes old, refreshed faithfully every hour, beside `bis.json` at 85.9 MB, `cot.json` at 1.1 MB
++and `ecb.json` at 786 KB -- all four written by the same driver on the same clock. The lane was
++not idle. It was diligently rewriting a populated axis into an empty one, every hour, and nothing
++anywhere read as broken because the file kept getting newer.
++
++The mechanism, and it is worth naming exactly because the shape recurs: `ingest_fred` catches
++every per-series exception, so it NEVER raises. The driver's `except` -- whose comment already
++says "the previous per-axis file on disk still stands" -- therefore never fires. The success path
++computes `state = "OK" if n else "EMPTY"`, a verdict nothing consumes, and writes the empty
++document anyway. Absence resolved into a confident verdict, with a timestamp on it.
++
++Pinned here:
++
++  1. An empty pass over a populated file writes NOTHING and says so (`EMPTY_REFUSED_OVERWRITE`),
++     with the count it preserved -- a non-write is a positive, dated fact, never a silence.
++  2. An empty pass over an axis that has NEVER landed still writes its failure record, because
++     that record is the only evidence the next session gets. It is how this defect was found.
++  3. A populated pass writes normally, and the guard can never become a reason not to refresh.
++  4. The write is ATOMIC, so a crash mid-write cannot truncate an axis by the slower route.
++  5. The FRED fetch carries its own allowlisted client token, scoped to FRED so the three axes
++     that were working on the shared one keep working.
++"""
++from __future__ import annotations
++
++import json
++import sys
++from pathlib import Path
++
++import pytest
++
++_DESK = Path(__file__).resolve().parents[1]
++_ROOT = _DESK.parent.parent
++for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++from research import axis_ingest_all as A  # noqa: E402
++
++POPULATED = {"axis": "macro_state", "n_series": 7, "series": {"DGS10": {"n": 900}}}
++EMPTY = {"axis": "macro_state", "n_series": 0, "n_failed": 7,
++         "failed": {"DGS10": "TimeoutError: The read operation timed out"}}
++
++
++def test_an_empty_pass_never_replaces_a_populated_axis(tmp_path: Path) -> None:
++    """THE RULE. The fetch came back empty; the world did not."""
++    target = tmp_path / "fred.json"
++    target.write_text(json.dumps(POPULATED), encoding="utf-8")
++
++    out = A._write_axis(target, EMPTY, 0)
++
++    assert out["written"] is False
++    assert out["write_state"] == "EMPTY_REFUSED_OVERWRITE"
++    assert out["preserved_n"] == 7
++    assert json.loads(target.read_text(encoding="utf-8"))["n_series"] == 7, (
++        "the populated axis was overwritten -- this is the whole defect")
++
++
++def test_the_refusal_is_a_recorded_fact_not_a_silence(tmp_path: Path) -> None:
++    """A guard that quietly does nothing is the same class of invisible as the bug it replaced."""
++    target = tmp_path / "fred.json"
++    target.write_text(json.dumps(POPULATED), encoding="utf-8")
++
++    out = A._write_axis(target, EMPTY, 0)
++
++    assert "never overwrites a populated axis" in out["why"]
++    assert "7" in out["why"], "the preserved count belongs in the reason"
++
++
++def test_an_axis_that_never_landed_still_records_its_failure(tmp_path: Path) -> None:
++    """The 893-byte fred.json IS the evidence that found this bug. Refusing to write a first
++    failure record would trade one blindness for another."""
++    target = tmp_path / "fred.json"
++
++    out = A._write_axis(target, EMPTY, 0)
++
++    assert out["written"] is True
++    assert out["write_state"] == "WRITTEN_FIRST_RECORD"
++    assert json.loads(target.read_text(encoding="utf-8"))["n_failed"] == 7
++
++
++def test_a_populated_pass_writes_normally(tmp_path: Path) -> None:
++    """The guard may never become a reason not to refresh a working axis."""
++    target = tmp_path / "fred.json"
++    target.write_text(json.dumps({"n_series": 3}), encoding="utf-8")
++
++    out = A._write_axis(target, POPULATED, 7)
++
++    assert out["written"] is True and out["write_state"] == "WRITTEN"
++    assert json.loads(target.read_text(encoding="utf-8"))["n_series"] == 7
++
++
++def test_a_corrupt_previous_file_does_not_freeze_the_lane(tmp_path: Path) -> None:
++    """An unreadable document is not evidence of data worth protecting. Treating it as such would
++    pin a broken axis in place forever, which is a worse failure than the one being fixed."""
++    target = tmp_path / "fred.json"
++    target.write_text("{not json at all", encoding="utf-8")
++
++    assert A._on_disk(target) == 0
++    assert A._write_axis(target, POPULATED, 7)["written"] is True
++
++
++def test_the_write_leaves_no_temp_file_behind(tmp_path: Path) -> None:
++    """Atomic via tmp+replace: the temp must not survive a successful write, or the next pass
++    inherits a directory that grows without bound."""
++    target = tmp_path / "cot.json"
++
++    A._write_axis(target, POPULATED, 7)
++
++    assert target.exists()
++    assert list(tmp_path.glob("*.tmp")) == []
++
++
++def test_run_all_reports_the_refusals_it_made(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
++                                              ) -> None:
++    """The driver's report is where an operator meets this. A refusal that is not in the report
++    is a refusal nobody learns about."""
++    monkeypatch.setattr(A, "OUT_DIR", tmp_path)
++    (tmp_path / "fred.json").write_text(json.dumps(POPULATED), encoding="utf-8")
++
++    import types
++    stub = types.ModuleType("axis_ingest")
++    stub.INGESTERS = {"fred": lambda: EMPTY, "cot": lambda: {"n_rows": 4060}}  # type: ignore[attr-defined]
++    monkeypatch.setitem(sys.modules, "axis_ingest", stub)
++    doc = A.run_all(apply=True)
++
++    assert doc["n_write_refused"] == 1 and doc["write_refused"] == ["fred"]
++    assert doc["axes"]["fred"]["write_state"] == "EMPTY_REFUSED_OVERWRITE"
++    assert doc["axes"]["cot"]["written"] is True
++    assert json.loads((tmp_path / "fred.json").read_text(encoding="utf-8"))["n_series"] == 7
++
++
++def test_the_fred_token_is_scoped_and_prefixed() -> None:
++    """MEASURED on the box: the publisher's edge allowlists the FIRST token of the User-Agent and
++    tarpits anything else -- no HTTP status, so it arrives as a timeout and reads like a network
++    fault. The desk's own identity stays as the second token so the publisher can still see who
++    is asking, and the shared `UA` is untouched because BIS, COT and ECB work on it."""
++    from research import axis_ingest as ai
++
++    assert ai.FRED_UA.split()[0] == "curl/8.4.0"
++    assert "quant-desk-axis-ingest" in ai.FRED_UA, (
++        "the allowlisted token is PREFIXED, never substituted -- the desk still identifies itself")
++    assert ai.UA == "quant-desk-axis-ingest/1.0 (research)", (
++        "the shared token must not change: three axes were ingesting 85.9 MB, 1.1 MB and 786 KB "
++        "on it, and a global change would risk them to repair a fourth")
++    src = (_DESK / "research" / "axis_ingest.py").read_text(encoding="utf-8")
++    fred_call = src.split("def ingest_fred", 1)[1]
++    assert 'headers={"User-Agent": FRED_UA}' in fred_call, (
++        "ingest_fred must send the scoped token, not the shared one")
++    assert 'headers={"User-Agent": UA}' in src.split("def ingest_fred", 1)[0], (
++        "the other ingesters must still send the shared token")
+diff --git a/desks/mt5/tests/test_dark_seat_repairs.py b/desks/mt5/tests/test_dark_seat_repairs.py
+new file mode 100644
+index 00000000000..8ea31762d52
+--- /dev/null
++++ b/desks/mt5/tests/test_dark_seat_repairs.py
+@@ -0,0 +1,140 @@
++"""THREE SEATS THAT PRODUCED HUNDREDS OF ARTIFACTS AND THEN STOPPED, EACH FOR ITS OWN REASON.
++
++Measured on the trading box 2026-09-24. All three logged `LEG_DONE outcome=ok` every hour while
++producing nothing, which is why none of them read as broken:
++
++  event_response_atlas   258 artifacts, then 15 consecutive clean runs donating nothing. It
++                         applied its OWN Bonferroni threshold as a donation filter, and that
++                         threshold is a function of how many cells it tested -- so it RISES with
++                         generation. At 636 cells it was t=3.9486 and the strongest cell in the
++                         whole atlas was t=-3.617. The door did not narrow, it shut.
++                         Measured: 279 of 300 published cells CLEAR COST, 0 clear Bonferroni.
++
++  research_tree          138 artifacts, then silence. `_donate` read `doc["frontier"]`, which is
++                         `frontier[:30]` -- a PUBLICATION cut. Measured: the published 30 held
++                         0 nodes with a spec, while the full frontier held 3,292 donatable ones.
++
++  alpha_periodic_table   its report went 47h stale while the leg ran hourly and exited 0, because
++                         the module's `__main__` was a print-only demo that never called `main()`.
++
++None of these is a threshold change, and none of them makes the desk trade differently: the ten
++gates, the fixed 7x DSR multiplier and every bar in gate_spec.yaml are untouched. What changes is
++how much reaches them.
++"""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++_DESK = Path(__file__).resolve().parents[1]
++_ROOT = _DESK.parent.parent
++for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
++    if _p not in sys.path:
++        sys.path.insert(0, _p)
++
++
++# ------------------------------------------------------------------ event_response_atlas
++def test_the_atlas_no_longer_carries_a_bar_of_its_own() -> None:
++    """RESEARCH.md 6d: no screen may apply a threshold of its own IN EITHER DIRECTION. A screen
++    sorts and reports; the ten gates decide. This is the third such bar the desk has had to
++    remove, after a sqrt(2 ln N) screen and an n_trials override inside a gate (both 2026-08-26).
++    """
++    src = (_DESK / "research" / "event_response_atlas.py").read_text(encoding="utf-8")
++    line = next(ln for ln in src.splitlines() if ln.strip().startswith("clearing = ["))
++    assert "clears_bonferroni" not in line, (
++        "the donation filter must not consult clears_bonferroni -- that bar RISES with the number "
++        "of cells tested, so it closes itself as the atlas broadens")
++    assert 'r["verdict"] == "CLEARS_COST"' in line
++
++
++def test_the_bonferroni_reading_is_still_measured_and_published() -> None:
++    """Removing its AUTHORITY is not the same as removing the measurement. A reader still wants
++    to know how a cell stands against the multiple-testing reference."""
++    from research import event_response_atlas as era
++
++    assert callable(era.bonferroni_t)
++    assert era.bonferroni_t(636) > 3.9
++    src = (_DESK / "research" / "event_response_atlas.py").read_text(encoding="utf-8")
++    assert 'row["clears_bonferroni"] = ' in src, "every row still carries the reading"
++    assert '"threshold_t"' in src, "the pass still publishes the threshold it computed"
++
++
++def test_the_only_remaining_screen_is_economic() -> None:
++    """Cost is the desk's own spread, not a statistical bar: a cell whose |mean| is inside the
++    spread cannot be traded at all, which is a different claim from 'not significant enough'."""
++    src = (_DESK / "research" / "event_response_atlas.py").read_text(encoding="utf-8")
++    body = src.split("def donate_clearing", 1)[1].split("def ", 1)[0]
++    for bar in ("threshold", "bonferroni", "alpha", "p_value", "pvalue"):
++        assert f"if {bar}" not in body, f"a {bar} bar reappeared inside the donation path"
++
++
++# ------------------------------------------------------------------------- research_tree
++def test_the_donation_walks_the_whole_frontier_not_the_published_slice() -> None:
++    """A readability cap must never decide what reaches the judge."""
++    from research import research_tree as rt
++
++    published = [{"id": "root|mechanism:x|a", "kind": "portfolio_residual_variant", "label": "r",
++                  "question": "q", "spec": None, "posterior_value": 0.1,
++                  "info_gain_nats": 0.1, "cost_cells": 1.0, "gain_per_cell": 0.9}] * 30
++    below_the_cut = [{"id": "root|mechanism:overnight_gap_decay|b", "kind": "execution_variant",
++                      "label": "exec:trigger0.5", "question": "q2",
++                      "spec": {"symbol": "EURUSD", "trigger": 0.5}, "posterior_value": 0.01,
++                      "info_gain_nats": 0.01, "cost_cells": 1.0, "gain_per_cell": 0.01}]
++    doc = {"frontier": published, "evidence": {"n_trials": 100}}
++
++    # The old behaviour, reproduced exactly: reading only the published slice finds nothing.
++    assert rt._donate(doc)["donated"] == 0
++
++    # ...and the full frontier is what it must actually read.
++    sent: dict[str, object] = {}
++
++    def _fake_donate(source: str, cands: list[dict], tests_run: int) -> Path:
++        sent["source"], sent["cands"] = source, cands
++        return Path("donated.json")
++
++    import research.proposer_common as pc
++    real, pc.donate = pc.donate, _fake_donate
++    try:
++        out = rt._donate(doc, published + below_the_cut)
++    finally:
++        pc.donate = real
++
++    assert out["donated"] == 1, out
++    assert sent["source"] == "research_tree"
++    assert sent["cands"][0]["symbol"] == "EURUSD"          # type: ignore[index]
++    assert sent["cands"][0]["family"] == "joint_genome"    # type: ignore[index]
++
++
++def test_the_full_frontier_is_never_written_to_the_report() -> None:
++    """6,000+ nodes belong to the donation, not to a file a human opens. The published slice must
++    stay exactly the size it was, or this fix trades one defect for a 40 MB report."""
++    src = (_DESK / "research" / "research_tree.py").read_text(encoding="utf-8")
++    assert '"frontier": frontier[:30],' in src, "the PUBLISHED slice is unchanged"
++    assert 'doc.pop("_full_frontier", None)' in src, "the full frontier is popped before writing"
++
++
++def test_the_remaining_cap_is_a_batch_budget_and_is_labelled_as_one() -> None:
++    """A cap that is a compute budget must say so, or the next reader takes it for a belief about
++    where edges stop (RESEARCH.md 6c-bis)."""
++    src = (_DESK / "research" / "research_tree.py").read_text(encoding="utf-8")
++    doc = src.split("def _donate", 1)[1].split('"""', 2)[1]
++    assert "BATCH BUDGET" in doc
++
++
++# ------------------------------------------------------------------- alpha_periodic_table
++def test_the_module_entry_point_produces_rather_than_prints() -> None:
++    """`hourly_cycle` runs this file as a subprocess every hour. What it ran was an exploratory
++    print block; `main()` -- the only path that writes the report -- was dead code. Exit 0, no
++    write, forever."""
++    src = (_DESK / "side_channels" / "alpha_periodic_table.py").read_text(encoding="utf-8")
++    tail = src.split('if __name__ == "__main__":', 1)[1]
++    assert "raise SystemExit(main())" in tail, (
++        "the module's __main__ must reach main(), which is the only caller of run()")
++    assert tail.index('if "--demo"') < tail.index("raise SystemExit(main())"), (
++        "the demo must be gated behind an explicit flag, never the default path")
++
++
++def test_the_demo_is_kept_rather_than_deleted() -> None:
++    """Deleting it only tempts the next author to re-add it in front of main() again."""
++    src = (_DESK / "side_channels" / "alpha_periodic_table.py").read_text(encoding="utf-8")
++    assert "--demo" in src and "get_research_targets()" in src
+diff --git a/docs/research/organ_cadence_debt.json b/docs/research/organ_cadence_debt.json
+new file mode 100644
+index 00000000000..772fd44468b
+--- /dev/null
++++ b/docs/research/organ_cadence_debt.json
+@@ -0,0 +1,140 @@
++{
++ "law": "ORGAN CADENCE DEBT. Every organ here is KNOWN to be dark and carries its reason. The list may only SHRINK: an organ leaves by being REPAIRED, never by being deleted, and a NEW dark organ fails the fence immediately rather than joining a backlog. See scripts/check_organ_cadence.py.",
++ "why_a_debt_and_not_a_red_gate": "A fence that goes red on a backlog it inherited is a fence somebody switches off (L1.43), and then the next real break is silent again. Declaring today's eighteen by name makes the gate usable TONIGHT and makes tomorrow's nineteenth fail on the day it appears -- the only day its diagnosis is cheap.",
++ "seeded_from": "scripts/check_organ_cadence.py run against the TRADING box (vmi3571445) 2026-09-24T22:0xZ, window 24h. The build box is a mirror and measures nothing, so the debt is seeded from the host that owns the clocks.",
++ "declared_max": 18,
++ "windows_lost_max": 13,
++ "windows_lost_note": "8 of 21 sleeve-day windows in the last 7 days closed with a placement; 13 closed with nothing but refusals, 742 of them 'release_identity_refused'. That is the seal being green most of the day and red when a window opens. The ratchet falls only.",
++ "updated_utc": "2026-09-25T01:30:00+00:00",
++ "handed_over": {
++  "why": "Measured causes for organs whose one-line fix lives in a file this lane was told to stay out of (hourly_cycle.py is being edited by other lanes tonight). Each is a single edit with the file, the line and the replacement named, so the owner applies it without re-deriving anything. These are NOT in `declared` and do NOT count against the ratchet -- they are diagnosed work waiting on a writer, not unexplained darkness.",
++  "axis_registry": {
++   "measured": "MEASURED standalone on the trading box: 598.8 s wall, rc 0, and it WROTE a new seat file (discoveries_20260924_2140.json, seat 45 -> 46). It is not broken; it is 17% inside a 720 s cap on an IDLE box, and contention from ~30 concurrently running MT5-* tasks eats that margin every hour. It has no --budget-s flag (argparse offers only --dry-run and --max-proposals), so it cannot stop itself and write a partial.",
++   "fix": "desks/mt5/research/hourly_cycle.py LEG_BUDGET_SEC: add \"axis_registry\": 900. The default is SEARCH_BUDGET_SEC = 720 at hourly_cycle.py:1512, applied at :1847. A cap below an organ's own need is the truncated-job shape that cost this desk 84 forward clocks.",
++   "also": "it logged external_survivors.json=TOO_LARGE(423516153) and skipped a 423 MB input; the 598.8 s does not include reading it."
++  },
++  "alpha_periodic_table_leg_target": {
++   "measured": "FIXED in this lane at the module (its __main__ was a print-only demo that never called main()). The hourly leg also names the wrong sibling.",
++   "fix": "desks/mt5/research/hourly_cycle.py:2713 -- _producer(\"alpha_periodic_table\", \"side_channels/alpha_periodic_table.py\") should name \"research/alpha_periodic_table.py\", the sibling that already ends in `raise SystemExit(main())` and is what daily_cycle.py:430 invokes. Optional now that the side_channels __main__ reaches main(), but it is the entry point the rest of the desk uses."
++  },
++  "fbs_tape": {
++   "measured": "A REAL PRODUCER WITH NO CLOCK -- 82 artifacts, last 209h ago, and it is NOT retired. mine_fbs_tape() at desks/mt5/side_channels/regional_survivor_hunters.py:324 writes the seat at :409-416. Its import chain is regional_survivor_hunters <- seed_miners.py:588 <- run_all_miners <- desks/mt5/hourly_controller_discovery_phase.py:18,34, which has ZERO callers in the repository. No scheduled task on the box mentions regional_survivor, seed_miners or run_all_miners (checked across all 101 MT5-* tasks). scout_roster.py:136-138 credits it to broker_physics_miner, also unclocked, and declares it with no `runs=`.",
++   "fix": "It needs a clock, NOT a retirement -- retiring a producer that works would reduce production, which this desk does not do. The sanctioned door is data, not code: hourly_cycle.run_auto_legs says in its own docstring 'the clock is data; nobody edits this file to wire an organ', and reads desks/mt5/data/auto_legs.json, written by research/wiring_ceo.py. The one-step fix is to establish why wiring_ceo does not classify broker_physics_miner / regional_survivor_hunters as 'a safe organ nothing else schedules' and let it write the row. Do not hand-edit auto_legs.json: it is box-written state.",
++   "same_cause_covers": "the whole seed_miners chain -- darwinex, collective2, myfxbook_outlook, propfirm_boards, quant_se, forexpeacearmy, forextsd_cdx, ff_calendar_vintage, tradingview_scripts, regional_survivors, trading_latam, readitrades_africa, minfx_jp are all declared behind the same dead import chain."
++  },
++  "representation_forge": {
++   "measured": "proposals 2905, selected 60, minted 0, refused 60, donations 0, and the budget was NEVER reached (elapsed 38.9 s of 900 s). All 40 listed refusals read 'produced fewer than 24 points from its inputs'. CAUSE: propose() filters the INPUT series on MIN_POINTS=24 (representation_forge.py:248, :270-271, :287) and mint() applies the SAME constant to the OUTPUT after the transform (:341). Length-destroying transforms -- vintage_revision, lead_lag, rolling_beta, event_window_aggregate, diff -- shrink a barely-24-point input below 24. Selection ranks on novelty x expected_value (:305-313) and takes the top 60, and the RAREST transforms are exactly the most length-destroying, so the selector systematically picks the un-mintable tail. One constant, two different quantities.",
++   "fix": "Either simulate output length at proposal time, or BACKFILL after refusal so the 60-row budget is actually minted from the next-best proposals. The second is the anti-timid form: it fills the budget rather than shrinking it.",
++   "also": "registry 'PARTIAL: OperationalError' is `database is locked` -- data/alpha_registry.sqlite is 2.07 GB with a 132 MB -wal; connect() uses timeout=30 (libs/moat/registry.py:594). With minted == [] the only statement in the try is reg.kpi() at :576."
++  },
++  "sandbox_systems": {
++   "measured": "THE HEADLINE 'they produce nothing' IS REFUTED and the real break is one step further along. SANDBOX_RUNNER.json: candidates 534, discoveries 388, unique_cells 1064 this pass. In data/alpha_registry.sqlite (the REPO-root one -- desks/mt5/data/alpha_registry.sqlite is a 0-byte decoy that makes the route look dead), generator LIKE '%sandbox%' returns 12,525 research_candidates: 11,908 claimed, 1,015 with a donated_cell. BUT judged_at is non-null for 0 of 12,525, terminal_gate is NULL for all, survived=0 for all. DB-wide only 1,278 rows carry judged_at and ALL 1,278 are non-sandbox. They are claimed by region workers, not by the judge: desks/mt5/scripts/external_gauntlet.py contains no sandbox reference and no registry claim call.",
++   "fix": "The break is between the registry queue and the gauntlet's intake, NOT between the runner and the registry. external_gauntlet.py is SEALED and must not be edited, so the bridge belongs on the other side: donate registry-queued sandbox candidates into data/intelligence/<seat>/ in the shape miner_candidate_compiler accepts (EXACT_RECIPE at :898-904 needs family + params + resolvable symbols + _registered_family; registered-family authority is :522-528, a callable mt5desk.families.family_<name> OR membership in ORTHOGONAL_FAMILIES). family='formula' accepts a JSON expression tree as the `expr` parameter (desks/mt5/mt5desk/family_formula.py:28-31, parsed at libs/research/alpha_grammar.py:385), which is the route for the novel mechanism names the sandboxes emit.",
++   "the_104_zeros_by_shared_cause": {
++    "rotation_never_gave_it_the_hour": "58 -- status RUNNABLE, ran=false; 15 of 85 runnable actually ran inside the 900 s budget (skipped_budget = 70). NO CLOCK, by starvation.",
++    "import_missing_no_sandbox_venv": "22 -- each already carries an install_tasks row. INPUT/INSTALL MISSING.",
++    "permanently_unavailable_on_this_host": "18 -- wheel/source/build-dep failures, settled with an error and a named cover. INSTALL MISSING, terminally, and lawfully settled.",
++    "rebuilt_route_with_no_desk_cell": "3 -- never expected to run upstream.",
++    "ran_but_donated_non_candidate_yield_only": "2 -- quantconnect_cloud, scikit_mine: representations and datasets, no candidate exit. RUNS AND WRITES NOWHERE the judge looks.",
++    "ran_empty_packet": "1 -- ruptures. CLOCK FIRES AND FAILS.",
++    "note": "scripts/check_sandbox_liveness.py exits 0 on this state, so the zeros are lawful-by-construction rather than breaches. The dominant cause (58, 56%) is the rotation budget, not a missing install -- so the highest-yield move is more rotation hours, never fewer systems."
++   }
++  },
++  "partial_builds_resolved": {
++   "hunt23_partial": "NOT unfinished work. 8/8 cells done, DONE_hunt23 marker 1.7h old, reports/hunt23.json 1.7h old. The *_partial is a stale CHECKPOINT of a run that completes normally every cycle -- as are hunt16/19/20/21/22_partial, all ~72h, all beside fresh finals and fresh markers. Nothing to finish; the checkpoint simply is not rewritten on a clean finish.",
++   "hunt17_partial": "GENUINELY UNFINISHED, now BURIED with its reason. MEASURED 2026-09-25: run_hunt17.py exits 1 after 1.0 s with FileNotFoundError on data/universe/BeyondMeat_H1.parquet. It walks a hardcoded symbol list and BeyondMeat is a single-name equity CFD, removed from the hypothesis universe by the two-lane mandate of 2026-09-06. The symbol is correctly gone and the hunt can never finish. research_supervisor restarts anything that died before writing its DONE marker FOREVER -- so it has been spawning a process to die in one second, every cycle, for 91 hours, while hunt17_partial.json sat frozen at 977 cells with 0 of 945 rows passing its gate. Clock withdrawn (research_supervisor.py), retirement recorded with its inheritor (docs/research/retirements.jsonl). Neither the runner nor the partial is deleted."
++  }
++ },
++ "declared": {
++  "alpha_evolution": {
++   "verdict": "REPORTS_BUT_PRODUCES_NOTHING",
++   "why": "10 clean runs, own report 1.8h old, seat 9.6h. check_producer_yield measured the cause on 2026-09-15 and it has not changed: it evolves against a book pf_allocation reports as ONE funded sleeve, so it is STARVED of parents rather than broken. Fix the input, never the organ.",
++   "owner": "unassigned"
++  },
++  "axis_registry": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "LEG_FAILED outcome=TIMEOUT on every hourly run for 31h+. It is absent from LEG_BUDGET_SEC in hourly_cycle.py, so it gets the default search budget and is killed at the same prefix every hour -- the truncated-job shape that cost this desk 84 forward clocks.",
++   "owner": "liveness lane 2026-09-24 -- budget raise queued"
++  },
++  "compile_candidates": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "10 runs, 10 failures in 24h. This is the leg that turns donated intelligence rows into cells, so its failure is upstream of every seat's value: a seat that donates perfectly still reaches no judge while this is red.",
++   "owner": "unassigned -- HIGHEST VALUE row in this file"
++  },
++  "daily": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "28 runs, 28 failures in 24h. The daily chain (shadow -> promoter -> markout -> decay -> export) is the back half of the same-day pipeline law.",
++   "owner": "unassigned"
++  },
++  "deep_forest": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "16 runs, 16 failures in 24h; the seat has NEVER donated. The deep-forest mandate is a principal standing order (CLAUDE.md 2026-09-04), so this row is a breach of it and not merely a quiet miner.",
++   "owner": "unassigned"
++  },
++  "dislocation_lab": {
++   "verdict": "REPORTS_BUT_PRODUCES_NOTHING",
++   "why": "14 clean runs, own report 1.9h old, seat 14.6h. Donation door, not the clock.",
++   "owner": "unassigned"
++  },
++  "event_response_atlas": {
++   "verdict": "SILENT_NOOP",
++   "why": "15 clean runs since 2026-09-23T22:17Z, nothing written on any channel; 258 artifacts then silence. MEASURED CAUSE: it applies its OWN Bonferroni threshold (t=3.9486 over 636 cells) as a donation filter and its best cell is t=-3.617, so the bar RISES with the number of cells it tests and has now closed. That is a producer-private bar in front of the ten gates, which RESEARCH.md 6d forbids in either direction.",
++   "owner": "liveness lane 2026-09-24 -- bar removal queued"
++  },
++  "external_gauntlet": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "11 runs, 11 failures in 24h. THIS IS THE JUDGE. Every certificate the desk can earn passes through it, and nothing was watching whether it ran successfully -- check_leg_rotation counted all 11 failures as attendance. The file itself is SEALED and must not be edited; the failure is in how it is invoked or fed.",
++   "owner": "unassigned -- HIGHEST VALUE row in this file"
++  },
++  "frontier_unknowns": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "4 runs, 4 failures in 24h.",
++   "owner": "unassigned"
++  },
++  "mining_objective": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "11 runs, 11 failures in 24h; MINING_OBJECTIVE.json 79h stale. The organ that says what the desk is mining FOR has been failing for three days.",
++   "owner": "unassigned"
++  },
++  "model_skill": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "4 runs, 4 failures in 24h.",
++   "owner": "unassigned"
++  },
++  "qd_frontier": {
++   "verdict": "REPORTS_BUT_PRODUCES_NOTHING",
++   "why": "3 clean runs and 1 failure, own report 1.8h old, seat 6.7h -- the mildest row here and the one most likely to clear itself. Kept so it is watched rather than assumed.",
++   "owner": "unassigned"
++  },
++  "representation_forge": {
++   "verdict": "REPORTS_BUT_PRODUCES_NOTHING",
++   "why": "30 clean runs, own report 1.1h old, seat 42.7h. MEASURED: proposals 2905, selected 60, minted 0, refused 60 -- every selected representation is refused, and the registry write reports 'PARTIAL: OperationalError'. The selector picks rows the minting rule cannot accept.",
++   "owner": "unassigned"
++  },
++  "research_os_archive": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "11 runs, 11 failures in 24h; artifact 35h stale.",
++   "owner": "unassigned"
++  },
++  "research_tree": {
++   "verdict": "REPORTS_BUT_PRODUCES_NOTHING",
++   "why": "17 clean runs, own report 0.8h old, seat 36.8h; 138 artifacts then silence. MEASURED CAUSE: _donate reads only doc['frontier'], which is frontier[:30] -- a PUBLICATION cut. Since the Tier-5 residual organs landed on 2026-09-23 the new portfolio_residual_variant nodes (spec=null, kind not donatable) fill the top 30, while 448 state_variants, 2204 cross_market_analogues and 2326 execution_variants sit OPEN below the cut. A display truncation became a production decision.",
++   "owner": "liveness lane 2026-09-24 -- full-frontier scan queued"
++  },
++  "search": {
++   "verdict": "SILENT_NOOP",
++   "why": "10 clean runs since 2026-09-23T21:53Z and its declared artifact is 43h old. Exits zero, writes nothing.",
++   "owner": "unassigned"
++  },
++  "source_registry": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "5 runs, 5 failures in 24h.",
++   "owner": "unassigned"
++  },
++  "sweep": {
++   "verdict": "ALWAYS_FAILING",
++   "why": "10 runs, 10 failures in 24h.",
++   "owner": "unassigned"
++  }
++ }
++}
+diff --git a/libs/ops/git_writer_lock.py b/libs/ops/git_writer_lock.py
+index f9c26f038fa..90f7ee4aeb0 100644
+--- a/libs/ops/git_writer_lock.py
++++ b/libs/ops/git_writer_lock.py
+@@ -485,25 +485,56 @@ def run_git(repo: Path | str, args: Sequence[str], *, timeout: float = 300.0,
+ # WHAT THIS WILL AND WILL NOT KILL. A process is reaped only when all four hold:
+ #   1. it is a `git` or `ssh` executable -- never `sshd` (the SSH SERVER is long-lived by design,
+ #      and matching it once reported a healthy 3.9-day-old service as a stuck writer);
+-#   2. it is older than `HUNG_MIN_AGE_S`, which is past every legitimate writer's OWN timeout
+-#      (the adoption waits 540 s, the shadow sync 600 s), so a slow writer is never a candidate;
+-#   3. it moved NO CPU and NO I/O across a sampling window -- this is the proof, and it is the
+-#      one thing an age threshold alone cannot give. A `git gc` on this repository is slow and
+-#      burns CPU the whole time; it will never be reaped by this;
++#   2. it is older than `HUNG_MIN_AGE_S` -- a FLOOR that keeps this from racing a writer which is
++#      legitimately BLOCKED WAITING for the mutex (such a writer burns no CPU and moves no bytes
++#      either, so the delta proof cannot tell it from a wedge). It is not the verdict, and when it
++#      was being used as one it hid a live wedge through five consecutive passes;
++#   3. it moved NO CPU and NO I/O across a sampling window -- THIS IS THE VERDICT, and it is the
++#      one thing an age threshold cannot give. A `git gc` on this repository is slow and burns CPU
++#      the whole time; a chunked push moves bytes the whole time; neither is ever reaped by this;
+ #   4. it is not this process, and not one of this process's own ancestors.
+ #
+ # Everything examined is reported, including what was SPARED and why, because "nothing was hung"
+ # and "nothing could be measured" must never render identically (L1.28a). Without psutil the
+ # verdict is UNMEASURED and nothing is killed.
+ 
+-#: Past every legitimate writer's own timeout: Adopt-And-Seal waits 540 s for the mutex, the
+-#: shadow sync's limit is 600 s. Anything still alive at 30 minutes has already outlived every
+-#: bound the desk's own writers respect.
+-HUNG_MIN_AGE_S = 1800.0
+-
+-#: How long to watch a candidate before calling it stopped. Long enough that a writer between two
+-#: syscalls still registers, short enough to sit inside the adoption's window.
+-HUNG_SAMPLE_S = 15.0
++#: THE AGE IS A FLOOR, NOT THE VERDICT -- and it was doing the verdict's job (measured 2026-09-24).
++#:
++#: At 1800 s, with the reaper on a 15-minute clock, a wedge is invisible for up to FORTY-FIVE
++#: MINUTES. That is not a theoretical bound: while a push sat wedged holding the writer mutex this
++#: evening, `MT5-ReapGitWriters` reported CLEAR **five times in a row**, because "no git process is
++#: older than 1800 s" was literally true on each pass. `MT5-SealIfClean` could not take the lock,
++#: `allows_new_risk` was False for over an hour, and the first `gold_asia` window after a
++#: seventeen-day placement halt was approaching. A wedge starting within ~45 minutes of a fixed
++#: placement window blocks that window ENTIRELY while this fence reports healthy -- and the windows
++#: are at fixed times, so that is a standing hole, not an unlucky night.
++#:
++#: THE PROOF IS THE MOVEMENT, so let the movement carry the verdict. Zero CPU delta AND zero I/O
++#: delta across the sampling window is strong evidence a process is stopped at ANY age; 1800 s was
++#: a weak proxy standing in front of a strong measurement.
++#:
++#: WHY 600 AND NOT LESS, because the floor is doing one real job and it is not the one the old
++#: comment claimed. A writer BLOCKED WAITING FOR THE MUTEX burns no CPU and moves no bytes either
++#: -- it is indistinguishable from a wedge by the delta proof alone. So the floor must sit above
++#: the longest legitimate WAIT, and that number is known: Adopt-And-Seal waits 540 s for the mutex
++#: before giving up. 600 s clears it with a minute in hand. Below that this would start killing
++#: writers that are correctly queued and about to do real work, which is its own failure.
++#:
++#: NET EFFECT: worst-case blind window falls from ~45 min (1800 s + a 15 min cadence) to ~25 min,
++#: and the thing that shortened it is the evidence, not a guess.
++HUNG_MIN_AGE_S = 600.0
++
++#: How long to watch a candidate before calling it stopped. LENGTHENED 15 -> 60 s (2026-09-24) as
++#: the other half of the trade above: the age floor came down by a factor of three, so the proof
++#: that replaces it is made four times stronger. A single `sleep` covers every candidate at once,
++#: so this costs sixty seconds per RUN, not per process, and it still sits an order of magnitude
++#: inside the 540 s mutex wait it must not disturb.
++#:
++#: The direction matters more than the number. A writer doing real work -- a chunked push, a slow
++#: `git gc` on a 22 GB repository -- moves SOMETHING in sixty seconds far more reliably than in
++#: fifteen, so lengthening the window makes this strictly LESS likely to kill live work. Being
++#: trigger-happy in that direction is the failure that would get the reaper switched off.
++HUNG_SAMPLE_S = 60.0
+ 
+ #: `sshd` is excluded on purpose -- see note 1 above.
+ _WRITER_NAMES = frozenset({"git", "git.exe", "ssh", "ssh.exe"})
+diff --git a/scripts/check_organ_cadence.py b/scripts/check_organ_cadence.py
+new file mode 100644
+index 00000000000..f27f30fcbb9
+--- /dev/null
++++ b/scripts/check_organ_cadence.py
+@@ -0,0 +1,728 @@
++#!/usr/bin/env python
++"""AN ORGAN THAT RUNS, SUCCEEDS AND PRODUCES NOTHING MUST NOT LOOK LIKE ONE THAT IS WORKING.
++
++WHAT HAPPENED, AND WHY THIS FILE EXISTS (2026-09-24).
++
++Twelve intelligence seats had donated nothing for twenty-four hours and five of them were not
++stubs -- `event_response_atlas` had written 258 artifacts and stopped, `graveyard_resurrection`
++220, `research_tree` 138, `fbs_tape` 82, `axis_registry` 45. Every one of them was still on its
++clock. Four of the five logged `LEG_DONE outcome=ok` EVERY HOUR while producing nothing at all,
++and each rewrote its own report faithfully on the way past, so the reports directory looked alive
++to the minute. The fifth logged `LEG_FAILED outcome=TIMEOUT` on every run for a day and a half.
++
++NOTHING NOTICED EITHER SHAPE, and it is worth being precise about why, because the desk already
++had three fences aimed at this ground:
++
++    check_leg_rotation.py    did the leg RUN?            -- a leg that fails every time ATTENDED.
++    check_seat_health.py     is the seat donating?       -- fires, and it was red, and it says
++                                                            "overdue", which is equally true of a
++                                                            seat with no clock and a seat whose
++                                                            donation door is broken.
++    check_organ_liveness.py  did the organ write?        -- reads the VPS cron plane; on the box
++                                                            it judged 0 of 0 rows and exited 0.
++
++None of them JOINS "it ran" to "its output moved", and that join is the whole diagnosis. A leg
++that ran ten times, exited zero ten times, rewrote its own report ten times and donated nothing
++is not slow, not starved and not unscheduled: its PRODUCTION path is broken while its REPORTING
++path is perfect, which is the most convincing possible disguise. The desk's signature defect is
++rc=0 with no write, and until this file there was no artifact anywhere that could say the words.
++
++SO THE CONTRACT IS THREE FACTS PER ORGAN, JOINED:
++
++    1. a DECLARED CADENCE          -- from the clock the repo already knows
++    2. the LAST SUCCESSFUL RUN     -- from the event log every leg already writes
++    3. the LAST ARTIFACT WRITTEN   -- and, crucially, on WHICH channel
++
++TWO CHANNELS, AND THE DIFFERENCE BETWEEN THEM IS THE POINT. An organ's SELF channel is its own
++report: the organ describing its own run. Its PRODUCT channel is what the rest of the desk eats
++-- the intelligence seat the compiler reads. A self channel that advances proves the process
++started and finished. It proves nothing whatsoever about output, and reading it as health is how
++258 artifacts stopped arriving under a green board.
++
++FOUR BREACHES, each a different diagnosis so nobody debugs the wrong thing:
++
++  SILENT_NOOP                  ran OK `MIN_OK_RUNS` times and NO channel moved since the first
++                               of those runs. The organ is a heater.
++  REPORTS_BUT_PRODUCES_NOTHING ran OK, its SELF channel moved every time, its PRODUCT channel has
++                               not moved in `PRODUCT_STALE_CADENCES` of its own cadences. This is
++                               today's shape exactly, and it points at the DONATION DOOR rather
++                               than at the clock -- which is where all four breaks actually were.
++  ALWAYS_FAILING               ran `MIN_FAIL_RUNS` times in the window and not once succeeded.
++                               `check_leg_rotation` counts these as attendance, correctly for its
++                               own question and fatally for this one.
++  NO_CONTRACT                  an organ on a clock whose output nothing can measure. UNMEASURED
++                               is a verdict (L1.28a), and it is the measurement debt this fence
++                               ratchets down rather than an excuse to skip the organ.
++
++IT CAPS NOTHING AND GATES NO CAPITAL. It never touches a sleeve, a lot, a threshold, a bar or the
++heat floor. Every verdict here can only ever demand that MORE organs produce; there is no
++threshold in this file that an organ can satisfy by attempting less, and retiring a producer to
++make a count look better raises `NO_CONTRACT` for nothing and is the one move that makes the
++number worse.
++
++THE DECLARED DEBT IS WHY IT SHIPS ACTIONABLE RATHER THAN PERMANENTLY RED. A fence that goes red
++on a backlog it inherited is a fence somebody switches off (L1.43), and then the next real break
++is silent again. So today's known-broken organs are DECLARED BY NAME in
++`docs/research/organ_cadence_debt.json` with a reason and an owner, the declared set may only
++SHRINK, and any organ that goes dark and is NOT on that list fails immediately -- on the day it
++happens, which is the only day the diagnosis is cheap.
++
++SECOND HALF: THE SEAL'S DUTY CYCLE AGAINST THE WINDOWS THAT MATTER. `check_placement_interlock`
++answers "is placement halted right now". This answers the question one layer up, which the desk
++learned the hard way on 2026-09-24: a rail can be perfectly correct, be green most of the day,
++and be red exactly when a window opens. Ordinary development destroys the seal -- each commit to
++the box invalidates it for roughly ten minutes -- so with several lanes committing, the gateway
++places only in the gaps. This measures, per sleeve, per day: did that sleeve's window close with
++a placement in it, or with nothing but refusals? `windows_lost` is then a number a freeze policy
++can be argued from instead of a feeling, and it carries its own falling ratchet.
++
++The windows are DERIVED from the ledger's own hours per sleeve, never a calendar in this file: a
++sleeve whose session moves is still measured, and a sleeve added tomorrow is measured tomorrow
++(LAWS 1 anti-hardcode).
++
++NOT-APPLICABLE IS NOT UNMEASURED (L1.43). A host with no event log and no reports directory runs
++no organs -- CI, a fresh clone -- and passes saying so. A host that HAS the cycle and produces no
++readable event log is UNMEASURED and FAILS, because "no evidence" is precisely what the outage
++looked like.
++
++Artifact: `desks/mt5/reports/ORGAN_CADENCE.json`. Registered in `scripts/run_law_gate.py`
++`_STATE_FENCES`.
++
++    python scripts/check_organ_cadence.py
++    python scripts/check_organ_cadence.py --json
++    python scripts/check_organ_cadence.py --declare      # write today's breaches into the debt
++"""
++from __future__ import annotations
++
++import argparse
++import json
++import re
++import sys
++from datetime import UTC, datetime, timedelta
++from pathlib import Path
++from typing import Any
++
++ROOT = Path(__file__).resolve().parent.parent
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
++
++from libs.ops.producer_census import runs_clocks_here  # noqa: E402
++
++DESK = ROOT / "desks" / "mt5"
++OUT = DESK / "reports" / "ORGAN_CADENCE.json"
++DEBT = ROOT / "docs" / "research" / "organ_cadence_debt.json"
++
++LEDGER_REL = "docs/research/tier1_program.json"
++EVENTS_REL = "desks/mt5/data/events.jsonl"
++REPORTS_REL = "desks/mt5/reports"
++DECISIONS_REL = "desks/mt5/data/decision_ledger.jsonl"
++INTEL_RELS = ("desks/mt5/data/intelligence", "data/intelligence")
++
++#: The measurement window. One day of an hourly cycle is twenty-four chances to produce; an organ
++#: that took none of them is not having a slow morning.
++WINDOW_H = 24.0
++
++#: How many clean runs make "it runs fine" a claim rather than a coincidence. Below this the
++#: organ simply has not been observed enough to convict, and saying so is the honest answer.
++MIN_OK_RUNS = 3
++
++#: ...and how many failures make "it fails every time" a claim. Same reasoning, other direction.
++MIN_FAIL_RUNS = 3
++
++#: How many of its OWN cadences a product channel may miss while its self channel keeps moving.
++#:
++#: SIX, NOT ONE. A producer legitimately finds nothing on a given pass -- that is what searching
++#: is -- and a fence that called one empty hour a defect would be off within the week. Six hourly
++#: passes with a perfect run record and nothing produced is not a quiet market; measured on the
++#: trading box the real breaks were at 31, 36, 42, 72 and 72 hours, so this is an order of
++#: magnitude tighter than the failure it is sized for and still far looser than normal work.
++PRODUCT_STALE_CADENCES = 6.0
++
++#: Default cadence for an organ on the hourly cycle. Read from the clock where the repo declares
++#: one; this is the fallback for a leg the cycle runs and nothing else times.
++DEFAULT_CADENCE_H = 1.0
++
++#: How many days of decision rows the seal duty cycle looks back over. Long enough for each
++#: sleeve's window to have recurred several times, short enough that a fortnight-old outage the
++#: desk has already fixed does not keep the number red.
++SEAL_LOOKBACK_DAYS = 7.0
++
++#: WHETHER THIS HOST RUNS THE CLOCKS IS MEASURED, NOT GUESSED -- and not re-implemented here.
++#:
++#: The build box holds a checkout of the trading box's state -- the same events.jsonl, the same
++#: reports -- and runs no research cycle. Its artifact mtimes are `git checkout` times, so every
++#: comparison of "did the output move since the run" measures the sync, not the organ. A fence
++#: that convicted organs on that evidence would be wrong on one host and switched off on both
++#: (L1.43).
++#:
++#: THE OBVIOUS TEST IS THE WRONG ONE, and it was tried first: judge the event log's own freshness
++#: and call a stale log a mirror. Measured on the build box 2026-09-24, the newest event there was
++#: **2.55 hours old** -- the sync is frequent enough that a freshness rule either excuses a real
++#: stall on the trading box or convicts a mirror anyway, depending on which side of the sync the
++#: check lands. It reads the sync cadence, not the question.
++#:
++#: `producer_census.runs_clocks_here()` already answers the real question and is the desk's one
++#: answer to it: on Windows it asks the scheduler whether the box's own tasks are registered HERE;
++#: on Linux whether the systemd user units are installed. `check_seat_health` and
++#: `check_organ_liveness` both route on it, so a third opinion in this file could only disagree
++#: with the other two.
++_RUNS_CLOCKS_HERE_HELP = ("libs.ops.producer_census.runs_clocks_here -- the desk's one measured "
++                          "answer to 'does this checkout hold the clocks'")
++
++UNMEASURED = "UNMEASURED"
++_BREACH = ("SILENT_NOOP", "REPORTS_BUT_PRODUCES_NOTHING", "ALWAYS_FAILING")
++_TS_FIELDS = ("decided_at", "ts", "at", "time")
++_LEG_TOKEN = re.compile(r"^[A-Za-z0-9_]+$")
++
++
++def _now() -> datetime:
++    return datetime.now(tz=UTC)
++
++
++def _parse_iso(text: Any) -> datetime | None:
++    raw = str(text or "").strip()
++    if not raw:
++        return None
++    if raw.endswith("Z"):
++        raw = raw[:-1] + "+00:00"
++    try:
++        stamp = datetime.fromisoformat(raw)
++    except ValueError:
++        return None
++    return stamp if stamp.tzinfo else stamp.replace(tzinfo=UTC)
++
++
++def _mtime(path: Path) -> float | None:
++    try:
++        return path.stat().st_mtime
++    except OSError:
++        return None
++
++
++def _newest(paths: list[Path]) -> float | None:
++    stamps = [s for s in (_mtime(p) for p in paths) if s is not None]
++    return max(stamps) if stamps else None
++
++
++# ------------------------------------------------------------------ 1. THE DECLARED CONTRACT
++
++def declared_organs(base: Path) -> tuple[dict[str, dict[str, Any]], list[str]]:
++    """leg -> {self_channel: [paths], cadence_h}. Returns (organs, tokens this could not parse).
++
++    READ FROM THE LEDGER THE DESK ALREADY KEEPS, never a new list. `docs/research/tier1_program.json`
++    already carries `scheduled_by: hourly_cycle:<leg>` beside `artifact: <path>` for 352 rows --
++    the liveness contract was declared and nothing had ever read it as one.
++
++    THE LEG TOKEN IS NORMALISED, and that is not cosmetic. `hourly_cycle._leg_artifacts` takes
++    `tok.split(":", 1)[1]` whole, so a row scheduled by `hourly_cycle:causal_lab (macro
++    department)` yields the leg name `causal_lab (macro department)`, which matches no leg that
++    has ever run. Measured on the trading box 2026-09-24: 263 tokens, of which 184 are clean leg
++    names -- 79 rows, 30% of the declaration, dropped on the floor by a parser that has been
++    reading past them for months. That is the same class of defect as everything else in this
++    file: a fact that exists, in a file the desk maintains, that no organ actually reads.
++    """
++    organs: dict[str, dict[str, Any]] = {}
++    unparsed: list[str] = []
++    path = base / Path(*LEDGER_REL.split("/"))
++    try:
++        doc = json.loads(path.read_text(encoding="utf-8-sig"))
++    except (OSError, ValueError):
++        return organs, unparsed
++    for item in doc.get("items", []) if isinstance(doc, dict) else []:
++        if not isinstance(item, dict):
++            continue
++        sched = str(item.get("scheduled_by") or "")
++        art = str(item.get("artifact") or "").strip()
++        if not art or "hourly_cycle:" not in sched:
++            continue
++        for tok in sched.split(","):
++            tok = tok.strip()
++            if not tok.startswith("hourly_cycle:"):
++                continue
++            # Everything up to the first space, bracket or semicolon: the rest is prose the
++            # ledger carries for a human and a leg name never contains.
++            leg = re.split(r"[\s(;]", tok.split(":", 1)[1], maxsplit=1)[0].strip()
++            if not _LEG_TOKEN.match(leg):
++                unparsed.append(tok[:80])
++                continue
++            rec = organs.setdefault(leg, {"self": [], "cadence_h": DEFAULT_CADENCE_H})
++            for root in (base, base / "desks" / "mt5"):
++                cand = root / Path(*art.split("/"))
++                if cand.exists():
++                    if cand not in rec["self"]:
++                        rec["self"].append(cand)
++                    break
++    return organs, unparsed
++
++
++def product_channels(base: Path) -> dict[str, list[Path]]:
++    """seat name -> the intelligence directories that hold its donations, both roots.
++
++    The PRODUCT channel is what the candidate compiler reads and nothing else (CLAUDE.md), so it
++    is the only channel whose silence costs the desk a hypothesis.
++    """
++    out: dict[str, list[Path]] = {}
++    for rel in INTEL_RELS:
++        root = base / Path(*rel.split("/"))
++        if not root.is_dir():
++            continue
++        try:
++            entries = sorted(root.iterdir())
++        except OSError:
++            continue
++        for d in entries:
++            if d.is_dir() and not d.name.startswith((".", "_")):
++                out.setdefault(d.name, []).append(d)
++    return out
++
++
++def _seat_newest(dirs: list[Path]) -> float | None:
++    """Newest FILE mtime anywhere under the seat's directories.
++
++    Measured off the file rather than a row's own stamp, for the reason the sibling fence gives:
++    a seat that stopped writing is the thing being looked for, and a stale row's internal
++    timestamp would report it as alive.
++    """
++    stamps: list[float] = []
++    for d in dirs:
++        try:
++            for f in d.rglob("*"):
++                if f.is_file():
++                    s = _mtime(f)
++                    if s is not None:
++                        stamps.append(s)
++        except OSError:
++            continue
++    return max(stamps) if stamps else None
++
++
++# --------------------------------------------------------------------- 2. THE RUN RECORD
++
++def run_records(path: Path, *, limit: int = 200_000) -> tuple[dict[str, list[tuple[datetime, bool]]],
++                                                              str | None]:
++    """leg -> [(when, succeeded)], oldest first. Returns (runs, problem)."""
++    try:
++        raw = path.read_text("utf-8", errors="replace").splitlines()
++    except OSError as exc:
++        return {}, f"{EVENTS_REL} exists but could not be read ({type(exc).__name__})"
++    runs: dict[str, list[tuple[datetime, bool]]] = {}
++    for line in raw[-limit:]:
++        line = line.strip()
++        if not line:
++            continue
++        try:
++            row = json.loads(line)
++        except ValueError:
++            continue
++        if not isinstance(row, dict):
++            continue
++        kind = str(row.get("kind") or "")
++        if kind not in ("LEG_DONE", "LEG_FAILED"):
++            continue
++        leg = str(row.get("leg") or "").strip()
++        when = _parse_iso(row.get("at"))
++        if not leg or when is None:
++            continue
++        runs.setdefault(leg, []).append((when, kind == "LEG_DONE"))
++    for hist in runs.values():
++        hist.sort(key=lambda r: r[0])
++    return runs, None
++
++
++# ------------------------------------------------------------------------- 3. THE JOIN
++
++def judge(organs: dict[str, dict[str, Any]], runs: dict[str, list[tuple[datetime, bool]]],
++          products: dict[str, list[Path]], now: datetime) -> list[dict[str, Any]]:
++    """One row per declared organ: cadence, last good run, last write per channel, verdict."""
++    cutoff = now - timedelta(hours=WINDOW_H)
++    rows: list[dict[str, Any]] = []
++    for leg in sorted(organs):
++        rec = organs[leg]
++        cadence = float(rec.get("cadence_h") or DEFAULT_CADENCE_H)
++        hist = runs.get(leg, [])
++        in_window = [(t, ok) for t, ok in hist if t >= cutoff]
++        oks = [t for t, ok in in_window if ok]
++        fails = [t for t, ok in in_window if not ok]
++
++        self_paths: list[Path] = list(rec["self"])
++        prod_dirs = products.get(leg, [])
++        self_at = _newest(self_paths)
++        prod_at = _seat_newest(prod_dirs) if prod_dirs else None
++
++        row: dict[str, Any] = {
++            "organ": leg,
++            "cadence_h": cadence,
++            "runs_ok_in_window": len(oks),
++            "runs_failed_in_window": len(fails),
++            "last_run_ok_at": max(oks).isoformat(timespec="seconds") if oks else UNMEASURED,
++            "self_channel": [str(p) for p in self_paths],
++            "self_age_h": round((now.timestamp() - self_at) / 3600.0, 2) if self_at else None,
++            "product_channel": [str(p) for p in prod_dirs],
++            "product_age_h": round((now.timestamp() - prod_at) / 3600.0, 2) if prod_at else None,
++        }
++
++        has_channel = bool(self_paths or prod_dirs)
++        if not has_channel:
++            row.update(verdict="NO_CONTRACT", why=(
++                "this organ runs on the hourly cycle and declares an artifact this host does not "
++                "hold, so whether it produced anything is UNMEASURED -- a verdict, not a pass"))
++        elif not hist:
++            row.update(verdict="NEVER_RAN", why=(
++                "no LEG_DONE or LEG_FAILED has ever been recorded for this organ; "
++                "check_leg_rotation owns that failure and this fence only reports it"))
++        elif not in_window:
++            row.update(verdict="NO_RUN_IN_WINDOW", why=(
++                f"nothing recorded in {WINDOW_H:g}h; check_leg_rotation owns that failure"))
++        elif not oks and len(fails) >= MIN_FAIL_RUNS:
++            row.update(verdict="ALWAYS_FAILING", why=(
++                f"ran {len(fails)} time(s) in {WINDOW_H:g}h and succeeded NONE of them. A leg "
++                "that fails every time still counts as attendance to a fence that only asks "
++                "whether it ran, which is why this one asks whether it worked"))
++        elif len(oks) >= MIN_OK_RUNS and _no_channel_moved(oks, self_at, prod_at):
++            row.update(verdict="SILENT_NOOP", why=(
++                f"exited cleanly {len(oks)} time(s) since {min(oks).isoformat(timespec='seconds')}"
++                " and not one of its output channels has moved since -- rc=0 with no write, which "
++                "is indistinguishable from healthy on every board the desk has"))
++        elif (len(oks) >= MIN_OK_RUNS and prod_dirs and self_at is not None
++              and self_at >= min(oks).timestamp()
++              and (prod_at is None
++                   or (now.timestamp() - prod_at) / 3600.0 > cadence * PRODUCT_STALE_CADENCES)):
++            age = ("never" if prod_at is None
++                   else f"{(now.timestamp() - prod_at) / 3600.0:.1f}h ago")
++            row.update(verdict="REPORTS_BUT_PRODUCES_NOTHING", why=(
++                f"ran cleanly {len(oks)} time(s) and rewrote its own report every time, while the "
++                f"seat the compiler reads last moved {age} "
++                f"(> {cadence * PRODUCT_STALE_CADENCES:g}h). The clock is fine and the organ is "
++                "fine; its DONATION DOOR is not, and that is a different repair"))
++        else:
++            row.update(verdict="LIVE", why="")
++        rows.append(row)
++    return rows
++
++
++def _no_channel_moved(oks: list[datetime], self_at: float | None,
++                      prod_at: float | None) -> bool:
++    """True when every channel this organ owns predates its first clean run in the window."""
++    first = min(oks).timestamp()
++    seen = [s for s in (self_at, prod_at) if s is not None]
++    return bool(seen) and all(s < first for s in seen)
++
++
++# ------------------------------------------------------- 4. THE SEAL'S DUTY CYCLE PER WINDOW
++
++def seal_duty_cycle(path: Path, now: datetime) -> dict[str, Any]:
++    """Per sleeve, per day: did its window close with a placement, or with nothing but refusals?
++
++    THE WINDOWS ARE DERIVED, NEVER LISTED. A sleeve's window is the set of UTC hours in which the
++    ledger has ever recorded a decision for it, so a session that moves is still measured and a
++    sleeve added tomorrow is measured tomorrow without touching this file (LAWS 1).
++    """
++    out: dict[str, Any] = {"available": False, "why": "", "lookback_days": SEAL_LOOKBACK_DAYS,
++                           "windows_seen": 0, "windows_placed": 0, "windows_lost": 0,
++                           "lost_by_reason": {}, "by_sleeve": {}}
++    try:
++        raw = path.read_text("utf-8", errors="replace").splitlines()
++    except OSError:
++        out["why"] = f"{DECISIONS_REL} is not readable on this host"
++        return out
++    cutoff = now - timedelta(days=SEAL_LOOKBACK_DAYS)
++    # (sleeve, date) -> {"placed": bool, "reasons": Counter-ish dict}
++    windows: dict[tuple[str, str], dict[str, Any]] = {}
++    for line in raw[-400_000:]:
++        line = line.strip()
++        if not line:
++            continue
++        try:
++            row = json.loads(line)
++        except ValueError:
++            continue
++        if not isinstance(row, dict):
++            continue
++        when = None
++        for field in _TS_FIELDS:
++            if row.get(field):
++                when = _parse_iso(row[field])
++                if when is not None:
++                    break
++        if when is None or when < cutoff:
++            continue
++        sleeve = str(row.get("sleeve") or row.get("strategy_id") or "?")
++        key = (sleeve, when.date().isoformat())
++        w = windows.setdefault(key, {"placed": False, "reasons": {}})
++        taken = row.get("taken")
++        placed = (taken is True or str(row.get("reason") or "") == "placed"
++                  or str(row.get("outcome") or "").upper() in ("EXECUTED", "PLACED", "FILLED"))
++        if placed:
++            w["placed"] = True
++        else:
++            r = str(row.get("reason") or "?")
++            w["reasons"][r] = w["reasons"].get(r, 0) + 1
++    if not windows:
++        out["why"] = (f"no decision row inside {SEAL_LOOKBACK_DAYS:g} day(s): the seal's duty "
++                      "cycle is UNMEASURED here, which is a verdict about the measurement")
++        return out
++    by_sleeve: dict[str, dict[str, Any]] = {}
++    for (sleeve, day), w in sorted(windows.items()):
++        s = by_sleeve.setdefault(sleeve, {"days": 0, "placed": 0, "lost": 0, "lost_days": [],
++                                          "top_refusal": None})
++        s["days"] += 1
++        if w["placed"]:
++            s["placed"] += 1
++            continue
++        s["lost"] += 1
++        if len(s["lost_days"]) < 12:
++            s["lost_days"].append(day)
++        for r, n in w["reasons"].items():
++            out["lost_by_reason"][r] = out["lost_by_reason"].get(r, 0) + n
++            if s["top_refusal"] is None:
++                s["top_refusal"] = r
++    out.update(available=True, by_sleeve=by_sleeve,
++               windows_seen=sum(v["days"] for v in by_sleeve.values()),
++               windows_placed=sum(v["placed"] for v in by_sleeve.values()),
++               windows_lost=sum(v["lost"] for v in by_sleeve.values()))
++    out["lost_by_reason"] = dict(sorted(out["lost_by_reason"].items(),
++                                        key=lambda kv: -kv[1])[:10])
++    out["note"] = ("a LOST window is a sleeve-day on which the desk decided and never placed. It "
++                   "is not automatically a defect -- a sleeve out of regime correctly places "
++                   "nothing -- but a rail-shaped reason ('release_identity_refused' and its kin) "
++                   "in this column is the book losing windows to its own machinery, which is what "
++                   "cost 19 gold sleeve-days over seventeen silent days in September 2026")
++    return out
++
++
++# --------------------------------------------------------------------------- 5. THE RATCHET
++
++DEBT_REL = "docs/research/organ_cadence_debt.json"
++
++
++def _debt(base: Path) -> dict[str, Any]:
++    """The declared debt, resolved under `base` so a test tree and the live tree read their own."""
++    try:
++        doc = json.loads((base / Path(*DEBT_REL.split("/"))).read_text(encoding="utf-8"))
++    except (OSError, ValueError):
++        return {}
++    return doc if isinstance(doc, dict) else {}
++
++
++def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, Any]:
++    base = Path(root or ROOT)
++    t_now = now or _now()
++    events = base / Path(*EVENTS_REL.split("/"))
++    reports = base / Path(*REPORTS_REL.split("/"))
++
++    doc: dict[str, Any] = {
++        "generated": t_now.isoformat(timespec="seconds"), "root": str(base),
++        "law": ("EVERY ORGAN DECLARES A CADENCE AND IS MEASURED AGAINST IT ON THE CHANNEL THE "
++                "DESK ACTUALLY EATS. Running is not producing; exiting zero is not producing; "
++                "rewriting your own report is not producing."),
++        "thresholds": {"window_h": WINDOW_H, "min_ok_runs": MIN_OK_RUNS,
++                       "min_fail_runs": MIN_FAIL_RUNS,
++                       "product_stale_cadences": PRODUCT_STALE_CADENCES},
++        "problems": [], "notes": [], "organs": [], "ok": True, "verdict": "OK",
++    }
++
++    # NOT APPLICABLE: a host that runs no cycle has no organ that could be silently idle.
++    if not events.exists() and not reports.is_dir():
++        doc["verdict"] = "NOT_APPLICABLE"
++        doc["notes"].append(
++            "no event log and no reports directory here -- this host runs no research cycle, so "
++            "there is no organ whose silence it could be hiding")
++        return doc
++
++    organs, unparsed = declared_organs(base)
++    if not organs:
++        doc.update(ok=False, verdict="UNMEASURED")
++        doc["problems"].append(
++            f"{LEDGER_REL} declares no hourly organ with an artifact on this host: the liveness "
++            "contract cannot be read, which is the same silence this fence exists to end")
++        return doc
++
++    if not events.exists():
++        doc.update(ok=False, verdict="UNMEASURED")
++        doc["problems"].append(
++            f"this host declares {len(organs)} hourly organ(s) and has no {EVENTS_REL}: an organ "
++            "plane that records no runs is exactly what a silent stall looks like")
++        return doc
++
++    runs, problem = run_records(events)
++    if problem:
++        doc.update(ok=False, verdict="UNMEASURED")
++        doc["problems"].append(problem)
++        return doc
++
++    newest_event = max((t for hist in runs.values() for t, _ in hist), default=None)
++    log_age_h = ((t_now - newest_event).total_seconds() / 3600.0
++                 if newest_event is not None else None)
++    doc["event_log_age_h"] = round(log_age_h, 2) if log_age_h is not None else UNMEASURED
++
++    # A MIRROR IS NOT A STALL, and which this host is, is MEASURED (see _RUNS_CLOCKS_HERE_HELP).
++    here = runs_clocks_here(base)
++    doc["runs_clocks_here"] = here
++    if here is False:
++        doc["verdict"] = "MIRROR_OF_ANOTHER_HOST"
++        doc["notes"].append(
++            "this checkout holds no clock of its own (measured: none of the box's scheduled tasks "
++            "is registered here), so it is a mirror of the host that does. Every artifact mtime "
++            "here is a sync time, and judging an organ on a sync would report work that is "
++            "happening correctly elsewhere as dark. The host that owns the clock judges these "
++            f"organs; {len(organs)} of them were read and their state is published below")
++        doc["organs"] = judge(organs, runs, product_channels(base), t_now)
++        doc["n_organs"] = len(doc["organs"])
++        return doc
++    if here is None:
++        doc["notes"].append(
++            "whether this host runs the clocks is UNMEASURED (the scheduler could not be read); "
++            "the organs are judged anyway, because assuming 'mirror' would be absence granting an "
++            "excuse, which is the failure this whole file is about (L1.28a)")
++
++    products = product_channels(base)
++    rows = judge(organs, runs, products, t_now)
++    doc["organs"] = rows
++    doc["n_organs"] = len(rows)
++    census: dict[str, int] = {}
++    for r in rows:
++        census[str(r["verdict"])] = census.get(str(r["verdict"]), 0) + 1
++    doc["census"] = dict(sorted(census.items()))
++    doc["seal_duty_cycle"] = seal = seal_duty_cycle(
++        base / Path(*DECISIONS_REL.split("/")), t_now)
++
++    if unparsed:
++        doc["n_unparsed_schedule_tokens"] = len(unparsed)
++        doc["unparsed_schedule_tokens"] = sorted(set(unparsed))[:12]
++        doc["notes"].append(
++            f"{len(unparsed)} scheduled_by token(s) in {LEDGER_REL} carry prose after the leg "
++            "name; this fence normalises them, and `hourly_cycle._leg_artifacts` does not -- so "
++            "those rows resolve to no leg there and their output hash is never taken")
++
++    declared = _debt(base)
++    known = {str(k) for k in (declared.get("declared") or {})}
++    breached = [r for r in rows if r["verdict"] in _BREACH]
++    undeclared = [r for r in breached if r["organ"] not in known]
++    doc["debt"] = {"declared": sorted(known), "n_declared": len(known),
++                   "n_breached": len(breached), "n_undeclared": len(undeclared),
++                   "declared_max": declared.get("declared_max"),
++                   "windows_lost_max": declared.get("windows_lost_max")}
++
++    for r in sorted(undeclared, key=lambda r: str(r["organ"])):
++        doc["ok"] = False
++        doc["problems"].append(
++            f"{r['organ']}: {r['verdict']} -- {r['why']}. It is not in {DEBT.name}, so this is a "
++            "NEW dark organ and today is the cheap day to fix it")
++
++    dmax = declared.get("declared_max")
++    if isinstance(dmax, (int, float)) and len(known) > dmax:
++        doc["ok"] = False
++        doc["problems"].append(
++            f"the declared debt holds {len(known)} organ(s) against a ratchet of {dmax:g}: this "
++            "list may only SHRINK. Repair an organ and remove its row -- never add one to make "
++            "this fence quiet")
++
++    wmax = declared.get("windows_lost_max")
++    if (seal.get("available") and isinstance(wmax, (int, float))
++            and seal["windows_lost"] > wmax):
++        doc["ok"] = False
++        doc["problems"].append(
++            f"{seal['windows_lost']} sleeve-day window(s) closed without a placement in the last "
++            f"{SEAL_LOOKBACK_DAYS:g} days, against a ratchet of {wmax:g}. Top refusal reasons: "
++            f"{seal['lost_by_reason']}. A rail that is green most of the day and red when a "
++            "window opens costs exactly as much as a rail that is broken")
++
++    for r in rows:
++        if r["verdict"] in ("NO_CONTRACT", "NEVER_RAN", "NO_RUN_IN_WINDOW"):
++            continue
++        if r["verdict"] in _BREACH and r["organ"] in known:
++            doc["notes"].append(f"{r['organ']}: {r['verdict']}, declared in {DEBT.name}")
++
++    doc["verdict"] = "OK" if doc["ok"] else "DARK"
++    return doc
++
++
++def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
++    path = Path(target or OUT)
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(json.dumps(doc, indent=2, default=str) + "\n", encoding="utf-8")
++    return path
++
++
++def declare(doc: dict[str, Any], target: Path | None = None) -> Path:
++    """Record today's breaches as the declared debt, with the ratchet set at what was measured.
++
++    NOT A SILENCER. Every row lands with its verdict and the fence's own reason, the count becomes
++    a ceiling that may only fall, and a breach that appears tomorrow and is not here fails on the
++    day it appears. Declaring is how a backlog becomes a worklist instead of a permanently red
++    board nobody reads (L1.43).
++    """
++    path = Path(target or DEBT)
++    existing = {}
++    try:
++        prev = json.loads(path.read_text(encoding="utf-8"))
++        existing = dict(prev.get("declared") or {}) if isinstance(prev, dict) else {}
++    except (OSError, ValueError):
++        pass
++    for r in doc.get("organs", []):
++        if r["verdict"] not in _BREACH:
++            continue
++        existing.setdefault(str(r["organ"]), {
++            "verdict": r["verdict"], "why": r["why"],
++            "declared_at": doc.get("generated"),
++            "owner": "unassigned -- a declared organ with no owner is a queue, not a plan",
++        })
++    seal = doc.get("seal_duty_cycle") or {}
++    out = {
++        "law": ("ORGAN CADENCE DEBT. Every organ here is KNOWN to be dark and carries its reason. "
++                "The list may only SHRINK: an organ leaves by being repaired, never by being "
++                "deleted, and a NEW dark organ fails the fence immediately rather than joining a "
++                "backlog. See scripts/check_organ_cadence.py."),
++        "declared_max": len(existing),
++        "windows_lost_max": seal.get("windows_lost") if seal.get("available") else None,
++        "updated_utc": doc.get("generated"),
++        "declared": dict(sorted(existing.items())),
++    }
++    path.parent.mkdir(parents=True, exist_ok=True)
++    path.write_text(json.dumps(out, indent=1) + "\n", encoding="utf-8")
++    return path
++
++
++def main(argv: list[str] | None = None) -> int:
++    ap = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
++    ap.add_argument("--json", action="store_true", help="print the artifact as JSON")
++    ap.add_argument("--no-write", action="store_true", help="do not write the artifact")
++    ap.add_argument("--declare", action="store_true",
++                    help="record today's breaches as the declared debt and set the ratchets")
++    args = ap.parse_args(argv)
++
++    doc = scan()
++    if not args.no_write:
++        write_artifact(doc)
++    if args.declare:
++        print(f"declared debt -> {declare(doc)}")
++    if args.json:
++        print(json.dumps(doc, indent=2, default=str))
++        return 0 if doc["ok"] else 2
++
++    print(f"organ cadence: {doc.get('verdict')}; {doc.get('n_organs', 0)} declared organ(s) -> "
++          f"{doc.get('census', {})}")
++    seal = doc.get("seal_duty_cycle") or {}
++    if seal.get("available"):
++        print(f"  seal duty cycle: {seal['windows_placed']}/{seal['windows_seen']} sleeve-day "
++              f"window(s) placed, {seal['windows_lost']} lost  {seal['lost_by_reason']}")
++    elif seal:
++        print(f"  seal duty cycle: UNMEASURED -- {seal.get('why')}")
++    for r in doc.get("organs", []):
++        if r["verdict"] in _BREACH:
++            print(f"  {r['verdict']:<30} {r['organ']:<28} ok={r['runs_ok_in_window']:>3} "
++                  f"fail={r['runs_failed_in_window']:>3} self={r['self_age_h']}h "
++                  f"product={r['product_age_h']}h")
++    for note in doc["notes"][:12]:
++        print(f"  note: {note}")
++    for problem in doc["problems"]:
++        print(f"  FAIL: {problem}")
++    if doc["ok"]:
++        print("check_organ_cadence: OK -- no organ is running, succeeding and producing nothing")
++        return 0
++    print("check_organ_cadence: FAILED -- an organ is dark and nothing else was going to say so")
++    return 2
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/tests/governance/test_organ_cadence_fence.py b/tests/governance/test_organ_cadence_fence.py
+new file mode 100644
+index 00000000000..f4c7e123388
+--- /dev/null
++++ b/tests/governance/test_organ_cadence_fence.py
+@@ -0,0 +1,344 @@
++"""THE TEST THAT FAILS IF AN ORGAN CAN RUN, SUCCEED AND PRODUCE NOTHING IN SILENCE.
++
++On 2026-09-24 twelve intelligence seats had donated nothing for a day. Five were not stubs:
++`event_response_atlas` had written 258 artifacts and stopped, `graveyard_resurrection` 220,
++`research_tree` 138, `fbs_tape` 82, `axis_registry` 45. Four of the five logged `LEG_DONE
++outcome=ok` EVERY HOUR while producing nothing, rewriting their own reports faithfully on the way
++past; the fifth logged `LEG_FAILED outcome=TIMEOUT` on every run for a day and a half. Three
++fences already watched this ground and none of them joined "it ran" to "its output moved", so a
++broken donation door and a healthy organ were the same picture.
++
++What is pinned here, and they are different claims:
++
++  1. The fence SEES each shape -- the silent no-op, the organ that reports but produces nothing,
++     and the leg that fails every single time (which `check_leg_rotation` counts as attendance).
++  2. It does NOT see shapes that are not defects -- a mirror host, a producer having one quiet
++     hour, an organ that has simply not been observed enough to convict.
++  3. It is WIRED. A checker nobody runs is the same silence with more files in it (LAWS III.16).
++  4. It gates no capital and caps nothing, in either direction.
++"""
++from __future__ import annotations
++
++import importlib.util
++import json
++from datetime import UTC, datetime, timedelta
++from pathlib import Path
++
++import pytest
++
++ROOT = Path(__file__).resolve().parents[2]
++_SPEC = importlib.util.spec_from_file_location(
++    "check_organ_cadence", ROOT / "scripts" / "check_organ_cadence.py")
++assert _SPEC and _SPEC.loader
++fence = importlib.util.module_from_spec(_SPEC)
++_SPEC.loader.exec_module(fence)
++
++LEDGER = "docs/research/tier1_program.json"
++EVENTS = "desks/mt5/data/events.jsonl"
++DEBT = "docs/research/organ_cadence_debt.json"
++
++NOW = datetime(2026, 9, 24, 22, 0, tzinfo=UTC)
++
++
++def _write(root: Path, rel: str, text: str) -> Path:
++    p = root / Path(*rel.split("/"))
++    p.parent.mkdir(parents=True, exist_ok=True)
++    p.write_text(text, "utf-8")
++    return p
++
++
++def _touch(path: Path, when: datetime) -> None:
++    import os
++    path.parent.mkdir(parents=True, exist_ok=True)
++    if not path.exists():
++        path.write_text("{}", "utf-8")
++    os.utime(path, (when.timestamp(), when.timestamp()))
++
++
++def _events(rows: list[tuple[str, datetime, bool]]) -> str:
++    return "\n".join(json.dumps({
++        "at": when.isoformat(timespec="seconds"),
++        "kind": "LEG_DONE" if ok else "LEG_FAILED", "leg": leg,
++        "outcome": "ok" if ok else "TIMEOUT",
++    }) for leg, when, ok in rows) + "\n"
++
++
++def _declare_ledger(root: Path, legs: dict[str, str]) -> None:
++    """`scheduled_by` + `artifact`, the two fields the repo already carries."""
++    _write(root, LEDGER, json.dumps({"items": [
++        {"id": f"T{i}", "scheduled_by": f"hourly_cycle:{leg}", "artifact": art}
++        for i, (leg, art) in enumerate(legs.items())]}))
++
++
++@pytest.fixture
++def box(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
++    """A host that RUNS the clocks: its artifact mtimes mean something."""
++    monkeypatch.setattr(fence, "runs_clocks_here", lambda _root: True)
++    (tmp_path / "desks" / "mt5" / "reports").mkdir(parents=True, exist_ok=True)
++    return tmp_path
++
++
++# ------------------------------------------------------- 1. the fence sees each dark shape
++def test_an_organ_that_exits_zero_and_writes_nothing_is_a_failure(box: Path) -> None:
++    """SILENT_NOOP: the measured shape of `event_response_atlas` -- 15 clean runs, no write."""
++    _declare_ledger(box, {"event_response_atlas": "desks/mt5/reports/ERA.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "ERA.json", NOW - timedelta(hours=72))
++    _write(box, EVENTS, _events([("event_response_atlas", NOW - timedelta(hours=h), True)
++                                 for h in range(15, 0, -1)]))
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is False, doc
++    assert doc["verdict"] == "DARK"
++    row = next(r for r in doc["organs"] if r["organ"] == "event_response_atlas")
++    assert row["verdict"] == "SILENT_NOOP"
++    assert row["runs_ok_in_window"] == 15
++    assert any("event_response_atlas" in p for p in doc["problems"])
++
++
++def test_reporting_is_not_producing(box: Path) -> None:
++    """REPORTS_BUT_PRODUCES_NOTHING: `research_tree`'s shape. Its own report is written every
++    hour -- which is the organ describing itself -- while the seat the compiler reads is frozen.
++    A fence that watched only the report would have called this perfect health."""
++    _declare_ledger(box, {"research_tree": "desks/mt5/reports/RESEARCH_TREE.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "RESEARCH_TREE.json", NOW - timedelta(minutes=45))
++    _touch(box / "desks" / "mt5" / "data" / "intelligence" / "research_tree" / "d.json",
++           NOW - timedelta(hours=36))
++    _write(box, EVENTS, _events([("research_tree", NOW - timedelta(hours=h), True)
++                                 for h in range(17, 0, -1)]))
++
++    doc = fence.scan(box, now=NOW)
++
++    row = next(r for r in doc["organs"] if r["organ"] == "research_tree")
++    assert row["verdict"] == "REPORTS_BUT_PRODUCES_NOTHING", row
++    assert row["self_age_h"] < 1.0
++    assert row["product_age_h"] > 30.0
++    assert doc["ok"] is False
++
++
++def test_a_leg_that_fails_every_time_is_not_attendance(box: Path) -> None:
++    """ALWAYS_FAILING: `axis_registry` timed out on every run for 31 hours, and the fence that
++    asks whether a leg RAN counted all of them. Whether it WORKED is a different question."""
++    _declare_ledger(box, {"axis_registry": "desks/mt5/reports/AXIS_REGISTRY.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "AXIS_REGISTRY.json", NOW - timedelta(minutes=10))
++    _write(box, EVENTS, _events([("axis_registry", NOW - timedelta(hours=h), False)
++                                 for h in range(11, 0, -1)]))
++
++    doc = fence.scan(box, now=NOW)
++
++    row = next(r for r in doc["organs"] if r["organ"] == "axis_registry")
++    assert row["verdict"] == "ALWAYS_FAILING"
++    assert row["runs_failed_in_window"] == 11 and row["runs_ok_in_window"] == 0
++    assert doc["ok"] is False
++
++
++def test_the_fence_is_not_keyed_to_todays_organ_names(box: Path) -> None:
++    """The next organ to go dark has a name nobody has typed yet. The contract is read from the
++    ledger, so an organ declared tomorrow is judged tomorrow with no edit here."""
++    _declare_ledger(box, {"an_organ_invented_next_march": "desks/mt5/reports/X.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "X.json", NOW - timedelta(days=9))
++    _write(box, EVENTS, _events([("an_organ_invented_next_march", NOW - timedelta(hours=h), True)
++                                 for h in range(9, 0, -1)]))
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is False
++    assert any("an_organ_invented_next_march" in p for p in doc["problems"])
++
++
++# ----------------------------------------------- 2. and does NOT see what is not a defect
++def test_a_producing_organ_passes(box: Path) -> None:
++    _declare_ledger(box, {"good_organ": "desks/mt5/reports/GOOD.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "GOOD.json", NOW - timedelta(minutes=20))
++    _touch(box / "desks" / "mt5" / "data" / "intelligence" / "good_organ" / "d.json",
++           NOW - timedelta(minutes=25))
++    _write(box, EVENTS, _events([("good_organ", NOW - timedelta(hours=h), True)
++                                 for h in range(10, 0, -1)]))
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is True, doc["problems"]
++    assert next(r for r in doc["organs"] if r["organ"] == "good_organ")["verdict"] == "LIVE"
++
++
++def test_one_quiet_hour_is_searching_not_a_defect(box: Path) -> None:
++    """A producer legitimately finds nothing on a pass -- that IS searching. A fence that called
++    a single empty hour a defect would be switched off within the week, and then the real break
++    is silent again (L1.43)."""
++    _declare_ledger(box, {"miner": "desks/mt5/reports/MINER.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "MINER.json", NOW - timedelta(minutes=15))
++    _touch(box / "desks" / "mt5" / "data" / "intelligence" / "miner" / "d.json",
++           NOW - timedelta(hours=2))
++    _write(box, EVENTS, _events([("miner", NOW - timedelta(hours=h), True)
++                                 for h in range(12, 0, -1)]))
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is True, doc["problems"]
++    assert next(r for r in doc["organs"] if r["organ"] == "miner")["verdict"] == "LIVE"
++
++
++def test_too_few_runs_to_convict_is_not_a_conviction(box: Path) -> None:
++    """Below MIN_OK_RUNS the organ has not been observed enough for 'it runs fine' to be a claim,
++    and saying so is the honest answer rather than a guess in either direction."""
++    _declare_ledger(box, {"new_organ": "desks/mt5/reports/NEW.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "NEW.json", NOW - timedelta(days=5))
++    _write(box, EVENTS, _events([("new_organ", NOW - timedelta(hours=1), True)]))
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is True, doc["problems"]
++    assert next(r for r in doc["organs"] if r["organ"] == "new_organ")["verdict"] == "LIVE"
++
++
++def test_a_mirror_host_judges_nobody(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
++    """The build box holds the trading box's state and runs no cycle, so every artifact mtime
++    there is a sync time. Convicting organs on a sync would report work that is happening
++    correctly elsewhere as dark -- and a fence red on a machine that was never running the organ
++    is one somebody switches off."""
++    monkeypatch.setattr(fence, "runs_clocks_here", lambda _root: False)
++    (tmp_path / "desks" / "mt5" / "reports").mkdir(parents=True, exist_ok=True)
++    _declare_ledger(tmp_path, {"event_response_atlas": "desks/mt5/reports/ERA.json"})
++    _touch(tmp_path / "desks" / "mt5" / "reports" / "ERA.json", NOW - timedelta(hours=72))
++    _write(tmp_path, EVENTS, _events([("event_response_atlas", NOW - timedelta(hours=h), True)
++                                      for h in range(15, 0, -1)]))
++
++    doc = fence.scan(tmp_path, now=NOW)
++
++    assert doc["verdict"] == "MIRROR_OF_ANOTHER_HOST"
++    assert doc["ok"] is True
++    # ...and it still PUBLISHES what it read, so the mirror is not also a blindfold.
++    assert doc["n_organs"] == 1
++
++
++def test_a_declared_organ_is_a_worklist_not_a_pass(box: Path) -> None:
++    """A known-dark organ named in the debt does not fail the gate -- and it is still reported,
++    so declaring is a promise to fix rather than a way to stop looking."""
++    _declare_ledger(box, {"event_response_atlas": "desks/mt5/reports/ERA.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "ERA.json", NOW - timedelta(hours=72))
++    _write(box, EVENTS, _events([("event_response_atlas", NOW - timedelta(hours=h), True)
++                                 for h in range(15, 0, -1)]))
++    _write(box, DEBT, json.dumps({"declared_max": 1, "declared": {
++        "event_response_atlas": {"verdict": "SILENT_NOOP", "why": "private bonferroni bar",
++                                 "owner": "liveness lane"}}}))
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is True, doc["problems"]
++    assert any("event_response_atlas" in n for n in doc["notes"])
++    assert doc["debt"]["n_breached"] == 1 and doc["debt"]["n_undeclared"] == 0
++
++
++def test_the_declared_debt_may_only_shrink(box: Path) -> None:
++    """The one way a debt list becomes a hiding place is by growing. It cannot."""
++    _declare_ledger(box, {"a": "desks/mt5/reports/A.json", "b": "desks/mt5/reports/B.json"})
++    for n in ("A", "B"):
++        _touch(box / "desks" / "mt5" / "reports" / f"{n}.json", NOW - timedelta(hours=72))
++    _write(box, EVENTS, _events([(leg, NOW - timedelta(hours=h), True)
++                                 for leg in ("a", "b") for h in range(15, 0, -1)]))
++    _write(box, DEBT, json.dumps({"declared_max": 1, "declared": {
++        "a": {"why": "x"}, "b": {"why": "y"}}}))
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is False
++    assert any("may only SHRINK" in p for p in doc["problems"])
++
++
++# ----------------------------------------------------- 3. the seal's duty cycle per window
++def test_a_window_that_closed_on_refusals_is_counted(box: Path) -> None:
++    """The measurement the 2026-09-24 freeze needed: not 'is placement halted now' (the sibling
++    fence answers that) but 'how many windows did the rail cost us'."""
++    _declare_ledger(box, {"x": "desks/mt5/reports/X.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "X.json", NOW - timedelta(minutes=5))
++    _write(box, EVENTS, _events([("x", NOW - timedelta(hours=1), True)]))
++    rows = []
++    for day in range(1, 4):                       # three days of refusals, none placed
++        for i in range(40):
++            rows.append(json.dumps({
++                "decided_at": (NOW - timedelta(days=day, minutes=i)).isoformat(),
++                "sleeve": "gold_asia", "reason": "release_identity_refused", "taken": False}))
++    rows.append(json.dumps({"decided_at": (NOW - timedelta(days=4)).isoformat(),
++                            "sleeve": "gold_asia", "reason": "placed", "taken": True}))
++    _write(box, "desks/mt5/data/decision_ledger.jsonl", "\n".join(rows) + "\n")
++
++    doc = fence.scan(box, now=NOW)
++    seal = doc["seal_duty_cycle"]
++
++    assert seal["available"] is True
++    assert seal["windows_lost"] == 3 and seal["windows_placed"] == 1
++    assert seal["lost_by_reason"]["release_identity_refused"] == 120
++
++
++def test_windows_lost_carries_a_falling_ratchet(box: Path) -> None:
++    _declare_ledger(box, {"x": "desks/mt5/reports/X.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "X.json", NOW - timedelta(minutes=5))
++    _write(box, EVENTS, _events([("x", NOW - timedelta(hours=1), True)]))
++    _write(box, "desks/mt5/data/decision_ledger.jsonl", "\n".join(json.dumps({
++        "decided_at": (NOW - timedelta(days=d)).isoformat(), "sleeve": "gold_asia",
++        "reason": "release_identity_refused", "taken": False}) for d in range(1, 5)) + "\n")
++    _write(box, DEBT, json.dumps({"declared": {}, "windows_lost_max": 2}))
++
++    doc = fence.scan(box, now=NOW)
++
++    assert doc["ok"] is False
++    assert any("without a placement" in p for p in doc["problems"])
++
++
++# ------------------------------------------------------ 4. applicability and measurement
++def test_a_host_that_runs_no_cycle_is_not_applicable(tmp_path: Path) -> None:
++    """CI and a fresh clone run no organ. A fence red on every machine that was never supposed to
++    run one is a fence somebody switches off (L1.43)."""
++    doc = fence.scan(tmp_path, now=NOW)
++    assert doc["verdict"] == "NOT_APPLICABLE"
++    assert doc["ok"] is True
++
++
++def test_a_cycle_host_with_no_event_log_is_unmeasured_and_fails(box: Path) -> None:
++    """UNMEASURED is a verdict, not a pass (L1.28a). An organ plane that records no runs is
++    exactly what a silent stall looks like."""
++    _declare_ledger(box, {"x": "desks/mt5/reports/X.json"})
++    _touch(box / "desks" / "mt5" / "reports" / "X.json", NOW)
++    doc = fence.scan(box, now=NOW)
++    assert doc["verdict"] == "UNMEASURED"
++    assert doc["ok"] is False
++
++
++def test_the_leg_token_is_normalised(box: Path) -> None:
++    """`hourly_cycle._leg_artifacts` takes the token whole, so `hourly_cycle:causal_lab (macro
++    department)` resolves to a leg that has never run. Measured on the box: 79 of 263 declaration
++    rows -- 30% -- dropped on the floor by that parser."""
++    _write(box, LEDGER, json.dumps({"items": [
++        {"id": "T1", "scheduled_by": "hourly_cycle:causal_lab (macro department)",
++         "artifact": "desks/mt5/reports/CAUSAL_LAB.json"}]}))
++    _touch(box / "desks" / "mt5" / "reports" / "CAUSAL_LAB.json", NOW)
++    organs, unparsed = fence.declared_organs(box)
++    assert "causal_lab" in organs, organs
++    assert unparsed == []
++
++
++# ------------------------------------------------------------------- 5. the fence is WIRED
++def test_the_fence_runs_on_a_clock() -> None:
++    """A checker nobody runs is the same silence with more files in it (LAWS III.16)."""
++    gate = (ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
++    assert "check_organ_cadence.py" in gate, (
++        "check_organ_cadence.py is not registered in run_law_gate.py -- an unwired fence is a "
++        "claim the desk cannot cash (L1.49)")
++
++
++def test_the_fence_never_caps_or_gates_capital() -> None:
++    """GROWTH GOVERNANCE. This file exists to make more organs produce; it must never be the
++    thing that makes the book smaller. Nothing here may write a sleeve, a lot or a threshold."""
++    src = (ROOT / "scripts" / "check_organ_cadence.py").read_text("utf-8")
++    for forbidden in ("sleeves.json", "risk_frac", "heat_floor", "gate_spec",
++                      "UNIVERSAL_SURVIVORS", "fixed_trial_count"):
++        assert forbidden not in src, f"the cadence fence must not touch {forbidden}"
++
++
++def test_thresholds_catch_the_day_it_happens() -> None:
++    """The real breaks were at 31, 36, 42, 72 and 72 hours. A window wider than a day, or a
++    staleness allowance wider than a shift, is choosing to be blind for longer -- and this says
++    so, so a later widening is a decision somebody makes on the record."""
++    assert fence.WINDOW_H <= 24.0
++    assert fence.PRODUCT_STALE_CADENCES <= 12.0
++    assert fence.MIN_OK_RUNS >= 2, "one clean run is not evidence that an organ runs fine"
+diff --git a/tests/ops/test_hung_writer_reaper.py b/tests/ops/test_hung_writer_reaper.py
+index 50cc4953255..4c2d19051e7 100644
+--- a/tests/ops/test_hung_writer_reaper.py
++++ b/tests/ops/test_hung_writer_reaper.py
+@@ -118,17 +118,67 @@ def test_a_slow_writer_is_spared(monkeypatch: pytest.MonkeyPatch, _no_sleep: Any
+     assert any(r["pid"] == 202 and "slow, not stopped" in r["why"] for r in rep["spared"])
+ 
+ 
+-def test_a_writer_inside_its_own_window_is_never_a_candidate(
++def test_a_writer_still_waiting_for_the_mutex_is_never_a_candidate(
+         monkeypatch: pytest.MonkeyPatch, _no_sleep: Any) -> None:
+-    """The adoption waits 540 s for the mutex and the shadow sync's limit is 600 s, so a writer
+-    that has not finished in nine minutes is merely slow -- the bar is 30."""
+-    young = _FakeProc(303, "git.exe", 600.0, [(0.0, 0), (0.0, 0)])
+-    _install(monkeypatch, [young])
++    """THE ONE REAL JOB OF THE AGE FLOOR, and it is not "slow writers are legitimate" -- the delta
++    proof already handles those. A writer BLOCKED WAITING for the mutex burns no CPU and moves no
++    bytes either, so it is indistinguishable from a wedge by movement alone. Adopt-And-Seal waits
++    540 s before giving up, so a motionless writer at 500 s may simply be queued and about to do
++    real work. Killing it is the trigger-happy failure that gets a reaper switched off."""
++    waiting = _FakeProc(303, "git.exe", 500.0, [(0.0, 0), (0.0, 0)])
++    _install(monkeypatch, [waiting])
+     rep = gwl.hung_writers(sleep=_no_sleep)
+     assert rep["hung"] == []
+     assert any(r["pid"] == 303 for r in rep["spared"])
+ 
+ 
++def test_the_floor_clears_the_longest_legitimate_wait_and_no_more(
++        monkeypatch: pytest.MonkeyPatch, _no_sleep: Any) -> None:
++    """MEASURED 2026-09-24: at 1800 s, with the reaper on a 15-minute clock, a wedge was invisible
++    for up to 45 minutes -- and one was, through five consecutive CLEAR reports, while the seal
++    could not take the lock and `allows_new_risk` stayed False into the approach of a placement
++    window. The floor now sits just past the 540 s mutex wait, so a motionless writer past every
++    legitimate queue is reaped on the evidence rather than waited out."""
++    assert 540.0 < gwl.HUNG_MIN_AGE_S <= 900.0, (
++        "the floor must clear Adopt-And-Seal's 540 s mutex wait and nothing beyond it")
++    wedged = _FakeProc(404, "git.exe", 620.0, [(1.5, 900), (1.5, 900)])
++    _install(monkeypatch, [wedged])
++    rep = gwl.hung_writers(sleep=_no_sleep)
++    assert [r["pid"] for r in rep["hung"]] == [404]
++
++
++def test_a_writer_moving_only_bytes_is_spared(monkeypatch: pytest.MonkeyPatch,
++                                              _no_sleep: Any) -> None:
++    """A chunked push blocked on the network burns almost no CPU while still transferring. If the
++    proof were CPU alone this would be killed mid-push, which is one lane's legitimate work
++    destroyed by the fence meant to protect it. I/O movement alone must spare."""
++    pushing = _FakeProc(505, "git.exe", 5_000.0, [(2.0, 1_000), (2.0, 4_500_000)])
++    _install(monkeypatch, [pushing])
++    rep = gwl.hung_writers(sleep=_no_sleep)
++    assert rep["hung"] == []
++    assert any("slow, not stopped" in r["why"] for r in rep["spared"])
++
++
++def test_a_writer_moving_only_cpu_is_spared(monkeypatch: pytest.MonkeyPatch,
++                                            _no_sleep: Any) -> None:
++    """The mirror case: `git gc` on a 22 GB repository burns CPU for a long time and may report
++    no per-process I/O at all on some platforms. Killing it mid-repack is how a repository gets
++    corrupted."""
++    packing = _FakeProc(606, "git.exe", 9_000.0, [(11.0, 0), (48.0, 0)])
++    _install(monkeypatch, [packing])
++    rep = gwl.hung_writers(sleep=_no_sleep)
++    assert rep["hung"] == []
++    assert any("slow, not stopped" in r["why"] for r in rep["spared"])
++
++
++def test_the_sample_window_is_long_enough_to_see_a_working_writer() -> None:
++    """The other half of lowering the floor: the proof that replaces it is made stronger, not
++    weaker. One `sleep` covers every candidate, so this costs sixty seconds per RUN and not per
++    process, and a longer window makes this strictly LESS likely to kill live work."""
++    assert gwl.HUNG_SAMPLE_S >= 60.0
++    assert gwl.HUNG_SAMPLE_S < 540.0, "the sample must sit well inside the mutex wait"
++
++
+ def test_sshd_is_not_a_writer() -> None:
+     """The SSH SERVER is long-lived by design; matching it once reported a healthy 3.9-day-old
+     service as a stuck writer, and a guard whose first output is a false positive gets removed."""
+-- 
+2.47.1.windows.1
+

@@ -1,0 +1,408 @@
+From ba93f202e44a305463e6452ebbbe445563e6ca56 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Wed, 23 Sep 2026 22:09:38 +0200
+Subject: [PATCH] The law battery gets a clock it can finish, and the box's
+ absent clocks come back
+
+data/law_gate.json on the trading box was 270 h old and held 14 of 56 fences, which is forty
+"fence_ran" defects and, by L1.49, every green claim resting on those fences uncashable. Nothing
+had been disabled and nothing had failed: full_gate gives each of 56 fences up to 600 s, so one
+battery can cost nine hours, and a gate that cannot fit an hourly window does not run at all.
+
+run_law_gate.py --rotate runs the fences that have gone longest without a verdict until its
+budget is spent and merges them into the record, which now carries each fence's own ran_at and
+the 48 h window it must be inside. A verdict older than the window is DROPPED, so a fence that
+stops running is reported as never run rather than carried green. Measured on the first pass:
+18 fences in 120 s, so the hourly 1800 s budget covers the battery several times over. No fence
+was disabled and no bar lowered: the pass ships RED with the real breaches named.
+
+MT5-LawGate (hourly at :40) is its clock. MT5-CycleNoon, MT5-CycleMidnight, MT5-RebootDrill and
+MT5-ShadowSync were declared by the installer and absent from the scheduler; they are registered
+from their own declared triggers and scripts. MT5-PlumbingWatchdog is installed from its own
+installer. MT5-Gateway and MT5-ArtifactSync leave the manifest with their reasons: the gateway
+runs as MT5-GatewayResident (measured: gateway_state.json 32 s old at the time of writing), and
+the installer deliberately unregisters ArtifactSync because the VPS it fed was decommissioned.
+
+MT5-AdoptRelease's window goes 20 -> 50 minutes. The adoption was being KILLED by its own limit
+mid `git merge -s ours` -- "could not write index / fatal: stash failed", exit 267014 -- which
+is why the box sat 9 commits behind, running code that was not the shipped code. The same pass
+with no limit adopted 24,297 paths and reached the tip.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01WZHzZoD3QX9Tx668fkAaw6
+---
+ desks/mt5/ops/box_tasks.manifest              |  31 +++-
+ .../scripts/install_adopt_release_task.ps1    |   2 +-
+ desks/mt5/scripts/install_law_gate_task.ps1   |  37 +++++
+ .../mt5/scripts/register_absent_box_tasks.ps1 |  59 +++++++
+ scripts/run_law_gate.py                       | 147 +++++++++++++++++-
+ 5 files changed, 266 insertions(+), 10 deletions(-)
+ create mode 100644 desks/mt5/scripts/install_law_gate_task.ps1
+ create mode 100644 desks/mt5/scripts/register_absent_box_tasks.ps1
+
+diff --git a/desks/mt5/ops/box_tasks.manifest b/desks/mt5/ops/box_tasks.manifest
+index 4b4264eea4d..0de2e760819 100644
+--- a/desks/mt5/ops/box_tasks.manifest
++++ b/desks/mt5/ops/box_tasks.manifest
+@@ -60,7 +60,14 @@ TASK name="MT5-CostState"          trigger="daily 04:20"         runs="desks/mt5
+ TASK name="MT5-FrontierAudit"      trigger="daily 05:10"         runs="ops/run_frontier_audit.cmd"            installer="NONE" lane="research"
+ TASK name="MT5-AuditLane"          trigger="every 1 hour"        runs="ops/run_audit_lane.cmd"                installer="NONE" lane="research"
+ TASK name="MT5-ScientistTournament" trigger="daily 02:30 local (00:30 UTC)" runs="ops/run_scientist_tournament.cmd" installer="NONE" lane="research"
+-TASK name="MT5-Gateway"            trigger="continuous loop"      runs="desks/mt5/research/run_gateway_loop.py" installer="NONE" lane="money"
++# MT5-Gateway IS RETIRED FROM THIS MANIFEST, AND THE GATEWAY IS NOT (2026-09-23). The gateway
++# runs as MT5-GatewayResident, declared below: MEASURED this hour, the resident task last ran
++# with result 0 and desks/mt5/data/gateway_state.json was 32 seconds old. MT5-Gateway itself has
++# been Disabled since 2026-09-16 and its last run was seven days ago; it is the superseded
++# registration, not a dark money path. Declaring it kept `check_declared_tasks` reporting a
++# CRITICAL disabled clock the desk does not want. The DISABLED task is left on the box rather
++# than deleted -- removing a money-path registration is not a thing to do from a defect sweep --
++# but this file no longer claims it.
+ TASK name="MT5-FusionDeadman"      trigger="UNDECLARED"           runs="scripts/run_deadman_switch.py"         installer="NONE" lane="money"
+ # THE MT5 RAIL, DRY-RUN ONLY (2026-09-08). A separate task from MT5-FusionDeadman above, which runs
+ # the Tier-3 crypto rail and is not touched. This one evaluates the live MT5 account's rails every
+@@ -150,7 +157,7 @@ TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="UNKNOWN
+ TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="NONE" lane="ops"
+ # The post-reboot drill (2026-09-08): read-only apart from re-enabling a Disabled task; records
+ # PASS/FAIL to desks/mt5/reports/REBOOT_DRILL.json and raises data/REBOOT_DRILL_ALARM.txt on FAIL.
+-TASK name="MT5-RebootDrill"        trigger="daily at 06:30"   runs="ops/reboot_drill.ps1"                     installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
++TASK name="MT5-RebootDrill"        trigger="daily at 06:30"   runs="ops/reboot_drill.ps1"                     installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="ops"
+ TASK name="MT5-DeskState"          trigger="every 15 minutes, at :05"       runs="scripts/build_zentech_state.py" installer="NONE" lane="ops"
+ TASK name="MT5-LocalDashboard"     trigger="at startup"       runs="scripts/serve_dashboard.py"         installer="desks/mt5/scripts/install_local_dashboard.ps1" lane="ops"
+ # THE 24/7 DASHBOARD (principal 2026-09-23). MT5-LocalDashboard binds 127.0.0.1 and is therefore
+@@ -159,7 +166,7 @@ TASK name="MT5-LocalDashboard"     trigger="at startup"       runs="scripts/serv
+ # permanent rather than a process someone started. It serves web/dashboard.html, which renders
+ # web/desk_state.json["dashboard"] -- the join written hourly by the desk_dashboard_state leg.
+ TASK name="MT5-DeskDashboard"      trigger="at startup"       runs="scripts/serve_dashboard.py --port 8080 --host 0.0.0.0 --require-token" installer="desks/mt5/scripts/install_desk_dashboard_task.ps1" lane="ops"
+-TASK name="MT5-ShadowSync"         trigger="UNDECLARED"       runs="desks/mt5/scripts/MT5Sync.cmd"            installer="NONE" lane="ops"
++TASK name="MT5-ShadowSync"         trigger="every 15 minutes at :05" runs="desks/mt5/scripts/sync_shadow_to_git.ps1" installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="ops"
+ 
+ # --- MEASURED ON THE BOX 2026-09-16 (schtasks /Query) so the DR floor knows them. MT5-HourlyCore
+ # runs hourly_cycle.py under HOURLY_PLAN=core (the cheap governance/forward/publication legs,
+@@ -219,13 +226,17 @@ TASK name="MT5-GoldHourSweep" trigger="UNDECLARED" runs="ops/run_gold_hour_sweep
+ # ops/organ_contract.py names it; not installed on the box 2026-09-16.
+ TASK name="MT5-CertHygiene" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="research"
+ # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
+-TASK name="MT5-CycleMidnight" trigger="UNDECLARED" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
++TASK name="MT5-CycleMidnight" trigger="hourly 00:00-11:00" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane midnight" installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="research"
+ # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
+-TASK name="MT5-CycleNoon" trigger="UNDECLARED" runs="desks/mt5/research/hourly_cycle.py" installer="NONE" lane="research"
++TASK name="MT5-CycleNoon" trigger="hourly 12:00-23:00" runs="desks/mt5/scripts/Run-DeskCycle.ps1 -Lane noon" installer="desks/mt5/scripts/register_absent_box_tasks.ps1" lane="research"
+ # scripts/check_scheduled_tasks.py names it; not installed on the box 2026-09-16.
+ TASK name="MT5-DashMirror" trigger="UNDECLARED" runs="UNKNOWN" installer="NONE" lane="ops"
+ # desks/mt5/scripts/Install-QuantWindows.ps1 registers it; not installed on the box 2026-09-16.
+-TASK name="MT5-ArtifactSync" trigger="UNDECLARED" runs="UNKNOWN" installer="desks/mt5/scripts/Install-QuantWindows.ps1" lane="ops"
++# MT5-ArtifactSync IS RETIRED FROM THIS MANIFEST (2026-09-23). Install-QuantWindows.ps1 does not
++# register it: it UNREGISTERS it on purpose ("Hetzner decommissioned", 2026-08-23), because its
++# whole job was pushing artifacts to a VPS that no longer takes them. The manifest went on
++# declaring it, so `check_declared_tasks` reported it absent every pass -- a defect generated by
++# the declaration, not by the box. The installer's own line is the authority here.
+ 
+ # THE DEPARTMENTS (2026-09-16): each research mission on its own hourly clock at full throughput
+ # (HOURLY_PLAN=dept:<name>) as 24/7 RESIDENTS (department_resident.py: singleton lock, a pass
+@@ -240,3 +251,11 @@ TASK name="MT5-Dept-Execution" trigger="at startup + every 10 minutes (keep-aliv
+ TASK name="MT5-Dept-Forward" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+ TASK name="MT5-Dept-Meta" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
+ TASK name="MT5-Dept-Rest" trigger="at startup + every 10 minutes (keep-alive of a 24/7 resident)" runs="desks/mt5/research/department_resident.py" installer="NONE" lane="research"
++
++# THE LAW BATTERY'S OWN CLOCK (2026-09-23). data/law_gate.json was 270 h old with 14 of 56
++# fences in it, which made forty "fence_ran" defects and, by L1.49, every green claim resting on
++# them uncashable. The battery does not fit an hourly window -- 56 fences at up to 600 s each --
++# so it rides a ROTATION: oldest fences first until the budget is spent, merged into the record
++# with each fence's own `ran_at`, and a fence whose verdict ages past the stated 48 h window is
++# dropped from the record and reported as never run. No fence is disabled to make this pass.
++TASK name="MT5-LawGate" trigger="hourly at :40" runs="scripts/run_law_gate.py --rotate --budget-s 1800" installer="desks/mt5/scripts/install_law_gate_task.ps1" lane="ops"
+diff --git a/desks/mt5/scripts/install_adopt_release_task.ps1 b/desks/mt5/scripts/install_adopt_release_task.ps1
+index b0b16e3d157..95db6a69685 100644
+--- a/desks/mt5/scripts/install_adopt_release_task.ps1
++++ b/desks/mt5/scripts/install_adopt_release_task.ps1
+@@ -51,7 +51,7 @@ $trigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMi
+ $settings = New-ScheduledTaskSettingsSet `
+     -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+     -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 2) `
+-    -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -MultipleInstances IgnoreNew
++    -ExecutionTimeLimit (New-TimeSpan -Minutes 50) -MultipleInstances IgnoreNew
+ 
+ # The same principal shape as MT5-ShadowSync, the task whose commits this one follows: the
+ # logged-on user, interactive, limited. Adoption writes files and runs git; it needs nothing
+diff --git a/desks/mt5/scripts/install_law_gate_task.ps1 b/desks/mt5/scripts/install_law_gate_task.ps1
+new file mode 100644
+index 00000000000..77ba4c5e859
+--- /dev/null
++++ b/desks/mt5/scripts/install_law_gate_task.ps1
+@@ -0,0 +1,37 @@
++<#
++  MT5-LawGate -- THE LAW BATTERY, ON A CLOCK THAT COMPLETES.
++
++  WHY THIS EXISTS. `data/law_gate.json` on this box was 270 HOURS old and held 14 of 56 fences,
++  so `check_fences_ran` reported forty fences as never run and, by the desk's own L1.49, every
++  green claim resting on them was uncashable. The battery was not disabled and nothing had
++  failed: `full_gate` gives each of 56 fences up to 600 s, which is up to nine hours, and no
++  hourly window can hold that. A gate that cannot fit its window does not run at all.
++
++  WHAT THIS REGISTERS. `run_law_gate.py --rotate` runs the fences that have gone longest without
++  a verdict until its budget is spent and MERGES them into the record, which carries `ran_at`
++  per fence and the window it must be inside. Measured on the first pass: 18 fences in 120 s, so
++  a 30-minute hourly budget covers the whole battery several times inside the 48 h window.
++
++  It never disables a fence and never lowers a bar: a fence that stops running falls out of the
++  record inside the window and is reported as never run, which is the measurement.
++#>
++$ErrorActionPreference = 'Stop'
++$TaskName = 'MT5-LawGate'
++$DeskRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
++$RepoRoot = (Resolve-Path (Join-Path $DeskRoot '..\..')).Path
++$python = (Get-Command python -ErrorAction SilentlyContinue).Source
++if (-not $python) { throw "python not on PATH" }
++$action = New-ScheduledTaskAction -Execute $python `
++    -Argument 'scripts\run_law_gate.py --rotate --budget-s 1800' -WorkingDirectory $RepoRoot
++# :40 past the hour: clear of the :05/:12/:20 git-writer slots, so a fence never waits on a lock.
++$trigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(40)) `
++    -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Days 3650)
++$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
++    -StartWhenAvailable -MultipleInstances IgnoreNew `
++    -ExecutionTimeLimit (New-TimeSpan -Minutes 45)
++$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
++Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
++Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
++    -Settings $settings -Principal $principal `
++    -Description "Law battery in rotation: oldest fences first, merged into data/law_gate.json with each fence's own hour." | Out-Null
++Write-Host ("  [OK  ] {0} registered (hourly at :40, 1800 s of fences per pass)" -f $TaskName)
+diff --git a/desks/mt5/scripts/register_absent_box_tasks.ps1 b/desks/mt5/scripts/register_absent_box_tasks.ps1
+new file mode 100644
+index 00000000000..02cb2889b2b
+--- /dev/null
++++ b/desks/mt5/scripts/register_absent_box_tasks.ps1
+@@ -0,0 +1,59 @@
++<#
++  THE CLOCKS THE INSTALLER DECLARES AND THE SCHEDULER DID NOT HAVE (2026-09-23).
++
++  `check_declared_tasks` reported five tasks declared by the box's own manifest and ABSENT from
++  the scheduler. Re-running Install-QuantWindows.ps1 whole on a live box has failed with "Access
++  is denied" on the S4U principals, so this registers exactly those tasks, with the triggers and
++  the scripts the installer's own table declares, and nothing else.
++
++  MT5-ArtifactSync is NOT here: the installer deliberately UNREGISTERS it (the Hetzner sync it
++  fed was decommissioned 2026-08-23). The manifest's claim on it is the thing that was wrong,
++  and the manifest is where that is fixed.
++#>
++$ErrorActionPreference = 'Continue'
++$RepoRoot = 'C:\opt\quant'
++$DeskRoot = Join-Path $RepoRoot 'desks\mt5'
++$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
++function Reg($name, $action, $trigger, $settings, $desc) {
++    try {
++        Unregister-ScheduledTask -TaskName $name -Confirm:$false -ErrorAction SilentlyContinue
++        Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger `
++            -Settings $settings -Principal $principal -Description $desc | Out-Null
++        Write-Host ("  [OK  ] {0} registered" -f $name)
++    } catch { Write-Host ("  [FAIL] {0} {1}" -f $name, $_.Exception.Message) }
++}
++$ps = (Get-Command powershell.exe).Source
++$base = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
++    -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Hours 10)
++
++# --- the two desk-cycle lanes: -Once with a repetition, the shape PS 5.1 accepts (the -Daily
++# parameter set rejects -RepetitionInterval, which is why both lanes were silently absent).
++$noonA = New-ScheduledTaskAction -Execute $ps -WorkingDirectory $RepoRoot -Argument `
++    ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}\scripts\Run-DeskCycle.ps1" -Lane noon' -f $DeskRoot)
++$noonT = New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(12)) `
++    -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Hours 11)
++Reg "MT5-CycleNoon" $noonA $noonT $base "Daily wiring pass (noon lane): schedule the unwired, repair staleness and failing tasks."
++
++$midA = New-ScheduledTaskAction -Execute $ps -WorkingDirectory $RepoRoot -Argument `
++    ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}\scripts\Run-DeskCycle.ps1" -Lane midnight' -f $DeskRoot)
++$midT = New-ScheduledTaskTrigger -Once -At ([datetime]::Today) `
++    -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Hours 11)
++Reg "MT5-CycleMidnight" $midA $midT $base "Daily wiring pass (midnight lane): schedule the unwired, repair staleness and failing tasks."
++
++# --- the post-reboot drill, read-only apart from re-enabling a task Windows left Disabled.
++$drillA = New-ScheduledTaskAction -Execute $ps -WorkingDirectory $RepoRoot -Argument `
++    ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}\ops\reboot_drill.ps1"' -f $RepoRoot)
++$drillT = New-ScheduledTaskTrigger -Daily -At "06:30"
++$drillS = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
++    -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 30)
++Reg "MT5-RebootDrill" $drillA $drillT $drillS "Daily post-reboot drill: terminal, required tasks and account freshness; records PASS/FAIL for the issue board."
++
++# --- the 15-minute shadow-health publisher, five minutes off the replay slots.
++$syncA = New-ScheduledTaskAction -Execute $ps -WorkingDirectory $RepoRoot -Argument `
++    ('-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{0}\scripts\sync_shadow_to_git.ps1"' -f $DeskRoot)
++$syncT = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(5)) `
++    -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 3650)
++$syncS = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
++    -StartWhenAvailable -MultipleInstances IgnoreNew -RestartCount 3 `
++    -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
++Reg "MT5-ShadowSync" $syncA $syncT $syncS "Commit MT5 shadow-health state to git for cross-brain visibility."
+diff --git a/scripts/run_law_gate.py b/scripts/run_law_gate.py
+index 766fff451ae..57efd33abb4 100644
+--- a/scripts/run_law_gate.py
++++ b/scripts/run_law_gate.py
+@@ -656,6 +656,131 @@ def full_gate(root: Path | None = None, *, laws_only: bool = False,
+             "generated": datetime.now(tz=UTC).isoformat()}
+ 
+ 
++#: HOW LONG A FENCE'S VERDICT STANDS, and therefore how long the rotation has to reach every
++#: fence in the battery. MEASURED, not chosen for comfort: `full_gate` gives each of the 53
++#: fences up to 600 s, so one battery can cost eight hours and no hourly window can hold it --
++#: which is exactly why `data/law_gate.json` on the trading box was 270 h old with 14 of 53
++#: fences in it, and why every green claim the desk made rested on a gate that had not run.
++#: A fence whose verdict is older than this window is DROPPED from the record, so the watchdog
++#: reports it as never run. That is the measurement (L1.49), never a failure of the record.
++ROTATION_WINDOW_H: float = 48.0
++
++#: The longest a single fence may hold the rotation, matching `full_gate`'s own per-fence bound.
++ROTATION_FENCE_TIMEOUT_S: float = 600.0
++
++#: The least budget a fence may be started with. Below this the pass ends instead of starting a
++#: fence it cannot let finish.
++_ROTATION_FLOOR_S: float = 120.0
++
++
++def _run_fence(root: Path, script: str, extra: tuple[str, ...],
++               timeout: float) -> dict[str, Any]:
++    """One fence, one verdict. An absent or unrunnable fence FAILS, it is never skipped."""
++    p = root / "scripts" / script
++    if not p.exists():
++        return {"fence": script, "ok": False, "detail": "missing"}
++    try:
++        r = subprocess.run([sys.executable, str(p), *extra], capture_output=True,
++                           text=True, timeout=timeout, cwd=root)
++    except (OSError, subprocess.TimeoutExpired) as exc:
++        return {"fence": script, "ok": False,
++                "detail": f"unrunnable: {exc} -- counts as FAILED, never skipped"}
++    tail = (r.stdout or r.stderr or "").strip().splitlines()
++    return {"fence": script, "ok": r.returncode == 0, "rc": r.returncode,
++            "detail": tail[-1][:200] if tail else ""}
++
++
++def _record_age_s(row: dict[str, Any], now: datetime) -> float:
++    """Seconds since this fence last ran; infinite when the record cannot be read."""
++    try:
++        return (now - datetime.fromisoformat(str(row.get("ran_at")))).total_seconds()
++    except (TypeError, ValueError):
++        return float("inf")
++
++
++def rotate_gate(root: Path | None = None, *, budget_s: float = 1800.0,
++                now: datetime | None = None) -> dict[str, Any]:
++    """THE WHOLE BATTERY, IN ROTATION, INSIDE A STATED WINDOW.
++
++    The full battery does not fit an hourly window, and a gate that cannot fit its window does
++    not run at all -- which is how the box reached 270 h with no battery record. This mode runs
++    the fences that have gone longest without a verdict until the budget is spent, then MERGES
++    them into `data/law_gate.json` so the record carries every fence with the time it ran.
++
++    Three properties the record must keep, because the whole point is that it can be cashed:
++
++      EVERY FENCE NAMES ITS OWN HOUR.  Each row carries `ran_at` and `elapsed_s`, so "the gate
++      is green" can always be answered with "measured when?".
++
++      THE WINDOW IS STATED AND ENFORCED.  A verdict older than ROTATION_WINDOW_H is dropped,
++      not carried forward -- a fence that stops running disappears from the record within the
++      window and is reported as never run.
++
++      NOTHING IS EVER SKIPPED FOR BEING SLOW.  Oldest-first ordering means a slow fence cannot
++      be starved by fast ones: it only ever climbs the queue.
++    """
++    root = root or _ROOT
++    t0 = now or datetime.now(tz=UTC)
++    # One entry per fence SCRIPT, carrying every argument set the battery declares for it (the
++    # same script rides both batteries with different flags; the record is keyed by name because
++    # `check_fences_ran` asks by name).
++    declared: dict[str, list[tuple[str, ...]]] = {}
++    for script, extra in (*_LAW_FENCES, *_STATE_FENCES):
++        declared.setdefault(script, []).append(tuple(extra))
++    prior: dict[str, dict[str, Any]] = {}
++    try:
++        doc = json.loads((root / "data/law_gate.json").read_text("utf-8"))
++        rec = doc.get("fences") if isinstance(doc, dict) else None
++        if isinstance(rec, dict):
++            prior = {str(k): dict(v) for k, v in rec.items() if isinstance(v, dict)}
++    except (OSError, ValueError):
++        prior = {}
++    due = sorted(declared, key=lambda n: (-_record_age_s(prior.get(n, {}), t0), n))
++    ran: list[str] = []
++    for name in due:
++        left = budget_s - (datetime.now(tz=UTC) - t0).total_seconds()
++        # A FENCE IS NEVER JUDGED ON A TRUNCATED CLOCK. Measured on the first rotation pass:
++        # check_enforcement_execution was started with 32 s of budget left, timed out, and was
++        # recorded as FAILED -- a verdict about the budget wearing the costume of a verdict about
++        # the desk. Below the floor the pass simply ends and the fence stays at the head of the
++        # queue for the next one.
++        if ran and left < _ROTATION_FLOOR_S:
++            break
++        started = datetime.now(tz=UTC)
++        rows = [_run_fence(root, name, extra,
++                           min(ROTATION_FENCE_TIMEOUT_S, max(_ROTATION_FLOOR_S, left)))
++                for extra in declared[name]]
++        bad = [r for r in rows if not r["ok"]]
++        row = dict(bad[0] if bad else rows[0])
++        row["ok"] = not bad
++        row["n_invocations"] = len(rows)
++        row["ran_at"] = started.isoformat()
++        row["elapsed_s"] = round((datetime.now(tz=UTC) - started).total_seconds(), 1)
++        prior[name] = row
++        ran.append(name)
++    t1 = datetime.now(tz=UTC)
++    window_s = ROTATION_WINDOW_H * 3600.0
++    fences = {n: r for n, r in prior.items()
++              if n in declared and _record_age_s(r, t1) <= window_s}
++    results = [fences[n] for n in sorted(fences)]
++    failures = [f"{r['fence']} (rc={r.get('rc', '?')}): {r.get('detail', '')}"
++                for r in results if not r.get("ok")]
++    missing = sorted(n for n in declared if n not in fences)
++    failures += [f"{n}: no verdict inside the {ROTATION_WINDOW_H:.0f}h rotation window -- "
++                 f"a gate that never ran is a claim the desk cannot cash (L1.49)"
++                 for n in missing]
++    return {"mode": "rotation", "ok": not failures, "n_fences": len(declared),
++            "subject": f"cwd (rotation judges LIVE state; {ROTATION_WINDOW_H:.0f}h window)",
++            "n_failed": len(failures), "failures": failures, "results": results,
++            "fences": fences,
++            "rotation": {"window_h": ROTATION_WINDOW_H, "budget_s": budget_s,
++                         "ran_this_pass": ran, "n_recorded": len(fences),
++                         "n_declared": len(declared), "never_recorded": missing,
++                         "oldest_ran_at": min((str(r.get("ran_at")) for r in results),
++                                              default=None)},
++            "generated": t1.isoformat()}
++
++
+ def main() -> int:
+     ap = argparse.ArgumentParser()
+     ap.add_argument("--fast", action="store_true",
+@@ -668,15 +793,31 @@ def main() -> int:
+                          "HEAD by default because that is what a push and CI actually gate; this "
+                          "is the escape hatch, and the re-exec inside the HEAD checkout uses it")
+     ap.add_argument("--json", action="store_true")
++    ap.add_argument("--rotate", action="store_true",
++                    help="run the OLDEST fences until --budget-s is spent and merge them into "
++                         "data/law_gate.json: the battery costs hours and no clock window holds "
++                         "it, so it rides a rotation whose window is stated in the record")
++    ap.add_argument("--budget-s", type=float, default=1800.0,
++                    help="seconds of fence time one rotation pass may spend (default 1800)")
+     args = ap.parse_args()
+-    rep = fast_gate() if args.fast else full_gate(laws_only=args.laws_only,
+-                                                  in_place=args.in_place)
++    if args.fast:
++        rep = fast_gate()
++    elif args.rotate:
++        rep = rotate_gate(budget_s=args.budget_s)
++    else:
++        rep = full_gate(laws_only=args.laws_only, in_place=args.in_place)
+     if not args.fast:
+         (_ROOT / "data/law_gate.json").write_text(json.dumps(rep, indent=2), "utf-8")
+     if args.json:
+         print(json.dumps(rep, indent=2))
+     else:
+-        head = "LAW GATE" + (" (fast)" if args.fast else f" -- {rep.get('n_fences', 0)} fences")
++        head = "LAW GATE" + (" (fast)" if args.fast
++                             else f" -- {rep.get('n_fences', 0)} fences")
++        rot = rep.get("rotation")
++        if isinstance(rot, dict):
++            head += (f" [rotation: {len(rot.get('ran_this_pass') or [])} ran this pass, "
++                     f"{rot.get('n_recorded')} of {rot.get('n_declared')} inside "
++                     f"{rot.get('window_h')}h]")
+         print(f"{head}: {'PASS' if rep['ok'] else 'FAIL'}")
+         # The verdict NAMES ITS OWN SUBJECT (R0402): "PASS" is meaningless until you know which
+         # artifact passed -- HEAD, or a working tree three sessions are writing to right now.
+-- 
+2.47.1.windows.1
+

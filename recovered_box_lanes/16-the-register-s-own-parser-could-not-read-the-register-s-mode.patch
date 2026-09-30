@@ -1,0 +1,208 @@
+From 4e12e062924619dbcc7c594e91b00ea9231e7903 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.local>
+Date: Thu, 24 Sep 2026 19:39:26 +0200
+Subject: [PATCH] The register's own parser could not read the register's
+ modern half
+
+---
+ docs/GAP_REGISTER.md                         |   3 +-
+ libs/research/finding_registry.py            |  19 ++-
+ tests/research/test_finding_registry_rows.py | 142 +++++++++++++++++++
+ 3 files changed, 161 insertions(+), 3 deletions(-)
+ create mode 100644 tests/research/test_finding_registry_rows.py
+
+diff --git a/docs/GAP_REGISTER.md b/docs/GAP_REGISTER.md
+index 18189b7a9a4..dec2ede93f9 100644
+--- a/docs/GAP_REGISTER.md
++++ b/docs/GAP_REGISTER.md
+@@ -1762,6 +1762,7 @@ _One class ran through nine of these rows: **a quantity was measured correctly a
+ | 207 | **OPEN — the conversion engine cannot run on this box: OOM-killed at 779.6MB having converted nothing, while 236 rows sit past grace (oldest 33.6d)** | `ops/run_recommendation_worker.sh` is the desk's only automated §33 disposer and has been dead since the 08-20 cron death; the conversion fence has read REPAIR-MODE ever since (311 rows, 166 open + 145 scheduled, 68 raised vs 17 dispositioned in 7d). Run by hand this cycle: it passed its own 400MB pre-flight with 1009MB available, invoked `claude`, and the kernel OOM killer took it at 10min20s with a 779.6MB peak and ZERO dispositions written. A floor below the job's own footprint is worse than no floor — the run starts, burns 2.5min CPU, dies, and hands the OOM killer a scoring decision this box has already got wrong (root cron, 08-20; three gap-wirer seats since). | PARTIAL: floor raised 400 -> 900MB on the measurement, so a doomed run no longer starts and no longer endangers a neighbour. NOT ALLOWLISTED — the box cannot host it beside the current fleet. THE BINDING CONSTRAINT IS A RESOURCE AND THE ASK IS EXPLICIT: 3814MB total with ZERO swap, ~650-1000MB typically available. Either swap or more memory unblocks the desk's conversion throughput; until then the backlog drains only at whatever rate human/agent sessions manage, which measured 17 rows in 7 days against 68 raised. | gap-fixer | 08-29 | open |
+ | 208 | **OPEN — 106 manifest rows are still run by NOTHING, and that number is now honest rather than 232** | After this cycle's wave-4 triage the dispatcher's `uncovered_unallowed` is 106 (was 120) and the scheduler fence's genuinely-uncovered count is 130 (was 232 undifferentiated). 13 organs were wired and 11 named as retired-universe rather than dead: `run_decline_detection`/`build_return_panel`/`run_fee_attribution` (BNBUSDT, TSTUSDT); `screen_moat`/`run_moat_campaign`/`screen_orderbook_state` (all block on `data/moat`, which holds only `bybit/` and `execution_tape/` while the MT5 moat is under `desks/mt5/data`); `snapshot_universe` (882 symbols with a crypto venue's status vocabulary against an MT5 registry of 251); `run_paper_sleeve_spawner`/`run_paper_sleeve_forward` (a SECOND forward loop fed by conv_* crypto screens — L1.58 mandates ONE engine for all lanes and calls a lane that builds its own "a defect on sight"). | NEXT CYCLE: judge the remaining 106 the same way — allowlist with the reason quoting what it actually printed, or retire in the manifest naming the successor. TRUE EXIT CODES ARE MANDATORY: the first two probe passes used `o=$(cmd\|tail); rc=$?`, which reports TAIL's status and graded a live ZeroDivisionError as rc=0. Two real crashes (rows 200, 203-adjacent) were invisible under that method. | gap-fixer | 08-29 | open |
+ | 209 | **OPEN — an automated snapshot commit from another box laundered stale content into this tree 31 times today, and the fence that heals it cannot see a bad HEAD** | `data/doc_replay_fence.log` records 31 heals of `docs/GAP_REGISTER.md` today, roughly every minute from 03:38 to 03:54, then silence — because at 04:22 the stale content was COMMITTED, HEAD became the bad version, and a fence that heals FROM HEAD has nothing left to compare against. That silence read as health, and the loss became permanent. Same box, same window, also dropped `currency_profit` from the universe registry (row 205). This is the recorded "Dell launder tramples DATA" class recurring: at least the third instance (research_queue 26->10; the 23-row universe stump; today). | THIS BOX'S DOOR IS CLOSED (row 203's pre-commit guard, row 205's pull guard, row 204's empty-file heal). The WRITER is not reachable from here — no ssh route to the pushing box. Per the recurrence ladder this is now an ARCHITECTURAL defect, 3rd+ occurrence: the desk should not keep buying the same repair. NEXT: identify what runs `desk snapshot <ts>` and make it commit from a clean checkout or not at all — a snapshot that commits a working tree it did not build is a laundering channel by construction. | gap-fixer | 08-29 | open |
+-| 210 | **PARTIALLY CLOSED 2026-08-29 — the MT5 financing tape has ONE day on disk, no scheduler, and was dropping the broker's own forced-trade announcements from a call already paid for** | Two defects in one organ, both verified by fresh read this cycle. (a) `desks/mt5/data/tape/contract_terms/` holds exactly one file, `2026-08-27.parquet` (1,908 rows, 9 hourly observations, 11 columns). **Friday 2026-08-28 — a full trading day — was never recorded**, while `desks/mt5/data/universe/*_H1.parquet` synced from the SAME Windows terminal carry today's mtime: the terminal was up and only this recorder stopped. `grep -rn record_contract_terms` finds no scheduler anywhere — it ran when a human remembered. `mt5desk.tape --terms-only` exists precisely so the cheap perishable leg can run apart from the minutes-long tick pull; the split was built and never wired. The module's own measurement: 81 of 248 symbols repriced inside one three-day window, so a two-day gap is a hole in the swap history, not a rounding error. (b) `mt5desk/tape.py::contract_terms_row` called `mt5.symbol_info()` and wrote 11 of its fields, dropping `trade_mode` (3 = CLOSEONLY, a dated forced-exit instruction from the broker), `margin_initial`/`margin_maintenance` (announced deleveraging), `trade_stops_level`/`freeze_level` (where a stop may legally sit — the execution model assumes anywhere), `volume_*` and `spread` — all at zero saving. Raised as improvement_inbox #3 and carried NO register row, which is what let it sit. | FIXED, both halves, plus the instrument. Nine fields added; **absent is `None`, never `0`** — `trade_mode == 0` means DISABLED and `margin_* == 0` means no requirement, so a zero default would render "we did not read it" identically to "the broker disabled the symbol" (WS-005). Two tests, one per direction: a reported zero survives as a value, an unread field is `None`. `scripts/max_audit.py::check_production` now gauges the tape on **TRADING DAYS, not on age** — the most recent fully-passed weekday must have a file, so it cannot fire on a Saturday for being a Saturday and fires the morning after any missed trading day; verified firing on the real 08-28 miss. `desks/mt5/scripts/install_contract_terms_task.ps1` written (hourly, idempotent, takes its principal from MT5-MoatSilver). **NOT CLOSED because registering the task needs the Windows box** — no route from this VPS; paged in `data/PRINCIPAL_ACTION.md` as one 10-second command. Until it runs, the field fix is correct and inert, and the fence says so daily rather than letting silence read green. | cro-cycle | 08-29 | open |
++| 210 | **CLOSED 2026-09-24 — the MT5 financing tape has ONE day on disk, no scheduler, and was dropping the broker's own forced-trade announcements from a call already paid for** | Two defects in one organ, both verified by fresh read this cycle. (a) `desks/mt5/data/tape/contract_terms/` holds exactly one file, `2026-08-27.parquet` (1,908 rows, 9 hourly observations, 11 columns). **Friday 2026-08-28 — a full trading day — was never recorded**, while `desks/mt5/data/universe/*_H1.parquet` synced from the SAME Windows terminal carry today's mtime: the terminal was up and only this recorder stopped. `grep -rn record_contract_terms` finds no scheduler anywhere — it ran when a human remembered. `mt5desk.tape --terms-only` exists precisely so the cheap perishable leg can run apart from the minutes-long tick pull; the split was built and never wired. The module's own measurement: 81 of 248 symbols repriced inside one three-day window, so a two-day gap is a hole in the swap history, not a rounding error. (b) `mt5desk/tape.py::contract_terms_row` called `mt5.symbol_info()` and wrote 11 of its fields, dropping `trade_mode` (3 = CLOSEONLY, a dated forced-exit instruction from the broker), `margin_initial`/`margin_maintenance` (announced deleveraging), `trade_stops_level`/`freeze_level` (where a stop may legally sit — the execution model assumes anywhere), `volume_*` and `spread` — all at zero saving. Raised as improvement_inbox #3 and carried NO register row, which is what let it sit. | FIXED, both halves, plus the instrument. Nine fields added; **absent is `None`, never `0`** — `trade_mode == 0` means DISABLED and `margin_* == 0` means no requirement, so a zero default would render "we did not read it" identically to "the broker disabled the symbol" (WS-005). Two tests, one per direction: a reported zero survives as a value, an unread field is `None`. `scripts/max_audit.py::check_production` now gauges the tape on **TRADING DAYS, not on age** — the most recent fully-passed weekday must have a file, so it cannot fire on a Saturday for being a Saturday and fires the morning after any missed trading day; verified firing on the real 08-28 miss. `desks/mt5/scripts/install_contract_terms_task.ps1` written (hourly, idempotent, takes its principal from MT5-MoatSilver). **NOT CLOSED because registering the task needs the Windows box** — no route from this VPS; paged in `data/PRINCIPAL_ACTION.md` as one 10-second command. Until it runs, the field fix is correct and inert, and the fence says so daily rather than letting silence read green. **CLOSED 2026-09-24 from the Windows box itself** — the one step this row waited 26 days for. `install_contract_terms_task.ps1` run on the trading box: `MT5-ContractTerms` is registered, `state=Ready interval=PT1H principal=SYSTEM logon=ServiceAccount`, next run on the hour. Started THROUGH THE SCHEDULER rather than by hand, because a module that runs when a session invokes it is exactly the condition this row describes: `lastResult=0`, `desks/mt5/logs/MT5-ContractTerms.log` written, 248 rows recorded (3 share CFDs refused by the terminal, named in the log), and `2026-09-24.parquet` went from 19 distinct `observed_at` to 20 — the clock's own increment, measured rather than asserted. **AND THE ROW'S PREMISE HAD ALREADY DECAYED, which is why it was re-measured before being closed rather than after:** the tape is no longer one file — 30 daily files now exist through today — because some other organ had begun calling `record_contract_terms` incidentally. That capture was 5-25 observations a day and irregular (5 on 09-15, 25 on 09-17), i.e. a hole in the swap history whenever the incidental caller happened not to run. The dedicated hourly task is what makes the cadence a property of the schedule instead of a side effect of another organ's. Nine fields verified present on today's file (`trade_mode` carrying real 3=CLOSEONLY and 4 values, `margin_initial` non-trivial, `freeze_level` all-`None` = read and unreported, never 0). | cro-cycle | 08-29 | closed |
+ | 211 | **OPEN — every `*_H1.parquet` is stamped `+00:00` while carrying broker EET, so every join to a genuinely-UTC series is silently 2-3h out and the error FLIPS SIGN between summer and winter** | Raised as improvement_inbox #2 with three independent lines of evidence and carried no register row. (1) Offset scan of XAUUSD 2026-08-20 against Dukascopy true-UTC ticks, hours 08/09/11 scanned separately over ±240min: every hour locks on **+180 min**, median abs diff **$0.11-0.13** against **$0.7-1.1** at ±1min — a spike, not a broad optimum. (2) Winter leg, XAUUSD 2026-01-14 over ±6h: locks on **+120 min**. So the offset is **+2h winter / +3h summer — DST-varying, and no constant shift repairs it**. (3) Structural, needing no external source: in the claimed-UTC index Friday closes at 23:56 and Monday opens at 01:00 (true UTC ~21:00 Fri / ~22:00 Sun), max Friday hour is 23 in both January and July every year 2018-2026, and **191 of 197 `*_H1.parquet` files** hold Friday bars at/after 22:00 "UTC" — impossible in real UTC. The likely single line is a `tz_localize('UTC')` where a `tz_convert` from EET was needed, indistinguishable from correct code at the call site. | NOT ATTEMPTED THIS CYCLE, AND NOT BLIND-FIXABLE. The stamp is wrong on BOTH sides of most existing joins (frontier 2026-08-29: 446/452 weeks Mon 00:00-Fri 23:00 in both seasons = broker EET on both legs), so "fixing" the label alone would ADD a 3h error to work that currently cancels. The blast radius is every hour-of-day feature, the swap-rollover hour, every macro-state join, and specifically the ForexFactory macro-surprise panel (12,423 events, genuine UTC release minutes) — where a 2-3h misalignment does not error, it moves the window off the release and manufactures a null or a look-ahead depending on sign. Needs one owner doing producer and every consumer in a single change, with the DST rule (not a constant) and a test on the structural signature above. | — | 08-29 | open |
+ | 212 | **PARTIALLY CLOSED 2026-09-10 — the "working-tree replayer" is not the Dell: it is the VPS's own module healers, shipping over SSH, whose safety check compares against the VPS's OWN stale HEAD** | This is row 157's named residual, measured rather than inferred. `scripts/heal_forward_lane.py::_ship()` (line 105) and `scripts/check_desk_module_drift.py` (line 339) both run ON the Hetzner VPS with `REMOTE = "contabo-mt5"`: they `scp` their copy to `REMOTE:C:/opt/quant/{rel}` and confirm it with `ssh "cd C:\opt\quant && git hash-object {rel}"`. Both state the same safety property — *"NEVER SHIP WHAT DOES NOT MATCH HEAD... a trampled local file is exactly the thing this must not propagate to the box that trades"* — but **HEAD there means the VPS's own checkout's HEAD**, and that checkout is behind (CLAUDE.md, measured 2026-09-09: the VPS serves a build from before 2026-09-08 21:29). On a stale-but-clean tree `local == head` passes, so the healer ships **last week's engine onto the box that trades, file by file, while reporting a successful heal**. That is exactly the decay `check_desk_module_drift.py:24` describes and could not name. MEASURED 2026-09-10 after `Adopt-And-Seal` sealed `45cfb1832cec`: **24 trample events in 33 minutes**; `gateway.py` reverted 3000 lines -> the 2127-line blob `4adef98b` (from `410ce3b6a`, 2026-09-05); `release_identity` flipped `allows_new_risk` true->false repeatedly; and `libs/portfolio/rails.py` cycled `10555->5668->10555->5668->10555` bytes as manual restores and the shipper fought each other seconds apart. The fence that was supposed to cover this (`check_moneypath_fence`) never fired: every marker was present in BOTH versions, so a marker-string fence cannot see a whole-file reversion to an older lineage. | CLOSED AT THE BOX: `C:\ProgramData\ssh\administrators_authorized_keys` held exactly one key, `claude-hetzner-to-contabo-mt5`; renamed to `administrators_authorized_keys.disabled-20260910-vps-replayer`. `sshd_config` maps `Match Group administrators` to exactly that path and no other `authorized_keys` exists anywhere on the box, so the write channel is shut. **Reverse with one rename — no service restart, sshd reads the file per connection.** Lawful under CLAUDE.md 2026-09-08 (*"The MT5 box PULLS"*): `MT5-AdoptRelease` is the sanctioned deployment path and does not use this channel; verified after the block — 0/22 MONEY_PATH drifted, `allows_new_risk: true`, gold armed. **RESIDUAL, NAMED:** the VPS still runs a stale checkout and its healers still fire, now failing at the door. The real fix is the VPS adopting the current branch (`desk-sync-clean` = `2f177fdbc42`, which already carries the good 3000-line `gateway.py` — the BRANCHES were never stale, only the VPS's working tree), after which the key can be restored. **No session on the box can do it: the box holds no private key, so the channel is one-directional inbound.** Needs a session with VPS access. | box-session | 09-10 | PARTIALLY CLOSED |
++| 213 | **CLOSED 2026-09-24 — the only organ that drives work to completion could not READ its own modern queue: the register parser saw 121 of 225 rows, and the 100 it missed were ids 130-212 almost without a break** | Found while taking rows off this register, which is the only reason it was found at all. `libs/research/finding_registry._ROW_RE` is the sole route into `docs/GAP_REGISTER.md`: `max_audit.check_gap_register_health`, `scripts/rerank_gaps.py` (the weekly re-rank), `research_cycle._register_row_closed` and the strategic director's dossier (which carries the register *as its OPEN rows only*) all read through it and nothing else does. Measured against the live file: **121 of 225 rows parsed, 72 open of a true 97**. The blind spot was not random — it was every row the MT5 desk has opened since the pivot, because three separate narrownesses each excluded the modern shape. (1) `owner` was `[a-z+ ]`: no hyphen, so `gap-fixer` (20 rows), `gap-wirer` (48), `cro-cycle` and `box-session` were invisible; no `>`, so `brain->principal` was; no em-dash, so the unowned rows 195/196/211 were. Those owners wrote essentially everything past id 160. (2) `title` required the closing `**` to be followed straight by the cell pipe, so rows 130/136/140, which put a parenthetical after the bold title, vanished. (3) `added` had to be nothing but a date, so rows 49/50/51/72, which appended their closure note into the Added cell, vanished. **A row the expression cannot match is not an error — it is an absence, and absence read green (WS-005, L1.28a).** So the weekly re-rank has been re-ranking the RETIRED crypto backlog and reporting health about it, while rows 206-212 — forward-stage saturation, the laundering channel, the financing tape, the EET timestamp — were not in any queue any organ could see. | FIXED: `_ROW_RE` widened on all three axes, `owner` to "anything that is not a pipe and not a digit". **The digit exclusion is load-bearing, not tidiness:** `added` is date-shaped and may be EMPTY, so an owner class admitting digits could let the two cells trade places and turn a miss into a confident wrong split; no owner cell in this register's history contains a digit, and a test pins that. **121 → 210 rows (93.3%), 72 → 97 open.** The one-way property is that the parser is now held against THE REAL FILE rather than a fixture: `tests/research/test_finding_registry_rows.py` splits every well-formed row on `|` with no assumptions in it at all and demands the expression read the same owner/added/status cells — 0 disagreements over 199 rows — plus a coverage floor that ratchets up only (L1.50) and a named check that anything still missed is a CELL-COUNT defect in the file, never in the expression. A fixture could not have caught the original, because a fixture is written by whoever wrote the expression and carries the same assumptions about what a row looks like. **NAMED RESIDUAL, deliberately not papered over by the regex:** 12 rows still do not parse because the FILE is wrong about its own shape — 105-110 are 4-column rows under a 7-column header, and 38/39/52/56/58/77 carry an undefined 8th column holding their real status (`closed-07-30 (...)`) while their status cell still reads `open`. Repairing those is a register edit, not a parser change, and the test names them so they cannot quietly grow. 5 tests. | box-session | 09-24 | closed |
+diff --git a/libs/research/finding_registry.py b/libs/research/finding_registry.py
+index 1d6a857902d..e5ad3a87e85 100644
+--- a/libs/research/finding_registry.py
++++ b/libs/research/finding_registry.py
+@@ -259,9 +259,24 @@ def update_coverage_ratchet(
+ 
+ _RERANK_RE = re.compile(r"Re-ranked\s+(\d{4}-\d{2}-\d{2})")
+ #: A register row: | id | **title** | mechanism | plan | owner | added | status |
++#: THE CLASSES ARE WIDE ON PURPOSE, AND THE NARROW ONES COST THE DESK ITS WHOLE MODERN QUEUE.
++#: Measured 2026-09-24 against the live register: this expression saw **121 of 225** rows, and the
++#: 100 it could not see were ids 130-212 almost without a break -- EVERY row the MT5 desk has
++#: opened since the pivot. `owner` was `[a-z+ ]`, so `gap-fixer`, `gap-wirer`, `cro-cycle`,
++#: `box-session`, `brain->principal` and the em-dash-unowned rows were all invisible; `title`
++#: demanded the closing `**` sit against the cell pipe; `added` had to be nothing but a date.
++#: Everything that DRIVES the register reads through here -- `max_audit.check_gap_register_health`,
++#: `scripts/rerank_gaps.py`, `research_cycle._register_row_closed` and the strategic director's
++#: dossier -- so all four were reporting on the retired crypto backlog and omitting the live one.
++#: A row the expression cannot match is not an error; it is an absence, and absence read green.
++#: `owner` is now "not a pipe and not a digit": the digit exclusion is load-bearing because
++#: `added` is date-shaped and may be EMPTY, so an owner class admitting digits could let the two
++#: cells trade places and turn a miss into a confident wrong split.
++#: `tests/research/test_finding_registry_rows.py` pins this against a naive pipe-split of the real
++#: file, so a row shape this cannot read fails the suite instead of disappearing.
+ _ROW_RE = re.compile(
+-    r"^\|\s*(?P<id>\d+)\s*\|\s*\*\*(?P<title>.+?)\*\*\s*\|(?P<body>.*?)\|\s*(?P<owner>[a-z+ ]*?)"
+-    r"\s*\|\s*(?P<added>[\d-]*)\s*\|\s*(?P<status>[^|]*?)\s*\|\s*$",
++    r"^\|\s*(?P<id>\d+)\s*\|\s*\*\*(?P<title>.+?)\*\*[^|]*\|(?P<body>.*?)"
++    r"\|\s*(?P<owner>[^|\d]*?)\s*\|\s*(?P<added>[\d-]*)[^|]*?\|\s*(?P<status>[^|]*?)\s*\|\s*$",
+     re.MULTILINE | re.IGNORECASE,
+ )
+ _OPEN_STATUS = ("open", "in-progress", "in progress", "queued", "watch", "pending")
+diff --git a/tests/research/test_finding_registry_rows.py b/tests/research/test_finding_registry_rows.py
+new file mode 100644
+index 00000000000..11f8a8151a5
+--- /dev/null
++++ b/tests/research/test_finding_registry_rows.py
+@@ -0,0 +1,142 @@
++"""THE REGISTER'S PARSER IS HELD AGAINST THE REGISTER ITSELF, NOT AGAINST A FIXTURE.
++
++WHY THIS FILE EXISTS. `docs/GAP_REGISTER.md` is the only organ on this desk that drives work to
++completion, and `finding_registry.parse_register` is the only way anything reads it:
++`max_audit.check_gap_register_health`, `scripts/rerank_gaps.py`, `research_cycle` and the
++strategic director's dossier all go through it. On 2026-09-24 that parser saw **121 of 225**
++rows, and the 100 it missed were ids 130-212 almost without a break -- every row the MT5 desk has
++opened since the pivot. The re-rank re-ranked the retired crypto backlog. The health check
++reported on it. Neither said so, because a row the expression cannot match is not an error; it is
++an absence, and absence read green (WS-005).
++
++A hand-written fixture could never have caught that, because a fixture is written by the same
++person who writes the expression and carries the same assumptions about what a row looks like.
++So the oracle here is the REAL FILE, split on pipes by a rule with no assumptions in it at all,
++and the test is that the two agree. When a future session writes a row shape the expression
++cannot read, this fails instead of the row disappearing.
++
++THE COVERAGE FLOOR RATCHETS UP ONLY (L1.50). `MIN_PARSED_FRACTION` is a floor under how much of
++its own queue the desk can see. Lower it and the suite fails; that is the point.
++"""
++from __future__ import annotations
++
++import re
++from pathlib import Path
++
++import pytest
++
++from libs.research.finding_registry import parse_register
++
++ROOT = Path(__file__).resolve().parents[2]
++REGISTER = ROOT / "docs" / "GAP_REGISTER.md"
++
++#: Any line that OPENS like a register row, judged with no knowledge of the rest of the shape.
++_LOOKS_LIKE_A_ROW = re.compile(r"^\|\s*(\d+)\s*\|\s*\*\*", re.MULTILINE)
++
++#: The floor, measured 2026-09-24 at 210/225 = 93.3%. The 15 below it are rows whose CELL COUNT
++#: is wrong (a 4-column row under a 7-column header, or an 8th column the header never defined) --
++#: a defect in the file, not in the expression, and one no regex should paper over.
++MIN_PARSED_FRACTION = 0.93
++
++
++def _rows_that_look_like_rows(text: str) -> list[str]:
++    return [ln for ln in text.splitlines() if _LOOKS_LIKE_A_ROW.match(ln)]
++
++
++@pytest.fixture(scope="module")
++def register_text() -> str:
++    if not REGISTER.exists():                       # pragma: no cover - the file is tracked
++        pytest.skip("GAP_REGISTER.md is absent on this checkout")
++    return REGISTER.read_text(encoding="utf-8")
++
++
++def test_parser_sees_almost_every_row_in_the_live_register(register_text: str) -> None:
++    """The floor under how much of its own work queue this desk can read."""
++    looks = _rows_that_look_like_rows(register_text)
++    parsed = parse_register(register_text)
++    assert looks, "the register has no rows at all, which is itself the alarm"
++    fraction = len(parsed) / len(looks)
++    assert fraction >= MIN_PARSED_FRACTION, (
++        f"parse_register reads {len(parsed)} of {len(looks)} rows ({fraction:.1%}); the floor is "
++        f"{MIN_PARSED_FRACTION:.0%}. A row the parser cannot see is a row the re-rank, the health "
++        f"check and the director's dossier all silently omit."
++    )
++
++
++def test_parser_agrees_with_a_naive_pipe_split_on_every_well_formed_row(
++    register_text: str,
++) -> None:
++    """The oracle: a 7-cell row split on `|` carries owner/added/status in fixed positions.
++
++    This is the test that would have caught the original defect. It makes no claim about what an
++    owner may contain -- it reads the cell and demands the expression read the same one.
++    """
++    parsed = {}
++    for row in parse_register(register_text):
++        parsed.setdefault(row.row_id, []).append(row)
++
++    checked = 0
++    problems: list[str] = []
++    for line in _rows_that_look_like_rows(register_text):
++        cells = line.split("|")
++        if len(cells) != 9:          # not a well-formed 7-column row; covered by the test below
++            continue
++        checked += 1
++        row_id = int(cells[1].strip())
++        owner, added, status = (cells[-4].strip(), cells[-3].strip(), cells[-2].strip())
++        candidates = parsed.get(row_id, [])
++        if not candidates:
++            problems.append(f"row {row_id}: well-formed but the parser never saw it")
++            continue
++        # Ids are NOT unique -- a 2026-08-04 merge unioned two lineages without renumbering -- so
++        # agreement means "some parsed row for this id matches these cells", never "the first".
++        if not any(r.owner == owner and r.status == status
++                   and added.startswith(r.added) and r.added for r in candidates):
++            problems.append(
++                f"row {row_id}: file says owner={owner!r} added={added[:12]!r} status={status!r}; "
++                f"parser produced {[(r.owner, r.added, r.status) for r in candidates]}")
++
++    assert checked > 100, f"only {checked} well-formed rows found; the oracle is not exercising"
++    assert not problems, "parser disagrees with the file on:\n  " + "\n  ".join(problems[:20])
++
++
++def test_every_row_the_parser_misses_is_a_malformed_cell_count(register_text: str) -> None:
++    """The residual is NAMED, so it cannot quietly grow.
++
++    A row the parser misses is acceptable only when the FILE is wrong about its own shape. If a
++    9-cell row ever stops parsing, that is the expression's fault and this fails.
++    """
++    seen = {row.row_id for row in parse_register(register_text)}
++    missed_but_well_formed = [
++        int(line.split("|")[1].strip())
++        for line in _rows_that_look_like_rows(register_text)
++        if len(line.split("|")) == 9 and int(line.split("|")[1].strip()) not in seen
++    ]
++    assert not missed_but_well_formed, (
++        f"these rows are shaped correctly and the parser still cannot read them: "
++        f"{sorted(set(missed_but_well_formed))}")
++
++
++def test_the_modern_mt5_rows_are_visible(register_text: str) -> None:
++    """The specific regression: ids past 160 are this desk's LIVE queue.
++
++    The original expression could read none of them, because every one is owned by `gap-fixer`,
++    `gap-wirer`, `cro-cycle`, `box-session` or nobody -- and its owner class admitted no hyphen
++    and no em-dash. A register whose live half is unreadable reports health about a retired desk.
++    """
++    modern = {row.row_id for row in parse_register(register_text) if row.row_id >= 160}
++    assert len(modern) >= 30, (
++        f"only {len(modern)} rows past id 160 are readable; the MT5 era is the part of this "
++        f"register that is still true")
++
++
++def test_owner_is_never_confused_with_the_date_cell(register_text: str) -> None:
++    """The reason the owner class excludes digits, pinned as a property.
++
++    `added` is date-shaped and may be empty, so an owner class admitting digits could let the two
++    cells trade places and produce a confident wrong split rather than a miss.
++    """
++    for row in parse_register(register_text):
++        assert not any(ch.isdigit() for ch in row.owner), (
++            f"row {row.row_id}: owner {row.owner!r} contains a digit, which means the expression "
++            f"has taken the Added cell for the Owner cell")
+-- 
+2.47.1.windows.1
+
