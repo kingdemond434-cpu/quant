@@ -614,9 +614,13 @@ def plan(roster: list[Producer], reg: dict[str, Any], cursor: dict[str, Any],
     # same quota, as many as their share of the ceiling pays for.
     quota = max(floor_q, (ceiling - sum(want.values())) // max(1, ring_k))
     slices: dict[str, list[Producer]] = {}
+    # A slice with a share visits at least one producer when the ceiling has room for it, even
+    # when its share is under one visit's quota (a small roster has a large quota).
+    room = max(0, ceiling - len(ring) * quota)
     for k in ("dataset", "culture", "hole"):
         pool = [p for p in pools[k] if p.pid not in taken]
-        kk = want[k] // quota
+        kk = min(max(1, want[k] // quota) if want[k] else 0, room // quota)
+        room -= kk * quota
         slices[k] = rotating_window(pool, kk, turn=turn) if kk and pool else []
         taken |= {p.pid for p in slices[k]}
     return {"dataset": slices["dataset"], "culture": slices["culture"], "hole": slices["hole"],

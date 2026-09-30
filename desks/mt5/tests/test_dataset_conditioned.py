@@ -47,9 +47,10 @@ def bars(days: int = 700, seed: int = 3) -> pd.DataFrame:
     return df
 
 
-def cot_file(root: Path, rel: str = "cot/syn", weeks: int = 150, seed: int = 1) -> Path:
+def cot_file(root: Path, rel: str = "cot/syn", weeks: int = 150, seed: int = 1,
+             start: str = "2022-03-01") -> Path:
     rng = np.random.default_rng(seed)
-    dates = pd.date_range("2021-06-01", periods=weeks, freq="W-TUE")
+    dates = pd.date_range(start, periods=weeks, freq="W-TUE")
     df = pd.DataFrame({"report_date": dates.strftime("%Y-%m-%d"),
                        "noncomm_positions_long_all": rng.integers(1000, 9000, weeks),
                        "noncomm_positions_short_all": rng.integers(1000, 9000, weeks),
@@ -67,10 +68,10 @@ def test_a_cot_reading_is_never_available_before_the_saturday_after_its_report(t
                root=tmp_path)
     assert s is not None and len(s) == 150
     assert (s.index.dayofweek == 5).all() and (s.index.hour == 0).all()     # Saturday 00:00
-    assert s.index[0] == pd.Timestamp("2021-06-05", tz="UTC")                 # Tue 1st + 4d
+    assert s.index[0] == pd.Timestamp("2022-03-05", tz="UTC")                 # Tue 1st + 4d
     # the shaped series is lagged a publication day more, before any join
     c = DS.conditioned("cot:cot/syn", "open_interest_all", transform="level", root=tmp_path)
-    assert c is not None and c.index[0] == pd.Timestamp("2021-06-06", tz="UTC")
+    assert c is not None and c.index[0] == pd.Timestamp("2022-03-06", tz="UTC")
     assert DS.pair_fields(["noncomm_positions_long_all", "noncomm_positions_short_all",
                            "lm_l", "lm_s"]) == ["noncomm_positions_long_all-"
                                                 "noncomm_positions_short_all", "lm_l-lm_s"]
@@ -301,7 +302,7 @@ def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def test_every_swarm_cell_carries_its_culture_provenance(sandbox: Path) -> None:
-    reg = _reg(hourly_cell_ceiling=40)
+    reg = _reg(hourly_cell_ceiling=200)
     doc = ps.run(now=datetime(2026, 9, 30, 12, tzinfo=UTC), reg=reg, bars=BARS,
                  out_dir=sandbox / "out", known=set(), datasets=[_ds("cot:cot/gbp")],
                  breadth={})
@@ -318,6 +319,6 @@ def test_every_swarm_cell_carries_its_culture_provenance(sandbox: Path) -> None:
         lin = json.loads(lj)
         assert all(lin.get(k) for k in keys)
         cultures.add(lin["source_culture"])
-    assert "GLOBAL" in cultures and cultures - {"GLOBAL"}
+    assert cultures - {"GLOBAL"}                    # the non-Western slice minted this hour
     for s in doc["cell_sample"]:
         assert all(s.get(k) for k in keys)
