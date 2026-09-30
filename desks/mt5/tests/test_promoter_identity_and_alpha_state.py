@@ -77,6 +77,11 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "SLEEVE_REGISTRY", tmp_path / "data" / "sleeve_registry.json")
     monkeypatch.setattr(promoter.provenance, "current_account", lambda _acc: _ACC)
     monkeypatch.setattr(promoter, "clock_identities", dict)
+    # THE TIER S DOOR IS GRANTED HERE, as the gate authority and the allocator are. Since
+    # 7de6ccca7 it withholds with DOOR_ERROR whenever REPLICATION.json is absent or stale, which it
+    # always is in a checkout; that fail-closed rule is pinned in test_tier_s_door.py, and this
+    # file is about identity and the alpha-state ledger.
+    monkeypatch.setattr(promoter, "tier_s_block", lambda _name: None)
 
     def _authority_from_shadow(base=None):
         try:
