@@ -151,9 +151,12 @@ def test_no_deals_is_unmeasured_not_clean(tmp_path: Path) -> None:
     assert doc["status"] == "UNMEASURED" and doc["clean_fraction"] is None
 
 
-def test_the_order_tag_switch_is_off() -> None:
-    """Carrying the chain head on the order changes what the gateway sends: principal's go."""
-    assert ic.PROPOSED_ORDER_TAG is False
+def test_the_order_tag_switch_is_on_and_the_gateway_sends_it() -> None:
+    """The chain head rides on every new order (blueprint identity chain, 2026-09-30)."""
+    assert ic.PROPOSED_ORDER_TAG is True
+    src = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    assert src.count('"comment": _ident["comment"]') == 3, (
+        "bracket, family and scalp sends must each carry the identity-tagged comment")
 
 
 @pytest.mark.parametrize("path", [ic.LIVE_LEDGER, ic.SLEEVES])

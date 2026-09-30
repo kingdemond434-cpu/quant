@@ -45,7 +45,7 @@ carries the high-water mark, and `--check` exits 1 when the fraction falls below
 WHAT IT MAY NOT DO. It reads records and writes its own two files. It changes no order comment,
 no sleeve, no allocation and no gateway path: carrying the chain head on the order (the natural
 fix for the fill -> sleeve break) would change what the gateway SENDS, and that is the
-principal's call. `PROPOSED_ORDER_TAG` below names it, OFF.
+principal's call. `PROPOSED_ORDER_TAG` below names it; the gateway now carries it (2026-09-30).
 
     python desks/mt5/research/identity_chain.py --once          # measure, append, write report
     python desks/mt5/research/identity_chain.py --trade 200224334   # reconstruct one deal
@@ -89,10 +89,12 @@ REQUIRED_LINKS: tuple[str, ...] = (
     "certificate->clock", "clock->raw_data",
 )
 
-#: OFF. When the principal says go, the gateway would send `trade_identity.tag(head)` in the order
-#: comment instead of the truncated sleeve name, and the fill -> sleeve link becomes EXACT by
-#: construction. This organ does not read the flag; it exists so the switch is named in code.
-PROPOSED_ORDER_TAG = False
+#: ON (blueprint identity chain, 2026-09-30). The gateway sends `trade_identity.tag(head)` of the
+#: order's pre-trade chain in the order comment (`decision_core.tagged_comment`: 16 characters of
+#: `DW<name>`, `#`, the 12-hex tag), records tag -> sleeve in `data/order_tags.json` and the
+#: head and node hashes on the intent row, and stamps the fill's ledger row with `order_tag`.
+#: This organ does not read the flag; it names the switch's state in code.
+PROPOSED_ORDER_TAG = True
 
 _BROKER_COMMENT = re.compile(r"^\[(sl|tp|so)\b", re.I)
 
@@ -490,8 +492,8 @@ def build(src: Sources, *, ledger: Path = LEDGER, report: Path = REPORT,
         "proposed_order_tag": {"enabled": PROPOSED_ORDER_TAG,
                                "what": "carry trade_identity.tag(chain head) in the order "
                                        "comment so fill->sleeve is EXACT by construction",
-                               "status": "needs the principal's go: it changes what the "
-                                         "gateway sends"},
+                               "status": ("live: gateway.new_order_identity stamps every new "
+                                          "order; fills carry order_tag in live_ledger")},
         "sample": [{k: r[k] for k in ("deal", "sleeve_tag", "sleeve", "verdict",
                                       "weak_links", "tag")} for r in m["results"][-10:]],
     }

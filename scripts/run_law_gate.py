@@ -136,6 +136,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # robust forward E[log W]; every strong opportunity may raise capital above normal; the
     # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.
     ("check_growth_governance.py", ()),
+    # MONEY-PATH SOVEREIGNTY (principal 2026-09-30): allocator zero is no order, an UNMEASURED
+    # admission / marginal / material cost is shadow, a banned family takes no capital, an
+    # override trades only inside the experimental budget -- and every new-risk order_send in the
+    # gateway is AST-verified to call the guard first and to carry its identity tag. Portable.
+    ("check_money_path_sovereignty.py", ()),
     # NO QUOTA ON FORWARD EVIDENCE SLOTS, EVER (principal 2026-09-23). The portable half:
     # AST-walks the enrolment path and fails when a cap comes back -- a quota constant, a slice
     # of the certificate roster, a `len(enrolled) >= n` gate, or `forward_reconcile.family_budget`

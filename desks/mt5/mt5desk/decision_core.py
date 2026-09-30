@@ -605,17 +605,21 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
     whether the allocator or the floor set the size -- a lot with no stated basis is the thing
     this desk keeps having to re-measure.
     """
-    floor_lot = gold_lot(equity, dist_usd, info)
+    # ALLOCATOR ZERO MEANS NO ORDER (principal, 2026-09-30: "allocator says zero -> absolutely
+    # zero order"; supersedes the 2026-09-07 exemption that sent the policy lot here). A
+    # fraction that is absent, not a number, non-finite or <= 0 returns NO lot, and the 0.02
+    # floor below applies only ABOVE zero. `mt5desk.money_path` refuses the order itself at
+    # every placement site; this makes the sizer say the same thing, so no path can turn "none"
+    # into the minimum ticket.
     try:
         frac = float(h_i)  # type: ignore[arg-type]
     except (TypeError, ValueError):
-        return floor_lot, "gold_lot: the allocator's fraction is not a number"
+        return 0.0, "no order: the allocator's fraction is not a number"
+    if not math.isfinite(frac):
+        return 0.0, "no order: the allocator's fraction is not finite"
     if not (frac > 0.0):
-        # ZERO IS AN ANSWER EVERYWHERE ELSE AND MUST NOT BE ONE HERE. `allocator_book` carries a
-        # zeroed sleeve at 0.0 so the gateway's skip path fires -- but for gold that skip would
-        # be a size cut to nothing on the book the principal's order protects. Gold falls back to
-        # its own policy lot and the basis says the allocator declined.
-        return floor_lot, "gold_lot: the allocator gave this window no heat"
+        return 0.0, "no order: the allocator gave this window no heat"
+    floor_lot = gold_lot(equity, dist_usd, info)
     # The same q the heat ledger bills for this row (`q_charge` above): fraction x fade, capped
     # by the outer per-trade envelope. Reduce-only inputs stay reduce-only; the `max` below is
     # what guarantees the result is never smaller than today's.
@@ -686,15 +690,26 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
             h_i = float(risk_frac)  # type: ignore[arg-type]
         except (TypeError, ValueError):
             h_i = 0.0
-        if not (h_i > 0.0):
-            # THE PRINCIPAL'S ORDER, 2026-09-12: a live sleeve is never skipped for being
-            # unsizeable. This returned 0.0 and three gateway sites then logged "allocator gave
-            # this sleeve no heat; skipped". Gold has had this exemption since 2026-09-07; the
-            # rest of the book gets it now. The venue minimum is the symbol's OWN minimum, so a
-            # share CFD gets 0.1 and not an order the broker refuses.
-            return float(min(venue_min_lot(symbol, info), 5.0))
+        if not (math.isfinite(h_i) and h_i > 0.0):
+            # ALLOCATOR ZERO MEANS NO ORDER (principal, 2026-09-30: "allocator says zero ->
+            # absolutely zero order"). This returned the venue minimum under the 2026-09-12
+            # order that a live sleeve is never skipped for being unsizeable -- which is exactly
+            # how a sleeve the allocator priced at NOTHING reached the venue at the minimum
+            # ticket. The minimum still binds for every fraction > 0 (below); zero is no order.
+            return 0.0
         q_eff = min(h_i, MAX_RISK_FRAC) * decay_factor(decay_faded)
     else:
+        # An EXPLICIT zero or non-finite fraction is the allocator's "none", never a default:
+        # `clamp_risk_frac` would floor it at the base fraction and the venue minimum would send
+        # it. A missing fraction (None) keeps its documented base-fraction default; the money
+        # path guard refuses such a sleeve anyway, because the allocator gave it nothing.
+        if risk_frac is not None:
+            try:
+                _rf = float(risk_frac)
+            except (TypeError, ValueError):
+                _rf = float("nan")
+            if not (math.isfinite(_rf) and _rf > 0.0):
+                return 0.0
         q_eff = ramped_fraction(risk_frac, live_n, decay_faded)
     lot = auto_lot(equity, dist_usd, symbol, info, q=q_eff)
     # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
@@ -1584,7 +1599,10 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
             continue
         sleeves.append({"name": name, "symbol": "XAUUSD",
                         "window": label, "sig_hour": sig_hour, "rng": rng,
-                        "lot": "auto", "status": "LIVE"})
+                        # `origin` tells `mt5desk.money_path` this is a canonical window, not a
+                        # registry row: no admission scan writes a row for it, so its admission
+                        # is the allocator's book pricing it this pass (invariant I1).
+                        "lot": "auto", "status": "LIVE", "origin": "gold_window"})
     # FORWARD-CLOCK VERSIONS ARE EVIDENCE IDENTITIES, NOT EXTRA LIVE BETS.  The promoter keeps
     # `gold_asia_v2/v3/v4` (and the corresponding London/afternoon rows) separately because each
     # certificate and prospective clock must remain auditable.  Economically, however, every
@@ -1624,7 +1642,13 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
                             "side": s.get("side", "LONG"), "state": s.get("state"),
                             "risk_frac": s.get("risk_frac"), "exec": "family_market",
                             "certificate": s.get("certificate"), "params": s.get("params"),
-                            "lot": "auto_ramp", "status": "LIVE"})
+                            "lot": "auto_ramp", "status": "LIVE",
+                            # THE ADMISSION TRAVELS TOO (money-path sovereignty, 2026-09-30). The
+                            # gateway may not open risk for a registry row whose admission scan
+                            # is UNMEASURED; a rebuilt row that dropped the block would read as
+                            # absent, which the guard also refuses -- so it is carried, not lost.
+                            "origin": "registry", "admission": s.get("admission"),
+                            "principal_override": s.get("principal_override")})
             continue
         # SCALP SLEEVES (principal 2026-09-04: every promotion candidate goes live, automatically).
         # The promoter writes the scalp lane's exact recipe -- timeframe, family, session and the
@@ -1637,7 +1661,9 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
                             "stop_atr": s.get("stop_atr"), "target_atr": s.get("target_atr"),
                             "max_hold": s.get("max_hold"),
                             "risk_frac": s.get("risk_frac"), "exec": "scalp_market",
-                            "lot": "auto_ramp", "status": "LIVE"})
+                            "lot": "auto_ramp", "status": "LIVE",
+                            "origin": "registry", "admission": s.get("admission"),
+                            "principal_override": s.get("principal_override")})
             continue
         if s.get("window") not in {w[0] for w in GOLD_WINDOWS}:
             continue  # only validated window semantics
@@ -1655,7 +1681,9 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
                         # earned promotion), and nothing would have said so.
                         "state": s.get("state"),
                         "risk_frac": s.get("risk_frac"),
-                        "lot": "auto_ramp", "status": "LIVE"})
+                        "lot": "auto_ramp", "status": "LIVE",
+                        "origin": "registry", "admission": s.get("admission"),
+                        "principal_override": s.get("principal_override")})
     return sleeves, notes
 
 
@@ -1945,6 +1973,70 @@ def bracket_deadline(sleeve: str, window: str | None = None,
         deadline = min(now_utc + timedelta(hours=BRACKET_TTL_HOURS),
                        deadline + timedelta(days=1))
     return deadline
+
+
+#: THE IDENTITY TAG ON THE ORDER (blueprint identity chain, 2026-09-30; `research/
+#: identity_chain.PROPOSED_ORDER_TAG`). A new order's comment is
+#:
+#:     "DW" + name, cut to ORDER_TAG_PREFIX characters  +  "#"  +  trade_identity.tag(head)
+#:
+#: 16 + 1 + 12 = 29 = the terminal's measured comment bound, so the head survives the venue and
+#: comes back on the fill: fill -> order becomes EXACT by construction instead of a name prefix.
+#: The prefix keeps "DW" and the sleeve's leading characters, so every `startswith("DWgold_")`
+#: reader still recognises a gold bracket.
+ORDER_TAG_PREFIX = 16
+ORDER_TAG_SEP = "#"
+_TAGGED = re.compile(r"^(DW.{0,14})#([0-9a-f]{12})$")
+
+
+def order_identity(s: dict, *, symbol: str, order: dict, at: str) -> dict:
+    """The pre-trade identity chain for one NEW order, and its tag. Pure.
+
+    `trade_identity.chain` needs every node from raw data to P&L and returns no head until the
+    fill and the P&L exist, which is after the order has already left. So the order carries the
+    head of the chain the gateway CAN name at send time -- hypothesis (the spec hash the
+    certificate and the forward clock both carry), certificate, sleeve, allocation and the order
+    itself -- linked in `CHAIN_KINDS` order exactly as `chain` links them. Every node payload is
+    returned, so `identity_chain` can re-verify the head from the intent row alone and extend it
+    with the fill and the P&L when they arrive.
+    """
+    from libs.research import trade_identity as ti
+    nodes: dict[str, Any] = {
+        "hypothesis": {"spec_hash": ti.spec_hash({"symbol": symbol, "family": s.get("family")
+                                                  or ("session_range_breakout"
+                                                      if s.get("window") else ""),
+                                                  "selector": s.get("selector")
+                                                  or s.get("window") or s.get("session"),
+                                                  "params": s.get("params") or {}})},
+        "certificate": {"certificate": s.get("certificate")},
+        "sleeve": {"name": s.get("name"), "sleeve_id": s.get("sleeve_id"), "symbol": symbol},
+        "allocation": {"risk_frac": s.get("risk_frac"), "sized_by": s.get("sized_by")},
+        "order": dict(order, symbol=symbol, at=at),
+    }
+    prev = ti.GENESIS
+    hashes = {}
+    for kind in ti.CHAIN_KINDS:
+        if kind not in nodes:
+            continue
+        h = ti.node_hash(kind, nodes[kind])
+        hashes[kind] = h
+        prev = ti.sha256(prev + h)
+    return {"nodes": nodes, "hashes": hashes, "head": prev, "tag": ti.tag(prev),
+            "kinds": [k for k in ti.CHAIN_KINDS if k in nodes]}
+
+
+def tagged_comment(name: str, tag: str | None) -> str:
+    """The order comment carrying the identity tag (see ORDER_TAG_PREFIX). Without a tag it is the
+    legacy `DW<name>` comment the caller would have sent anyway, cut by the caller's bound."""
+    if not tag:
+        return f"DW{name}"
+    return f"DW{name}"[:ORDER_TAG_PREFIX] + ORDER_TAG_SEP + str(tag)
+
+
+def comment_tag(comment: str) -> tuple[str, str] | None:
+    """(prefix, tag) of a tagged comment, or None for a legacy / broker-rewritten one."""
+    m = _TAGGED.match(str(comment or ""))
+    return (m.group(1), m.group(2)) if m else None
 
 
 def sleeve_from_comment(comment: str, unattributed: str = "") -> str:
@@ -2268,7 +2360,8 @@ def signal_with_levels(g: object, stop: float, target: float) -> object:
         return SimpleNamespace(**d)
 
 
-def bar_already_traded(deals: object, tag: str, entry_in: int = 0) -> tuple[int, str] | None:
+def bar_already_traded(deals: object, tag: str, entry_in: int = 0,
+                       canon: Any = None) -> tuple[int, str] | None:
     """(deal ticket, ISO time) of the first ENTRY deal carrying this sleeve's order comment among
     `deals`, or None. The venue's own record of whether this sleeve already opened on a bar.
 
@@ -2284,7 +2377,10 @@ def bar_already_traded(deals: object, tag: str, entry_in: int = 0) -> tuple[int,
         try:
             if int(getattr(d, "entry", -1)) != int(entry_in):
                 continue
-            if str(getattr(d, "comment", "") or "") != tag:
+            _c = str(getattr(d, "comment", "") or "")
+            # `canon` maps an identity-tagged comment back to the sleeve's legacy tag, so a deal
+            # the gateway sent with its chain head is still this sleeve's witness.
+            if (canon(_c) if callable(canon) else _c) != tag:
                 continue
             t = getattr(d, "time", None)
             iso = (datetime.fromtimestamp(int(t), tz=UTC).isoformat(timespec="seconds")

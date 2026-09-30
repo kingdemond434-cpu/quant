@@ -125,6 +125,46 @@ def validate(a: StrategyArtifact, *, known_families: set[str] | None = None,
         problems.append(f"symbol not in the desk's universe: {a.symbols}")
     if not a.validation_certificate or a.validation_certificate.get("status") not in ("PASS", ""):
         problems.append("no passing validation certificate")
+    basis: dict[str, Any] | None = None
     if a.cost_assumptions.get("cost_hash") is None and a.cost_assumptions.get("cost_r") is None:
-        problems.append("no cost basis")
-    return {"ok": not problems, "problems": problems, "version_hash": a.compute_hash()}
+        basis = measured_cost_basis(a.symbols)
+        if basis is None:
+            problems.append("no cost basis")
+    out: dict[str, Any] = {"ok": not problems, "problems": problems,
+                           "version_hash": a.compute_hash()}
+    if basis is not None:
+        out["cost_basis"] = basis
+    return out
+
+
+def measured_cost_basis(symbols: list[str]) -> dict[str, Any] | None:
+    """The instrument's MEASURED material cost when the artifact carries no certificate cost.
+
+    WHY ALL 40 LIVE ROWS READ `artifact.ok: false` (measured 2026-09-30). The promoter builds
+    each LIVE row's artifact with `cost_assumptions = {cost_hash: row["cost_hash"], cost_r:
+    row["cost_r"]}` -- and no sleeve row has ever carried either key; they live on the
+    CERTIFICATE, not the registry row. So "no cost basis" was a join that could not succeed,
+    not a statement about the instrument: 38 of those 40 rows trade an instrument whose spread
+    the broker's own tape has measured for the session (`data/cost_surface.json`). The
+    promoter is sealed; its validator is not, so the missing basis is resolved HERE from the
+    same decider the gateway's money-path guard uses (`mt5desk.money_path.cost_basis`, i.e.
+    `research/cost_surfaces.cost_for` over the published surface). A symbol
+    with no measured spread still returns None and keeps the "no cost basis" problem --
+    UNMEASURED is never cheapened into a pass.
+    """
+    if len(symbols) != 1:
+        return None
+    try:
+        from mt5desk.money_path import cost_basis, load_cost_surface
+        if "surface" not in _SURFACE:
+            _SURFACE["surface"], _SURFACE["source"] = load_cost_surface()
+        got = cost_basis(symbols[0], None, surface=_SURFACE["surface"])
+    except Exception:
+        return None
+    return dict(got, surface=_SURFACE.get("source")) if got.get("status") == "MEASURED" \
+        else None
+
+
+#: One cost surface per process: the promoter validates every LIVE row in one pass, and the
+#: surface is an hourly artifact, so re-reading (or re-building) it per row buys nothing.
+_SURFACE: dict[str, Any] = {}

@@ -43,6 +43,7 @@ import MetaTrader5 as mt5
 import pandas as pd
 from mt5desk import account_profile as _acct
 from mt5desk import decision_core as _core
+from mt5desk import money_path as _mp
 from mt5desk import position_manager as _pm
 from mt5desk import provenance as _prov
 from mt5desk.config import desk_root, gateway_paused, terminal_path
@@ -66,6 +67,7 @@ from mt5desk.decision_core import (
     bracket_deadline,
     bracket_from_bars,
     closed_trade_r,
+    comment_tag,
     diagnose,
     entry_is_legal,
     exec_context,
@@ -78,6 +80,7 @@ from mt5desk.decision_core import (
     h1_frame,
     hibernated,
     placement_verdict,
+    order_identity,
     ramped_fraction,
     release_gate,
     roster,
@@ -87,6 +90,7 @@ from mt5desk.decision_core import (
     sleeve_from_comment,
     state_allows,
     stop_distance,
+    tagged_comment,
     ttl_expired,
     window_end_hour,
     window_session_ended,
@@ -139,6 +143,78 @@ def order_comment(name: str) -> str:
     its own -- and would then re-open it on the next pass, forever.
     """
     return f"DW{name}"[:COMMENT_MAX]
+
+
+#: Identity tag -> the sleeve that sent it (and the chain head it abbreviates). A tagged comment
+#: carries only the first 14 characters of the name, so ownership is resolved here, never from
+#: the prefix: many long sleeve names share their first 14 characters. Persistent across passes
+#: because a position outlives the process that opened it.
+ORDER_TAGS = BASE / "data" / "order_tags.json"
+_ORDER_TAG_MAP: dict[str, dict[str, str]] | None = None
+#: Tags kept. A tag is needed only while its order or position is alive; this is years of the
+#: desk's order rate and still a few hundred kB.
+ORDER_TAGS_KEEP = 20_000
+
+
+def _order_tag_map() -> dict[str, dict[str, str]]:
+    global _ORDER_TAG_MAP
+    if _ORDER_TAG_MAP is None:
+        try:
+            doc = json.loads(ORDER_TAGS.read_text(encoding="utf-8"))
+            _ORDER_TAG_MAP = {str(k): v for k, v in (doc.get("tags") or {}).items()
+                              if isinstance(v, dict)}
+        except (OSError, ValueError, AttributeError):
+            _ORDER_TAG_MAP = {}
+    return _ORDER_TAG_MAP
+
+
+def _remember_order_tag(tag: str, name: str, head: str) -> None:
+    """Record tag -> sleeve BEFORE the order is sent, so a fill can never outrun its owner.
+    Never raises: a failure costs attribution of this order to its tag, never the order."""
+    try:
+        m = _order_tag_map()
+        m[tag] = {"sleeve": name, "head": head, "at": now()}
+        if len(m) > ORDER_TAGS_KEEP:
+            for k in sorted(m, key=lambda k: str(m[k].get("at") or ""))[:len(m) -
+                                                                          ORDER_TAGS_KEEP]:
+                m.pop(k, None)
+        ORDER_TAGS.parent.mkdir(parents=True, exist_ok=True)
+        tmp = ORDER_TAGS.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps({"tags": m}, indent=0), encoding="utf-8")
+        os.replace(tmp, ORDER_TAGS)
+    except Exception as exc:
+        log(f"order tag map write failed (non-fatal): {type(exc).__name__}: {exc}")
+
+
+def canonical_comment(comment: str) -> str:
+    """An identity-tagged comment read back as the sleeve's legacy `order_comment`, so every
+    reader that matches a position, order or deal to its sleeve keeps working. A legacy or
+    broker-rewritten comment is returned unchanged; an unknown tag is returned unchanged too --
+    it then matches no sleeve rather than the wrong one."""
+    c = str(comment or "")
+    parts = comment_tag(c)
+    if parts is None:
+        return c
+    owner = (_order_tag_map().get(parts[1]) or {}).get("sleeve")
+    return order_comment(owner) if owner else c
+
+
+def new_order_identity(s: dict, symbol: str, order: dict) -> dict:
+    """The identity chain for a NEW order and the comment that carries its head. Never raises:
+    an identity that cannot be computed falls back to the legacy comment, recorded as such --
+    the identity is attribution, and attribution never blocks an order."""
+    name = str(s.get("name") or "")
+    try:
+        ident = order_identity(s, symbol=symbol, order=order, at=now())
+        comment = tagged_comment(name, ident["tag"])
+        if len(comment) > COMMENT_MAX:
+            raise ValueError(f"tagged comment {len(comment)} > {COMMENT_MAX}")
+        _remember_order_tag(str(ident["tag"]), name, str(ident["head"]))
+        return {"comment": comment, "order_tag": ident["tag"], "identity_head": ident["head"],
+                "identity_kinds": ident["kinds"], "identity_hashes": ident["hashes"]}
+    except Exception as exc:
+        return {"comment": order_comment(name), "order_tag": None, "identity_head": None,
+                "identity_error": f"{type(exc).__name__}: {exc}"}
 
 #: How far back record_trades looks for closed deals it has not yet written. Deals are deduped
 #: by the venue's own ticket, so a wider window costs a list scan and cannot double-count. It
@@ -1141,6 +1217,15 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
     if _DESK_STALE is not None:
         log(f"[{sleeve}] refused: desk stale ({_DESK_STALE['verdict']}), no new risk")
         return {"ok": False, "stage": "desk_stale", "why": _DESK_STALE["why"]}
+    # MONEY-PATH SOVEREIGNTY, at the function that sends the pending legs. The bracket loop in
+    # `main` calls the guard before it gets here; this second call is the one that holds for any
+    # future caller of `place_bracket`, and it is a no-op re-judgement for the loop's own call.
+    if not money_path_guard(st, sleeve_row if isinstance(sleeve_row, dict) else
+                            {"name": sleeve, "symbol": symbol},
+                            lane="bracket", lot=lot, price=None):
+        return {"ok": False, "stage": "money_path",
+                "why": (sleeve_row or {}).get("money_path") if isinstance(sleeve_row, dict)
+                else "no sleeve row: the money-path invariants cannot be shown to hold"}
     if not st["armed"]:
         log(f"SHADOW [{sleeve}] would place bracket: {json.dumps(spec, default=str)}")
         for side in ("buy_stop", "sell_stop"):
@@ -1150,6 +1235,11 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
                              taken=False, reason="shadow_not_armed")
         return {"shadow": True, "orders": []}
     sent = []
+    # ONE IDENTITY FOR THE WHOLE BRACKET: both legs carry the same chain head, because the OCO
+    # repair finds the resting sibling of a filled leg by comparing the two comments.
+    _ident = new_order_identity(sleeve_row if isinstance(sleeve_row, dict) else
+                                {"name": sleeve}, symbol,
+                                {"kind": "bracket", "lot": lot, "spec": spec})
     # Current market, read ONCE for the legality check below. A pending order
     # whose entry sits inside the broker's freeze band is refused with 10015,
     # and finding that out from the broker costs a rejection that then looks
@@ -1223,7 +1313,7 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
             "type_filling": mt5.ORDER_FILLING_RETURN,
             "deviation": 20,
             "magic": MAGIC,
-            "comment": order_comment(sleeve),
+            "comment": _ident["comment"],
         }
         # LATENCY, MEASURED IN PLACE (2026-09-08): the wall clock around the one call that
         # reaches the venue. `decision_dataset` has read `latency_ms` off the intent since it was
@@ -1256,6 +1346,7 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
             decision_ask=(float(_t.ask) if _t is not None else None),
             spread_at_decision=(float(_t.ask) - float(_t.bid) if _t is not None else None),
             point=_point, stops_level=_lvl, order_type="pending_stop", latency_ms=_lat_ms,
+            **{k: v for k, v in _ident.items() if k != "comment"},
             **_sleeve_identity(sleeve_row))
         sent.append({"side": side, "retcode": code,
                      "comment": res.comment if res else None})
@@ -1320,7 +1411,7 @@ def expire_stale_brackets(st: dict) -> int:
         # the sweep and the broker expiry can never disagree. A flat cutoff here would defeat the
         # point: it would keep an afternoon bracket alive hours past the force-close the broker
         # had already been told to kill it at.
-        sleeve = sleeve_from_comment(str(getattr(o, "comment", "") or ""))
+        sleeve = sleeve_from_comment(canonical_comment(str(getattr(o, "comment", "") or "")))
         if bracket_deadline(sleeve) > now_utc and placed.date() == now_utc.date():
             continue
         res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
@@ -1398,12 +1489,12 @@ def cancel_filled_gold_siblings(st: dict) -> int:
     positions = [p for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])
                  if int(getattr(p, "magic", 0) or 0) == MAGIC
                  and str(getattr(p, "comment", "") or "").startswith("DWgold_")]
-    open_tags = {str(getattr(p, "comment", "") or "") for p in positions}
+    open_tags = {canonical_comment(str(getattr(p, "comment", "") or "")) for p in positions}
     if not open_tags:
         return 0
     siblings = [o for o in (mt5.orders_get(symbol=GOLD_SYMBOL) or [])
                 if int(getattr(o, "magic", 0) or 0) == MAGIC
-                and str(getattr(o, "comment", "") or "") in open_tags]
+                and canonical_comment(str(getattr(o, "comment", "") or "")) in open_tags]
     removed = 0
     for order in siblings:
         if not st.get("armed"):
@@ -1516,6 +1607,113 @@ def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
         pass
 
 
+#: The money-path guard's inputs, read ONCE per pass (`_money_path_refresh`) so every placement
+#: site in one pass judges against the same ban list, cost surface and experimental budget.
+#: `surface` None means "not read this pass", and the guard reads them itself rather than
+#: judging on nothing.
+_MP_INPUTS: dict[str, object] = {"banned": None, "banned_why": "", "surface": None,
+                                 "surface_source": "", "budget": None}
+
+
+def _money_path_refresh() -> None:
+    """Re-read the ban list, the cost surface and the experimental budget for this pass. Never
+    raises: an unreadable ban list is None, which the guard refuses on (fail closed); an
+    unreadable surface is {}, which leaves every instrument UNMEASURED; an absent budget is {},
+    which refuses override sleeves only."""
+    try:
+        banned, why = _mp.banned_families()
+    except Exception as exc:
+        banned, why = None, f"{type(exc).__name__}: {exc}"
+    try:
+        surface, source = _mp.load_cost_surface(BASE)
+    except Exception as exc:
+        surface, source = {}, f"{type(exc).__name__}: {exc}"
+    try:
+        budget = _mp.load_experimental_budget(BASE)
+    except Exception:
+        budget = {}
+    _MP_INPUTS.update({"banned": banned, "banned_why": why, "surface": surface,
+                       "surface_source": source, "budget": budget})
+
+
+def money_path_verdict(s: dict) -> dict:
+    """The money-path invariants over one sleeve, THIS pass (`mt5desk.money_path`)."""
+    if _MP_INPUTS.get("surface") is None:
+        _money_path_refresh()
+    surface = _MP_INPUTS.get("surface")
+    banned = _MP_INPUTS.get("banned")
+    budget = _MP_INPUTS.get("budget")
+    cost = _mp.cost_basis(str(s.get("symbol") or ""),
+                          _mp.session_of_hour(datetime.now(tz=UTC).hour),
+                          surface=surface if isinstance(surface, dict) else None)
+    return _mp.verdict(s, banned=banned if isinstance(banned, frozenset) else None, cost=cost,
+                       budget=budget if isinstance(budget, dict) else None)
+
+
+def money_path_guard(st: dict, s: dict, *, lane: str, side: object = None,
+                     lot: float | None = None, price: float | None = None,
+                     sl: float | None = None, tp: float | None = None) -> bool:
+    """True when this NEW-RISK order may go out; False after writing why it may not.
+
+    CALLED AT EVERY SITE THAT OPENS RISK AND AT NO SITE THAT REDUCES IT (money-path sovereignty,
+    principal 2026-09-30). The invariants are `mt5desk.money_path`: allocator zero means no
+    order, an UNMEASURED admission or marginal is shadow, a banned family takes no capital, an
+    UNMEASURED material cost (as `cost_surfaces.cost_for` decides it) is shadow, and a principal
+    override trades only inside the declared experimental budget. Stops, trailing, TTL exits, closes, cancels and OCO repair never
+    call this, so a refused sleeve keeps its open positions managed. `scripts/
+    check_money_path_sovereignty.py` fails the law gate if any new-risk `order_send` in this file
+    sits in a function that does not call it first.
+
+    EVERY REFUSAL LEAVES TWO ROWS, once per sleeve, reason and day: a not-taken decision in
+    `data/decision_ledger.jsonl` (reason `sovereignty_<invariant>`, every failed invariant in
+    `failed_gates`) so the counterfactual replay can price the order that was not sent, and one
+    `money_path_sovereignty.<invariant>` line per failed invariant in `data/missed_growth.jsonl`
+    (growth governance: no gate without its missed-growth line). Never raises: a guard that
+    cannot judge refuses, because the inputs it reads are exactly the ones whose absence
+    means the order is not known to be allowed.
+    """
+    name = str(s.get("name") or "")
+    try:
+        v = money_path_verdict(s)
+    except Exception as exc:
+        v = {"ok": False, "first": "unjudgeable", "allocator_fraction": None,
+             "refusals": [{"invariant": "unjudgeable",
+                           "why": f"money-path guard raised ({type(exc).__name__}: {exc})"}]}
+    s["money_path"] = {"ok": bool(v.get("ok")), "first": v.get("first")}
+    if v.get("ok"):
+        return True
+    reason = _mp.reason_of(v)
+    whys = "; ".join(f"{r['invariant']}: {r['why']}" for r in v.get("refusals") or [])
+    today = datetime.now(tz=UTC).date().isoformat()
+    seen = st.setdefault("money_path_refused", {})
+    stamp = f"{today}|{reason}"
+    if seen.get(name) == stamp:
+        log(f"[{name}] SHADOW ({lane}): {reason} (recorded today)")
+        return False
+    log(f"[{name}] SHADOW ({lane}) -- no new risk: {whys}")
+    _numeric_side = isinstance(side, (int, float)) and not isinstance(side, bool)
+    _side = (("buy" if float(side) > 0 else "sell")  # type: ignore[arg-type]
+             if _numeric_side else side)
+    try:
+        _record_decision(sleeve=name, symbol=s.get("symbol"), side=_side,
+                         lot=lot, price=price, sl=sl, tp=tp, taken=False, reason=reason,
+                         detail=whys, first_blocking_gate=reason,
+                         failed_gates=[{"gate": f"{_mp.REASON_PREFIX}{r['invariant']}",
+                                        "actual": r["why"], "required": "invariant holds"}
+                                       for r in v.get("refusals") or []],
+                         money_path=v)
+    except Exception as exc:
+        log(f"[{name}] money-path decision record failed (non-fatal): {type(exc).__name__}: "
+            f"{exc}")
+    if _numeric_side and float(side) != 0:  # type: ignore[arg-type]
+        journal_refusal(name, str(s.get("symbol") or ""), int(side),  # type: ignore[call-overload]
+                        reason, whys, lot, price)
+    _mp.append_missed_growth(_mp.missed_growth_line(
+        v, sleeve=name, symbol=str(s.get("symbol") or ""), day=today, at=now(), lane=lane))
+    seen[name] = stamp
+    return False
+
+
 #: A stop closer than this many spreads to the entry is inside the quote's own noise. Three:
 #: the entry pays one spread, and a stop two more away is still hit by a normal widening at a
 #: session open without any move in the mid.
@@ -1586,7 +1784,7 @@ def close_positions(st: dict, symbol: str, keep_tags: frozenset[str] = frozenset
         log("SHADOW would force-close open positions")
         return
     for p in mt5.positions_get(symbol=symbol) or []:
-        if keep_tags and str(getattr(p, "comment", "") or "") in keep_tags:
+        if keep_tags and canonical_comment(str(getattr(p, "comment", "") or "")) in keep_tags:
             continue
         tick = mt5.symbol_info_tick(symbol)
         req = {
@@ -1721,7 +1919,7 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
             # the floor alone, which cannot tighten inside the bracket and can only refuse to
             # leave a stop under water after the trade has already run 0.85R.
             _floor_only = False
-            _fam_name = _fixed_tags.get(str(getattr(p, "comment", "") or ""))
+            _fam_name = _fixed_tags.get(canonical_comment(str(getattr(p, "comment", "") or "")))
             if _fam_name is not None:
                 _trail = float(((st.get("generic") or {}).get(_fam_name) or {})
                                .get("trail_k") or 0.0)
@@ -1916,8 +2114,14 @@ def _position_entry(pid) -> dict:
         return out
     try:
         for o in (mt5.history_orders_get(position=pid) or ()):
+            _raw = str(getattr(o, "comment", "") or "")
             if not out["comment"]:
-                out["comment"] = str(getattr(o, "comment", "") or "")
+                out["comment"] = canonical_comment(_raw)
+            # THE IDENTITY STAMP ON THE FILL: the opening order's chain-head tag, read back from
+            # the venue, so the ledger row joins its intent by the tag and not by a name prefix.
+            _tagged = comment_tag(_raw)
+            if _tagged and not out.get("order_tag"):
+                out["order_tag"] = _tagged[1]
             if float(getattr(o, "sl", 0.0) or 0.0) > 0:
                 out["sl"] = float(o.sl)
                 out["tp"] = float(getattr(o, "tp", 0.0) or 0.0)
@@ -2014,7 +2218,7 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         # ONE name to fade or retire, so a sleeve whose losses are stop-outs -- which is what a
         # losing sleeve's losses ARE -- could never accumulate the evidence to be retired. The
         # organ was not blind by threshold; it was blind by attribution.
-        _out_comment = str(d.comment or "")
+        _out_comment = canonical_comment(str(d.comment or ""))
         _broker_close = _out_comment.startswith("[")
         comment = ((ctx["comment"] or "") if _broker_close else (_out_comment or ctx["comment"] or ""))
         # MAGIC IS THE IDENTITY, NOT THE COMMENT. history_deals_get already filtered to
@@ -2045,6 +2249,7 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                                        tick_size=float(getattr(sym_info, "trade_tick_size",
                                                                0.0) or 0.0))
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
+               "order_tag": ctx.get("order_tag"),
                # Preserve the legacy close-deal side, but expose the actual position side
                # separately: a closing BUY belongs to a SHORT position.
                "entry_side": ctx["entry_side"], "entry_time": ctx["entry_time"],
@@ -2879,7 +3084,7 @@ def resolve_family_order(st: dict, s: dict, equity: float,
         _deals = mt5.history_deals_get(_from_s, _from_s + _bar_min * 60) or []
     except Exception:
         _deals = []                                  # UNMEASURED: the state mark still stands
-    _traded = bar_already_traded(_deals, order_comment(name))
+    _traded = bar_already_traded(_deals, order_comment(name), canon=canonical_comment)
     if _traded is not None:
         return {"ok": False, "stage": "bar_traded", "considered": True, "sep": " ",
                 "mark": True, "last_bar": last_bar,
@@ -3101,6 +3306,12 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         side, lot, dist = int(plan["side"]), float(plan["lot"]), float(plan["dist"])
         sym, tick, entry_ref, g = plan["sym"], plan["tick"], float(plan["entry_ref"]), \
             plan["signal"]
+        # MONEY-PATH SOVEREIGNTY before anything is sized, booked or sent. A refused sleeve is
+        # shadow: its TTL housekeeping below still runs, so an open position is still closed.
+        if not money_path_guard(st, s, lane="family_market", side=side, lot=lot,
+                                price=entry_ref, sl=float(getattr(g, "stop", 0.0) or 0.0),
+                                tp=float(getattr(g, "target", 0.0) or 0.0)):
+            continue
         if not (lot > 0):
             log(f"[{name}] FAMILY-EXEC: allocator gave this sleeve no heat; skipped")
             continue
@@ -3153,12 +3364,15 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not margin_ok(s["symbol"], lot, entry_ref):
             log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
             continue
+        _ident = new_order_identity(s, s["symbol"], {
+            "kind": "family_market", "side": side, "lot": lot, "price": entry_ref,
+            "sl": float(g.stop), "tp": float(g.target), "ttl_until": ttl_until})
         _t0 = time.perf_counter()
         res = mt5.order_send({
             "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": lot,
             "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
             "price": entry_ref, "sl": float(g.stop), "tp": float(g.target),
-            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+            "deviation": 20, "magic": MAGIC, "comment": _ident["comment"],
         })
         _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         rc = res.retcode if res else None
@@ -3167,6 +3381,7 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        intended=entry_ref, sl=float(g.stop), tp=float(g.target),
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice, latency_ms=_lat_ms,
+                       **{k: v for k, v in _ident.items() if k != "comment"},
                        # A MARKET ORDER'S FILL IS KNOWN AT SEND TIME AND WAS THROWN AWAY. The
                        # venue answers `order_send` with the price it filled at; recording it
                        # here means slippage on this order is complete before it ever closes,
@@ -3219,7 +3434,7 @@ def _sleeve_positions(symbol: str, name: str) -> list:
     """Open positions this sleeve owns: the order comment is the sleeve's tag."""
     tag = order_comment(name)
     return [p for p in (mt5.positions_get(symbol=symbol) or [])
-            if str(getattr(p, "comment", "") or "") == tag]
+            if canonical_comment(str(getattr(p, "comment", "") or "")) == tag]
 
 
 def close_retired_positions(st: dict) -> None:
@@ -3244,7 +3459,7 @@ def close_retired_positions(st: dict) -> None:
     for name in names:
         tag = order_comment(name)
         held = [p for p in (mt5.positions_get() or [])
-                if str(getattr(p, "comment", "") or "") == tag]
+                if canonical_comment(str(getattr(p, "comment", "") or "")) == tag]
         if not held:
             log(f"[{name}] RETIRED: no open position under its tag; dropped from the close queue")
             continue
@@ -3581,6 +3796,11 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         per, side, price = float(plan["per"]), int(plan["side"]), float(plan["price"])
         stop, tp, sym, tick = float(plan["stop"]), float(plan["tp"]), plan["sym"], plan["tick"]
         desc, is_addon = str(plan["desc"]), plan["kind"] == "addon"
+        # MONEY-PATH SOVEREIGNTY for the first slice AND every add-on: an add-on is new risk.
+        # `manage_scalp_baskets` (the basket's exits) runs before this lane and is never gated.
+        if not money_path_guard(st, s, lane="scalp_market", side=side, lot=per, price=price,
+                                sl=stop, tp=tp):
+            continue
         log(f"[{name}] scalp sizing basis: {plan['basis']}")
         policy_advice = None
         if not is_addon:
@@ -3596,12 +3816,15 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             log(f"[{name}] SCALP-EXEC{' add-on' if is_addon else ''} SKIPPED: margin tight "
                 f"(lot={per})")
             continue
+        _ident = new_order_identity(s, s["symbol"], {
+            "kind": "scalp_addon" if is_addon else "scalp_market", "side": side, "lot": per,
+            "price": price, "sl": stop, "tp": tp})
         _t0 = time.perf_counter()
         res = mt5.order_send({
             "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
             "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
             "price": price, "sl": stop, "tp": tp,
-            "deviation": 20, "magic": MAGIC, "comment": order_comment(name),
+            "deviation": 20, "magic": MAGIC, "comment": _ident["comment"],
         })
         _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         rc = res.retcode if res else None
@@ -3610,6 +3833,7 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        sl=stop, tp=tp,
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice,
+                       **{k: v for k, v in _ident.items() if k != "comment"},
                        slice_depth=(len(plan["entries"]) if is_addon else 1),
                        latency_ms=_lat_ms,
                        # As the family-market path: the venue's own fill, recorded at send.
@@ -4120,6 +4344,7 @@ def main() -> None:
                     st, _s, equity, _plan.get("sym") if _plan.get("ok") else None)
             except Exception as _exc:                       # a charge never stops the pass
                 _open_why = f"open basket unpriceable ({type(_exc).__name__}: {_exc})"
+            _s["q_open"] = _open_q
             if _plan.get("ok"):
                 try:
                     _new_q = realised_q(equity, _plan["dist"], _s["symbol"], _plan["sym"],
@@ -4153,6 +4378,27 @@ def main() -> None:
             # heat ledger and the order path could come to disagree about the same leg.
             _s["q_charge"] = ramped_fraction(_s.get("risk_frac"), sleeve_live_n(_s["name"]),
                                              _s.get("decay_faded"))
+    # MONEY-PATH SOVEREIGNTY, PRICED BEFORE THE CAP. A sleeve the money-path invariants refuse will
+    # send no new order this pass, so the cap must not reserve heat for one -- that would defer a
+    # sleeve that CAN trade, which is a growth cost with nothing bought. Only the NEW order's
+    # charge is released: a bracket already on the book and an open scalp basket are still risk
+    # and keep their charge. The placement sites judge again and write the refusal rows.
+    _money_path_refresh()
+    for _s in sleeves:
+        try:
+            _mpv = money_path_verdict(_s)
+        except Exception:
+            continue
+        if _mpv.get("ok"):
+            continue
+        _new = (((_s.get("pending_bracket") or {}).get("stage") == "ok")
+                or bool((_s.get("pending_order") or {}).get("ok")))
+        if not _new:
+            continue
+        _s["q_charge"] = float(_s.get("q_open") or 0.0) \
+            if _s.get("exec") == "scalp_market" else 0.0
+        _s["q_charge_basis"] = (f"money path refuses new risk "
+                                f"({_mp.reason_of(_mpv)}); new order charged nothing")
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
@@ -4247,6 +4493,11 @@ def main() -> None:
             lot = float(_pend["lot"])
             q_real = float(_pend["q_real"])
             log(f"[{s['name']}] sizing basis: {_pend['basis']}")
+            # MONEY-PATH SOVEREIGNTY: allocator zero, UNMEASURED admission, banned family and
+            # UNMEASURED cost each mean no bracket. Nothing is written to `st["brackets"]`, so
+            # the day's bracket is not marked placed and no heat is held for it next pass.
+            if not money_path_guard(st, s, lane="bracket", lot=lot):
+                continue
             if not (lot > 0):
                 log(f"[{s['name']}] SKIPPED: allocator gave this sleeve no heat")
                 continue

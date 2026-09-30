@@ -492,6 +492,40 @@ def _verdict_from_samples(samples: list[float]) -> tuple[str, dict[str, Any]]:
                "t": round(t, 2), "annualised_logw": round(float(arr.mean()) * 252.0, 6)}
 
 
+#: The gateway's money-path guard (`mt5desk/money_path.py`) writes one line per refused sleeve,
+#: invariant and day under this rail prefix. They are not registered rails -- the register is
+#: sealed -- so they are summarised here rather than walked by the calibration loop.
+SOVEREIGNTY_PREFIX = "money_path_sovereignty."
+
+
+def sovereignty_refusals(rows: list[dict]) -> dict[str, Any]:
+    """What the four money-path invariants refused, by invariant: sleeve-days, sleeves, and how
+    many of those lines carry a priced value. A line with no value is UNMEASURED -- the order
+    that was not sent is priced by the counterfactual replay of its decision row, never read as
+    free (Rule 1)."""
+    out: dict[str, Any] = {}
+    for r in rows:
+        rail = str(r.get("rail") or "")
+        if not rail.startswith(SOVEREIGNTY_PREFIX):
+            continue
+        inv = rail[len(SOVEREIGNTY_PREFIX):]
+        b = out.setdefault(inv, {"sleeve_days": 0, "sleeves": set(), "priced": 0,
+                                 "value_logw": 0.0, "last_day": ""})
+        b["sleeve_days"] += 1
+        b["sleeves"].add(str(r.get("sleeve") or ""))
+        v = _num(r.get("value"))
+        if v is not None:
+            b["priced"] += 1
+            b["value_logw"] += v
+        b["last_day"] = max(b["last_day"], str(r.get("day") or ""))
+    for b in out.values():
+        b["sleeves"] = len(b["sleeves"])
+        b["verdict"] = UNMEASURED if b["priced"] == 0 else (
+            COSTS if b["value_logw"] > 0 else EARNS)
+        b["value_logw"] = round(b["value_logw"], 8)
+    return out
+
+
 def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
     alloc = _json(ALLOC)
     fv = _veto_evidence()
@@ -577,6 +611,7 @@ def run(write: bool = True, today: str | None = None) -> dict[str, Any]:
             pass
     aggression = alloc.get("aggression") or {}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(), "day": day,
+           "money_path_sovereignty": sovereignty_refusals(rows),
            "ledger_rows": len(rows), "new_samples": len(new), "rails": verdicts,
            "veto_evidence_source": fv.get("source"),
            "costs_growth": sorted(k for k, v in verdicts.items() if v.get("verdict") == COSTS),
