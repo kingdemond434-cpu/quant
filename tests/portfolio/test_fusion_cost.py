@@ -203,9 +203,26 @@ def test_the_arithmetic_is_the_engines_and_not_reimplemented():
     """`Costs.from_symbol` handles two unit traps this desk has already paid for -- points to
     price units, and commission via `quote_per_account`, whose absence undercharged the JPY
     crosses by 184x."""
+    import ast
     src = (_ROOT / "libs" / "portfolio" / "fusion_cost.py").read_text(encoding="utf-8")
     assert "Costs.from_symbol" in src
-    assert "tick_size" not in src.split('"""', 2)[2], "the module re-derives price units itself"
+    # ONE declared exception since 38b00dd1 (2026-09-29): `commission_roundtrip_price` prices the
+    # scalp lane's commission in price units from the same Fusion metadata. It is allowed to
+    # touch tick_size only because it is pinned below to agree with the engine's own conversion
+    # (`quote_per_account / contract_oz`); nothing else in the module may.
+    tree = ast.parse(src)
+    helper = next(n for n in tree.body
+                  if isinstance(n, ast.FunctionDef) and n.name == "commission_roundtrip_price")
+    rest = src.split("\n")
+    del rest[helper.lineno - 1:helper.end_lineno]
+    assert "tick_size" not in "\n".join(rest).split('"""', 2)[2], (
+        "the module re-derives price units itself")
+    for tick, tv in ((1e-5, 1.0), (0.001, 0.54), (0.01, 1.3)):
+        meta = _meta(10.0, tick=tick, contract=1e5, tick_value=tv)
+        c = fc.costs_for_symbol(meta)                # the engine's Costs.from_symbol
+        engine = 2.0 * c.commission_per_lot * c.quote_per_account / c.contract_oz
+        assert fc.commission_roundtrip_price(meta) == pytest.approx(engine), (
+            "the helper's price-unit commission drifted from the engine's conversion")
 
 
 def test_a_jpy_cross_converts_commission_through_tick_value():

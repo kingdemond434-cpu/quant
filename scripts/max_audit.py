@@ -4954,7 +4954,12 @@ def check_test_suite_collectable(defects) -> None:
     best = int(rec.get("max_collected", 0))
     if n > best:
         TEST_RECORD.parent.mkdir(parents=True, exist_ok=True)
+        # MERGED, NEVER REPLACED. The record has a second writer (`libs/ops/suite_record`, the
+        # `pass_fail` block from scripts/record_suite_run.py); writing a fresh three-key dict
+        # here silently erased it on every raise of the collection mark -- the state-eraser
+        # class tests/ops/test_suite_record.py pins.
         TEST_RECORD.write_text(json.dumps({
+            **rec,
             "max_collected": n, "at": datetime.now(tz=UTC).isoformat(),
             "note": "high-water mark of COLLECTABLE test modules; ratchets UP only. A suite may "
                     "never quietly shrink -- deleting a test is a decision, not a side effect.",
@@ -4967,6 +4972,32 @@ def check_test_suite_collectable(defects) -> None:
             "deleted file at a time while 'tests pass' stays true the entire way down. Restore "
             f"them, or record in {TEST_RECORD.relative_to(ROOT)} why the coverage is legitimately "
             "gone."))
+
+
+def check_test_suite_pass_fail(defects) -> None:
+    """The PASS/FAIL half of the suite record (`libs/ops/suite_record.grade`).
+
+    The collection ratchet above cannot see a test that imports fine and FAILS; this reads the
+    block `scripts/record_suite_run.py` writes and raises a defect for every non-OK grade. A DICT
+    LOOKUP on purpose: a status `grade()` gains without a key here is a KeyError, loud on the
+    first run, rather than a silent skip (tests/ops/test_suite_record.py pins the two together).
+    """
+    from libs.ops import suite_record
+    keys = {
+        "RED": "test-suite-red",
+        "RED-ENTRENCHED": "test-suite-red-entrenched",
+        "FELL": "test-suite-fell",
+        "UNMEASURED": "test-suite-pass-fail-unmeasured",
+        "STALE": "test-suite-pass-fail-stale",
+    }
+    try:
+        rec = json.loads(TEST_RECORD.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        rec = {}
+    status, detail = suite_record.grade(rec if isinstance(rec, dict) else {})
+    if status == "OK":
+        return
+    defects.append((keys[status], f"test suite {status}: {detail}"))
 
 
 #: Triage registers excluded from §35 because they disposition their own items inline. The
@@ -7059,6 +7090,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("naive-datetime", check_naive_datetime),
                       ("host-memory", check_host_memory_headroom),
                       ("test-suite", check_test_suite_collectable),
+                      ("test-suite-pass-fail", check_test_suite_pass_fail),
                       ("triage-disposition", check_triage_disposition),
                       ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),

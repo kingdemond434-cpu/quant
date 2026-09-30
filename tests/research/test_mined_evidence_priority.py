@@ -37,7 +37,9 @@ def test_every_miner_prompt_carries_the_mined_evidence_priority_block(prompt: Pa
     # The three rules, matched on their load-bearing phrases rather than exact prose.
     assert "NUMBERS OVER MECHANISMS" in src                       # L0038
     assert "Z-SCORE when it is expensive to move" in src          # L0048
-    assert "mean-reversion families rank LAST" in src             # L0054
+    # bcbec41f re-cased the rule ("MEAN-REVERSION FAMILIES RANK LAST FOR RESEARCH EFFORT") when
+    # it was rewritten as a prior over the MT5 book; matched case-insensitively on the phrase.
+    assert "mean-reversion families rank last" in src.lower()   # L0054
 
 
 @pytest.mark.parametrize("prompt", _PROMPTS, ids=lambda p: p.name)
