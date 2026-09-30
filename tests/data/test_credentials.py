@@ -261,6 +261,7 @@ def test_the_file_inventory_imports_the_env_registry_one_source_each() -> None:
         "_check_credentials_under_test", ROOT / "scripts" / "check_credentials.py")
     assert spec and spec.loader
     cc_files = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = cc_files          # dataclasses resolve their module by name
     spec.loader.exec_module(cc_files)
     assert cc_files.registry is cred
     declared = {c.name for c in cc_files.CREDENTIALS}
