@@ -23,10 +23,10 @@
   }
  },
  "census": {
-  "LIVE": 127,
+  "LIVE": 125,
   "STALE": 1,
   "MISSING": 48,
-  "NEVER": 712,
+  "NEVER": 714,
   "UNMEASURED": 34
  },
  "scope": {
@@ -14546,6 +14546,31 @@
    "consumer": "UNMEASURED"
   },
   {
+   "organ": "leg:credential_coverage",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/credential_coverage.py"
+   ],
+   "clock": "hourly_cycle:credential_coverage",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
+   "artifact_declared": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
    "organ": "leg:kelly_survival",
    "kind": "leg",
    "code": [
@@ -16634,6 +16659,31 @@
    "last_run_source": "UNMEASURED",
    "artifact": "desks/mt5/reports/JUDGING_THROUGHPUT.json",
    "artifact_declared": "desks/mt5/reports/JUDGING_THROUGHPUT.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:keyed_sources",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "clock": "hourly_cycle:keyed_sources",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/KEYED_SOURCES.json",
+   "artifact_declared": "desks/mt5/reports/KEYED_SOURCES.json",
    "artifact_resolved_by": "absent",
    "artifact_declared_n": 1,
    "artifact_age_s": null,
@@ -23346,58 +23396,6 @@
    "artifact_sha256": "7acc04b9cfddf89308b6e212ad003ca0134f1d00b8991ee37c86770b9a9c38d2",
    "summary": {},
    "progress_metric": "timer_runs",
-   "consumer": "UNMEASURED"
-  },
-  {
-   "organ": "leg:credential_coverage",
-   "kind": "leg",
-   "code": [
-    "desks/mt5/research/credential_coverage.py"
-   ],
-   "clock": "hourly_cycle:credential_coverage",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "LIVE",
-   "why": "artifact 0.0h old, inside its cadence",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
-   "artifact_declared": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
-   "artifact_resolved_by": "declared",
-   "artifact_declared_n": 1,
-   "artifact_age_s": 5,
-   "artifact_bytes": 56098,
-   "artifact_sha256": "88893505624d8b49dc7aa7354b4313d74531538b48e1817b171e8b71f26253cb",
-   "summary": {},
-   "progress_metric": "leg_completions",
-   "consumer": "UNMEASURED"
-  },
-  {
-   "organ": "leg:keyed_sources",
-   "kind": "leg",
-   "code": [
-    "desks/mt5/research/keyed_sources.py"
-   ],
-   "clock": "hourly_cycle:keyed_sources",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "LIVE",
-   "why": "artifact 0.0h old, inside its cadence",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "desks/mt5/reports/KEYED_SOURCES.json",
-   "artifact_declared": "desks/mt5/reports/KEYED_SOURCES.json",
-   "artifact_resolved_by": "declared",
-   "artifact_declared_n": 1,
-   "artifact_age_s": 6,
-   "artifact_bytes": 4468,
-   "artifact_sha256": "d72eda80490a12e9e75ba3c9a6e95b33204a7d3510fd26314276d0084e36e1f7",
-   "summary": {
-    "status": "DRY_RUN"
-   },
-   "progress_metric": "leg_completions",
    "consumer": "UNMEASURED"
   }
  ],
