@@ -676,8 +676,9 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
 
     Guarantees, pinned by tests: every existing row is left byte-identical (never rewritten,
     re-attested or flipped); rows are only appended; census and `scope.attested` move by the
-    added rows alone; the host stamp, `generated_at` and the ratchet are left as the attesting
-    host wrote them; a second run adds nothing; appended rows carry `measured_on`/`measured_at`
+    added rows alone (and a header that disagreed with its own rows is recounted from them,
+    logged in `scope.header_reconciled`); the host stamp, `generated_at` and the ratchet are
+    left as the attesting host wrote them; a second run adds nothing; appended rows carry `measured_on`/`measured_at`
     and, off the attesting host, read NEVER or UNMEASURED rather than this machine's mtimes; the
     size trim runs over the appended rows only. Run it on a FULL tree -- on a sparse one the
     registry cannot see every organ's source, and absence there would be read as NEVER.
@@ -691,7 +692,8 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     rows, _scope = organ_rows(paths, budget_s)
     added = [r for r in rows if str(r["organ"]) not in have]
     if not added:
-        return {"doc": doc, "added": []}
+        fixed = _reconcile_header(doc)
+        return {"doc": doc, "added": [], "reconciled": fixed}
     # A ROW'S STATE IS A FACT ABOUT THE HOST THAT MEASURED IT. LIVE/STALE/MISSING are read off
     # file mtimes and run records on whatever machine runs this pass, so the same organ could
     # read LIVE here and STALE on the box. Every appended row is stamped with where and when it
@@ -722,6 +724,8 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     _s = doc.get("scope")
     scope: dict[str, Any] = _s if isinstance(_s, dict) else {}
     scope["attested"] = int(scope.get("attested", 0)) + len(added)
+    doc["scope"] = scope
+    fixed = _reconcile_header(doc)
     log = scope.get("only_missing_appended")
     log = list(log) if isinstance(log, list) else []
     log.append({"at": at, "host": here, "machine_id": _machine_id(),
@@ -730,7 +734,44 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     scope["only_missing_appended"] = log
     doc["scope"] = scope
     _trim(doc, only=added)
-    return {"doc": doc, "added": added}
+    return {"doc": doc, "added": added, "reconciled": fixed}
+
+
+def _reconcile_header(doc: dict[str, Any]) -> dict[str, Any] | None:
+    """Make `census` and `scope.attested` the count OF THE ROWS, and log any correction.
+
+    THE HEADER IS DERIVED, NEVER CARRIED (2026-09-30). LIVE's committed file held 938 rows under
+    a header that said 937 (census NEVER 720 against 721 NEVER rows): a row landed without its
+    header moving. Adding `len(added)` to a wrong base only carries the error forward, so after
+    any append -- or on a pass that appends nothing -- the header is recounted from the rows.
+    No row is touched; the correction is recorded in `scope.header_reconciled` so a reviewer
+    sees what the file claimed before. Returns the correction, or None when the header agreed.
+    """
+    organs = [r for r in doc.get("organs") or [] if isinstance(r, dict)]
+    counted = {s: sum(1 for r in organs if r.get("state") == s) for s in STATES}
+    for r in organs:
+        st = str(r.get("state"))
+        if st not in counted:
+            counted[st] = counted.get(st, 0) + 1
+    _c = doc.get("census")
+    census: dict[str, Any] = _c if isinstance(_c, dict) else {}
+    _s = doc.get("scope")
+    scope: dict[str, Any] = _s if isinstance(_s, dict) else {}
+    was_census = {k: int(census.get(k, 0) or 0) for k in counted}
+    was_attested = int(scope.get("attested", 0) or 0)
+    if was_census == counted and was_attested == len(organs) and \
+            all(k in counted for k in census):
+        return None
+    fix = {"at": _iso(_now()), "rows": len(organs), "attested_was": was_attested,
+           "census_was": {k: v for k, v in census.items()}, "census_now": dict(counted)}
+    doc["census"] = {**{k: v for k, v in census.items() if k in counted}, **counted}
+    scope["attested"] = len(organs)
+    log = scope.get("header_reconciled")
+    log = list(log) if isinstance(log, list) else []
+    log.append(fix)
+    scope["header_reconciled"] = log
+    doc["scope"] = scope
+    return fix
 
 
 def _age(seconds: Any) -> str:
@@ -826,7 +867,7 @@ def main(argv: list[str] | None = None) -> int:
         except FileNotFoundError as exc:
             print(f"runtime_attestation --only-missing: NOT written ({exc})")
             return 1
-        if res["added"]:
+        if res["added"] or res.get("reconciled"):
             try:
                 _atomic(paths.out_json,
                         json.dumps(res["doc"], indent=1, default=str, sort_keys=False))
@@ -838,6 +879,10 @@ def main(argv: list[str] | None = None) -> int:
         names = ", ".join(f"{r['organ']} ({r['state']})" for r in res["added"])
         print(f"runtime_attestation --only-missing: appended {len(res['added'])} row(s)"
               + (f": {names}" if names else " -- every registry organ already has a row"))
+        if res.get("reconciled"):
+            fx = res["reconciled"]
+            print(f"runtime_attestation --only-missing: header recounted from the rows "
+                  f"(attested {fx['attested_was']} -> {fx['rows']})")
         return 0
     doc = attest(paths, budget_s=float(a.budget_s))
     rat = ratchet_update(paths, doc["attests_to_host"], doc["census"],

@@ -177,7 +177,11 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " semis_sector_value",
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
+                                            " gnn_propagation"
                                             " semis_leader_catchup",
+    # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
+    # concession that reverts or information that continues, read off the recent path.
+    "inventory_shock price_only market": "attention_ts",
     # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
     # against its own peer class on the same date.
     "trend_persistence cross_asset market": "cross_sectional_class_momentum"
@@ -228,7 +232,11 @@ for _key, _fams in _FAMILY_GROUPS.items():
         FAMILY_TABLE[_fam] = (_mech, _info, _style)
 
 #: Constructors that build families from a spec rather than being one -- never proposed.
-NOT_A_FAMILY = frozenset({"generic", "formula", "ensemble", "cross_sectional", "joint_genome"})
+#: `gnn_propagation` / `attention_ts` are built from a recipe (a peer panel and a model
+#: configuration) that only research/learned_miners names and charges; proposed bare they would
+#: carry no panel and fire nothing.
+NOT_A_FAMILY = frozenset({"generic", "formula", "ensemble", "cross_sectional", "joint_genome",
+                          "gnn_propagation", "attention_ts"})
 
 RULE = ("a cell is UNMEASURED until a source says otherwise, the strongest source wins "
         "(LIVE>FORWARD>CERTIFIED>MEASURED_FAIL>UNMEASURED), an unmapped family is UNKNOWN and "

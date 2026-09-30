@@ -452,3 +452,39 @@ def test_the_host_stamp_records_the_machine_identity(tmp_path: Path, monkeypatch
     h = ra.host_identity(ra.Paths.at(tmp_path))
     assert h["hostname"] == "vmi3571445" and h["machine_id"] == "box-machine-id"
     assert h["desk_host"] is True
+
+
+def test_only_missing_recounts_a_header_that_disagrees_with_its_rows(
+        tmp_path: Path, monkeypatch) -> None:
+    """LIVE 2026-09-30 held 938 rows under a header that said 937 (one NEVER row landed without
+    its census moving). Adding len(added) to that base carried the error forward; the header is
+    now recounted from the rows, rows untouched, and the correction logged."""
+    path = _committed(tmp_path)
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc["organs"].append(_row("hand_added", "NEVER"))   # 3 rows, header still says 2
+    path.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    rows_before = [json.dumps(r) for r in doc["organs"]]
+    # nothing to append: the recount alone must still be written
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: (
+        [_row("old_a"), _row("old_b"), _row("hand_added")], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    after = json.loads(path.read_text(encoding="utf-8"))
+    assert [json.dumps(r) for r in after["organs"]] == rows_before
+    assert after["scope"]["attested"] == 3 and after["census"]["NEVER"] == 1
+    assert after["scope"]["header_reconciled"][-1]["attested_was"] == 2
+    assert "Organs attested **3**" in ra.Paths.at(tmp_path).out_md.read_text(encoding="utf-8")
+    # with a row to append, the count is the rows', not the stale base plus one
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: (
+        [_row("old_a"), _row("new_z", "NEVER")], {}))
+    doc["organs"].append(_row("hand_added_2", "NEVER"))
+    doc["scope"]["attested"] = 3
+    path.write_text(json.dumps({**doc, "census": after["census"]}, indent=1, default=str),
+                    encoding="utf-8")
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    again = json.loads(path.read_text(encoding="utf-8"))
+    assert again["scope"]["attested"] == len(again["organs"]) == 5
+    assert sum(again["census"].values()) == 5
+    # and a consistent file is left byte-identical by a pass with nothing to add
+    once = path.read_bytes()
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert path.read_bytes() == once

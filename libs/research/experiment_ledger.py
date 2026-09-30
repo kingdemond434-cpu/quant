@@ -49,8 +49,11 @@ def _count(v: Any) -> int | None:
     return int(v)
 
 
-def charge_by_family(tests_run: Any, rows: Any, by_family: Any = None) -> dict[str, int]:
-    """Charge a discovery file's trials to families by what each row actually cost.
+def proportional_charge(tests_run: Any, rows: Any, by_family: Any = None) -> dict[str, int]:
+    """Split a discovery file's trials over families by what each row actually cost.
+
+    This is the file's contribution to the LIFETIME TOTAL (each trial counted once). It is NOT
+    a family's deflation charge: that is `charge_by_family`, which may only be tighter.
 
     THE ONE PLACE A FILE-LEVEL `tests_run` IS SPLIT (audit 2026-09-30). The old split divided the
     file's count evenly over its DISTINCT families with a floor, so a family with 40 rows was
@@ -104,22 +107,58 @@ def charge_by_family(tests_run: Any, rows: Any, by_family: Any = None) -> dict[s
     return charge
 
 
+def _even_split(tests_run: Any, rows: Any) -> dict[str, int]:
+    """The pre-2026-09-30 charge: the file's count split evenly over its distinct families."""
+    n = _count(tests_run) or 0
+    fams = {str(r.get("family")) for r in (rows if isinstance(rows, list) else [])
+            if isinstance(r, dict) and r.get("family")}
+    return {f: n // max(1, len(fams)) for f in fams or {"?"}}
+
+
+def charge_by_family(tests_run: Any, rows: Any, by_family: Any = None) -> dict[str, int]:
+    """A family's DEFLATION charge for one discovery file: TIGHTENING-ONLY (audit 2026-09-30).
+
+    The proportional split (`proportional_charge`) replaced an even split, and in a mixed file it
+    LOWERED the minority family's charge (101,000 screened, a 1-row family beside a 100-row one:
+    even split 50,500, proportional 1,000). A family surfaced from a screen of N cells was
+    selected out of all N, so each family named on the file -- by a declared count, a row or the
+    old split -- is charged
+
+        max(proportional, even split, union)      union = max(tests_run, proportional total)
+
+    which can never be lower than either earlier rule. The per-family charges therefore sum to
+    MORE than the file's trials by design; the lifetime TOTAL counts each trial once
+    (`proportional_charge`), and only the per-family figures carry the union.
+    """
+    new = proportional_charge(tests_run, rows, by_family)
+    n = _count(tests_run) or 0
+    if not n and not new:
+        return {}
+    old = _even_split(tests_run, rows) if n else {}
+    union = max(n, sum(new.values()))
+    fams = set(new) | set(old)
+    if isinstance(by_family, dict):
+        fams |= {str(f) for f, k in by_family.items() if _count(k)}
+    fams = fams or {"?"}
+    return {f: max(new.get(f, 0), old.get(f, 0), union) for f in sorted(fams)}
+
+
 def _proposer_counts() -> tuple[int, dict[str, int]]:
     """`tests_run` on every discovery file, attributed to the families it proposed."""
     total = 0
     by_fam: dict[str, int] = {}
     intel = DESK / "data" / "intelligence"
-    for f in (glob.glob(str(intel / "*" / "discoveries_*.json")) if intel.exists() else []):
+    # No early return when there is no intelligence dir: the side ledgers below still count.
+    for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
             continue
         if not isinstance(doc, dict) or not isinstance(doc.get("tests_run"), (int, float)):
             continue
-        charge = charge_by_family(doc["tests_run"], doc.get("discoveries"),
-                                  doc.get("tests_by_family"))
-        total += sum(charge.values())
-        for fam, k in charge.items():
+        args = (doc["tests_run"], doc.get("discoveries"), doc.get("tests_by_family"))
+        total += sum(proportional_charge(*args).values())
+        for fam, k in charge_by_family(*args).items():
             by_fam[fam] = by_fam.get(fam, 0) + k
     # FACTOR x MODEL PAIRINGS ARE TRIALS TOO. Co-evolution writes no discovery file (a pairing is
     # not a cell), so its ledger is read here and charged to the model_pairing family.
@@ -133,6 +172,22 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
     except (OSError, ValueError, TypeError):
         pass
+    # A MINER RUN THAT PROPOSES NOTHING STILL RAN ITS TESTS. `learned_miners` writes one row per
+    # (config, symbol, threshold) it tried; a run that donated is already counted through its
+    # discovery file's tests_run, so only the runs that donated nothing are charged here -- the
+    # null runs that would otherwise leave no trace in the lifetime count.
+    try:
+        for ln in (DESK / "data" / "learned_miners_trials.jsonl").read_text("utf-8").splitlines():
+            if not ln.strip():
+                continue
+            row = json.loads(ln)
+            if not isinstance(row, dict) or row.get("donated"):
+                continue
+            fam = str(row.get("family") or "?").rsplit(":", 1)[-1]
+            total += 1
+            by_fam[fam] = by_fam.get(fam, 0) + 1
+    except (OSError, ValueError, TypeError):
+        pass
     # SCREENS THAT FOUND NOTHING ARE TRIALS TOO. A pass with no candidate writes no discovery
     # file, so its width is appended to screen_trials.jsonl instead (research/
     # cross_sectional_breadth.py) and charged here, per family.
@@ -144,10 +199,13 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             widths = row.get("by_family") if isinstance(row, dict) else None
             if not isinstance(widths, dict):
                 continue
-            for fam, k in widths.items():
-                n = int(k or 0)
-                total += n
-                by_fam[str(fam)] = by_fam.get(str(fam), 0) + n
+            own = {str(f): int(k or 0) for f, k in widths.items()}
+            screened = max(int(row.get("screened") or 0), sum(own.values()))
+            # counted once in the total; each family screened is charged the pass's whole width
+            # (the union rule of `charge_by_family`), never less than its own width.
+            total += screened
+            for fam, n in own.items():
+                by_fam[fam] = by_fam.get(fam, 0) + max(n, screened)
     except (OSError, ValueError, TypeError):
         pass
     return total, by_fam

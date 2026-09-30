@@ -552,7 +552,7 @@ def test_every_donated_row_carries_its_culture(semis, tmp_path, monkeypatch):
     monkeypatch.setattr(xs, "_policy", lambda: _P())
     donated: list[list[dict]] = []
 
-    def fake_donate(source, rows, tests_run):
+    def fake_donate(source, rows, tests_run, tests_by_family=None):
         donated.append(list(rows))
         return tmp_path / "d.json"
     monkeypatch.setattr(pc, "donate", fake_donate)

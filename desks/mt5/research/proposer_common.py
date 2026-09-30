@@ -489,8 +489,13 @@ def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str,
     return clean, {k: rep[k] for k in ("rows", "violations", "fields_stripped")}
 
 
-def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
+def donate(source: str, candidates: list[dict], tests_run: int,
+           tests_by_family: dict[str, int] | None = None) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
+
+    `tests_by_family` (optional) declares how many cells each family SCREENED this pass,
+    including families that produced no candidate, so `experiment_ledger.charge_by_family`
+    charges every screened family -- not only the ones whose rows survived to this file.
 
     POINT-IN-TIME BY CONSTRUCTION AND BY REFUSAL. Every row that leaves here carries
     available_time, ingested_time, source_version and a payload hash, so a joiner can refuse it
@@ -530,6 +535,9 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     path.write_text(json.dumps({"source": source,
                                 "generated_at": datetime.now(tz=UTC).isoformat(),
                                 "tests_run": tests_run, "discoveries": candidates,
+                                **({"tests_by_family": {str(k): int(v) for k, v in
+                                                        tests_by_family.items() if int(v) > 0}}
+                                   if tests_by_family else {}),
                                 "counts": {"donated": len(candidates),
                                            "refused_unstamped": len(refused),
                                            "refused_wrong_lane": len(lane_refused),

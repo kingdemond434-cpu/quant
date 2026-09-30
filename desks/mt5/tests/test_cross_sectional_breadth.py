@@ -226,7 +226,7 @@ def test_seeder_donates_only_cells_over_the_floor(universe, tmp_path, monkeypatc
     monkeypatch.setattr(csb, "TRIALS_LEDGER", tmp_path / "screen_trials.jsonl")
     donated: list[list[dict]] = []
 
-    def fake_donate(source, rows, tests_run):
+    def fake_donate(source, rows, tests_run, tests_by_family=None):
         donated.append(list(rows))
         return tmp_path / "discoveries.json"
     monkeypatch.setattr(pc, "donate", fake_donate)
@@ -422,7 +422,55 @@ def test_a_null_pass_still_charges_its_full_screened_width(universe, tmp_path, m
     assert len(rows) == 1 and sum(rows[0]["by_family"].values()) == width
     monkeypatch.setattr(el, "DESK", desk)
     total, by_fam = el._proposer_counts()
-    assert total == width and by_fam == rows[0]["by_family"]
+    # counted once in the total; each family screened is charged the pass's WHOLE width
+    assert total == width and by_fam == {f: width for f in rows[0]["by_family"]}
     # the same day again screens nothing new and charges nothing twice
     csb.run(budget_s=600, symbols=MEMBERS[:2])
     assert len((desk / "data" / "screen_trials.jsonl").read_text("utf-8").splitlines()) == 1
+
+
+def test_a_donated_pass_charges_its_whole_width_to_every_family_it_screened(
+        universe, tmp_path, monkeypatch):
+    """Audit 2026-09-30 (PR #136): a pass that DONATED charged its width through the discovery
+    file's `tests_run`, and the census split that only over the families that had a candidate
+    row -- a family screened alongside them with no hit (or whose rows the door refused) was
+    charged nothing. Every family screened is now declared, and each is charged the whole width."""
+    from libs.research import experiment_ledger as el
+    from research import cross_sectional_breadth as csb
+    from research import proposer_common as pc
+    monkeypatch.setattr(xs, "_policy", lambda: _stub_policy(MEMBERS))
+    for name, fname in (("STATE", "state.json"), ("OUT", "out.json"), ("BREADTH", "a.json"),
+                        ("BREADTH_LEDGER", "b.json"), ("CANON", "c.json"),
+                        ("VERDICTS", "d.jsonl")):
+        monkeypatch.setattr(csb, name, tmp_path / fname)
+    desk = tmp_path / "desk"
+    monkeypatch.setattr(csb, "TRIALS_LEDGER", desk / "data" / "screen_trials.jsonl")
+    intel = desk / "data" / "intelligence" / csb.SOURCE
+    intel.mkdir(parents=True)
+    kept: dict[str, list] = {}
+
+    def fake_donate(source, rows, tests_run, tests_by_family=None):
+        # the door keeps ONE family's rows only: the others screened, but reach no row
+        first = sorted({r["family"] for r in rows})[0]
+        kept["rows"] = [r for r in rows if r["family"] == first]
+        path = intel / "discoveries_1.json"
+        path.write_text(json.dumps({"tests_run": tests_run, "discoveries": kept["rows"],
+                                    "tests_by_family": tests_by_family}), "utf-8")
+        return path
+    monkeypatch.setattr(pc, "donate", fake_donate)
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(kept["rows"])})
+    doc = csb.run(budget_s=600, symbols=MEMBERS[:2])
+    seeding = doc["seeding"]
+    widths = {f: int(c.get("measured_this_pass", 0))
+              for f, c in seeding["cells_by_family"].items()
+              if int(c.get("measured_this_pass", 0)) > 0}
+    width = sum(widths.values())
+    assert seeding["donation"]["status"] == "DONATED" and len(widths) >= 2
+    assert {r["family"] for r in kept["rows"]} < set(widths)    # some families have no row
+    assert seeding["trials_charged"]["charged_to_each_family"] == width
+    assert not (desk / "data" / "screen_trials.jsonl").exists()  # no double charge
+    monkeypatch.setattr(el, "DESK", desk)
+    total, by_fam = el._proposer_counts()
+    assert total == width                                       # each trial once in the total
+    assert set(by_fam) == set(widths)
+    assert all(by_fam[f] == width for f in widths)              # whole width to every family

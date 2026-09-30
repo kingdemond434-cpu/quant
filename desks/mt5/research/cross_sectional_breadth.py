@@ -320,8 +320,12 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
              "target_cluster": books.TARGETS.get(c["family"], {}).get("cluster"),
              "peer_class": c["klass"]}),
             **culture(c["symbol"], c["klass"], c["family"])} for c in cands]
-        path = pc.donate(SOURCE, rows, sum(int(v["measured_this_pass"])
-                                           for v in by_family.values()) or len(rows))
+        # EVERY family screened is declared, hit or no hit (audit 2026-09-30): the census charges
+        # each of them the pass's whole width, not only the families that produced a candidate.
+        widths = {f: int(v.get("measured_this_pass", 0)) for f, v in by_family.items()
+                  if int(v.get("measured_this_pass", 0)) > 0}
+        path = pc.donate(SOURCE, rows, sum(widths.values()) or len(rows),
+                         tests_by_family=widths or None)
         counts = pc.donation_counts()
         donated = int(counts.get("donated") or 0)
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
@@ -373,8 +377,11 @@ def _charge_trials(by_family: dict[str, Counter], donation: dict[str, Any],
     from each discovery file's `tests_run`, and a pass with no candidate writes no file -- so a
     pass that screened thousands of cells and found nothing charged ZERO trials, and every later
     survivor was deflated as if those looks had never happened. When a donation file carried the
-    width (`tests_run`), it is already charged; otherwise the full screened width goes to
-    TRIALS_LEDGER, per family. A dry run screens nothing it keeps, and charges nothing."""
+    width (`tests_run`, with every screened family declared in `tests_by_family`), it is already
+    charged; otherwise the full screened width goes to TRIALS_LEDGER. Either way the census
+    charges EACH family screened the pass's whole width (the union rule of
+    `experiment_ledger.charge_by_family`). A dry run screens nothing it keeps, and charges
+    nothing."""
     width = {f: int(c.get("measured_this_pass", 0)) for f, c in by_family.items()
              if int(c.get("measured_this_pass", 0)) > 0}
     total = sum(width.values())
@@ -383,7 +390,9 @@ def _charge_trials(by_family: dict[str, Counter], donation: dict[str, Any],
     if not total:
         return {"screened": 0, "charged_via": "nothing screened this pass"}
     if donation.get("status") == "DONATED":
-        return {"screened": total, "charged_via": "discovery file tests_run"}
+        return {"screened": total, "charged_to_each_family": total, "families": sorted(width),
+                "charged_via": "discovery file tests_run + tests_by_family (whole width to "
+                               "every family screened)"}
     row = {"at": _now(), "source": SOURCE, "screened": total, "by_family": width,
            "why": f"no discovery file carried tests_run ({donation.get('status')})"}
     try:
