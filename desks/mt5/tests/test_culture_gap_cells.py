@@ -155,13 +155,51 @@ def test_a_symbol_the_broker_will_not_trade_is_gated_and_named() -> None:
     rub = G.tradability("USDRUB", rows, None)
     assert not rub["ok"] and "median spread" in rub["why"]
     assert rub["trade_mode"] == CC.UNMEASURED                    # never read as a pass or a 0
-    assert not G.tradability("EURRUB", rows, None)["ok"]        # 1.4M-point snapshot
+    eur = G.tradability("EURRUB", rows, None)                  # 1.4M-point snapshot, 250 median
+    assert eur["ok"] and eur["snapshot_spread_cost"] > 0.05 > eur["median_spread_cost"]
     assert G.tradability("USDMXN", rows, None)["ok"]
     closing = G.tradability("USDMXN", rows, {"USDMXN": 3})
     assert not closing["ok"] and "CLOSE_ONLY" in closing["why"]
     rec = next(r for r in _REC if r["id"] == "ru_retail_moex_open")
     cells, note = G.cells_for(rec, 2026, G.universe(), rows=rows, modes=None)
-    assert not cells and {g["symbol"] for g in note["gated"]} == {"USDRUB", "EURRUB"}
+    assert {g["symbol"] for g in note["gated"]} == {"USDRUB"}      # the USDRUB gate stays
+    assert cells and {c["symbol"] for c in cells} == {"EURRUB"}
+
+
+def test_one_bad_snapshot_never_gates_the_median_and_trade_mode_do() -> None:
+    """EURRUB was gated on ONE 10.33% print against a 0.0018% median: the snapshot is reported,
+    only the median (or the box's trade_mode) vetoes."""
+    rows = {"EURUSD": {"tick_value": 1.0, "tick_size": 1e-5, "contract_size": 100000.0},
+            "XXXUSD": {"median_spread_pts": 2.0, "spread_pts_at_collection": 5e6,
+                       "tick_value": 1.0, "tick_size": 1e-5, "contract_size": 100000.0}}
+    t = G.tradability("XXXUSD", rows, None)
+    assert t["ok"] and t["snapshot_spread_cost"] > 0.01
+    rows["XXXUSD"]["median_spread_pts"] = 5e3
+    assert "median spread" in G.tradability("XXXUSD", rows, None)["why"]
+    rows["XXXUSD"]["median_spread_pts"] = 2.0
+    assert "DISABLED" in G.tradability("XXXUSD", rows, {"XXXUSD": 0})["why"]
+    rows["XXXUSD"]["median_spread_pts"] = None                  # UNMEASURED never gates
+    assert G.tradability("XXXUSD", rows, None)["ok"]
+
+
+def test_every_gate_writes_its_missed_growth_line_once_a_day(tmp_path: Path) -> None:
+    """Rule 1: a veto bills what it withheld. One row per (day, recipe:symbol), value UNMEASURED
+    (never 0), in the ledger's own shape; an hourly leg never appends the same day twice."""
+    gated = [{"recipe": "ru_retail_moex_open", "symbol": "USDRUB", "cells_not_minted": 12,
+              "why": "median spread 0.179% of notional > 0.10%", "trade_mode": CC.UNMEASURED,
+              "median_spread_cost": 0.0018, "snapshot_spread_cost": 0.015}]
+    led = tmp_path / "missed_growth.jsonl"
+    lines = G.missed_growth_lines(gated, "2026-09-30")
+    assert G.append_missed_growth(lines, led) == 1
+    assert G.append_missed_growth(G.missed_growth_lines(gated, "2026-09-30"), led) == 0
+    assert G.append_missed_growth(G.missed_growth_lines(gated, "2026-10-01"), led) == 1
+    rows = [json.loads(x) for x in led.read_text().splitlines()]
+    assert len(rows) == 2 and {r["rail"] for r in rows} == {G.GATE_RAIL}
+    for r in rows:
+        assert set(r) >= {"day", "rail", "value", "at"} and r["value"] is None
+        assert r["value_status"].startswith(CC.UNMEASURED) and r["cells_not_minted"] == 12
+    from libs.portfolio.rails import RAILS  # sealed register: not a rail there
+    assert G.GATE_RAIL not in {x.name for x in RAILS}
 
 
 def test_crowding_reads_the_english_evidence_the_run_was_given(tmp_path: Path) -> None:
@@ -233,6 +271,7 @@ def _isolate_door(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(R, "BACKUP", tmp_path / "no_backup")
     monkeypatch.setattr(TP, "SAMPLES", tmp_path / "throughput_samples.jsonl")
     monkeypatch.setattr(G, "SERIES_DIR", tmp_path / "series")
+    monkeypatch.setattr(G, "MISSED", tmp_path / "missed_growth.jsonl")
     return intel
 
 
@@ -379,3 +418,81 @@ def test_bar_length_is_read_in_the_index_own_unit() -> None:
     idx = _stamps("2026-01-05", "2026-02-27")
     for unit in ("s", "ms", "us", "ns"):
         assert LC.bar_minutes(idx.as_unit(unit)) == 60
+
+
+def test_a_lost_cursor_never_re_donates_or_re_charges(tmp_path: Path,
+                                                      monkeypatch: pytest.MonkeyPatch) -> None:
+    """The cursor is gitignored state; the dedup that charges is by cell identity against the
+    seat's own contract files. Delete the cursor: nothing is enqueued, donated or charged again."""
+    from libs.moat import registry as R
+    intel = _isolate_door(tmp_path, monkeypatch)
+    recs = [r for r in _REC if r["id"] in ("cn_pboc_fix", "jp_tax_calendar_jpn225")]
+    rp = tmp_path / "recipes.json"
+    rp.write_text(json.dumps({"recipes": recs}), encoding="utf-8")
+    cur = tmp_path / "cursor.json"
+    R.set_path(tmp_path / "alpha_registry.sqlite")
+    try:
+        first = G.run(60, year=2026, recipes_path=rp, summary=tmp_path / "absent.json",
+                      cursor_path=cur)
+        n = first["totals"]["emitted_this_pass"]
+        assert n > 0 and first["donation"]["tests_run"] == n
+        assert first["donation"]["identities_on_file_before"] == 0
+        cur.unlink()                                             # the cursor is gone
+        again = G.run(60, year=2026, recipes_path=rp, summary=tmp_path / "absent.json",
+                      cursor_path=cur)
+    finally:
+        R.set_path(None)
+    assert again["donation"]["identities_on_file_before"] == n
+    assert again["totals"]["emitted_this_pass"] == 0
+    assert again["totals"]["already_donated_this_pass"] == n
+    assert again["donation"]["donated"] == 0 and again["donation"]["path"] is None
+    files = sorted((intel / G.SEAT).glob("discoveries_*.json"))
+    assert len(files) == 1                                       # no second contract file
+    charged = sum(json.loads(f.read_text())["tests_run"] for f in files)
+    assert charged == n                                          # charged once, per cell
+    # the rebuilt cursor marks them done, so a third pass is a no-op on the fast path too
+    assert json.loads(cur.read_text())
+    assert len(G.donated_identities(intel / G.SEAT)) == n
+
+
+def test_the_donated_identity_is_the_identity_the_judge_stamps(tmp_path: Path,
+                                                               monkeypatch: pytest.MonkeyPatch
+                                                               ) -> None:
+    """The ledger charges each identity once (experiment_ledger.lifetime): that only holds if
+    the donated row's node_id is the node_id the compiled, judged cell carries."""
+    from libs.moat import registry as R
+    from libs.research.hypothesis_graph import node_id_for_spec
+    from research import miner_candidate_compiler as MC
+    intel = _isolate_door(tmp_path, monkeypatch)
+    recs = [r for r in _REC if r["id"] in ("cn_pboc_fix", "ae_gold_dubai_to_london")]
+    rp = tmp_path / "recipes.json"
+    rp.write_text(json.dumps({"recipes": recs}), encoding="utf-8")
+    R.set_path(tmp_path / "alpha_registry.sqlite")
+    try:
+        G.run(60, year=2026, recipes_path=rp, summary=tmp_path / "absent.json",
+              cursor_path=tmp_path / "cursor.json")
+    finally:
+        R.set_path(None)
+    contract = json.loads(sorted((intel / G.SEAT).glob("discoveries_*.json"))[0].read_text())
+    universe = {s for r in recs for s in r["symbols"]}
+    compiled = {node_id_for_spec(c) for row in contract["discoveries"]
+                for c in MC.expand_axes(MC.compile_row(G.SEAT, row, universe)[0])}
+    assert compiled == G.donated_identities(intel / G.SEAT)
+
+
+def test_a_local_handoff_reads_a_microsecond_index_as_hours() -> None:
+    """`_local_handoff` read `asi8` in nanoseconds: on a datetime64[us] index a contiguous source
+    span looked 1000x too short and no window ever paired. Same bars, any unit, same signals."""
+    from mt5desk.families_edge_queue import _local_handoff
+    idx = _stamps("2026-01-05", "2026-04-30")
+    base = _bars(idx)
+    args = ("Europe/London", "08:00", "start", 2, "Asia/Tokyo", "09:00", "start",
+            0.1, 20, 1.0, 1.2, 6, 1)
+    want = _local_handoff(base, *args)
+    assert want
+    for unit in ("us", "ms", "s"):
+        df = base.copy()
+        df.index = df.index.as_unit(unit)
+        got = _local_handoff(df, *args)
+        assert [(g.time, g.side, round(g.stop, 9)) for g in got] == \
+            [(g.time, g.side, round(g.stop, 9)) for g in want], unit

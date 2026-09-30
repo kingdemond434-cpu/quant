@@ -50,7 +50,9 @@ family's own parameter grid, and the roster row whose publisher states the fact
      A cell already minted is never re-enqueued (the registry would count a second search of
      the same rule), so the per-recipe cursor walks each recipe's cell list once and a recipe
      whose list changes (new variants when DST rules move, a new grid point, a pack series that
-     lands on the box) is walked again from where it differs.
+     lands on the box) is walked again from where it differs. The cursor is only a speed-up:
+     the dedup that charges is by CELL IDENTITY against the seat's own contract files
+     (`donated_identities`), so a lost cursor can never re-donate or re-charge a cell.
 
   5. REFUSES WITHOUT EVIDENCE. A local-premium conditioner needs the pack's stamped series in the
      lake (`exogenous_conditioner` refuses without it); where the series is absent the recipe is
@@ -121,13 +123,27 @@ LOCAL_CLOCK: dict[str, dict[str, str]] = {
 SESSION = "all"
 
 #: TRADABILITY, from the broker's own contract terms (2026-09-30). A symbol the broker has
-#: DISABLED (trade_mode 0) or set CLOSE-ONLY (3) cannot open a trade, and a symbol whose spread
-#: costs more than these fractions of notional cannot pay for a one-to-three-bar fixing or close
-#: effect: its cells would spend family-wise trials no result could cash. Gated symbols are named
-#: in the report with the numbers, and re-read every pass (a spread that normalises un-gates).
+#: DISABLED (trade_mode 0) or set CLOSE-ONLY (3) cannot open a trade, and a symbol whose MEDIAN
+#: spread costs more than this fraction of notional cannot pay for a one-to-three-bar fixing or
+#: close effect: its cells would spend family-wise trials no result could cash. Gated symbols are
+#: named in the report with the numbers, and re-read every pass (a spread that normalises
+#: un-gates).
+#:
+#: THE SNAPSHOT NEVER GATES (audit 2026-09-30). The one spread read at collection is a single
+#: tick: EURRUB's was 1,397,460 points (10.33% of notional) against its own MEDIAN of 250 points
+#: (0.0018%), so one bad print withheld twelve cells of a symbol that is cheap to trade. It is
+#: reported beside the median, and the median (or trade_mode, where the box's contract-terms
+#: snapshot exists) is the only spread evidence that vetoes.
 UNTRADEABLE_MODES = {0: "DISABLED", 3: "CLOSE_ONLY"}
 MAX_MEDIAN_SPREAD_COST = 0.0010
-MAX_SNAPSHOT_SPREAD_COST = 0.0100
+#: RULE 1'S LEDGER LINE FOR THIS VETO. Every gated (recipe, symbol) writes one row a day to the
+#: missed-growth ledger in its own shape (day / rail / value / at), the way `cost_truth` bills
+#: its refusals: `libs/portfolio/rails.py` is sealed, so the rail is not registered there and
+#: `missed_growth.run` (which reads registered rails only) never mistakes it for one. `value` is
+#: None with `value_status` UNMEASURED: no cell of a gated symbol is judged, so the growth it
+#: forgoes has no measurement yet -- never a zero.
+MISSED = DESK / "data" / "missed_growth.jsonl"
+GATE_RAIL = "culture_gap_tradability_gate"
 TERMS_DIR = DESK / "data" / "tape" / "contract_terms"
 BARS_DIR = DESK / "data" / "universe"
 
@@ -250,7 +266,8 @@ def spread_costs(sym: str, rows: dict[str, dict[str, Any]], bars_dir: Path | Non
 def tradability(sym: str, rows: dict[str, dict[str, Any]], modes: dict[str, int] | None,
                 bars_dir: Path | None = None) -> dict[str, Any]:
     """{"ok": bool, "why": str, ...measurements}. UNMEASURED never gates: a check that could not
-    be made is reported as such and the symbol is minted."""
+    be made is reported as such and the symbol is minted. The spread at collection is reported
+    and never gates (one tick is not a cost); the median, and trade_mode, do."""
     mode = None if modes is None else modes.get(sym.upper())
     med, snap, basis = spread_costs(sym, rows, bars_dir)
     m: dict[str, Any] = {"trade_mode": (CC.UNMEASURED if mode is None else mode),
@@ -261,9 +278,6 @@ def tradability(sym: str, rows: dict[str, dict[str, Any]], modes: dict[str, int]
     if med is not None and med > MAX_MEDIAN_SPREAD_COST:
         return {"ok": False, "why": f"median spread {med:.3%} of notional > "
                                     f"{MAX_MEDIAN_SPREAD_COST:.2%}", **m}
-    if snap is not None and snap > MAX_SNAPSHOT_SPREAD_COST:
-        return {"ok": False, "why": f"spread at collection {snap:.2%} of notional > "
-                                    f"{MAX_SNAPSHOT_SPREAD_COST:.0%}", **m}
     return {"ok": True, "why": "", **m}
 
 
@@ -486,6 +500,79 @@ def cell_key(rec_id: str, c: dict[str, Any]) -> str:
     return hashlib.sha1(blob.encode("utf-8")).hexdigest()[:16]
 
 
+def identity(symbol: str, family: str, params: dict[str, Any]) -> str:
+    """THE cell identity: the hypothesis graph's `node_id(symbol, family, params)`, the key the
+    judge stamps on a verdict and `experiment_ledger.lifetime` charges once."""
+    from libs.research.hypothesis_graph import node_id
+    return node_id(symbol, family, dict(params))
+
+
+def seat_dir() -> Path:
+    """The seat's intake directory, read from the donation door at call time."""
+    from research import proposer_common as PC
+    return Path(PC.INTEL) / SEAT
+
+
+def donated_identities(root: Path | None = None) -> set[str]:
+    """Every cell identity this seat has ever donated, read off its own contract files.
+
+    THE DONATION DEDUP (audit 2026-09-30). The per-recipe cursor lives under reports/ and is
+    gitignored: a box rebuild, a clean checkout or a deleted file emptied `done`, and every cell
+    was minted and donated -- and charged through `tests_run` -- again. The contract files ARE
+    the donation, so a cell whose identity is already in one is never donated or charged twice,
+    whatever the cursor says."""
+    out: set[str] = set()
+    d = root or seat_dir()
+    for f in sorted(d.glob("discoveries_*.json")) if d.exists() else []:
+        doc = _read(f, {})
+        for r in (doc.get("discoveries") or []) if isinstance(doc, dict) else []:
+            if (isinstance(r, dict) and r.get("symbol") and r.get("family")
+                    and isinstance(r.get("params"), dict)):
+                out.add(identity(str(r["symbol"]), str(r["family"]), r["params"]))
+    return out
+
+
+def missed_growth_lines(gated: list[dict[str, Any]], day: str) -> list[dict[str, Any]]:
+    """One missed-growth row per gated (recipe, symbol) for `day`, in the ledger's own shape."""
+    out: list[dict[str, Any]] = []
+    for g in gated:
+        out.append({"day": day, "rail": GATE_RAIL, "value": None,
+                    "value_status": (f"{CC.UNMEASURED}: the gate withheld these cells, so no "
+                                     "judged cell of this symbol measures the growth forgone"),
+                    "at": _now(), "cell": f"{g.get('recipe')}:{g.get('symbol')}",
+                    "symbol": g.get("symbol"), "recipe": g.get("recipe"),
+                    "cells_not_minted": int(g.get("cells_not_minted") or 0),
+                    "why_gated": g.get("why"), "trade_mode": g.get("trade_mode"),
+                    "median_spread_cost": g.get("median_spread_cost"),
+                    "snapshot_spread_cost": g.get("snapshot_spread_cost"),
+                    "max_median_spread_cost": MAX_MEDIAN_SPREAD_COST, "reversible": True,
+                    "why": ("a symbol gated on its broker terms is re-read every pass and un-gates "
+                            "when its median spread normalises; Rule 1: a veto must prove it "
+                            "raises robust forward E[log W]")})
+    return out
+
+
+def append_missed_growth(lines: list[dict[str, Any]], path: Path | None = None) -> int:
+    """Append the day's lines, one per (day, cell): an hourly leg must not outvote a daily one."""
+    p = path or MISSED
+    have: set[tuple[str, str]] = set()
+    try:
+        for ln in p.read_text("utf-8").splitlines():
+            if ln.strip():
+                r = json.loads(ln)
+                if isinstance(r, dict) and r.get("rail") == GATE_RAIL:
+                    have.add((str(r.get("day")), str(r.get("cell"))))
+    except (OSError, ValueError):
+        pass
+    fresh = [x for x in lines if (str(x["day"]), str(x["cell"])) not in have]
+    if fresh:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open("a", encoding="utf-8") as fh:
+            for x in fresh:
+                fh.write(json.dumps(x, default=str) + "\n")
+    return len(fresh)
+
+
 # ------------------------------------------------------------------------------ the gap list
 def gap_states(path: Path = SUMMARY) -> dict[tuple[str, str, str], str] | None:
     """(asset class, jurisdiction, structure|any) -> ZERO | THIN from the last published culture
@@ -617,8 +704,9 @@ def donate_cells(rows: list[dict[str, Any]]) -> dict[str, Any]:
 def emit(rec: dict[str, Any], cells: list[dict[str, Any]], start: int, deadline: float,
          src: dict[str, Any], *, dry_run: bool, done: set[str],
          donations: list[tuple[str, dict[str, Any]]] | None = None,
-         english: frozenset[str] | None = None) -> dict[str, Any]:
-    made = created = 0
+         english: frozenset[str] | None = None,
+         donated: set[str] | None = None) -> dict[str, Any]:
+    made = created = skipped = 0
     errors: list[str] = []
     did = ""
     mech = str(rec.get("mechanism") or "")
@@ -646,6 +734,14 @@ def emit(rec: dict[str, Any], cells: list[dict[str, Any]], start: int, deadline:
         key = cell_key(rec["id"], c)
         i += 1
         if key in done:
+            continue
+        ident = identity(c["symbol"], str(rec["family"]), c["params"])
+        if donated is not None and ident in donated:
+            # ALREADY IN A CONTRACT FILE: minted, donated and charged before -- whatever the
+            # cursor says. Never enqueued, donated or charged again.
+            if not dry_run:
+                done.add(key)
+            skipped += 1
             continue
         made += 1
         if dry_run:
@@ -675,18 +771,20 @@ def emit(rec: dict[str, Any], cells: list[dict[str, Any]], start: int, deadline:
             done.add(key)
             if donations is not None:
                 donations.append((key, donation_row(rec, c, src_row)))
+                if donated is not None:
+                    donated.add(ident)          # one identity, one donation, inside a pass too
         except Exception as exc:
             errors.append(f"{c['symbol']}/{c['chart']}: {type(exc).__name__}: {str(exc)[:60]}")
             if len(errors) >= 5:
                 break
     return {"emitted": made, "created": created, "next": i, "discovery_id": did,
-            "errors": errors}
+            "already_donated": skipped, "errors": errors}
 
 
 # ------------------------------------------------------------------------------------ the run
 def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = None,
         recipes_path: Path = RECIPES, summary: Path = SUMMARY,
-        cursor_path: Path = CURSOR) -> dict[str, Any]:
+        cursor_path: Path = CURSOR, missed_path: Path | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     deadline = t0 + max(2.0, budget_s - WRITE_RESERVE_S)
     yr = int(year or datetime.now(tz=UTC).year)
@@ -704,6 +802,10 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
         cursor = {}
     per: list[dict[str, Any]] = []
     donations: list[tuple[str, dict[str, Any]]] = []
+    # The durable dedup: identities already in this seat's contract files (the cursor is only a
+    # speed-up, and losing it can never re-donate or re-charge a cell).
+    donated = donated_identities()
+    n_donated_before = len(donated)
     dones: dict[str, set[str]] = {}
     order = sorted(recs, key=lambda r: (_ORDER.get(recipe_gap_state(r, states), 9), r["id"]))
     for rec in order:
@@ -721,7 +823,7 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
         start = int(st.get("next") or 0) if st.get("fingerprint") == fp else 0
         src = src_rows.get(str(rec.get("source_id")), {})
         res = emit(rec, cells, start, deadline, src, dry_run=dry_run, done=done,
-                   donations=donations, english=english)
+                   donations=donations, english=english, donated=donated)
         dones[rec["id"]] = done
         if not dry_run:
             cursor[rec["id"]] = {"fingerprint": fp, "next": res["next"], "done": done,
@@ -740,13 +842,20 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
             # minted keys of the CURRENT cell list: a key from a superseded recipe is history
             "cells_minted_total": 0, "_keys": [cell_key(rec["id"], c) for c in cells],
             "emitted_this_pass": res["emitted"], "created_this_pass": res["created"],
+            "already_donated_this_pass": res.get("already_donated", 0),
             "complete": res["next"] >= len(cells) and len(cells) > 0,
             "variants": note.get("variants"), "dropped_variants": note.get("dropped_variants"),
             "refused": note.get("refused"), "gated": note.get("gated"),
             "unmeasured": note.get("unmeasured"),
             "errors": res.get("errors")})
     donation: dict[str, Any] = {"donated": 0, "path": None}
+    missed = missed_growth_lines(gated, datetime.now(tz=UTC).date().isoformat())
+    missed_appended: int | str = 0
     if not dry_run:
+        try:
+            missed_appended = append_missed_growth(missed, missed_path)
+        except OSError as exc:
+            missed_appended = f"NOT written: {exc}"
         donation = donate_cells([row for _k, row in donations])
         if donations and not donation.get("path"):
             # THE DOOR DID NOT TAKE THEM: the cells are un-marked so the next pass mints and
@@ -783,15 +892,25 @@ def run(budget_s: float = 240.0, *, dry_run: bool = False, year: int | None = No
         "totals": {"recipes": len(per), "cells_total": sum(r["cells_total"] for r in per),
                    "emitted_this_pass": sum(r["emitted_this_pass"] for r in per),
                    "created_this_pass": sum(r["created_this_pass"] for r in per),
+                   "already_donated_this_pass": sum(r["already_donated_this_pass"]
+                                                    for r in per),
                    "unmeasured_recipes": [r["id"] for r in per if r["unmeasured"]]},
-        "donation": {"seat": SEAT, **donation},
+        "donation": {"seat": SEAT, **donation,
+                     "identities_on_file_before": n_donated_before,
+                     "dedup": ("by cell identity (hypothesis_graph.node_id) against this seat's "
+                               "own contract files; the cursor is a speed-up only")},
         "tradability": {"trade_modes": ("read" if modes is not None else
                                         f"{CC.UNMEASURED}: no contract-terms snapshot under "
                                         f"{TERMS_DIR} on this host"),
                         "max_median_spread_cost": MAX_MEDIAN_SPREAD_COST,
-                        "max_snapshot_spread_cost": MAX_SNAPSHOT_SPREAD_COST,
+                        "gate_basis": ("trade_mode (box contract-terms snapshot) or the MEDIAN "
+                                       "spread; the spread at collection is reported, never "
+                                       "gates"),
                         "gated": gated,
-                        "cells_not_minted": sum(int(g["cells_not_minted"]) for g in gated)},
+                        "cells_not_minted": sum(int(g["cells_not_minted"]) for g in gated),
+                        "missed_growth": {"rail": GATE_RAIL, "ledger": str(missed_path or MISSED),
+                                          "lines": len(missed),
+                                          "appended": missed_appended}},
         "crowding_prior": {"counts": dict(crowding),
                            "english_evidence": ("summary" if english is not None else
                                                 "module (cell_culture.SUMMARY)"),

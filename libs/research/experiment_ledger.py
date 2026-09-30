@@ -89,14 +89,84 @@ def lifetime(write: bool = True) -> dict[str, Any]:
     g_total, g_fam = _graph_counts()
     p_total, p_fam = _proposer_counts()
     prereg = _prereg_counts()
+
+    # ONE CHARGE PER CELL IDENTITY (audit 2026-09-30). A cell a proposer donated is charged at
+    # MINT (its discovery file's `tests_run`) and again when the gauntlet JUDGES it (the graph):
+    # the same trial, counted twice. Each identity -- the graph's own `node_id(symbol, family,
+    # params)` -- is charged the MAX of its declared charges, never their sum, and the excess is
+    # taken off the sum below. Rows with no exact identity (a hypothesis, a culled count) have
+    # nothing to collide with and stay charged in full. An identity always keeps its LARGEST
+    # charge, so no cell is ever charged less than any single source declared for it. Kept
+    # inside this function so `_proposer_counts`' own charge rule is untouched.
+    def _declared(row: dict[str, Any]) -> int:
+        for k in ("tests_run", "n_trials", "trials"):
+            v = row.get(k)
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and v >= 0:
+                return int(v)
+        return 1
+
+    def _overlap() -> tuple[int, dict[str, int], int]:
+        try:
+            from libs.research.hypothesis_graph import node_id
+        except Exception:
+            return 0, {}, 0
+        charges: dict[str, list[int]] = {}
+        fam_of: dict[str, str] = {}
+        intel = DESK / "data" / "intelligence"
+        for f in (sorted(glob.glob(str(intel / "*" / "discoveries_*.json")))
+                  if intel.exists() else []):
+            try:
+                doc = json.loads(Path(f).read_text("utf-8"))
+            except (OSError, ValueError):
+                continue
+            tr = doc.get("tests_run") if isinstance(doc, dict) else None
+            if not isinstance(tr, (int, float)) or isinstance(tr, bool):
+                continue
+            budget = max(0, int(tr))          # a row is charged only out of what the file paid
+            for r in doc.get("discoveries") or []:
+                if budget <= 0:
+                    break
+                if not isinstance(r, dict) or not isinstance(r.get("params"), dict):
+                    continue
+                sym, fam = str(r.get("symbol") or ""), str(r.get("family") or "")
+                if not sym or not fam:
+                    continue
+                c = min(_declared(r), budget)
+                budget -= c
+                if c > 0:
+                    i = node_id(sym, fam, dict(r["params"]))
+                    charges.setdefault(i, []).append(c)
+                    fam_of[i] = fam
+        if not charges:
+            return 0, {}, 0
+        try:
+            from libs.research.hypothesis_graph import Graph
+            cur = Graph().current()
+        except Exception:
+            return 0, {}, 0
+        for i, r in cur.items():
+            if i in charges and r.get("fate") in ("FAILED", "BURIED", "CERTIFIED", "JUDGED"):
+                charges[i].append(1)
+        dup_fam: dict[str, int] = {}
+        n_ids = 0
+        for i, cs in charges.items():
+            extra = sum(cs) - max(cs)
+            if extra > 0:
+                n_ids += 1
+                dup_fam[fam_of[i]] = dup_fam.get(fam_of[i], 0) + extra
+        return sum(dup_fam.values()), dup_fam, n_ids
+
+    dup_total, dup_fam, dup_ids = _overlap()
     fams = sorted(set(g_fam) | set(p_fam))
-    by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0)) for f in fams}
+    by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0) - dup_fam.get(f, 0)) for f in fams}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(),
-           "lifetime_trials": int(g_total + p_total),
+           "lifetime_trials": int(g_total + p_total - dup_total),
            "judged_cells": g_total, "screened_cells": p_total, "preregistered_cards": prereg,
+           "duplicate_charges_removed": dup_total, "identities_charged_twice": dup_ids,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
-                    "tests_run); consumers may only deflate MORE with it, never less")}
+                    "tests_run), each cell identity charged ONCE at the max of its declared "
+                    "charges; consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1), "utf-8")
