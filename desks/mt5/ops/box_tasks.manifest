@@ -151,7 +151,10 @@ TASK name="MT5-MoatMiner"          trigger="every 1 hour"          runs="desks/m
 TASK name="MT5-MoatFence"          trigger="every 30 minutes, at :17"            runs="UNKNOWN"                            installer="NONE" lane="data"
 TASK name="MT5-Universe"           trigger="every 1 hour, at :26"            runs="desks/mt5/research/expand_universe.py"  installer="NONE" lane="data"
 TASK name="MT5-ContractTerms"      trigger="every 1 hour"          runs="UNKNOWN"   installer="desks/mt5/scripts/install_contract_terms_task.ps1" lane="data"
-TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="UNKNOWN"   installer="desks/mt5/scripts/install_cachewarm_task.ps1" lane="data"
+# MT5-CacheWarm warms the JUDGE'S OWN next docket (research/judge_docket_order.py), never-judged first,
+# with IDLE-priority workers sized from psutil-measured idle cores; WARM_GAUNTLET.json is read by
+# research/judging_burndown.py (leg judging_burndown). The installer names this script.
+TASK name="MT5-CacheWarm"          trigger="every 30 minutes"      runs="desks/mt5/scripts/warm_gauntlet_cache.py"   installer="desks/mt5/scripts/install_cachewarm_task.ps1" lane="data"
 
 # -------------------------------------------------------------------------------------- ops
 TASK name="MT5-StallWatch"         trigger="every 10 minutes" runs="desks/mt5/scripts/stall_watch.ps1"        installer="NONE" lane="ops"
