@@ -137,6 +137,26 @@ def apply(doc: dict[str, Any]) -> dict[str, Any]:
     return {"moved": len(moved), "to": str(EVICTED.relative_to(ROOT))}
 
 
+def requeue_for_rejudge() -> dict[str, Any]:
+    """EVERY EVICTION RE-ENTERS THE DOCKET, FIRST, WITH ITS PARAMS RECORDED.
+
+    An eviction used to be a dead end: the row's own `why` says it can only come back on a
+    fresh window, and nothing ever put it on one. `rejudge_evicted` writes one never-judged,
+    fully-parameterised, stamped cell per evicted certificate to the front of the judge's docket,
+    each parameter with its provenance, and the sealed gauntlet judges it like any other cell
+    (charged to the same trial census). The same organ runs hourly from `requeue_unrunnable`, so
+    this call is the eviction's own hook, not the only clock. Never raises: a failure here must
+    not undo an eviction that already happened, and it is reported instead.
+    """
+    try:
+        import rejudge_evicted
+        doc = rejudge_evicted.run(apply_changes=True)
+        return {"cells": len(doc.get("cells") or []), "refused": len(doc.get("refused") or []),
+                "applied": doc.get("applied"), "report": str(rejudge_evicted.OUT)}
+    except Exception as exc:                                      # noqa: BLE001
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--apply", action="store_true", help="move the unrunnable rows out")
@@ -151,6 +171,8 @@ def main(argv: list[str] | None = None) -> int:
         doc["applied"] = apply(doc)
         print(f"  moved {doc['applied'].get('moved', 0)} row(s) -> "
               f"{doc['applied'].get('to')}")
+        doc["rejudge"] = requeue_for_rejudge()
+        print(f"  re-judge: {doc['rejudge']}")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
     print(f"-> {OUT}")

@@ -189,6 +189,23 @@ def main(argv: list[str] | None = None) -> int:
         report["requeued"] = len(fresh)
         report["already_on_docket"] = len(usable) - len(fresh)
 
+    # THE EVICTED ONES, WHICH THIS ORGAN CAN NO LONGER SEE. It reads the canon, and
+    # `certificate_hygiene` has already moved every unrunnable row OUT of the canon -- so after an
+    # eviction this organ reports nothing stuck while the certificate sits in the eviction file
+    # with no route back to a judge. `rejudge_evicted` reads that file and re-queues each one with
+    # a complete, provenanced parameterisation, stamped, at the docket's front. Run here so it has
+    # an hourly clock (this leg) as well as the eviction's own hook.
+    try:
+        import rejudge_evicted
+        rj = rejudge_evicted.run(apply_changes=apply)
+        report["rejudge_evicted"] = {"cells": len(rj.get("cells") or []),
+                                     "refused": len(rj.get("refused") or []),
+                                     "applied": rj.get("applied"),
+                                     "report": str(rejudge_evicted.OUT)}
+    except Exception as exc:                                            # noqa: BLE001
+        report["rejudge_evicted"] = {"status": "UNMEASURED",
+                                     "why": f"{type(exc).__name__}: {exc}"}
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(report, indent=2), encoding="utf-8")
     verb = "requeued" if apply else "would requeue"
