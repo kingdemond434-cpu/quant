@@ -515,6 +515,18 @@ def _bandit_budget(leg: str, base: int) -> tuple[int, dict]:
                            "why": f"research_budget unavailable: {type(exc).__name__}: {exc}"}
 
 
+def _bandit_observe(leg: str, rec: dict) -> dict | None:
+    """After a budgeted leg ran: its output onto the budget's trial ledger, when the run was a
+    trial unit (research_budget.observe). This is the measurement the budget's contract is
+    judged on; never fails the pass."""
+    try:
+        import research_budget
+        return research_budget.observe(leg, rec)
+    except Exception as exc:
+        print(f"research_budget observe {leg}: {type(exc).__name__}: {exc}", flush=True)
+        return None
+
+
 def deepen() -> dict:
     """Drain the deepening queue -- THE conversion bottleneck, and it was scheduled nowhere.
 
@@ -556,9 +568,11 @@ def deepen() -> dict:
         _base = int(getattr(deepening_worker, "DEFAULT_LIMIT", 0))
         _lim, _rec = _bandit_budget("deepen", _base)
         _limit = 0 if _base <= 0 else max(1, int(_lim))
-        return {"exit_code": deepening_worker.main(["--limit", str(_limit)]),
+        _rc = deepening_worker.main(["--limit", str(_limit)])
+        return {"exit_code": _rc,
                 "limit": _limit, "limit_is_sentinel": _base <= 0,
                 "bandit_factor": _rec.get("factor"),
+                "budget_trial": _bandit_observe("deepen", _rec),
                 "at": datetime.now(UTC).isoformat(timespec="seconds")}
     except SystemExit as exc:                       # argparse exits rather than returning
         return {"exit_code": int(exc.code or 0),
@@ -3411,6 +3425,9 @@ def main() -> None:
     aev = _costed("alpha_evolution", lambda: _producer("alpha_evolution",
                                                         "research/alpha_evolution.py",
                                                         "--budget-s", str(_aev_s)))
+    # ITS OUTPUT, ONTO THE BUDGET'S TRIAL LEDGER: the budget is authoritative only once the
+    # held-out comparison of these rows admits its uplift (research_budget.contract_verdict).
+    _bandit_observe("alpha_evolution", _aev_rec)
     # The closed-loop attestation: every flag derived from another organ's artifact.
     clp = _costed("closed_loop", lambda: _producer("closed_loop", "scripts/check_closed_loop.py"))
     rc = _costed("regime_coverage", regime_coverage)
