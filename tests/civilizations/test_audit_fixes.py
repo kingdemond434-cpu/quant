@@ -120,7 +120,8 @@ def test_release_pauses_while_the_judge_backlog_grows(tmp_path: Path) -> None:
     assert BP.release_budget(_load(1500), growing=True) == 0
     assert BP.release_budget(_load(1500, draining=True), growing=True) > 0
     assert BP.backlog_growing(hist, _load(900), now=8000.0) is False
-    assert BP.release_budget(_load(900), growing=False) == 24_000 * BP.CIV_SHARE // 24
+    assert BP.release_budget(_load(900), growing=False) == BP.FLOOR_PER_HOUR   # share < floor
+    assert BP.release_budget(_load(900, cap=240_000), growing=False) == 1000
     assert BP.release_budget(BP.JudgeLoad(None, None, None)) == BP.FLOOR_PER_HOUR
 
 
@@ -129,7 +130,7 @@ def test_hourly_release_budget_is_shared_across_processes(tmp_path: Path) -> Non
     BP.log_release(log, 150, now=1000.0)
     BP.log_release(log, 60, now=4000.0)
     assert BP.released_within(log, 3600, now=4500.0) == 210
-    assert BP.released_within(log, 3600, now=8000.0) == 60
+    assert BP.released_within(log, 3600, now=7000.0) == 60
 
 
 def test_file_lock_is_exclusive_and_breaks_when_stale(tmp_path: Path) -> None:

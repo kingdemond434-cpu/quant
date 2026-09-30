@@ -301,6 +301,8 @@ def test_end_to_end_git_lane_routes_parks_releases_and_publishes(tmp_path: Path)
         "  def __init__(self, accepting_spread_percent=0.005):\n    pass\n"
         "  # fill model: execute when the spread is tight; limit order book\n")
     (repo / "Algorithm.Python" / "BinanceFeeRegressionAlgorithm.py").write_text("x = 1\n")
+    # LEAN is Apache-2.0: its files are kept (with the notice) only because the licence says so
+    (repo / "LICENSE").write_text("Apache License, Version 2.0\nCopyright 2014 QuantConnect\n")
     _git("init", "-q", cwd=repo)
     _git("add", "-A", cwd=repo)
     _git("commit", "-q", "-m", "seed", cwd=repo)
