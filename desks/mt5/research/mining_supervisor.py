@@ -132,13 +132,14 @@ OTHER_ORGAN_FETCHERS = frozenset({"owned"})
 
 
 def fetch_evidence(run: Mapping[str, Any], producers: Mapping[str, int], now: datetime,
-                   fetcher: str = "owned") -> str:
+                   fetcher: str = "owned", recent_records: int = 0) -> str:
     """Why this source's fetcher is known to have RUN within ACTIVE_WINDOW, or '' when nothing
     shows it did. ACTIVE needs this as well as a judged cell (audit 2026-09-30: 37 of 98 credits
     were to sources no fetcher had run for).
 
     The proof is the REGISTERED fetcher's own. A source the pipeline fetches needs the
-    pipeline's fetch log (`ok`/`empty` in the window). A source another organ fetches (`owned`,
+    pipeline's fetch log (`ok`/`empty` in the window) or records it acquired in the window. A
+    source another organ fetches (`owned`,
     or a fallback row the pipeline last DEFERRED_TO_OWNER) needs a judged docket row credited to
     it whose producer is a DECLARED organ (scout roster or producer_organs.json): that organ
     fetched the page the row cites.
@@ -147,6 +148,8 @@ def fetch_evidence(run: Mapping[str, Any], producers: Mapping[str, int], now: da
     if str(run.get("outcome") or "") in RAN_OUTCOMES and at is not None \
             and at >= now - ACTIVE_WINDOW:
         return f"pipeline:{run.get('outcome')}@{run.get('at')}"
+    if recent_records > 0:
+        return f"pipeline:{recent_records} records acquired in 30 days"
     if fetcher not in OTHER_ORGAN_FETCHERS and run.get("outcome") != "DEFERRED_TO_OWNER":
         return ""
     organs = sorted(o for o, k in producers.items() if k and not o.startswith("unmapped:"))
@@ -1129,6 +1132,7 @@ class Pipeline:
         via = docket["by_source"]
         runs = self.store.last_runs()
         recs = self.store.records_by_source()
+        recent = self.store.records_by_source(since=t - ACTIVE_WINDOW)
         prods: dict[str, dict[str, int]] = getattr(self, "_producers", {})
         out = {}
         for s in self.roster:
@@ -1140,7 +1144,8 @@ class Pipeline:
             # Every use mints cells now: allocation_intel's facts become exogenous_conditioner
             # cells (see `conditioners`), so each use can carry a receipt.
             cell_use = bool(set(compiler.USES) & set(s.uses))
-            fetched = fetch_evidence(r, prods.get(s.id) or {}, t, s.fetcher)
+            fetched = fetch_evidence(r, prods.get(s.id) or {}, t, s.fetcher,
+                                     int(recent.get(s.id, 0)))
             active = n >= 1 and cell_use and bool(fetched)
             out[s.id] = {"status": "ACTIVE" if active else "COLD",
                          "uses": list(s.uses),
