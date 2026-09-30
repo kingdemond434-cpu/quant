@@ -238,6 +238,8 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
         assert needle in step, needle
     assert "6b. **Tier verdict" in cycle_text
     assert "EVERY PASS IS THE LAST CHANCE" in cycle_text
+    assert "GET PAST TECHNICAL BLOCKS ALONE" in cycle_text
+    assert "is NOT a technical error" in cycle_text
     for n, duty in enumerate((
         "Read desktop over git", "Tier verdict", "Judging throughput to maximum",
         "Permanent backlog guard", "Same-day certificate and clock",
