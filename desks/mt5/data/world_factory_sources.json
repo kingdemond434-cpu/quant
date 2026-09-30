@@ -72,7 +72,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "its outlets are read by the local participants who move first, so the reaction should break down when those participants' holidays, disclosure rules or attention differ from the Western news cycle"
   },
   {
    "id": "news_desk",
@@ -107,7 +121,18 @@
    "cadence": "5 min",
    "auth": "key",
    "machine_use_allowed": null,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [],
+   "feeds_no_producer_because": "reads data/news_schedule.json, which only a licensed calendar may fill and which is empty: a dead end",
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "its outlets are read by the local participants who move first, so the reaction should break down when those participants' holidays, disclosure rules or attention differ from the Western news cycle"
   },
   {
    "id": "event_surprise",
@@ -154,7 +179,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "event reactions are priced by whichever participants dominate that venue at release time, so the effect should fail when local liquidity at the print differs from the London/New York session a Western model assumes"
   },
   {
    "id": "event_response_atlas",
@@ -194,7 +233,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "event reactions are priced by whichever participants dominate that venue at release time, so the effect should fail when local liquidity at the print differs from the London/New York session a Western model assumes"
   },
   {
    "id": "event_graph_lab",
@@ -233,7 +286,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "event reactions are priced by whichever participants dominate that venue at release time, so the effect should fail when local liquidity at the print differs from the London/New York session a Western model assumes"
   },
   {
    "id": "fred_macro",
@@ -265,7 +332,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [],
+    "indirect": [
+     "macro_conditional family (desks/mt5/mt5desk/families_orthogonal.py) reads it as its state series"
+    ],
+    "allocation": []
+   },
+   "consumers": [
+    "macro_conditional family"
+   ],
+   "source_culture": "US",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "id": "macro_state_engine",
@@ -310,7 +391,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "id": "macro_intelligence",
@@ -343,7 +438,18 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [],
+   "feeds_no_producer_because": "no consumer found on this tree for its artifact",
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "id": "macro_department",
@@ -387,7 +493,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "id": "macro_desk",
@@ -423,7 +543,21 @@
    "cadence": "perpetual",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [],
+    "indirect": [
+     "macro_conditional family reads data/macro_state.json"
+    ],
+    "allocation": []
+   },
+   "consumers": [
+    "macro_conditional family reads data/macro_state.json"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "id": "cross_asset_graph",
@@ -462,7 +596,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "id": "world_lab",
@@ -500,7 +648,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "id": "acquire_datasets",
@@ -540,7 +702,25 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells via desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells via desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json via desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumers": [
+    "desks/mt5/research/world_cells.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "published statistics carry their own publication calendar and revision habits, so the signal should fail around that jurisdiction's release and revision dates rather than the Western macro calendar"
   },
   {
    "id": "world_dataset_hunter",
@@ -580,7 +760,18 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [],
+   "feeds_no_producer_because": "its world_macro_state family lives on the unmerged PR #92 branch",
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "published statistics carry their own publication calendar and revision habits, so the signal should fail around that jurisdiction's release and revision dates rather than the Western macro calendar"
   },
   {
    "id": "pack_cells",
@@ -619,7 +810,26 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells via desks/mt5/research/pack_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells via desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json via desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumers": [
+    "desks/mt5/research/pack_cells.py",
+    "desks/mt5/research/world_cells.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "published statistics carry their own publication calendar and revision habits, so the signal should fail around that jurisdiction's release and revision dates rather than the Western macro calendar"
   },
   {
    "id": "coverage_drain",
@@ -652,7 +862,11 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": false,
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "published statistics carry their own publication calendar and revision habits, so the signal should fail around that jurisdiction's release and revision dates rather than the Western macro calendar"
   },
   {
    "id": "world_crawler",
@@ -693,7 +907,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "claims mined from local-language forums and competitions describe what local traders did, so they should fail when local market structure (price limits, T+1, retail share) changes rather than when a Western edge decays"
   },
   {
    "id": "deep_forest",
@@ -739,7 +967,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "claims mined from local-language forums and competitions describe what local traders did, so they should fail when local market structure (price limits, T+1, retail share) changes rather than when a Western edge decays"
   },
   {
    "id": "moat_collectors",
@@ -772,7 +1014,18 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [],
+   "feeds_no_producer_because": "its captures become claims whose only cell is pack_cells' regional_information, which no family can evaluate (scripts/check_family_evaluability.py)",
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "claims mined from local-language forums and competitions describe what local traders did, so they should fail when local market structure (price limits, T+1, retail share) changes rather than when a Western edge decays"
   },
   {
    "id": "regional_survivor_hunters",
@@ -858,7 +1111,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "broker_specific",
+   "failure_mode_hypothesis": "claims mined from local-language forums and competitions describe what local traders did, so they should fail when local market structure (price limits, T+1, retail share) changes rather than when a Western edge decays"
   },
   {
    "id": "kimi_seat",
@@ -894,7 +1161,21 @@
    "cadence": "hourly",
    "auth": "key",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "an LLM seat's hypotheses inherit the culture of the sources it read, so they should fail where those sources' market structure differs from the Western literature the model was trained on"
   },
   {
    "id": "deepseek_seat",
@@ -929,7 +1210,18 @@
    "cadence": "hourly (VPS only)",
    "auth": "key",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [],
+   "feeds_no_producer_because": "runs on the VPS timer only; the VPS branch is an orphan, so its donations never reach the box's compiler",
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "an LLM seat's hypotheses inherit the culture of the sources it read, so they should fail where those sources' market structure differs from the Western literature the model was trained on"
   },
   {
    "id": "understanding_seat",
@@ -968,7 +1260,21 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "an LLM seat's hypotheses inherit the culture of the sources it read, so they should fail where those sources' market structure differs from the Western literature the model was trained on"
   },
   {
    "id": "proposer_seat",
@@ -1005,7 +1311,21 @@
    "cadence": "hourly",
    "auth": "key",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "an LLM seat's hypotheses inherit the culture of the sources it read, so they should fail where those sources' market structure differs from the Western literature the model was trained on"
   },
   {
    "id": "mass_screen",
@@ -1041,7 +1361,11 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": false,
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "a screen's survivors reflect the universe and costs it screened, so they should fail where a jurisdiction's costs or trading hours differ"
   },
   {
    "id": "miner_candidate_compiler",
@@ -1074,7 +1398,11 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": false,
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "the compiler inherits every donor's culture, so its failures are its donors' failures"
   },
   {
    "id": "alt_datasets",
@@ -1114,7 +1442,187 @@
    "cadence": "hourly",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": null
+   "cursor": null,
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells via desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells via desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json via desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumers": [
+    "desks/mt5/research/world_cells.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "published statistics carry their own publication calendar and revision habits, so the signal should fail around that jurisdiction's release and revision dates rather than the Western macro calendar"
+  },
+  {
+   "id": "fetch_alfred",
+   "kind": "macro",
+   "family": "macro_vintage",
+   "organ": "desks/mt5/research/fetch_alfred.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "fetch_alfred"
+    ]
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [
+    "fetch_alfred"
+   ],
+   "artifact": "desks/mt5/reports/alfred_vintages.json",
+   "items_keys": [
+    "written",
+    "skipped_already_present"
+   ],
+   "regions": [
+    "us"
+   ],
+   "languages": [
+    "en"
+   ],
+   "source_types": [
+    "macro_vintage"
+   ],
+   "licence": "FRED/ALFRED API terms (St. Louis Fed): free API key, machine use allowed, cite FRED; some series carry third-party copyright",
+   "cadence": "hourly leg; a series is refetched when its file is older than the refresh age",
+   "auth": "api_key (secrets/fred_api_key or FRED_API_KEY)",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/lake/alfred/<SERIES>.parquet mtime",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells via desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells via desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json via desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumers": [
+    "desks/mt5/research/world_cells.py"
+   ],
+   "source_culture": "US",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "a US first print is what the Fed and rates desks react to on the day, and the revised series every Western backtest reads is not, so the first-print version fails at benchmark revisions and policy pivots rather than when the revised macro signal does"
+  },
+  {
+   "id": "world_cells",
+   "kind": "dataset",
+   "family": "exogenous_conditioner exogenous_gate",
+   "organ": "desks/mt5/research/world_cells.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "world_factory"
+    ]
+   },
+   "seats": [],
+   "generators": [
+    "world_cells"
+   ],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/WORLD_CELLS.json",
+   "items_keys": [
+    "published"
+   ],
+   "regions": [
+    "global"
+   ],
+   "languages": [],
+   "source_types": [
+    "dataset"
+   ],
+   "licence": "derived: publishes other organs' series; inherits their licences",
+   "cadence": "hourly",
+   "auth": "none",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/world_cells_cursor.json",
+   "dataset": false,
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "each cell carries the culture of the series it was minted from; this row is the producer, not a dataset"
+  },
+  {
+   "id": "llm_extractor",
+   "kind": "dataset",
+   "family": "llm_extraction",
+   "organ": "desks/mt5/research/llm_extractor.py",
+   "clock": {
+    "type": "hourly_cycle",
+    "legs": [
+     "llm_extractor"
+    ]
+   },
+   "seats": [],
+   "generators": [],
+   "compiler_sources": [],
+   "fetch_legs": [],
+   "artifact": "desks/mt5/reports/LLM_EXTRACTION.json",
+   "items_keys": [
+    "totals.rows_accepted",
+    "totals.sent"
+   ],
+   "regions": [
+    "cn",
+    "jp",
+    "kr",
+    "in",
+    "sg",
+    "hk",
+    "tw",
+    "id",
+    "th",
+    "my",
+    "ph",
+    "vn"
+   ],
+   "languages": [
+    "zh",
+    "ja",
+    "ko",
+    "en"
+   ],
+   "source_types": [
+    "statistics_prose",
+    "pdf_bulletin"
+   ],
+   "licence": "derived: reads documents asia_collector vaulted under each asia_sources.json row's own licence; the model call goes through libs/ops/llm_seat (free tier by default)",
+   "cadence": "hourly, 5 documents a pass, a document re-sent after 72h",
+   "auth": "llm seat key (OPENROUTER_API_KEY or data/secrets/llm_panel.json); UNMEASURED without one",
+   "machine_use_allowed": true,
+   "cursor": "desks/mt5/data/llm_extractor_cursor.json",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells via desks/mt5/research/pack_cells.py (the <id>.parquet alias)"
+    ],
+    "indirect": [
+     "exogenous_gate cells via desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json via desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumers": [
+    "desks/mt5/research/pack_cells.py",
+    "desks/mt5/research/world_cells.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "statistics released as local-language prose are read first by the domestic desks that can read them, so a conditioning on them should fail when the domestic policy calendar, not the Western data calendar, moves"
   }
  ],
  "media_units": [
@@ -1172,7 +1680,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#regional_survivor_hunters"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#regional_survivor_hunters",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "broker_specific",
+   "failure_mode_hypothesis": "broker-hosted track records reflect one broker's clients, spreads and leverage, so they should fail when that broker's execution or client mix changes rather than with the wider market"
   },
   {
    "name": "central_bank",
@@ -1203,7 +1725,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#central_bank"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#central_bank",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "name": "forexfactory",
@@ -1229,7 +1765,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#forexfactory"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#forexfactory",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "its outlets are read by the local participants who move first, so the reaction should break down when those participants' holidays, disclosure rules or attention differ from the Western news cycle"
   },
   {
    "name": "investing",
@@ -1256,7 +1806,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#investing"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#investing",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "its outlets are read by the local participants who move first, so the reaction should break down when those participants' holidays, disclosure rules or attention differ from the Western news cycle"
   },
   {
    "name": "earnings",
@@ -1282,7 +1846,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#earnings"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#earnings",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "its outlets are read by the local participants who move first, so the reaction should break down when those participants' holidays, disclosure rules or attention differ from the Western news cycle"
   },
   {
    "name": "sec_edgar",
@@ -1308,7 +1886,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#sec_edgar"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#sec_edgar",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "its outlets are read by the local participants who move first, so the reaction should break down when those participants' holidays, disclosure rules or attention differ from the Western news cycle"
   },
   {
    "name": "cot",
@@ -1334,7 +1926,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#cot"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#cot",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "name": "aaii",
@@ -1360,7 +1966,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#aaii"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#aaii",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "US",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "name": "fear_greed",
@@ -1386,7 +2006,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#fear_greed"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#fear_greed",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "US",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "name": "google_trends",
@@ -1412,7 +2046,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#google_trends"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#google_trends",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "weather",
@@ -1439,7 +2087,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#weather"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#weather",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "name": "shipping",
@@ -1465,7 +2127,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#shipping"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#shipping",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "name": "correlations",
@@ -1491,7 +2167,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#correlations"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#correlations",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "name": "seasonality",
@@ -1517,7 +2207,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#seasonality"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#seasonality",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "policy-driven macro prints move the market through the local authority's reaction function, so the conditioning should fail at that authority's pivots rather than at Western data surprises"
   },
   {
    "name": "china",
@@ -1544,7 +2248,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#china"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#china",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "CN",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "korea",
@@ -1571,7 +2289,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#korea"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#korea",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "KR",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "reddit",
@@ -1597,7 +2329,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#reddit"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#reddit",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "youtube",
@@ -1623,7 +2369,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#youtube"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#youtube",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "github",
@@ -1649,7 +2409,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#github"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#github",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "mql5_codebase",
@@ -1677,7 +2451,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_codebase"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_codebase",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "broker_specific",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "mql5_articles",
@@ -1705,7 +2493,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_articles"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_articles",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "broker_specific",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "mql5_signals",
@@ -1732,7 +2534,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_signals"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_signals",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "broker_specific",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "mql5_forum",
@@ -1759,7 +2575,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_forum"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#mql5_forum",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "broker_specific",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "tradingview",
@@ -1785,7 +2615,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#tradingview"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#tradingview",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "quantconnect",
@@ -1811,7 +2655,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#quantconnect"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#quantconnect",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "academic",
@@ -1837,7 +2695,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#academic"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#academic",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   },
   {
    "name": "seed_miners",
@@ -1896,7 +2768,21 @@
    "cadence": "hourly rotation (least-recently-run first)",
    "auth": "none",
    "machine_use_allowed": true,
-   "cursor": "desks/mt5/data/world_factory_cursor.json#seed_miners"
+   "cursor": "desks/mt5/data/world_factory_cursor.json#seed_miners",
+   "dataset": true,
+   "uses": {
+    "direct": [
+     "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
+    ],
+    "indirect": [],
+    "allocation": []
+   },
+   "consumers": [
+    "desks/mt5/research/miner_candidate_compiler.py"
+   ],
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "retail-heavy crowd sentiment is contrarian at extremes, so it should fail when institutional flow, not the crowd, sets the price"
   }
  ]
 }

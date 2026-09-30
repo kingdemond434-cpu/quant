@@ -25,6 +25,9 @@ TWO MODES, TWO LEGS, ONE FILE.
             is reached within a few hours even when the pass is cut short; the ledger
             `data/world_factory_runs.jsonl` records every unit run with its rows and status.
 
+  --produce (same leg, first). `research/world_cells.py`: every published world series used
+            three ways -- direct cells, indirect (gated) cells, allocation state inputs.
+
   --measure (leg `world_factory`, core). MEASURES every source in the roster and writes
             `reports/WORLD_FACTORY.json`: per source -- the clock and whether it ran (compute
             ledger), items fetched, hypotheses minted (rows in its seat's discovery files),
@@ -78,6 +81,12 @@ REGISTRY = ROOT / "data" / "alpha_registry.sqlite"
 ALT_SOURCES = DESK / "data" / "alt_dataset_sources.json"
 ACQUIRED = DESK / "data" / "acquired" / "registry.json"
 ALT_PLATFORMS = DESK / "data" / "intelligence" / "coverage_registry.json"
+WORLD_CELLS = DESK / "reports" / "WORLD_CELLS.json"
+#: The three uses every dataset must feed (principal, 2026-09-30) and the culture keys every cell
+#: carries (principal, 2026-09-30 14:18). Copied from the roster row into the report row verbatim.
+USES = ("direct", "indirect", "allocation")
+CULTURE_KEYS = ("source_culture", "participant_structure", "failure_mode_hypothesis")
+COMPILER_USE = "desks/mt5/research/miner_candidate_compiler.py (seat donations -> compiled cells)"
 INTEL_ROOTS: tuple[Path, ...] = (DESK / "data" / "intelligence", ROOT / "data" / "intelligence")
 SIDE_CHANNELS = DESK / "side_channels"
 #: The newest bytes of an append-only ledger worth reading for a 24-hour window. The compute
@@ -394,6 +403,18 @@ def forest_sources() -> list[dict[str, Any]]:
                     "countries": [c.lower() for c in f.countries],
                     "ground_regions": [g.lower() for g in f.grounds],
                     "languages": list(f.languages),
+                    "dataset": True,
+                    "uses": {"direct": [COMPILER_USE], "indirect": [], "allocation": []},
+                    "consumers": [COMPILER_USE.split(" (")[0]],
+                    "source_culture": (f.countries[0].upper() if len(f.countries) == 1
+                                       else "GLOBAL" if not f.countries
+                                       else "/".join(c.upper() for c in f.countries[:4])),
+                    "participant_structure": "mixed",
+                    "failure_mode_hypothesis": (
+                        "claims mined from this forest's local-language grounds describe what "
+                        "local traders did, so they should fail when local market structure "
+                        "(price limits, settlement, retail share) changes rather than when the "
+                        "Western version of the edge decays"),
                     "licence": "per ground (deep_forest_sources.json: `licence`, else the "
                                "publisher's public terms)"})
     return out
@@ -482,13 +503,84 @@ def alt_datasets(since: datetime, rows_path: Path | None = None,
                 "acquired": sum(1 for x in out if x["class"] == c
                                 and x["status"] in ("SUCCESS", "PARTIAL"))} for c in classes},
             "rows": out,
-            "cell_route": ("acquired series become PIT-certified `ext_<name>` primitives; on this "
-                           "tree the only family that executes an ext_ feature is the banned "
-                           "`discovered`, so these rows reach the anomaly factory, the "
-                           "transmission graph and the global research OS but NOT the docket. "
-                           "The cell route is the `world_macro_state` family of the unmerged "
-                           "world-dataset-hunter branch (PR #92), which reloads a series by key "
-                           "inside the family so the sealed gauntlet needs no change.")}
+            "cell_route": ("research/world_cells.py publishes each PIT-authoritative acquired "
+                           "series of these rows as data/lake/series/<row id>.parquet on its "
+                           "available_time clock, then mints exogenous_conditioner (direct) and "
+                           "exogenous_gate (indirect) cells and writes "
+                           "reports/WORLD_STATE_INPUTS.json (allocation). An ext_ primitive of "
+                           "the banned `discovered` family is no longer the only route.")}
+
+
+def world_cells_state(path: Path | None = None) -> dict[str, Any]:
+    """What `world_cells` published and minted on its last pass; UNMEASURED when it never ran."""
+    doc = _read_json(path or WORLD_CELLS)
+    if not isinstance(doc, dict):
+        return {"status": UNMEASURED, "why": "reports/WORLD_CELLS.json absent on this box"}
+    cells = doc.get("cells") or {}
+    return {"status": "MEASURED", "generated_at": doc.get("generated_at"),
+            "published": doc.get("published"),
+            "not_published": doc.get("not_published") or [],
+            "direct_new": (cells.get("direct") or {}).get("minted"),
+            "indirect_new": (cells.get("indirect") or {}).get("minted"),
+            "indirect_deferred": (cells.get("indirect") or {}).get("deferred_to_next_pass"),
+            "gate_bases": doc.get("gate_bases")}
+
+
+def feeding(rows: list[dict[str, Any]], alt: Mapping[str, Any], wc: Mapping[str, Any]
+            ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """(every dataset that feeds no producer, every dataset missing one of the three uses).
+
+    DECLARED first -- a roster row whose `uses` are all empty feeds nothing by construction --
+    then MEASURED: an alt row whose fetch is blocked, and a world series `world_cells` could not
+    publish, feed nothing THIS hour whatever they declare. A row with no `uses` at all is
+    UNMEASURED and listed as such, never read as a clean pass.
+    """
+    none: list[dict[str, Any]] = []
+    gaps: list[dict[str, Any]] = []
+    for r in rows:
+        if not r.get("dataset", True):
+            continue
+        uses = r.get("uses")
+        if not isinstance(uses, Mapping):
+            none.append({"source": r["id"], "why": f"{UNMEASURED}: the row declares no `uses`"})
+            continue
+        if not any(uses.get(u) for u in USES):
+            none.append({"source": r["id"],
+                         "why": r.get("feeds_no_producer_because")
+                         or "declares no direct, indirect or allocation consumer"})
+            continue
+        missing = [u for u in USES if not uses.get(u)]
+        if missing:
+            gaps.append({"source": r["id"], "missing": missing})
+    for a in alt.get("rows") or []:
+        if a.get("status") == "REGISTERED_BLOCKED":
+            none.append({"source": f"alt:{a.get('name')}",
+                         "why": f"fetch blocked: {a.get('blocker')}"})
+    if wc.get("status") == "MEASURED":
+        for x in wc.get("not_published") or []:
+            reason = str(x.get("reason") or "")
+            if reason.startswith("not fetchable"):
+                continue            # already listed above as a blocked alt row
+            none.append({"source": f"world_cells:{x.get('source')}",
+                         "why": f"not published this pass: {reason}"})
+    return none, gaps
+
+
+def culture_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Which cultures the factory's sources carry, and how much of it is not English."""
+    by: dict[str, int] = {}
+    ps: dict[str, int] = {}
+    non_en = 0
+    for r in rows:
+        by[str(r.get("source_culture") or UNMEASURED)] = by.get(
+            str(r.get("source_culture") or UNMEASURED), 0) + 1
+        ps[str(r.get("participant_structure") or UNMEASURED)] = ps.get(
+            str(r.get("participant_structure") or UNMEASURED), 0) + 1
+        langs = {str(x).lower() for x in (r.get("coverage") or {}).get("languages_declared") or []}
+        non_en += int(bool(langs - {"en"}))
+    return {"by_source_culture": dict(sorted(by.items(), key=lambda kv: -kv[1])),
+            "by_participant_structure": dict(sorted(ps.items(), key=lambda kv: -kv[1])),
+            "sources_with_a_non_english_language": non_en, "n_sources": len(rows)}
 
 
 # ---------------------------------------------------------------------------------- measure
@@ -509,7 +601,14 @@ def measure_source(src: Mapping[str, Any], *, since: datetime,
     row: dict[str, Any] = {"id": src.get("id"), "kind": src.get("kind"),
                            "family": src.get("family"), "organ": organ,
                            "organ_on_tree": bool(organ) and (ROOT / organ).exists(),
-                           "clock": clock, "licence": src.get("licence") or UNMEASURED}
+                           "clock": clock, "licence": src.get("licence") or UNMEASURED,
+                           "dataset": bool(src.get("dataset", True)),
+                           "uses": ({u: list((src.get("uses") or {}).get(u) or []) for u in USES}
+                                    if isinstance(src.get("uses"), Mapping) else UNMEASURED),
+                           "consumers": list(src.get("consumers") or []),
+                           **{k: src.get(k) or UNMEASURED for k in CULTURE_KEYS}}
+    if src.get("feeds_no_producer_because"):
+        row["feeds_no_producer_because"] = src["feeds_no_producer_because"]
     # --- did it run
     run_legs = list(clock.get("legs") or [])
     if clock.get("type") == "hourly_cycle" and run_legs:
@@ -649,7 +748,10 @@ def measure(now: datetime | None = None, roster_path: Path | None = None) -> dic
                             "regions": list(u.get("regions") or []),
                             "languages": list(u.get("languages") or []),
                             "source_types": list(u.get("source_types") or []),
-                            "licence": u.get("licence")})
+                            "licence": u.get("licence"),
+                            **{k: u[k] for k in ("dataset", "uses", "consumers",
+                                                 "feeds_no_producer_because", *CULTURE_KEYS)
+                               if k in u}})
     legs = leg_runs(since)
     fetches = fetch_runs(since)
     compiled = compiler_yield()
@@ -678,9 +780,11 @@ def measure(now: datetime | None = None, roster_path: Path | None = None) -> dic
         if r["status"] == "REGISTERED_BLOCKED":
             holes.append({"source": f"alt:{r['name']}", "hole": "ALT_DATASET_BLOCKED",
                           "detail": r.get("blocker")})
-    if alt.get("status") == "MEASURED" or alt.get("rows"):
-        holes.append({"source": "alt_datasets", "hole": "NO_CELL_ROUTE_FOR_ACQUIRED_SERIES",
-                      "detail": alt.get("cell_route")})
+    wc = world_cells_state()
+    no_producer, uses_gaps = feeding(rows, alt, wc)
+    for x in no_producer:
+        holes.append({"source": x["source"], "hole": "DATASET_FEEDS_NO_PRODUCER",
+                      "detail": x["why"]})
     by_family: dict[str, dict[str, Any]] = {}
     for r in rows:
         fam = by_family.setdefault(str(r.get("family") or r.get("kind")), {
@@ -716,7 +820,11 @@ def measure(now: datetime | None = None, roster_path: Path | None = None) -> dic
         "coverage": {"regions": sorted(regions), "languages": sorted(languages),
                      "n_regions": len(regions), "n_languages": len(languages)},
         "by_family": by_family, "sources": rows,
-        "alt_platforms": plats, "alt_datasets": alt,
+        "alt_platforms": plats, "alt_datasets": alt, "world_cells": wc,
+        "datasets_feeding_no_producer": no_producer,
+        "n_datasets_feeding_no_producer": len(no_producer),
+        "uses_gaps": uses_gaps,
+        "culture": culture_summary(rows),
         "holes": holes, "n_holes": len(holes),
         "rule": ("UNMEASURED is never 0: a zero here was read from an artifact that said zero. "
                  "This organ adds clocks and measurements; it never sizes, caps or vetoes."),
@@ -854,6 +962,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--measure", action="store_true")
     ap.add_argument("--mine", action="store_true")
+    ap.add_argument("--produce", action="store_true",
+                    help="run research/world_cells.py first: publish world series, mint direct "
+                         "and indirect cells, write the allocation state inputs")
     ap.add_argument("--unit", default=None)
     ap.add_argument("--budget-s", type=float, default=1400.0)
     ap.add_argument("--dry-run", action="store_true")
@@ -863,6 +974,19 @@ def main(argv: list[str] | None = None) -> int:
         return run_unit(a.unit)
     if a.mine:
         mine(a.budget_s, dry_run=a.dry_run)
+        if not a.measure and not a.produce:
+            return 0
+    if a.produce:
+        # Its own failure never costs the measurement: the report then says what it could read.
+        try:
+            import world_cells
+            wdoc = world_cells.produce(dry_run=a.dry_run)
+            wc = wdoc["cells"]
+            print(f"world_cells: {wdoc['published']} published; direct "
+                  f"{wc['direct']['minted']} new, indirect {wc['indirect']['minted']} new",
+                  flush=True)
+        except Exception as exc:                                    # noqa: BLE001
+            print(f"world_cells FAILED: {type(exc).__name__}: {str(exc)[:160]}", flush=True)
         if not a.measure:
             return 0
     doc = measure()

@@ -29,6 +29,7 @@ def _redirect(monkeypatch, tmp_path: Path) -> dict[str, Path]:
         "RUNS": tmp_path / "world_factory_runs.jsonl",
         "CURSOR": tmp_path / "world_factory_cursor.json",
         "REPORT": tmp_path / "WORLD_FACTORY.json",
+        "WORLD_CELLS": tmp_path / "WORLD_CELLS.json",
     }
     for k, v in paths.items():
         monkeypatch.setattr(wf, k, v)
@@ -296,7 +297,7 @@ def test_nasa_power_and_arcgis_payloads_parse_into_dated_series() -> None:
     assert ad._dated(ad._parse(fred, "https://fred.stlouisfed.org/graph/fredgraph.csv")) is not None
 
 
-def test_alt_measurement_names_unattempted_platforms_and_the_missing_cell_route(tmp_path) -> None:
+def test_alt_measurement_names_unattempted_platforms_and_the_cell_route(tmp_path) -> None:
     cov = tmp_path / "cov.json"
     cov.write_text(json.dumps({"platforms": {
         "amarkets": {"last_attempt": "2026-09-12T04:01:59+00:00", "last_state": "ok",
@@ -316,4 +317,77 @@ def test_alt_measurement_names_unattempted_platforms_and_the_missing_cell_route(
     assert by[row["name"]]["status"] == "SUCCESS"
     assert any(r["status"] == "REGISTERED_BLOCKED" for r in alt["rows"])
     assert alt["by_class"]["patents"]["fetchable"] == 0
-    assert "world_macro_state" in alt["cell_route"]
+    assert "world_cells" in alt["cell_route"] and "exogenous_gate" in alt["cell_route"]
+
+
+def test_every_dataset_row_declares_its_three_uses_and_its_culture() -> None:
+    """The principal's two rules on the roster itself: uses {direct, indirect, allocation} with a
+    consuming organ, and the three culture keys, on every source and media unit."""
+    rows = [*ROSTER["sources"], *ROSTER["media_units"]]
+    for r in rows:
+        for k in ("source_culture", "participant_structure", "failure_mode_hypothesis"):
+            assert r.get(k), (r["id"], k)
+        assert r["participant_structure"] in {
+            "retail_heavy", "institutional", "tax_driven", "policy_driven",
+            "settlement_constrained", "physical_flow", "broker_specific", "mixed", "UNMEASURED"}
+        if not r.get("dataset", True):
+            continue
+        assert set(r["uses"]) == {"direct", "indirect", "allocation"}, r["id"]
+        if any(r["uses"].values()):
+            assert r["consumers"], r["id"]
+        else:
+            assert r.get("feeds_no_producer_because"), r["id"]
+    ids = {r["id"] for r in ROSTER["sources"]}
+    assert {"fetch_alfred", "world_cells", "llm_extractor"} <= ids
+    for r in ALT["rows"]:
+        assert set(r["uses"]) == {"direct", "indirect", "allocation"} and r["consumer"]
+        assert r["source_culture"] and r["failure_mode_hypothesis"]
+
+
+def test_the_report_lists_every_dataset_feeding_no_producer(monkeypatch, tmp_path) -> None:
+    _redirect(monkeypatch, tmp_path)
+    roster = tmp_path / "roster.json"
+    roster.write_text(json.dumps({"expand_forests": False, "sources": [
+        {"id": "fed", "kind": "macro", "organ": "desks/mt5/research/world_cells.py",
+         "clock": {"type": "hourly_cycle", "legs": ["x"]}, "dataset": True,
+         "uses": {"direct": ["a"], "indirect": [], "allocation": []}, "consumers": ["a"],
+         "source_culture": "JP", "participant_structure": "policy_driven",
+         "failure_mode_hypothesis": "x", "languages": ["ja"]},
+        {"id": "dead", "kind": "news", "organ": "desks/mt5/research/world_cells.py",
+         "clock": {"type": "hourly_cycle", "legs": ["y"]}, "dataset": True,
+         "uses": {"direct": [], "indirect": [], "allocation": []},
+         "feeds_no_producer_because": "calendar empty"},
+        {"id": "untagged", "kind": "news", "organ": "desks/mt5/research/world_cells.py",
+         "clock": {"type": "hourly_cycle", "legs": ["z"]}},
+        {"id": "organ", "kind": "compiler", "organ": "desks/mt5/research/world_cells.py",
+         "clock": {"type": "hourly_cycle", "legs": ["w"]}, "dataset": False}]}))
+    (tmp_path / "WORLD_CELLS.json").write_text(json.dumps({
+        "generated_at": "2026-09-30T11:00:00+00:00", "published": 1, "gate_bases": 3,
+        "not_published": [{"source": "alt_power_x", "reason": "not yet acquired"}],
+        "cells": {"direct": {"minted": 9}, "indirect": {"minted": 4,
+                                                        "deferred_to_next_pass": 2}}}))
+    doc = wf.measure(NOW, roster)
+    none = {x["source"]: x["why"] for x in doc["datasets_feeding_no_producer"]}
+    assert none["dead"] == "calendar empty"
+    assert none["untagged"].startswith("UNMEASURED")
+    assert "fed" not in none and "organ" not in none
+    assert "world_cells:alt_power_x" in none
+    assert {"source": "fed", "missing": ["indirect", "allocation"]} in doc["uses_gaps"]
+    assert doc["world_cells"]["indirect_new"] == 4
+    assert doc["culture"]["by_source_culture"]["JP"] == 1
+    assert any(h["hole"] == "DATASET_FEEDS_NO_PRODUCER" for h in doc["holes"])
+    src = {r["id"]: r for r in doc["sources"]}
+    assert src["fed"]["source_culture"] == "JP" and src["untagged"]["uses"] == "UNMEASURED"
+
+
+def test_fetch_alfred_and_the_extractor_are_clocked_budgeted_and_layered() -> None:
+    from libs.research.layers import LEG_LAYER
+    from research import hourly_cycle as hc
+    for leg, dept in (("fetch_alfred", "macro"), ("llm_extractor", "data")):
+        assert hc.LEG_DEPARTMENT.get(leg) == dept, leg
+        assert hc.LEG_BUDGET_SEC.get(leg), leg
+        assert LEG_LAYER.get(leg), leg
+    src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '"research/fetch_alfred.py", "--leg"' in src
+    assert '"research/world_factory.py", "--produce", "--measure"' in src
+    assert '"research/llm_extractor.py"' in src

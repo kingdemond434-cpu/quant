@@ -24,7 +24,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "us",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US crop-belt weather is priced by CBOT funds and commercial hedgers around the USDA WASDE and crop-progress calendar, so it should fail around those reports rather than when a generic Western weather-momentum rule does",
+   "feeds_now": true
   },
   {
    "id": "alt_power_kansas_wheat",
@@ -48,7 +64,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "us",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US crop-belt weather is priced by CBOT funds and commercial hedgers around the USDA WASDE and crop-progress calendar, so it should fail around those reports rather than when a generic Western weather-momentum rule does",
+   "feeds_now": true
   },
   {
    "id": "alt_power_mato_grosso_soy",
@@ -73,7 +105,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "br",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "BR",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "Brazilian crops are sold forward in reais by farmers hedging through BRL, so the weather signal should fail when the real moves and the farmer selling pace changes, not with US weather",
+   "feeds_now": true
   },
   {
    "id": "alt_power_sao_paulo_sugar_belt",
@@ -99,7 +147,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "br",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "BR",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "Brazilian crops are sold forward in reais by farmers hedging through BRL, so the weather signal should fail when the real moves and the farmer selling pace changes, not with US weather",
+   "feeds_now": true
   },
   {
    "id": "alt_power_cote_d_ivoire_cocoa_belt",
@@ -124,7 +188,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "ci",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "CI",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "Ivorian cocoa is sold forward by the state regulator (Conseil Cafe-Cacao) at a fixed farmgate price, so the weather signal should fail when forward-sale policy changes rather than when the crop itself does",
+   "feeds_now": true
   },
   {
    "id": "alt_power_west_texas_cotton",
@@ -148,7 +228,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "us",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US crop-belt weather is priced by CBOT funds and commercial hedgers around the USDA WASDE and crop-progress calendar, so it should fail around those reports rather than when a generic Western weather-momentum rule does",
+   "feeds_now": true
   },
   {
    "id": "alt_power_florida_citrus",
@@ -172,7 +268,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "us",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US crop-belt weather is priced by CBOT funds and commercial hedgers around the USDA WASDE and crop-progress calendar, so it should fail around those reports rather than when a generic Western weather-momentum rule does",
+   "feeds_now": true
   },
   {
    "id": "alt_firms_viirs_global_active_fire_7d",
@@ -196,7 +308,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "fire counts in Amazon and Indonesian frontiers follow land-clearing seasons and local enforcement, so they should fail when clearing policy changes rather than with Western commodity sentiment",
+   "feeds_now": false
   },
   {
    "id": "alt_viirs_nighttime_lights_eog",
@@ -218,7 +346,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "CN",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "night-light activity in China tracks state-directed construction and power rationing, so it should fail when policy credit turns rather than with the reported PMI a Western model reads",
+   "feeds_now": false
   },
   {
    "id": "alt_copernicus_sentinel_hub_statistical_api",
@@ -240,7 +384,23 @@
    "cadence": "daily",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "US patent grants follow USPTO examination backlogs, so they should fail with office throughput rather than with the innovation cycle a Western equity model assumes",
+   "feeds_now": false
   },
   {
    "id": "alt_imf_portwatch_strait_of_hormuz_daily_transits",
@@ -265,7 +425,23 @@
    "cadence": "weekly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "chokepoint transits are set by insurers, navies and rerouting decisions, so they should fail on security events and war-risk premia rather than on the demand cycle a Western freight index tracks",
+   "feeds_now": true
   },
   {
    "id": "alt_imf_portwatch_suez_canal_daily_transits",
@@ -290,7 +466,23 @@
    "cadence": "weekly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "GLOBAL",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "chokepoint transits are set by insurers, navies and rerouting decisions, so they should fail on security events and war-risk premia rather than on the demand cycle a Western freight index tracks",
+   "feeds_now": true
   },
   {
    "id": "alt_fred_cass_freight_index_shipments",
@@ -315,7 +507,23 @@
    "cadence": "monthly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "us",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US domestic freight volumes follow inventory and trucking-contract cycles, so they should fail at restocking turns rather than on the monthly print a Western macro trader watches",
+   "feeds_now": true
   },
   {
    "id": "alt_fred_bts_freight_transportation_services_index",
@@ -339,7 +547,23 @@
    "cadence": "monthly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "us",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US domestic freight volumes follow inventory and trucking-contract cycles, so they should fail at restocking turns rather than on the monthly print a Western macro trader watches",
+   "feeds_now": true
   },
   {
    "id": "alt_fred_ppi_deep_sea_freight",
@@ -364,7 +588,23 @@
    "cadence": "monthly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "us",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "US domestic freight volumes follow inventory and trucking-contract cycles, so they should fail at restocking turns rather than on the monthly print a Western macro trader watches",
+   "feeds_now": true
   },
   {
    "id": "alt_ny_fed_global_supply_chain_pressure_index",
@@ -386,7 +626,23 @@
    "cadence": "monthly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "a Fed-built composite of global freight and PMI delivery times reflects the institutional survey cycle, so it should fail at survey-methodology and seasonal-adjustment breaks rather than at physical turns",
+   "feeds_now": false
   },
   {
    "id": "alt_un_comtrade_public_preview",
@@ -408,7 +664,23 @@
    "cadence": "monthly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "GLOBAL",
+   "participant_structure": "settlement_constrained",
+   "failure_mode_hypothesis": "declared customs trade is reported with long lags and re-export routing, so it should fail when trade is rerouted through third countries rather than when demand turns",
+   "feeds_now": false
   },
   {
    "id": "alt_uspto_patentsview_patentsearch_api",
@@ -429,7 +701,23 @@
    "cadence": "monthly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "US patent grants follow USPTO examination backlogs, so they should fail with office throughput rather than with the innovation cycle a Western equity model assumes",
+   "feeds_now": false
   },
   {
    "id": "alt_patentsview_bulk_granted_patents",
@@ -450,7 +738,23 @@
    "cadence": "monthly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "US",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "US patent grants follow USPTO examination backlogs, so they should fail with office throughput rather than with the innovation cycle a Western equity model assumes",
+   "feeds_now": false
   },
   {
    "id": "alt_epo_open_patent_services",
@@ -471,7 +775,23 @@
    "cadence": "monthly",
    "cursor": "desks/mt5/data/acquired/registry.json#by_url",
    "region": "global",
-   "language": "en"
+   "language": "en",
+   "uses": {
+    "direct": [
+     "exogenous_conditioner cells, minted by desks/mt5/research/world_cells.py"
+    ],
+    "indirect": [
+     "exogenous_gate cells (price-only base families gated by the series), minted by desks/mt5/research/world_cells.py"
+    ],
+    "allocation": [
+     "desks/mt5/reports/WORLD_STATE_INPUTS.json (advisory lagged z per instrument), written by desks/mt5/research/world_cells.py"
+    ]
+   },
+   "consumer": "desks/mt5/research/world_cells.py",
+   "source_culture": "EU",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "European patent publication follows EPO procedure timing, so it should fail with procedural backlog rather than with the European innovation cycle",
+   "feeds_now": false
   }
  ]
 }

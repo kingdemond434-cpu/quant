@@ -50,6 +50,7 @@ LEG_LAYER: dict[str, str] = {
     # That is information, not prediction: neither one scores anything.
     "proposer_seat": "information", "kimi_hunt": "information",
     "world_media_miners": "information", "world_factory": "meta",
+    "fetch_alfred": "information", "llm_extractor": "information",
     "deep_forest": "information", "market_intel": "information", "record_tape": "information",
     "archive_tape": "information", "refresh_bars": "information",
     "timeframe_coverage": "information", "frontier": "information",

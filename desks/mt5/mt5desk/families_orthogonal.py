@@ -2284,3 +2284,15 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# THE INDIRECT USE OF A DATASET (2026-09-30, world factory). `exogenous_conditioner` is a
+# dataset's DIRECT cell: the series alone picks the side. `exogenous_gate` is its INDIRECT cell: an
+# existing price-only base cell, kept only while the same lagged series sits in a band. Its cells
+# are named by `research/world_cells.py` from published lake series and wrappable base families;
+# the ungated base is already an ordinary candidate, so the control arm exists.
+from mt5desk.family_exogenous_gate import family_exogenous_gate  # noqa: E402
+
+ORTHOGONAL_FAMILIES["exogenous_gate"] = family_exogenous_gate
+FAMILY_INPUTS["exogenous_gate"] = (
+    "a published series on its own available_time clock, gating a price-only base family",
+    "data/lake/series/<source>.parquet")
