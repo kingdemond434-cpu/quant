@@ -49,10 +49,10 @@ def _reader() -> Any:
 @pytest.fixture()
 def door(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[dict[str, Any]]:
     _reader()
-    src = tmp_path / "live_door.json"
-    out = tmp_path / "promoter_live_door.json"
-    monkeypatch.setattr(promoter, "TIER_S_LIVE_DOOR", src)
-    monkeypatch.setattr(promoter, "TIER_S_LIVE_DOOR_OUT", out)
+    monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "sleeves.json")
+    src, out = promoter.tier_s_live_door_paths()
+    assert src.parent == out.parent == tmp_path / "tier_s"
+    src.parent.mkdir(parents=True)
     queued: list[list[str]] = []
     billed: list[tuple[str, str, str]] = []
     monkeypatch.setattr(promoter, "_queue_close", lambda names: queued.append(list(names)))
@@ -159,7 +159,8 @@ def test_the_promoter_pass_calls_the_reader() -> None:
 def test_the_reader_reads_the_file_the_door_writes() -> None:
     _reader()
     from libs.tiers import promotion_authority
-    assert promoter.TIER_S_LIVE_DOOR.resolve() == promotion_authority.LIVE_DOOR.resolve()
+    src, _out = promoter.tier_s_live_door_paths()
+    assert src.resolve() == promotion_authority.LIVE_DOOR.resolve()
 
 
 # ------------------------------------------------------------------ the gauntlet's constitution
@@ -207,4 +208,4 @@ def test_the_sweep_publishes_the_law_and_applies_it() -> None:
     assert '"constitution": law' in src
     assert "threshold=dsr_bar" in src and "threshold=DSR_THRESHOLD" not in src
     assert "lockbox_cut(daily, frac=lockbox_frac)" in src
-    assert ">= gates_required" in src
+    assert "< gates_required" in src
