@@ -260,9 +260,32 @@ def build_state() -> None:
         f"R={state['states']['RISK_STATE']} D={state['states']['DOLLAR_STATE']}")
 
 
+def _code_fingerprint() -> tuple:
+    """Bytes of this module and the fetch layer it calls: what a running copy is executing."""
+    out = []
+    for path in (Path(__file__), Path(getattr(fd, "__file__", "") or __file__)):
+        try:
+            out.append((str(path), path.read_bytes()))
+        except OSError:
+            out.append((str(path), None))
+    return tuple(out)
+
+
 def main() -> None:
     log("macro desk started (FRED keyless + ALFRED vintages + Yahoo anchors)")
+    # A PERPETUAL WORKER NEVER SAW A RELEASE (2026-09-30). This loop is launched once by
+    # research_supervisor and runs forever, so it executes the code that was on disk when it
+    # STARTED. MT5-AdoptRelease lands new code in place and restarts only the gateway: the
+    # per-cell anchor merge (97e21ce8f) that stops a flaky T10YIE fetch erasing REAL_YIELD_10Y
+    # reached the box's disk and never this process, and the committed pickle stayed all-NaN.
+    # When the code under it changes, the loop ends cleanly; the supervisor sees no live
+    # macro_desk and respawns it on the new code within its 30 s tick.
+    started_on = _code_fingerprint()
     while True:
+        if _code_fingerprint() != started_on:
+            log("macro desk: its code changed on disk since start -- exiting so the supervisor "
+                "respawns it on the adopted release")
+            return
         t0 = time.time()
         try:
             anchors()          # first: hunt23 depends on the pkl
