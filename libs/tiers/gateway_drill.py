@@ -93,6 +93,7 @@ for f in (terminal_info, initialize, last_error, symbol_info_tick, symbol_info, 
     setattr(m, f.__name__, f)
 sys.modules["MetaTrader5"] = m
 sys.path.insert(0, desk)
+sys.path.insert(0, sys.argv[3])
 out = {"fault": fault}
 try:
     from mt5desk import gateway
@@ -135,9 +136,15 @@ def run_fault(fault: str, *, desk: Path = DESK) -> dict[str, Any]:
         root = Path(tmp)
         (root / "data").mkdir()
         (root / "logs").mkdir()
-        env = {**os.environ, "MT5_DESK_ROOT": str(root), "PYTHONDONTWRITEBYTECODE": "1"}
+        # The child runs from the temp directory, so neither the repository root (for `libs`)
+        # nor the desk (for `mt5desk`) is on its path unless it is put there: a clean worktree
+        # has no installed package to fall back on (audit 2026-09-30: ModuleNotFoundError).
+        path = os.pathsep.join([str(ROOT), str(desk),
+                                *filter(None, [os.environ.get("PYTHONPATH", "")])])
+        env = {**os.environ, "MT5_DESK_ROOT": str(root), "PYTHONDONTWRITEBYTECODE": "1",
+               "PYTHONPATH": path}
         try:
-            proc = subprocess.run([sys.executable, "-c", _CHILD, fault, str(desk)],
+            proc = subprocess.run([sys.executable, "-c", _CHILD, fault, str(desk), str(ROOT)],
                                   capture_output=True, text=True, timeout=TIMEOUT_S, env=env,
                                   cwd=str(root))
         except subprocess.TimeoutExpired:

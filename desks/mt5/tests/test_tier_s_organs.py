@@ -632,3 +632,21 @@ def test_a_loosened_constitution_withholds_promotion(monkeypatch: Any, tmp_path:
     doc["rules"]["cert.dsr_threshold"]["value"] = 0.99           # a tightening is lawful
     c.write_text(json.dumps(doc), "utf-8")
     assert pa._constitution("X.y") is None
+
+
+def test_allocator_applies_a_tier_s_factor_below_the_shared_floor(monkeypatch: Any) -> None:
+    """A Tier S factor in (0, 0.5) is applied as itself, not lifted to the 0.5 floor, and an
+    exchange ZERO takes the sleeve's mean to zero."""
+    import numpy as np
+    import pf_allocator as pfa  # type: ignore[import-not-found]
+
+    from libs.portfolio import allocator_evidence as ae
+    from libs.portfolio.robust_elog import SleeveEvidence
+    monkeypatch.setattr(ae, "tier_s_factors",
+                        lambda **k: ({"A": 0.2, "Z": 0.0, "N": 1.0}, "test"))
+    ev = [SleeveEvidence(n, np.full(30, 0.5)) for n in ("A", "Z", "N")]
+    pfa.apply_allocator_evidence(ev, None, None)
+    got = {e.name: float(np.mean(e.daily_r)) for e in ev}
+    assert got["A"] == pytest.approx(0.5 + (0.2 - 1.0) * 0.5)
+    assert got["Z"] == pytest.approx(0.0)
+    assert got["N"] == pytest.approx(0.5)
