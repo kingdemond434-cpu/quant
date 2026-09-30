@@ -415,7 +415,12 @@ $relPaths = @(
     "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
     "desks/mt5/data/tier_s/RELEASE_STOP.json",
     "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
-    "desks/mt5/reports/REPLICATION.json"
+    "desks/mt5/reports/REPLICATION.json",
+    # THE LOCKBOX v4 RE-CERTIFICATION (pass-2 P0, 2026-09-30): the per-certificate lockbox Sharpe
+    # before and after (leg lockbox_recert) and the re-mint's own status (leg attestation_remint,
+    # PR #126; absent until it lands, and an absent path is simply not staged).
+    "desks/mt5/reports/LOCKBOX_RECERT.json",
+    "desks/mt5/reports/REMINT_STATUS.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {
