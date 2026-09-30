@@ -381,6 +381,21 @@ def partition_work(
 #: WHY a certificate it is flagging has no clock instead of only that it has none.
 DROPPED_CERTIFICATES: list[dict[str, str]] = []
 
+#: Certificates `certificate_hygiene` already EVICTED from the sealed canon as unrunnable (their
+#: `params` were never recorded and are never guessed). They still stand in the judge's report --
+#: eviction is not revocation -- so without this every pass re-announced the same six as fresh
+#: ENROL-GAP drops (measured 2026-09-30: five session_range_breakout rows and one AUDNZD
+#: dav_range_filter_adx, all gated 2026-08-23), which buried real drops and read as a live defect.
+#: Listed here instead, by key, so the eviction stays visible without posing as a new finding.
+EVICTED_CERTIFICATES: list[str] = []
+
+
+def _evicted_keys(base: Path) -> set[str]:
+    """Keys the sealed canon records as evicted-unrunnable. Absent or unreadable -> empty set, so
+    a missing record can only make the door LOUDER (every drop reported), never quieter."""
+    ev = _read(base / "data" / "UNIVERSAL_SURVIVORS.canon.json").get("unrunnable_evicted")
+    return {str(k) for k in ev} if isinstance(ev, list) else set()
+
 
 def _drop(name: object, why: str) -> None:
     """Record and announce a ten-gate certificate that will not reach the forward engine.
@@ -514,7 +529,9 @@ def authorized_runs(base: Path = BASE,
     # policy mismatch must not leave the previous pass's drops standing as if they were this
     # pass's findings. This list always describes the run that just happened, never a backlog.
     DROPPED_CERTIFICATES.clear()
+    EVICTED_CERTIFICATES.clear()
     universal, canon_from = _canon(base)
+    evicted = _evicted_keys(base)
     if not is_exact_policy(universal.get("gate_policy")):
         # THE LARGEST SILENT DROP OF ALL, and this desk has already paid for it once.
         # `is_exact_policy`'s own docstring records 2026-09-02: "this is the whole reason the desk
@@ -557,6 +574,10 @@ def authorized_runs(base: Path = BASE,
         # the place that took care to avoid it. Certification and enrolment are one act
         # (RESEARCH §6d); a door that closes without saying so breaks that law quietly.
         spec = row.get("shadow_spec")
+        if str(name) in evicted and not (isinstance(spec, dict)
+                                         and isinstance(spec.get("params"), dict)):
+            EVICTED_CERTIFICATES.append(str(name))   # already evicted and still unrunnable
+            continue
         if not isinstance(spec, dict):
             _drop(name, "carries no `shadow_spec`, so there is nothing to enrol from -- the "
                         "publisher wrote a certificate without the specification that makes it "
