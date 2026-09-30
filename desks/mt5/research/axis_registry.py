@@ -171,9 +171,16 @@ _FAMILY_GROUPS: dict[str, str] = {
     "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
                                                      " cross_sectional pca_residual"
-                                                     " relative_value style_premia",
+                                                     " relative_value style_premia"
+                                                     " cross_sectional_class_value"
+                                                     " cross_sectional_class_low_vol",
     "relative_value_dislocation microstructure limit": "triangle",
-    "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag",
+    "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup",
+    # The class books of 2026-09-30 (`mt5desk.families_cross_sectional`): each leg is ranked
+    # against its own peer class on the same date.
+    "trend_persistence cross_asset market": "cross_sectional_class_momentum",
+    "range_reversion cross_asset market": "cross_sectional_class_reversal",
+    "forced_liquidation cross_asset market": "crisis_only_class_defensive",
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
                                         " mean_reversion_rsi range_reversion",
     "range_reversion price_only market": "engulfing_reversal pin_bar_reversal",

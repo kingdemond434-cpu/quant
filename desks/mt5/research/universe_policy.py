@@ -22,6 +22,11 @@ WHY THIS IS RIGHT AND NOT MERELY A PREFERENCE, recorded because a later reader w
   the multiple-testing charge, spent on the asset class least suited to the method, and paid for
   by the classes best suited to it.
 
+AMENDED BY THE PRINCIPAL 2026-09-30: "do cross sectional add cross sectional and news not js news
+change my order". Share CFDs now ALSO mint hypotheses in the cross-sectional class books
+(`CROSS_SECTIONAL_FAMILIES`, ranked within the `equity` peer class), alongside the event lane.
+Every other statistical family remains event-lane-only for them, for the two reasons above.
+
 So this is not a reduction in breadth. It is the same evidence budget spent where the mechanism
 being modelled is the mechanism actually present.
 
@@ -186,9 +191,33 @@ def lane(symbol: str) -> str:
     return UNCLASSIFIED
 
 
-def may_hypothesise(symbol: str) -> bool:
-    """True only for instruments whose edge is sought statistically."""
-    return lane(symbol) == HYPOTHESIS
+#: THE PRINCIPAL'S AMENDMENT OF 2026-09-30 to the two-lane order: "do cross sectional add cross
+#: sectional and news not js news change my order". Single-name equities keep their news and
+#: earnings lane AND are now ranked in cross-sectional class books. Only these families may mint
+#: a hypothesis on a share CFD; every other statistical family stays event-lane-only for them,
+#: because the single-name time-series argument above (a path dominated by its own disclosures,
+#: and the shared trial budget) still holds for those. A cross-sectional book is a different
+#: bet: it ranks a share against its peers on the same date, so each name's own disclosures are
+#: the idiosyncratic noise the class book diversifies, not the signal.
+#: Pinned to `mt5desk.families_cross_sectional.CROSS_SECTIONAL_FAMILIES` by a test.
+CROSS_SECTIONAL_FAMILIES = frozenset({
+    "cross_sectional_class_momentum", "cross_sectional_class_reversal",
+    "cross_sectional_class_value", "cross_sectional_class_low_vol",
+    "crisis_only_class_defensive", "lead_lag_class_catchup",
+})
+
+
+def is_equity(symbol: str) -> bool:
+    """True for a share CFD: the event lane's own asset class, from the broker's registry."""
+    return lane(symbol) == EVENT and asset_class_of(symbol) in EVENT_DRIVEN_CLASSES
+
+
+def may_hypothesise(symbol: str, family: object = None) -> bool:
+    """True for instruments whose edge is sought statistically -- and, for a share CFD, only when
+    `family` is one of the cross-sectional class books (principal 2026-09-30)."""
+    if lane(symbol) == HYPOTHESIS:
+        return True
+    return (str(family or "") in CROSS_SECTIONAL_FAMILIES) and is_equity(symbol)
 
 
 def split(symbols) -> dict[str, list[str]]:
@@ -199,3 +228,113 @@ def split(symbols) -> dict[str, list[str]]:
     for key in out:
         out[key] = sorted(set(out[key]))
     return out
+
+
+# =============================================================================================
+# PEER CLASSES FOR CROSS-SECTIONAL FAMILIES (2026-09-30).
+#
+# A cross-sectional hypothesis ranks an instrument AGAINST ITS CLASS at a point in time, so it
+# needs an answer to "which instruments is this one ranked against", and that answer has to be
+# the same in the gauntlet, the forward clock and the live executor. It is derived here, from the
+# same broker registry the lane is, and never from a symbol list: a Fusion instrument listed
+# tomorrow joins its class the day it appears.
+#
+# THE HYPOTHESIS LANE AND SHARE CFDs HAVE PEER CLASSES. Share CFDs rank as one `equity` class
+# (the principal's amendment of 2026-09-30 to the two-lane order: cross-sectional books AND the
+# news lane for single names). An UNCLASSIFIED symbol is ranked against nothing -- absence is not
+# a permission here either.
+#
+# FIVE CLASSES, AND THE CONSTRUCTION RULES THAT KEEP ONE BET FROM BEING COUNTED TWICE:
+#   fx_usd     every pair with a USD leg, read as the NON-USD CURRENCY's value in dollars
+#              (EURUSD as-is, USDJPY inverted), so the rank is a rank of currencies -- the
+#              construction in Menkhoff, Sarno, Schmeling & Schrimpf (2012).
+#   fx_cross   pairs with no USD leg, ranked as pairs. Each is the difference of two USD legs, so
+#              they are their own cross-section rather than extra members of the first one.
+#   index      equity indices. The dollar basket (a symbol spelled USD...) is a currency and is
+#              left out: ranking it beside NAS100 would be ranking an FX bet as an equity one.
+#   commodity  metals, energy and softs as one class (Asness, Moskowitz & Pedersen 2013 rank
+#              commodities as one book). A metal quoted in a second currency (XAUEUR, XAGEUR,
+#              XAUAUD) is the metal times an FX rate and is left out for the same reason.
+#   crypto     Fusion's crypto CFDs.
+# Bonds have their own class but three members in the registry; below MIN_CLASS_MEMBERS a rank is
+# a sort of three, and the class reports as too small rather than borrowing members.
+# =============================================================================================
+
+#: Members a class must have present on a date before any member of it is ranked on that date.
+MIN_CLASS_MEMBERS = 5
+
+_FX_CLASSES = _norm_set({"forex", "forex majors", "forex crosses", "forex exotics", "fx",
+                         "fx_major", "fx_cross", "fx_exotic"})
+_INDEX_CLASSES = _norm_set({"indices", "index"})
+_COMMODITY_CLASSES = _norm_set({"commodity", "commodities", "soft commodity", "soft commodities",
+                                "soft", "metal", "metals", "precious metals", "energy"})
+_BOND_CLASSES = _norm_set({"bond", "bonds"})
+_CRYPTO_CLASSES = _norm_set({"crypto", "cryptocurrency"})
+
+#: The peer classes, in the order reports list them.
+PEER_CLASSES: tuple[str, ...] = ("fx_usd", "fx_cross", "index", "commodity", "bond", "crypto",
+                                 "equity")
+
+
+def _pair_legs(symbol: str) -> tuple[str, str] | None:
+    s = str(symbol).strip().upper()
+    if len(s) == 6 and s.isalpha():
+        return s[:3], s[3:]
+    return None
+
+
+def peer_class(symbol: str) -> str | None:
+    """The cross-sectional class `symbol` is ranked within, or None. Never raises.
+
+    `equity` for a share CFD. None for every other symbol outside the hypothesis lane, and for the
+    two constructions that would
+    count one bet twice (a metal quoted in a second currency, the dollar basket among indices).
+    """
+    try:
+        if is_equity(symbol):
+            return "equity"
+        if lane(symbol) != HYPOTHESIS:
+            return None
+        klass = asset_class_of(symbol)
+    except Exception:
+        return None
+    legs = _pair_legs(symbol)
+    if klass in _FX_CLASSES:
+        if legs is None:
+            return None
+        return "fx_usd" if "USD" in legs else "fx_cross"
+    if klass in _INDEX_CLASSES:
+        return None if str(symbol).strip().upper().startswith("USD") else "index"
+    if klass in _COMMODITY_CLASSES:
+        if legs is not None and legs[0].startswith("X") and legs[1] != "USD":
+            return None
+        return "commodity"
+    if klass in _BOND_CLASSES:
+        return "bond"
+    if klass in _CRYPTO_CLASSES:
+        return "crypto"
+    return None
+
+
+def usd_orientation(symbol: str) -> int:
+    """+1 when the pair's price IS the non-USD currency in dollars (XXXUSD), -1 when it must be
+    inverted to read that way (USDXXX), +1 for anything that is not a USD pair."""
+    legs = _pair_legs(symbol)
+    if legs is not None and legs[0] == "USD" and legs[1] != "USD":
+        return -1
+    return 1
+
+
+def peer_classes() -> dict[str, list[str]]:
+    """{class: members} over the whole registry, in the registry's own casing, one pass."""
+    out: dict[str, list[str]] = {k: [] for k in PEER_CLASSES}
+    for k, v in _registry().items():
+        c = peer_class(k)
+        if c is not None:
+            out.setdefault(c, []).append(str(v.get("symbol") or k))
+    return {k: sorted(set(v)) for k, v in out.items()}
+
+
+def class_members(klass: str) -> list[str]:
+    """Every registry symbol whose peer class is `klass`, sorted."""
+    return list(peer_classes().get(str(klass), []))
