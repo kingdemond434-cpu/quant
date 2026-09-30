@@ -80,6 +80,10 @@ SELECT_K = 120
 PER_RUN = 40
 
 
+#: `world_dataset_hunter` series arrive under this prefix (kept in step with its own constant).
+WORLD_FEATURE_PREFIX = "ext_world_"
+
+
 def _interaction_pool_size(n_rows: int, n_features: int) -> int:
     """Use the largest interaction pool current memory can support.
 
@@ -232,7 +236,11 @@ def build_primitives(df, symbol: str, extra: dict | None = None) -> dict:
     # stretched" -- and that structure is unreachable from single features however many you add.
     # Interactions are formed mechanically between a bounded set of the most-populated primitives
     # so the trial count stays honest and countable rather than exploding into millions.
-    keys = [k for k in sorted(prim) if prim[k].notna().sum() > len(prim[k]) * 0.5]
+    # WORLD SERIES STAY OUT OF THE PAIRWISE POOL. They enter as single-feature conditions; the
+    # pool is left exactly as it was so every existing `x_` cell keeps rebuilding from the same
+    # members, and dozens of daily-rotating series never square the interaction count.
+    keys = [k for k in sorted(prim) if not k.startswith(WORLD_FEATURE_PREFIX)
+            and prim[k].notna().sum() > len(prim[k]) * 0.5]
     pool_size = _interaction_pool_size(len(d), len(keys))
     # Rank by population first, then name for deterministic ties. External/tape series with less
     # history no longer disappear merely because their names sort after OHLC transforms.
@@ -525,6 +533,24 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
             except Exception:
                 continue
 
+    # --- the world's official statistics, point-in-time -------------------------------------
+    # `world_dataset_hunter` ingests thousands of public datasets (DBnomics' ~80 providers, BIS
+    # bulk, CFTC TFF, US Treasury, FRED) and maps each series to the instruments it is about
+    # (country -> currency -> FX pair / index / bond, commodity -> metal / energy / soft). This
+    # is the door they reach research through: a stable core plus a daily rotating window of
+    # the symbol's mapped series, each keyed on the instant the desk could have KNOWN the
+    # value. Equities receive nothing (two-lanes rule, enforced inside the hunter). The names
+    # arrive as `ext_world_<key>`; `family_discovered` rebuilds any of them by name, so a cell
+    # found on a series that later rotates out of the window still rebuilds bar-for-bar.
+    try:
+        try:
+            from research.world_dataset_hunter import world_series_for
+        except ImportError:
+            from world_dataset_hunter import world_series_for
+        extra.update(world_series_for(symbol, index))
+    except Exception as exc:                        # an absent store is simply no world series
+        print(f"  {symbol}: world series unavailable ({type(exc).__name__}: {exc})")
+
     _RESOLVE_CACHE[_ck] = extra
     while len(_RESOLVE_CACHE) > _RESOLVE_CACHE_DEPTH:
         _RESOLVE_CACHE.popitem(last=False)
@@ -596,6 +622,9 @@ def mechanism_for_feature(feature: str) -> tuple[str, str]:
          "cross-sectional dispersion/breadth identifies common-flow versus idiosyncratic states"),
         (("ext_macro_",),
          "point-in-time macro state changes discount-rate and risk-transfer demand"),
+        ((WORLD_FEATURE_PREFIX,),
+         "a point-in-time official statistic of the instrument's own economy or commodity "
+         "balance (rates, prices, money, trade, supply) moves discount rates and real flows"),
         (("hour", "dow", "dom", "month", "gap"),
          "scheduled settlement/rebalancing and liquidity cycles create clock-conditioned flow"),
         (("volratio_", "rngratio_", "sign_entropy_", "path_efficiency_", "serial_corr_"),

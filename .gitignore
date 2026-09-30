@@ -381,6 +381,10 @@ desks/mt5/logs/
 # them made both hosts unpullable while the desk was running, which is always.
 desks/mt5/data/.job_locks/
 desks/mt5/data/free_data_cache/
+# world_dataset_hunter store: parquet observations, per-dataset meta, catalog, exposure and
+# key index are box-local and regenerated; data_registry.json + reports/DATASET_HUNT.json
+# are the tracked record of what it holds.
+desks/mt5/data/world_datasets/
 
 # Session scratch: throwaway measurement one-liners written to answer one question.
 # Excluded from ruff too (pyproject [tool.ruff] exclude) -- 32 of these once held the trading

@@ -1287,6 +1287,18 @@ def family_discovered(
             _PRIM_CACHE.clear()
         _PRIM_CACHE[_key] = prim
     series = prim.get(feature)
+    if series is None and str(feature).startswith("ext_world_"):
+        # A WORLD SERIES IS REBUILT BY NAME. The hunter's exposure rotates daily, so the series
+        # a cell was found on may not be in this hour's `extra`; `world_feature` rebuilds it
+        # with build_primitives' own formula. Every other feature takes the old path unchanged.
+        try:
+            try:
+                from research.world_dataset_hunter import world_feature
+            except ImportError:
+                from world_dataset_hunter import world_feature
+            series = world_feature(str(feature), d.index)
+        except Exception:
+            series = None
     if series is None:
         return []
     values = series.to_numpy(dtype="float64", na_value=np.nan)
