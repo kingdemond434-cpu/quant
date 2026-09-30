@@ -66,6 +66,8 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
 from libs.data import credentials as cred  # noqa: E402
 from libs.data import keyed_sources as ks  # noqa: E402
 
+#: The leg's own artifact (the component registry and runtime attestation read this binding).
+REPORT = DESK / "reports" / "KEYED_SOURCES.json"
 SEAT = "keyed_sources"
 INDIRECT_SEAT = "keyed_sources_indirect"
 UNMEASURED = "UNMEASURED"

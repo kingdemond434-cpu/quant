@@ -23,17 +23,17 @@
   }
  },
  "census": {
-  "LIVE": 118,
+  "LIVE": 120,
   "STALE": 1,
   "MISSING": 49,
   "NEVER": 715,
   "UNMEASURED": 30
  },
  "scope": {
-  "attested": 913,
+  "attested": 915,
   "excluded": 419,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
-  "registry_components": 1332,
+  "registry_components": 1334,
   "declaration_defects": 4,
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
@@ -2195,6 +2195,31 @@
    "consumer": "desks/mt5/research/miner_candidate_compiler.py (walks data/intelligence/**), des"
   },
   {
+   "organ": "leg:credential_coverage",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/credential_coverage.py"
+   ],
+   "clock": "hourly_cycle:credential_coverage",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "LIVE",
+   "why": "artifact 0.0h old, inside its cadence",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
+   "artifact_declared": "desks/mt5/reports/CREDENTIAL_COVERAGE.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 5,
+   "artifact_bytes": 56098,
+   "artifact_sha256": "88893505624d8b49dc7aa7354b4313d74531538b48e1817b171e8b71f26253cb",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
    "organ": "leg:daily",
    "kind": "leg",
    "code": [],
@@ -2491,6 +2516,33 @@
    "summary": {},
    "progress_metric": "leg_completions",
    "consumer": "any re-run of a certificate; the principal"
+  },
+  {
+   "organ": "leg:keyed_sources",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/keyed_sources.py"
+   ],
+   "clock": "hourly_cycle:keyed_sources",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "LIVE",
+   "why": "artifact 0.0h old, inside its cadence",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/KEYED_SOURCES.json",
+   "artifact_declared": "desks/mt5/reports/KEYED_SOURCES.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 6,
+   "artifact_bytes": 4468,
+   "artifact_sha256": "d72eda80490a12e9e75ba3c9a6e95b33204a7d3510fd26314276d0084e36e1f7",
+   "summary": {
+    "status": "DRY_RUN"
+   },
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
   },
   {
    "organ": "leg:kimi_hunt",
@@ -2923,7 +2975,7 @@
     "_": "UNMEASURED (not a readable JSON object)"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/miner_candidate_compiler.py \u2192 desks/mt5/data/hypotheses/miner"
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py → desks/mt5/data/hypotheses/miner"
   },
   {
    "organ": "leg:state_admission",
@@ -3391,7 +3443,7 @@
     "outcome": "exit_code=1"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning \u2192 StateVector.co"
+   "consumer": "desks/mt5/research/state_vector_build.py:335 world_conditioning → StateVector.co"
   },
   {
    "organ": "leg:dead_architecture",
@@ -3551,7 +3603,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "libs/research/bandit SOURCE_ARM \u2192 exit_improvement budget share; nothing reads e"
+   "consumer": "libs/research/bandit SOURCE_ARM → exit_improvement budget share; nothing reads e"
   },
   {
    "organ": "leg:experiment_cache",
@@ -3869,7 +3921,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) \u2014 the repres"
+   "consumer": "ML_LAYER.json is read by scripts/build_zentech_state.py (dashboard) — the repres"
   },
   {
    "organ": "leg:model_league",
@@ -3894,7 +3946,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) \u2014 a"
+   "consumer": "desks/mt5/research/issue_board.py:74 tracks MODEL_ZOO.json freshness (3600s) — a"
   },
   {
    "organ": "leg:model_skill",
@@ -4027,7 +4079,7 @@
     "outcome": "ok"
    },
    "progress_metric": "leg_completions",
-   "consumer": "promoter.allocation_view \u2192 admission_of \u2192 capital_verdict \u2192 reconcile_capital \u2192 "
+   "consumer": "promoter.allocation_view → admission_of → capital_verdict → reconcile_capital → "
   },
   {
    "organ": "leg:promoter",
