@@ -69,6 +69,9 @@ KINDS = (
     # refuses new risk, and PLACEMENT_CLEAR on a clean pass -- so seventeen days of
     # `release_identity_refused` rows can never again sit in the decision ledger unread.
     "PLACEMENT_HALTED", "PLACEMENT_CLEAR",
+    # The box's state is fresh on the box and stale on origin: delivery is broken, the desk is not
+    # idle (libs/ops/state_publication.py). Written by publish_state; read by stall_watch.
+    "STATE_FLOW_STALLED",
 )
 
 #: Legs whose completion IS a domain transition. Every other leg emits only LEG_DONE.
