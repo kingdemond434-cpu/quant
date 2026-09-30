@@ -308,6 +308,8 @@ def debate(symbol: str, context: list[str], cat: Mapping[str, Mapping[str, Any]]
             else:
                 row["family"] = str(it["family"])
                 row["params"] = normalise(it, cat)
+                if "symbol" in cat[row["family"]]["defaults"]:
+                    row["params"]["symbol"] = symbol       # a family keyed by its own cell
                 cells.append(row)
     if cells and meter["calls"] < calls_left:
         listing = [f"[{i}] {c['analyst']}: {c['family']} {json.dumps(c['params'])} -- "

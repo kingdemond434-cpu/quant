@@ -53,12 +53,21 @@ for _p in (str(BASE), str(ROOT)):
 
 from mt5desk import families_cn_cta as cn  # noqa: E402
 from mt5desk import families_elitequant as eq  # noqa: E402
+from mt5desk import families_quanttrading as qt  # noqa: E402
 
 #: Every family absorbed from the two curated lists, with its grid and declared culture:
-#: EliteQuant (Western canon) and thuquant/awesome-quant (the CN futures CTA canon).
-FAMILIES = {**eq.ELITEQUANT_FAMILIES, **cn.CN_CTA_FAMILIES}
-PARAM_GRID = {**eq.PARAM_GRID, **cn.PARAM_GRID}
-CULTURE = {**eq.CULTURE, **cn.CULTURE}
+#: EliteQuant (Western canon), thuquant/awesome-quant (the CN futures CTA canon) and
+#: je-suis-tm/quant-trading (retail chart patterns and the Oil Money commodity-FX residual).
+FAMILIES = {**eq.ELITEQUANT_FAMILIES, **cn.CN_CTA_FAMILIES, **qt.QUANTTRADING_FAMILIES}
+PARAM_GRID = {**eq.PARAM_GRID, **cn.PARAM_GRID, **qt.PARAM_GRID}
+CULTURE = {**eq.CULTURE, **cn.CULTURE, **qt.CULTURE}
+#: Where each family came from, for the donated row's provenance.
+ORIGIN = {**dict.fromkeys(eq.ELITEQUANT_FAMILIES, "github.com/EliteQuant/EliteQuant (Apache-2.0)"),
+          **dict.fromkeys(cn.CN_CTA_FAMILIES, "github.com/thuquant/awesome-quant (MIT)"),
+          **dict.fromkeys(qt.QUANTTRADING_FAMILIES,
+                          "github.com/je-suis-tm/quant-trading (Apache-2.0)")}
+#: Families that read their own second leg keyed by the cell's `symbol` parameter.
+SYMBOL_KEYED = frozenset({"commodity_fx_residual"})
 
 SOURCE = "elitequant_breadth"
 OUT = BASE / "reports" / "ELITEQUANT_BREADTH.json"
@@ -118,8 +127,8 @@ def symbols() -> list[str]:
 def _mechanism(family: str, symbol: str) -> str:
     fn = FAMILIES[family]
     doc = (fn.__doc__ or family.replace("_", " ")).strip().splitlines()[0]
-    src = "thuquant/awesome-quant" if family in cn.CN_CTA_FAMILIES else "EliteQuant"
-    return (f"{family} on {symbol}: {doc} Absorbed from the {src} map "
+    src = ORIGIN[family].split(" ")[0].removeprefix("github.com/")
+    return (f"{family} on {symbol}: {doc} Absorbed from {src} "
             f"({fn.__module__}); fails when {CULTURE[family]['failure_mode_hypothesis']}")
 
 
@@ -131,7 +140,8 @@ def _null_tails(ts: list[float]) -> dict[str, Any]:
         return {"n": 0}
     up_ = sum(t > 2.0 for t in ts)
     dn = sum(t < -2.0 for t in ts)
-    return {"n": n, "t_gt_2": up_, "t_lt_minus_2": dn, "null_expected_each_side": round(0.0228 * n, 1),
+    return {"n": n, "t_gt_2": up_, "t_lt_minus_2": dn,
+            "null_expected_each_side": round(0.0228 * n, 1),
             "mean_t": round(sum(ts) / n, 3)}
 
 
@@ -159,7 +169,8 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
         if time.monotonic() - started > budget_s:
             stopped = f"time budget {budget_s:g}s reached; resumes next pass"
             break
-        plan = [(f, p) for f in FAMILIES for p in grid(f)]
+        plan = [(f, {**p, "symbol": sym} if f in SYMBOL_KEYED else p)
+                for f in FAMILIES for p in grid(f)]
         stale = any((cells.get(identity(sym, f, p)) or {}).get("day") != today for f, p in plan)
         d = pc.bars(sym) if stale else None
         if stale and (d is None or len(d) < MIN_BARS):
@@ -202,11 +213,10 @@ def seed(*, budget_s: float = 600.0, dry_run: bool = False,
                 SOURCE, c["symbol"], c["family"], dict(c["params"]),
                 _mechanism(c["family"], c["symbol"]), f"{c['symbol']} {c['family']}",
                 {"screen_t_gross": c.get("t_gross"), "n_independent": c.get("n_independent"),
-                 "origin": ("github.com/thuquant/awesome-quant (MIT)" if c["family"] in cn.CN_CTA_FAMILIES
-                            else "github.com/EliteQuant/EliteQuant (Apache-2.0)")})
+                 "origin": ORIGIN[c["family"]]})
             culture = dict(CULTURE[c["family"]])
             row.update(culture)
-            row["culture_derivation"] = {k: "declared" for k in culture}
+            row["culture_derivation"] = dict.fromkeys(culture, "declared")
             rows.append(row)
         measured = sum(int(v["measured_this_pass"]) for v in by_family.values())
         path = pc.donate(SOURCE, rows, measured or len(rows))

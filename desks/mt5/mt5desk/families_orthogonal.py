@@ -2367,3 +2367,18 @@ ORTHOGONAL_FAMILIES.update(CN_CTA_FAMILIES)
 for _cn_name in CN_CTA_FAMILIES:
     FAMILY_INPUTS[_cn_name] = ("price only", "data/universe/*_H1.parquet")
 del _cn_name
+
+# SIX MECHANISMS FROM je-suis-tm/quant-trading (2026-09-30): Heikin-Ashi exhaustion, the Awesome
+# Oscillator saucer, the parabolic SAR flip, the Bollinger W/M retest, head-and-shoulders on the
+# RSI, and "Oil Money" -- a commodity currency's residual on the commodity it exports, traded only
+# while the fit is valid. The last loads its commodity leg itself, keyed by the cell's `symbol`.
+# Seeded by `research/elitequant_breadth.py`.
+from mt5desk.families_quanttrading import QUANTTRADING_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(QUANTTRADING_FAMILIES)
+for _qt_name in QUANTTRADING_FAMILIES:
+    FAMILY_INPUTS[_qt_name] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["commodity_fx_residual"] = (
+    "price only", "the cell's H1 bars plus its export commodity's (economic_drivers.ROLES), "
+    "read as of the cell's own daily decision bar from data/universe/*_H1.parquet")
+del _qt_name

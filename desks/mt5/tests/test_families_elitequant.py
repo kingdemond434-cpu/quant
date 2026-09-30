@@ -110,7 +110,7 @@ def test_seeder_donates_cost_clearing_cells_with_culture(monkeypatch, tmp_path):
     from research import elitequant_breadth as eb
     from research import proposer_common as pc
 
-    assert set(eb.FAMILIES) == set(eq.ELITEQUANT_FAMILIES) | set(cn.CN_CTA_FAMILIES)
+    assert set(eq.ELITEQUANT_FAMILIES) | set(cn.CN_CTA_FAMILIES) <= set(eb.FAMILIES)
 
     d = _bars(9_000)
     monkeypatch.setattr(eb, "STATE", tmp_path / "state.json")
