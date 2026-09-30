@@ -267,12 +267,30 @@ def _tail_lines(path: Path, max_bytes: int) -> list[str]:
     return raw.decode("utf-8", errors="replace").splitlines()
 
 
-def run_index(paths: Paths) -> dict[str, dict[str, Any]]:
+def run_index(paths: Paths, *, hostname: str | None = None,
+              trust_unstamped: bool = True) -> dict[str, dict[str, Any]]:
     """leg -> {at, outcome, source}: the LAST recorded run of each organ, from the two logs the
     desk already keeps. `events.jsonl` carries LEG_DONE/LEG_FAILED with the organ's own scalars;
     `compute_ledger.jsonl` carries the cycle's own accounting. An organ in neither has no run
-    record on this host, which is what makes NEVER distinguishable from MISSING."""
+    record on this host, which is what makes NEVER distinguishable from MISSING.
+
+    A RUN ON ANOTHER HOST IS NOT A RUN ON THIS ONE (2026-09-30). `events.jsonl` is TRACKED, and
+    the trading box's copy was committed on 2026-09-12 and 2026-09-24. Every other host that
+    checked the branch out then read the box's LEG_DONE rows as "this host recorded a run", found
+    the box's gitignored reports absent, and declared 48 legs MISSING -- `leg:issue_board`
+    among them, "missing since 09-12", while the leg ran clean and wrote its artifact wherever it
+    was actually invoked. So a row stamped with a `host` counts only when the stamp is this
+    host's, and an UNSTAMPED row (everything written before `events.emit` stamped one) counts
+    only when `trust_unstamped` -- which the caller sets from the MEASURED role: the unstamped
+    history was written by the trading loop, so only a host running one may claim it.
+    """
     out: dict[str, dict[str, Any]] = {}
+
+    def mine(d: dict[str, Any]) -> bool:
+        stamp = d.get("host")
+        if stamp is None or stamp == "":
+            return trust_unstamped
+        return hostname is None or str(stamp) == hostname
 
     def put(name: str, at: str, outcome: str, source: str, extra: dict[str, Any]) -> None:
         if not name or not at:
@@ -287,7 +305,7 @@ def run_index(paths: Paths) -> dict[str, dict[str, Any]]:
             d = json.loads(line)
         except ValueError:
             continue
-        if not isinstance(d, dict):
+        if not isinstance(d, dict) or not mine(d):
             continue
         name = str(d.get("leg") or d.get("organ") or "")
         kind = str(d.get("kind") or "")
@@ -301,7 +319,7 @@ def run_index(paths: Paths) -> dict[str, dict[str, Any]]:
             d = json.loads(line)
         except ValueError:
             continue
-        if not isinstance(d, dict):
+        if not isinstance(d, dict) or not mine(d):
             continue
         put(str(d.get("run") or ""), str(d.get("at") or ""), str(d.get("outcome") or ""),
             "compute_ledger.jsonl", {})
@@ -418,7 +436,9 @@ def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dic
     from desks.mt5.ops.components import registry  # local: heavy import, one pass only
 
     reg = registry(paths.root)
-    runs = run_index(paths)
+    host = host_identity(paths)
+    runs = run_index(paths, hostname=str(host["hostname"]),
+                     trust_unstamped=host["role"] == "trading_host")
     started = time.monotonic()
     rows: list[dict[str, Any]] = []
     excluded = 0

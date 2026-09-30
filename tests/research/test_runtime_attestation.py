@@ -222,3 +222,36 @@ def test_a_leg_with_a_producer_is_repaired_by_running_the_leg(tmp_path: Path) ->
     assert a is not None and a.name.startswith("run_once:leg:")
     assert a.argv[0] and a.argv[-1]
     assert a.postconditions == (rec.act.PRODUCTION_RESUMED,)
+
+
+def test_a_run_recorded_on_another_host_is_not_a_run_here(tmp_path: Path) -> None:
+    """#104 re-score: `leg:issue_board` read MISSING "since 09-12" on a host that never ran it,
+    because the tracked events.jsonl carried the trading box's LEG_DONE rows. Only this host's
+    stamped rows count; unstamped history counts only on a host that runs the trading loop."""
+    p = ra.Paths.at(tmp_path)
+    p.events.parent.mkdir(parents=True)
+    here = socket.gethostname()
+    rows = [
+        {"at": "2026-09-12T10:58:06+00:00", "kind": "LEG_DONE", "leg": "issue_board",
+         "outcome": "ok"},
+        {"at": "2026-09-30T10:00:00+00:00", "kind": "LEG_DONE", "leg": "publish_state",
+         "outcome": "ok", "host": "some-other-box"},
+        {"at": "2026-09-30T11:00:00+00:00", "kind": "LEG_DONE", "leg": "acceptance",
+         "outcome": "ok", "host": here},
+    ]
+    p.events.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    here_only = ra.run_index(p, hostname=here, trust_unstamped=False)
+    assert set(here_only) == {"acceptance"}
+    box = ra.run_index(p, hostname=here, trust_unstamped=True)
+    assert set(box) == {"acceptance", "issue_board"}
+    # the state the re-score read: no artifact and no run of THIS host is NEVER, not MISSING
+    assert ra._state(False, None, 7200, "issue_board" in here_only)[0] == "NEVER"
+
+
+def test_the_event_log_stamps_its_host(tmp_path: Path) -> None:
+    from libs.ops import events
+
+    row = events.emit("LEG_DONE", path=tmp_path / "events.jsonl", leg="issue_board")
+    assert row is not None and row["host"] == socket.gethostname()
+    written = json.loads((tmp_path / "events.jsonl").read_text(encoding="utf-8"))
+    assert written["host"] == socket.gethostname()
