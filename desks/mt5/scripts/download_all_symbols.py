@@ -3,12 +3,12 @@ universe.json. Runs on Windows where MetaTrader5 is installed. Then SCP to VPS.
 
 Was H1-only, and not by choice -- see the TIMEFRAME_DEPTH block below.
 """
+import atexit
 import json
 import os
 import re
 import sys
 import time
-import atexit
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -52,6 +52,21 @@ PARQUET_DIR.mkdir(parents=True, exist_ok=True)
 #: so the hourly pass skipped every missing chart for a day, and the next outage restamped them.
 #: 296 of the 602 FX charts were absent while the terminal served the same bars live.
 TERMINAL_ERROR_MAX = -10000
+
+# Single-name shares are an event/news lane by mandate, not a statistical-mining universe.
+# Downloading seven deep histories for every share used most of the four-hour recovery window
+# before the collector reached the FX, metals, rates, energy and index charts that certified
+# mechanisms actually require. Keep indices (their broker path is ``Indices``) and every other
+# multi-asset class; exclude only explicit share/equity path components. Existing files are not
+# deleted -- they can still serve as cross-asset observations -- but this completeness job no
+# longer treats them as missing research cells.
+_SINGLE_NAME_EQUITY_CATEGORIES = frozenset({"equities", "equity", "stocks", "stock", "shares"})
+
+
+def _is_single_name_equity(path_or_category: object) -> bool:
+    parts = {part.strip().casefold() for part in
+             re.split(r"[/\\\\]", str(path_or_category or "")) if part.strip()}
+    return bool(parts & _SINGLE_NAME_EQUITY_CATEGORIES)
 
 
 def _is_terminal_error(err: object) -> bool:
@@ -97,7 +112,9 @@ def _all_cells_accounted_for() -> tuple[bool, int, int]:
     wanted = [x.strip().upper() for x in os.environ.get(
         "MT5_TIMEFRAMES", ",".join(CANONICAL_TIMEFRAMES)).split(",") if x.strip()]
     physical = refused = 0
-    for symbol in registry:
+    for symbol, meta in registry.items():
+        if isinstance(meta, dict) and _is_single_name_equity(meta.get("category")):
+            continue
         wildcard = cells.get(f"{symbol}_*") or {}
         for tf in wanted:
             if (PARQUET_DIR / f"{symbol}_{tf}.parquet").exists():
@@ -126,7 +143,6 @@ if _accounted:
 import MetaTrader5 as mt5  # noqa: E402
 import pandas as pd  # noqa: E402
 import pyarrow.parquet as pq  # noqa: E402
-
 from research.expand_universe import _pull_bars  # noqa: E402
 from research.job_lock import exclusive_job  # noqa: E402
 from research.mt5_session import attach_or_initialize  # noqa: E402
@@ -156,8 +172,10 @@ syms = mt5.symbols_get()
 # pass claimed to cover the full broker.  Select every enabled instrument below; MT5 will make
 # it visible before the request.  A failed select/request is recorded as a cell verdict rather
 # than silently shrinking the denominator.
-tradable = [s for s in syms if s.trade_mode > 0]
-print(f"Tradable symbols: {len(tradable)}")
+tradable_all = [s for s in syms if s.trade_mode > 0]
+tradable = [s for s in tradable_all if not _is_single_name_equity(s.path)]
+print(f"Tradable non-equity symbols: {len(tradable)} "
+      f"({len(tradable_all) - len(tradable)} single-name equities excluded by mandate)")
 
 # Build universe.json + download bars at every eligible timeframe
 universe = {}
