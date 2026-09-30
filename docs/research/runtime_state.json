@@ -23349,6 +23349,31 @@
    "consumer": "UNMEASURED"
   },
   {
+   "organ": "fence:check_organ_cadence",
+   "kind": "task",
+   "code": [
+    "scripts/check_organ_cadence.py"
+   ],
+   "clock": "run_law_gate.py",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "data/law_gate.json",
+   "artifact_declared": "data/law_gate.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "gate_runs",
+   "consumer": "desks/mt5/research/plumbing_watchdog.py"
+  },
+  {
    "organ": "leg:gauntlet_guard",
    "kind": "leg",
    "code": [
@@ -23399,31 +23424,6 @@
    "consumer": "UNMEASURED"
   },
   {
-   "organ": "fence:check_organ_cadence",
-   "kind": "task",
-   "code": [
-    "scripts/check_organ_cadence.py"
-   ],
-   "clock": "run_law_gate.py",
-   "cadence_s": 3600,
-   "max_silence_s": 7200,
-   "state": "NEVER",
-   "why": "no artifact and no run record on this host",
-   "last_run_at": "UNMEASURED",
-   "last_run_outcome": "UNMEASURED",
-   "last_run_source": "UNMEASURED",
-   "artifact": "data/law_gate.json",
-   "artifact_declared": "data/law_gate.json",
-   "artifact_resolved_by": "absent",
-   "artifact_declared_n": 1,
-   "artifact_age_s": null,
-   "artifact_bytes": 0,
-   "artifact_sha256": "UNMEASURED",
-   "summary": {},
-   "progress_metric": "gate_runs",
-   "consumer": "desks/mt5/research/plumbing_watchdog.py"
-  },
-  {
    "organ": "leg:srb_uncorrelated_sweep",
    "kind": "leg",
    "code": [
@@ -23446,7 +23446,7 @@
    "artifact_sha256": "UNMEASURED",
    "summary": {},
    "progress_metric": "leg_completions",
-   "consumer": "desks/mt5/research/srb_basket_judge.py"
+   "consumer": "UNMEASURED"
   }
  ],
  "ratchet": {

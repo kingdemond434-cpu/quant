@@ -925,9 +925,9 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `timer:quant-prompt-prefix` | `quant-prompt-prefix` | UNMEASURED UNMEASURED | `data/prompt_prefix.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-sameday-fence` | `quant-sameday-fence` | UNMEASURED UNMEASURED | `data/sameday_pipeline.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-unit-parity` | `quant-unit-parity` | UNMEASURED UNMEASURED | `data/unit_parity.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `fence:check_organ_cadence` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:gauntlet_guard` | `hourly_cycle:gauntlet_guard` | UNMEASURED UNMEASURED | `desks/mt5/reports/GAUNTLET_PASSES.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:srb_basket_judge` | `hourly_cycle:srb_basket_judge` | UNMEASURED UNMEASURED | `desks/mt5/reports/SRB_BASKET_JUDGEMENT.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `fence:check_organ_cadence` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:srb_uncorrelated_sweep` | `hourly_cycle:srb_uncorrelated_sweep` | UNMEASURED UNMEASURED | `desks/mt5/reports/SRB_UNCORRELATED_SWEEP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (34)
