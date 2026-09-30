@@ -52,6 +52,7 @@ import json
 import os
 import re
 import ssl
+import sys
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -350,7 +351,16 @@ def _generic_rank(model_id: str) -> tuple[int, int, int] | None:
 
 
 def month_spend_usd(now: datetime | None = None) -> float:
-    """This calendar month's estimated spend, read from the append-only ledger."""
+    """This calendar month's estimated spend, read from the append-only ledger.
+
+    FREE ROWS ARE SKIPPED BY MODEL ID, not by the `usd` they carry, and that is deliberate. The
+    ledger is append-only, so the phantom dollars already booked against free calls before
+    `_record_spend` learned the difference cannot be edited out -- $234.26 of them on the trading
+    box the month this was found, against a $20 cap and a true bill of zero. The ROLLUP can be
+    right even when the history cannot be rewritten: a `:free` model charged nothing on the day it
+    ran and charges nothing retroactively. Without this the cap stays tripped by its own past for
+    the rest of the month, and the cap is what gates the paid lane the principal would be buying.
+    """
     stamp = (now or datetime.now(UTC)).strftime("%Y-%m")
     total = 0.0
     if not SPEND_LEDGER.exists():
@@ -362,8 +372,11 @@ def month_spend_usd(now: datetime | None = None) -> float:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if str(row.get("utc", "")).startswith(stamp):
-            total += float(row.get("usd") or 0.0)
+        if not str(row.get("utc", "")).startswith(stamp):
+            continue
+        if row.get("free") is True or is_free_model(str(row.get("model") or "")):
+            continue
+        total += float(row.get("usd") or 0.0)
     return round(total, 4)
 
 
@@ -378,6 +391,78 @@ DEFAULT_FREE_DAILY_MAX = 900
 #: What the PROVIDER actually refused at, learned from its own 429 rather than assumed. The
 #: number above is a published figure for a class of account; this file is what THIS account did.
 FREE_CEILING = _ROOT / "data" / "llm_free_ceiling.json"
+
+
+#: THE PROVIDER'S OWN COUNTER, AND IT IS IN A DIFFERENT UNIT FROM OURS (measured 2026-09-24).
+#:
+#: `note_free_limit_hit` records `calls_today()` -- the number of calls that produced a PARSEABLE
+#: COMPLETION and therefore a spend row -- as "the ceiling". OpenRouter counts REQUESTS: every
+#: parameter-degradation retry in `_post_with_degrade`, every 5xx from an overloaded upstream and
+#: every malformed reply is one of the day's thousand, and not one of them writes a ledger row.
+#: The two numbers are therefore never equal and ours is always the smaller.
+#:
+#: MEASURED ON THE TRADING BOX, BOTH SIDES IN ONE SITTING:
+#:     2026-09-23   desk ledger 460 calls   provider counted 1000   540 requests (54%) invisible
+#:     2026-09-24   desk ledger 789 calls   provider counted 1008   219 requests (22%) invisible
+#:
+#: WHAT THE CONFUSION COST, and it is why this function exists rather than a comment. The desk's
+#: own source files went on to quote the 09-23 reading as the account's CAPACITY -- "the provider
+#: refused at 458 calls", in `deepening_worker`'s module docstring, four times over -- and every
+#: plan sized against that number was sized against less than half the truth. A budget measured
+#: in the wrong unit does not read as wrong; it reads as a smaller desk.
+#:
+#: So the authoritative figure is asked for by name. `/key` returns `free_model_daily_requests`
+#: as {used, limit, remaining} and that is the provider's own arithmetic, not our inference from
+#: a refusal. It is a network call, so it is OPTIONAL everywhere: every caller falls back to the
+#: ledger-derived estimate, which is wrong in a known direction (low) rather than unavailable.
+PROVIDER_QUOTA = _ROOT / "data" / "llm_provider_quota.json"
+
+
+def provider_free_quota(seat: Seat | None = None, *, timeout: float = 20.0
+                        ) -> dict[str, Any]:
+    """The PROVIDER's free-request counter for today: {used, limit, remaining}. Never raises.
+
+    This is the only honest answer to "how much budget is left", because it is the number the
+    provider will actually refuse against. `free_budget_left()` derives its answer from the spend
+    ledger, which counts completions rather than requests and therefore over-reports what is left
+    by whatever fraction of the day went to retries and upstream errors -- 22% to 54% of it on the
+    two days measured.
+
+    Returns `{}` when the provider does not answer or does not publish the field, which is a
+    verdict (UNMEASURED) rather than a zero: a caller that cannot reach the provider must not
+    conclude the budget is gone.
+    """
+    s = seat or primary_seat()
+    if s is None:
+        return {}
+    body, err = _get(f"{s.base_url}/key", s.key, timeout=timeout)
+    if err:
+        return {"error": err[:200]}
+    data = body.get("data") if isinstance(body.get("data"), dict) else body
+    quota = data.get("free_model_daily_requests") if isinstance(data, dict) else None
+    if not isinstance(quota, dict):
+        return {}
+    out: dict[str, Any] = {"at": datetime.now(UTC).isoformat(timespec="seconds"),
+                           "date": datetime.now(UTC).strftime("%Y-%m-%d")}
+    for k in ("used", "limit", "remaining"):
+        raw = quota.get(k)
+        if raw is None:
+            continue
+        with contextlib.suppress(TypeError, ValueError):
+            out[k] = int(raw)
+    # The desk's own counter beside it, so the GAP is on the record rather than rediscovered.
+    ours = calls_today()
+    out["ledger_calls_today"] = ours
+    if isinstance(out.get("used"), int):
+        out["invisible_requests"] = max(0, int(out["used"]) - ours)
+        out["why"] = ("`used` counts REQUESTS (degradation retries, upstream 5xx and unparseable "
+                      "replies included); `ledger_calls_today` counts the subset that produced a "
+                      "completion. The difference is the day's waste and is the number to drive "
+                      "down -- it is free budget, recoverable without spending anything.")
+    with contextlib.suppress(OSError, TypeError, ValueError):
+        PROVIDER_QUOTA.parent.mkdir(parents=True, exist_ok=True)
+        PROVIDER_QUOTA.write_text(json.dumps(out, indent=1), encoding="utf-8")
+    return out
 
 
 def observed_free_ceiling(now: datetime | None = None) -> int | None:
@@ -407,18 +492,72 @@ def observed_free_ceiling(now: datetime | None = None) -> int | None:
         n = int(doc.get("ceiling"))
     except (TypeError, ValueError):
         return None
-    return n if n >= 0 else None
+    # A CEILING OF ZERO IS THE MIDNIGHT RACE, NOT A MEASUREMENT (fixed 2026-09-25, caught live).
+    #
+    # WHAT HAPPENED, to the second. At 00:00:03 UTC an organ made a free call. The desk's ledger
+    # had no rows for the new day yet, so `calls_today()` was 0. OpenRouter's own daily counter
+    # had NOT rolled -- the 429 body carried `X-RateLimit-Remaining: 0` with a reset stamp still
+    # in the future -- so the call was refused. `note_free_limit_hit` duly recorded
+    # `ceiling: 0` against the NEW date, and `free_daily_max()` then returned min(900, 0) = 0.
+    #
+    # THE DESK THEN LOCKED ITSELF OUT OF A WORKING BUDGET FOR TWENTY-FOUR HOURS. Every organ was
+    # refused by `free_budget_left()` before any HTTP request was made, reporting "free-tier
+    # daily request budget exhausted: 0 call(s) today against a 0 ceiling" -- which reads exactly
+    # like a provider limit. Measured eleven minutes later, the provider said `remaining: 987`.
+    # A three-second race at midnight costs the entire day's novel-mechanism discovery, silently,
+    # and it would have recurred every night.
+    #
+    # ZERO COMPLETIONS IS NOT EVIDENCE ABOUT TODAY. It says the refusal arrived before this desk
+    # had successfully called anything, which is a fact about YESTERDAY's exhaustion observed
+    # through a counter that had not yet rolled. So it is UNMEASURED rather than zero (L1.28a),
+    # and the configured default governs. If the provider really is still refusing, the next call
+    # takes its own 429 and records a ceiling that means something.
+    if n <= 0:
+        return None
+    return n
+
+
+#: The provider states its own limit in the 429 body's headers. Reading it is strictly better than
+#: inferring one, and it is the number that ends the "458/day" confusion for good.
+_LIMIT_HEADER = re.compile(r'"X-RateLimit-Limit"\s*:\s*"?(\d+)')
 
 
 def note_free_limit_hit(detail: str, now: datetime | None = None) -> None:
-    """Record that the provider refused a FREE call, and at what count. Never raises."""
+    """Record that the provider refused a FREE call, and at what count. Never raises.
+
+    TWO NUMBERS, LABELLED, BECAUSE THEY ARE IN DIFFERENT UNITS. `ceiling` is what the DESK had
+    counted when the refusal landed -- completions, from the spend ledger. `provider_limit` is
+    what the provider says its own allowance is, lifted straight out of the 429 body's
+    `X-RateLimit-Limit`. On 2026-09-23 those read 460 and 1000; the desk's own docstrings then
+    quoted the smaller one as the account's capacity and every plan sized against it was sized
+    against less than half the truth. Recording both, named, is what stops that happening again:
+    `ceiling` still governs the rest of the day (the refusal is real and more calls will not
+    work), but nobody reading the file can mistake it for the account's size.
+    """
     t = now or datetime.now(UTC)
-    row = {"date": t.strftime("%Y-%m-%d"), "ceiling": calls_today(t),
-           "observed_at": t.isoformat(timespec="seconds"), "detail": detail[:300],
-           "why": ("the provider refused a free request at this count. Until the UTC day rolls, "
-                   "free_daily_max() believes this number rather than the configured default -- "
-                   "an organ that keeps calling past a real ceiling spends its cadence on "
-                   "refusals and goes dark while its scheduler still reports healthy.")}
+    mine = calls_today(t)
+    row: dict[str, Any] = {
+        "date": t.strftime("%Y-%m-%d"), "ceiling": mine,
+        "ceiling_unit": "completions recorded by this desk (data/llm_spend.jsonl rows)",
+        "observed_at": t.isoformat(timespec="seconds"), "detail": detail[:300],
+        "why": ("the provider refused a free request at this count. Until the UTC day rolls, "
+                "free_daily_max() believes this number rather than the configured default -- "
+                "an organ that keeps calling past a real ceiling spends its cadence on "
+                "refusals and goes dark while its scheduler still reports healthy.")}
+    m = _LIMIT_HEADER.search(detail or "")
+    if m:
+        with contextlib.suppress(ValueError):
+            lim = int(m.group(1))
+            row["provider_limit"] = lim
+            row["provider_limit_unit"] = ("REQUESTS the provider counted, retries and upstream "
+                                          "errors included -- always >= `ceiling`")
+            row["invisible_requests"] = max(0, lim - mine)
+            row["read_this_one_for_capacity"] = (
+                f"the account's allowance is {lim} REQUESTS/day, not {mine}. The gap is this "
+                f"day's waste (degradation retries, 5xx, unparseable replies), which is free "
+                f"budget recoverable without spending a penny. Do NOT quote `ceiling` as the "
+                f"size of this desk's daily research allowance -- that error is what put "
+                f"'458 calls/day' into four docstrings.")
     try:
         FREE_CEILING.parent.mkdir(parents=True, exist_ok=True)
         FREE_CEILING.write_text(json.dumps(row, indent=1), encoding="utf-8")
@@ -435,7 +574,13 @@ def free_daily_max() -> int:
     # The MEASURED ceiling wins whenever it is lower, and only for the UTC day it was measured
     # on. It never raises the budget: a day that happened to stop early is not evidence the
     # provider will allow more tomorrow.
-    return min(configured, seen) if seen is not None else configured
+    resolved = min(configured, seen) if seen is not None else configured
+    # NEVER ZERO, BY THE SAME LAW THAT ALREADY GOVERNS THE CONFIGURED PATH. `QUANT_FREE_DAILY_MAX=0`
+    # floors at one because "a ceiling of zero would be a permanently dark desk"; a MEASURED zero
+    # is the same desk, equally dark, arrived at by a different road. `observed_free_ceiling`
+    # refuses zero outright now, so this is the belt to that braces -- a later change that
+    # reintroduces a zero from anywhere still cannot take the seat dark for a whole day.
+    return max(1, resolved)
 
 
 def calls_today(now: datetime | None = None) -> int:
@@ -486,9 +631,24 @@ def _is_daily_free_refusal(err: str) -> bool:
     return any(m in low for m in _DAILY_FREE_MARKERS)
 
 
+#: Ask the PROVIDER to guarantee a JSON object, rather than asking the model nicely in the prompt.
+#:
+#: WHY THIS IS WORTH A PARAMETER. Measured on the trading box 2026-09-24: of 789 completed seat
+#: calls, 456 (58%) were thrown away by the caller with "reply was not a JSON object" -- and the
+#: caller's parser is already lenient, stripping code fences and scanning from the first brace to
+#: the last, so a rejection means the reply contained no object AT ALL. Each of those cost one of
+#: the day's thousand requests and returned nothing. That is the single largest recoverable loss
+#: in this lane and it costs no money to recover: the same allowance, spent on replies that parse.
+#:
+#: It is OPT-IN because not every caller wants JSON, and it degrades rather than fails because a
+#: free model that has never implemented structured output must not go dark over it.
+JSON_OBJECT: dict[str, str] = {"type": "json_object"}
+
+
 def chat(
     prompt: str, *, system: str = "", seat: Seat | None = None, max_tokens: int = 8000,
     timeout: float = 240.0, temperature: float = 0.4, effort: str = DEFAULT_EFFORT,
+    response_format: dict[str, Any] | None = None,
 ) -> tuple[str, str | None]:
     """One completion at MAXIMUM reasoning effort. Returns (text, error) -- NEVER raises, so a
     cadenced organ survives it.
@@ -543,6 +703,8 @@ def chat(
                            "temperature": float(temperature)}
     if effort:
         req["reasoning_effort"] = effort
+    if response_format:
+        req["response_format"] = dict(response_format)
     body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
     if err:
         # A DAILY FREE-TIER REFUSAL IS EVIDENCE, NOT NOISE. Recording it teaches every later
@@ -555,13 +717,14 @@ def chat(
         text = str(body["choices"][0]["message"]["content"] or "")
     except (KeyError, IndexError, TypeError):
         return "", f"unparseable response: {json.dumps(body)[:200]}"
-    _record_spend(s, model, body.get("usage") or {})
+    _record_spend(s, model, body)
     return text, None
 
 
 def chat_messages(
     messages: list[dict[str, str]], *, seat: Seat | None = None, max_tokens: int = 8000,
     timeout: float = 240.0, temperature: float = 0.4, effort: str = DEFAULT_EFFORT,
+    response_format: dict[str, Any] | None = None,
 ) -> tuple[str, str | None]:
     """chat(), at the MESSAGES level -- the seam the push ladder needs.
 
@@ -601,6 +764,8 @@ def chat_messages(
                            "temperature": float(temperature)}
     if effort:
         req["reasoning_effort"] = effort
+    if response_format:
+        req["response_format"] = dict(response_format)
     body, err = _post_with_degrade(f"{s.base_url}/chat/completions", s.key, req, timeout=timeout)
     if err:
         # Same refusal, same lesson: chat_messages is the push ladder's seam and
@@ -612,7 +777,7 @@ def chat_messages(
         text = str(body["choices"][0]["message"]["content"] or "")
     except (KeyError, IndexError, TypeError):
         return "", f"unparseable response: {json.dumps(body)[:200]}"
-    _record_spend(s, model, body.get("usage") or {})
+    _record_spend(s, model, body)
     return text, None
 
 
@@ -705,7 +870,13 @@ def _get(url: str, key: str, *, timeout: float) -> tuple[dict[str, Any], str | N
 #: Parameters that a provider may reject, in the order they are given up. Effort goes LAST because
 #: it is the one the principal asked for; temperature and the token-cap spelling go first because
 #: their defaults are harmless.
-_DEGRADABLE = ("temperature", "max_completion_tokens", "reasoning_effort")
+#:
+#: `response_format` sits ahead of effort and behind the harmless two: a free model that does not
+#: implement structured output must not cost the caller its request, and a caller that asked for
+#: JSON still gets a reply it can attempt to parse. EVERY RETRY HERE IS ONE OF THE DAY'S THOUSAND
+#: REQUESTS -- see `provider_free_quota` -- so the ladder is ordered to be short in the common
+#: case, not to be thorough.
+_DEGRADABLE = ("temperature", "max_completion_tokens", "response_format", "reasoning_effort")
 
 
 def _post_with_degrade(url: str, key: str, req: dict[str, Any], *, timeout: float
@@ -756,17 +927,97 @@ def _send(req: urllib.request.Request, timeout: float) -> tuple[dict[str, Any], 
         # that is always actionable.
         with contextlib.suppress(Exception):
             detail = exc.read().decode("utf8", errors="ignore")[:300]
+        # AND IT MUST BE CLOSED. `HTTPError` is itself a response object holding a spooled
+        # temporary file; left to the collector it emits `ResourceWarning: Implicitly cleaning up
+        # <HTTPError ...>` from `tempfile.__del__` at an arbitrary later moment. The suite runs
+        # `filterwarnings = error`, so that stray warning fails whichever test happens to be
+        # executing when the collector gets to it -- which is how a genuine assertion
+        # (`test_a_key_never_appears_in_full_in_a_report`, and its assertions PASS) reported red
+        # for a leak that had nothing to do with keys. Every 4xx and 429 this desk takes goes
+        # through here, so on a day of rate-limit refusals it leaks one per refusal.
+        with contextlib.suppress(Exception):
+            exc.close()
         return {}, f"HTTP {exc.code}: {detail or exc.reason}"
     except Exception as exc:
         return {}, f"{type(exc).__name__}: {str(exc)[:160]}"
 
 
-def _record_spend(seat: Seat, model: str, usage: dict[str, Any]) -> None:
-    """Append-only, and it records what the PROVIDER reported rather than what we guessed."""
+def is_free_model(model: str) -> bool:
+    """True when the provider serves this model id at no charge."""
+    return model.lower().endswith((":free", "-free"))
+
+
+def calling_organ() -> str:
+    """Which organ is spending the seat. Env first, else the entry-point script's name.
+
+    WHY THE BUDGET NEEDS A NAME ON IT. One account holds ONE allowance of a thousand requests a
+    day, and every model organ on this desk draws from it first-come-first-served. Measured
+    2026-09-24: the allowance was gone by 01:42 UTC, so every audit, panel and recommendation
+    organ scheduled after that hour got a refusal that reads exactly like a provider outage --
+    and the recommendation ledger duly recorded seven new entries in twenty days, down from
+    dozens a week. Nothing in the ledger said WHO had spent it, because the ledger recorded the
+    provider's name (`openrouter`) and never the caller's, so the question could not even be
+    asked. A budget that cannot be attributed cannot be allocated.
+    """
+    named = os.environ.get("QUANT_LLM_ORGAN", "").strip()
+    if named:
+        return named[:64]
+    with contextlib.suppress(Exception):
+        stem = Path(sys.argv[0]).stem
+        if stem and stem not in ("-c", "", "python", "python3"):
+            return stem[:64]
+    return "unattributed"
+
+
+def _record_spend(seat: Seat, model: str, body: dict[str, Any]) -> None:
+    """Append-only, and it records what the PROVIDER reported rather than what we guessed.
+
+    A FREE CALL COSTS ZERO, AND BOOKING IT AS SPEND BRICKS THE PAID LANE (fixed 2026-09-24).
+    `_USD_PER_1K_TOKENS` is a deliberate over-estimate, which is the right error for a metered
+    call and a catastrophic one for a free model: the desk runs free-tier by default, so every
+    call was accruing phantom dollars against a $20 monthly cap. Measured on the trading box the
+    month this was found: $234.26 booked, $0.00 actually owed. Nothing had failed yet only
+    because `free_tier_only()` skips the cap check -- but that is precisely the switch the
+    principal flips to BUY more capacity, and flipping it would have taken every organ dark
+    inside one call with "monthly cap reached: $234.26 of $20.00". The landmine sat directly on
+    the upgrade path, armed by the safety feature.
+
+    WHAT ELSE IS RECORDED, and why each field is a number the desk was arguing about without it:
+    the ORGAN (so the one allowance can be attributed and therefore allocated), the COMPLETION and
+    REASONING token split, and `finish_reason`. That last pair is the live question: seat calls go
+    out at `reasoning_effort: high` under a 700-token completion cap, and a reasoning model that
+    spends the cap thinking returns empty content -- which every caller reports as "reply was not
+    a JSON object", 456 times on the day this was written, 58% of the day's completed calls.
+    Truncation and refusal are indistinguishable downstream; `finish_reason` distinguishes them at
+    the source, so the next pass measures the cause instead of inferring it.
+    """
+    raw_usage = body.get("usage")
+    usage: dict[str, Any] = raw_usage if isinstance(raw_usage, dict) else {}
     tok = int(usage.get("total_tokens") or 0)
-    row = {"utc": datetime.now(UTC).isoformat(timespec="seconds"), "seat": seat.name,
-           "model": model, "tokens": tok,
-           "usd": round(tok / 1000.0 * _USD_PER_1K_TOKENS, 5)}
+    free = is_free_model(model)
+    row: dict[str, Any] = {
+        "utc": datetime.now(UTC).isoformat(timespec="seconds"), "seat": seat.name,
+        "organ": calling_organ(), "model": model, "tokens": tok, "free": free,
+        # ZERO for a free model, and it is zero because it IS zero -- not a discount, not an
+        # assumption. The estimate is kept for metered models only, where erring high is right.
+        "usd": 0.0 if free else round(tok / 1000.0 * _USD_PER_1K_TOKENS, 5)}
+    for key in ("prompt_tokens", "completion_tokens"):
+        raw = usage.get(key)
+        if raw is not None:
+            with contextlib.suppress(TypeError, ValueError):
+                row[key] = int(raw)
+    det = usage.get("completion_tokens_details")
+    if isinstance(det, dict) and det.get("reasoning_tokens") is not None:
+        with contextlib.suppress(TypeError, ValueError):
+            row["reasoning_tokens"] = int(det["reasoning_tokens"])
+    choices = body.get("choices")
+    if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+        ch: dict[str, Any] = choices[0]
+        if ch.get("finish_reason"):
+            row["finish_reason"] = str(ch["finish_reason"])[:32]
+        msg = ch.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else None
+        row["empty_content"] = not str(content or "").strip()
     try:
         SPEND_LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with SPEND_LEDGER.open("a", encoding="utf-8") as fh:
