@@ -2,21 +2,16 @@
 from __future__ import annotations
 
 import json
-import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-_DESK = Path(__file__).resolve().parents[1]
-_ROOT = _DESK.parent.parent
-for p in (str(_DESK), str(_ROOT)):
-    if p not in sys.path:
-        sys.path.insert(0, p)
+from libs.data import pit_certificate as pit
+from libs.data import repo_mined_feeds as rmf
 
-from libs.data import pit_certificate as pit  # noqa: E402
-from libs.data import repo_mined_feeds as rmf  # noqa: E402
+_DESK = Path(__file__).resolve().parents[2] / "desks" / "mt5"
 
 NOW = datetime(2026, 9, 30, 12, tzinfo=UTC)
 
