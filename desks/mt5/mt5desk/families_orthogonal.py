@@ -2263,6 +2263,20 @@ FAMILY_INPUTS["exogenous_conditioner"] = (
     "a data pack's own published series, on its own available_time clock",
     "data/lake/series/<pack_id>.parquet")
 
+# THE MASS SCREEN'S GRAMMARS (2026-09-30). `research/mass_screen.py` generates and cheaply screens
+# rule cells in bulk and forwards only the FDR-controlled, cluster-deduplicated survivors through
+# the registry door; this is the constructor the sealed gauntlet rebuilds each one with. The five
+# names are grammars of one executable rule (`mt5desk.mass_screen_rules`), kept distinct so the
+# multiplicity ledger charges each grammar its own screened width. Price-only (the lead grammar
+# also reads its leader's parquet); every argument that defines the rule is required, so a
+# default-parameter sweep sets these aside instead of minting an unscreened rule.
+from mt5desk.mass_screen_rules import MASS_SCREEN_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(MASS_SCREEN_FAMILIES)
+for _ms_name in MASS_SCREEN_FAMILIES:
+    FAMILY_INPUTS[_ms_name] = ("price only (lead: the named leader's bars too)",
+                               "data/universe/*_H1.parquet")
+
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a
 # certificate: `family_cross_sectional` takes its peers as an argument and the sealed gauntlet's

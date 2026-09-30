@@ -26,14 +26,14 @@
   "LIVE": 125,
   "STALE": 1,
   "MISSING": 48,
-  "NEVER": 712,
+  "NEVER": 713,
   "UNMEASURED": 34
  },
  "scope": {
-  "attested": 920,
+  "attested": 921,
   "excluded": 421,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
-  "registry_components": 1341,
+  "registry_components": 1342,
   "declaration_defects": 4,
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
@@ -19119,6 +19119,31 @@
    "consumer": "UNMEASURED"
   },
   {
+   "organ": "leg:stage1_judge",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/stage1_judge.py"
+   ],
+   "clock": "hourly_cycle:stage1_judge",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/JUDGING_TWO_STAGE.json",
+   "artifact_declared": "desks/mt5/reports/JUDGING_TWO_STAGE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED"
+  },
+  {
    "organ": "leg:swap_rejudge",
    "kind": "leg",
    "code": [
@@ -23347,6 +23372,32 @@
    "summary": {},
    "progress_metric": "timer_runs",
    "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:mass_screen",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/hourly_cycle.py",
+    "desks/mt5/research/mass_screen.py"
+   ],
+   "clock": "hourly_cycle:mass_screen",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/MASS_SCREEN.json",
+   "artifact_declared": "desks/mt5/reports/MASS_SCREEN.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "libs/moat/registry.py enqueue_candidate -> libs/moat/docket_feed.py -> desks/mt5"
   }
  ],
  "ratchet": {
@@ -23355,6 +23406,6 @@
   "NEVER": 677,
   "at": "2026-09-30T14:33:34+00:00",
   "git_sha": "UNMEASURED",
-  "attested": 920
+  "attested": 921
  }
 }

@@ -953,7 +953,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "session_structure"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
-    **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
+    **dict.fromkeys(("search", "sweep", "breadth_sweep", "mass_screen", "compile_candidates",
+                     "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
@@ -975,6 +976,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
                      "fast_admission", "canon_publication", "placebo_audit", "judging_burndown",
+                     "stage1_judge",
                      "committees"),
                     "validate"),
     # macro: the cross-asset / macro brain
@@ -1625,6 +1627,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # truncates it at the same prefix every hour. `judging_throughput` must also finish BEFORE
     # the gauntlet leg it sizes, which is the other reason it is cheap by design.
     "judging_throughput": 400,
+    # THE MASS SCREEN stops starting symbols at its own --budget-s (MASS_SCREEN_BUDGET_S) and
+    # always writes its artifact; the cap sits above it for the reason `enrol_clocks` was raised.
+    "mass_screen": 1_080,
     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.
@@ -1675,6 +1680,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # a second; the trading box's million-row docket and ledger scale that linearly. The cap is
     # an order of magnitude above, so a doubled docket is never truncated at the same prefix.
     "judging_burndown": 600,
+    # THE TWO-STAGE JUDGE'S FIRST STAGE stops starting batches at its own --budget-s 600 and always
+    # writes JUDGING_TWO_STAGE.json; the cap sits above it so the cycle never kills it mid-write.
+    "stage1_judge": 780,
     # STATE ADMISSION reads the shadow ledgers and the live ledger and judges six dimensions; the
     # daily cycle measured it at 2.1 s. The cap is here so it HAS an entry rather than inheriting
     # SEARCH_BUDGET_SEC by accident, and it is set well above the measurement so a box with more
@@ -2614,6 +2622,22 @@ def breadth_sweep() -> dict:
     return _producer("breadth_sweep", "research/breadth_sweep.py", "--apply")
 
 
+#: The mass screen's own stopping point: it stops STARTING symbols once this is spent and always
+#: writes MASS_SCREEN.json; `LEG_BUDGET_SEC["mass_screen"]` sits above it so the cycle never kills
+#: it mid-write. Its workers are derived inside the organ from MEASURED free cores (psutil).
+MASS_SCREEN_BUDGET_S = 900
+
+
+def mass_screen() -> dict:
+    """`mass_screen`: generate and cheaply screen rule cells in bulk (grammar x symbol x horizon x
+    threshold x side) on the TRAINING window only, charge every screened cell to
+    MASS_SCREEN_TRIALS.jsonl, and forward the BH-FDR, 3x-cost-stressed, day-deduplicated survivors
+    through the registry door into the judge's docket. Artifact: reports/MASS_SCREEN.json."""
+    return _producer("mass_screen", "research/mass_screen.py", "--once",
+                     "--budget-s", "900")  # == MASS_SCREEN_BUDGET_S, literal so the
+    # component registry can read the production args statically (pinned by test_mass_screen)
+
+
 def search() -> dict:
     """`edge_search`: the family-free hypothesis search. NOT SCHEDULED ANYWHERE BEFORE THIS.
 
@@ -3431,6 +3455,10 @@ def main() -> None:
     m = _costed("mine", mine)
     se = _costed("search", search)
     bs = _costed("breadth_sweep", breadth_sweep)
+    # THE MASS SCREEN (2026-09-30): millions of rule cells a day screened on the training window
+    # only, every one charged as a trial, and only the FDR survivors forwarded to the judge. It
+    # runs BEFORE `merge_docket` so the survivors it enqueues reach the docket the same pass.
+    msc = _costed("mass_screen", mass_screen)
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     myd = _costed("mutation_yield", mutation_yield)
@@ -4467,6 +4495,17 @@ def main() -> None:
     # the environment `_producer` hands the gauntlet subprocess. The plan is floored at what the
     # sealed file would pick unaided, so this can never throttle the judge, and the live terminal
     # always wins (it stands down to that floor, never below it).
+    # THE TWO-STAGE JUDGE, STAGE 1 (principal 2026-09-30: "we need judging like 100-500k a day").
+    # A charged, formal first ruling on EVERY never-judged docket cell from its training window
+    # only (before the sealed walk-forward test region and the lockbox), BH at q=0.05 over the
+    # run and the 3x spread stress; every evaluated cell is a trial in STAGE1_TRIALS.jsonl.
+    # Survivors go to `data/hypotheses/priority_stage1.json`, which the warmer reads to put them
+    # at the front of what the judge rules on, behind v4 re-mint and evicted re-judges. AFTER the
+    # docket merge so it sees this hour's cells, and BEFORE `judging_throughput`, which embeds its
+    # summary. Workers from psutil-measured idle cores and free memory. Artifact:
+    # reports/JUDGING_TWO_STAGE.json.
+    s1j = _costed("stage1_judge", lambda: _producer(
+        "stage1_judge", "research/stage1_judge.py", "--once", "--budget-s", "600"))
     jth = _costed("judging_throughput", lambda: _producer(
         "judging_throughput", "research/judging_throughput.py", "--once", "--budget-s", "300"))
     try:
@@ -5159,7 +5198,8 @@ def main() -> None:
                     "health": h, "tape": t, "state_vector": s, "daily": d,
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
-                    "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
+                    "search": se, "breadth_sweep": bs, "mass_screen": msc,
+                    "candidate_conservation": ccv,
                     "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
@@ -5319,7 +5359,7 @@ def main() -> None:
                     "judging_throughput": jth, "duty_cycle": dcy, "forward_enrolment": fen,
                     "certificate_clock_law": ccl,
                     "external_gauntlet": gt, "fast_admission": fa,
-                    "canon_publication": cpub, "judging_burndown": jbd,
+                    "canon_publication": cpub, "judging_burndown": jbd, "stage1_judge": s1j,
                     "falsifier_run": fz, "merge_docket": mh,
                     "backtest": bt,
                     "wiring_audit": wa, "brain_ab": ab, "alpha_breadth": cm,

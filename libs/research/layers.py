@@ -182,6 +182,9 @@ LEG_LAYER: dict[str, str] = {
     # The breadth sweep mints cells for every unbanned family on every chart the desk holds bars
     # for -- a predictor search, scheduled hourly since the discovery hunt was banned (2026-09-16).
     "breadth_sweep": "prediction",
+    # The mass screen generates and screens rule cells by the million and forwards the FDR
+    # survivors to the judge -- a predictor search at scale: prediction.
+    "mass_screen": "prediction",
     # Whether the allocator's book reaches the sleeves it funds is a measurement of the desk's
     # own wiring, like `wiring_audit`: meta.
     "allocator_join": "meta",
@@ -288,6 +291,9 @@ LEG_LAYER: dict[str, str] = {
     # other guarantees every certificate gets a forward clock the moment it is minted. They are
     # the machine that runs the machine -- throughput and evidence plumbing, not edge.
     "judging_throughput": "meta", "forward_enrolment": "meta", "judging_burndown": "meta",
+    # STAGE 1 OF THE TWO-STAGE JUDGE rules on every backlog cell from its training window and
+    # forwards the FDR survivors to the sealed gauntlet -- a predictor screen: prediction.
+    "stage1_judge": "prediction",
     # META for the same reason, and it is the one that measures whether the other two are even
     # being reached: what fraction of the day the desk actually mints and judges, against the best
     # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.

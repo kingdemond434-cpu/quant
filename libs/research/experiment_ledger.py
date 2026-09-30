@@ -77,6 +77,49 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     return total, by_fam
 
 
+#: THE MASS SCREEN'S TRIAL LEDGER (desks/mt5/research/mass_screen.py). Every rule cell it screens
+#: -- the millions that never reach a judge included -- is counted in a row's `cells_screened`,
+#: per grammar family. A screen that looked at a cell has TESTED it, however cheaply, so the count
+#: joins the lifetime total here and the per-family count the winner's-curse shrinkage reads.
+MASS_SCREEN_TRIALS = DESK / "data" / "MASS_SCREEN_TRIALS.jsonl"
+
+
+def _mass_screen_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
+    """(cells screened, per family) from the mass screen's ledger. Dry runs are not trials of the
+    desk's search and are skipped. Absent ledger: (0, {}) -- nothing was screened."""
+    total = 0
+    by_fam: dict[str, int] = {}
+    try:
+        lines = (path or MASS_SCREEN_TRIALS).read_text("utf-8").splitlines()
+    except OSError:
+        return 0, {}
+    for ln in lines:
+        if not ln.strip():
+            continue
+        try:
+            row = json.loads(ln)
+            if not isinstance(row, dict) or row.get("dry_run"):
+                continue
+            k = int(row.get("cells_screened") or 0)
+        except (ValueError, TypeError):
+            continue
+        fam = str(row.get("family") or "mass_screen")
+        total += k
+        by_fam[fam] = by_fam.get(fam, 0) + k
+    return total, by_fam
+
+
+#: STAGE 1 OF THE TWO-STAGE JUDGE (desks/mt5/research/stage1_judge.py). Every backlog cell it
+#: screens on its training window is a trial of that cell's family, whether it passes to the sealed
+#: gauntlet or not; per-run, per-family rows carry `cells_screened` in the mass screen's schema.
+STAGE1_TRIALS = DESK / "data" / "STAGE1_TRIALS.jsonl"
+
+
+def _stage1_counts(path: Path | None = None) -> tuple[int, dict[str, int]]:
+    """(cells screened, per family) from stage 1's ledger; same reader as the mass screen's."""
+    return _mass_screen_counts(path or STAGE1_TRIALS)
+
+
 def _prereg_counts() -> int:
     try:
         from libs.research.preregistration import cards
@@ -88,15 +131,27 @@ def _prereg_counts() -> int:
 def lifetime(write: bool = True) -> dict[str, Any]:
     g_total, g_fam = _graph_counts()
     p_total, p_fam = _proposer_counts()
+    m_total, m_fam = _mass_screen_counts()
+    for fam, k in m_fam.items():
+        p_fam[fam] = p_fam.get(fam, 0) + k
+    p_total += m_total
+    s_total, s_fam = _stage1_counts()
+    for fam, k in s_fam.items():
+        p_fam[fam] = p_fam.get(fam, 0) + k
+    p_total += s_total
     prereg = _prereg_counts()
     fams = sorted(set(g_fam) | set(p_fam))
     by_fam = {f: int(g_fam.get(f, 0) + p_fam.get(f, 0)) for f in fams}
     doc = {"generated_utc": datetime.now(tz=UTC).isoformat(),
            "lifetime_trials": int(g_total + p_total),
            "judged_cells": g_total, "screened_cells": p_total, "preregistered_cards": prereg,
+           "mass_screen_cells": m_total,
+           "stage1_cells": s_total,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
-                    "tests_run); consumers may only deflate MORE with it, never less")}
+                    "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and "
+                    "every stage-1 cell in STAGE1_TRIALS.jsonl); "
+                    "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1), "utf-8")
