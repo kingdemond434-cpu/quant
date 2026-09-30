@@ -14,12 +14,14 @@ cells and adds nothing here for them. Four mechanisms had no family at all:
       currency on somebody else's schedule (Brunnermeier, Nagel & Pedersen 2008, "Carry Trades
       and Currency Crashes"). `harvest` holds the positive-swap side while the RISK PROXY is calm;
       `unwind` takes the anti-carry side on the day the proxy's trailing return breaks down.
-      Payer: the levered carry holder who must deleverage.
+      Payer: the levered carry holder who must deleverage. NOT PRICE-ONLY: EXOGENOUS (swap
+      terms) and CONDITIONED on the risk proxy -- see `INFORMATION_CLASS`.
   month_end_rebalance   Indices. A balanced fund with fixed equity/bond weights must sell the
       asset that outperformed over the month and buy the one that lagged, and does so in the
       last days of the month (the pension-rebalancing flow). The side is AGAINST the month-to-
       date equity-minus-bond return, read as of the decision bar. Payer: the fixed-weight
       allocator. `turn_of_month` bets on the calendar; this bets on the flow's direction.
+      NOT PRICE-ONLY: CONDITIONED on the bond proxy's bars.
   seasonal_window       Softs. A weather or crop-cycle risk premium is priced into a fixed
       stretch of the calendar and bled out as the risk resolves -- the US corn/soy pollination
       premium that decays through July-August, the Brazilian coffee frost season, the West
@@ -458,13 +460,59 @@ SPECIALIST_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "entry_conditioned": family_entry_conditioned,
 }
 
+#: WHAT KIND OF INFORMATION EACH FAMILY BETS ON -- and it is NOT price for two of them.
+#:
+#: `carry_risk_off` and `month_end_rebalance` were first registered beside `seasonal_window` as
+#: if all three were bar-only: `gauntlet_buildability` read their foreign series as ordinary
+#: parameters and said the gauntlet "supplies every data input it reads", which is the verdict a
+#: price-only family gets. They are not price-only. `carry_risk_off` reads a DATASET the bars do
+#: not carry (the venue's recorded swap terms, `data/tape/contract_terms`) and conditions on a
+#: second instrument's path (the risk proxy); `month_end_rebalance` conditions on the bond
+#: proxy's month-to-date return. So:
+#:
+#:   exogenous    the family reads a dataset that is not a price series (swap terms)
+#:   conditioned  the family conditions the traded instrument on ANOTHER instrument's bars
+#:   price_only   the traded instrument's own bars and the calendar, nothing else
+#:
+#: `FOREIGN_SERIES` names, per family, the PARAMETER that names each foreign series and the
+#: dataset it is read from, so a reader (buildability, the report, the forward clock's needs
+#: text) sees the input by name rather than inferring it from prose. `entry_conditioned` is
+#: conditioned only when its cell names a `cond_symbol`; otherwise it is its base's information.
+INFORMATION_CLASS: dict[str, str] = {
+    "carry_risk_off": "exogenous",
+    "month_end_rebalance": "conditioned",
+    "seasonal_window": "price_only",
+    "entry_conditioned": "conditioned",
+}
+FOREIGN_SERIES: dict[str, tuple[tuple[str | None, str], ...]] = {
+    "carry_risk_off": ((None, "data/tape/contract_terms (swap terms, as `family_carry` reads "
+                              "them through families_orthogonal._swap_terms)"),
+                       ("risk_symbol", "data/universe/<risk_symbol>_H1.parquet")),
+    "month_end_rebalance": (("bond_symbol", "data/universe/<bond_symbol>_H1.parquet"),),
+    "seasonal_window": (),
+    "entry_conditioned": (("cond_symbol", "data/universe/<cond_symbol>_H1.parquet"),),
+}
+
+
+def information_class(family: str, params: dict[str, Any] | None = None) -> str | None:
+    """`exogenous` / `conditioned` / `price_only` for a specialist family, None for any other.
+    `entry_conditioned` with no `cond_symbol` filters on its own bars' hour, weekday or regime,
+    so that cell alone is `price_only`."""
+    fam = str(family or "")
+    if fam == "entry_conditioned" and params is not None and not params.get("cond_symbol"):
+        return "price_only"
+    return INFORMATION_CLASS.get(fam)
+
+
 #: What each family reads, for `families_orthogonal.FAMILY_INPUTS`.
 INPUTS: dict[str, tuple[str, str]] = {
-    "carry_risk_off": ("the venue's recorded swap terms (as `carry`) and the RISK PROXY named by "
-                       "`risk_symbol`, read as of each decision bar from the bar store",
+    "carry_risk_off": ("EXOGENOUS: the venue's recorded swap terms (data/tape/contract_terms, as "
+                       "`carry`) and CONDITIONED on the RISK PROXY named by `risk_symbol`, read "
+                       "as of each decision bar from the bar store -- not price-only",
                        "data/universe/<risk_symbol>_H1.parquet"),
-    "month_end_rebalance": ("the bond proxy named by `bond_symbol`, read as of each decision bar "
-                            "from the bar store", "data/universe/<bond_symbol>_H1.parquet"),
+    "month_end_rebalance": ("CONDITIONED on the bond proxy named by `bond_symbol`, read as of "
+                            "each decision bar from the bar store -- not price-only",
+                            "data/universe/<bond_symbol>_H1.parquet"),
     "seasonal_window": ("price only + the window and side the cell declares",
                         "data/universe/*_H1.parquet"),
     "entry_conditioned": ("the base cell's own inputs, plus `cond_symbol` from the bar store when "
@@ -474,9 +522,11 @@ INPUTS: dict[str, tuple[str, str]] = {
 
 #: Charts each daily-decision family can express, for `families_orthogonal.FAMILY_TIMEFRAMES`.
 TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
-    name: (("H1",), "decides once a day at a broker decision HOUR and reads its foreign series "
-                    "from the H1 store; on a four-hour or daily chart the decision hour does not "
-                    "exist, and below the hour the foreign series would be joined to a finer "
-                    "clock than it carries")
-    for name in ("carry_risk_off", "month_end_rebalance", "seasonal_window")
+    **dict.fromkeys(("carry_risk_off", "month_end_rebalance"),
+                    (("H1",), "decides once a day at a broker decision HOUR and reads its "
+                              "foreign series from the H1 store; on a four-hour or daily chart "
+                              "the decision hour does not exist, and below the hour the foreign "
+                              "series would be joined to a finer clock than it carries")),
+    "seasonal_window": (("H1",), "decides once a day at a broker decision HOUR; on a four-hour or "
+                                 "daily chart the decision hour does not exist"),
 }

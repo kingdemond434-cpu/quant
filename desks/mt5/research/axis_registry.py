@@ -185,6 +185,10 @@ _FAMILY_GROUPS: dict[str, str] = {
     # bets on a fixed-weight allocator's flow against the equity-minus-bond gap; a crop-cycle
     # window is a calendar-constrained hedger's premium. `entry_conditioned` is an OPERATOR over a
     # base cell, like `exit_operated`: its mechanism is its base's, so no single row names it.
+    # NEITHER OF THE FIRST TWO IS PRICE-ONLY: carry_risk_off reads the swap terms (exogenous) and
+    # a risk proxy's bars; month_end_rebalance conditions on a bond proxy's bars. Their
+    # information source is `carry` / `cross_asset` here and `exogenous` / `conditioned` in
+    # `gauntlet_buildability.information_class`; a test pins that neither reads `price_only`.
     "forced_liquidation carry market": "carry_risk_off",
     "calendar_seasonality cross_asset market": "month_end_rebalance",
     "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"

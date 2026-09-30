@@ -388,6 +388,50 @@ def measure(sym: str, family: str, params: dict[str, Any], meta: dict[str, Any]
     return {"built": True, **got}
 
 
+def breadth_unit(klass: str, mechanism: str) -> str:
+    """ONE MECHANISM IS ONE BREADTH UNIT, however many (symbol, parameter) points it is minted on.
+
+    Measured 2026-09-30: 352 of the 370 cells that cleared the floor were `wmr_fix_reversal` --
+    one participant (the benchmark tracker at the WMR fix) on 22 FX symbols x 16 parameter
+    points. Counted as cells, the organ reported 370 units of breadth; counted as independent
+    bets it had two or three. Every cell is still measured, charged to the trial census and
+    donated (no mining is reduced); breadth is counted by this key."""
+    return f"{klass}/{mechanism}"
+
+
+def family_grids(cells: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Per breadth unit: the family, and the DISTINCT symbols and parameter points it spans --
+    one family grid per mechanism, never one breadth unit per cell."""
+    out: dict[str, dict[str, Any]] = {}
+    pts: dict[str, set[str]] = {}
+    syms: dict[str, set[str]] = {}
+    fams: dict[str, set[str]] = {}
+    for c in cells:
+        u = breadth_unit(str(c["klass"]), str(c["mechanism"]))
+        pts.setdefault(u, set()).add(json.dumps(c["params"], sort_keys=True, default=str))
+        syms.setdefault(u, set()).add(str(c["symbol"]))
+        fams.setdefault(u, set()).add(str(c["family"]))
+        out.setdefault(u, {"cells": 0})["cells"] += 1
+    for u, row in out.items():
+        row.update({"families": sorted(fams[u]), "symbols": len(syms[u]),
+                    "param_points": len(pts[u])})
+    return dict(sorted(out.items(), key=lambda kv: -int(kv[1]["cells"])))
+
+
+def breadth(cells: list[dict[str, Any]]) -> dict[str, Any]:
+    """k-style breadth of a set of cells: the number of distinct MECHANISMS, beside the raw cell
+    count and the largest mechanism's share, so a grid cannot pass for independent bets."""
+    grids = family_grids(cells)
+    top = next(iter(grids.items()), (None, {"cells": 0}))
+    return {"cells": len(cells), "breadth_k": len(grids),
+            "largest_unit": top[0], "largest_unit_share": (round(top[1]["cells"] / len(cells), 4)
+                                                           if cells else 0.0),
+            "family_grids": grids,
+            "rule": ("breadth counts a mechanism ONCE (asset-class desk / mechanism); its "
+                     "symbols and parameter points are one family grid. Every cell is still "
+                     "charged to the trial census and donated")}
+
+
 def charge(cells: list[dict[str, Any]]) -> dict[str, Any]:
     """This pass's multiplicity, priced by the desk's effective-trial ledger over every cell
     MEASURED -- the specialist's whole search, not only what cleared the floor."""
@@ -441,6 +485,7 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
     no_bars: set[str] = set()
     measured_now: list[dict[str, Any]] = []
     cands: list[dict[str, Any]] = []
+    clearing: list[dict[str, Any]] = []
     stopped = "catalogue exhausted"
     for c in cells:
         key = (c["klass"], c["mechanism"])
@@ -480,6 +525,8 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
             row["built_but_zero_signals"] += 1
         ok = int(prior.get("trade_days_lb") or 0) >= SEED_FLOOR
         row["clears_floor" if ok else "held_back_under_floor"] += 1
+        if ok:
+            clearing.append(c)
         if ok and not prior.get("donated_at"):
             cands.append({**c, "ident": ident,
                           "firing": {k: prior.get(k) for k in ("signal_days", "trade_days_lb")}})
@@ -495,8 +542,14 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
              "asset_class_desk": c["klass"], "specialist_mechanism": c["mechanism"],
              "built_by": "external_gauntlet.build_cell (sealed), measured on its own output"})
             for c in cands]
+        grids = family_grids(cands)
         for row, c in zip(out_rows, cands, strict=True):
             row.update({k: c[k] for k in CULTURE_KEYS})
+            # One family grid per mechanism: every row of it names the same unit, so a reader
+            # of the donation counts the mechanism once however many cells it carries.
+            unit = breadth_unit(c["klass"], c["mechanism"])
+            row["breadth_unit"] = unit
+            row["family_grid"] = {"id": unit, **grids[unit]}
         path = pc.donate(SOURCE, out_rows, len(measured_now) or len(out_rows))
         counts = pc.donation_counts()
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
@@ -525,6 +578,8 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
         "cells_in_catalogue": len(cells), "measured_this_pass": len(measured_now),
         "candidates_this_pass": len(cands), "donation": donation,
         "trial_charge_this_pass": charge(measured_now),
+        "breadth_clearing_floor": breadth(clearing),
+        "breadth_donated_this_pass": breadth(cands),
         "by_mechanism": by_mech,
         "set_aside_unbuildable": dict(set_aside.most_common(40)),
         "input_gaps": dict(input_gaps.most_common(40)),
@@ -570,10 +625,13 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
     new_families = {}
     try:
         from mt5desk.families_specialist import INPUTS
-        from research.gauntlet_buildability import family_verdict
+        from research.gauntlet_buildability import family_verdict, foreign_series, \
+            information_class
         for fam in INPUTS:
             v, why = family_verdict(fam)
-            new_families[fam] = {"verdict": v, "why": why, "inputs": INPUTS[fam][0]}
+            new_families[fam] = {"verdict": v, "why": why, "inputs": INPUTS[fam][0],
+                                 "information": information_class(fam),
+                                 "foreign_series": foreign_series(fam)}
     except Exception as exc:
         new_families = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     return {

@@ -328,6 +328,23 @@ def runner_scripts() -> dict[str, str]:
 
 
 # ------------------------------------------------------------------ measurement
+def breadth_unit(r: dict[str, Any]) -> str:
+    """The MECHANISM a donated row belongs to -- the unit breadth counts ONCE.
+
+    A producer that sweeps one mechanism over many symbols and parameter points (specialist_cell's
+    wmr_fix_reversal: 352 of its 370 floor-clearing cells, 2026-09-30) mints ONE independent bet,
+    not 352. The row's own declared unit wins (`breadth_unit`, or its `family_grid` id); then the
+    specialist mechanism in its evidence; then its family. Cells are still counted as cells."""
+    unit = r.get("breadth_unit")
+    grid = r.get("family_grid")
+    if not unit and isinstance(grid, dict):
+        unit = grid.get("id")
+    ev = r.get("evidence") if isinstance(r.get("evidence"), dict) else {}
+    if not unit and ev.get("specialist_mechanism"):
+        unit = f"{ev.get('asset_class_desk') or ''}/{ev['specialist_mechanism']}".lstrip("/")
+    return str(unit or r.get("family") or "")
+
+
 def _row_facts(r: dict[str, Any]) -> tuple[list[str], str, str, str, dict[str, Any]]:
     params = r.get("params") if isinstance(r.get("params"), dict) else {}
     syms = r.get("symbols") if isinstance(r.get("symbols"), list) else None
@@ -350,13 +367,15 @@ class Tally:
         self.charts: Counter[str] = Counter()
         self.sessions: Counter[str] = Counter()
         self.families: Counter[str] = Counter()
+        #: cells per breadth UNIT (a mechanism): `len(units)` is the producer's k-style breadth
+        self.units: Counter[str] = Counter()
         self.buildable = 0
         self.last: datetime | None = None
         self.verdicts: Counter[str] = Counter()
 
     def add(self, at: datetime | None, now: datetime, syms: list[str], tf: str, sess: str,
             fam: str, params: dict[str, Any] | None, n: int = 1,
-            n24: int | None = None) -> None:
+            n24: int | None = None, unit: str | None = None) -> None:
         """Count `n` cells stamped `at`. `n24` overrides the 24h share when the caller already
         knows it (a registry group spans many stamps); otherwise it follows `at`."""
         if at is None or at < now - timedelta(days=7):
@@ -371,6 +390,8 @@ class Tally:
         self.sessions[sess] += n
         if fam:
             self.families[fam] += n
+        if unit or fam:
+            self.units[str(unit or fam)] += n
         verdict = _verdict(fam, params, tf)
         self.verdicts[verdict] += n
         if verdict == "BUILDABLE":
@@ -497,7 +518,7 @@ def from_seats(seats: list[str], now: datetime, budget: dict[str, int]) -> tuple
         gen = _parse_ts(doc.get("generated_at")) if isinstance(doc, dict) else None
         for r in _rows_of(doc):
             syms, tf, sess, fam, params = _row_facts(r)
-            t.add(gen or at, now, syms, tf, sess, fam, params)
+            t.add(gen or at, now, syms, tf, sess, fam, params, unit=breadth_unit(r))
     why = f"{len(files) - skipped} seat file(s) in 7d"
     if skipped:
         why += f"; {skipped} over the byte budget left UNMEASURED"
@@ -522,6 +543,7 @@ def from_artifact(name: str, now: datetime) -> tuple[Tally, str]:
             t.charts.update({str(k): int(v) for k, v in (doc.get("charts") or {}).items()})
             t.sessions.update({str(k): int(v) for k, v in (doc.get("sessions") or {}).items()})
             t.families.update({str(k): int(v) for k, v in fams.items()})
+            t.units.update({str(k): int(v) for k, v in fams.items()})
             if at and at >= now - timedelta(days=7):
                 t.n7 += n
                 t.n24 += n if at >= now - timedelta(hours=24) else 0
@@ -533,7 +555,7 @@ def from_artifact(name: str, now: datetime) -> tuple[Tally, str]:
             return t, f"{p.name} (cells merged this pass; breadth = cells built)"
         for r in _rows_of(doc):
             syms, tf, sess, fam, params = _row_facts(r)
-            t.add(at, now, syms, tf, sess, fam, params)
+            t.add(at, now, syms, tf, sess, fam, params, unit=breadth_unit(r))
         return t, f"{p.name}"
     return t, f"{UNMEASURED}: {name} absent"
 
@@ -620,6 +642,12 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
             "last_run": tally.last.isoformat(timespec="seconds") if tally.last else None,
             "cells_24h": tally.n24 if measured_ok else UNMEASURED,
             "cells_7d": tally.n7 if measured_ok else UNMEASURED,
+            # k-style breadth: distinct MECHANISMS minted in 7d. A grid of one mechanism over
+            # many symbols and parameter points is one unit here and many cells above.
+            "breadth_k": len(tally.units) if measured_ok else UNMEASURED,
+            "largest_unit_share": (round(max(tally.units.values()) / sum(tally.units.values()), 4)
+                                   if measured_ok and tally.units else UNMEASURED),
+            "units": dict(tally.units.most_common()),
             "measured_from": measured,
             "covered": {"symbols": len(tally.symbols), "charts": dict(tally.charts),
                         "sessions": dict(tally.sessions), "families": dict(tally.families)},
@@ -668,6 +696,10 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "unmeasured": sorted(n for n, r in rows.items() if not isinstance(r["cells_7d"], int)),
         "cells_24h": sum(int(r["cells_24h"]) for r in measured),
         "cells_7d": sum(int(r["cells_7d"]) for r in measured),
+        "breadth_k": len({u for r in measured for u in (r.get("units") or {})}),
+        "breadth_rule": ("breadth_k counts each mechanism ONCE (a producer's declared "
+                         "breadth_unit / family_grid, else the family); cells_24h/7d still count "
+                         "every cell, and every cell is still charged to the trial census"),
         "lane_symbols": len(lane) if lane else UNMEASURED,
         "clusters_fed_buildable_7d": dict(sorted(fed.items())),
         "clusters_fed_by": {c: sorted(v) for c, v in sorted(fed_by.items())},

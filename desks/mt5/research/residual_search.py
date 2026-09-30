@@ -754,6 +754,51 @@ def cited() -> dict[str, Any]:
     return out
 
 
+# ============================================================================ the clock ===
+def data_window(trades: list[dict[str, Any]]) -> dict[str, Any]:
+    """The entry-stamp window the search read, on the bar clock AND in true UTC.
+
+    THE HOUR AXIS IS BROKER TIME. A trade's `t` is the venue's bar stamp (New York + 7 h under a
+    UTC label, `libs.regime.session_clock`), so `hour=16` means the 16:00 BAR, which is 13:00 UTC
+    while New York is on daylight time and 14:00 UTC otherwise. The window is published both ways
+    so a finding can be re-derived from the same ledgers and read in real time."""
+    if not trades:
+        return {"status": UNMEASURED, "why": "no trades"}
+    ts = pd.DatetimeIndex([t["t"] for t in trades])
+    out: dict[str, Any] = {"first_entry_bar_stamp": ts.min().isoformat(),
+                           "last_entry_bar_stamp": ts.max().isoformat(),
+                           "n_trades": len(trades),
+                           "hour_axis": "broker hour of the entry bar stamp (venue clock, "
+                                        "New York + 7 h), NOT UTC"}
+    try:
+        from libs.regime import session_clock
+        u = session_clock.server_to_utc(ts)
+        out.update({"first_entry_utc": u.min().isoformat(), "last_entry_utc": u.max().isoformat(),
+                    "clock_model": f"session_clock.server_to_utc ({session_clock.SERVER_TZ} "
+                                   f"+ {getattr(session_clock, 'SERVER_SHIFT_H', 0)} h)"})
+    except Exception as exc:                                  # pragma: no cover - path
+        out["utc"] = f"{UNMEASURED}: session_clock unavailable ({type(exc).__name__})"
+    return out
+
+
+def _true_utc_of_hour_findings(trades: list[dict[str, Any]], findings: list[dict[str, Any]]
+                               ) -> None:
+    """Annotate each broker-HOUR finding with the true UTC hours its trades entered at."""
+    try:
+        from libs.regime import session_clock
+    except Exception:                                         # pragma: no cover - path
+        return
+    for f in findings:
+        if f.get("axis") != "hour":
+            continue
+        members = [t["t"] for t in trades if t.get("hour") == f["bucket"]]
+        if not members:
+            continue
+        hours = session_clock.server_to_utc(pd.DatetimeIndex(members)).hour
+        f["broker_hour"] = f["bucket"]
+        f["true_utc_hours"] = {int(h): int(n) for h, n in sorted(Counter(hours).items())}
+
+
 # ==================================================================================== run ===
 def build(*, dry_run: bool = False, budget_s: float = 600.0) -> dict[str, Any]:
     started = time.monotonic()
@@ -765,7 +810,8 @@ def build(*, dry_run: bool = False, budget_s: float = 600.0) -> dict[str, Any]:
                   "conditioned cells go to the gauntlet through the proposer door, and its "
                   "counterfactuals are read by research/residual_queue.py, never by the gateway, "
                   "promoter, admission or allocator"),
-        "inputs": {**notes, "certified_parent_specs": len(specs)},
+        "inputs": {**notes, "certified_parent_specs": len(specs),
+                   "data_window": data_window(trades)},
     }
     if len(trades) < MIN_BUCKET_N:
         doc["residual"] = {"status": UNMEASURED,
@@ -776,6 +822,7 @@ def build(*, dry_run: bool = False, budget_s: float = 600.0) -> dict[str, Any]:
         model = residualise(trades, specs)
         labels = label(trades)
         found = search(trades)
+        _true_utc_of_hour_findings(trades, found["findings"])
         kids, skipped = children(trades, found["findings"], specs)
         doc["residual"] = {"status": "MEASURED", "model": model, "labels": labels, **found,
                            "conditioned_cells": emit(kids, dry_run=dry_run,

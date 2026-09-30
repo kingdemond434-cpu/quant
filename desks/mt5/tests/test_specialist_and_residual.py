@@ -103,6 +103,48 @@ def test_clusters_and_sweep_exclusion():
         assert name in osw.NOT_SOURCED_HERE
 
 
+def test_carry_risk_off_and_month_end_rebalance_are_not_price_only():
+    """Both read another series, so neither may carry the price-only label anywhere: the
+    buildability census, the axis registry's information source, or FAMILY_INPUTS' sentinel."""
+    from research import axis_registry, gauntlet_buildability as gb
+    assert gb.information_class("carry_risk_off") == gb.EXOGENOUS
+    assert gb.information_class("month_end_rebalance") == gb.CONDITIONED
+    assert gb.information_class("seasonal_window") == gb.PRICE_ONLY
+    for fam, param in (("carry_risk_off", "risk_symbol"), ("month_end_rebalance", "bond_symbol")):
+        assert axis_registry.classify_family(fam)[1] != "price_only"
+        assert not fo.FAMILY_INPUTS[fam][0].lower().startswith("price only")
+        assert fo.FAMILY_INPUTS[fam][1] is not None           # shadow_forward: not replayable
+        assert param in [k for k, _ in fs.FOREIGN_SERIES[fam]]
+        why = gb.family_verdict(fam)[1]
+        assert "not price-only" in why and "supplies every data input" not in why
+        assert gb.census()[fam]["information"] != gb.PRICE_ONLY
+    assert any("contract_terms" in path for path in gb.foreign_series("carry_risk_off"))
+    # a cell that names an empty series would read nothing: refused by name, never built blind
+    v, why = gb.cell_verdict("month_end_rebalance", {"bond_symbol": ""})
+    assert v == gb.MISSING_PARAMS and "bond_symbol" in why
+    assert gb.information_class("entry_conditioned", {"hours": [3]}) == gb.PRICE_ONLY
+    assert gb.information_class("entry_conditioned", {"cond_symbol": "USDX"}) == gb.CONDITIONED
+
+
+def test_breadth_counts_one_mechanism_once_however_many_cells_it_spans():
+    """k-style breadth: 352 wmr_fix_reversal cells on many symbols and parameter points are ONE
+    mechanism, not 352 breadth units -- and the trial charge still counts every cell."""
+    from research import specialist_cell as sc
+    grid = sc._grid({"fix_hour": [18, 19], "pre_window_bars": [2, 3],
+                     "min_displacement_atr": [0.6, 1.0], "hold_bars": [3, 6]})
+    cells = [{"klass": "fx", "mechanism": "wmr_fix_reversal", "symbol": f"FX{i:02d}",
+              "family": "fx_fixing_reversal", "params": p} for i in range(22) for p in grid]
+    cells += [{"klass": "indices", "mechanism": "overnight_gap", "symbol": "US500",
+               "family": "overnight_gap_decay", "params": {"gap_atr": g}} for g in (0.5, 1.0)]
+    b = sc.breadth(cells)
+    assert b["cells"] == 22 * 16 + 2 and b["breadth_k"] == 2
+    g = b["family_grids"]["fx/wmr_fix_reversal"]
+    assert g == {"cells": 352, "families": ["fx_fixing_reversal"], "symbols": 22,
+                 "param_points": 16}
+    assert b["largest_unit"] == "fx/wmr_fix_reversal" and b["largest_unit_share"] > 0.99
+    assert sc.charge(cells)["n_raw"] == len(cells)            # every trial is still charged
+
+
 # ------------------------------------------------------------------------------ families ---
 def test_seasonal_window_fires_only_inside_and_wraps_the_year():
     d = _bars(7)
