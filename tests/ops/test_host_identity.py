@@ -94,7 +94,9 @@ def test_birth_obligations_judges_by_the_helper(monkeypatch: pytest.MonkeyPatch,
     spec = importlib.util.spec_from_file_location(
         "birth_hi", ROOT / "scripts" / "check_birth_obligations.py")
     assert spec and spec.loader
+    import sys
     birth = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, "birth_hi", birth)   # its dataclasses resolve their module
     spec.loader.exec_module(birth)
     gs = tmp_path / "desks" / "mt5" / "data" / "gateway_state.json"
     gs.parent.mkdir(parents=True)
