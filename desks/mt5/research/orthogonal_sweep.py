@@ -535,6 +535,15 @@ NOT_SOURCED_HERE = {
                              "clock; a sweep enumerating them over bars would be inventing which "
                              "pack series conditions which instrument. Called blind it has no "
                              "source and returns [] on every symbol",
+    "news_reaction": "its event stream (country, scope, disclosure class, direction, burst "
+                     "count) is named by research/corporate_disclosure from the dated filings it "
+                     "holds, with a floor of event-days per spec; a sweep enumerating streams over "
+                     "bars would invent which filings move which instrument. Called blind it has "
+                     "no stream and returns [] on every symbol",
+    "exogenous_gate": "an OPERATOR over an existing price family, gated by a lake series: the "
+                      "(base family, series, column, gate) identity is named by "
+                      "research/corporate_disclosure from series that clear the conditioner's "
+                      "own history floor. Called blind it has neither and returns []",
     # The within-class rank legs (mt5desk/families_cross_sectional.py). Each loads its own class
     # panel from `symbol`, so nothing is unsuppliable -- but the grid is (class member x family x
     # params) and research/cross_sectional_breadth enumerates it, measures every cell's firing
