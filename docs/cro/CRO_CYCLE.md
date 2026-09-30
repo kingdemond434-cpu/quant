@@ -185,7 +185,9 @@ Measure at least, with day-over-day change:
 
 Baseline (2026-09-30, `/mnt/project-files/reports/tier1_breadth_gap_2026-09-30.md`): 249 instruments; 4 datasets; 0 of 14 alt platforms yielding; ~8.3k cells/day mined, ~5.3k/day judged; 43% UNKNOWN; 69% build/data failures; backlog ~1.4M growing ~3k/day; 837 certs from 10 families (41% cross_asset_residual); k_eff 2.53 against ~7 needed; 6 of 15 risk clusters empty; 9% cert-to-forward. Verdict: tier 3 overall.
 
-**Minimum table, reproduced every pass with fresh numbers** (columns: Measure | Us, live box | Yesterday | Tier-1, public estimate | Gap). The 2026-09-30 baseline is shown; add any row that limits breadth:
+**Sources, both every pass (principal, 2026-09-30):** read git (origin and its committed artifacts) AND the desktop (the desktop checkout plus the box read through it). Desktop/box data is the more accurate source. Where they differ, the table uses the desktop/box number, records the git value beside it, and flags the git copy STALE with its age. A value found only in git is marked GIT-ONLY and is never presented as live.
+
+**Minimum table, reproduced every pass with fresh numbers** (columns: Measure | Us, desktop/box | Git value if different | Yesterday | Tier-1, public estimate | Gap). The 2026-09-30 baseline is shown; add any row that limits breadth:
 
 | Measure | Baseline 2026-09-30 | Tier-1 (estimate) | Gap |
 |---|---|---|---|
