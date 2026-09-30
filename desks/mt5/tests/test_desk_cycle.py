@@ -39,9 +39,10 @@ def test_both_lanes_are_registered_by_one_owner() -> None:
     src = _cro_installer()
     for name in ("MT5-CycleNoon", "MT5-CycleMidnight"):
         assert f"Name = '{name}'" in src
-    # The full installer and the absent-task registrar delegate instead of registering a second shape.
+    # Both entry points delegate instead of registering a second task shape.
     assert "install_cro_cycle_tasks.ps1" in _installer()
-    assert "install_cro_cycle_tasks.ps1" in (DESK / "scripts" / "register_absent_box_tasks.ps1").read_text("utf-8")
+    absent_registrar = DESK / "scripts" / "register_absent_box_tasks.ps1"
+    assert "install_cro_cycle_tasks.ps1" in absent_registrar.read_text("utf-8")
 
 
 def test_each_lane_passes_its_own_lane_argument() -> None:
@@ -186,7 +187,8 @@ def test_the_prompt_closes_canonically() -> None:
 def test_the_three_cro_documents_are_in_the_repository() -> None:
     for name in ("CRO_CYCLE.md", "QUANT_CONSTITUTION.md", "QUANT_REFERENCE.md"):
         assert (CRO / name).is_file(), name
-    assert "THIS IS AN ACTION CYCLE, NOT A REPORTING CYCLE" in (CRO / "CRO_CYCLE.md").read_text("utf-8")
+    cycle_text = (CRO / "CRO_CYCLE.md").read_text("utf-8")
+    assert "THIS IS AN ACTION CYCLE, NOT A REPORTING CYCLE" in cycle_text
 
 
 def test_the_brief_loads_cycle_first_constitution_second_reference_on_demand() -> None:
