@@ -146,26 +146,21 @@ def test_carry_risk_off_harvests_in_calm_and_unwinds_in_risk_off(store, monkeypa
 
 
 def test_entry_conditioned_filters_and_refuses_a_blind_cell(store):
+    from mt5desk.families import get_family_func
     d = store["FXA"]
-    base = fo.ORTHOGONAL_FAMILIES["overnight_gap_decay"](d, gap_atr=0.1)
+    base = get_family_func("mean_reversion_rsi")(d)
     assert base
-    assert fs.family_entry_conditioned(d, base_family="overnight_gap_decay",
-                                       base_params={"gap_atr": 0.1}) == []
-    by_dow = fs.family_entry_conditioned(d, base_family="overnight_gap_decay",
-                                         base_params={"gap_atr": 0.1}, dows=[1, 2])
+    assert fs.family_entry_conditioned(d, base_family="mean_reversion_rsi") == []
+    by_dow = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", dows=[1, 2])
     assert by_dow and all(s.time.dayofweek in (1, 2) for s in by_dow)
     assert len(by_dow) < len(base)
-    up_ = fs.family_entry_conditioned(d, base_family="overnight_gap_decay",
-                                      base_params={"gap_atr": 0.1}, cond_symbol="COND",
+    up_ = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", cond_symbol="COND",
                                       cond_sign=1)
-    dn = fs.family_entry_conditioned(d, base_family="overnight_gap_decay",
-                                     base_params={"gap_atr": 0.1}, cond_symbol="COND",
+    dn = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", cond_symbol="COND",
                                      cond_sign=-1)
     assert up_ and dn and not ({s.time for s in up_} & {s.time for s in dn})
-    hv = fs.family_entry_conditioned(d, base_family="overnight_gap_decay",
-                                     base_params={"gap_atr": 0.1}, vol_regime="high_vol")
-    nhv = fs.family_entry_conditioned(d, base_family="overnight_gap_decay",
-                                      base_params={"gap_atr": 0.1}, vol_regime="not_high_vol")
+    hv = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", vol_regime="high_vol")
+    nhv = fs.family_entry_conditioned(d, base_family="mean_reversion_rsi", vol_regime="not_high_vol")
     assert len(hv) + len(nhv) == len(base)
     assert fs.family_entry_conditioned(d, base_family="relative_value", hours=[3]) == []
     assert fs.family_entry_conditioned(d, base_family="discovered", hours=[3]) == []
@@ -174,8 +169,8 @@ def test_entry_conditioned_filters_and_refuses_a_blind_cell(store):
 @pytest.mark.parametrize("family,params", [
     ("seasonal_window", {"start_md": 601, "end_md": 831, "side_bias": 1}),
     ("month_end_rebalance", {"bond_symbol": "BOND", "min_gap_sd": 0.0}),
-    ("entry_conditioned", {"base_family": "overnight_gap_decay",
-                           "base_params": {"gap_atr": 0.1}, "cond_symbol": "COND",
+    ("entry_conditioned", {"base_family": "mean_reversion_rsi",
+                           "base_params": {}, "cond_symbol": "COND",
                            "cond_sign": 1}),
 ])
 def test_no_lookahead_with_the_foreign_series_corrupted_too(store, tmp_path, family, params):
@@ -210,8 +205,8 @@ def test_the_sealed_build_cell_builds_every_specialist_family(store):
     import external_gauntlet as eg
     cases = [("IDX", "seasonal_window", {"start_md": 601, "end_md": 831, "side_bias": 1}),
              ("IDX", "month_end_rebalance", {"bond_symbol": "BOND", "min_gap_sd": 0.0}),
-             ("FXA", "entry_conditioned", {"base_family": "overnight_gap_decay",
-                                           "base_params": {"gap_atr": 0.1}, "dows": [1]})]
+             ("FXA", "entry_conditioned", {"base_family": "mean_reversion_rsi",
+                                           "base_params": {}, "dows": [1]})]
     for sym, fam, params in cases:
         cell = eg.build_cell(sym, fam, dict(params), {}, h1_override=store[sym])
         assert cell is not None, (fam, eg.LAST_BUILD_FAILURE)
