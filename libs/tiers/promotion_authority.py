@@ -3,8 +3,10 @@ needed", every blueprint wired live).
 
 `block(name)` is called by `research/promoter.py` beside `blind_review_veto`, with the same
 consequence and the same limits: it WITHHOLDS A NEW LIVE ROW, it sizes nothing and it never
-touches an open position or a row already holding capital. Three verdicts can withhold:
+touches an open position or a row already holding capital. Four verdicts can withhold:
 
+  CONSTITUTION_VIOLATED  the truth kernel's rule set in force loosens the sealed constitution
+                         without a principal ratification of its exact hash;
   REPLICATION_MISMATCH   an independent re-execution of the certificate disagreed with it
                          (`reports/REPLICATION.json`, verdict MISMATCH / DISAGREE / FAIL);
   ONLINE_FDR_OVER_BUDGET the certificate was admitted after the desk's lifetime online-FDR
@@ -111,9 +113,41 @@ def _freeze() -> str | None:
     return f"IMMUNE_FREEZE: the production certifier got easier to fool -- {why}"
 
 
+CONSTITUTION = ROOT / "docs" / "research" / "tier_s_constitution.json"
+RATIFICATIONS = ROOT / "docs" / "research" / "tier_s_ratifications.jsonl"
+
+
+def _constitution(name: str) -> str | None:
+    """THE TRUTH KERNEL'S CONSTITUTION BINDS THE DOOR. A rule set in force that LOOSENS the
+    sealed one (a DSR bar lowered, a gate count cut, cost fail-closed switched off) without a
+    principal ratification of its exact hash is a VIOLATION, and while it stands no new LIVE row
+    is written: a certificate minted under loosened law is not the certificate the law promised.
+    A tightening, the sealed set itself or a ratified successor withholds nothing."""
+    if authority.suspended("truth_kernel"):
+        return None
+    from libs.tiers import truth_kernel
+    live = _read(CONSTITUTION)
+    if not isinstance(live, dict) or not isinstance(live.get("rules"), dict):
+        return None                     # no live file: the sealed default is in force
+    firewall.may("promoter", "read", str(RATIFICATIONS.relative_to(ROOT)))
+    ratifs: list[dict[str, Any]] = []
+    try:
+        for line in RATIFICATIONS.read_text("utf-8").splitlines():
+            if line.strip():
+                ratifs.append(json.loads(line))
+    except (OSError, ValueError):
+        pass
+    st = truth_kernel.constitution_status(truth_kernel.constitution_doc(), live, ratifs)
+    if st.get("status") != "VIOLATION":
+        return None
+    loosened = ", ".join((st.get("diff") or {}).get("loosen") or []) or "rules removed"
+    return (f"CONSTITUTION_VIOLATED: the rule set in force loosens the sealed constitution "
+            f"({loosened}) without a principal ratification; {name} waits for the law")
+
+
 def block(name: str) -> str | None:
     """The first reason this certificate may not be written LIVE now, or None."""
-    for fn in (_replication, _fdr):
+    for fn in (_constitution, _replication, _fdr):
         why = fn(name)
         if why:
             return why

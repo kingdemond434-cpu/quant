@@ -593,3 +593,23 @@ def test_allocator_reads_tier_s_tilts_fresh_only() -> None:
     assert ae.tier_s_factors({"kind": "other"}, now=now)[0] == {}
     src = (DESK / "research" / "pf_allocator.py").read_text("utf-8")
     assert "tier_s_factors(now=now)" in src and "nf * sf" in src
+
+
+def test_a_loosened_constitution_withholds_promotion(monkeypatch: Any, tmp_path: Path) -> None:
+    from libs.tiers import authority, truth_kernel
+    from libs.tiers import promotion_authority as pa
+    doc = truth_kernel.constitution_doc()
+    doc["rules"]["cert.dsr_threshold"]["value"] = 0.5            # a loosening
+    c = tmp_path / "docs" / "c.json"
+    c.parent.mkdir(parents=True)
+    c.write_text(json.dumps(doc), "utf-8")
+    monkeypatch.setattr(pa, "ROOT", tmp_path)
+    monkeypatch.setattr(pa, "CONSTITUTION", c)
+    monkeypatch.setattr(pa, "RATIFICATIONS", tmp_path / "docs" / "r.jsonl")
+    monkeypatch.setattr(pa.firewall, "may", lambda *a, **k: True)
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)
+    why = pa._constitution("X.y") or ""
+    assert why.startswith("CONSTITUTION_VIOLATED") and "cert.dsr_threshold" in why
+    doc["rules"]["cert.dsr_threshold"]["value"] = 0.99           # a tightening is lawful
+    c.write_text(json.dumps(doc), "utf-8")
+    assert pa._constitution("X.y") is None
