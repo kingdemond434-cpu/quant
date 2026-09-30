@@ -501,7 +501,7 @@ LEG_LAYER: dict[str, str] = {
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",
-    "fill_recorder": "execution",
+    "fill_recorder": "execution", "cost_surfaces": "execution",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
     "shortfall_model": "execution",
@@ -526,6 +526,16 @@ LEG_LAYER: dict[str, str] = {
     # nothing, which is exactly what `meta` covers.
     "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
+    # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
+    # what it produces, the same rule as the rest of this table.
+    "acquire_datasets": "information", "dukascopy_backfill": "information",
+    "source_experiment_census": "information",
+    "cross_asset_graph": "information", "transmission_engine": "information",
+    "excursions": "exit", "exit_accounts": "exit",
+    "state_replay_audit": "execution", "why_not_report": "execution",
+    "forward_calibration": "prediction",
+    "certificate_clock_law": "meta", "desk_self_heal": "meta", "mission_control": "meta",
+    "tier5_acceptance": "meta",
 }
 
 _LEG_RE = re.compile(r'_costed\("([^"]+)"')

@@ -1,0 +1,134 @@
+"""JUDGING RATE + measured free cores: verdicts/hour vs backlog, and workers only ever rise."""
+from __future__ import annotations
+
+import json
+import sqlite3
+import sys
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+_DESK = Path(__file__).resolve().parents[1]
+_ROOT = _DESK.parent.parent
+for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+from research import judging_throughput as jt  # noqa: E402
+
+UNMEASURED = jt.UNMEASURED
+COSTS = {"per_worker_mb": 768.0, "declared_need_mb": 1200.0}
+BOX = {"cores": 18, "market_closed": False, "source": "GlobalMemoryStatusEx",
+       "total_phys_mb": 98_298, "free_phys_mb": 59_364, "commit_limit_mb": 257_024,
+       "commit_free_mb": 104_000, "terminal_running": True, "is_judging_box": True}
+QUEUE = {"status": "MEASURED", "depth": 19_996, "gates_per_hour": 100.0,
+         "workers_last_sweep": 1}
+NOW = datetime(2026, 9, 30, 12, 0, tzinfo=UTC)
+
+
+# ------------------------------------------------------------------ free cores, measured
+def test_an_idle_box_gives_the_judge_the_cores_the_fixed_reservation_held_back() -> None:
+    fixed = jt.plan(BOX, QUEUE, COSTS)
+    measured = jt.plan({**BOX, "busy_other_cores": 0.4}, QUEUE, COSTS)
+    assert fixed["workers"] == 15 and fixed["cores_basis"] == "fixed_reservation"
+    # 0.4 busy x 1.5 -> reserve 1 core: 17 workers instead of 15.
+    assert measured["workers"] == 17
+    assert measured["cores_basis"] == "measured_free_cores"
+    assert measured["reserved_cores"] == 1
+
+
+def test_a_busy_box_never_costs_the_judge_a_worker() -> None:
+    fixed = jt.plan(BOX, QUEUE, COSTS)
+    for busy in (2.5, 6.0, 17.9, 40.0):
+        got = jt.plan({**BOX, "busy_other_cores": busy}, QUEUE, COSTS)
+        assert got["workers"] >= fixed["workers"], busy
+        assert got["workers"] >= got["baseline"]["workers"]
+
+
+def test_unmeasured_cpu_and_the_weekend_leave_the_plan_unchanged() -> None:
+    assert (jt.plan({**BOX, "busy_other_cores": UNMEASURED}, QUEUE, COSTS)["workers"]
+            == jt.plan(BOX, QUEUE, COSTS)["workers"])
+    closed = {**BOX, "market_closed": True}
+    assert (jt.plan({**closed, "busy_other_cores": 0.0}, QUEUE, COSTS)["workers"]
+            == jt.plan(closed, QUEUE, COSTS)["workers"] == 18)
+
+
+def test_a_starved_terminal_still_stands_down_to_the_baseline() -> None:
+    got = jt.plan({**BOX, "free_phys_mb": 1_000, "busy_other_cores": 0.0}, QUEUE, COSTS)
+    assert got["stood_down"] and got["workers"] == got["baseline"]["workers"]
+
+
+def test_measure_cpu_is_psutil_or_unmeasured() -> None:
+    got = jt.measure_cpu(sample_s=0.1)
+    if got["cpu_source"] == "psutil":
+        assert isinstance(got["busy_other_cores"], float) and got["busy_other_cores"] >= 0
+    else:
+        assert got["busy_other_cores"] == UNMEASURED
+
+
+# ------------------------------------------------------------------ the rate artifact
+def _ledger(path: Path, stamps: list[datetime]) -> Path:
+    path.write_text("".join(json.dumps({"cell": i, "at": t.isoformat(timespec="seconds")})
+                            + "\n" for i, t in enumerate(stamps)) + '{"cell": "x"}\n', "utf-8")
+    return path
+
+
+def _registry(path: Path, stamps: list[datetime]) -> Path:
+    c = sqlite3.connect(path)
+    c.execute("CREATE TABLE research_candidates (id INTEGER, created_at TEXT)")
+    c.executemany("INSERT INTO research_candidates VALUES (?, ?)",
+                  [(i, t.isoformat(timespec="seconds")) for i, t in enumerate(stamps)])
+    c.commit()
+    c.close()
+    return path
+
+
+def test_rate_counts_windows_and_drains(tmp_path: Path) -> None:
+    ver = [NOW - timedelta(minutes=10)] * 5 + [NOW - timedelta(hours=5)] * 43 \
+        + [NOW - timedelta(days=3)] * 100
+    cre = [NOW - timedelta(hours=2)] * 24
+    got = jt.measure_rate({"depth": 1_000, "source": "bp"}, {"workers": 15}, NOW,
+                          ledger=_ledger(tmp_path / "l.jsonl", ver),
+                          registry=_registry(tmp_path / "r.sqlite", cre))
+    assert got["verdicts"]["counts"] == {"1h": 5, "24h": 48, "7d": 148}
+    assert got["verdicts"]["rows_unstamped"] == 1
+    assert got["verdicts_per_hour"] == 2.0 and got["verdicts_per_day"] == 48.0
+    assert got["created_per_day"] == 24.0
+    eta = got["eta_to_drain"]
+    assert eta["status"] == "DRAINING" and eta["net_per_hour"] == 1.0 and eta["hours"] == 1000.0
+
+
+def test_a_judge_slower_than_creation_is_growing_not_a_big_number(tmp_path: Path) -> None:
+    got = jt.measure_rate({"depth": 55_811}, {"workers": 15}, NOW,
+                          ledger=_ledger(tmp_path / "l.jsonl", []),
+                          registry=_registry(tmp_path / "r.sqlite",
+                                             [NOW - timedelta(hours=1)] * 1_032))
+    assert got["verdicts_per_day"] == 0.0 and got["created_per_day"] == 1_032.0
+    assert got["eta_to_drain"]["status"] == "GROWING"
+    assert got["eta_to_drain"]["hours"] is None
+    assert got["eta_to_drain"]["net_per_day"] == -1_032.0
+
+
+def test_absent_inputs_are_unmeasured_never_zero(tmp_path: Path) -> None:
+    got = jt.measure_rate({"depth": UNMEASURED}, {}, NOW, ledger=tmp_path / "none.jsonl",
+                          registry=tmp_path / "none.sqlite")
+    assert got["verdicts"]["status"] == UNMEASURED
+    assert got["created"]["status"] == UNMEASURED
+    assert got["verdicts_per_hour"] == UNMEASURED
+    assert got["eta_to_drain"]["status"] == UNMEASURED
+
+
+def test_run_publishes_the_rate_artifact(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(jt, "OUT", tmp_path / "JUDGING_THROUGHPUT.json")
+    monkeypatch.setattr(jt, "RATE_OUT", tmp_path / "JUDGING_RATE.json")
+    monkeypatch.setattr(jt, "ENV_FILE", tmp_path / "env.json")
+    monkeypatch.setattr(jt, "BACKPRESSURE", tmp_path / "bp.json")
+    monkeypatch.setattr(jt, "GATE_LEDGER", _ledger(tmp_path / "l.jsonl", [NOW]))
+    monkeypatch.setattr(jt, "REGISTRY", tmp_path / "none.sqlite")
+    monkeypatch.setattr(jt, "measure_cpu", lambda *a, **k: {"cpu_source": UNMEASURED,
+                                                             "busy_other_cores": UNMEASURED})
+    monkeypatch.setattr(jt, "apply_env", lambda *a, **k: {})
+    payload = jt.run(write=True, now=NOW, apply=False)
+    rate = json.loads((tmp_path / "JUDGING_RATE.json").read_text("utf-8"))
+    assert rate["verdicts"]["counts"]["1h"] == 1
+    assert rate["backlog"] == UNMEASURED
+    assert payload["rate"]["eta_to_drain"]["status"] == UNMEASURED

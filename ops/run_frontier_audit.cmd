@@ -23,84 +23,112 @@ set "PYTHONPATH=C:\opt\quant;C:\opt\quant\desks\mt5"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-FrontierAudit.log"
 set "PY=C:\Program Files\Python314\python.exe"
 cd /d C:\opt\quant
-"%PY%" -u "desks\mt5\research\certificate_hygiene.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\book_forensics.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\pit_audit.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\forward_calibration.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\orthogonality.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\unknown_unknowns.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\world_model.py" --apply >>"%LOG%" 2>&1
+rem EVERY ORGAN RUNS, AND A FAILURE IS STILL REPORTED (2026-09-30). This file used to end with an
+rem unconditional `exit /b 0`, so the scheduler recorded LastTaskResult 0 whether every organ
+rem succeeded or all thirty crashed -- a green task wearing a dead lane. Each organ now goes
+rem through :run, which records a non-zero exit (negative crash codes included: `neq 0`, never
+rem `if errorlevel 1`, which misses them) and carries on, because one organ's failure must not
+rem starve the measurements after it. The lane exits 1 if ANY organ failed and names them in the
+rem log, so `Get-ScheduledTaskInfo MT5-FrontierAudit` finally says what the log says.
+set /a FAILED=0
+set "FAILED_NAMES="
+>>"%LOG%" echo === MT5-FrontierAudit start %DATE% %TIME%
+call :run "desks\mt5\research\certificate_hygiene.py" --apply
+call :run "desks\mt5\research\book_forensics.py" --apply
+call :run "desks\mt5\research\pit_audit.py" --apply
+call :run "desks\mt5\research\forward_calibration.py" --apply
+call :run "desks\mt5\research\orthogonality.py" --apply
+call :run "desks\mt5\research\unknown_unknowns.py" --apply
+call :run "desks\mt5\research\world_model.py" --apply
 rem TWO MEASUREMENTS THAT WERE DARK (Tier-5 audit XCI/107 and XCIV, 2026-09-29).
 rem market_posteriors is F3, the nine-axis posteriors split off world_model on 2026-09-17;
 rem chart_allocator publishes the per-chart hunting weights edge_search already draws from.
 rem Both read artifacts and bars for seconds, write one report each, and size, trade and
 rem promote nothing. They run HERE, off the hourly research chain, so wiring them takes no
 rem minute from any miner, crawler or generator.
-"%PY%" -u "desks\mt5\research\market_posteriors.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\chart_allocator.py" >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\representation_discovery.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\joint_evolution.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\negative_knowledge.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\frontier_map.py" --apply >>"%LOG%" 2>&1
+call :run "desks\mt5\research\market_posteriors.py" --apply
+call :run "desks\mt5\research\chart_allocator.py"
+call :run "desks\mt5\research\representation_discovery.py" --apply
+call :run "desks\mt5\research\joint_evolution.py" --apply
+call :run "desks\mt5\research\negative_knowledge.py" --apply
+call :run "desks\mt5\research\frontier_map.py" --apply
 rem THE THREE-RESOURCE LOOP, IN DEPENDENCY ORDER (F28 + F11/F27, 2026-09-12).
 rem scaling_laws fits survivors per compute-hour, which is the ONLY input that gives compute
 rem a price; budget_market quotes all three resources; meta_controller spends those prices on
 rem nine kinds of action. Run out of order and the controller reads yesterday's prices.
 rem scaling_laws returns UNMEASURED until the compute ledger holds seven days -- it held two
 rem on the day this was wired, and that is a data limit rather than a defect.
-"%PY%" -u -m libs.ops.scaling_laws >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\budget_market.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\market_ecology.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\information_value.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\execution_science.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\subhour_counterfactuals.py" --apply >>"%LOG%" 2>&1
+call :run -m libs.ops.scaling_laws
+call :run "desks\mt5\research\budget_market.py" --apply
+call :run "desks\mt5\research\market_ecology.py" --apply
+call :run "desks\mt5\research\information_value.py" --apply
+call :run "desks\mt5\research\execution_science.py" --apply
+call :run "desks\mt5\research\subhour_counterfactuals.py" --apply
 rem BOTH HALVES OF CAPACITY (F21). capacity.py answers the LOWER bound -- the venue's
 rem minimum lot forcing more risk per trade than the policy asked for, which its own
 rem docstring rightly calls the binding constraint at this account size -- and it had no
 rem runner and no contract since the day it was written. capacity_frontier answers the
 rem upper bound in the only unit this venue supplies: how many multiples of today's round
 rem trip each mechanism survives.
-"%PY%" -u "desks\mt5\research\capacity.py" >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\capacity_frontier.py" --apply >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\meta_controller.py" --apply >>"%LOG%" 2>&1
+call :run "desks\mt5\research\capacity.py"
+call :run "desks\mt5\research\capacity_frontier.py" --apply
+call :run "desks\mt5\research\meta_controller.py" --apply
 rem RECURSIVE META-R&D (F25), immediately BEFORE the bench and the verifier so it records
 rem the arena state as it stood this pass. Its three arenas are the bench, the adversary
 rem and the credit record -- which is why it could not be built before them.
-"%PY%" -u "desks\mt5\research\meta_rnd.py" --apply >>"%LOG%" 2>&1
+call :run "desks\mt5\research\meta_rnd.py" --apply
 rem THE BENCH RUNS LAST (F18), and the order is the point: every probe reads an artifact
 rem this lane has just regenerated, so a stale report cannot be mistaken for a returned
 rem defect. It reports UNMEASURABLE on an artifact older than the code that produces it.
 rem THE EVIDENCE VAULT (F19). Seals each symbol's holdout tier ONCE, counts reveals, and
 rem fingerprints the judge, engine, families, cost model and contract terms -- so a
 rem verdict minted before any of them changed is visible as such.
-"%PY%" -u "desks\mt5\research\evidence_vault.py" --apply >>"%LOG%" 2>&1
+call :run "desks\mt5\research\evidence_vault.py" --apply
 rem CAUSAL DISCOVERY (F16). The desk already enumerates rival explanations and has never
 rem decided between them. A collider is the one orientation observational data can settle,
 rem and the CONFLICT count is a diagnostic on the assumptions rather than noise.
-"%PY%" -u "desks\mt5\research\causal_discovery.py" --apply >>"%LOG%" 2>&1
+call :run "desks\mt5\research\causal_discovery.py" --apply
 rem CREDIT FLOWS BACK TO THE SCIENTIST (F12). The chain was entirely on disk -- forward
 rem clock, sleeve, certificate, docket row, source -- and nobody had walked it, so a
 rem miner was rewarded for passing a screen and never asked what its output earned.
-"%PY%" -u "desks\mt5\research\credit_assignment.py" --apply >>"%LOG%" 2>&1
+call :run "desks\mt5\research\credit_assignment.py" --apply
 rem THE ADVERSARY THAT LEARNS (F17). Each generation is ONE run_gauntlet over the whole
 rem population, so two generations cost two dockets of 14 cells -- small against an
 rem hourly sweep of thousands. The population PERSISTS, which is what makes it
 rem co-evolution: when a gate tightens, the attacks that used to score lose their
 rem fitness and the population moves.
-"%PY%" -u "desks\mt5\research\adversary_evolution.py" --apply --generations 2 >>"%LOG%" 2>&1
+call :run "desks\mt5\research\adversary_evolution.py" --apply --generations 2
 rem GOVERNANCE PRICED (F24). missed_growth walks 22 rails against the growth curve and
 rem capital_modifiers scores every applied multiplier; both existed, both were correct,
 rem and neither was on a clock. modifier_counterfactuals prices the applied multipliers in
 rem E[log W] at CONSTANT average heat, which is the unit F24 asks for.
-"%PY%" -u "desks\mt5\research\missed_growth.py" >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\modifier_counterfactuals.py" --apply >>"%LOG%" 2>&1
+call :run "desks\mt5\research\missed_growth.py"
+call :run "desks\mt5\research\modifier_counterfactuals.py" --apply
 rem THE STRUCTURAL VERIFIER (F26), beside the bench. The bench asks whether a defect the
 rem desk survived has returned; this asks whether a property that must NEVER hold has
 rem started holding. Different questions, and a desk needs both.
-"%PY%" -u "desks\mt5\research\formal_invariants.py" --apply >>"%LOG%" 2>&1
+call :run "desks\mt5\research\formal_invariants.py" --apply
 rem THE INDEPENDENT VERIFIER (item 15, 2026-09-29). A second implementation, importing no desk
 rem code, rebuilds every promoted certificate from its frozen spec and is compared trade by
 rem trade with the original. Daily, not hourly: it reloads every certified chart's bars.
-"%PY%" -u "desks\mt5\research\independent_verifier.py" --apply --budget-s 1200 >>"%LOG%" 2>&1
-"%PY%" -u "desks\mt5\research\quantbench.py" --apply >>"%LOG%" 2>&1
+call :run "desks\mt5\research\independent_verifier.py" --apply --budget-s 1200
+call :run "desks\mt5\research\quantbench.py" --apply
+if %FAILED% neq 0 (
+    >>"%LOG%" echo === MT5-FrontierAudit end %DATE% %TIME%: %FAILED% organ^(s^) FAILED:%FAILED_NAMES%
+    exit /b 1
+)
+>>"%LOG%" echo === MT5-FrontierAudit end %DATE% %TIME%: all organs exited 0
+exit /b 0
+
+rem ---------------------------------------------------------------------------------------------
+rem :run <script-or--m module> [args...] -- run one organ, append its output to the lane log, and
+rem count it as FAILED on any non-zero exit. Always returns 0 so the caller keeps going.
+:run
+"%PY%" -u %* >>"%LOG%" 2>&1
+set "RC=%ERRORLEVEL%"
+if not "%RC%"=="0" (
+    set /a FAILED+=1
+    set "FAILED_NAMES=%FAILED_NAMES% [%~1 rc=%RC%]"
+    >>"%LOG%" echo !!! organ FAILED rc=%RC%: %*
+)
 exit /b 0

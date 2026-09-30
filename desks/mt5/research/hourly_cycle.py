@@ -843,7 +843,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
     "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
-    "fill_recorder",
+    "fill_recorder", "cost_surfaces",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
@@ -973,7 +973,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "entry_timing", "cost_to_edge", "exit_study",
                      "execution_resolver", "netting_report", "execution_alpha",
                      "latency_lab", "feed_clock_lab", "impact_lab", "digital_twin",
-                     "net_edge", "cost_truth"),
+                     "net_edge", "cost_truth", "cost_surfaces"),
                     "execution"),
     # forward: forward evidence, promotion and the allocator
     **dict.fromkeys(("enrol_clocks", "state_admission", "pf_allocator",
@@ -4782,6 +4782,13 @@ def main() -> None:
     # corpus the execution twin and the shortfall model already read. Recording only.
     flr = _costed("fill_recorder", lambda: _producer(
         "fill_recorder", "research/fill_recorder.py", "--once", "--budget-s", "120"))
+    # THE WHOLE ROUND TRIP, KEYED (2026-09-30). The cost model was spread x hour only; this joins
+    # the corpus fill_recorder just wrote with the ledger's commission and swap into surfaces
+    # keyed instrument x session x size x vol x direction x order type, UNMEASURED where no fill
+    # exists and the spread x hour prior as the spread fallback. Publish only: cost_for() is the
+    # API, and COST_SURFACES.json lists the consumers that have NOT adopted it yet. ~0.1 s.
+    csf = _costed("cost_surfaces", lambda: _producer(
+        "cost_surfaces", "research/cost_surfaces.py", "--once"))
     apr = _costed("actor_pressure", lambda: _producer(
         "actor_pressure", "research/actor_pressure.py", "--once", "--budget-s", "300"))
     dpo = _costed("destroyer_pool", lambda: _producer(
@@ -5024,7 +5031,7 @@ def main() -> None:
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
                     "ground_depth": gdp,
-                    "timeframe_fanout": tff, "fill_recorder": flr,
+                    "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,
                     "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
                     "clock_ledger": ckl,
