@@ -74,6 +74,45 @@ class BitemporalStore:
                 out[key] = d
         return out
 
+    def latest_known(self, entity: str, attribute: str,
+                     times: Sequence[Any]) -> list[Datum | None]:
+        """For each query time: the datum with the NEWEST valid time that was KNOWN then (its
+        latest revision known then), or None when nothing was knowable yet.
+
+        This is `as_of` answered for many clocks at once -- the read a backtest makes per signal
+        -- in one sweep over the knowledge-time order instead of one scan per query. The two
+        agree by construction: `as_of(t)` restricted to (entity, attribute), then the entry with
+        the greatest valid time. A query time or a row that does not parse is never admitted."""
+        rows: list[tuple[datetime, datetime, Datum]] = []
+        for d in self.rows:
+            if d.entity != entity or d.attribute != attribute:
+                continue
+            kt, vt = parse_t(d.knowledge_time), parse_t(d.valid_time)
+            if kt is not None and vt is not None:
+                rows.append((kt, vt, d))
+        rows.sort(key=lambda r: r[0])
+        qs = [parse_t(t.isoformat() if isinstance(t, datetime) else t) for t in times]
+        order = sorted((i for i, q in enumerate(qs) if q is not None),
+                       key=lambda i: qs[i])  # type: ignore[arg-type,return-value]
+        out: list[Datum | None] = [None] * len(qs)
+        best: dict[str, Datum] = {}
+        newest: tuple[datetime, str] | None = None
+        j = 0
+        for i in order:
+            q = qs[i]
+            assert q is not None
+            while j < len(rows) and rows[j][0] <= q:
+                _kt, vt, d = rows[j]
+                cur = best.get(d.valid_time)
+                if cur is None or (d.revision, d.knowledge_time) > (cur.revision,
+                                                                    cur.knowledge_time):
+                    best[d.valid_time] = d
+                if newest is None or vt > newest[0]:
+                    newest = (vt, d.valid_time)
+                j += 1
+            out[i] = best[newest[1]] if newest is not None else None
+        return out
+
     def revisions(self) -> dict[str, Any]:
         per: dict[tuple[str, str, str], int] = {}
         for d in self.rows:

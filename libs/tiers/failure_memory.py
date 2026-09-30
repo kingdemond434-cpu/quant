@@ -23,7 +23,9 @@ many raw rows each theorem stands for.
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from libs.tiers.truth_kernel import canon, sha256
@@ -130,3 +132,74 @@ def neighbourhood(desc: Mapping[str, Any], memory: Mapping[str, Any], min_match:
             hits.append(t)
             explored += int(t["n"])
     return {"explored": explored, "relevant": hits[:10]}
+
+
+# ------------------------------------------------------------------------------ generator door
+
+#: where `organ_failure_memory` (desks/mt5/research/tier_s.py) publishes the theorems hourly
+MEMORY_PATH = (Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "tier_s"
+               / "failure_memory.json")
+#: a memory older than this is no memory: its theorems stop ordering anything
+MAX_AGE_H = 6.0
+
+
+def load(path: Path | None = None, *, max_age_h: float = MAX_AGE_H,
+         now: datetime | None = None) -> dict[str, Any]:
+    """The published theorems and rules, or {} when absent, unreadable or stale. An empty memory
+    orders nothing, so a generator that consults it degrades to its own order, never to less."""
+    import json
+    try:
+        doc = json.loads((path or MEMORY_PATH).read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(doc, dict):
+        return {}
+    try:
+        at = datetime.fromisoformat(str(doc.get("generated_utc")))
+    except ValueError:
+        return {}
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=UTC)
+    if ((now or datetime.now(UTC)) - at).total_seconds() > max_age_h * 3600:
+        return {}
+    return doc
+
+
+def prioritise(rows: Sequence[dict[str, Any]], memory: Mapping[str, Any],
+               desc_of: Callable[[dict[str, Any]], Mapping[str, Any]],
+               rank: Callable[[dict[str, Any]], Any] = lambda _r: 0,
+               tag: str = "failure_memory") -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """REORDER, NEVER FILTER. Within each `rank` tier a row goes after every row whose
+    neighbourhood the memory has mapped less, and a row in a mapped-dead neighbourhood is TAGGED
+    with the theorems that cover it. The output holds exactly the input rows -- a theorem about a
+    region is a prior on a new cell, not a verdict on it, and generation volume is never reduced.
+
+    `desc_of(row)` gives the row's {mechanism, asset_class, selector}; the neighbourhood is looked
+    up once per distinct triple, so a docket of 10^5 cells over a few hundred theorems costs a few
+    hundred lookups."""
+    if not memory or not (memory.get("theorems") or memory.get("rules")):
+        return list(rows), {"theorems": 0, "rules": 0, "consulted": False, "rows": len(rows),
+                            "tagged": 0, "moved": 0}
+    cache: dict[tuple[str, str, str], dict[str, Any]] = {}
+    keyed: list[tuple[Any, int, int, dict[str, Any]]] = []
+    tagged = 0
+    for i, r in enumerate(rows):
+        desc = desc_of(r)
+        k = _cls(desc)
+        hood = cache.get(k)
+        if hood is None:
+            hood = cache[k] = neighbourhood(desc, memory)
+        explored = int(hood["explored"])
+        if explored:
+            tagged += 1
+            r[tag] = {"explored": explored,
+                      "theorems": [str(t.get("statement")) for t in hood["relevant"][:3]],
+                      "evidence": [str((t.get("provenance") or {}).get("evidence_hash"))
+                                   for t in hood["relevant"][:3]]}
+        keyed.append((rank(r), explored, i, r))
+    keyed.sort(key=lambda x: (x[0], x[1], x[2]))
+    out = [x[3] for x in keyed]
+    moved = sum(1 for a, b in zip(rows, out, strict=True) if a is not b)
+    return out, {"theorems": len(memory.get("theorems") or []),
+                 "rules": len(memory.get("rules") or []), "consulted": True,
+                 "rows": len(out), "tagged": tagged, "moved": moved}

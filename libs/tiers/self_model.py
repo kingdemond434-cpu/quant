@@ -38,7 +38,8 @@ GAIN_WEIGHT: dict[str, float] = {
 
 #: sealed-suite metrics and the direction that is better; a release may not move any the wrong way
 SEALED_METRICS: dict[str, str] = {
-    "immune_score": "up", "power": "up", "protocol_proven": "up", "chaos_breaches": "down",
+    "immune_score": "up", "power": "up", "protocol_proven": "up", "protocol_verified": "up",
+    "chaos_breaches": "down",
     "replay_share": "up", "firewall_violations": "down", "journal_ok": "up",
 }
 
@@ -80,6 +81,18 @@ def inventory(reports: Mapping[str, Mapping[str, Any]]) -> list[dict[str, Any]]:
     add("ops.protocol_conformance", None if conf is None else 1.0 - float(conf),
         "OPERATIONAL_RISK", "gateway send sites that break the model-checked order protocol: "
         f"{_get(reports.get('formal'), 'conformance', 'obligations')}", p_fix=0.6)
+    # THE CLAIM, NOT THE MODEL (S31's consumer, `formal.claim` over FORMAL.json): a PROVEN model
+    # whose knobs the gateway lacks is not a verified protocol, and the gap is the share of
+    # invariants the implementation does not back. VIOLATED is a full gap; UNMEASURED half.
+    fc = reports.get("formal_claim")
+    if fc is not None:
+        fclaim = _get(fc, "claim")
+        vs = _get(fc, "verified_share")
+        gap = (1.0 if fclaim == "VIOLATED" else None if fclaim in (None, "UNMEASURED")
+               or vs is None else 1.0 - float(vs))
+        add("ops.protocol_verified", gap, "OPERATIONAL_RISK",
+            f"order protocol claim {fclaim}: {'; '.join(_get(fc, 'reasons') or [])[:300]}",
+            p_fix=0.6)
     rq = _get(reports.get("red_queen"), "attack_success")
     add("validation.red_queen", rq, "FALSIFICATION",
         f"evolved attacks fool the defender; blind spots "
@@ -257,6 +270,9 @@ def sealed_scorecard(reports: Mapping[str, Mapping[str, Any]]) -> dict[str, floa
         "power": f(_get(reports.get("immune"), "score", "power")),
         "protocol_proven": f(1.0 if _get(reports.get("formal"), "desk_all_proven") else 0.0)
         if reports.get("formal") else None,
+        # VERIFIED is the implementation-backed claim (S31), never the model check alone
+        "protocol_verified": f(_get(reports.get("formal_claim"), "verified_share"))
+        if reports.get("formal_claim") else None,
         "chaos_breaches": f(sum((_get(reports.get("chaos"), "campaign", "breaches") or {})
                                 .values())) if reports.get("chaos") else None,
         "replay_share": f(_get(reports.get("replay"), "reconstructible_share")),
