@@ -740,6 +740,52 @@ def producer_signals(path: Path | None = None) -> dict[str, dict[str, Any]]:
     return {}
 
 
+def _docket_keff() -> Any:
+    """The marginal-k_eff scorer (research/docket_keff.py), or None when it cannot import."""
+    for mod in ("research.docket_keff", "docket_keff"):
+        try:
+            return __import__(mod, fromlist=["score"])
+        except Exception:
+            continue
+    return None
+
+
+def _keff_family_factor(rows: list[dict[str, Any]]) -> dict[str, float]:
+    if not any("_keff" in r for r in rows):
+        return {}
+    dk = _docket_keff()
+    return dk.family_factor(rows) if dk is not None else {}
+
+
+def keff_stamp(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Stamp `_keff` (the cell's marginal-k_eff priority) on every row; return the evidence.
+
+    Never raises and never removes a row: a failure leaves the rows unstamped, which ranks every
+    one of them exactly as before, and the reason is published as UNMEASURED (L1.28a).
+    """
+    dk = _docket_keff()
+    if dk is None:
+        return {"status": "UNMEASURED", "why": "research/docket_keff.py did not import"}
+    try:
+        doc = dk.score(rows)
+        doc["status"] = "MEASURED"
+        return dict(doc)
+    except Exception as exc:
+        for r in rows:
+            r.pop("_keff", None)
+        return {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"[:300]}
+
+
+def _keff_summary(keff: dict[str, Any]) -> dict[str, Any]:
+    """The compact k_eff block JUDGE_COVERAGE.json carries; the full table has its own report."""
+    if keff.get("status") != "MEASURED":
+        return {k: keff.get(k) for k in ("status", "why")}
+    dk = _docket_keff()
+    out = dk.summary(keff) if dk is not None else {}
+    out["status"] = "MEASURED"
+    return out
+
+
 def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
                   capacity: int) -> list[dict[str, Any]]:
     """EXPECTED VALUE PER JUDGE-SECOND, per family, published so the choice is inspectable.
@@ -768,6 +814,10 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
     values, median = family_value()
     occ = family_breadth()
     signals = producer_signals()
+    # MARGINAL k_eff PER FAMILY (research/docket_keff.py): 1 + max(0, mean cell priority) over the
+    # rows `build` stamped. One-sided like the two factors above, and exactly 1.0 for rows that
+    # carry no stamp, so a caller that never scored is ranked as it always was.
+    keff_f = _keff_family_factor(rows)
     per_cell_s = judge_seconds_per_cell(capacity)
     cost_units: dict[str, list[float]] = {}
     for row in rows:
@@ -785,7 +835,8 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
         sig = signals.get(fam) or {}
         ortho_f = float(sig.get("orthogonality_factor") or 1.0)
         cert_f = float(sig.get("certificate_factor") or 1.0)
-        ev_cell = float(pr["p_optimistic"]) * value * (1.0 + breadth) * ortho_f * cert_f
+        kf = float(keff_f.get(fam, 1.0))
+        ev_cell = float(pr["p_optimistic"]) * value * (1.0 + breadth) * ortho_f * cert_f * kf
         rl = realised.get(fam) or {}
         out.append({
             "family": fam, "unjudged": backlog[fam],
@@ -808,6 +859,7 @@ def rank_by_value(backlog: dict[str, int], rows: list[dict[str, Any]],
             # Both are one-sided (>= 1.0), so no family's ev is ever REDUCED by them and the
             # 25% floor below is untouched: this re-orders the remainder, it never starves.
             "orthogonality_factor": round(ortho_f, 4), "certificate_factor": round(cert_f, 4),
+            "keff_factor": round(kf, 4),
             "marginal_rank": sig.get("marginal_rank"),
             "certs_per_judge_hour": sig.get("certs_per_judge_hour"),
             # BANNED / UNMEASURED / UNDER_JUDGED / MEASURED_ZERO / CERTIFYING -- a zero pass rate
@@ -933,7 +985,8 @@ def _unseen_in_prefix(rows: list[dict[str, Any]], n: int) -> int:
 
 def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
                    unjudged_ids: set[str] | None = None, *,
-                   demote_variants: bool = True) -> list[dict[str, Any]]:
+                   demote_variants: bool = True,
+                   use_keff: bool = True) -> list[dict[str, Any]]:
     """Weighted interleave of the families, so EVERY PREFIX of the docket is family-balanced.
 
     Each family is emitted on its own virtual clock ticking at 1/quota, and the family whose next
@@ -945,6 +998,11 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
     ground rather than on the same rule's constants. `demote_variants=False` reproduces the
     pre-2026-09-23 order, which is how the freed-slot count below is measured.
 
+    MARGINAL k_eff (2026-09-30): among rows tied on those two tests, the cell whose instrument and
+    cluster add the most independent bets to the book goes first (`_keff`, stamped by
+    `keff_stamp`), and only then the oldest. A row with no stamp scores 0 and keeps its old place;
+    `use_keff=False` reproduces the order before this term existed.
+
     No row is dropped. A family with no quota still ships, after the quota'd stream, because the
     docket this returns is the whole docket and the judge's budget -- not this order -- decides
     where the hour stops.
@@ -953,14 +1011,15 @@ def coverage_order(rows: list[dict[str, Any]], quota: dict[str, int],
         return []
     ids = unjudged_ids or set()
 
-    def rank(row: dict[str, Any]) -> tuple[int, int, str]:
+    def rank(row: dict[str, Any]) -> tuple[int, int, float, str]:
         cid = str(row.get("_cell") or "")
         fresh = 0 if (not ids or cid in ids) else 1
         # A parameter variant of a rule already claiming this grid cell ranks below an unseen
         # mechanism -- inside the family stream, after the never-judged test. It is never
         # dropped and the stream is never shortened; only the order changes.
         variant = int(row.get("_variant") or 0) if demote_variants else 0
-        return (fresh, variant, str(row.get("first_seen") or "9999"))
+        keff = -float(row.get("_keff") or 0.0) if use_keff else 0.0
+        return (fresh, variant, keff, str(row.get("first_seen") or "9999"))
 
     streams: dict[str, list[dict[str, Any]]] = {}
     for row in rows:
@@ -1057,6 +1116,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()
     unrunnable = update_unrunnable_bank(named_unknowns, at=at.isoformat(timespec="seconds"))
+    # MARGINAL k_eff, STAMPED BEFORE THE RANKING READS IT (research/docket_keff.py). Reorders
+    # only: the family factor lifts a family's share of the remainder, the per-cell stamp orders
+    # rows inside each family stream. Nothing is removed and the floor is untouched.
+    keff = keff_stamp(rows)
     ranking = rank_by_value(backlog, rows, capacity)
     quota = allocate(backlog, capacity, ranking=ranking)
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
@@ -1066,6 +1129,10 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     variant_split(judgeable, unjudged_ids)
     ordered = coverage_order(judgeable, quota, unjudged_ids) + study_rows
     head = ordered[:capacity]
+    if keff.get("status") == "MEASURED":
+        dk = _docket_keff()
+        if dk is not None:
+            keff["head"] = {"shipped": dk.head_census(ordered, capacity, keff.get("_terms") or {})}
     queued: dict[str, int] = {}
     for row in head:
         fam = str(row.get("family") or "")
@@ -1251,12 +1318,16 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             "neither judged nor passed, because nobody looked is not a failure"),
         "unknown_reasons": unknown,
         "unrunnable": unrunnable,
+        "keff_order": _keff_summary(keff),
+        "_keff_detail": keff,
         "value_ranking": ranking,
         "value_rule": ("remainder after every family's floor goes down expected value per "
                        "judge-second: p_optimistic (upper credible bound of the desk's own Beta "
                        "prior, so an unseen family is explored) x net-of-cost slot value "
                        "(NET_EDGE.json) x (1 + marginal breadth from EFFECTIVE_BREADTH cluster "
-                       "occupancy), divided by measured seconds per cell x the family's bar cost"),
+                       "occupancy) x keff_factor (1 + max(0, mean marginal-k_eff priority of the "
+                       "family's cells, research/docket_keff.py)), divided by measured seconds "
+                       "per cell x the family's bar cost"),
         "worst_backlog": [
             {"family": f, "unjudged": table[f]["unjudged"], "queued": table[f]["queued"],
              "oldest_unjudged_age_h": table[f]["oldest_unjudged_age_h"],
@@ -1312,10 +1383,21 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         # dropped in either order: both hold every row.
         split = variant_split(judgeable, ids)
         cap = int((doc.get("totals") or {}).get("capacity_measured") or 0)
-        before = coverage_order(judgeable, quota, ids, demote_variants=False)
+        before = coverage_order(judgeable, quota, ids, demote_variants=False, use_keff=False)
         ordered_j = coverage_order(judgeable, quota, ids)
         ordered = ordered_j + study
         was, now_ = _unseen_in_prefix(before, cap), _unseen_in_prefix(ordered_j, cap)
+        # THE ORDERING EVIDENCE: what the judge's measured capacity head holds under the shipped
+        # order against the legacy one (no variant demotion, no k_eff term). Same rows, same
+        # quotas -- the difference is only which cells the hour reaches first.
+        keff = doc.get("_keff_detail") or {}
+        dk = _docket_keff()
+        if keff.get("status") == "MEASURED" and dk is not None:
+            terms = keff.get("_terms") or {}
+            keff["head"] = {"capacity": cap,
+                            "shipped": dk.head_census(ordered_j, cap, terms),
+                            "legacy": dk.head_census(before, cap, terms)}
+            doc["keff_order"] = _keff_summary(keff)
         doc["variant_demotion"] = {
             **split, "capacity": cap,
             "unseen_in_capacity_before": was, "unseen_in_capacity_after": now_,
@@ -1327,9 +1409,11 @@ def order_docket(rows: list[dict[str, Any]], *, publish: bool = True,
         doc["unrunnable_filtered_from_docket"] = len(blocked)
         for _b in blocked:
             _b.pop("_cell", None)
+            _b.pop("_keff", None)
         for row in ordered:
             row.pop("_cell", None)
             row.pop("_variant", None)
+            row.pop("_keff", None)
         if publish:
             write(doc)
         return ordered, doc
@@ -1342,6 +1426,14 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
     """Publish the table and advance the ratchet. A ratchet write is the NEXT reading's baseline."""
     target = report or REPORT
     target.parent.mkdir(parents=True, exist_ok=True)
+    keff = doc.pop("_keff_detail", None)
+    if isinstance(keff, dict) and keff.get("status") == "MEASURED" and report is None:
+        dk = _docket_keff()
+        if dk is not None:
+            try:
+                dk.publish(keff)
+            except OSError as exc:
+                doc.setdefault("keff_order", {})["publish_error"] = f"{type(exc).__name__}"
     target.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
     fams = doc.get("families") or {}
     state = {
