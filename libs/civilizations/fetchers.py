@@ -164,6 +164,8 @@ def _fetch_git_mirror(src: acq.Source, cursor: dict[str, Any], ctx: acq.FetchCon
     for path in changed:
         if ctx.expired():
             return
+        if LIC.LICENCE_FILE.match(path.rsplit("/", 1)[-1]):
+            continue                                   # kept once under notices/, not a record
         rc, body = _git(["show", f"{head}:{path}"], d, _remaining(ctx))
         if rc != 0:
             continue                                   # deleted in the delta
