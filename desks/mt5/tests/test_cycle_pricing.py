@@ -42,6 +42,7 @@ def _isolate(tmp_path: Path, monkeypatch: Any, *, meta: dict[str, Any] | None = 
     # The factory contracts are a price source read from the desk's reports; a test must never
     # price off what the box wrote this hour.
     monkeypatch.setattr(cp, "_factory_prices", lambda: ({}, "isolated"), raising=True)
+    monkeypatch.setattr(cp, "_alpha_rank_prices", lambda: ({}, "isolated"), raising=True)
 
 
 BASES = {f"leg{i}": 600 for i in range(10)}
@@ -296,3 +297,35 @@ def test_the_factory_contracts_are_a_price_source(tmp_path: Path, monkeypatch: A
     assert plan["sources"]["factory_contracts"] is True
     assert plan["legs"]["leg3"]["planned_s"] > plan["legs"]["leg3"]["base_s"]
     assert plan["legs"]["leg4"]["planned_s"] == plan["legs"]["leg4"]["base_s"]
+
+
+def test_the_north_star_prices_legs_directly(tmp_path: Path, monkeypatch: Any) -> None:
+    """Effective independent alpha rank per compute hour is its own price source: the leg that
+    buys the most independent alpha per hour is given more, and no leg is cut."""
+    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={}, ledger=_spare_ledger())
+    monkeypatch.setattr(cp, "_kind_legs", lambda: {}, raising=True)
+    monkeypatch.setattr(cp, "_meta_prices", lambda: ({}, "none"), raising=True)
+    monkeypatch.setattr(cp, "_bandit_prices", dict, raising=True)
+    monkeypatch.setattr(cp, "_policy_factors", lambda: ({}, False), raising=True)
+    monkeypatch.setattr(cp, "_alpha_rank_prices",
+                        lambda: ({"leg2": 0.9, "leg4": 0.1, "leg6": 0.0}, ""), raising=True)
+    plan = cp.build_plan(BASES)
+    legs = plan["legs"]
+    assert "alpha_rank" in legs["leg2"]["priced_by"]
+    assert legs["leg2"]["factor"] > 1.0
+    assert plan["sources"]["alpha_rank"] is True
+    for name, v in legs.items():
+        assert v["factor"] >= 1.0 and v["planned_s"] >= v["base_s"], f"{name} was cut"
+
+
+def test_factory_contracts_publish_leg_independent_alpha(tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    import factory_contracts as fc  # type: ignore[import-not-found]
+    p = tmp_path / "FC.json"
+    p.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                             "leg_independent_alpha": {"deepen": 0.3, "mine": 0.1}}), "utf-8")
+    got, why = fc.leg_alpha_rank(p)
+    assert got == {"deepen": 0.3, "mine": 0.1} and why == ""
+    p.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(timespec="seconds")}), "utf-8")
+    assert fc.leg_alpha_rank(p)[0] == {}

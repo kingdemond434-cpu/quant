@@ -329,6 +329,16 @@ def _factory_prices() -> tuple[dict[str, float], str]:
         return {}, f"factory_contracts unavailable ({type(exc).__name__}: {exc})"
 
 
+def _alpha_rank_prices() -> tuple[dict[str, float], str]:
+    """{leg: marginal effective independent alpha rank per compute hour} -- the north star
+    (`alpha_rank.py` -> `factory_contracts.leg_alpha_rank`). Read, never written here."""
+    try:
+        from factory_contracts import leg_alpha_rank  # type: ignore[import-not-found]
+        return leg_alpha_rank()
+    except Exception as exc:
+        return {}, f"factory_contracts unavailable ({type(exc).__name__}: {exc})"
+
+
 def _department_of(leg: str) -> str:
     try:
         import hourly_cycle as hc  # type: ignore[import-not-found]
@@ -416,8 +426,14 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     # THE TIER S RESEARCHER MARKET (layer 8): per-producer value, ancestry-discounted, folded
     # onto legs; its held-out control legs are never repriced by it
     r01 = _rank01(_researcher_prices())
-    W = {"meta_controller": 0.40, "research_bandit": 0.20, "evig_acquisition": 0.15,
-         "factory_contracts": 0.15, "researcher_market": 0.15, "compute_policy": 0.10}
+    # THE NORTH STAR GETS ITS OWN WEIGHT (2026-09-30). Effective independent alpha rank per
+    # compute hour was one quarter of the factory's percentile mean; it is the metric the
+    # principal named, so it prices legs directly, second only to log-wealth per day.
+    ar, ar_why = _alpha_rank_prices()
+    a01 = _rank01(ar)
+    W = {"meta_controller": 0.40, "alpha_rank": 0.25, "research_bandit": 0.20,
+         "evig_acquisition": 0.15, "factory_contracts": 0.15, "researcher_market": 0.15,
+         "compute_policy": 0.10}
     legs: dict[str, dict[str, Any]] = {}
     for leg, base in sorted(bases.items()):
         parts: list[tuple[str, float, float]] = []
@@ -427,6 +443,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             parts.append(("research_bandit", W["research_bandit"], b01[leg]))
         if leg in e01:
             parts.append(("evig_acquisition", W["evig_acquisition"], e01[leg]))
+        if leg in a01:
+            parts.append(("alpha_rank", W["alpha_rank"], a01[leg]))
         if leg in f01:
             parts.append(("factory_contracts", W["factory_contracts"], f01[leg]))
         if leg in r01:
@@ -499,7 +517,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
                     "research_bandit": bool(bandit), "compute_policy": bool(policy),
                     "compute_policy_applied": policy_applied,
                     "evig_acquisition": bool(evig), "evig_why": evig_why,
-                    "factory_contracts": bool(fac), "factory_why": fac_why},
+                    "factory_contracts": bool(fac), "factory_why": fac_why,
+                    "alpha_rank": bool(ar), "alpha_rank_why": ar_why},
         "spare": spare,
         "spare_granted_s": sum(int(v["extra_s"]) for v in legs.values()),
         "department_grant_ratio": {d: round(r, 4) for d, r in sorted(grant_ratio.items())},
