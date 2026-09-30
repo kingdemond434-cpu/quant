@@ -202,3 +202,21 @@ def test_deepen_leaves_a_symbol_with_no_file_to_its_own_producer(_store: Path) -
     mt5 = _FakeMT5(total=9_000, maxbars=100_000, start=datetime(2021, 1, 1, tzinfo=UTC))
     assert deepen_one(mt5, "NOPE", "M30", dry_run=False)["status"] == "NO_FILE"
     assert not list(_store.glob("*.parquet"))
+
+
+def test_the_deepener_is_on_its_daily_step_clock_and_has_no_orphan_wrapper() -> None:
+    """#104 re-score: the registry declared `invoked:scripts/check_desk_module_drift.py` (a fence
+    that only LISTS the path) while the real runner is `daily_cycle:deepen_bars`, and
+    `ops/run_deepen_universe.cmd` was scheduled by nothing."""
+    repo = _DESK.parents[1]
+    if str(repo) not in sys.path:
+        sys.path.insert(0, str(repo))
+    from desks.mt5.ops import components
+
+    assert components.daily_step_imports().get("deepen_universe") == "deepen_bars"
+    reg = components.build_registry(repo)
+    spec = next(s for s in reg.all()
+                if s.code_paths == ("desks/mt5/research/deepen_universe.py",))
+    assert spec.schedule == "daily_cycle:deepen_bars"
+    assert spec.cadence_s == 86_400
+    assert not (repo / "ops" / "run_deepen_universe.cmd").exists()

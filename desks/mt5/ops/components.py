@@ -296,6 +296,50 @@ def daily_step_names() -> tuple[str, ...]:
     return tuple(dict.fromkeys(re.findall(r'\(\s*"([a-z0-9_]+)"\s*,\s*_', body)))
 
 
+@lru_cache(maxsize=1)
+def daily_step_imports() -> dict[str, str]:
+    """module stem -> the daily STEP whose function imports it (first step wins, STEPS order).
+
+    THE CLOCK A DAILY STEP LENDS IS THE STEP, NOT WHOEVER THE WALK POPPED FIRST (#104 re-score,
+    2026-09-30). `research/deepen_universe.py` runs once a day as `daily_cycle:deepen_bars`, which
+    imports it inside `_deepen_bars`. The reach walk is a stack, so the first reacher it popped
+    was `scripts/check_desk_module_drift.py` -- a fence that merely LISTS the path -- and the
+    registry, the runtime attestation and RUNTIME_STATE.md all declared the deepener's clock as
+    `invoked:scripts/check_desk_module_drift.py`. A step's import is the edge that runs it.
+    """
+    try:
+        tree = ast.parse(DAILY.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, SyntaxError, ValueError):
+        return {}
+    fn_imports: dict[str, list[str]] = {}
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            stems: list[str] = []
+            for sub in ast.walk(node):
+                if isinstance(sub, ast.Import):
+                    stems += [a.name.rsplit(".", 1)[-1] for a in sub.names]
+                elif isinstance(sub, ast.ImportFrom):
+                    if sub.module:
+                        stems.append(sub.module.rsplit(".", 1)[-1])
+                    stems += [a.name for a in sub.names]
+            fn_imports[node.name] = stems
+    step_fn: list[tuple[str, str]] = []
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(
+                isinstance(t, ast.Name) and t.id == "STEPS" for t in node.targets) \
+                and isinstance(node.value, ast.Tuple):
+            for elt in node.value.elts:
+                if isinstance(elt, ast.Tuple) and len(elt.elts) == 2 \
+                        and isinstance(elt.elts[0], ast.Constant) \
+                        and isinstance(elt.elts[1], ast.Name):
+                    step_fn.append((str(elt.elts[0].value), elt.elts[1].id))
+    out: dict[str, str] = {}
+    for step, fn in step_fn:
+        for stem in fn_imports.get(fn, ()):
+            out.setdefault(stem, step)
+    return out
+
+
 def daily_step_specs() -> list[ComponentSpec]:
     return [ComponentSpec(
         component_id=f"daily:{step}",
@@ -1195,9 +1239,23 @@ def reach_specs(reg: Registry, root: Path | None = None,
                     reached[target] = ("executable", rel)
                     frontier.append(target)
     out: list[ComponentSpec] = []
+    daily_rel = DAILY.relative_to(ROOT).as_posix() if DAILY.is_relative_to(ROOT) else ""
+    step_of = daily_step_imports()
     for rel, (kind, via) in sorted(reached.items()):
         if rel not in exes:
             continue                     # a pure library: not an executable, nothing to claim
+        step = step_of.get(Path(rel).stem)
+        if step and daily_rel and daily_rel in _REACHERS.get(rel, ()):
+            # A daily step imports it: that step IS its clock (see `daily_step_imports`).
+            out.append(ComponentSpec(
+                component_id=f"{kind}:{rel}",
+                kind=kind, host="box", code_paths=(rel,),
+                cadence_s=86_400, timeout_s=3_600, progress_metric=UNMEASURED,
+                owner="daily_cycle", restart_action="restart:task:MT5-Daily",
+                criticality="optional", resource_budget={"budget_s": 3600},
+                schedule=f"daily_cycle:{step}", artifact_class="daily",
+                notes=f"REACHED: imported by daily step `{step}` in {daily_rel}, runs when it runs"))
+            continue
         out.append(ComponentSpec(
             component_id=f"{kind}:{rel}",
             kind=kind, host="any", code_paths=(rel,),
@@ -1340,7 +1398,7 @@ def _declare_own_artifacts(reg: Registry, root: Path | None = None) -> None:
             if s.outputs or s.kind not in ("library", "executable"):
                 continue
             prefix, _, via = s.schedule.partition(":")
-            if prefix not in ("import", "invoked"):
+            if prefix not in ("import", "invoked", "daily_cycle"):
                 continue
             # The scheduling reacher first; any other reacher that binds an artifact otherwise,
             # so the proof does not depend on which reacher the walk happened to pop first.
