@@ -520,6 +520,7 @@ def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
         rec.update({"applied_s": int(base), "factor": 1.0, "applied": False,
                     "department_factor": round(dept, 3), "department_authoritative": dept_auth,
                     "department_why": dept_why, "authoritative": False, "trial": False,
+                    "granted": False,
                     "arm": "none", "governed_why": "bandit shares unreadable; base budget",
                     "why": "bandit shares unreadable for these arms; base budget"})
         return int(base), rec
@@ -561,10 +562,11 @@ def budget_s(leg: str, base: float) -> tuple[int, dict[str, Any]]:
                 "graveyard_factor": round(grave, 3), "graveyard_why": grave_why,
                 # WHICH PARADIGM THIS LEG IS, AND HOW INDEPENDENT IT IS (Tier-1 Q18).
                 "paradigm_factor": round(para, 3), "paradigm_why": para_why,
-                # `factor` is the PRICE (what the budget asked for); `applied_s` is what it was
-                # GRANTED after `_govern`, and `applied` says the budget moved seconds this hour.
-                "factor": round(factor, 3), "applied_s": applied,
-                "applied": rec.get("arm") == "treated",
+                # `factor` is the PRICE (what the budget asked for) and `applied` says the price
+                # was read from the bandit's shares; `applied_s` is what `_govern` GRANTED, and
+                # `granted` says the budget moved seconds above the floor this hour.
+                "factor": round(factor, 3), "applied_s": applied, "applied": True,
+                "granted": rec.get("arm") == "treated",
                 "why": f"share {share:.3f} of arms {list(arms)} vs equal-share baseline "
                        f"{baseline:.3f} -> x{factor:.2f}, clipped to [{FLOOR}, {CEIL}]"
                        f"; department factor x{dept:.2f} "
@@ -596,7 +598,7 @@ def record(rec: dict[str, Any]) -> None:
                    "baseline, clipped to [1, 2]; the floor (x1.0, its base) always runs, and the "
                    "uplift above it is granted only out of the department clock's measured "
                    "spare, only in a treated hour, and not while the contract is REJECTED; "
-                   "`applied` false means the floor ran, and `department_authoritative` false "
+                   "`granted` false means the floor ran, and `department_authoritative` false "
                    "means the resource exchange REPORTED its factor rather than deciding it"}
     try:
         OUT.parent.mkdir(parents=True, exist_ok=True)

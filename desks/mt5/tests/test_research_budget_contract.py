@@ -67,7 +67,7 @@ REJECT = [("treated", 4), ("treated", 5), ("treated", 4), ("treated", 5),
 def test_the_trial_grants_the_uplift_from_surplus_but_is_not_authoritative(desk: Any) -> None:
     s, rec = rb.budget_s("alpha_evolution", 240)
     assert rec["factor"] == rb.CEIL and s == 480
-    assert rec["arm"] == "treated" and rec["trial"] is True
+    assert rec["arm"] == "treated" and rec["trial"] is True and rec["granted"] is True
     assert rec["contract"]["verdict"] == "UNMEASURED" and rec["authoritative"] is False
     rb.record(rec)
     doc = json.loads(rb.OUT.read_text("utf-8"))
@@ -85,7 +85,7 @@ def test_the_uplift_never_exceeds_measured_surplus(desk: Any) -> None:
 def test_no_measured_surplus_grants_nothing_above_the_floor(desk: Any, surplus: Any) -> None:
     desk["surplus"] = surplus
     s, rec = rb.budget_s("alpha_evolution", 240)
-    assert s == 240 and rec["arm"] == "none" and rec["applied"] is False
+    assert s == 240 and rec["arm"] == "none" and rec["granted"] is False
 
 
 def test_a_held_out_hour_runs_the_floor_and_is_a_trial_unit(desk: Any) -> None:
