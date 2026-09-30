@@ -1796,7 +1796,8 @@ SYNC_CYCLE_S = 3600.0
 GRAPH_BUDGET_SHARE = 0.4
 #: THE VERDICT STREAM'S OWN ROW CAP, as a multiple of `max_rows` (measured 2026-09-25). The
 #: shared 20,000-row cap was sized when every stream cost the same per row; the verdicts did not,
-#: because `mark_candidate` scanned the whole candidate table per row (`ix_candidates_donated_cell`).
+#: because `mark_candidate` scanned the whole candidate table per row
+#: (`ix_candidates_donated_cell`).
 #: With that index the verdicts are the CHEAPEST stream on the pass, and a cap sized for the
 #: expensive case is the only thing between a 227,497-row backlog and a single pass. The
 #: wall-clock deadline is still the real guard; this only stops the ROW COUNT binding the funnel's
