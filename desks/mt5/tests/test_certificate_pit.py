@@ -82,7 +82,12 @@ def edge(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 def test_resolve_inputs_reads_cot_only_after_release(edge) -> None:
     es, _desk = edge
     index = pd.date_range("2026-03-02", "2026-03-10", freq="h")
-    cot = es.resolve_inputs("XAUUSD", index, ["XAUUSD"])["cot_net"]
+    weekly = es.resolve_inputs("XAUUSD", index, ["XAUUSD"])["cot_net"]
+    assert (weekly.index.to_series().diff().dropna().dt.days >= 7).all()   # one row per report
+    # what `build_primitives` does with it: exact-stamp reindex, then forward fill
+    cot = es.build_primitives(pd.DataFrame(
+        {"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0}, index=index), "XAUUSD",
+        {"cot_net": weekly})["ext_cot_net"]
     tue = pd.Timestamp("2026-03-03")
     fri = pd.Timestamp("2026-03-06 12:00")                 # release day, before the release
     sat = pd.Timestamp("2026-03-07 01:00")
@@ -90,7 +95,6 @@ def test_resolve_inputs_reads_cot_only_after_release(edge) -> None:
     assert cot.notna().sum() > 0                            # the feature still exists
     assert float(cot.loc[fri]) == report_of_tue - 1.0       # Friday still reads LAST week's
     assert float(cot.loc[tue]) == report_of_tue - 1.0       # the Tuesday never reads itself
-    assert list(cot.index) == list(index)
 
 
 def test_macro_snapshot_is_never_broadcast_back(edge) -> None:

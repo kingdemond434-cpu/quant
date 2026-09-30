@@ -259,17 +259,26 @@ def _data_os():
 
 
 def _known(series, source: str, index):
-    """A valid-dated series re-indexed on its KNOWLEDGE time (`data_os.known_series`) and carried
-    CAUSALLY onto the caller's bar clock: each bar holds the latest value already published at
-    its stamp. The one door every dated external input of the certificate path goes through.
+    """A valid-dated series re-labelled on its KNOWLEDGE time (`data_os.known_series`), each
+    label that falls inside `index` snapped FORWARD to the first bar at or after it. The one door
+    every dated external input of the certificate path goes through.
 
-    It lands on `index` itself because `build_primitives` aligns extras by EXACT stamp: a CFTC
-    knowledge time (Saturday 00:00) matches no FX bar, so an unaligned known series would read
-    as all-NaN and silently drop the feature -- the cell would vanish instead of becoming honest.
+    WHY SNAP, AND WHY ONLY FORWARD. `build_primitives` aligns extras by EXACT stamp and then
+    forward-fills, and a CFTC knowledge time (Saturday 00:00) matches no FX bar: an unsnapped
+    series would read as all-NaN and silently drop the feature -- the cell would vanish instead
+    of becoming honest. Snapping to the first bar AT OR AFTER the knowledge time can only make a
+    value later, never earlier, and the series stays one observation per report, so a weekly
+    print is never counted as 168 hourly ones.
     """
+    import pandas as pd
     known = _match_clock(_data_os().known_series(series.sort_index(), source), index)
-    known = known[~known.index.duplicated(keep="last")]
-    return known.reindex(known.index.union(index)).ffill().reindex(index)
+    if len(index):
+        labels = list(known.index)
+        for i, t in enumerate(labels):
+            if index[0] <= t <= index[-1]:
+                labels[i] = index[int(index.searchsorted(t, side="left"))]
+        known = pd.Series(known.to_numpy(), index=pd.DatetimeIndex(labels), name=known.name)
+    return known[~known.index.duplicated(keep="last")]
 
 
 def _snapshot_known_at(doc: dict, index):
