@@ -7,12 +7,13 @@
    "variants": 192
   },
   "asia_momentum": {
-   "dead": 307,
-   "dead_share_of_measured": 0.6688,
-   "dead_share_of_variants": 0.6688,
+   "dead": 302,
+   "dead_share_of_measured": 0.658,
+   "dead_share_of_variants": 0.658,
    "live": 150,
-   "rehomed": 267,
-   "remapped": 267,
+   "live_filter_only": 5,
+   "rehomed": 262,
+   "remapped": 262,
    "session_tz_mismatch": 2,
    "variants": 459
   },
@@ -29,11 +30,12 @@
    "variants": 90
   },
   "clock_transition": {
-   "dead": 30,
-   "dead_share_of_measured": 1.0,
-   "dead_share_of_variants": 0.7143,
-   "reanchored": 30,
-   "remapped": 30,
+   "dead": 26,
+   "dead_share_of_measured": 0.8667,
+   "dead_share_of_variants": 0.619,
+   "live_filter_only": 4,
+   "reanchored": 26,
+   "remapped": 26,
    "unmeasured": 12,
    "variants": 42
   },
@@ -77,11 +79,12 @@
    "variants": 1593
   },
   "dow_effect": {
-   "dead": 18,
-   "dead_share_of_measured": 1.0,
-   "dead_share_of_variants": 1.0,
-   "rehomed": 18,
-   "remapped": 18,
+   "dead": 12,
+   "dead_share_of_measured": 0.6667,
+   "dead_share_of_variants": 0.6667,
+   "live_filter_only": 6,
+   "rehomed": 12,
+   "remapped": 12,
    "variants": 18
   },
   "drawdown_conditional": {
@@ -117,12 +120,13 @@
    "variants": 57
   },
   "forced_flow": {
-   "dead": 120,
-   "dead_share_of_measured": 0.6452,
-   "dead_share_of_variants": 0.6452,
+   "dead": 62,
+   "dead_share_of_measured": 0.3333,
+   "dead_share_of_variants": 0.3333,
    "live": 66,
-   "rehomed": 94,
-   "remapped": 94,
+   "live_filter_only": 58,
+   "rehomed": 49,
+   "remapped": 49,
    "variants": 186
   },
   "formula": {
@@ -177,12 +181,13 @@
    "variants": 21
   },
   "liquidity_gamma_reversal": {
-   "dead": 458,
-   "dead_share_of_measured": 0.297,
-   "dead_share_of_variants": 0.2678,
+   "dead": 74,
+   "dead_share_of_measured": 0.048,
+   "dead_share_of_variants": 0.0433,
    "live": 700,
-   "rehomed": 354,
-   "remapped": 354,
+   "live_filter_only": 384,
+   "rehomed": 58,
+   "remapped": 58,
    "session_tz_mismatch": 384,
    "unmeasured": 168,
    "variants": 1710
@@ -228,21 +233,20 @@
    "variants": 339
   },
   "monday_gap": {
-   "dead": 6,
-   "dead_share_of_measured": 1.0,
-   "dead_share_of_variants": 0.5,
-   "rehomed": 6,
-   "remapped": 6,
+   "dead_share_of_measured": 0.0,
+   "dead_share_of_variants": 0.0,
+   "live_filter_only": 6,
    "unmeasured": 6,
    "variants": 12
   },
   "multi_speed_trend": {
-   "dead": 214,
-   "dead_share_of_measured": 0.9907,
-   "dead_share_of_variants": 0.8492,
+   "dead": 144,
+   "dead_share_of_measured": 0.6667,
+   "dead_share_of_variants": 0.5714,
    "live": 2,
-   "rehomed": 193,
-   "remapped": 193,
+   "live_filter_only": 70,
+   "rehomed": 130,
+   "remapped": 130,
    "unmeasured": 36,
    "variants": 252
   },
@@ -262,23 +266,26 @@
    "variants": 417
   },
   "overnight_drift": {
-   "dead": 70,
-   "dead_share_of_measured": 0.9722,
-   "dead_share_of_variants": 0.8974,
-   "reanchored": 62,
-   "rehomed": 8,
-   "remapped": 70,
+   "dead": 45,
+   "dead_share_of_measured": 0.625,
+   "dead_share_of_variants": 0.5769,
+   "live_filter_only": 25,
+   "reanchored": 40,
+   "rehomed": 5,
+   "remapped": 45,
    "session_tz_mismatch": 2,
    "unmeasured": 6,
    "variants": 78
   },
   "overnight_gap_decay": {
-   "dead": 104,
-   "dead_share_of_measured": 0.8966,
-   "dead_share_of_variants": 0.8966,
+   "dead": 60,
+   "dead_share_of_measured": 0.5172,
+   "dead_share_of_variants": 0.5172,
    "live": 12,
-   "rehomed": 104,
-   "remapped": 104,
+   "live_filter_only": 30,
+   "protected_by_evidence": 14,
+   "rehomed": 60,
+   "remapped": 60,
    "variants": 116
   },
   "pca_residual": {
@@ -329,30 +336,33 @@
    "variants": 45
   },
   "session_range_breakout": {
-   "dead": 74,
-   "dead_share_of_measured": 0.5736,
-   "dead_share_of_variants": 0.5736,
+   "dead": 58,
+   "dead_share_of_measured": 0.4496,
+   "dead_share_of_variants": 0.4496,
    "live": 55,
-   "reanchored": 64,
+   "protected_by_evidence": 16,
+   "reanchored": 48,
    "rehomed": 10,
-   "remapped": 74,
+   "remapped": 58,
    "variants": 129
   },
   "spread_state": {
-   "dead": 3,
-   "dead_share_of_measured": 0.0059,
-   "dead_share_of_variants": 0.0059,
+   "dead": 2,
+   "dead_share_of_measured": 0.0039,
+   "dead_share_of_variants": 0.0039,
    "live": 507,
-   "rehomed": 3,
-   "remapped": 3,
+   "live_filter_only": 1,
+   "rehomed": 2,
+   "remapped": 2,
    "variants": 510
   },
   "style_premia": {
-   "dead": 1197,
-   "dead_share_of_measured": 1.0,
-   "dead_share_of_variants": 0.941,
-   "rehomed": 721,
-   "remapped": 721,
+   "dead": 1127,
+   "dead_share_of_measured": 0.9415,
+   "dead_share_of_variants": 0.886,
+   "live_filter_only": 70,
+   "rehomed": 668,
+   "remapped": 668,
    "unmeasured": 75,
    "variants": 1272
   },
@@ -410,16 +420,16 @@
   "libs/research/family_firing.session_cells <- miner_candidate_compiler.expand_axes, breadth_sweep.cells, axis_registry, qd_frontier, trajectory_evolution, moat_card_explosion",
   "registry door -> research_candidates (origin session_variant_remap)"
  ],
- "dead_but_server_window_fires": 659,
+ "dead_but_server_window_fires": 0,
  "dead_by_cause": {
-  "NEVER_FIRES_IN_SESSION": 2775,
-  "SESSION_TZ_MISMATCH": 448
+  "NEVER_FIRES_IN_SESSION": 2086
  },
- "dead_found": 2775,
- "dead_share": 0.1278,
- "dead_share_of_measured": 0.2589,
- "dead_today_on_server_window": 2564,
- "dead_without_standin": 667,
+ "dead_found": 2086,
+ "dead_rule": "DEAD only when NEITHER clock holds a signal (never on today's server-hour filter, never in the market's own session); filter-only is LIVE_FILTER_ONLY, market-only is SESSION_TZ_MISMATCH",
+ "dead_share": 0.096,
+ "dead_share_of_measured": 0.1946,
+ "dead_today_on_server_window": 2534,
+ "dead_without_standin": 542,
  "docket": {
   "path": "data/hypotheses/external_survivors.json",
   "rows": 57538,
@@ -429,23 +439,51 @@
  "donation": {
   "available": true,
   "dry_run": true,
-  "planned": 2108
+  "planned": 1544
  },
- "elapsed_s": 4.58,
- "generated_at": "2026-09-30T15:52:09+00:00",
+ "elapsed_s": 178.56,
+ "generated_at": "2026-09-30T16:16:57+00:00",
+ "guard": {
+  "certified_cells": 52,
+  "certified_or_positive_dead": 0,
+  "certified_or_positive_dead_sample": [],
+  "evidence_variants_by_verdict": {
+   "LIVE": 9,
+   "LIVE_FILTER_ONLY": 7,
+   "PROTECTED_BY_EVIDENCE": 30,
+   "UNMEASURED": 15
+  },
+  "live_filter_only_or_protected": 689,
+  "net_positive_cells": 80,
+  "passed_cells": 0,
+  "session_variants_with_evidence": 61,
+  "sources": {
+   "canon": {
+    "certificates": 52,
+    "path": "UNIVERSAL_SURVIVORS.canon.json"
+   },
+   "gate_verdict_ledger": {
+    "path": "gate_verdict_ledger.jsonl",
+    "status": "UNMEASURED: FileNotFoundError (box state)"
+   }
+  }
+ },
  "law": "NOTHING REMOVED: a dead variant stays in the docket and is only marked; UNMEASURED is never DEAD; every stand-in is a new cell charged to the census",
  "live": 7497,
+ "live_filter_only": 659,
  "oracle": {
-  "elapsed_s": 2.34,
+  "elapsed_s": 157.66,
   "keys": 434,
-  "measured_now": 0,
+  "measured_now": 434,
   "unmeasured_keys": 182
  },
- "oracle_version": 3,
- "remapped": 2108,
+ "oracle_clock_hash": "09c62e1ff12198d4",
+ "oracle_version": "4+clock:09c62e1ff12198d4",
+ "protected_by_evidence": 30,
+ "remapped": 1544,
  "remapped_by_kind": {
-  "reanchored": 262,
-  "rehomed": 1846
+  "reanchored": 220,
+  "rehomed": 1324
  },
  "sealed_need": "/mnt/project-files/patches/session_variants/: the sealed sort in external_gauntlet.main cannot read DEAD_SESSION_VARIANTS.jsonl; the patch there sorts a dead variant last (never drops it). The two-stage judge (claude/two-stage-judge) should read the sidecar in stage 0 and spend no build on a listed genome_id.",
  "session_tz_mismatch": 448,
