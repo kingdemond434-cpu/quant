@@ -109,6 +109,8 @@ ATTESTATION = {
     "regime_control": REGIME_CONTROL,
     "cpcv_mean_oos_sharpe_min_exclusive": 0.0,
     "lockbox_oos_sharpe_min": 0.0,
+    "lockbox_basis": "reserved_final_calendar_fraction_carved_before_program_matrix",
+    "lifetime_trial_floor": "max(campaign charge, per-family lifetime trials in EXPERIMENT_LEDGER)",
     "expected_value_min_exclusive": 0.0,
 }
 
@@ -137,6 +139,59 @@ _SUPERSEDED_TRIAL_BASES: tuple[str, ...] = (
 if isinstance(_SPEC_FIXED_TRIALS, int) and 2 <= _SPEC_FIXED_TRIALS <= 597:
     _SUPERSEDED_TRIAL_BASES = (*_SUPERSEDED_TRIAL_BASES, _LEGACY_TRIAL_COUNT_BASIS,
                                "fixed_campaign_trials(597)")
+
+
+# ------------------------------------------------------------------ THE RESERVED LOCKBOX (v3)
+_LOCKBOX_PARAMS = next((g.get("params", {}) for g in _SPEC.get("gates", [])
+                        if g.get("name") == "lockbox"), {})
+#: The final fraction of the campaign calendar that no gate but the lockbox may read.
+LOCKBOX_FRAC = float(_LOCKBOX_PARAMS.get("holdout_fraction", 0.20))
+#: Below this many held-out observations a lockbox Sharpe is noise and the gate FAILS.
+LOCKBOX_MIN_DAYS = int(_LOCKBOX_PARAMS.get("min_holdout_bars", 40))
+
+
+def lockbox_cut(series: list[Any], frac: float = LOCKBOX_FRAC,
+                min_days: int = LOCKBOX_MIN_DAYS) -> Any:
+    """The single calendar key at which every cell's lockbox begins, or None when too short.
+
+    Derived from the UNION of every cell's index so one cut serves the whole campaign: every cell
+    holds out the SAME calendar period, which keeps the program matrix's rows comparable. None
+    means no lockbox exists, and the verdict fails closed on it -- it must never degrade into
+    'no held-out data, therefore fine'.
+    """
+    cal = sorted({d for s in series if s is not None for d in s.index})
+    if len(cal) < min_days * 2:
+        return None
+    idx = int(len(cal) * (1.0 - frac))
+    if len(cal) - idx < min_days:
+        return None
+    return cal[idx]
+
+
+def carve_lockbox(series: list[Any], cut: Any) -> tuple[list[Any], list[Any]]:
+    """Split each series at `cut` into (development, held-out). None stays None on both sides.
+
+    With no cut every held-out slice is None, so the lockbox gate fails closed for every cell.
+    """
+    if cut is None:
+        return list(series), [None] * len(series)
+    dev = [None if s is None else s[s.index < cut] for s in series]
+    held = [None if s is None else s[s.index >= cut] for s in series]
+    return dev, held
+
+
+def lockbox_stage(held: Any, sharpe: Any, min_days: int = LOCKBOX_MIN_DAYS) -> dict[str, Any]:
+    """Gate 9's verdict from the held-out slice alone. `sharpe` is the desk's Sharpe function."""
+    n = 0 if held is None else len(held)
+    if n < min_days:
+        return {"passed": False, "lockbox_sharpe": None, "n_days": int(n),
+                "basis": ATTESTATION["lockbox_basis"],
+                "why": (f"held-out window is {n} days, under the {min_days}-day floor; "
+                        f"no lockbox evidence exists")}
+    import numpy as _np
+    sr = float(sharpe(_np.asarray(held, dtype=float)))
+    return {"passed": bool(sr >= 0.0), "lockbox_sharpe": round(sr, 4), "n_days": int(n),
+            "basis": ATTESTATION["lockbox_basis"]}
 
 
 def is_exact_policy(value: Any) -> bool:

@@ -2304,6 +2304,60 @@ def certificate_annotations(v: dict, cell: dict | None, meta: dict, *, priors: d
     return out
 
 
+#: Registry fields without which the engine's cost for a symbol is a default, not a measurement.
+COST_BASIS_FIELDS = ("median_spread_pts", "tick_size", "tick_value", "contract_size",
+                     "swap_long", "swap_short")
+
+
+def registry_cost_basis(sym: str, meta: dict) -> dict:
+    """Whether the engine priced `sym` from measured registry numbers. UNMEASURED otherwise.
+
+    `Costs.from_symbol` silently falls back on absent fields (swap 0, quote_per_account 1.0, a
+    0.05 spread floor), which prices an unknown cost as zero. This names every missing field so
+    the swap_cost stage can fail closed on it instead.
+    """
+    row = (meta or {}).get(sym) or {}
+    missing = []
+    for f in COST_BASIS_FIELDS:
+        v = row.get(f)
+        if v is None or isinstance(v, bool):
+            missing.append(f)
+            continue
+        try:
+            fv = float(v)
+        except (TypeError, ValueError):
+            missing.append(f)
+            continue
+        if f in ("median_spread_pts", "tick_size", "tick_value", "contract_size") and not fv > 0:
+            missing.append(f)
+    if not row:
+        return {"measured": False, "why": f"{sym or '?'} is absent from the universe registry"}
+    if missing:
+        return {"measured": False, "why": f"{sym} registry lacks {', '.join(missing)}"}
+    return {"measured": True, "why": "spread, commission conversion and swap from the registry"}
+
+
+def charged_lifetime_trials(campaign: int, family: str, lifetime: dict,
+                            raw_cells: int) -> tuple[int, str]:
+    """The trial charge for one cell: max(campaign charge, the family's lifetime trials).
+
+    ADAPTIVE MULTIPLICITY (principal, 2026-09-29: "every trial ever attempted contributes to
+    selection-bias accounting"). The campaign charge alone is a constant, blind to the tens of
+    thousands of configurations the desk has searched; the experiment ledger (judged cells in the
+    hypothesis graph plus every proposer's tests_run) counts them per family. A tightening only:
+    the result is never below the campaign charge. An unreadable ledger fails closed to the raw
+    burden of this sweep (cells x the spec's multiplier), never to the campaign charge alone.
+    """
+    from research.gate_policy import TRIALS_MULTIPLIER
+    if not isinstance(lifetime, dict) or lifetime.get("status") != "MEASURED":
+        raw = max(2, math.ceil(max(0, raw_cells) * float(TRIALS_MULTIPLIER)))
+        return max(int(campaign), raw), f"lifetime ledger UNMEASURED: raw sweep burden {raw}"
+    fam_n = (lifetime.get("family_trials") or {}).get(family)
+    if not isinstance(fam_n, int) or fam_n <= 0:
+        return int(campaign), f"family {family or '?'} absent from the lifetime ledger"
+    return max(int(campaign), fam_n), f"lifetime family trials {fam_n}"
+
+
 def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     """Run full 10-gate gauntlet on a list of cells."""
     print(f"\n=== GAUNTLET: {hunt_name} ({len(cells)} cells) ===")
@@ -2347,6 +2401,20 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     if hits:
         print(f"  series cache: {hits}/{len(cells)} cell(s) loaded (unchanged data-day); "
               f"{len(cells) - hits} computed fresh")
+
+    # ------------------------------------------------------------------ THE LOCKBOX, CARVED FIRST
+    # GATE 9 WAS GATE 7 READ TWICE until v3 of the policy: `lockbox` passed on `wf_oos >= 0`,
+    # the walk-forward gate's own OOS Sharpe, and 58/58 authority certificates carried
+    # lockbox_sharpe == walk_forward.oos_sharpe exactly. The cut happens HERE, before the drop
+    # census and the program matrix, so PBO/SPA/DSR/CPCV/walk-forward/stress/EV all see the
+    # development window only, and the held-out tail is read by the lockbox gate alone. One
+    # calendar cut for the whole sweep (gate_policy.lockbox_cut), so every column holds out the
+    # same period. The FULL series stays in the cache: the carve is re-derived every sweep.
+    from research.gate_policy import carve_lockbox, lockbox_cut, lockbox_stage
+    _lock_cut = lockbox_cut(daily)
+    daily, lock_daily = carve_lockbox(daily, _lock_cut)
+    print(f"  lockbox: reserved from {_lock_cut} onward" if _lock_cut is not None else
+          "  lockbox: NONE -- campaign too short to reserve; every cell's gate 9 fails closed")
 
     # Build matrix from valid series
     # WHERE CELLS DIE, BY FAMILY. A cell that builds but yields fewer than 60 trading days has
@@ -2469,6 +2537,13 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         except Exception:
             daily_x3.append(None)
 
+    # The stress arm is judged on the same development window as the baseline, never the tail.
+    if _lock_cut is not None:
+        daily_x3 = [None if x is None else x[x.index < _lock_cut] for x in daily_x3]
+
+    # THE LIFETIME LEDGER, read once per sweep (V21 made authoritative by policy v3).
+    _lifetime = lifetime_trial_report(c.get("family") for c in cells)
+
     # Per-cell verdicts
     verdicts = []
     for _idx, (orig_i, ds) in enumerate(valid):
@@ -2483,12 +2558,16 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
             "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
         }
 
-        # Deflated Sharpe
-        dsr = deflated_sharpe_ratio(arr, n_trials=n_trials,
+        # Deflated Sharpe, charged the LARGER of the campaign charge and the family's lifetime
+        # trial count (policy v3): every trial the desk ever ran in this mechanism raises the bar.
+        _n_cell, _n_basis = charged_lifetime_trials(n_trials, str(c.get("family") or ""),
+                                                    _lifetime, matrix.shape[1])
+        dsr = deflated_sharpe_ratio(arr, n_trials=_n_cell,
                                     variance_of_sharpes=sh_var, threshold=DSR_THRESHOLD)
         stages["deflated_sharpe"] = {
             "passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
-            "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials,
+            "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": _n_cell,
+            "campaign_trials": n_trials, "lifetime_basis": _n_basis,
             "variance_of_sharpes": round(sh_var, 6),
             "variance_basis": _var_basis,
             "variance_measured_this_sweep": round(sh_var_measured, 6),
@@ -2530,9 +2609,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         exp3 = float(x3_ds.to_numpy(float).mean()) if x3_ds is not None and len(x3_ds) > 0 else 0.0
         stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
 
-        # Lockbox
-        stages["lockbox"] = {"passed": bool(wf_oos >= 0.0),
-                             "lockbox_sharpe": round(wf_oos, 4)}
+        # Lockbox: the reserved tail, which no gate above has read (policy v3).
+        stages["lockbox"] = lockbox_stage(lock_daily[orig_i], sharpe_ratio)
 
         # Expected Value
         ev = float(arr.mean())
@@ -2557,28 +2635,39 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         # A CERTIFICATE JUDGED AT COSTS THE BROKER DOES NOT CHARGE IS NOT EVIDENCE. It is a
         # well-documented opinion.
         #
-        # UNMEASURED PASSES, and that is deliberate rather than lax. This needs a live terminal to
-        # read a swap rate; the gauntlet also runs where there is none, and refusing every cell on
-        # a host without MT5 would halt certification entirely instead of charging a cost. The
-        # verdict says UNMEASURED, which is a reading, and the fence binds where it can measure.
+        # UNKNOWN COST IS UNKNOWN EDGE (principal, 2026-09-29). This stage used to PASS whenever
+        # the live terminal could not be read, which is every host the gauntlet runs on without
+        # one -- so an unpriced instrument certified as though financing were free. Two readings
+        # now, and the cell needs one of them to be a real measurement:
+        #   1. the REGISTRY basis the engine itself charged: `Costs.from_symbol` prices spread,
+        #      commission (via tick_value) and swap (worse side, per night held) from
+        #      universe.json, so a symbol carrying all of those was backtested net of them;
+        #   2. the live-terminal cost-to-edge fence, which can still REFUSE on a measured cost.
+        # A symbol missing any registry field is UNMEASURED, and UNMEASURED fails closed.
+        _basis = registry_cost_basis(str(c.get("sym") or c.get("symbol") or ""), meta)
         try:
             from research.cost_to_edge import verdict as _cost_verdict
             _refuse, _why, _cost = _cost_verdict(
                 str(c.get("sym") or c.get("symbol") or ""),
                 str(c.get("family") or ""), ev)
-            stages["swap_cost"] = {
-                "passed": not _refuse,
-                "measured": bool(_cost.get("measured")),
-                "total_cost_r": _cost.get("total_cost_r"),
-                "swap_r": _cost.get("swap_r"),
-                "holds_overnight": _cost.get("holds_overnight"),
-                "why": _why or ("cost within the bar" if _cost.get("measured")
-                                else str(_cost.get("why") or "UNMEASURED")),
-            }
         except Exception as _exc:
-            stages["swap_cost"] = {"passed": True, "measured": False,
-                                   "why": f"UNMEASURED ({type(_exc).__name__}): "
-                                          f"cost could not be priced on this host"}
+            _refuse, _why, _cost = False, "", {
+                "measured": False, "why": f"terminal unreadable ({type(_exc).__name__})"}
+        _live_measured = bool(_cost.get("measured"))
+        stages["swap_cost"] = {
+            "passed": bool((_basis["measured"] or _live_measured) and not _refuse),
+            "measured": bool(_basis["measured"] or _live_measured),
+            "registry_basis": _basis,
+            "live_measured": _live_measured,
+            "total_cost_r": _cost.get("total_cost_r"),
+            "swap_r": _cost.get("swap_r"),
+            "holds_overnight": _cost.get("holds_overnight"),
+            "why": (_why if _refuse else
+                    "cost within the bar" if _live_measured else
+                    "priced by the registry basis the engine charged" if _basis["measured"] else
+                    f"UNMEASURED cost fails closed: {_basis['why']}; "
+                    f"live: {_cost.get('why') or 'unread'}"),
+        }
 
         passed = all(s["passed"] for s in stages.values())
         # WHICH GATE ACTUALLY STOPPED IT, AND WITHOUT THIS THE FUNNEL IS INVISIBLE.
