@@ -12,6 +12,8 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 for _p in (str(ROOT / "desks" / "mt5" / "research"), str(ROOT / "scripts"), str(ROOT)):
     if _p not in sys.path:
@@ -102,11 +104,51 @@ def test_fence_fails_when_the_role_is_asserted_not_measured(tmp_path: Path) -> N
     assert any("role is asserted" in f for f in fence.measure(tmp_path)["failures"])
 
 
-def test_fence_fails_on_staleness_on_the_attesting_host(tmp_path: Path) -> None:
-    _write(tmp_path, _doc(generated_at=ra._iso(time.time() - ra.MAX_SILENCE_S - 600)))
+def _box_host() -> dict:
+    return {"hostname": socket.gethostname(), "role": "trading_host",
+            "role_evidence": "gateway_state.json is 0.1h old (fresh)"}
+
+
+def test_fence_fails_on_staleness_on_the_trading_box(tmp_path: Path) -> None:
+    # the box that owns the organs, reading its own stale attestation: red, as always
+    _write(tmp_path, _doc(host=_box_host(),
+                          generated_at=ra._iso(time.time() - ra.MAX_SILENCE_S - 600)))
     v = fence.measure(tmp_path)
-    assert v["on_attesting_host"] and any("stale on its own host" in f for f in v["failures"])
+    assert v["on_attesting_host"] and v["age_judged"]
+    assert v["staleness"].startswith("STALE")
+    assert any("stale on its own host" in f for f in v["failures"])
     assert fence.main(["--root", str(tmp_path)]) == 2
+
+
+def test_off_box_staleness_is_unmeasured_loudly_never_judged(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    # a cloud container (every one is hostname `vm`) that attested itself as non_trading_host:
+    # its age is not the box's hourly leg, so it reads UNMEASURED with the age and the host
+    _write(tmp_path, _doc(generated_at=ra._iso(time.time() - 10 * ra.MAX_SILENCE_S)))
+    v = fence.measure(tmp_path)
+    assert v["on_attesting_host"] and not v["age_judged"]
+    assert v["staleness"].startswith(ra.UNMEASURED)
+    assert socket.gethostname() in v["staleness"] and "20.0h" in v["staleness"]
+    assert not v["failures"]
+    assert fence.main(["--root", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    assert "staleness: UNMEASURED" in out and "20.0h ago on host" in out
+
+
+def test_structural_failures_stay_red_off_box_even_when_stale(tmp_path: Path) -> None:
+    old = ra._iso(time.time() - 10 * ra.MAX_SILENCE_S)
+    here = socket.gethostname()
+    for doc, needle in (
+            (_doc(generated_at=old, attests_to_host="some-other-box"), "host drift"),
+            (_doc(generated_at=old, host={"hostname": here, "role": "non_trading_host",
+                                          "role_evidence": ""}), "role is asserted"),
+            (_doc(generated_at="not-a-time"), "not a timestamp")):
+        _write(tmp_path, doc)
+        v = fence.measure(tmp_path)
+        assert not v["age_judged"]
+        assert any(needle in f for f in v["failures"]), needle
+        assert not any("stale" in f for f in v["failures"])
+        assert fence.main(["--root", str(tmp_path)]) == 2
 
 
 def test_fence_passes_elsewhere_and_absence_is_unmeasured(tmp_path: Path) -> None:
