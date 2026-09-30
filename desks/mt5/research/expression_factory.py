@@ -91,6 +91,7 @@ def _bias() -> dict:
         return bias()
     except Exception:
         return {}
+from libs.regime import session_clock  # noqa: E402
 from libs.research import trial_ledger as tl  # noqa: E402
 
 try:
@@ -396,6 +397,9 @@ class World:
     asset_class: str = ""
     cost_status: str = "MEASURED"
     lockbox: dict[str, Any] = field(default_factory=dict)
+    #: The TRUE UTC hour of each bar. `hours` is the broker's EET stamp hour, which the cost
+    #: surface is keyed on; the SESSIONS table is in UTC and must be compared with this one.
+    utc_hours: np.ndarray | None = None
 
     @property
     def n(self) -> int:
@@ -613,7 +617,7 @@ class Lake:
         world = World(sym, frames, np.log(close.to_numpy(dtype=float)),
                       idx.hour.to_numpy(dtype=np.int16), _regimes(frames["vol"]),
                       self._cost(sym, close), mult, bound, self.asset_class(sym), status,
-                      lockbox)
+                      lockbox, utc_hours=session_clock.utc_hours(idx))
         self.worlds[sym] = world
         return world
 
@@ -686,7 +690,10 @@ def _state_mask(world: World, state: str) -> np.ndarray | None:
     kind, _, name = state.partition(":")
     if kind == "session" and name in SESSIONS:
         lo, hi = SESSIONS[name]
-        return np.asarray((world.hours >= lo) & (world.hours < hi))
+        # SESSIONS are UTC hours; `world.hours` is the broker's stamp hour, 2-3 h ahead of UTC,
+        # so a "london" state compared with it was the Frankfurt pre-open (Tier S 2026-09-30).
+        hrs = world.utc_hours if world.utc_hours is not None else world.hours
+        return np.asarray((hrs >= lo) & (hrs < hi))
     if kind == "regime" and name in REGIMES:
         return np.asarray(world.vol_regime == REGIMES.index(name))
     return None
