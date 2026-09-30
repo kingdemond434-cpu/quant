@@ -694,7 +694,9 @@ def cot_features(data_dir: Path = DESK / "data") -> dict[str, pd.DataFrame]:
         f["cot.am_net_chg_z"] = zscore((sign * am).diff()).to_numpy()
         f["cot.oi_chg_z"] = zscore(oi.pct_change(fill_method=None)).to_numpy()
         f["cot.conc_top4_pct"] = pct_rank(conc).to_numpy()
-        out[asset] = f.dropna(subset=["available_time"]).set_index("available_time")
+        f = f.dropna(subset=["available_time"]).set_index("available_time")
+        # A backlog publishes many weeks at one instant; the latest week is the reading then.
+        out[asset] = f[~f.index.duplicated(keep="last")]
     return out
 
 
@@ -763,7 +765,7 @@ def price_features(asset: str, cot: pd.DataFrame | None) -> dict[str, pd.Series]
     out = {"price.drawdown_z": -zscore(dd, 250)}
     if cot is not None and "cot.lev_net_pct" in cot:
         ret4w = close.pct_change(20, fill_method=None)
-        pos = cot["cot.lev_net_pct"].reindex(close.index, method="ffill")
+        pos = carry_forward(cot["cot.lev_net_pct"], pd.DatetimeIndex(close.index))
         # Crowded long while price fails to advance: high positioning percentile, low return rank.
         out["price.div_vs_positioning"] = (pos - pct_rank(ret4w, 250)).astype(float)
     return out
@@ -903,7 +905,7 @@ def build_states(assets: Iterable[str] | None = None) -> dict[str, pd.DataFrame]
         fsrc: dict[str, str] = {}
         if asset in cot:
             cols.update({k: cot[asset][k] for k in cot[asset].columns})
-            fsrc.update({k: COT_SOURCE_ID for k in cot[asset].columns})
+            fsrc.update(dict.fromkeys(cot[asset].columns, COT_SOURCE_ID))
         for key, (s, sid) in macro.items():
             cols[key] = s
             fsrc[key] = sid
@@ -1071,7 +1073,7 @@ def learn_side(source: str, signal: str, transform: str, threshold: float, symbo
         return None
     edge = float((np.sign(ev["m"]) * ev["fwd"]).mean())
     return {"side": 1 if edge >= 0 else -1, "train_end": pd.Timestamp(cut).isoformat(),
-            "train_events": int(len(ev)), "train_edge": round(edge, 6)}
+            "train_events": len(ev), "train_edge": round(edge, 6)}
 
 
 def _credit(credited: dict[str, str], ids: Iterable[str]) -> None:
@@ -1093,7 +1095,7 @@ def emit_cells(plans: list[dict[str, Any]], *, deadline: float, dry_run: bool = 
     done = set(prev.get("keys") or [])
     raw_credit = prev.get("credited") or {}
     credited: dict[str, str] = (dict(raw_credit) if isinstance(raw_credit, Mapping)
-                                else {}) # a list from the pre-decay ledger carries no time
+                                else {})  # a list from the pre-decay ledger carries no time
     made = created = skipped = unlearned = 0
     errors: list[str] = []
     culture_rows: list[dict[str, Any]] = []
