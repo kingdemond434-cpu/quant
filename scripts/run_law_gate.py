@@ -498,7 +498,9 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # the live half of THE RUNTIME ATTESTATION: on the host that publishes it, an attestation
     # older than its own cadence means the hourly leg has stopped and the committed file has
     # quietly become a photograph of the past -- which is worse than no file, because it still
-    # reads as current runtime state to anyone on GitHub.
+    # reads as current runtime state to anyone on GitHub. An attestation stamped
+    # `desk_host: false` (a cloud or other non-desk pass) is not a desk attestation: its age is
+    # UNMEASURED here too, so a cloud attest no longer turns this arm red ~2h later.
     ("check_runtime_attestation.py", ("--require-state",)),
     # the live half of THE SELF-REPAIR FENCE: a class whose detector exists but whose artifact has
     # never appeared, or has gone silent past its window, is judged where the detectors run. The
