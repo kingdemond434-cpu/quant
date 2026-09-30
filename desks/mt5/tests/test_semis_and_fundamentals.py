@@ -569,3 +569,135 @@ def test_every_donated_row_carries_its_culture(semis, tmp_path, monkeypatch):
     assert csb.culture("USDJPY", "fx_usd", "x")["source_culture"] == "JP"
     assert csb.culture("USDCNH", "fx_usd", "x")["participant_structure"] == "policy_driven"
     assert csb.culture("NOTREAL", "index", "x")["source_culture"] == "UNMEASURED"
+
+
+# ------------------------------------------------------------- the EDGAR user agent (item 6) ---
+_UA_VARS = ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA")
+
+
+def test_edgar_ua_reads_three_names_in_order(monkeypatch):
+    from research import sec_fundamentals as sec
+    assert sec.UA_ENV_VARS == _UA_VARS
+    for v in _UA_VARS:
+        monkeypatch.delenv(v, raising=False)
+    assert sec.edgar_user_agent() == (None, None)
+    monkeypatch.setenv("SEC_EDGAR_UA", "c")
+    assert sec.edgar_user_agent() == ("c", "SEC_EDGAR_UA")
+    monkeypatch.setenv("SEC_EDGAR_USER_AGENT", "b")
+    assert sec.edgar_user_agent() == ("b", "SEC_EDGAR_USER_AGENT")
+    monkeypatch.setenv("QUANT_EDGAR_UA", "a")
+    assert sec.edgar_user_agent() == ("a", "QUANT_EDGAR_UA")
+    assert not hasattr(sec, "DEFAULT_UA"), "the placeholder identity is back"
+
+
+def test_no_edgar_ua_is_blocked_and_sends_nothing(lake, monkeypatch):
+    sec = lake
+    for v in _UA_VARS:
+        monkeypatch.delenv(v, raising=False)
+
+    def no_network(*a, **k):
+        raise AssertionError("a request left without a User-Agent")
+    monkeypatch.setattr(sec, "urlopen", no_network)
+    monkeypatch.setattr(sec, "registry_equities", lambda: ["NVIDIA"])
+    doc = sec.run(budget_s=10, symbols=["NVIDIA"])
+    assert doc["pass"]["status"] == "UNMEASURED" and doc["pass"]["blocked"] is True
+    assert all(v in doc["pass"]["why"] for v in _UA_VARS)
+
+
+def test_the_ua_value_is_never_written(lake, monkeypatch):
+    sec = lake
+    secret = "Probe Person probe-ua-value@example.invalid"
+    monkeypatch.setenv("SEC_EDGAR_USER_AGENT", secret)
+    monkeypatch.delenv("QUANT_EDGAR_UA", raising=False)
+    monkeypatch.setattr(sec, "http_fetcher", lambda ua: (lambda url: (403, None)))
+    monkeypatch.setattr(sec, "http_lines", lambda ua: (lambda url: (403, [])))
+    monkeypatch.setattr(sec, "registry_equities", lambda: ["NVIDIA"])
+    doc = sec.run(budget_s=10, symbols=["NVIDIA"])
+    assert doc["pass"]["user_agent_source"] == "SEC_EDGAR_USER_AGENT"
+    assert secret not in json.dumps(doc, default=str)
+
+
+# ------------------------------------------------------------------ survivorship (item 5) ---
+def test_delisted_issuers_are_resolved_from_edgar_and_never_tradable(lake, tmp_path,
+                                                                     monkeypatch):
+    """A delisted issuer's CIK comes from EDGAR's entity list (unique match or reported), its
+    Form 25 dates the delisting, its fundamentals are built, and it is never a cell."""
+    from research import universe_policy as up
+    sec = lake
+    fx = tmp_path / "fx"
+    fx.mkdir()
+    # SYNTHETIC fixture CIKs, not real ones: the test pins the mechanism, not EDGAR's numbers
+    (fx / "cik-lookup-data.txt").write_text(
+        "XILINX INC:0000999001:\nVMWARE INC:0000999002:\nVMWARE, INC.:0000999003:\n"
+        "SOMETHING ELSE:0000999004:\n", "latin-1")
+    (fx / "company_tickers.json").write_text(json.dumps({
+        "0": {"cik_str": 1045810, "ticker": "NVDA", "title": "NVIDIA CORP"}}), "utf-8")
+    facts, subs = synthetic_company(REV)
+    subs = json.loads(json.dumps(subs))
+    subs["filings"]["recent"]["form"].insert(0, "25-NSE")
+    subs["filings"]["recent"]["accessionNumber"].insert(0, "delist-1")
+    subs["filings"]["recent"]["acceptanceDateTime"].insert(0, "2022-02-14T16:00:00.000Z")
+    subs["filings"]["recent"]["filingDate"] = (
+        ["2022-02-14"] + ["2021-01-01"] * (len(subs["filings"]["recent"]["form"]) - 1))
+    (fx / "submissions_CIK0000999001.json").write_text(json.dumps(subs), "utf-8")
+    (fx / "companyfacts_CIK0000999001.json").write_text(json.dumps(facts), "utf-8")
+    monkeypatch.setattr(sec, "registry_equities", lambda: [])
+    doc = sec.run(fetch=sec.fixture_fetcher(fx), lines=sec.fixture_lines(fx), budget_s=60,
+                  symbols=["NVIDIA"])
+    surv = doc["survivorship"]["issuers"]
+    x = surv["Xilinx"]
+    assert x["cik"] == 999001 and x["tradable_now"] is False
+    assert x["delisting_filed"] == "2022-02-14" and x["snapshots"] > 5
+    assert x["in_ranking_history"]["price_free_ranks"] is True
+    assert str(x["in_ranking_history"]["price_ranks"]).startswith("UNMEASURED")
+    assert surv["VMware"]["status"].startswith("cik_unresolved: ambiguous")
+    assert surv["Altera"]["status"].startswith("cik_unresolved: absent")
+    assert "XILINX" in fp.covered_symbols()
+    # untradable now, by every door
+    assert up.is_delisted("Xilinx") and up.peer_class("Xilinx") is None
+    assert not up.may_hypothesise("Xilinx", "quantamental_quality")
+    assert "Xilinx" in up.delisted_members("semis") and "Twitter" not in up.delisted_members("semis")
+    reg = up._registry()
+    assert not {k.upper() for k in up.DELISTED_ISSUERS} & {k.upper() for k in reg}
+
+
+def test_a_registry_ticker_that_left_the_sec_list_still_resolves(lake, tmp_path, monkeypatch):
+    sec = lake
+    now = datetime(2026, 9, 30, tzinfo=UTC)
+    sec._remember_tickers({"WBA": 999010}, now)
+    assert sec.ticker_history()["WBA"] == 999010
+    assert sec._norm_name("MONSANTO CO /NEW/") == "MONSANTO CO"
+    assert sec._norm_name("Twitter, Inc.") == "TWITTER INC"
+
+
+def test_delisted_issuers_join_the_ranking_history_and_are_never_placed(equity, tmp_path,
+                                                                        monkeypatch):
+    """EQE is the fifth of six on gross margin: short. While a WORSE delisted peer still files,
+    EQE is fifth of seven and out of the bottom third; when the peer stops filing it leaves the
+    cross-section by itself and EQE is short again. A delisted name never gets a signal."""
+    frames, snaps = equity
+    hist = []
+    start = pd.Timestamp("2020-02-10 12:00", tz="UTC")
+    for q in range(3):
+        av = start + pd.Timedelta(days=91 * q)
+        hist.append({**snaps.iloc[0].to_dict(), "symbol": "Xilinx", "available": av,
+                     "period_end": av - pd.Timedelta(days=40), "gross_margin": 0.01})
+    path = tmp_path / "with_hist.parquet"
+    pd.concat([snaps, pd.DataFrame(hist)], ignore_index=True).to_parquet(path, index=False)
+    base = _key(qm.family_quantamental_quality(frames["EQE"], symbol="EQE"))
+    monkeypatch.setattr(fp, "PIT_PATH", path)
+    monkeypatch.setattr(fp, "_CACHE", {"key": None, "by_symbol": {}})
+    monkeypatch.setattr(xs, "history_members", lambda k: ["Xilinx"] if k == "equity" else [])
+    monkeypatch.setattr(xs, "is_delisted", lambda s: str(s).upper() == "XILINX")
+    d = xs._h1(frames["EQE"])
+    panel = xs.class_panel(d, "EQE", klass="equity", fundamentals_history=True)
+    assert panel is not None and panel["delisted"] == ["Xilinx"]
+    assert xs.class_panel(d, "EQE", klass="equity")["delisted"] == []   # price books: bars only
+    got = _key(qm.family_quantamental_quality(frames["EQE"], symbol="EQE"))
+    life_end = (start + pd.Timedelta(days=91 * 2 - 40 + 200)).value
+    assert [k for k in base if k[0] >= life_end + 86_400e9 * 2] == \
+        [k for k in got if k[0] >= life_end + 86_400e9 * 2]
+    early = [k for k in got if k[0] < (start + pd.Timedelta(days=150)).value]
+    assert [k for k in base if k[0] < (start + pd.Timedelta(days=150)).value] and not early
+    assert xs.class_panel(d, "Xilinx", klass="equity", fundamentals_history=True) is None
+    assert qm.family_quantamental_quality(frames["EQE"], symbol="Xilinx") == []
