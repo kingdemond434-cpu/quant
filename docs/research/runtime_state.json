@@ -26,11 +26,11 @@
   "LIVE": 118,
   "STALE": 1,
   "MISSING": 49,
-  "NEVER": 725,
+  "NEVER": 726,
   "UNMEASURED": 30
  },
  "scope": {
-  "attested": 923,
+  "attested": 924,
   "excluded": 419,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1332,
@@ -23389,6 +23389,31 @@
    "summary": {},
    "progress_metric": "leg_completions",
    "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "executable:desks/mt5/research/culture_orthogonality.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/culture_orthogonality.py"
+   ],
+   "clock": "hourly_cycle:occupancy_map",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+   "artifact_declared": "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/research/pf_allocator.py apply_culture_labels; desks/mt5/research/docket_keff.py"
   }
  ],
  "ratchet": {
