@@ -865,7 +865,8 @@ def test_one_registry_names_every_lane_once(tmp_path: Path) -> None:
         {"name": "Stats Portal", "region": "cn", "url": "https://stats.example.cn/sj/"}]}),
         "utf-8")
     (d / "lane.json").write_text(json.dumps({"sources": [
-        {"id": "hcn_interviews", "name": "七禾网 专访", "url": "http://7hcn.com/list/"},
+        {"id": "hcn_interviews", "name": "七禾网 专访", "region": "cn",
+         "url": "http://7hcn.com/list/"},
         {"id": "cn_rail", "name": "rail freight", "url": "https://stats.example.cn/sj"},
         {"id": "shfe_kx", "name": "a", "url": "https://s.cn/d.html?paramid=kx"},
         {"id": "shfe_pm", "name": "b", "url": "https://s.cn/d.html?paramid=pm"}]}), "utf-8")

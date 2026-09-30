@@ -222,8 +222,13 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
         feeds=[str(x) for x in (row.get("feeds_to") or [])],
         enabled=bool(row.get("enabled", True)), config=cfg, origin=origin,
         url_key=canonical_url(_row_url(row)),
-        seats=[str(x) for x in (row.get("seats") if isinstance(row.get("seats"), list)
-                                else [row["seats"]] if row.get("seats") else [])])
+        seats=_seats(row.get("seats")))
+
+
+def _seats(raw: Any) -> list[str]:
+    if isinstance(raw, list):
+        return [str(x) for x in raw]
+    return [str(raw)] if raw else []
 
 
 def load_roster(path: Path = ROSTER, *, root: Path | None = None) -> list[Source]:
