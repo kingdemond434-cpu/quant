@@ -1268,3 +1268,7 @@ if __name__ == "__main__":
     except Exception:
         import traceback
         slog("shadow error:", traceback.format_exc())
+        # NON-ZERO, SO THE CALLER SEES IT. Exiting 0 here made a pass that died before writing
+        # the state file read as a clean run to `enrol_clocks` and to the enrolment repair sweep;
+        # the forward book then stood still for days behind a green leg (measured 2026-09-30).
+        raise SystemExit(1) from None
