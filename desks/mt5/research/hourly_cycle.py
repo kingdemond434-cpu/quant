@@ -847,6 +847,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE TIER S DOOR'S WRITER, EVERY HOUR (2026-09-30): the promotion door fails closed on a
     # verdict older than 6h, so this leg is on the core clock and exempt from rotation
     # (libs/ops/leg_rotation.ALWAYS_RUN). ~10 min measured end to end under its 1,500 s cap.
+    # THE RESEARCH-LIVE IDENTITY JOIN, before the door that lists its mismatches: a reader of
+    # four artifacts, seconds, so it rides the core clock with the door (`tier_s`).
+    "research_live_identity",
     "tier_s",
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
@@ -971,7 +974,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
-                     "fast_admission", "canon_publication", "placebo_audit"),
+                     "fast_admission", "canon_publication", "placebo_audit",
+                     # each hunted family's own pipeline on null data: the gates' real
+                     # false-positive rate, per family
+                     "null_lab"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -985,7 +991,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
                      "regime_hierarchy", "representation_discovery",
-                     "event_surprise", "cross_asset_graph", "transmission_engine"), "macro"),
+                     "event_surprise", "cross_asset_graph", "transmission_engine",
+                     # the macro-conditioned dip sweep, read point-in-time through the store
+                     "macro_conditioned_sweep"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -1037,7 +1045,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # own lineage: meta.
                      "attribution_census",
                      "runtime_attestation", "self_repair", "desk_self_heal",
-                     "tier5_acceptance", "mission_control", "tier_s"), "meta"),
+                     "tier5_acceptance", "mission_control", "tier_s",
+                     "research_live_identity"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -1607,6 +1616,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # twin 64 s, world_science 58 s); the cap leaves room for the box's larger ledgers (the
     # gate verdict ledger and hypothesis graph are read in full).
     "tier_s": 1_500,
+    # The null lab stops STARTING draws at --budget-s 600 minus a 30 s margin and then writes;
+    # one draw on a feature-heavy family is ~10 s, so the cap sits above its own budget.
+    "null_lab": 720,
     # THE CONTROL PLANE'S OBSERVE PASS walks ~1,100 components, every watermark, every lease and
     # every mandatory edge. Its own budget is 600 s (it stops itself), so the cycle's cap sits
     # above that: a cap BELOW an organ's own budget is the truncated-job defect that cost this
@@ -2062,6 +2074,45 @@ def orthogonality() -> dict:
     silently shrank the book would be a growth cut with no missed-growth ledger line behind it.
     """
     return _producer("orthogonality", "research/orthogonality.py", "--apply")
+
+
+def null_lab() -> dict:
+    """`null_lab`: every hunted family's OWN pipeline on data where no edge can exist.
+
+    For each family in the docket, one of its own docketed specs goes through
+    `external_gauntlet.build_cell` (read-only, `h1_override`) on block-shuffled bars, a
+    volatility-matched random walk, and its real bars with sign-permuted signals; the engine
+    backtests the cell and the gauntlet's per-cell statistics score it. The draws accumulate in
+    `reports/null_lab_draws.jsonl` (fewest-drawn family and arm first, so the budget goes where
+    the rate is least known) and `reports/NULL_LAB.json` publishes each family's empirical
+    false-positive rate, its null distribution and `exceeds_nominal` as a named defect.
+
+    CONSEQUENCE: the `tier_s` leg (after this one) multiplies that family's online-FDR p-values
+    by its `fpr_charge` (`libs/tiers/online_fdr.charge_null_fpr`), so an easy-to-fool family pays
+    its real price in lifetime alpha-wealth.
+    """
+    return _producer("null_lab", "research/null_lab.py", "--budget-s", "600")
+
+
+def research_live_identity() -> dict:
+    """`research_live_identity`: for every LIVE sleeve, the spec the gateway trades against the
+    spec research certified -- family, symbol, selector, params (recovered the way the gateway
+    recovers them) and code hash (resolved the way the gateway resolves it, against the one the
+    forward clock froze). Writes `reports/RESEARCH_LIVE_IDENTITY.json`; a MISMATCH is a named
+    defect, and the `tier_s` door lists that LIVE row in `data/tier_s/live_door.json`
+    (`promotion_authority.review_live`)."""
+    return _producer("research_live_identity", "research/research_live_identity.py")
+
+
+def macro_conditioned_sweep() -> dict:
+    """`macro_conditioned_sweep`: the dip families on seven macro-mapped symbols, each run plain
+    and conditioned on its named macro driver -- the conditioning state read POINT-IN-TIME through
+    `data_os.store_from_series` / `BitemporalStore.latest_known` at the source's declared lag
+    (`data_os.PUBLICATION_LAGS["cross_asset_anchors"]`). It had never been scheduled, and it joined
+    each signal to its own calendar date's state, computed from that day's close. Stage-A ranking
+    only; `reports/macro_conditioned_sweep.json` carries `pit` counts of what the old join admitted
+    before the print was knowable, and the `tier_s` data-OS organ publishes them."""
+    return _producer("macro_conditioned_sweep", "research/run_macro_conditioned_sweep.py")
 
 
 def tier_s() -> dict:
@@ -4703,6 +4754,11 @@ def main() -> None:
     rxs = _costed("research_exchange_score", research_exchange_score)
     lkp = _costed("lake_promote", lake_promote)
     orth = _costed("orthogonality", orthogonality)
+    # BEFORE tier_s: its online-FDR organ reads NULL_LAB.json and its door reads
+    # RESEARCH_LIVE_IDENTITY.json, and its data-OS organ reads the macro sweep's PIT counts.
+    nlab = _costed("null_lab", null_lab)
+    rlid = _costed("research_live_identity", research_live_identity)
+    mcsw = _costed("macro_conditioned_sweep", macro_conditioned_sweep)
     tiers = _costed("tier_s", tier_s)
     advx = _costed("adversary_evolution", adversary_evolution)
     exsci = _costed("execution_science", execution_science)
@@ -5221,6 +5277,8 @@ def main() -> None:
                     "causal_graph": cg, "alpha_rl": arl,
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
+                    "null_lab": nlab, "research_live_identity": rlid,
+                    "macro_conditioned_sweep": mcsw,
                     "tier_s": tiers, "adversary_evolution": advx,
                     "execution_science": exsci, "frontier_map": fmap,
                     "market_ecology": meco, "research_diversity_archive": rdar,

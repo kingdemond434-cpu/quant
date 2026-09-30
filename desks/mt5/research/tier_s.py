@@ -1323,7 +1323,16 @@ def organ_online_fdr() -> dict[str, Any]:
         n_graph += 1
         tests.append(online_fdr.Test(test_id=nid, at=str(r.get("at") or ""), p=1.0,
                                      family=str(r.get("family") or "")))
+    # THE NULL LAB'S PRICE (desks/mt5/research/null_lab.py, hourly): a family whose own gate
+    # passes its null above the nominal level has its p-values multiplied by the measured charge
+    # before the replay, so it spends the lifetime budget at its REAL false-positive rate.
+    from libs.research import null_lab
+    null_doc = _read(REPORTS / "NULL_LAB.json")
+    tests, null_charge = online_fdr.charge_null_fpr(tests, null_lab.charges(null_doc))
+    null_charge["source"] = ("reports/NULL_LAB.json" if isinstance(null_doc, dict)
+                             else "UNMEASURED: reports/NULL_LAB.json absent")
     res = online_fdr.replay(tests)
+    res["null_lab"] = null_charge
     rows = res.pop("rows")
     over = [r for r in rows if r["over_budget"]]
     _write(OUT_DIR / "ONLINE_FDR_ROWS.json", {"generated_utc": NOW.isoformat(),
@@ -2969,8 +2978,20 @@ def organ_data_os() -> dict[str, Any]:
     sweep = _read(REPORTS / "edges_macro_fusion_sweep.json")
     pit_reads = (sweep.get("pit") if isinstance(sweep, dict) else None) or {
         "status": data_os.UNMEASURED, "why": "edges_macro_fusion_sweep.json absent or pre-PIT"}
+    # KNOWN-BY-DATE: every registered dataset's declared publication lag (data_os
+    # .PUBLICATION_LAGS or its own pit block), and the research readers routed through the store.
+    reg_doc = _read(DATA_REGISTRY)
+    reg = reg_doc.get("datasets") if isinstance(reg_doc, dict) else None
+    lags = (data_os.lag_census(reg) if isinstance(reg, dict) else
+            {"status": data_os.UNMEASURED, "why": "data_registry.json absent"})
+    macro_sweep = _read(REPORTS / "macro_conditioned_sweep.json")
+    pit_reads = {"edges_macro_fusion_sweep": pit_reads,
+                 "macro_conditioned_sweep": ((macro_sweep.get("pit") if isinstance(
+                     macro_sweep, dict) else None) or {
+                     "status": data_os.UNMEASURED,
+                     "why": "macro_conditioned_sweep.json absent or pre-PIT"})}
     return {"pit_audits": audits, "sources": sources, "gate_yield": yields,
-            "pit_reads": pit_reads,
+            "pit_reads": pit_reads, "publication_lags": lags,
             "acquisition": {"scored_on": {"rankers": "own_metric", "landed": "gate_yield"},
                             "open": len(ranking), "registered_now": made,
                             "resolved_now": n_res, "calibration": cal, "top": ranking[:25],

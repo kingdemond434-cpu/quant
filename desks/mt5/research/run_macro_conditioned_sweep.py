@@ -49,14 +49,42 @@ import warnings
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 warnings.filterwarnings("ignore", category=UserWarning)
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from libs.tiers import data_os  # noqa: E402
 from mt5desk import families, macro_regime  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from mt5desk.multiplicity import deflation  # noqa: E402
+
+#: THE SOURCE `macro_regime.load_history` READS, as the data OS names it: its publication lag is
+#: declared once, in `libs/tiers/data_os.PUBLICATION_LAGS`, and read here -- never restated.
+MACRO_SOURCE = "cross_asset_anchors"
+
+
+def pit_conditioned(sigs: list, fav: pd.Series, col: str) -> tuple[list, dict]:
+    """The signals whose macro state, AS KNOWN AT THE SIGNAL'S OWN TIME, was favourable, and the
+    count of what the old same-date join admitted that was not yet knowable.
+
+    THE LOOK-AHEAD THIS CLOSES (the one `run_edges_macro_fusion_sweep` closed first). This sweep
+    kept a signal when `s.time.date()` was a favourable DATE -- but that day's state is computed
+    from the day's CLOSE, so a 03:00 signal was filtered on a yield change that printed about a
+    day later. The state is now read through the bitemporal store (`data_os.store_from_series`,
+    knowledge time = valid + the source's declared lag) with `latest_known` at each signal's
+    time, so every conditioned arm sees only what was knowable when it fired."""
+    store = data_os.store_from_series(fav, source=MACRO_SOURCE, entity=col,
+                                      attribute="favourable")
+    known = store.latest_known(col, "favourable", [s.time for s in sigs])
+    cond = [s for s, d in zip(sigs, known, strict=True) if d is not None and d.value]
+    fav_dates = set(fav[fav].index.date)
+    same_day = {id(s) for s in sigs if s.time.date() in fav_dates}
+    kept = {id(s) for s in cond}
+    return cond, {"signals": len(sigs), "pit_admitted": len(cond),
+                  "date_join_admitted": len(same_day),
+                  "lookahead_refused": len(same_day - kept)}
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
@@ -119,6 +147,7 @@ def main() -> int:
           f"reference only, promotes nothing]\n")
 
     rows = []
+    pit_tot: dict[str, int] = {}
     for sym, fam in pairs:
         col, lookback, why = CONDITION[sym]
         h1 = pd.read_parquet(UNI / f"{sym}_H1.parquet")
@@ -133,8 +162,9 @@ def main() -> int:
         fav = _favourable(hist, col, lookback)
         if fav.empty:
             continue
-        fav_dates = set(fav[fav].index.date)
-        cond = [s for s in sigs if s.time.date() in fav_dates]
+        cond, pit_row = pit_conditioned(sigs, fav, col)
+        for k, v in pit_row.items():
+            pit_tot[k] = pit_tot.get(k, 0) + v
         n_c, t_c, e_c = _t(run_backtest(h1, cond, costs).trades) if cond else (0, float("nan"), float("nan"))
 
         rows.append({"symbol": sym, "family": fam, "condition": f"{col} falling {lookback}d",
@@ -161,8 +191,14 @@ def main() -> int:
 
     out = BASE / "reports" / "macro_conditioned_sweep.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({"screen_bar": SCREEN_BAR, "runs": trials, "rows": rows},
-                              indent=2, default=str), encoding="utf-8")
+    lag = data_os.declared_lag(MACRO_SOURCE) or {}
+    out.write_text(json.dumps({
+        "screen_bar": SCREEN_BAR, "runs": trials, "rows": rows,
+        # THE CONDITIONING READ, POINT-IN-TIME: through BitemporalStore.latest_known at the
+        # source's declared lag, with what the old same-date join would have admitted.
+        "pit": {"store": "libs.tiers.bitemporal.BitemporalStore.latest_known",
+                "source": MACRO_SOURCE, "lag_s": lag.get("lag_s"), "basis": lag.get("basis"),
+                **pit_tot}}, indent=2, default=str), encoding="utf-8")
     print(f"\n-> {out}")
     return 0
 
