@@ -136,6 +136,12 @@ def test_hourly_merge_refuses_stale_producer_artifacts(monkeypatch, tmp_path) ->
     assert report["source_state"]["edge_search_results.json"] == "STALE_SKIPPED"
     assert report["per_source"]["edge_search_results.json"] == -2
     assert all(row["producer"] != "edge_search_results.json" for row in rows)
+    # PRE-REGISTERED BEFORE THE JUDGE READS IT, into the ledger beside the redirected docket --
+    # never the desk's own (every path in the merge's prereg step hangs off HYP).
+    assert report["preregistration"]["status"] == "APPLIED", report["preregistration"]
+    assert rows and all(r["prereg_status"] == "PREREGISTERED" and r["prereg_hash"]
+                        for r in rows)
+    assert (tmp_path / "preregistrations.jsonl").exists()
 
 
 def test_mechanism_prior_is_not_invented_for_price_shape() -> None:

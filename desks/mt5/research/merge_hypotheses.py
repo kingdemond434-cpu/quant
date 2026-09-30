@@ -851,9 +851,19 @@ def main() -> int:
         from libs.research import prereg_join as _pj_join
         from libs.research.hypothesis_graph import Graph as _Graph
         from research.frontier_identity import cell_id as _cell_id
-        _g = _Graph()
-        prereg = {"verdicts": _pj_join.record_gate_ledger(graph=_g, specs=rows_out),
-                  "docket": _pj_join.preregister_docket(rows_out, graph=_g, cell_id=_cell_id),
+        # EVERY PATH HANGS OFF `HYP`, so a caller that points this merge at another directory
+        # (every test does) moves the card ledger and the graph with it and never writes the
+        # desk's own. The defaults resolve to exactly the desk's paths.
+        _data = HYP.parent
+        _g = _Graph(_data / "hypothesis_graph.jsonl")
+        _paths: dict[str, Any] = {"gate_ledger": HYP / "gate_verdict_ledger.jsonl",
+                                  "seen_cells": HYP / "gauntlet_seen_cells.json",
+                                  "prereg_path": _data / "preregistrations.jsonl"}
+        prereg = {"verdicts": _pj_join.record_gate_ledger(
+                      graph=_g, specs=rows_out, cursor=HYP / "prereg_join_cursor.json",
+                      **_paths),
+                  "docket": _pj_join.preregister_docket(rows_out, graph=_g, cell_id=_cell_id,
+                                                        **_paths),
                   "status": "APPLIED"}
         _d = prereg["docket"]
         print(f"   preregistration: {_d['already']} carded, {_d['new_specs']} new spec(s) in "
