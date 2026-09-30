@@ -1,8 +1,11 @@
 """Broker stamps are EET/EEST under a UTC label; sessions are judged in real time (2026-09-30)."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
+import pytest
 
 from libs.regime import session_clock as sc
 
@@ -58,3 +61,52 @@ def test_aliases_and_unknown_sessions() -> None:
     assert sc.in_session(idx, "tokyo").tolist() == [False]  # type: ignore[union-attr]
     assert sc.in_session(idx, "overlap") is None
     assert isinstance(sc.in_session(idx, "ny"), np.ndarray)
+
+
+# ------------------------------------------------ the measurement the clock rests on, as a test
+
+_EURUSD = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "universe" / \
+    "EURUSD_H1.parquet"
+
+
+def _weekly_opens() -> pd.DatetimeIndex:
+    idx = pd.DatetimeIndex(pd.read_parquet(_EURUSD, columns=["close"]).index)
+    gap = idx[1:] - idx[:-1]
+    opens = idx[1:][gap >= pd.Timedelta(hours=36)]
+    # The Christmas and New Year weeks open late on a holiday Monday; they say nothing of the clock.
+    holiday = ((opens.month == 12) & (opens.day >= 24)) | ((opens.month == 1) & (opens.day <= 3))
+    return opens[~holiday]
+
+
+@pytest.mark.skipif(not _EURUSD.exists(), reason="EURUSD H1 bars are not on this clone")
+def test_every_fx_week_opens_at_five_pm_new_york_on_the_venue_clock() -> None:
+    """The docstring's claim, measured: 2018-2026, every non-holiday week opens Monday 00:00
+    stamp, and that stamp read as New York + 7 h is Sunday 17:00 New York -- the FX open."""
+    opens = _weekly_opens()
+    assert len(opens) > 400
+    assert set(zip(opens.weekday, opens.hour, strict=True)) == {(0, 0)}
+    ny = sc.server_to_utc(opens).tz_convert("America/New_York")
+    assert set(zip(ny.weekday, ny.hour, strict=True)) == {(6, 17)}
+
+
+@pytest.mark.skipif(not _EURUSD.exists(), reason="EURUSD H1 bars are not on this clone")
+def test_the_weeks_that_separate_new_york_from_athens_open_on_the_new_york_clock() -> None:
+    """Between the US and EU clock changes an EET/EEST venue would stamp the 17:00 New York open
+    23:00 Sunday. None does: the venue follows US daylight-time dates."""
+    opens = _weekly_opens()
+    utc = sc.server_to_utc(opens)
+    ny_dst = pd.Series(utc.tz_convert("America/New_York").map(lambda t: bool(t.dst())))
+    eu_dst = pd.Series(utc.tz_convert("Europe/Athens").map(lambda t: bool(t.dst())))
+    split = opens[(ny_dst != eu_dst).to_numpy()]
+    assert len(split) >= 20          # three weeks each spring and one each autumn, 2018-2026
+    assert set(zip(split.weekday, split.hour, strict=True)) == {(0, 0)}
+
+
+@pytest.mark.parametrize(("at", "off"), [
+    ("2026-07-01T12:00:00Z", 3), ("2026-01-15T12:00:00Z", 2),
+    ("2026-03-16T12:00:00Z", 3),     # New York already on daylight time, Athens not yet
+    ("2026-10-28T12:00:00Z", 3),     # Athens back on winter time, New York not yet
+    ("2026-11-02T12:00:00Z", 2),
+])
+def test_the_offset_in_force_follows_new_york_daylight_time(at, off) -> None:
+    assert sc.utc_offset_h(at) == off
