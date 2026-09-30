@@ -251,15 +251,15 @@ FAMILY_CLASSES: dict[str, tuple[str, ...]] = dict.fromkeys(SECTOR_FAMILIES, (BOO
 
 TARGETS: dict[str, dict[str, str]] = {
     "semis_sector_momentum": {
-        "cluster": "cross_sectional_fx",
+        "cluster": "cross_sectional_equity",
         "prior": "industry-relative momentum: slow intra-industry diffusion (Moskowitz & "
                  "Grinblatt 1999; Hou 2007)"},
     "semis_sector_reversal": {
-        "cluster": "cross_sectional_fx",
+        "cluster": "cross_sectional_equity",
         "prior": "within-industry short-horizon reversal: the price of immediacy (Lehmann 1990; "
                  "Da, Liu & Schaumburg 2014)"},
     "semis_sector_value": {
-        "cluster": "cross_sectional_fx",
+        "cluster": "cross_sectional_equity",
         "prior": "reversion to a long-run level ranked within industry (AMP 2013 value)"},
     "semis_leader_catchup": {
         "cluster": "cross_asset_lead_lag",

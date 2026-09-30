@@ -47,8 +47,11 @@ from research import survivor_neighbourhood as sn  # noqa: E402
 # --------------------------------------------------------------------------------- the taxonomy
 def test_taxonomy_is_declared_and_sized_for_the_target_band() -> None:
     keys = [c.key for c in ac.CLUSTERS]
-    assert len(keys) == len(set(keys)) == 15
-    assert ac.TARGET_MIN <= len(keys) <= ac.TARGET_MAX
+    # the principal's fifteen, in his order, then the two single-name payers (2026-09-30)
+    assert len(keys) == len(set(keys)) == 17
+    assert keys[-2:] == ["cross_sectional_equity", "quantamental"]
+    # the band bounds OCCUPIED clusters; the declared list must at least reach its top
+    assert len(keys) >= ac.TARGET_MAX >= ac.TARGET_MIN
     # Every cluster names a PAYER and a hunt; a cluster without one is a label, not a phenomenon.
     for c in ac.CLUSTERS:
         assert c.payer.strip() and c.hunt.strip() and c.title.strip()

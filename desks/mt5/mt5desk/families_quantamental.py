@@ -161,13 +161,13 @@ FAMILY_CLASSES: dict[str, tuple[str, ...]] = dict.fromkeys(QUANTAMENTAL_FAMILIES
 
 TARGETS: dict[str, dict[str, str]] = {
     "quantamental_value": {
-        "cluster": "cross_sectional_fx",
+        "cluster": "quantamental",
         "prior": "cheap on point-in-time fundamentals beats dear (Fama & French 1992; AMP 2013)"},
     "quantamental_quality": {
-        "cluster": "cross_sectional_fx",
+        "cluster": "quantamental",
         "prior": "profitability is under-priced (Novy-Marx 2013; Asness, Frazzini & Pedersen "
                  "2019 quality-minus-junk)"},
     "quantamental_earnings_yield": {
-        "cluster": "cross_sectional_fx",
+        "cluster": "quantamental",
         "prior": "high trailing E/P outperforms low (Basu 1977), point-in-time"},
 }

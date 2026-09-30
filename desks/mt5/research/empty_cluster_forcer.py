@@ -110,6 +110,11 @@ CLUSTER_PROPOSER = {
     "positioning_flow": "the COT families (cot_positioning, cot_change_fade, cot_net_fade), which "
                         "need a COT print per bar",
     "event_surprise": "event_reaction, fed by the calendar -- 113 cells already built",
+    "cross_sectional_equity": "research/cross_sectional_breadth.py (the semis sector book, "
+                              "mt5desk/families_sector.py) -- each leg loads its own peer panel",
+    "quantamental": "research/cross_sectional_breadth.py (mt5desk/families_quantamental.py and "
+                    "the valuation_regime_conditioned operator), fed by research/"
+                    "sec_fundamentals.py's point-in-time table",
 }
 
 

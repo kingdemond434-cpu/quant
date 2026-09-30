@@ -32,7 +32,7 @@ FAMILIES: dict[str, Callable[..., list[Signal]]] = {
 PARAM_GRID: dict[str, dict[str, list]] = {**xs.PARAM_GRID, **sector.PARAM_GRID, **qm.PARAM_GRID}
 TARGETS: dict[str, dict[str, str]] = {
     **xs.TARGETS, **sector.TARGETS, **qm.TARGETS,
-    OPERATOR: {"cluster": "relative_value",
+    OPERATOR: {"cluster": "quantamental",
                "prior": "valuation predicts the premium a leg earns (Campbell & Shiller 1988; "
                         "value spread: Cohen, Polk & Vuolteenaho 2003): an existing class-book "
                         "leg conditioned on a lagged point-in-time valuation or quality regime"}}

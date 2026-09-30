@@ -1,4 +1,5 @@
-"""THE FIFTEEN PHENOMENA A BOOK CAN EARN FROM, and which of them this desk actually occupies.
+"""THE PHENOMENA A BOOK CAN EARN FROM (the principal's fifteen, plus two single-name payers
+added 2026-09-30), and which of them this desk actually occupies.
 
 WHY A DECLARED TAXONOMY AND NOT ANOTHER CLUSTERING. `desks/mt5/research/alpha_genome.py` already
 clusters certificates by their STRUCTURE -- same mechanism class, same direction bias, same entry
@@ -73,8 +74,12 @@ class AlphaCluster:
     hunt: str
 
 
-#: THE FIFTEEN. Ordered as the principal listed them, because the order is his and reordering a
-#: declared list makes diffs lie about what changed.
+#: THE PRINCIPAL'S FIFTEEN, in his order (reordering a declared list makes diffs lie about what
+#: changed), then TWO SINGLE-NAME PAYERS appended 2026-09-30 when the share CFDs got class books
+#: and point-in-time fundamentals. Filing a semis within-industry spread or a quality rank under
+#: `cross_sectional_fx` named the wrong payer: breadth and k_eff then read an equity book as one
+#: more FX cross-section, so the equity legs looked like a crowded cluster and earned no
+#: empty-cluster credit. The TARGET band (8-15 OCCUPIED clusters) is unchanged.
 CLUSTERS: tuple[AlphaCluster, ...] = (
     AlphaCluster(
         "session_liquidity", "Session and liquidity structure",
@@ -165,6 +170,19 @@ CLUSTERS: tuple[AlphaCluster, ...] = (
         "already has no bid, and the liquidation itself is the opportunity.",
         "Mechanisms with POSITIVE expectancy specifically inside the book's own worst periods. "
         "Standalone Sharpe is not the bar here -- the bar is the sign, in that state."),
+    AlphaCluster(
+        "cross_sectional_equity", "Cross-sectional equity selection",
+        "Slow diffusers of firm- and industry-specific news in single names, and the liquidity "
+        "demander who pushes one share away from its industry peers for a few days.",
+        "Rank shares within their equity peer class or sector book (semis) on price "
+        "characteristics, with the industry move demeaned out -- never against a currency or "
+        "an index, which are proxy legs and conditioners, not peers."),
+    AlphaCluster(
+        "quantamental", "Fundamental (quantamental) mispricing",
+        "The extrapolator who overprices glamour and junk against what the firm has DISCLOSED, "
+        "and the lottery-seeking holder who pays for it.",
+        "Point-in-time SEC fundamentals (value, quality, earnings yield), stamped at acceptance, "
+        "ranked within the equity class -- delisted issuers included in the ranking history."),
 )
 
 #: key -> cluster, built once. A tuple keeps the declared order; this makes lookup cheap.
@@ -255,16 +273,18 @@ FAMILY_CLUSTER: dict[str, str] = {
     "lead_lag_class_catchup": "cross_asset_lead_lag",
     # Fires ONLY in a lagged class-stress regime and is idle otherwise: forced deleveraging.
     "crisis_only_class_defensive": "crisis_drawdown",
-    # The semis sector book and the quantamental books (2026-09-30): within-class rank legs.
-    "semis_sector_momentum": "cross_sectional_fx",
-    "semis_sector_reversal": "cross_sectional_fx",
-    "semis_sector_value": "cross_sectional_fx",
+    # The semis sector book (2026-09-30): issuers ranked against their equity peers.
+    "semis_sector_momentum": "cross_sectional_equity",
+    "semis_sector_reversal": "cross_sectional_equity",
+    "semis_sector_value": "cross_sectional_equity",
     "semis_leader_catchup": "cross_asset_lead_lag",
-    "quantamental_value": "cross_sectional_fx",
-    "quantamental_quality": "cross_sectional_fx",
-    "quantamental_earnings_yield": "cross_sectional_fx",
-    # a class-book leg gated by a fundamental valuation regime: price against a disclosed value
-    "valuation_regime_conditioned": "relative_value",
+    # The quantamental books: disclosed fundamentals ranked within the equity class.
+    "quantamental_value": "quantamental",
+    "quantamental_quality": "quantamental",
+    "quantamental_earnings_yield": "quantamental",
+    # a class-book leg gated by a fundamental valuation regime: its payer is the same mispricing
+    # of disclosed value, not finite arbitrage capacity (relative_value's payer)
+    "valuation_regime_conditioned": "quantamental",
     # -- crisis and drawdown alpha
     "drawdown_conditional": "crisis_drawdown",
     "crisis_only": "crisis_drawdown",
