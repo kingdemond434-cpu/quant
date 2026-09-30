@@ -47,6 +47,22 @@ class Role:
     forbid_seats: tuple[str, ...] = ()
 
 
+#: DEVELOPER -> EVALUATOR (layer 12). Organs that generate or rewrite code by construction;
+#: `developer_role(root)` adds every organ whose own source writes a `.py` file.
+DEVELOPER_ORGANS: tuple[str, ...] = (
+    "desks/mt5/research/implementer.py", "desks/mt5/research/alpha_evolution.py",
+    "desks/mt5/research/expression_factory.py", "desks/mt5/research/descendants.py",
+    "desks/mt5/research/research_evolution.py", "desks/mt5/research/*_factory.py",
+    "desks/mt5/research/*_miner.py", "desks/mt5/research/strategy_*.py",
+    "libs/research/codegen*.py", "libs/tiers/evolution.py", "libs/tiers/grammar_bias.py")
+#: where the evaluator lives: the signed judge files and the validation library
+EVALUATOR_PATHS: tuple[str, ...] = (
+    "universal_gate", "external_gauntlet", "libs/validation/", "validation/gauntlet",
+    "gate_policy", "multiplicity", "certificate_truth", "blind_reviewer", "evidence_vault",
+    "heat_policy", "IMMUTABLE_MANIFEST", "check_immutable_evaluator")
+DEVELOPER_SENTENCE = ("Developer cannot alter the evaluator: no organ that writes code may "
+                      "write the gauntlet, the gate policy or the validation library.")
+
 ROLES: tuple[Role, ...] = (
     Role("generator",
          ("desks/mt5/research/*_miner.py", "desks/mt5/research/expression_factory.py",
@@ -87,6 +103,8 @@ ROLES: tuple[Role, ...] = (
           "desks/mt5/research/attribution_reconcile.py"),
          forbid_writes=("pf_forecast_log", "forecast_log", "FORECAST_REGISTRY"),
          sentence="Live attribution cannot rewrite historical forecasts."),
+    Role("developer", DEVELOPER_ORGANS, forbid_writes=EVALUATOR_PATHS,
+         sentence=DEVELOPER_SENTENCE),
 )
 
 _WRITE_CALLS = {"write_text", "write_bytes", "dump", "to_json", "to_parquet", "to_csv",
@@ -386,19 +404,6 @@ def written_paths(tree: ast.AST) -> list[str]:
 # DEVELOPER -> EVALUATOR (layer 12): an organ that writes code may not write the evaluator
 # ------------------------------------------------------------------------------------------------
 
-#: organs that generate or rewrite code by construction; `developer_role` adds every organ whose
-#: own source writes a `.py` file
-DEVELOPER_ORGANS: tuple[str, ...] = (
-    "desks/mt5/research/implementer.py", "desks/mt5/research/alpha_evolution.py",
-    "desks/mt5/research/expression_factory.py", "desks/mt5/research/descendants.py",
-    "desks/mt5/research/research_evolution.py", "desks/mt5/research/*_factory.py",
-    "desks/mt5/research/*_miner.py", "desks/mt5/research/strategy_*.py",
-    "libs/research/codegen*.py", "libs/tiers/evolution.py", "libs/tiers/grammar_bias.py")
-#: where the evaluator lives: the signed judge files and the validation library
-EVALUATOR_PATHS: tuple[str, ...] = (
-    "universal_gate", "external_gauntlet", "libs/validation/", "validation/gauntlet",
-    "gate_policy", "multiplicity", "certificate_truth", "blind_reviewer", "evidence_vault",
-    "heat_policy", "IMMUTABLE_MANIFEST", "check_immutable_evaluator")
 _SCAN_FOR_CODE_WRITERS: tuple[str, ...] = ("desks/mt5/research/*.py", "libs/research/*.py",
                                            "libs/tiers/*.py", "scripts/*.py")
 
@@ -424,11 +429,7 @@ def developer_role(root: Path | None = None) -> Role:
     """The static developer organs, plus (given a root) every organ measured to write code."""
     extra = tuple(c for c in code_writers(root) if c not in DEVELOPER_ORGANS) if root else ()
     return Role("developer", DEVELOPER_ORGANS + extra, forbid_writes=EVALUATOR_PATHS,
-                sentence="Developer cannot alter the evaluator: no organ that writes code may "
-                         "write the gauntlet, the gate policy or the validation library.")
-
-
-ROLES = (*ROLES, developer_role())
+                sentence=DEVELOPER_SENTENCE)
 
 
 # ------------------------------------------------------------------------------------------------
