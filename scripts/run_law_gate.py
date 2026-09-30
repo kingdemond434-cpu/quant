@@ -63,6 +63,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # Portable: it reads git's own config and ref state, so it means the same in CI, a fresh
     # clone, on the VPS and on the box.
     ("check_autostash.py", ()),
+    # CRO D18, THE CODE HALF: the dataset_exploitation leg is wired before producer_swarm with a
+    # declared budget, its state fence is registered, its three uses carry D18's names, and a
+    # world-state file no allocator reads can never be counted as a cost/risk use. Portable (no
+    # desk state), so it blocks here; the STATE half stays in _STATE_FENCES on the box.
+    ("check_dataset_exploitation.py", ("--wiring",)),
     # PRODUCER BEFORE CONSUMER. build_enforcement_matrix WRITES data/enforcement_matrix.json and
     # check_law_families READS it; the matrix is gitignored (data/*), so on a VIRGIN tree the
     # consumer ran first against a file that did not exist yet. That is why this gate was green
@@ -456,8 +461,8 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_ingestion_exploitation.py", ()),
     # CRO D18 -- NO DATASET IS JUST STORED (principal 2026-09-30: "all datasets must be exploited
     # ... not just stored like museum items always"). Every enrolled dataset feeds direct cells,
-    # conditioner cells and a WORLD_STATE_INPUTS entry within 24h of enrolment and produces judged
-    # cells daily; fails naming every dataset past 24h that is not FULL. A STATE fence: it reads the
+    # conditioning cells and cost/risk (a WORLD_STATE_INPUTS entry an allocator reads) within 24h
+    # of enrolment and produces judged cells daily; fails naming every dataset past 24h that is not FULL. A STATE fence: it reads the
     # hourly leg's DATASET_EXPLOITATION.json, which only the box writes, so on the box an absent or
     # stale artifact is the leg not running and fails too.
     ("check_dataset_exploitation.py", ("--require-state",)),

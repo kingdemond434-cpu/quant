@@ -223,7 +223,7 @@ class Producer:
     #: Explicit parameter moves (a conditioned producer's states); empty = the family's own.
     moves: tuple[tuple[tuple[str, Any], ...], ...] = ()
     #: Which of a dataset's three uses this producer mints: "direct" (`dataset_stance`) or
-    #: "conditioner" (`dataset_conditioned`); "" for every non-dataset producer.
+    #: "conditioning" (`dataset_conditioned`, CRO D18's name); "" for every non-dataset producer.
     use: str = ""
 
 
@@ -458,7 +458,7 @@ def _dataset_producers(reg: dict[str, Any], fams: list[str], bars: dict[str, set
                     chart=chart, session="all", transform="conditioned", mods=(), lane=lane,
                     cluster=cluster_of(base), quota=quota, base=p, culture=tag,
                     participant=part,
-                    failure_mode=why, dataset=ds, use="conditioner",
+                    failure_mode=why, dataset=ds, use="conditioning",
                     moves=tuple((("state", st),) for st in states)))
     out += _direct_producers(dc, usable, on_chart, quota, skipped, cults, chart)
     census["producers"] = len(out)

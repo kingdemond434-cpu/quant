@@ -1692,9 +1692,12 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "producer_swarm": 600,
     # DATASET EXPLOITATION reads the registry once (every research_candidates row, three small
     # JSON columns each), the verdict ledger's 64 MB tail and each dataset's series once for its
-    # world-state z (~350 datasets, 3 fields). Measured 2026-09-30 on the 4-core container:
-    # see DATASET_EXPLOITATION.json `wall_s`; the cap sits well above a million-row registry.
-    "dataset_exploitation": 900,
+    # world-state z (~350 datasets, 3 fields). Measured 2026-09-30 on the 4-core container: 11 s
+    # for 348 datasets, two evaluations per pass. It is a CORE leg, and the core rotation plans
+    # into ~1,920 s of MT5-HourlyCore's PT40M, so it declares 300 s -- ~27x its measured wall,
+    # room for a registry of a few million rows -- not the 900 s (47% of the pass) it first held.
+    # It mines nothing; this is a measurement leg's cap, not a miner's budget.
+    "dataset_exploitation": 300,
     # DUTY CYCLE stops itself at --budget-s 400 and writes; the cap sits above it. Most of that
     # budget is one `schtasks /query /v` over every task on the box, which is how it finds the
     # clocks that have stopped firing -- the defect that left the judge idle for 22 of 24 hours.

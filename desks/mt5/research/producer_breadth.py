@@ -1029,7 +1029,7 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "producers": rows,
         "swarm": swarm,
         "datasets": datasets,
-        # CRO D18: every enrolled dataset's three uses (direct, conditioner, allocation) and judged
+        # CRO D18: every enrolled dataset's three uses (direct, conditioning, cost_risk) and judged
         # cells in 24h, read from the hourly dataset_exploitation leg's artifact, never recomputed.
         "dataset_exploitation": exploitation,
     }
