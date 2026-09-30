@@ -26,8 +26,8 @@ import html as _html
 import json
 import os
 import re
-import time
 import threading
+import time
 import urllib.parse
 import urllib.robotparser
 from collections.abc import Callable, Iterator, Mapping
@@ -68,7 +68,7 @@ class Source:
     enabled: bool = True
     config: dict[str, Any] = field(default_factory=dict)
     origin: str = "sources.yaml"
-    uses: list[str] = field(default_factory=list)      # direct_cells|indirect_cells|allocation_intel
+    uses: list[str] = field(default_factory=list)   # direct|indirect_cells, allocation_intel
     consumer: str = ""               # for owned rows: the organ that fetches and consumes it
     respect_robots: bool = True
 

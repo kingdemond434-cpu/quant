@@ -91,8 +91,10 @@ PATTERNS: dict[str, tuple[str, ...]] = {
 #: Regime conditions a text can state, mapped to the regimes `mt5desk.cell_modifiers` applies
 #: honestly (volatility masks, month/quarter-end windows). Anything else is not a regime here.
 REGIME_WORDS: dict[str, tuple[str, ...]] = {
-    "high_vol": ("high volatility", "volatile market", "high vol", "高波动", "高ボラ", "высокой волатильн"),
-    "low_vol": ("low volatility", "quiet market", "low vol", "低波动", "低ボラ", "низкой волатильн"),
+    "high_vol": ("high volatility", "volatile market", "high vol", "高波动", "高ボラ",
+                 "высокой волатильн"),
+    "low_vol": ("low volatility", "quiet market", "low vol", "低波动", "低ボラ",
+                "низкой волатильн"),
     "month_end": ("month end", "month-end", "end of month", "月末", "конец месяца"),
     "quarter_end": ("quarter end", "quarter-end", "end of quarter", "季末", "四半期末",
                     "конец квартала"),
