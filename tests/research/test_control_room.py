@@ -104,3 +104,29 @@ def test_daily_cycle_runs_the_control_room_after_the_portfolio():
     names = [n for n, _ in daily_cycle.STEPS]
     assert "control_room" in names
     assert names.index("portfolio") < names.index("control_room")
+
+
+def test_practitioner_processes_bind_every_stage_and_name_the_bottleneck(tmp_path, monkeypatch):
+    import practitioner_processes as pp
+    monkeypatch.setattr(pp, "R", tmp_path)
+    monkeypatch.setattr(pp, "D", tmp_path)
+    (tmp_path / "CONTROL_ROOM.json").write_text(json.dumps({"assets": {"EURUSD": {}},
+                                                            "share_trending": 1.0}))
+    (tmp_path / "REGIME_ALLOCATION_CONTRACT.json").write_text(json.dumps(
+        {"verdict": "INCONCLUSIVE", "admits": False, "design": {"universe": "desk"}}))
+    doc = pp.run()
+    kw = doc["processes"]["korean_winner"]
+    status = {s["stage"]: s["status"] for s in kw["stages"]}
+    assert status["regime_detection"] == "RUNNING"
+    assert status["regime_drives_weights"] == "NOT_ADMITTED"
+    assert status["geometric_allocation"] == "UNMEASURED"
+    assert kw["complete"] is False and kw["bottleneck"] == "geometric_allocation"
+    for proc in doc["processes"].values():
+        assert all(s["organ"] for s in proc["stages"]), "every stage names the organ doing it"
+
+
+def test_daily_cycle_publishes_the_practitioner_processes():
+    import inspect
+
+    import daily_cycle
+    assert "practitioner_processes" in inspect.getsource(daily_cycle._control_room)

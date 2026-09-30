@@ -244,6 +244,11 @@ def digest(n: int = 20, out: Path = DIGEST) -> str:
             f"{k} {v.get('n')}" for k, v in st.items()) + f"; missed growth "
             f"{len(bb.get('missed_growth') or [])} candidate(s), "
             f"{bb.get('missed_growth_per_year')} log/yr")
+    pp = _report("PRACTITIONER_PROCESSES.json") or {}
+    for name, proc in (pp.get("processes") or {}).items():
+        lines.append(f"- Process `{name}`: {proc.get('running')}/{proc.get('stages_total')} "
+                     f"stages running" + (" (complete)" if proc.get("complete") else
+                                          f", bottleneck `{proc.get('bottleneck')}`"))
     lines += ["", "## Research memory health", "",
               f"- Journal: {len(rows)} decision(s); verify "
               f"{'PASS' if ok else 'FAIL: ' + '; '.join(problems[:5])}",

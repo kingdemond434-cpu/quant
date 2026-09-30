@@ -605,6 +605,9 @@ def _control_room() -> None:
                                  regime-first gap and index/VIX divergence screens
       bench_bridge               reports/BENCH_BRIDGE.json -- certified -> forward -> live ->
                                  funded, scored by dE[log W], missed growth listed first
+      practitioner_processes     reports/PRACTITIONER_PROCESSES.json -- each cited practitioner's
+                                 whole loop, stage by stage, and its bottleneck (runs last: it
+                                 reads the three artifacts above)
       operator digest            reports/OPERATOR_DIGEST.md -- the one page the operator reads
                                  (scripts/context.py; never writes under context/, which is code)
     Sizes nothing; publishes.
@@ -613,7 +616,8 @@ def _control_room() -> None:
     import time as _t
     failed = []
     contract = BASE / "reports" / "REGIME_ALLOCATION_CONTRACT.json"
-    jobs = [("control_room", []), ("control_room_mechanisms", []), ("bench_bridge", [])]
+    jobs = [("control_room", []), ("control_room_mechanisms", []), ("bench_bridge", []),
+            ("practitioner_processes", [])]
     if not contract.exists() or _t.time() - contract.stat().st_mtime > 7 * 86400:
         jobs.insert(1, ("regime_allocation_contract", ["--worlds", "256", "--rows", "384"]))
     for name, args in jobs:
