@@ -345,3 +345,26 @@ def test_frozen_clock_raises_no_identity_finding(tmp_path, monkeypatch) -> None:
                    enrolled={key}, cert_keys={key})
     doc = json.loads(out.read_text(encoding="utf-8"))
     assert doc["identity_unfrozen"] == 0
+
+
+def test_new_clocks_are_checkpointed_before_evidence_replay(tmp_path, monkeypatch) -> None:
+    import shadow_forward
+
+    monkeypatch.setattr(
+        shadow_forward,
+        "sleeve_key",
+        lambda symbol, window, params, family, side: f"{symbol}.{family}.{window}",
+    )
+    state = {}
+    state_path = tmp_path / "shadow_state.json"
+    enrolled = [("XAUUSD", "london", {"rr": 2.0}, "session_range_breakout", "LONG")]
+
+    assert shadow_forward.checkpoint_enrolments(enrolled, state, state_path) == 1
+    saved = json.loads(state_path.read_text(encoding="utf-8"))
+    row = saved["XAUUSD.session_range_breakout.london"]
+    assert row["status"] == "ACTIVE"
+    assert row["n"] == 0
+    assert row["order_authority"] is False
+    assert row["promotion_authority"] is False
+
+    assert shadow_forward.checkpoint_enrolments(enrolled, saved, state_path) == 0

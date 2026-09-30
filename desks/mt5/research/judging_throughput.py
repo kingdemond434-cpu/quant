@@ -1067,6 +1067,16 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     ver = _verdict_counts(t, ledger)
     cre = _creation_counts(t, registry)
     backlog = queue.get("depth")
+    backlog_source = queue.get("source", UNMEASURED)
+    # THE DOCKET IS THE BACKLOG. GAUNTLET_BACKPRESSURE counts one sweep's discovered-minus-judged
+    # and went unwritten from 2026-09-25, which left this ETA UNMEASURED for five days while
+    # JUDGE_COVERAGE, written every hour from the docket itself, held 1,398,253 unjudged. The
+    # docket count is preferred whenever it exists; backpressure is the fallback.
+    _cov = _read_json(JUDGE_COVERAGE, {}) or {}
+    _unj = ((_cov.get("totals") or {}).get("unjudged_total")
+            if isinstance(_cov, dict) else None)
+    if isinstance(_unj, int):
+        backlog, backlog_source = _unj, f"{JUDGE_COVERAGE} totals.unjudged_total"
     vph = ((ver.get("per_hour") or {}).get("24h") if ver.get("status") == "MEASURED" else None)
     cph = ((cre.get("per_hour") or {}).get("24h") if cre.get("status") == "MEASURED" else None)
     eta: dict[str, Any] = {"status": UNMEASURED}
@@ -1092,7 +1102,7 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
         "verdicts_per_day": round(vph * 24.0, 1) if vph is not None else UNMEASURED,
         "created_per_day": round(cph * 24.0, 1) if cph is not None else UNMEASURED,
         "backlog": backlog if backlog is not None else UNMEASURED,
-        "backlog_source": queue.get("source", UNMEASURED),
+        "backlog_source": backlog_source,
         "eta_to_drain": eta,
         "workers_planned": decision.get("workers"),
         "workers_last_sweep": queue.get("workers_last_sweep", UNMEASURED),

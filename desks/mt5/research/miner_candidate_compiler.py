@@ -15,6 +15,7 @@ import json
 import os
 import pathlib
 import sys
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -238,6 +239,46 @@ _LAST_INTAKE: dict = {"deferred_files": 0, "files_seen": 0, "bound_hit": False,
                       "cursor_prefix_sha256": None, "cycle_cutoff_utc": None}
 
 
+class _NoBlinding:
+    """Fallback when libs/ is unimportable: nothing stripped, and the report SAYS so."""
+
+    stage = "compiler_read"
+
+    def filter(self, seat: str, row: dict) -> dict:
+        return row
+
+    def report(self) -> dict:
+        return {"stage": self.stage, "status": "UNMEASURED: libs.tiers.blinding unimportable"}
+
+
+def _blinding_counter():
+    """TIER S LAYER 4, AT RUNTIME: every row this compiler (a proposer) reads is stripped of the
+    desk's held-out / lockbox / forward / gate outcomes before it can shape a candidate, and the
+    rows that carried them are counted per seat (`libs/tiers/blinding.RuntimeCounter`)."""
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.tiers.blinding import RuntimeCounter
+        return RuntimeCounter("compiler_read")
+    except Exception:
+        return _NoBlinding()
+
+
+_BLIND = _blinding_counter()
+
+
+def _seat_of(path: Path, row: dict) -> str:
+    """The seat a row belongs to: its directory under an intelligence root, else its source."""
+    for root in INTEL_ROOTS:
+        try:
+            parts = path.relative_to(root).parts
+        except ValueError:
+            continue
+        if len(parts) > 1:
+            return parts[0]
+    return str(row.get("source") or path.parent.name or "unknown")
+
+
 def _prefix_sha256(path: Path, size: int) -> str:
     """Hash exactly the bytes whose row offset was checkpointed.
 
@@ -283,6 +324,47 @@ def _cursor_start(paths: list[Path]) -> tuple[int, int, datetime | None]:
                 unchanged_prefix = False
             return i, offset if unchanged_prefix else 0, cycle_cutoff
     return 0, 0, None
+
+
+#: THE PASS'S WALL CLOCK (noon CRO 2026-09-30: `compile_candidates` timed out every hour and moved
+#: 0 artifacts). The row bound above is a MEMORY bound; nothing bounded TIME, so a window of a few
+#: million rows ran past the cycle's cap and was killed before any write -- and because the cursor
+#: is only saved after the writes, the next pass re-read the same rows and died at the same place.
+#: With `--budget-s`, intake stops at INTAKE_SHARE of the budget and compiling stops at
+#: COMPILE_SHARE; either stop moves the cursor to the first row not yet compiled, so every pass
+#: writes and the next one resumes exactly there. Nothing is dropped, only deferred and counted.
+INTAKE_SHARE = 0.35
+COMPILE_SHARE = 0.85
+_CLOCK: dict[str, float] = {}
+#: (path, row_index) of every row `recent_rows` returned, parallel to its list, so a compile-time
+#: stop can place the cursor on the exact row it did not reach.
+_POSITIONS: list[tuple[str, int]] = []
+
+
+def _set_budget(budget_s: float | None) -> None:
+    _CLOCK.clear()
+    if budget_s and budget_s > 0:
+        t0 = time.monotonic()
+        _CLOCK.update({"intake_by": t0 + INTAKE_SHARE * budget_s,
+                       "compile_by": t0 + COMPILE_SHARE * budget_s, "budget_s": budget_s})
+
+
+def _past(key: str) -> bool:
+    by = _CLOCK.get(key)
+    return by is not None and time.monotonic() >= by
+
+
+def _park_cursor_at(path: Path, row_index: int, deferred_files: int, why: str) -> None:
+    """Point the cursor at `row_index` of `path` -- the first row this pass did not compile."""
+    try:
+        size = path.stat().st_size
+        prefix = _prefix_sha256(path, size)
+    except OSError:
+        size, prefix = 0, None
+    _LAST_INTAKE.update({"deferred_files": deferred_files, "bound_hit": True,
+                         "bound": why, "cursor_next": str(path),
+                         "cursor_row_offset": row_index, "cursor_file_size": size,
+                         "cursor_prefix_sha256": prefix})
 
 
 def _save_cursor() -> None:
@@ -375,6 +457,8 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
     NEWEST FIRST, so if `MAX_ROWS_PER_PASS` binds it is the oldest discoveries that wait for the
     next pass rather than an arbitrary slice, and the shortfall is reported rather than hidden.
     """
+    global _BLIND
+    _BLIND = _blinding_counter()          # one counter per pass
     current_cutoff = now - timedelta(days=WINDOW_DAYS)
     found: list[tuple[str, dict]] = []
     seen: set[str] = set()
@@ -393,6 +477,7 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
     start, start_row, saved_cutoff = _cursor_start(all_paths)
     cutoff = saved_cutoff or current_cutoff
     _LAST_INTAKE["cycle_cutoff_utc"] = cutoff.isoformat(timespec="seconds")
+    _POSITIONS.clear()
     if all_paths:
         all_paths = [*all_paths[start:], *all_paths[:start]]
         _LAST_INTAKE["cursor_start"] = str(all_paths[0])
@@ -407,6 +492,14 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
         for row_index, row in enumerate(_iter_file_rows(path)):
             if row_index < row_start:
                 continue
+            if _past("intake_by"):
+                _park_cursor_at(path, row_index, len(all_paths) - i, "time: intake share")
+                print(f"compiler: intake stopped at {INTAKE_SHARE:.0%} of the "
+                      f"{_CLOCK.get('budget_s')}s budget with {len(found):,} row(s); "
+                      f"{len(all_paths) - i} file(s) resume next pass at this row")
+                return found
+            if isinstance(row, dict):
+                row = _BLIND.filter(_seat_of(path, row), row)
             payload = json.dumps(row, sort_keys=True, default=str, separators=(",", ":"))
             digest = hashlib.sha256(payload.encode()).hexdigest()
             if digest in seen:
@@ -414,6 +507,7 @@ def recent_rows(now: datetime) -> list[tuple[str, dict]]:
             seen.add(digest)
             source = str(row.get("source") or path.parent.name or "unknown")
             found.append((source, row))
+            _POSITIONS.append((str(path), row_index))
             if len(found) >= MAX_ROWS_PER_PASS:
                 # THE SHORTFALL IS RECORDED, NOT ONLY PRINTED: the files this pass never opened
                 # are research the desk chose not to do this hour, and the compiled artifact
@@ -1365,7 +1459,24 @@ def main() -> int:
     # AND a crawler all name is a different object from one a single crawler named, and the
     # trial allocator can order on it.
     sources_by_identity: dict[str, set[str]] = {}
-    for source, row in recent_rows(now):
+    rows = recent_rows(now)
+    # THE BLINDING COUNTER IS PUBLISHED BEFORE ANY ROW IS COMPILED: organ_market reads the ledger
+    # and withholds a seat whose output carried outcomes from the independent-discovery count.
+    # (the ledger sits beside OUT's data/ tree: desks/mt5/data/tier_s/blinding_runtime.jsonl)
+    blinding_note = (_BLIND.publish(OUT.parents[1], "tier_s/blinding_runtime.jsonl")
+                     if hasattr(_BLIND, "publish") else _BLIND.report())
+    if blinding_note.get("violations"):
+        print(f"blinding: {blinding_note['violations']} row(s) carried held-out/lockbox/forward "
+              f"outcomes; {blinding_note['fields_stripped']} field(s) stripped before compiling")
+    for _row_k, (source, row) in enumerate(rows):
+        if _past("compile_by") and _row_k < len(_POSITIONS):
+            _path_s, _idx = _POSITIONS[_row_k]
+            _park_cursor_at(Path(_path_s), _idx, int(_LAST_INTAKE.get("deferred_files") or 0),
+                            "time: compile share")
+            _LAST_INTAKE["rows_deferred_uncompiled"] = len(rows) - _row_k
+            print(f"compiler: compile stopped at {COMPILE_SHARE:.0%} of the budget after "
+                  f"{_row_k:,} of {len(rows):,} row(s); the rest resume next pass")
+            break
         task_identity = _deepening_task_id(source, row)
         produced, disposition = compile_row(source, row, universe)
         recovered_for_row = recovered_deepening.get(task_identity, [])
@@ -1670,6 +1781,9 @@ def main() -> int:
         "agreement": {"candidates_with_2plus_sources": agreement},
         "disagreement": disagreement,
         "intake": {"max_rows_per_pass": MAX_ROWS_PER_PASS, **_LAST_INTAKE},
+        "blinding": {k: v for k, v in blinding_note.items() if k != "seats"}
+        | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
+                                   if d.get("rows_with_outcomes")}},
         "graph": graph_note,
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
@@ -1720,4 +1834,9 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    import argparse
+    _ap = argparse.ArgumentParser()
+    _ap.add_argument("--budget-s", type=float, default=None,
+                     help="stop reading at 35%% and compiling at 85%% of this, then resume")
+    _set_budget(_ap.parse_args().budget_s)
     raise SystemExit(main())

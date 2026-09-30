@@ -288,6 +288,36 @@ def _identity(row: dict) -> str:
     }, sort_keys=True, default=str)
 
 
+def stamp_fresh_intake(row: dict[str, Any], source: str, now: datetime) -> dict[str, Any]:
+    """Stamp a freshly produced row at this intake time, never at an older descriptive date.
+
+    This function is only called for artifacts that passed ``_fresh_for_run`` under an
+    orchestrated pipeline start.  A producer's old ``found_at`` may describe the source item,
+    but it cannot make the candidate available before this compiler actually received it.
+    Complete producer stamps are preserved; missing ones are added by the canonical PIT stamper
+    with availability floored to this merge.
+    """
+    import sys as _sys
+
+    root = str(BASE.parents[1])
+    if root not in _sys.path:
+        _sys.path.insert(0, root)
+    from libs.data.pit import is_stamped, stamp as pit_stamp
+
+    if is_stamped(row):
+        return row
+    ts = now.isoformat(timespec="seconds")
+    body = dict(row)
+    body["available_time"] = ts
+    body["ingested_time"] = ts
+    body["intake_stamp"] = {
+        "at": ts,
+        "source_artifact": source,
+        "availability_policy": "fresh artifact availability floored to canonical merge time",
+    }
+    return pit_stamp(body, source, now=now)
+
+
 def tradeable_universe() -> dict[str, str]:
     """UPPERCASE -> the registry's own spelling, for every symbol the desk can actually replay.
 
@@ -366,7 +396,7 @@ def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
         import sys as _sys
         if str(BASE) not in _sys.path:
             _sys.path.insert(0, str(BASE))
-        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane
+        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane, may_hypothesise
     except Exception as exc:
         return None, (f"universe_policy unavailable ({type(exc).__name__}: {exc}): NOTHING was "
                       f"routed by lane this run (UNMEASURED, not clean)")
@@ -376,12 +406,24 @@ def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
                       f"lane -- it cannot see the registry from here, so NOTHING was routed by "
                       f"lane this run (UNMEASURED, not clean)")
 
-    def refusal(symbol: str) -> str:
+    def refusal(symbol: str, family: object = None) -> str:
+        # A share CFD in a cross-sectional class book reaches the judge (principal 2026-09-30);
+        # every other family on a share CFD stays in the event lane.
+        if may_hypothesise(symbol, family):
+            return ""
         verdict = lane(symbol)
         return "" if verdict == HYPOTHESIS else verdict
 
     return refusal, (f"universe_policy.lane, proved on {placed} of {len(tradeable)} tradeable "
                      f"symbol(s); only lane={HYPOTHESIS!r} reaches the judge")
+
+
+def _refuse(refusal: Any, symbol: str, family: object) -> str:
+    """Ask the door with the row's family when it takes one; a one-argument door still works."""
+    try:
+        return str(refusal(symbol, family) or "")
+    except TypeError:
+        return str(refusal(symbol) or "")
 
 
 def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
@@ -411,7 +453,7 @@ def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
         # be in the wrong lane, and refusing it would turn a missing field into a policy breach.
         # A row that DOES name one and whose class the desk has never seen is a different thing --
         # that is UNCLASSIFIED, and absence of a rule about a real instrument is not a permission.
-        verdict = refusal(symbol) if symbol else ""
+        verdict = _refuse(refusal, symbol, row.get("family")) if symbol else ""
         if not verdict:
             judged.append(row)
             continue
@@ -486,6 +528,7 @@ def main() -> int:
     untradeable_syms: dict[str, int] = {}
     per_source: dict[str, int] = {}
     source_state: dict[str, str] = {}
+    intake_stamped: dict[str, int] = {}
 
     for name, key in SOURCES:
         source_path = HYP / name
@@ -537,6 +580,17 @@ def main() -> int:
                 unrouted += 1
                 continue
             enriched["producer"] = name
+            if started_at is not None:
+                # The orchestrator proved this artifact was written during the current run. It
+                # is therefore safe to make the candidate available NOW. We never repair the
+                # old bank this way: historical unstamped rows remain refused until their
+                # originating producer emits a fresh, versioned candidate.
+                before = all(enriched.get(k) for k in
+                             ("available_time", "ingested_time", "source_version",
+                              "payload_hash"))
+                enriched = stamp_fresh_intake(enriched, name, now)
+                if not before:
+                    intake_stamped[name] = intake_stamped.get(name, 0) + 1
             merged[ident] = enriched
             kept += 1
         per_source[name] = kept
@@ -745,6 +799,27 @@ def main() -> int:
               f"least-judged-family order")
         if judged:
             rows_out = breadth_order(rows_out, judged)
+    # TIER S PRE-JUDGE SCREEN (layers 9 and 21): a row the adopted Red Queen defenders or the
+    # machine-ratified invented tests FLAGGED (run_external_backtest tags it) moves behind the
+    # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
+    # allocator just built is unchanged, no row leaves the docket, and nothing is billed because
+    # nothing is withheld. A screen fault costs the demotion, never a row.
+    prejudge: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.tiers import prejudge_screen as _pj
+        rows_out, prejudge = _pj.demote_flagged(
+            rows_out, _pj.load_verdicts(HYP / _pj.VERDICTS.name))
+        prejudge["status"] = "APPLIED"
+        if prejudge["flagged"]:
+            print(f"   prejudge screen: {prejudge['flagged']} flagged row(s) demoted within "
+                  f"their family ({prejudge['moved']} position(s) changed, 0 removed)")
+    except Exception as exc:
+        prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -764,6 +839,7 @@ def main() -> int:
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
+        "fresh_intake_stamps": intake_stamped,
         # THE REGISTRY'S OWN LANE, MEASURED (libs/moat/docket_feed.py). Until 2026-09-24 the
         # sealed gauntlet had no path to `data/alpha_registry.sqlite` at all and the registry's
         # cells reached it only through a 276-row hourly lease; this census is how many of them
@@ -810,6 +886,7 @@ def main() -> int:
                                       "families_starved", "unjudged_total",
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
+        "prejudge": prejudge,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "

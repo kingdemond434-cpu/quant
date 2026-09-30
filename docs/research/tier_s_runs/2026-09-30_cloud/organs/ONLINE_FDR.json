@@ -1,0 +1,22 @@
+{
+ "alpha": 0.05,
+ "n_tests": 23488,
+ "lord_discoveries": 44,
+ "elond_discoveries": 20,
+ "certified": 58,
+ "over_budget": 14,
+ "over_budget_share": 0.2413793103448276,
+ "next_level": {
+  "lord": 0.007834172506953641,
+  "elond": 2.788763343672586e-06
+ },
+ "failed_tests_charged": 0,
+ "upstream_failures_charged": 23430,
+ "note": "failed trials enter at p=1: they spend lifetime budget without earning it",
+ "metric": {
+  "over_budget_share": 0.2413793103448276,
+  "lord_discoveries": 44
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 3.482
+}

@@ -225,7 +225,9 @@ Run `scripts/check_timeframe_coverage.py` every pass, and act on all three of it
    Fix PIPELINE and MINER_SOURCE hits; leave THROWAWAY alone.
 3. **The ladder is required only for the hunted lane.** Single-name equities are traded on news,
    financial reports and earnings reaction, and are **never hunted for statistical hypotheses**
-   (principal, 2026-09-06). Demanding the full ladder for hundreds of share CFDs would report a
+   (principal, 2026-09-06) -- **except in the cross-sectional class books, which the principal
+   added for them on 2026-09-30** (`universe_policy.CROSS_SECTIONAL_FAMILIES`, H1 bars only, so
+   the ladder beyond H1 is still not required for them). Demanding the full ladder for hundreds of share CFDs would report a
    gap that is a deliberate policy and spend the download budget filling it. Route by **asset
    class from MetaTrader's own registry**, never by a symbol list — a ticker is exactly what lies
    about a share CFD called `3M` or `A`. An unroutable symbol is UNCLASSIFIED, not permitted:

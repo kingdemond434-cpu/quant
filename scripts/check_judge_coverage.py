@@ -57,6 +57,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
+#: A sweep-to-sweep wobble in the pre-warm failure share below this is noise, not a regression.
+PREWARM_TOLERANCE = 0.02
 DESK = ROOT / "desks" / "mt5"
 REPORT = DESK / "reports" / "JUDGE_COVERAGE.json"
 RATCHET = DESK / "data" / "judge_backlog_ratchet.json"
@@ -305,13 +307,58 @@ def judge(report: Path | None = None, *, require_state: bool = False,
                            " (unchanged because the judge recorded no verdict this window --"
                            " a stall is only a stall if the judge ran)"))})
 
+    # 6. THE JUDGE KEEPS PACE WITH CREATION (principal 2026-09-30: "the cells thing always
+    #    permanently fixed"). Measured that day: ~8,300 cells created a day against ~5,300
+    #    verdicts, so 1.4M unjudged and growing ~3k a day while the old meter read "25 h to
+    #    drain". The drain status is the backlog's own movement between two readings, net of
+    #    judging and creation. Two consecutive GROWING readings FAIL. THE REMEDY IS CAPACITY,
+    #    NEVER LESS MINING: `research/judging_throughput.py` raises workers and cadence off this
+    #    same report, and the unrunnable bank keeps dead cells from eating the judge. A single
+    #    GROWING reading WARNs, because one sweep's timing is not a trend.
+    drain = tot.get("drain_status")
+    prior_drain = tot.get("prior_drain_status")
+    if drain is None:
+        out["checks"].append({"metric": "judge_keeps_pace", "state": "UNMEASURED",
+                              "why": "no drain status in this report"})
+    elif drain == "GROWING" and prior_drain == "GROWING":
+        failures.append("judge_keeps_pace")
+        out["checks"].append({
+            "metric": "judge_keeps_pace", "state": "FAIL",
+            "why": (f"backlog grew across two readings ({tot.get('backlog_growth_per_hour')}/h; "
+                    f"judge sustains {tot.get('capacity_sustained_per_hour')}/h): add judge "
+                    "capacity -- never throttle a miner")})
+    else:
+        out["checks"].append({"metric": "judge_keeps_pace",
+                              "state": "WARN" if drain == "GROWING" else "OK",
+                              "why": f"drain {drain} (previous {prior_drain})"})
+
+    # 7. BUILD/DATA FAILURES BEFORE JUDGING RATCHET DOWN. Measured 2026-09-30: 20,247 of 29,466
+    #    pre-warm builds failed on build or data. Those cells are now parked with a named reason
+    #    and re-admitted only when their bars appear or grow, so the share may not rise.
+    pw_now, pw_was = tot.get("prewarm_fail_share"), tot.get("prior_prewarm_fail_share")
+    if pw_now is None or pw_was is None:
+        out["checks"].append({"metric": "prewarm_fail_ratchet", "state": "UNMEASURED",
+                              "why": f"pre-warm failure share {pw_now} (previous {pw_was})"})
+    elif float(pw_now) > float(pw_was) + PREWARM_TOLERANCE:
+        failures.append("prewarm_fail_share")
+        out["checks"].append({
+            "metric": "prewarm_fail_ratchet", "state": "FAIL",
+            "why": (f"pre-warm build/data failure share rose {float(pw_was):.1%} -> "
+                    f"{float(pw_now):.1%}: failing cells are reaching the judge again")})
+    else:
+        out["checks"].append({"metric": "prewarm_fail_ratchet", "state": "OK",
+                              "why": f"pre-warm failures {float(pw_was):.1%} -> "
+                                     f"{float(pw_now):.1%}"})
+
     totals = doc.get("totals") or {}
     out["totals"] = {k: totals.get(k) for k in (
         "families_mined", "families_with_backlog", "families_queued", "families_starved",
         "unjudged_total", "carried_total", "study_only_total", "capacity_measured",
         "oldest_unjudged_age_h", "value_at_risk", "value_deferred", "value_forgone_per_hour",
         "hours_to_drain", "capacity_short", "unknown_total", "unknown_share",
-        "unknown_unnamed", "never_fires_cells", "unrunnable_parked", "unrunnable_bank")}
+        "unknown_unnamed", "never_fires_cells", "unrunnable_parked", "unrunnable_bank",
+        "drain_status", "backlog_growth_per_hour", "capacity_sustained_per_hour",
+        "prewarm_fail_share", "not_run_named")}
     out["unknown_reasons"] = (doc.get("unknown_reasons") or {}).get("by_reason") or {}
     out["top_value"] = [{k: r.get(k) for k in ("rank", "family", "ev_per_judge_second",
                                                "p_optimistic", "prior_status", "quota",

@@ -248,6 +248,14 @@ def build() -> dict[str, Any]:
     for k, v in out.items():
         if v.get("leg") and k in scores:
             leg_yield[v["leg"]] = max(leg_yield.get(v["leg"], 0.0), scores[k])
+    # THE NORTH STAR AS ITS OWN PRICE (2026-09-30): marginal effective independent alpha rank
+    # per compute hour, per leg, published beside the blended yield score so `cycle_pricing`
+    # can weight it directly instead of as one quarter of a percentile mean.
+    leg_alpha: dict[str, float] = {}
+    for v in out.values():
+        r = (v.get("rates") or {}).get("independent_alpha_per_hour")
+        if v.get("leg") and _num(r) is not None:
+            leg_alpha[v["leg"]] = max(leg_alpha.get(v["leg"], float("-inf")), float(r))
     n = len(out)
     coverage = {t: round(sum(1 for v in out.values() if not isinstance(v["contract"][t], dict))
                          / n, 4) if n else 0.0 for t in TERMS}
@@ -260,6 +268,7 @@ def build() -> dict[str, Any]:
         "term_coverage": coverage,
         "terms": list(TERMS), "rates": list(RATES),
         "leg_yield": dict(sorted(leg_yield.items(), key=lambda kv: -kv[1])),
+        "leg_independent_alpha": dict(sorted(leg_alpha.items(), key=lambda kv: -kv[1])),
         "top_by_yield": [{"producer": k, "yield_score": scores[k], "leg": out[k].get("leg"),
                           "rates": out[k]["rates"]} for k in ranked[:15]],
         "producers": out,
@@ -292,6 +301,21 @@ def leg_yield(path: Path | None = None) -> tuple[dict[str, float], str]:
     if not isinstance(ly, dict) or not ly:
         return {}, "FACTORY_CONTRACTS.json prices no hourly leg"
     return {str(k): float(v) for k, v in ly.items() if _num(v) is not None}, ""
+
+
+def leg_alpha_rank(path: Path | None = None) -> tuple[dict[str, float], str]:
+    """{leg: marginal independent alpha rank per compute hour} from a fresh artifact, or {} and
+    why. The north star's own price source for `cycle_pricing`."""
+    doc = _read(path or OUT)
+    if not doc:
+        return {}, "FACTORY_CONTRACTS.json absent"
+    ok, why = _fresh(doc, "FACTORY_CONTRACTS.json")
+    if not ok:
+        return {}, why
+    la = doc.get("leg_independent_alpha")
+    if not isinstance(la, dict) or not la:
+        return {}, "no leg carries a measured independent-alpha rate (ALPHA_RANK.json unread)"
+    return {str(k): float(v) for k, v in la.items() if _num(v) is not None}, ""
 
 
 def main(argv: list[str] | None = None) -> int:
