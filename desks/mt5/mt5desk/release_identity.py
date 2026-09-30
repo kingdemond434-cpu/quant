@@ -79,6 +79,8 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    "desks/mt5/data/tier_s/box_evidence.json",
+    "desks/mt5/data/tier_s/live_door.json",
 })
 
 #: STATE DIRECTORIES, verbatim from libs/ops/release.STATE_PREFIXES (mirrored, not imported --
