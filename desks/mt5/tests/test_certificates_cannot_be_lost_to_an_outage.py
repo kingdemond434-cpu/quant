@@ -108,7 +108,8 @@ def test_the_only_empty_returns_left_are_for_an_unreadable_or_malformed_file() -
 
 # ------------------------------------------------------------- 3. the box pulls, unattended
 def test_adopt_and_seal_runs_in_the_only_safe_order() -> None:
-    steps = ["Adopt-Release.ps1", "if ($sealed -eq $head)", "git diff --name-only --no-ext-diff HEAD",
+    steps = ["Adopt-Release.ps1", "if ($sealed -eq $head)",
+             "git diff --name-only --no-ext-diff HEAD",
              "release.seal(by='Adopt-And-Seal')", 'git add -- "desks/mt5/data/RELEASE.json"',
              "git write-tree", "git commit-tree", "git update-ref",
              # a79c35a8475: the gateway is a 24/7 resident now; the seal STARTS its keep-alive
@@ -120,8 +121,8 @@ def test_adopt_and_seal_runs_in_the_only_safe_order() -> None:
 
 def test_adopt_and_seal_refuses_a_partial_adoption_and_a_dirty_tree() -> None:
     assert "partial adoption; NOT sealing" in ADOPT
-    assert "exit $adoptExit" in ADOPT
-    assert "refusing to seal:" in ADOPT and "exit 3" in ADOPT
+    assert 'Done $adoptExit "adopt-release-partial"' in ADOPT
+    assert "refusing to seal:" in ADOPT and 'Done 3 "dirty-code-path"' in ADOPT
 
 
 def test_adopt_and_seal_stages_exactly_one_path_and_never_stashes() -> None:
@@ -156,7 +157,7 @@ def test_the_installer_registers_the_adoption_hourly_after_the_sync_slot() -> No
     assert 'scripts\\Adopt-And-Seal.ps1' in blk
     assert "-RepetitionInterval (New-TimeSpan -Hours 1)" in blk
     assert "(Get-Date).Date.AddMinutes(12)" in blk          # between the :05 and :20 sync slots
-    assert "-ExecutionTimeLimit (New-TimeSpan -Minutes 20)" in blk
+    assert "-ExecutionTimeLimit (New-TimeSpan -Hours 2)" in blk
     assert "-MultipleInstances IgnoreNew" in blk
     assert "[DRY ] MT5-AdoptRelease" in blk                  # honoured in -WhatIfOnly
 
@@ -203,7 +204,7 @@ def test_the_sync_and_the_adoption_exclude_each_other() -> None:
     guard = ADOPT_CODE.index("Get-ScheduledTask -TaskName \"MT5-ShadowSync\"")
     assert guard < ADOPT_CODE.index("$adoptScript")
     assert '.State -eq "Running"' in ADOPT_CODE[guard:guard + 200]
-    assert "not adopting under it" in ADOPT_CODE and "exit 6" in ADOPT_CODE
+    assert "not adopting under it" in ADOPT_CODE and 'Done 6 "wait-shadowsync"' in ADOPT_CODE
     # the sync yields to a running adoption before its first git operation (the pull)
     yield_at = SYNC.index("Get-ScheduledTask -TaskName \"MT5-AdoptRelease\"")
     assert yield_at < SYNC.index("Sync-Pull -RepoRoot $RepoRoot -Branch $branch")
@@ -218,14 +219,15 @@ def test_the_sync_and_the_adoption_exclude_each_other() -> None:
 def test_adopt_and_seal_s_dirty_check_ignores_state_and_untracked_paths() -> None:
     """On the box a tracked ledger is dirty for most of every hour by design; a check that
     refused on it could only seal in the seconds after a sync, and never did."""
-    assert "git status --porcelain --untracked-files=no" in ADOPT_CODE
+    assert "git diff --name-only --no-ext-diff HEAD" in ADOPT_CODE
     import sys
     repo_root = str(_DESK.parent.parent)
     if repo_root not in sys.path:
         sys.path.insert(0, repo_root)
-    from libs.ops import release
-    for prefix in release.STATE_PREFIXES:
-        assert f'"{prefix}"' in ADOPT_CODE, prefix
+    code_roots = _block(ADOPT_CODE, "$releaseCodePaths = @(", ")\n# A BUILD ARTIFACT")
+    assert '"desks/mt5/data"' not in code_roots
+    assert '"desks/mt5/logs"' not in code_roots
+    assert '"desks/mt5/reports"' not in code_roots
     assert "tracked code path(s) differ from HEAD after adoption" in ADOPT_CODE
 
 
@@ -239,7 +241,7 @@ def test_the_standalone_installer_agrees_with_the_full_one() -> None:
     blk = _block(INSTALL, "$adoptSeal = Join-Path", "# MT5-ArtifactSync")
     for s in ("MT5-AdoptRelease", "Adopt-And-Seal.ps1",
               "-RepetitionInterval (New-TimeSpan -Hours 1)", "(Get-Date).Date.AddMinutes(12)",
-              "-ExecutionTimeLimit (New-TimeSpan -Minutes 20)", "-MultipleInstances IgnoreNew",
+              "-ExecutionTimeLimit (New-TimeSpan -Hours 2)", "-MultipleInstances IgnoreNew",
               "-LogonType ServiceAccount -RunLevel Highest", "-StartWhenAvailable",
               # a DAILY trigger repeating hourly for ONE day: a -Once trigger with a long
               # duration was folded to P9DT2H40M by the scheduler and expired 2026-09-21
@@ -304,7 +306,7 @@ def test_every_git_writer_on_the_box_takes_the_same_process_level_lock() -> None
     # the adoption takes it before invoking Adopt-Release and refuses loudly (exit 6) on a miss
     alock = ADOPT_CODE.index("$mutexHandle = Open-GitWriterMutex")
     assert alock < ADOPT_CODE.index("$adoptScript")
-    assert "exit 6" in ADOPT_CODE[alock:alock + 600]
+    assert 'Done 6 "mutex-unopenable"' in ADOPT_CODE[alock:alock + 600]
 
 
 def test_the_box_s_hourly_verifier_no_longer_merges_code_behind_the_seal() -> None:
@@ -325,6 +327,6 @@ def test_a_seal_or_state_commit_on_top_of_the_sealed_code_is_not_re_sealed() -> 
     assert "release.accepts(sys.argv[1], release.load() or {})" in ADOPT_CODE
     eq = ADOPT_CODE.index("if ($sealed -eq $head)")
     acc = ADOPT_CODE.index("release.accepts(")
-    dirty = ADOPT_CODE.index("git status --porcelain --untracked-files=no")
+    dirty = ADOPT_CODE.index("git diff --name-only --no-ext-diff HEAD")
     assert eq < acc < dirty
     assert "plus seal/state commits only; nothing to seal" in ADOPT_CODE
