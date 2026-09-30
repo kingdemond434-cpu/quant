@@ -83,6 +83,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import socket
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -94,6 +95,35 @@ DESK = ROOT / "desks" / "mt5"
 #: 15-minute sync publishes; origin never hand-edits it, and an off-box run never writes it.
 OUT_REL = "desks/mt5/data/placement_interlock.json"
 OUT = ROOT / Path(*OUT_REL.split("/"))
+
+#: The trading box (the Contabo host that runs the gateway), named once in
+#: `libs/tiers/box_evidence.py` and read from there; the literal is only the fallback for a
+#: checkout where that module cannot be imported.
+_TRADING_HOST_FALLBACK = "vmi3571445"
+
+
+def trading_host() -> str:
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.tiers.box_evidence import TRADING_HOST
+        return str(TRADING_HOST)
+    except Exception:
+        return _TRADING_HOST_FALLBACK
+
+
+def _hostname() -> str:
+    return socket.gethostname()
+
+
+def on_trading_host() -> bool:
+    """True on the box that places orders, identified by hostname exactly as
+    `libs/tiers/box_evidence.py` does (a prefix match on TRADING_HOST). There an UNMEASURED
+    verdict means the gateway stopped writing the evidence this fence reads, and that FAILS:
+    24h after the gateway dies the ledger falls out of the live window, and an exit 0 would read
+    green on the one host where a silent halt costs money. Off the box it stays exit 0."""
+    return _hostname().lower().startswith(trading_host().lower())
+
 
 LEDGER_REL = "desks/mt5/data/decision_ledger.jsonl"
 IDENTITY_REL = "desks/mt5/data/release_identity.json"
@@ -495,6 +525,8 @@ def main(argv: list[str] | None = None) -> int:
         doc["event"] = record_event(doc)
     if args.json:
         print(json.dumps(doc, indent=2, default=str))
+        if doc["ok"] is None and on_trading_host():
+            return 2
         return 2 if doc["ok"] is False else 0
 
     print(f"placement interlock: {doc.get('verdict')}; "
@@ -506,6 +538,11 @@ def main(argv: list[str] | None = None) -> int:
     for problem in doc["problems"]:
         print(f"  FAIL: {problem}")
     if doc["ok"] is None:
+        if on_trading_host():
+            print("check_placement_interlock: FAILED -- UNMEASURED on the trading host "
+                  f"({trading_host()}): the gateway has stopped writing placement evidence here, "
+                  "and silence on the box that places orders is not a pass (L1.28a)")
+            return 2
         print("check_placement_interlock: UNMEASURED -- no live placement evidence on this host "
               "(not a clean pass; nothing here to halt)")
         return 0

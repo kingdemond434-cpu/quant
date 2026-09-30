@@ -280,11 +280,41 @@ def test_stale_rows_off_the_box_pass_the_gate_and_write_no_committed_report(
     out = tmp_path / "report.json"
     monkeypatch.setattr(fence, "ROOT", tmp_path)
     monkeypatch.setattr(fence, "OUT", out)
+    monkeypatch.setattr(fence, "_hostname", lambda: "ubuntu-4gb-hel1-5")
 
     assert fence.main([]) == 0
     printed = capsys.readouterr().out
     assert "UNMEASURED" in printed and "HALTED" not in printed
     assert not out.exists()
+
+
+@pytest.mark.parametrize("as_json", [False, True])
+def test_unmeasured_on_the_trading_host_fails(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str], as_json: bool) -> None:
+    """A day after the gateway dies its ledger falls out of the live window and the verdict is
+    UNMEASURED. Off the box that is exit 0; ON the trading host it must exit non-zero, or the
+    fence reads green on the one machine where a silent halt costs money."""
+    _stale_published_copy(tmp_path)
+    monkeypatch.setattr(fence, "ROOT", tmp_path)
+    monkeypatch.setattr(fence, "OUT", tmp_path / "report.json")
+    monkeypatch.setattr(fence, "record_alert", lambda doc: None)
+    monkeypatch.setattr(fence, "record_event", lambda doc: None)
+    monkeypatch.setattr(fence, "trading_host", lambda: "vmi3571445")
+    monkeypatch.setattr(fence, "_hostname", lambda: "VMI3571445")
+
+    assert fence.scan(tmp_path, now=NOW)["ok"] is None
+    assert fence.main(["--no-write"] + (["--json"] if as_json else [])) == 2
+    printed = capsys.readouterr().out
+    assert "UNMEASURED" in printed
+
+    monkeypatch.setattr(fence, "_hostname", lambda: "ubuntu-4gb-hel1-5")
+    assert fence.main(["--no-write"] + (["--json"] if as_json else [])) == 0
+
+
+def test_the_trading_host_is_the_one_box_evidence_names() -> None:
+    from libs.tiers import box_evidence
+    assert fence.trading_host() == box_evidence.TRADING_HOST
 
 
 def test_a_refusal_run_ages_out(box: Path) -> None:
