@@ -265,6 +265,26 @@ def door_inputs() -> dict[str, dict[str, Any]]:
 
 
 LIVE_DOOR = DESK / "data" / "tier_s" / "live_door.json"
+#: `desks/mt5/research/research_live_identity.py`, hourly: per LIVE sleeve, whether the spec the
+#: gateway trades is the spec research certified (family, symbol, selector, params, code hash)
+IDENTITY = DESK / "reports" / "RESEARCH_LIVE_IDENTITY.json"
+
+
+def _identity_mismatches() -> dict[str, str]:
+    """{LIVE sleeve: reason} for every row the identity join names MISMATCH.
+
+    ABSENT OR STALE LISTS NOTHING: the join is a live-book check, not one of the door's required
+    verdict files, and a missing report is the absence of a finding. A report that EXISTS but is
+    damaged raises `DoorReadError` from `_read` -- damage is not silence -- and `review_live`
+    turns that into a named row per live sleeve, the door's fail-closed rule."""
+    from libs.tiers import research_live_identity
+    doc = _read(IDENTITY)
+    if doc is None or not _fresh(doc):
+        return {}
+    rows = doc.get("rows")
+    if rows is not None and not isinstance(rows, list):
+        raise DoorReadError(f"{IDENTITY.name} rows are a {type(rows).__name__}")
+    return research_live_identity.mismatch_reasons(doc)
 
 
 def review_live(live_names: list[str]) -> dict[str, str]:
@@ -274,10 +294,20 @@ def review_live(live_names: list[str]) -> dict[str, str]:
     replication failed, whose FDR budget was spent or whose own forward clock turned against it
     after it went live is no better for having gone live first. This is the same `block`, fail
     closed, run over the live book; the `door` organ publishes it as `data/tier_s/live_door.json`
-    for the promoter's automatic retirement to read, billed like every door verdict."""
+    for the promoter's automatic retirement to read, billed like every door verdict.
+
+    PLUS ONE CHECK ONLY A LIVE ROW CAN FAIL: the research-live identity join. A LIVE sleeve whose
+    traded spec differs from the certified one (`IDENTITY_MISMATCH`) is trading a strategy no
+    certificate covers, so it is listed here beside the six door verdicts."""
     out: dict[str, str] = {}
+    try:
+        ident = _identity_mismatches()
+        ident_err = None
+    except Exception as exc:
+        ident, ident_err = {}, (f"DOOR_ERROR: the identity check raised {type(exc).__name__}: "
+                                f"{exc}; withheld until it runs clean")
     for name in live_names:
-        why = block(name)
+        why = block(name) or ident_err or ident.get(name)
         if why:
             out[name] = why
     return out

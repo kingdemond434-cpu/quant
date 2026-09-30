@@ -308,6 +308,150 @@ def retarget(preds: Sequence[Any], metrics: Mapping[str, float]) -> dict[str, in
 
 
 
+# --------------------------------------------------------------------- known-by-date (PIT) lags
+
+#: PUBLICATION LAG PER SOURCE: when a value that is TRUE AT its valid time becomes KNOWABLE.
+#:
+#: Every external dataset research reads needs one of two things before a backtest may join it
+#: to a bar: a declared lag here (knowledge time = valid time + `lag_s`) or a knowledge-time
+#: column carried on the rows themselves (`knowledge_column`). A source with neither can only be
+#: joined by the date it DESCRIBES, which is the look-ahead this desk has paid for three times
+#: (the macro-sweep same-date join, the COT Tuesday label, the monthly FRED prints).
+#:
+#: THE READS THAT DEFINE A READER. `readers` are the tokens whose presence in a research module
+#: marks it as reading the source -- `scripts/check_known_by_date.py` names every such module that
+#: joins by valid date without routing through a lag, and `scripts/check_pit.py` fails on a
+#: registered dataset (`desks/mt5/data/data_registry.json`) that has no entry here and no
+#: `pit.publication_lag_days` of its own. Lags are CONSERVATIVE on purpose: a lag that is a day
+#: too long costs a day of signal; a lag that is a day too short manufactures an edge.
+#:
+#: `valid` says what the valid time IS for that source, because the lag means nothing without it.
+PUBLICATION_LAGS: dict[str, dict[str, Any]] = {
+    # the broker's own bars: a bar is known at its close, and every family acts on closed bars
+    # (`libs/research/bar_clock`, `family_call`). Valid time = the bar's open stamp.
+    "mt5_h1_universe": {"lag_s": 3600, "valid": "H1 bar open (broker time under UTC tzinfo)",
+                        "basis": "known at the bar's close, one bar after its stamp",
+                        "readers": ()},
+    "xauusd_scalp_bars": {"lag_s": 300, "valid": "M5 bar open", "basis": "known at bar close",
+                          "readers": ()},
+    # daily market prints (DGS10, T10YIE, VIX, DXY, SPX, CL): posted the following day; the bar
+    # index is broker time (+2 winter / +3 summer), so one day plus the largest offset is the
+    # earliest bar that could read the print under either clock.
+    "cross_asset_anchors": {"lag_s": 27 * 3600, "valid": "the market day the print refers to",
+                            "basis": "run_edges_macro_fusion_sweep.MACRO_KNOWABLE_AFTER: 1 day + "
+                                     "the 3h broker offset",
+                            "readers": ("macro_regime.load_history", "cross_asset_anchors")},
+    "fred_macro": {"lag_s": 27 * 3600, "valid": "observation date (daily market series only)",
+                   "basis": "orthogonal_sweep.MACRO_PUBLICATION_LAG_D = 1 day, plus the broker "
+                            "offset; monthly releases are admissible only through data/vintages",
+                   "readers": ("fred_macro.json", "lake/fred_", "fred_macro")},
+    # CFTC: as-of TUESDAY, published the FOLLOWING FRIDAY 15:30 ET (19:30/20:30 UTC)
+    "cot_fx": {"lag_s": 4 * 86400, "valid": "report date (Tuesday)",
+               "basis": "owned_data._COT_PUBLICATION_LAG_DAYS = 4: Friday release, Saturday "
+                        "under every DST/broker-clock combination",
+               "readers": ("cot_zcache", "data/cot/", "cot_tff", "cot_disagg")},
+    "cot": {"lag_s": 4 * 86400, "valid": "report date (Tuesday)",
+            "basis": "the same CFTC release as cot_fx", "readers": ("cot.json",)},
+    "eur_cot_blocked": {"lag_s": 4 * 86400, "valid": "report date (Tuesday)",
+                        "basis": "the same CFTC release as cot_fx", "readers": ()},
+    "bis_eer": {"lag_s": 20 * 86400, "valid": "reference month end",
+                "basis": "monthly official statistic; pit_stamp.DEFAULT_LAG_DAYS['monthly']",
+                "readers": ("bis_eer",)},
+    "spdr_gld_holdings": {"lag_s": 86400, "valid": "holdings date",
+                          "basis": "published the same US evening: usable next day",
+                          "readers": ("gld_holdings", "spdr_gld")},
+    "sge_benchmark": {"lag_s": 86400, "valid": "fixing date",
+                      "basis": "the PM fix prints 15:30 CST; next day is unambiguous",
+                      "readers": ("sge_daily", "sge_benchmark")},
+    "shfe_gold": {"lag_s": 86400, "valid": "trade date", "basis": "daily settlement",
+                  "readers": ("shfe",)},
+    "lbma_vaults": {"lag_s": 40 * 86400, "valid": "reference month end",
+                    "basis": "LBMA publishes vault holdings with a one-month lag on the 5th "
+                             "business day",
+                    "readers": ("lbma_vault",)},
+    "swiss_customs_gold": {"lag_s": 25 * 86400, "valid": "reference month end",
+                           "basis": "FOCBS monthly trade data, about three weeks after month end",
+                           "readers": ("swiss_customs",)},
+    "wgc_goldhub": {"lag_s": 20 * 86400, "valid": "reference month end",
+                    "basis": "monthly ETF/flow tables; pit_stamp.DEFAULT_LAG_DAYS['monthly']",
+                    "readers": ("goldhub",)},
+    "cme_gc": {"lag_s": 86400, "valid": "trade date", "basis": "daily settlement",
+               "readers": ("cme_gc",)},
+    "gdelt": {"lag_s": 3600, "valid": "event time",
+              "basis": "15-minute update cadence; one bar is conservative",
+              "knowledge_column": "published_time", "readers": ("gdelt",)},
+}
+
+
+def declared_lag(source: str, registry_row: Mapping[str, Any] | None = None
+                 ) -> dict[str, Any] | None:
+    """The source's declared publication lag, or None when it has none.
+
+    A registry row's own `pit.publication_lag_days` (the field `libs/data/pit_stamp.lag_for`
+    reads) counts as a declaration and wins; else `PUBLICATION_LAGS`. A cadence DEFAULT is not a
+    declaration -- it is what `pit_stamp` falls back to when nobody declared anything, which is
+    exactly the state this registry exists to end."""
+    pit = (registry_row or {}).get("pit") if isinstance(registry_row, Mapping) else None
+    if isinstance(pit, Mapping) and pit.get("publication_lag_days") is not None:
+        try:
+            days = float(pit["publication_lag_days"])
+        except (TypeError, ValueError):
+            days = -1.0
+        if days >= 0:
+            return {"lag_s": days * 86400, "basis": "data_registry pit.publication_lag_days",
+                    "valid": str(pit.get("valid") or "declared by the registry row")}
+    entry = PUBLICATION_LAGS.get(source)
+    return dict(entry) if entry is not None else None
+
+
+def knowledge_time(source: str, valid_time: datetime) -> datetime:
+    """valid_time + the source's declared lag. KeyError for an undeclared source: a value whose
+    publication lag nobody declared cannot be given a knowledge time by guessing one."""
+    lag = declared_lag(source)
+    if lag is None:
+        raise KeyError(f"source {source!r} has no declared publication lag (data_os."
+                       "PUBLICATION_LAGS) and no knowledge-time column")
+    return valid_time + timedelta(seconds=float(lag["lag_s"]))
+
+
+def store_from_series(series: Any, *, source: str, entity: str, attribute: str) -> Any:
+    """A valid-dated pandas Series as BITEMPORAL rows: valid time = its index, knowledge time =
+    valid + the source's declared lag. The one door a research reader uses to turn a dataset it
+    would otherwise join by date into one it can only read as of what was known."""
+    import pandas as pd
+
+    from libs.tiers.bitemporal import BitemporalStore, Datum
+    lag = declared_lag(source)
+    if lag is None:
+        raise KeyError(f"source {source!r} has no declared publication lag")
+    delta = pd.Timedelta(seconds=float(lag["lag_s"]))
+    store = BitemporalStore()
+    for t, val in series.items():
+        if val is None or (isinstance(val, float) and val != val):
+            continue
+        ts = pd.Timestamp(t)
+        ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
+        store.add(Datum(entity=entity, attribute=attribute,
+                        value=val.item() if hasattr(val, "item") else val,
+                        valid_time=ts.isoformat(), knowledge_time=(ts + delta).isoformat(),
+                        source=source, latency_s=float(lag["lag_s"])))
+    return store
+
+
+def lag_census(registry: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
+    """Which registered datasets carry a declared lag, which do not, and where each came from."""
+    declared: dict[str, str] = {}
+    undeclared: list[str] = []
+    for name, row in sorted(registry.items()):
+        lag = declared_lag(name, row if isinstance(row, Mapping) else None)
+        if lag is None:
+            undeclared.append(name)
+        else:
+            declared[name] = str(lag.get("basis") or "")
+    return {"n": len(registry), "declared": sorted(declared), "undeclared": undeclared,
+            "basis": declared}
+
+
 def tail_jsonl(path: Path, max_bytes: int = 8 * 1024 * 1024) -> list[dict[str, Any]]:
     """The last `max_bytes` of an append-only JSONL ledger, whole lines only: the latest row per
     unit lives at the tail, and the head of a years-long ledger is history the join does not need.

@@ -527,6 +527,11 @@ LEG_LAYER: dict[str, str] = {
     # The identity chain grades the joins between the desk's own records and the placebo audit
     # grades its own gates against planted defects: the machine measuring the machine.
     "identity_chain": "meta", "placebo_audit": "meta",
+    # The null lab grades each family's own gates on data with no edge in it, and the
+    # research-live identity join grades whether the live book trades what research certified:
+    # the machine measuring the machine. The macro-conditioned sweep is a claim about returns.
+    "null_lab": "meta", "research_live_identity": "meta",
+    "macro_conditioned_sweep": "prediction",
     "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the
