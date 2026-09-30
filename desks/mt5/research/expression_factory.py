@@ -642,7 +642,11 @@ class Cell:
 
     @property
     def key(self) -> str:
-        return f"{self.symbol}|{self.hold}|{self.state}|{dsl.canonical_key(self.expr)}"
+        # A session state is versioned: before 2026-09-30 it was judged on the broker's stamp
+        # hour, not UTC, so a "session:london" cell in `seen` tested different hours and must not
+        # mark the corrected cell as already tested.
+        state = f"{self.state}@utc1" if self.state.startswith("session:") else self.state
+        return f"{self.symbol}|{self.hold}|{state}|{dsl.canonical_key(self.expr)}"
 
     def mechanism(self) -> str:
         """The tree's shape as the grammar describes it, with the state kind it is conditioned

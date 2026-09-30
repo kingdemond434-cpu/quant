@@ -33,3 +33,13 @@ def test_the_residual_study_labels_sessions_in_utc() -> None:
     df = pd.DataFrame({"close": [1.0, 1.01, 1.02], "tick_volume": [1.0, 2.0, 3.0]}, index=_IDX)
     labels = fmc._labels(df, np.arange(3), "EURUSD", 8)
     assert labels["session"] == ["asia", "london", "ny"]
+
+
+def test_a_corrected_session_cell_is_not_skipped_as_already_tested(monkeypatch) -> None:
+    import expression_factory as ef
+    monkeypatch.setattr(ef.dsl, "canonical_key", lambda _e: "E")
+    key = ef.Cell.key.fget
+    sess = SimpleNamespace(symbol="EURUSD", hold=8, state="session:london", expr=None)
+    plain = SimpleNamespace(symbol="EURUSD", hold=8, state="none", expr=None)
+    assert key(sess) == "EURUSD|8|session:london@utc1|E"
+    assert key(plain) == "EURUSD|8|none|E"      # unchanged: nothing else is re-tested
