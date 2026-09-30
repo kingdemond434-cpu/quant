@@ -32,6 +32,7 @@ multiplicity, which is the harder direction on both.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import re
@@ -262,10 +263,8 @@ def register_grid(rows: Iterable[Mapping[str, Any]], *, path: Path | None = None
     grid, so it stamps every row and hands the ledger every member's genome id -- the id the
     hypothesis graph keys its verdicts by -- and the verdict joins to the family from then on."""
     genome_id: Any = None
-    try:
+    with contextlib.suppress(Exception):
         from libs.research.alpha_genome import genome_id
-    except Exception:                                    # pragma: no cover
-        pass
     fams: dict[str, dict[str, Any]] = {}
     for r in rows:
         probe = dict(r)
