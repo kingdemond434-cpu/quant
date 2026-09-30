@@ -111,7 +111,12 @@ def compose(a: Mechanism, *, condition: Mechanism | None = None,
     trade = a.trade
     if execution is not None:
         trade = f"{a.trade} VIA {execution.trade or execution.transmission}".strip()
-    fals = " OR ".join(x for x in (a.falsifier, condition.falsifier if condition else "") if x)
+    # the composite is refuted when ANY component's falsifier fires -- the execution mechanism's
+    # included (until 2026-09-30 it was dropped, so a composite whose fills never happened
+    # could not be falsified through them). Repeated clauses are stated once.
+    fals = " OR ".join(dict.fromkeys(
+        x for x in (a.falsifier, condition.falsifier if condition else "",
+                    execution.falsifier if execution else "") if x))
     return Mechanism(a.cause, a.observable, a.transmission, cond, trade, a.horizon, fals,
                      parents=tuple(parents), family=a.family)
 
