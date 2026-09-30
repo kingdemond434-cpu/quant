@@ -802,6 +802,9 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
+    # The silent-organ fence exits 2 when an organ went silent since the previous reading: the
+    # fence doing its job, not the leg failing (scripts/check_silent_organs.py).
+    "silent_organs": (2,),
 }
 
 
@@ -837,6 +840,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     "release_authority", "residual_map", "failure_prior", "scientist_standings",
     "frontier_ceo", "evig_acquisition",
     "stamp_freshness", "time_joins", "layer_census", "opportunity_cost", "dead_architecture",
+    # Every silent organ by name, fenced RED on a new one (principal: "eliminate silent research
+    # organs to 100%, every day"). Reads two small JSON files; core so it runs every pass.
+    "silent_organs",
     "producer_census", "productivity_census", "preregistration",
     # The north star over certified edges and the per-producer contracts it feeds (Tier-1
     # #9/#11): artifact readers, seconds each, on the core clock with the census they join.
@@ -5112,6 +5118,12 @@ def main() -> None:
     # disabled, masked or deleted -- organs are retired by a person, on this evidence.
     dac = _costed("dead_architecture", lambda: _producer(
         "dead_architecture", "scripts/check_dead_architecture.py"))
+    # EVERY SILENT ORGAN, BY NAME (CRO noon 2026-09-30: "101 silent scheduled failures" was a sum
+    # nobody could triage, and 71 of it was one failed scheduler read). Joins process_health and
+    # the previous pass's sync_marker into a per-organ list and exits 2 -- a declared verdict --
+    # when an organ went silent since the last reading.
+    sil = _costed("silent_organs", lambda: _producer(
+        "silent_organs", "scripts/check_silent_organs.py"))
     # NO PRODUCER IS DARK (LAWS 7). Every seat, miner and organ the component registry knows,
     # with its clock, its last production and its verdict -- and the RELIGHT of every dark row
     # in the same pass, judged by the producer's own output moving, never by a zero exit code.
@@ -5309,7 +5321,7 @@ def main() -> None:
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
-                    "dead_architecture": dac, "producer_census": prdc,
+                    "dead_architecture": dac, "silent_organs": sil, "producer_census": prdc,
                     "productivity_census": prodc, "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
                     "publish_state": pub,

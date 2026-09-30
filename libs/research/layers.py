@@ -86,6 +86,7 @@ LEG_LAYER: dict[str, str] = {
     "edges_macro_fusion_sweep": "prediction", "alpha_breadth": "prediction",
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
+    "silent_organs": "meta",
     "producer_census": "meta", "productivity_census": "meta",
     # The north star over certified edges and the per-producer contracts that price spare compute
     # (Tier-1 #9/#11): the machine measuring what its research bought, which is meta.

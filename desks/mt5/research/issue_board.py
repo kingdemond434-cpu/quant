@@ -132,6 +132,10 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/rank_recovery.py"),
     ("cross_sectional_breadth", "desks/mt5/reports/CROSS_SECTIONAL_BREADTH.json", 3600,
      "research/cross_sectional_breadth.py"),
+    # The silent-organ census reads two small JSON files; its own clock here means the fence
+    # still runs when a slow earlier leg ends the hourly pass before it is reached.
+    ("silent_organs", "desks/mt5/reports/SILENT_ORGANS.json", 3600,
+     "scripts/check_silent_organs.py"),
     ("attribution_census", "desks/mt5/reports/ATTRIBUTION_COVERAGE.json", 3600,
      "research/attribution_census.py"),
     ("coverage_tensor", "desks/mt5/reports/COVERAGE_TENSOR.json", 3600,
