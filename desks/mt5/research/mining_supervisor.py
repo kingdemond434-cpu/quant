@@ -73,10 +73,17 @@ DIGEST_CHAINS = 300
 #: row per real vintage stamped with the vintage's own `available_for_decision_at`. Once a series
 #: holds the family's minimum observations, each changing column mints conditioner cells on the
 #: source's target instruments, judged by the one gauntlet like every other cell.
+#: 60, not the family's own 30: the gauntlet needs 60 days of returns before it will judge a
+#: cell at all (`external_gauntlet` "no valid cells"), so a shorter series keeps accumulating as
+#: UNMEASURED rather than minting cells the judge can only refuse.
 try:
-    from mt5desk.family_exogenous_conditioner import MIN_OBSERVATIONS as COND_MIN_OBS
+    from mt5desk.family_exogenous_conditioner import MIN_OBSERVATIONS as _FAMILY_MIN_OBS
 except Exception:                                          # tests and a bare checkout
-    COND_MIN_OBS = 30
+    _FAMILY_MIN_OBS = 30
+COND_MIN_OBS = max(60, int(_FAMILY_MIN_OBS))
+#: The committed input for the cost and risk models: every page's latest PIT vintage, split
+#: into cost facts and prop-rule limits (extractor.COST_FACTS / RULE_FACTS). Never minted as cells.
+MECHANICS_FACTS = _DESK / "data" / "mechanics_facts.json"
 COND_TRANSFORMS: tuple[str, ...] = ("level_z", "delta")
 UNI = _DESK / "data" / "universe"
 HYP = _DESK / "data" / "hypotheses"
@@ -215,6 +222,7 @@ class Pipeline:
         self.data = Path(data_dir)
         # beside data_dir: desks/mt5/data/mining -> desks/mt5/data/lake/series (the family's own)
         self.lake = Path(lake) if lake is not None else self.data.parent / "lake" / "series"
+        self.mechanics_facts = self.data.parent / MECHANICS_FACTS.name
         # beside data_dir: desks/mt5/data/mining -> desks/mt5/data/mining_digest.json (DIGEST)
         self.digest = Path(digest) if digest is not None else self.data.parent / DIGEST.name
         self.reports = Path(reports_dir)
@@ -523,8 +531,8 @@ class Pipeline:
             cols = sorted({k for r in rows for k, v in (r.get("facts") or {}).items()
                            if isinstance(v, (int, float))})
             self._write_series(sid, rows, cols)
-            varying = [c for c in cols
-                       if len({(r.get("facts") or {}).get(c) for r in rows}) > 1]
+            varying = [c for c in cols if c in extractor.SIGNAL_FACTS
+                       and len({(r.get("facts") or {}).get(c) for r in rows}) > 1]
             entry: dict[str, Any] = {"source_id": rows[-1].get("source_id"),
                                      "source_uri": rows[-1].get("source_uri"),
                                      "vintages": len(rows), "columns": cols,
@@ -533,7 +541,9 @@ class Pipeline:
                 entry["status"] = (f"UNMEASURED: {len(rows)} vintages < {COND_MIN_OBS} the "
                                    "conditioner family needs")
             elif not varying:
-                entry["status"] = "no column has changed across vintages: nothing to condition on"
+                entry["status"] = ("no signal column (swap) has changed across vintages: "
+                                   "nothing to condition on; cost and rule facts go to "
+                                   "mechanics_facts.json")
             else:
                 entry["status"] = "MINTING"
                 entry["cells_minted"] = self._mint_conditioner_cells(sid, rows[-1], varying,
@@ -541,7 +551,45 @@ class Pipeline:
                 minted += entry["cells_minted"]
             report[sid] = entry
         self.cells.kv_set("conditioners", json.dumps(report, default=str))
+        self._write_mechanics_facts(groups)
         return {"series": len(report), "cells_minted": minted}
+
+    def _write_mechanics_facts(self, groups: Mapping[str, list[dict[str, Any]]]) -> None:
+        """Latest vintage per page, cost facts and prop-rule limits apart, with each fact's
+        PIT time and the time it last changed. The cost and risk models' input; not a cell."""
+        pages: dict[str, Any] = {}
+        for sid, rows in groups.items():
+            rows = sorted(rows, key=lambda r: str(r.get("available_for_decision_at") or ""))
+            last = rows[-1]
+            facts = dict(last.get("facts") or {})
+            changed: dict[str, str] = {}
+            prev: dict[str, Any] = {}
+            for r in rows:
+                for k, v in (r.get("facts") or {}).items():
+                    if prev.get(k) != v:
+                        changed[k] = str(r.get("available_for_decision_at"))
+                prev = dict(r.get("facts") or {})
+            pages[sid] = {"source_id": last.get("source_id"), "source_uri": last.get("source_uri"),
+                          "label": last.get("label"), "vintages": len(rows),
+                          "available_for_decision_at": last.get("available_for_decision_at"),
+                          "cost": {k: v for k, v in facts.items() if k in extractor.COST_FACTS},
+                          "prop_rules": {k: v for k, v in facts.items()
+                                         if k in extractor.RULE_FACTS},
+                          "financing": {k: v for k, v in facts.items()
+                                        if k in extractor.SIGNAL_FACTS},
+                          "last_changed_at": changed}
+        doc = {"schema": "mechanics_facts/1", "generated_at": iso(utcnow()),
+               "rule": ("published broker/prop terms as read, point-in-time; inputs for the cost "
+                        "and risk models, never cells and never a sizing change by themselves"),
+               "pages": pages}
+        dest = self.mechanics_facts
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        tmp = dest.with_suffix(".tmp")
+        tmp.write_text(json.dumps(doc, indent=1, ensure_ascii=False, default=str) + "\n",
+                       "utf-8")
+        with contextlib.suppress(OSError):
+            os.chmod(dest, 0o644)
+        os.replace(tmp, dest)
 
     def _write_series(self, sid: str, rows: list[dict[str, Any]], cols: list[str]) -> None:
         import csv

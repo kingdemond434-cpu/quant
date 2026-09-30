@@ -779,7 +779,8 @@ def test_mechanics_feed_becomes_conditioner_series_and_cells(tmp_path: Path) -> 
     uri = "https://broker/xauusd-spec"
     for i in range(MS.COND_MIN_OBS - 1):
         _put(pipe, "broker_specs", uri, f"Swap long -{6 + i * 0.1:.1f}, swap short 1.1. "
-             "Commission $4.5 per lot.", kind="mechanics", now=T0 + timedelta(days=i))
+             f"Commission ${4 + i % 3}.5 per lot. Maximum daily loss of {4 + i % 2}%.",
+             kind="mechanics", now=T0 + timedelta(days=i))
         pipe.process(now=T0 + timedelta(days=i))
     rep = pipe.conditioners(now=T0 + timedelta(days=40))
     sid = MS.Pipeline.series_id("broker_specs", uri)
@@ -803,6 +804,12 @@ def test_mechanics_feed_becomes_conditioner_series_and_cells(tmp_path: Path) -> 
     assert {c.spec["params"]["source"] for c in cells} == {sid}
     assert all(c.status == "QUEUED" and c.preregistration_id for c in cells)
     assert pipe.conditioners(now=last)["cells_minted"] == 0          # minted once
+    # commission and the prop-rule limit changed too, and went to the cost/risk input instead
+    facts = json.loads((tmp_path / "mechanics_facts.json").read_text("utf-8"))["pages"][sid]
+    assert facts["cost"] == {"commission_per_lot": 4.5} and facts["financing"]["swap_long"] == -9.9
+    assert "max_daily_loss_pct" not in facts["prop_rules"]          # the last page omitted it
+    assert set(facts["last_changed_at"]) >= {"swap_long", "commission_per_lot"}
+    assert not any(c.spec["params"]["signal"] != "swap_long" for c in cells)
 
 
 def test_digest_carries_the_whole_rejection_ledger(tmp_path: Path) -> None:

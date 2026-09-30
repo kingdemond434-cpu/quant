@@ -235,6 +235,18 @@ def read_text(text: str) -> dict[str, Any]:
             "lookahead": leaks}
 
 
+#: WHERE EACH FACT BELONGS. Only a financing rate can be a SIGNAL: a swap schedule moves with
+#: the carry it prices, so it may condition an instrument. Commission and leverage are COST and
+#: margin inputs; a prop firm's limits are RISK inputs. Neither is a hypothesis, and minting them
+#: as cells would spend the shared trial budget on things that are not signals.
+SIGNAL_FACTS: frozenset[str] = frozenset({"swap_long", "swap_short"})
+COST_FACTS: frozenset[str] = frozenset({"commission_per_lot", "leverage"})
+RULE_FACTS: frozenset[str] = frozenset({"max_daily_loss_pct", "max_drawdown_pct",
+                                        "profit_target_pct", "min_trading_days",
+                                        "news_trading_restricted",
+                                        "weekend_holding_restricted"})
+
+
 def read_facts(text: str) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for name, rx in _FACTS.items():
