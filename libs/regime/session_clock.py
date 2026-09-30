@@ -65,7 +65,8 @@ def utc_offset_h(at: Any = None) -> int:
     ts = ts.tz_localize("UTC") if ts.tzinfo is None else ts.tz_convert("UTC")
     local = ts.tz_convert(SERVER_TZ)
     stamp = local.tz_localize(None) + pd.Timedelta(hours=SERVER_SHIFT_H)
-    return round((stamp - ts.tz_localize(None)) / pd.Timedelta(hours=1))
+    hours: float = (stamp - ts.tz_localize(None)) / pd.Timedelta(hours=1)
+    return round(hours)
 
 
 def utc_hours(index: Any) -> np.ndarray:
