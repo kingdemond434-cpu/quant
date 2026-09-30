@@ -127,6 +127,22 @@ def test_api_hang_is_a_failed_repair_not_a_quiet_zero(world):
     assert doc["DESK_CLOSED_AND_HEALTHY"] is False
 
 
+def test_windows_held_byte_lock_is_liveness(world, monkeypatch):
+    w = world
+    p = w["locks"] / "dept_korea.lock"
+    p.write_text("123 now\n", encoding="utf-8")
+    real_read_bytes = Path.read_bytes
+
+    def held(self):
+        if self == p:
+            raise PermissionError(13, "resident owns byte zero")
+        return real_read_bytes(self)
+
+    monkeypatch.setattr(Path, "read_bytes", held)
+    ok, why = act._pc_new_live_lock_holder({"lock_stem": "dept_korea", "locks": w["locks"]})
+    assert ok is True and "held" in why
+
+
 def test_corrupt_an_artifact_and_it_reads_unleased_not_fresh(world):
     w = world
     art = w["root"] / "reports" / "FOREST_KOREA.json"

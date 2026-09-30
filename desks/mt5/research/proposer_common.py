@@ -388,7 +388,7 @@ def _lane_filtered(candidates: list[dict]) -> tuple[list[dict], list[dict]]:
             ok.append(c)
             continue
         try:
-            allowed = bool(may_hypothesise(sym))
+            allowed = bool(may_hypothesise(sym, c.get("family")))
         except Exception:
             allowed = True          # an unreadable verdict is not a refusal
         if allowed:

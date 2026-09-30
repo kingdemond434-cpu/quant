@@ -48,6 +48,15 @@ import pytest
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parents[1]
 ADOPT = BASE / "scripts" / "Adopt-Release.ps1"
+
+
+def test_scheduled_fetches_do_not_spawn_detached_git_maintenance():
+    """A fetch's detached gc outlives the writer mutex and blocks the later adoption commit."""
+    adopt = ADOPT.read_text(encoding="utf-8")
+    ship = (BASE / "scripts" / "intel_ship_adopt.ps1").read_text(encoding="utf-8")
+    for src in (adopt, ship):
+        assert "maintenance.auto=false" in src
+        assert "gc.auto=0" in src
 SEAL = BASE / "scripts" / "Adopt-And-Seal.ps1"
 
 #: The prefixes the discovery corpus lives under, and the organ that delivers it.

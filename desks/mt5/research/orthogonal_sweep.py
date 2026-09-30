@@ -535,6 +535,17 @@ NOT_SOURCED_HERE = {
                              "clock; a sweep enumerating them over bars would be inventing which "
                              "pack series conditions which instrument. Called blind it has no "
                              "source and returns [] on every symbol",
+    # The within-class rank legs (mt5desk/families_cross_sectional.py). Each loads its own class
+    # panel from `symbol`, so nothing is unsuppliable -- but the grid is (class member x family x
+    # params) and research/cross_sectional_breadth enumerates it, measures every cell's firing
+    # against the gauntlet's 60-day floor and charges it. Sweeping it here too would charge the
+    # same trials twice.
+    **dict.fromkeys(("cross_sectional_class_momentum", "cross_sectional_class_reversal",
+                     "cross_sectional_class_value", "cross_sectional_class_low_vol",
+                     "crisis_only_class_defensive", "lead_lag_class_catchup"),
+                    "research/cross_sectional_breadth enumerates the class x family x params "
+                    "grid, measures each cell's firing against the gauntlet's 60-day floor and "
+                    "charges its own trials; sweeping it here would charge them twice"),
 }
 
 
