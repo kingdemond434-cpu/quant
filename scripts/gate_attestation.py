@@ -64,6 +64,34 @@ def _tracked_py() -> set[str]:
     return {ln.strip() for ln in _git("ls-files", "*.py").splitlines() if ln.strip()}
 
 
+def _working_tree_rows() -> list[str]:
+    """Tracked changes plus untracked Python, without crawling runtime state as untracked data.
+
+    Plain ``git status --porcelain`` traversed the trading checkout's enormous generated-data
+    tree.  The gates finished, then their recorder spent minutes enumerating irrelevant parquet,
+    logs and ledgers and was killed by the task timeout, leaving a day-old attestation.  Tracked
+    changes and import-shadowing Python are the only two classes this policy consumes, so ask Git
+    for exactly those classes.
+    """
+    # `diff-files` examines tracked worktree entries only; `diff-index --cached` examines staged
+    # entries only.  Neither traverses the huge untracked runtime-data forest that made `status`
+    # exceed its 60-second bound on the trading box.
+    rows = _git("diff-files", "--name-status").splitlines()
+    rows.extend(_git("diff-index", "--cached", "--name-status", "HEAD").splitlines())
+    # For untracked Python, the only possible same-directory/same-name collision with a tracked
+    # module is package bootstrap or pytest bootstrap (a normal module would be the same tracked
+    # path). Check those exact paths in known tracked-package directories without a repository
+    # crawl.
+    tracked = _tracked_py()
+    parents = {str(PurePosixPath(rel).parent) for rel in tracked}
+    for parent in parents:
+        for name in ("__init__.py", "conftest.py"):
+            rel = str(PurePosixPath(parent) / name)
+            if rel not in tracked and (ROOT / Path(rel)).is_file():
+                rows.append(f"?? {rel}")
+    return rows
+
+
 def code_hash(ref: str = "HEAD") -> str:
     """The hash of the CODE TREE at `ref`: every tracked non-state blob, by path and blob id.
 
@@ -147,7 +175,12 @@ def attest(gates: str, result: str) -> dict[str, object]:
     # sessions; treating those as "the tree is dirty" would make this field permanently useless,
     # which is how a check ends up being ignored rather than fixed.
     dirty = []
-    for ln in _git("status", "--porcelain").splitlines():
+    # `git ls-files` is a repository census, not a per-row question. The trading checkout can
+    # carry dozens of harmless untracked diagnostics; recomputing the same tracked-Python set for
+    # every one made verdict recording take many minutes (or time out) after the gates themselves
+    # had completed. Resolve it lazily once, only if an untracked Python file is encountered.
+    tracked_py: set[str] | None = None
+    for ln in _working_tree_rows():
         if not ln.strip():
             continue
         code, rel = ln[:2], ln[3:].strip().strip('"')
@@ -159,7 +192,9 @@ def attest(gates: str, result: str) -> dict[str, object]:
             # `_shadows_a_real_module`. Anything else is a scratch file nothing imports.
             if not rel.endswith(".py"):
                 continue
-            if not _shadows_a_real_module(rel, _tracked_py()):
+            if tracked_py is None:
+                tracked_py = _tracked_py()
+            if not _shadows_a_real_module(rel, tracked_py):
                 continue
         dirty.append(ln)
     return {

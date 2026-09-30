@@ -231,7 +231,6 @@ def test_every_python_index_writer_takes_the_lock(rel: str) -> None:
 #: exact confusion is what kept this box from adopting for four days.
 PS_WRITERS = (
     "desks/mt5/scripts/Adopt-And-Seal.ps1",
-    "desks/mt5/scripts/Seal-IfClean.ps1",
     "desks/mt5/scripts/intel_ship_adopt.ps1",
     "desks/mt5/scripts/sync_shadow_to_git.ps1",
 )

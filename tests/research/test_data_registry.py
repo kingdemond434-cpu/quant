@@ -548,14 +548,21 @@ class TestTheRatchetCountActuallyRises:
                                                                      tmp_path: Path) -> None:
         """End to end: what build_data_registry actually wrote is what the ratchet actually counts.
 
-        The live artifact is COPIED first rather than scored in place -- the desk rebuilds it on a
-        cron and inside run_intelligence_cycle, and a test that reads the file twice around a
-        rebuild would fail on a race instead of on the contract it is guarding.
+        HERMETIC SINCE 2026-09-29. It used to copy the box's live `data/data_assets.json`, which
+        is runtime state that a fresh clone (CI) does not carry, so the contract went unchecked
+        everywhere but the box. The builder now writes the artifact into a throwaway checkout with
+        one measured and one declared-but-absent asset, and the ratchet scores THAT file -- the
+        same producer-to-reader seam, with a numerator that is neither 0 nor the whole.
         """
-        raw = (REPO / "data/data_assets.json").read_text("utf-8")
+        src = tmp_path / "src"
+        _repo(src, days=["2026-01-01", "2026-01-02", "2026-01-03"])
+        (src / "scripts/organ2.py").write_text('PATH = "data/gone.jsonl"\n', "utf-8")
+        assert build_registry(["--root", str(src)]) == 0
+        raw = (src / "data/data_assets.json").read_text("utf-8")
         (tmp_path / "data").mkdir(parents=True)
         (tmp_path / "data/data_assets.json").write_text(raw, "utf-8")
         doc = json.loads(raw)
+        assert 0 < doc["counts"]["measured"] < doc["counts"]["assets"], doc["counts"]
         aspect = next(a for a in read_capability(tmp_path) if a.key == "data_coverage")
         comp = next(c for c in aspect.components if c.key == "assets_with_measured_span")
         assert comp.state == "MEASURED"

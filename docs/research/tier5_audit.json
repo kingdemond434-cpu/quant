@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-09-27",
+ "updated": "2026-09-29",
  "source": "the principal's two Tier-5 blueprints, 2026-09-22: the COMPLETE TIER-5 AUTONOMOUS QUANT INSTITUTION BLUEPRINT (I-CII) and the FINAL MAXIMUM-AGGRESSIVE TIER-5 QUANT RESEARCH CIVILIZATION (1-170)",
  "rule": "every non-MISSING row cites a file that exists; every EXISTS+WIRED+LIVE row names a clock this repo knows and an artifact it writes. Verified by scripts/check_tier5_audit.py at every law-gate run; docs/research/TIER5_AUDIT.md is derived from this file with --render.",
  "expected_counts": {
@@ -112,9 +112,9 @@
     "desks/mt5/research/expression_factory.py",
     "libs/research/alpha_grammar.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:expression_factory"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:expression_factory",
+   "artifact": "desks/mt5/reports/EXPRESSION_FACTORY.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -158,9 +158,9 @@
    "files": [
     "desks/mt5/research/qd_frontier.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:qd_frontier"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:qd_frontier",
+   "artifact": "desks/mt5/reports/QD_FRONTIER.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -215,8 +215,9 @@
    "files": [
     "desks/mt5/research/information_value.py"
    ],
-   "why": "the code exists (desks/mt5/research/information_value.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/INFORMATION_VALUE.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -248,9 +249,9 @@
    "files": [
     "desks/mt5/research/formal_invariants.py"
    ],
-   "why": "the code exists (desks/mt5/research/formal_invariants.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/FORMAL_INVARIANTS.json",
+   "clock": "MT5-FrontierAudit"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -282,9 +283,9 @@
    "files": [
     "desks/mt5/research/simplifier.py"
    ],
-   "why": "the code exists (desks/mt5/research/simplifier.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/SIMPLIFIER.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/SIMPLIFIER.json",
+   "clock": "daily_cycle:simplifier"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -293,8 +294,9 @@
    "files": [
     "desks/mt5/research/representation_discovery.py"
    ],
-   "why": "the code exists (desks/mt5/research/representation_discovery.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:representation_discovery,MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/REPRESENTATION_DISCOVERY.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -316,9 +318,9 @@
     "desks/mt5/research/counterfactual_replay.py",
     "desks/mt5/research/action_counterfactuals.py"
    ],
-   "why": "the code exists (desks/mt5/research/counterfactual_replay.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/COUNTERFACTUAL_WORLD.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/COUNTERFACTUAL_WORLD.json",
+   "clock": "daily_cycle:counterfactual_replay,daily_cycle:action_counterfactuals"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -351,9 +353,9 @@
     "desks/mt5/research/adversary.py",
     "desks/mt5/research/adversary_evolution.py"
    ],
-   "why": "the code exists (desks/mt5/research/adversary.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/ADVERSARY.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/ADVERSARY.json",
+   "clock": "hourly_cycle:adversaries,MT5-FrontierAudit"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -387,9 +389,9 @@
     "desks/mt5/research/deepening_worker.py",
     "desks/mt5/research/miner_candidate_compiler.py"
    ],
-   "why": "the code exists (desks/mt5/research/deepening_worker.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/data/hypotheses/deepened_candidates.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/data/hypotheses/deepened_candidates.json",
+   "clock": "hourly_cycle:deepen,hourly_cycle:compile_candidates,MT5-Deepening"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -419,10 +421,13 @@
    "title": "GLOBAL MULTIPLICITY LEDGER",
    "files": [
     "libs/research/trial_ledger.py",
-    "desks/mt5/research/multiplicity.py"
+    "desks/mt5/research/multiplicity.py",
+    "desks/mt5/research/effective_trials.py"
    ],
-   "why": "the code exists (libs/research/trial_ledger.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:effective_trials",
+   "artifact": "desks/mt5/reports/EFFECTIVE_TRIALS.json",
+   "note": "trial_ledger and multiplicity are libraries; effective_trials is the leg that charges the ledger every pass"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -430,10 +435,12 @@
    "title": "PREREGISTRATION",
    "files": [
     "libs/research/preregistration.py",
+    "scripts/check_preregistration.py",
     "docs/RESEARCH.md"
    ],
-   "why": "the code exists (libs/research/preregistration.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:preregistration",
+   "artifact": "desks/mt5/reports/PREREG_COVERAGE.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -487,9 +494,9 @@
    "files": [
     "desks/mt5/research/shadow_forward.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:enrol_clocks"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:enrol_clocks",
+   "artifact": "desks/mt5/reports/shadow/shadow_state.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -510,8 +517,9 @@
    "files": [
     "desks/mt5/research/negative_knowledge.py"
    ],
-   "why": "the code exists (desks/mt5/research/negative_knowledge.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "daily_cycle:negative_knowledge,MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/NEGATIVE_KNOWLEDGE.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -520,9 +528,9 @@
    "files": [
     "desks/mt5/research/alpha_periodic_table.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:alpha_periodic_table"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_periodic_table",
+   "artifact": "desks/mt5/reports/ALPHA_PERIODIC_TABLE.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -672,9 +680,9 @@
    "files": [
     "desks/mt5/research/excursions.py"
    ],
-   "why": "the code exists (desks/mt5/research/excursions.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/EXCURSIONS.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/data/excursions.jsonl",
+   "clock": "hourly_cycle:excursions,daily_cycle:excursions"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -697,8 +705,10 @@
     "desks/mt5/research/book_reality.py",
     "desks/mt5/research/forward_calibration.py"
    ],
-   "why": "the code exists (desks/mt5/research/book_reality.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:forward_calibration,MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/FORWARD_CALIBRATION.json",
+   "note": "book_reality.py is a one-off printed study with no artifact; forward_calibration is the organ that measures the gap every pass"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -731,8 +741,9 @@
     "desks/mt5/research/hourly_cycle.py",
     "desks/mt5/ops/box_tasks.manifest"
    ],
-   "why": "the code exists (desks/mt5/research/hourly_cycle.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-HourlyCore,MT5-Hourly",
+   "artifact": "desks/mt5/data/sync_marker.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -751,10 +762,12 @@
    "title": "REPRODUCIBILITY",
    "files": [
     "libs/ops/release.py",
+    "desks/mt5/mt5desk/release_identity.py",
     "desks/mt5/data/release_identity.json"
    ],
-   "why": "the code exists (libs/ops/release.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:release_identity,MT5-AdoptRelease",
+   "artifact": "desks/mt5/data/release_identity.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -763,9 +776,10 @@
    "files": [
     "libs/ops/events.py"
    ],
-   "why": "the code exists (libs/ops/events.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/data/events.jsonl"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/data/events.jsonl",
+   "clock": "MT5-HourlyCore",
+   "note": "hourly_cycle._emit_leg writes one event per leg end through leg_events"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -775,8 +789,9 @@
     "desks/mt5/research/department_resident.py",
     "desks/mt5/ops/box_tasks.manifest"
    ],
-   "why": "the code exists (desks/mt5/research/department_resident.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-Hourly,resident:MT5-Dept-Japan",
+   "artifact": "desks/mt5/data/watermarks/resident__dept_japan.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -844,8 +859,9 @@
     "desks/mt5/research/unknown_unknowns.py",
     "libs/research/search_strategy.py"
    ],
-   "why": "the code exists (desks/mt5/research/unknown_unknowns.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:exogenous_search,MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/UNKNOWN_UNKNOWNS.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -863,13 +879,15 @@
    "id": "LXXV",
    "title": "COMPETITOR / PUBLIC STRATEGY REVERSE ENGINEERING",
    "files": [
-    "desks/mt5/research/scalp_reverse_engineering.py",
+    "desks/mt5/research/repo_miner.py",
     "desks/mt5/research/provider_reverse.py",
-    "desks/mt5/research/repo_miner.py"
+    "desks/mt5/research/book_forensics.py",
+    "desks/mt5/research/scalp_reverse_engineering.py"
    ],
-   "why": "the code exists (desks/mt5/research/scalp_reverse_engineering.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/REPO_MINER.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/REPO_MINER.json",
+   "clock": "daily_cycle:repo_miner,MT5-FrontierAudit",
+   "note": "provider_reverse runs inside book_forensics on MT5-FrontierAudit; scalp_reverse_engineering is a preregistered one-shot falsification (fixed VERSION, 60/40 split) and is deliberately not re-run on a clock"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -889,20 +907,24 @@
    "title": "SECURITY",
    "files": [
     "scripts/moneypath_precommit_guard.py",
-    "ops/githooks/pre-commit"
+    "ops/githooks/pre-commit",
+    "scripts/check_moneypath_fence.py"
    ],
-   "why": "the code exists (scripts/moneypath_precommit_guard.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "PARTIAL",
+   "gap": "the guard fires on the commit EVENT (ops/githooks/pre-commit), not a clock, and its content-fence twin scripts/check_moneypath_fence.py runs on quant-moneypath-fence.timer (VPS, every 5 min); neither writes an artifact, so a firing cannot be read back (III.16). Giving the guard one would dirty the tree on every commit",
+   "clock": "quant-moneypath-fence.timer"
   },
   {
    "source": "BLUEPRINT I-CII",
    "id": "LXXVIII",
    "title": "DISASTER RECOVERY",
    "files": [
-    "desks/mt5/research/desk_self_heal.py"
+    "desks/mt5/research/desk_self_heal.py",
+    "desks/mt5/research/run_desk_self_heal.py"
    ],
-   "why": "the code exists (desks/mt5/research/desk_self_heal.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:desk_self_heal",
+   "artifact": "desks/mt5/reports/DESK_SELF_HEAL.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -936,8 +958,9 @@
     "scripts/run_law_gate.py",
     "docs/LAWS.md"
    ],
-   "why": "the code exists (scripts/run_law_gate.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-LawGate",
+   "artifact": "data/law_gate.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -958,9 +981,9 @@
     "desks/mt5/research/conservation_ledger.py",
     "desks/mt5/research/exit_accounts.py"
    ],
-   "why": "the code exists (desks/mt5/research/conservation_ledger.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/EXIT_ACCOUNTS.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/EXIT_ACCOUNTS.json",
+   "clock": "daily_cycle:conservation,hourly_cycle:exit_accounts"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -982,9 +1005,9 @@
    "files": [
     "desks/mt5/research/portfolio_evidence.py"
    ],
-   "why": "the code exists (desks/mt5/research/portfolio_evidence.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/portfolio_evidence.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/portfolio_evidence.json",
+   "clock": "daily_cycle:portfolio"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -1005,9 +1028,9 @@
     "desks/mt5/research/unknown_unknowns.py",
     "desks/mt5/research/unseen_frontier.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:unseen_frontier"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:unseen_frontier,hourly_cycle:exogenous_search",
+   "artifact": "desks/mt5/reports/UNSEEN_FRONTIER.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -1052,9 +1075,10 @@
     "desks/mt5/research/drift_monitor.py",
     "desks/mt5/research/market_posteriors.py"
    ],
-   "why": "the code exists (desks/mt5/research/drift_monitor.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/DRIFT.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/DRIFT.json",
+   "clock": "daily_cycle:drift_monitor,MT5-FrontierAudit",
+   "note": "market_posteriors joined MT5-FrontierAudit 2026-09-29 (MARKET_POSTERIORS.json)"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -1064,9 +1088,9 @@
     "desks/mt5/research/action_counterfactuals.py",
     "desks/mt5/research/modifier_counterfactuals.py"
    ],
-   "why": "the code exists (desks/mt5/research/action_counterfactuals.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/ACTION_COUNTERFACTUALS.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/MODIFIER_COUNTERFACTUALS.json",
+   "clock": "daily_cycle:action_counterfactuals,MT5-FrontierAudit"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -1076,9 +1100,9 @@
     "desks/mt5/research/alpha_genome.py",
     "desks/mt5/research/alpha_periodic_table.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:alpha_periodic_table"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:alpha_periodic_table",
+   "artifact": "desks/mt5/reports/ALPHA_PERIODIC_TABLE.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -1088,9 +1112,10 @@
     "desks/mt5/research/session_allocator.py",
     "desks/mt5/research/chart_allocator.py"
    ],
-   "why": "the code exists (desks/mt5/research/session_allocator.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/SESSION_ALLOCATION.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/SESSION_ALLOCATION.json",
+   "clock": "hourly_cycle:session_allocation,MT5-FrontierAudit",
+   "note": "chart_allocator joined MT5-FrontierAudit 2026-09-29 (CHART_ALLOCATION.json); edge_search draws its chart from chart_allocator.pick every search pass"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -1158,8 +1183,9 @@
     "scripts/check_tier5_audit.py",
     "docs/research/tier5_audit.json"
    ],
-   "why": "the code exists (scripts/check_tier5_audit.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:tier5_acceptance,law_gate:check_tier5_audit.py",
+   "artifact": "desks/mt5/reports/TIER5_ACCEPTANCE.json"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -1167,10 +1193,13 @@
    "title": "FINAL BUILDER INSTRUCTION",
    "files": [
     "scripts/check_tier1_program.py",
-    "docs/research/tier1_program.json"
+    "docs/research/tier1_program.json",
+    "desks/mt5/research/batteries.py"
    ],
-   "why": "the code exists (scripts/check_tier1_program.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:fence_battery",
+   "artifact": "desks/mt5/reports/BATTERY_FENCES.json",
+   "note": "rostered in batteries.FENCES 2026-09-29; its verdict (including any LIE) is named in BATTERY_FENCES.json every rotation"
   },
   {
    "source": "BLUEPRINT I-CII",
@@ -1216,8 +1245,9 @@
     "desks/mt5/research/hourly_cycle.py",
     "desks/mt5/research/department_resident.py"
    ],
-   "why": "the code exists (desks/mt5/research/hourly_cycle.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-HourlyCore,resident:MT5-Dept-Japan",
+   "artifact": "desks/mt5/data/sync_marker.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1238,19 +1268,21 @@
    "files": [
     "desks/mt5/research/hourly_cycle.py"
    ],
-   "why": "the code exists (desks/mt5/research/hourly_cycle.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-HourlyCore",
+   "artifact": "desks/mt5/data/sync_marker.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
    "id": "6",
    "title": "ONE CANONICAL RESEARCH TRUTH",
    "files": [
-    "libs/moat/registry.py"
+    "libs/moat/registry.py",
+    "desks/mt5/research/registry_sync.py"
    ],
-   "why": "the code exists (libs/moat/registry.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "data/alpha_registry.sqlite"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/RESEARCH_REGISTRY.json",
+   "clock": "hourly_cycle:registry_sync"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1295,9 +1327,9 @@
    "files": [
     "desks/mt5/research/region_department.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:japan_department"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:japan_department",
+   "artifact": "desks/mt5/reports/REGION_JAPAN.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1307,9 +1339,9 @@
     "desks/mt5/research/universe_policy.py",
     "desks/mt5/research/region_department.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:japan_department"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:japan_department",
+   "artifact": "desks/mt5/reports/REGION_JAPAN.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1448,9 +1480,9 @@
    "files": [
     "desks/mt5/research/forced_flow_calendar.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:forced_flow_calendar"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:forced_flow_calendar",
+   "artifact": "desks/mt5/data/forced_flow_calendar.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1469,24 +1501,27 @@
    "id": "25",
    "title": "PUBLIC-STRATEGY MINERS",
    "files": [
-    "desks/mt5/research/scalp_reverse_engineering.py",
-    "desks/mt5/research/repo_miner.py"
+    "desks/mt5/research/repo_miner.py",
+    "desks/mt5/research/scalp_reverse_engineering.py"
    ],
-   "why": "the code exists (desks/mt5/research/scalp_reverse_engineering.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/REPO_MINER.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/REPO_MINER.json",
+   "clock": "daily_cycle:repo_miner",
+   "note": "scalp_reverse_engineering is a preregistered one-shot falsification (fixed VERSION, 60/40 split) and is deliberately not re-run on a clock"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
    "id": "26",
    "title": "TRACK-RECORD REVERSE ENGINE",
    "files": [
+    "desks/mt5/research/institutional_cards.py",
     "desks/mt5/research/provider_reverse.py",
-    "desks/mt5/research/institutional_cards.py"
+    "desks/mt5/research/book_forensics.py"
    ],
-   "why": "the code exists (desks/mt5/research/provider_reverse.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/INSTITUTIONAL_CARDS.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/INSTITUTIONAL_CARDS.json",
+   "clock": "hourly_cycle:organ_battery,MT5-FrontierAudit",
+   "note": "institutional_cards is rostered in batteries.ORGANS; provider_reverse runs inside book_forensics"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1495,9 +1530,9 @@
    "files": [
     "desks/mt5/research/repo_miner.py"
    ],
-   "why": "the code exists (desks/mt5/research/repo_miner.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/REPO_MINER.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/REPO_MINER.json",
+   "clock": "daily_cycle:repo_miner"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1543,9 +1578,9 @@
     "desks/mt5/research/axis_proposer.py",
     "desks/mt5/research/data_axis_miner.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:axis_proposer"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:axis_proposer",
+   "artifact": "desks/mt5/reports/AXIS_PROPOSER.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1555,9 +1590,9 @@
     "desks/mt5/research/data_prospector.py",
     "desks/mt5/research/free_data.py"
    ],
-   "why": "the code exists (desks/mt5/research/data_prospector.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/DATA_PROSPECTOR.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/DATA_PROSPECTOR.json",
+   "clock": "daily_cycle:data_prospector"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1612,9 +1647,9 @@
    "files": [
     "desks/mt5/research/expression_factory.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:expression_factory"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:expression_factory",
+   "artifact": "desks/mt5/reports/EXPRESSION_FACTORY.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1635,9 +1670,9 @@
    "files": [
     "desks/mt5/research/qd_frontier.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:qd_frontier"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:qd_frontier",
+   "artifact": "desks/mt5/reports/QD_FRONTIER.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1680,8 +1715,9 @@
    "files": [
     "desks/mt5/research/information_value.py"
    ],
-   "why": "the code exists (desks/mt5/research/information_value.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/INFORMATION_VALUE.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1785,9 +1821,9 @@
     "desks/mt5/research/adversary.py",
     "desks/mt5/research/adversary_evolution.py"
    ],
-   "why": "the code exists (desks/mt5/research/adversary.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/ADVERSARY.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/ADVERSARY.json",
+   "clock": "hourly_cycle:adversaries,MT5-FrontierAudit"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1902,9 +1938,9 @@
    "files": [
     "desks/mt5/research/miner_candidate_compiler.py"
    ],
-   "why": "the code exists (desks/mt5/research/miner_candidate_compiler.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/data/hypotheses/miner_candidates.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/data/hypotheses/miner_candidates.json",
+   "clock": "hourly_cycle:compile_candidates"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -1983,12 +2019,14 @@
    "id": "69",
    "title": "MASSIVE RAW CANDIDATE PRODUCTION",
    "files": [
-    "desks/mt5/research/compile_anomalies.py",
-    "desks/mt5/research/miner_candidate_compiler.py"
+    "desks/mt5/research/miner_candidate_compiler.py",
+    "desks/mt5/research/anomaly_factory.py",
+    "desks/mt5/research/compile_anomalies.py"
    ],
-   "why": "the code exists (desks/mt5/research/compile_anomalies.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/data/hypotheses/anomaly_candidates.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/data/hypotheses/miner_candidates.json",
+   "clock": "hourly_cycle:compile_candidates,daily_cycle:anomaly_factory",
+   "note": "compile_anomalies is superseded by anomaly_factory (a daily proposer); its anomaly_candidates.json has no reader, so it is not given a clock of its own"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2008,10 +2046,12 @@
    "title": "GLOBAL MULTIPLICITY",
    "files": [
     "libs/research/trial_ledger.py",
-    "desks/mt5/research/multiplicity.py"
+    "desks/mt5/research/multiplicity.py",
+    "desks/mt5/research/effective_trials.py"
    ],
-   "why": "the code exists (libs/research/trial_ledger.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:effective_trials",
+   "artifact": "desks/mt5/reports/EFFECTIVE_TRIALS.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2077,9 +2117,9 @@
    "files": [
     "desks/mt5/research/shadow_forward.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:enrol_clocks"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:enrol_clocks",
+   "artifact": "desks/mt5/reports/shadow/shadow_state.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2265,9 +2305,9 @@
    "files": [
     "desks/mt5/research/excursions.py"
    ],
-   "why": "the code exists (desks/mt5/research/excursions.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/EXCURSIONS.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/data/excursions.jsonl",
+   "clock": "hourly_cycle:excursions,daily_cycle:excursions"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2300,8 +2340,10 @@
     "desks/mt5/research/book_reality.py",
     "desks/mt5/research/forward_calibration.py"
    ],
-   "why": "the code exists (desks/mt5/research/book_reality.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:forward_calibration,MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/FORWARD_CALIBRATION.json",
+   "note": "book_reality.py is a one-off printed study with no artifact; forward_calibration is the organ that measures the gap every pass"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2392,8 +2434,9 @@
    "files": [
     "desks/mt5/research/negative_knowledge.py"
    ],
-   "why": "the code exists (desks/mt5/research/negative_knowledge.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "daily_cycle:negative_knowledge,MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/NEGATIVE_KNOWLEDGE.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2414,9 +2457,9 @@
    "files": [
     "desks/mt5/research/factor_residual_engine.py"
    ],
-   "why": "the code exists (desks/mt5/research/factor_residual_engine.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/factor_residual.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/factor_residual.json",
+   "clock": "hourly_cycle:residual_factors,daily_cycle:factor_residual"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2426,9 +2469,10 @@
     "desks/mt5/research/drift_monitor.py",
     "desks/mt5/research/market_posteriors.py"
    ],
-   "why": "the code exists (desks/mt5/research/drift_monitor.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/DRIFT.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/DRIFT.json",
+   "clock": "daily_cycle:drift_monitor,MT5-FrontierAudit",
+   "note": "market_posteriors joined MT5-FrontierAudit 2026-09-29 (MARKET_POSTERIORS.json)"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2438,9 +2482,9 @@
     "desks/mt5/research/action_counterfactuals.py",
     "desks/mt5/research/modifier_counterfactuals.py"
    ],
-   "why": "the code exists (desks/mt5/research/action_counterfactuals.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/ACTION_COUNTERFACTUALS.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/MODIFIER_COUNTERFACTUALS.json",
+   "clock": "daily_cycle:action_counterfactuals,MT5-FrontierAudit"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2527,20 +2571,25 @@
    "id": "116",
    "title": "REPRODUCIBILITY",
    "files": [
-    "libs/ops/release.py"
+    "libs/ops/release.py",
+    "desks/mt5/mt5desk/release_identity.py"
    ],
-   "why": "the code exists (libs/ops/release.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:release_identity,MT5-AdoptRelease",
+   "artifact": "desks/mt5/data/release_identity.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
    "id": "117",
    "title": "CRASH RECOVERY",
    "files": [
-    "desks/mt5/research/job_lock.py"
+    "desks/mt5/research/job_lock.py",
+    "desks/mt5/research/run_desk_self_heal.py"
    ],
-   "why": "the code exists (desks/mt5/research/job_lock.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:desk_self_heal,hourly_cycle:falsifier_run",
+   "artifact": "desks/mt5/reports/DESK_SELF_HEAL.json",
+   "note": "job_lock is the stale-lock library every long leg (falsifier_run, edge_search, orthogonal_sweep, pf_allocator) takes; desk_self_heal repairs what a crash left"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2549,9 +2598,10 @@
    "files": [
     "libs/ops/events.py"
    ],
-   "why": "the code exists (libs/ops/events.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/data/events.jsonl"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/data/events.jsonl",
+   "clock": "MT5-HourlyCore",
+   "note": "hourly_cycle._emit_leg writes one event per leg end through leg_events"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2655,9 +2705,9 @@
     "desks/mt5/research/unknown_unknowns.py",
     "desks/mt5/research/unseen_frontier.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "hourly_cycle:unseen_frontier"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:unseen_frontier,hourly_cycle:exogenous_search",
+   "artifact": "desks/mt5/reports/UNSEEN_FRONTIER.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2667,8 +2717,9 @@
     "desks/mt5/research/unknown_unknowns.py",
     "libs/research/search_strategy.py"
    ],
-   "why": "the code exists (desks/mt5/research/unknown_unknowns.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:exogenous_search,MT5-FrontierAudit",
+   "artifact": "desks/mt5/reports/UNKNOWN_UNKNOWNS.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2779,9 +2830,9 @@
    "files": [
     "desks/mt5/research/simplifier.py"
    ],
-   "why": "the code exists (desks/mt5/research/simplifier.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT",
-   "artifact": "desks/mt5/reports/SIMPLIFIER.json"
+   "status": "EXISTS+WIRED+LIVE",
+   "artifact": "desks/mt5/reports/SIMPLIFIER.json",
+   "clock": "daily_cycle:simplifier"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2886,8 +2937,9 @@
     "docs/LAWS.md",
     "scripts/run_law_gate.py"
    ],
-   "why": "the code exists (docs/LAWS.md) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-LawGate",
+   "artifact": "data/law_gate.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2906,10 +2958,12 @@
    "title": "PRODUCTION FIREWALL",
    "files": [
     "scripts/moneypath_precommit_guard.py",
-    "ops/githooks/pre-commit"
+    "ops/githooks/pre-commit",
+    "scripts/check_moneypath_fence.py"
    ],
-   "why": "the code exists (scripts/moneypath_precommit_guard.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "PARTIAL",
+   "gap": "the guard fires on the commit EVENT (ops/githooks/pre-commit), not a clock, and its content-fence twin scripts/check_moneypath_fence.py runs on quant-moneypath-fence.timer (VPS, every 5 min); neither writes an artifact, so a firing cannot be read back (III.16)",
+   "clock": "quant-moneypath-fence.timer"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2919,8 +2973,9 @@
     "desks/mt5/scripts/Adopt-And-Seal.ps1",
     "libs/ops/release.py"
    ],
-   "why": "the code exists (desks/mt5/scripts/Adopt-And-Seal.ps1) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-AdoptRelease",
+   "artifact": "desks/mt5/logs/adopt_and_seal.log"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2942,8 +2997,10 @@
     "scripts/check_tier5_audit.py",
     "scripts/check_tier1_program.py"
    ],
-   "why": "the code exists (scripts/check_tier5_audit.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:tier5_acceptance,hourly_cycle:fence_battery",
+   "artifact": "desks/mt5/reports/TIER5_ACCEPTANCE.json",
+   "note": "check_tier1_program joined the fence battery 2026-09-29 (BATTERY_FENCES.json)"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2963,9 +3020,8 @@
    "files": [
     "tests/research/test_tier5_acceptance.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "law_gate:check_tier5_audit.py"
+   "gap": "the acceptance is a pytest (tests/research/test_tier5_acceptance.py) run by CI and by sessions; no box clock runs it and it writes no artifact, so the verdict is not published where the desk reads it",
+   "status": "PARTIAL"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2974,9 +3030,8 @@
    "files": [
     "tests/research/test_tier5_acceptance.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "law_gate:check_tier5_audit.py"
+   "gap": "the acceptance is a pytest (tests/research/test_tier5_acceptance.py) run by CI and by sessions; no box clock runs it and it writes no artifact, so the verdict is not published where the desk reads it",
+   "status": "PARTIAL"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2985,9 +3040,8 @@
    "files": [
     "tests/research/test_tier5_acceptance.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "law_gate:check_tier5_audit.py"
+   "gap": "the acceptance is a pytest (tests/research/test_tier5_acceptance.py) run by CI and by sessions; no box clock runs it and it writes no artifact, so the verdict is not published where the desk reads it",
+   "status": "PARTIAL"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -2995,10 +3049,12 @@
    "title": "MULTIPLICITY ACCEPTANCE TEST",
    "files": [
     "libs/research/trial_ledger.py",
-    "desks/mt5/research/multiplicity.py"
+    "desks/mt5/research/multiplicity.py",
+    "desks/mt5/research/effective_trials.py"
    ],
-   "why": "the code exists (libs/research/trial_ledger.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:effective_trials",
+   "artifact": "desks/mt5/reports/EFFECTIVE_TRIALS.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -3043,9 +3099,8 @@
    "files": [
     "tests/research/test_tier5_acceptance.py"
    ],
-   "gap": "on a clock; this audit could not name a report of its own -- the organ's hour lands in the registry or a shared state file, so there is no per-organ artifact to read it back from (LAWS III.16)",
-   "status": "PARTIAL",
-   "clock": "law_gate:check_tier5_audit.py"
+   "gap": "the acceptance is a pytest (tests/research/test_tier5_acceptance.py) run by CI and by sessions; no box clock runs it and it writes no artifact, so the verdict is not published where the desk reads it",
+   "status": "PARTIAL"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -3066,8 +3121,9 @@
     "docs/GROWTH_GOVERNANCE.md",
     "scripts/check_growth_governance.py"
    ],
-   "why": "the code exists (docs/GROWTH_GOVERNANCE.md) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "law_gate:check_growth_governance.py,MT5-LawGate",
+   "artifact": "data/law_gate.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -3077,8 +3133,9 @@
     "docs/RESEARCH.md",
     "desks/mt5/research/hourly_cycle.py"
    ],
-   "why": "the code exists (docs/RESEARCH.md) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "MT5-HourlyCore",
+   "artifact": "desks/mt5/data/sync_marker.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -3112,8 +3169,9 @@
     "scripts/check_tier5_audit.py",
     "docs/research/tier5_audit.json"
    ],
-   "why": "the code exists (scripts/check_tier5_audit.py) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:tier5_acceptance,law_gate:check_tier5_audit.py",
+   "artifact": "desks/mt5/reports/TIER5_ACCEPTANCE.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",
@@ -3133,10 +3191,12 @@
    "title": "FINAL BUILDER PRIORITY",
    "files": [
     "docs/research/tier1_program.json",
-    "scripts/check_tier1_program.py"
+    "scripts/check_tier1_program.py",
+    "desks/mt5/research/batteries.py"
    ],
-   "why": "the code exists (docs/research/tier1_program.json) and no leg of hourly_cycle, no box task and no resident names it; it runs only when a session runs it",
-   "status": "DORMANT"
+   "status": "EXISTS+WIRED+LIVE",
+   "clock": "hourly_cycle:fence_battery",
+   "artifact": "desks/mt5/reports/BATTERY_FENCES.json"
   },
   {
    "source": "FINAL MAXIMUM-AGGRESSIVE 1-170",

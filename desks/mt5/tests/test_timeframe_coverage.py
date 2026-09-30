@@ -105,3 +105,15 @@ def test_it_is_watched_for_freshness_like_every_other_producer() -> None:
 
     named = {name for name, _rel, _cad, _prod in issue_board.CADENCE}
     assert "timeframe_coverage" in named
+
+
+def test_bulk_fill_does_not_spend_the_recovery_window_on_single_name_shares() -> None:
+    """The downloader must implement the same event-lane boundary this audit grades.
+
+    Existing share data stays available, but missing single-share charts cannot precede the
+    required FX, metals, rates, energy, commodity and index charts in every recovery pass.
+    """
+    src = (DESK / "scripts" / "download_all_symbols.py").read_text(encoding="utf-8")
+    assert "def _is_single_name_equity(" in src
+    assert "tradable_all =" in src
+    assert "not _is_single_name_equity(s.path)" in src

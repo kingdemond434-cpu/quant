@@ -80,7 +80,12 @@ def test_a_success_diagnoses_to_nothing(gw):
 
 
 def test_a_lost_connection_is_distinguished_from_a_rejection(gw):
-    assert "terminal connection is gone" in gw["diagnose"](None)
+    # A None retcode is no longer CALLED a lost connection (decision_core.diagnose, 2026-09-14:
+    # an order was accepted in the same second one of these was lost). It is still told apart
+    # from a rejection -- it names no retcode, says the send returned nothing, and says UNKNOWN.
+    d = gw["diagnose"](None)
+    assert "returned nothing" in d and "UNKNOWN" in d
+    assert "terminal connection is gone" not in d and "not a retcode" not in d
 
 
 def test_an_unknown_retcode_says_so_rather_than_inventing_a_cause(gw):

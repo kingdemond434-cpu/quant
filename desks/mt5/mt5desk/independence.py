@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 #: Overlapping observations a PAIR needs before its correlation is used at all. Below this the
 #: estimate is dominated by noise, and a noisy correlation near zero is indistinguishable from

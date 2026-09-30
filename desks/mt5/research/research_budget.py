@@ -47,7 +47,12 @@ GRAVEYARD = DESK / "reports" / "GRAVEYARD_MODEL.json"
 GRAVEYARD_FLOOR, GRAVEYARD_CEIL = 1.0, 2.0
 AUCTION = DESK / "reports" / "RESEARCH_AUCTION.json"
 OUT = DESK / "reports" / "RESEARCH_BUDGET.json"
-FLOOR, CEIL = 0.5, 2.0
+#: THE FLOOR IS PAR (2026-09-29, Tier-1 #10). It was 0.5, so a bandit share below the equal
+#: share halved `alpha_evolution`'s seconds -- a generator throttled on a price nobody had shown
+#: raises E[log W]. The principal's standing order is that no miner is starved: every leg keeps
+#: its base, and the price only ever funds a leg ABOVE it, exactly as ENGINE_FLOOR and
+#: GRAVEYARD_FLOOR already do for their own factors.
+FLOOR, CEIL = 1.0, 2.0
 #: Which bandit arms each budgeted leg serves. The baseline for a leg is the equal share of its
 #: arms among all arms, so a leg scales up only when the bandit prices its arms above average.
 LEG_ARMS: dict[str, tuple[str, ...]] = {

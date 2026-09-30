@@ -111,7 +111,8 @@ def test_the_discovery_corpus_is_left_to_the_organ_that_ships_it() -> None:
     assert 'Get-NonShippedDiff -From $mergeBase -To "HEAD" -Mode "name-status"' in src
     verify = src.index('$allDiff = @(Get-NonShippedDiff')
     assert verify > loop
-    assert "function Get-ShippedDiffCount" in src and '"--shortstat"' in src
+    assert "function Get-ShippedDiffCount" in src and '"--quiet"' in src
+    assert '"--no-renames"' in src
 
 
 def test_the_skip_names_the_organ_that_actually_delivers_those_paths() -> None:
@@ -151,7 +152,7 @@ def test_an_adoption_lands_code_and_leaves_the_discovery_corpus_alone(tmp_path: 
     # The corpus did NOT: it is the intel ship's, and the box keeps what it had until then.
     assert json.loads((box / "data/intelligence/kimi/discoveries_1.json")
                       .read_text(encoding="utf-8")) == {"v": 1}
-    assert "left 1 discovery path(s) to MT5-IntelShip" in r.stdout
+    assert "discovery drift exists and is left to MT5-IntelShip" in r.stdout
     # And the merge is recorded even though one tracked path still differs from the target,
     # because that path is not this script's to land.
     assert _git(box, "rev-parse", "HEAD") != _git(box, "rev-parse", "FETCH_HEAD")

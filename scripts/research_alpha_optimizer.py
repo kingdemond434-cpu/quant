@@ -26,10 +26,15 @@ Read-only. Run from repo root.
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from libs.research.search_strategy import evolve_search_strategies
+_R = Path(__file__).resolve().parent.parent
+if str(_R) not in sys.path:  # run by path: scripts/ is on sys.path, the root is not
+    sys.path.insert(0, str(_R))
+
+from libs.research.search_strategy import evolve_search_strategies  # noqa: E402
 
 LEDGER = Path("data/decision_ledger.json")
 OUT = Path("data/research_alpha_optimizer.json")

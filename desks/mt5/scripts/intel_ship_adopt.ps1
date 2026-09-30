@@ -38,7 +38,17 @@ function Log([string] $m) {
 
 if (-not (Test-Path (Join-Path $RepoRoot ".git"))) { Log "no .git under $RepoRoot"; exit 2 }
 
-# 1. wait for MT5-ShadowSync the way Adopt-And-Seal does (sync limit is 10 min; give it 9)
+# 1. FETCH WITHOUT HOLDING THE INDEX-WRITER MUTEX.  The transport branch can contain tens of
+# thousands of objects; measured 2026-09-30, index-pack ran for more than nine minutes while this
+# task held the global writer mutex, causing every release adoption to time out. Fetching objects
+# and updating this task's DEDICATED remote ref does not touch the worktree or index. Crucially,
+# --no-write-fetch-head prevents this fetch from overwriting FETCH_HEAD while Adopt-Release uses
+# it as its immutable target.
+$shipRef = "refs/remotes/intel-ship/send"
+& git fetch --no-write-fetch-head origin "+refs/heads/intel-ship/send:$shipRef" 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) { Log "git fetch failed (rc=$LASTEXITCODE)"; exit 3 }
+
+# 2. wait for MT5-ShadowSync the way Adopt-And-Seal does (sync limit is 10 min; give it 9)
 $waited = 0
 while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContinue).State -eq "Running") {
     if ($waited -ge 540) { Log "MT5-ShadowSync still running after 9 min; not adopting under it"; exit 6 }
@@ -47,7 +57,7 @@ while ((Get-ScheduledTask -TaskName "MT5-ShadowSync" -ErrorAction SilentlyContin
     $waited += 5
 }
 
-# 2. the mutex every git writer on this box takes
+# 3. the mutex every WORKTREE/INDEX writer on this box takes
 . (Join-Path $PSScriptRoot "GitWriterMutex.ps1")
 # THE WHOLE HANDLE (2026-09-23): `.Mutex` alone drops the legacy name the helper also takes, and
 # a $null from a name that could not be OPENED then failed non-terminating and was reported as
@@ -66,16 +76,15 @@ catch [System.Threading.AbandonedMutexException] { $gotLock = $true }
 if (-not $gotLock) { Log ("another git writer held " + $script:GitWriterHandle.Name + " for the full 9 min; not adopting under it"); exit 6 }
 
 try {
-    # 3. fetch the transport branch into FETCH_HEAD, then land ONLY the two discovery trees
-    & git fetch origin intel-ship/send 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0) { Log "git fetch failed (rc=$LASTEXITCODE)"; exit 3 }
-    & git checkout FETCH_HEAD -- data/intelligence desks/mt5/data/intelligence 2>&1 | Out-Null
+    # 4. land ONLY the two discovery trees from the dedicated ref. The expensive transfer above
+    # happened before this lock window; only the bounded index/worktree write is serialized.
+    & git checkout $shipRef -- data/intelligence desks/mt5/data/intelligence 2>&1 | Out-Null
     if ($LASTEXITCODE -ne 0) { Log "git checkout failed (rc=$LASTEXITCODE)"; exit 4 }
 
-    # 4. verify a marker from the ship is actually on disk (the ship always carries the
+    # 5. verify a marker from the ship is actually on disk (the ship always carries the
     #    discovery per-miner corpus; count what came down)
     $n = (Get-ChildItem -Recurse -File "C:\opt\quant\data\intelligence","C:\opt\quant\desks\mt5\data\intelligence" -ErrorAction SilentlyContinue | Measure-Object).Count
-    $head = (& git rev-parse --short FETCH_HEAD | Out-String).Trim()
+    $head = (& git rev-parse --short $shipRef | Out-String).Trim()
     Log "adopted $head onto disk ($n intelligence files); leaving conversion to the box's own pipeline"
     exit 0
 }

@@ -23,6 +23,7 @@ Two rules now hold here, and both are the anti-hardcode law (LAWS §1) rather th
     a missing row is not "no data", it is an uncostable symbol that kills a pass.
 """
 
+import argparse
 import json
 import sys
 import time
@@ -261,12 +262,47 @@ def _refresh_order(candidates: list[str]) -> list[str]:
     return ordered
 
 
-def main() -> None:
-    if mt5.terminal_info() is None:
-        if not mt5.initialize(path=TERMINAL):
-            print(f"initialize failed: {mt5.last_error()}")
-            return
-    print(f"terminal: {mt5.terminal_info().name} | account {mt5.account_info().login}")
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="Hydrate the broker-derived MT5 bar universe")
+    parser.add_argument(
+        "--symbols", default="",
+        help=("comma-separated repair subset; empty keeps the full broker-derived sweep. A "
+              "targeted run merges into universe.json and writes a separate coverage receipt"),
+    )
+    args = parser.parse_args(argv)
+    requested = {s.strip().upper() for s in args.symbols.split(",") if s.strip()}
+    terminal = mt5.terminal_info()
+    last_error: object = None
+    if terminal is None:
+        # A visible terminal process can still leave a dead Python IPC endpoint. One clean,
+        # bounded retry restores transient failures without reporting a false-success task.
+        for attempt in range(2):
+            mt5.shutdown()
+            if mt5.initialize(path=TERMINAL, timeout=60_000):
+                terminal = mt5.terminal_info()
+                if terminal is not None:
+                    break
+            last_error = mt5.last_error()
+            if attempt == 0:
+                time.sleep(2)
+    account = mt5.account_info() if terminal is not None else None
+    if terminal is None or account is None:
+        failure = {
+            "fetched_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "mode": "TARGETED_REPAIR" if requested else "FULL_UNIVERSE",
+            "status": "INIT_FAILED",
+            "requested": sorted(requested),
+            "attempted": 0,
+            "written": 0,
+            "skipped": len(requested),
+            "reasons": {s: {"reason": "MT5_INIT_FAILED", "detail": str(last_error)}
+                        for s in sorted(requested)},
+        }
+        coverage_name = "bar_coverage_targeted.json" if requested else "bar_coverage_skips.json"
+        (OUT / coverage_name).write_text(json.dumps(failure, indent=1), encoding="utf-8")
+        print(f"initialize failed after 2 attempts: {last_error}")
+        raise SystemExit(2)
+    print(f"terminal: {terminal.name} | account {account.login}")
 
     # THE REGISTRY IS THE BASE, NOT THE OUTPUT. Read first, refresh into it, write the union.
     registry: dict = {}
@@ -308,6 +344,11 @@ def main() -> None:
                 registry[s]["delisted_seen_at"] = datetime.now(UTC).isoformat()
     candidates = _refresh_order(
         list(dict.fromkeys([*SEED_CANDIDATES, *registry, *offered])))
+    if requested:
+        candidates = [s for s in candidates if s.upper() in requested]
+        absent = sorted(requested - {s.upper() for s in candidates})
+        if absent:
+            print(f"targeted symbols absent from seed, registry and broker offer: {absent}")
     print(f"refreshing {len(candidates)} symbol(s): {len(SEED_CANDIDATES)} seeded, "
           f"{prior_n} already in the registry; clocked and stalest first")
 
@@ -409,8 +450,11 @@ def main() -> None:
     # The skip ledger is written EVERY run, including an empty one, because "nothing was skipped
     # this pass" and "this pass never reported" are different facts and a stale file would make
     # them look identical to the coverage watchdog.
-    (OUT / "bar_coverage_skips.json").write_text(json.dumps({
+    coverage_name = "bar_coverage_targeted.json" if requested else "bar_coverage_skips.json"
+    (OUT / coverage_name).write_text(json.dumps({
         "fetched_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "mode": "TARGETED_REPAIR" if requested else "FULL_UNIVERSE",
+        "requested": sorted(requested),
         "attempted": len(candidates), "written": len(summary), "skipped": len(skipped),
         "reasons": skipped}, indent=1), encoding="utf-8")
     print(f"skip ledger: {len(skipped)} symbol(s) recorded with a reason")

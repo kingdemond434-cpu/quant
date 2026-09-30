@@ -106,9 +106,13 @@ def test_a_pass_runs_cells_names_unmeasured_libraries_and_writes_the_artifact(
     assert rup["run_status"] == "UNMEASURED" and rup["task"]["kind"] == "install"
     assert rup["task"]["requirement"] == "ruptures==1.0.6"
     assert any(t["requirement"] == "ruptures==1.0.6" for t in doc["install_tasks"])
+    # bridgewater_pat_aia MEASURES now: it maps its six architecture stages against this tree
+    # (organ present, artifact written, artifact age) and donates the coverage as a
+    # representation (tier1_program, "THREE ZERO-PRODUCTION BINDINGS FIXED"). TEXT_ONLY was
+    # "never a resting state", and it has left it.
     pat = by_id["bridgewater_pat_aia"]
-    assert pat["run_status"] == "TEXT_ONLY" and pat["task"]["kind"] == "rebuilt"
-    assert "bridgewater_pat_aia" in doc["text_only"] and doc["rebuilt_tasks"]
+    assert pat["run_status"] == "PRODUCED", (pat.get("why_unmeasured"), pat.get("why"))
+    assert "bridgewater_pat_aia" not in doc["text_only"]
     for cell in ("path_signature_lab", "conformal_calibration", "coevolution_cell",
                  "rl_execution_challenger"):
         row = by_id[f"cell:{cell}"]

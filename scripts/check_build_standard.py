@@ -64,6 +64,8 @@ _GOVERNED: tuple[str, ...] = (
     "check_denominator_attrition.py",                       # L1.60 what that denominator LOST
     "check_claim_consistency.py",                           # L1.61 does the desk contradict itself
     "check_panel_breadth.py",                               # L1.62 was that power denominator measured
+    "check_data_recoverability.py",                         # L1.65 lost span, and can it be bought back
+    "check_frozen_values.py",                               # L1.66 running values == values on disk
     "check_risk_units.py",                                  # L1.67 is the lot in the account's units
     "check_citation_integrity.py",                          # R0369 can the proof-of-work be cashed
     "check_birth_properties.py",                            # §36/L2.9 born with its properties

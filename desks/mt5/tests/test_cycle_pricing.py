@@ -39,9 +39,21 @@ def _isolate(tmp_path: Path, monkeypatch: Any, *, meta: dict[str, Any] | None = 
     monkeypatch.setattr(cp, "OUT", tmp_path / "CYCLE_PRICING.json", raising=True)
     monkeypatch.setattr(cp, "_PLAN", None, raising=False)
     monkeypatch.setattr(cp, "_PLAN_AT", 0.0, raising=False)
+    # The factory contracts are a price source read from the desk's reports; a test must never
+    # price off what the box wrote this hour.
+    monkeypatch.setattr(cp, "_factory_prices", lambda: ({}, "isolated"), raising=True)
 
 
 BASES = {f"leg{i}": 600 for i in range(10)}
+
+
+def _spare_ledger(wall_s: float = 60.0) -> str:
+    """One recent compute-ledger row: the `rest` clock is measured and nearly idle, so its spare
+    is MEASURED. The grant above base comes out of that spare and out of nothing else."""
+    from datetime import UTC, datetime
+    row = {"at": datetime.now(tz=UTC).isoformat(timespec="seconds"), "run": "leg0",
+           "wall_s": wall_s, "outcome": "ok"}
+    return json.dumps(row) + "\n"
 
 
 def _board(values: dict[str, float]) -> dict[str, Any]:
@@ -53,7 +65,7 @@ def _board(values: dict[str, float]) -> dict[str, Any]:
 
 def test_a_winner_gets_more_and_the_loser_keeps_its_scout_floor(
         tmp_path: Path, monkeypatch: Any) -> None:
-    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={})
+    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={}, ledger=_spare_ledger())
     monkeypatch.setattr(cp, "_kind_legs", lambda: {}, raising=True)
     monkeypatch.setattr(cp, "_meta_prices", lambda: ({"leg0": 10.0, "leg9": -5.0}, ""),
                         raising=True)
@@ -130,7 +142,7 @@ def test_the_order_puts_scouts_first_then_price(tmp_path: Path, monkeypatch: Any
 
 def test_applied_budget_records_planned_against_applied(
         tmp_path: Path, monkeypatch: Any) -> None:
-    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={})
+    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={}, ledger=_spare_ledger())
     monkeypatch.setattr(cp, "_kind_legs", lambda: {}, raising=True)
     monkeypatch.setattr(cp, "_meta_prices", lambda: ({"leg0": 9.0, "leg9": -9.0}, ""),
                         raising=True)
@@ -230,3 +242,57 @@ def test_declaring_never_costs_the_leg_that_declared(tmp_path: Path, monkeypatch
     monkeypatch.setattr(jl, "record_spec", lambda *_a, **_k: (_ for _ in ()).throw(OSError("x")),
                         raising=True)
     cp.declare_spec("legC", {"leg": "legC", "applied_s": 60, "score": 1.0})   # must not raise
+
+
+# ------------------------------------------------ Tier-1 #10: spare compute, never a throttle
+def _priced(monkeypatch: Any, prices: dict[str, float]) -> None:
+    monkeypatch.setattr(cp, "_kind_legs", lambda: {}, raising=True)
+    monkeypatch.setattr(cp, "_meta_prices", lambda: (dict(prices), ""), raising=True)
+    monkeypatch.setattr(cp, "_bandit_prices", dict, raising=True)
+    monkeypatch.setattr(cp, "_policy_factors", lambda: ({}, False), raising=True)
+    monkeypatch.setattr(cp, "_evig_prices", lambda: ({}, "isolated"), raising=True)
+
+
+def test_no_leg_is_ever_below_its_base(tmp_path: Path, monkeypatch: Any) -> None:
+    """The principal's order: no miner is starved. The worst-priced leg keeps its whole base."""
+    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={}, ledger=_spare_ledger())
+    _priced(monkeypatch, {f"leg{i}": float(i) for i in range(10)})
+    plan = cp.build_plan(BASES)
+    assert cp.FLOOR == 1.0
+    for leg, v in plan["legs"].items():
+        assert v["planned_s"] >= v["base_s"], f"{leg} was cut below its base"
+        assert v["factor"] >= 1.0 and v["price_factor"] >= 1.0
+
+
+def test_unmeasured_spare_grants_nothing(tmp_path: Path, monkeypatch: Any) -> None:
+    """A price is not a measurement of capacity: with no ledger row every leg runs at base."""
+    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={})
+    _priced(monkeypatch, {"leg0": 10.0, "leg9": -5.0})
+    plan = cp.build_plan(BASES)
+    assert plan["spare"]["status"] == "UNMEASURED"
+    assert plan["legs"]["leg0"]["price_factor"] > 1.0
+    assert plan["legs"]["leg0"]["planned_s"] == 600 and plan["spare_granted_s"] == 0
+
+
+def test_the_grant_never_exceeds_the_measured_spare(tmp_path: Path, monkeypatch: Any) -> None:
+    """A clock that is nearly full grants pro rata out of what is left, never more."""
+    busy = (cp.CLOCK_S - 100.0) * cp.SPARE_WINDOW_H          # 100 s of spare per hour
+    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={}, ledger=_spare_ledger(busy))
+    _priced(monkeypatch, {f"leg{i}": float(i) for i in range(10)})
+    plan = cp.build_plan(BASES)
+    spare = plan["spare"]["spare_s"]["rest"]
+    assert spare == pytest.approx(100.0, abs=0.5)
+    assert 0 < plan["spare_granted_s"] <= spare + len(BASES)  # rounding, one second per leg
+    assert all(v["planned_s"] >= v["base_s"] for v in plan["legs"].values())
+
+
+def test_the_factory_contracts_are_a_price_source(tmp_path: Path, monkeypatch: Any) -> None:
+    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={}, ledger=_spare_ledger())
+    _priced(monkeypatch, {})
+    monkeypatch.setattr(cp, "_factory_prices", lambda: ({"leg3": 0.9, "leg4": 0.1}, ""),
+                        raising=True)
+    plan = cp.build_plan(BASES)
+    assert "factory_contracts" in plan["legs"]["leg3"]["priced_by"]
+    assert plan["sources"]["factory_contracts"] is True
+    assert plan["legs"]["leg3"]["planned_s"] > plan["legs"]["leg3"]["base_s"]
+    assert plan["legs"]["leg4"]["planned_s"] == plan["legs"]["leg4"]["base_s"]

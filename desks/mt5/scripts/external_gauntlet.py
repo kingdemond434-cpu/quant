@@ -692,11 +692,19 @@ def _live_frame(sym: str, timeframe: str = "H1"):
     if os.name != "nt":
         return None
     try:
+        # The full gauntlet is a parquet consumer, not a terminal owner. Holding the Fusion
+        # research lease around a 45-minute statistical sweep starved the hourly tail refresher,
+        # leaving real files 13+ hours stale and blocking forward clocks. Only this rare
+        # missing-parquet fallback needs MT5, so lease the terminal for the read itself.
+        from research.job_lock import exclusive_job
         from research.h1_source import fetch_h1
-        bars = fetch_h1(str(sym), datetime(2018, 1, 1, tzinfo=UTC),
-                        prefer="MT5", prefer_promotion_authority=True,
-                        require_coverage=True,
-                        timeframe=str(timeframe).upper())
+        with exclusive_job("fusion_terminal_research_lane", need_mb=0) as terminal_lane:
+            if not terminal_lane:
+                return None
+            bars = fetch_h1(str(sym), datetime(2018, 1, 1, tzinfo=UTC),
+                            prefer="MT5", prefer_promotion_authority=True,
+                            require_coverage=True,
+                            timeframe=str(timeframe).upper())
         if bars is None or bars.n <= 0 or not bars.promotion_authority:
             return None
         frame = families._h1(bars.df)
@@ -705,6 +713,25 @@ def _live_frame(sym: str, timeframe: str = "H1"):
         return frame
     except Exception:
         return None
+
+
+def modifier_preflight(spec: dict) -> str | None:
+    """Name a deterministic modifier refusal without loading bars or runtime inputs."""
+    family = str(spec.get("family") or "")
+    fn = getattr(families, f"family_{family}", None)
+    if fn is None:
+        try:
+            from mt5desk import families_orthogonal as fo
+            fn = fo.ORTHOGONAL_FAMILIES.get(family)
+        except ImportError:
+            fn = None
+    if fn is None:
+        return None
+    params = dict(spec.get("params") or {})
+    params.pop("timeframe", None)
+    params.pop("session", None)
+    _kwargs, mods = cell_modifiers.split(fn, params)
+    return cell_modifiers.refusal(mods)
 
 
 _LIVE_H1_AVAILABLE: dict[str, bool] = {}
@@ -2855,6 +2882,25 @@ def main():
           f"({_untradeable} untradeable symbol, "
           f"{len(prior_rejections) - _untradeable} no economic prior)")
 
+    # These descriptions cannot execute as claimed. Conserve every refusal, but discover it
+    # before novelty, allocation and parallel pre-warm so scarce build/gate compute is reserved
+    # for cells that can actually reach the ten gates.
+    _modifier_blocked: list[dict] = []
+    _modifier_ready: list[dict] = []
+    for _spec in eligible_specs:
+        _why = modifier_preflight(_spec)
+        if _why:
+            _modifier_blocked.append({**_spec,
+                                      "downstream_status": "NOT_RUN_MODIFIER",
+                                      "why": f"NOT_RUN_MODIFIER: {_why}"})
+        else:
+            _modifier_ready.append(_spec)
+    eligible_specs = _modifier_ready
+    if _modifier_blocked:
+        print(f"Modifier preflight: {len(_modifier_blocked)} impossible variant(s) conserved "
+              f"without spending build/gate compute; {len(eligible_specs)} executable cell(s) "
+              "remain")
+
     # Build cell objects -- CACHE FIRST. A cell whose (identity, params, last complete data-day)
     # was already computed loads its 1x and 3x daily series and skips signal generation AND both
     # backtests entirely; only genuinely new candidates, or a new trading day, pay for compute.
@@ -2864,7 +2910,7 @@ def main():
     built_fresh = 0
     deferred: list[dict] = []
     _mem_deferred = 0
-    blocked_build: list[dict] = []
+    blocked_build: list[dict] = list(_modifier_blocked)
     _build_t0 = time.time()
     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
     try:
@@ -3713,22 +3759,18 @@ def _cli_main() -> int:
     # each process was individually non-duplicated but the pair spawned independent worker pools;
     # the live task then failed with 0x800705AF (insufficient system resources).  A five-minute
     # trigger makes deferral cheap; overlapping two authorities is never useful.
-    # The judge reads local bars, but its cost-truth legs also attach to Fusion.  The full chart
-    # collector needs that same terminal and was interrupted when the two hourly triggers landed
-    # together.  Serialize only these research owners; the live gateway remains independent.
-    with exclusive_job("fusion_terminal_research_lane", need_mb=0) as terminal_lane:
-        if not terminal_lane:
-            print("external_gauntlet: DEFERRED -- broker chart collection owns Fusion research lane")
+    # Normal judging reads local parquets and frozen cost artifacts. It must not monopolize the
+    # terminal and prevent those parquets from being refreshed. `_live_frame` takes the Fusion
+    # lease narrowly when a missing-parquet fallback is genuinely required.
+    with exclusive_job("certification_lane", need_mb=_need) as lane:
+        if not lane:
+            print("external_gauntlet: DEFERRED -- another canonical certifier owns the lane")
             return 0
-        with exclusive_job("certification_lane", need_mb=_need) as lane:
-            if not lane:
-                print("external_gauntlet: DEFERRED -- another canonical certifier owns the lane")
+        with exclusive_job(_job, need_mb=0) as acquired:
+            if not acquired:
                 return 0
-            with exclusive_job(_job, need_mb=0) as acquired:
-                if not acquired:
-                    return 0
-                main()
-                return 0
+            main()
+            return 0
 
 
 if __name__ == "__main__":

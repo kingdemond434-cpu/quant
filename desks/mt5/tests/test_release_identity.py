@@ -306,8 +306,12 @@ def test_smoke_release_passes_on_a_sealed_signed_tree(sealed: Path, tmp_path: Pa
     _git(sealed, "checkout", "--", SIZING)
     judge = sealed / "desks/mt5/research/promoter.py"
     judge.write_bytes(judge.read_bytes().replace(b"\n", b"\r\n"))
+    # The immutable fence itself now hashes CRLF -> LF (scripts/check_immutable_evaluator.py,
+    # "Normalising CRLF -> LF makes the hash mean what it always claimed to mean"), so a CRLF
+    # checkout is no finding at all -- not even one the smoke has to excuse as `crlf_only`.
     rc, rep = _smoke(sealed, tmp_path / "smoke3.json")
-    assert rc == 0 and rep["checks"]["immutable"]["crlf_only"] == ["desks/mt5/research/promoter.py"]
+    imm = rep["checks"]["immutable"]
+    assert rc == 0 and imm["ok"] and imm["breaches"] == [] and imm["crlf_only"] == []
 
 
 # ------------------------------------------------------------------- the live manifest

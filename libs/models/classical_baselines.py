@@ -125,8 +125,10 @@ class HawkesIntensity:
                 if best is None or candidate[0] < best[0]:
                     best = candidate
         assert best is not None
-        nll, branching, beta, mu = best
+        nll, fitted_branching, fitted_beta, fitted_mu = best
         self.state = {"fitted": True, "verdict": "MEASURED", "n_events": int(times.size),
-                      "branching_ratio": branching, "decay_halflife": math.log(2.0) / beta,
-                      "mu": mu, "alpha": branching * beta, "beta": beta, "loglik": -nll}
+                      "branching_ratio": fitted_branching,
+                      "decay_halflife": math.log(2.0) / fitted_beta,
+                      "mu": fitted_mu, "alpha": fitted_branching * fitted_beta,
+                      "beta": fitted_beta, "loglik": -nll}
         return self

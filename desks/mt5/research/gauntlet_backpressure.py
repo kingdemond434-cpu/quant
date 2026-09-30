@@ -497,7 +497,10 @@ def cold_exploration(born: list[dict[str, Any]], vers: list[dict[str, Any]],
             cold += 1
     floor = 0.20
     try:
-        import negative_knowledge as nk
+        # Package-qualified: a bare `import negative_knowledge` resolves to the repo-root
+        # `scripts/negative_knowledge.py` (no EXPLORE_FLOOR) whenever that directory is earlier
+        # on sys.path, and this read then fell silently back to the literal.
+        from research import negative_knowledge as nk
         floor = float(nk.EXPLORE_FLOOR)
     except Exception:
         pass

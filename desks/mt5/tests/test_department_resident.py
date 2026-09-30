@@ -26,6 +26,19 @@ def test_singleton_lock_is_exclusive(monkeypatch, tmp_path):
     b.close()
 
 
+def test_capacity_slots_bound_cross_department_passes(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    first = dr.claim_capacity_slot(2)
+    second = dr.claim_capacity_slot(2)
+    assert first is not None and second is not None
+    assert dr.claim_capacity_slot(2) is None
+    first.close()
+    replacement = dr.claim_capacity_slot(2)
+    assert replacement is not None
+    replacement.close()
+    second.close()
+
+
 def test_one_pass_runs_the_cycle_under_the_department_plan(monkeypatch, tmp_path):
     fake = tmp_path / "cycle.py"
     fake.write_text(

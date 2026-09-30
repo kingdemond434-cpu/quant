@@ -124,10 +124,14 @@ def test_snapshot_reader_renames_the_lookahead_field(tmp_path: Path) -> None:
 
 
 def test_the_collector_script_parses_and_refuses_loudly() -> None:
-    """collect_unlock_calendar.py's contract without network: it imports, its error path writes
-    status UNMEASURED (never a silent zero-append), and its happy path stamps status OK."""
-    import ast
+    """collect_unlock_calendar.py was a crypto token-unlock collector (its rows are *USDT
+    tickers) deleted in the 2026-09-05 MT5 purge -- the universe mandate forbids hunting that
+    ground. Its contract is therefore pinned as RETIRED: absent, and named by no live scheduler
+    line, so a resurrected copy cannot run unnoticed. The snapshot reader above survives."""
     from pathlib import Path
-    src = (Path(__file__).resolve().parents[2] / "scripts/collect_unlock_calendar.py").read_text()
-    ast.parse(src)
-    assert '"UNMEASURED"' in src and '"status": "OK"' in src
+    root = Path(__file__).resolve().parents[2]
+    assert not (root / "scripts/collect_unlock_calendar.py").exists()
+    for sched in (root / "ops/crontab.manifest", root / "desks/mt5/ops/box_tasks.manifest"):
+        live = [ln for ln in sched.read_text("utf-8").splitlines()
+                if "collect_unlock_calendar" in ln and not ln.lstrip().startswith("#")]
+        assert not live, live

@@ -58,7 +58,11 @@ def _ann_sharpe(arr: Any, periods_per_year: float = 365.0) -> float | None:
     mean = sum(vals) / n
     var = sum((v - mean) ** 2 for v in vals) / (n - 1)      # sample sd, matches numpy ddof=1
     sd = math.sqrt(var)
-    if sd <= 0.0:
+    # ZERO TO FLOATING-POINT PRECISION, not only exactly zero: ten copies of 0.01 leave a
+    # rounding residue of ~1e-19 in the variance sum, and dividing by it published a Sharpe of
+    # 1e17 for a constant series. A spread that small relative to the values is no spread.
+    scale = max(abs(v) for v in vals)
+    if sd <= 1e-12 * scale or sd == 0.0:
         return None
     return float(mean / sd * math.sqrt(periods_per_year))
 

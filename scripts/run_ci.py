@@ -76,6 +76,8 @@ _PY = venv_python(_ROOT)
 # on the next -- the two numbers live in different files and nothing else relates them.
 _STEPS = [
     ("lint (ruff)", [_PY, "-m", "ruff", "check", "scripts", "libs", "tests"], 300),
+    ("lint desks/mt5 (bugs)", [_PY, "-m", "ruff", "check", "desks/mt5", "--isolated",
+                               "--target-version", "py311", "--select", "E9,F63,F7,F82"], 300),
     # COLLECTION IS ITS OWN GATE, AND IT RUNS BEFORE THE EXPENSIVE ONE (2026-08-13). Measured at
     # 8 SECONDS against the full-suite step's 7200s budget, which is the whole argument: a
     # collection break is the cheapest failure in the repo to detect and was being detected last,
@@ -116,7 +118,9 @@ _STEPS = [
     # (cycle memory 2026-08-11), so the old 1800s budget tripped on every HONEST run -- the
     # marker read "HUNG >1800s" nightly and the gate was a wall no run could pass (L1.49).
     # 2h keeps the wide "wedged, never busy" margin over the 80min observation.
-    ("tests (pytest)", [_PY, "-m", "pytest", "tests/", "-q"], 7200),
+    # No "-q": addopts already carries it, and a second one reaches pytest as -qq, which drops
+    # the summary counts the suite record parses (tests/scripts/test_record_suite_run.py).
+    ("tests (pytest)", [_PY, "-m", "pytest", "tests/"], 7200),
     # TYPES (2026-07-25): mypy --strict was configured in pyproject and run by NOBODY -- the
     # strictest tool in the repo was not in the gate, so nothing stopped a type regression
     # landing. Added the same day scripts/ entered its `files` list, because a type gate that

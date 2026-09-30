@@ -51,6 +51,16 @@
 [CmdletBinding()]
 param()
 
+# RETIRED 2026-09-30. Adoption, sealing and gate re-attestation are one release transaction,
+# owned by MT5-AdoptRelease. This second ten-minute sealer repeatedly collided with adoption and
+# invoked the same crash-prone Windows porcelain commit, delaying the canonical release it was
+# supposed to help. Keep the entrypoint harmless for boxes that still carry the legacy task;
+# the manifest no longer treats it as a writer.
+Write-Output "MT5-SealIfClean retired; MT5-AdoptRelease owns the release transaction"
+exit 0
+
+<# RETIRED IMPLEMENTATION -- audit history only; deliberately unreachable.
+
 $ErrorActionPreference = "Continue"
 
 $desk = Split-Path -Parent $PSScriptRoot
@@ -156,3 +166,4 @@ try {
 finally {
     Close-GitWriterMutex $mutexHandle
 }
+#>

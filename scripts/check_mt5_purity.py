@@ -99,6 +99,21 @@ _RETIRED = re.compile(r"\bis retired\b|\bwas retired\b|\bretired\b.{0,40}\b20\d\
 
 _DECLARATION_WINDOW = 2500
 
+#: A claim phrase NEGATED in place ("No crypto-exchange universe is hunted") is the file stating
+#: its compliance, not declaring the ground. The desk's country packs state the boundary in exactly
+#: that sentence, so reading it as a declaration would flag the mandate for being quoted.
+_NEGATION = re.compile(r"\b(?:no|never|not a|nor)\s+$", re.I)
+
+
+def _declared_claims(window: str) -> list[str]:
+    """Patterns with at least one NON-negated match in the declaration window."""
+    out: list[str] = []
+    for r in _DECLARES:
+        if any(not _NEGATION.search(window[max(0, m.start() - 12):m.start()])
+               for m in r.finditer(window)):
+            out.append(r.pattern)
+    return out
+
 #: Allowed to reach a venue, each with the reason it survives an MT5-only purge. A bare allowlist
 #: is a list nobody can safely extend; every entry here answers "why is this not the thing we
 #: just deleted?"
@@ -133,6 +148,14 @@ _ALLOWED: dict[str, str] = {
         "only possible by writing both down.",
     "tests/scripts/test_watchdog_banned_universe.py":
         "Tests that the watchdog rejects the banned universe, which it can only do by naming it.",
+    "desks/mt5/tests/test_scout_swarm.py":
+        "Pins that the scout swarm REFUSES crypto-exchange ground by mandate (refused_by_mandate "
+        "== 2, nothing registered), which it can only prove by offering it a venue URL.",
+    "desks/mt5/research/shadow_institutional.py":
+        "CRYPTO AS REFERENCE DATA INFORMING AN MT5 INSTRUMENT -- the one use the 2026-08-18 "
+        "mandate permits. Enforced in code, not prose: every crypto sensor must declare MT5 "
+        "`consumers` and check_sensors refuses one without, no crypto instrument is ever a "
+        "hypothesis target, and nothing on the list is tradable.",
 }
 
 #: Read, never executed: the desk's memory of the era it retired. A record of what was tried and
@@ -211,7 +234,7 @@ def scan() -> dict:
         hosts = sorted({h for h in _VENUE_HOSTS if h in code})
         window = _docstring_window(text, p)
         excused = _PERMITTED.search(window) or _RETIRED.search(text)
-        claims = [] if excused else [r.pattern for r in _DECLARES if r.search(window)]
+        claims = [] if excused else _declared_claims(window)
 
         if not hosts and not claims:
             continue

@@ -302,7 +302,7 @@ def test_the_bracket_is_resolved_before_the_heat_cap_runs() -> None:
 
 
 def test_the_charge_site_bills_at_the_resolved_stop_and_the_live_symbol_info() -> None:
-    block = _GW_SRC.split("from_book = _book is not None", 1)[1] \
+    block = _GW_SRC.split("from_book = _key is not None", 1)[1] \
                    .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
     assert 'resolve_pending_bracket(_s, hour, datetime.now(tz=UTC).date())' in block, (
         "the charge must ask about the same day the placement loop will, or the two sites can "
@@ -437,8 +437,18 @@ def test_the_cancel_hour_is_part_of_the_resolution_not_of_the_send():
     pend = _resolve(45.0, hour=float(dc.CANCEL_HOUR) + 0.5)
     assert not pend["ok"] and pend["stage"] == "past_cancel_hour"
     assert "taken back by this same pass" in pend["why"]
-    # And it is still resolvable an hour before the backstop, or the guard has eaten the session.
-    assert _resolve(45.0, hour=float(dc.CANCEL_HOUR) - 1.0)["ok"]
+    # And it is still resolvable inside its own session, or the guard has eaten the session.
+    assert _resolve(45.0, hour=16.9)["ok"]
+
+
+def test_a_late_pass_does_not_resolve_a_bracket_whose_session_has_ended():
+    """2026-09-25 on Fusion: asia and london_am brackets went out after 17:00 server off stale
+    ranges and both whipsawed (-122.90 EUR). london_am's session ends when the afternoon opens, so
+    a pass at 17:00 or later no longer resolves it -- and the cap never prices it."""
+    pend = _resolve(45.0, hour=17.0)
+    assert not pend["ok"] and pend["stage"] == "session_ended"
+    assert "stale range" in pend["why"]
+    assert not _resolve(45.0, hour=float(dc.CANCEL_HOUR) - 1.0)["ok"]
 
 
 def test_a_sleeve_the_cap_did_not_price_cannot_be_placed_later_in_the_same_pass():
@@ -502,7 +512,7 @@ def test_the_charge_site_covers_every_lane_and_names_the_one_it_does_not():
     """Gold, promoted and fixed-lot are all charged at their resolved order; the family lane is
     charged at ITS resolved order; the scalp lane is still charged a fraction and the source
     says so out loud rather than leaving it to be rediscovered by a fourth audit."""
-    block = _GW_SRC.split("from_book = _book is not None", 1)[1] \
+    block = _GW_SRC.split("from_book = _key is not None", 1)[1] \
                    .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
     assert 'if _s.get("exec") not in ("family_market", "scalp_market"):' in block
     assert 'elif _s.get("exec") == "family_market":' in block
@@ -536,7 +546,12 @@ def test_the_family_resolver_writes_no_state():
               and n.name == "resolve_family_order")
     called = {n.func.id for n in ast.walk(fn)
               if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
-    assert not called & {"save_state", "_record_intent", "_book_target", "_book_fill", "log"}
+    # `log` and `journal_refusal` left this set with the 2026-09-15 same-side cap and stale-signal
+    # refusal (bcbec41f): the resolver now REFUSES by itself (a stale replay, a doubled bet), and
+    # a refusal it makes is final whatever the cap does, so it is journalled for `missed_growth`
+    # where it is decided. Neither consumes a signal bar or touches the pass state, which is
+    # what this test guards; `save_state`, intents and the book stay forbidden.
+    assert not called & {"save_state", "_record_intent", "_book_target", "_book_fill"}
     assert not [n for n in ast.walk(fn) if isinstance(n, ast.Attribute)
                 and isinstance(n.value, ast.Name) and n.value.id == "mt5"
                 and n.attr in ("order_send", "order_check")]
@@ -548,9 +563,12 @@ def test_the_family_resolver_writes_no_state():
 def test_an_open_bracket_is_charged_at_the_lot_the_venue_holds():
     """Re-sizing an order the book already has prices a trade the book does not have: equity
     has moved since it was placed. The bracket record now carries its own lot."""
-    assert _GW_SRC.count('"lot": lot') == 3, (
+    # Counted on the bracket-record lines only: `journal_refusal` (2026-09-15) also writes a
+    # `"lot": lot` key, into the refusal journal, which is not a bracket write site.
+    assert sum('"lot": lot' in ln for ln in _GW_SRC.splitlines()
+               if 'st["brackets"]' in ln) == 3, (
         "a bracket write site stopped recording the lot it placed")
-    block = _GW_SRC.split("from_book = _book is not None", 1)[1] \
+    block = _GW_SRC.split("from_book = _key is not None", 1)[1] \
                    .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
     assert '"placed_lot"' in block and "already on the book" in block
 
@@ -609,7 +627,7 @@ def test_an_unpriceable_basket_charges_zero_and_says_so_rather_than_raising():
 
 
 def test_the_scalp_charge_is_the_slice_plus_the_basket_and_the_source_says_which():
-    block = _GW_SRC.split("from_book = _book is not None", 1)[1] \
+    block = _GW_SRC.split("from_book = _key is not None", 1)[1] \
                    .split("sleeves, heat_note = cap_by_heat(sleeves", 1)[0]
     assert 'elif _s.get("exec") == "scalp_market":' in block
     assert "resolve_scalp_order(" in block and "scalp_open_basket_q(" in block

@@ -426,6 +426,63 @@ def stop_rests_at_venue(*, stop: float, side: Literal[1, -1], bid: float, ask: f
                      "book pays, so it is NOT sent and the current stop stands")
 
 
+def tightest_stop(*, side: Literal[1, -1], stops: Sequence[float | None]) -> float | None:
+    """The stop that protects MOST among `stops`: the highest for a long, the lowest for a short.
+
+    Zero and negative entries are ignored -- MetaTrader reports 0.0 for "no stop", and treating
+    that as a level would read as the loosest stop possible for a long and the tightest for a
+    short. None when no stop is known at all.
+
+    WHY IT EXISTS (2026-09-29). A scalp add-on re-sent the basket's ORIGINAL stop, recorded at
+    the first slice, after `manage_open_positions` had already trailed the slices or floored them
+    at break-even -- and the retarget that followed then pushed that original level back onto
+    every slice. A stop the desk had moved into profit was moved back under water by an order
+    that was only meant to ADD risk at the current protection, never to undo it.
+    """
+    if side not in (1, -1):
+        raise ValueError(f"side must be 1 or -1, got {side}")
+    valid = [float(s) for s in stops if s is not None and float(s) > 0]
+    if not valid:
+        return None
+    return max(valid) if side == 1 else min(valid)
+
+
+def never_loosen(*, side: Literal[1, -1], proposed: float, current: float) -> float:
+    """`proposed` if it protects at least as much as `current`, else `current`.
+
+    The same never-widen rule `ratchet` applies, for callers that send a stop for some other
+    reason (a basket retarget, an add-on). A position with no stop (`current` <= 0) takes the
+    proposed one, because any stop protects more than none.
+    """
+    if side not in (1, -1):
+        raise ValueError(f"side must be 1 or -1, got {side}")
+    if not float(current) > 0:
+        return float(proposed)
+    tighter = tightest_stop(side=side, stops=[proposed, current])
+    return float(current) if tighter is None else tighter
+
+
+def tightens_by_min_step(*, side: Literal[1, -1], new_stop: float, current_stop: float,
+                         step: float) -> bool:
+    """Does `new_stop` tighten `current_stop` by at least one venue stop step?
+
+    THE THRESHOLD FOR SENDING A MODIFY IS THE BROKER'S PRICE GRID, NOT AN R FRACTION
+    (2026-09-29). Until then a trail or break-even improvement under 0.05R was skipped as "not
+    worth a modify". A modify is a request, not a trade: it pays no spread and no commission,
+    and the protection it buys is real the moment the venue acknowledges it. The only move that
+    is genuinely not worth sending is one the venue cannot represent -- smaller than a tick --
+    so that is the floor. `step` <= 0 (a venue that states none) falls back to "any strict
+    tightening".
+    """
+    if side not in (1, -1):
+        raise ValueError(f"side must be 1 or -1, got {side}")
+    gain = side * (float(new_stop) - float(current_stop))
+    if not float(step) > 0:
+        return gain > 0
+    # A float tolerance of a thousandth of a step, so 4300.01 - 4300.00 counts as one 0.01 tick.
+    return gain >= float(step) * (1.0 - 1e-3)
+
+
 def ratchet(*, entry: float, current_stop: float, stop_distance: float,
             extreme: float, atr: float, side: Literal[1, -1],
             bars_since_extreme: int,

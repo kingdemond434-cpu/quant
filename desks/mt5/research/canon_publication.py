@@ -122,7 +122,8 @@ ADMISSION = DESK / "reports" / "ADMISSION_SCREEN.json"
 #: is another organ's record -- the retirers', the healer's, the hygiene pass's -- and dropping it
 #: would erase their work under the banner of publishing the judge's.
 CARRIED: tuple[str, ...] = ("retired_certificates", "revoked_at", "unrunnable_evicted",
-                            "unrunnable_note", "healed_at", "healed_by")
+                            "unrunnable_note", "healed_at", "healed_by",
+                            "certificate_aliases")
 
 #: A derived view is bounded so a 33 MB ledger can never become an hour of IO on the box that
 #: holds the live terminal. It is a fallback view, not an index.
@@ -198,6 +199,67 @@ def _age_hours(stamp: Any, now: datetime) -> float | None:
     if then.tzinfo is None:
         then = then.replace(tzinfo=UTC)
     return round((now - then).total_seconds() / 3600.0, 2)
+
+
+def _clock_identity(row: dict[str, Any]) -> str | None:
+    """Return the forward engine's own identity for a certificate, or ``None`` fail-closed.
+
+    Two certificate keys can differ only because one producer wrote a family default explicitly
+    while another omitted it.  The forward engine normalises those forms into one sleeve key; if
+    canon retains both, they alternately rewrite one frozen clock and manufacture a parameter-
+    drift alarm.  Import the engine's identity rather than spelling a second approximation here.
+    """
+    spec = row.get("shadow_spec")
+    if not isinstance(spec, dict):
+        return None
+    try:
+        from shadow_forward import sleeve_key
+    except ImportError:                                  # pragma: no cover - import-context dep
+        try:
+            from research.shadow_forward import sleeve_key  # type: ignore[no-redef]
+        except ImportError:
+            return None
+    try:
+        return str(sleeve_key(str(spec.get("symbol") or row.get("sym") or ""),
+                              str(spec.get("selector") or ""),
+                              dict(spec.get("params") or {}),
+                              str(spec.get("family") or ""),
+                              str(spec.get("side") or "LONG").upper()))
+    except Exception:
+        return None
+
+
+def _collapse_clock_aliases(rows: dict[str, dict[str, Any]],
+                            existing: dict[str, Any] | None = None,
+                            *, at: str) -> tuple[dict[str, dict[str, Any]], dict[str, Any], int]:
+    """Collapse certificate aliases that resolve to one executable forward-clock identity.
+
+    The lexicographically first certificate key is stable across runs.  Every removed key remains
+    durably traceable in ``certificate_aliases``; this is identity normalisation, not revocation.
+    If the engine identity is unavailable, the row is preserved rather than guessed away.
+    """
+    kept: dict[str, dict[str, Any]] = {}
+    aliases = dict(existing or {})
+    owner: dict[str, str] = {}
+    collapsed = 0
+    for key in sorted(rows):
+        row = rows[key]
+        identity = _clock_identity(row)
+        if not identity or identity not in owner:
+            kept[key] = row
+            if identity:
+                owner[identity] = key
+            continue
+        canonical = owner[identity]
+        aliases[key] = {
+            "canonical_certificate": canonical,
+            "clock_identity": identity,
+            "collapsed_at": at,
+            "why": ("equivalent certificate keys resolved to the same forward-engine sleeve_key; "
+                    "the clock and earned gate evidence remain under the canonical key"),
+        }
+        collapsed += 1
+    return kept, aliases, collapsed
 
 
 def _funnel(admission: Path = ADMISSION) -> dict[str, Any]:
@@ -436,7 +498,9 @@ def recover_from_gate_output(gates: Path = GATE_OUTPUT, report: Path = REPORT,
         from gate_policy import ATTESTATION, all_ten_pass, is_admissible_trial_count_basis
     except ImportError:                                  # pragma: no cover - import-context dep
         from research.gate_policy import (  # type: ignore[no-redef]
-            ATTESTATION, all_ten_pass, is_admissible_trial_count_basis,
+            ATTESTATION,
+            all_ten_pass,
+            is_admissible_trial_count_basis,
         )
 
     now = datetime.now(UTC)
@@ -732,11 +796,23 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
                 admitted_recovered.append(key)
         merged[key] = row
 
+    # ONE EXECUTABLE IDENTITY, ONE CERTIFICATE ROW.  Keeping aliases in the survivor mapping does
+    # not create more evidence; it makes one clock oscillate between two equivalent certificate
+    # names and the frozen-identity guard correctly reads that as mutation.  Collapse only by the
+    # forward engine's own key and preserve the removed key in a durable alias ledger.
+    previous_aliases = doc_seal.get("certificate_aliases")
+    previous_aliases = previous_aliases if isinstance(previous_aliases, dict) else {}
+    merged, certificate_aliases, aliases_collapsed = _collapse_clock_aliases(
+        merged, previous_aliases, at=now.isoformat())
+    record["identity_aliases_collapsed"] = aliases_collapsed
+    record["certificate_aliases"] = certificate_aliases
+
     # THE REFUSAL CENSUS IS A MEASUREMENT AND IS NEVER WITHHELD BY AN EARLY RETURN. A publication
     # that refused every row and says only "REFUSED_EMPTY" is the shape that hides a judge quietly
     # emitting rows the seal cannot take -- the count, by named reason, is the thing that says so.
     record["refused_rows"] = dict(refused_rows)
-    if len(merged) < len(seal_before):
+    accounted_keys = set(merged) | set(certificate_aliases)
+    if not set(seal_before).issubset(accounted_keys):
         # Unreachable by construction (merged starts as a copy of the seal) and asserted anyway:
         # the never-shrink law is the one this desk has actually lost certificates to.
         record.update(status="REFUSED_SHRINK", sealed=False, admitted=0,
@@ -764,6 +840,7 @@ def publish(report: Path = REPORT, seal: Path = SEAL,
     doc_new.update({
         "n": len(merged),
         "survivors": merged,
+        "certificate_aliases": certificate_aliases,
         # THE ATTESTATION OF THE POLICY THE ROWS WERE JUDGED UNDER. The report's when it carries
         # one; otherwise the current spec's, which recovery has already checked the gate output's
         # own trial basis equal to -- it refuses outright when they differ.

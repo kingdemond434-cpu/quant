@@ -28,7 +28,8 @@
 [CmdletBinding()]
 param(
     [string] $RepoRoot = "C:\opt\quant",
-    [string] $Python   = "C:\Program Files\Python314\python.exe"
+    [string] $Python   = "C:\Program Files\Python314\python.exe",
+    [string] $InteractiveUser = "Administrator"
 )
 $ErrorActionPreference = "Stop"
 
@@ -37,13 +38,19 @@ $desk = Join-Path $RepoRoot "desks\mt5"
 
 function Set-E8Task {
     param([string] $Name, [string] $Script, [string] $ScheduleArgs, [string] $Why,
-          [string] $ExtraArgs = "")
+          [string] $ExtraArgs = "", [switch] $RequiresDesktop)
     $arguments = "`"$Script`""
     if ($ExtraArgs) { $arguments += " $ExtraArgs" }
     $action  = New-ScheduledTaskAction -Execute $Python -Argument $arguments -WorkingDirectory $desk
-    # RunLevel Highest so the task can write under C:\opt\quant regardless of the ACL the
-    # adoption left; S4U so it runs whether or not anyone is logged in over RDP.
-    $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    # MetaTrader IPC exists only in the interactive desktop session.  E8-Gold reads the same
+    # Fusion bars as the canonical gold book, and E8-Spreads samples that terminal; under SYSTEM
+    # both failed every pass with -10004 No IPC connection while still looking scheduled.  The
+    # management-only TradeLocker executor needs no terminal and remains a durable SYSTEM task.
+    $principal = if ($RequiresDesktop) {
+        New-ScheduledTaskPrincipal -UserId $InteractiveUser -LogonType Interactive -RunLevel Highest
+    } else {
+        New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    }
     # AN EXECUTION LIMIT SHORTER THAN THE WORK IS NOT A SAFETY RAIL, IT IS A GUARANTEED KILL.
     # Measured 2026-09-13 on MT5-Daily, registered the same day with a 3-hour cap: daily_cycle's
     # own leg budgets sum past that before the network miners are counted, so the run was
@@ -73,6 +80,7 @@ Set-E8Task -Name "E8-Executor" -Script (Join-Path $prop "e8_executor.py") `
     -Why "manage/flatten inherited E8 positions; legacy FX entry is retired"
 
 Set-E8Task -Name "E8-Gold" -Script (Join-Path $prop "e8_gold.py") `
+    -RequiresDesktop `
     -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)" `
     -Why "mirror the three Fusion gold windows (sends only while data\E8_GOLD_ARMED exists)"
 
@@ -84,6 +92,7 @@ if (Get-ScheduledTask -TaskName "E8-Book" -ErrorAction SilentlyContinue) {
 }
 
 Set-E8Task -Name "E8-Spreads" -Script (Join-Path $prop "e8_spread_sampler.py") `
+    -RequiresDesktop `
     -ScheduleArgs "New-ScheduledTaskTrigger -AtStartup" `
     -Why "measure what this venue actually charges in the hours the book trades"
 

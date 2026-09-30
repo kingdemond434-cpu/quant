@@ -368,7 +368,8 @@ def test_every_message_carries_a_reading_and_an_instruction(organ):
 
 # ------------------------------------------------------------------------------- cold and priors
 def test_cold_share_is_measured_against_the_explore_floor(organ):
-    import negative_knowledge as nk
+    # package-qualified: repo-root scripts/negative_knowledge.py shadows the bare name
+    from research import negative_knowledge as nk
     warm = [_verdict("EURUSD", "carry", n=1, passed=True),                 # forex|carry_rollover
             _verdict("EURUSD", "mean_reversion_rsi", n=2, passed=True),    # forex|range_reversion
             _verdict("XAUUSD", "forced_flow", n=3, passed=True),           # commodities|forced

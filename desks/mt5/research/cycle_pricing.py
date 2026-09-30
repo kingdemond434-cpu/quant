@@ -20,11 +20,11 @@ principal's never-reduce-aggressiveness order). Three properties hold by constru
 pinned by tests:
 
   1. WINNERS GET MORE. A leg the board prices above the median is multiplied UP, to `CEIL`.
-  2. NO LEG IS EVER CUT. `FLOOR` is 1.0: every leg keeps at least its whole base budget, and
-     never less than `SCOUT_MIN_S` seconds. Pricing only adds capacity and reorders. A leg
-     priced last still runs whole; it must, because the price is an estimate made from the
-     desk's own past and the desk has been wrong about which leg was worthless before
-     (L1.25: failure to discover is never evidence there is nothing).
+  2. EVERY LEG KEEPS ITS CURRENT SHARE. No leg is ever cut below its base (`FLOOR` is 1.0 since
+     2026-09-29) and no leg below `SCOUT_MIN_S` seconds. A leg priced last still runs at the budget
+     it had; it must, because the price is an estimate made from the desk's own past and the desk
+     has been wrong about which leg was worthless before (L1.25: failure to discover is never
+     evidence there is nothing), and the principal's standing order forbids starving any miner.
   3. NEVER A GLOBAL REDUCTION. After clipping, the whole plan is rescaled so the TOTAL seconds
      allocated is never less than the total the legs would have had unpriced. The controller
      moves compute BETWEEN legs; it never quietly hands the hour back.
@@ -75,13 +75,20 @@ POLICY = DESK / "data" / "compute_policy.json"
 LEDGER = DESK / "data" / "compute_ledger.jsonl"
 OUT = R / "CYCLE_PRICING.json"
 
-#: THE FLOOR AND THE WINNER'S CEILING. `FLOOR` is the fraction of its base budget the
-#: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach.
-#: FLOOR IS 1.0 AND PINNED (principal's standing order, 2026-09-29: "NEVER reduce info gathering,
-#: raw cell mining or research generation"). Until 2026-09-29 it was 0.60, so a miner priced
-#: last lost 40% of its hour. Pricing may only ADD capacity: a winner is lengthened toward CEIL,
-#: a loser keeps its whole base and is merely run later in the hour (`order`).
+#: THE SCOUT FLOOR AND THE WINNER'S CEILING. `FLOOR` is the fraction of its base budget the
+#: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach. Both are
+#: bounds on the RATIO, so the plan is a reallocation and not a resize.
 FLOOR, CEIL = 1.00, 2.00
+#: THE PRICE ALLOCATES SPARE COMPUTE ONLY (2026-09-29, Tier-1 #10). The floor was 0.60: a leg the
+#: board priced last lost 40% of its seconds to fund the winners, which is throttling a miner on an
+#: estimate. It is now par, and what a winner gets ABOVE par comes out of the MEASURED spare
+#: capacity of its department's clock (`spare_capacity`), never out of another leg. When the spare
+#: is unmeasured nothing extra is handed out: an absent measurement never buys seconds (L1.28a).
+SPARE_WINDOW_H = 24.0
+#: What one department clock may spend per pass. NOT an hour: `MT5-HourlyCore` runs its pass
+#: under ExecutionTimeLimit=PT40M (hourly_cycle's OWN_CLOCK_LEGS note), and a grant sized off 3600 s
+#: would push the core pass into the task kill. The tightest measured pass limit is the bound.
+CLOCK_S = 2400.0
 #: No leg is cut below this many seconds whatever the ratio says: below about a minute a
 #: subprocess leg spends its whole budget starting an interpreter and reading its inputs, so a
 #: smaller number is not a smaller budget, it is a guaranteed timeout with nothing written.
@@ -310,6 +317,72 @@ def _researcher_prices(max_age_h: float = 6.0) -> dict[str, float]:
             and not in_control(str(k), "market")}
 
 
+def _factory_prices() -> tuple[dict[str, float], str]:
+    """{leg: yield score} from the factory contracts (Tier-1 #11), or {} and why. The score is
+    the mean percentile of a producer's measured per-compute-hour yields -- unique cells,
+    survivors, marginal independent alpha rank and credited dE[log W] -- folded onto the leg that
+    runs it. Read, never written: `factory_contracts.py` owns the artifact."""
+    try:
+        from factory_contracts import leg_yield  # type: ignore[import-not-found]
+        return leg_yield()
+    except Exception as exc:
+        return {}, f"factory_contracts unavailable ({type(exc).__name__}: {exc})"
+
+
+def _department_of(leg: str) -> str:
+    try:
+        import hourly_cycle as hc  # type: ignore[import-not-found]
+        return str(hc.department_of(leg))
+    except Exception:
+        return "rest"
+
+
+def spare_capacity(window_h: float = SPARE_WINDOW_H) -> dict[str, Any]:
+    """MEASURED spare seconds per department clock, from the compute ledger.
+
+    A department clock is one hour of wall time per pass; what its legs actually burned per hour
+    over the window is `busy`, and the rest is `spare` -- seconds the clock already owns and did
+    not use. That, and only that, is what a winner may be granted above its base: nothing is taken
+    from another leg. No ledger rows in the window is UNMEASURED and grants nothing."""
+    now = datetime.now(tz=UTC)
+    busy: dict[str, float] = {}
+    n = 0
+    try:
+        lines = LEDGER.read_text(encoding="utf-8", errors="replace").splitlines()[-20000:]
+    except OSError:
+        lines = []
+    dept_cache: dict[str, str] = {}
+    for ln in lines:
+        try:
+            r = json.loads(ln)
+            t = datetime.fromisoformat(str(r.get("at")).replace("Z", "+00:00"))
+        except (ValueError, TypeError, AttributeError):
+            continue
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=UTC)
+        if (now - t).total_seconds() > window_h * 3600.0:
+            continue
+        name = str(r.get("run") or "")
+        wall = r.get("wall_s")
+        if not name or not isinstance(wall, (int, float)) or isinstance(wall, bool):
+            continue
+        if name not in dept_cache:
+            dept_cache[name] = _department_of(name)
+        d = dept_cache[name]
+        busy[d] = busy.get(d, 0.0) + float(wall)
+        n += 1
+    if not n:
+        return {"status": "UNMEASURED", "spare_s": {}, "busy_s_per_hour": {},
+                "why": f"no compute-ledger row in the last {window_h:g}h: spare is unmeasured "
+                       "and no leg is granted anything above its base"}
+    per_h = {d: round(v / window_h, 1) for d, v in busy.items()}
+    return {"status": "MEASURED", "window_h": window_h, "n_rows": n,
+            "busy_s_per_hour": per_h,
+            "spare_s": {d: round(max(0.0, CLOCK_S - v), 1) for d, v in per_h.items()},
+            "why": ("spare = one clock-hour minus the department's measured wall seconds per hour; "
+                    "a department absent from the ledger has no measured spare and grants nothing")}
+
+
 def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     """The hour's plan: a price, a factor and a planned budget for every leg with a base."""
     if bases is None:
@@ -335,9 +408,16 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     # weaker claim than log-wealth per day and a stronger one than a tier prior.
     evig, evig_why = _evig_prices()
     e01 = _rank01(evig)
+    # THE FACTORY CONTRACTS JOIN THE STACK (Tier-1 #11, 2026-09-29): measured yield per compute
+    # hour of the producer a leg runs. Weighted beside the bandit: a percentile of measured
+    # per-hour yield is a stronger claim than a tier prior and weaker than log-wealth per day.
+    fac, fac_why = _factory_prices()
+    f01 = _rank01(fac)
+    # THE TIER S RESEARCHER MARKET (layer 8): per-producer value, ancestry-discounted, folded
+    # onto legs; its held-out control legs are never repriced by it
     r01 = _rank01(_researcher_prices())
-    W = {"meta_controller": 0.45, "research_bandit": 0.25, "evig_acquisition": 0.20,
-         "researcher_market": 0.15, "compute_policy": 0.10}
+    W = {"meta_controller": 0.40, "research_bandit": 0.20, "evig_acquisition": 0.15,
+         "factory_contracts": 0.15, "researcher_market": 0.15, "compute_policy": 0.10}
     legs: dict[str, dict[str, Any]] = {}
     for leg, base in sorted(bases.items()):
         parts: list[tuple[str, float, float]] = []
@@ -347,6 +427,8 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             parts.append(("research_bandit", W["research_bandit"], b01[leg]))
         if leg in e01:
             parts.append(("evig_acquisition", W["evig_acquisition"], e01[leg]))
+        if leg in f01:
+            parts.append(("factory_contracts", W["factory_contracts"], f01[leg]))
         if leg in r01:
             parts.append(("researcher_market", W["researcher_market"], r01[leg]))
         if leg in p01:
@@ -375,8 +457,27 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         s = float(v["score"])
         f = (1.0 + (s - median) / max(1e-9, 1.0 - median) * (CEIL - 1.0)) if s >= median else \
             (FLOOR + (s / max(1e-9, median)) * (1.0 - FLOOR))
-        v["factor"] = round(max(FLOOR, min(CEIL, f)), 4)
-        v["planned_s"] = max(SCOUT_MIN_S, round(v["base_s"] * v["factor"]))
+        v["price_factor"] = round(max(FLOOR, min(CEIL, f)), 4)
+
+    # THE EXTRA COMES OUT OF MEASURED SPARE, PER DEPARTMENT CLOCK. Every leg keeps its base; a
+    # leg priced above par ASKS for base x (price_factor - 1) more, and the asks inside one
+    # department are granted in full when its measured spare covers them and pro rata when it
+    # does not. The granted factor is what `applied_budget` spends.
+    spare = spare_capacity()
+    spare_s = spare.get("spare_s") if spare.get("status") == "MEASURED" else {}
+    asks: dict[str, float] = {}
+    want: dict[str, float] = {}
+    for leg, v in legs.items():
+        v["department"] = _department_of(leg)
+        asks[leg] = float(v["base_s"]) * (float(v["price_factor"]) - 1.0)
+        want[v["department"]] = want.get(v["department"], 0.0) + asks[leg]
+    grant_ratio = {d: (1.0 if w <= 0 else min(1.0, float((spare_s or {}).get(d, 0.0)) / w))
+                   for d, w in want.items()}
+    for leg, v in legs.items():
+        extra = asks[leg] * grant_ratio.get(v["department"], 0.0)
+        v["extra_s"] = int(round(extra))
+        v["factor"] = round(1.0 + (v["extra_s"] / v["base_s"] if v["base_s"] else 0.0), 4)
+        v["planned_s"] = max(SCOUT_MIN_S, int(v["base_s"]) + v["extra_s"])
 
     # NEVER A GLOBAL REDUCTION. Clipping and the scout minimum can only add; the rescale below
     # exists for the case where they do not, so the hour's total is never handed back.
@@ -397,18 +498,24 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         "sources": {"meta_controller": bool(meta), "meta_why": meta_why,
                     "research_bandit": bool(bandit), "compute_policy": bool(policy),
                     "compute_policy_applied": policy_applied,
-                    "evig_acquisition": bool(evig), "evig_why": evig_why},
+                    "evig_acquisition": bool(evig), "evig_why": evig_why,
+                    "factory_contracts": bool(fac), "factory_why": fac_why},
+        "spare": spare,
+        "spare_granted_s": sum(int(v["extra_s"]) for v in legs.values()),
+        "department_grant_ratio": {d: round(r, 4) for d, r in sorted(grant_ratio.items())},
         "weights": W, "floor": FLOOR, "ceiling": CEIL, "scout_min_s": SCOUT_MIN_S,
         "scout_stale_h": SCOUT_STALE_H,
         "median_score": round(median, 6), "rescale": round(rescale, 4),
         "totals": {"base_s": total_base, "planned_s": total_planned,
                    "never_reduced": total_planned >= total_base},
         "legs": legs, "order": ordered, "applied": {},
-        "rule": ("every leg's seconds are its base times a factor derived by RANK from the meta "
-                 "controller's dE[log W] board, the bandit's arm shares and the compute policy's "
-                 "tier split, clipped to [FLOOR, CEIL] and floored at SCOUT_MIN_S; the hour's "
-                 "total is never below the unpriced total; order is price-descending with every "
-                 "leg staler than SCOUT_STALE_H pulled to the front"),
+        "rule": ("every leg keeps its base (its current share); a leg priced above the median "
+                 "by RANK over the meta controller's dE[log W] board, the bandit, the EVIG "
+                 "frontier, the factory contracts' measured yield and the compute policy asks for "
+                 "base x (price_factor - 1) more, granted out of its department clock's MEASURED "
+                 "spare seconds and never out of another leg; unmeasured spare grants nothing; "
+                 "order is price-descending with every leg staler than SCOUT_STALE_H pulled to "
+                 "the front"),
     }
 
 
@@ -525,6 +632,8 @@ def applied_budget(leg: str, base: float) -> tuple[int, dict[str, Any]]:
             applied = max(SCOUT_MIN_S, round(base_i * factor))
             rec = {"leg": leg, "base_s": base_i, "planned_s": int(row.get("planned_s") or applied),
                    "applied_s": applied, "factor": round(factor, 4),
+                   "price_factor": row.get("price_factor"), "extra_s": row.get("extra_s"),
+                   "department": row.get("department"),
                    "score": row.get("score"), "priced_by": row.get("priced_by"),
                    "rank": row.get("rank"), "applied": True,
                    "why": (f"rank score {row.get('score')} vs median {p.get('median_score')} "
