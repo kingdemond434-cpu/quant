@@ -8,7 +8,7 @@ Every layer runs hourly (leg `tier_s` unless named). The verdict column is the c
 
 | id | layer | status | gain | metric | verdict | latest | what remains |
 |---|---|---|---|---|---|---|---|
-| S01 | Truth kernel: content-addressed journal, constitution, evidence seal | BLOCKED_ON_USER | OPERATIONAL_RISK | `truth_kernel.metric.journal_ok` (up) | - | - | binding the constitution's values into the gauntlet and promoter: this environment's permission rule refuses edits to live promotion code; research side (raw data -> code -> hypothesis -> certificate -> allocation -> order -> fill journal, human-only ratification, rails) is done |
+| S01 | Truth kernel: content-addressed journal, constitution, evidence seal | BLOCKED_ON_USER | OPERATIONAL_RISK | `truth_kernel.metric.journal_ok` (up) | - | - | the gauntlet reading cert.dsr_threshold / cert.gates_required / lockbox.min_fraction from the constitution: external_gauntlet.py is a signed judge file, routed to the desktop session; the promotion door already enforces the constitution (a loosened, unratified rule set withholds every new live row) |
 | S02 | World data OS: bitemporal store and point-in-time audit | PARTIAL | CALIBRATION | `data_os.metric.pit_share` (up) | - | - | one per-source record joining ingestion_ledger, data_registry and vintage; acquisition gain scored on gate yield instead of pit_share |
 | S03 | World model: causal edges classified stable/decaying/false; broken edges become hypotheses | PARTIAL | ALPHA_DISCOVERY | `world_science.metric.hypotheses` (up) | - | - | classify the world_causal_graph / cross_asset_graph edge list itself; credit, vol, inflation, liquidity and flow nodes are UNMEASURED until their datasets (FRED axis, a flow source) are on the host -- rates, carry, dollar and positioning run hourly (libs/tiers/world_macro.py) |
 | S04 | Researcher civilization: heterogeneous cohorts priced by independent discoveries | PARTIAL | PRODUCTIVITY | `market.metric.n_researchers` (up) | - | - | enforced blinding: a firewall role that forbids one cohort's seat reading another's data/intelligence output |
@@ -57,7 +57,7 @@ Every layer runs hourly (leg `tier_s` unless named). The verdict column is the c
 
 ## What each layer is built from
 
-- **S01** Truth kernel: content-addressed journal, constitution, evidence seal: `libs/tiers/truth_kernel.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/TRUTH_KERNEL.json`
+- **S01** Truth kernel: content-addressed journal, constitution, evidence seal: `libs/tiers/truth_kernel.py`, `desks/mt5/research/tier_s.py`, `libs/tiers/promotion_authority.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/TRUTH_KERNEL.json`
 - **S02** World data OS: bitemporal store and point-in-time audit: `libs/tiers/bitemporal.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/DATA_OS.json`
 - **S03** World model: causal edges classified stable/decaying/false; broken edges become hypotheses: `libs/tiers/world_edges.py`, `desks/mt5/research/tier_s.py`, `libs/tiers/world_macro.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/WORLD_SCIENCE.json`
 - **S04** Researcher civilization: heterogeneous cohorts priced by independent discoveries: `libs/tiers/researcher_market.py`, `desks/mt5/research/tier_s.py`; clock `hourly_cycle:tier_s`; artifact `desks/mt5/reports/tier_s/MARKET.json`

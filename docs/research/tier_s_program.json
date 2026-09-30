@@ -13,7 +13,8 @@
    "title": "Truth kernel: content-addressed journal, constitution, evidence seal",
    "files": [
     "libs/tiers/truth_kernel.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/promotion_authority.py"
    ],
    "extends": [
     "desks/mt5/research/certificate_truth.py"
@@ -28,7 +29,7 @@
     "organ": "truth_kernel",
     "bar": 1.0
    },
-   "remaining": "binding the constitution's values into the gauntlet and promoter: this environment's permission rule refuses edits to live promotion code; research side (raw data -> code -> hypothesis -> certificate -> allocation -> order -> fill journal, human-only ratification, rails) is done"
+   "remaining": "the gauntlet reading cert.dsr_threshold / cert.gates_required / lockbox.min_fraction from the constitution: external_gauntlet.py is a signed judge file, routed to the desktop session; the promotion door already enforces the constitution (a loosened, unratified rule set withholds every new live row)"
   },
   {
    "id": "S02",
