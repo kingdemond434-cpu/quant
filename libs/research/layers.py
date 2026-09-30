@@ -539,6 +539,8 @@ LEG_LAYER: dict[str, str] = {
     # the machine measuring the machine. The macro-conditioned sweep is a claim about returns.
     "null_lab": "meta", "research_live_identity": "meta",
     "macro_conditioned_sweep": "prediction",
+    # The UNKNOWN-share census grades the judge's own coverage: the machine measuring the machine.
+    "unknown_census": "meta",
     "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the

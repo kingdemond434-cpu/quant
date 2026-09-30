@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 DESK = Path(__file__).resolve().parents[1]
 for _p in (str(DESK / "scripts"), str(DESK), str(DESK.parent.parent)):
@@ -115,3 +116,102 @@ def test_judged_share_excludes_cells_that_never_reached_the_judge() -> None:
     assert s["build_failed"] == 1 and s["gate0_rejected"] == {"symbol_eligibility": 1}
     both = usc.summarise(recs, siblings_too=True)
     assert both["judged_built"] == 3 and both["unknown"] == 2
+
+
+class _FakeJudge:
+    """The slice of the judge's surface `measure` touches: every cell builds 200 daily days."""
+
+    LAST_BUILD_FAILURE: str | None = None
+
+    def __init__(self) -> None:
+        self.idx = pd.date_range("2025-01-01", periods=200, freq="D")
+
+    def partition_at_economic_prior(self, specs, meta):
+        return list(specs), []
+
+    def modifier_preflight(self, spec):
+        return None
+
+    def _bars_for(self, sym, tf):
+        return pd.DataFrame({"close": range(len(self.idx))}, index=self.idx)
+
+    def build_cell(self, sym, fam, params, meta):
+        return {"df": None, "sigs": [1], "costs": None}
+
+    def daily_series(self, df, sigs, costs):
+        return pd.Series(0.001, index=self.idx)
+
+    def _series_trim_partial(self, ds, last_day):
+        return ds
+
+
+def _cells(n: int) -> list[dict]:
+    return [{"sym": f"S{i}", "family": "f", "params": {}, "timeframe": "H1",
+             "key": f"S{i}.f.{{}}", "row": {}} for i in range(n)]
+
+
+def test_measure_checkpoints_partial_verdicts_before_the_cause_pass() -> None:
+    """A killed run still publishes: every `every` built cells and once before the cause pass
+    the caller is handed the records so far, carved, with no causes (the pass has not run)."""
+    seen: list[tuple[str, int, int]] = []
+
+    def cp(stage: str, partial: dict) -> None:
+        recs = partial["records"]
+        seen.append((stage, len(recs), sum(1 for r in recs if r.get("verdict"))))
+        assert all("cause" not in r for r in recs), "a partial carve names no causes"
+
+    out = usc.measure(_cells(7), meta={}, eg=_FakeJudge(), budget_s=1e9, rss_cap_mb=1e9,
+                      checkpoint=cp, every=3)
+    assert [s for s, _n, _v in seen] == ["building", "building", "carving"]
+    assert [n for _s, n, _v in seen] == [3, 6, 7]
+    assert all(n == v for _s, n, v in seen), "every built cell carries a verdict at each write"
+    assert len(out["records"]) == 7 and all("_spec" not in r for r in out["records"])
+
+
+def test_a_killed_run_leaves_a_partial_document_and_a_finished_one_says_complete(
+        tmp_path: Path, monkeypatch) -> None:
+    docket = tmp_path / "docket.json"
+    docket.write_text(json.dumps([{"symbol": f"S{i}", "family": "f", "params": {}}
+                                  for i in range(5)]), "utf-8")
+    out = tmp_path / "CENSUS.json"
+
+    class Killed(RuntimeError):
+        pass
+
+    def killed(*_a, checkpoint=None, **_k):
+        checkpoint("building", {"records": [{"stage": "built", "verdict": "judgeable"}]})
+        raise Killed
+
+    monkeypatch.setattr(usc, "measure", killed)
+    with pytest.raises(Killed):
+        usc.main(["--n", "5", "--docket", str(docket), "--out", str(out)])
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["complete"] is False and doc["stage"] == "building"
+    assert doc["cells_visited"] == 1 and doc["sample"] <= 5
+    assert doc["utc_day"] and doc["sampled_cells"]["judged_built"] == 1
+    assert not (tmp_path / "CENSUS.json.tmp").exists()
+
+    monkeypatch.setattr(usc, "measure", lambda *_a, **_k: {
+        "records": [], "lockbox_cut": None, "lockbox_frac": 0.2,
+        "cells_carved_at_own_tail": 0})
+    assert usc.main(["--n", "5", "--docket", str(docket), "--out", str(out)]) == 0
+    doc = json.loads(out.read_text("utf-8"))
+    assert doc["complete"] is True and doc["stage"] == "complete"
+
+
+def test_the_census_is_its_own_daily_gated_hourly_leg_not_a_daily_step(tmp_path: Path) -> None:
+    from research import daily_cycle
+    from research import hourly_cycle as hc
+    assert "unknown_census" not in dict(daily_cycle.STEPS), "the 900 s daily chain cannot hold it"
+    src = (DESK / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '_costed("unknown_census", unknown_census)' in src
+    assert '"--n", "6000"' in src and usc.LEG_SAMPLE_N == 6000
+    assert hc.department_of("unknown_census") == "meta"
+    assert hc.LEG_BUDGET_SEC["unknown_census"] > hc._self_stop_floor_s(
+        ("--budget-s", str(hc.UNKNOWN_CENSUS_BUILD_S)))
+    assert hc.UNKNOWN_CENSUS_OUT == usc.OUT
+    doc = tmp_path / "c.json"
+    assert not hc._census_ran_on("2026-09-30", doc), "no document: the census is due"
+    doc.write_text(json.dumps({"utc_day": "2026-09-30", "complete": False}), "utf-8")
+    assert hc._census_ran_on("2026-09-30", doc), "a run started today, even killed, is the day's"
+    assert not hc._census_ran_on("2026-10-01", doc)

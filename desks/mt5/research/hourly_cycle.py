@@ -1074,7 +1074,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "attribution_census",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s",
-                     "research_live_identity"), "meta"),
+                     "research_live_identity",
+                     # THE UNKNOWN-SHARE CENSUS: the machine measuring its own judge, once a
+                     # day, 2,400 s -- in meta so its hour never delays the judge's sweep.
+                     "unknown_census"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
     **dict.fromkeys(("japan_department",), "japan"),
     # mathlab: the AI mathematics research civilization -- twenty-eight mathematical traditions
@@ -1644,6 +1647,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # twin 64 s, world_science 58 s); the cap leaves room for the box's larger ledgers (the
     # gate verdict ledger and hypothesis graph are read in full).
     "tier_s": 1_500,
+    # THE UNKNOWN-SHARE CENSUS, once per UTC day: a fixed 6,000-cell sample took 1,955 s on the
+    # box. It stops building at UNKNOWN_CENSUS_BUILD_S (1,800) and then carves and names causes;
+    # the cap sits above both and the document is checkpointed, so a kill still publishes.
+    "unknown_census": 2_400,
     # The null lab stops STARTING draws at --budget-s 600 minus a 30 s margin and then writes;
     # one draw on a feature-heavy family is ~10 s, so the cap sits above its own budget.
     "null_lab": 720,
@@ -2156,6 +2163,46 @@ def macro_conditioned_sweep() -> dict:
     only; `reports/macro_conditioned_sweep.json` carries `pit` counts of what the old join admitted
     before the print was knowable, and the `tier_s` data-OS organ publishes them."""
     return _producer("macro_conditioned_sweep", "research/run_macro_conditioned_sweep.py")
+
+
+#: THE UNKNOWN-SHARE CENSUS'S ARTIFACT, the one its own `OUT` names (CRO D3 reads it). Read here
+#: only for the once-a-day gate: the leg itself imports nothing from the census.
+UNKNOWN_CENSUS_OUT = BASE / "reports" / "UNKNOWN_SHARE_CENSUS.json"
+#: Where the census stops BUILDING and carves; the leg's cap (LEG_BUDGET_SEC) sits above it.
+UNKNOWN_CENSUS_BUILD_S = 1_800
+
+
+def _census_ran_on(day: str, path: Path = UNKNOWN_CENSUS_OUT) -> bool:
+    """True when the census document on disk was STARTED on UTC `day` (complete or not)."""
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(doc, dict) and doc.get("utc_day") == day
+
+
+def unknown_census() -> dict:
+    """`unknown_census`: the UNKNOWN share of JUDGED cells on a fixed-seed 6,000-cell docket
+    sample down the judge's own path, once per UTC day (the 43% bottleneck, principal
+    2026-09-30). Read-only; writes `reports/UNKNOWN_SHARE_CENSUS.json`, which CRO D3 reads.
+
+    ITS OWN LEG, NOT A DAILY-CYCLE STEP (measured 2026-09-30). As the `unknown_census` step of
+    `daily_cycle` it had `--budget-s 900` inside the 900 s the hourly cycle gives the WHOLE daily
+    chain, while its memory-sized sample reached ~17k cells on the box and a 6k-cell run took
+    1,955 s -- it could never finish, so the artifact was never written. Here it has a fixed
+    `--n 6000` (~+/-3 pt), a build budget of `UNKNOWN_CENSUS_BUILD_S`, a cap of its own in
+    `LEG_BUDGET_SEC`, and it checkpoints the document (`"complete": false`) as it goes, so even a
+    killed run publishes. A run STARTED today stamps `utc_day` on its first write, and that is the
+    gate: complete or killed, the census runs once per UTC day, never again the same day.
+    """
+    today = datetime.now(UTC).date().isoformat()
+    if _census_ran_on(today):
+        return {"status": "SKIPPED", "why": f"census already started on {today} (once per UTC day)",
+                "at": datetime.now(UTC).isoformat()}
+    return _producer("unknown_census", "scripts/unknown_share_census.py",
+                     "--n", "6000", "--complete-inputs", "--budget-s",
+                     str(UNKNOWN_CENSUS_BUILD_S), "--label", "daily",
+                     "--out", "reports/UNKNOWN_SHARE_CENSUS.json")
 
 
 def tier_s() -> dict:
@@ -4834,6 +4881,8 @@ def main() -> None:
     nlab = _costed("null_lab", null_lab)
     rlid = _costed("research_live_identity", research_live_identity)
     mcsw = _costed("macro_conditioned_sweep", macro_conditioned_sweep)
+    # Once per UTC day (the leg gates itself on the document's `utc_day`); meta department.
+    ucen = _costed("unknown_census", unknown_census)
     tiers = _costed("tier_s", tier_s)
     advx = _costed("adversary_evolution", adversary_evolution)
     exsci = _costed("execution_science", execution_science)
@@ -5368,7 +5417,7 @@ def main() -> None:
                     "research_exchange_score": rxs, "lake_promote": lkp,
                     "orthogonality": orth,
                     "null_lab": nlab, "research_live_identity": rlid,
-                    "macro_conditioned_sweep": mcsw,
+                    "macro_conditioned_sweep": mcsw, "unknown_census": ucen,
                     "tier_s": tiers, "adversary_evolution": advx,
                     "execution_science": exsci, "frontier_map": fmap,
                     "market_ecology": meco, "research_diversity_archive": rdar,
