@@ -924,6 +924,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "dukascopy_backfill", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
+                     # free public POS/card/location/satellite proxies as PIT series
+                     "alt_proxies",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -1720,6 +1722,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
     "event_surprise": 400,
+    # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
+    "alt_proxies": 400,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -4736,6 +4740,13 @@ def main() -> None:
     sge = _costed("sge_premium", sge_premium)
     aco = _costed("asia_collector", asia_collector)
     apr = _costed("asia_parser", asia_parser)
+    # FREE PUBLIC ALT-DATA PROXIES (2026-09-30): Korea early exports, TSA throughput, Census
+    # ex-autos retail, JNTO arrivals, Tokyo CPI, FIRMS industrial heat, PortWatch ports and
+    # chokepoints, India gold imports and the recorded SGE premium, each as a PIT series
+    # through the axis door, the lake (exogenous_conditioner / alt conditioners) and
+    # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
+    alp = _costed("alt_proxies", lambda: _producer(
+        "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -5263,6 +5274,7 @@ def main() -> None:
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,
+                    "alt_proxies": alp,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
