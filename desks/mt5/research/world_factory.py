@@ -958,6 +958,126 @@ def write(doc: Mapping[str, Any], out: Path | None = None) -> Path:
     return p
 
 
+# ------------------------------------------------------------------ keyless fetchability
+KEYLESS_REPORT = DESK / "reports" / "KEYLESS_FETCHABILITY.json"
+#: fetch_fred.py's own keyless endpoint, probed with one series. FRED's graph CSV needs no key;
+#: the ALFRED API does and is never probed here.
+FRED_GRAPH_PROBE = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10"
+PROBE_TIMEOUT_S = 8.0
+PROBE_BUDGET_S = 90.0
+PROBE_READ_BYTES = 1024
+#: A status the cloud container's egress proxy returns for a host it will not pass. From behind
+#: that proxy it says nothing about the SOURCE, so it is never read as the source being dead.
+PROXY_REFUSALS = frozenset({403, 405, 407})
+UNMEASURED_FROM_CLOUD = "UNMEASURED_FROM_CLOUD"
+
+
+def keyless_urls(alt_path: Path | None = None, now: datetime | None = None
+                 ) -> list[dict[str, str]]:
+    """Every keyless, fetchable URL the world factory depends on: each alt row the acquirer is
+    allowed to fetch without a key ({today} filled the way the acquirer fills it), and FRED's
+    keyless graph CSV."""
+    doc = _read_json(alt_path or ALT_SOURCES)
+    rows = (doc.get("rows") if isinstance(doc, dict) else None) or []
+    day = (now or _now()).strftime("%Y%m%d")
+    out: list[dict[str, str]] = []
+    for r in rows:
+        if not isinstance(r, dict) or not r.get("url"):
+            continue
+        if not r.get("fetch") or r.get("keyless") is False or r.get("machine_use_allowed") is False:
+            continue
+        out.append({"id": str(r.get("id") or ""), "url": str(r["url"]).replace("{today}", day)})
+    out.append({"id": "fred_graph_csv", "url": FRED_GRAPH_PROBE})
+    return out
+
+
+def _behind_proxy() -> bool:
+    return any(os.environ.get(k) for k in ("HTTPS_PROXY", "https_proxy", "HTTP_PROXY",
+                                           "http_proxy"))
+
+
+def probe_url(url: str, timeout_s: float = PROBE_TIMEOUT_S) -> dict[str, Any]:
+    """One GET (HEAD is refused by half these APIs), reading at most 1 KB: status and latency."""
+    import urllib.error
+    import urllib.request
+    t0 = time.monotonic()
+    req = urllib.request.Request(url, headers={"User-Agent": "quant-desk-fetchability/1.0",
+                                               "Accept": "*/*"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout_s) as r:
+            status = int(getattr(r, "status", 200) or 200)
+            ctype = str(r.headers.get("Content-Type") or "")[:60]
+            r.read(PROBE_READ_BYTES)
+        return {"status": status, "latency_ms": round((time.monotonic() - t0) * 1000, 1),
+                "content_type": ctype}
+    except urllib.error.HTTPError as exc:
+        return {"status": int(exc.code), "latency_ms": round((time.monotonic() - t0) * 1000, 1),
+                "error": f"HTTPError {exc.code}"}
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        return {"status": None, "latency_ms": round((time.monotonic() - t0) * 1000, 1),
+                "error": f"{type(exc).__name__}: {str(exc)[:120]}"}
+
+
+def classify_probe(res: Mapping[str, Any], *, proxied: bool) -> str:
+    """FETCHABLE / REFUSED / UNREACHABLE on the host that measured it, or UNMEASURED_FROM_CLOUD
+    when a proxy stood between them. A cloud 403 is never 0 and never dead (L1.28a)."""
+    st = res.get("status")
+    if isinstance(st, int) and 200 <= st < 400:
+        return "FETCHABLE"
+    if proxied and (st in PROXY_REFUSALS or st is None):
+        return UNMEASURED_FROM_CLOUD
+    if isinstance(st, int):
+        return "REFUSED"
+    return "UNREACHABLE"
+
+
+def keyless_fetchability(*, urls: list[dict[str, str]] | None = None,
+                         budget_s: float = PROBE_BUDGET_S,
+                         probe: Any = None, proxied: bool | None = None,
+                         now: datetime | None = None) -> dict[str, Any]:
+    """Probe every keyless URL once, inside a budget; an unprobed URL is UNMEASURED, never 0."""
+    now = now or _now()
+    urls = keyless_urls(now=now) if urls is None else urls
+    proxied = _behind_proxy() if proxied is None else proxied
+    fn = probe or probe_url
+    t0 = time.monotonic()
+    rows: list[dict[str, Any]] = []
+    for u in urls:
+        if time.monotonic() - t0 > budget_s:
+            rows.append({**u, "verdict": UNMEASURED, "why": "probe budget spent this pass"})
+            continue
+        res = fn(u["url"])
+        rows.append({**u, **res, "verdict": classify_probe(res, proxied=proxied)})
+    census: dict[str, int] = {}
+    for r in rows:
+        census[r["verdict"]] = census.get(r["verdict"], 0) + 1
+    return {"generated_at": _iso(now), "host": socket_host(), "behind_proxy": proxied,
+            "n_urls": len(rows), "census": census, "rows": rows,
+            "rule": ("one GET per keyless URL on the host that runs the world_factory leg; "
+                     "status and latency recorded. Behind an egress proxy a 403/405/407 or no "
+                     "answer is UNMEASURED_FROM_CLOUD -- a fact about the proxy, never about the "
+                     "source, and never 0 or dead"),
+            "consumer": "desks/mt5/research/acquire_datasets.py (which rows to fetch) and the "
+                        "world_factory report's alt_datasets block"}
+
+
+def socket_host() -> str:
+    import socket
+    try:
+        return socket.gethostname()
+    except OSError:                                                  # pragma: no cover
+        return UNMEASURED
+
+
+def write_keyless(doc: Mapping[str, Any], out: Path | None = None) -> Path:
+    target = out or KEYLESS_REPORT
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    os.replace(tmp, target)
+    return target
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     ap.add_argument("--measure", action="store_true")
@@ -989,6 +1109,16 @@ def main(argv: list[str] | None = None) -> int:
             print(f"world_cells FAILED: {type(exc).__name__}: {str(exc)[:160]}", flush=True)
         if not a.measure:
             return 0
+    # KEYLESS FETCHABILITY, measured on the host that runs this leg (the box): its own failure
+    # never costs the measurement below.
+    if not a.dry_run:
+        try:
+            kf = keyless_fetchability()
+            write_keyless(kf)
+            print(f"keyless_fetchability: {kf['census']}", flush=True)
+        except Exception as exc:                                    # noqa: BLE001
+            print(f"keyless_fetchability FAILED: {type(exc).__name__}: {str(exc)[:160]}",
+                  flush=True)
     doc = measure()
     if a.dry_run:
         print(json.dumps({k: doc[k] for k in ("n_sources", "n_holes", "coverage", "inputs")},

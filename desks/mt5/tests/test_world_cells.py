@@ -71,6 +71,20 @@ class _Door:
         return "disc_1", True
 
 
+class _Donor:
+    """Records every donation the way the intake door would accept it."""
+
+    def __init__(self, accept: bool = True) -> None:
+        self.calls: list[tuple[list[dict], int]] = []
+        self.accept = accept
+
+    def __call__(self, cands, tests_run):
+        self.calls.append((list(cands), int(tests_run)))
+        if not self.accept:
+            return None, {"refused_unstamped": len(cands)}
+        return "intel/world_cells/discoveries_x.json", {"donated": len(cands)}
+
+
 def _policy(monkeypatch) -> None:
     import universe_policy
     monkeypatch.setattr(universe_policy, "may_hypothesise",
@@ -128,8 +142,10 @@ def test_direct_and_gated_cells_are_minted_once_with_culture_on_every_cell(monke
     _policy(monkeypatch)
     p = _alt_fixture(tmp_path)
     door = _Door()
+    donor = _Donor()
     monkeypatch.setattr(wc, "gate_bases", lambda: ["base_a", "base_b"])
-    doc = wc.produce(now=NOW, door=(door.enqueue, door.record), paths={**p, "packs": False})
+    doc = wc.produce(now=NOW, door=(door.enqueue, door.record), paths={**p, "packs": False},
+                     donor=donor)
     c = doc["cells"]
     # 2 signals x 3 transforms x 2 admissible targets x 3 charts
     assert c["direct"]["minted"] == 36 and c["direct"]["created"] == 36
@@ -147,7 +163,8 @@ def test_direct_and_gated_cells_are_minted_once_with_culture_on_every_cell(monke
                                    "transform", "threshold", "band"}
     # SECOND PASS: nothing is re-enqueued, so the census is never charged twice
     before = len(door.cells)
-    doc2 = wc.produce(now=NOW, door=(door.enqueue, door.record), paths={**p, "packs": False})
+    doc2 = wc.produce(now=NOW, door=(door.enqueue, door.record), paths={**p, "packs": False},
+                      donor=donor)
     assert doc2["cells"]["direct"]["minted"] == 0 and doc2["cells"]["indirect"]["minted"] == 0
     assert doc2["cells"]["direct"]["already"] == 36 and len(door.cells) == before
     state = json.loads(p["state"].read_text())
@@ -213,3 +230,111 @@ def test_the_gate_family_is_registered_where_every_door_reads() -> None:
     assert "exogenous_gate" in FAMILY_TABLE
     src = (DESK / "research" / "orthogonal_sweep.py").read_text("utf-8")
     assert '"exogenous_gate":' in src
+
+
+# ------------------------------------------------------ audit of PR #123: cells reach a judge
+def test_every_minted_cell_is_donated_and_charged_once(monkeypatch, tmp_path) -> None:
+    """The registry is not the judge's input: every cell minted this pass is donated through the
+    intake with tests_run = cells minted, its registry row is `claimed` by this organ, and a
+    second pass donates nothing because nothing new was minted."""
+    _policy(monkeypatch)
+    p = _alt_fixture(tmp_path)
+    door, donor = _Door(), _Donor()
+    monkeypatch.setattr(wc, "gate_bases", lambda: ["base_a", "base_b"])
+    doc = wc.produce(now=NOW, door=(door.enqueue, door.record), paths={**p, "packs": False},
+                     donor=donor)
+    (cands, tests_run), = donor.calls
+    assert tests_run == len(cands) == 36 + 24
+    d = doc["cells"]["donation"]
+    assert d["status"] == "DONATED" and d["tests_run"] == 60 and d["donated"] == 60
+    for v in door.cells.values():
+        assert v["status"] == "claimed" and v["claimed_by"] == "world_cells"
+    for c in cands:
+        assert c["falsifier"] and c["family"] in {"exogenous_conditioner", "exogenous_gate"}
+        assert c["source_culture"] == "BR"
+        # the minted chart rides in params.timeframe, H1 by absence
+        assert c["params"].get("timeframe", "H1") == c["chart"]
+    wc.produce(now=NOW, door=(door.enqueue, door.record), paths={**p, "packs": False},
+               donor=donor)
+    assert len(donor.calls) == 1, "nothing new was minted, so nothing is donated or charged again"
+
+
+def test_a_refused_donation_is_re_offered_next_pass_never_lost(monkeypatch, tmp_path) -> None:
+    _policy(monkeypatch)
+    p = _alt_fixture(tmp_path)
+    door = _Door()
+    monkeypatch.setattr(wc, "gate_bases", lambda: ["base_a"])
+    doc = wc.produce(now=NOW, door=(door.enqueue, door.record), paths={**p, "packs": False},
+                     donor=_Donor(accept=False))
+    assert doc["cells"]["donation"]["status"] == "REFUSED"
+    assert json.loads(p["cursor"].read_text())["minted"] == []
+    ok = _Donor()
+    doc2 = wc.produce(now=NOW, door=(door.enqueue, door.record), paths={**p, "packs": False},
+                      donor=ok)
+    assert doc2["cells"]["donation"]["status"] == "DONATED"
+    assert ok.calls and ok.calls[0][1] == doc["cells"]["donation"]["tests_run"]
+
+
+def test_world_state_inputs_names_its_consumer_and_never_claims_wiring(monkeypatch,
+                                                                       tmp_path) -> None:
+    _policy(monkeypatch)
+    p = _alt_fixture(tmp_path)
+    monkeypatch.setattr(wc, "gate_bases", lambda: [])
+    wc.produce(now=NOW, door=(_Door().enqueue, _Door().record), paths={**p, "packs": False},
+               donor=_Donor())
+    state = json.loads(p["state"].read_text())
+    assert state["consumer"].startswith("PENDING_PATCH ") and state["wired"] is False
+
+
+def test_a_world_cell_reaches_the_docket_end_to_end(monkeypatch, tmp_path) -> None:
+    """world_cells -> the intake donation (the REAL proposer_common door) -> the REAL
+    miner_candidate_compiler main -> the docket input `merge_hypotheses` reads
+    (miner_candidates.json `hypotheses`)."""
+    import libs.ops.repair_invoke as ri
+    import libs.research.hypothesis_graph as hg
+    from libs.research import preregistration as pr
+    from research import miner_candidate_compiler as mcc
+    from research import proposer_common as pc
+    _policy(monkeypatch)
+    p = _alt_fixture(tmp_path)
+    intel = tmp_path / "intel"
+    monkeypatch.setattr(pc, "INTEL", intel)
+    monkeypatch.setattr(pr, "LEDGER", tmp_path / "prereg.jsonl")
+    monkeypatch.setattr(pc, "_lane_filtered", lambda c: (c, []))
+    monkeypatch.setattr(wc, "gate_bases", lambda: ["range_reversion"])
+    door = _Door()
+    doc = wc.produce(now=NOW, door=(door.enqueue, door.record), paths={**p, "packs": False})
+    don = doc["cells"]["donation"]
+    assert don["status"] == "DONATED", don
+    contract = json.loads(Path(don["path"]).read_text("utf-8"))
+    assert contract["tests_run"] == don["tests_run"] == len(door.cells)
+    assert Path(don["path"]).parent == intel / "world_cells"
+
+    class _Graph:
+        def prior_failures(self, *_a, **_k):
+            return {"n_failed": 0, "region": ""}
+
+        def rows(self):
+            return []
+
+    for name, val in (("INTEL_ROOTS", (intel,)), ("OUT", tmp_path / "out.json"),
+                      ("DEEPEN", tmp_path / "deepen.json"),
+                      ("DEEPEN_WORKED", tmp_path / "deepening_worked.jsonl"),
+                      ("DEEPENED", tmp_path / "deepened.json"),
+                      ("CURSOR", tmp_path / "cursor_mcc.json")):
+        monkeypatch.setattr(mcc, name, val)
+    monkeypatch.setattr(mcc, "known_symbols", lambda: {"CORN", "EURUSD"})
+    monkeypatch.setattr(mcc, "structurally_untestable_families", dict)
+    monkeypatch.setattr(mcc, "expand_axes", lambda rows: rows)
+    monkeypatch.setattr(hg, "Graph", _Graph)
+    monkeypatch.setattr(hg, "record_candidates", lambda *a, **k: 0)
+    monkeypatch.setattr(ri, "request_repair", lambda reason, **kw: False)
+    assert mcc.main() == 0
+    out = json.loads((tmp_path / "out.json").read_text("utf-8"))
+    hyps = [h for h in out["hypotheses"] if str(h.get("source")) == "miner:world_cells"]
+    fams = {h["family"] for h in hyps}
+    assert fams == {"exogenous_conditioner", "exogenous_gate"}, fams
+    assert {h["symbol"] for h in hyps} <= {"CORN", "EURUSD"}
+    gate = next(h for h in hyps if h["family"] == "exogenous_gate")
+    assert gate["params"]["source"] == "alt_power_test"
+    assert gate["params"]["base_family"] == "range_reversion"

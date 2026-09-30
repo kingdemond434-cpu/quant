@@ -391,3 +391,40 @@ def test_fetch_alfred_and_the_extractor_are_clocked_budgeted_and_layered() -> No
     assert '"research/fetch_alfred.py", "--leg"' in src
     assert '"research/world_factory.py", "--produce", "--measure"' in src
     assert '"research/llm_extractor.py"' in src
+
+
+# ----------------------------------------------- audit of PR #123: keyless fetchability
+def test_a_cloud_403_is_unmeasured_from_cloud_never_dead() -> None:
+    assert wf.classify_probe({"status": 403}, proxied=True) == wf.UNMEASURED_FROM_CLOUD
+    assert wf.classify_probe({"status": None}, proxied=True) == wf.UNMEASURED_FROM_CLOUD
+    assert wf.classify_probe({"status": 403}, proxied=False) == "REFUSED"
+    assert wf.classify_probe({"status": None}, proxied=False) == "UNREACHABLE"
+    assert wf.classify_probe({"status": 200}, proxied=True) == "FETCHABLE"
+
+
+def test_every_keyless_url_is_probed_with_status_and_latency(tmp_path) -> None:
+    alt = tmp_path / "alt.json"
+    alt.write_text(json.dumps({"rows": [
+        {"id": "a", "url": "https://a/{today}", "fetch": True, "keyless": True,
+         "machine_use_allowed": True},
+        {"id": "keyed", "url": "https://k", "fetch": True, "keyless": False},
+        {"id": "off", "url": "https://o", "fetch": False, "keyless": True}]}))
+    now = datetime(2026, 9, 30, tzinfo=UTC)
+    urls = wf.keyless_urls(alt, now=now)
+    assert [u["id"] for u in urls] == ["a", "fred_graph_csv"]
+    assert urls[0]["url"] == "https://a/20260930"
+    seen: list[str] = []
+
+    def probe(url: str) -> dict:
+        seen.append(url)
+        return {"status": 403, "latency_ms": 12.5}
+
+    doc = wf.keyless_fetchability(urls=urls, probe=probe, proxied=True, now=now)
+    assert seen == [u["url"] for u in urls]
+    assert doc["census"] == {wf.UNMEASURED_FROM_CLOUD: 2}
+    assert all(r["latency_ms"] == 12.5 and r["status"] == 403 for r in doc["rows"])
+    spent = wf.keyless_fetchability(urls=urls, probe=probe, proxied=False, budget_s=-1.0,
+                                    now=now)
+    assert spent["census"] == {wf.UNMEASURED: 2}, "an unprobed URL is UNMEASURED, never 0"
+    out = wf.write_keyless(doc, tmp_path / "K.json")
+    assert json.loads(out.read_text())["n_urls"] == 2

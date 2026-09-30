@@ -83,6 +83,10 @@ def desk(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(cm, "SEAT_DIR", seat)
     monkeypatch.setattr(cm, "REPO", tmp_path)
     monkeypatch.setattr(up, "UNIVERSE", uni / "universe.json")
+    # The pass now OFFERS falsifier-carrying rows through the intake: its pre-registration card
+    # must land in tmp_path, never the tracked ledger (the donation itself lands beside `seat`).
+    from libs.research import preregistration as _pr
+    monkeypatch.setattr(_pr, "LEDGER", tmp_path / "preregistrations.jsonl")
     up._registry.cache_clear()
     R.set_path(tmp_path / "reg.sqlite")
     conn = R.connect()
@@ -745,3 +749,46 @@ def test_every_debt_component_names_the_organ_that_drains_it(desk) -> None:
     for name in ("silent_discoveries", "unreasoned_blocks"):
         assert "NOT this organ" in debt["component_owner"][name]
         assert "discovery_compiler" in debt["component_owner"][name]
+
+
+# ------------------------------------------ audit of PR #123: a falsifier is a feature
+def test_a_queued_row_with_a_falsifier_is_offered_to_a_judge_not_skipped(desk) -> None:
+    """A complete row -- family, instrument, params AND falsifier -- was never debt, so the pass
+    never touched it and only the score-ranked lease could reach it. It is now offered through
+    the intake, charged, and claimed so no door offers it twice."""
+    conn = desk["conn"]
+    done = _plant(conn, "c_complete", family="range_reversion", symbol="TESTFX", status="queued",
+                  mechanism="mean reversion after an overnight gap", chart="H4",
+                  falsifier="re-judged on bars after the snapshot and it fails")
+    judged = _plant(conn, "c_judged", family="range_reversion", symbol="TESTXAU",
+                    status="queued", mechanism="m", falsifier="f")
+    conn.execute("UPDATE research_candidates SET judged_at='2026-09-01' WHERE id=?", (judged,))
+    conn.commit()
+    got: list = []
+
+    def donor(cands, tests_run):
+        got.append((cands, tests_run))
+        return "x.json", {"donated": len(cands)}
+
+    out = cm.offer_unjudged(conn, budget=cm.Budget(30.0), dry_run=False, limit=10, donor=donor)
+    assert out["status"] == "DONATED" and out["offered"] == 1 and out["tests_run"] == 1
+    (cands, tests_run), = got
+    assert tests_run == 1 and cands[0]["candidate_id"] == done
+    assert cands[0]["falsifier"] and cands[0]["params"]["timeframe"] == "H4"
+    row = conn.execute("SELECT status, claimed_by FROM research_candidates WHERE id=?",
+                       (done,)).fetchone()
+    assert tuple(row) == ("claimed", cm.SEAT)
+    again = cm.offer_unjudged(conn, budget=cm.Budget(30.0), dry_run=False, limit=10,
+                              donor=donor)
+    assert again["offered"] == 0 and len(got) == 1, "a claimed row is never offered twice"
+
+
+def test_the_pass_offers_falsifier_rows_into_its_own_seat_tree(desk) -> None:
+    conn = desk["conn"]
+    _plant(conn, "c_ready", family="range_reversion", symbol="TESTFX", status="queued",
+           mechanism="mean reversion after an overnight gap", falsifier="it fails re-judged")
+    body = _run(desk)
+    off = body["offered_with_falsifier"]
+    assert off["status"] == "DONATED", off
+    assert Path(off["path"]).parent == desk["root"] / cm.SEAT
+    assert off["pacing"]["axis_fanout"] >= 1

@@ -1401,6 +1401,133 @@ def _disposition(row: Mapping[str, Any], cid: str, age: float | None,
             "actions_taken": list(actions_taken)}
 
 
+#: The falsifier-carrying rows this pass offers to a judge, oldest first. PACING, never a
+#: ceiling: it is the judge's OWN busiest recorded hour (`registry.lease_size`), so the pass
+#: offers what the gauntlet has demonstrably drunk in an hour, and the next pass takes the next
+#: oldest. The backlog it leaves is published as `offered_with_falsifier.backlog`.
+OFFER_ORDER = "created_at ASC"
+
+
+def axis_fanout() -> int:
+    """Cells the compiler makes of one H1 row: (intraday charts + H1) x sessions."""
+    try:
+        from research.miner_candidate_compiler import INTRADAY_CHARTS, SESSION_AXIS
+        return (len(INTRADAY_CHARTS) + 1) * len(SESSION_AXIS)
+    except Exception:                                                    # pragma: no cover
+        return 16
+
+
+def offer_unjudged(conn: sqlite3.Connection, *, budget: Budget, dry_run: bool,
+                   limit: int | None = None, donor: Any = None,
+                   intel_root: Path | None = None) -> dict[str, Any]:
+    """A FALSIFIER IS A FEATURE, NOT A REASON TO BE SKIPPED (audit of PR #123, 2026-09-30).
+
+    `_debt_rows` draws `donated` rows and queued rows WITHOUT a falsifier, so a queued row that
+    arrived complete -- family, instrument, params AND its falsifier, e.g. every world cell --
+    was never debt, and never touched here. The moat exchange's lease takes the best-SCORED
+    queued rows, so an unscored row waits behind 300k others; `libs.moat.docket_feed` carries
+    the unjudged registry into the docket, but as the bare registry cell -- never through the
+    compiler's intake, so never charged a `tests_run`, never expanded to the intraday charts and
+    sessions every other mined mechanism is hunted on. That is the organ skipping the most
+    testable rows because they were testable.
+
+    This offers them. Queued rows that carry a falsifier and have never been judged or claimed,
+    oldest first, are donated through `data/intelligence/conversion_maximiser/` (the intake the
+    compiler reads), charged `tests_run` = rows offered, and marked `claimed` by this organ so no
+    door offers them twice. A banned-from-live family is skipped and counted, never offered (it
+    cannot reach the book). Nothing is refused, retired or reordered in the registry.
+    """
+    out: dict[str, Any] = {"status": "NOT_RUN", "offered": 0, "donated": 0, "skipped_banned": 0}
+    if not budget.ok("offer_unjudged", reserve=5.0):
+        out["status"] = "OUT_OF_BUDGET"
+        return out
+    if limit is None:
+        try:
+            lease, basis = R.lease_size(1)
+        except Exception as exc:                                         # pragma: no cover
+            lease, basis = R.LEASE_FLOOR, {"why": f"UNMEASURED: {type(exc).__name__}"}
+        # The compiler fans an H1 row out to every intraday chart in every session, so a row
+        # offered is up to `fanout` cells judged: the judge's hour of CELLS is lease / fanout
+        # ROWS. Floored at the historic lease, so this never offers fewer than the exchange did.
+        fanout = axis_fanout()
+        limit = max(R.LEASE_FLOOR, int(lease) // max(1, fanout))
+        out["pacing"] = {**basis, "axis_fanout": fanout, "rows_this_pass": limit}
+    where = ("status='queued' AND COALESCE(falsifier,'')<>'' AND COALESCE(judged_at,'')='' "
+             "AND COALESCE(claimed_by,'')=''")
+    try:
+        backlog = int(conn.execute(
+            f"SELECT COUNT(*) FROM research_candidates WHERE {where}").fetchone()[0])  # noqa: S608
+        cur = conn.execute(
+            f"SELECT * FROM research_candidates WHERE {where} "  # noqa: S608
+            f"ORDER BY {OFFER_ORDER} LIMIT ?", (int(limit),))
+        cols = [c[0] for c in cur.description]
+        rows = [dict(zip(cols, r, strict=False)) for r in cur.fetchall()]
+    except sqlite3.Error as exc:
+        out.update(status=UNMEASURED, why=f"{type(exc).__name__}: {exc}")
+        return out
+    out["backlog"] = backlog
+    banned = live_banned_families()
+    cands: list[dict[str, Any]] = []
+    ids: list[str] = []
+    for r in rows:
+        fam, sym = str(r.get("family") or ""), str(r.get("symbol") or "")
+        if not fam or not sym:
+            continue
+        if fam in banned:
+            out["skipped_banned"] += 1
+            continue
+        try:
+            params = json.loads(r.get("params_json") or "{}")
+        except (TypeError, ValueError):
+            params = {}
+        params = params if isinstance(params, dict) else {}
+        chart = str(r.get("chart") or "")
+        if chart and chart != "H1" and "timeframe" not in params:
+            params["timeframe"] = chart
+        cid = str(r.get("id") or "")
+        ids.append(cid)
+        cands.append({"source": SEAT, "kind": "queued_with_falsifier", "symbol": sym,
+                      "family": fam, "params": params,
+                      "mechanism": str(r.get("mechanism") or ""),
+                      "falsifier": str(r.get("falsifier") or ""), "chart": chart,
+                      "title": f"{sym} {fam}: queued with its falsifier, never judged",
+                      "url": "", "candidate_id": cid, "origin": r.get("origin"),
+                      "evidence": {"candidate_id": cid, "grid_cell": r.get("grid_cell"),
+                                   "score": r.get("score"), "age_days": _age_days(r)}})
+    out["offered"] = len(cands)
+    if dry_run or not cands:
+        out["status"] = "DRY_RUN" if dry_run else "NOTHING_TO_OFFER"
+        return out
+    try:
+        if donor is None:
+            from research import proposer_common as pc
+            path = pc.donate(SEAT, cands, len(cands), record_in_registry=False,
+                             intel_root=intel_root or SEAT_DIR.parent)
+            counts = pc.donation_counts()
+        else:
+            path, counts = donor(cands, len(cands))
+    except Exception as exc:                                             # noqa: BLE001
+        out.update(status="FAILED", why=f"{type(exc).__name__}: {str(exc)[:160]}")
+        return out
+    if not path:
+        out.update(status="REFUSED", why="the donation door wrote no file; re-offered next pass",
+                   counts={k: counts.get(k) for k in ("refused_unstamped", "refused_wrong_lane")})
+        return out
+    stamp = _now()
+    for i in range(0, len(ids), 500):
+        chunk = ids[i:i + 500]
+        conn.execute("UPDATE research_candidates SET status='claimed', claimed_by=?, "  # noqa: S608
+                     "claimed_at=?, updated_at=? WHERE id IN (" + ",".join("?" * len(chunk))
+                     + ")", [SEAT, stamp, stamp, *chunk])
+    conn.commit()
+    out.update(status="DONATED", path=str(path), tests_run=len(cands),
+               donated=int(counts.get("donated") or 0),
+               refused_wrong_lane=int(counts.get("refused_wrong_lane") or 0),
+               consumer=("desks/mt5/research/miner_candidate_compiler.py (EXACT_RECIPE) -> the "
+                         "docket -> external_gauntlet"))
+    return out
+
+
 def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: bool,
         universe_dir: Path | None = None, seat_dir: Path | None = None,
         carry_path: Path | None = None, out_path: Path | None = None,
@@ -1655,6 +1782,9 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
     # EFFECTIVE TRIALS, not raw count: re-enqueued work pays the multiple-testing bill it owes,
     # and 500 mutations of one rule are not 500 independent looks at the tape.
     charge = _charge_trials(repaired, conn, dry_run=dry_run)
+    # A FALSIFIER IS A FEATURE: the complete rows `_debt_rows` never draws are offered to a judge.
+    offered = offer_unjudged(conn, budget=budget, dry_run=dry_run,
+                             intel_root=(seat_dir or SEAT_DIR).parent)
     naming_path = "" if dry_run else _naming_requests(naming, seat_dir)
     acq_path = "" if dry_run else _acquisition_tasks(acquisitions, seat_dir)
 
@@ -1695,6 +1825,7 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
         "bar_coverage": coverage,
         "refusal_policy": REFUSAL_POLICY,
         "judged_vs_docket": judged_vs_docket(),
+        "offered_with_falsifier": offered,
         "oldest_unconverted": oldest_unconverted(conn),
         "carried_in": len(carried), "carried_out": len(leftover),
         "carry_rule": "no queues: this pass's leftover is the FIRST work of the next pass, and "

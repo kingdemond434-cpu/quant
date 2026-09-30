@@ -28,6 +28,15 @@ WHAT IT DOES, per pass (inside leg `world_factory`, before the measurement):
   4. ALLOCATION: `reports/WORLD_STATE_INPUTS.json`, the current lagged z of every published
      series, per instrument it maps to. ADVISORY: the allocator is sealed and is not edited; this
      is a state input it may read, stamped with its age.
+  5. DONATE. Every cell minted this pass is ALSO donated through
+     `data/intelligence/world_cells/discoveries_*.json` (`proposer_common.donate`, the door every
+     seat uses), with `tests_run` = the cells minted, so each one is charged. The gauntlet
+     never opens the SQLite registry: the moat exchange leases the best-SCORED rows (these
+     carry no score) and `libs.moat.docket_feed` carries the bare registry cell, never through
+     the compiler and never charged. The donation is the compiler's own door, the same one
+     every seat uses. The registry row is written `claimed` by this organ so no second door
+     offers it again; a cell whose donation is refused stays out of the minted set and is
+     re-offered next pass, never lost.
 
 Nothing here sizes, vetoes or shrinks. UNMEASURED is never zero: a source not yet acquired is
 listed as NOT_PUBLISHED with its reason, not as a source with zero cells.
@@ -65,6 +74,12 @@ UNIVERSE = DESK / "data" / "universe" / "universe.json"
 CURSOR = DESK / "data" / "world_cells_cursor.json"
 CELLS_REPORT = DESK / "reports" / "WORLD_CELLS.json"
 STATE_REPORT = DESK / "reports" / "WORLD_STATE_INPUTS.json"
+#: WHO READS WORLD_STATE_INPUTS, said as it is (audit of PR #123, 2026-09-30). The allocation
+#: consumer of a world state input is the allocator's context (`pf_allocator` via
+#: `libs.portfolio.macro_state`), which this organ may not edit; the reader is staged as a patch
+#: and this label says so until it lands. It is NOT a claim that the file is wired. The dataset
+#: exploitation fence (CRO D18) reads this field.
+STATE_CONSUMER = "PENDING_PATCH /mnt/project-files/patches/world_state_inputs_allocator/"
 
 GENERATOR = "world_cells"
 CHARTS: tuple[str, ...] = ("H1", "H4", "D1")
@@ -445,12 +460,42 @@ def _registry_door() -> tuple[Enqueue, Callable[..., tuple[str, bool]]]:
     return enqueue_candidate, record_discovery
 
 
+def donation_row(*, cid: str, family: str, symbol: str, params: Mapping[str, Any],
+                 chart: str, mechanism: str, falsifier: str,
+                 common: Mapping[str, Any]) -> dict[str, Any]:
+    """One minted cell in the shape the compiler's EXACT_RECIPE door reads (family + params +
+    symbol). A chart other than H1 rides in `params.timeframe`, the desk-wide spelling the
+    gauntlet reads (`external_gauntlet.timeframe_of`; H1 by absence), so the compiler keeps the
+    chart the cell was minted on instead of re-expanding it."""
+    p = dict(params)
+    if chart and chart != "H1":
+        p["timeframe"] = chart
+    return {"source": GENERATOR, "kind": "world_cell", "symbol": symbol, "family": family,
+            "params": p, "mechanism": mechanism, "falsifier": falsifier, "chart": chart,
+            "title": f"{symbol} {family} on {common.get('source_id')} ({chart})",
+            "url": f"world_cells://{common.get('source_id')}",
+            "candidate_id": cid, "discovery_id": common.get("discovery_id"),
+            "source_id": common.get("source_id"), "pit_status": common.get("pit_status"),
+            "required_data": list(common.get("required_data") or []),
+            **{k: str(common.get(k) or UNMEASURED) for k in CULTURE_KEYS},
+            "evidence": {"candidate_id": cid, "screen": "none: minted, never pre-screened; the "
+                                                        "gauntlet is the only judge"}}
+
+
 def mint(published: list[dict[str, Any]], *, minted: set[str], bases: list[str],
          universe: set[str] | None = None, dry_run: bool = False,
          gate_cap: int = GATE_CELLS_PER_PASS,
-         door: tuple[Enqueue, Callable[..., tuple[str, bool]]] | None = None
+         door: tuple[Enqueue, Callable[..., tuple[str, bool]]] | None = None,
+         pending: list[tuple[str, dict[str, Any]]] | None = None
          ) -> dict[str, Any]:
-    """Direct then indirect cells for every PUBLISHED source; each cell enqueued once, ever."""
+    """Direct then indirect cells for every PUBLISHED source; each cell enqueued once, ever.
+
+    With `pending` given (the produce path), a minted cell is NOT added to `minted` here: it is
+    appended to `pending` with its donation row, and `produce` adds it to `minted` only once its
+    donation was written. The registry row is then enqueued `claimed` by this organ."""
+    claim: dict[str, Any] = ({} if pending is None else
+                             {"status": "claimed", "claimed_by": GENERATOR,
+                              "claimed_at": _iso(_now())})
     stats: dict[str, Any] = {"direct": {"minted": 0, "created": 0, "already": 0},
                              "indirect": {"minted": 0, "created": 0, "already": 0,
                                           "deferred_to_next_pass": 0},
@@ -505,15 +550,23 @@ def mint(published: list[dict[str, Any]], *, minted: set[str], bases: list[str],
                         if enqueue is None:
                             continue
                         try:
+                            dparams = {"source": sid, "signal": sig, "transform": tf}
+                            dfals = (f"the {tf} of {sid}.{sig} has no measurable relation "
+                                     f"to {sym} at {chart} out of sample")
                             _cid, new = enqueue(
                                 family="exogenous_conditioner", symbol=sym,
-                                params={"source": sid, "signal": sig, "transform": tf},
+                                params=dparams,
                                 mechanism=mech, chart=chart, horizon=chart, asset_class="",
                                 transformation="world_series",
-                                falsifier=(f"the {tf} of {sid}.{sig} has no measurable relation "
-                                           f"to {sym} at {chart} out of sample"), **common)
+                                falsifier=dfals, **common, **claim)
                             stats["direct"]["created"] += int(bool(new))
-                            minted.add(k)
+                            if pending is None:
+                                minted.add(k)
+                            else:
+                                pending.append((k, donation_row(
+                                    cid=str(_cid), family="exogenous_conditioner", symbol=sym,
+                                    params=dparams, chart=chart, mechanism=mech,
+                                    falsifier=dfals, common=common)))
                         except Exception as exc:          # noqa: BLE001
                             stats["errors"].append(f"{sid}/{sig}/{sym}: {type(exc).__name__}")
         # INDIRECT: the first signal gates every base family; further signals follow once the
@@ -535,20 +588,27 @@ def mint(published: list[dict[str, Any]], *, minted: set[str], bases: list[str],
                         if enqueue is None:
                             continue
                         try:
+                            gparams = {"base_family": base, "base_params": {}, "source": sid,
+                                       "signal": sig, "transform": "level_z",
+                                       "threshold": GATE_THRESHOLD, "band": band}
+                            gmech = (f"{base} on {sym} behaves differently while "
+                                     f"{sid}.{sig} is {band}")
+                            gfals = (f"{base} on {sym} gated to {sid}.{sig} {band} is no "
+                                     "better than the ungated base out of sample")
                             _cid, new = enqueue(
-                                family="exogenous_gate", symbol=sym,
-                                params={"base_family": base, "base_params": {}, "source": sid,
-                                        "signal": sig, "transform": "level_z",
-                                        "threshold": GATE_THRESHOLD, "band": band},
-                                mechanism=(f"{base} on {sym} behaves differently while "
-                                           f"{sid}.{sig} is {band}"),
+                                family="exogenous_gate", symbol=sym, params=gparams,
+                                mechanism=gmech,
                                 chart=GATE_CHART, horizon=GATE_CHART, asset_class="",
                                 transformation="world_series_gate",
-                                falsifier=(f"{base} on {sym} gated to {sid}.{sig} {band} is no "
-                                           "better than the ungated base out of sample"),
-                                **common)
+                                falsifier=gfals, **common, **claim)
                             stats["indirect"]["created"] += int(bool(new))
-                            minted.add(k)
+                            if pending is None:
+                                minted.add(k)
+                            else:
+                                pending.append((k, donation_row(
+                                    cid=str(_cid), family="exogenous_gate", symbol=sym,
+                                    params=gparams, chart=GATE_CHART, mechanism=gmech,
+                                    falsifier=gfals, common=common)))
                         except Exception as exc:          # noqa: BLE001
                             stats["errors"].append(f"{sid}/{base}/{sym}: {type(exc).__name__}")
     stats["errors"] = stats["errors"][:20]
@@ -585,17 +645,59 @@ def state_inputs(published: list[dict[str, Any]], now: datetime, *,
                 by_instrument.setdefault(sym, []).append(
                     {"source": src["source"], "signal": sig, "z_lagged": z, "age_h": age_h})
     return {"generated_at": _iso(now), "advisory": True,
+            "consumer": STATE_CONSUMER, "wired": False,
             "rule": ("state inputs the allocator MAY read; nothing here is read by the sealed "
                      "allocator today and nothing here sizes anything. z is the series' own "
-                     "level z-score, lagged one publication day on its available_time clock"),
+                     "level z-score, lagged one publication day on its available_time clock. "
+                     "`consumer` names the staged reader; `wired` turns true only when it lands"),
             "series": per_series, "by_instrument": by_instrument,
             "n_series": len(per_series), "n_instruments": len(by_instrument)}
 
 
 # --------------------------------------------------------------------------------------- run
+Donor = Callable[[list[dict[str, Any]], int], tuple[Any, dict[str, Any]]]
+
+
+def _intake_donor(cands: list[dict[str, Any]], tests_run: int) -> tuple[Any, dict[str, Any]]:
+    from research import proposer_common as pc
+    # The registry rows were written by `mint` (claimed, with falsifier and culture keys); the
+    # donation door must not enqueue them a second time.
+    path = pc.donate(GENERATOR, cands, tests_run, record_in_registry=False)
+    return path, pc.donation_counts()
+
+
+def donate_cells(pending: list[tuple[str, dict[str, Any]]], minted: set[str], *,
+                 donor: Donor | None = None) -> dict[str, Any]:
+    """Donate this pass's minted cells to the intake the compiler reads, charging one test per
+    cell. A cell enters `minted` only when its donation file was written, so a refused or failed
+    donation is re-offered next pass rather than lost (the registry dedups its re-enqueue)."""
+    if not pending:
+        return {"status": "NOTHING_MINTED", "donated": 0, "tests_run": 0}
+    cands = [c for _, c in pending]
+    try:
+        path, counts = (donor or _intake_donor)(cands, len(cands))
+    except Exception as exc:                              # noqa: BLE001
+        return {"status": "FAILED", "why": f"{type(exc).__name__}: {str(exc)[:160]}",
+                "tests_run": len(cands), "donated": 0, "carried_to_next_pass": len(cands)}
+    if not path:
+        return {"status": "REFUSED", "tests_run": len(cands), "donated": 0,
+                "carried_to_next_pass": len(cands),
+                "why": "the donation door wrote no file; every cell is re-offered next pass",
+                "counts": {k: counts.get(k) for k in ("refused_unstamped", "refused_wrong_lane")}}
+    for k, _ in pending:
+        minted.add(k)
+    return {"status": "DONATED", "path": str(path), "tests_run": len(cands),
+            "donated": int(counts.get("donated") or 0),
+            "refused_unstamped": int(counts.get("refused_unstamped") or 0),
+            "refused_wrong_lane": int(counts.get("refused_wrong_lane") or 0),
+            "consumer": ("desks/mt5/research/miner_candidate_compiler.py (EXACT_RECIPE) -> "
+                         "data/hypotheses docket -> external_gauntlet")}
+
+
 def produce(*, now: datetime | None = None, dry_run: bool = False,
             door: tuple[Enqueue, Callable[..., tuple[str, bool]]] | None = None,
-            paths: Mapping[str, Any] | None = None) -> dict[str, Any]:
+            paths: Mapping[str, Any] | None = None,
+            donor: Donor | None = None) -> dict[str, Any]:
     now = now or _now()
     p = dict(paths or {})
     lake = p.get("lake", LAKE)
@@ -606,8 +708,12 @@ def produce(*, now: datetime | None = None, dry_run: bool = False,
     cur = _read_json(cursor_path) or {}
     minted = set(cur.get("minted") or [])
     bases = gate_bases()
+    pending: list[tuple[str, dict[str, Any]]] = []
     stats = mint(published, minted=minted, bases=bases, dry_run=dry_run,
-                 universe=_universe(p["universe"]) if "universe" in p else None, door=door)
+                 universe=_universe(p["universe"]) if "universe" in p else None, door=door,
+                 pending=None if dry_run else pending)
+    stats["donation"] = ({"status": "DRY_RUN"} if dry_run else
+                         donate_cells(pending, minted, donor=donor))
     if not dry_run:
         _atomic_json(cursor_path, {"updated_at": _iso(now), "minted": sorted(minted)})
     n_pub = sum(1 for s in published if s.get("status") == "PUBLISHED")
@@ -621,7 +727,9 @@ def produce(*, now: datetime | None = None, dry_run: bool = False,
         "cells": stats,
         "rule": ("direct = exogenous_conditioner, indirect = exogenous_gate on price-only bases, "
                  "allocation = reports/WORLD_STATE_INPUTS.json (advisory). A cell is enqueued "
-                 "once; `already` counts cells minted on an earlier pass, never re-charged"),
+                 "once; `already` counts cells minted on an earlier pass, never re-charged. "
+                 "Every minted cell is donated to data/intelligence/world_cells/ with "
+                 "tests_run = cells minted, which is its road to the docket and the gauntlet"),
     }
     if not dry_run:
         _atomic_json(p.get("report", CELLS_REPORT), doc)
@@ -638,7 +746,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"world_cells: {doc['published']} published, {len(doc['not_published'])} not; "
           f"direct {c['direct']['minted']} new ({c['direct']['created']} created), "
           f"indirect {c['indirect']['minted']} new ({c['indirect']['created']} created, "
-          f"{c['indirect']['deferred_to_next_pass']} next pass), bases {doc['gate_bases']}")
+          f"{c['indirect']['deferred_to_next_pass']} next pass), bases {doc['gate_bases']}; "
+          f"donation {c['donation'].get('status')} ({c['donation'].get('donated', 0)} rows, "
+          f"{c['donation'].get('tests_run', 0)} tests charged)")
     return 0
 
 

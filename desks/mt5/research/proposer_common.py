@@ -481,8 +481,17 @@ def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str,
     return clean, {k: rep[k] for k in ("rows", "violations", "fields_stripped")}
 
 
-def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
+def donate(source: str, candidates: list[dict], tests_run: int, *,
+           record_in_registry: bool = True, intel_root: Path | None = None) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
+
+    `record_in_registry=False` is for a producer that ALREADY wrote the canonical registry row of
+    each candidate itself (world_cells enqueues every cell with its falsifier, culture keys and
+    discovery edge before donating it, and conversion_maximiser offers rows that are already in
+    the registry). Re-recording them here would enqueue the same rule a second time and read as
+    a search re-hit (`search_count` 2) for a cell that was minted once. `intel_root` redirects
+    the contract file (a caller's own seat directory's parent, e.g. under test); the default is
+    the intake the compiler reads.
 
     POINT-IN-TIME BY CONSTRUCTION AND BY REFUSAL. Every row that leaves here carries
     available_time, ingested_time, source_version and a payload hash, so a joiner can refuse it
@@ -513,7 +522,7 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
         return None
     prereg = _preregister(source, candidates)
     LAST_DONATION["prereg"] = prereg
-    out = INTEL / source
+    out = (intel_root or INTEL) / source
     out.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
     path = out / f"discoveries_{stamp}.json"
@@ -534,7 +543,8 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                                          "here and counted, never written: absence of an "
                                          "available_time is not permission to use the row")},
                                indent=1, default=str), "utf-8")
-    _record_in_registry(source, candidates)
+    if record_in_registry:
+        _record_in_registry(source, candidates)
     return path
 
 
