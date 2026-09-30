@@ -427,16 +427,22 @@ def test_every_module_that_calls_order_send_binds_mt5_through_the_door() -> None
         rel = p.relative_to(_DESK).as_posix()
         if rel in _EXEMPT or p.name == "order_door.py":
             continue
-        if "order_door.guard(" not in p.read_text("utf-8").replace("_door.guard(",
-                                                                   "order_door.guard("):
+        if "_door.guard(" not in p.read_text("utf-8"):
             bypass.append(rel)
     assert not bypass, f"order_send reachable without the order door in: {bypass}"
 
 
 def test_gateway_binds_the_guarded_module_and_reconciles_before_managing() -> None:
     src = (_DESK / "mt5desk" / "gateway.py").read_text("utf-8")
-    assert "\nimport MetaTrader5 as mt5\n" not in src, "the raw module is bound as `mt5` again"
-    assert "mt5 = _door.guard(_mt5_venue" in src
+    # The raw import stays (other fences read it); the module-level rebinding is what routes
+    # every call site, and it must be the LAST module-level binding of `mt5`.
+    tree = ast.parse(src)
+    binds = [n for n in tree.body if isinstance(n, (ast.Assign, ast.Import))
+             and any((isinstance(t, ast.Name) and t.id == "mt5") for t in getattr(n, "targets", []))
+             or (isinstance(n, ast.Import) and any((a.asname or a.name) == "mt5" for a in n.names))]
+    last = binds[-1]
+    assert isinstance(last, ast.Assign), "the raw module is bound as `mt5` after the door"
+    assert ast.get_source_segment(src, last.value).startswith("_door.guard(mt5")
     main = src[src.index("\ndef main() -> None:"):]
     assert main.index("_door.restart_reconcile(") < main.index("manage_open_positions(st")
 

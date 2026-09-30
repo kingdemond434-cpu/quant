@@ -39,7 +39,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import MetaTrader5 as _mt5_venue
+import MetaTrader5 as mt5
 import pandas as pd
 from mt5desk import account_profile as _acct
 from mt5desk import order_door as _door
@@ -117,7 +117,7 @@ MAGIC = 341953
 #: one ledger row per attempt, an in-doubt send never repeated blind, and an exception logged
 #: and propagated, never swallowed. Bound here, once, so no call site can bypass it by
 #: accident; `log` is late-bound so the door writes to this gateway's own log.
-mt5 = _door.guard(_mt5_venue, caller="gateway", log=lambda m: log(m))
+mt5 = _door.guard(mt5, caller="gateway", log=lambda m: log(m))
 
 #: The longest order comment THIS terminal accepts. MEASURED, not documented.
 #:
