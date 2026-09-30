@@ -1,0 +1,562 @@
+# MT5_GLOBAL_MINING_V1 source roster.
+#
+# One row per source. Cursor state is NOT kept here (this file is code); each source's durable
+# cursor lives at desks/mt5/data/mining/cursors/<id>.json, written after every record.
+#
+#   fetcher   one of: html_listing rss reddit_json github_search telegram_preview json_api
+#             search_route page_snapshot external_feed   (libs/mining/acquirer.py FETCHERS)
+#   kind      code | text | mechanics   (which extractor reads the records)
+#   auth      none | optional | key | login. key/login without `auth_env` set on the box is
+#             BLOCKED_AUTH every run (recorded), and the keyless path beside it still runs.
+#   mode      primary, or fallback: runs only while the owning lane's feed (`owner_feed`) is
+#             absent, so a source another lane already fetches is never fetched twice.
+#   immutable_time  the source's own timestamp can be used as availability (it cannot be
+#             silently edited). Anything editable is available from acquisition only.
+#   feeds_to  consumers beyond the gauntlet docket (mechanics feed for risk and cost models).
+#
+# A source is ACTIVE only with a consumer receipt: >= 1 of its cells reached EVALUATED in the
+# last 30 days. Everything else is COLD, whatever it fetched.
+#
+# Another lane's source table joins this roster by being listed under `external_rosters`;
+# its rows are read as they are (id/source_id, cadence in minutes/seconds/hours/named,
+# auth, licence/license, region, language/lang). First definition of an id wins.
+
+external_rosters:
+  - desks/mt5/data/source_rosters/*.json
+  - desks/mt5/data/source_rosters/*.jsonl
+  - desks/mt5/data/source_rosters/*.yaml
+
+sources:
+  # ============================================================ PRIORITY 1: MT5 native
+  - id: mql5_codebase_en
+    name: "MQL5 CodeBase (English), experts/indicators/scripts/libraries, full index walk"
+    priority: 1
+    kind: code
+    fetcher: html_listing
+    cadence_minutes: 60
+    region: global
+    language: en
+    licence: "MQL5.com terms; concept only, code never copied"
+    owner: breadth/cell_emitter
+    mode: fallback
+    owner_feed: desks/mt5/data/intelligence/cell_emitter/**/*mql5*
+    config:
+      listing:
+        - {url: "https://www.mql5.com/en/code/mt5/experts/page{page}", page1: "https://www.mql5.com/en/code/mt5/experts"}
+        - {url: "https://www.mql5.com/en/code/mt5/indicators/page{page}", page1: "https://www.mql5.com/en/code/mt5/indicators"}
+        - {url: "https://www.mql5.com/en/code/mt5/scripts/page{page}", page1: "https://www.mql5.com/en/code/mt5/scripts"}
+        - {url: "https://www.mql5.com/en/code/mt5/libraries/page{page}", page1: "https://www.mql5.com/en/code/mt5/libraries"}
+      item_regex: "/en/code/\\d+$"
+      pages_per_run: 3
+
+  - id: mql5_codebase_ru
+    name: "MQL5 CodeBase (Russian), full index walk"
+    priority: 1
+    kind: code
+    fetcher: html_listing
+    cadence_minutes: 120
+    region: cis
+    language: ru
+    owner: breadth/cell_emitter
+    mode: fallback
+    owner_feed: desks/mt5/data/intelligence/cell_emitter/**/*mql5*
+    config:
+      listing:
+        - {url: "https://www.mql5.com/ru/code/mt5/experts/page{page}", page1: "https://www.mql5.com/ru/code/mt5/experts"}
+        - {url: "https://www.mql5.com/ru/code/mt5/indicators/page{page}", page1: "https://www.mql5.com/ru/code/mt5/indicators"}
+      item_regex: "/ru/code/\\d+$"
+      pages_per_run: 2
+
+  - id: mql5_market
+    name: "MQL5 Market products (listing, description, what's-new changelog, reviews), long tail included"
+    priority: 1
+    kind: text
+    fetcher: html_listing
+    cadence_minutes: 180
+    language: en
+    config:
+      listing:
+        - {url: "https://www.mql5.com/en/market/mt5/expert/page{page}", page1: "https://www.mql5.com/en/market/mt5/expert"}
+        - {url: "https://www.mql5.com/en/market/mt5/indicator/page{page}", page1: "https://www.mql5.com/en/market/mt5/indicator"}
+      item_regex: "/en/market/product/[\\w-]+$"
+      item_subpages: ["", "/comments"]
+      pages_per_run: 2
+
+  - id: mql5_signals
+    name: "MQL5 Signals, public MT5 signal providers"
+    priority: 1
+    kind: text
+    fetcher: html_listing
+    cadence_minutes: 360
+    language: en
+    config:
+      listing:
+        - {url: "https://www.mql5.com/en/signals/mt5/list/page{page}", page1: "https://www.mql5.com/en/signals/mt5/list"}
+      item_regex: "/en/signals/\\d+$"
+      pages_per_run: 2
+
+  - id: mql5_freelance
+    name: "MQL5 Freelance public job posts (specifications are rule statements)"
+    priority: 1
+    kind: text
+    fetcher: html_listing
+    cadence_minutes: 120
+    language: en
+    config:
+      listing:
+        - {url: "https://www.mql5.com/en/job/page{page}", page1: "https://www.mql5.com/en/job"}
+      item_regex: "/en/job/\\d+$"
+      pages_per_run: 2
+
+  - id: mql5_forum_en
+    name: "MQL5 Forum (English)"
+    priority: 1
+    kind: text
+    fetcher: html_listing
+    cadence_minutes: 60
+    language: en
+    config:
+      listing:
+        - {url: "https://www.mql5.com/en/forum/page{page}", page1: "https://www.mql5.com/en/forum"}
+      item_regex: "/en/forum/\\d+$"
+      pages_per_run: 3
+
+  - id: mql5_forum_ru
+    name: "MQL5 Forum (Russian), the deepest technical MT5 discussion"
+    priority: 1
+    kind: text
+    fetcher: html_listing
+    cadence_minutes: 60
+    region: cis
+    language: ru
+    config:
+      listing:
+        - {url: "https://www.mql5.com/ru/forum/page{page}", page1: "https://www.mql5.com/ru/forum"}
+      item_regex: "/ru/forum/\\d+$"
+      pages_per_run: 3
+
+  - id: mql5_articles
+    name: "MQL5 Articles (en), strategy write-ups with code"
+    priority: 1
+    kind: code
+    fetcher: html_listing
+    cadence_minutes: 360
+    language: en
+    config:
+      listing:
+        - {url: "https://www.mql5.com/en/articles/page{page}", page1: "https://www.mql5.com/en/articles"}
+      item_regex: "/en/articles/\\d+$"
+      pages_per_run: 2
+
+  - id: mql5_codebase_mt4
+    name: "MQL5 CodeBase MT4 experts (same indicator grammar, older and larger corpus)"
+    priority: 1
+    kind: code
+    fetcher: html_listing
+    cadence_minutes: 180
+    owner: breadth/cell_emitter
+    mode: fallback
+    owner_feed: desks/mt5/data/intelligence/cell_emitter/**/*mql5*
+    config:
+      listing:
+        - {url: "https://www.mql5.com/en/code/mt4/experts/page{page}", page1: "https://www.mql5.com/en/code/mt4/experts"}
+      item_regex: "/en/code/\\d+$"
+      pages_per_run: 3
+
+  # ============================================================ PRIORITY 2: practitioners
+  - id: forexfactory_trading_systems
+    name: "Forex Factory forum, Trading Systems and Platform Tech"
+    priority: 2
+    kind: text
+    fetcher: html_listing
+    cadence_minutes: 60
+    config:
+      listing:
+        - "https://www.forexfactory.com/forum/71-trading-systems"
+        - "https://www.forexfactory.com/forum/69-platform-tech"
+      item_regex: "/thread/\\d+"
+
+  - id: reddit_practitioners
+    name: "Reddit r/algotrading r/mt5 r/Forex r/quant r/Daytrading r/metatrader"
+    priority: 2
+    kind: text
+    fetcher: reddit_json
+    cadence_minutes: 60
+    immutable_time: true
+    config:
+      subs: [algotrading, mt5, Forex, quant, Daytrading, metatrader, Forexstrategy, FuturesTrading]
+
+  - id: telegram_public
+    name: "Public Telegram channels (MT5/EA/algo; RU, AR, PT-BR, CN-adjacent), self-extending"
+    priority: 2
+    kind: text
+    fetcher: telegram_preview
+    cadence_minutes: 60
+    config:
+      channels: []   # seeded by telegram_discovery below; add known channels here
+
+  - id: telegram_discovery
+    name: "Search route that discovers public Telegram MT5 channels"
+    priority: 2
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 1440
+    config:
+      queries:
+        - "site:t.me MT5 expert advisor"
+        - "site:t.me советник MT5"
+        - "site:t.me robô MT5"
+        - "site:t.me توصيات MT5 اكسبيرت"
+        - "site:t.me MT5 EA 外汇"
+      discover_regex: "t\\.me/(?:s/)?([A-Za-z][\\w]{4,31})"
+      discover_into: telegram_public
+
+  - id: x_public
+    name: "X (Twitter) MT5 hashtags, EA sellers, algo accounts (API)"
+    priority: 2
+    kind: text
+    fetcher: json_api
+    auth: key
+    auth_env: X_BEARER_TOKEN
+    cadence_minutes: 60
+    config:
+      url: "https://api.x.com/2/tweets/search/recent?max_results=100&query={q}"
+      queries: ["#MT5 OR #MQL5 OR #ExpertAdvisor", "MT5 EA -is:retweet"]
+      items_path: data
+      fields: {uri: id, title: id, body: text, time: created_at}
+      uri_template: "https://x.com/i/status/{uri}"
+
+  - id: x_search_route
+    name: "X, keyless path (search-engine snippets)"
+    priority: 2
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 360
+    config:
+      queries: ["site:x.com MT5 EA strategy", "site:x.com MQL5 expert advisor backtest"]
+
+  - id: discord_public
+    name: "Discord public quant/algo servers (needs an account; keyless path is invite discovery)"
+    priority: 2
+    kind: text
+    fetcher: json_api
+    auth: login
+    auth_env: DISCORD_USER_TOKEN
+    cadence_minutes: 360
+    config: {url: "", items_path: ""}
+
+  - id: discord_discovery
+    name: "Discord invite discovery (keyless)"
+    priority: 2
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 1440
+    config:
+      queries: ["discord.gg MT5 algo trading", "discord.gg expert advisor mql5"]
+
+  - id: tradingview_scripts
+    name: "TradingView public Pine scripts (strategies and indicators)"
+    priority: 2
+    kind: code
+    fetcher: html_listing
+    cadence_minutes: 180
+    config:
+      listing:
+        - {url: "https://www.tradingview.com/scripts/page-{page}/?script_type=strategies", page1: "https://www.tradingview.com/scripts/?script_type=strategies"}
+      item_regex: "/script/[A-Za-z0-9]+-"
+      pages_per_run: 2
+
+  - id: babypips_forum
+    name: "BabyPips forum (Discourse RSS)"
+    priority: 2
+    kind: text
+    fetcher: rss
+    cadence_minutes: 120
+    config:
+      feeds: ["https://forums.babypips.com/latest.rss", "https://forums.babypips.com/c/trading-systems/l/latest.rss"]
+
+  - id: stackexchange_quant
+    name: "Quantitative Finance StackExchange (forex, backtesting, execution tags)"
+    priority: 2
+    kind: text
+    fetcher: json_api
+    cadence_minutes: 360
+    immutable_time: true
+    config:
+      url: "https://api.stackexchange.com/2.3/questions?order=desc&sort=creation&site=quant&filter=withbody&pagesize=50&page={page}&tagged={q}"
+      queries: ["forex", "backtesting", "trading-strategy", "high-frequency"]
+      items_path: items
+      fields: {uri: link, title: title, body: body, time: creation_date}
+
+  - id: youtube_route
+    name: "YouTube MT5 strategy videos (search route; transcripts via deep_forest)"
+    priority: 2
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 720
+    config:
+      queries: ["site:youtube.com MT5 EA strategy backtest", "site:youtube.com советник MT5 стратегия", "site:youtube.com MT5 自動売買 ロジック"]
+
+  - id: arxiv_qfin
+    name: "arXiv q-fin trading/microstructure papers (Atom API)"
+    priority: 2
+    kind: text
+    fetcher: rss
+    cadence_minutes: 1440
+    immutable_time: true
+    config:
+      feeds:
+        - "https://export.arxiv.org/api/query?search_query=cat:q-fin.TR+AND+(abs:forex+OR+abs:currency+OR+abs:gold)&sortBy=submittedDate&sortOrder=descending&max_results=50"
+        - "https://export.arxiv.org/api/query?search_query=cat:q-fin.TR+AND+abs:intraday&sortBy=submittedDate&sortOrder=descending&max_results=50"
+
+  - id: regulator_filings_route
+    name: "Regulator actions/filings naming MT5-based systems or brokers (SEC, CFTC, FCA, ASIC, CySEC)"
+    priority: 5
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 1440
+    feeds_to: [risk_model]
+    config:
+      queries: ["site:sec.gov MetaTrader", "site:cftc.gov MetaTrader", "site:fca.org.uk MetaTrader", "site:asic.gov.au MetaTrader 5", "site:cysec.gov.cy MetaTrader"]
+
+  # ============================================================ PRIORITY 3: regional
+  - id: wechat_sogou
+    name: "WeChat public articles via Sogou (微信/搜狗)"
+    priority: 3
+    kind: text
+    fetcher: html_listing
+    cadence_minutes: 180
+    region: cn
+    language: zh
+    config:
+      listing:
+        - "https://weixin.sogou.com/weixin?type=2&query=MT5+%E7%AD%96%E7%95%A5"
+        - "https://weixin.sogou.com/weixin?type=2&query=EA+%E5%A4%96%E6%B1%87+%E7%AD%96%E7%95%A5"
+      item_regex: "/link\\?url="
+      listing_only: true
+
+  - id: zhihu_route
+    name: "Zhihu (知乎) via search route (direct search needs login)"
+    priority: 3
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 360
+    region: cn
+    language: zh
+    config:
+      queries: ["site:zhuanlan.zhihu.com MT5 策略", "site:zhihu.com EA 外汇 回测"]
+
+  - id: xueqiu
+    name: "Xueqiu (雪球), behind a WAF: login cookie path"
+    priority: 3
+    kind: text
+    fetcher: json_api
+    auth: login
+    auth_env: XUEQIU_COOKIE
+    cadence_minutes: 360
+    region: cn
+    language: zh
+    config: {url: "", items_path: ""}
+
+  - id: xueqiu_route
+    name: "Xueqiu keyless path (search-engine snippets)"
+    priority: 3
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 720
+    region: cn
+    language: zh
+    config:
+      queries: ["site:xueqiu.com 外汇 EA 策略", "site:xueqiu.com 黄金 日内 策略"]
+
+  - id: ru_forums_route
+    name: "Russian/CIS MT5 forums (smart-lab, forexsystems, mql5 ru blogs) via search route"
+    priority: 3
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 360
+    region: cis
+    language: ru
+    config:
+      queries:
+        - "site:smart-lab.ru советник MT5"
+        - "site:forexsystems.biz советник стратегия"
+        - "site:mql5.com/ru/blogs стратегия советник"
+        - "советник MT5 стратегия бэктест форум"
+
+  - id: note_jp
+    name: "note.com Japanese algo/EA posts (public search API)"
+    priority: 3
+    kind: text
+    fetcher: json_api
+    cadence_minutes: 360
+    region: jp
+    language: ja
+    config:
+      url: "https://note.com/api/v3/searches?context=note&q={q}&size=20&start=0"
+      queries: ["MT5 EA", "自動売買 MT5", "FX EA ロジック"]
+      items_path: data.notes.contents
+      fields: {uri: noteUrl, title: name, body: body, time: publishAt}
+
+  - id: jp_5ch_route
+    name: "Japanese 5ch/2ch market boards and X-JP via search route"
+    priority: 3
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 720
+    region: jp
+    language: ja
+    config:
+      queries: ["site:5ch.net MT5 EA", "site:x.com 自動売買 MT5 ロジック", "Axiory MT5 約定 スリッページ"]
+
+  - id: kr_naver_route
+    name: "Korean Naver cafes/blogs via search route (cafe bodies need login)"
+    priority: 3
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 720
+    region: kr
+    language: ko
+    config:
+      queries: ["site:cafe.naver.com MT5 EA", "site:blog.naver.com MT5 자동매매 전략"]
+
+  - id: kakao_public
+    name: "Kakao public channels (login only)"
+    priority: 3
+    kind: text
+    fetcher: json_api
+    auth: login
+    auth_env: KAKAO_TOKEN
+    cadence_minutes: 720
+    region: kr
+    language: ko
+    config: {url: "", items_path: ""}
+
+  # ============================================================ PRIORITY 4: code archaeology
+  - id: github_mt5_repos
+    name: "GitHub repositories on mt5/mql5/metatrader5/expert-advisor topics, with READMEs"
+    priority: 4
+    kind: code
+    fetcher: github_search
+    auth: optional
+    auth_env: GITHUB_TOKEN
+    cadence_minutes: 60
+    immutable_time: false
+    owner: breadth/cell_emitter
+    mode: fallback
+    owner_feed: desks/mt5/data/intelligence/cell_emitter/**/*github*
+    config:
+      search: repositories
+      queries: ["topic:mt5", "topic:mql5", "topic:metatrader5", "topic:expert-advisor", "mql5 in:name,description"]
+
+  - id: github_mt5_issues
+    name: "GitHub issues, discussions and PRs on MT5 repos (failure knowledge)"
+    priority: 4
+    kind: text
+    fetcher: github_search
+    auth: optional
+    auth_env: GITHUB_TOKEN
+    cadence_minutes: 120
+    config:
+      search: issues
+      readme: false
+      queries: ["metatrader5 in:title,body", "mql5 in:title,body", "MT5 expert advisor in:title,body"]
+
+  - id: gitee_mt5
+    name: "Gitee MT5 projects"
+    priority: 4
+    kind: code
+    fetcher: json_api
+    cadence_minutes: 720
+    region: cn
+    language: zh
+    config:
+      url: "https://gitee.com/api/v5/search/repositories?q={q}&page={page}&per_page=50"
+      queries: ["mt5", "mql5", "metatrader"]
+      items_path: ""
+      fields: {uri: html_url, title: full_name, body: description, time: created_at}
+
+  - id: gitlab_mt5
+    name: "GitLab MT5 projects"
+    priority: 4
+    kind: code
+    fetcher: json_api
+    cadence_minutes: 720
+    config:
+      url: "https://gitlab.com/api/v4/projects?search={q}&order_by=last_activity_at&per_page=50&page={page}"
+      queries: ["mql5", "metatrader5", "expert advisor"]
+      items_path: ""
+      fields: {uri: web_url, title: path_with_namespace, body: description, time: created_at}
+
+  # ============================================================ PRIORITY 5: broker mechanics
+  - id: broker_specs
+    name: "Broker contract specs, swaps, execution policies (the desk's Fusion first)"
+    priority: 5
+    kind: mechanics
+    fetcher: page_snapshot
+    cadence_minutes: 1440
+    feeds_to: [cost_model, risk_model]
+    config:
+      pages:
+        - {url: "https://fusionmarkets.com/en/trading-conditions/forex", label: "fusion forex"}
+        - {url: "https://fusionmarkets.com/en/trading-conditions/metals", label: "fusion metals"}
+        - {url: "https://fusionmarkets.com/en/trading-conditions/indices", label: "fusion indices"}
+        - {url: "https://fusionmarkets.com/en/trading/order-execution-policy", label: "fusion execution"}
+        - {url: "https://www.icmarkets.com/global/en/trading-markets/forex", label: "icmarkets forex"}
+        - {url: "https://pepperstone.com/en/trading/trading-hours/", label: "pepperstone hours"}
+        - {url: "https://www.exness.com/trading/forex/", label: "exness forex"}
+        - {url: "https://www.tickmill.com/forex", label: "tickmill forex"}
+        - {url: "https://www.fpmarkets.com/forex-trading/", label: "fpmarkets forex"}
+        - {url: "https://www.axiory.com/jp/trading-products/forex", label: "axiory jp"}
+        - {url: "https://traders-trust.com/trading/forex", label: "traders trust"}
+
+  - id: broker_outages
+    name: "Broker outages, requotes, execution defects (from forums, not docs)"
+    priority: 5
+    kind: text
+    fetcher: reddit_json
+    cadence_minutes: 180
+    immutable_time: true
+    feeds_to: [risk_model]
+    config:
+      searches: ["mt5 server down", "mt5 requote", "broker outage mt5", "mt5 slippage news", "fusion markets outage"]
+
+  - id: broker_outages_route
+    name: "Broker outage postmortems via search route"
+    priority: 5
+    kind: text
+    fetcher: search_route
+    cadence_minutes: 720
+    feeds_to: [risk_model]
+    config:
+      queries: ["MT5 server outage postmortem broker", "site:forexfactory.com MT5 server down requote"]
+
+  - id: prop_rules
+    name: "Prop firm evaluation rules (E8 first; FTMO, The5ers, TopStep, FundedNext), change log by vintage"
+    priority: 5
+    kind: mechanics
+    fetcher: page_snapshot
+    cadence_minutes: 720
+    feeds_to: [risk_model, e8_rules]
+    config:
+      pages:
+        - {url: "https://e8markets.com/faq", label: "e8 faq"}
+        - {url: "https://e8markets.com/e8-one", label: "e8 one"}
+        - {url: "https://ftmo.com/en/trading-objectives/", label: "ftmo objectives"}
+        - {url: "https://ftmo.com/en/faq/", label: "ftmo faq"}
+        - {url: "https://the5ers.com/high-stakes/", label: "the5ers high stakes"}
+        - {url: "https://www.topstep.com/our-rules/", label: "topstep rules"}
+        - {url: "https://fundednext.com/faq", label: "fundednext faq"}
+
+  # ============================================================ existing lanes, read not refetched
+  - id: deep_forest_claims
+    name: "deep_forest_miner claims (502 grounds, 26 languages), compiled deterministically here"
+    priority: 2
+    kind: text
+    fetcher: external_feed
+    cadence_minutes: 60
+    handoff_deepening: false     # deep_forest already queues these for the LLM seat
+    config:
+      root: desks/mt5/data
+      paths: [deep_forest_claims.jsonl]
+      fields: {uri: url, body: claim, title: ground, time: published_time, language: lang}

@@ -396,3 +396,7 @@ data/alpha_registry.sqlite-shm
 # tree in one parse. Machine-rewritten on every registry build, so it is a cache by this file's
 # own definition above and belongs nowhere near git.
 desks/mt5/data/import_stems_cache.json
+# MT5_GLOBAL_MINING_V1 working state (libs/mining): the PIT store/registry database, per-source
+# cursors and sealed preregistrations live on the box; the dated metrics under
+# desks/mt5/reports/mining/ are the published artifact.
+desks/mt5/data/mining/
