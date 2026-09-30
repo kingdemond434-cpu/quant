@@ -72,13 +72,16 @@ def test_screen_r_equals_engine_r_on_the_gauntlets_own_build_path() -> None:
     screen_r = P.R1[8][vi, kept]
     engine_r = np.array([t.r_multiple for t in res.trades[:len(kept)]])
     assert np.allclose(screen_r, engine_r, rtol=0, atol=1e-9)
-    # and the daily series is the gauntlet's grouping by entry date
+    # and the daily series is the sealed judge's own (`external_gauntlet.daily_series`, copied
+    # verbatim: a dict keyed by entry date, so the LAST trade of a day is the day's value)
+    trades = res.trades[:len(kept)]
+    theirs = pd.Series({pd.Timestamp(t.entry_time).date(): t.r_multiple for t in trades},
+                       dtype=float).groupby(level=0).sum()
     days = P.entry_day[kept]
-    starts = np.flatnonzero(np.r_[True, days[1:] != days[:-1]])
-    ours = np.add.reduceat(screen_r, starts)
-    theirs = pd.Series({pd.Timestamp(t.entry_time).date(): t.r_multiple
-                        for t in res.trades[:len(kept)]}).groupby(level=0).sum()
-    assert np.allclose(ours, theirs.to_numpy(), atol=1e-9)
+    st = MS.cell_stats(P.R1[8], P.R3[8], kept, days)
+    assert st is not None and int(st["n_days"][0]) == len(theirs)
+    assert st["mean"][vi] == pytest.approx(float(theirs.mean()), abs=1e-9)
+    assert len(theirs) < len(trades)            # the case where sum and last-wins differ
 
 
 def test_swap_nights_match_the_engine() -> None:

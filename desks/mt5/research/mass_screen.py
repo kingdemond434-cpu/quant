@@ -382,21 +382,26 @@ def cell_days(P: Prepared, kept_full: np.ndarray, h: int) -> tuple[np.ndarray, i
 
 def cell_stats(R1: np.ndarray, R3: np.ndarray, kept: np.ndarray, days: np.ndarray
                ) -> dict[str, np.ndarray] | None:
-    """Per-variant daily-series statistics over the kept fires (None when < MIN_DAYS days)."""
+    """Per-variant daily-series statistics over the kept fires (None when < MIN_DAYS days).
+
+    THE DAY'S VALUE IS ITS LAST TRADE'S R, NOT THE SUM, because that is what the sealed judge
+    computes: `external_gauntlet.daily_series` builds `pd.Series({entry_date: r for t in trades})`,
+    a dict keyed by date, so every earlier trade on the same entry day is overwritten before its
+    `.groupby(level=0).sum()` runs. The screen measures what the judge will measure (pinned by
+    test_screen_r_equals_engine_r_on_the_gauntlets_own_build_path); the discrepancy itself is a
+    defect in the sealed file, reported rather than edited.
+    """
     if kept.size == 0:
         return None
-    starts = np.flatnonzero(np.r_[True, days[1:] != days[:-1]])
-    D = starts.size
+    last = np.flatnonzero(np.r_[days[1:] != days[:-1], True])
+    D = last.size
     if D < MIN_DAYS:
         return {"n_days": np.full(R1.shape[0], D)}
-    x1 = R1[:, kept]
-    x3 = R3[:, kept]
-    ok = np.isfinite(x1).all(axis=0)
-    if not ok.all():
-        x1 = np.where(np.isfinite(x1), x1, 0.0)
-        x3 = np.where(np.isfinite(x3), x3, 0.0)
-    s1 = np.add.reduceat(x1, starts, axis=1)
-    s3 = np.add.reduceat(x3, starts, axis=1)
+    s1 = R1[:, kept[last]]
+    s3 = R3[:, kept[last]]
+    if not np.isfinite(s1).all():
+        s1 = np.where(np.isfinite(s1), s1, 0.0)
+        s3 = np.where(np.isfinite(s3), s3, 0.0)
     mean = s1.mean(axis=1)
     sd = s1.std(axis=1, ddof=1)
     with np.errstate(divide="ignore", invalid="ignore"):
