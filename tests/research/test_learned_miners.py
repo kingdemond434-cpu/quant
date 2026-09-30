@@ -16,6 +16,7 @@ What each test pins, in the order a skeptic would ask for it:
 from __future__ import annotations
 
 import inspect
+import json
 import sys
 from pathlib import Path
 
@@ -296,3 +297,20 @@ def test_the_forecast_axis_binds_as_a_causal_field(tmp_path: Path) -> None:
     assert intel["models"]["gnn"]["allocation_eligible"] is False
     assert intel["models"]["gnn"]["contract_verdict"] == "UNMEASURED"
     assert set(intel["instruments"]) == set(names)
+
+
+def test_a_null_run_is_charged_to_the_lifetime_ledger(tmp_path, monkeypatch):
+    """A run that donated nothing still ran its tests: the lifetime ledger must count them."""
+    from libs.research import experiment_ledger as EL
+    desk = tmp_path / "desks" / "mt5"
+    (desk / "data").mkdir(parents=True)
+    rows = [{"trial_id": f"EURUSD:g{i}", "family": "learned_miners_gnn:gnn_propagation",
+             "donated": False} for i in range(5)]
+    rows += [{"trial_id": "GBPUSD:g0", "family": "learned_miners_gnn:gnn_propagation",
+              "donated": True}]
+    (desk / "data" / "learned_miners_trials.jsonl").write_text(
+        "\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    monkeypatch.setattr(EL, "DESK", desk)
+    total, by_fam = EL._proposer_counts()
+    assert total == 5
+    assert by_fam == {"gnn_propagation": 5}

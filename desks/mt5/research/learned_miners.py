@@ -464,7 +464,8 @@ def run(budget_s: float = BUDGET_S, models: Sequence[str] = ("gnn", "attention")
         total_proposed += len(cands)
         led = _append_trials([{"generated_utc": out["generated_at"], "source": res["source"],
                                "trial_id": t.trial_id, "family": t.family,
-                               "descriptors": dict(t.descriptors)} for t in trials],
+                               "descriptors": dict(t.descriptors),
+                               "donated": bool(donate and cands)} for t in trials],
                              trials_path or TRIALS)
         res["trial_ledger_error"] = led
         out["miners"][model] = res
@@ -507,6 +508,32 @@ def _shuffled(panel: LP.Panel, seed: int = 11) -> LP.Panel:
     return LP.Panel(panel.dates, panel.symbols, ret, panel.cost)
 
 
+
+def _cell_screen(bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any],
+                 deflate_t: Any) -> dict[str, Any]:
+    """EVERY (config, symbol, threshold) test the miner charges, committed, not only the best.
+
+    The claim "best of N, deflated to t" is only checkable if all N rows are in the artifact."""
+    out: dict[str, Any] = {}
+    keep = ("cell", "config", "symbol", "entry_z", "t_gross", "t_deflated_sweep",
+            "t_deflated_lifetime", "n_independent", "net_per_trade", "clears_cost", "proposed")
+    for model in MINERS:
+        res = mine(model, bars, meta, deadline=time.monotonic() + 3600.0)
+        rows = [{k: r.get(k) for k in keep} for r in res["rows"]]
+        rows.sort(key=lambda r: -abs(float(r.get("t_gross") or 0.0)))
+        best = rows[0] if rows else None
+        n = int(res["tests_attempted"])
+        out[model] = {
+            "tests_attempted": n, "tests_screened": len(rows),
+            "not_screened": n - len(rows), "effective_trials": res["effective_trials"],
+            "best": best,
+            "best_t_deflated_by_attempted": (round(float(deflate_t(float(best["t_gross"]), n)), 3)
+                                             if best and best.get("t_gross") is not None
+                                             else None),
+            "proposed": sum(1 for r in rows if r.get("proposed")),
+            "rows": rows}
+    return out
+
 def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dict[str, Any]:
     """Walk-forward OOS metrics for both miners against their baselines on the bars in git."""
     from research.multiplicity import deflate_t
@@ -524,6 +551,7 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
         timings[name] = round(time.monotonic() - t0, 2)
         results[name] = {"model": model, "config": dict(cfg), **LP.evaluate(p, panel, des)}
 
+    cell_screen = _cell_screen(bars, meta, deflate_t)
     score("zero", "zero", {})
     score("naive_last", "naive_last", {})
     score("ridge_own_lags", "ridge", {})
@@ -608,6 +636,7 @@ def measure_contract(base: Path = GIT_BARS, out_path: Path | None = None) -> dic
             **{k: control.get(k) for k in ("ic_mean", "ic_t", "rank_ic_t", "hit_rate",
                                            "ls_sharpe_net")}},
         "all_models": results,
+        "cell_screen": cell_screen,
         "fit_seconds": timings,
         "trials_charged": {"gnn_configs": len(LP.GNN_GRID),
                            "attention_configs": len(LP.ATTENTION_GRID),
