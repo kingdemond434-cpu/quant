@@ -340,7 +340,7 @@ def register_dataset(handoff: dict[str, Any], now: datetime, path: Path | None =
     body = json.dumps({DATASET_KEY: registry_row(handoff, now.date().isoformat())}, indent=2)
     inner = "\n".join("  " + ln for ln in body.splitlines()[1:-1])
     stripped = text.rstrip()
-    cut = stripped.rstrip("}").rstrip()        # the file ends `...}\n  }\n}`: datasets, then root
+    cut = stripped[:-1].rstrip()                # drop the root's `}`; datasets' `}` is next
     if not stripped.endswith("}") or not cut.endswith("}"):
         return {"status": UNMEASURED, "why": f"{p.name} does not end with the datasets object"}
     head = cut[:-1].rstrip()
