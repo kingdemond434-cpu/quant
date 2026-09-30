@@ -337,6 +337,9 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # first census measured 63,110 rows waiting and a 654 h oldest row, and a fence tuned to pass
     # on today's backlog would pin that backlog in place (L1.43).
     ("check_no_queues.py", ()),
+    # A LEG TAKEN OFF EVERY PLAN RUNS ONLY IF ITS OWN TASK EXISTS AND IS ARMED. `OWN_CLOCK_LEGS`
+    # in hourly_cycle.py names them; this asks the Task Scheduler, so it is state and box-only.
+    ("check_own_clock_legs.py", ()),
     ("check_universe_integrity.py", ()),       # bars: corrupt is quarantined, stale named
     ("check_external_federation.py", ("--require-state",)),   # LAWS 5h -- the live half
     # LAWS 5h / L1.32 -- the SANDBOX half: no runnable federated system goes a rotation window

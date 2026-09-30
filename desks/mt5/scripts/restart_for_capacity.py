@@ -63,7 +63,8 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-ROOT = Path(r"C:\opt\quant")
+#: The repo this file sits in (C:\opt\quant on the trading box), never a hard-coded copy of it.
+ROOT = Path(__file__).resolve().parents[3]
 DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "CAPACITY_RESTART.json"
 COMMON_INI = Path(r"C:\Users\Administrator\AppData\Roaming\MetaQuotes\Terminal"

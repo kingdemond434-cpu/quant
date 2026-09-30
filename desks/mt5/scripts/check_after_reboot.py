@@ -44,6 +44,8 @@ BASE = Path(__file__).resolve().parents[1]
 REPORTS = BASE / "reports"
 BASELINE = REPORTS / "REBOOT_BASELINE.json"
 VERDICT = REPORTS / "REBOOT_VERIFY.json"
+#: The artifact the component registry reads as this organ's proof of running.
+REPORT = VERDICT
 
 #: Long-lived processes identified by a fragment of their command line. A resident that is
 #: restarted by its own keep-alive trigger still has to APPEAR, so absence is reportable either
