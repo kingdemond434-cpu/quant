@@ -245,23 +245,33 @@ def fetch_series(row: Mapping[str, Any], now: datetime, fetch: Fetch) -> tuple[d
 # ------------------------------------------------------------------------ point-in-time ----
 def merge_obs(paths: Paths, sid: str, pts: Mapping[str, float], now: datetime) -> list[dict]:
     """First value seen per day is kept for ever; a different later value is a revision beside
-    it. Returns the lake rows, oldest first."""
+    it. Returns the lake rows, oldest first.
+
+    BACKFILL IS TIMED AT THE PUBLICATION RULE, EVERYTHING AFTER AT max(rule, first seen) -- the
+    keyed_sources convention. The series' FIRST successful fetch returns a year of history that
+    the door published day by day (Wikimedia's daily pageviews and GDELT's daily counts are
+    archival and final once out), so stamping all of it "now" would collapse a year onto one
+    instant and leave the conditioner nothing to measure; the rule (day end + LAG_H) is late by
+    construction. From the second fetch on, a day is never available before the desk saw it.
+    """
     p = paths.obs / f"{sid}.json"
     doc = _read(p, {}) or {}
     first: dict[str, Any] = doc.get("first") or {}
     revisions: list[dict[str, Any]] = doc.get("revisions") or []
     seen = now.isoformat(timespec="seconds")
+    backfill = not first
     for d, v in sorted(pts.items()):
         if d not in first:
-            first[d] = {"value": v, "first_seen_at": seen}
+            first[d] = {"value": v, "first_seen_at": seen, "backfill": backfill}
         elif float(first[d]["value"]) != float(v):
             revisions.append({"day": d, "value": v, "seen_at": seen})
     _atomic(p, {"first": first, "revisions": revisions[-2000:]})
     rows = []
     for d in sorted(first):
         day_end = datetime.fromisoformat(d).replace(tzinfo=UTC) + timedelta(days=1)
-        avail = max(day_end + timedelta(hours=LAG_H),
-                    datetime.fromisoformat(str(first[d]["first_seen_at"])))
+        rule = day_end + timedelta(hours=LAG_H)
+        avail = (rule if first[d].get("backfill")
+                 else max(rule, datetime.fromisoformat(str(first[d]["first_seen_at"]))))
         rows.append({"event_time": day_end.isoformat(timespec="seconds"),
                      "available_time": avail.isoformat(timespec="seconds"),
                      "value": float(first[d]["value"]), "source_id": sid,

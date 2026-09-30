@@ -257,6 +257,11 @@ def test_substitutes_publish_pit_lake_series_and_charge_every_minted_cell(
         assert av >= ev + timedelta(hours=A.LAG_H)
     assert all(r["event_time"][:10] <= NOW.strftime("%Y-%m-%d") for r in rows), \
         "today's partial day is never published"
+    # A day first seen on a LATER fetch is never available before the desk saw it.
+    later = NOW + timedelta(days=2)
+    fresh = A.merge_obs(paths, "attn_gdelt__xauusd", {"2026-09-30": 7.0, "2026-10-01": 9.0}, later)
+    new_row = next(r for r in fresh if r["event_time"].startswith("2026-10-02"))
+    assert datetime.fromisoformat(new_row["available_time"]) >= later
     # The conditioner family can load what was published.
     from mt5desk.family_exogenous_conditioner import conditioner
     s = conditioner("attn_wiki__en_Gold_as_an_investment", "value", "level_z",
