@@ -318,6 +318,31 @@ foreach ($ensure in @(
     }
 }
 
+# ------------------------------------------------------------ 2a. the box's release signing key
+# EVERY RELEASE.json THIS BOX EVER WROTE WAS UNSIGNED (measured 2026-09-30): `release.seal` signs
+# only when data/secrets/release_signing.key exists, and nothing ever created it. `ensure_key`
+# creates it ONCE and never overwrites; only its file name is logged, never its bytes. The key is
+# gitignored and never leaves this box. Best-effort: a failure here is logged, the seal goes on
+# (unsigned, with the reason written into the record).
+$keyOut = @(& $py @pyArgs -c "from libs.ops import release_signing as rs; created, msg = rs.ensure_key(); print(msg)" 2>&1 |
+            ForEach-Object { "$_" })
+Log ("signing key: exit {0}: {1}" -f $LASTEXITCODE, ($keyOut -join ' | '))
+
+# SIGN THE RELEASE THE BOX IS ALREADY RUNNING. The two "nothing to seal" exits below are the ones
+# every hour takes, so a record sealed before the key existed would stay unsigned until the next
+# code change. `release.ensure_signed` signs it in place ONLY when HEAD is accepted and the money
+# path and judge core on disk match the record; it never commits and never raises, and nothing
+# here lets its answer change the exit code.
+function Ensure-Signed {
+    try {
+        $out = @(& $py @pyArgs -c "from libs.ops import release; d = release.ensure_signed(); print(d.get('state'), '-', d.get('why'))" 2>&1 |
+                 ForEach-Object { "$_" })
+        Log ("ensure-signed: {0}" -f ($out -join ' | '))
+    } catch {
+        Log ("ensure-signed: failed to run: {0}" -f $_.Exception.Message)
+    }
+}
+
 # ------------------------------------------------------ 2. seal, only if HEAD is not sealed
 $head = (git rev-parse HEAD 2>$null | Out-String).Trim()
 if (-not $head) { Log "cannot read HEAD"; Done 2 "head-unreadable" }
@@ -327,6 +352,7 @@ if (Test-Path $release) {
 }
 if ($sealed -eq $head) {
     Log "HEAD $($head.Substring(0,12)) is already the sealed code; nothing to do"
+    Ensure-Signed
     Done 0 "already-sealed"
 }
 # A SEAL COMMIT OR A STATE-SYNC COMMIT ON TOP OF THE SEALED CODE IS THE SAME RELEASE. After the
@@ -338,6 +364,7 @@ if ($sealed) {
     $acc = & $py @pyArgs -c "import sys; from libs.ops import release; ok, why, _ = release.accepts(sys.argv[1], release.load() or {}); print('OK' if ok else 'NO'); print(why)" $head 2>$null
     if ("$acc" -match '^OK') {
         Log "HEAD $($head.Substring(0,12)) is the sealed release $($sealed.Substring(0,12)) plus seal/state commits only; nothing to seal"
+        Ensure-Signed
         Done 0 "accepts-nothing-to-seal"
     }
 }

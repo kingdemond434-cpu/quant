@@ -370,3 +370,87 @@ def test_seal_signs_with_the_box_key_and_pins_the_judge_core(
     assert rs.verify(release.load(repo), repo)[0]
     tampered = dict(doc, immutable_hash="0" * 16)
     assert not rs.verify(tampered, repo)[0]
+
+
+# ------------------------------------------------- ensure_signed: sign what the box runs, only that
+def test_ensure_signed_signs_an_unsigned_release_the_box_is_running(
+        repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A release sealed before the box held a key takes the 'already sealed' exit forever; the
+    unattended path now signs it in place -- never commits, only when HEAD and disk match."""
+    from libs.ops import release_signing as rs
+    monkeypatch.delenv("QUANT_RELEASE_SIGNING_KEY", raising=False)
+    release.seal(root=repo)
+    head = _git(repo, "rev-parse", "HEAD")
+    assert release.ensure_signed(root=repo)["state"] == "NO_KEY"
+
+    rs.ensure_key(repo)
+    out = release.ensure_signed(root=repo)
+    assert out["signed"] and out["state"] == "SIGNED"
+    assert rs.verify(release.load(repo), repo)[0]
+    assert _git(repo, "rev-parse", "HEAD") == head  # it never commits
+    assert release.ensure_signed(root=repo)["state"] == "VALID"  # idempotent
+
+    # A wrong signature (signed elsewhere / edited) is re-signed when everything still matches.
+    rec = release.load(repo)
+    rec["signature"] = "0" * 64
+    release._write(rec, repo)
+    assert release.ensure_signed(root=repo)["state"] == "SIGNED"
+
+
+def test_ensure_signed_fills_the_top_level_judge_hash_on_a_legacy_record(
+        repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.ops import release_signing as rs
+    monkeypatch.delenv("QUANT_RELEASE_SIGNING_KEY", raising=False)
+    rec = release.seal(root=repo)
+    rec.pop("immutable_hash")
+    release._write(rec, repo)
+    rs.ensure_key(repo)
+    assert release.ensure_signed(root=repo)["state"] == "SIGNED"
+    signed = release.load(repo)
+    assert signed["immutable_hash"] == signed["immutable_manifest"]["sha256_16"]
+    assert rs.verify(signed, repo)[0]
+
+
+@pytest.mark.parametrize("drift", ["code_commit", "money_path_on_disk", "judge_on_disk"])
+def test_ensure_signed_refuses_what_the_box_is_not_running(
+        repo: Path, monkeypatch: pytest.MonkeyPatch, drift: str) -> None:
+    from libs.ops import release_signing as rs
+    monkeypatch.delenv("QUANT_RELEASE_SIGNING_KEY", raising=False)
+    release.seal(root=repo)
+    rs.ensure_key(repo)
+    if drift == "code_commit":
+        _commit(repo, SIZING, "# unreleased\n", "unreleased code")
+    elif drift == "money_path_on_disk":
+        (repo / SIZING).write_text("# edited on the box\n", "utf-8")
+    else:
+        (repo / release.IMMUTABLE_MANIFEST).write_text('{"files": {"x": 1}}', "utf-8")
+    out = release.ensure_signed(root=repo)
+    assert not out["signed"] and out["state"] == "REFUSED"
+    assert rs.SIG_FIELD not in release.load(repo)
+
+
+def test_ensure_signed_never_raises(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.ops import release_signing as rs
+    monkeypatch.delenv("QUANT_RELEASE_SIGNING_KEY", raising=False)
+    release.seal(root=repo)
+    rs.ensure_key(repo)
+
+    def boom(*_a: object, **_k: object) -> None:
+        raise OSError("disk gone")
+    monkeypatch.setattr(release, "accepts", boom)
+    assert release.ensure_signed(root=repo)["state"] == "ERROR"
+    assert release.ensure_signed(root=repo / "nowhere")["state"] == "ABSENT"
+
+
+# ------------------------------------------ verify(): the canon moving is state, not a drift
+def test_verify_reports_canon_movement_without_failing(repo: Path) -> None:
+    release.seal(root=repo)
+    (repo / release.SURVIVORS).write_text('{"moved": true}\n', "utf-8")
+    v = release.verify(root=repo)
+    assert v["ok"], v
+    assert set(v["state_moved"]) == {"survivor_registry_hash", "canon_sha256"}
+    assert "survivor_registry_hash" not in v["diffs"] and "canon_sha256" not in v["diffs"]
+    # A money-path edit is still a drift alongside it.
+    (repo / SIZING).write_text("# edited\n", "utf-8")
+    v = release.verify(root=repo)
+    assert not v["ok"] and "money_path_hash" in v["diffs"] and v["state_moved"]
