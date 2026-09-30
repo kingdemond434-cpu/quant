@@ -350,3 +350,23 @@ def test_a_seal_with_no_prior_record_and_a_write_free_seal_both_name_nothing(rep
     (repo / release.RELEASE_REL).parent.mkdir(parents=True, exist_ok=True)
     (repo / release.RELEASE_REL).write_text("{ not json", "utf-8")
     assert release.seal(root=repo, write=False)["previous_code_sha"] is None
+
+
+# ------------------------------------------------------------------ the seal is signed (2026-09-30)
+def test_seal_signs_with_the_box_key_and_pins_the_judge_core(
+        repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every RELEASE.json the desk ever wrote was unsigned because seal() never called the signer,
+    and the signer read a top-level `immutable_hash` the record never carried."""
+    from libs.ops import release_signing as rs
+    monkeypatch.delenv("QUANT_RELEASE_SIGNING_KEY", raising=False)
+    unsigned = release.seal(root=repo)
+    assert rs.SIG_FIELD not in unsigned and "no signing key" in unsigned["signature_note"]
+    assert unsigned["immutable_hash"] == unsigned["immutable_manifest"]["sha256_16"]
+
+    rs.ensure_key(repo)
+    doc = release.seal(root=repo)
+    assert "signature_note" not in doc
+    assert rs.verify(doc, repo) == (True, "signature valid")
+    assert rs.verify(release.load(repo), repo)[0]
+    tampered = dict(doc, immutable_hash="0" * 16)
+    assert not rs.verify(tampered, repo)[0]

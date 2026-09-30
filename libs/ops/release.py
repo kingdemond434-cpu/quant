@@ -349,6 +349,9 @@ def _describe(root: Path, commit: str | None) -> dict[str, Any]:
         "dependency_hash": _dependency_hash(root, commit),
         "seal_rule": SEAL_RULE, "non_code": sorted(NON_CODE),
     }
+    # The signature covers `immutable_hash` by name (release_signing.SIGNED_FIELDS); the record
+    # only ever carried it nested, so every signature would have pinned "" for the judge core.
+    doc["immutable_hash"] = (doc["immutable_manifest"] or {}).get("sha256_16")
     # The stamped id keeps its 2026-09-04 formula so an unchanged tree keeps its release_id.
     doc["release_id"] = hashlib.sha256(json.dumps(
         {k: doc[k] for k in ("live_sha", "config_hash", "survivor_registry_hash",
@@ -416,9 +419,27 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
                tested_sha=head if tested else None, worktree_dirty=dirty_code,
                worktree_dirty_scope="release_code_paths",
                previous_code_sha=prev_sha, previous_release_id=prev_id)
+    doc = _sign(doc, r)
     if write:
         _write(doc, root)
     return doc
+
+
+# ------------------------------------------------------------------------------------ signing
+def _sign(doc: dict[str, Any], root: Path) -> dict[str, Any]:
+    """Stamp the record with this box's release key, or record plainly why it is unsigned.
+
+    MEASURED 2026-09-30: every RELEASE.json the desk ever wrote was UNSIGNED, because `seal()`
+    never called `release_signing` -- the audit's "unsigned release" flag was true by
+    construction, not by accident. A machine without the key (CI) still seals, unsigned, with
+    the reason written into the record; only a box that was given the key signs."""
+    from libs.ops import release_signing
+    out, why = release_signing.stamp(doc, root)
+    if release_signing.SIG_FIELD not in out:
+        out["signature_note"] = why
+    else:
+        out.pop("signature_note", None)
+    return out
 
 
 def load(root: Path | None = None) -> dict[str, Any] | None:
