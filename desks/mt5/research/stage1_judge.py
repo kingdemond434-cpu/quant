@@ -50,7 +50,9 @@ THE VERDICTS (every cell gets one, logged in `data/stage1/stage1_record.sqlite`)
                   1, restated by calling it).
   UNBUILDABLE     cause from the sealed builder's own `LAST_BUILD_FAILURE` or preflight
                   (MODIFIER_REFUSED, PARAM_SIGNATURE_MISMATCH, NO_CHART_BARS, FACTOR_BASKET_
-                  INCOMPLETE, UNTRADEABLE_SYMBOL, BANNED_FAMILY, ...), counted by family x cause.
+                  INCOMPLETE, UNTRADEABLE_SYMBOL, BANNED_FAMILY, ...), counted by family x cause;
+                  NEVER_FIRES_IN_SESSION for a session variant with zero signals over its whole
+                  history (or refused by `libs.research.family_firing` once that oracle lands).
 
 A REJECT IS NEVER A DELETION. The cell stays on the docket and in the record; it is re-screened
 when its chart grows by RESCREEN_GROWTH, its first bar moves, or its family's code changes
@@ -358,6 +360,13 @@ def evaluate_engine(spec: dict[str, Any]) -> dict[str, Any]:
     try:
         sigs = list(obj.get("sigs") or [])
         if not sigs:
+            if session_bound(params):
+                # A SESSION VARIANT OF A FAMILY THAT NEVER FIRES IN THAT SESSION (Tier S,
+                # 2026-09-30: 21% of the judge's UNKNOWN verdicts). Named, counted, never
+                # forwarded; the producers' remap (claude/session-variant-fix) removes the cause.
+                return {"verdict": REC.UNBUILDABLE, "cause": NEVER_FIRES_IN_SESSION,
+                        "reason": (f"0 signals over full history inside session "
+                                   f"{params.get('session')!r}")}
             return {"verdict": REC.REJECT, "reason": "R_NO_SIGNALS", "n_days_full": 0}
         last_day = frame.index[-1].normalize()
         ds1 = G._series_trim_partial(G.daily_series(obj["df"], sigs, obj["costs"]), last_day)
@@ -390,6 +399,41 @@ def evaluate_engine(spec: dict[str, Any]) -> dict[str, Any]:
         return out
     finally:
         obj["sigs"] = obj["df"] = None
+
+
+NEVER_FIRES_IN_SESSION = "NEVER_FIRES_IN_SESSION"
+
+
+def session_bound(params: dict[str, Any] | None) -> bool:
+    """Is the cell a session variant (a `session` identity key other than all)?"""
+    ses = (params or {}).get("session")
+    return bool(ses) and str(ses).lower() not in ("all", "none", "")
+
+
+def firing_oracle(family: str, params: dict[str, Any]) -> bool | None:
+    """`libs.research.family_firing` (being written on another branch), when it has landed:
+    False means the family provably never fires in this cell's session. Any other answer,
+    an absent module or an unknown API is None -- the cell is built and measured instead."""
+    if not session_bound(params):
+        return None
+    try:
+        from libs.research import family_firing as FF  # type: ignore[attr-defined]
+    except ImportError:
+        return None
+    for name in ("fires_in_session", "fires"):
+        fn = getattr(FF, name, None)
+        if callable(fn):
+            try:
+                ans = fn(family, params.get("session"), params)
+            except TypeError:
+                try:
+                    ans = fn(family, params.get("session"))
+                except Exception:
+                    return None
+            except Exception:
+                return None
+            return ans if isinstance(ans, bool) else None
+    return None
 
 
 def _mass_screen_cond(params: dict[str, Any]) -> tuple[dict[str, Any], int, int, float] | None:
@@ -701,6 +745,10 @@ def preflight(G: Any, meta: dict, sp: dict[str, Any]) -> dict[str, Any] | None:
     if not stage.get("passed"):
         return {"verdict": REC.REJECT, "reason": "R_GATE1_ECONOMIC_PRIOR",
                 "detail": str(stage.get("message") or stage.get("why") or "")[:240]}
+    if firing_oracle(fam, sp["params"]) is False:
+        return {"verdict": REC.UNBUILDABLE, "cause": NEVER_FIRES_IN_SESSION,
+                "reason": f"family_firing oracle: {fam} never fires in session "
+                          f"{sp['params'].get('session')!r}"}
     why = G.modifier_preflight(sp)
     if why:
         return {"verdict": REC.UNBUILDABLE, "cause": unbuildable_cause(why) if

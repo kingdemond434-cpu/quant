@@ -129,6 +129,25 @@ def test_unbuildable_causes_are_named_from_the_sealed_builders_words(why, cause)
     assert S.unbuildable_cause(why) == cause
 
 
+def test_a_session_variant_that_never_fires_is_its_own_unbuildable_cause(monkeypatch) -> None:
+    import types
+    frame = pd.DataFrame({"open": [1.0] * 3, "high": [1.0] * 3, "low": [1.0] * 3,
+                          "close": [1.0] * 3},
+                         index=pd.date_range("2024-01-01", periods=3, freq="h", tz="UTC"))
+    G = types.SimpleNamespace(_bars_for=lambda s, tf: frame,
+                              build_cell=lambda *a, **k: {"sigs": [], "df": frame},
+                              LAST_BUILD_FAILURE=None)
+    monkeypatch.setitem(S._W, "G", G)
+    monkeypatch.setitem(S._W, "meta", {})
+    spec = {"cid": "x", "sym": "EURUSD", "family": "asia_momentum", "tf": "H1",
+            "params": {"session": "london"}}
+    r = S.evaluate_engine(spec)
+    assert r["verdict"] == REC.UNBUILDABLE and r["cause"] == S.NEVER_FIRES_IN_SESSION
+    spec["params"] = {}
+    assert S.evaluate_engine(spec)["reason"] == "R_NO_SIGNALS"
+    assert S.firing_oracle("asia_momentum", {"session": "all"}) is None
+
+
 # ------------------------------------------------------------------------ the fence
 def _doc(proj, target, backlog):
     return {"stage1": {"projected_per_day_18c_50pct": proj, "target_per_day": target},
