@@ -329,8 +329,9 @@ def test_stall_watch_runs_the_watcher_on_its_own_clock() -> None:
     sw = (ROOT / "desks/mt5/scripts/stall_watch.ps1").read_text("utf-8", errors="ignore")
     assert "-m libs.ops.state_publication --watch" in sw
     assert "alerts_line" in sw and "alerts_armed" in sw and "state_flow_watch" in sw
-    for forbidden in ("run_deadman_switch", "fusion_deadman"):
-        assert forbidden not in sw
+    block = sw[sw.index("THE PAGER ON ITS OWN CLOCK"):sw.index("PER-SYMBOL FEED LAG")]
+    for forbidden in ("deadman", "Stop-Process", "Disable-ScheduledTask"):
+        assert forbidden not in block, "the watcher only reads and pages; it touches no rail"
 
 
 # ------------------------------------------------------------------ NOT-ARMED is loud (gap 2)
