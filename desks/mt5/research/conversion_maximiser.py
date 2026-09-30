@@ -1420,6 +1420,27 @@ def _ensure_cursor_indexes(conn: sqlite3.Connection, budget: Budget | None = Non
     return out
 
 
+def page_sql(pop: str, pos: tuple[str, str] | None, limit: int, *,
+             indexed: bool = False) -> tuple[str, list[Any]]:
+    """The keyset read for one population, SEEKABLE.
+
+    Measured on a 650,000-row copy (2026-09-30): the planner left to itself picks the status
+    index and sorts every matching row per wave (0.75-0.94 s a 13,000-row wave); pinned to the
+    partial index with a leading `>=` on the key it SEEKS (0.14 s, and 0.009 s near the newest
+    rows). `INDEXED BY` is used only when `_ensure_cursor_indexes` saw the index present, because
+    it is an error when the index is absent.
+    """
+    hint = f" INDEXED BY ix_cvm_{pop}" if indexed else ""
+    sql = f"SELECT * FROM research_candidates{hint} WHERE {_POP_WHERE[pop]}"  # noqa: S608
+    args: list[Any] = []
+    if pos is not None:
+        sql += f" AND {_KEY} >= ? AND ({_KEY}, id) > (?, ?)"
+        args += [pos[0], pos[0], pos[1]]
+    sql += f" ORDER BY {_KEY}, id LIMIT ?"
+    args.append(int(limit))
+    return sql, args
+
+
 def _pop_of(row: Mapping[str, Any]) -> str:
     return "donated" if str(row.get("status") or "") == "donated" else "untestable"
 
@@ -1441,7 +1462,8 @@ class _Cursor:
 
     def __init__(self, conn: sqlite3.Connection, pool: int,
                  state: Mapping[str, Any] | None = None,
-                 budget: Budget | None = None) -> None:
+                 budget: Budget | None = None,
+                 indexed: Sequence[str] = ()) -> None:
         self.conn = conn
         self.pool = max(2, int(pool))
         state = state or {}
@@ -1454,17 +1476,10 @@ class _Cursor:
         self.done: set[str] = set()
         self.budget = budget
         self.errors: list[str] = []
+        self.indexed: set[str] = set(indexed or ())
 
     def _page(self, pop: str, limit: int) -> list[dict[str, Any]]:
-        where = _POP_WHERE[pop]
-        pos = self.pos.get(pop)
-        sql = f"SELECT * FROM research_candidates WHERE {where}"  # noqa: S608
-        args: list[Any] = []
-        if pos is not None:
-            sql += f" AND ({_KEY}, id) > (?, ?)"
-            args += [pos[0], pos[1]]
-        sql += f" ORDER BY {_KEY}, id LIMIT ?"
-        args.append(int(limit))
+        sql, args = page_sql(pop, self.pos.get(pop), limit, indexed=pop in self.indexed)
         try:
             with _deadline(self.conn, self.budget):
                 cur = self.conn.execute(sql, args)
@@ -1746,7 +1761,8 @@ def run(*, budget: Budget, conn: sqlite3.Connection, max_rows: int, dry_run: boo
     # arrivals -- that is how a tail starves while the report says the backlog is being worked.
     carried_set = set(carried)
     handled: set[str] = set()
-    cursor = _Cursor(conn, pool, cursor_state, budget)
+    cursor = _Cursor(conn, pool, cursor_state, budget,
+                     indexed=[p for p, st in indexes.items() if st == "present"])
 
     def _draw(offset: int) -> list[dict[str, Any]]:
         """One wave of the debt population: the carry first (on the first wave), then the next

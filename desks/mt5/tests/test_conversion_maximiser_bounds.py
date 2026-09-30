@@ -69,7 +69,6 @@ def test_the_next_pass_resumes_after_the_cursor(desk) -> None:  # noqa: F811
     first = _run(desk, max_rows=4, carry_path=carry)
     cursor = json.loads(carry.read_text(encoding="utf-8"))["cursor"]
     assert cursor["untestable"] or cursor["donated"], cursor
-    carry.write_text(json.dumps({"ids": [], "cursor": cursor}), encoding="utf-8")
     second = _run(desk, max_rows=4, carry_path=carry)
     one = {e["id"] for e in first["still_blocked_rows"]}
     two = {e["id"] for e in second["still_blocked_rows"]}
@@ -121,10 +120,11 @@ def test_the_pass_checkpoints_and_a_checkpoint_is_not_a_trend(
 
 
 def test_the_indexes_the_cursor_walks_are_used(desk) -> None:  # noqa: F811
-    cm._ensure_cursor_indexes(desk["conn"])
-    for pop, where in cm._POP_WHERE.items():
-        plan = " ".join(str(r[3]) for r in desk["conn"].execute(
-            f"EXPLAIN QUERY PLAN SELECT * FROM research_candidates WHERE {where} "  # noqa: S608
-            f"AND ({cm._KEY}, id) > (?, ?) ORDER BY {cm._KEY}, id LIMIT 5", ("", "")))
-        assert f"ix_cvm_{pop}" in plan, plan
+    built = cm._ensure_cursor_indexes(desk["conn"])
+    assert set(built.values()) == {"present"}, built
+    for pop in cm.DEBT_POPULATIONS:
+        sql, args = cm.page_sql(pop, ("2026-09-01", "x"), 5, indexed=True)
+        plan = " ".join(str(r[3]) for r in desk["conn"].execute(f"EXPLAIN QUERY PLAN {sql}",
+                                                                  args))
+        assert f"SEARCH research_candidates USING INDEX ix_cvm_{pop}" in plan, plan
     assert R.path().exists()
