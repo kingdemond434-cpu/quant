@@ -643,6 +643,41 @@ Write-Host ("  target {0}" -f $target.Substring(0, 12))
 
 if ($head -eq $target) { Write-Host "  already at target -- nothing to adopt"; exit 0 }
 
+# ---- 0b. THE TARGET'S JUDGE MUST BE SEALED BEFORE ANY OF IT LANDS (2026-09-30) ----
+# Origin carried a broken seal for about two minutes (4678fe4f at 515d665e, until fc6c34e5
+# re-signed it), and this script checked neither CI nor the seal: an adoption at :12 inside that
+# window would have landed an unsigned judge on the box that trades. `check_target_seal.py`
+# hashes the fetched COMMIT's frozen judge files against the manifest that commit carries, using
+# the union of this checkout's and the target's frozen lists. Anything but SEALED refuses here,
+# before a byte is written: the running release, its seal and the gateway stay exactly as they
+# are, and the next hourly pass adopts once origin is re-signed. Exit 7 so Adopt-And-Seal can say
+# what happened instead of reporting a partial adoption.
+$sealCheck = Join-Path $RepoRoot "scripts\check_target_seal.py"
+if (Test-Path $sealCheck) {
+    $sealPy = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $sealPyArgs = @()
+    if (-not (Test-Path $sealPy)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $sealPy = "py"; $sealPyArgs = @("-3") }
+        else { $sealPy = "python" }
+    }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $sealOut = @(& $sealPy @sealPyArgs $sealCheck $target 2>&1 | ForEach-Object { "$_" })
+        $sealRc = $LASTEXITCODE
+    } catch {
+        $sealOut = @("check_target_seal.py could not run: " + $_.Exception.Message)
+        $sealRc = 2
+    } finally { $ErrorActionPreference = $prevEap }
+    $sealOut | ForEach-Object { Write-Host ("  " + $_) }
+    if ($sealRc -ne 0) {
+        Write-Host ("  REFUSING target {0}: its judge is not sealed (rc {1}); keeping the current release" -f
+                    $target.Substring(0, 12), $sealRc)
+        exit 7
+    }
+} else {
+    Write-Host "  check_target_seal.py absent in this checkout (pre-gate release); adopting without the seal check this once"
+}
+
 # ---- 1. THE BOX'S OWN UNCOMMITTED STATE, COMMITTED AS ITSELF -----------------
 # The sync commits state every fifteen minutes, so a dirty tree here means a pass
 # was interrupted -- which is exactly the situation this script is run in. Those
