@@ -78,7 +78,8 @@ def test_each_negative_differs_from_the_positive_in_its_one_respect() -> None:
 
 
 @pytest.fixture(scope="module")
-def real() -> dict[str, Any]:
+def real(measured_dsr_inputs_module: Path) -> dict[str, Any]:
+    # The judge reads its DSR inputs from a measured document and fails closed without one.
     return pa.run()
 
 
@@ -91,7 +92,8 @@ def test_the_real_judges_admit_the_positives_and_catch_every_planted_defect(real
     assert real["by_judge"][pa.SENTINEL]["recall"] == 1.0
 
 
-def test_main_writes_the_report_and_a_history_row(tmp_path: Path) -> None:
+def test_main_writes_the_report_and_a_history_row(tmp_path: Path,
+                                                  measured_dsr_inputs: Path) -> None:
     rep, hist = tmp_path / "r.json", tmp_path / "h.jsonl"
     rc = pa.main(["--report", str(rep), "--history", str(hist)])
     assert rc == 0 and rep.exists() and len(hist.read_text("utf-8").splitlines()) == 1

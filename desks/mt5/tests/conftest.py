@@ -99,3 +99,54 @@ def _tier_s_state_stays_out_of_the_checkout(monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setattr(blinding, "record", record)
     if Path(pa.LEDGER).resolve().is_relative_to(repo):
         monkeypatch.setattr(pa, "LEDGER", sink / "promotion_blocks.jsonl")
+
+
+def write_measured_dsr_inputs(root: Path, *, variance: float = 0.0002, n: int = 200,
+                              family: str = "fixture") -> Path:
+    """A REAL measured `DSR_INPUTS.json` under `root`, written by the organ's own `run` from a
+    synthetic sweep of `n` judged cells whose Sharpes have sample variance exactly `variance`.
+
+    The sealed judge (with `tier_s_dsr_measured_variance.patch`) fails closed without a fresh,
+    verified DSR_INPUTS -- every cell UNKNOWN, `dsr_inputs_unmeasured`. A test that is not about
+    the DSR inputs points the judge's door here. Nothing is stubbed: the document is harvested,
+    measured and hashed exactly as the hourly leg does it, and the judge verifies it. The
+    fixture family is not a real family, so every real family reads the POOLED variance and no
+    measured effective-trial count (the judge's other charges apply unchanged)."""
+    import math
+
+    from libs.research import dsr_inputs
+
+    a = math.sqrt(variance * (n - 1) / n)             # +-a alternating: ddof=1 variance exact
+    verdicts = [{"cell": f"FIX{i}.{family}.p={i}", "family": family, "sym": f"FIX{i % 7}",
+                 "days": 300, "stages": {"in_sample_screen": {"sharpe": a if i % 2 else -a}}}
+                for i in range(n)]
+    root.mkdir(parents=True, exist_ok=True)
+    sweep = root / "fixture_sweep.json"
+    sweep.write_text(json.dumps({"hunt": "fixture", "swept_at": datetime.now(UTC).isoformat(),
+                                 "verdicts": verdicts}), "utf-8")
+    out = root / "DSR_INPUTS.json"
+    doc = dsr_inputs.run(report_path=sweep, ledger_path=root / "dsr_trial_sharpes.jsonl",
+                         out=out)
+    assert doc["status"] == dsr_inputs.MEASURED, doc.get("why")
+    return out
+
+
+@pytest.fixture
+def measured_dsr_inputs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
+    """Point the judge's DSR-inputs door at a fresh measured document (see the writer above)."""
+    from libs.research import dsr_inputs
+
+    path = write_measured_dsr_inputs(tmp_path / "dsr_inputs")
+    monkeypatch.setattr(dsr_inputs, "REPORT", path)
+    return path
+
+
+@pytest.fixture(scope="module")
+def measured_dsr_inputs_module(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Path]:
+    """`measured_dsr_inputs` for a module-scoped fixture that runs the real judge once."""
+    from libs.research import dsr_inputs
+
+    path = write_measured_dsr_inputs(tmp_path_factory.mktemp("dsr_inputs"))
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(dsr_inputs, "REPORT", path)
+        yield path

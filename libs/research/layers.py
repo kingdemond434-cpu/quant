@@ -339,6 +339,8 @@ LEG_LAYER: dict[str, str] = {
     "occupancy_map": "information",
     # What the multiplicity budget is charged in: nominal rows vs effective independent tests.
     "effective_trials": "information",
+    # The deflated-Sharpe hurdle's two inputs, measured from judged trials with provenance.
+    "dsr_inputs": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The bounty
     # board and the drawdown-alpha miner are PORTFOLIO: both ask what the BOOK lacks -- a payoff
