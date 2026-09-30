@@ -19,6 +19,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# The recorder performs multiple independent Git reads. On the Windows trading checkout each is
+# deliberately bounded at 60 seconds, so a 120-second wrapper could kill an otherwise completed
+# gate run before ``gate_attestation.json`` was written. Three reads plus process startup fit in
+# this budget and remain below the scheduled task's 30-minute hard limit. This changes only the
+# time allowed to RECORD the verdict; it does not change a gate or turn a failure into a pass.
+ATTEST_RECORD_TIMEOUT_S = 300
+
 
 def _run(args: list[str], timeout: int = 1500) -> tuple[int, str, float]:
     t0 = time.time()
@@ -44,7 +51,7 @@ def main() -> int:
         print(f"{name}: rc={rc} in {s}s -- {tail.replace(chr(10), ' | ')[:160]}")
     verdict = "pass" if all(rc == 0 for rc, _, _ in results.values()) else "fail"
     rc, tail, _ = _run([py, "scripts/gate_attestation.py", "--gates", "fast", "--result", verdict],
-                       timeout=120)
+                       timeout=ATTEST_RECORD_TIMEOUT_S)
     print(f"attestation: {verdict} ({tail[:120]})")
     return 0 if verdict == "pass" else 1
 
