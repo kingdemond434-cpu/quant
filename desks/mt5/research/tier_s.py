@@ -4169,6 +4169,40 @@ def _run(name: str, fn: Callable[[], dict[str, Any]], timings: dict[str, float],
     return out
 
 
+#: a door input missing this long is a LOUD defect: every promotion is withheld meanwhile
+DOOR_INPUT_GRACE_H = 2.0
+
+
+def _door_input_health() -> dict[str, Any]:
+    """The four verdict files the promotion door requires (fail closed), read as the door reads
+    them. One missing or stale withholds EVERY new live row, so each is tracked from the first
+    pass it was bad; past DOOR_INPUT_GRACE_H it is a DEFECT, printed and published, naming the
+    writer that is not delivering."""
+    from libs.tiers import promotion_authority
+    st = _state("door_inputs")
+    since = {str(k): str(v) for k, v in (st.get("bad_since") or {}).items()}
+    rows = promotion_authority.door_inputs()
+    defects: list[str] = []
+    for key, row in rows.items():
+        if row["ok"]:
+            since.pop(key, None)
+            continue
+        first = since.setdefault(key, NOW.isoformat())
+        try:
+            hours = (NOW - datetime.fromisoformat(first)).total_seconds() / 3600
+        except ValueError:
+            hours = 0.0
+        row["bad_for_h"] = round(hours, 2)
+        if hours >= DOOR_INPUT_GRACE_H:
+            defects.append(f"DEFECT door input {key} bad for {hours:.1f}h -- {row['why']} "
+                           f"(writer: {row['writer']}); every promotion is withheld meanwhile")
+    _save_state("door_inputs", {"bad_since": since, "at": NOW.isoformat()})
+    for d in defects:
+        print(d, file=sys.stderr, flush=True)
+    return {"inputs": rows, "all_ok": all(r["ok"] for r in rows.values()),
+            "grace_h": DOOR_INPUT_GRACE_H, "defects": defects}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--only", default="", help="comma-separated organ names")
@@ -4250,6 +4284,7 @@ def main(argv: list[str] | None = None) -> int:
                "emitted": {k: (v or {}).get("emitted") for k, v in reports.items()
                            if isinstance(v, dict) and v.get("emitted")}}
     if not only:
+        summary["door_inputs"] = _door_input_health()
         _write(SUMMARY, summary)
         # A layer is DONE only on the trading box's own evidence (libs/tiers/box_evidence).
         try:
@@ -4257,9 +4292,16 @@ def main(argv: list[str] | None = None) -> int:
             box_evidence.attest()
         except Exception as exc:                    # pragma: no cover - host dependent
             errors["box_evidence"] = f"{type(exc).__name__}: {exc}"
+    door_defects = list((summary.get("door_inputs") or {}).get("defects") or [])
     print(json.dumps({"total_seconds": summary["total_seconds"],
-                      "errors": list(summary["errors"])}), flush=True)
-    return 1 if errors and len(errors) == len(timings) else 0
+                      "errors": list(summary["errors"]),
+                      "door_input_defects": door_defects}), flush=True)
+    if errors and len(errors) == len(timings):
+        return 1
+    # A DOOR INPUT MISSING PAST ITS GRACE FAILS THE LEG, so the hourly report carries the defect
+    # (exit code and stderr tail) instead of a quiet line in a JSON file: meanwhile every
+    # promotion is withheld.
+    return 3 if door_defects else 0
 
 
 if __name__ == "__main__":

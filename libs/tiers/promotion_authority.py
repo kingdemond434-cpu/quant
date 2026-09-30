@@ -240,6 +240,30 @@ def block(name: str) -> str | None:
     return None
 
 
+#: the four hourly verdict files the door REQUIRES present and fresh (fail closed), with their
+#: stamp key and the leg that writes each
+REQUIRED: dict[str, tuple[Path, str, str]] = {
+    "replication": (REPLICATION, "at", "hourly leg replication_civilization"),
+    "online_fdr": (FDR_ROWS, "generated_utc", "tier_s organ online_fdr"),
+    "immune": (FREEZE, "at", "tier_s organ immune"),
+    "door": (DOOR_VERDICTS, "generated_utc", "tier_s organ door"),
+}
+
+
+def door_inputs() -> dict[str, dict[str, Any]]:
+    """{input: {ok, why, writer}} for the door's four required verdict files, read exactly as
+    `block` reads them. A missing or stale one withholds EVERY promotion, so its health is
+    published every hour (the `tier_s` summary's `door_inputs`)."""
+    out: dict[str, dict[str, Any]] = {}
+    for key, (path, stamp, writer) in REQUIRED.items():
+        try:
+            _required(path, stamp)
+            out[key] = {"ok": True, "why": "present and fresh", "writer": writer}
+        except Exception as exc:
+            out[key] = {"ok": False, "why": str(exc), "writer": writer}
+    return out
+
+
 LIVE_DOOR = DESK / "data" / "tier_s" / "live_door.json"
 
 

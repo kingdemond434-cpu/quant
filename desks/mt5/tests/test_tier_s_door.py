@@ -245,3 +245,32 @@ def test_a_suspension_lookup_that_raises_withholds(monkeypatch: Any, tmp_path: P
 
     monkeypatch.setattr(authority, "suspended", boom)
     assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR")
+
+
+def test_a_door_input_missing_past_its_grace_is_a_loud_defect(monkeypatch: Any,
+                                                              tmp_path: Path) -> None:
+    from datetime import timedelta
+
+    import tier_s as ts  # type: ignore[import-not-found]
+
+    pa = _door_sandbox(monkeypatch, tmp_path)
+    for key, (_path, stamp, writer) in list(pa.REQUIRED.items()):
+        monkeypatch.setitem(pa.REQUIRED, key, (getattr(pa, {
+            "replication": "REPLICATION", "online_fdr": "FDR_ROWS", "immune": "FREEZE",
+            "door": "DOOR_VERDICTS"}[key]), stamp, writer))
+    store: dict[str, Any] = {}
+    monkeypatch.setattr(ts, "_state", lambda n: dict(store.get(n) or {}))
+    monkeypatch.setattr(ts, "_save_state", lambda n, d: store.__setitem__(n, dict(d)))
+    t0 = ts.NOW
+    first = ts._door_input_health()
+    assert not first["all_ok"] and first["defects"] == [], "inside the grace: tracked, quiet"
+    monkeypatch.setattr(ts, "NOW", t0 + timedelta(hours=2.5))
+    later = ts._door_input_health()
+    assert len(later["defects"]) == 4 and all("DEFECT door input" in d for d in later["defects"])
+    now = datetime.now(UTC).isoformat()
+    pa.REPLICATION.write_text(json.dumps({"at": now}), "utf-8")
+    pa.FDR_ROWS.write_text(json.dumps({"generated_utc": now}), "utf-8")
+    pa.FREEZE.write_text(json.dumps({"at": now, "verdict": "OK"}), "utf-8")
+    pa.DOOR_VERDICTS.write_text(json.dumps({"generated_utc": now, "rows": {}}), "utf-8")
+    healed = ts._door_input_health()
+    assert healed["all_ok"] and healed["defects"] == [] and store["door_inputs"]["bad_since"] == {}
