@@ -43,9 +43,12 @@ into the next pass at that seat's level, highest information per second first.
 A COMMITTEE THAT ADDS NO INFORMATION LOSES BUDGET. Each pass re-weights the six committees'
 shares of the leg's fixed budget by their measured information per second (unique catches,
 experiments saved, settled calibration), floored so no committee ever goes fully dark. A
-committee whose floored share held for RETIRE_AFTER_PASSES consecutive passes with enough
-measurements and nothing unique is RETIRED (traps and health keep running, so it can be
-re-admitted on evidence). UNMEASURED never moves budget or retires anything (L1.28a).
+committee held at the floor for every pass of a RETIRE_WINDOW_DAYS window, with enough
+measurements and no unique catch in it, is RETIRED; it keeps running at the floor share as a
+probe (with its traps and health), and a unique catch inside the window re-admits it. A seat
+retires by the same window on ablation value <= 0, sits on 1 in PROBE_EVERY subjects, re-opens on
+a unique catch, and is billed the information it was expected to buy on every subject it skipped.
+UNMEASURED never moves budget or retires anything (L1.28a).
 """
 from __future__ import annotations
 
@@ -109,7 +112,9 @@ DEFAULT_BUDGET_S = 300.0
 BASE_SHARE = {SCIENTIFIC: 0.40, FORENSIC: 0.10, PORTFOLIO: 0.08, EXECUTION: 0.08, DATA: 0.24,
               META: 0.10}
 SHARE_FLOOR = 0.02
-RETIRE_AFTER_PASSES = 168          # a week of hourly passes at the floor
+#: A seat whose clean twins fail more often than this is DEGRADED (measured rates on fresh
+#: fixtures over 40 seeds, 2026-09-30: 0-2.5% per seat).
+FALSE_ALARM_CEILING = 0.10
 PER_SUBJECT_S = 30.0
 MAX_SUBJECTS = {SCIENTIFIC: 3000, FORENSIC: 400, PORTFOLIO: 4, EXECUTION: 200, DATA: 40,
                 META: 2}
@@ -165,11 +170,51 @@ def _f(x: Any) -> float | None:
 SEATS: list[ce.Specialist] = []
 
 
+#: The pass's trap seed. Every fixture generator draws from it, so each pass plants a FRESH
+#: instance of each defect (a live measure, not a regression fixture); the report records it.
+_PASS_SEED = [0]
+#: Fields a trap's jitter never moves: prices must stay consistent with one another.
+_FIXED = frozenset({"entry_price", "sl", "tp", "fill_price", "open", "high", "low", "close"})
+
+
+def _s(k: int) -> int:
+    """Fixture k's seed for this pass."""
+    return int(k) * 7919 + int(_PASS_SEED[0])
+
+
+def _vary(obj: Any, seed: int) -> Any:
+    """Jitter every free number in a dict/list fixture by up to 5%, from the pass seed."""
+    import numpy as np
+    rng = np.random.default_rng(seed)
+
+    def walk(x: Any, key: str = "") -> Any:
+        if isinstance(x, dict):
+            return {k: walk(v, str(k)) for k, v in x.items()}
+        if isinstance(x, list):
+            return [walk(v, key) for v in x]
+        if isinstance(x, bool) or key in _FIXED or not isinstance(x, (int, float)):
+            return x
+        v = x * (1 + float(rng.uniform(-0.05, 0.05)))
+        return round(v) if isinstance(x, int) else v
+    return walk(obj)
+
+
+def _seeded(make: Callable[[], Any] | None) -> Callable[[int], Any] | None:
+    if make is None:
+        return None
+
+    def build(seed: int) -> Any:
+        _PASS_SEED[0] = int(seed)
+        return _vary(make(), seed)
+    return build
+
+
 def seat(committee: str, partition: str, level: int, failure_class: str, cost_s: float, *,
          trap: Callable[[], Any] | None = None, clean: Callable[[], Any] | None = None,
          settles_by: str = "remeasure") -> Callable[[Callable[..., ce.Result]],
                                                      Callable[..., ce.Result]]:
-    """Register `fn(sp, evidence, key) -> Result` as one specialist."""
+    """Register `fn(sp, evidence, key) -> Result` as one specialist. Its trap and clean twin are
+    generators: they read the pass seed through `_s`, and dict fixtures are jittered by it."""
     def deco(fn: Callable[..., ce.Result]) -> Callable[..., ce.Result]:
         holder: dict[str, ce.Specialist] = {}
 
@@ -177,7 +222,7 @@ def seat(committee: str, partition: str, level: int, failure_class: str, cost_s:
             return fn(holder["sp"], part, key)
 
         sp = ce.Specialist(fn.__name__, committee, partition, level, failure_class, cost_s,
-                           check, trap, clean, settles_by)
+                           check, _seeded(trap), _seeded(clean), settles_by)
         holder["sp"] = sp
         SEATS.append(sp)
         return fn
@@ -208,7 +253,7 @@ class Sig:
 def _bars(n: int = 800, seed: int = 7, drift: float = 0.0, vol: float = 0.002) -> Any:
     import numpy as np
     import pandas as pd
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(_s(seed))
     r = rng.normal(drift, vol, n)
     close = np.exp(np.cumsum(r))
     open_ = np.r_[1.0, close[:-1]]
@@ -218,17 +263,57 @@ def _bars(n: int = 800, seed: int = 7, drift: float = 0.0, vol: float = 0.002) -
                         index=idx)
 
 
-def _oracle(df: Any, every: int = 4, flip_after: int | None = None) -> list[Sig]:
-    """Signals that know the next bar: the edge a clean fixture needs, with no subtlety."""
-    o, c = df["open"].to_numpy(), df["close"].to_numpy()
-    out = []
-    for i in range(0, len(df) - 3, every):
-        side = 1 if c[i + 2] > o[i + 1] else -1
+def _momentum_cell(seed: int, n: int = 800, flip_after: int | None = None) -> dict[str, Any]:
+    """A CAUSAL edge for clean twins: returns are AR(1) with phi 0.5 and each signal takes the
+    sign of the bar that has already closed. Nothing reads a future bar. `flip_after` reverses
+    the sides from that bar on, which is the regime break half_stability exists to catch."""
+    import numpy as np
+    import pandas as pd
+    rng = np.random.default_rng(_s(seed))
+    e = rng.normal(0.0, 0.002, n)
+    r = np.zeros(n)
+    for i in range(1, n):
+        r[i] = 0.5 * r[i - 1] + e[i]
+    close = np.exp(np.cumsum(r))
+    open_ = np.r_[1.0, close[:-1]]
+    idx = pd.date_range("2026-01-05", periods=n, freq="h", tz="UTC")
+    df = pd.DataFrame({"open": open_, "high": np.maximum(open_, close) * 1.0005,
+                       "low": np.minimum(open_, close) * 0.9995, "close": close}, index=idx)
+    sigs = []
+    for i in range(1, n - 3, 2):
+        side = 1 if r[i] > 0 else -1
         if flip_after is not None and i >= flip_after:
             side = -side
-        out.append(Sig(df.index[i], side, float(c[i]) * (1 - 0.01 * side),
-                       float(c[i]) * (1 + 0.01 * side), 1))
-    return out
+        sigs.append(Sig(idx[i], side, float(close[i]) * (1 - 0.01 * side),
+                        float(close[i]) * (1 + 0.01 * side), 1))
+    return _cell(df, sigs, 0.0)
+
+
+def _event_cell(seed: int, n: int = 1200, events: int = 60) -> dict[str, Any]:
+    """A CAUSAL edge sharp in time, the clean twin a placebo battery must tell apart: a bar
+    whose wick marks a rejection is followed by two bars in the wick's direction. The signal
+    reads only the closed marker bar; a shifted, flipped or random entry earns nothing."""
+    import numpy as np
+    import pandas as pd
+    rng = np.random.default_rng(_s(seed))
+    r = rng.normal(0.0, 0.001, n)
+    at = sorted(rng.choice(np.arange(20, n - 10, 12), size=events, replace=False))
+    sides = rng.choice([-1, 1], size=events)
+    for t, sd in zip(at, sides, strict=True):
+        r[t], r[t + 1], r[t + 2] = -0.004 * sd, 0.006 * sd, 0.004 * sd
+    close = np.exp(np.cumsum(r))
+    open_ = np.r_[1.0, close[:-1]]
+    high, low = np.maximum(open_, close) * 1.0003, np.minimum(open_, close) * 0.9997
+    for t, sd in zip(at, sides, strict=True):
+        if sd > 0:
+            low[t] = min(open_[t], close[t]) * 0.99      # a long lower wick: rejection of lows
+        else:
+            high[t] = max(open_[t], close[t]) * 1.01
+    idx = pd.date_range("2026-01-05", periods=n, freq="h", tz="UTC")
+    df = pd.DataFrame({"open": open_, "high": high, "low": low, "close": close}, index=idx)
+    sigs = [Sig(idx[t], int(sd), float(low[t]), float(close[t]) * (1 + 0.01 * sd), 2)
+            for t, sd in zip(at, sides, strict=True)]
+    return _cell(df, sigs, 0.0)
 
 
 def _cell(df: Any, sigs: list[Sig], cost: float, family: Any = None) -> dict[str, Any]:
@@ -240,8 +325,9 @@ def _lucky_tail_cell() -> dict[str, Any]:
     import numpy as np
     import pandas as pd
     n = 600
-    step = np.full(n, -0.0005)
-    spikes = list(range(30, n - 5, 60))
+    rng = np.random.default_rng(_s(41))
+    step = np.full(n, -0.0005) + rng.normal(0, 0.0001, n)
+    spikes = list(range(int(rng.integers(10, 50)), n - 5, 60))
     for j in spikes:
         step[j] = 0.06
     close = np.exp(np.cumsum(step))
@@ -255,11 +341,11 @@ def _lucky_tail_cell() -> dict[str, Any]:
 
 
 def _peeking_family(frame: Any, **_kw: Any) -> list[Sig]:
-    """Sides from the WHOLE frame's mean, future included: truncation must change them."""
+    """Sides from the close FIVE bars ahead: signals within five bars of any cut exist only
+    with the future in hand, so truncation must change them, whatever the path."""
     c = frame["close"].to_numpy()
-    m = float(c.mean())
-    return [Sig(frame.index[i], 1 if c[i] < m else -1, 0.0, 0.0, 1)
-            for i in range(len(c)) if i % 3 == 0]
+    return [Sig(frame.index[i], 1 if c[i + 5] > c[i] else -1, 0.0, 0.0, 1)
+            for i in range(len(c) - 5) if i % 3 == 0]
 
 
 def _causal_family(frame: Any, **_kw: Any) -> list[Sig]:
@@ -341,24 +427,24 @@ def _longs(df: Any, every: int) -> list[Sig]:
 
 _falsifier_seat("cost_surface", 1, "COST_DEATH", 0.5,
                 lambda: _cell(_bars(seed=11), _longs(_bars(seed=11), 5), 0.02),
-                lambda: _cell(_bars(seed=12), _oracle(_bars(seed=12)), 0.0), "half_stability")
+                lambda: _momentum_cell(12), "half_stability")
 _falsifier_seat("tail_worst_decile", 1, "TAIL_FAILURE", 0.5, _lucky_tail_cell,
-                lambda: _cell(_bars(seed=13), _oracle(_bars(seed=13)), 0.0), "half_stability")
+                lambda: _momentum_cell(13), "half_stability")
 _falsifier_seat("half_stability", 2, "STATE_FRAGILE", 1.0,
-                lambda: _cell(_bars(seed=14), _oracle(_bars(seed=14), flip_after=400), 0.0),
-                lambda: _cell(_bars(seed=15), _oracle(_bars(seed=15)), 0.0), "truncation")
+                lambda: _momentum_cell(14, flip_after=400),
+                lambda: _momentum_cell(15), "truncation")
 _falsifier_seat("truncation", 3, "LEAKAGE", 2.0,
                 lambda: _cell(_bars(seed=16), [], 0.0, _peeking_family),
                 lambda: _cell(_bars(seed=17), [], 0.0, _causal_family), "placebo_battery")
 _falsifier_seat("placebo_battery", 4, "LEAKAGE", 20.0,
                 lambda: _cell(_bars(seed=18), _longs(_bars(seed=18), 4), 0.0),
-                lambda: _cell(_bars(seed=19), _oracle(_bars(seed=19)), 0.0), "")
+                lambda: _event_cell(19), "")
 
 
 @seat(SCIENTIFIC, "cell", 2, "DRIFT_EXPLAINED", 0.2, settles_by="fate",
       trap=lambda: _cell(_bars(seed=31, drift=0.002), _longs(_bars(seed=31, drift=0.002), 4),
                          0.0),
-      clean=lambda: _cell(_bars(seed=32), _oracle(_bars(seed=32)), 0.0))
+      clean=lambda: _momentum_cell(32))
 def drift_explanation(sp: ce.Specialist, cell: Mapping[str, Any], key: str) -> ce.Result:
     """THE ALTERNATIVE EXPLAINER: would holding the instrument's own drift, on the signals'
     side mix and holding time, have earned most of the edge?"""
@@ -704,7 +790,7 @@ def _matrix(days: Mapping[str, Mapping[str, float]], min_days: int = 20
 def _book(n_days: int = 160, n_sleeves: int = 6, common: float = 0.0, seed: int = 3,
           tail_common: bool = False) -> dict[str, dict[str, float]]:
     import numpy as np
-    rng = np.random.default_rng(seed)
+    rng = np.random.default_rng(_s(seed))
     f = rng.normal(0, 1, n_days)
     out: dict[str, dict[str, float]] = {}
     for j in range(n_sleeves):
@@ -807,16 +893,46 @@ def ruin_simulation(sp: ce.Specialist, days: Mapping[str, Mapping[str, float]], 
     return _r(sp, PASS, 0.7, p_drawdown_ge_ruin_r=round(p, 4), ruin_r=RUIN_R)
 
 
+def _regime_book(stressed_common: float = 0.85, n_days: int = 240) -> dict[str, dict[str, float]]:
+    """Alternating 20-day calm and stressed blocks; stressed blocks carry double volatility and,
+    in the trap, a common factor -- the correlation that arrives exactly when it hurts."""
+    import numpy as np
+    rng = np.random.default_rng(_s(9))
+    out: dict[str, dict[str, float]] = {f"s{j}": {} for j in range(6)}
+    for i in range(n_days):
+        stressed = (i // 20) % 2 == 1
+        f = rng.normal(0, 1)
+        rho = stressed_common if stressed else 0.0
+        vol = 2.0 if stressed else 1.0
+        day = f"2026-{1 + i // 28:02d}-{1 + i % 28:02d}" if i < 12 * 28 else f"d{i}"
+        for j in range(6):
+            x = vol * (rho * f + math.sqrt(1 - rho * rho) * rng.normal(0.05, 1))
+            out[f"s{j}"][day] = float(x)
+    return out
+
+
 @seat(PORTFOLIO, "daily_r", 2, "CORRELATION_BREAKDOWN", 0.05,
-      trap=lambda: _book(tail_common=True), clean=lambda: _book())
+      trap=lambda: _regime_book(0.85), clean=lambda: _regime_book(0.0))
 def regime_correlation(sp: ce.Specialist, days: Mapping[str, Mapping[str, float]], key: str
                        ) -> ce.Result:
     import numpy as np
     sleeves, m = _matrix(days)
     if m is None:
         return _r(sp, UNMEASURED, 0.0, "more forward days per sleeve", sleeves=len(sleeves))
-    stress = np.abs(m.sum(axis=1))
-    hi = stress >= np.quantile(stress, 0.8)
+    # The regime is read from the book's volatility over the PRIOR ten days, never from the
+    # same day's P&L: conditioning on a day's own extreme manufactures correlation among
+    # independent sleeves (the clean twin caught that in an earlier version of this seat).
+    book = m.sum(axis=1)
+    lag = np.array([book[max(0, i - 10):i].std() if i >= 5 else np.nan
+                    for i in range(len(book))])
+    ok = np.isfinite(lag)
+    m, lag = m[ok], lag[ok]
+    if len(lag) < 20:
+        return _r(sp, UNMEASURED, 0.0, "more forward days per sleeve", days=len(lag))
+    hi = lag >= np.quantile(lag, 2 / 3)
+    # De-volatilise by the same lagged reading, so a few loud days cannot carry either regime's
+    # correlation (Pearson is variance-weighted).
+    m = m / np.maximum(lag, 1e-9)[:, None]
 
     def mean_corr(x: Any) -> float:
         if len(x) < 5:
@@ -827,8 +943,10 @@ def regime_correlation(sp: ce.Specialist, days: Mapping[str, Mapping[str, float]
     a, b = mean_corr(m[hi]), mean_corr(m[~hi])
     if not (math.isfinite(a) and math.isfinite(b)):
         return _r(sp, UNMEASURED, 0.0, "", why="too few stress days")
-    if a - b > 0.3:
-        return _r(sp, FAIL, 0.8 if a - b > 0.5 else 0.6, "",
+    # 0.10 separates the planted regime break (>= 0.14 over 40 seeds) from independent sleeves
+    # (<= 0.06): measured on the seat's own trap and clean twin, 2026-09-30.
+    if a - b > 0.10:
+        return _r(sp, FAIL, 0.8 if a - b > 0.25 else 0.6, "",
                   corr_stress=round(a, 3), corr_calm=round(b, 3))
     return _r(sp, PASS, 0.6, corr_stress=round(a, 3), corr_calm=round(b, 3))
 
@@ -1059,7 +1177,7 @@ def _bad_ohlc() -> Any:
 def _gappy() -> Any:
     import numpy as np
     df = _clean_frame()
-    return df[np.random.default_rng(5).random(len(df)) > 0.3]
+    return df[np.random.default_rng(_s(5)).random(len(df)) > 0.3]
 
 
 def _spiky() -> Any:
@@ -1347,6 +1465,12 @@ def blind_spots(sp: ce.Specialist, b: Mapping[str, Any], key: str) -> ce.Result:
       trap=lambda: {"census": {"LIVE": 10, "NEVER": 80, "MISSING": 10}},
       clean=lambda: {"census": {"LIVE": 90, "NEVER": 5, "MISSING": 5}})
 def dead_organs(sp: ce.Specialist, p: Mapping[str, Any], key: str) -> ce.Result:
+    if "non_trading" in str(p.get("host_role") or ""):
+        # The attestation in hand was taken on a host that runs none of the box's organs, so
+        # its NEVER rows are the host, not the desk (a cloud clone read 760 of 922 NEVER on
+        # 2026-09-30). Only the trading box's own attestation can call an organ dead.
+        return _r(sp, UNMEASURED, 0.0, "attest on the trading box",
+                  why=f"runtime_state.json was attested on a {p.get('host_role')}")
     c = {k: float(v) for k, v in (p.get("census") or {}).items() if _f(v) is not None}
     tot = sum(c.values())
     if tot <= 0:
@@ -1585,6 +1709,11 @@ def _outcome_fn(examined: Sequence[Mapping[str, Any]], fates: Mapping[str, Any]
         if claim["specialist"] in fate_seats:
             gid = str(claim.get("cell") or "")
             f = str((fates.get(gid) or {}).get("fate") or "") if gid else ""
+            if str(claim.get("key") or "").startswith("survivor:"):
+                # A red-team claim on a CERTIFIED cell is not settled by the certificate it
+                # challenges -- that would score every correct objection as wrong. Only a later
+                # death (forward evidence failing it) settles it; until then it stays open.
+                return True if f in ("FAILED", "BURIED") else None
             if f == "CERTIFIED":
                 return False
             if f in ("FAILED", "BURIED"):
@@ -1605,8 +1734,13 @@ def _fates() -> dict[str, Any]:
         return {}
 
 
-def _reweight(state: dict[str, Any], per: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
-    """ROI ACCOUNTING: shares move toward measured information per second; floors hold."""
+def _reweight(state: dict[str, Any], per: Mapping[str, Mapping[str, Any]], day: str
+              ) -> dict[str, Any]:
+    """ROI ACCOUNTING: shares move toward measured information per second; floors hold.
+
+    Retirement reads a RETIRE_WINDOW_DAYS window of per-day counts (never a lifetime count
+    against one pass). A retired committee keeps running at the floor share as a probe, so the
+    re-admission condition -- a unique catch inside the window -- can actually arrive."""
     shares = dict(state.get("shares") or BASE_SHARE)
     info: dict[str, float] = {}
     for c in COMMITTEES:
@@ -1627,26 +1761,34 @@ def _reweight(state: dict[str, Any], per: Mapping[str, Mapping[str, Any]]) -> di
     shares = {c: round(max(SHARE_FLOOR, shares.get(c, BASE_SHARE[c]) / tot), 4)
               for c in COMMITTEES}
     state["shares"] = shares
-    # Retirement: a week at the floor with enough measured work and nothing unique.
-    streak = state.setdefault("floor_streak", {})
-    lifetime = state.setdefault("lifetime", {})
+    from datetime import date
+    start = (date.fromisoformat(day) - timedelta(days=ce.RETIRE_WINDOW_DAYS - 1)).isoformat()
+    cdays = state.setdefault("committee_days", {})
+    retired = state.setdefault("retired_committees", {})
     for c in COMMITTEES:
         p = per.get(c) or {}
-        lt = lifetime.setdefault(c, {"measured": 0, "unique": 0, "fails": 0, "seconds": 0.0,
-                                     "saved_s": 0.0})
-        for k in ("measured", "unique", "fails"):
-            lt[k] = int(lt[k]) + int(p.get(k) or 0)
-        for k in ("seconds", "saved_s"):
-            lt[k] = round(float(lt[k]) + float(p.get(k) or 0.0), 3)
-        at_floor = shares[c] <= SHARE_FLOOR + 1e-9 and c in info
-        streak[c] = int(streak.get(c, 0)) + 1 if at_floor else 0
-        retired = state.setdefault("retired_committees", {})
-        if streak[c] >= RETIRE_AFTER_PASSES and lt["measured"] >= ce.MIN_OBS_FOR_RETIREMENT \
-                and lt["unique"] == 0:
-            retired.setdefault(c, {"at": _now(), "why": f"{streak[c]} passes at the budget "
-                                   f"floor, {lt['measured']} measured, no unique catch"})
-        elif c in retired and (per.get(c) or {}).get("unique"):
-            retired.pop(c)                       # re-admitted on evidence
+        d = cdays.setdefault(c, {}).setdefault(day, {"measured": 0, "unique": 0, "passes": 0,
+                                                     "floor_passes": 0})
+        d["measured"] += int(p.get("measured") or 0)
+        d["unique"] += int(p.get("unique") or 0)
+        d["passes"] += 1
+        d["floor_passes"] += int(shares[c] <= SHARE_FLOOR * 1.5 and c in info)
+        cdays[c] = {k: cdays[c][k] for k in sorted(cdays[c])[-(ce.RETIRE_WINDOW_DAYS * 4):]}
+        win = [v for k, v in cdays[c].items() if start <= k <= day]
+        span = (date.fromisoformat(day) - date.fromisoformat(min(cdays[c]))).days + 1
+        w = {k: sum(int(v.get(k, 0)) for v in win)
+             for k in ("measured", "unique", "passes", "floor_passes")}
+        if c in retired:
+            if w["unique"] > 0:
+                retired.pop(c)                   # re-admitted on evidence from its probes
+            continue
+        if span >= ce.RETIRE_WINDOW_DAYS and w["measured"] >= ce.MIN_OBS_FOR_RETIREMENT \
+                and w["unique"] == 0 and w["passes"] and w["floor_passes"] == w["passes"]:
+            retired[c] = {"at": _now(), "window_days": ce.RETIRE_WINDOW_DAYS,
+                          "measured": w["measured"],
+                          "why": f"{ce.RETIRE_WINDOW_DAYS} days at the budget floor, "
+                                 f"{w['measured']} measured, no unique catch",
+                          "reopen": "a unique catch by its floor-share probe inside the window"}
     return shares
 
 
@@ -1659,7 +1801,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
     state: dict[str, Any] = _json(STATE, {}) if write else {}
     if not state:
         state = ce.blank_state()
-    traps = ce.run_traps(SEATS)
+    seed = int(now_ts // 3600)
+    day = datetime.fromtimestamp(now_ts, tz=UTC).date().isoformat()
+    traps = ce.run_traps(SEATS, seed)
     shares = dict(state.get("shares") or BASE_SHARE)
     retired_c = set(state.get("retired_committees") or {})
     examined_all: list[dict[str, Any]] = []
@@ -1667,10 +1811,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
     bank = None
     for name in COMMITTEES:
         c0 = time.monotonic()
-        if name in retired_c:
-            per[name] = {"status": "RETIRED", "why": state["retired_committees"][name]["why"]}
-            continue
-        share_s = max(1.0, float(budget_s) * float(shares.get(name, BASE_SHARE[name])))
+        share = SHARE_FLOOR if name in retired_c else float(shares.get(name, BASE_SHARE[name]))
+        share_s = max(1.0, float(budget_s) * share)
         if subjects is not None:
             pool = list(subjects.get(name) or [])
         elif name == SCIENTIFIC:
@@ -1693,7 +1835,9 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         examined_all += ex
         res = [r for e in ex for r in e["results"]]
         per[name] = counts | {
-            "status": "RAN", "budget_s": round(share_s, 2),
+            "status": "RETIRED_PROBE" if name in retired_c else "RAN",
+            "budget_s": round(share_s, 2),
+            "over_budget_seats": sum(len(e.get("over_budget") or []) for e in ex),
             "seconds": round(time.monotonic() - c0, 3),
             "measured": sum(1 for r in res if r["verdict"] != UNMEASURED),
             "fails": sum(1 for r in res if r["verdict"] == FAIL),
@@ -1703,7 +1847,7 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         }
     ov = ce.overlap(examined_all, SEATS)
     for name in COMMITTEES:
-        if per[name].get("status") == "RAN":
+        if per[name].get("status") in ("RAN", "RETIRED_PROBE"):
             per[name]["unique"] = sum(v for k, v in ov["unique"].items()
                                       if any(s.name == k and s.committee == name
                                              for s in SEATS))
@@ -1719,8 +1863,10 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
             st = state["seats"].setdefault(name, {})
             st["saved_s"] = round(float(st.get("saved_s", 0.0)) + float(s), 4)
             st["saves"] = int(st.get("saves", 0)) + 1
-    newly_retired = ce.retire(state, SEATS, ov)
-    new_shares = _reweight(state, per)
+    ce.record_day(state, examined_all, SEATS, ov, day)
+    newly_retired = ce.retire(state, SEATS, day)
+    new_shares = _reweight(state, per, day)
+    trials = _charge_trials(examined_all, write)
     state["queue"] = _queue(experiments)
     state["passes"] = int(state.get("passes", 0)) + 1
     state["last_pass"] = _now()
@@ -1738,10 +1884,11 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
                               "minority": e["minority"]} for e in examined_all
                              if e["minority"]][:200],
         "trees_sample": trees[:50], "trees_total": len(trees),
-        "traps": traps, "settled_this_pass": settled, "retired_this_pass": newly_retired,
+        "traps": traps, "trap_seed": seed, "settled_this_pass": settled,
+        "retired_this_pass": newly_retired, "trials_charged": trials,
         "seconds": round(time.monotonic() - t0, 3), "passes": state["passes"],
     }
-    health = health_doc(state, roi, traps, ov, per)
+    health = health_doc(state, roi, traps, ov, per, day)
     if write:
         _atomic(STATE, state)
         _atomic(FINDINGS, {"generated_utc": doc["generated_utc"], "examined": examined_all,
@@ -1754,6 +1901,43 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
     doc["health"] = health
     doc["examined"] = examined_all
     return doc
+
+
+#: Every (cell, seat) look at return data the Scientific seats ever made, charged ONCE: the union.
+TRIAL_UNION = STATE_DIR / "trial_union.txt"
+TRIAL_DONATIONS = BASE / "data" / "intelligence" / "committee_ensembles"
+
+
+def _charge_trials(examined: Sequence[Mapping[str, Any]], write: bool) -> dict[str, Any]:
+    """MULTIPLE-TESTING CHARGE. Each hourly falsifier look at a cell's returns is a trial. It is
+    charged once over the lifetime union of (cell, seat) looks -- a re-look on unchanged evidence
+    is not a new trial -- by a `tests_run` file the experiment ledger reads with every other
+    producer's (`libs/research/experiment_ledger.py`). No candidate rides in it."""
+    cell_seats = {s.name for s in SEATS if s.partition == "cell"}
+    looks = set()
+    for e in examined:
+        cell = str((e.get("keys") or {}).get("cell") or e["key"])
+        for r in e.get("results") or []:
+            if r["specialist"] in cell_seats and r["verdict"] != UNMEASURED:
+                looks.add(f"{cell}|{r['specialist']}")
+    try:
+        known = set(TRIAL_UNION.read_text(encoding="utf-8").split())
+    except OSError:
+        known = set()
+    new = sorted(looks - known)
+    out = {"looks_this_pass": len(looks), "new_in_union": len(new),
+           "union_total": len(known) + len(new)}
+    if write and new:
+        TRIAL_UNION.parent.mkdir(parents=True, exist_ok=True)
+        with TRIAL_UNION.open("a", encoding="utf-8") as fh:
+            fh.write("\n".join(new) + "\n")
+        stamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
+        _atomic(TRIAL_DONATIONS / f"discoveries_{stamp}.json",
+                {"source": "committee_ensembles", "kind": "trial_charge",
+                 "tests_run": len(new), "discoveries": [],
+                 "why": "falsifier looks at return data by the Scientific committee, charged "
+                        "once over the lifetime union of (cell, seat)"})
+    return out
 
 
 def _premortems(examined: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -1775,9 +1959,10 @@ def _premortems(examined: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
 # ================================================================== health (the CRO's duty read)
 def health_doc(state: Mapping[str, Any], roi: Mapping[str, Mapping[str, Any]],
                traps: Mapping[str, Mapping[str, Any]], ov: Mapping[str, Any],
-               per: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
+               per: Mapping[str, Mapping[str, Any]], day: str | None = None) -> dict[str, Any]:
     """Per specialist: calibration, false_alarm_rate, experiments_saved, overlap,
     ablation_value, roi. Per committee: a verdict the CRO can act on."""
+    day = day or datetime.now(tz=UTC).date().isoformat()
     seats_out: dict[str, Any] = {}
     stats = state.get("seats") or {}
     best_overlap: dict[str, float] = {}
@@ -1788,15 +1973,22 @@ def health_doc(state: Mapping[str, Any], roi: Mapping[str, Mapping[str, Any]],
         s = stats.get(sp.name) or {}
         r = roi.get(sp.name) or {}
         n = int(s.get("settled", 0))
+        tn = int(s.get("trap_settled", 0))
         cleans = int(s.get("cleans", 0))
         cost = float(s.get("cost_s", 0.0))
-        info = float(r.get("unique_catches") or 0) + float(s.get("saved_s", 0.0)) / 10.0
+        w = ce.window(state, sp.name, day)
+        info = float(w["unique"] + w["sole"]) + float(s.get("saved_s", 0.0)) / 10.0
         seats_out[sp.name] = {
             "committee": sp.committee, "level": sp.level, "status": r.get("status"),
-            "calibration": {"brier": round(float(s.get("brier_sum", 0.0)) / n, 4) if n
-                            else UNMEASURED, "settled": n,
-                            "pending": sum(1 for c in state.get("pending") or []
-                                           if c.get("specialist") == sp.name)},
+            "calibration": {
+                "brier": round(float(s.get("brier_sum", 0.0)) / n, 4) if n else UNMEASURED,
+                "settled": n,
+                "trap_brier": round(float(s.get("trap_brier_sum", 0.0)) / tn, 4) if tn
+                else UNMEASURED, "trap_scored": tn,
+                "weight": round(ce.calibrated_weight(state, sp.name), 4),
+                "settles_by": sp.settles_by,
+                "pending": sum(1 for c in state.get("pending") or []
+                               if c.get("specialist") == sp.name)},
             "false_alarm_rate": round(int(s.get("false_alarms", 0)) / cleans, 4) if cleans
             else UNMEASURED,
             "trap_catch_rate": round(int(s.get("traps_caught", 0)) / int(s["traps"]), 4)
@@ -1805,23 +1997,34 @@ def health_doc(state: Mapping[str, Any], roi: Mapping[str, Mapping[str, Any]],
                                   "seconds": round(float(s.get("saved_s", 0.0)), 3)},
             "overlap": {"max_jaccard": round(best_overlap.get(sp.name, 0.0), 4),
                         "fails": (ov.get("fails") or {}).get(sp.name, 0)},
-            "ablation_value": {"unique_catches": (ov.get("unique") or {}).get(sp.name, 0),
-                               "sole_objector": (ov.get("ablation") or {}).get(sp.name, 0)},
+            "ablation_value": {
+                "window_days": ce.RETIRE_WINDOW_DAYS, "history_days": w["history_days"],
+                "value": w["unique"] + w["sole"], "unique_catches": w["unique"],
+                "sole_objector": w["sole"], "measured": w["measured"],
+                "this_pass": (ov.get("unique") or {}).get(sp.name, 0)},
             "roi": {"cost_s": round(cost, 3), "measured": int(s.get("measured", 0)),
-                    "info_per_s": round(info / cost, 4) if cost > 0 else UNMEASURED},
+                    "info_per_s": round(info / cost, 4) if cost > 0 else UNMEASURED,
+                    "retirement": (state.get("retired") or {}).get(sp.name),
+                    "missed_while_retired": (state.get("missed") or {}).get(sp.name)},
             "last_trap": (traps.get(sp.name) or {}).get("trap"),
         }
     committees: dict[str, Any] = {}
     for c in COMMITTEES:
         mine = {k: v for k, v in seats_out.items() if v["committee"] == c}
         broken = sorted(k for k, v in mine.items() if v["status"] == "BROKEN")
-        alarms = sorted(k for k, v in mine.items() if (traps.get(k) or {}).get("false_alarm"))
+        # A clean twin is drawn fresh each pass, so a seat's false-alarm RATE is the measure; a
+        # single alarm is a reading, and DEGRADED fires when the rate crosses the ceiling.
+        alarms = sorted(k for k, v in mine.items()
+                        if isinstance(v["false_alarm_rate"], float)
+                        and v["false_alarm_rate"] > FALSE_ALARM_CEILING)
         p = per.get(c) or {}
-        if p.get("status") == "RETIRED":
-            verdict, why = "RETIRED", str(p.get("why"))
+        if p.get("status") == "RETIRED_PROBE":
+            verdict, why = "RETIRED", str(((state.get("retired_committees") or {}).get(c)
+                                           or {}).get("why"))
         elif broken or alarms:
             verdict, why = "DEGRADED", (f"broken seats {broken}" if broken else
-                                        f"false alarms on clean twins {alarms}")
+                                        f"clean-twin false-alarm rate above "
+                                        f"{FALSE_ALARM_CEILING:.0%}: {alarms}")
         elif p.get("examined", 0) and not p.get("measured"):
             verdict, why = "DARK", "examined subjects but measured nothing"
         elif not p.get("population"):
@@ -1834,8 +2037,20 @@ def health_doc(state: Mapping[str, Any], roi: Mapping[str, Mapping[str, Any]],
                                                  if v["status"] == "RETIRED"),
                          "share": (state.get("shares") or BASE_SHARE).get(c),
                          "examined": p.get("examined", 0), "measured": p.get("measured", 0),
-                         "deferred": p.get("deferred", 0)}
+                         "deferred": p.get("deferred", 0),
+                         "over_budget_seats": p.get("over_budget_seats", 0)}
     return {"generated_utc": _now(), "last_pass": state.get("last_pass"),
+            "budget_disclosure": (
+                "ORDER DECIDES WHAT FITS. Inside a level, seats run in order of expected "
+                "information per second (binary entropy of the seat's FAIL rate x its "
+                "calibrated weight / its measured cost). When a subject's budget or the "
+                "committee's share runs out, the seats later in that order are not run for "
+                "it: each committee's over_budget_seats counts those skips this pass, each "
+                "examined subject names them in ensemble_findings.json, and deferred counts "
+                "subjects never reached. Retired seats sit only on 1 in "
+                f"{ce.PROBE_EVERY} subjects (probes)."),
+            "trap_policy": ("fixtures are regenerated every pass from the pass seed (the hour); "
+                            "a trap reading is ground truth and enters every seat's Brier"),
             "committees": committees, "specialists": seats_out,
             "all_healthy": all(v["verdict"] == "HEALTHY" for v in committees.values())}
 

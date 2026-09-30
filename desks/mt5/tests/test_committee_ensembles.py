@@ -49,7 +49,7 @@ def desk(tmp_path, monkeypatch):
 
 
 def _planted() -> dict[str, list[ce.Subject]]:
-    good_cell = ens._cell(ens._bars(seed=12), ens._oracle(ens._bars(seed=12)), 0.0)
+    good_cell = ens._momentum_cell(12)
     return {
         ens.SCIENTIFIC: [
             ce.Subject(ens.SCIENTIFIC, "g_bad", {"mechanism": {"note": "", "status": "UNNAMED",
@@ -90,11 +90,30 @@ def test_exactly_six_committees_every_seat_typed_and_trapped():
         assert s.failure_class and s.cost_s > 0
 
 
-def test_every_seat_catches_its_trap_and_passes_its_clean_twin():
-    traps = ce.run_traps(ens.SEATS)
+@pytest.mark.parametrize("seed", [0, 491_337, 2_026_093_020])
+def test_every_seat_catches_its_trap_and_passes_its_clean_twin(seed):
+    traps = ce.run_traps(ens.SEATS, seed)
     missed = [k for k, v in traps.items() if not v.get("caught")]
     alarms = [k for k, v in traps.items() if v.get("false_alarm")]
     assert missed == [] and alarms == []
+
+
+def test_traps_are_regenerated_from_the_pass_seed():
+    sp = next(s for s in ens.SEATS if s.name == "record_sample")
+    assert sp.trap(1) != sp.trap(2) and sp.trap(1) == sp.trap(1)
+    bars = next(s for s in ens.SEATS if s.name == "gaps")
+    assert len(bars.trap(1)) != len(bars.trap(2))
+
+
+def test_the_placebo_clean_twin_reads_no_future_bar():
+    """The clean twin's signals must be a function of bars already closed at signal time."""
+    cell = ens._event_cell(19)
+    df, sigs = cell["df"], cell["signals"]
+    pos = {t: i for i, t in enumerate(df.index)}
+    for s in sigs:
+        i = pos[s.time]
+        wick_low = df["low"].iloc[i] < min(df["open"].iloc[i], df["close"].iloc[i]) * 0.995
+        assert (s.side > 0) == bool(wick_low)
 
 
 def test_no_committee_holds_authority():
@@ -208,24 +227,52 @@ def test_fate_seats_settle_on_the_graph():
     assert state["seats"]["cost_surface"]["brier_sum"] == pytest.approx(0.75 ** 2)
 
 
-def test_a_redundant_seat_retires_and_unmeasured_never_does():
+def _day(i):
+    return (datetime(2026, 9, 1, tzinfo=UTC) + timedelta(days=i)).date().isoformat()
+
+
+def _rows(n, dear_unique=False, prefix="k"):
+    out = []
+    for i in range(n):
+        res = [{"specialist": "dear", "verdict": ce.FAIL, "strength": .9, "cost_s": 5.0},
+               {"specialist": "dark", "verdict": ce.UNMEASURED, "strength": 0, "cost_s": 0.0}]
+        if not dear_unique:
+            res.append({"specialist": "cheap", "verdict": ce.FAIL, "strength": .9,
+                        "cost_s": 0.01})
+        out.append({"committee": "c", "key": f"{prefix}{i}", "fingerprint": "f", "keys": {},
+                    "results": res, "retired_skipped": []})
+    return out
+
+
+def test_retirement_is_the_14_day_ablation_rule_with_a_reopen_path():
     seats = [_sp("dear", 0, _res(ce.FAIL, 0.9), cost=5.0), _sp("cheap", 0, _res(ce.FAIL, 0.9)),
              _sp("dark", 0, _res(ce.UNMEASURED, 0.0))]
     state = ce.blank_state()
-    rows = []
-    for i in range(ce.MIN_OBS_FOR_RETIREMENT + 5):
-        rows.append({"committee": "c", "key": f"k{i}", "fingerprint": "f", "keys": {},
-                     "results": [{"specialist": "dear", "verdict": ce.FAIL, "strength": .9,
-                                  "cost_s": 5.0},
-                                 {"specialist": "cheap", "verdict": ce.FAIL, "strength": .9,
-                                  "cost_s": 0.01},
-                                 {"specialist": "dark", "verdict": ce.UNMEASURED,
-                                  "strength": 0, "cost_s": 0.0}]})
-    ce.update_state(state, rows, {})
-    ov = ce.overlap(rows, seats)
-    assert ce.retire(state, seats, ov) == ["dear"]
-    assert state["retired"]["dear"]["covered_by"] == "cheap"
-    assert ce.roi(state, seats, ov)["dark"]["status"] == "ACTIVE"
+    for d in range(ce.RETIRE_WINDOW_DAYS - 1):           # 13 days: too short a history
+        rows = _rows(10)
+        ce.record_day(state, rows, seats, ce.overlap(rows, seats), _day(d))
+        assert ce.retire(state, seats, _day(d))["retired"] == []
+    rows = _rows(10)
+    last = _day(ce.RETIRE_WINDOW_DAYS - 1)
+    ce.record_day(state, rows, seats, ce.overlap(rows, seats), last)
+    out = ce.retire(state, seats, last)
+    # Both FAIL on every subject, so NEITHER has ablation value: both retire. UNMEASURED never.
+    assert sorted(out["retired"]) == ["cheap", "dear"] and "dark" not in state["retired"]
+    assert state["retired"]["dear"]["reopen"]
+    # A retired seat sits only on probe subjects, and the skips are billed.
+    fp_probe = next(f"{i:08x}" for i in range(1000) if ce.is_probe(f"{i:08x}"))
+    fp_plain = next(f"{i:08x}" for i in range(1000) if not ce.is_probe(f"{i:08x}"))
+    assert [s.name for s in ce.plan(seats, state, 0, 99.0, None, probe=False)[0]] == ["dark"]
+    assert "dear" in [s.name for s in ce.plan(seats, state, 0, 99.0, None, probe=True)[0]]
+    assert ce.is_probe(fp_probe) and not ce.is_probe(fp_plain)
+    skipped = [{"retired_skipped": ["dear"], "results": []}]
+    ce.record_day(state, skipped, [], {}, last)
+    assert state["missed"]["dear"]["subjects"] == 1 and state["missed"]["dear"]["bits"] > 0
+    # A probe's unique catch inside the window re-opens it.
+    rows = _rows(3, dear_unique=True, prefix="p")
+    nxt = _day(ce.RETIRE_WINDOW_DAYS)
+    ce.record_day(state, rows, seats, ce.overlap(rows, seats), nxt)
+    assert ce.retire(state, seats, nxt)["reopened"] == ["dear"]
 
 
 def test_a_seat_that_misses_its_trap_is_broken():
@@ -270,6 +317,7 @@ def test_a_pass_writes_the_report_the_health_and_the_order_hints(desk):
     for name, row in health["specialists"].items():
         for f in HEALTH_FIELDS:
             assert f in row, (name, f)
+    assert "ORDER DECIDES WHAT FITS" in health["budget_disclosure"]
     assert health["committees"][ens.SCIENTIFIC]["verdict"] == "HEALTHY"
     hints = json.loads(ens.PREMORTEMS.read_text())
     assert set(hints) == {"cell_bad"} and hints["cell_bad"]["source"] == "committees"
@@ -299,27 +347,65 @@ def test_budget_moves_to_information_and_unmeasured_moves_nothing():
                          "fails": 0}
     per[ens.META] = {"status": "RAN", "measured": 0, "seconds": 10.0}
     before = dict(state["shares"])
-    after = ens._reweight(state, per)
+    after = ens._reweight(state, per, "2026-09-30")
     assert after[ens.FORENSIC] < before[ens.FORENSIC]
     assert sum(after.values()) == pytest.approx(1.0, abs=1e-3)
     assert min(after.values()) >= ens.SHARE_FLOOR
-    assert state["floor_streak"][ens.META] == 0
+    assert state["committee_days"][ens.META]["2026-09-30"]["floor_passes"] == 0
 
 
 def test_a_committee_that_adds_nothing_is_retired_and_readmitted_on_evidence():
     state = {"shares": {c: (ens.SHARE_FLOOR if c == ens.FORENSIC else 0.2)
-                        for c in ens.COMMITTEES},
-             "floor_streak": {ens.FORENSIC: ens.RETIRE_AFTER_PASSES},
-             "lifetime": {ens.FORENSIC: {"measured": 500, "unique": 0, "fails": 0,
-                                         "seconds": 100.0, "saved_s": 0.0}}}
+                        for c in ens.COMMITTEES}}
     per = {c: {"measured": 50, "seconds": 10.0, "unique": 5, "fails": 10}
            for c in ens.COMMITTEES}
     per[ens.FORENSIC] = {"measured": 50, "seconds": 10.0, "unique": 0, "fails": 0}
-    ens._reweight(state, per)
+    for d in range(ce.RETIRE_WINDOW_DAYS - 1):
+        ens._reweight(state, per, _day(d))
+        assert ens.FORENSIC not in state["retired_committees"]
+    ens._reweight(state, per, _day(ce.RETIRE_WINDOW_DAYS - 1))
     assert ens.FORENSIC in state["retired_committees"]
+    # It keeps running at the floor as a probe; a unique catch re-admits it.
     per[ens.FORENSIC] = {"measured": 50, "seconds": 10.0, "unique": 3, "fails": 3}
-    ens._reweight(state, per)
+    ens._reweight(state, per, _day(ce.RETIRE_WINDOW_DAYS))
     assert ens.FORENSIC not in state["retired_committees"]
+
+
+def test_a_certified_survivors_red_team_claim_is_not_scored_by_its_certificate():
+    state = ce.blank_state()
+    ex = {"committee": ens.SCIENTIFIC, "key": "survivor:c1", "fingerprint": "f",
+          "keys": {"cell": "n1"},
+          "results": [{"specialist": "cost_surface", "verdict": ce.FAIL, "strength": 0.9,
+                       "cost_s": 0.0}]}
+    ce.update_state(state, [ex], {})
+    assert ce.settle(state, ens._outcome_fn([], {"n1": {"fate": "CERTIFIED"}})) == 0
+    assert ce.settle(state, ens._outcome_fn([], {"n1": {"fate": "FAILED"}})) == 1
+    assert state["seats"]["cost_surface"]["brier_sum"] == pytest.approx(0.05 ** 2)
+
+
+def test_every_seat_is_scored_on_its_traps_as_ground_truth():
+    state = ce.blank_state()
+    ce.update_state(state, [], {"a": {"trap": ce.FAIL, "trap_strength": 0.9, "caught": True,
+                                      "clean": ce.PASS, "clean_strength": 0.8,
+                                      "false_alarm": False}})
+    s = state["seats"]["a"]
+    assert s["trap_settled"] == 2
+    assert s["trap_brier_sum"] == pytest.approx(0.05 ** 2 + 0.1 ** 2)
+    assert ce.calibrated_weight(state, "a") > 0.99
+
+
+def test_falsifier_looks_are_charged_once_over_the_union(desk, monkeypatch):
+    monkeypatch.setattr(ens, "TRIAL_UNION", desk / "committees" / "union.txt")
+    monkeypatch.setattr(ens, "TRIAL_DONATIONS", desk / "intelligence" / "committee_ensembles")
+    ex = [{"committee": ens.SCIENTIFIC, "key": "g", "keys": {"cell": "n1"},
+           "results": [{"specialist": "cost_surface", "verdict": ce.PASS},
+                       {"specialist": "truncation", "verdict": ce.UNMEASURED},
+                       {"specialist": "mechanism_named", "verdict": ce.PASS}]}]
+    assert ens._charge_trials(ex, True)["new_in_union"] == 1
+    assert ens._charge_trials(ex, True)["new_in_union"] == 0
+    files = list((desk / "intelligence" / "committee_ensembles").glob("discoveries_*.json"))
+    doc = json.loads(files[0].read_text())
+    assert doc["tests_run"] == 1 and doc["discoveries"] == []
 
 
 def test_read_health_is_never_healthy_when_absent_or_stale(tmp_path):
@@ -352,7 +438,15 @@ def test_the_gauntlets_survivors_are_red_teamed_first_from_l1(monkeypatch):
     assert subs[0].committee == ens.SCIENTIFIC and "mechanism" not in subs[0].evidence
     state = ce.blank_state()
     bank = ce.Subject(ens.SCIENTIFIC, "b", {"mechanism": {"note": ""}})
-    subs[0].evidence["cell"] = ens._cell(ens._bars(seed=12), ens._oracle(ens._bars(seed=12)),
-                                         0.0)
-    ex, counts = ens._examine_committee(ens.SCIENTIFIC, [bank, subs[0]], state, 60.0, 0.0)
+    subs[0].evidence["cell"] = ens._momentum_cell(12)
+    ex, _counts = ens._examine_committee(ens.SCIENTIFIC, [bank, subs[0]], state, 60.0, 0.0)
     assert ex[0]["key"] == "survivor:c1" and ex[0]["levels"][0] == 1
+
+
+def test_dead_organs_never_judges_the_desk_from_a_non_trading_hosts_attestation():
+    sp = next(s for s in ens.SEATS if s.name == "dead_organs")
+    census = {"LIVE": 126, "NEVER": 715, "MISSING": 47}
+    r = ce.run_seat(sp, {"program": {"census": census, "host_role": "non_trading_host"}}, "p")
+    assert r.verdict == ce.UNMEASURED
+    r = ce.run_seat(sp, {"program": {"census": census, "host_role": "trading_host"}}, "p")
+    assert r.verdict == ce.FAIL

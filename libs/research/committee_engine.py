@@ -65,10 +65,16 @@ DECISIVE = 0.8
 #: Measured PASSes settle a level only when at least one is this strong; a weak pass (a cheap
 #: screen that found nothing) invites the next level rather than closing the question.
 CONFIDENT = 0.6
-#: Retirement evidence floor: a seat is judged for redundancy only after this many subjects.
+#: Retirement evidence floor: a seat is judged for redundancy only after this many measurements
+#: inside the window.
 MIN_OBS_FOR_RETIREMENT = 60
-#: A seat is redundant when this share of its catches were also made by a cheaper seat.
-REDUNDANT_OVERLAP = 0.95
+#: THE RETIREMENT RULE (CRO D27): a seat whose ablation value -- the subjects only it objected
+#: to -- is zero or less over this many days of measurement retires. A shorter history never does.
+RETIRE_WINDOW_DAYS = 14
+#: A retired seat still sits on one subject in this many (chosen by the subject's fingerprint,
+#: so the probe sample is stable and unbiased by the seat); a unique catch inside the window
+#: re-opens it.
+PROBE_EVERY = 20
 #: Traps: a seat that catches fewer than this share of its own traps is BROKEN.
 TRAP_FLOOR = 0.8
 #: Open calibration claims kept; the oldest leave first.
@@ -154,8 +160,8 @@ class Specialist:
     failure_class: str
     cost_s: float                               # declared cost, used before it is measured
     check: Callable[[Any, str], Result]         # (partition evidence, subject key) -> Result
-    trap: Callable[[], Any] | None = None       # evidence the seat MUST fail
-    clean: Callable[[], Any] | None = None      # evidence the seat must NOT fail
+    trap: Callable[[int], Any] | None = None    # seed -> evidence the seat MUST fail
+    clean: Callable[[int], Any] | None = None   # seed -> evidence the seat must NOT fail
     settles_by: str = "remeasure"               # "fate" | "remeasure"
 
 
@@ -176,7 +182,8 @@ def entropy(p: float) -> float:
 
 # ------------------------------------------------------------------------------------ state
 def blank_state() -> dict[str, Any]:
-    return {"seats": {}, "seen": {}, "pending": [], "retired": {}, "broken": {}}
+    return {"seats": {}, "seen": {}, "pending": [], "retired": {}, "broken": {}, "days": {},
+            "missed": {}}
 
 
 def seat_stats(state: Mapping[str, Any], name: str) -> dict[str, Any]:
@@ -190,36 +197,58 @@ def fail_prior(state: Mapping[str, Any], name: str) -> float:
 
 
 def calibrated_weight(state: Mapping[str, Any], name: str) -> float:
-    """1 - Brier (0.25 is a coin); a seat with no settled claims keeps weight 0.75."""
+    """1 - Brier over every settled claim AND every planted-trap reading (ground truth the seat
+    cannot see coming); 0.25 is a coin, and a seat with nothing scored keeps weight 0.75."""
     s = seat_stats(state, name)
-    n = int(s.get("settled", 0))
-    return 1.0 - (float(s.get("brier_sum", 0.0)) / n if n else 0.25)
+    n = int(s.get("settled", 0)) + int(s.get("trap_settled", 0))
+    b = float(s.get("brier_sum", 0.0)) + float(s.get("trap_brier_sum", 0.0))
+    return 1.0 - (b / n if n else 0.25)
 
 
-def select(seats: Sequence[Specialist], state: Mapping[str, Any], level: int,
-           budget_s: float, partitions: Iterable[str] | None = None) -> list[Specialist]:
-    """DYNAMIC SEAT SELECTION: this level's live seats, most information per second first.
+def p_fail(verdict: str, strength: float) -> float:
+    """The probability of FAIL a typed result asserts."""
+    return 0.5 + 0.5 * strength if verdict == FAIL else 0.5 - 0.5 * strength
 
-    Only seats whose partition the subject CARRIES sit (a partition present but empty is
-    carried, and its seat says UNMEASURED); a seat for another kind of subject never does."""
+
+def is_probe(fingerprint: str) -> bool:
+    return int(fingerprint[:8] or "0", 16) % PROBE_EVERY == 0
+
+
+def plan(seats: Sequence[Specialist], state: Mapping[str, Any], level: int, budget_s: float,
+         partitions: Iterable[str] | None = None, probe: bool = False
+         ) -> tuple[list[Specialist], list[str], list[str]]:
+    """DYNAMIC SEAT SELECTION: this level's seats, most information per second first.
+
+    Returns (chosen, left out for budget, retired and skipped). Only seats whose partition the
+    subject CARRIES sit (a partition present but empty is carried, and its seat says
+    UNMEASURED). A retired seat sits only on a probe subject. THE ORDER DECIDES WHAT FITS: when
+    the budget runs out, the seats later in the order are the ones not run, and they are named."""
     retired = set(state.get("retired") or {})
     has = None if partitions is None else set(partitions)
-    live = [s for s in seats if s.level == level and s.name not in retired
-            and (has is None or s.partition in has)]
+    here = [s for s in seats if s.level == level and (has is None or s.partition in has)]
+    live = [s for s in here if probe or s.name not in retired]
+    skipped_retired = sorted(s.name for s in here if s not in live)
 
     def rate(s: Specialist) -> float:
         cost = max(float(seat_stats(state, s.name).get("mean_cost_s") or s.cost_s), 1e-3)
         return entropy(fail_prior(state, s.name)) * calibrated_weight(state, s.name) / cost
 
     out: list[Specialist] = []
+    over: list[str] = []
     spent = 0.0
     for s in sorted(live, key=lambda s: (-rate(s), s.name)):
         cost = float(seat_stats(state, s.name).get("mean_cost_s") or s.cost_s)
         if out and spent + cost > budget_s:
+            over.append(s.name)
             continue
         out.append(s)
         spent += cost
-    return out
+    return out, over, skipped_retired
+
+
+def select(seats: Sequence[Specialist], state: Mapping[str, Any], level: int,
+           budget_s: float, partitions: Iterable[str] | None = None) -> list[Specialist]:
+    return plan(seats, state, level, budget_s, partitions)[0]
 
 
 def run_seat(sp: Specialist, evidence: Mapping[str, Any], key: str) -> Result:
@@ -259,13 +288,21 @@ def examine(subject: Subject, seats: Sequence[Specialist], state: Mapping[str, A
     """TRIGGER -> L0..L4 ESCALATION for one subject."""
     results: list[Result] = []
     levels_run: list[int] = []
+    over_budget: list[str] = []
+    retired_skipped: list[str] = []
     level = max(0, min(4, subject.level))
+    fp = subject.fingerprint()
+    probe = is_probe(fp)
     deadline = time.monotonic() + budget_s
     while level <= 4:
         left = deadline - time.monotonic()
         if left <= 0:
+            over_budget += [s.name for s in seats if s.level >= level
+                            and s.partition in subject.evidence]
             break
-        chosen = select(seats, state, level, left, subject.evidence)
+        chosen, over, gone = plan(seats, state, level, left, subject.evidence, probe)
+        over_budget += over
+        retired_skipped += gone
         if chosen:
             levels_run.append(level)
             here = [run_seat(sp, subject.evidence, subject.key) for sp in chosen]
@@ -285,8 +322,9 @@ def examine(subject: Subject, seats: Sequence[Specialist], state: Mapping[str, A
             saved[name] = round(spared / len(stoppers), 4)
     return {"key": subject.key, "committee": subject.committee, "trigger": subject.trigger,
             "claim": subject.claim, "keys": dict(subject.keys), "levels": levels_run,
-            "fingerprint": subject.fingerprint(), "results": [r.row() for r in results],
-            "minority": minority(results), "verdict": overall(results), "saved_s": saved}
+            "fingerprint": fp, "results": [r.row() for r in results],
+            "minority": minority(results), "verdict": overall(results), "saved_s": saved,
+            "probe": probe, "over_budget": over_budget, "retired_skipped": retired_skipped}
 
 
 def overall(rs: Sequence[Result]) -> str:
@@ -387,21 +425,29 @@ def contradictions(examined: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]
 
 
 # -------------------------------------------------------------- traps, overlap, ROI
-def run_traps(seats: Sequence[Specialist]) -> dict[str, dict[str, Any]]:
-    """PLANTED TRAPS: each seat against the defect it exists to catch, and its clean twin."""
+def run_traps(seats: Sequence[Specialist], seed: int = 0) -> dict[str, dict[str, Any]]:
+    """PLANTED TRAPS: each seat against the defect it exists to catch, and its clean twin.
+
+    The fixtures are GENERATED from `seed` (the pass sets it from the clock), so every pass
+    plants a fresh instance of each defect: a seat tuned to one fixed fixture fails the next."""
     out: dict[str, dict[str, Any]] = {}
     for sp in seats:
-        row: dict[str, Any] = {}
-        if sp.trap is not None:
-            r = run_seat(sp, {sp.partition: sp.trap()}, f"trap:{sp.name}")
-            row["trap"] = r.verdict
-            row["caught"] = r.verdict == FAIL
-        else:
-            row["trap"] = UNMEASURED
-        if sp.clean is not None:
-            r = run_seat(sp, {sp.partition: sp.clean()}, f"clean:{sp.name}")
-            row["clean"] = r.verdict
-            row["false_alarm"] = r.verdict == FAIL
+        row: dict[str, Any] = {"seed": seed}
+        for kind, make in (("trap", sp.trap), ("clean", sp.clean)):
+            if make is None:
+                row[kind] = UNMEASURED
+                continue
+            try:
+                ev = make(seed)
+            except Exception as exc:          # a fixture that cannot build measured nothing
+                row[kind], row[f"{kind}_why"] = UNMEASURED, f"{type(exc).__name__}: {exc}"
+                continue
+            r = run_seat(sp, {sp.partition: ev}, f"{kind}:{sp.name}")
+            row[kind], row[f"{kind}_strength"] = r.verdict, round(r.strength, 4)
+            if kind == "trap":
+                row["caught"] = r.verdict == FAIL
+            else:
+                row["false_alarm"] = r.verdict == FAIL
         out[sp.name] = row
     return out
 
@@ -460,8 +506,7 @@ def update_state(state: dict[str, Any], examined: Sequence[Mapping[str, Any]],
                 continue                     # the same claim on the same evidence, once
             open_claims.add(claim_id)
             # A claim to settle later: the P(FAIL) it asserted, and on what evidence.
-            p = 0.5 + 0.5 * float(r["strength"]) if r["verdict"] == FAIL \
-                else 0.5 - 0.5 * float(r["strength"])
+            p = p_fail(r["verdict"], float(r["strength"]))
             claim = {"specialist": r["specialist"], "committee": ex["committee"],
                      "key": ex["key"], "p_fail": round(p, 4), "at": now(),
                      "fingerprint": ex["fingerprint"]}
@@ -476,6 +521,15 @@ def update_state(state: dict[str, Any], examined: Sequence[Mapping[str, Any]],
         if "false_alarm" in t:
             s["cleans"] = int(s.get("cleans", 0)) + 1
             s["false_alarms"] = int(s.get("false_alarms", 0)) + int(bool(t["false_alarm"]))
+        # GROUND TRUTH: a planted defect is a FAIL by construction and its clean twin a PASS, so
+        # every seat, whatever its committee, is scored for calibration on every pass.
+        for kind, truth in (("trap", 1.0), ("clean", 0.0)):
+            v = t.get(kind)
+            if v in (PASS, FAIL):
+                q = p_fail(str(v), float(t.get(f"{kind}_strength") or 0.0))
+                s["trap_settled"] = int(s.get("trap_settled", 0)) + 1
+                s["trap_brier_sum"] = round(float(s.get("trap_brier_sum", 0.0))
+                                            + (q - truth) ** 2, 6)
         rate = s.get("traps_caught", 0) / s["traps"] if s.get("traps") else None
         if rate is not None and rate < TRAP_FLOOR:
             state.setdefault("broken", {})[name] = {
@@ -503,31 +557,69 @@ def settle(state: dict[str, Any], outcome: Callable[[Mapping[str, Any]], bool | 
     return n
 
 
-def retire(state: dict[str, Any], seats: Sequence[Specialist], ov: Mapping[str, Any]) -> list[str]:
-    """ROI RETIREMENT: enough observations, no unique catch, and a cheaper seat covers it."""
-    out = []
-    stats = state.get("seats") or {}
-    fails = ov.get("fails") or {}
+def record_day(state: dict[str, Any], examined: Sequence[Mapping[str, Any]],
+               seats: Sequence[Specialist], ov: Mapping[str, Any], day: str) -> None:
+    """Per seat per UTC day: measured, fails, unique catches and sole objections, so the
+    retirement rule reads a WINDOW, never a lifetime count against one pass's catches. Retired
+    seats that were skipped are billed the information they would have been expected to buy."""
+    days = state.setdefault("days", {})
     for sp in seats:
-        s = stats.get(sp.name) or {}
-        if sp.name in (state.get("retired") or {}) or int(s.get("measured", 0)) < \
-                MIN_OBS_FOR_RETIREMENT:
+        d = days.setdefault(sp.name, {}).setdefault(day, {"measured": 0, "fails": 0,
+                                                          "unique": 0, "sole": 0})
+        d["measured"] += int((ov.get("measured") or {}).get(sp.name, 0))
+        d["fails"] += int((ov.get("fails") or {}).get(sp.name, 0))
+        d["unique"] += int((ov.get("unique") or {}).get(sp.name, 0))
+        d["sole"] += int((ov.get("ablation") or {}).get(sp.name, 0))
+        keep = sorted(days[sp.name])[-(RETIRE_WINDOW_DAYS * 4):]
+        days[sp.name] = {k: days[sp.name][k] for k in keep}
+    missed = state.setdefault("missed", {})
+    for ex in examined:
+        for name in ex.get("retired_skipped") or []:
+            m = missed.setdefault(name, {"subjects": 0, "bits": 0.0})
+            m["subjects"] += 1
+            m["bits"] = round(m["bits"] + entropy(fail_prior(state, name))
+                              * calibrated_weight(state, name), 4)
+
+
+def window(state: Mapping[str, Any], name: str, day: str) -> dict[str, Any]:
+    """The seat's last RETIRE_WINDOW_DAYS days: totals, and how many days it spans."""
+    from datetime import date, timedelta
+    end = date.fromisoformat(day)
+    start = (end - timedelta(days=RETIRE_WINDOW_DAYS - 1)).isoformat()
+    rows = {k: v for k, v in ((state.get("days") or {}).get(name) or {}).items()
+            if start <= k <= day}
+    first = min((state.get("days") or {}).get(name) or {day: {}})
+    tot = {k: sum(int(v.get(k, 0)) for v in rows.values())
+           for k in ("measured", "fails", "unique", "sole")}
+    return tot | {"history_days": (end - date.fromisoformat(first)).days + 1}
+
+
+def retire(state: dict[str, Any], seats: Sequence[Specialist], day: str) -> dict[str, list[str]]:
+    """THE ROI RULE (CRO D27): ablation value <= 0 over RETIRE_WINDOW_DAYS days with enough
+    measurements retires a seat; a unique catch by a retired seat's probes inside the window
+    re-opens it. UNMEASURED never retires (no measurements, no verdict), and a broken seat is
+    repaired, never retired for being blind."""
+    out: dict[str, list[str]] = {"retired": [], "reopened": []}
+    retired = state.setdefault("retired", {})
+    for sp in seats:
+        w = window(state, sp.name, day)
+        value = w["unique"] + w["sole"]
+        if sp.name in retired:
+            if value > 0:
+                retired.pop(sp.name)
+                out["reopened"].append(sp.name)
             continue
-        if (ov.get("unique") or {}).get(sp.name, 0) > 0 or not fails.get(sp.name):
-            continue
-        cost = float(s.get("mean_cost_s") or sp.cost_s)
-        for p in ov.get("pairs") or []:
-            other = p["b"] if p["a"] == sp.name else p["a"] if p["b"] == sp.name else None
-            if other is None or p["jaccard"] < REDUNDANT_OVERLAP:
-                continue
-            ocost = float((stats.get(other) or {}).get("mean_cost_s") or cost)
-            if ocost < cost and other not in (state.get("retired") or {}):
-                state.setdefault("retired", {})[sp.name] = {
-                    "at": now(), "covered_by": other, "jaccard": p["jaccard"],
-                    "why": f"no unique catch in {s.get('measured')} measured; {other} catches "
-                           f"the same subjects at {ocost:.3f}s against {cost:.3f}s"}
-                out.append(sp.name)
-                break
+        if w["history_days"] >= RETIRE_WINDOW_DAYS and w["measured"] >= \
+                MIN_OBS_FOR_RETIREMENT and value <= 0 and sp.name not in (state.get("broken")
+                                                                          or {}):
+            retired[sp.name] = {
+                "at": now(), "window_days": RETIRE_WINDOW_DAYS, "measured": w["measured"],
+                "ablation_value": value,
+                "why": f"no subject only it objected to in {w['measured']} measurements over "
+                       f"{RETIRE_WINDOW_DAYS} days; probes on 1 in {PROBE_EVERY} subjects "
+                       f"re-open it on its first unique catch",
+                "reopen": f"a unique catch by a probe inside {RETIRE_WINDOW_DAYS} days"}
+            out["retired"].append(sp.name)
     return out
 
 
