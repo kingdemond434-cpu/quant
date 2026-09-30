@@ -225,6 +225,14 @@ def market_closed(now: datetime | None = None) -> bool:
 
 WORKERS = _worker_count()
 
+# Joblib/loky otherwise shells out to the removed/deprecated ``wmic`` command from each spawned
+# worker to rediscover physical core count. On the production Windows box those probes were
+# interleaved hundreds of times into the judge log and some failed at CreateProcess under load.
+# The judge has already computed its stricter CPU+memory ceiling; publish it so downstream
+# sklearn/joblib calls reuse the same number instead of spawning unrelated hardware probes.
+# An explicit operator value still wins.
+os.environ.setdefault("LOKY_MAX_CPU_COUNT", str(WORKERS))
+
 
 def _rss_mb() -> float:
     """This process's CURRENT resident size, or 0.0 where the platform will not say.
