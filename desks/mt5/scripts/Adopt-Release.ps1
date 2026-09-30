@@ -735,16 +735,14 @@ function Get-NonShippedDiff {
 
 function Get-ShippedDiffCount {
     param([string] $From, [string] $To)
-    # `--shortstat` preserves the exact audit count without shipping tens of thousands of path
-    # strings through the PowerShell pipeline.  The detailed corpus remains visible to the organ
-    # that owns and lands it (MT5-IntelShip).
-    # Rename similarity is irrelevant to this telemetry count and forces Git to compare blobs
-    # across the entire discovery lake.  On the live box that left adoption inside one count
-    # for minutes.  Count adds/deletes/modifications directly; IntelShip owns path genealogy.
-    $args = @("diff", "--shortstat", "--no-renames", $From, $To, "--") + $ShippedPathspecs
-    $summary = "$(Invoke-Git $args -AllowFail)"
-    if ($LASTEXITCODE -ne 0 -or $summary -notmatch '(\d+) files? changed') { return 0 }
-    return [int]$Matches[1]
+    # The adopter only needs to know whether the independently-owned corpus differs. Counting
+    # every changed discovery file scans tens of thousands of paths three times and used to hold
+    # the release mutex for minutes. `--quiet` stops at the first difference; IntelShip owns the
+    # exact per-path ledger. Return 1 as a presence flag, never as a fabricated exact count.
+    $args = @("diff", "--quiet", "--no-renames", $From, $To, "--") + $ShippedPathspecs
+    $null = Invoke-Git $args -AllowFail
+    if ($LASTEXITCODE -eq 1) { return 1 }
+    return 0
 }
 if ($dirty.Count -gt 0) {
     $dirtyPaths = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
@@ -915,7 +913,7 @@ foreach ($rec in $records) {
 }
 Write-Host ("  wrote {0} modified, {1} added, {2} deleted in place; {3} state path(s) origin no longer tracks untracked here (left on disk)" -f $written, $added, $removed, $untracked)
 if ($shipped -gt 0) {
-    Write-Host ("  left {0} discovery path(s) to MT5-IntelShip (intel_ship_adopt.ps1, hourly at :01, branch intel-ship/send)" -f $shipped)
+    Write-Host "  discovery drift exists and is left to MT5-IntelShip (hourly at :01, branch intel-ship/send)"
 }
 if ($kept.Count -gt 0) {
     Write-Host ("  kept {0} state path(s) this box wrote since it diverged (the box's evidence wins; origin's copy is reverted by the next push):" -f $kept.Count)
@@ -1124,7 +1122,7 @@ while ($drift.Count -gt 0 -and $repairPasses -lt 2) {
     }
 }
 if ($shippedDriftCount -gt 0) {
-    Write-Host ("  {0} discovery path(s) differ and are MT5-IntelShip's to land, not this script's" -f $shippedDriftCount)
+    Write-Host "  discovery drift remains and is MT5-IntelShip's to land, not this script's"
 }
 if ($stateDrift.Count -gt 0) {
     Write-Host ("  {0} state path(s) differ and are NOT blocking: the box's organs own them and " -f $stateDrift.Count)
