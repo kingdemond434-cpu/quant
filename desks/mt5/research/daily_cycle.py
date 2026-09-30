@@ -304,7 +304,11 @@ def _proposers() -> None:
                  # already here and `negative_knowledge` -- the model of what KILLS a cell --
                  # ran on no clock at all, which is the classic defect: the organ existed and
                  # produced nothing. Its report feeds the experience split.
-                 "negative_knowledge"):
+                 "negative_knowledge",
+                 # THE REGIME SPLIT (2026-09-30): every price-only family searched inside one
+                 # control-room regime at a time, purged walk-forward as the kill, survivors
+                 # donated as family `regime_split` to the same gauntlet.
+                 "regime_split_miner"):
         try:
             mod = __import__(name)
             kwargs = {}
