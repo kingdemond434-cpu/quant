@@ -53,17 +53,26 @@ _CAND = {"status": "PROMOTION_CANDIDATE", "timeframe": "M15",
          "promotion_authority": True}
 
 
-def _open_live_policy(tmp_path: Path, monkeypatch, *symbols: str, unban_m15: bool = False
-                      ) -> None:
+def _open_live_policy(tmp_path: Path, monkeypatch, *symbols: str, unban_m15: bool = False,
+                      lift_scalp_stand_down: bool = True) -> None:
     """Admit this file's fixture symbols through `mt5desk/live_policy.py` (bcbec41f, principal
     2026-09-17: the live account is XAUUSD-only, M15 banned desk-wide). Without it the
     promoter's write door RETIRES every fixture row before the promotion mechanics under test
     are ever read. The policy itself is pinned by test_live_policy.py and
-    test_plumbing_watchdog.py."""
+    test_plumbing_watchdog.py.
+
+    THE SCALP STAND-DOWN (4059265c, #51, principal 2026-09-29): `live_policy` now bans exec lane
+    `scalp_market` from live capital by default -- the executable replay is <= 0R a trade on every
+    candidate -- and only the policy FILE can lift it (`"banned_execs": []`). These tests pin the
+    promotion MECHANICS the lane keeps for the day it is lifted, so the fixture lifts it exactly
+    as the M15 ban is lifted; `test_the_stand_down_refuses_a_matured_scalp_candidate` below pins
+    the default, and test_live_policy.py pins the policy itself."""
     from mt5desk import live_policy
     doc: dict = {"live_symbols": list(symbols), "by": "test fixture"}
     if unban_m15:
         doc["banned_timeframes"] = {"*": [], **{sym: [] for sym in symbols}}
+    if lift_scalp_stand_down:
+        doc["banned_execs"] = []
     pol = tmp_path / "live_sleeve_policy.json"
     pol.write_text(json.dumps(doc), encoding="utf-8")
     monkeypatch.setattr(live_policy, "POLICY_FILE", pol)
@@ -138,6 +147,21 @@ def test_a_matured_certified_scalp_candidate_goes_live_immediately_and_idempoten
     assert s["risk_frac"] == promoter.PROMOTED_RISK_FRAC and s["lot"] == "auto_ramp"
     promoter.main()
     assert len(desk.sleeves()) == 1
+
+
+def test_the_stand_down_refuses_a_matured_scalp_candidate(desk, tmp_path, monkeypatch):
+    """The default policy after 4059265c (#51): a matured, certified scalp candidate is NOT
+    written LIVE -- the promoter's write door refuses exec lane `scalp_market` and the row lands
+    RETIRED with the stand-down named. Only the principal's policy file lifts it."""
+    _open_live_policy(tmp_path, monkeypatch, "XAUUSD", unban_m15=True,
+                      lift_scalp_stand_down=False)
+    desk.certify(_NAME)
+    desk.scalp({_NAME: dict(_CAND)})
+    promoter.main()
+    (s,) = desk.sleeves()
+    assert s["status"] == "RETIRED" and s["retired_by"] == "live_policy"
+    assert "scalp_market" in s["retire_reason"] and "stood down" in s["retire_reason"]
+    assert _dc.load_sleeves(tmp_path / "data" / "sleeves.json") == []
 
 
 def test_the_forward_clock_is_the_scalp_lanes_certificate(desk):

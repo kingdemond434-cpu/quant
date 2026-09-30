@@ -529,16 +529,22 @@ def test_partial_adoption_target_matches_do_not_become_permanent_false_conflicts
     fetched target is unknown local work. The comparison must cover every dirty path, including
     target deletions, and the ordinary refusal must remain after it."""
     code = _executable_lines(SCRIPT.read_text("utf-8"))
-    # BATCHED since f82c4727 (2026-09-29): one `git diff --name-only $target -- <100 paths>` per
-    # batch instead of one `git diff --quiet` per path, which took hours on the live index. Every
-    # dirty path is still classified: each batch covers a slice of the whole normalised list.
+    # BLOB IDENTITY since b458aca16 + 58ba1ce96 (2026-09-30), which replaced the f82c4727
+    # batches: even one eight-path `git diff` refreshes the enormous live index and took minutes
+    # on the trading box, so each dirty path's working-tree blob (clean filter applied, so a CRLF
+    # checkout equals its LF blob) is compared with the target's `ls-tree` blob, with no `git diff`
+    # at all. Every dirty path is still classified, and a target deletion still counts.
     compare = code.index("$normalisedDirty = @($dirty")
     refuse = code.index("local code path(s) are dirty")
     assert compare < refuse
     block = code[compare:refuse]
-    assert "for ($start = 0; $start -lt $normalisedDirty.Count; $start += $batchSize)" in block
-    assert '@("diff", "--name-only", "--no-ext-diff", $target, "--") + $batch' in block
-    assert "foreach ($rel in $batch)" in block
+    assert "foreach ($rel in $normalisedDirty)" in block
+    assert '@("ls-tree", $target, "--", $rel)' in block
+    assert '@("hash-object", "--path=$rel", "--", $rel)' in block
+    assert "$worktreeBlob -eq $targetBlob" in block
+    assert "if (-not $targetExists)" in block                  # target deletions are covered
+    loop = block[:block.index("$dirty = @($stillDirty)")]
+    assert '"diff"' not in loop and "$batchSize" not in loop
     assert "$stillDirty.Add($rel)" in block
     assert "$dirty = @($stillDirty)" in block
     assert "already equal the fetched target" in block
