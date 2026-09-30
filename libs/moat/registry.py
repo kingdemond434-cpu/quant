@@ -120,6 +120,12 @@ CANON: dict[str, str] = {
     "schema_migrations": "version INTEGER PRIMARY KEY, name TEXT, sha256 TEXT, applied_at TEXT",
 }
 
+#: The culture provenance columns (libs/research/cell_culture.FIELDS + its derivation).
+CULTURE_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("source_culture", "TEXT"), ("participant_structure", "TEXT"),
+    ("failure_mode_hypothesis", "TEXT"), ("crowding_prior", "TEXT"),
+    ("culture_derivation", "TEXT"))
+
 #: The moat factory's columns, added to the canonical tables (ADD COLUMN, never a rewrite).
 EXTENSIONS: dict[str, tuple[tuple[str, str], ...]] = {
     "research_candidates": (
@@ -170,11 +176,19 @@ EXTENSIONS: dict[str, tuple[tuple[str, str], ...]] = {
         # cells` -- not because Europe produced nothing but because its cells could not be traced
         # back. `attribution_route` records HOW each was reached, so a number can be checked.
         ("producer", "TEXT"), ("region", "TEXT"), ("attribution_route", "TEXT"),
+        # CULTURE PROVENANCE AT BIRTH (libs/research/cell_culture.py, principal 2026-09-30). The
+        # source culture, the participant structure on the other side of the trade, the stated
+        # failure-mode hypothesis and the English-literature crowding prior -- so Tier S can test
+        # whether a culture's version of a mechanism really fails on different days. Declared by
+        # the producer where it knows, inferred by the one rule otherwise, UNMEASURED never
+        # guessed; `culture_derivation` (JSON) says which. ADD COLUMN, never a rewrite.
+        *CULTURE_COLUMNS,
     ),
     #: The same three on the discovery, which is where a cell's regional ground is still visible:
     #: the compiler that turns a discovery into candidates writes its OWN generator, so a cell
     #: joined only to the compiler credits one pass-through with the whole desk's output.
-    "discoveries": (("producer", "TEXT"), ("region", "TEXT"), ("attribution_route", "TEXT")),
+    "discoveries": (("producer", "TEXT"), ("region", "TEXT"), ("attribution_route", "TEXT"),
+                    *CULTURE_COLUMNS),
     "research_memory": (("kind", "TEXT"), ("memory_key", "TEXT"), ("payload_json", "TEXT"),
                         ("evidence_json", "TEXT"), ("updated_at", "TEXT")),
     "workers": (("kind", "TEXT"), ("beat", "TEXT"), ("department", "TEXT"),
@@ -828,6 +842,21 @@ def _stamp(c: sqlite3.Connection, fields: Mapping[str, Any], *, origin: Any = No
         parent=_parent_attribution(c, fields.get("discovery_id")))
 
 
+def _culture(fields: Mapping[str, Any]) -> dict[str, str]:
+    """CULTURE AT BIRTH: the four culture columns plus their derivation, through the one rule in
+    `libs/research/cell_culture.py`. Declared values on the row win; the rest is inferred or
+    UNMEASURED. Never raises -- provenance may never cost the desk a cell."""
+    try:
+        from libs.research import cell_culture as _cc
+        got = _cc.infer(fields)
+    except Exception:
+        return {}
+    out = {k: str(got[k]) for k in ("source_culture", "participant_structure",
+                                    "failure_mode_hypothesis", "crowding_prior")}
+    out["culture_derivation"] = _j(got.get("culture_derivation") or {}) or "{}"
+    return out
+
+
 def enqueue_candidate(*, family: str, symbol: str, params: Mapping[str, Any] | None,
                       origin: str, mechanism: str = "", candidate_id: str | None = None,
                       status: str = "queued", conn: sqlite3.Connection | None = None,
@@ -874,6 +903,8 @@ def enqueue_candidate(*, family: str, symbol: str, params: Mapping[str, Any] | N
             "campaign_id": str(fields.get("campaign_id") or ""),
             "subtype": str(fields.get("transformation") or ""), "survived": 0,
             **_stamp(c, fields, origin=origin),
+            **_culture({**fields, "family": family, "symbol": symbol, "mechanism": mechanism,
+                        "params": dict(params or {}), "origin": origin}),
         }
         allowed = set(_columns(c, "research_candidates"))
         for k, v in fields.items():
@@ -1105,6 +1136,8 @@ def record_discovery(*, source_id: str, source_type: str, mechanism: str, origin
             "content_hash": h, "possible_cells": 0, "generated_cells": 0, "compiled_cells": 0,
             "queued_cells": 0, "tested_cells": 0, "blocked_cells": 0,
             **_stamp(c, {**fields, "source_id": source_id}, origin=origin, generator=generator),
+            **_culture({**fields, "source_id": source_id, "mechanism": mechanism,
+                        "generator": generator, "origin": origin}),
         }
         allowed = set(_columns(c, "discoveries"))
         alias = {"parent_discovery_ids": "parent_ids_json", "parent_ids": "parent_ids_json",

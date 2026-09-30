@@ -401,3 +401,48 @@ def test_cli_dry_run(desk, ctx, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "dry run" in out and "conversion coverage" in out
     assert not desk["paths"]["OUT"].exists()
+
+
+# --------------------------------------------------------------------------- culture provenance
+CULTURE_DOC = {
+    "source": "followme_cn", "generated_at": "2026-09-30T00:00:00+00:00", "tests_run": 10,
+    "discoveries": [
+        {"kind": "copy_trader", "symbol": "EURUSD", "family": "asia_momentum",
+         "params": {"rr": 1.8, "ttl_bars": 12, "session": "asia", "timeframe": "H1"},
+         "url": "https://www.followme.cn/trader/123",
+         "mechanism": "散户 chase the asia session handover: risk carried out of tokyo is "
+                      "repriced in london",
+         "title": "EURUSD asia handover by a FollowMe trader"}],
+}
+
+
+def test_every_emitted_cell_carries_the_sources_culture_url_and_seat(desk, ctx):
+    """THE DEFECT (Tier S cross-culture test, 2026-09-30): 24 live FX sleeves born in this
+    compiler carried no seat, no URL and no culture -- the compiler dropped them between the
+    donation it read and the cells it emitted. Every emitted cell now carries them forward."""
+    _write(desk["paths"]["INTEL"] / "followme_cn" / "discoveries_20260930_0000.json",
+           CULTURE_DOC)
+    report = dc.run(budget_s=60, max_discoveries=5, cursor_path=desk["paths"]["CURSOR"],
+                    out=desk["paths"]["OUT"], ctx=ctx)
+    assert report["compiled"] > 0
+    assert desk["donated"], "the compiler donated nothing"
+    for row in desk["donated"]:
+        assert row["source_culture"] == "CN/zh"
+        assert row["participant_structure"] == "retail_heavy"
+        assert row["failure_mode_hypothesis"] not in ("", None, "UNMEASURED")
+        assert row["crowding_prior"] in ("low", "medium", "high", "UNMEASURED")
+        assert row["source_url"] == "https://www.followme.cn/trader/123"
+        assert row["source_seat"] == "followme_cn"
+        assert row["source_file"].endswith("discoveries_20260930_0000.json")
+        assert row["culture_derivation"]["source_culture"].startswith("inferred:")
+    cands = R.candidates(limit=500)
+    assert cands and all(c["source_culture"] == "CN/zh" for c in cands)
+    disc = R.discoveries(limit=50)
+    assert any(d.get("source_culture") == "CN/zh" for d in disc)
+
+
+def test_a_row_with_no_evidence_carries_unmeasured_never_a_guess():
+    prov = dc.provenance({"symbol": "XAUUSD", "family": "carry", "mechanism": "carry"})
+    assert prov["source_culture"] == "UNMEASURED"
+    assert prov["culture_derivation"]["source_culture"] == "UNMEASURED"
+    assert "source_url" not in prov and "source_seat" not in prov

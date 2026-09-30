@@ -23,17 +23,17 @@
   }
  },
  "census": {
-  "LIVE": 123,
+  "LIVE": 124,
   "STALE": 0,
   "MISSING": 47,
   "NEVER": 675,
   "UNMEASURED": 29
  },
  "scope": {
-  "attested": 874,
+  "attested": 875,
   "excluded": 454,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
-  "registry_components": 1328,
+  "registry_components": 1329,
   "declaration_defects": 4,
   "declaration_defects_reason": "the component declares an artifact path the organ does not write, while the same basename is present elsewhere in the desk's state -- repair the declaration",
   "hash_skipped_over_budget": 0,
@@ -22160,6 +22160,31 @@
    "summary": {},
    "progress_metric": "timer_runs",
    "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:cell_culture_index",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/cell_culture_index.py"
+   ],
+   "clock": "hourly_cycle:cell_culture_index",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "LIVE",
+   "why": "artifact 0.1h old, inside its cadence",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/CELL_CULTURE.json",
+   "artifact_declared": "desks/mt5/reports/CELL_CULTURE.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 297,
+   "artifact_bytes": 43516,
+   "artifact_sha256": "353199103c6861feb8e8382c1e24229aec90cf1f5a9ba0f728290d47860568b5",
+   "summary": {},
+   "progress_metric": "leg_completions",
+   "consumer": "desks/mt5/research/culture_orthogonality.py (Tier S, #113: load_culture_index ke"
   }
  ],
  "ratchet": {
