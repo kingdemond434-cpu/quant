@@ -339,3 +339,55 @@ def test_a_world_cell_reaches_the_docket_end_to_end(monkeypatch, tmp_path) -> No
     gate = next(h for h in hyps if h["family"] == "exogenous_gate")
     assert gate["params"]["source"] == "alt_power_test"
     assert gate["params"]["base_family"] == "range_reversion"
+
+    # ---- PAST THE DOCKET, THROUGH ADMISSION (audit PR123_v2): every world cell the docket
+    # carries is judged and fails (the common case), the gauntlet's OWN ledger writer records
+    # it, the ONE lifetime online-FDR stream charges it, and the promotion door reads the
+    # verdict for an FX certificate that arrives after them.
+    if str(DESK / "scripts") not in sys.path:
+        sys.path.insert(0, str(DESK / "scripts"))
+    import external_gauntlet as eg
+
+    from libs.tiers import authority, online_fdr
+    from libs.tiers import promotion_authority as pa
+    from research import tier_s as ts
+    monkeypatch.setattr(eg, "GATE_LEDGER", tmp_path / "gate_verdict_ledger.jsonl")
+    monkeypatch.setattr(eg, "GATE_INDEX", tmp_path / "gate_verdict_index.json")
+    verdicts = [{"cell": f"world.{h['symbol']}.{h['family']}.{i}", "sym": h["symbol"],
+                 "family": h["family"], "passed": False, "terminal_gate": "deflated_sharpe"}
+                for i, h in enumerate(hyps)]
+    eg._append_gate_ledger(verdicts)
+    n_gate = sum(1 for h in hyps if h["family"] == "exogenous_gate")
+    assert n_gate >= 1
+    surv = {"hunt.EURUSD.carry.x": {"gated_at": "2999-01-01T00:00:00",
+                                    "shadow_spec": {"family": "carry"},
+                                    "gates": {"reality_check_spa": {"p_value": 2e-5}}},
+            "hunt.GBPUSD.carry.y": {"gated_at": "2999-01-01T00:00:01",
+                                    "shadow_spec": {"family": "carry"},
+                                    "gates": {"reality_check_spa": {"p_value": 0.2}}}}
+    monkeypatch.setattr(ts, "GATE_LEDGER", eg.GATE_LEDGER)
+    monkeypatch.setattr(ts, "HGRAPH", tmp_path / "no_graph.jsonl")
+    monkeypatch.setattr(ts, "OUT_DIR", tmp_path / "tier_s")
+    monkeypatch.setattr(ts, "survivors", lambda: surv)
+    fdr = ts.organ_online_fdr()
+    assert fdr["failed_tests_charged"] == len(verdicts), "every world cell is charged"
+    assert fdr["n_tests"] == len(verdicts) + 2
+    rows = json.loads((tmp_path / "tier_s" / "ONLINE_FDR_ROWS.json").read_text("utf-8"))
+    rows["generated_utc"] = datetime.now(UTC).isoformat()
+    monkeypatch.setattr(pa, "ROOT", tmp_path)
+    monkeypatch.setattr(pa, "FDR_ROWS", tmp_path / "tier_s" / "ONLINE_FDR_ROWS.json")
+    pa.FDR_ROWS.write_text(json.dumps(rows), "utf-8")
+    monkeypatch.setattr(pa.firewall, "may", lambda *a, **k: True)
+    monkeypatch.setattr(authority, "suspended", lambda *a, **k: False)
+    assert pa._fdr("EURUSD.carry.x") is None, "the strong FX certificate is admitted"
+    held = str(pa._fdr("GBPUSD.carry.y"))
+    assert held.startswith("ONLINE_FDR_OVER_BUDGET")
+    if hasattr(online_fdr, "replay_budgeted"):
+        # exogenous_gate_fdr_budget applied: the gate cells are charged to their own share of
+        # the ONE budget and the door quotes the bound its rule actually carries
+        assert rows["budgets"]["exogenous_gate"]["n_tests"] == n_gate
+        assert rows["fdr_bound"]["fdr_bound"] == online_fdr.fdr_bound()["fdr_bound"]
+        assert "FDR bound" in held and "lifetime online-FDR budget was spent" not in held
+    else:
+        # patch not applied: the gate cells share the pooled stream with FX/metals
+        assert "budgets" not in rows

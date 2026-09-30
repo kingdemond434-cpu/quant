@@ -181,15 +181,36 @@ def test_no_allocator_pass_is_unmeasured_and_a_curve_that_misses_the_heat_says_s
 # ------------------------------------ audit of PR #123: the gate family's own FDR budget
 def test_the_gate_family_fdr_budget_is_billed_and_never_reads_as_free(tmp_path,
                                                                       monkeypatch) -> None:
+    """Rebuilt after audit PR123_v2: the rail is billed as the FX/metals door's harshness with
+    and without the patch, and its log-wealth is never invented."""
     monkeypatch.setattr(mg, "BASE", tmp_path)
     out = mg.measure_gate_family_fdr_budget(None, {}, {})
-    assert out["verdict"] == mg.UNMEASURED and "partition" in out["why"]
-    p = tmp_path / "reports" / "tier_s" / "ONLINE_FDR_ROWS.json"
-    p.parent.mkdir(parents=True)
-    p.write_text(json.dumps({"partition": {"flipped_admitted": [], "flipped_blocked": [],
-                                           "budgets": {"main": 10, "exogenous_gate": 90}}}))
-    assert mg.measure_gate_family_fdr_budget(None, {}, {})["verdict"] == mg.NOT_BINDING
-    p.write_text(json.dumps({"partition": {"flipped_admitted": ["h.EURUSD_x"],
-                                           "flipped_blocked": []}}))
+    assert out["verdict"] == mg.UNMEASURED and "ONLINE_FDR.json" in out["why"]
+    tier = tmp_path / "reports" / "tier_s"
+    tier.mkdir(parents=True)
+    # PATCH ABSENT: the pooled stream's harshness, from counts
+    (tier / "ONLINE_FDR.json").write_text(json.dumps({"n_tests": 583_488,
+                                                      "generated_utc": "2026-09-30T20:00:00"}))
+    led = tmp_path / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+    led.parent.mkdir(parents=True)
+    led.write_text("".join(json.dumps({"cell": f"g{i}", "family": "exogenous_gate",
+                                       "passed": False, "graph_id": ""}) + "\n"
+                           for i in range(560_000)))
+    got = mg.measure_gate_family_fdr_budget(None, {}, {})
+    assert got["patch"] == "ABSENT" and got["verdict"] == mg.UNMEASURED
+    assert got["n_gate"] == 560_000 and got["n_main"] == 23_488
+    assert got["harsher_without_patch"] == pytest.approx(30.17, rel=1e-3)
+    assert got["harsher_with_patch"] == pytest.approx(1 / 0.95, rel=1e-3)
+    # PATCH APPLIED: the organ's own three-replay measurement, and the flips both ways
+    p = tier / "ONLINE_FDR_ROWS.json"
+    harsh = {"n_main": 10, "n_separated": 90,
+             "base": {"harsher_without_patch": 3.0, "harsher_with_patch": 1.0526},
+             "level": {}, "flipped_admitted": [], "flipped_blocked": []}
+    p.write_text(json.dumps({"door_harshness": harsh, "fdr_bound": {"fdr_bound": 0.1}}))
+    nb = mg.measure_gate_family_fdr_budget(None, {}, {})
+    assert nb["verdict"] == mg.NOT_BINDING and nb["harsher_without_patch"] == 3.0
+    assert nb["fdr_bound"] == {"fdr_bound": 0.1}
+    p.write_text(json.dumps({"door_harshness": {**harsh, "flipped_admitted": ["h.EURUSD_x"]}}))
     got = mg.measure_gate_family_fdr_budget(None, {}, {})
     assert got["verdict"] == mg.UNMEASURED and got["n_released"] == 1
+    assert got["harsher_with_patch"] == 1.0526

@@ -501,48 +501,134 @@ def measure_tier_s_block(r: Any, alloc: dict[str, Any],
             "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
 
 
+#: The gate family's pre-declared share of the one lifetime online-FDR allotment in the staged patch
+#: (/mnt/project-files/patches/exogenous_gate_fdr_budget/, `online_fdr.SEPARATE_SHARE`). Read from
+#: the module when the patch is applied; this copy only prices the patch on a host without it.
+GATE_FDR_SHARE = 0.05
+GATE_FAMILY = "exogenous_gate"
+
+
+def _gate_fdr_counts() -> dict[str, Any]:
+    """Trials the ONE online-FDR stream charges, split main vs the gate family, counted the way
+    `tier_s.organ_online_fdr` builds the stream: the organ's own total (reports/tier_s/
+    ONLINE_FDR.json `n_tests`) and the gate family's failed trials in the gate ledger plus the
+    hypothesis graph's FAILED nodes the ledger does not already name. Streamed, uncapped."""
+    summ = _json(BASE / "reports" / "tier_s" / "ONLINE_FDR.json") or {}
+    n_total = summ.get("n_tests") if isinstance(summ, dict) else None
+    if not isinstance(n_total, int) or n_total <= 0:
+        return {"status": UNMEASURED,
+                "why": "reports/tier_s/ONLINE_FDR.json carries no n_tests: tier_s has not run"}
+    seen: set[str] = set()
+    graph_ids: set[str] = set()
+    n_gate = 0
+    for path, is_graph in ((BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl", False),
+                           (BASE / "data" / "hypothesis_graph.jsonl", True)):
+        try:
+            fh = path.open("r", encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        with fh:
+            for line in fh:
+                if GATE_FAMILY not in line and not (not is_graph and '"graph_id"' in line):
+                    continue
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict):
+                    continue
+                if not is_graph:
+                    if row.get("graph_id"):
+                        graph_ids.add(str(row["graph_id"]))
+                    cell = str(row.get("cell") or "")
+                    if (row.get("family") == GATE_FAMILY and cell and cell not in seen
+                            and not row.get("passed")):
+                        seen.add(cell)
+                        n_gate += 1
+                else:
+                    nid = str(row.get("id") or "")
+                    if (row.get("family") == GATE_FAMILY and row.get("fate") == "FAILED" and nid
+                            and nid not in graph_ids and nid not in seen):
+                        seen.add(nid)
+                        n_gate += 1
+    return {"status": "MEASURED", "n_total": n_total, "n_gate": min(n_gate, n_total),
+            "n_main": n_total - min(n_gate, n_total),
+            "at": summ.get("generated_utc") if isinstance(summ, dict) else None}
+
+
+def _door_harshness_from_counts(n_main: int, n_total: int, share: float) -> dict[str, Any]:
+    """The next FX/metals test's base allotment against its own stream: gamma(n_main+1) today,
+    gamma(n_total+1) pooled (no patch), (1-share) * gamma(n_main+1) with the patch."""
+    from libs.tiers import online_fdr
+    g = online_fdr._gamma(n_total + 2)
+    main = 1.0 - share
+    return {"today": g[n_main], "pooled": g[n_total], "budgeted": main * g[n_main],
+            "harsher_without_patch": round(g[n_main] / g[n_total], 4),
+            "harsher_with_patch": round(1.0 / main, 4)}
+
+
 def measure_gate_family_fdr_budget(r: Any, _alloc: dict[str, Any],
                                    _fv: dict[str, Any]) -> dict[str, Any]:
-    """What giving the `exogenous_gate` family its OWN online-FDR budget costs, and saves.
+    """What giving the `exogenous_gate` family its OWN SHARE of the one online-FDR budget costs,
+    and saves -- billed as the FX/metals door's harshness, with the patch and without it.
 
-    THE RAIL, PRECISELY (audit of PR #123, 2026-09-30). World cells arrive at ~1k gate cells an
-    hour, ~560k in total. In ONE lifetime online-FDR stream (23,488 tests when measured) every one
-    of them spends the budget the FX and metals certificates are judged against, so the promotion
-    door's `ONLINE_FDR_OVER_BUDGET` bar rises for the classes the method suits. The staged patch
-    (/mnt/project-files/patches/exogenous_gate_fdr_budget/) replays the gate family in its own
-    stream: every trial is still charged, in its own family budget; deflated Sharpe is per family
-    and untouched. It is billed like every gate because it changes which certificate is admitted:
+    THE RAIL, PRECISELY (audit of PR #123, rebuilt after audit PR123_v2, 2026-09-30). World cells
+    arrive at ~1k gate cells an hour, ~560k in total. In ONE pooled lifetime stream every one of
+    them pushes each later FX/metals test down the LORD++/e-LOND spending sequence: at 23,488 main
+    + 560,000 gate trials the next main test's base allotment falls 30.2x (gamma(23,489) /
+    gamma(583,489)). The staged patch keeps ONE stream and ONE budget and gives the gate family a
+    pre-declared 5% share at its pooled position, so the main family keeps 95% at its own count:
+    1/0.95 = 1.053x harsher than today instead of 30x, and the stream's bound stays the one-stream
+    bound (LORD++ alpha, e-LOND alpha, 2 alpha for the door's OR rule, disclosed in the file).
 
-      flipped_admitted  certificates OVER budget in the pooled stream and admitted once the gate
-                        family pays its own way -- the growth the separation RELEASES
-      flipped_blocked   gate-family certificates admitted by the pooled stream and over budget in
-                        their own -- the growth it COSTS
+    Measured two ways:
+      patch applied   ONLINE_FDR_ROWS.json `door_harshness` (three replays: main-only, pooled,
+                      budgeted) and `partition` -- the certificates whose admission the budgets
+                      flip, both ways
+      patch absent    the same base-allotment ratio from counts: ONLINE_FDR.json `n_tests` and
+                      the gate family's failed trials in the gate ledger and graph
 
-    Both lists are written by `tier_s.organ_online_fdr` into ONLINE_FDR_ROWS.json `partition`.
-    Pricing either in log-wealth needs the forward R of the flipped certificates, which exists only
-    once they have clocks; until then the counts are published and the verdict is UNMEASURED --
-    an invented number would make a rail that moves the promotion bar look free. Registered in
-    `libs.portfolio.rails` by the same patch, so the measurement lands first (the hazard_shrink
-    order).
+    The harshness is the FDR cost, measured. Pricing it in log-wealth needs the forward R of the
+    certificates it admits or withholds, which exists only once they carry clocks; until then the
+    log-wealth verdict is UNMEASURED with the harshness published -- an invented number would
+    make a rail that moves the promotion bar look free.
     """
     doc = _json(BASE / "reports" / "tier_s" / "ONLINE_FDR_ROWS.json") or {}
-    part = doc.get("partition") if isinstance(doc, dict) else None
-    if not isinstance(part, dict):
-        return {"verdict": UNMEASURED,
-                "why": ("ONLINE_FDR_ROWS.json carries no `partition` block: the gate family "
-                        "still shares the one lifetime stream on this host (patch "
-                        "exogenous_gate_fdr_budget not applied), or tier_s has not run")}
-    released = list(part.get("flipped_admitted") or [])
-    cost = list(part.get("flipped_blocked") or [])
-    if not released and not cost:
-        return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True,
-                "budgets": part.get("budgets"),
-                "why": "no certificate's admission differs between the pooled and split streams"}
-    return {"verdict": UNMEASURED, "n_released": len(released), "n_blocked": len(cost),
-            "budgets": part.get("budgets"),
-            "why": (f"{len(released)} certificate(s) admitted only because the gate family pays "
-                    f"its own budget, {len(cost)} gate certificate(s) over budget only in their "
-                    f"own stream; pricing needs their forward R, which no clock carries yet")}
+    harsh = doc.get("door_harshness") if isinstance(doc, dict) else None
+    if isinstance(harsh, dict) and isinstance(harsh.get("base"), dict):
+        released = list(harsh.get("flipped_admitted") or [])
+        cost = list(harsh.get("flipped_blocked") or [])
+        base = harsh["base"]
+        out = {"patch": "APPLIED", "fdr_bound": doc.get("fdr_bound"),
+               "harsher_without_patch": base.get("harsher_without_patch"),
+               "harsher_with_patch": base.get("harsher_with_patch"),
+               "level_harshness": harsh.get("level"),
+               "n_main": harsh.get("n_main"), "n_gate": harsh.get("n_separated"),
+               "n_released": len(released), "n_blocked": len(cost),
+               "budgets": doc.get("budgets")}
+        if not released and not cost:
+            return {"verdict": NOT_BINDING, "value_logw_per_day": 0.0, "sample": True, **out,
+                    "why": ("no certificate's admission differs between the pooled stream and "
+                            "the family shares; the FX/metals door is "
+                            f"{out['harsher_with_patch']}x harsher than its own stream with the "
+                            f"shares vs {out['harsher_without_patch']}x pooled")}
+        return {"verdict": UNMEASURED, **out,
+                "why": (f"{len(released)} certificate(s) admitted only because the gate family "
+                        f"draws its own share, {len(cost)} gate certificate(s) withheld only by "
+                        "it; pricing needs their forward R, which no clock carries yet")}
+    counts = _gate_fdr_counts()
+    if counts.get("status") != "MEASURED":
+        return {"verdict": UNMEASURED, "patch": "ABSENT", "why": counts.get("why")}
+    h = _door_harshness_from_counts(counts["n_main"], counts["n_total"], GATE_FDR_SHARE)
+    return {"verdict": UNMEASURED, "patch": "ABSENT",
+            "harsher_without_patch": h["harsher_without_patch"],
+            "harsher_with_patch": h["harsher_with_patch"], "base": h,
+            "n_main": counts["n_main"], "n_gate": counts["n_gate"], "counted_at": counts["at"],
+            "why": ("the gate family still shares the one pooled stream on this host (patch "
+                    "exogenous_gate_fdr_budget not applied): the FX/metals door is "
+                    f"{h['harsher_without_patch']}x harsher than its own stream, "
+                    f"{h['harsher_with_patch']}x with the patch; log-wealth pricing needs the "
+                    "forward R of the certificates it holds back")}
 
 
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
