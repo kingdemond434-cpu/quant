@@ -72,3 +72,30 @@ def fresh_tier_s_door(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterat
                 required[key] = (new, stamp, writer)
     monkeypatch.setattr(pa, "REQUIRED", required)
     yield paths
+
+_REPO_DEPTH = 3
+
+
+@pytest.fixture(autouse=True)
+def _tier_s_state_stays_out_of_the_checkout(monkeypatch: pytest.MonkeyPatch,
+                                            tmp_path_factory: pytest.TempPathFactory) -> None:
+    """A test never appends to the live Tier S ledgers. `blinding.record` (which `publish` calls)
+    and the promotion door's block ledger write under the checkout by default, so a suite run on
+    the box would add fake rows to `desks/mt5/data/tier_s/`. Writes aimed inside the checkout are
+    redirected to a temp root; a test that points them at its own tmp_path is untouched."""
+    from libs.tiers import blinding
+    from libs.tiers import promotion_authority as pa
+
+    repo = Path(__file__).resolve().parents[_REPO_DEPTH]
+    sink = tmp_path_factory.mktemp("tier_s_sink")
+    real_record = blinding.record
+
+    def record(root: Path, rep: Any, ledger: str = blinding.RUNTIME_LEDGER) -> None:
+        target = (Path(root) / ledger).resolve()
+        if target.is_relative_to(repo):
+            root, ledger = sink, str(target.relative_to(repo))
+        real_record(root, rep, ledger)
+
+    monkeypatch.setattr(blinding, "record", record)
+    if Path(pa.LEDGER).resolve().is_relative_to(repo):
+        monkeypatch.setattr(pa, "LEDGER", sink / "promotion_blocks.jsonl")
