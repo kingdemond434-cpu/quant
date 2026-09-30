@@ -685,6 +685,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:netting_report` | `hourly_cycle:netting_report` | UNMEASURED UNMEASURED | `desks/mt5/reports/NETTING.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:news_event_stream` | `hourly_cycle:news_event_stream` | UNMEASURED UNMEASURED | `desks/mt5/reports/EVENT_RESPONSE_ATLAS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:novelty_gate` | `hourly_cycle:novelty_gate` | UNMEASURED UNMEASURED | `desks/mt5/reports/NOVELTY_GATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:occupancy_map` | `hourly_cycle:occupancy_map` | UNMEASURED UNMEASURED | `desks/mt5/reports/OCCUPANCY_MAP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:ops_redundancy` | `hourly_cycle:ops_redundancy` | UNMEASURED UNMEASURED | `desks/mt5/reports/OPS_REDUNDANCY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:organ_census` | `hourly_cycle:organ_census` | UNMEASURED UNMEASURED | `desks/mt5/reports/ORGAN_CENSUS.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:orthogonality` | `hourly_cycle:orthogonality` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESIDUAL_GATE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |

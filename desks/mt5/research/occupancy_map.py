@@ -767,7 +767,7 @@ def head_census(rows: list[dict[str, Any]], n: int) -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------------------ writing
-def _atomic(path: Path, doc: Any) -> None:
+def _atomic_write(path: Path, doc: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
@@ -776,11 +776,11 @@ def _atomic(path: Path, doc: Any) -> None:
 
 def write(doc: Mapping[str, Any], props: list[dict[str, Any]], *, report: Path | None = None,
           intake: Path | None = None) -> Path | None:
-    _atomic(report or REPORT, doc)
+    _atomic_write(report or REPORT, doc)
     if not props:
         return None
     target = (intake or INTAKE) / f"discoveries_{datetime.now(UTC).strftime('%Y%m%d_%H%M')}.json"
-    _atomic(target, props)
+    _atomic_write(target, props)
     return target
 
 

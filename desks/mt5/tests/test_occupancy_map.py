@@ -187,7 +187,8 @@ def test_coverage_order_lifts_target_and_orthogonal_rows_and_drops_nothing() -> 
 
 def test_order_docket_reads_the_map_publishes_the_score_and_ships_every_row(
         monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(om, "REPORT", _map_doc(tmp_path, at=datetime.now(tz=UTC)))
+    monkeypatch.setattr(jc, "OCCUPANCY_REPORT",
+                        _map_doc(tmp_path, at=datetime.now(tz=UTC)))
     monkeypatch.setattr(jc, "REPORT", tmp_path / "JUDGE_COVERAGE.json")
     monkeypatch.setattr(jc, "RATCHET", tmp_path / "ratchet.json")
     monkeypatch.setattr(jc, "STUDY_BANK", tmp_path / "none.json")

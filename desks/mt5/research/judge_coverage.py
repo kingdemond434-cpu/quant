@@ -99,6 +99,8 @@ STUDY_BANK = HYP / "study_bank.json"
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
 REPORTS = BASE / "reports"
 REPORT = REPORTS / "JUDGE_COVERAGE.json"
+#: research/occupancy_map.py's hourly artifact: target cells and per-candidate orthogonality.
+OCCUPANCY_REPORT = REPORTS / "OCCUPANCY_MAP.json"
 RATCHET = BASE / "data" / "judge_backlog_ratchet.json"
 
 #: The judging window every family is measured against: one hour, because the principal's order
@@ -974,7 +976,10 @@ def occupancy_stamp(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if om is None:
         return {"status": "UNMEASURED", "why": "research/occupancy_map.py did not import"}
     try:
-        return dict(om.stamp(rows))
+        doc, why = om.load(OCCUPANCY_REPORT)
+        if doc is None:
+            return {"status": "UNMEASURED", "why": why, "rows": len(rows)}
+        return dict(om.stamp(rows, doc))
     except Exception as exc:
         for r in rows:
             r.pop("_occ", None)
