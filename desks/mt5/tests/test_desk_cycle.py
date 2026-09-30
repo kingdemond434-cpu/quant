@@ -226,3 +226,13 @@ def test_a_fresh_pass_starts_only_at_the_slot_later_firings_only_resume() -> Non
     src = LAUNCHER.read_text("utf-8")
     assert "$DublinNow.Hour -ne $WindowStart" in src
     assert "$unfinishedToday" in src
+
+
+def test_every_pass_runs_the_tier1_breadth_review() -> None:
+    cycle_text = (CRO / "CRO_CYCLE.md").read_text("utf-8")
+    step = cycle_text[cycle_text.index("## STEP 4B"):cycle_text.index("## STEP 5")]
+    for needle in ("What tier is the quant today?", "maxed out", "Never assume the machinery is at its peak",
+                   "Never cut mining", "TIER1_BREADTH_REVIEW.json", "k_eff", "Asian"):
+        assert needle in step, needle
+    assert "6b. **Tier verdict" in cycle_text
+    assert "STEP 4B" in LAUNCHER.read_text("utf-8")
