@@ -565,6 +565,27 @@ def mechanism_of(c: dict[str, Any]) -> str:
             f"selected from {c.get('_m', 0)} cells at BH q={c.get('_q', FDR_Q)}.")
 
 
+def banned_grammars() -> dict[str, str]:
+    """{grammar: reason} for every grammar whose family the desk has banned (research.family_policy,
+    PERMANENT list plus data/banned_families.json). A banned family is never screened, never
+    forwarded and never charged: the sealed gauntlet discards banned specs, so screening one is
+    work with no judge on the other end. Unreadable policy: nothing is treated as banned here, and
+    the registry/merge/judge fences still refuse downstream."""
+    try:
+        from research.family_policy import ban_reason, family_banned
+    except Exception:
+        return {}
+    out = {}
+    for g in MR.GRAMMARS:
+        fam = f"mass_screen_{g}"
+        try:
+            if family_banned(fam):
+                out[g] = str(ban_reason(fam))
+        except Exception:
+            continue
+    return out
+
+
 def forward(cells: list[dict[str, Any]], *, conn=None) -> dict[str, Any]:
     """Through the registry's one door. Returns counts; never raises."""
     out = {"attempted": 0, "created": 0, "already_present": 0, "failed": 0, "why": None}
@@ -584,8 +605,12 @@ def forward(cells: list[dict[str, Any]], *, conn=None) -> dict[str, Any]:
         out["failed"] = len(cells)
         return out
     try:
+        banned = banned_grammars()
         for c in cells:
             out["attempted"] += 1
+            if c["grammar"] in banned:
+                out["failed"] += 1
+                continue
             try:
                 _id, made = enqueue_candidate(
                     family=f"mass_screen_{c['grammar']}", symbol=c["symbol"],
@@ -644,7 +669,7 @@ def _load_leaders(symbols: list[str]) -> dict[str, Any]:
     return out
 
 
-def _worker(symbol: str, q: float) -> dict[str, Any]:
+def _worker(symbol: str, q: float, skip: tuple[str, ...] = ()) -> dict[str, Any]:
     """One symbol, end to end, in a worker process. Never raises."""
     t0 = time.monotonic()
     try:
@@ -655,7 +680,8 @@ def _worker(symbol: str, q: float) -> dict[str, Any]:
         meta = universe_meta().get(symbol) or {}
         P = Prepared(symbol, df, meta, _load_leaders([symbol]))
         prep_s = time.monotonic() - t0
-        res = screen_symbol(P, meta, q=q)
+        conds = [c for c in conditions(P, meta) if c["grammar"] not in skip]
+        res = screen_symbol(P, meta, q=q, conds=conds)
         res["prep_seconds"] = round(prep_s, 3)
         res["seconds"] = round(time.monotonic() - t0, 3)
         return res
@@ -708,6 +734,8 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
     epoch = int(cursor.get("epoch", 0))
     order = universe[start:] + universe[:start]
     w, winfo = derive_workers(workers)
+    banned = banned_grammars()
+    skip = tuple(sorted(banned))
     results: list[dict[str, Any]] = []
     done = 0
     per_symbol_s: list[float] = []
@@ -719,7 +747,7 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
         for s in order:
             if results and _time_left() < (np.median(per_symbol_s) if per_symbol_s else 0):
                 break
-            r = _worker(s, q)
+            r = _worker(s, q, skip)
             results.append(r)
             per_symbol_s.append(float(r.get("seconds") or 0))
             done += 1
@@ -730,7 +758,7 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
             it = iter(order)
             live: dict[Any, str] = {}
             for s in it:
-                live[ex.submit(_worker, s, q)] = s
+                live[ex.submit(_worker, s, q, skip)] = s
                 if len(live) >= w:
                     break
             while live:
@@ -748,7 +776,7 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
                     if _time_left() > est:
                         nxt = next(it, None)
                         if nxt is not None:
-                            live[ex.submit(_worker, nxt, q)] = nxt
+                            live[ex.submit(_worker, nxt, q, skip)] = nxt
             for f in live:
                 f.cancel()
     wall = time.monotonic() - started
@@ -836,6 +864,9 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
                             "rows": trial_rows,
                             "reader": "libs/research/experiment_ledger.py::_mass_screen_counts"},
         "by_grammar": by_g,
+        "banned": {"grammars_skipped": banned, "screened_cells_in_banned_families": 0,
+                   "rule": "research.family_policy.family_banned is read at the source: a banned "
+                           "grammar is never screened, forwarded or charged"},
         "throughput": {
             "cells_per_sec_wall": round(cps, 1), "cells_per_core_sec": round(cps_core, 1),
             "workers": w, "wall_s": round(wall, 2), "numba": bool(MR._HAVE_NUMBA),

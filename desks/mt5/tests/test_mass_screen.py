@@ -254,3 +254,16 @@ def test_the_sealed_judges_last_trade_per_day_is_a_look_ahead_on_noise() -> None
     assert np.nanmean(r[last]) > np.nanmean(r[k]) + 0.2      # selection on the future
     one_a_day = MR.thin(pos, 1, P.entry_day)
     assert abs(np.nanmean(r[one_a_day])) < 0.2
+
+
+def test_a_banned_grammar_is_never_screened_or_forwarded(sandbox, monkeypatch) -> None:
+    from research import family_policy
+    tmp, frames = sandbox
+    frames["SYNB"] = bars(500, seed=11, plant_hour=10, plant=0.0006)
+    monkeypatch.setattr(family_policy, "family_banned", lambda f, path=None:
+                        str(f) in ("mass_screen_clock", "discovered"))
+    doc = MS.run(budget_s=600, workers=1, symbols=["SYNB"], out_dir=tmp / "o3")
+    assert "clock" in doc["banned"]["grammars_skipped"]
+    assert "clock" not in doc["by_grammar"]
+    assert all(r["family"] != "mass_screen_clock" for r in doc["forwarded_sample"])
+    assert not any(g.startswith("discovered") for g in doc["by_grammar"])
