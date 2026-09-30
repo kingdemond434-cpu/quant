@@ -21,6 +21,10 @@ BILLED LIKE EVERY RAIL (growth governance Rule 1): the rail `tier_s_evidence_blo
 this module appends (`data/tier_s/promotion_blocks.jsonl`): every withheld row, with the forward
 expectancy its clock carried when it was withheld, so what the door refused is a number.
 
+AUTHORITY IS EARNED: an organ whose every contracted layer reads REJECTED
+(`libs/tiers/authority.py`) loses its verdict here -- a suspended `online_fdr` or `immune` organ
+withholds nothing until one of its layers is ADMITTED or UNMEASURED again.
+
 READ-ONLY OF CERTIFICATES, BY THE FIREWALL: every file this module opens is checked with
 `firewall.may("promoter", "read", ...)`, and the promoter role may not read raw hypotheses.
 """
@@ -31,7 +35,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from libs.tiers import firewall
+from libs.tiers import authority, firewall
 
 ROOT = Path(__file__).resolve().parents[2]
 DESK = ROOT / "desks" / "mt5"
@@ -79,6 +83,8 @@ def _replication(name: str) -> str | None:
 
 
 def _fdr(name: str) -> str | None:
+    if authority.suspended("online_fdr"):      # its contract is REJECTED: no authority here
+        return None
     doc = _read(FDR_ROWS)
     if not isinstance(doc, dict) or not _fresh(doc):
         return None
@@ -91,6 +97,8 @@ def _fdr(name: str) -> str | None:
 
 
 def _freeze() -> str | None:
+    if authority.suspended("immune"):
+        return None
     doc = _read(FREEZE)
     if not isinstance(doc, dict) or not _fresh(doc, "at"):
         return None

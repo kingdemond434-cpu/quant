@@ -410,3 +410,147 @@ def close(mt5, p):
     mt5.order_send({"action": 1, "position": p, "magic": 1, "comment": "c"})
 ''')
     assert closing["knobs"]["recheck_alloc_at_send"] is True, "a close need not re-ask"
+
+
+# ---------------------------------------------------------------- scope gaps closed 2026-09-30
+def _fake_catalogue(days: int = 400) -> Any:
+    from libs.research import alpha_dsl as dsl
+
+    class Cat:
+        def __init__(self) -> None:
+            self.fields = (
+                dsl.Field("fred.DGS10", "macro_level", "macro", "axis:fred", "period_end+1d"),
+                dsl.Field("cftc_cot_legacy.net_pct_oi", "positioning", "positioning",
+                          "axis:cot", "knowable_at", symbol="XAUUSD"),
+                dsl.Field("close", "price", "close", "bars", "bar_close"))
+            idx = pd.date_range("2024-01-01", periods=days, freq="D", tz="UTC")
+            rng = np.random.default_rng(3)
+            self.data = {"fred.DGS10": pd.Series(np.cumsum(rng.normal(0, 1, days)), idx),
+                         "cftc_cot_legacy.net_pct_oi": pd.Series(rng.normal(0, 1, days), idx)}
+
+        def series(self, f: Any, index: pd.Index) -> pd.Series:
+            s = self.data[f.name]
+            return s.reindex(pd.DatetimeIndex(index), method="ffill")
+    return Cat()
+
+
+def test_world_macro_kinds_and_causal_one_day_lead() -> None:
+    from libs.tiers import world_macro as wm
+    assert wm.kind_of("fred.BAMLH0A0HYM2", "macro_level") == "credit"
+    assert wm.kind_of("fred.VIXCLS", "macro_level") == "vol"
+    assert wm.kind_of("fred.DTWEXBGS", "macro_level") == "dollar"
+    assert wm.kind_of("fred.T10YIE", "macro_level") == "inflation"
+    assert wm.kind_of("fred.WALCL", "macro_level") == "liquidity"
+    assert wm.kind_of("bis_policy_rates.carry_differential", "rate") == "carry"
+    assert wm.kind_of("cftc_cot_legacy.net_pct_oi", "positioning") == "positioning"
+    cat = _fake_catalogue()
+    days = 400
+    idx = pd.date_range("2024-01-01", periods=days * 24, freq="h", tz="UTC")
+    # XAUUSD's return on day d+1 is minus the DGS10 change of day d: a planted lead
+    dgs = cat.data["fred.DGS10"]
+    daily = -0.01 * dgs.diff().shift(1).fillna(0.0)
+    hourly = np.repeat(daily.to_numpy() / 24.0, 24)
+    closes = {"XAUUSD": pd.Series(100 * np.exp(np.cumsum(hourly)), idx),
+              "EURUSD": pd.Series(1 + 0.001 * np.random.default_rng(1).normal(0, 1, len(idx))
+                                  .cumsum() / 50, idx)}
+    r = wm.run(cat, closes, "2026-09-30T00:00:00+00:00", vocab={"cot_net_fade"})
+    assert r["census"]["rates"]["status"] == "MEASURED"
+    assert r["census"]["credit"]["status"] == "UNMEASURED"
+    assert r["census"]["flows"]["status"] == "UNMEASURED"
+    hit = [e for e in r["edges"] if e["driver"] == "fred.DGS10" and e["target"] == "XAUUSD"]
+    assert hit and hit[0]["class"] != "FALSE" and hit[0]["beta"] < 0
+    # a per-symbol node never reaches another symbol
+    assert not [e for e in r["edges"] if e["driver"].startswith("cftc") and e["target"] != "XAUUSD"]
+    x = [e for e in r["exprs"] if e["symbol"] == "XAUUSD" and e["bind"] == {"macro": "fred.DGS10"}]
+    assert x and x[0]["expr"] == "neg(delta(macro, 24))"
+    terms = list(ag.terminal_pool(True, extra=["macro", "positioning", "fundamental"]))
+    for e in r["exprs"]:
+        assert ag.is_valid(ag.from_str(e["expr"]), terminals=terms)
+
+
+def test_enqueue_dedupes_by_binding(tmp_path: Path) -> None:
+    q = tmp_path / "q.json"
+    base = {"symbol": "XAUUSD", "expr": "delta(macro, 24)"}
+    assert ts.enqueue_xsci([{**base, "bind": {"macro": "a"}}, {**base, "bind": {"macro": "b"}},
+                            {**base, "bind": {"macro": "a"}}], q) == 2
+
+
+def test_hypothesis_graph_records_every_parent(tmp_path: Path) -> None:
+    from libs.research import hypothesis_graph as hg
+    g = hg.Graph(tmp_path / "g.jsonl")
+    a = hg.Node(symbol="EURUSD", family="trend_ma_cross", params={"f": 1})
+    b = hg.Node(symbol="EURUSD", family="trend_ma_cross", params={"f": 2})
+    g.append(a)
+    g.append(b)
+    hg.record_candidates([{"symbol": "EURUSD", "family": "trend_ma_cross", "params": {"f": 3},
+                           "parent_ids": [a.id, b.id, "unresolved"]}], "t", graph=g)
+    child = next(r for r in g.current().values() if (r.get("params") or {}).get("f") == 3)
+    assert child["parent"] == a.id and child["co_parents"] == [b.id]
+    roles = [e.get("role") for e in child["edges"] if e["type"] == hg.MUTATED_FROM]
+    assert roles.count("co_parent") == 2           # the unresolved claim stays on an edge
+    assert {a.id, b.id} <= set(g.ancestors(child["id"]))
+
+
+def test_crossover_child_names_its_partner() -> None:
+    import expression_factory as ef
+    assert "co_parents" in ef.Cell.__dataclass_fields__
+    src = (DESK / "research" / "expression_factory.py").read_text("utf-8")
+    assert "self._partner_pid = mate.pid" in src and '"parent_ids": [p for p in' in src
+
+
+def test_control_arm_verdicts() -> None:
+    from libs.tiers import control_arm as ca
+    assert ca.compare([1, 2], [1, 2, 3])["verdict"] == "UNMEASURED"
+    assert ca.compare([5, 6, 7, 6], [1, 2, 1, 2])["verdict"] == "ADMITTED"
+    assert ca.compare([1, 2, 1, 2], [5, 6, 7, 6])["verdict"] == "REJECTED"
+    units = [f"leg{i}" for i in range(2000)]
+    share = sum(ca.in_control(u, "market") for u in units) / len(units)
+    assert 0.15 < share < 0.25
+    assert ca.in_control("x", "market") == ca.in_control("x", "market")
+
+
+def test_cycle_pricing_never_reprices_a_control_leg(monkeypatch: Any, tmp_path: Path) -> None:
+    import cycle_pricing as cp
+
+    from libs.tiers import control_arm as ca
+    legs = [f"leg{i}" for i in range(40)]
+    doc = {"generated_utc": pd.Timestamp.now(tz="UTC").isoformat(),
+           "leg_prices": dict.fromkeys(legs, 1.0)}
+    monkeypatch.setattr(cp, "_read", lambda _p: doc)
+    got = cp._researcher_prices()
+    assert got and all(not ca.in_control(lg, "market") for lg in got)
+    assert len(got) < len(legs)
+
+
+def test_suspension_reaches_every_steering_consumer() -> None:
+    src = (DESK / "research" / "tier_s.py").read_text("utf-8")
+    for organ in ("topology", "genomes", "failure_memory", "frontier", "predictions",
+                  "red_queen", "twin"):
+        assert f'authority.suspended("{organ}")' in src, organ
+    door = (ROOT / "libs" / "tiers" / "promotion_authority.py").read_text("utf-8")
+    assert 'suspended("online_fdr")' in door and 'suspended("immune")' in door
+    impl = (DESK / "research" / "implementer.py").read_text("utf-8")
+    assert 'suspended("self_model"' in impl
+
+
+def test_suspended_immune_and_fdr_withhold_nothing(monkeypatch: Any, tmp_path: Path) -> None:
+    from libs.tiers import authority
+    from libs.tiers import promotion_authority as pa
+    now = pd.Timestamp.now(tz="UTC").isoformat()
+    fdr = tmp_path / "fdr.json"
+    fdr.write_text(json.dumps({"generated_utc": now, "certified": [
+        {"test_id": "X.y", "over_budget": True, "p": 0.04, "lord_level": 0.001}]}), "utf-8")
+    fr = tmp_path / "freeze.json"
+    fr.write_text(json.dumps({"at": now, "verdict": "FREEZE", "judge": "production:abc",
+                              "why": "immune score fell"}), "utf-8")
+    monkeypatch.setattr(pa, "FDR_ROWS", fdr)
+    monkeypatch.setattr(pa, "FREEZE", fr)
+    monkeypatch.setattr(pa, "REPLICATION", tmp_path / "none.json")
+    monkeypatch.setattr(pa, "ROOT", tmp_path)
+    monkeypatch.setattr(pa.firewall, "may", lambda *a, **k: True)
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: False)
+    assert (pa.block("X.y") or "").startswith("ONLINE_FDR_OVER_BUDGET")
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: organ == "online_fdr")
+    assert (pa.block("X.y") or "").startswith("IMMUNE_FREEZE")
+    monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: True)
+    assert pa.block("X.y") is None

@@ -6,10 +6,19 @@ contracted layer is REJECTED is SUSPENDED: its STEERING outputs stop steering an
 the organ keeps running so its metric can still recover (a suspended organ that stopped running
 could never be re-admitted).
 
-What "steering" means, per consumer:
-  * `market`   -> cycle_pricing ignores researcher_prices.json (no leg is repriced by it);
-  * `grammar`  -> grammar_bias returns {} (the generators draw the uniform grammar);
-and any further consumer calls `suspended(<organ>)` before acting on an organ's output.
+What "steering" means, per consumer (every one calls `suspended(<organ>)` before acting):
+  * `market`         -> cycle_pricing ignores researcher_prices.json (no leg is repriced by it);
+  * `grammar`        -> grammar_bias returns {} (the generators draw the uniform grammar);
+  * `topology`       -> its weights stop ordering the orthogonal emissions, and the market
+                        stops discounting producers by ancestry novelty;
+  * `genomes`        -> every genome draws its candidates at random (no falsify ordering);
+  * `failure_memory` -> emissions are no longer re-ordered by the mapped dead regions;
+  * `frontier`       -> the market's frontier factor is 1 for every producer;
+  * `predictions`    -> the market's honesty term is 1 for every producer;
+  * `red_queen`      -> its defenders are not registered as validator challengers;
+  * `twin`           -> a challenger that beats the incumbent is PENDING_AUTHORITY, not ADOPTED;
+  * `self_model`     -> the implementer takes no rows from its docket;
+  * `online_fdr`, `immune` -> the promotion door (`promotion_authority`) ignores their verdicts.
 
 WHAT IS NEVER STOPPED: hypothesis emission. The standing order is that research generation is
 never reduced, so a suspended organ's rows still reach the compiler and are still judged; only

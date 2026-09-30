@@ -51,9 +51,11 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.tiers import (  # noqa: E402
+    authority,
     bitemporal,
     chaos,
     contracts,
+    control_arm,
     cross_science,
     epistemic,
     evolution,
@@ -77,6 +79,7 @@ from libs.tiers import (  # noqa: E402
     truth_kernel,
     twin,
     world_edges,
+    world_macro,
 )
 
 PRODUCTION_ARGS: list[str] = []
@@ -361,7 +364,9 @@ def _emit(kind: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     LAST, so the cap spends itself on unexplored ground first. Nothing is dropped for having a
     failed neighbour -- a theorem about a region is a prior, not a verdict on a new cell."""
     rows = [r for r in rows if r.get("symbols")]
-    rows = sorted(rows, key=_explored)[:MAX_EMIT_PER_KIND]
+    if not authority.suspended("failure_memory"):
+        rows = sorted(rows, key=_explored)
+    rows = rows[:MAX_EMIT_PER_KIND]
     if not rows:
         return {"kind": kind, "emitted": 0}
     stamp = NOW.strftime("%Y%m%dT%H")
@@ -884,7 +889,7 @@ def organ_red_queen() -> dict[str, Any]:
                               "success_history": hist[-500:],
                               "challenger": res["challenger"],
                               "real_leaks": (real.get("leaks") or [])[:20]})
-    if res["challenger"]:
+    if res["challenger"] and not authority.suspended("red_queen"):
         _register_challenger("validator", f"red_queen_gen{gen}", res["challenger"],
                              res["best_defender"])
     return {"generation": gen, **{k: v for k, v in res.items() if k != "next_attackers"},
@@ -972,25 +977,43 @@ def organ_topology() -> dict[str, Any]:
         rank["live_pnl"] = topology.rank_report(pnl, pnl_names, None)
     steer = topology.steering(descs, rank.get("uniqueness"), sleeve_names,
                               ("mechanism", "asset_class", "selector", "timeframe"))
-    # ancestry novelty over the hypothesis graph (parent -> child)
+    # ancestry novelty over the hypothesis graph: EVERY parent a row records (first parent,
+    # co-parents, mutated_from edges), so a crossover child is discounted by both ancestors
+    from libs.research.hypothesis_graph import parents_of
     nodes: dict[str, dict[str, Any]] = {}
+    src_of: dict[str, str] = {}
+    multi = 0
     for r in _jsonl(HGRAPH, 60_000):
         nid = str(r.get("id") or "")
         if not nid:
             continue
-        par = r.get("parent")
-        nodes[nid] = {"parents": [str(par)] if par and str(par) in nodes else [],
+        pars = [p for p in parents_of(r) if p in nodes]
+        multi += int(len(pars) > 1)
+        src_of[nid] = _producer(r.get("source"))
+        nodes[nid] = {"parents": pars,
                       "descriptors": {"family": r.get("family"), "symbol": r.get("symbol"),
                                       "source": str(r.get("source") or "").split(":")[0]}}
     nov = topology.novelty(nodes) if nodes else {}
     eff = topology.effective_discoveries(nov)
+    eff["multi_parent_nodes"] = multi
+    eff["parented_nodes"] = sum(1 for n in nodes.values() if n["parents"])
     st = _state("topology")
     hist = list(st.get("rank_history") or [])
     hist.append({"at": NOW.isoformat(), "combined": rank.get("combined"),
                  "n": len(sleeve_names)})
-    _save_state("topology", {"rank_history": hist[-2000:]})
+    # THE RANK STEERS COMPUTE: each producer's mean ancestry novelty is the "mean novelty
+    # (ancestry-discounted)" term of its researcher-market value, read by organ_market this
+    # same hour -- so a producer whose births are copies of their parents is priced as copies
+    by_prod: dict[str, list[float]] = defaultdict(list)
+    for nid, v in nov.items():
+        by_prod[src_of.get(nid, "unattributed")].append(float(v))
+    prod_nov = {k: round(float(np.mean(v)), 4) for k, v in by_prod.items() if len(v) >= 5}
+    eff["producer_novelty"] = prod_nov
+    _save_state("topology", {"rank_history": hist[-2000:], "producer_novelty": prod_nov,
+                             "at": NOW.isoformat()})
     # orthogonal directions -> hypotheses: the least-occupied mechanisms on new symbols
-    emitted = _emit_orthogonal(steer, descs)
+    # a SUSPENDED topology organ still emits; its weights stop ordering what it emits
+    emitted = _emit_orthogonal({} if authority.suspended("topology") else steer, descs)
     return {"rank": rank, "steering": steer, "ancestry": eff, "emitted": emitted,
             "metric": {"effective_rank": rank.get("combined"), "n_sleeves": len(sleeve_names),
                        "effective_discoveries": eff.get("effective")}}
@@ -1189,6 +1212,7 @@ def organ_genomes() -> dict[str, Any]:
                                           for k, v in (st.get("emitted") or {}).items()}
     by_sf = _gate_by_symfam()
     kills = _family_gate_kills()
+    genomes_suspended = authority.suspended("genomes")
     s_per = _gauntlet_s_per_verdict()
     fwd = shadow_rows()
     scored: list[tuple[dict[str, Any], float]] = []
@@ -1289,9 +1313,14 @@ def organ_genomes() -> dict[str, Any]:
             continue
         allele = str(g.get("falsify_order") or "")
         jitter = rng.random(len(cand))
-        idx = sorted(range(len(cand)),
-                     key=lambda i: (occ.get(cls.get(cand[i][0], "?"), 0),
-                                    falsify_rank(cand[i][1], allele, kills), jitter[i]))[:k]
+        # HELD-OUT CONTROL ARM: a fixed fifth of genomes draw at random, so the ordering is
+        # judged against genomes that emitted under the same desk in the same hours
+        if genomes_suspended or control_arm.in_control(gid, "genomes"):
+            idx = sorted(range(len(cand)), key=lambda i: jitter[i])[:k]
+        else:
+            idx = sorted(range(len(cand)),
+                         key=lambda i: (occ.get(cls.get(cand[i][0], "?"), 0),
+                                        falsify_rank(cand[i][1], allele, kills), jitter[i]))[:k]
         for i in idx:
             s, f = cand[int(i)]
             spec = FAMILY_REGISTRY.get(f) or {}
@@ -1323,7 +1352,11 @@ def organ_genomes() -> dict[str, Any]:
                             "emitted": {k: v[-400:] for k, v in emitted.items()},
                             "fitness": fit_rows})
     best = max((f for _g, f in scored), default=0.0)
-    return {"generation": gen + 1, "population": len(nxt),
+    judged_rows = [r for r in fit_rows if r["judged"]]
+    arm = control_arm.compare(
+        [r["fitness"] for r in judged_rows if not control_arm.in_control(r["genome"], "genomes")],
+        [r["fitness"] for r in judged_rows if control_arm.in_control(r["genome"], "genomes")])
+    return {"generation": gen + 1, "population": len(nxt), "control_arm": arm,
             "diversity": evolution.diversity(nxt), "best_fitness": best,
             "fitness_rows": sorted(fit_rows, key=lambda r: -r["fitness"])[:12],
             "cpu_s_per_verdict": s_per, "emitted": out,
@@ -1831,7 +1864,11 @@ def organ_market() -> dict[str, Any]:
         "mine", "deepen", "compile_candidates", "search", "sweep", "world_crawler",
         "deep_forest", "market_intel"))
     unlegged = sum(rs[n].candidates for n, lg in leg_of.items() if not lg) or 1
-    hon = _state("honesty").get("factories") or {}
+    hon = {} if authority.suspended("predictions") else (
+        _state("honesty").get("factories") or {})
+    # ancestry novelty per producer from organ_topology (runs first); suspended -> no discount
+    anc_nov: dict[str, float] = {} if authority.suspended("topology") else {
+        str(k): float(v) for k, v in (_state("topology").get("producer_novelty") or {}).items()}
     for name, rr in rs.items():
         lg = leg_of[name]
         share = [x for x, y in leg_of.items() if y == lg] if lg else []
@@ -1844,7 +1881,9 @@ def organ_market() -> dict[str, Any]:
         if isinstance(h, dict) and h.get("honesty") is not None:
             rr.honesty = float(h["honesty"])
         p, f = fdr.get(name, [0, 0])
-        rr.mean_novelty = max(0.05, 1.0 - (f / p if p else 0.0))
+        anc = anc_nov.get(name)
+        rr.mean_novelty = max(0.05, (1.0 - (f / p if p else 0.0)) *
+                              (float(anc) if anc is not None else 1.0))
     res = researcher_market.allocate(list(rs.values()), headroom_s=1800.0, seed=NOW.hour)
     # independent discovery: a mechanism x asset-class species that PASSED for >= 2 cohorts
     sight = []
@@ -1857,7 +1896,8 @@ def organ_market() -> dict[str, Any]:
     # THE FRONTIER PRICES THE GROUND (layer 36): a producer whose ground the species estimator
     # says still hides many unseen mechanisms is worth more compute than its record alone says.
     # Last hour's FRONTIER report (the organ runs after this one); absent -> factor 1.
-    fr = (_read(OUT_DIR / "FRONTIER.json") or {}).get("grounds") or {}
+    fr = {} if authority.suspended("frontier") else (
+        _read(OUT_DIR / "FRONTIER.json") or {}).get("grounds") or {}
     unseen = {str(g): float(v.get("unseen") or 0.0) for g, v in fr.items() if isinstance(v, dict)}
     tot_unseen = sum(unseen.values())
     leg_prices: dict[str, float] = {}
@@ -1874,7 +1914,20 @@ def organ_market() -> dict[str, Any]:
                  else None, "cpu_s": round(r.cost.get("cpu_s", 0.0), 1),
                  "validated_per_cpu_h": round(3600.0 * r.successes.get("full", 0)
                                               / max(1.0, r.cost.get("cpu_s", 1.0)), 6),
-                 "honesty": r.honesty} for n, r in rs.items()}
+                 "honesty": r.honesty, "ancestry_novelty": anc_nov.get(n),
+                 "mean_novelty": round(r.mean_novelty, 4)} for n, r in rs.items()}
+    # HELD-OUT CONTROL ARM: cycle_pricing never reprices a control leg by these prices, so the
+    # market is judged by validated output per CPU hour on its treated legs against its held-out
+    # ones in the same hours
+    per_leg: dict[str, float] = {}
+    for row in table.values():
+        if row["leg"]:
+            per_leg[str(row["leg"])] = per_leg.get(str(row["leg"]), 0.0) + float(
+                row["validated_per_cpu_h"])
+    arm = control_arm.compare(
+        [v for lg, v in per_leg.items() if not control_arm.in_control(lg, "market")],
+        [v for lg, v in per_leg.items() if control_arm.in_control(lg, "market")])
+    arm["control_legs"] = sorted(lg for lg in per_leg if control_arm.in_control(lg, "market"))
     _write(STATE / "researcher_prices.json", {
         "generated_utc": NOW.isoformat(),
         "prices": {k: v["price"] for k, v in res["allocations"].items()},
@@ -1883,7 +1936,7 @@ def organ_market() -> dict[str, Any]:
         "consumer": "research/cycle_pricing.py (compute only; never capital)"})
     return {**{k: v for k, v in res.items() if k != "allocations"},
             "researchers": dict(sorted(table.items(), key=lambda kv: -kv[1]["births"])[:40]),
-            "independent_discoveries": ind, "priced_legs": len(leg_prices),
+            "independent_discoveries": ind, "priced_legs": len(leg_prices), "control_arm": arm,
             "metric": {"n_researchers": len(rs), "independently_discovered":
                        ind["independently_discovered"], "priced_legs": len(leg_prices)}}
 
@@ -2170,13 +2223,16 @@ def enqueue_xsci(rows: list[dict[str, Any]], path: Path | None = None) -> int:
     except (OSError, ValueError):
         have = []
     have = have if isinstance(have, list) else []
-    seen = {(r.get("symbol"), r.get("expr")) for r in have if isinstance(r, dict)}
+    def key(r: Mapping[str, Any]) -> tuple[Any, Any, str]:
+        return r.get("symbol"), r.get("expr"), json.dumps(r.get("bind") or {}, sort_keys=True)
+
+    seen = {key(r) for r in have if isinstance(r, dict)}
     landed = 0
     for r in rows:
-        if (r["symbol"], r["expr"]) in seen:
+        if key(r) in seen:
             continue
         have.append(r)
-        seen.add((r["symbol"], r["expr"]))
+        seen.add(key(r))
         landed += 1
     _write(path, have[-XSCI_CAP:])
     return landed
@@ -2238,12 +2294,33 @@ def organ_world_and_science() -> dict[str, Any]:
     emitted = _emit("cross_science", rows)
     queued = enqueue_xsci(exprs)
     census = world_edges.census(edges)
+    macro = _macro_world(sorted(rets))
+    macro_emitted = _emit("macro_world", macro.pop("rows"))
+    macro_exprs = macro.pop("exprs")
+    queued += enqueue_xsci(macro_exprs)
+    macro.pop("edges", None)
     return {"edges": census, "broken_relationships": resid[:20],
+            "macro_world": {**macro, "emitted": macro_emitted},
             "labs": {k: len(v) for k, v in labs.items()}, "emitted": emitted,
             "expressions_queued": queued, "expressions_offered": len(exprs),
             "sample": {k: v[:3] for k, v in labs.items()},
             "metric": {"stable_edges": census.get("STABLE", 0),
-                       "hypotheses": len(rows) + len(exprs)}}
+                       "hypotheses": len(rows) + len(exprs) + int(macro_emitted.get(
+                           "emitted") or 0) + len(macro_exprs),
+                       "macro_kinds_measured": macro.get("kinds_measured"),
+                       "macro_live_edges": len(macro.get("live_edges") or [])}}
+
+
+def _macro_world(symbols: list[str]) -> dict[str, Any]:
+    """The world model's non-price nodes (`libs/tiers/world_macro.py`) over the same targets."""
+    try:
+        from libs.research.alpha_dsl import FieldCatalogue
+        cat = FieldCatalogue(DESK / "data" / "axes", DESK / "data" / "representations")
+    except Exception as exc:                          # pragma: no cover - import guard
+        return {"status": "UNMEASURED", "why": f"catalogue: {type(exc).__name__}", "rows": [],
+                "exprs": [], "census": {}}
+    return world_macro.run(cat, world_macro.bars_closes(UNIVERSE, symbols), NOW.isoformat(),
+                           may=_may_hypothesise, vocab=set(_family_vocab() or ()))
 
 
 def organ_worlds() -> dict[str, Any]:
@@ -2538,7 +2615,9 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
         row["judged_on"] = f"sealed:{seal[:12]}"
         if bal is None or inc_bal is None:
             continue
-        if float(bal) > float(inc_bal) + 0.01 and not sealed_now.get("blocked"):
+        if float(bal) > float(inc_bal) + 0.01 and authority.suspended("twin"):
+            row["adoption"] = "PENDING_AUTHORITY"   # the twin's contract is REJECTED
+        elif float(bal) > float(inc_bal) + 0.01 and not sealed_now.get("blocked"):
             row["adoption"] = "ADOPTED"
             ad = _state("adopted")
             ad["validator"] = c.get("genome")
@@ -2601,8 +2680,12 @@ def evaluate_contracts(reports: Mapping[str, Any]) -> dict[str, Any]:
             hist.setdefault(lid, []).append(val)
             hist[lid] = hist[lid][-500:]
         ev = contracts.evaluate(c, hist.get(lid, []))
-        out[lid] = {**ev, "gain": str(c.gain), "metric": f"{organ}.{c.metric}",
-                    "latest": val}
+        # a significant CONTROL-ARM reading outranks the organ's comparison with its own past
+        arm = src.get("control_arm") if isinstance(src, dict) else None
+        if isinstance(arm, dict) and arm.get("verdict"):
+            ev = {**ev, "vs_control": arm}
+            if arm["verdict"] in ("ADMITTED", "REJECTED"):
+                ev = {**ev, "verdict": arm["verdict"], "judged_by": "control_arm"}
         counts[ev["verdict"]] += 1
     # THE NEW HOURLY LEGS carry contracts too (`leg_contracts`), read from their own reports.
     # They are verdicts only: none of these legs is a steering organ, so none can be suspended.
@@ -2627,7 +2710,6 @@ def evaluate_contracts(reports: Mapping[str, Any]) -> dict[str, Any]:
         legs_out[lid] = {**contracts.evaluate(c, hist.get(lid, [])), "gain": str(c.gain),
                          "metric": f"{organ}.{c.metric}", "latest": val}
     _save_state("contracts", {"history": hist})
-    from libs.tiers import authority
     auth = authority.compute(ledger, out)
     _write(authority.AUTHORITY, auth)
     return {"layers": out, "legs": legs_out, "counts": dict(counts),

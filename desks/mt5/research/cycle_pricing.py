@@ -300,7 +300,14 @@ def _researcher_prices(max_age_h: float = 6.0) -> dict[str, float]:
     except (TypeError, ValueError):
         return {}
     lp = doc.get("leg_prices") or {}
-    return {str(k): float(v) for k, v in lp.items() if isinstance(v, (int, float))}
+    try:
+        from libs.tiers.control_arm import in_control
+    except ImportError:                                  # pragma: no cover - import guard
+        def in_control(unit: str, salt: str, share: float = 0.2) -> bool:
+            return False
+    # the market's HELD-OUT legs are never repriced by it: they are what it is judged against
+    return {str(k): float(v) for k, v in lp.items() if isinstance(v, (int, float))
+            and not in_control(str(k), "market")}
 
 
 def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:

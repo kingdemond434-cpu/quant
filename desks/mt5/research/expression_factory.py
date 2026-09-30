@@ -544,12 +544,32 @@ class Lake:
             pass
         return out
 
+    def _pinned(self, sym: str) -> dict[str, str]:
+        """terminal -> field name the world model's queued expressions for `sym` are pinned to.
+
+        A macro-world edge (`libs/tiers/world_macro.py`) is a claim about ONE field; its queued
+        expression says so in `bind`, and the world binds that field first so the claim is
+        tested as stated rather than against whichever field the rotation reached."""
+        try:
+            rows = json.loads((self.paths.desk / "data" / "tier_s" / "xsci_expressions.json"
+                               ).read_text("utf-8"))
+        except (OSError, ValueError):
+            return {}
+        out: dict[str, str] = {}
+        for r in rows if isinstance(rows, list) else []:
+            if isinstance(r, dict) and r.get("symbol") == sym and isinstance(r.get("bind"), dict):
+                for term, name in r["bind"].items():
+                    out.setdefault(str(term), str(name))
+        return out
+
     def _bind_externals(self, sym: str, idx: pd.Index) -> tuple[dict[str, pd.Series],
                                                                   dict[str, dsl.Field]]:
-        """One causal field per external terminal, the macro one rotating between passes."""
+        """One causal field per external terminal, the macro one rotating between passes; a
+        field the world model's queued expressions are pinned to is bound first."""
         extra: dict[str, pd.Series] = {}
         bound: dict[str, dsl.Field] = {}
         fields = [f for f in self.catalogue.external(sym) if f.causal()]
+        pinned = self._pinned(sym) if sym not in self.injected else {}
         for term in ("positioning", "fundamental", "macro", "event"):
             cands = [f for f in fields if f.terminal == term]
             if not cands:
@@ -557,6 +577,8 @@ class Lake:
             if term == "macro":
                 k = self.macro_index % len(cands)
                 cands = cands[k:] + cands[:k]
+            if term in pinned:
+                cands = sorted(cands, key=lambda f: f.name != pinned[term])
             for f in cands:
                 s = self.catalogue.series(f, idx)
                 if s is not None and bool(s.notna().sum() >= 100):
@@ -611,6 +633,8 @@ class Cell:
     generator: str = ""
     asset_class: str = ""
     chain: list[str] = field(default_factory=list)   #: the mutation chain from the parent
+    #: the SECOND parent of a crossover child (its partner's pid); lineage is multi-parent
+    co_parents: list[str] = field(default_factory=list)
 
     @property
     def key(self) -> str:
@@ -636,7 +660,8 @@ class Cell:
     def as_dict(self) -> dict[str, Any]:
         return {"expr": self.expr, "rendered": ag.to_str(self.expr), "symbol": self.symbol,
                 "hold": self.hold, "state": self.state, "origin": self.origin,
-                "parent": self.parent, "generator": self.generator,
+                "parent": self.parent, "co_parents": list(self.co_parents),
+                "generator": self.generator,
                 "asset_class": self.asset_class, "chain": list(self.chain), "key": self.key,
                 "family": dsl.family_key(self.expr), "mechanism": self.mechanism(),
                 "representation": self.representation(), "descriptor": self.descriptor()}
@@ -1160,6 +1185,7 @@ class Campaign:
             return row
         row = {"state": "PROPOSED", "at": now_iso(), "symbol": cell.symbol, "hold": cell.hold,
                "state_filter": cell.state, "origin": cell.origin, "parent": cell.parent,
+               "co_parents": list(cell.co_parents),
                "generator": cell.generator, "chain": list(cell.chain),
                "rendered": ag.to_str(cell.expr), "family": dsl.family_key(cell.expr),
                "asset_class": cell.asset_class, "candidate_id": "", "history": ["PROPOSED"]}
@@ -1301,6 +1327,7 @@ class Factory:
         self.seat_cells = 0
         #: cross-science cells drained this pass, per `cross_science:<lab>` generator
         self.xsci_cells: dict[str, int] = {}
+        self._partner_pid = ""          #: the crossover partner of the move being applied
 
     # ---- bookkeeping
     def say(self, msg: str) -> None:
@@ -1626,6 +1653,7 @@ class Factory:
         else:
             # THE MOVE IS DRAWN BY MEASURED CREDIT: what screened and survived earns the draws.
             gen = str(rng.choice(MOVES, p=self.credits.move_weights(MOVES)))
+            self._partner_pid = ""
             child = self._apply_move(base, gen, terms, parent)
             for fallback in ("constant", "point", "subtree"):
                 if child is not None:
@@ -1637,8 +1665,9 @@ class Factory:
             expr = base if child is None else child
             if gen == "horizon":
                 hold = HORIZONS[(HORIZONS.index(hold) + 1) % len(HORIZONS)]
+        partner = self._partner_pid if gen == "crossover" else ""
         return Cell(expr, sym, hold, state, "mutation", parent.pid, gen, world.asset_class,
-                    [*parent.chain, gen])
+                    [*parent.chain, gen], [partner] if partner else [])
 
     def _apply_move(self, base: Expr, move: str, terms: Sequence[str],
                     parent: Parent) -> Expr | None:
@@ -1648,7 +1677,9 @@ class Factory:
             if move == "crossover":
                 others = [p for p in self.parents.values()
                           if p.transferred and p.pid != parent.pid]
-                partner = others[int(self.rng.integers(len(others)))].expr if others else None
+                mate = others[int(self.rng.integers(len(others)))] if others else None
+                partner = mate.expr if mate is not None else None
+                self._partner_pid = mate.pid if mate is not None else ""
             return dsl.mutate(base, move, self.rng, terminals=terms, partner=partner)
         if move == "basket_swap":
             out = self._swap_rank(base)
@@ -1730,6 +1761,11 @@ class Factory:
             if not isinstance(row, dict) or row.get("symbol") not in self.lake.worlds:
                 continue
             world = self.lake.worlds[row["symbol"]]
+            raw_bind = row.get("bind")
+            bind: dict[str, Any] = raw_bind if isinstance(raw_bind, dict) else {}
+            if any(getattr(world.bindings.get(t), "name", None) != n for t, n in bind.items()):
+                continue        # pinned to a field this world did not bind: tested as stated
+
             try:
                 expr = ag.from_str(str(row.get("expr")))
                 ok = ag.is_valid(expr, terminals=list(ag.available_terminals(world.frames)))
@@ -2082,6 +2118,8 @@ class Factory:
                                        "entry": f"|z_{NORM}| >= {ENTRY_Z}", "hold_bars": c["hold"],
                                        "side": side},
                         "parent_alpha": c["parent"], "origin": c["origin"],
+                        "parent_ids": [p for p in [c["parent"], *(c.get("co_parents") or [])]
+                                       if p],
                         "generator": c["generator"], "trial_family": c["family"],
                         "evidence": {**row["t1"], **{f"t2_{k}": v for k, v in row["t2"].items()},
                                      "orthogonality": row["orthogonality"],

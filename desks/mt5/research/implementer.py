@@ -795,6 +795,13 @@ def _self_model_rows(root: Path) -> list[dict[str, Any]]:
     Until 2026-09-30 the self-model wrote this docket and nothing read it. The summary carries no
     number -- the gap and its `why` move every hour, and a number in the text would mint a new row
     per read past the (source, summary) dedupe -- so the order rides on `rank` instead."""
+    try:
+        from libs.tiers import authority
+        if authority.suspended("self_model", root / "desks" / "mt5" / "data" / "tier_s"
+                               / "AUTHORITY.json"):
+            return []        # its contract is REJECTED: its docket orders no work until re-admitted
+    except Exception:
+        pass
     doc = _load_json(root / "desks" / "mt5" / "data" / "tier_s" / "SELF_MODEL_DOCKET.json",
                      {}) or {}
     out: list[dict[str, Any]] = []
