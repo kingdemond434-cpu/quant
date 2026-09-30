@@ -52,6 +52,22 @@ def _is_literal(node: ast.AST) -> bool:
     return True
 
 
+#: THE MONEY-PATH SEAMS (2026-09-30). Every new-risk site now calls `money_path_guard` first and
+#: stamps its comment through `new_order_identity`; every reader maps a tagged comment back
+#: through `canonical_comment`. Those three read desk files (ban list, cost surface, tag map), so
+#: this harness seeds them as ADMIT / LEGACY COMMENT / IDENTITY and tests what each test is about.
+#: The guard and the tag are exercised for real in test_money_path_sovereignty.py, and
+#: scripts/check_money_path_sovereignty.py fails the law gate if a site stops calling them. A test
+#: that wants the guard to refuse passes its own in `ns`.
+MONEY_PATH_SEAMS: dict = {
+    "money_path_guard": lambda *_a, **_k: True,
+    "_money_path_refresh": lambda: None,
+    "canonical_comment": lambda c: str(c or ""),
+    "new_order_identity": lambda s, symbol, order: {
+        "comment": f"DW{s.get('name') or ''}"[:29], "order_tag": None, "identity_head": None},
+}
+
+
 def _exec(names: tuple[str, ...], ns: dict) -> dict:
     """Exec the named gateway functions over a namespace seeded with the real decision core, so
     a bare name the adapter uses resolves to the same object the gateway imports.
@@ -87,6 +103,7 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) \
                 and node.value is not None and _is_literal(node.value):
             seed.setdefault(node.target.id, ast.literal_eval(node.value))
+    seed.update(MONEY_PATH_SEAMS)
     seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     assert {n.name for n in keep} == set(names), f"missing from gateway.py: {set(names)}"
@@ -1134,6 +1151,14 @@ def test_main_with_the_pause_file_present_sends_nothing_and_writes_no_state(
     assert ns["_logs"] == ["gateway paused (data/GATEWAY_PAUSED present); no trading this pass"]
 
 
+def _gold_book() -> tuple[dict[str, float], str]:
+    """An allocator book that prices the three gold windows. Since 2026-09-30 a window the
+    allocator did not price sends nothing (principal: "allocator says zero -> absolutely zero
+    order"), so a test that expects gold legs gives the pass a book; the small fraction leaves
+    the policy lot and the 0.02 floor deciding the size."""
+    return {"gold_asia": 1e-4, "gold_london_am": 1e-4, "gold_afternoon": 1e-4}, "test gold book"
+
+
 def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_sends_nothing(
         tmp_path, monkeypatch) -> None:
     """Three mechanisms, run: the first pass places asia's two legs; the same pass again is
@@ -1142,6 +1167,7 @@ def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_se
     rows = _gold_rows()
     mt5 = _Terminal(rows, *_quote(rows))
     ns = _main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["allocator_book"] = _gold_book
     ns["main"]()
     assert [r["type"] for r in mt5.sent] == [mt5.ORDER_TYPE_BUY_STOP, mt5.ORDER_TYPE_SELL_STOP]
     assert {r["comment"] for r in mt5.sent} == {"DWgold_asia"}   # 09:30 is asia's hour alone
@@ -1178,6 +1204,7 @@ def test_fusion_suppresses_the_same_opposing_gold_leg_as_e8(tmp_path, monkeypatc
                                      price_open=2000.0, sl=1900.0, tp=2200.0,
                                      time=int(_WHEN.timestamp()))]
     ns = _main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+    ns["allocator_book"] = _gold_book
 
     ns["main"]()
 

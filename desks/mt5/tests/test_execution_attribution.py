@@ -23,6 +23,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, p)
 
 from mt5desk import markout  # noqa: E402
+from mt5desk.decision_core import comment_tag as _comment_tag  # noqa: E402
 from research import allocator_attribution as attr  # noqa: E402
 
 UNMEASURED = attr.UNMEASURED
@@ -151,7 +152,15 @@ def _gateway_func(*names: str, ns: dict | None = None) -> dict:
             if isinstance(n, ast.FunctionDef) and n.name in wanted]
     assert len(body) == len(wanted), f"missing from gateway.py: {wanted - {b.name for b in body}}"
     env: dict = {"json": json, "Path": Path, "_SV_CACHE": (0.0, ""), "now": lambda: "T",
-                 "log": lambda *_a, **_k: None}
+                 "log": lambda *_a, **_k: None,
+                 # The money-path seams as ADMIT / LEGACY / IDENTITY; exercised for real in
+                 # test_money_path_sovereignty.py.
+                 "money_path_guard": lambda *_a, **_k: True,
+                 "canonical_comment": lambda c: str(c or ""),
+                 "comment_tag": _comment_tag,
+                 "new_order_identity": lambda s, symbol, order: {
+                     "comment": f"DW{s.get('name') or ''}"[:29], "order_tag": None,
+                     "identity_head": None}}
     env.update(ns or {})
     exec(compile(ast.Module(body=body, type_ignores=[]), "<gateway>", "exec"), env)  # noqa: S102
     return env

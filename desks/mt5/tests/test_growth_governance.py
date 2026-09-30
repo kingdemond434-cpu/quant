@@ -89,23 +89,14 @@ def test_the_books_fraction_reaches_the_venue_unshrunk(monkeypatch) -> None:
     # The outer per-trade envelope still holds, the fade still reduces, no heat is no lot.
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.5, None, from_book=True) == pytest.approx(5.0)
     assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.04, True, from_book=True) == pytest.approx(2.0)
-    # "NO HEAT IS NO LOT" BECAME "NO HEAT IS THE SMALLEST LOT THE BROKER TAKES" (principal,
-    # 2026-09-12: "all sleeves must trade atleast 0.01 lots overriding the risk per trade cuz
-    # thats broker minimum no matter what"). What this test is actually about is UNCHANGED and is
-    # the four lines above: the book's fraction reaches the venue un-re-shrunk. The zero is still
-    # the smallest thing the desk can send, and it is still nothing like the 3% clamp floor the
-    # gateway used to fall back to -- which is the growth-governance point.
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None,
-               from_book=True) == pytest.approx(_dc.venue_min_lot("EURUSD"))
-    # A MISSING FRACTION AND AN EXPLICIT ZERO GET THE SAME ANSWER, and that is deliberate rather
-    # than sloppy. `None` here is a rostered sleeve the book has no readable number for -- an
-    # ABSENCE, not a decision, and L1.28a is why the two are worth separating in the first place.
-    # They separate in the LOG, where the basis says which one happened; they do not separate in
-    # the LOT, because the principal's order is unconditional ("no matter what") and because the
-    # answer absence gets is the smallest action available, not a licence to size. Sizing an
-    # unreadable fraction as though it were a number is the failure L1.28a actually guards.
-    assert lot(1000.0, 3, 10.0, "EURUSD", None, None, None,
-               from_book=True) == pytest.approx(_dc.venue_min_lot("EURUSD"))
+    # NO HEAT IS NO LOT (principal, 2026-09-30: "allocator says zero -> absolutely zero order",
+    # superseding the 2026-09-12 "0.01 no matter what" reading). What this test is about is
+    # UNCHANGED and is the four lines above: the book's fraction reaches the venue un-re-shrunk,
+    # and the venue minimum still floors every NONZERO allocation. A zero or an absent fraction
+    # is refused before sizing by the money-path guard, which writes its missed-growth line
+    # (`money_path_sovereignty.allocator_zero`), so the refusal is priced, not silent.
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None, from_book=True) == 0.0
+    assert lot(1000.0, 3, 10.0, "EURUSD", None, None, None, from_book=True) == 0.0
 
 
 def test_every_promoted_lot_call_site_passes_from_book() -> None:

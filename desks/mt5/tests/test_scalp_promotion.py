@@ -333,6 +333,15 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     # which the gateway imports as `_pm` at module scope (2026-09-29).
     seed["_pm"] = _pm
     seed["os"] = os                  # MIN_STOP_SPREAD_MULT reads its env override
+    # The money-path seams (guard, identity tag, comment reader) as ADMIT / LEGACY / IDENTITY;
+    # they are exercised for real in test_money_path_sovereignty.py.
+    seed.update({
+        "money_path_guard": lambda *_a, **_k: True,
+        "_money_path_refresh": lambda: None,
+        "canonical_comment": lambda c: str(c or ""),
+        "new_order_identity": lambda s, symbol, order: {
+            "comment": f"DW{s.get('name') or ''}"[:29], "order_tag": None,
+            "identity_head": None}})
     seed.update(ns)
     keep = [n for n in _GW_TREE.body
             if (isinstance(n, ast.FunctionDef) and n.name in names)

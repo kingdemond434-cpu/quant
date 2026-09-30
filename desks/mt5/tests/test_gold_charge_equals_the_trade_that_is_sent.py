@@ -209,12 +209,20 @@ def test_the_charge_equals_the_send_at_every_stop_distance_and_every_fraction() 
                         "the billed fraction is not the fraction this lot runs at this stop")
 
 
+#: A POSITIVE fraction far below the policy lot, so `max(h_i lot, gold_lot)` resolves to the
+#: policy lot. These tests were written when an absent fraction fell back to the policy lot;
+#: since 2026-09-30 an absent or zero fraction is NO ORDER (principal: "allocator says zero ->
+#: absolutely zero order"), so the policy-lot regime they measure is reached by the smallest
+#: nonzero allocation instead -- the floor binds every nonzero fraction exactly as before.
+_POLICY_H = 1e-9
+
+
 def _old_and_new(equity: float, span: float) -> tuple[float, float, float, float]:
     """(old_charge, new_charge, nominal_lot, exact_lot) -- the previous HEAD's arithmetic beside
     this one's, at the same equity and the same bracket."""
     pend = _resolve(span)
-    nominal_lot, _ = dc.gold_book_lot(equity, None, None, None)
-    exact_lot, _ = dc.gold_book_lot(equity, pend["dist"], pend["sym"], None)
+    nominal_lot, _ = dc.gold_book_lot(equity, None, None, _POLICY_H)
+    exact_lot, _ = dc.gold_book_lot(equity, pend["dist"], pend["sym"], _POLICY_H)
     return (dc.realised_q(equity, None, SLEEVE["symbol"], lot=nominal_lot),
             dc.realised_q(equity, pend["dist"], SLEEVE["symbol"], pend["sym"], lot=exact_lot),
             nominal_lot, exact_lot)
@@ -279,7 +287,7 @@ def test_the_exact_charge_never_cuts_the_size_the_desk_sends() -> None:
     for equity in (1_500.0, 8_000.0, 20_000.0):
         for span in SPANS:
             pend = _resolve(span)
-            lot, _ = dc.gold_book_lot(equity, pend["dist"], pend["sym"], None)
+            lot, _ = dc.gold_book_lot(equity, pend["dist"], pend["sym"], _POLICY_H)
             assert lot >= dc.gold_min_lot() - 1e-12, (equity, span, lot)
             assert lot == dc.gold_lot(equity, pend["dist"], pend["sym"])
 
@@ -367,6 +375,11 @@ def test_main_charges_the_heat_cap_exactly_what_it_sends_to_the_venue(tmp_path,
     # The core's real laws, in place of the harness's constants.
     for name in ("realised_q", "gold_lot", "gold_min_lot", "min_lot", "promoted_lot"):
         ns[name] = getattr(dc, name)
+    # The allocator prices gold: since 2026-09-30 an absent fraction is NO ORDER, so the pass
+    # this test measures needs a book that holds the window (a small fraction, so the policy lot
+    # and the 0.02 floor still decide the size, exactly the regime this test was written for).
+    ns["allocator_book"] = lambda: ({"gold_asia": 1e-4, "gold_london_am": 1e-4,
+                                     "gold_afternoon": 1e-4}, "test book")
     charged: dict[str, float] = {}
 
     def _cap(sleeves, equity, per_sleeve_q=None, k_eff=None):
@@ -477,8 +490,10 @@ def test_the_whole_bracket_lane_is_priced_at_its_order_not_just_gold():
     ns = _resolver(45.0)
     pend = _resolve(45.0)
     equity = 8_000.0
-    gold = dict(SLEEVE)
+    gold = {**SLEEVE, "sized_by": "allocator_book", "risk_frac": 1e-4}
     assert ns["bracket_lane_lot"](gold, equity, pend["dist"], pend["sym"])[0] > 0
+    # A gold window the allocator did not price sends nothing (principal, 2026-09-30).
+    assert ns["bracket_lane_lot"](dict(SLEEVE), equity, pend["dist"], pend["sym"])[0] == 0.0
 
     promoted = {"name": "eurusd_asia", "symbol": "XAUUSD", "lot": "auto_ramp",
                 "risk_frac": 0.03, "rng": None, "sig_hour": 13}

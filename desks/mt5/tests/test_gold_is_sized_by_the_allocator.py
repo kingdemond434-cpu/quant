@@ -61,14 +61,15 @@ def test_a_fraction_the_optimiser_wants_larger_actually_raises_the_lot() -> None
     assert "allocator_book" in basis and "above the gold policy lot" in basis
 
 
-def test_no_fraction_and_a_zeroed_window_both_fall_back_to_the_policy_lot() -> None:
-    """A zeroed sleeve is a skip everywhere else. For gold that skip would be a size cut to
-    nothing on the book the principal's order protects, so it falls back and SAYS so."""
-    policy = _policy()
-    for h_i, expect in ((None, "not a number"), ("", "not a number"), (0.0, "no heat"),
-                        (-1.0, "no heat")):
+def test_no_fraction_and_a_zeroed_window_place_no_order() -> None:
+    """ALLOCATOR ZERO OR ABSENT IS ABSOLUTELY ZERO ORDER (principal, 2026-09-30), superseding
+    the 2026-09-07 fallback to the policy lot. The 0.02 floor and `max(h_i lot, gold_lot)` bind
+    every NONZERO fraction (the two tests above); a zero, absent or junk one sends nothing and
+    SAYS so, and the gateway's money-path guard records the refusal with its missed-growth line."""
+    for h_i, expect in ((None, "not a number"), ("", "not a number"), (0.0, "no order"),
+                        (-1.0, "no order"), (float("nan"), "not finite")):
         lot, basis = dc.gold_book_lot(EQUITY, DIST, INFO, h_i)
-        assert lot == policy and expect in basis, (h_i, lot, basis)
+        assert lot == 0.0 and expect in basis, (h_i, lot, basis)
 
 
 def test_the_fade_flag_still_applies_and_is_reduce_only() -> None:
@@ -92,7 +93,8 @@ def test_the_outer_per_trade_envelope_still_caps_the_fraction() -> None:
 def test_the_basis_always_names_which_term_set_the_size() -> None:
     for h_i in (None, 0.0, 0.001, 0.50):
         _, basis = dc.gold_book_lot(EQUITY, DIST, INFO, h_i)
-        assert basis and ("gold_lot" in basis or "allocator_book" in basis)
+        assert basis and ("gold_lot" in basis or "allocator_book" in basis
+                          or "no order" in basis)
 
 
 def test_the_gateway_routes_the_gold_branch_through_it() -> None:
@@ -138,8 +140,11 @@ def test_the_charge_can_never_sit_below_the_policy_component_of_the_lot() -> Non
         charged, _ = dc.gold_book_lot(EQUITY, DIST, INFO, h_i)
         sent, _ = dc.gold_book_lot(EQUITY, DIST, INFO, h_i)
         assert charged == sent, f"h_i={h_i}: charge {charged} != send {sent}"
-        assert charged >= policy - 1e-12, (
-            f"h_i={h_i}: charged {charged} below the policy lot {policy} the venue would get")
+        if h_i:   # a nonzero fraction: the policy floor binds; none sends and charges nothing
+            assert charged >= policy - 1e-12, (
+                f"h_i={h_i}: charged {charged} below the policy lot {policy} the venue would get")
+        else:
+            assert charged == 0.0
 
 
 def test_the_gateway_bills_gold_through_the_same_sizer_and_not_behind_from_book() -> None:

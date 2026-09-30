@@ -28,12 +28,15 @@ from mt5desk import decision_core as core  # noqa: E402
 from mt5desk import sizing  # noqa: E402
 
 
-def test_a_zeroed_sleeve_now_trades_the_venue_minimum() -> None:
-    """The order itself: the allocator declining no longer means no trade."""
+def test_a_zeroed_sleeve_places_nothing_and_a_nonzero_one_trades_the_venue_minimum() -> None:
+    """The venue minimum is a floor on a NONZERO allocation. Allocator zero is absolutely zero
+    order (principal, 2026-09-30, superseding the 2026-09-12 reading for the zero case only);
+    the smallest positive fraction still trades the broker's minimum ticket."""
+    assert core.promoted_lot(607.68, 100, dist_usd=0.005, symbol="EURUSD",
+                             risk_frac=0.0, from_book=True) == 0.0
     lot = core.promoted_lot(607.68, 100, dist_usd=0.005, symbol="EURUSD",
-                            risk_frac=0.0, from_book=True)
-    assert lot > 0.0, "a rostered sleeve the allocator zeroed must still trade"
-    assert lot == core.venue_min_lot("EURUSD")
+                            risk_frac=1e-4, from_book=True)
+    assert lot == core.venue_min_lot("EURUSD"), "a nonzero allocation keeps the floor"
 
 
 def test_the_venue_minimum_is_per_symbol_and_not_a_literal() -> None:

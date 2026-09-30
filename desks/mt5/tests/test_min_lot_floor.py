@@ -131,23 +131,21 @@ def test_promoted_sleeves_get_the_floor_too() -> None:
     assert lot >= dc.min_lot(), f"a promoted sleeve sized to {lot}, below the desk floor"
 
 
-def test_a_leg_the_allocator_zeroed_now_trades_the_venue_minimum() -> None:
-    """REVERSED BY THE PRINCIPAL, 2026-09-12: "all sleeves must trade at least 0.01 lots
-    overriding the risk per trade cuz thats broker minimum no matter what".
+def test_a_leg_the_allocator_zeroed_places_nothing() -> None:
+    """ALLOCATOR ZERO IS ABSOLUTELY ZERO ORDER (principal, 2026-09-30).
 
-    This test was `test_a_leg_the_allocator_zeroed_is_still_zero` and pinned the opposite rule.
-    The reasoning it protected was that a floor lifting a zeroed leg would "put capital on the
-    one sleeve the optimiser explicitly refused" -- sound, and superseded. Gold has had this
-    exemption since 2026-09-07; the rest of the book has it now.
-
-    The allocator's zero still TRAVELS: it is reported in the sizing basis, so the record still
-    says the optimiser declined and what overrode it. What changed is the lot, not the story.
+    This was `test_a_leg_the_allocator_zeroed_is_still_zero`, reversed on 2026-09-12 to trade
+    the venue minimum, and is restored by the newer order: a floor lifting a zeroed leg puts
+    capital on the one sleeve the optimiser explicitly refused. The floor binds every NONZERO
+    allocation, gold's 0.02 included; the money-path guard refuses the zero before sizing and
+    records it (`sovereignty_allocator_zero` + its missed-growth line).
     """
     from mt5desk import decision_core as dc
 
-    lot = dc.promoted_lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None, from_book=True)
-    assert lot == dc.venue_min_lot("EURUSD")
-    assert lot > 0.0
+    assert dc.promoted_lot(1000.0, 3, 10.0, "EURUSD", None, 0.0, None, from_book=True) == 0.0
+    assert dc.promoted_lot(1000.0, 3, 10.0, "EURUSD", None, 1e-4, None,
+                           from_book=True) == dc.venue_min_lot("EURUSD")
+
 
 def test_the_floor_is_a_lot_floor_and_not_a_risk_base() -> None:
     """Principal 2026-09-07: "its base floor minimum of minimum but not risk floor base".
@@ -267,9 +265,12 @@ def test_the_heat_ledger_bills_gold_at_its_own_floor() -> None:
     assert "return gold_book_lot(" in src, "the gold branch no longer reaches gold_book_lot"
     # And the sizer both sides call still floors at the GOLD minimum, at every stop and every
     # allocator fraction -- checked in arithmetic, because that is the claim, not the spelling.
+    # A NONZERO fraction only: zero or absent is no order (principal, 2026-09-30).
     for dist in (2.0, 19.1, 60.0, 200.0):
-        for h_i in (None, 0.0, 0.001, 0.5):
+        for h_i in (0.001, 0.5):
             lot, _basis = dc.gold_book_lot(3_000.0, dist, None, h_i)
             assert lot >= dc.gold_min_lot() - 1e-12, (dist, h_i, lot)
+        for h_i in (None, 0.0):
+            assert dc.gold_book_lot(3_000.0, dist, None, h_i)[0] == 0.0, (dist, h_i)
     assert '_floor = gold_min_lot() if s.get("lot") == "auto" else min_lot()' in src, (
         "the floor-binding log line reports the wrong floor for the gold lane")
