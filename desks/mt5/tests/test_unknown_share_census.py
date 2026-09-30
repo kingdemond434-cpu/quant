@@ -33,6 +33,7 @@ def test_the_census_classifies_on_the_judges_own_scale() -> None:
     assert usc.classify(empty, 219, 400) == "lockbox_consumed_history"
     assert usc.classify(empty, 0, 0) == "no_signals"
     assert usc.classify(empty, 0, 7) == "signals_no_trades"
+    assert usc.classify(empty, 41, 7) == "short_history_after_cut"
     assert usc.classify(empty, 0, None) == "no_trades"
     assert usc.classify(pd.Series([0.1, 0.2], index=idx), 2, 9) == "too_rare"
 
@@ -58,6 +59,9 @@ def test_build_failures_aggregate_by_kind_not_by_symbol() -> None:
     assert k("lead_lag: no driver_symbol on the cell") == "no_driver_symbol_named"
     assert k("execution_state: no microstructure surface for X in Y") == \
         "no_microstructure_surface"
+    assert k("triangle: no leg_c_symbol on the candidate") == "no_leg_symbol_named"
+    assert k("triangle leg missing: no H1 bars for EURNOK") == \
+        k("triangle leg missing: no H1 bars for USDSEK") == "no_bars_for_leg"
 
 
 def test_the_sample_is_fixed_by_seed_whatever_the_row_order(tmp_path: Path) -> None:

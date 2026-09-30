@@ -97,6 +97,8 @@ def classify(dev: Any, pre_carve_days: int | None, n_signals: int | None, *,
         return "series_exception" if errored else "no_series"
     if (pre_carve_days or 0) >= need:
         return "lockbox_consumed_history"
+    if len(dev) == 0 and (pre_carve_days or 0) > 0:
+        return "short_history_after_cut"
     if len(dev) == 0:
         return ("no_trades" if n_signals is None else
                 "no_signals" if n_signals == 0 else "signals_no_trades")
@@ -118,6 +120,10 @@ def build_failure_kind(why: str) -> str:
         return "no_driver_symbol_named"
     if "driver missing" in w:
         return "no_bars_for_driver"
+    if w.startswith("triangle: no leg_"):
+        return "no_leg_symbol_named"
+    if w.startswith("triangle leg missing"):
+        return "no_bars_for_leg"
     if "no microstructure surface" in w:
         return "no_microstructure_surface"
     if "no event calendar" in w:
