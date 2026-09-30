@@ -1,0 +1,237 @@
+{
+ "use": "equity_handoff",
+ "producer": "desks/mt5/research/alt_proxies.py",
+ "consumer": "the cross-sectional equity book (universe_policy.CROSS_SECTIONAL_FAMILIES)",
+ "rule": "share CFDs never mint as alt-proxy direct or conditioned cells (two-lane order, asset class from universe_policy). Each row is a PIT lake series (data/lake/series/<lake_file>.csv) and the share CFDs it bears on with the declared prior sign; the equity book decides and charges any test",
+ "rows": [
+  {
+   "source": "kr_exports_early",
+   "series": "daily_avg_yoy",
+   "lake_file": "alt_kr_exports_early__daily_avg_yoy",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "AMD": 1,
+    "MicronTechnology": 1,
+    "NVIDIA": 1,
+    "TSMC": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "confirmed",
+   "usable": true
+  },
+  {
+   "source": "kr_exports_early",
+   "series": "semis_yoy",
+   "lake_file": "alt_kr_exports_early__semis_yoy",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "AMD": 1,
+    "MicronTechnology": 1,
+    "NVIDIA": 1,
+    "TSMC": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "confirmed",
+   "usable": true
+  },
+  {
+   "source": "us_tsa_throughput",
+   "series": "travelers",
+   "lake_file": "alt_us_tsa_throughput__travelers",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "Airbnb": 1,
+    "Boeing": 1,
+    "Booking": 1,
+    "Uber": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "confirmed",
+   "usable": true
+  },
+  {
+   "source": "gdelt_events_country",
+   "series": "TW_tone",
+   "lake_file": "alt_gdelt_events_country__TW_tone",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "TSMC": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "confirmed",
+   "usable": true
+  },
+  {
+   "source": "gdelt_events_country",
+   "series": "TW_conflict_share",
+   "lake_file": "alt_gdelt_events_country__TW_conflict_share",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "TSMC": -1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "confirmed",
+   "usable": true
+  },
+  {
+   "source": "us_oi_card_spend",
+   "series": "spend_all",
+   "lake_file": "alt_us_oi_card_spend__spend_all",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "AmericanExpress": 1,
+    "Mastercard": 1,
+    "Target": 1,
+    "Visa": 1,
+    "Walmart": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": true,
+   "terms": "confirmed",
+   "usable": false
+  },
+  {
+   "source": "us_oi_card_spend",
+   "series": "spend_retail_no_grocery",
+   "lake_file": "alt_us_oi_card_spend__spend_retail_no_grocery",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "AmericanExpress": 1,
+    "Mastercard": 1,
+    "Target": 1,
+    "Visa": 1,
+    "Walmart": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": true,
+   "terms": "confirmed",
+   "usable": false
+  },
+  {
+   "source": "us_oi_card_spend",
+   "series": "spend_food_accommodation",
+   "lake_file": "alt_us_oi_card_spend__spend_food_accommodation",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "McDonalds": 1,
+    "Starbucks": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": true,
+   "terms": "confirmed",
+   "usable": false
+  },
+  {
+   "source": "cn_holiday_spend",
+   "series": "spend_per_trip_yoy",
+   "lake_file": "alt_cn_holiday_spend__spend_per_trip_yoy",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "Baidu": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "to_confirm",
+   "usable": false
+  },
+  {
+   "source": "cn_holiday_spend",
+   "series": "spend_yoy",
+   "lake_file": "alt_cn_holiday_spend__spend_yoy",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "Baidu": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "to_confirm",
+   "usable": false
+  },
+  {
+   "source": "mx_antad_sss",
+   "series": "same_store_sales_yoy",
+   "lake_file": "alt_mx_antad_sss__same_store_sales_yoy",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "Walmart": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": false,
+   "terms": "to_confirm",
+   "usable": false
+  },
+  {
+   "source": "us_oi_google_mobility",
+   "series": "retail_and_recreation",
+   "lake_file": "alt_us_oi_google_mobility__retail_and_recreation",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "Target": 1,
+    "Walmart": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": true,
+   "terms": "confirmed",
+   "usable": false
+  },
+  {
+   "source": "us_oi_google_mobility",
+   "series": "transit_stations",
+   "lake_file": "alt_us_oi_google_mobility__transit_stations",
+   "columns": [
+    "surprise_z",
+    "pace"
+   ],
+   "shares": {
+    "Booking": 1,
+    "Lyft": 1,
+    "Uber": 1
+   },
+   "prior_sign_basis": "declared prior, untested",
+   "dead": true,
+   "terms": "confirmed",
+   "usable": false
+  }
+ ]
+}

@@ -238,7 +238,8 @@ def test_keyed_substitutes_block_without_their_key(monkeypatch: pytest.MonkeyPat
     assert got == {"kr_bok_card_spend": "BLOCKED_ON_KEY:ECOS_API_KEY",
                    "kr_kobis_box_office": "BLOCKED_ON_KEY:KOBIS_API_KEY",
                    "kr_seoul_subway": "BLOCKED_ON_KEY:SEOUL_API_KEY"}
-    assert A.status_of(A.BY_ID["us_oi_card_spend"]) == "ARCHIVE_ENDED:2024-06"
+    assert A.status_of(A.BY_ID["us_oi_card_spend"]) == "DEAD:2024-06"
+    assert A.status_of(A.BY_ID["us_oi_google_mobility"]) == "DEAD:2022-10"
 
 
 def test_wiki_requests_full_history_once_then_a_window() -> None:
@@ -284,10 +285,10 @@ def _pts(values: dict[date, float]) -> list[dict[str, Any]]:
     return [{"d": d.isoformat(), "value": v} for d, v in sorted(values.items())]
 
 
-def test_substitute_agreement_measures_overlaps_and_names_what_is_missing(tmp_path: Path) -> None:
+def test_substitute_agreement_is_on_changes_split_by_regime(tmp_path: Path) -> None:
     paths = A.Paths(tmp_path / "desk")
-    days = [date(2021, 1, 1) + timedelta(days=i) for i in range(120)]
-    spend = {d: (i % 11) * 0.01 for i, d in enumerate(days)}
+    days = [date(2020, 3, 1) + timedelta(days=i) for i in range(1400)]
+    spend = {d: float((i * 37) % 101) * 0.01 for i, d in enumerate(days)}
     visits = {d: v * 2 + 0.001 * (i % 3) for i, (d, v) in enumerate(spend.items())}
     pts = {"us_oi_card_spend": {"spend_retail_no_grocery": _pts(spend),
                                 "spend_all": _pts(spend)},
@@ -300,13 +301,179 @@ def test_substitute_agreement_measures_overlaps_and_names_what_is_missing(tmp_pa
                   "geopolitical_risk_intensity": [spend[d] for d in days]}).to_parquet(
         paths.series / "nlp_events_CN.parquet", index=False)
     got = A.substitute_agreement(paths, pts)
-    assert got["oi_card_vs_google_mobility_level"]["verdict"] == "MEASURED"
-    assert got["oi_card_vs_google_mobility_level"]["pearson"] > 0.99
+    m = got["oi_card_vs_google_mobility"]
+    assert m["basis"] == "changes"
+    assert set(m["changes"]) == {"all", "pre_2021", "2021_plus"}
+    n_weeks = m["changes"]["all"]["n"]
+    assert n_weeks == len([d for d in days if d.weekday() == 6]) - 1     # non-overlapping
+    assert m["changes"]["pre_2021"]["n"] + m["changes"]["2021_plus"]["n"] == n_weeks
+    assert m["changes"]["2021_plus"]["pearson"] > 0.99
+    assert "levels_context_only" in m                                 # never levels alone
     assert got["oi_card_vs_census_marts_mom"]["verdict"] == "UNMEASURED"
     g = got["gdelt_conflict_share_vs_tagger_geopolitical_risk"]
-    assert g["verdict"] == "MEASURED" and g["n"] == 120 and g["pearson"] == pytest.approx(1.0)
-    assert got["gdelt_negative_tone_vs_tagger_geopolitical_risk"]["pearson"] == pytest.approx(1.0)
-    assert got["vs_paid_original"]["verdict"] == "UNMEASURED"
+    assert g["changes"]["all"]["verdict"] == "MEASURED"
+    assert g["changes"]["all"]["pearson"] == pytest.approx(1.0)
+    assert got["gdelt_negative_tone_vs_tagger_geopolitical_risk"]["changes"]["all"][
+        "pearson"] == pytest.approx(1.0)
+    po = got["paid_original_agreement"]
+    assert set(po) == {"news_analytics", "card_panels", "foot_traffic", "satellite"}
+    for row in po.values():                    # no number without fetched data behind it
+        assert row["verdict"] == "UNMEASURED" and row["why"] and row["paid_original"]
+        assert set(row["substitutes"]) <= set(A.BY_ID)
+
+
+def test_weekly_change_is_non_overlapping() -> None:
+    days = {date(2024, 1, 1) + timedelta(days=i): float(i) for i in range(30)}
+    wk = A._weekly_change(days)
+    assert wk and all(d.weekday() == 6 and v == 7.0 for d, v in wk.items())
+    keyed = A._weekly_change({(d, "CN"): v for d, v in days.items()})
+    assert set(keyed) == {(d, "CN") for d in wk}
+
+
+# ============================================================================ terms / status
+def test_every_source_has_an_explicit_terms_entry() -> None:
+    assert set(A.TERMS) == set(A.BY_ID)
+    for s in A.SOURCES:
+        assert s.terms in A.TERMS_VALUES and s.terms == A.TERMS[s.id][0], s.id
+    for sid in ("cn_maoyan_box_office", "cn_baidu_migration"):
+        assert A.BY_ID[sid].terms == "to_confirm"
+
+
+def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
+    paths = A.Paths(tmp_path / "desk")
+
+    def boom(url: str) -> tuple[bytes, str]:
+        raise AssertionError(f"fetched {url}")
+
+    for src in A.SOURCES:
+        if src.terms == "confirmed":
+            continue
+        assert A.status_of(src).startswith(("BLOCKED_ON_TERMS:", "DEAD:")), src.id
+        for fixtures in (None, FIX):
+            rec = A.collect(paths, src, {}, NOW, fetch=True, fixtures=fixtures,
+                            deadline=1e18, getter=boom)
+            assert rec["status"] == f"BLOCKED_ON_TERMS:{src.terms}" and rec["requests"] == 0
+    rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
+    for sid in ("cn_maoyan_box_office", "cn_baidu_migration"):
+        assert rep["sources"][sid]["series"] == {}
+        assert sid in rep["blocked_on_terms"]
+
+
+def test_ecos_never_builds_a_request_on_a_placeholder_code(
+        monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    src = A.BY_ID["kr_bok_card_spend"]
+    for env in ("ALT_ECOS_CARD_STAT", "ALT_ECOS_CARD_ITEM"):
+        monkeypatch.delenv(env, raising=False)
+    monkeypatch.delenv("ECOS_API_KEY", raising=False)
+    assert A.status_of(src) == "BLOCKED_ON_KEY:ECOS_API_KEY"
+    monkeypatch.setenv("ECOS_API_KEY", "k")
+    assert A.status_of(src) == "UNCONFIGURED:ALT_ECOS_CARD_STAT,ALT_ECOS_CARD_ITEM"
+    assert A.requests_for(src, NOW, {}) == []
+    rec = A.collect(A.Paths(tmp_path / "desk"), src, {}, NOW, fetch=True, fixtures=None,
+                    deadline=1e18, getter=lambda u: (_ for _ in ()).throw(AssertionError(u)))
+    assert rec["status"].startswith("UNCONFIGURED")
+    monkeypatch.setenv("ALT_ECOS_CARD_STAT", "901Y999")
+    assert A.requests_for(src, NOW, {}) == []                        # one code is not both
+    monkeypatch.setenv("ALT_ECOS_CARD_ITEM", "I61A")
+    assert A.status_of(src) == "UNMEASURED_LIVE_YIELD"
+    (req,) = A.requests_for(src, NOW, {})
+    assert req.url.endswith("/901Y999/M/201801/202609/I61A") and "{" not in req.url
+
+
+def test_no_source_claims_live_yield_and_dead_archives_never_count_as_live() -> None:
+    for s in A.SOURCES:
+        assert "LIVE" not in A.status_of(s).replace("UNMEASURED_LIVE_YIELD", ""), s.id
+    rep = {"at": NOW.isoformat(), "mode": "fetch",
+           "sources": {"us_oi_card_spend": {"status": "DEAD:2024-06", "parsed": 900,
+                                            "series": {"spend_all": 900}}}}
+    assert A.digest_section(rep)["status"] == "UNMEASURED_LIVE_YIELD"
+
+
+# ============================================================================ lane
+def test_no_direct_cell_has_a_share_cfd_symbol(tmp_path: Path) -> None:
+    from research import universe_policy
+    gains: dict[str, dict[str, Any]] = {}
+    for s in A.SOURCES:
+        for series in s.signal_series:
+            for sym in s.instruments_for(series):
+                gains[f"{s.id}|{series}|{sym}"] = {"verdict": "PASS", "ic": 0.2, "n": 50}
+    assert any(universe_policy.is_equity(k.split("|")[2]) for k in gains)   # they are mapped
+    cells = A.direct_cells(gains, NOW)
+    assert cells and not any(universe_policy.is_equity(c["symbol"]) for c in cells)
+    assert all(not A.BY_ID[c["provenance"]["source_id"]].archive_until for c in cells)
+    # the gain tests never spend a trial on one either
+    src = A.BY_ID["kr_exports_early"]
+    pts = {"semis_yoy": [{"available_time": "2026-01-10T00:00:00+00:00", "surprise_z": 1.0,
+                          "pit_quality": "live", "d": "2026-01-09", "value": 1.0}]}
+    keys = A.gain_tests(A.Paths(tmp_path / "desk"), {src.id: pts})
+    assert keys and not any(universe_policy.is_equity(k.split("|")[2]) for k in keys)
+    assert "kr_exports_early|semis_yoy|USDKRW" in keys
+
+
+def test_share_cfd_series_go_to_the_equity_handoff() -> None:
+    from research import universe_policy
+    doc = A.equity_handoff()
+    rows = {(r["source"], r["series"]): r for r in doc["rows"]}
+    semis = rows[("kr_exports_early", "semis_yoy")]
+    assert semis["shares"]["TSMC"] == 1 and "USDKRW" not in semis["shares"]
+    for r in doc["rows"]:
+        assert r["shares"] and all(universe_policy.is_equity(s) for s in r["shares"])
+        assert all(v in (1, -1) for v in r["shares"].values())
+    committed = json.loads((DESK / "data" / "digests" / "alt_proxies_equity_handoff.json"
+                            ).read_text("utf-8"))
+    assert committed["rows"] == doc["rows"]
+
+
+# ============================================================================ trials
+def test_a_null_pass_is_charged_to_the_lifetime_ledger_once(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from libs.research import experiment_ledger as L
+    from research import proposer_common as pc
+    paths = A.Paths(tmp_path / "desk")
+    monkeypatch.setattr(L, "DESK", paths.desk)
+    base, _ = L._proposer_counts()
+    res = A._donate(paths, A.SOURCE, [], 7, {"exogenous_conditioner": 7}, NOW)
+    assert res["null_trials_charged"] == 7
+    total, fam = L._proposer_counts()
+    assert total == base + 7 and fam["exogenous_conditioner"] == 7
+    # a pass whose discovery file carries tests_run is NOT also written to the side ledger
+    monkeypatch.setattr(pc, "donate", lambda *a, **k: tmp_path / "discoveries_x.json")
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": 1})
+    res = A._donate(paths, A.SOURCE, [{"cell": "x"}], 9, {"exogenous_conditioner": 9}, NOW)
+    assert "null_trials_charged" not in res
+    assert L._proposer_counts()[0] == base + 7
+    # nothing tested, nothing charged
+    assert "null_trials_charged" not in A._donate(paths, A.SOURCE, [], 0, {}, NOW)
+
+
+# ============================================================================ power
+def test_placebo_gates_hold_the_null_false_positive_rate_at_or_below_alpha() -> None:
+    """The null row of the power table is the false-positive rate. It must not sit above alpha
+    by more than its own sampling error (one-sided binomial, 1.96 SE, fixed seeds)."""
+    import math
+
+    from libs.research.release_gain import ALPHA_FAMILY, power_table
+    rows = power_table(ics=(0.0,), ns=(250,), n_sims=30, gates=("release_gain",))
+    rows += power_table(ics=(0.0,), ns=(250, 1000), n_sims=400, gates=("regime_placebo",),
+                        regime_masks=1000)
+    for r in rows:
+        se = math.sqrt(ALPHA_FAMILY * (1 - ALPHA_FAMILY) / r["n_sims"])
+        assert r["pass_rate"] <= ALPHA_FAMILY + 1.96 * se, r
+
+
+def test_power_is_reported_and_a_low_power_miss_is_underpowered_not_fail() -> None:
+    from libs.research.release_gain import TARGET_IC, min_detectable_ic, power_table
+    rows = power_table(ics=(0.05, 0.5), ns=(250,), n_sims=10)
+    by = {(r["gate"], r["planted_ic"]): r for r in rows}
+    for gate in ("release_gain", "regime_placebo"):
+        assert 0.0 <= by[(gate, 0.05)]["pass_rate"] <= 1.0
+        assert by[(gate, 0.05)]["min_detectable_ic"] > TARGET_IC      # n=250 cannot see 0.05
+        assert by[(gate, 0.5)]["pass_rate"] >= 0.8                     # a large IC is seen
+        print(gate, by[(gate, 0.05)])
+    assert by[("release_gain", 0.05)]["underpowered_rate"] > 0
+    m250, m1000 = min_detectable_ic(250), min_detectable_ic(1000)
+    assert m250 is not None and m1000 is not None and m1000 < m250
+    assert (min_detectable_ic(1000, 40) or 0.0) > m1000             # the charge costs power
 
 
 # ============================================================================ roster

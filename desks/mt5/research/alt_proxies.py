@@ -68,7 +68,7 @@ import time
 import urllib.parse
 import urllib.request
 from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -150,6 +150,16 @@ class Paths:
     @property
     def survivors(self) -> Path:
         return self.desk / "reports" / "UNIVERSAL_SURVIVORS.json"
+
+    @property
+    def equity_handoff(self) -> Path:
+        """COMMITTED hand-off to the cross-sectional equity book (share CFDs never mint here)."""
+        return self.desk / "data" / "digests" / "alt_proxies_equity_handoff.json"
+
+    @property
+    def null_trials(self) -> Path:
+        """Side ledger of trials from passes that donated nothing (`experiment_ledger` reads it)."""
+        return self.desk / "data" / "null_pass_trials.jsonl"
 
     @property
     def sge_premium(self) -> Path:
@@ -1291,8 +1301,13 @@ class Source:
     reader: Callable[[Paths], list[Obs]] | None = None
     #: The paid panel this free source stands in for (roster `substitutes_for`).
     substitutes_for: str = ""
-    #: The publisher stopped updating: history only, and the status says so.
+    #: The publisher stopped updating: history only. Such a source is DEAD, never live.
     archive_until: str | None = None
+    #: confirmed | to_confirm | refused. FAIL CLOSED: only `confirmed` is ever fetched. Set per
+    #: source in TERMS below, never by this default.
+    terms: str = "to_confirm"
+    #: Env vars that must hold REAL codes before a request may be built (no placeholder default).
+    config_env: tuple[str, ...] = ()
 
     def instruments_for(self, series: str) -> dict[str, int]:
         for prefix, m in self.series_instruments.items():
@@ -1605,20 +1620,24 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                    "panel Second Measure and Earnest sell, published free by Opportunity Insights"),
         payer="consumer-equity and index holders who wait for Census retail sales",
         constraint="the official receipts survey is monthly and two weeks late",
-        licence="Opportunity Insights Economic Tracker (CC BY 4.0, cite Chetty et al.)",
+        licence=("Opportunity Insights Economic Tracker README: 'Anyone is welcome to use this "
+                 "data' with the provider (Affinity Solutions) named and Chetty et al. cited; "
+                 "no formal licence file"),
         source_culture="US/en", participant_structure=("retail_heavy", "institutional"),
         failure_mode_hypothesis=("fails because the feed ENDED (last rows 2024-06): it is a "
                                  "2020-2024 backfill for history-only tests, and it over-weights "
                                  "the pandemic regime in any fit"),
         crowding_prior="high", substitutes_for=_CARD, archive_until="2024-06",
-        note="live-measured here: the GitHub raw host was reachable from the authoring box"),
+        note=("DEAD: the feed ended 2024-06-16 (re-read from GitHub raw 2026-09-30). History for "
+              "the agreement check only; never a live source, never a direct cell. No free "
+              "successor was wired: none was reachable to verify from the authoring box")),
     Source(
         id="kr_bok_card_spend", name="BOK ECOS card spending (Korea, one configured item)",
         url=("https://ecos.bok.or.kr/api/StatisticSearch/{key}/json/kr/1/1000/"
-             + os.environ.get("ALT_ECOS_CARD_STAT", "601Y002") + "/M/201801/{yyyymm}/"
-             + os.environ.get("ALT_ECOS_CARD_ITEM", "X")),
+             "{ALT_ECOS_CARD_STAT}/M/201801/{yyyymm}/{ALT_ECOS_CARD_ITEM}"),
         region="KR", language="ko", cadence="monthly", parse=parse_ecos,
         rule=_lag_rule(25, 0, weekday=True), transform="yoy_monthly", key_env="ECOS_API_KEY",
+        config_env=("ALT_ECOS_CARD_STAT", "ALT_ECOS_CARD_ITEM"),
         instruments={"USDKRW": -1},
         signal_series=("card_spend",),
         mechanism=("Korean card use is near-universal, so the BOK's card-spending series is "
@@ -1630,9 +1649,10 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         failure_mode_hypothesis=("fails around Chuseok/Lunar New Year month shifts and "
                                  "government consumption-voucher programmes"),
         crowding_prior="low", substitutes_for=_CARD,
-        note=("minimal ECOS reader (no ECOS reader exists in the repo); stat/item codes are "
-              "overridable with ALT_ECOS_CARD_STAT / ALT_ECOS_CARD_ITEM and must be confirmed "
-              "against ECOS StatisticItemList on the box")),
+        note=("minimal ECOS reader (no ECOS reader exists in the repo). NO DEFAULT CODES: the "
+              "stat and item codes come only from ALT_ECOS_CARD_STAT / ALT_ECOS_CARD_ITEM, read "
+              "off ECOS StatisticItemList on the box; until both and the key are set the row is "
+              "BLOCKED_ON_KEY / UNCONFIGURED and nothing is requested")),
     Source(
         id="jp_meti_retail", name="METI commercial dynamics flash: retail sales YoY (Japan)",
         url=os.environ.get("ALT_METI_RETAIL_URL",
@@ -1776,11 +1796,14 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
                    "-- the product SafeGraph and Placer.ai sell, published free by Google"),
         payer="consumer and travel holders waiting for earnings and monthly surveys",
         constraint="visit counts were never part of any official calendar",
-        licence="Google COVID-19 Community Mobility Reports via Opportunity Insights (free use)",
+        licence=("Google COVID-19 Community Mobility Reports as redistributed by Opportunity "
+                 "Insights ('Anyone is welcome to use this data', provider named, OI cited)"),
         source_culture="US/en", participant_structure=("retail_heavy", "physical_flow"),
         failure_mode_hypothesis=("fails because the feed ENDED (2022-10): a pandemic-era "
                                  "history for history-only tests"),
-        crowding_prior="high", substitutes_for=_FOOT, archive_until="2022-10"),
+        crowding_prior="high", substitutes_for=_FOOT, archive_until="2022-10",
+        note=("DEAD: Google stopped the reports; last row 2022-10-15 (re-read from GitHub raw "
+              "2026-09-30). History for the agreement check only; never live, never a cell")),
     Source(
         id="kr_kobis_box_office", name="KOBIS daily box office (Korea, top 10)",
         url=("https://www.kobis.or.kr/kobisopenapi/webservice/rest/boxoffice/"
@@ -1902,16 +1925,68 @@ SUBSTITUTE_SOURCES: tuple[Source, ...] = (
         note="bulletin URL overridable (ALT_CN_MOT_PORT_URL); confirm route on the box"),
 )
 
-SOURCES = (*SOURCES, *SUBSTITUTE_SOURCES)
+#: THE TERMS GATE, FAIL CLOSED. `confirmed` only where the licence is plainly open: government
+#: open data under a stated open licence, CC/CC0 data, public statistics behind a documented API,
+#: or a publisher's written "anyone may use this". Everything else is `to_confirm` until a human
+#: reads the terms, and a `to_confirm` or `refused` source is NEVER fetched (BLOCKED_ON_TERMS).
+TERMS: dict[str, tuple[str, str]] = {
+    "kr_exports_early": ("confirmed", "KOGL public-sector open licence"),
+    "us_tsa_throughput": ("confirmed", "US federal work, public domain"),
+    "us_census_marts_ex_autos": ("confirmed", "US Census documented public API, public domain"),
+    "jp_jnto_arrivals": ("to_confirm", "JNTO site terms not read; not a documented API"),
+    "jp_tokyo_cpi": ("confirmed", "e-Stat documented API, Government of Japan statistics"),
+    "cn_firms_industrial": ("confirmed", "NASA open data, documented API"),
+    "imf_portwatch_ports": ("confirmed", "IMF PortWatch public statistics, documented ArcGIS API"),
+    "imf_portwatch_chokepoints": ("confirmed", "IMF PortWatch public statistics, documented "
+                                  "ArcGIS API"),
+    "in_gold_imports": ("confirmed", "Government of India press releases (PIB), public"),
+    "cn_sge_premium": ("to_confirm", "Shanghai Gold Exchange terms not read"),
+    "gdelt_events_country": ("confirmed", "GDELT: unrestricted use with citation"),
+    "wiki_asia_attention": ("confirmed", "Wikimedia pageviews API, CC0"),
+    "us_oi_card_spend": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
+    "kr_bok_card_spend": ("confirmed", "BOK ECOS documented Open API"),
+    "jp_meti_retail": ("confirmed", "Government of Japan Standard Terms of Use (CC BY compatible)"),
+    "cn_nbs_retail": ("to_confirm", "no stated open licence on stats.gov.cn release pages"),
+    "cn_holiday_spend": ("to_confirm", "MCT pages carry no open licence; UnionPay is private"),
+    "in_npci_upi": ("to_confirm", "NPCI is a private company; no open licence stated"),
+    "tr_bkm_card": ("to_confirm", "BKM is a private association; no open licence stated"),
+    "br_cielo_icva": ("to_confirm", "Cielo is a private acquirer; no open licence stated"),
+    "mx_antad_sss": ("to_confirm", "ANTAD is a private association; no open licence stated"),
+    "za_beti": ("to_confirm", "BankservAfrica/PayInc is private; no open licence stated"),
+    "us_oi_google_mobility": ("confirmed", "OI README: 'Anyone is welcome to use this data'"),
+    "kr_kobis_box_office": ("confirmed", "KOBIS documented Open API (Korean Film Council)"),
+    "kr_seoul_subway": ("confirmed", "Seoul Open Data Plaza, KOGL type 1"),
+    "cn_maoyan_box_office": ("to_confirm", "Maoyan dashboard: private, terms not read"),
+    "cn_baidu_migration": ("to_confirm", "Baidu Huiyan map: private, terms not read"),
+    "kr_busan_port": ("to_confirm", "Busan Port Authority board: licence not stated"),
+    "sg_port_throughput": ("confirmed", "SingStat Table Builder API, Singapore Open Data Licence"),
+    "cn_mot_port_weekly": ("to_confirm", "no stated open licence on mot.gov.cn bulletins"),
+}
+TERMS_VALUES = ("confirmed", "to_confirm", "refused")
+
+SOURCES = tuple(replace(s, terms=TERMS.get(s.id, ("to_confirm", ""))[0])
+                for s in (*SOURCES, *SUBSTITUTE_SOURCES))
+SUBSTITUTE_SOURCES = tuple(s for s in SOURCES if s.substitutes_for)
 BY_ID = {s.id: s for s in SOURCES}
 
 
 def status_of(src: Source) -> str:
+    """One named state per source. Nothing here claims live yield: a source that has not returned
+    real data on the box is UNMEASURED_LIVE_YIELD, and the pass report says what it parsed."""
+    if src.archive_until:
+        return f"DEAD:{src.archive_until}"
+    if src.terms != "confirmed":
+        return f"BLOCKED_ON_TERMS:{src.terms}"
     if src.key_env and not os.environ.get(src.key_env):
         return f"BLOCKED_ON_KEY:{src.key_env}"
-    if src.archive_until:
-        return f"ARCHIVE_ENDED:{src.archive_until}"
+    missing = [e for e in src.config_env if not os.environ.get(e)]
+    if missing:
+        return "UNCONFIGURED:" + ",".join(missing)
     return "UNMEASURED_LIVE_YIELD"
+
+
+def is_dead(src: Source) -> bool:
+    return bool(src.archive_until)
 
 
 # ============================================================================ fetching
@@ -2014,8 +2089,13 @@ def requests_for(src: Source, now: datetime, state: dict[str, Any]) -> list[Requ
         # page, which TSA publishes at /<year>.
         return [Request(src.url, Ctx(fetched_at=now)),
                 Request(f"{src.url}/{now.year - 1}", Ctx(part="prior_year", fetched_at=now))]
-    return [Request(src.url.replace("{key}", key).replace("{yyyymm}", now.strftime("%Y%m")),
-                    Ctx(fetched_at=now))]
+    url = src.url.replace("{key}", key).replace("{yyyymm}", now.strftime("%Y%m"))
+    for env in src.config_env:
+        code = os.environ.get(env, "").strip()
+        if not code:
+            return []                  # never a request built on a placeholder code
+        url = url.replace("{" + env + "}", urllib.parse.quote(code, safe=""))
+    return [Request(url, Ctx(fetched_at=now))]
 
 
 #: Per-date sources: (recent days re-read each pass, publication lag in days, backfill days per
@@ -2395,16 +2475,59 @@ def _meta(src: Source) -> dict[str, Any]:
             "crowding_prior": src.crowding_prior}
 
 
+DIRECT_FAMILY = "exogenous_conditioner"
+
+
+def may_mint(sym: str, family: str = DIRECT_FAMILY) -> bool:
+    """THE TWO-LANE ORDER, by ASSET CLASS from `universe_policy` (never a symbol list). A share
+    CFD mints only in CROSS_SECTIONAL_FAMILIES or the news lane, so it is never a direct or
+    conditioned cell here; its series go to the equity hand-off instead."""
+    from research import universe_policy
+    return bool(universe_policy.may_hypothesise(sym, family))
+
+
+def equity_handoff(sources: Iterable[Source] = SOURCES) -> dict[str, Any]:
+    """(series, share symbols, prior sign) for every mapped share CFD, for the cross-sectional
+    equity book to consume as a conditioner or ranking axis. Nothing here is a cell or a trial."""
+    from research import universe_policy
+    rows: list[dict[str, Any]] = []
+    for src in sources:
+        for series in src.signal_series:
+            shares = {sym: int(sgn) for sym, sgn in sorted(src.instruments_for(series).items())
+                      if universe_policy.is_equity(sym)}
+            if shares:
+                rows.append({"source": src.id, "series": series,
+                             "lake_file": lake_file(src, series), "columns": ["surprise_z",
+                                                                               "pace"],
+                             "shares": shares, "prior_sign_basis": "declared prior, untested",
+                             "dead": is_dead(src), "terms": src.terms,
+                             "usable": not is_dead(src) and src.terms == "confirmed"})
+    return {"use": "equity_handoff", "producer": "desks/mt5/research/alt_proxies.py",
+            "consumer": ("the cross-sectional equity book "
+                         "(universe_policy.CROSS_SECTIONAL_FAMILIES)"),
+            "rule": ("share CFDs never mint as alt-proxy direct or conditioned cells (two-lane "
+                     "order, asset class from universe_policy). Each row is a PIT lake series "
+                     "(data/lake/series/<lake_file>.csv) and the share CFDs it bears on with the "
+                     "declared prior sign; the equity book decides and charges any test"),
+            "rows": rows}
+
+
 def gain_tests(paths: Paths, points_by_source: dict[str, dict[str, list[dict[str, Any]]]],
                ) -> dict[str, dict[str, Any]]:
-    """Every (source, signal series, mapped instrument) cell, tested once, charged together."""
+    """Every (source, signal series, mapped instrument) cell, tested once, charged together.
+
+    Only instruments the two-lane order lets this family mint on are tested (share CFDs go to
+    the equity hand-off), and a DEAD source is never tested: its conditioner can never fire."""
     from libs.research.release_gain import release_gain
     cells: list[tuple[str, str, str]] = []
     for sid, per in points_by_source.items():
         src = BY_ID[sid]
+        if is_dead(src):
+            continue
         for series in src.signal_series:
             if per.get(series):
-                cells.extend((sid, series, sym) for sym in src.instruments_for(series))
+                cells.extend((sid, series, sym) for sym in src.instruments_for(series)
+                             if may_mint(sym))
     out: dict[str, dict[str, Any]] = {}
     closes: dict[str, Any] = {}
     for sid, series, sym in cells:
@@ -2434,6 +2557,8 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
             continue
         sid, series, sym = key.split("|")
         src = BY_ID[sid]
+        if is_dead(src) or not may_mint(sym):
+            continue
         side = 1 if float(g["ic"]) > 0 else -1
         params = {"source": lake_file(src, series), "signal": "surprise_z",
                   "transform": "level_z", "threshold": 1.0, "side_when_high": side,
@@ -2451,7 +2576,7 @@ def direct_cells(gains: dict[str, dict[str, Any]], now: datetime) -> list[dict[s
                           "returns no longer beats the shifted-release placebo at p<=0.05"),
             "evidence": {k: g.get(k) for k in ("ic", "n", "t", "p_t", "p_placebo",
                                                "placebo_abs_ic_p95", "backfill_share",
-                                               "horizon_bars", "why")},
+                                               "horizon_bars", "min_detectable_ic", "why")},
             "provenance": {"organ": "alt_proxies", "use": "direct_cells", "source_id": sid,
                            "series": series, **_meta(src)}})
     return out
@@ -2545,13 +2670,16 @@ def indirect_cells(paths: Paths, points_by_source: dict[str, dict[str, list[dict
     pairs: list[tuple[str, str, dict[str, Any]]] = []
     for sid, per in sorted(points_by_source.items()):
         src = BY_ID[sid]
+        if is_dead(src):
+            continue
         for series in src.signal_series:
             pts = [p for p in per.get(series, []) if p.get("pace") is not None]
             if len(pts) < 24:
                 continue
             for sym in src.instruments_for(series):
                 for par in parents.get(sym, [])[:PARENTS_PER_SYMBOL]:
-                    pairs.append((sid, series, par))
+                    if may_mint(sym, str(par.get("family") or "")):
+                        pairs.append((sid, series, par))
     if not pairs:
         return [], 0, []
     start = int(state.get("indirect_cursor") or 0) % len(pairs)
@@ -2614,7 +2742,8 @@ def _gate_children(paths: Paths,
         else:
             seed = int(hashlib.sha256(cand["cell"].encode()).hexdigest()[:8], 16)
             res = regime_placebo(x[0], x[1], x[2], n_trials=n_trials, seed=seed)
-        gates.append({"cell": cand["cell"], "parent": cand["parent"], **res})
+        gates.append({"cell": cand["cell"], "parent": cand["parent"], "family": cand["family"],
+                      **res})
         if res.get("verdict") == "PASS":
             cand["evidence"] = {k: res.get(k) for k in (
                 "n_in", "n_signals", "duty_cycle", "mean_in", "placebo_mean", "placebo_p95",
@@ -2623,15 +2752,37 @@ def _gate_children(paths: Paths,
     return passed, gates
 
 
-def _donate(source: str, cands: list[dict[str, Any]], tests_run: int) -> dict[str, Any]:
-    if not cands:
-        return {"donated": 0, "path": None}
-    try:
-        from research import proposer_common as pc
-        path = pc.donate(source, cands, tests_run)
-        return {**pc.donation_counts(), "path": str(path) if path else None}
-    except Exception as exc:
-        return {"donated": 0, "path": None, "error": f"{type(exc).__name__}: {str(exc)[:160]}"}
+def _donate(paths: Paths, source: str, cands: list[dict[str, Any]], tests_run: int,
+            by_family: dict[str, int], now: datetime) -> dict[str, Any]:
+    """Donate the passing cells, and CHARGE EVERY TESTED CELL EITHER WAY.
+
+    A discovery file carries `tests_run` for the whole pass (passes and fails), and
+    `experiment_ledger` counts it. A pass with nothing to donate -- or whose donation the door
+    turned away -- writes no discovery file, so its trials would vanish from the lifetime count;
+    those go to the side ledger `paths.null_trials` instead. Exactly one of the two carries a
+    pass's trials, so nothing is counted twice."""
+    res: dict[str, Any] = {"donated": 0, "path": None}
+    if cands:
+        try:
+            from research import proposer_common as pc
+            path = pc.donate(source, cands, max(1, tests_run))
+            res = {**pc.donation_counts(), "path": str(path) if path else None}
+        except Exception as exc:
+            res = {"donated": 0, "path": None,
+                   "error": f"{type(exc).__name__}: {str(exc)[:160]}"}
+    if tests_run > 0 and not res.get("path"):
+        row = {"at": now.isoformat(timespec="seconds"), "source": source,
+               "tests_run": int(tests_run),
+               "by_family": {k: int(v) for k, v in sorted(by_family.items()) if v},
+               "why": "tested cells charged; no discovery file carried them this pass"}
+        try:
+            paths.null_trials.parent.mkdir(parents=True, exist_ok=True)
+            with paths.null_trials.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps(row, sort_keys=True) + "\n")
+            res["null_trials_charged"] = int(tests_run)
+        except OSError as exc:
+            res["null_trials_error"] = f"{type(exc).__name__}: {str(exc)[:160]}"
+    return res
 
 
 # ============================================================================ the pass
@@ -2651,6 +2802,12 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
     rec: dict[str, Any] = {"id": src.id, "status": status_of(src)}
     store_p = paths.obs_dir / f"{src.id}.json"
     store = _read_json(store_p, {})
+    if src.terms != "confirmed":
+        rec.update({"status": f"BLOCKED_ON_TERMS:{src.terms}", "requests": 0,
+                    "why": (f"terms {src.terms}: not fetched until a human confirms the "
+                            f"licence ({TERMS.get(src.id, ('', 'unknown'))[1]})"),
+                    "store_rows": len(store)})
+        return rec
     if src.parse is None:                  # a local read of a series another organ fetches
         obs = src.reader(paths) if src.reader is not None else []
         rec.update({"requests": 0, "parsed": len(obs),
@@ -2660,9 +2817,12 @@ def collect(paths: Paths, src: Source, state: dict[str, Any], now: datetime, *,
         _atomic(store_p, store)
         rec["store_rows"] = len(store)
         return rec
-    blocked = rec["status"].startswith("BLOCKED_ON_KEY") and fixtures is None
+    blocked = (rec["status"].startswith(("BLOCKED_ON_KEY", "UNCONFIGURED"))
+               and fixtures is None)
     if blocked:
-        rec["why"] = f"{src.key_env} is not set: a named state, never a dead endpoint"
+        rec["why"] = (f"{src.key_env} is not set: a named state, never a dead endpoint"
+                      if rec["status"].startswith("BLOCKED_ON_KEY") else
+                      f"{rec['status']}: no request is built on a placeholder code")
         rec["store_rows"] = len(store)
         return rec
     sst = state.setdefault("sources", {}).setdefault(src.id, {})
@@ -2792,9 +2952,91 @@ def _monthly_mom(daily: dict[date, float], *, index_base: float = 0.0) -> dict[A
     return out
 
 
-def _weekly_change(daily: dict[date, float]) -> dict[Any, float]:
-    return {d: v - daily[d - timedelta(days=7)] for d, v in daily.items()
-            if d - timedelta(days=7) in daily}
+def _weekly_change(daily: dict[Any, float], anchor_weekday: int = 6) -> dict[Any, float]:
+    """NON-OVERLAPPING 7-day changes: one per week, on `anchor_weekday` (Sunday, the day the
+    Opportunity Insights weekly rows carry). Keys are dates or (date, country) pairs. Overlapping
+    daily 7-day differences are one observation counted seven times."""
+    out: dict[Any, float] = {}
+    for k, v in daily.items():
+        d, rest = (k[0], k[1:]) if isinstance(k, tuple) else (k, ())
+        prev = (d - timedelta(days=7), *rest) if rest else d - timedelta(days=7)
+        if d.weekday() == anchor_weekday and prev in daily:
+            out[k] = v - daily[prev]
+    return out
+
+
+#: Agreement is reported per regime: the pandemic swing (2020) makes any two activity series
+#: co-move in levels, so a pooled number is mostly COVID. 2021+ is the regime that trades now.
+AGREEMENT_REGIMES: tuple[tuple[str, date | None, date | None], ...] = (
+    ("all", None, None), ("pre_2021", None, date(2021, 1, 1)),
+    ("2021_plus", date(2021, 1, 1), None))
+
+
+def _key_day(k: Any) -> date:
+    if isinstance(k, date):
+        return k
+    if isinstance(k, tuple) and k and isinstance(k[0], date):
+        return k[0]
+    return date(int(k[0]), int(k[1]), 1)                      # (year, month)
+
+
+def _by_regime(a: dict[Any, float], b: dict[Any, float], min_n: int) -> dict[str, Any]:
+    from libs.research.event_factors import agreement
+    out: dict[str, Any] = {}
+    for name, lo, hi in AGREEMENT_REGIMES:
+        def keep(k: Any, lo: date | None = lo, hi: date | None = hi) -> bool:
+            d = _key_day(k)
+            return (lo is None or d >= lo) and (hi is None or d < hi)
+        out[name] = agreement({k: v for k, v in a.items() if keep(k)},
+                              {k: v for k, v in b.items() if keep(k)}, min_n=min_n)
+    return out
+
+
+#: D19, each paid class against the paid original's PUBLIC outputs. A number appears here only if
+#: it was computed from data this box fetched; every other entry is UNMEASURED with its reason.
+PAID_ORIGINAL_AGREEMENT: dict[str, dict[str, Any]] = {
+    "news_analytics": {
+        "paid_original": "RavenPack", "substitutes": ["gdelt_events_country",
+                                                      "wiki_asia_attention"],
+        "public_outputs": ("academic papers quote summary statistics of RavenPack sentiment "
+                           "(ESS/relevance distributions, event counts), never a daily series"),
+        "verdict": UNMEASURED,
+        "why": ("no public RavenPack series exists to align on the same keys, and the GDELT host "
+                "answered 403 to the authoring box, so there is no GDELT panel to compare "
+                "either")},
+    "card_panels": {
+        "paid_original": "Bank of America card data / Second Measure / Earnest",
+        "substitutes": ["us_oi_card_spend", "kr_bok_card_spend", "jp_meti_retail",
+                        "cn_nbs_retail", "in_npci_upi", "tr_bkm_card", "br_cielo_icva",
+                        "mx_antad_sss", "za_beti"],
+        "public_outputs": ("BofA Institute 'Consumer Checkpoint' monthly releases print card "
+                           "spending per household YoY/MoM in prose and charts"),
+        "verdict": UNMEASURED,
+        "why": ("the BofA Institute page offers no downloadable series (checked 2026-09-30) and "
+                "its host is not reachable through this box's proxy; transcribing ~24 monthly "
+                "figures from release prose was not done, so no number is claimed. The only "
+                "measured card comparison is OI vs Google mobility (substitute vs substitute)")},
+    "foot_traffic": {
+        "paid_original": "Placer.ai / SafeGraph",
+        "substitutes": ["us_oi_google_mobility", "kr_kobis_box_office", "kr_seoul_subway",
+                        "cn_maoyan_box_office", "cn_baidu_migration"],
+        "public_outputs": ("Placer.ai publishes mall and retail visit indexes in blog posts "
+                           "and monthly reports (charts, some tables)"),
+        "verdict": UNMEASURED,
+        "why": ("no Placer.ai index was fetched: its host is not reachable through this box's "
+                "proxy and no machine-readable history is published; SafeGraph patterns are "
+                "licensed, not public")},
+    "satellite": {
+        "paid_original": "Orbital Insight / SpaceKnow",
+        "substitutes": ["kr_busan_port", "sg_port_throughput", "cn_mot_port_weekly",
+                        "imf_portwatch_ports", "cn_firms_industrial"],
+        "public_outputs": ("SpaceKnow's China Satellite Manufacturing Index was published in "
+                           "press releases (2016-2019); Orbital Insight publishes no index"),
+        "verdict": UNMEASURED,
+        "why": ("no SpaceKnow SMI history was fetched (not reachable from this box, and "
+                "discontinued as a public print), and none of the port substitutes returned data "
+                "here to compare")},
+}
 
 
 def _nlp_panel(paths: Paths, iso: str, column: str) -> dict[date, float]:
@@ -2818,9 +3060,11 @@ def _nlp_panel(paths: Paths, iso: str, column: str) -> dict[date, float]:
 
 def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, Any]]]]
                          ) -> dict[str, Any]:
-    """Each free substitute against the paid original where it is held (never, here) or against
-    an OVERLAPPING free series on the same keys. `event_factors.agreement` is the one metric."""
-    from libs.research.event_factors import agreement
+    """Each free substitute against an OVERLAPPING free series on the same keys, ON CHANGES and
+    split by regime (all / pre_2021 / 2021_plus). Levels are reported only as context beside the
+    changes, never alone: two activity series that both fell in 2020 agree in levels whatever
+    they measure. `paid_original_agreement` is the D19 block (the paid originals' public
+    outputs). `event_factors.agreement` is the one metric."""
     oi, gm = pts.get("us_oi_card_spend"), pts.get("us_oi_google_mobility")
     out: dict[str, Any] = {}
     # 1. card panel vs the official receipts survey, monthly MoM (both seasonally adjusted).
@@ -2828,21 +3072,22 @@ def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, A
     official = _monthly_mom(_vals(pts.get("us_census_marts_ex_autos"), "sales_ex_autos_gas"))
     out["oi_card_vs_census_marts_mom"] = {
         "what": "OI/Affinity spend_all month-mean MoM vs Census MARTS ex-autos-and-gas MoM",
-        **(agreement(card_m, official, min_n=12) if card_m and official else {
+        "basis": "changes",
+        **({"changes": _by_regime(card_m, official, 12)} if card_m and official else {
             "verdict": UNMEASURED,
             "why": ("no Census MARTS vintages on this box (api.census.gov unreachable from the "
                     "authoring container)" if not official else "no OI card-spend points")})}
-    # 2. card panel vs foot traffic (Google mobility), daily levels and 7-day changes.
+    # 2. card panel vs foot traffic (Google mobility): weekly changes, levels as context only.
     spend = _vals(oi, "spend_retail_no_grocery")
     visits = _vals(gm, "retail_and_recreation")
-    for name, a, b in (("oi_card_vs_google_mobility_level", spend, visits),
-                       ("oi_card_vs_google_mobility_7d_change", _weekly_change(spend),
-                        _weekly_change(visits))):
-        out[name] = {"what": ("OI spend_retail_no_grocery vs Google retail_and_recreation "
-                              "visits on the same days"),
-                     **(agreement(a, b, min_n=30) if a and b else {
-                         "verdict": UNMEASURED, "why": "one of the two archives is not held"})}
-    # 3. GDELT vs this desk's own event tagger on the same country-days.
+    out["oi_card_vs_google_mobility"] = {
+        "what": ("OI spend_retail_no_grocery vs Google retail_and_recreation visits: "
+                 "non-overlapping Sunday-to-Sunday changes on the same weeks"),
+        "basis": "changes",
+        **({"changes": _by_regime(_weekly_change(spend), _weekly_change(visits), 30),
+            "levels_context_only": _by_regime(spend, visits, 30)} if spend and visits else {
+            "verdict": UNMEASURED, "why": "one of the two archives is not held"})}
+    # 3. GDELT vs this desk's own event tagger on the same country-days, weekly changes.
     g = pts.get("gdelt_events_country") or {}
     ours_c: dict[Any, float] = {}
     theirs_c: dict[Any, float] = {}
@@ -2856,15 +3101,18 @@ def substitute_agreement(paths: Paths, pts: dict[str, dict[str, list[dict[str, A
             theirs_t[(d, iso)] = -v
     for name, theirs in (("gdelt_conflict_share_vs_tagger_geopolitical_risk", theirs_c),
                          ("gdelt_negative_tone_vs_tagger_geopolitical_risk", theirs_t)):
-        out[name] = {"what": "pooled country-days where both GDELT and nlp_events have a value",
-                     **(agreement(ours_c, theirs, min_n=30) if ours_c and theirs else {
+        out[name] = {"what": ("pooled country-weeks where both GDELT and nlp_events have a "
+                              "value: non-overlapping 7-day changes"),
+                     "basis": "changes",
+                     **({"changes": _by_regime(_weekly_change(ours_c), _weekly_change(theirs),
+                                               30),
+                         "levels_context_only": _by_regime(ours_c, theirs, 30)}
+                        if ours_c and theirs else {
                          "verdict": UNMEASURED,
                          "why": ("no GDELT days on this box (data.gdeltproject.org answered 403 "
                                  "to the authoring container)" if not theirs else
                                  "no nlp_events_<CC>.parquet tagger panel on this box")})}
-    out["vs_paid_original"] = {"verdict": UNMEASURED,
-                               "why": ("no paid panel (RavenPack, Second Measure, SafeGraph, "
-                                       "Orbital Insight) is licensed on this desk to compare")}
+    out["paid_original_agreement"] = PAID_ORIGINAL_AGREEMENT
     return out
 
 
@@ -2878,6 +3126,9 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
     points_by_source: dict[str, dict[str, list[dict[str, Any]]]] = {}
     for src in SOURCES:
         rec = collect(paths, src, state, now, fetch=fetch, fixtures=fixtures, deadline=deadline)
+        if src.terms != "confirmed":
+            records[src.id] = {**rec, "series": {}}     # a stored history is not read either
+            continue
         store = _read_json(paths.obs_dir / f"{src.id}.json", {})
         pts = build_points(src, store) if store else {}
         if pts:
@@ -2891,19 +3142,37 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
     live = dict(points_by_source) if fixtures is None else {}
     direct = direct_cells(gains, now) if fixtures is None else []
     indirect, owed, child_gates = indirect_cells(paths, live, state, now)
-    n_children_tested = sum(1 for g in child_gates if g.get("verdict") in ("PASS", "FAIL"))
-    n_tested = sum(1 for g in gains.values() if g.get("verdict") in ("PASS", "FAIL"))
+    tested = ("PASS", "FAIL", "UNDERPOWERED")
+    n_children_tested = sum(1 for g in child_gates if g.get("verdict") in tested)
+    n_tested = sum(1 for g in gains.values() if g.get("verdict") in tested)
+    child_fams: dict[str, int] = {}
+    for g in child_gates:
+        if g.get("verdict") in tested:
+            child_fams[str(g.get("family"))] = child_fams.get(str(g.get("family")), 0) + 1
     donations: dict[str, Any] = {"direct": {"donated": 0}, "indirect": {"donated": 0}}
     if donate and not dry_run:
-        donations["direct"] = _donate(SOURCE, direct, max(1, n_tested))
-        donations["indirect"] = _donate(INDIRECT_SOURCE, indirect, max(1, n_children_tested))
+        donations["direct"] = _donate(paths, SOURCE, direct, n_tested,
+                                      {DIRECT_FAMILY: n_tested}, now)
+        donations["indirect"] = _donate(paths, INDIRECT_SOURCE, indirect, n_children_tested,
+                                        child_fams, now)
     intel = allocation_intel(points_by_source, gains, now)
+    handoff = equity_handoff()
+    from libs.research.release_gain import TARGET_IC
     report = {
         "at": now.isoformat(timespec="seconds"), "organ": "alt_proxies",
         "mode": "fixtures" if fixtures is not None else ("fetch" if fetch else "no_fetch"),
         "sources": records,
         "gain_tests": gains,
         "n_cells_tested": n_tested, "n_cells_total": len(gains),
+        "power": {"target_ic": TARGET_IC,
+                  "n_underpowered": sum(1 for g in gains.values()
+                                        if g.get("verdict") == "UNDERPOWERED"),
+                  "rule": ("each gain row carries min_detectable_ic (80% power at its n and "
+                           "Bonferroni charge); a miss above target_ic is UNDERPOWERED, not FAIL")},
+        "equity_handoff": {"path": str(paths.equity_handoff), "n_rows": len(handoff["rows"]),
+                           "rule": handoff["rule"]},
+        "dead_sources": sorted(s.id for s in SOURCES if is_dead(s)),
+        "blocked_on_terms": sorted(s.id for s in SOURCES if s.terms != "confirmed"),
         "direct_cells": {"n": len(direct), "donation": donations["direct"],
                          "rule": ("an exogenous_conditioner cell is donated only after its gain "
                                   "test PASSED on this box; every tested cell is charged")},
@@ -2927,6 +3196,7 @@ def run(paths: Paths = DEFAULT_PATHS, *, budget_s: float = 300.0, fetch: bool = 
     if not dry_run:
         _atomic(paths.state, state)
         _atomic(paths.allocation_intel, intel)
+        _atomic(paths.equity_handoff, handoff)
         _atomic(paths.report, report)
         from libs.research import asia_alt_digest
         asia_alt_digest.publish(SOURCE, digest_section(report), paths.digest)
@@ -2940,8 +3210,9 @@ def digest_section(report: dict[str, Any]) -> dict[str, Any]:
     recs = report.get("sources") or {}
     pts = {sid: sum((r.get("series") or {}).values()) for sid, r in recs.items()}
     measured = [sid for sid, n in pts.items() if n > 0]
-    live = report.get("mode") == "fetch" and any(int(r.get("parsed") or 0) > 0
-                                                 for r in recs.values())
+    live = report.get("mode") == "fetch" and any(
+        int(r.get("parsed") or 0) > 0 and not str(r.get("status") or "").startswith("DEAD")
+        for r in recs.values())                          # a DEAD archive is never "live"
     ind = report.get("indirect_cells") or {}
     return asia_alt_digest.section(
         at=str(report.get("at")),
@@ -2955,7 +3226,10 @@ def digest_section(report: dict[str, Any]) -> dict[str, Any]:
         direct_cells=int((report.get("direct_cells") or {}).get("n") or 0),
         indirect_cells={"minted": int(ind.get("n_minted") or 0),
                         "tested": int(ind.get("n_tested") or 0),
-                        "passed": int(ind.get("n") or 0)})
+                        "passed": int(ind.get("n") or 0)},
+        power={"target_ic": (report.get("power") or {}).get("target_ic"),
+               "min_detectable_ic": {k: (g or {}).get("min_detectable_ic") for k, g in
+                                     sorted((report.get("gain_tests") or {}).items())[:40]}})
 
 
 def _cursor(s: Source) -> str:
@@ -2987,7 +3261,7 @@ def roster_rows(sources: Iterable[Source] = SOURCES) -> list[dict[str, Any]]:
                      "pit": ("available_time = page publication stamp else release-calendar rule "
                              "(late-biased); first_seen_at = vault fetch instant"),
                      "uses": uses, "consumer": "desks/mt5/research/alt_proxies.py",
-                     "status": status_of(s), **_meta(s)})
+                     "status": status_of(s), "terms": s.terms, **_meta(s)})
         if s.substitutes_for:
             rows[-1].update({"substitutes_for": s.substitutes_for, "fetcher": "owned",
                              "owner": "asia_gap_thread"})

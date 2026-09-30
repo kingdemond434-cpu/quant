@@ -74,6 +74,24 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
     except (OSError, ValueError, TypeError):
         pass
+    # NULL PASSES ARE TRIALS TOO. A proposer pass that tested cells and donated none writes no
+    # discovery file, so it appends its `tests_run` here instead (alt_proxies._donate). A pass
+    # writes one or the other, never both, so nothing is counted twice.
+    try:
+        for ln in (DESK / "data" / "null_pass_trials.jsonl").read_text("utf-8").splitlines():
+            if not ln.strip():
+                continue
+            row = json.loads(ln)
+            if not isinstance(row, dict):
+                continue
+            total += int(row.get("tests_run") or 0)
+            split = row.get("by_family")
+            per: dict[str, Any] = (split if isinstance(split, dict) and split
+                                   else {"?": row.get("tests_run") or 0})
+            for fam, k in per.items():
+                by_fam[str(fam)] = by_fam.get(str(fam), 0) + int(k or 0)
+    except (OSError, ValueError, TypeError):
+        pass
     return total, by_fam
 
 

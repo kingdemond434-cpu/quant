@@ -21,6 +21,7 @@ sources:
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
   status: UNMEASURED_LIVE_YIELD
+  terms: confirmed
   source_culture: GLOBAL/multi
   participant_structure:
   - institutional
@@ -59,6 +60,7 @@ sources:
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
   status: UNMEASURED_LIVE_YIELD
+  terms: confirmed
   source_culture: JP/ja,CN/zh,KR/ko
   participant_structure:
   - retail_heavy
@@ -82,7 +84,7 @@ sources:
   language: en
   cadence: weekly
   auth: none
-  licence: Opportunity Insights Economic Tracker (CC BY 4.0, cite Chetty et al.)
+  licence: "Opportunity Insights Economic Tracker README: 'Anyone is welcome to use this data' with the provider (Affinity Solutions) named and Chetty et al. cited; no formal licence file"
   cursor: vintage store keyed series|period (append-only)
   pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
     = vault fetch instant
@@ -91,7 +93,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: ARCHIVE_ENDED:2024-06
+  status: DEAD:2024-06
+  terms: confirmed
   source_culture: US/en
   participant_structure:
   - retail_heavy
@@ -109,11 +112,13 @@ sources:
   owner: asia_gap_thread
   cadence_minutes: 10080
   kind: mechanics
-  live_yield: 'MEASURED 2026-09-30 from the authoring container: 6,867 obs, 2020-01-13..2024-06-16 (feed
-    ended); corr to Google mobility retail visits r=0.61 levels / 0.42 7d-changes (n=851/844)'
+  live_yield: 'DEAD archive, re-read 2026-09-30 from GitHub raw: 6,867 obs, 2020-01-13..2024-06-16 (feed
+    ended). Agreement with Google mobility retail visits on non-overlapping weekly changes: r=0.37 all
+    (n=136), 0.62 pre-2021 (n=43), 0.05 2021+ (n=92); the r=0.61 same-day LEVELS figure was the
+    2020 COVID swing (levels 2021+: r=-0.05, n=539)'
 - id: kr_bok_card_spend
   name: BOK ECOS card spending (Korea, one configured item)
-  url: https://ecos.bok.or.kr/api/StatisticSearch/<key>/json/kr/1/1000/601Y002/M/201801/{yyyymm}/X
+  url: https://ecos.bok.or.kr/api/StatisticSearch/<key>/json/kr/1/1000/{ALT_ECOS_CARD_STAT}/M/201801/{yyyymm}/{ALT_ECOS_CARD_ITEM}
   region: KR
   language: ko
   cadence: monthly
@@ -128,6 +133,7 @@ sources:
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
   status: BLOCKED_ON_KEY:ECOS_API_KEY
+  terms: confirmed
   source_culture: KR/ko
   participant_structure:
   - retail_heavy
@@ -162,6 +168,7 @@ sources:
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
   status: UNMEASURED_LIVE_YIELD
+  terms: confirmed
   source_culture: JP/ja
   participant_structure:
   - policy_driven
@@ -193,7 +200,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: CN/zh
   participant_structure:
   - policy_driven
@@ -226,7 +234,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: CN/zh
   participant_structure:
   - retail_heavy
@@ -260,7 +269,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: IN/en
   participant_structure:
   - retail_heavy
@@ -293,7 +303,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: TR/tr
   participant_structure:
   - retail_heavy
@@ -326,7 +337,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: BR/pt
   participant_structure:
   - retail_heavy
@@ -359,7 +371,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: MX/es
   participant_structure:
   - retail_heavy
@@ -391,7 +404,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: ZA/en
   participant_structure:
   - institutional
@@ -414,7 +428,7 @@ sources:
   language: en
   cadence: daily
   auth: none
-  licence: Google COVID-19 Community Mobility Reports via Opportunity Insights (free use)
+  licence: "Google COVID-19 Community Mobility Reports as redistributed by Opportunity Insights ('Anyone is welcome to use this data', provider named, OI cited)"
   cursor: vintage store keyed series|period (append-only)
   pit: available_time = page publication stamp else release-calendar rule (late-biased); first_seen_at
     = vault fetch instant
@@ -423,7 +437,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: ARCHIVE_ENDED:2022-10
+  status: DEAD:2022-10
+  terms: confirmed
   source_culture: US/en
   participant_structure:
   - retail_heavy
@@ -459,6 +474,7 @@ sources:
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
   status: BLOCKED_ON_KEY:KOBIS_API_KEY
+  terms: confirmed
   source_culture: KR/ko
   participant_structure:
   - retail_heavy
@@ -492,6 +508,7 @@ sources:
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
   status: BLOCKED_ON_KEY:SEOUL_API_KEY
+  terms: confirmed
   source_culture: KR/ko
   participant_structure:
   - retail_heavy
@@ -524,7 +541,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: CN/zh
   participant_structure:
   - retail_heavy
@@ -556,7 +574,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: CN/zh
   participant_structure:
   - physical_flow
@@ -589,7 +608,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: KR/ko
   participant_structure:
   - physical_flow
@@ -622,6 +642,7 @@ sources:
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
   status: UNMEASURED_LIVE_YIELD
+  terms: confirmed
   source_culture: SG/en
   participant_structure:
   - physical_flow
@@ -653,7 +674,8 @@ sources:
   - indirect_cells
   - allocation_intel
   consumer: desks/mt5/research/alt_proxies.py
-  status: UNMEASURED_LIVE_YIELD
+  status: BLOCKED_ON_TERMS:to_confirm
+  terms: to_confirm
   source_culture: CN/zh
   participant_structure:
   - physical_flow

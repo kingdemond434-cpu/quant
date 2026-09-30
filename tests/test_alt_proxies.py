@@ -264,7 +264,7 @@ def test_gain_test_does_not_pass_null_data() -> None:
     for seed in range(6):
         ev = _events(90, seed)
         res = release_gain(ev, np.exp(_bars(1000, seed)), horizon_bars=120, n_cells=40)
-        assert res.verdict in ("FAIL", "UNMEASURED")
+        assert res.verdict in ("FAIL", "UNDERPOWERED", "UNMEASURED")
         passes += res.verdict == "PASS"
     assert passes == 0
 
@@ -392,7 +392,7 @@ def test_indirect_child_with_a_planted_regime_edge_passes_and_its_mirror_does_no
                                           replay=_replay(paths, src, 0.002, 1))
     assert owed >= 0 and len(gates) == 2                       # both halves were tested
     verdicts = {g["cell"].rsplit(":", 2)[1]: g["verdict"] for g in gates}
-    assert verdicts == {"gt": "PASS", "lt": "FAIL"}, gates
+    assert verdicts["gt"] == "PASS" and verdicts["lt"] in ("FAIL", "UNDERPOWERED"), gates
     assert all(g["n_trials"] == 2 for g in gates)               # both charged
     assert len(cells) == 1
     c = cells[0]
@@ -420,7 +420,7 @@ def test_indirect_children_of_a_null_parent_are_never_donated(tmp_path: Path) ->
         cells, _owed, gates = A.indirect_cells(paths, {src.id: pts}, {}, NOW,
                                                replay=_replay(paths, src, 0.0, seed))
         assert not cells and len(gates) == 2
-        assert all(g["verdict"] in ("FAIL", "UNMEASURED") for g in gates)
+        assert all(g["verdict"] in ("FAIL", "UNDERPOWERED", "UNMEASURED") for g in gates)
 
 
 def test_an_unreplayable_parent_is_unmeasured_not_donated(tmp_path: Path) -> None:
@@ -475,7 +475,8 @@ def test_roster_rows_carry_uses_status_and_the_regional_schema() -> None:
     for r in rows:
         assert set(r["uses"]) == {"direct_cells", "indirect_cells", "allocation_intel"}
         assert (r["status"] in ("UNMEASURED_LIVE_YIELD", f"BLOCKED_ON_KEY:{r['auth'][9:]}")
-                or r["status"].startswith("ARCHIVE_ENDED:"))
+                or r["status"].startswith(("DEAD:", "BLOCKED_ON_TERMS:", "UNCONFIGURED:")))
+        assert r["terms"] in A.TERMS_VALUES
         for k in (*REQUIRED_META, "id", "name", "url", "region", "language", "cadence", "auth",
                                   "licence", "cursor", "pit", "consumer"):
             assert r.get(k), (r["id"], k)
