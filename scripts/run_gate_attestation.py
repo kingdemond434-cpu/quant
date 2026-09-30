@@ -147,6 +147,13 @@ def main() -> int:
     # gate while consumers kept reading yesterday's file.  Distinguish infrastructure failure.
     if rc != 0:
         return 2
+    # REPUBLISH THE ONE BIT NOW THAT ITS "TESTED" CLAUSE HAS AN ANSWER (2026-09-30). Adopt-And-Seal
+    # publishes RELEASE_AUTHORITY at seal time and only then starts this task, so the bit always
+    # judged the new tree against the PREVIOUS tree's attestation and read tested=False until the
+    # next hourly leg. Measured on the box: seal 10:53, attestation pass 10:59, bit still false at
+    # the noon pass. Best-effort and report-only: it never changes this task's exit code.
+    brc, btail, _ = _run([py, "desks/mt5/research/release_authority.py", "--once"], timeout=300)
+    print(f"release authority republished rc={brc} ({btail[:160]})")
     return 0 if verdict == "pass" else 1
 
 

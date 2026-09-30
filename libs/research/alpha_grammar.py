@@ -39,8 +39,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import warnings
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -1075,6 +1076,64 @@ def to_str(expr: Expr) -> str:
     return f"{op}({inner})"
 
 
+def from_str(text: str) -> Expr:
+    """The inverse of `to_str`: "zscore(sub(close, open), 20)" -> the prefix list. Numbers come
+    back as int (or float); everything else is a terminal name. Raises ValueError on a string
+    that is not a well-formed rendering."""
+    s = re.sub(r"\s+", "", str(text))
+    pos = 0
+
+    def atom() -> Expr | int | float:
+        nonlocal pos
+        j = pos
+        while j < len(s) and s[j] not in "(),":
+            j += 1
+        tok = s[pos:j]
+        if not tok:
+            raise ValueError(f"empty token at {pos} in {text!r}")
+        pos = j
+        if pos < len(s) and s[pos] == "(":
+            pos += 1
+            args: list[Any] = []
+            while True:
+                args.append(atom())
+                if pos >= len(s):
+                    raise ValueError(f"unclosed call in {text!r}")
+                if s[pos] == ",":
+                    pos += 1
+                    continue
+                if s[pos] == ")":
+                    pos += 1
+                    break
+                raise ValueError(f"unexpected {s[pos]!r} in {text!r}")
+            return [tok, *args]
+        try:
+            return int(tok)
+        except ValueError:
+            try:
+                return float(tok)
+            except ValueError:
+                return tok
+
+    out = atom()
+    if pos != len(s) or not isinstance(out, (str, list)):
+        raise ValueError(f"trailing input in {text!r}")
+    return out
+
+
+def _pick(rng: np.random.Generator, ops: Sequence[str],
+          weights: Mapping[str, float] | None) -> str:
+    """One operator of a class. Without learned weights this is exactly the uniform draw it
+    always was (same rng consumption); with them, each operator's weight is floored at a quarter
+    of the class mean so a retired operator is drawn less, never never."""
+    if not weights:
+        return str(rng.choice(ops))
+    raw = np.array([max(0.0, float(weights.get(o, 1.0))) for o in ops], dtype=float)
+    floor = 0.25 * (float(raw.mean()) or 1.0)
+    w = np.maximum(raw, floor)
+    return str(rng.choice(ops, p=w / w.sum()))
+
+
 def key(expr: Expr) -> str:
     return json.dumps(expr, separators=(",", ":"), default=str)
 
@@ -1151,7 +1210,9 @@ def _structurally_valid(expr: Expr, allow_drivers: bool = True,
 
 # --------------------------------------------------------------------------- search moves
 def random_expr(rng: np.random.Generator, max_depth: int = 3, allow_drivers: bool = True,
-                tries: int = 40, terminals: Sequence[str] | None = None) -> Expr:
+                tries: int = 40, terminals: Sequence[str] | None = None,
+                op_weights: Mapping[str, float] | None = None,
+                primitives: Sequence[Expr] | None = None) -> Expr:
     """A random tree the production screen accepts: sampled until `is_valid` -- structure, type
     AND units -- says yes, with a bare terminal (always valid) as the floor after `tries`.
 
@@ -1161,7 +1222,8 @@ def random_expr(rng: np.random.Generator, max_depth: int = 3, allow_drivers: boo
     """
     pool = tuple(terminals) if terminals is not None else terminal_pool(allow_drivers)
     for _ in range(tries):
-        e = _random_expr_raw(rng, max_depth, allow_drivers, terminals=pool)
+        e = _random_expr_raw(rng, max_depth, allow_drivers, terminals=pool,
+                             op_weights=op_weights, primitives=primitives)
         # `pool` is not re-asserted here: the raw draw took its leaves FROM it, so the default
         # screen is the same verdict, and passing it would make `is_valid` unmockable for the
         # sampler tests that stub the screen out.
@@ -1172,23 +1234,31 @@ def random_expr(rng: np.random.Generator, max_depth: int = 3, allow_drivers: boo
 
 def _random_expr_raw(rng: np.random.Generator, max_depth: int = 3,
                      allow_drivers: bool = True, _d: int = 0,
-                     terminals: Sequence[str] | None = None) -> Expr:
+                     terminals: Sequence[str] | None = None,
+                     op_weights: Mapping[str, float] | None = None,
+                     primitives: Sequence[Expr] | None = None) -> Expr:
     terms = tuple(terminals) if terminals is not None else terminal_pool(allow_drivers)
     if _d >= max_depth or (_d > 0 and rng.random() < 0.3):
+        # a LEARNED PRIMITIVE (a sub-expression recurring across independent survivors) may
+        # stand where a leaf would; only when primitives were handed in, so the default draw
+        # is unchanged
+        if primitives and rng.random() < 0.2:
+            return _clone(primitives[int(rng.integers(len(primitives)))])
         return str(rng.choice(terms))
     kind = rng.choice(["unary", "windowed", "binary", "binary_windowed"],
                       p=[0.1, 0.5, 0.25, 0.15])
     w = int(rng.choice(WINDOWS))
 
     def _child() -> Expr:
-        return _random_expr_raw(rng, max_depth, allow_drivers, _d + 1, terms)
+        return _random_expr_raw(rng, max_depth, allow_drivers, _d + 1, terms, op_weights,
+                                primitives)
     if kind == "unary":
-        return [str(rng.choice(UNARY)), _child()]
+        return [_pick(rng, UNARY, op_weights), _child()]
     if kind == "windowed":
-        return [str(rng.choice(WINDOWED)), _child(), w]
+        return [_pick(rng, WINDOWED, op_weights), _child(), w]
     if kind == "binary":
-        return [str(rng.choice(BINARY)), _child(), _child()]
-    return [str(rng.choice(BINARY_WINDOWED)), _child(), _child(), w]
+        return [_pick(rng, BINARY, op_weights), _child(), _child()]
+    return [_pick(rng, BINARY_WINDOWED, op_weights), _child(), _child(), w]
 
 
 def _paths(expr: Expr, prefix: tuple[int, ...] = ()) -> list[tuple[int, ...]]:
@@ -1219,7 +1289,9 @@ def _clone(expr: Expr) -> Expr:
 
 
 def mutate(expr: Expr, rng: np.random.Generator, allow_drivers: bool = True,
-           terminals: Sequence[str] | None = None, tries: int = 12) -> Expr:
+           terminals: Sequence[str] | None = None, tries: int = 12,
+           op_weights: Mapping[str, float] | None = None,
+           primitives: Sequence[Expr] | None = None) -> Expr:
     """One structural move: window change, operator swap within class, terminal swap, or a
     subtree replaced by a fresh random one. Always returns a valid expression."""
     pool = tuple(terminals) if terminals is not None else terminal_pool(allow_drivers)
@@ -1231,7 +1303,8 @@ def mutate(expr: Expr, rng: np.random.Generator, allow_drivers: bool = True,
         move = rng.random()
         if isinstance(node, str):
             new: Expr = (str(rng.choice(pool)) if move < 0.6
-                         else random_expr(rng, 2, allow_drivers, terminals=pool))
+                         else random_expr(rng, 2, allow_drivers, terminals=pool,
+                                          op_weights=op_weights, primitives=primitives))
         elif move < 0.35 and node[0] in WINDOWED + BINARY_WINDOWED:
             new = list(node)
             new[-1] = int(rng.choice(WINDOWS))
@@ -1239,9 +1312,10 @@ def mutate(expr: Expr, rng: np.random.Generator, allow_drivers: bool = True,
             cls = next(c for c in (UNARY, WINDOWED, BINARY, BINARY_WINDOWED, PANEL)
                        if node[0] in c)
             new = list(node)
-            new[0] = str(rng.choice(cls))
+            new[0] = _pick(rng, cls, op_weights)
         else:
-            new = random_expr(rng, 2, allow_drivers, terminals=pool)
+            new = random_expr(rng, 2, allow_drivers, terminals=pool, op_weights=op_weights,
+                              primitives=primitives)
         cand = _set(e, path, new)
         if is_valid(cand, allow_drivers):
             return cand

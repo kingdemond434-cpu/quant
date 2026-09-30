@@ -1,0 +1,77 @@
+{
+ "kind": "tier_s_tilts",
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "sleeves": {
+  "gold_asia": {
+   "group": "XAUUSD.asia",
+   "exchange_factor": 0.0,
+   "capture_factor": 0.863376,
+   "tilt": 0.0,
+   "held_out": false
+  },
+  "USDJPY_asia_FAILED_BREAK": {
+   "group": "USDJPY.asia",
+   "exchange_factor": 2.0,
+   "capture_factor": 1.015736,
+   "tilt": 2.0,
+   "held_out": false
+  },
+  "XAUUSD_session_range_breakout_asia": {
+   "group": "XAUUSD.asia",
+   "exchange_factor": 0.0,
+   "capture_factor": 0.863376,
+   "tilt": 0.0,
+   "held_out": false
+  },
+  "EURZAR_overnight_gap_decay_asia": {
+   "group": "EURZAR.asia",
+   "exchange_factor": 1.0,
+   "capture_factor": 1.0,
+   "tilt": 1.0,
+   "held_out": true
+  },
+  "USDZAR_overnight_gap_decay_asia": {
+   "group": "USDZAR.asia",
+   "exchange_factor": 1.0,
+   "capture_factor": 1.0,
+   "tilt": 1.0,
+   "held_out": true
+  },
+  "CHFNOK_carry_asia": {
+   "group": "CHFNOK.asia",
+   "exchange_factor": 2.0,
+   "capture_factor": 1.015736,
+   "tilt": 2.0,
+   "held_out": false
+  },
+  "AUDCHF_overnight_gap_decay_asia": {
+   "group": "AUDCHF.asia",
+   "exchange_factor": 0.0,
+   "capture_factor": 1.015736,
+   "tilt": 0.0,
+   "held_out": false
+  },
+  "GBPMXN_overnight_gap_decay_asia": {
+   "group": "GBPMXN.asia",
+   "exchange_factor": 1.0,
+   "capture_factor": 1.0,
+   "tilt": 1.0,
+   "held_out": true
+  },
+  "xau_m15_anti_breakout": {
+   "group": "XAUUSD.*",
+   "exchange_factor": 1.901856,
+   "capture_factor": 1.015736,
+   "tilt": 1.931784,
+   "held_out": false
+  },
+  "xau_m15_anti_momentum": {
+   "group": "XAUUSD.*",
+   "exchange_factor": 1.0,
+   "capture_factor": 1.0,
+   "tilt": 1.0,
+   "held_out": true
+  }
+ },
+ "consumer": "research/pf_allocator.py via libs/portfolio/allocator_evidence.tier_s_factors"
+}
