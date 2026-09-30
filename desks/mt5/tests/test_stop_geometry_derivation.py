@@ -123,3 +123,11 @@ def test_the_solve_is_kelly_survivals() -> None:
                                                              ks.HORIZON)
     assert pytest.approx(0.20) == sgd.DEATH_LINE and pytest.approx(0.05) == sgd.EPS_DEATH
     assert sgd.HORIZON == 60
+
+
+def test_a_value_kept_on_the_evidence_is_a_solved_constant(monkeypatch) -> None:
+    ok = {"status": "OK", "derived": 0.05}
+    kept = {"status": "TODAY_OPTIMAL_WITHIN_NOISE", "derived": 3.0}
+    monkeypatch.setattr(sgd, "derive_min_stop_spread_mult", lambda deals, **k: dict(kept))
+    monkeypatch.setattr(sgd, "derive_entry_drift_tol_frac", lambda deals, **k: dict(ok))
+    assert sgd.derive()["status"] == "OK"

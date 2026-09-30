@@ -27,10 +27,10 @@
   "STALE": 46,
   "MISSING": 47,
   "NEVER": 719,
-  "UNMEASURED": 33
+  "UNMEASURED": 34
  },
  "scope": {
-  "attested": 935,
+  "attested": 936,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -49,6 +49,16 @@
      "fence:check_box_state_freshness",
      "library:desks/mt5/research/free_shadows.py",
      "library:desks/mt5/research/gate_verdict_digest.py"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:44:02+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "leg:stop_geometry_derivation"
     ]
    }
   ]
@@ -23719,6 +23729,36 @@
    "summary": {},
    "progress_metric": "UNMEASURED",
    "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "leg:stop_geometry_derivation",
+   "kind": "leg",
+   "code": [
+    "desks/mt5/research/stop_geometry_derivation.py"
+   ],
+   "clock": "hourly_cycle:stop_geometry_derivation",
+   "cadence_s": 3600,
+   "max_silence_s": 7200,
+   "state": "UNMEASURED",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): its state on the attesting host is unmeasured (read LIVE here)",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json",
+   "artifact_declared": "desks/mt5/reports/STOP_GEOMETRY_DERIVATION.json",
+   "artifact_resolved_by": "declared",
+   "artifact_declared_n": 1,
+   "artifact_age_s": 575,
+   "artifact_bytes": 10561,
+   "artifact_sha256": "5fed2d7860824fd6e89b46e64bc5a04c5504971566fba50695803882b43accb9",
+   "summary": {
+    "status": "PARTIAL"
+   },
+   "progress_metric": "leg_completions",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:44:02+00:00"
   }
  ],
  "ratchet": {

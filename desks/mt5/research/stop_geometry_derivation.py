@@ -535,8 +535,10 @@ def derive() -> dict[str, Any]:
                                 "edge_r": ((alt.get("inputs") or {}).get("edge") or {})
                                 .get("posterior_r")}
     states = [doc[k].get("status", "") for k in ("MIN_STOP_SPREAD_MULT", "ENTRY_DRIFT_TOL_FRAC")]
-    doc["status"] = "OK" if all(s == "OK" for s in states) else (
-        "PARTIAL" if any(s == "OK" for s in states) else "UNMEASURED")
+    # SOLVED covers "today's value is optimal within noise": the solve ran and answered.
+    solved = {"OK", "TODAY_OPTIMAL_WITHIN_NOISE"}
+    doc["status"] = "OK" if all(s in solved for s in states) else (
+        "PARTIAL" if any(s in solved for s in states) else "UNMEASURED")
     return doc
 
 
