@@ -97,7 +97,13 @@ _SIZING_MODULES: tuple[str, ...] = (
 #: magic number, two in-process caches, two venue retcode tables, the session window definitions,
 #: and two session clock times). The ratchet is set to the count that actually stands, not to the
 #: count before the exemptions -- a ceiling with slack in it is not a ratchet.
-MAX_UNJUSTIFIED = 17
+#:
+#: 2 on 2026-09-30: the live scope measured 4 (the 17 had fallen with every derivation written
+#: since and the line was never lowered); two were plumbing and are exempted above. The two
+#: that stand are real risk numbers argued in prose with no measurement behind them --
+#: gateway.MIN_STOP_SPREAD_MULT (3.0) and decision_core.ENTRY_DRIFT_TOL_FRAC (0.25) -- and
+#: their derivation is owed by whoever measures them, never written here from guesswork.
+MAX_UNJUSTIFIED = 2
 
 #: Words that mark a real derivation. A comment must contain at least one AND a digit, so
 #: "measured" alone does not pass -- the number itself has to appear in the justification.
@@ -186,6 +192,9 @@ _EXEMPT: dict[str, str] = {
     "GOLD_WINDOWS": "session window definitions (names and clock bounds), not a sizing input",
     "CANCEL_HOUR": "session clock time, not a size -- the per-bracket TTL is the real limit",
     "CLOSE_HOUR": "session clock time (force-close), not a size",
+    # 2026-09-30: two more of the same plumbing classes, named rather than left as debt.
+    "_SLEEVE_ID_CACHE": "in-process cache (mtime, sleeve->id map), not a decision",
+    "OPPOSING_LEG": "direction sign -> bracket-leg NAME lookup; +1/-1 are signs, not sizes",
 }
 
 
