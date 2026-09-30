@@ -28,6 +28,9 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
 from libs.moat import registry as R  # noqa: E402
 from research import ingestion_ledger as IL  # noqa: E402
 
+#: The symbols the synthetic tree carries, all in the hypothesis lane -- fixed here, never read
+#: from the box's universe registry.
+SYNTHETIC_HYPOTHESIS = frozenset({"EURUSD", "GBPUSD", "XAUUSD", "NOKJPY", "USDJPY"})
 NOW = datetime(2026, 9, 17, 12, 0, tzinfo=UTC)
 OLD = NOW - timedelta(days=9)
 FRESH = NOW - timedelta(hours=2)
@@ -87,6 +90,11 @@ def desk(tmp_path, monkeypatch):
     # is recorded rather than run, so these tests pin the HANDOFF contract on its own. The drain
     # itself is pinned in test_ingestion_routing.py.
     monkeypatch.setattr(IL, "ROUTES", tmp_path / "ingestion_routes.json")
+    # THE LANE IS SYNTHETIC TOO. Left alone, `_lane` reads the box's real universe registry, so
+    # which units route to compile_now / class_book / block_unclassified depended on what
+    # universe.json happened to hold. Tests that exercise a lane monkeypatch their own map.
+    monkeypatch.setattr(IL, "_lane", lambda s: "hypothesis" if s in SYNTHETIC_HYPOTHESIS
+                        else "unclassified")
     drained: list[dict[str, Any]] = []
     monkeypatch.setattr(IL, "_drain", lambda o, c, d: drained.append(dict(o)) or
                         {"requested": len(o), "expanded": 0})
@@ -642,3 +650,31 @@ def test_the_fence_ratchets_stranded_units_down_and_requires_every_unit_routed(d
     assert out["exit"] == 1 and "reached NO consumer" in out["why"]
     floor = json.loads((tmp_path / "floor.json").read_text("utf-8"))
     assert floor["stranded_units_floor"] == 10
+
+
+def test_a_partial_index_is_unmeasured_never_stranded_or_red(desk):
+    """PR #158 audit item 4: the index read hit its deadline, so units only a later row names
+    read STRANDED. The fence returns UNMEASURED (exit 0) and moves no floor -- a share far below
+    the floor and a stranded count far above it change nothing."""
+    tmp_path = desk["tmp"]
+    sys.path.insert(0, str(_DESK.parent.parent / "scripts"))
+    import check_ingestion_exploitation as CIE
+    floor_path = tmp_path / "floor.json"
+    floor_path.write_text(json.dumps({"floor": 0.8, "stranded_floor": 5,
+                                      "stranded_units_floor": 10, "history": []}), "utf-8")
+    report = tmp_path / "INGESTION_EXPLOITATION.json"
+    report.write_text(json.dumps({
+        "exploitation_share": 0.1, "dispositions": {"tape_day": {"STRANDED": 900}},
+        "n_stranded_units": 900, "stranded_routing": {"unrouted": 0},
+        "index": {"complete": False, "stopped_at": "discoveries row 40000"}}), "utf-8")
+    out = CIE.judge(report=report, floor_path=floor_path, audit_path=tmp_path / "audit.json")
+    assert out["status"] == "UNMEASURED" and out["exit"] == 0
+    assert "deadline" in out["why"] and out["stranded_kinds"] == []
+    floor = json.loads(floor_path.read_text("utf-8"))
+    assert (floor["floor"], floor["stranded_floor"], floor["stranded_units_floor"]) == (0.8, 5, 10)
+    # the same artifact with a COMPLETE index is judged, and red
+    doc = json.loads(report.read_text("utf-8"))
+    doc["index"]["complete"] = True
+    report.write_text(json.dumps(doc), "utf-8")
+    assert CIE.judge(report=report, floor_path=floor_path,
+                     audit_path=tmp_path / "audit.json")["exit"] == 1

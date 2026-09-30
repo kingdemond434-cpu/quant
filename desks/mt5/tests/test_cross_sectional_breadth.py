@@ -223,6 +223,7 @@ def test_seeder_donates_only_cells_over_the_floor(universe, tmp_path, monkeypatc
     monkeypatch.setattr(csb, "BREADTH_LEDGER", tmp_path / "absent2.json")
     monkeypatch.setattr(csb, "CANON", tmp_path / "absent3.json")
     monkeypatch.setattr(csb, "VERDICTS", tmp_path / "absent4.jsonl")
+    monkeypatch.setattr(csb, "ROUTES", tmp_path / "absent5.json")
     donated: list[list[dict]] = []
 
     def fake_donate(source, rows, tests_run):
@@ -367,3 +368,34 @@ def test_one_argument_doors_still_work():
     judged, off, _, _ = mh.split_by_lane([{"symbol": "X", "family": "f"}],
                                          lambda s: "event", "now")
     assert not judged and len(off) == 1
+
+
+def test_the_ingestion_routes_have_a_reader_and_routed_symbols_are_walked_first(
+        tmp_path, monkeypatch):
+    """class_book and block_unclassified (ingestion_ledger's route book) are READ here: routed
+    share CFDs lead the walk (order, never a cap), and both lists are published by name."""
+    from research import cross_sectional_breadth as csb
+    routes = tmp_path / "ingestion_routes.json"
+    routes.write_text(json.dumps({"updated": "2026-09-30T12:00:00+00:00", "routes": {
+        "universe_bars:OOOPPP.H1": {"action": "class_book", "symbols": ["OOOPPP"]},
+        "universe_bars:ZZZ.H1": {"action": "class_book", "symbols": ["ZZZ"]},
+        "tape_day:QQQX/2026-09-01": {"action": "block_unclassified", "symbols": ["QQQX"]},
+        "tape_day:EURUSD/2026-09-01": {"action": "compile_now", "symbols": ["EURUSD"]}}}),
+        "utf-8")
+    monkeypatch.setattr(csb, "ROUTES", routes)
+    monkeypatch.setattr(csb, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(xs, "_policy", lambda: _stub_policy(MEMBERS))
+    got = csb.routed_units()
+    assert got["status"] == "MEASURED"
+    assert got["class_book"] == {"units": 2, "symbols": ["OOOPPP", "ZZZ"]}
+    assert got["block_unclassified"] == {"units": 1, "symbols": ["QQQX"]}
+    view = csb._routes_view(_stub_policy(MEMBERS).peer_classes())
+    assert view["class_book"]["in_a_peer_class"] == ["OOOPPP"]
+    assert view["class_book"]["no_peer_class"] == ["ZZZ"]
+    walked: list[str] = []
+    monkeypatch.setattr(csb, "_bars", lambda s: walked.append(s))
+    csb.seed(budget_s=600, dry_run=True)
+    assert walked[0] == "OOOPPP"                       # the routed member leads its class
+    assert set(MEMBERS) <= set(walked)                  # and nothing is skipped
+    monkeypatch.setattr(csb, "ROUTES", tmp_path / "absent.json")
+    assert csb.routed_units()["status"] == "UNMEASURED"

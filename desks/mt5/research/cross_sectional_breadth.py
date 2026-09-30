@@ -64,6 +64,11 @@ BREADTH = BASE / "reports" / "EFFECTIVE_BREADTH.json"
 BREADTH_LEDGER = ROOT / "web" / "breadth_ledger.json"
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 VERDICTS = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+#: The ingestion ledger's route book. `class_book` routes name the share CFDs whose consumer is
+#: THIS organ (the two-lane order) and `block_unclassified` the symbols no class claims; both were
+#: written with no reader until this one (PR #158 audit residual).
+ROUTES = BASE / "data" / "ingestion_routes.json"
+MAX_ROUTES_BYTES = 32 * 1024 * 1024
 UNMEASURED = "UNMEASURED"
 
 #: The sealed gauntlet's own floor: a daily series under 60 days is dropped before any gate.
@@ -150,6 +155,39 @@ def _mechanism(family: str, symbol: str, klass: str) -> str:
             "class book, long the top of the class and short the bottom")
 
 
+def routed_units(path: Path | None = None) -> dict[str, Any]:
+    """The ingestion ledger's `class_book` and `block_unclassified` routes, read. Never raises.
+
+    `class_book`: stranded units of share CFDs handed to this organ -- their symbols are walked
+    FIRST in `seed` (an order, never a cap: every other member is still walked). Symbols with no
+    rankable peer class are NAMED, not dropped. `block_unclassified`: symbols MetaTrader's
+    registry gives no class; published by name so the classification gap is visible here too.
+    """
+    p = path or ROUTES
+    out: dict[str, Any] = {"status": UNMEASURED, "source": str(p.name), "why": "",
+                           "class_book": {"units": 0, "symbols": []},
+                           "block_unclassified": {"units": 0, "symbols": []}}
+    try:
+        if p.stat().st_size > MAX_ROUTES_BYTES:
+            out["why"] = f"{p.name} is over {MAX_ROUTES_BYTES} bytes; not read"
+            return out
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        out["why"] = f"{p.name} absent or unreadable ({type(exc).__name__})"
+        return out
+    routes = doc.get("routes") if isinstance(doc, dict) else None
+    if not isinstance(routes, dict):
+        out["why"] = f"{p.name} carries no routes block"
+        return out
+    for action in ("class_book", "block_unclassified"):
+        rows = [r for r in routes.values() if isinstance(r, dict) and r.get("action") == action]
+        syms = sorted({str(s) for r in rows for s in (r.get("symbols") or []) if s})
+        out[action] = {"units": len(rows), "symbols": syms}
+    out.update(status="MEASURED", updated=doc.get("updated"),
+               why="routes read from the ingestion ledger's book")
+    return out
+
+
 def seed(*, budget_s: float = 900.0, dry_run: bool = False,
          symbols: list[str] | None = None) -> dict[str, Any]:
     """Measure firing on the grid and donate every cell that clears SEED_FLOOR. Never raises
@@ -160,6 +198,7 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
         classes = xs._policy().peer_classes()
     except Exception as exc:
         return {"status": UNMEASURED, "why": f"peer classes unreadable: {type(exc).__name__}"}
+    routed = set(routed_units()["class_book"]["symbols"])
     state = _load_state()
     cells_state: dict[str, Any] = state["cells"]
     cands: list[dict[str, Any]] = []
@@ -168,10 +207,13 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
     no_bars: list[str] = []
     errors: Counter = Counter()
     stopped = "grid exhausted"
-    for klass, members in sorted(classes.items()):
+    # ROUTED SHARE CFDs FIRST: classes holding a symbol the ingestion ledger routed here are
+    # walked first, and inside a class the routed members lead. Order only -- nothing is skipped.
+    for klass, members in sorted(classes.items(),
+                                 key=lambda kv: (not (routed & set(kv[1])), kv[0])):
         row = by_class.setdefault(klass, Counter())
         row["members_in_registry"] = len(members)
-        for sym in members:
+        for sym in sorted(members, key=lambda m: m not in routed):
             if symbols and sym not in symbols:
                 continue
             if time.monotonic() - started > budget_s:
@@ -381,6 +423,17 @@ def _families(occupancy: dict[str, Any], vacant: dict[str, Any]) -> list[dict[st
     return rows
 
 
+def _routes_view(classes: dict[str, Any]) -> dict[str, Any]:
+    """`routed_units` joined to the peer classes: which routed share CFDs this organ can rank."""
+    got = routed_units()
+    members = {str(s) for v in classes.values() for s in v}
+    book = got["class_book"]
+    got["class_book"] = {**book,
+                         "in_a_peer_class": [s for s in book["symbols"] if s in members],
+                         "no_peer_class": [s for s in book["symbols"] if s not in members]}
+    return got
+
+
 def report(seeded: dict[str, Any]) -> dict[str, Any]:
     occupancy = _cluster_occupancy()
     vacant = _vacant_classes()
@@ -401,6 +454,7 @@ def report(seeded: dict[str, Any]) -> dict[str, Any]:
         "cluster_occupancy_now": occupancy,
         "vacant_census_classes_now": vacant,
         "seeding": seeded,
+        "ingestion_routes": _routes_view(classes),
         "verdicts": verdicts,
         "certificates": _certificates(verdicts),
         "consumer": ("data/intelligence/cross_sectional_breadth/ -> "
