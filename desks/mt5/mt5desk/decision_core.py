@@ -2152,7 +2152,8 @@ def family_signal_hour(window: dict) -> int:
     return window.get("signal_at") or window["range_start"]
 
 
-def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
+def family_bar_due(closed: pd.DataFrame, sig_hour: int, *, now: object = None,
+                   bar_minutes: int = 60) -> pd.Timestamp | None:
     """The last CLOSED bar when it is the sleeve's signal bar, else None. The in-progress bar
     is excluded by the caller, exactly as the replay sees it.
 
@@ -2171,11 +2172,36 @@ def family_bar_due(closed: pd.DataFrame, sig_hour: int) -> pd.Timestamp | None:
     sleeve acts on the first bar whose label is the signal hour, as soon as that bar closes. On M5
     that is the N:00 bar acting at N:05 -- the same "act on the signal bar the moment it is
     final", one chart down.
+
+    THE CLOCK IS AN ARGUMENT (2026-09-30), and it answers the one question the frame cannot:
+    is this frame CURRENT? The caller drops the last row as the forming bar, so on a live feed
+    `now` lies inside the bar AFTER `last_bar` -- less than two bars past its open. At two bars
+    or more the "forming" row had already closed (a stalled feed, or a quiet symbol whose venue
+    printed no bar), `last_bar` is not the bar just finished, and acting on it would enter a
+    signal hours late. That is refused here as not due. `now` must be in the bars' own clock
+    (the gateway passes the venue's tick time); None reads the current UTC time, which on a
+    venue whose server runs ahead of UTC can only make a frame look fresher, never refuse a
+    current one.
     """
     last_bar = closed.index[-1]
     if last_bar.hour != sig_hour:
         return None
-    return last_bar if last_bar.minute == 0 else None
+    if last_bar.minute != 0:
+        return None
+    return last_bar if closed_bar_is_current(last_bar, now=now, bar_minutes=bar_minutes) \
+        else None
+
+
+def closed_bar_is_current(last_bar: object, *, now: object = None,
+                          bar_minutes: int = 60) -> bool:
+    """True when `last_bar` (the last CLOSED bar's open) is the bar that just finished: `now`
+    is less than two bars past its open. See `family_bar_due` for the clock convention; None is
+    the current UTC time."""
+    t = pd.Timestamp(datetime.now(tz=UTC) if now is None else now)  # type: ignore[arg-type]
+    lb = pd.Timestamp(last_bar)  # type: ignore[arg-type]
+    if (t.tzinfo is None) != (lb.tzinfo is None):
+        t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC").tz_localize(None)
+    return bool(t - lb < pd.Timedelta(minutes=2 * int(bar_minutes)))
 
 
 def family_signal_step(closed: pd.DataFrame, last_bar: pd.Timestamp, *, last_signal_bar: object,
@@ -2388,6 +2414,68 @@ def bar_already_traded(deals: object, tag: str, entry_in: int = 0,
             return int(getattr(d, "ticket", 0) or 0), iso
         except Exception:
             continue
+    return None
+
+
+def venue_holds_bracket(pending: object, positions: object, deals: object, *, tag: str,
+                        spec: dict, canon: Any = None, since_epoch: int | None = None,
+                        price_tol: float = 0.5, entry_in: int = 0) -> str | None:
+    """Why the venue already holds today's bracket for this sleeve, or None. Pure.
+
+    THE STATE FILE IS NOT THE ONLY WITNESS TO A PLACEMENT (2026-09-30). The bracket lane's
+    once-a-day guard is `st["brackets"][name]["date"]`; a crash between `order_send` and
+    `save_state`, or a lost state file, erased it, and the only venue check left was a PRICE
+    match on the symbol's resting orders. That missed every case in which the bracket was no
+    longer resting: a leg that FILLED (the OCO repair cancels its sibling, so nothing rests) or
+    a bracket that filled and closed earlier the same day -- and the next pass placed the day's
+    bracket again. The venue is asked three things, each by the sleeve's own tag
+    (`canon` maps an identity-tagged comment back to it):
+
+      1. a RESTING order carrying the tag -- or, as before, resting at either leg's price
+         within `price_tol` (a broker-rewritten comment must not hide the bracket);
+      2. an OPEN position carrying the tag, opened at or after `since_epoch` (today);
+      3. an ENTRY deal carrying the tag at or after `since_epoch` (`bar_already_traded`).
+
+    Times are the venue's own epoch convention (server clock), as the caller's day key is.
+    """
+    def _own(c: object) -> bool:
+        c = str(c or "")
+        return (canon(c) if callable(canon) else c) == tag
+
+    levels = []
+    for leg in ("buy_stop", "sell_stop"):
+        try:
+            levels.append(float((spec.get(leg) or {})["price"]))
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+    for o in pending or []:  # type: ignore[attr-defined]
+        try:
+            if _own(getattr(o, "comment", "")):
+                return f"pending order {getattr(o, 'ticket', '?')} carries this sleeve's tag"
+            px = float(getattr(o, "price_open", float("nan")))
+            if any(abs(px - lv) < price_tol for lv in levels):
+                return f"pending order {getattr(o, 'ticket', '?')} rests at this bracket's level"
+        except Exception:
+            continue
+    for p in positions or []:  # type: ignore[attr-defined]
+        try:
+            if not _own(getattr(p, "comment", "")):
+                continue
+            t = getattr(p, "time", None)
+            if since_epoch is None or (t is not None and int(t) >= int(since_epoch)):
+                return f"position {getattr(p, 'ticket', '?')} opened by this sleeve today"
+        except Exception:
+            continue
+    today = []
+    for d in deals or []:  # type: ignore[attr-defined]
+        try:
+            if since_epoch is None or int(getattr(d, "time", 0) or 0) >= int(since_epoch):
+                today.append(d)
+        except Exception:
+            continue
+    hit = bar_already_traded(today, tag, entry_in, canon)
+    if hit is not None:
+        return f"entry deal {hit[0]} at {hit[1]} was this sleeve's bracket today"
     return None
 
 

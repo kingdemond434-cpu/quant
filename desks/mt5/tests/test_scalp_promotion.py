@@ -337,6 +337,7 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     # they are exercised for real in test_money_path_sovereignty.py.
     seed.update({
         "money_path_guard": lambda *_a, **_k: True,
+        "money_path_recheck": lambda *_a, **_k: True,
         "_money_path_refresh": lambda: None,
         "canonical_comment": lambda c: str(c or ""),
         "new_order_identity": lambda s, symbol, order: {

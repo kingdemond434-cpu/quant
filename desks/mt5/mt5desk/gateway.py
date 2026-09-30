@@ -69,6 +69,7 @@ from mt5desk.decision_core import (
     book_from_allocation,
     bracket_deadline,
     bracket_from_bars,
+    closed_bar_is_current,
     closed_trade_r,
     comment_tag,
     diagnose,
@@ -95,6 +96,7 @@ from mt5desk.decision_core import (
     stop_distance,
     tagged_comment,
     ttl_expired,
+    venue_holds_bracket,
     window_end_hour,
     window_session_ended,
 )
@@ -1237,6 +1239,14 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
                              price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
                              taken=False, reason="shadow_not_armed")
         return {"shadow": True, "orders": []}
+    # TIME-OF-USE: the allocator, registry status and admission re-read immediately before the
+    # two legs go out, once for the pair so a bracket is never sent with one leg
+    # (`money_path_recheck`).
+    if not money_path_recheck(st, sleeve_row if isinstance(sleeve_row, dict) else
+                              {"name": sleeve, "symbol": symbol}, lane="bracket", lot=lot):
+        return {"ok": False, "stage": "money_path_recheck",
+                "why": (sleeve_row or {}).get("money_path") if isinstance(sleeve_row, dict)
+                else "no sleeve row"}
     sent = []
     # ONE IDENTITY FOR THE WHOLE BRACKET: both legs carry the same chain head, because the OCO
     # repair finds the resting sibling of a filled leg by comparing the two comments.
@@ -1675,7 +1685,6 @@ def money_path_guard(st: dict, s: dict, *, lane: str, side: object = None,
     cannot judge refuses, because the inputs it reads are exactly the ones whose absence
     means the order is not known to be allowed.
     """
-    name = str(s.get("name") or "")
     try:
         v = money_path_verdict(s)
     except Exception as exc:
@@ -1685,6 +1694,17 @@ def money_path_guard(st: dict, s: dict, *, lane: str, side: object = None,
     s["money_path"] = {"ok": bool(v.get("ok")), "first": v.get("first")}
     if v.get("ok"):
         return True
+    _money_path_refuse(st, s, v, lane=lane, side=side, lot=lot, price=price, sl=sl, tp=tp)
+    return False
+
+
+def _money_path_refuse(st: dict, s: dict, v: dict, *, lane: str, side: object = None,
+                       lot: float | None = None, price: float | None = None,
+                       sl: float | None = None, tp: float | None = None) -> None:
+    """Write a refused money-path verdict: the SHADOW log line, the not-taken decision row, the
+    refusal journal and one missed-growth line per failed invariant -- once per sleeve, reason
+    and day. Shared by the guard and the pre-send re-check so both leave the same record."""
+    name = str(s.get("name") or "")
     reason = _mp.reason_of(v)
     whys = "; ".join(f"{r['invariant']}: {r['why']}" for r in v.get("refusals") or [])
     today = datetime.now(tz=UTC).date().isoformat()
@@ -1692,7 +1712,7 @@ def money_path_guard(st: dict, s: dict, *, lane: str, side: object = None,
     stamp = f"{today}|{reason}"
     if seen.get(name) == stamp:
         log(f"[{name}] SHADOW ({lane}): {reason} (recorded today)")
-        return False
+        return
     log(f"[{name}] SHADOW ({lane}) -- no new risk: {whys}")
     _numeric_side = isinstance(side, (int, float)) and not isinstance(side, bool)
     _side = (("buy" if float(side) > 0 else "sell")  # type: ignore[arg-type]
@@ -1714,6 +1734,67 @@ def money_path_guard(st: dict, s: dict, *, lane: str, side: object = None,
     _mp.append_missed_growth(_mp.missed_growth_line(
         v, sleeve=name, symbol=str(s.get("symbol") or ""), day=today, at=now(), lane=lane))
     seen[name] = stamp
+
+
+def _money_path_fresh_row(s: dict) -> tuple[dict | None, bool, bool]:
+    """(`s` with the values that can move laid over it from a fresh read, registry read ok,
+    book read ok). The registry row is re-read from data/sleeves.json through the same core
+    reader `load_sleeves` uses (live policy included, no log or lineage side effects); the
+    allocator's fraction is re-read from `allocator_book()` for a row the pass sized from it.
+    None for the row: the sleeve is no longer in the LIVE registry. Never raises."""
+    fresh: dict | None = dict(s)
+    registry_read = book_read = True
+    if s.get("origin") == "registry":
+        reg = None
+        try:
+            rows, _notes = _core.load_sleeves_verbose(SLEEVES_FILE)
+            reg = next((r for r in rows if str(r.get("name") or "") == str(s.get("name") or "")),
+                       None)
+        except Exception:
+            registry_read = False
+        if registry_read and reg is None:
+            fresh = None
+        elif reg is not None and fresh is not None:
+            for k in ("status", "admission", "principal_override"):
+                fresh[k] = reg.get(k)
+    if fresh is not None and s.get("sized_by") == "allocator_book":
+        try:
+            book, _why = allocator_book()
+        except Exception:
+            book = None
+        if not isinstance(book, dict):
+            book_read = False
+            fresh["risk_frac"] = None
+        else:
+            key = _book_key(s, book)
+            fresh["risk_frac"] = book.get(key) if key else None
+    return fresh, registry_read, book_read
+
+
+def money_path_recheck(st: dict, s: dict, *, lane: str, side: object = None,
+                       lot: float | None = None, price: float | None = None,
+                       sl: float | None = None, tp: float | None = None) -> bool:
+    """True when the values `money_path_guard` judged at the top of the pass STILL hold,
+    re-read immediately before `order_send`; False after recording why not.
+
+    TIME-OF-CHECK / TIME-OF-USE (2026-09-30). The book and the registry are read once per pass
+    and a pass can run for minutes, so the promoter can demote or un-measure a sleeve, or the
+    allocator zero it, between the guard and the send. This re-reads exactly those values and
+    re-judges them (`mt5desk.money_path.recheck`). Called directly before every NEW-RISK
+    `order_send` and never before a stop, TTL, close, cancel or OCO repair;
+    `scripts/check_money_path_sovereignty.py` fails the law gate if a new-risk send is not
+    preceded by it. Never raises: a re-check that cannot run refuses."""
+    try:
+        fresh, reg_ok, book_ok = _money_path_fresh_row(s)
+        v = _mp.recheck(s, fresh, registry_read=reg_ok, book_read=book_ok)
+    except Exception as exc:
+        v = {"ok": False, "first": _mp.CHANGED_BEFORE_SEND, "allocator_fraction": None,
+             "refusals": [{"invariant": _mp.CHANGED_BEFORE_SEND,
+                           "why": f"pre-send re-check raised ({type(exc).__name__}: {exc})"}]}
+    if v.get("ok"):
+        return True
+    s["money_path"] = {"ok": False, "first": v.get("first")}
+    _money_path_refuse(st, s, v, lane=lane, side=side, lot=lot, price=price, sl=sl, tp=tp)
     return False
 
 
@@ -2921,6 +3002,18 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     return call_params, ""
 
 
+def _venue_clock(st: dict) -> pd.Timestamp:
+    """This pass's venue clock: the tick time `main` stamps as `placement_pass` (server clock,
+    the bars' own convention), else the current UTC time. Never raises."""
+    try:
+        stamp = st.get("placement_pass")
+        if stamp:
+            return pd.Timestamp(str(stamp))
+    except (ValueError, TypeError):
+        pass
+    return pd.Timestamp(datetime.now(tz=UTC))
+
+
 def resolve_family_order(st: dict, s: dict, equity: float,
                          pending: dict[str, float] | None = None) -> dict:
     """The order this family sleeve would send THIS pass, priced -- read-only, no state written.
@@ -2974,12 +3067,21 @@ def resolve_family_order(st: dict, s: dict, equity: float,
     frame = h1_frame(h1)
     closed = frame.iloc[:-1]
     call_params: dict | None = None
+    # THE VENUE'S CLOCK, NOT AN IMPLICIT ONE: this pass's tick time (`placement_pass`, server
+    # clock like the bars), so a frame whose "forming" bar already closed is refused as stale
+    # rather than acted on hours late (`closed_bar_is_current`).
+    _venue_now = _venue_clock(st)
+    _tf_min = int(_BAR_MINUTES.get(tf, 60))
     if population == "hunt16":
         # ONE DECISION A DAY AT THE CERTIFIED HOUR.
-        last_bar = family_bar_due(closed, family_signal_hour(WINDOWS[selector]))
+        last_bar = family_bar_due(closed, family_signal_hour(WINDOWS[selector]),
+                                  now=_venue_now, bar_minutes=_tf_min)
     else:
         # NO HOUR FILTER, BECAUSE THE CLOCK APPLIES NONE -- the family itself owns when it fires.
         last_bar = closed.index[-1] if len(closed) else None
+        if last_bar is not None and not closed_bar_is_current(last_bar, now=_venue_now,
+                                                              bar_minutes=_tf_min):
+            last_bar = None
     # THE MARK IS READ BEFORE THE INPUTS ARE REBUILT (2026-09-16). Input reconstruction is the
     # expensive step -- peer bars, factor bars, primitives -- and it was paid on every pass for
     # every sleeve whether or not the bar had already been considered: 64 sleeves at 2-5 s each
@@ -3366,6 +3468,11 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             continue
         if not margin_ok(s["symbol"], lot, entry_ref):
             log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
+            continue
+        # TIME-OF-USE: the allocator, registry status and admission re-read now, not at the
+        # top of the pass (see `money_path_recheck`).
+        if not money_path_recheck(st, s, lane="family_market", side=side, lot=lot,
+                                  price=entry_ref, sl=float(g.stop), tp=float(g.target)):
             continue
         _ident = new_order_identity(s, s["symbol"], {
             "kind": "family_market", "side": side, "lot": lot, "price": entry_ref,
@@ -3818,6 +3925,10 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not margin_ok(s["symbol"], per, price):
             log(f"[{name}] SCALP-EXEC{' add-on' if is_addon else ''} SKIPPED: margin tight "
                 f"(lot={per})")
+            continue
+        # TIME-OF-USE: re-read and re-judged immediately before the send (`money_path_recheck`).
+        if not money_path_recheck(st, s, lane="scalp_market", side=side, lot=per, price=price,
+                                  sl=stop, tp=tp):
             continue
         _ident = new_order_identity(s, s["symbol"], {
             "kind": "scalp_addon" if is_addon else "scalp_market", "side": side, "lot": per,
@@ -4575,16 +4686,27 @@ def main() -> None:
                                              "spec": spec, "result": {"margin": False}}
                 save_state(st)
                 continue
+            # RECONCILE AGAINST THE VENUE BEFORE PLACING (`venue_holds_bracket`): a resting
+            # order, an open position or an entry deal of this sleeve's today means the bracket
+            # was placed by a pass whose state did not survive -- never place it twice.
             pend = mt5.orders_get(symbol=s["symbol"]) or []
-            matches = [
-                o for o in pend
-                if abs(o.price_open - spec["buy_stop"]["price"]) < 0.5
-                or abs(o.price_open - spec["sell_stop"]["price"]) < 0.5
-            ]
-            if matches:
+            _day0 = int(pd.Timestamp(day_key, tz="UTC").timestamp())
+            try:
+                _held_pos = mt5.positions_get(symbol=s["symbol"]) or []
+            except Exception:
+                _held_pos = []
+            try:
+                _held_deals = mt5.history_deals_get(_day0, _day0 + 86_400) or []
+            except Exception:
+                _held_deals = []
+            _held = venue_holds_bracket(pend, _held_pos, _held_deals,
+                                        tag=order_comment(s["name"]), spec=spec,
+                                        canon=canonical_comment, since_epoch=_day0)
+            if _held:
                 st["brackets"][s["name"]] = {"date": day_key, "recovered": True, "lot": lot,
-                                             "hi": hi, "lo": lo, "spec": spec}
+                                             "hi": hi, "lo": lo, "spec": spec, "held": _held}
                 log(f"recovered [{s['name']}] bracket for {day_key}")
+                log(f"[{s['name']}] venue already holds today's bracket: {_held}")
                 save_state(st)
                 continue
             if not NEW_RISK_OK:

@@ -156,6 +156,7 @@ def _gateway_func(*names: str, ns: dict | None = None) -> dict:
                  # The money-path seams as ADMIT / LEGACY / IDENTITY; exercised for real in
                  # test_money_path_sovereignty.py.
                  "money_path_guard": lambda *_a, **_k: True,
+                 "money_path_recheck": lambda *_a, **_k: True,
                  "canonical_comment": lambda c: str(c or ""),
                  "comment_tag": _comment_tag,
                  "new_order_identity": lambda s, symbol, order: {

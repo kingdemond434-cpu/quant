@@ -345,3 +345,184 @@ def test_the_fence_catches_an_unguarded_site_an_untagged_order_and_an_unguarded_
 def test_the_fence_is_on_the_law_gate():
     src = (ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
     assert '("check_money_path_sovereignty.py", ())' in src
+
+
+# ------------------------------------------------ formal-check items (2026-09-30, coordinator)
+# 1. RECONCILE AGAINST THE VENUE BEFORE PLACING A BRACKET (`decision_core.venue_holds_bracket`)
+_SPEC = {"buy_stop": {"price": 2010.0}, "sell_stop": {"price": 1990.0}}
+_DAY0 = 1_790_000_000
+_TAG = "DWgold_asia"
+
+
+def _o(ticket, comment="", price=1500.0):
+    return SimpleNamespace(ticket=ticket, comment=comment, price_open=price)
+
+
+def _p(ticket, comment, time):
+    return SimpleNamespace(ticket=ticket, comment=comment, time=time)
+
+
+def _d(ticket, comment, time, entry=0):
+    return SimpleNamespace(ticket=ticket, comment=comment, time=time, entry=entry)
+
+
+def _held(pending=(), positions=(), deals=(), canon=None):
+    return dc.venue_holds_bracket(list(pending), list(positions), list(deals), tag=_TAG,
+                                  spec=_SPEC, canon=canon, since_epoch=_DAY0)
+
+
+def test_nothing_at_the_venue_is_nothing_held():
+    assert _held() is None
+    # Another sleeve's order away from both legs, a manual position, yesterday's own position
+    # and a closing deal are none of them today's bracket.
+    assert _held(pending=[_o(1, "DWgold_london_am", 1500.0)],
+                 positions=[_p(2, "manual", _DAY0 + 60), _p(3, _TAG, _DAY0 - 60)],
+                 deals=[_d(4, _TAG, _DAY0 + 60, entry=1), _d(5, _TAG, _DAY0 - 60)]) is None
+
+
+def test_a_resting_order_is_held_by_its_tag_or_at_a_legs_level():
+    assert "tag" in _held(pending=[_o(7, _TAG, 1500.0)])
+    assert "level" in _held(pending=[_o(8, "[broker rewrote]", 2010.2)])
+
+
+def test_a_filled_leg_is_held_even_when_nothing_rests():
+    """THE CASE THE PRICE MATCH MISSED: the leg filled, the OCO repair cancelled its sibling,
+    nothing rests -- and a pass with lost state placed the day's bracket again."""
+    assert "position 9" in _held(positions=[_p(9, _TAG, _DAY0 + 3600)])
+
+
+def test_a_bracket_that_filled_and_closed_today_is_held_by_its_entry_deal():
+    assert "entry deal 11" in _held(deals=[_d(11, _TAG, _DAY0 + 3600)])
+
+
+def test_an_identity_tagged_comment_is_read_back_through_canon():
+    tagged = {"DWgold_asia#0123456789ab": _TAG}
+    assert _held(positions=[_p(12, "DWgold_asia#0123456789ab", _DAY0 + 1)],
+                 canon=lambda c: tagged.get(c, c)) is not None
+
+
+def test_the_gateway_reconciles_before_placing_and_logs_why():
+    src = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    main = src.split("\ndef main(", 1)[1]
+    at = main.index("venue_holds_bracket(")
+    assert "mt5.positions_get(symbol=" in main[:at] and "mt5.history_deals_get(" in main[:at]
+    assert main.index("if not NEW_RISK_OK:") > at, "reconcile before the send path"
+    assert "matches = [" not in main, "the price-only match is back"
+
+
+# 2. THE BAR-DUE CHECK TAKES ITS CLOCK, AND THE GATEWAY PASSES THE VENUE'S
+def test_the_family_resolver_passes_the_venue_clock_to_the_bar_due_check():
+    src = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+    body = src.split("\ndef resolve_family_order(", 1)[1].split("\ndef ", 1)[0]
+    assert "_venue_now = _venue_clock(st)" in body
+    assert "now=_venue_now" in body and "closed_bar_is_current(" in body
+    clock = src.split("\ndef _venue_clock(", 1)[1].split("\ndef ", 1)[0]
+    assert 'st.get("placement_pass")' in clock
+
+
+# 3. TIME-OF-CHECK / TIME-OF-USE (`money_path.recheck`, `gateway.money_path_recheck`)
+def test_an_unchanged_sleeve_passes_the_recheck():
+    assert mp.recheck(_row(), _row())["ok"]
+    gold = {"name": "gold_asia", "origin": "gold_window", "sized_by": "allocator_book",
+            "risk_frac": 0.01}
+    assert mp.recheck(gold, dict(gold))["ok"]
+
+
+@pytest.mark.parametrize("fresh", [
+    _row(risk_frac=0.0), _row(risk_frac=None), _row(risk_frac=float("nan")),
+    _row(admission={"status": "UNMEASURED"}), _row(admission=None),
+    _row(admission={"status": "LIVE", "risk_frac": 0.01}),     # marginal no longer measured
+    _row(status="STANDBY"), _row(status="RETIRED"), None,
+])
+def test_a_sleeve_that_changed_before_the_send_is_refused(fresh):
+    v = mp.recheck(_row(), fresh)
+    assert not v["ok"] and v["first"] == mp.CHANGED_BEFORE_SEND
+    assert mp.CHANGED_BEFORE_SEND in mp.INVARIANTS
+
+
+def test_a_value_that_cannot_be_re_read_is_refused():
+    assert not mp.recheck(_row(), _row(), registry_read=False)["ok"]
+    assert not mp.recheck(_row(), _row(), book_read=False)["ok"]
+    # A gold window has no registry row and is not refused for one it never had.
+    gold = {"name": "gold_asia", "origin": "gold_window", "sized_by": "allocator_book",
+            "risk_frac": 0.01}
+    assert mp.recheck(gold, dict(gold), registry_read=False)["ok"]
+    assert not mp.recheck(gold, {**gold, "risk_frac": 0.0})["ok"]
+
+
+_GW_SRC = (DESK / "mt5desk" / "gateway.py").read_text("utf-8")
+_GW_TREE = ast.parse(_GW_SRC)
+
+
+def _gw(names, seed):
+    keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
+    assert {n.name for n in keep} == set(names)
+    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), seed)  # noqa: S102
+    return seed
+
+
+def _recheck_world(tmp_path, monkeypatch, *, rows, book):
+    import re as _re
+    sleeves = tmp_path / "sleeves.json"
+    sleeves.write_text(json.dumps({"sleeves": rows}), "utf-8")
+    monkeypatch.setattr(mp, "MISSED_GROWTH", tmp_path / "missed_growth.jsonl")
+    decisions: list[dict] = []
+    logs: list[str] = []
+    seed = {"_core": dc, "_mp": mp, "SLEEVES_FILE": sleeves, "re": _re,
+            "allocator_book": lambda: (book, "test"), "log": logs.append,
+            "_record_decision": lambda **r: decisions.append(r),
+            "journal_refusal": lambda *a, **k: None, "now": lambda: NOW.isoformat(),
+            "datetime": datetime, "UTC": UTC}
+    ns = _gw(("_money_path_fresh_row", "money_path_recheck", "_money_path_refuse",
+              "_book_key"), seed)
+    return ns, decisions, logs
+
+
+_GOLD_ROW = {"name": "xau_srb", "symbol": "XAUUSD", "family": "session_range_breakout",
+             "status": "LIVE",
+             "admission": {"status": "LIVE", "risk_frac": 0.01, "heat_earned": 0.01}}
+
+
+def _sent_row():
+    return {**_GOLD_ROW, "origin": "registry", "sized_by": "allocator_book", "risk_frac": 0.01}
+
+
+def test_the_gateway_recheck_admits_what_still_holds(tmp_path, monkeypatch):
+    ns, decisions, _ = _recheck_world(tmp_path, monkeypatch, rows=[_GOLD_ROW],
+                                      book={"xau_srb": 0.01})
+    assert ns["money_path_recheck"]({}, _sent_row(), lane="family_market", side=1,
+                                    lot=0.02) is True
+    assert decisions == []
+
+
+def test_the_gateway_recheck_refuses_a_zeroed_book_and_records_it(tmp_path, monkeypatch):
+    ns, decisions, _ = _recheck_world(tmp_path, monkeypatch, rows=[_GOLD_ROW],
+                                      book={"xau_srb": 0.0})
+    assert ns["money_path_recheck"]({}, _sent_row(), lane="family_market", side=1,
+                                    lot=0.02) is False
+    assert decisions and decisions[0]["reason"] == "sovereignty_changed_before_send"
+    lines = (tmp_path / "missed_growth.jsonl").read_text("utf-8").splitlines()
+    assert json.loads(lines[0])["rail"] == "money_path_sovereignty.changed_before_send"
+
+
+@pytest.mark.parametrize(("rows", "book"), [
+    ([{**_GOLD_ROW, "status": "STANDBY"}], {"xau_srb": 0.01}),      # demoted mid-pass
+    ([{**_GOLD_ROW, "admission": {"status": "UNMEASURED"}}], {"xau_srb": 0.01}),
+    ([_GOLD_ROW], None),                                             # book not re-readable
+    ([_GOLD_ROW], {"someone_else": 0.02}),                           # left the book
+])
+def test_the_gateway_recheck_refuses_what_changed(tmp_path, monkeypatch, rows, book):
+    ns, decisions, _ = _recheck_world(tmp_path, monkeypatch, rows=rows, book=book)
+    assert ns["money_path_recheck"]({}, _sent_row(), lane="family_market", side=1) is False
+    assert decisions[0]["reason"] == "sovereignty_changed_before_send"
+
+
+def test_every_new_risk_send_is_rechecked_after_its_guard():
+    sites = [s for s in fence.placement_sites(_GW_SRC) if s["new_risk"]]
+    assert {s["function"] for s in sites} >= fence.KNOWN_SITES
+    assert all(s["rechecked"] for s in sites), sites
+
+
+def test_the_fence_catches_a_send_with_no_time_of_use_recheck():
+    checks = {f["check"] for f in fence.check_sites(_BAD)}
+    assert "S8_NOT_RECHECKED_AT_SEND" in checks

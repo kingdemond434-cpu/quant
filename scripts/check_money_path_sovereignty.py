@@ -23,11 +23,16 @@ the allocator had sized at zero. `desks/mt5/mt5desk/money_path.py` holds the fou
       0.02 gold floor and the venue minimum are untouched for every fraction > 0.
   S5  THE BAN LIST IS READ, NEVER RESTATED: `money_path.py` carries no string literal naming a
       banned family, and its `banned_families()` returns the union of the two declared sources.
-  S6  EVERY REFUSAL LEAVES ITS ROWS: `money_path_guard` calls `_record_decision` (the decision
-      ledger) and `append_missed_growth` (the growth-governance line).
+  S6  EVERY REFUSAL LEAVES ITS ROWS: `money_path_guard` and `money_path_recheck` both refuse
+      through `_money_path_refuse`, which calls `_record_decision` (the decision ledger) and
+      `append_missed_growth` (the growth-governance line).
   S7  EVERY NEW ORDER CARRIES ITS IDENTITY: each new-risk request's comment is the
       identity-tagged `_ident["comment"]` from `gateway.new_order_identity` (the pre-trade chain
       head, `libs/research/trade_identity.tag`).
+  S8  EVERY NEW-RISK SEND IS RE-CHECKED AT TIME OF USE: the enclosing function calls
+      `money_path_recheck(` after its guard and before the `order_send`, so the allocator's
+      fraction, the registry status and the admission are re-read immediately before the send
+      rather than trusted from the top of a pass that can run for minutes.
 
 S3 also covers the blueprint additions: I5 (an UNMEASURED marginal dE[log W] is refused), I6 (a
 principal override outside the declared experimental budget is refused) and that I4 is decided by
@@ -58,6 +63,10 @@ GATEWAY = DESK / "mt5desk" / "gateway.py"
 MONEY_PATH = DESK / "mt5desk" / "money_path.py"
 SLEEVES = DESK / "data" / "sleeves.json"
 GUARD = "money_path_guard"
+#: The time-of-use re-check that must sit between the guard and every new-risk send (S8).
+RECHECK = "money_path_recheck"
+#: The one writer of a refusal's rows, shared by the guard and the re-check (S6).
+REFUSE = "_money_path_refuse"
 #: The three lanes that open risk today. A new one is welcome and is guarded by S1 like these;
 #: fewer than these means the walk broke, not that the desk stopped trading.
 KNOWN_SITES = frozenset({"place_bracket", "run_family_sleeves", "run_scalp_sleeves"})
@@ -119,6 +128,7 @@ def placement_sites(src: str) -> list[dict[str, Any]]:
         if not isinstance(fn, ast.FunctionDef):
             continue
         guards = _calls(fn, GUARD)
+        rechecks = _calls(fn, RECHECK)
         for node in ast.walk(fn):
             if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
                     and node.func.attr == "order_send":
@@ -131,6 +141,8 @@ def placement_sites(src: str) -> list[dict[str, Any]]:
                             comment = ast.unparse(v)
                 sites.append({"function": fn.name, "line": node.lineno, "new_risk": kind,
                               "guarded": any(g < node.lineno for g in guards),
+                              "rechecked": any(min(guards, default=node.lineno) < r < node.lineno
+                                               for r in rechecks),
                               "comment": comment})
     return sites
 
@@ -147,6 +159,11 @@ def check_sites(src: str) -> list[dict[str, str]]:
             f.append({"check": "S1_UNGUARDED_PLACEMENT",
                       "why": f"new-risk order_send at gateway.py:{s['line']} in "
                              f"{s['function']} is not preceded by {GUARD}()"})
+        if s["new_risk"] and not s.get("rechecked"):
+            f.append({"check": "S8_NOT_RECHECKED_AT_SEND",
+                      "why": f"new-risk order_send at gateway.py:{s['line']} in "
+                             f"{s['function']} is not preceded by {RECHECK}() after its guard: "
+                             f"the allocator and admission it sends on were read at pass start"})
         if s["new_risk"] and s.get("comment") != IDENTITY_COMMENT:
             f.append({"check": "S7_IDENTITY_TAG",
                       "why": f"new-risk order_send at gateway.py:{s['line']} in "
@@ -168,17 +185,23 @@ def check_sites(src: str) -> list[dict[str, str]]:
                 f.append({"check": "S2_UNGUARDED_CALLER",
                           "why": f"{fn.name} calls place_bracket at gateway.py:{line} without "
                                  f"a prior {GUARD}()"})
-    # S6 -- the guard writes both rows
-    for fn in ast.walk(tree):
-        if isinstance(fn, ast.FunctionDef) and fn.name == GUARD:
-            for need in ("_record_decision", "append_missed_growth"):
-                if not _calls(fn, need):
-                    f.append({"check": "S6_REFUSAL_ROWS",
-                              "why": f"{GUARD} no longer calls {need}: a refusal would leave "
-                                     f"no row"})
-            break
+    # S6 -- the guard and the re-check both refuse through the one writer of both rows
+    fns = {fn.name: fn for fn in ast.walk(tree) if isinstance(fn, ast.FunctionDef)}
+    for name in (GUARD, RECHECK):
+        if name not in fns:
+            f.append({"check": "S6_REFUSAL_ROWS", "why": f"gateway.py has no {name}"})
+        elif not _calls(fns[name], REFUSE):
+            f.append({"check": "S6_REFUSAL_ROWS",
+                      "why": f"{name} no longer refuses through {REFUSE}: its refusal would "
+                             f"leave no row"})
+    if REFUSE not in fns:
+        f.append({"check": "S6_REFUSAL_ROWS", "why": f"gateway.py has no {REFUSE}"})
     else:
-        f.append({"check": "S6_REFUSAL_ROWS", "why": f"gateway.py has no {GUARD}"})
+        for need in ("_record_decision", "append_missed_growth"):
+            if not _calls(fns[REFUSE], need):
+                f.append({"check": "S6_REFUSAL_ROWS",
+                          "why": f"{REFUSE} no longer calls {need}: a refusal would leave "
+                                 f"no row"})
     return f
 
 
@@ -235,6 +258,17 @@ def check_behaviour() -> list[dict[str, str]]:
                    mp.OVERRIDE_OUTSIDE_BUDGET):
         f.append({"check": "S3_I6_OVERRIDE_BUDGET",
                   "why": "an override sleeve with no experimental budget is not refused"})
+    # S8 behaviour -- the time-of-use re-check refuses what changed and admits what did not
+    base = _base_row()
+    if not mp.recheck(base, dict(base))["ok"]:
+        f.append({"check": "S8_RECHECK", "why": "an unchanged sleeve is refused at send time"})
+    for fresh in (_base_row(risk_frac=0.0), _base_row(admission={"status": "UNMEASURED"}),
+                  _base_row(status="STANDBY"), None):
+        if mp.recheck(base, fresh)["ok"]:
+            f.append({"check": "S8_RECHECK",
+                      "why": f"a sleeve that changed to {fresh!r} before the send is admitted"})
+    if mp.recheck(base, dict(base), book_read=False)["ok"]:
+        f.append({"check": "S8_RECHECK", "why": "an unreadable book at send time is admitted"})
     # I4 IS DECIDED BY cost_surfaces.cost_for, not by a parallel reader
     try:
         mp_src = MONEY_PATH.read_text("utf-8")

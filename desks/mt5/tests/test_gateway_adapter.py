@@ -61,6 +61,11 @@ def _is_literal(node: ast.AST) -> bool:
 #: that wants the guard to refuse passes its own in `ns`.
 MONEY_PATH_SEAMS: dict = {
     "money_path_guard": lambda *_a, **_k: True,
+    "money_path_recheck": lambda *_a, **_k: True,
+    # The venue clock the family lane's staleness check reads (`closed_bar_is_current`): the
+    # epoch, so a fixture frame from any date reads as current. The staleness rule itself is
+    # tested in test_decision_core / test_money_path_sovereignty against explicit clocks.
+    "_venue_clock": lambda st: pd.Timestamp("1970-01-01", tz="UTC"),
     "_money_path_refresh": lambda: None,
     "canonical_comment": lambda c: str(c or ""),
     "new_order_identity": lambda s, symbol, order: {

@@ -74,10 +74,13 @@ BANNED_FAMILY = "banned_family"
 COST_UNMEASURED = "cost_unmeasured"
 MARGINAL_UNMEASURED = "marginal_unmeasured"
 OVERRIDE_OUTSIDE_BUDGET = "override_outside_budget"
+#: I1/I2/I5 re-judged on values re-read immediately before `order_send` (`recheck`).
+CHANGED_BEFORE_SEND = "changed_before_send"
 #: The invariants, in the order they are reported. `first` of a verdict is the first of these
 #: that refused, and it is the decision ledger's `first_blocking_gate`.
 INVARIANTS: tuple[str, ...] = (ALLOCATOR_ZERO, ADMISSION_UNMEASURED, BANNED_FAMILY,
-                               COST_UNMEASURED, MARGINAL_UNMEASURED, OVERRIDE_OUTSIDE_BUDGET)
+                               COST_UNMEASURED, MARGINAL_UNMEASURED, OVERRIDE_OUTSIDE_BUDGET,
+                               CHANGED_BEFORE_SEND)
 #: Decision-ledger reason prefix and missed-growth rail prefix.
 REASON_PREFIX = "sovereignty_"
 RAIL_PREFIX = "money_path_sovereignty."
@@ -256,6 +259,44 @@ def verdict(row: Mapping[str, Any], *, banned: Iterable[str] | None,
             "allocator_fraction": frac, "allocator_source": src,
             "admission": admission_status(row) or None,
             "cost": dict(cost) if isinstance(cost, Mapping) else None}
+
+
+def recheck(before: Mapping[str, Any], fresh: Mapping[str, Any] | None, *,
+            registry_read: bool = True, book_read: bool = True) -> dict[str, Any]:
+    """TIME-OF-CHECK / TIME-OF-USE (2026-09-30). The pass reads the allocator book and the
+    registry ONCE, at its start, and a pass can run for minutes; the promoter or the allocator
+    may zero, demote or un-measure a sleeve in between. This re-judges the values that can move
+    -- the allocator's fraction, the registry status, the admission and its marginal reading --
+    on a row the gateway re-read IMMEDIATELY before `order_send`, and refuses under
+    `changed_before_send` when any of them no longer holds. Pure.
+
+    `fresh` is `before` with the re-read values laid over it (None: the sleeve is no longer in
+    the registry). `registry_read` / `book_read` False: that re-read failed, and a value that
+    cannot be re-read cannot be shown to still hold, so the order does not go (fail closed --
+    the order is new risk; nothing open is touched).
+    """
+    whys: list[str] = []
+    registry = before.get("origin") == "registry"
+    if registry and not registry_read:
+        whys.append("the registry could not be re-read immediately before the send")
+    elif registry and fresh is None:
+        whys.append("the sleeve left the LIVE registry after the pass read it")
+    if before.get("sized_by") == "allocator_book" and not book_read:
+        whys.append("the allocator book could not be re-read immediately before the send")
+    if fresh is not None:
+        status = str(fresh.get("status") or "LIVE").strip().upper()
+        if registry and status != "LIVE":
+            whys.append(f"the sleeve's status changed to {status} after the pass read it")
+        for check in (check_allocator, check_admission, check_marginal):
+            why = check(fresh)
+            if why:
+                whys.append(f"changed since the pass read it -- {why}")
+    refusals = [{"invariant": CHANGED_BEFORE_SEND, "why": w} for w in whys]
+    frac, src = allocator_fraction(fresh) if fresh is not None else (None, "absent")
+    return {"ok": not refusals, "refusals": refusals,
+            "first": CHANGED_BEFORE_SEND if refusals else None,
+            "allocator_fraction": frac, "allocator_source": src,
+            "admission": admission_status(fresh) if fresh is not None else None}
 
 
 def reason_of(v: Mapping[str, Any]) -> str:

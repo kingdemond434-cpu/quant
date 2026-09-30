@@ -843,8 +843,36 @@ def test_family_signal_hour_prefers_signal_at() -> None:
 
 def test_family_bar_due_is_the_last_closed_bar_at_the_signal_hour() -> None:
     closed = _h1(31)                                         # last bar 2026-09-04 06:00
-    assert dc.family_bar_due(closed, 6) == closed.index[-1]
-    assert dc.family_bar_due(closed, 7) is None
+    live = closed.index[-1] + pd.Timedelta(minutes=65)       # inside the forming 07:00 bar
+    assert dc.family_bar_due(closed, 6, now=live) == closed.index[-1]
+    assert dc.family_bar_due(closed, 7, now=live) is None
+
+
+def test_family_bar_due_takes_its_clock_and_refuses_a_stale_frame() -> None:
+    """THE CLOCK IS AN ARGUMENT (2026-09-30). On a live feed `now` lies inside the bar after the
+    last closed one; two bars or more past its open, the frame's "forming" row had already
+    closed and the signal is hours old -- not due."""
+    closed = _h1(31)
+    last = closed.index[-1]
+    for mins in (60, 61, 119):
+        assert dc.family_bar_due(closed, 6, now=last + pd.Timedelta(minutes=mins)) == last
+    for mins in (120, 180, 60 * 24):
+        assert dc.family_bar_due(closed, 6, now=last + pd.Timedelta(minutes=mins)) is None
+    # The chart's own bar length: an M5 frame is stale ten minutes after its last open.
+    assert dc.family_bar_due(closed, 6, now=last + pd.Timedelta(minutes=9), bar_minutes=5) \
+        == last
+    assert dc.family_bar_due(closed, 6, now=last + pd.Timedelta(minutes=10),
+                             bar_minutes=5) is None
+    # A naive clock is read as UTC against a tz-aware frame, and the reverse.
+    naive_now = (last + pd.Timedelta(minutes=70)).tz_convert("UTC").tz_localize(None)
+    assert dc.family_bar_due(closed, 6, now=naive_now) == last
+    naive = closed.copy()
+    naive.index = naive.index.tz_localize(None)
+    assert dc.family_bar_due(naive, 6, now=last + pd.Timedelta(minutes=70)) is not None
+    # No clock is the current time: a September fixture is long stale by now.
+    assert dc.family_bar_due(closed, 6) is None
+    assert dc.closed_bar_is_current(last, now=last + pd.Timedelta(minutes=90))
+    assert not dc.closed_bar_is_current(last, now=last + pd.Timedelta(hours=3))
 
 
 def test_family_signal_step_is_replay_faithful() -> None:
