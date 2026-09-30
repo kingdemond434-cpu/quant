@@ -33,6 +33,8 @@ Do not spend the run rereading or resummarizing the entire institution when the 
 
 **AMENDMENT: GET PAST TECHNICAL BLOCKS ALONE (principal's standing order, 2026-09-30).** The principal will not be there, so the pass clears every technical obstacle itself. That covers a failed fetch, a broken build, bad or missing data, a flaky or failing test, a stale artifact, a parked session, a crashed leg, a timeout and a merge conflict. For each one the pass retries with backoff, tries an alternate source or path, fixes the root cause, and carries on with everything else while it does. Every such workaround is recorded with its cause. **One boundary is absolute:** a permission or safety refusal (auto-mode, the permission classifier, a device or desktop rule, a sealed-judge or live-money fence) is NOT a technical error. It is never retried in another form, split up, or routed around. It is recorded as BLOCKED with the exact refusal and the exact approval that would clear it, and the pass finishes everything else.
 
+**AMENDMENT: NEVER ASK THE PRINCIPAL (principal's standing order, 2026-09-30).** The principal will not be there. The pass never asks for permission, approval, a go, a sign-off or a re-sign, for anything, and never posts a question or an ask to the principal. It decides and acts on everything it is able to do. When a tool, fence or safety check refuses a step, the pass writes that item into the ledger as BLOCKED with the exact reason, and does not turn it into a request. It then finishes everything else.
+
 Read `CRO_CYCLE.md` first.
 
 Then load `QUANT_CONSTITUTION.md` for governing laws.
