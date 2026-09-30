@@ -39,6 +39,7 @@ import hashlib
 import json
 import os
 import subprocess
+from collections.abc import Callable
 from datetime import UTC, datetime
 from functools import lru_cache
 from pathlib import Path
@@ -210,25 +211,49 @@ def _norm(b: bytes) -> bytes:
 
 
 @lru_cache(maxsize=512)
-def _read_commit(rel: str, root_text: str, commit: str) -> bytes | None:
-    """Return one immutable commit blob, reusing it within later hash calculations.
+def _read_commit_ok(rel: str, root_text: str, commit: str) -> bytes:
+    """One immutable commit blob, cached ONLY WHEN IT WAS READ.
 
     `_describe` hashes the same money-path blobs once as a set and again per file. On the
     Windows trading box each `git show` costs seconds against the large repository, turning a
-    22-file seal into a multi-minute mutex hold. A commit's blob cannot change, so this removes
-    only duplicate reads without changing the release hash contract.
+    22-file seal into a multi-minute mutex hold. A commit's blob cannot change, so caching it
+    removes only duplicate reads without changing the release hash contract.
+
+    A FAILED READ IS NEVER CACHED (recovered box patch 39). `lru_cache` remembers None exactly
+    as faithfully as bytes, so one transient `git show` failure became this process's permanent
+    answer for that path -- the "absent" that a seal then signed. Failure raises instead, which
+    `lru_cache` does not memoise.
+
+    The timeout is 30 s, not 10 s: the only thing a short timeout buys is a FASTER WRONG ANSWER.
+    A real blob read is milliseconds, so the ceiling is only reached when something is wrong.
     """
     root = Path(root_text)
     try:
         result = subprocess.run([_git_exe(), "show", f"{commit}:{rel}"], cwd=root,
-                                capture_output=True, timeout=10)
-    except (OSError, subprocess.SubprocessError):
+                                capture_output=True, timeout=30)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise LookupError(f"git show {commit[:12]}:{rel}: {type(exc).__name__}") from exc
+    if result.returncode != 0:
+        raise LookupError(f"git show {commit[:12]}:{rel} exited {result.returncode}")
+    return result.stdout
+
+
+def _read_commit(rel: str, root_text: str, commit: str) -> bytes | None:
+    """One commit blob, or None when git would not produce it (absent OR unreadable -- the
+    caller that must tell those apart is `_Blobs`)."""
+    try:
+        return _read_commit_ok(rel, root_text, commit)
+    except LookupError:
         return None
-    return result.stdout if result.returncode == 0 else None
 
 
 def _read(rel: str, root: Path, commit: str | None) -> bytes | None:
-    """File bytes from the working tree (commit None) or from git's objects at `commit`."""
+    """File bytes from the working tree (commit None) or from git's objects at `commit`.
+
+    None IS AMBIGUOUS HERE and must never be consumed directly by anything that WRITES a record:
+    it means "not in that commit" and "git would not answer" alike. `_Blobs` below is the reader
+    that tells those apart (recovered box patch 39).
+    """
     if commit is None:
         try:
             return (root / Path(*rel.split("/"))).read_bytes()
@@ -237,28 +262,94 @@ def _read(rel: str, root: Path, commit: str | None) -> bytes | None:
     return _read_commit(rel, str(root.resolve()), commit)
 
 
-def hash_paths(paths: tuple[str, ...] | list[str], root: Path | None = None,
-               commit: str | None = None) -> str:
-    """The keyed digest of a file set. Mirrored byte-for-byte in mt5desk/release_identity.py,
-    which must not import this package; a test pins the two together."""
-    r = _root(root)
+#: What a file that a commit genuinely does not carry hashes to. Part of the wire format: the box
+#: side (mt5desk/release_identity.py) hashes the same sentinel.
+ABSENT = b"<absent>"
+
+
+class SealReadError(RuntimeError):
+    """A file that IS present in the thing being sealed could not be read, so its digest would be
+    a guess. Raised instead of sealing: a seal is a measurement or it is nothing."""
+
+
+class _Blobs:
+    """One commit's bytes, with "absent" and "unreadable" kept apart (recovered box patch 39).
+
+    THE DEFECT THIS EXISTS TO END, measured on the trading box 2026-09-24. `_read` returned None
+    for two different facts -- "git says this path is not in that commit" and "git would not
+    answer" -- and the hashing wrote the `<absent>` sentinel for both. A seal taken while git was
+    intermittently failing recorded NINETEEN of the twenty-two money-path files as absent, filed
+    under a `code_sha` whose tree contains all twenty-two, and wrote that as a signed fact.
+    `release_identity` then re-hashed those files on disk, found real content, and refused NEW
+    risk with "money path drifted on disk" -- a phantom drift. 1,222 of the last 1,266 decisions
+    were `release_identity_refused`.
+
+    `git ls-tree` is the authority on which of the two a None is. A path IN the tree that will
+    not read is UNMEASURED and refuses; a path genuinely not in the tree still hashes to the
+    sentinel, because "this commit does not carry that file" is a real and hashable fact. Reads
+    are cached per instance, so one describe reads each blob once and cannot disagree with itself.
+    """
+
+    def __init__(self, root: Path, commit: str | None, strict: bool = False) -> None:
+        self.root, self.commit, self.strict = root, commit, strict
+        self._cache: dict[str, bytes | None] = {}
+        self.tree: frozenset[str] | None = None
+        if strict and commit is not None:
+            out = _git(["ls-tree", "-r", "--name-only", "-z", commit], root, timeout=60.0)
+            if out is None:
+                raise SealReadError(
+                    f"cannot list the tree of {commit[:12]}: git did not answer, so NOTHING "
+                    f"about this commit has been measured and nothing may be sealed from it")
+            self.tree = frozenset(p for p in out.split("\0") if p)
+
+    def present(self, rel: str) -> bool:
+        """Does the thing being described actually carry this path? Asked of git, not guessed."""
+        if self.commit is None:
+            return (self.root / Path(*rel.split("/"))).exists()
+        return self.tree is not None and rel in self.tree
+
+    def read(self, rel: str) -> bytes | None:
+        if rel not in self._cache:
+            b = _read(rel, self.root, self.commit)
+            if b is None and self.strict and self.present(rel):
+                where = self.commit[:12] if self.commit else "the working tree"
+                raise SealReadError(
+                    f"{rel} IS present at {where} but could not be read -- that is UNMEASURED, "
+                    f"and an unmeasured file is never sealed as absent")
+            self._cache[rel] = b
+        return self._cache[rel]
+
+
+def _hash_with(paths: tuple[str, ...] | list[str], read: Callable[[str], bytes | None]) -> str:
     h = hashlib.sha256()
     for rel in sorted(paths):
         h.update(rel.encode())
-        b = _read(rel, r, commit)
-        h.update(_norm(b) if b is not None else b"<absent>")
+        b = read(rel)
+        h.update(_norm(b) if b is not None else ABSENT)
     return h.hexdigest()[:16]
 
 
-def _file_sha256(rel: str, root: Path, commit: str | None) -> str | None:
-    b = _read(rel, root, commit)
+def hash_paths(paths: tuple[str, ...] | list[str], root: Path | None = None,
+               commit: str | None = None, *, strict: bool = False) -> str:
+    """The keyed digest of a file set. Mirrored byte-for-byte in mt5desk/release_identity.py,
+    which must not import this package; a test pins the two together.
+
+    `strict` refuses to digest a file that is present but unreadable, instead of hashing it as
+    absent. Everything that WRITES a record passes it; `verify()` and `build()` do not, because
+    their job is to describe whatever is on disk.
+    """
+    return _hash_with(paths, _Blobs(_root(root), commit, strict).read)
+
+
+def _file_sha256(rel: str, read: Callable[[str], bytes | None]) -> str | None:
+    b = read(rel)
     return hashlib.sha256(_norm(b)).hexdigest() if b is not None else None
 
 
-def _dependency_hash(root: Path, commit: str | None) -> str | None:
+def _dependency_hash(read: Callable[[str], bytes | None]) -> str | None:
     """pyproject's dependency tables only, so a docstring edit in pyproject does not read as a
     dependency change; the raw bytes when the file will not parse."""
-    b = _read(PYPROJECT, root, commit)
+    b = read(PYPROJECT)
     if b is None:
         return None
     try:
@@ -272,8 +363,8 @@ def _dependency_hash(root: Path, commit: str | None) -> str | None:
         return hashlib.sha256(_norm(b)).hexdigest()[:16]
 
 
-def _immutable_manifest(root: Path, commit: str | None) -> dict[str, Any] | None:
-    b = _read(IMMUTABLE_MANIFEST, root, commit)
+def _immutable_manifest(read: Callable[[str], bytes | None]) -> dict[str, Any] | None:
+    b = read(IMMUTABLE_MANIFEST)
     if b is None:
         return None
     out: dict[str, Any] = {"sha256_16": hashlib.sha256(_norm(b)).hexdigest()[:16]}
@@ -330,23 +421,34 @@ def dirty_paths(root: Path | None = None, *, code_only: bool = False) -> list[st
 
 
 # ------------------------------------------------------------------------------------ build
-def _describe(root: Path, commit: str | None) -> dict[str, Any]:
-    """The release record for the working tree (commit None) or for one commit's blobs."""
+def _describe(root: Path, commit: str | None, *, strict: bool = False) -> dict[str, Any]:
+    """The release record for the working tree (commit None) or for one commit's blobs.
+
+    ONE READER FOR THE WHOLE RECORD (recovered box patch 39). Every hash used to open its own
+    reader, so a git flap between two lines of this dict put `heat_policy.py` into `config_hash`
+    as absent and into `allocator_hash` as present, in the same record. A single `_Blobs` makes
+    the record one coherent measurement; `strict` makes a failed read refuse rather than become
+    a digest of `<absent>`.
+    """
     sha = commit or git_head(root)
+    rd = _Blobs(root, commit, strict).read
     doc: dict[str, Any] = {
         "generated_utc": datetime.now(tz=UTC).isoformat(), "live_sha": sha, "code_sha": sha,
         "parent_sha": _rev(f"{sha}^", root) if sha != "unknown" else None,
         "tree_sha": _rev(f"{sha}^{{tree}}", root) if sha != "unknown" else None,
-        "config_hash": hash_paths(CONFIG_FILES, root, commit),
-        "survivor_registry_hash": hash_paths((SURVIVORS,), root, commit),
-        "allocator_hash": hash_paths(ALLOCATOR_FILES, root, commit),
-        "money_path_hash": hash_paths(MONEY_PATH, root, commit),
+        "config_hash": _hash_with(CONFIG_FILES, rd),
+        "survivor_registry_hash": _hash_with((SURVIVORS,), rd),
+        "allocator_hash": _hash_with(ALLOCATOR_FILES, rd),
+        "money_path_hash": _hash_with(MONEY_PATH, rd),
         "data_schema_version": DATA_SCHEMA_VERSION, "money_path": list(MONEY_PATH),
-        "money_path_files": {rel: hash_paths((rel,), root, commit) for rel in MONEY_PATH},
-        "canon_sha256": _file_sha256(SURVIVORS, root, commit),
-        "immutable_manifest": _immutable_manifest(root, commit),
+        "money_path_files": {rel: _hash_with((rel,), rd) for rel in MONEY_PATH},
+        # ABSENCE IS WRITTEN DOWN, not left to be inferred from a digest: a reader of this record
+        # can SEE the claim it is making, and normally sees `[]`.
+        "money_path_absent": sorted(rel for rel in MONEY_PATH if rd(rel) is None),
+        "canon_sha256": _file_sha256(SURVIVORS, rd),
+        "immutable_manifest": _immutable_manifest(rd),
         "allocator_certificate": _allocator_certificate(root),
-        "dependency_hash": _dependency_hash(root, commit),
+        "dependency_hash": _dependency_hash(rd),
         "seal_rule": SEAL_RULE, "non_code": sorted(NON_CODE),
     }
     # The signature covers `immutable_hash` by name (release_signing.SIGNED_FIELDS); the record
@@ -412,17 +514,55 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
     if prev_sha == head:
         prev_sha = str(prev.get("previous_code_sha") or "") or None
         prev_id = str(prev.get("previous_release_id") or "") or None
-    doc = _describe(r, head)
+    # STRICT: a file that is in this commit and will not read refuses the seal (patch 39).
+    doc = _describe(r, head, strict=True)
     doc.update(sealed=True, sealed_at=doc["generated_utc"],
                sealed_by=by or os.environ.get("GITHUB_ACTOR") or "operator",
                ci_run_id=os.environ.get("GITHUB_RUN_ID"),
                tested_sha=head if tested else None, worktree_dirty=dirty_code,
                worktree_dirty_scope="release_code_paths",
                previous_code_sha=prev_sha, previous_release_id=prev_id)
+    # THE SHA AND THE HASHES ADVANCE TOGETHER OR NEITHER DOES. Nothing is signed or written until
+    # the manifest has been re-derived from the commit it names and agreed.
+    disagrees = manifest_describes_commit(doc, root=r)
+    if disagrees:
+        raise SealReadError(
+            f"refusing to seal {head[:12]}: the manifest does not describe that commit "
+            f"({len(disagrees)} entry(s): {disagrees[:6]}). Nothing written; the previous seal "
+            f"stands. A sha without the hashes that describe it is how the gateway came to "
+            f"refuse new risk on a money path that had not drifted.")
     doc = _sign(doc, r)
     if write:
         _write(doc, root)
     return doc
+
+
+def manifest_describes_commit(rec: dict[str, Any], root: Path | None = None) -> list[str]:
+    """Empty iff `rec`'s money-path manifest really is a digest of the commit `rec` names;
+    otherwise the entries that disagree (recovered box patch 39).
+
+    A release record carries a `code_sha` and a manifest of per-file digests, and nothing checked
+    that the second describes the first. On 2026-09-24 the box ran a record whose `code_sha` was
+    exactly HEAD while nineteen of its money-path digests were the `<absent>` sentinel. `seal()`
+    runs this BEFORE it writes, through a reader of its own, so the check is an independent
+    re-derivation rather than a restatement of the dict it just built.
+
+    Raises SealReadError when git cannot answer. Unmeasured is not a pass.
+    """
+    sha = str(rec.get("code_sha") or rec.get("live_sha") or "")
+    if not sha or sha == "unknown":
+        return ["<the record names no code_sha>"]
+    money = list(rec.get("money_path") or ())
+    if not money:
+        return ["<the record carries no money_path>"]
+    per = dict(rec.get("money_path_files") or {})
+    read = _Blobs(_root(root), sha, strict=True).read
+    bad = [rel for rel in money if per.get(rel) != _hash_with((rel,), read)]
+    if sorted(per) != sorted(money):
+        bad.append("<money_path_files does not cover money_path>")
+    if _hash_with(money, read) != rec.get("money_path_hash"):
+        bad.append("<money_path_hash disagrees with the commit it names>")
+    return bad
 
 
 # ------------------------------------------------------------------------------------ signing
@@ -489,7 +629,7 @@ def ensure_signed(*, root: Path | None = None) -> dict[str, Any]:
         # held to the disk exactly like a record that always had it.
         imm_rec = rec.get("immutable_hash") or (rec.get("immutable_manifest") or {}).get(
             "sha256_16")
-        imm_now = (_immutable_manifest(r, None) or {}).get("sha256_16")
+        imm_now = (_immutable_manifest(lambda rel: _read(rel, r, None)) or {}).get("sha256_16")
         if not imm_rec or imm_rec != imm_now:
             return {"signed": False, "state": "REFUSED",
                     "why": f"judge manifest on disk {imm_now} differs from the record {imm_rec}"}
