@@ -760,11 +760,13 @@ def _swarm_visits(now: datetime, path: Path | None = None) -> dict[str, tuple[st
 
 
 def swarm_section(now: datetime, db: Path | None, *, scheduled: bool, clocks: list[str],
-                  n_families: int, n_clusters: int) -> dict[str, Any]:
-    """Every swarm producer measured individually, and rolled up by family."""
+                  n_families: int, n_clusters: int,
+                  datasets: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    """Every swarm producer measured individually, and rolled up by family and by culture."""
     try:
         from research.producer_swarm import instantiate
-        roster, census = instantiate()
+        roster, census = (instantiate(datasets=datasets) if datasets is not None
+                          else instantiate())
     except BaseException as exc:          # SystemExit from an unreadable registry included
         return {"status": UNMEASURED,
                 "why": f"swarm roster unbuildable ({type(exc).__name__}: {exc})",
@@ -774,6 +776,7 @@ def swarm_section(now: datetime, db: Path | None, *, scheduled: bool, clocks: li
     visits = _swarm_visits(now)
     rows: dict[str, Any] = {}
     fam: dict[str, dict[str, Any]] = {}
+    cult: dict[str, dict[str, Any]] = {}
     for p in roster:
         c = counts.get(p.pid, {"n7": 0, "n24": 0, "sym7": set(), "sym24": set()})
         n24 = int(c["n24"]) if measured else UNMEASURED
@@ -801,6 +804,8 @@ def swarm_section(now: datetime, db: Path | None, *, scheduled: bool, clocks: li
                                    idle_why=idle_why)
         rows[p.pid] = {"family": p.family, "class": p.klass, "chart": p.chart,
                        "session": p.session, "transform": p.transform, "cluster": p.cluster,
+                       "source_culture": p.culture, "participant_structure": p.participant,
+                       "dataset": p.dataset or None,
                        "lane_symbols": lane_n, "cells_24h": n24, "cells_7d": n7,
                        "symbols_24h": b24["symbols"], "symbols_7d": b7["symbols"],
                        "symbol_share_24h": b24["symbol_share"],
@@ -824,11 +829,22 @@ def swarm_section(now: datetime, db: Path | None, *, scheduled: bool, clocks: li
             f["sessions_24h"].add(p.session)
         if isinstance(n7, int):
             f["cells_7d"] += n7
+        cu = cult.setdefault(p.culture, {"producers": 0, "active": 0, "cells_24h": 0,
+                                         "cells_7d": 0})
+        cu["producers"] += 1
+        cu["active"] += int(isinstance(n24, int) and n24 > 0)
+        cu["cells_24h"] += n24 if isinstance(n24, int) else 0
+        cu["cells_7d"] += n7 if isinstance(n7, int) else 0
     for f in fam.values():
         for k in ("classes_24h", "charts_24h", "sessions_24h"):
             f[k] = sorted(f[k])
+    c24 = sum(v["cells_24h"] for v in cult.values())
     return {"status": "MEASURED" if measured else UNMEASURED, "registry": why,
-            "roster": census, "producers": rows, "by_family": dict(sorted(fam.items()))}
+            "roster": census, "producers": rows, "by_family": dict(sorted(fam.items())),
+            "by_culture": dict(sorted(cult.items())),
+            "non_global_share_of_cells_24h": (
+                round(1 - cult.get("GLOBAL", {}).get("cells_24h", 0) / c24, 4) if c24 and measured
+                else UNMEASURED)}
 
 
 def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]:
@@ -950,9 +966,11 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         by_cluster.setdefault(c, {"buildable": [], "unbuildable": []})
         by_cluster[c]["buildable" if v["verdict"] == "BUILDABLE" else "unbuildable"].append(fam)
     swarm_row = rows.get("producer_swarm") or {}
+    ds_list, datasets = dataset_section(now, db)
     swarm = swarm_section(now, db, scheduled=bool(swarm_row.get("scheduled")),
                           clocks=list(swarm_row.get("clocks") or []),
-                          n_families=len(buildable_fams), n_clusters=len(reachable_clusters))
+                          n_families=len(buildable_fams), n_clusters=len(reachable_clusters),
+                          datasets=ds_list)
     for pid, r in (swarm.get("producers") or {}).items():
         if isinstance(r.get("cells_7d"), int) and r["cells_7d"] and r["verdict"] == "BUILDABLE":
             fed[r["cluster"]] += r["cells_7d"]
@@ -1002,13 +1020,14 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         "thresholds": {"narrow_symbol_share": NARROW_SYMBOL_SHARE,
                        "narrow_min_asset_classes": NARROW_MIN_CLASSES,
                        "untestable_buildable_share_below": UNTESTABLE_BELOW},
-        "headline": headline(rows, swarm, unfed, holes),
+        "headline": headline(rows, swarm, unfed, holes, datasets),
         "registry": reg_why,
         "seat_bytes_read": MAX_SEAT_BYTES_TOTAL - budget["left"],
         "wall_s": round(time.monotonic() - t0, 2),
         "totals": totals,
         "producers": rows,
         "swarm": swarm,
+        "datasets": datasets,
     }
 
 
@@ -1056,8 +1075,21 @@ def coverage_holes(tallies: dict[str, Tally], swarm: dict[str, Any], lane: list[
                      "aimed at these first")}
 
 
+def dataset_section(now: datetime, db: Path | None) -> tuple[list[dict[str, Any]] | None,
+                                                             dict[str, Any]]:
+    """(the discovered datasets, the census) -- UNMEASURED with its reason, never an empty 0."""
+    try:
+        from research.dataset_census import census, discover
+        found = discover()
+        return found, census(now, db, datasets=found)
+    except Exception as exc:
+        return None, {"status": UNMEASURED,
+                      "why": f"dataset census failed ({type(exc).__name__}: {exc})",
+                      "datasets": {}, "unfed": [], "totals": {}}
+
+
 def headline(rows: dict[str, Any], swarm: dict[str, Any], unfed: list[dict[str, Any]],
-             holes: dict[str, Any]) -> dict[str, Any]:
+             holes: dict[str, Any], datasets: dict[str, Any] | None = None) -> dict[str, Any]:
     """The first thing the daily CRO duty reads."""
     srows = swarm.get("producers") or {}
 
@@ -1092,10 +1124,29 @@ def headline(rows: dict[str, Any], swarm: dict[str, Any], unfed: list[dict[str, 
     fam_idle = sorted(((f, v["idle"]) for f, v in (swarm.get("by_family") or {}).items()
                        if v.get("idle")), key=lambda x: -x[1])
     gaps += [f"swarm family {f}: {k} producer(s) idle in 24h" for f, k in fam_idle[:5]]
+    ds = datasets or {}
+    dt = ds.get("totals") or {}
+    rows_ds = ds.get("datasets") or {}
+    # A DATASET THAT FEEDS NO PRODUCER IS A DEFECT TO WIRE FIRST (principal, 2026-09-30), so it
+    # leads the list the CRO duty reads rather than being cut off at its tail.
+    gaps = [f"dataset {k} feeds no producer: {rows_ds.get(k, {}).get('why', '')}"
+            for k in (ds.get("unfed_conditionable") or [])[:5]] + gaps
     return {"producers_total": total["producers"], "active": total["active"],
             "idle": total["idle"], "narrow": total["narrow"],
             "untestable": total["untestable"], "unmeasured": total["unmeasured"],
-            "hand_written": legacy, "swarm": sw, "top_gaps": gaps[:25]}
+            "hand_written": legacy, "swarm": sw,
+            "datasets": ({"total": dt.get("datasets"), "feeding": dt.get("feeding"),
+                          "unfed": dt.get("unfed"), "unmeasured": dt.get("unmeasured"),
+                          "conditionable": dt.get("conditionable"),
+                          "unfed_conditionable": dt.get("unfed_conditionable")}
+                         if dt else {"status": ds.get("status", UNMEASURED),
+                                     "why": ds.get("why")}),
+            "culture": {"swarm_by_culture_producers": {
+                            k: v.get("producers") for k, v in
+                            (swarm.get("by_culture") or {}).items()},
+                        "non_global_share_of_swarm_cells_24h":
+                            swarm.get("non_global_share_of_cells_24h", UNMEASURED)},
+            "top_gaps": gaps[:25]}
 
 
 def write(doc: dict[str, Any], out: Path | None = None) -> Path:
@@ -1126,6 +1177,10 @@ def main(argv: list[str] | None = None) -> int:
               f"unfed clusters {[u['cluster'] for u in t['empty_clusters_unfed']]}")
         if t["unscheduled"]:
             print(f"  ON NO CLOCK: {', '.join(t['unscheduled'][:30])}")
+        dh = (doc.get("headline") or {}).get("datasets") or {}
+        print(f"  datasets: {dh.get('total')} on disk, {dh.get('feeding')} feeding a producer, "
+              f"{dh.get('unfed')} unfed ({dh.get('unfed_conditionable')} conditionable, wired "
+              f"first by producer_swarm), {dh.get('unmeasured')} unmeasured")
         print(f"  -> {path}")
     return 0
 

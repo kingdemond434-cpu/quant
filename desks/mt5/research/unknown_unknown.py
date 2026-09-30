@@ -114,6 +114,17 @@ NAMED_CLUSTER = {"ret_1": "mean_reversion", "ret_2": "mean_reversion", "ret_4": 
                  "rngatr": "volatility_transition", "hod": "session_liquidity",
                  "dow": "fixing_roll_calendar", "mend": "fixing_roll_calendar"}
 
+#: CULTURE PROVENANCE on every donated cell (principal, 2026-09-30 14:18), plain keys until
+#: libs/research/cell_culture.py lands. A grammar over bar primitives speaks for no culture and
+#: names no participant; saying so is the measurement, a guessed tag would not be.
+CULTURE: dict[str, str] = {
+    "source_culture": "GLOBAL",
+    "participant_structure": "UNMEASURED",
+    "failure_mode_hypothesis": ("UNMEASURED: an unnamed statistical relation over bar "
+                                "primitives, screened on every lane symbol alike; no culture's "
+                                "version is claimed, so no different failure timing is either"),
+}
+
 
 def _now() -> str:
     return datetime.now(tz=UTC).isoformat(timespec="seconds")
@@ -521,7 +532,8 @@ def forward(cells: list[dict[str, Any]], *, conn=None) -> dict[str, Any]:
                     origin=ORIGIN, mechanism=mechanism_of(c), conn=con, chart="H1",
                     horizon=f"{c['hold']}h",
                     p_edge=round(max(0.5, min(0.99, 1.0 - float(c.get("_qvalue", 1.0)))), 4),
-                    producer="desks/mt5/research/unknown_unknown.py", generator=ORIGIN)
+                    producer="desks/mt5/research/unknown_unknown.py", generator=ORIGIN,
+                    lineage=CULTURE)
             except Exception:
                 out["failed"] += 1
                 continue

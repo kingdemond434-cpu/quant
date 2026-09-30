@@ -209,6 +209,16 @@ class Producer:
     cluster: str
     quota: int = 1
     base: dict[str, Any] = field(default_factory=dict, compare=False, hash=False)
+    #: CULTURE PROVENANCE every cell carries (principal, 2026-09-30 14:18), plain keys until
+    #: libs/research/cell_culture.py lands: an ISO / culture tag, the participant structure, and
+    #: why this culture's version should fail at different times from the standard one.
+    culture: str = "GLOBAL"
+    participant: str = UNMEASURED
+    failure_mode: str = UNMEASURED
+    #: The dataset a `dataset_conditioned` producer conditions on ("" for every other producer).
+    dataset: str = ""
+    #: Explicit parameter moves (a conditioned producer's states); empty = the family's own.
+    moves: tuple[tuple[tuple[str, Any], ...], ...] = ()
 
 
 def base_params(chart: str, session: str, mods: dict[str, Any]) -> dict[str, Any]:
@@ -220,9 +230,31 @@ def base_params(chart: str, session: str, mods: dict[str, Any]) -> dict[str, Any
     return p
 
 
+GLOBAL_FAILURE_MODE = ("none claimed: this is the standard global version of the mechanism, the "
+                       "baseline the culture producers' failure timing is measured against")
+
+
+def cultures_of(reg: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {str(k): dict(v) for k, v in (reg.get("cultures") or {}).items()
+            if not str(k).startswith("_") and isinstance(v, dict)}
+
+
+def culture_members(tokens: list[str], symbols: set[str]) -> list[str]:
+    toks = [str(t).upper() for t in tokens if t]
+    return sorted(s for s in symbols if any(t in s.upper() for t in toks))
+
+
 def instantiate(reg: dict[str, Any] | None = None, *,
-                bars: dict[str, set[str]] | None = None) -> tuple[list[Producer], dict[str, Any]]:
-    """The roster: one Producer per admitted combination, and the census of what was not."""
+                bars: dict[str, set[str]] | None = None,
+                datasets: list[dict[str, Any]] | None = None
+                ) -> tuple[list[Producer], dict[str, Any]]:
+    """The roster: one Producer per admitted combination, and the census of what was not.
+
+    Three kinds, all in one lap: the GLOBAL axes (family x class x chart x session x transform),
+    the CULTURE producers (family x culture x chart x transform, on the culture's own instruments
+    in its home session) and the DATASET producers (usable dataset x field x base family, minting
+    `dataset_conditioned`). `datasets` is research/dataset_census.discover()'s list, discovered
+    here when the registry declares dataset conditioning and the caller passes none."""
     from mt5desk.families_orthogonal import timeframe_refusal
 
     from research.gauntlet_buildability import BUILDABLE, cell_verdict
@@ -235,6 +267,8 @@ def instantiate(reg: dict[str, Any] | None = None, *,
     quota = max(1, int(reg.get("min_quota_per_visit") or 1))
     bars = bars if bars is not None else bars_by_chart(charts)
     fams, aside = swarm_families(reg)
+    parts = {str(k): str(v) for k, v in (reg.get("class_participants") or {}).items()
+             if not str(k).startswith("_")}
     anywhere = set().union(*bars.values()) if bars else set()
     klass_of = {s: swarm_class(s, reg) for s in sorted(anywhere)}
     classes = list((reg.get("asset_classes") or {}).keys())
@@ -271,12 +305,157 @@ def instantiate(reg: dict[str, Any] | None = None, *,
                             pid=f"{fam}.{klass}.{tf}.{sess}.{tname}", family=fam, klass=klass,
                             chart=tf, session=sess, transform=tname,
                             mods=tuple(sorted(mods.items())), lane=lane, cluster=cl,
-                            quota=quota, base=p))
+                            quota=quota, base=p,
+                            participant=str(parts.get(klass) or UNMEASURED),
+                            failure_mode=GLOBAL_FAILURE_MODE))
+    n_global = len(out)
+    out += _culture_producers(reg, fams, bars, charts, free, transforms, quota, skipped)
+    n_culture = len(out) - n_global
+    ds_census: dict[str, Any] = {}
+    out += _dataset_producers(reg, fams, bars, quota, skipped, datasets, ds_census)
+    by_culture: Counter[str] = Counter(p.culture for p in out)
     census = {"producers": len(out), "families": len(fams),
+              "global_producers": n_global, "culture_producers": n_culture,
+              "dataset_producers": len(out) - n_global - n_culture,
+              "by_culture": dict(sorted(by_culture.items())),
+              "non_global_share": (round(1 - by_culture.get("GLOBAL", 0) / len(out), 4)
+                                   if out else UNMEASURED),
+              "datasets": ds_census,
               "families_set_aside": aside, "not_instantiated": dict(sorted(skipped.items())),
               "classes": {k: sum(1 for v in klass_of.values() if v == k) for k in classes},
               "unclassified_symbols": sorted(s for s, k in klass_of.items() if k is None)[:50]}
     return sorted(out, key=lap_key), census
+
+
+def _culture_producers(reg: dict[str, Any], fams: list[str], bars: dict[str, set[str]],
+                       charts: list[str], free: set[str], transforms: dict[str, dict[str, Any]],
+                       quota: int, skipped: Counter[str]) -> list[Producer]:
+    """One producer per (family x culture x chart x transform): the culture's own instruments,
+    in its home session, carrying its tag, participant structure and failure-mode hypothesis."""
+    from mt5desk.families_orthogonal import timeframe_refusal
+
+    from research.gauntlet_buildability import BUILDABLE, cell_verdict
+    from research.universe_policy import may_hypothesise
+    cults = cultures_of(reg)
+    if not cults:
+        return []
+    only = [str(t) for t in reg.get("culture_transforms") or []]
+    tforms = {k: v for k, v in transforms.items() if not only or k in only}
+    anywhere = set().union(*bars.values()) if bars else set()
+    out: list[Producer] = []
+    for tag, c in cults.items():
+        home = str(c.get("session") or "all")
+        members_all = culture_members(list(c.get("tokens") or []), anywhere)
+        if not members_all:
+            skipped["culture_without_an_instrument_on_disk"] += 1
+            continue
+        for fam in fams:
+            cl = cluster_of(fam)
+            members = [s for s in members_all if may_hypothesise(s, fam)]
+            if not members:
+                skipped["culture_members_the_two_lane_law_refuses"] += 1
+                continue
+            for tf in charts:
+                if timeframe_refusal(fam, tf):
+                    skipped["timeframe_refused_by_family"] += 1
+                    continue
+                lane = tuple(s for s in members if s in bars.get(tf, set()))
+                if not lane:
+                    skipped["no_bars_on_chart_for_culture"] += 1
+                    continue
+                sess = "all" if tf in free else home
+                for tname, mods in tforms.items():
+                    if _transform_ok(fam, json.dumps(mods, sort_keys=True)):
+                        skipped["transform_not_applicable"] += 1
+                        continue
+                    p = base_params(tf, sess, mods)
+                    probe = {**p, "symbol": lane[0]} if _takes_symbol(fam) else p
+                    v, _w = cell_verdict(fam, probe)
+                    if v != BUILDABLE:
+                        skipped[f"verdict_{v}"] += 1
+                        continue
+                    out.append(Producer(
+                        pid=f"{fam}.{tag}.{tf}.{sess}.{tname}", family=fam,
+                        klass=f"culture_{tag}", chart=tf, session=sess, transform=tname,
+                        mods=tuple(sorted(mods.items())), lane=lane, cluster=cl, quota=quota,
+                        base=p, culture=tag,
+                        participant=str(c.get("participant_structure") or UNMEASURED),
+                        failure_mode=str(c.get("failure_mode_hypothesis") or UNMEASURED)))
+    return out
+
+
+def _dataset_producers(reg: dict[str, Any], fams: list[str], bars: dict[str, set[str]],
+                       quota: int, skipped: Counter[str], datasets: list[dict[str, Any]] | None,
+                       census: dict[str, Any]) -> list[Producer]:
+    """One producer per (usable dataset x field x base family), minting `dataset_conditioned`:
+    the INDIRECT use of every dataset with a usable point-in-time series."""
+    dc = dict(reg.get("dataset_conditioning") or {})
+    fam = str(dc.get("family") or "")
+    if not fam:
+        census["status"] = "not declared by the registry"
+        return []
+    from mt5desk.family_dataset_conditioned import STATES, base_ok
+
+    from research.gauntlet_buildability import BUILDABLE, cell_verdict
+    from research.universe_policy import may_hypothesise
+    if datasets is None:
+        try:
+            from research.dataset_census import discover
+            datasets = discover()
+        except Exception as exc:
+            census["status"] = f"{UNMEASURED}: dataset discovery failed ({type(exc).__name__})"
+            return []
+    chart = str(dc.get("chart") or "H1").upper()
+    states = [str(x) for x in dc.get("states") or ["high", "low"] if str(x) in STATES]
+    nf = max(1, int(dc.get("max_fields_per_dataset") or 3))
+    cults = cultures_of(reg)
+    on_chart = bars.get(chart, set())
+    bases = [b for b in fams if base_ok(b)]
+    usable = [d for d in datasets if (d.get("pit") or {}).get("usable")]
+    census.update({"status": "MEASURED", "datasets_seen": len(datasets),
+                   "usable": len(usable), "base_families": len(bases),
+                   "rule": "usable = a stamped series with enough readings and history "
+                           "(research/dataset_census); fields capped per dataset"})
+    out: list[Producer] = []
+    for d in usable:
+        ds = str(d["id"])
+        tag = str(d.get("source_culture") or UNMEASURED)
+        c = cults.get(tag) or {}
+        part = str(c.get("participant_structure") or
+                   ("institutional" if d.get("kind") == "cot" else UNMEASURED))
+        for fdef in (d.get("fields") or [])[:nf]:
+            fld, match = str(fdef.get("field") or ""), str(fdef.get("match") or "")
+            if not fld:
+                continue
+            why = (f"{ds}.{fld}{' [' + match + ']' if match else ''} decides when the base is "
+                   f"taken, so it fails when that {tag} reading turns, not when the "
+                   f"unconditioned base does"
+                   + (f"; {c['failure_mode_hypothesis']}" if c.get("failure_mode_hypothesis")
+                      else ""))
+            for base in bases:
+                lane = tuple(sorted(s for s in on_chart if may_hypothesise(s, base)))
+                if not lane:
+                    skipped["dataset_producer_without_a_lane"] += 1
+                    continue
+                p = {"base_family": base, "base_params": {}, "dataset": ds, "field": fld,
+                     "transform": str(dc.get("transform") or "level_z"),
+                     "threshold": float(dc.get("threshold") or 1.0)}
+                if match:
+                    p["match"] = match
+                if cell_verdict(fam, p)[0] != BUILDABLE:
+                    skipped["dataset_producer_unbuildable"] += 1
+                    continue
+                key = f"{fld}|{match}" if match else fld
+                out.append(Producer(
+                    pid=f"{fam}.{ds}.{key}.{base}", family=fam, klass="dataset",
+                    chart=chart, session="all", transform="conditioned", mods=(), lane=lane,
+                    cluster=cluster_of(base), quota=quota, base=p, culture=tag,
+                    participant=part,
+                    failure_mode=why, dataset=ds,
+                    moves=tuple((("state", st),) for st in states)))
+    census["producers"] = len(out)
+    census["datasets_wired"] = len({p.dataset for p in out})
+    return out
 
 
 def lap_key(p: Producer) -> str:
@@ -385,29 +564,67 @@ def in_hole(p: Producer, h: dict[str, list[str]]) -> bool:
             or p.chart in h["charts"] or (p.session in h["sessions"] and p.session != "all"))
 
 
+def unfed_datasets(doc: dict[str, Any] | None) -> set[str] | None:
+    """The datasets the last PRODUCER_BREADTH.json names as feeding no producer; None when it
+    carries no dataset census (then every dataset producer counts as unfed: none has minted)."""
+    ds = (doc or {}).get("datasets")
+    if not isinstance(ds, dict) or not isinstance(ds.get("unfed"), list):
+        return None
+    return {str(x) for x in ds["unfed"]}
+
+
 def plan(roster: list[Producer], reg: dict[str, Any], cursor: dict[str, Any],
-         hole_axes: dict[str, list[str]], turn: int) -> dict[str, Any]:
-    """The hour's visits: hole producers first (rotating), then the lap from the cursor."""
+         hole_axes: dict[str, list[str]], turn: int,
+         unfed: set[str] | None = None) -> dict[str, Any]:
+    """The hour's visits: the priority slices first (unfed datasets, then the non-Western
+    culture producers, then the breadth holes -- each rotating over its pool), then the lap from
+    the cursor.
+
+    THE LAP IS NEVER STARVED BY A SLICE. Each slice takes its share of the ceiling only out of
+    what the lap's floor (`ring_k` visits at `min_quota_per_visit`) leaves, scaled down together
+    when the shares exceed it, and a slice whose pool is empty takes nothing -- its share returns
+    to the lap's quota."""
     from research.breadth_rotation import rotating_window
     n = len(roster)
     lap_h = max(1, int(reg.get("visit_lap_hours") or 24))
     ceiling = max(1, int(reg.get("hourly_cell_ceiling") or 2000))
     ring_k = math.ceil(n / lap_h) if n else 0
-    hole_cells = int(ceiling * float(reg.get("hole_visit_share") or 0.0))
     floor_q = max(1, int(reg.get("min_quota_per_visit") or 1))
-    # THE CEILING IS SHARED, NOT LEFT ON THE TABLE: the lap's visits divide what the holes do not
-    # take, every visit minting at least the floor; the hole producers are visited at the same
-    # quota, as many as their share of the ceiling pays for.
-    quota = max(floor_q, (ceiling - hole_cells) // max(1, ring_k))
     pos = int(cursor.get("pos") or 0) % n if n else 0
     ring = [roster[(pos + i) % n] for i in range(min(ring_k, n))]
-    in_ring = {p.pid for p in ring}
-    hole_pool = [p for p in roster if in_hole(p, hole_axes) and p.pid not in in_ring]
-    hole_k = hole_cells // quota
-    hole = rotating_window(hole_pool, hole_k, turn=turn) if hole_k else []
-    return {"hole": hole, "ring": ring, "quota": quota, "ceiling": ceiling, "ring_k": ring_k,
-            "pos": pos, "lap_hours_at_this_size": (round(n / ring_k, 2) if ring_k else None),
-            "hole_pool": len(hole_pool)}
+    taken = {p.pid for p in ring}
+    pools: dict[str, list[Producer]] = {
+        "dataset": [p for p in roster if p.dataset and p.pid not in taken
+                    and (unfed is None or p.dataset in unfed)],
+        "culture": [p for p in roster if not p.dataset and p.culture not in ("GLOBAL", "")
+                    and p.pid not in taken],
+        "hole": [p for p in roster if in_hole(p, hole_axes) and p.pid not in taken],
+    }
+    shares = {"dataset": float((reg.get("dataset_conditioning") or {})
+                               .get("unfed_visit_share") or 0.0),
+              "culture": float(reg.get("culture_visit_share") or 0.0),
+              "hole": float(reg.get("hole_visit_share") or 0.0)}
+    want = {k: int(ceiling * shares[k]) if pools[k] else 0 for k in pools}
+    spare = max(0, ceiling - ring_k * floor_q)
+    total = sum(want.values())
+    if total > spare:
+        want = {k: int(v * spare / total) for k, v in want.items()}
+    # THE CEILING IS SHARED, NOT LEFT ON THE TABLE: the lap's visits divide what the slices do
+    # not take, every visit minting at least the floor; the slices' producers are visited at the
+    # same quota, as many as their share of the ceiling pays for.
+    quota = max(floor_q, (ceiling - sum(want.values())) // max(1, ring_k))
+    slices: dict[str, list[Producer]] = {}
+    for k in ("dataset", "culture", "hole"):
+        pool = [p for p in pools[k] if p.pid not in taken]
+        kk = want[k] // quota
+        slices[k] = rotating_window(pool, kk, turn=turn) if kk and pool else []
+        taken |= {p.pid for p in slices[k]}
+    return {"dataset": slices["dataset"], "culture": slices["culture"], "hole": slices["hole"],
+            "ring": ring, "quota": quota, "ceiling": ceiling, "ring_k": ring_k, "pos": pos,
+            "lap_hours_at_this_size": (round(n / ring_k, 2) if ring_k else None),
+            "hole_pool": len(pools["hole"]), "culture_pool": len(pools["culture"]),
+            "dataset_pool": len(pools["dataset"]),
+            "slice_cells": want}
 
 
 # ------------------------------------------------------------------ one visit
@@ -422,12 +639,17 @@ def visit(p: Producer, quota: int, reg: dict[str, Any], known: set[str],
         return [], "NO_LANE"
     ring = orthogonal_ring(p.lane, p.family, counts=counts)
     sym_param = _takes_symbol(p.family)
+    base_fam = str(p.base.get("base_family") or "") if p.dataset else ""
+    base_sym = bool(base_fam) and _takes_symbol(base_fam)
+    moves = [dict(m) for m in p.moves] if p.moves else variants(p.family, reg)
     out: list[dict] = []
-    for var in variants(p.family, reg):
+    for var in moves:
         for sym in ring:
             params = {**var, **p.base}
             if sym_param:
                 params["symbol"] = sym
+            if base_sym:
+                params["base_params"] = {**dict(params.get("base_params") or {}), "symbol": sym}
             cid = cell_id({"sym": sym, "family": p.family, "params": params})
             if cid in known:
                 continue
@@ -436,13 +658,29 @@ def visit(p: Producer, quota: int, reg: dict[str, Any], known: set[str],
                 continue
             known.add(cid)
             out.append({"cid": cid, "symbol": sym, "params": params,
-                        "variant": next(iter(var), "defaults")})
+                        "variant": ("=".join(map(str, next(iter(var.items()))))
+                                    if p.moves else next(iter(var), "defaults"))})
             if len(out) >= quota:
                 return out, "MINTED"
     return out, ("MINTED" if out else "EXHAUSTED")
 
 
+def culture_fields(p: Producer) -> dict[str, str]:
+    """The three plain keys every swarm cell carries (principal, 2026-09-30 14:18)."""
+    return {"source_culture": p.culture or UNMEASURED,
+            "participant_structure": p.participant or UNMEASURED,
+            "failure_mode_hypothesis": p.failure_mode or UNMEASURED}
+
+
 def mechanism(p: Producer, cell: dict[str, Any]) -> str:
+    if p.dataset:
+        b = p.base
+        return (f"{b.get('base_family')} on {cell['symbol']}, taken only while {p.dataset}."
+                f"{b.get('field')}{' [' + str(b['match']) + ']' if b.get('match') else ''} "
+                f"({b.get('transform')}) is {cell['params'].get('state')} beyond "
+                f"{b.get('threshold')}: the dataset's INDIRECT use, minted by swarm producer "
+                f"{p.pid} (culture {p.culture}). No performance is claimed -- the gauntlet "
+                f"attaches the only numbers that attach.")
     return (f"{p.family} on {cell['symbol']} ({p.klass}, {p.chart}, session {p.session}, "
             f"transform {p.transform}, {cell['variant']}): a breadth cell minted by swarm "
             f"producer {p.pid} for cluster {p.cluster}. No performance is claimed -- the "
@@ -473,12 +711,18 @@ def write_cells(minted: list[tuple[Producer, dict[str, Any]]], *, conn=None) -> 
             for p, c in minted:
                 out["attempted"] += 1
                 try:
+                    extra: dict[str, Any] = {}
+                    if p.culture and p.culture not in ("GLOBAL", UNMEASURED):
+                        extra["region"] = p.culture
+                    if p.dataset:
+                        extra["required_data"] = [p.dataset]
                     _id, made = R.enqueue_candidate(
                         family=p.family, symbol=c["symbol"], params=c["params"], origin="DESK",
                         mechanism=mechanism(p, c), conn=con, chart=p.chart, session=p.session,
                         asset_class=p.klass, generator=SOURCE, source_id=p.pid,
                         trial_family=p.family, transformation=p.transform,
-                        producer="desks/mt5/research/producer_swarm.py")
+                        producer="desks/mt5/research/producer_swarm.py",
+                        lineage={**culture_fields(p), "producer_id": p.pid}, **extra)
                 except Exception:
                     out["failed"] += 1
                     continue
@@ -509,7 +753,8 @@ def _trim_visits(path: Path, now: datetime) -> None:
 # ------------------------------------------------------------------ the run
 def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, Any] | None = None,
         bars: dict[str, set[str]] | None = None, conn=None, out_dir: Path | None = None,
-        known: set[str] | None = None) -> dict[str, Any]:
+        known: set[str] | None = None, datasets: list[dict[str, Any]] | None = None,
+        breadth: dict[str, Any] | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
     now = now or datetime.now(UTC)
     reg = reg or load_registry()
@@ -517,7 +762,7 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
     cursor_p = (out_dir / "producer_swarm_cursor.json") if out_dir else CURSOR
     trials_p = (out_dir / "PRODUCER_SWARM_TRIALS.jsonl") if out_dir else TRIALS
     visits_p = (out_dir / "producer_swarm_visits.jsonl") if out_dir else VISITS
-    roster, census = instantiate(reg, bars=bars)
+    roster, census = instantiate(reg, bars=bars, datasets=datasets)
     if not roster:
         doc = {"generated_at": now.isoformat(timespec="seconds"), "status": UNMEASURED,
                "why": "no producer instantiated (no buildable family, class or bars)",
@@ -526,8 +771,10 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
         return doc
     from research.breadth_rotation import hour_turn, judged_counts
     cursor = _read(cursor_p, {}) or {}
-    hole_axes = holes(_read(BREADTH, {}) if out_dir is None else {})
-    hplan = plan(roster, reg, cursor, hole_axes, hour_turn(now))
+    bdoc = breadth if breadth is not None else (_read(BREADTH, {}) if out_dir is None else {})
+    hole_axes = holes(bdoc)
+    unfed = unfed_datasets(bdoc)
+    hplan = plan(roster, reg, cursor, hole_axes, hour_turn(now), unfed)
     fams = {p.family for p in roster}
     if known is None:
         known, kinfo = known_cells(fams)
@@ -539,7 +786,8 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
     visit_rows: list[dict[str, Any]] = []
     ts = now.isoformat(timespec="seconds")
     ring_done = 0
-    for lane_name, plist in (("hole", hplan["hole"]), ("ring", hplan["ring"])):
+    for lane_name, plist in (("dataset", hplan["dataset"]), ("culture", hplan["culture"]),
+                             ("hole", hplan["hole"]), ("ring", hplan["ring"])):
         for p in plist:
             if len(minted) >= hplan["ceiling"]:
                 break
@@ -547,7 +795,8 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
             outcomes[outcome] += 1
             minted += [(p, c) for c in cells]
             visit_rows.append({"t": ts, "p": p.pid, "n": len(cells), "o": outcome,
-                               "via": lane_name, "s": sorted({c["symbol"] for c in cells})})
+                               "via": lane_name, "c": p.culture,
+                               "s": sorted({c["symbol"] for c in cells})})
             if lane_name == "ring":
                 ring_done += 1
     wrote = ({"attempted": 0, "created": 0, "already_present": 0, "failed": 0,
@@ -569,7 +818,12 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
     cls_cells: Counter[str] = Counter(p.klass for p, _c in minted)
     chart_cells: Counter[str] = Counter(p.chart for p, _c in minted)
     clus_cells: Counter[str] = Counter(p.cluster for p, _c in minted)
+    cult_cells: Counter[str] = Counter(p.culture for p, _c in minted)
+    ds_cells: Counter[str] = Counter(p.dataset for p, _c in minted if p.dataset)
     n = len(roster)
+    sample = [{"producer": p.pid, "symbol": c["symbol"], "family": p.family,
+               "params": c["params"], **culture_fields(p)}
+              for p, c in ([m for m in minted if m[0].culture != "GLOBAL"][:6] + minted[:4])]
     doc = {
         "generated_at": ts, "status": "MEASURED", "dry_run": bool(dry_run),
         "rule": ("one producer per (family x asset class x chart x session x transform) from "
@@ -582,20 +836,34 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
                  "ring_visits": ring_done, "ring_planned": len(hplan["ring"]),
                  "hole_pool": hplan["hole_pool"], "quota_per_visit": hplan["quota"],
                  "ceiling": hplan["ceiling"], "cursor_from": hplan["pos"],
+                 "dataset_visits": len(hplan["dataset"]), "dataset_pool": hplan["dataset_pool"],
+                 "culture_visits": len(hplan["culture"]), "culture_pool": hplan["culture_pool"],
+                 "slice_cells": hplan["slice_cells"],
                  "outcomes": dict(outcomes), "cells_minted": len(minted),
+                 "by_culture": dict(sorted(cult_cells.items())),
+                 "non_global_share_of_cells": (round(1 - cult_cells.get("GLOBAL", 0)
+                                                     / len(minted), 4) if minted else None),
+                 "by_dataset": dict(sorted(ds_cells.items())),
                  "by_family": dict(sorted(by_fam.items())), "by_class": dict(cls_cells),
                  "by_chart": dict(chart_cells), "by_cluster": dict(clus_cells)},
         "holes_targeted": hole_axes,
+        "unfed_datasets_targeted": (sorted(unfed)[:200] if unfed is not None else
+                                    "every dataset producer: no dataset census read yet"),
+        "culture_rule": ("every cell carries source_culture, participant_structure and "
+                         "failure_mode_hypothesis (registry lineage_json); culture producers "
+                         "take culture_visit_share of the ceiling before the breadth holes"),
+        "cell_sample": sample,
         "dedup": kinfo,
         "write": wrote,
         "projection": {
             "producers": n,
-            "visits_per_day": min(n, hplan["ring_k"] * 24) + len(hplan["hole"]) * 24,
+            "visits_per_day": min(n, hplan["ring_k"] * 24) + 24 * (
+                len(hplan["hole"]) + len(hplan["culture"]) + len(hplan["dataset"])),
             "lap_hours": hplan["lap_hours_at_this_size"],
             "cells_per_day_ceiling": hplan["ceiling"] * 24,
-            "cells_per_day_at_this_quota": min(hplan["ceiling"],
-                                               (hplan["ring_k"] + len(hplan["hole"]))
-                                               * hplan["quota"]) * 24,
+            "cells_per_day_at_this_quota": min(hplan["ceiling"], (
+                hplan["ring_k"] + len(hplan["hole"]) + len(hplan["culture"])
+                + len(hplan["dataset"])) * hplan["quota"]) * 24,
             "every_producer_visited_daily": bool(hplan["ring_k"] * 24 >= n),
             "note": ("an upper bound: a producer whose reachable cells all exist mints nothing "
                      "and says EXHAUSTED; the measured figure is PRODUCER_BREADTH.json's"),
@@ -621,7 +889,8 @@ def main(argv: list[str] | None = None) -> int:
     doc = run(dry_run=a.dry_run)
     h = doc.get("hour") or {}
     print(f"producer_swarm {doc.get('status')}: {doc.get('roster', {}).get('producers')} "
-          f"producers; {h.get('visits')} visited ({h.get('hole_visits')} hole, "
+          f"producers; {h.get('visits')} visited ({h.get('dataset_visits')} dataset, "
+          f"{h.get('culture_visits')} culture, {h.get('hole_visits')} hole, "
           f"{h.get('ring_visits')} lap); {h.get('cells_minted')} cells minted; "
           f"outcomes {h.get('outcomes')}; write {doc.get('write')}")
     return 0

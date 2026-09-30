@@ -36,7 +36,9 @@ def _reg(**over: Any) -> dict[str, Any]:
     excl.update({f: "narrowed for the test" for f in fams if f not in KEEP})
     reg = {**reg, "families": {**reg["families"], "exclude": excl},
            "charts": ["H1", "M15"], "sessions": ["all", "london"],
-           "transforms": {"base": {}, "high_vol": {"regime": "high_vol"}}}
+           "transforms": {"base": {}, "high_vol": {"regime": "high_vol"}},
+           # the culture and dataset producers have their own tests
+           "cultures": {}, "dataset_conditioning": {}}
     reg.update(over)
     return reg
 
