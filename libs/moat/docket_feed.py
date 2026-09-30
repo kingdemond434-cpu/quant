@@ -96,7 +96,31 @@ def _row(c: Mapping[str, Any]) -> dict[str, Any] | None:
         "discovery_id": str(c.get("discovery_id") or ""),
         "retrieved_at": str(c.get("created_at") or ""),
         "content_hash": str(c.get("content_hash") or ""),
+        # CULTURE PROVENANCE RIDES ONTO THE DOCKET (libs/research/cell_culture.py): stamped at
+        # the registry door, carried here so the judged cell and its certificate keep it.
+        **_culture_of(c),
     }
+
+
+#: The registry's culture columns, carried verbatim when present.
+CULTURE_COLUMNS: tuple[str, ...] = ("source_culture", "participant_structure",
+                                    "failure_mode_hypothesis", "crowding_prior",
+                                    "culture_derivation")
+
+
+def _culture_of(c: Mapping[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for k in CULTURE_COLUMNS:
+        v = c.get(k)
+        if v in (None, ""):
+            continue
+        if k == "culture_derivation" and isinstance(v, str):
+            try:
+                v = json.loads(v)
+            except ValueError:
+                continue
+        out[k] = v
+    return out
 
 
 def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | None = None,
@@ -109,6 +133,12 @@ def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | N
     """
     ban = banned or frozenset()
     try:
+        have = {str(r[1]) for r in conn.execute("PRAGMA table_info(research_candidates)")}
+    except sqlite3.Error:
+        have = set()
+    extra = "".join(f", {k}" for k in CULTURE_COLUMNS if k in have)
+    # `extra` is built from CULTURE_COLUMNS, never from input
+    try:
         has_sources = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND "
                                    "name='sources'").fetchone() is not None
     except sqlite3.Error:
@@ -118,7 +148,8 @@ def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | N
                " AS url" if has_sources else "")
     cur = conn.execute(
         "SELECT id, symbol, family, params_json, chart, origin, mechanism, grid_cell, score,"  # noqa: S608
-        f" created_at, content_hash, source_id, discovery_id{url_col} FROM research_candidates "
+        f" created_at, content_hash, source_id, discovery_id{extra}{url_col} "
+        "FROM research_candidates "
         "WHERE symbol IS NOT NULL AND symbol != '' AND family IS NOT NULL AND family != '' "
         "AND judged_at IS NULL AND COALESCE(status,'') != 'survived' ORDER BY score DESC, seq")
     while True:

@@ -19,7 +19,7 @@
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
 
-## LIVE (125)
+## LIVE (126)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -148,6 +148,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `task:MT5-Shadow` | `MT5-Shadow` | UNMEASURED UNMEASURED | `desks/mt5/reports/shadow/shadow_health.json` | 1.6h | 3K | `9583b625e9b7d9c0` | status=FAILED |
 | `task:MT5-Universe` | `MT5-Universe` | UNMEASURED UNMEASURED | `desks/mt5/data/universe_expansion.json` | 1.6h | 24K | `c4e001c1a7b63e53` | UNMEASURED |
 | `timer:quant-mt5-suite` | `quant-mt5-suite` | UNMEASURED UNMEASURED | `desks/mt5/reports/mt5_suite.json` | 1.6h | 452B | `d459f7fec791a7c1` | verdict=OK |
+| `leg:cell_culture_index` | `hourly_cycle:cell_culture_index` | UNMEASURED UNMEASURED | `desks/mt5/reports/CELL_CULTURE.json` | 0.1h | 44K | `353199103c6861fe` | UNMEASURED |
 
 ## STALE (1)
 

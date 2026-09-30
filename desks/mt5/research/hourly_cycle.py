@@ -1040,6 +1040,11 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # region, stamped at the registry doors. The machine measuring its
                      # own lineage: meta.
                      "attribution_census",
+                     # CULTURE PROVENANCE PER CELL: source culture, participant structure,
+                     # failure-mode hypothesis and crowding prior, backfilled bounded, and the
+                     # culture gap list the producers read. The machine measuring whether its
+                     # breadth is cultural or cosmetic: meta.
+                     "cell_culture_index",
                      "runtime_attestation", "self_repair", "desk_self_heal",
                      "tier5_acceptance", "mission_control", "tier_s"), "meta"),
     # japan: the Japan research division (the principal's 47-section mandate, hourly)
@@ -1734,6 +1739,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The attribution census stops itself at --budget-s 240: two registry scans and one
     # bounded backfill that commits per chunk and resumes. The cap sits above it.
     "attribution_census": 300,
+    # Streams the backlog from a byte cursor at ~3,400 rows/s and self-stops 45 s inside its
+    # --budget-s; 240 s of work plus the docket stream and the write fit 300 s.
+    "cell_culture_index": 300,
     # The coverage drain stops itself at --budget-s 900 -- and it scales that DOWN further off
     # measured free memory, because its cost is network wait on the box that also holds the
     # terminal. The cap sits above its own budget for the reason `enrol_clocks` was raised: a
@@ -4356,6 +4364,17 @@ def main() -> None:
     att = _costed("attribution_census", lambda: _producer("attribution_census",
                                                           "research/attribution_census.py",
                                                           "--once", "--budget-s", "240"))
+    # CULTURE PROVENANCE PER CELL (principal 2026-09-30). Every cell carries source_culture,
+    # participant_structure, failure_mode_hypothesis and crowding_prior -- stamped at the registry
+    # doors and the compiler for new cells, and backfilled here for the backlog, the docket and
+    # the certificates WITHOUT rewriting box state: a side index Tier S joins by cell id and by
+    # certificate, plus the culture GAP LIST (MT5 class x culture with zero/thin cells) that
+    # deep_forest_miner works first. Measured on the committed artifacts the day it landed:
+    # culture inferred for 72.0% of 77,933 graph cells, only 1.5% from the source itself; the
+    # non-Western share is 36.9% of measured cells, 14.5% of judged, 43.1% of certificates.
+    ccx = _costed("cell_culture_index", lambda: _producer("cell_culture_index",
+                                                          "research/cell_culture_index.py",
+                                                          "--once", "--budget-s", "240"))
     # THE FOREST FEDERATION (principal 2026-09-17). Korea 24/7 || Japan 24/7 || China 24/7 ||
     # Russia 24/7 || ... || Global 24/7: every region its own research civilization, running the
     # eleven agent roles in parallel on its own resident, all feeding ONE registry through ONE
@@ -5238,6 +5257,7 @@ def main() -> None:
                     "prediction_markets": pmk, "dislocation_lab": dsl,
                     "independence_intake": ind, "rank_recovery": rkr,
                     "attribution_census": att,
+                    "cell_culture_index": ccx,
                     "shadow_institutional": shi, "latent_actors": lat, "latency_lab": lab,
                     "feed_clock_lab": fcl, "impact_lab": imp, "net_edge": nee,
                     "cost_truth": ctr,
