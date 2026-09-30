@@ -54,7 +54,8 @@
    "title": "World model: causal edges classified stable/decaying/false; broken edges become hypotheses",
    "files": [
     "libs/tiers/world_edges.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/world_macro.py"
    ],
    "extends": [
     "desks/mt5/research/hourly_cycle.py"
@@ -68,7 +69,7 @@
     "better": "up",
     "organ": "world_science"
    },
-   "remaining": "classify the world_causal_graph / cross_asset_graph edge list (macro drivers included) and emit the residual itself as the feature"
+   "remaining": "classify the world_causal_graph / cross_asset_graph edge list itself; credit, vol, inflation, liquidity and flow nodes are UNMEASURED until their datasets (FRED axis, a flow source) are on the host -- rates, carry, dollar and positioning run hourly (libs/tiers/world_macro.py)"
   },
   {
    "id": "S04",
@@ -192,12 +193,14 @@
    "files": [
     "libs/tiers/traps.py",
     "libs/tiers/meta_benchmark.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/promotion_authority.py",
+    "desks/mt5/research/promoter.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/IMMUNE.json",
-   "status": "BLOCKED_ON_USER",
+   "status": "DONE",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.immune_score",
@@ -205,26 +208,28 @@
     "organ": "immune",
     "bar": 0.9
    },
-   "remaining": "the promoter honouring PROMOTION_FREEZE: refused by this environment's permission rule (Modify Shared Resources)"
+   "remaining": ""
   },
   {
    "id": "S11",
    "title": "Online FDR: LORD++ and e-LOND over the lifetime trial stream",
    "files": [
     "libs/tiers/online_fdr.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/promotion_authority.py",
+    "desks/mt5/research/promoter.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/ONLINE_FDR.json",
-   "status": "BLOCKED_ON_USER",
+   "status": "DONE",
    "contract": {
     "gain": "FDR_REDUCTION",
     "metric": "metric.over_budget_share",
     "better": "down",
     "organ": "online_fdr"
    },
-   "remaining": "online-FDR wealth gating admission: refused by the same permission rule; the lifetime stream (survivors, gate failures, upstream FAILED fates) runs hourly"
+   "remaining": ""
   },
   {
    "id": "S12",
@@ -289,7 +294,9 @@
    "title": "Effective independent alpha rank (linear, rank, tail, drawdown, ancestry)",
    "files": [
     "libs/tiers/topology.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/research/hypothesis_graph.py",
+    "libs/tiers/control_arm.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
@@ -598,7 +605,8 @@
    "files": [
     "libs/tiers/formal.py",
     "desks/mt5/research/formal_invariants.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/conformance.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
@@ -669,7 +677,7 @@
     "better": "up",
     "organ": "immune"
    },
-   "remaining": "per-kind suite >= 100 and a real-episode suite"
+   "remaining": "a real-episode suite beside the synthetic one (the per-kind production suite is 150)"
   },
   {
    "id": "S35",
@@ -733,19 +741,21 @@
    "id": "S38",
    "title": "Cross-engine replication: independent rebuild from the written spec",
    "files": [
-    "desks/mt5/research/replication_civilization.py"
+    "desks/mt5/research/replication_civilization.py",
+    "libs/tiers/promotion_authority.py",
+    "desks/mt5/research/promoter.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:replication_civilization",
    "artifact": "desks/mt5/reports/REPLICATION.json",
-   "status": "BLOCKED_ON_USER",
+   "status": "DONE",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "counts.REPLICATED",
     "better": "up",
     "organ": "report:REPLICATION.json"
    },
-   "remaining": "a MISMATCH blocking promotion: refused by the permission rule; rebuild verdicts feed the review panel hourly"
+   "remaining": ""
   },
   {
    "id": "S39",
