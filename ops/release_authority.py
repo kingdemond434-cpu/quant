@@ -239,6 +239,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"release authority: {doc.get('status')}")
     tv = doc.get("tree_matches_release") or {}
     print(f"  tree vs release : {'OK' if tv.get('ok') else 'DRIFT'}  {str(tv.get('why'))[:90]}")
+    for k, pair in (tv.get("state_moved") or {}).items():
+        was, now = [*pair, None, None][:2]
+        print(f"  state moved     : {k} {str(was)[:16]} -> {str(now)[:16]} (reported, not drift)")
     sg = doc.get("signature") or {}
     print(f"  signature       : {sg.get('state')}  {str(sg.get('why'))[:90]}")
     ag = doc.get("adopt_guard") or {}
