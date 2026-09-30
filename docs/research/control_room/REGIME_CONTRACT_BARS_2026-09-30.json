@@ -1,0 +1,288 @@
+{
+ "generated_at": "2026-09-30T14:41:06+00:00",
+ "contract": "regime_allocation",
+ "verdict": "INCONCLUSIVE",
+ "headline": {
+  "arm": "geo_asset",
+  "against": "geo",
+  "mean_per_day": -0.000430583,
+  "annual": -0.10851,
+  "ci90": [
+   -0.001496372,
+   0.000721912
+  ]
+ },
+ "rule": "GAIN iff the 90% stationary-bootstrap interval of (geo_asset - geo) daily log growth is above zero AND geo_asset beats equal heat; headline declared before the run, never swapped for the best arm",
+ "trials": 6,
+ "arms": {
+  "equal": {
+   "days": 1350,
+   "mean_log_per_day": -0.00123872,
+   "annual_log_growth": -0.31216,
+   "sharpe": -0.7581,
+   "max_drawdown_log": -2.18929
+  },
+  "geo": {
+   "days": 1350,
+   "mean_log_per_day": -0.00116532,
+   "annual_log_growth": -0.29366,
+   "sharpe": -0.4386,
+   "max_drawdown_log": -2.39914
+  },
+  "geo_asset": {
+   "days": 1350,
+   "mean_log_per_day": -0.0015959,
+   "annual_log_growth": -0.40217,
+   "sharpe": -0.5968,
+   "max_drawdown_log": -3.43191
+  },
+  "switch": {
+   "days": 1350,
+   "mean_log_per_day": -0.00172939,
+   "annual_log_growth": -0.43581,
+   "sharpe": -0.7342,
+   "max_drawdown_log": -2.67615
+  },
+  "geo_hmm": {
+   "days": 1350,
+   "mean_log_per_day": -0.00156911,
+   "annual_log_growth": -0.39542,
+   "sharpe": -0.5954,
+   "max_drawdown_log": -2.56867
+  },
+  "geo_hmm_asset": {
+   "days": 1350,
+   "mean_log_per_day": -0.00134672,
+   "annual_log_growth": -0.33937,
+   "sharpe": -0.49,
+   "max_drawdown_log": -3.20403
+  }
+ },
+ "differences": {
+  "equal_minus_geo": {
+   "mean_per_day": -7.3395e-05,
+   "annual": -0.0185,
+   "ci90": [
+    -0.001386369,
+    0.001294494
+   ]
+  },
+  "geo_asset_minus_geo": {
+   "mean_per_day": -0.000430583,
+   "annual": -0.10851,
+   "ci90": [
+    -0.001496372,
+    0.000721912
+   ]
+  },
+  "switch_minus_geo": {
+   "mean_per_day": -0.000564071,
+   "annual": -0.14215,
+   "ci90": [
+    -0.002190326,
+    0.001156429
+   ]
+  },
+  "geo_hmm_minus_geo": {
+   "mean_per_day": -0.000403794,
+   "annual": -0.10176,
+   "ci90": [
+    -0.000961799,
+    0.000173895
+   ]
+  },
+  "geo_hmm_asset_minus_geo": {
+   "mean_per_day": -0.000181396,
+   "annual": -0.04571,
+   "ci90": [
+    -0.001392986,
+    0.001113509
+   ]
+  },
+  "geo_minus_equal": {
+   "mean_per_day": 7.3395e-05,
+   "annual": 0.0185,
+   "ci90": [
+    -0.001294494,
+    0.001386369
+   ]
+  },
+  "geo_asset_minus_equal": {
+   "mean_per_day": -0.000357188,
+   "annual": -0.09001,
+   "ci90": [
+    -0.001719287,
+    0.000996995
+   ]
+  }
+ },
+ "design": {
+  "assets": [
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "USDCHF",
+   "NZDUSD",
+   "EURJPY",
+   "GBPJPY",
+   "AUDJPY",
+   "XAUUSD",
+   "XAGUSD"
+  ],
+  "sleeves": [
+   "EURUSD_trend",
+   "EURUSD_range",
+   "GBPUSD_trend",
+   "GBPUSD_range",
+   "USDJPY_trend",
+   "USDJPY_range",
+   "AUDUSD_trend",
+   "AUDUSD_range",
+   "USDCAD_trend",
+   "USDCAD_range",
+   "USDCHF_trend",
+   "USDCHF_range",
+   "NZDUSD_trend",
+   "NZDUSD_range",
+   "EURJPY_trend",
+   "EURJPY_range",
+   "GBPJPY_trend",
+   "GBPJPY_range",
+   "AUDJPY_trend",
+   "AUDJPY_range",
+   "XAUUSD_trend",
+   "XAUUSD_range",
+   "XAGUSD_trend",
+   "XAGUSD_range"
+  ],
+  "total_heat": 0.25,
+  "sleeve_share": 0.25,
+  "step_days": 21,
+  "train_days": 750,
+  "n_worlds": 256,
+  "n_rows": 384,
+  "oos_first": "2021-07-05",
+  "oos_last": "2026-09-15",
+  "macro_arm": "UNMEASURED: no FRED archive on this host (data/fred_macro*.json)",
+  "cost_bps_per_turnover": 1.0
+ },
+ "rebalances": [
+  {
+   "asof": "2026-04-13",
+   "state": {
+    "EURUSD": "mid|trend|normal",
+    "GBPUSD": "high|range|normal",
+    "USDJPY": "mid|range|normal",
+    "AUDUSD": "high|range|normal",
+    "USDCAD": "low|trend|normal",
+    "USDCHF": "mid|range|normal",
+    "NZDUSD": "high|range|normal",
+    "EURJPY": "low|trend|normal",
+    "GBPJPY": "low|trend|normal",
+    "AUDJPY": "low|range|normal",
+    "XAUUSD": "high|range|thin",
+    "XAGUSD": "high|range|normal"
+   },
+   "trend_share_geo_asset": 0.6804,
+   "trend_share_geo": 0.6957
+  },
+  {
+   "asof": "2026-05-12",
+   "state": {
+    "EURUSD": "low|range|normal",
+    "GBPUSD": "mid|range|normal",
+    "USDJPY": "high|range|normal",
+    "AUDUSD": "mid|trend|normal",
+    "USDCAD": "mid|range|normal",
+    "USDCHF": "mid|range|normal",
+    "NZDUSD": "high|range|normal",
+    "EURJPY": "high|trend|normal",
+    "GBPJPY": "mid|trend|normal",
+    "AUDJPY": "low|range|normal",
+    "XAUUSD": "mid|range|normal",
+    "XAGUSD": "high|range|normal"
+   },
+   "trend_share_geo_asset": 0.6049,
+   "trend_share_geo": 0.5905
+  },
+  {
+   "asof": "2026-06-10",
+   "state": {
+    "EURUSD": "low|trend|normal",
+    "GBPUSD": "mid|trend|normal",
+    "USDJPY": "low|trend|normal",
+    "AUDUSD": "high|trend|normal",
+    "USDCAD": "low|trend|normal",
+    "USDCHF": "low|trend|normal",
+    "NZDUSD": "high|trend|normal",
+    "EURJPY": "low|range|normal",
+    "GBPJPY": "low|range|normal",
+    "AUDJPY": "low|trend|normal",
+    "XAUUSD": "high|trend|normal",
+    "XAGUSD": "high|trend|normal"
+   },
+   "trend_share_geo_asset": 0.5319,
+   "trend_share_geo": 0.5996
+  },
+  {
+   "asof": "2026-07-09",
+   "state": {
+    "EURUSD": "mid|trend|normal",
+    "GBPUSD": "low|range|normal",
+    "USDJPY": "low|trend|normal",
+    "AUDUSD": "low|trend|normal",
+    "USDCAD": "low|trend|normal",
+    "USDCHF": "low|trend|normal",
+    "NZDUSD": "low|range|normal",
+    "EURJPY": "mid|range|normal",
+    "GBPJPY": "mid|trend|normal",
+    "AUDJPY": "mid|range|normal",
+    "XAUUSD": "mid|range|normal",
+    "XAGUSD": "mid|trend|normal"
+   },
+   "trend_share_geo_asset": 0.6609,
+   "trend_share_geo": 0.5995
+  },
+  {
+   "asof": "2026-08-07",
+   "state": {
+    "EURUSD": "mid|trend|normal",
+    "GBPUSD": "mid|range|normal",
+    "USDJPY": "high|trend|normal",
+    "AUDUSD": "mid|trend|normal",
+    "USDCAD": "high|trend|normal",
+    "USDCHF": "high|range|normal",
+    "NZDUSD": "mid|trend|normal",
+    "EURJPY": "high|range|normal",
+    "GBPJPY": "high|trend|normal",
+    "AUDJPY": "mid|range|normal",
+    "XAUUSD": "mid|range|normal",
+    "XAGUSD": "mid|range|normal"
+   },
+   "trend_share_geo_asset": 0.6228,
+   "trend_share_geo": 0.6284
+  },
+  {
+   "asof": "2026-09-07",
+   "state": {
+    "EURUSD": "mid|range|thin",
+    "GBPUSD": "low|range|thin",
+    "USDJPY": "high|trend|normal",
+    "AUDUSD": "low|trend|thin",
+    "USDCAD": "high|range|thin",
+    "USDCHF": "high|range|thin",
+    "NZDUSD": "low|range|thin",
+    "EURJPY": "high|trend|thin",
+    "GBPJPY": "high|trend|thin",
+    "AUDJPY": "mid|range|normal",
+    "XAUUSD": "mid|range|thin",
+    "XAGUSD": "low|range|thin"
+   },
+   "trend_share_geo_asset": 0.5925,
+   "trend_share_geo": 0.5271
+  }
+ ],
+ "runtime_s": 342.6
+}

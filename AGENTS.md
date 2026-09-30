@@ -16,6 +16,9 @@ replace the old pile; annexes stay under banners for unabridged detail, see
 - `docs/RESEARCH.md` — **the one research mandate** for every miner, hunter, digger, generator,
   screen and test: hunt space, sources, track-record/leaderboard mining, §33 conversion, the
   two-stage validation gauntlet, survivor factory, wiring duties.
+- `context/DELEGATION_PROTOCOL.md` — who owns which lane, what is written to the repo versus kept
+  in chat, and how the operator audits agent work. Journal every decision that changes what the
+  desk does (`python scripts/context.py decide`), and read `python scripts/context.py show` first.
 - `ops/principal_doctrine.txt` — the sealed immutable core + the MT5 universe mandate (the order
   channel; injected into every organ together with LAWS.md).
 - `docs/research/OVERNIGHT_FRONTIER_CONTRACT.json`

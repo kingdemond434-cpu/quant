@@ -591,6 +591,50 @@ def _zentech() -> None:
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
+def _control_room() -> None:
+    """THE LIVE CONTROL ROOM (2026-09-30): regime now, its admission contract, the bench bridge.
+
+    Five artifacts, each fenced so one failure costs only itself:
+      control_room               reports/CONTROL_ROOM.json -- every traded instrument's
+                                 vol / trend-range / liquidity state and the live sleeves in it
+      regime_allocation_contract reports/REGIME_ALLOCATION_CONTRACT.json -- walk-forward, the live
+                                 solver with and without the per-instrument regime kernel; the
+                                 allocator consumes the kernel only on GAIN. Re-run weekly: 65
+                                 monthly re-solves do not change inside a week.
+      control_room_mechanisms    reports/CONTROL_ROOM_MECHANISMS.json -- the reverse-engineered
+                                 regime-first gap and index/VIX divergence screens
+      bench_bridge               reports/BENCH_BRIDGE.json -- certified -> forward -> live ->
+                                 funded, scored by dE[log W], missed growth listed first
+      operator digest            reports/OPERATOR_DIGEST.md -- the one page the operator reads
+                                 (scripts/context.py; never writes under context/, which is code)
+    Sizes nothing; publishes.
+    """
+    import runpy
+    import time as _t
+    failed = []
+    contract = BASE / "reports" / "REGIME_ALLOCATION_CONTRACT.json"
+    jobs = [("control_room", []), ("control_room_mechanisms", []), ("bench_bridge", [])]
+    if not contract.exists() or _t.time() - contract.stat().st_mtime > 7 * 86400:
+        jobs.insert(1, ("regime_allocation_contract", ["--worlds", "256", "--rows", "384"]))
+    for name, args in jobs:
+        try:
+            mod = __import__(name)
+            rc = mod.main(args)
+            dlog(f"{name}: rc={rc}")
+        except Exception as exc:
+            failed.append(name)
+            dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
+    try:
+        ctx = runpy.run_path(str(BASE.parent.parent / "scripts" / "context.py"))
+        ctx["digest"](20, BASE / "reports" / "OPERATOR_DIGEST.md")
+        dlog("operator digest written")
+    except Exception as exc:
+        failed.append("operator_digest")
+        dlog(f"operator digest FAILED (non-fatal): {type(exc).__name__}: {exc}")
+    if len(failed) == len(jobs) + 1:
+        raise RuntimeError(f"every control-room artifact failed: {failed}")
+
+
 STEPS = (("research_gap_map", _research_gap_map),
          ("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
@@ -601,7 +645,7 @@ STEPS = (("research_gap_map", _research_gap_map),
          ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("recertify", _recertify),
          ("promoter", _promote), ("markout", _markout),
-         ("portfolio", _portfolio), ("decay", _decay),
+         ("portfolio", _portfolio), ("control_room", _control_room), ("decay", _decay),
          ("state_research_feedback", _state_research_feedback),
          ("research_memory", _research_memory),
          ("module_rent", _module_rent), ("zentech", _zentech), ("conservation", _conservation),
