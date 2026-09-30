@@ -168,7 +168,7 @@ def _candidate() -> dict:
     row = {"symbol": "EURUSD", "config": dict(LP.GNN_GRID[0]), "entry_z": 1.0,
            "n_independent": 120, "gross_per_trade": 0.0004, "net_per_trade": 0.0002,
            "cost_frac": 0.0002, "t_gross": 3.1, "t_deflated_sweep": 0.5, "n_tests_sweep": 192,
-           "oos_ic_symbol": 0.02, "oos_ic_t_symbol": 1.1}
+           "wf_ic_symbol": 0.02, "wf_ic_t_symbol": 1.1}
     return LM.make_candidate("gnn", row, panel=list(LM.PANEL), tests_run=192, n_effective=2.4)
 
 
@@ -180,7 +180,7 @@ def test_an_emitted_cell_passes_the_compiler_prior_prereg_and_stamp() -> None:
     from libs.research.preregistration import from_candidate, validate
 
     c = _candidate()
-    compiled, disposition = compile_row("gnn_miner", c, {"EURUSD"})
+    compiled, disposition = compile_row("learned_gnn", c, {"EURUSD"})
     assert disposition == "EXACT_RECIPE"
     assert len(compiled) == 1                      # the H1 pin: no intraday fan-out of a daily call
     cell = compiled[0]
@@ -188,7 +188,7 @@ def test_an_emitted_cell_passes_the_compiler_prior_prereg_and_stamp() -> None:
     prior = economic_prior(cell)
     assert prior["passed"] and len(cell["mechanism_note"]) >= 12
     assert validate(from_candidate(c)) == []
-    assert is_stamped(stamp(c, "gnn_miner"))
+    assert is_stamped(stamp(c, "learned_gnn"))
 
 
 def test_an_emitted_cell_carries_the_schema_fields() -> None:
@@ -204,6 +204,20 @@ def test_an_emitted_cell_carries_the_schema_fields() -> None:
     assert c["tests_run"] == 192 and c["effective_trials"] == 2.4
     assert c["params"]["timeframe"] == "H1" and c["params"]["hold_bars"] == 20
     assert c["evidence"]["tests_attempted"] == 192
+
+
+def test_an_emitted_cell_is_blind_and_desk_origin() -> None:
+    """No held-out outcome field rides on the row (the Tier S write door would strip it and
+    count the seat as having read outcomes), and the source names a DESK proposer, not an
+    external miner, in the canonical registry."""
+    import learned_miners as LM
+
+    from libs.moat.registry import origin_of
+    from libs.tiers.blinding import strip_outcomes
+
+    assert strip_outcomes(_candidate())[1] == []
+    for spec in LM.MINERS.values():
+        assert origin_of(spec["source"]) == "DESK"
 
 
 def test_the_cell_rebuilds_from_its_params_as_the_gauntlet_calls_it() -> None:

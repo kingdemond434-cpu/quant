@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-09-30T14:40:52.692399+00:00",
+ "generated_at": "2026-09-30T14:48:38.153859+00:00",
  "data": {
   "bars": "desks/mt5/universe/*_H1.parquet (in git)",
   "resample": "broker-date daily closes, Monday-Friday grid",
@@ -390,17 +390,17 @@
  "fit_seconds": {
   "zero": 0.0,
   "naive_last": 0.0,
-  "ridge_own_lags": 0.27,
-  "ridge_lags_L20": 3.58,
-  "ridge_lags_L10": 1.22,
+  "ridge_own_lags": 0.34,
+  "ridge_lags_L20": 2.71,
+  "ridge_lags_L10": 1.02,
   "gnn:adjacency=lead_lag,layers=1": 1.76,
-  "gnn:adjacency=lead_lag,layers=2": 2.41,
-  "gnn:adjacency=corr,layers=1": 1.74,
-  "gnn:adjacency=corr,layers=2": 2.43,
-  "attention:heads=1,lookback=20": 17.84,
-  "attention:heads=2,lookback=20": 54.45,
+  "gnn:adjacency=lead_lag,layers=2": 2.5,
+  "gnn:adjacency=corr,layers=1": 2.17,
+  "gnn:adjacency=corr,layers=2": 2.51,
+  "attention:heads=1,lookback=20": 17.95,
+  "attention:heads=2,lookback=20": 55.04,
   "attention:heads=1,lookback=10": 9.18,
-  "attention:heads=2,lookback=10": 28.68
+  "attention:heads=2,lookback=10": 26.05
  },
  "trials_charged": {
   "gnn_configs": 4,

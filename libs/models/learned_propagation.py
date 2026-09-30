@@ -107,8 +107,9 @@ class Panel:
 
 def _utc_index(df: pd.DataFrame) -> pd.DataFrame:
     out = df.copy()
-    out.index = pd.DatetimeIndex(pd.to_datetime(out.index, utc=True, errors="coerce"))
-    out = out[~out.index.isna()]
+    idx = pd.DatetimeIndex(pd.to_datetime(out.index, utc=True, errors="coerce"))
+    out.index = idx
+    out = out[~np.asarray(idx.isna())]
     return out[~out.index.duplicated(keep="last")].sort_index()
 
 
@@ -127,7 +128,7 @@ def daily_panel(bars: Mapping[str, pd.DataFrame],
         d = _utc_index(bars[s])
         if d.empty or "close" not in d.columns:
             continue
-        day = d.index.normalize()
+        day = pd.DatetimeIndex(d.index).normalize()
         c = d["close"].astype(float)
         closes[s] = c.groupby(day).last()
         tick = float((tick_sizes or {}).get(s) or 0.0)
@@ -283,7 +284,7 @@ def _train_rows(xd: np.ndarray, y: np.ndarray, lo: int, k: int) -> tuple[np.ndar
     return xs[ok], ys[ok]
 
 
-def ridge_predictions(d: Design, *, features: np.ndarray | None = None,
+def ridge_predictions(d: Design, features: np.ndarray | None = None,
                       alpha: float = RIDGE_ALPHA, **wf: int) -> np.ndarray:
     """The baseline: one pooled ridge on each node's OWN lagged features, same folds."""
     xd = d.x if features is None else features
@@ -339,7 +340,8 @@ def adjacency(x0: np.ndarray, y: np.ndarray, kind: str, top_k: int = TOP_K) -> n
         np.put_along_axis(mask, keep, True, axis=1)
         a = np.where(mask, a, 0.0)
     s = np.abs(a).sum(axis=1, keepdims=True)
-    return np.divide(a, s, out=np.zeros_like(a), where=s > 0)
+    out: np.ndarray = np.divide(a, s, out=np.zeros_like(a), where=s > 0)
+    return out
 
 
 def propagate(x: np.ndarray, a: np.ndarray, layers: int) -> np.ndarray:
@@ -506,10 +508,10 @@ def predictions(d: Design, model: str, config: Mapping[str, Any], **wf: int) -> 
         return attention_predictions(d, heads=int(config.get("heads", 1)),
                                      lookback=int(config.get("lookback", 20)), **wf)
     if model == "ridge":
-        return ridge_predictions(d, **wf)
+        return ridge_predictions(d, None, **wf)
     if model == "ridge_lags":
         return ridge_predictions(
-            d, features=lagged_token_features(d, int(config.get("lookback", 20))), **wf)
+            d, lagged_token_features(d, int(config.get("lookback", 20))), **wf)
     if model == "naive_last":
         p = np.where(np.isfinite(d.z), d.z, np.nan)
         p[:wf.get("min_train", MIN_TRAIN)] = np.nan

@@ -5,12 +5,12 @@ returns a REPRESENTATION packet -- embeddings and a loss curve -- that nothing d
 certify, and it needs torch, which the trading box does not have. These two miners are the same
 ideas built so their output is a CELL:
 
-  gnn_miner        family `gnn_propagation`: next-day forecast from 1-2 hops of propagation over
+  learned_gnn      family `gnn_propagation`: next-day forecast from 1-2 hops of propagation over
                    a lead-lag (or co-movement) graph measured on the training window, ridge
                    readout shared by every node. Mechanism: cross-asset information diffusion --
                    news priced first in one market reaches the slower one with a lag
                    (`alpha_schema.EVENTS["cross_market_lead"]`).
-  attention_miner  family `attention_ts`: next-day forecast from scaled dot-product attention
+  learned_attention family `attention_ts`: next-day forecast from scaled dot-product attention
                    over each instrument's last L daily tokens, weights shared across the panel.
                    Mechanism: state-dependent continuation versus reversal -- whether a move is
                    absorbed (a liquidity concession that reverts) or propagates depends on the
@@ -94,7 +94,7 @@ FIXED = {"norm": 120, "hold_bars": 20, "signal_hour": 2}
 
 MINERS: dict[str, dict[str, Any]] = {
     "gnn": {
-        "source": "gnn_miner", "family": "gnn_propagation", "grid": LP.GNN_GRID,
+        "source": "learned_gnn", "family": "gnn_propagation", "grid": LP.GNN_GRID,
         "event": "cross_market_lead",
         "mechanism": ("cross-asset information diffusion: {sym}'s next-day return is forecast by "
                       "propagating the panel's latest moves {hops} hop(s) through a {adj} graph "
@@ -111,7 +111,7 @@ MINERS: dict[str, dict[str, Any]] = {
         "crowding_prior": "high",
     },
     "attention": {
-        "source": "attention_miner", "family": "attention_ts", "grid": LP.ATTENTION_GRID,
+        "source": "learned_attention", "family": "attention_ts", "grid": LP.ATTENTION_GRID,
         "event": "inventory_shock",
         "mechanism": ("state-dependent continuation versus reversal on {sym}: attention over the "
                       "last {lookback} daily tokens ({heads} head(s), weights shared across the "
@@ -173,9 +173,12 @@ def make_candidate(model: str, row: dict[str, Any], *, panel: Sequence[str],
                                     lookback=cfg.get("lookback"), heads=cfg.get("heads"))
     title = (f"{sym}.{spec['family']} {_config_key(model, cfg)} z>={row['entry_z']} "
              f"hold={FIXED['hold_bars']}")
+    # The miner's own walk-forward IC stays in its REPORT and off the row: `libs.tiers.blinding`
+    # strips any `oos_*` field at the write door and counts the row as a proposer that read
+    # held-out outcomes, which would withhold this seat from the independent-discovery count.
     evidence = {k: row.get(k) for k in ("n_independent", "gross_per_trade", "net_per_trade",
                                         "cost_frac", "t_gross", "t_deflated_sweep",
-                                        "n_tests_sweep", "oos_ic_symbol", "oos_ic_t_symbol")}
+                                        "n_tests_sweep")}
     evidence.update({"tests_attempted": tests_run, "effective_trials": round(n_effective, 3),
                      "model_config": _config_key(model, cfg)})
     c = pc.candidate(spec["source"], sym, spec["family"], params, mechanism=mech, title=title,
@@ -268,8 +271,8 @@ def mine(model: str, bars: Mapping[str, pd.DataFrame], meta: Mapping[str, Any], 
                     continue
                 rows.append({"cell": f"{sym}.{spec['family']}", "symbol": sym,
                              "config": dict(cfg), "entry_z": z, **sc,
-                             "oos_ic_symbol": (per_sym.get(sym) or {}).get("ic"),
-                             "oos_ic_t_symbol": (per_sym.get(sym) or {}).get("t")})
+                             "wf_ic_symbol": (per_sym.get(sym) or {}).get("ic"),
+                             "wf_ic_t_symbol": (per_sym.get(sym) or {}).get("t")})
     rows = _redeflate(rows, attempted)
     census = TL.census(trials)
     proposals = pc.best_per_cell(rows)
