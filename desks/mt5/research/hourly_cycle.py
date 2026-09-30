@@ -871,6 +871,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
     "source_registry", "queue_census",
+    # THE BOOK'S RESIDUAL AND THE GATES' COUNTERFACTUALS (2026-09-30): ledger reads plus a
+    # bounded build of the few conditioned cells a BH-corrected finding names; before
+    # `residual_queue`, which queues its findings.
+    "residual_search",
     # THE CANONICAL REGISTRY BRIDGE (2026-09-17): every pass pours the desk's record in.
     "registry_sync",
     # THE CONVERSION AND RESEARCH DEBT LEDGERS (M7): cheap registry reads, every pass.
@@ -962,7 +966,10 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "htf_anchor", "empty_cluster_forcer",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
-                     "cross_sectional_breadth"),
+                     "cross_sectional_breadth",
+                     # the asset-class specialists' named mechanisms, built by the sealed
+                     # gauntlet's own build_cell before they are donated
+                     "specialist_cell"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -1718,6 +1725,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
+    # stops itself at its own 900 s `--budget-s` and writes; resumes next pass from its state
+    "specialist_cell": 1_000,
+    # ledger reads in seconds; the conditioned-cell builds stop at their own 300 s budget
+    "residual_search": 400,
     "event_surprise": 400,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
@@ -3541,6 +3552,15 @@ def main() -> None:
                                                        "scripts/verify_artifact_chain.py"))
     # THE IGNORANCE LEDGER: every unexplained thing in one queue, priority = magnitude x
     # recurrence x unexplained fraction; the top items donated as hypotheses.
+    # THE BOOK'S RESIDUAL (2026-09-30): the live and certified book's trades regressed on their
+    # mechanism clusters and certified sleeves, the residual searched by hour, weekday, regime and
+    # cross-asset state (BH-corrected), findings emitted as conditioned cells for the gauntlet;
+    # and every gate's refusals priced relaxed and its admitted margin tightened. RESEARCH
+    # FINDINGS ONLY: reports/RESIDUAL_SEARCH.json is read by residual_queue below, never by
+    # sizing, admission or the gateway.
+    rsr = _costed("residual_search", lambda: _producer("residual_search",
+                                                        "research/residual_search.py", "--once",
+                                                        "--budget-s", "300"))
     rsq = _costed("residual_queue", lambda: _producer("residual_queue",
                                                        "research/residual_queue.py",
                                                        "--max-donations", "15"))
@@ -3590,6 +3610,14 @@ def main() -> None:
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
+    # SPECIALIST RESEARCH CELLS (2026-09-30): per-asset-class desks mint the mechanisms a generic
+    # sweep misses -- FX fixes, carry into risk-off, central-bank drift; gold against bonds and the
+    # dollar, the gold/silver ratio; the EIA Wednesday; index overnight gaps, open drives and
+    # month-end rebalancing; softs weather windows. Every cell is buildability-checked, BUILT by
+    # the sealed build_cell, floored at 66 trade days, donated through the one proposer door and
+    # charged to the trial census; writes reports/SPECIALIST_CELLS.json. Additive.
+    spc = _costed("specialist_cell", lambda: _producer(
+        "specialist_cell", "research/specialist_cell.py", "--once", "--budget-s", "900"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -5185,13 +5213,15 @@ def main() -> None:
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
                     "evaluator_lab": evl, "synthetic_regimes": syr, "value_of_data": vod,
                     "research_api_status": rap,
-                    "artifact_chain": acv, "residual_queue": rsq, "unseen_frontier": usf,
+                    "artifact_chain": acv, "residual_search": rsr, "residual_queue": rsq,
+                    "unseen_frontier": usf,
                     "attribution_reconcile": atr,
                     "macro_state_engine": mse,
                     "research_artifacts": rart,
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
+                    "specialist_cell": spc,
                     "event_surprise": esur,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
