@@ -6,7 +6,7 @@
 
 - Measured at **2026-09-30T14:33:34+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `UNMEASURED` on `UNMEASURED`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **926** of 1341 registry components (421 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **920** of 1341 registry components (421 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 0.55s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
@@ -14,7 +14,7 @@
 | **LIVE** | 125 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 1 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 48 | artifact absent while this host recorded the organ running |
-| **NEVER** | 718 | no artifact and no run record on this host |
+| **NEVER** | 712 | no artifact and no run record on this host |
 | **UNMEASURED** | 34 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
@@ -925,12 +925,12 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `timer:quant-prompt-prefix` | `quant-prompt-prefix` | UNMEASURED UNMEASURED | `data/prompt_prefix.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-sameday-fence` | `quant-sameday-fence` | UNMEASURED UNMEASURED | `data/sameday_pipeline.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-unit-parity` | `quant-unit-parity` | UNMEASURED UNMEASURED | `data/unit_parity.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:mass_screen` | `hourly_cycle:mass_screen` | UNMEASURED UNMEASURED | `desks/mt5/reports/MASS_SCREEN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:producer_swarm` | `hourly_cycle:producer_swarm` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_SWARM.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
-| `leg:unknown_unknown` | `hourly_cycle:unknown_unknown` | UNMEASURED UNMEASURED | `desks/mt5/reports/UNKNOWN_UNKNOWN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:breadth_sweep` | `hourly_cycle:breadth_sweep` | UNMEASURED UNMEASURED | `desks/mt5/reports/BREADTH_SWEEP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:empty_cluster_forcer` | `hourly_cycle:empty_cluster_forcer` | UNMEASURED UNMEASURED | `desks/mt5/reports/EMPTY_CLUSTER_FORCER.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:mass_screen` | `hourly_cycle:mass_screen` | UNMEASURED UNMEASURED | `desks/mt5/reports/MASS_SCREEN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `leg:producer_breadth` | `hourly_cycle:producer_breadth` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_BREADTH.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:producer_swarm` | `hourly_cycle:producer_swarm` | UNMEASURED UNMEASURED | `desks/mt5/reports/PRODUCER_SWARM.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:unknown_unknown` | `hourly_cycle:unknown_unknown` | UNMEASURED UNMEASURED | `desks/mt5/reports/UNKNOWN_UNKNOWN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (34)
 
