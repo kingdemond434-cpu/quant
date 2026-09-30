@@ -10063,6 +10063,56 @@
    "consumer": "UNMEASURED"
   },
   {
+   "organ": "executable:desks/mt5/research/rationale_grade.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/rationale_grade.py"
+   ],
+   "clock": "invoked:desks/mt5/research/hourly_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/RATIONALE_GRADE.json",
+   "artifact_declared": "desks/mt5/reports/RATIONALE_GRADE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "executable:desks/mt5/research/rejection_throughput.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/rejection_throughput.py"
+   ],
+   "clock": "invoked:desks/mt5/research/hourly_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/REJECTION_THROUGHPUT.json",
+   "artifact_declared": "desks/mt5/reports/REJECTION_THROUGHPUT.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
    "organ": "executable:desks/mt5/research/opportunity_curve.py",
    "kind": "executable",
    "code": [
