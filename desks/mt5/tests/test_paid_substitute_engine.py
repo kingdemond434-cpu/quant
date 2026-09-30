@@ -150,16 +150,21 @@ def test_correlation_unmeasured_without_both_series_and_measured_with_them(tmp_p
     pd = pytest.importorskip("pandas")
     np = pytest.importorskip("numpy")
     sub = {"id": "fred_x", "classes": ["macro"]}
+    paid = {"id": "paid:v:x", "public_sample": {"status": "MACHINE_SERIES", "url": "https://v/x",
+                                                "endpoints": ["https://v/x.csv"]}}
     assert pse.correlation({"public_sample": None}, sub, lake=tmp_path) == pse.UNMEASURED
-    assert pse.correlation({"public_sample": "vendor_sample"}, sub, lake=tmp_path) == pse.UNMEASURED
+    assert pse.correlation(paid, sub, lake=tmp_path) == pse.UNMEASURED   # sample not on disk
+    headline = {**paid, "public_sample": {**paid["public_sample"], "status": "HEADLINE_ONLY"}}
     idx = pd.date_range("2018-01-01", periods=900, freq="D", tz="UTC")
     rng = np.random.default_rng(3)
     base = np.cumsum(rng.normal(size=len(idx)))
-    for name, noise in (("vendor_sample", 0.05), (pse.dataset_id(sub), 0.05)):
+    for name, noise in ((pse.sample_id(paid), 0.05), (pse.dataset_id(sub), 0.05)):
         pd.DataFrame({"value": base + rng.normal(scale=noise, size=len(idx)),
                       "available_time": idx}).to_parquet(tmp_path / f"{name}.parquet")
-    c = pse.correlation({"public_sample": "vendor_sample"}, sub, lake=tmp_path)
+    c = pse.correlation(paid, sub, lake=tmp_path)
     assert isinstance(c, float) and c > 0.9
+    # a headline-only sample has no series: UNMEASURED even with both files on disk
+    assert pse.correlation(headline, sub, lake=tmp_path) == pse.UNMEASURED
 
 
 # ------------------------------------------------------------------------------- hunter
@@ -243,7 +248,9 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
         assert d, did
         for c in d + [c for c in gates if c["source_id"] == did]:
             assert c["params"]["source"] == did    # the fence's match key, in params ...
-            assert c["campaign_id"] == f"paid_substitute:{did}"   # ... and in provenance
+            # ... and in provenance, with the lane: validated or research, never unmarked
+            lane = next(e["lane"] for e in enrolled if e["dataset_id"] == did)
+            assert c["campaign_id"] == f"paid_substitute:{lane}:{did}"
             assert c["origin"] == pse.GENERATOR
             for k in ("source_culture", "participant_structure", "failure_mode_hypothesis"):
                 assert c[k]
@@ -398,3 +405,103 @@ def test_leg_is_on_the_hourly_clock_with_a_budget_and_a_layer() -> None:
     assert core and '"paid_substitute_engine"' in core.group(1)
     from libs.research.layers import LEG_LAYER
     assert LEG_LAYER["paid_substitute_engine"] == "information"
+
+
+# ------------------------------------------------------------ coverage is verified, not matched
+def _cand(paid_id: str, did: str, corr: object, *, same: bool = False) -> dict:
+    return {"paid_id": paid_id, "substitute_id": did, "dataset_id": did, "coverage": 1.0,
+            "components": {"class": 1.0, "region": 1.0, "latency": 1.0}, "unmeasured": [],
+            "usable": True, "machine_route": True, "correlation": corr, "same_series": same}
+
+
+def test_only_a_measured_correlation_covers_a_paid_set() -> None:
+    """D19: a substitute whose strength is unmeasured counts as uncovered."""
+    cat = [{"id": p} for p in ("a", "b", "c", "d")]
+    cands = [_cand("a", "s1", 0.8), _cand("b", "s2", pse.UNMEASURED), _cand("c", "s3", 0.1),
+             {**_cand("d", "s4", 0.9), "components": {"class": 0.0, "region": 1.0}}]
+    st = pse.paid_status(cat, cands)
+    assert {k: v["status"] for k, v in st.items()} == {
+        "a": "COVERED", "b": "MATCHED_UNVERIFIED", "c": "CONTRADICTED", "d": "UNMATCHED"}
+    assert st["a"]["basis"] == "independent" and st["a"]["verified_by"] == ["s1"]
+    assert pse.lane_of([cands[0]]) == pse.LANE_VALIDATED
+    assert pse.lane_of([cands[1]]) == pse.LANE_RESEARCH      # UNMEASURED is never a pass
+    assert not pse.enrolable(cands[2])                       # a measured miss blocks enrolment
+    ms = pse.match_strength(cands, {"s1": pse.LANE_VALIDATED})
+    assert ms["by_dataset"]["s2"]["strength"] == pse.UNMEASURED
+    assert ms["by_dataset"]["s1"]["strength"] == 0.8 and ms["measured"] == 2
+
+
+def test_the_vendors_own_release_is_reported_as_same_series() -> None:
+    cat = [{"id": "a"}]
+    st = pse.paid_status(cat, [_cand("a", "s1", 1.0, same=True)])
+    assert st["a"]["status"] == "COVERED" and st["a"]["basis"] == "same_series"
+
+
+def test_every_catalogue_row_states_its_public_sample() -> None:
+    rows = pse.load_catalogue(crawled=Path("/nonexistent"), classes=pse.load_classes())
+    machine = 0
+    for e in rows:
+        ps = e.get("public_sample")
+        assert isinstance(ps, dict) and ps["status"] in pse.SAMPLE_STATUSES, e["id"]
+        assert ps.get("note"), e["id"]                       # the reason is said per row
+        if ps["status"] != "NONE_KNOWN":
+            assert str(ps.get("url") or "").startswith("https://"), e["id"]
+            assert ps.get("source"), e["id"]
+        if ps["status"] == "MACHINE_SERIES":
+            machine += 1
+            assert ps["endpoints"] and all(u.startswith("https://") for u in ps["endpoints"])
+    assert machine >= 5
+    # the hunt searches for the missing ones on the clock
+    grounds = pse.search_targets(rows, pse.load_classes())
+    none = sum(1 for e in rows if e["public_sample"]["status"] == "NONE_KNOWN")
+    assert sum(1 for g in grounds if g["target_type"] == "sample") == none
+
+
+def test_samples_go_to_the_acquirer_and_are_measured_from_it(tmp_path: Path) -> None:
+    pd = pytest.importorskip("pandas")
+    np = pytest.importorskip("numpy")
+    rows = pse.load_catalogue(crawled=Path("/nonexistent"), classes=pse.load_classes())
+    drows = pse.sample_discovery_rows(rows, NOW)
+    assert drows and all(r["role"] == "paid_public_sample" and r["endpoints"] for r in drows)
+    paid = next(e for e in rows if e["public_sample"]["status"] == "MACHINE_SERIES")
+    ep = paid["public_sample"]["endpoints"][0]
+    # acquire_datasets' shape, with a RangeIndex frame and a date column: _series_for dates it
+    idx = pd.date_range("2016-01-01", periods=1_500, freq="D", tz="UTC")
+    vals = np.cumsum(np.random.default_rng(5).normal(size=len(idx)))
+    path = tmp_path / "s.parquet"
+    pd.DataFrame({"date": idx, "value": vals}).to_parquet(path)
+    acq = {"by_url": {ep: {"series": ["s"]}}, "series": {"s": {"path": str(path)}}}
+    s = pse.sample_series(paid, lake=tmp_path, acquired=acq)
+    assert s is not None and isinstance(s.index, pd.DatetimeIndex) and len(s) == len(idx)
+    sub = {"id": "free_y", "endpoint": "https://free/y.csv"}
+    pd.DataFrame({"value": vals, "available_time": idx}).to_parquet(
+        tmp_path / f"{pse.dataset_id(sub)}.parquet")
+    c = pse.correlation(paid, sub, lake=tmp_path, acquired=acq)
+    assert isinstance(c, float) and c > 0.99
+
+
+def test_report_carries_the_d19_keys(tmp_path: Path) -> None:
+    doc = pse.run(now=NOW, fetch=False, dry_run=True, paths=_paths(tmp_path), environ={},
+                  asia_globs=[])
+    h = doc["headline"]
+    for k in ("paid_sources_named", "paid_sources_substituted", "covered_share",
+              "matched_unverified", "public_samples"):
+        assert k in h, k
+    assert "coverage_share" not in h                      # the metadata figure is not coverage
+    assert h["paid_sources_substituted"] <= h["paid_with_match"]
+    assert h["covered_share"] == round(h["paid_sources_substituted"] / h["paid_sources_named"], 4)
+    ms = doc["substitute_match_strength"]
+    assert ms["substitutes"] == ms["measured"] + ms["unmeasured"]
+
+
+def test_the_fence_is_a_state_fence_on_the_law_gate() -> None:
+    src = (_ROOT / "scripts" / "run_law_gate.py").read_text("utf-8")
+    sys.path.insert(0, str(_ROOT))
+    from scripts.run_law_gate import _LAW_FENCES, _STATE_FENCES
+    assert dict(_STATE_FENCES)["check_paid_substitute_coverage.py"] == ("--require-state",)
+    assert "check_paid_substitute_coverage.py" not in dict(_LAW_FENCES)
+    assert "check_paid_substitute_coverage.py" in src
+    import subprocess
+    r = subprocess.run([sys.executable, str(_ROOT / "scripts" / "check_paid_substitute_coverage.py"),
+                        "--root", str(_ROOT)], capture_output=True, text=True, timeout=120)
+    assert r.returncode in (0, 1) and "paid_substitute fence" in r.stdout

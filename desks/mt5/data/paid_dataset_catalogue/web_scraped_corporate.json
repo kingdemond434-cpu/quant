@@ -14,7 +14,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:diffbot:web_data_extraction",
@@ -27,7 +34,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:nasdaq_quandl:core_us_fundamentals_and_alt_data",
@@ -40,7 +54,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:quiver_quantitative:alternative_data_api",
@@ -53,7 +74,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:thinknum:web_scraped_data",
@@ -66,7 +94,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:thinknum_alternative_data:web_scraped_corporate_data",
@@ -79,7 +114,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:ubs_evidence_lab:alternative_data",
@@ -92,7 +134,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   }
  ]
 }

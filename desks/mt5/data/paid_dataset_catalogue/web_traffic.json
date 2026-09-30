@@ -14,7 +14,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:comscore:web_streaming_audience",
@@ -27,7 +34,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:semrush:digital_marketing_intelligence",
@@ -40,7 +54,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:similarweb:web_traffic_analytics",
@@ -53,7 +74,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   }
  ]
 }

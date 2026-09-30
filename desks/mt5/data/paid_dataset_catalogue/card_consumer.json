@@ -14,7 +14,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:affinity_solutions:card_transaction_data",
@@ -27,7 +34,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:bloomberg_second_measure:card_transaction_data",
@@ -40,7 +54,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:consumer_edge:transaction_data",
@@ -53,7 +74,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:earnest_analytics:spending_trends_dashboard",
@@ -66,7 +94,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:envestnet_yodlee:financial_data_aggregation",
@@ -79,7 +114,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:fable_data:european_transaction_data",
@@ -92,7 +134,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:facteus:card_transaction_aggregation",
@@ -105,7 +154,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:kodata:south_korean_credit_card_data_and_sales_estimate",
@@ -118,7 +174,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://www.neudata.co/1/vendors/kodata",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:m_science:alternative_research",
@@ -131,7 +194,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:mastercard:spendingpulse",
@@ -144,7 +214,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:nielseniq:retail_data",
@@ -157,7 +234,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:nowcast_inc:jcb_consumption_now",
@@ -170,7 +254,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:second_measure:consumer_spending_platform",
@@ -183,7 +274,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:visa:visa_spending_momentum_index",
@@ -196,7 +294,17 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "MACHINE_SERIES",
+    "kind": "vendor_public_release",
+    "url": "https://fred.stlouisfed.org/series/VISASMIHSA",
+    "endpoints": [
+     "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VISASMIHSA"
+    ],
+    "series": "VISASMIHSA",
+    "source": "web_search:2026-09-30",
+    "note": "Visa SMI headline, US, seasonally adjusted, on FRED"
+   }
   },
   {
    "id": "paid:yipitdata:alternative_data_research",
@@ -209,7 +317,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   }
  ]
 }

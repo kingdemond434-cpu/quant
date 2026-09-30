@@ -14,7 +14,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://www.techsalerator.com/post/top-implied-volatility-data-providers",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:cboe:cboe_livevol",
@@ -27,7 +34,17 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "MACHINE_SERIES",
+    "kind": "vendor_public_release",
+    "url": "https://fred.stlouisfed.org/series/VIXCLS",
+    "endpoints": [
+     "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS"
+    ],
+    "series": "VIXCLS",
+    "source": "web_search:2026-09-30",
+    "note": "Cboe's own free VIX close; LiveVol's surfaces stay paid"
+   }
   },
   {
    "id": "paid:cboe_global_markets:cboe_datashop_options_data",
@@ -40,7 +57,17 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://www.techsalerator.com/post/top-implied-volatility-data-providers",
-   "public_sample": null
+   "public_sample": {
+    "status": "MACHINE_SERIES",
+    "kind": "vendor_public_release",
+    "url": "https://fred.stlouisfed.org/series/VIXCLS",
+    "endpoints": [
+     "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS"
+    ],
+    "series": "VIXCLS",
+    "source": "web_search:2026-09-30",
+    "note": "Cboe's own free VIX close; DataShop option-level data stays paid"
+   }
   },
   {
    "id": "paid:exchange_data_international:swaption_volatility_data",
@@ -53,7 +80,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://datarade.ai/data-categories/implied-volatility-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:finpricing:fx_implied_volatility_surface_data",
@@ -66,7 +100,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://datarade.ai/data-categories/implied-volatility-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:finpricing:precious_metal_implied_volatility",
@@ -79,7 +120,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://datarade.ai/data-categories/implied-volatility-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:finpricing:swaption_implied_volatility_surface_data",
@@ -92,7 +140,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://datarade.ai/data-categories/implied-volatility-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:infotrie:implied_volatility",
@@ -105,7 +160,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://datarade.ai/data-categories/implied-volatility-data",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:intrinio:options_data_feeds",
@@ -118,7 +180,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://www.techsalerator.com/post/top-implied-volatility-data-providers",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:nasdaq_data_link:options_and_volatility_datasets",
@@ -131,7 +200,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://www.techsalerator.com/post/top-implied-volatility-data-providers",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": "web_search:2026-09-30",
+    "note": "searched 2026-09-30: a free API tier exists but the options/volatility datasets are premium"
+   }
   },
   {
    "id": "paid:optionmetrics:ivydb",
@@ -144,7 +220,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://www.techsalerator.com/post/top-implied-volatility-data-providers",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:orats:orats_implied_volatility_data",
@@ -157,7 +240,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:spiderrock:options_analytics",
@@ -170,7 +260,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   }
  ]
 }

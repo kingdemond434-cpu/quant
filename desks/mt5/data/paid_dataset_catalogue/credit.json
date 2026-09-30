@@ -14,7 +14,17 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "MACHINE_SERIES",
+    "kind": "vendor_public_release",
+    "url": "https://fred.stlouisfed.org/series/BAMLH0A0HYM2",
+    "endpoints": [
+     "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+    ],
+    "series": "BAMLH0A0HYM2",
+    "source": "web_search:2026-09-30",
+    "note": "ICE publishes the index's OAS through FRED; the full constituent/total-return set stays paid"
+   }
   },
   {
    "id": "paid:kodata:south_korean_credit_ratings",
@@ -27,7 +37,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://www.neudata.co/1/vendors/kodata",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:marketaxess:cp_and_trace_analytics",
@@ -40,7 +57,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:markit_s_p_global:cds_pricing",
@@ -53,7 +77,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "model_knowledge_unverified",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:moody_s:credit_economic_data",
@@ -66,7 +97,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://londonstrategicedge.com/directory/alternative-data/",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   },
   {
    "id": "paid:stamdata:fixed_income_data",
@@ -79,7 +117,14 @@
    "history_years": "UNMEASURED",
    "latency_days": "UNMEASURED",
    "seed_source": "public_listing:https://datarade.ai/data-categories/climate-data/providers",
-   "public_sample": null
+   "public_sample": {
+    "status": "NONE_KNOWN",
+    "kind": null,
+    "url": null,
+    "endpoints": [],
+    "source": null,
+    "note": "no vendor sample file, published index or free tier known for this product; the hourly hunt searches for one (target type sample)"
+   }
   }
  ]
 }

@@ -599,6 +599,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # the missing knobs named: the honest state, never the word "verified". It touches no money
     # path and forces no change to one. State, because FORMAL.json is written by the box's tier_s.
     ("check_formal_claim.py", ("--require-state",)),
+    # THE PAID-SUBSTITUTE HUNT IS ALIVE (principal 2026-09-30). The seeded paid-dataset catalogue
+    # never falls below its committed floor, and reports/PAID_SUBSTITUTE_COVERAGE.json (hourly leg
+    # `paid_substitute_engine`) is under six hours old. State, because reports/** is not in git:
+    # without --require-state an absent report reads UNMEASURED; on the box it is the failure.
+    ("check_paid_substitute_coverage.py", ("--require-state",)),
 )
 
 

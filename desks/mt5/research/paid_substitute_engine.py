@@ -173,6 +173,14 @@ ENROL_THRESHOLD = 0.70
 MIN_REGION = 0.7
 MIN_MEASURED_COMPONENTS = 4
 MIN_CORRELATION = 0.50
+#: What a catalogue row's `public_sample` can be. Only MACHINE_SERIES can ever be correlated.
+SAMPLE_STATUSES = ("MACHINE_SERIES", "HEADLINE_ONLY", "FREE_TIER", "NONE_KNOWN")
+#: The two enrolment lanes. A substitute whose correlation to a paid set was MEASURED at or above
+#: MIN_CORRELATION is a validated substitute; one whose correlation is UNMEASURED still feeds its
+#: three uses (a free series is worth testing on its own merits, and the gauntlet judges every
+#: cell regardless) but ONLY as research, flagged, and it never counts toward coverage.
+LANE_VALIDATED = "validated_substitute"
+LANE_RESEARCH = "research_unverified"
 #: The history a substitute needs to be judged at all: the gauntlet's walk-forward wants years.
 HISTORY_REQUIREMENT_YEARS = 10.0
 
@@ -795,8 +803,22 @@ def coverage(
     }
 
 
+def _dated(s: Any) -> Any:
+    """The series on a UTC DatetimeIndex, sorted, de-duplicated; None when no index parses.
+    Resampling (the correlation's monthly step) raises on anything else, and that raise used to
+    read as UNMEASURED for a series that was on disk all along."""
+    import pandas as pd
+
+    idx = pd.to_datetime(s.index, utc=True, errors="coerce")
+    out = pd.Series(pd.to_numeric(s, errors="coerce").to_numpy(), index=idx)
+    out = out[out.index.notna()].dropna()
+    if out.empty:
+        return None
+    return out[~out.index.duplicated(keep="last")].sort_index()
+
+
 def _series_for(name: str, *, lake: Path, acquired: Mapping[str, Any] | None) -> Any:
-    """A numeric series by lake id or acquired-series name, else None."""
+    """A numeric series on a UTC date index, by lake id or acquired-series name, else None."""
     try:
         import pandas as pd
     except Exception:
@@ -807,18 +829,20 @@ def _series_for(name: str, *, lake: Path, acquired: Mapping[str, Any] | None) ->
             try:
                 df = pd.read_parquet(p) if suf == ".parquet" else pd.read_csv(p)
                 if "available_time" in df.columns and SIGNAL in df.columns:
-                    return pd.Series(
-                        pd.to_numeric(df[SIGNAL], errors="coerce").to_numpy(),
-                        index=pd.to_datetime(df["available_time"], utc=True, errors="coerce"),
-                    ).dropna()
+                    return _dated(
+                        pd.Series(df[SIGNAL].to_numpy(), index=df["available_time"].to_numpy())
+                    )
             except Exception:
                 return None
     rec = ((acquired or {}).get("series") or {}).get(name)
     if isinstance(rec, dict) and rec.get("path"):
         try:
             df = pd.read_parquet(Path(str(rec["path"])))
-            col = df.columns[0]
-            return pd.to_numeric(df[col], errors="coerce").dropna()
+            col = SIGNAL if SIGNAL in df.columns else df.columns[0]
+            for dc in ("date", "Date", "DATE", "observation_date", "period"):
+                if dc in df.columns and dc != col:
+                    return _dated(pd.Series(df[col].to_numpy(), index=df[dc].to_numpy()))
+            return _dated(df[col])
         except Exception:
             return None
     return None
@@ -833,20 +857,21 @@ def correlation(
 ) -> float | str:
     """Pearson correlation of monthly changes when BOTH series are on disk; else UNMEASURED.
 
-    The paid side is only ever a vendor's PUBLIC sample or a published proxy the catalogue row
-    names in `public_sample`; no paid data is fetched."""
-    sample = paid.get("public_sample")
-    if not sample:
-        return UNMEASURED
+    The paid side is only ever the vendor's own PUBLIC release the catalogue row names in
+    `public_sample` (a MACHINE_SERIES: its endpoints are fetched by acquire_datasets like any
+    discovery); no paid data is fetched. A headline-only, free-tier or unknown sample has no
+    series, so its correlation is UNMEASURED -- never 0 and never a pass."""
     lk = lake or LAKE
-    a = _series_for(str(sample), lake=lk, acquired=acquired)
+    a = sample_series(paid, lake=lk, acquired=acquired)
+    if a is None:
+        return UNMEASURED
     b = _series_for(dataset_id(sub), lake=lk, acquired=acquired)
     if b is None:
         for name in _acquired_names(sub, acquired) or []:
             b = _series_for(name, lake=lk, acquired=acquired)
             if b is not None:
                 break
-    if a is None or b is None:
+    if b is None:
         return UNMEASURED
     try:
         am = a.resample("ME").last().diff()
@@ -858,6 +883,62 @@ def correlation(
         return round(c, 4) if c == c else UNMEASURED
     except Exception:
         return UNMEASURED
+
+
+def public_sample(paid: Mapping[str, Any]) -> dict[str, Any]:
+    """The row's public sample, normalised: a crawled or Asia row with none is NONE_KNOWN."""
+    ps = paid.get("public_sample")
+    if isinstance(ps, dict) and ps.get("status") in SAMPLE_STATUSES:
+        return dict(ps)
+    return {
+        "status": "NONE_KNOWN",
+        "endpoints": [],
+        "url": None,
+        "note": "no public sample recorded for this row",
+    }
+
+
+def sample_id(paid: Mapping[str, Any]) -> str:
+    """The lake id a sample series may be stored under (`psamp_<paid id>`)."""
+    return f"psamp_{_slug(str(paid.get('id')), 56)}"
+
+
+def sample_series(
+    paid: Mapping[str, Any], *, lake: Path | None = None, acquired: Mapping[str, Any] | None
+) -> Any:
+    ps = public_sample(paid)
+    if ps["status"] != "MACHINE_SERIES":
+        return None
+    lk = lake or LAKE
+    s = _series_for(sample_id(paid), lake=lk, acquired=acquired)
+    if s is not None:
+        return s
+    by_url = (acquired or {}).get("by_url") or {}
+    for ep in ps.get("endpoints") or []:
+        for name in (by_url.get(ep) or {}).get("series") or []:
+            s = _series_for(str(name), lake=lk, acquired=acquired)
+            if s is not None:
+                return s
+    return None
+
+
+def same_series(paid: Mapping[str, Any], sub: Mapping[str, Any]) -> bool:
+    """The free substitute IS the vendor's own public release (same endpoint): a correlation of
+    ~1 then says the free version exists, not that an independent series replicates it."""
+    ep = str(sub.get("endpoint") or "")
+    return bool(ep) and ep in (public_sample(paid).get("endpoints") or [])
+
+
+def verification(c: Mapping[str, Any]) -> str:
+    """VERIFIED: correlation to the paid set's public sample measured and >= MIN_CORRELATION.
+    REJECTED: measured and below it. MATCHED_UNVERIFIED: a match whose correlation is
+    UNMEASURED. UNMATCHED: not a match at all."""
+    if not is_match(c):
+        return "UNMATCHED"
+    corr = c.get("correlation")
+    if isinstance(corr, (int, float)):
+        return "VERIFIED" if corr >= MIN_CORRELATION else "REJECTED"
+    return "MATCHED_UNVERIFIED"
 
 
 # ------------------------------------------------------------------------------- hunter
@@ -935,6 +1016,31 @@ def search_targets(
         if vendor in ("", "UNSTATED") and ds in ("", "UNSTATED"):
             continue
         label = " ".join(x for x in (vendor, ds) if x and x != "UNSTATED")
+        if public_sample(e)["status"] == "NONE_KNOWN":
+            name = f"paidsub|sample|{e['id']}|public_web"
+            if name not in seen:
+                seen.add(name)
+                out.append(
+                    {
+                        "name": name,
+                        "cluster": "paid_substitutes",
+                        "kind": "dataset",
+                        "route": "search",
+                        "site": "",
+                        "language": "en",
+                        "region": str(e.get("region") or "global").lower(),
+                        "weight": 0.7,
+                        "queries": [
+                            f"{label} sample data download",
+                            f"{label} free index published",
+                            f"{label} free tier",
+                        ],
+                        "class": str(e.get("class")),
+                        "target_type": "sample",
+                        "paid_ids": [e["id"]],
+                        "why": f"a public sample of {label}, so a substitute can be verified",
+                    }
+                )
         for ttype, site in (("github", "github.com"), ("public_web", ""), ("zenodo", "zenodo.org")):
             name = f"paidsub|vendor|{e['id']}|{ttype}"
             if name in seen:
@@ -1001,6 +1107,8 @@ def library_candidates(
                     "components": cov["components"],
                     "unmeasured": cov["unmeasured"],
                     "correlation": correlation(p, s, lake=lake, acquired=acquired),
+                    "same_series": same_series(p, s),
+                    "sample_status": public_sample(p)["status"],
                     "usable": ok,
                     "usable_reason": why,
                     "machine_route": str(s.get("endpoint") or "").startswith("http"),
@@ -1032,7 +1140,8 @@ def discovered_candidates(
                 continue
             ground = str(r.get("ground") or "")
             parts = ground.split("|")
-            if len(parts) < 3 or parts[0] != "paidsub":
+            if len(parts) < 3 or parts[0] != "paidsub" or parts[1] == "sample":
+                # a SAMPLE lead is evidence about the paid side, not a substitute
                 continue
             url = str(r.get("url") or "")
             if not url or url in seen or banned(url):
@@ -1071,6 +1180,8 @@ def discovered_candidates(
                         "components": cov["components"],
                         "unmeasured": cov["unmeasured"],
                         "correlation": UNMEASURED,
+                        "same_series": False,
+                        "sample_status": public_sample(p)["status"],
                         "usable": True,
                         "usable_reason": "found by the forest; UNCHARACTERISED",
                         "machine_route": bool(r.get("endpoints")),
@@ -1096,7 +1207,10 @@ def is_match(c: Mapping[str, Any]) -> bool:
 def enrolable(c: Mapping[str, Any]) -> bool:
     """A match that is free, reachable, machine-readable, measured enough, and not contradicted
     by a measured correlation. Page-only matches stay hunted (crawl seeds, roster) until an
-    endpoint is found; they are never enrolled on a landing page."""
+    endpoint is found; they are never enrolled on a landing page.
+
+    An UNMEASURED correlation is NOT a pass: it admits the substitute to the RESEARCH lane only
+    (`lane_of`), flagged `correlation: UNMEASURED`, and it never counts as coverage."""
     corr = c.get("correlation")
     live = (c.get("components") or {}).get("latency") != 0.0  # an ended archive: never enrolled
     return (
@@ -1106,6 +1220,15 @@ def enrolable(c: Mapping[str, Any]) -> bool:
         and bool(c.get("machine_route"))
         and len(WEIGHTS) - len(c.get("unmeasured") or []) >= MIN_MEASURED_COMPONENTS
         and (corr == UNMEASURED or (isinstance(corr, (int, float)) and corr >= MIN_CORRELATION))
+    )
+
+
+def lane_of(cands: Iterable[Mapping[str, Any]]) -> str:
+    """A substitute's lane over all its enrolable pairs: validated when ANY pair is VERIFIED."""
+    return (
+        LANE_VALIDATED
+        if any(verification(c) == "VERIFIED" for c in cands if enrolable(c))
+        else LANE_RESEARCH
     )
 
 
@@ -1185,6 +1308,44 @@ def discovery_rows(
                 "dataset_class": (s.get("classes") or [""])[0],
                 "dataset_id": dataset_id(s),
                 "host": urllib.parse.urlparse(ep).netloc,
+            }
+        )
+    return rows
+
+
+def sample_discovery_rows(catalogue: list[dict[str, Any]], now: datetime) -> list[dict[str, Any]]:
+    """The paid side's PUBLIC samples go to acquire_datasets like any discovery, so the
+    correlation can be measured where the endpoint answers (the box), never fabricated here."""
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for e in catalogue:
+        ps = public_sample(e)
+        if ps["status"] != "MACHINE_SERIES":
+            continue
+        eps = [u for u in ps.get("endpoints") or [] if u.startswith("http") and not banned(u)]
+        eps = [u for u in eps if u not in seen]
+        if not eps:
+            continue
+        seen.update(eps)
+        rows.append(
+            {
+                "source": GENERATOR,
+                "kind": "dataset",
+                "title": f"public sample of {e.get('vendor')} {e.get('dataset')}"[:160],
+                "url": ps.get("url"),
+                "published": _iso(now),
+                "symbols": [],
+                "timeframes": [],
+                "patterns": [],
+                "confidence": 0.8,
+                "lang": "en",
+                "endpoints": eps,
+                "n_endpoints": len(eps),
+                "dataset_class": str(e.get("class")),
+                "dataset_id": sample_id(e),
+                "paid_id": e["id"],
+                "role": "paid_public_sample",
+                "host": urllib.parse.urlparse(eps[0]).netloc,
             }
         )
     return rows
@@ -1344,6 +1505,8 @@ def emit_uses(
     door: Callable[..., Any] | None = None,
     budget: list[int] | None = None,
     dry_run: bool = False,
+    lane: str = LANE_RESEARCH,
+    corr: float | str = UNMEASURED,
 ) -> dict[str, Any]:
     """The three uses of one ENROLLED substitute (its lake frame exists). Idempotent: a cell is
     enqueued once, ever, as `queued` -- claimable on arrival, never parked (the no-queues law,
@@ -1361,13 +1524,21 @@ def emit_uses(
         f"{sub.get('name')} is the free replica of a paid {'/'.join(sub.get('classes') or [])} "
         f"dataset; while its series is at an extreme, {', '.join(d_targets) or 'its instruments'} "
         f"trade differently"
+        + (
+            ""
+            if lane == LANE_VALIDATED
+            else " [research lane: correlation to the paid set UNMEASURED, not a validated "
+            "substitute]"
+        )
     )
     common = {
         "origin": GENERATOR,
         "generator": GENERATOR,
         "department": "information",
         "source_id": did,
-        "campaign_id": f"paid_substitute:{did}",
+        # the lane rides in the campaign id (a registry column), so every cell says whether its
+        # source is a VALIDATED substitute or research with correlation UNMEASURED
+        "campaign_id": f"paid_substitute:{lane}:{did}",
         "pit_status": "STAMPED",
         "required_data": [f"desks/mt5/data/lake/series/{did}.parquet"],
         "causal_rationale": mech,
@@ -1375,6 +1546,8 @@ def emit_uses(
     }
     stats: dict[str, Any] = {
         "dataset_id": did,
+        "lane": lane,
+        "correlation": corr,
         "direct": 0,
         "indirect": 0,
         "created": 0,
@@ -1568,14 +1741,108 @@ def write_world_state(rows: list[dict[str, Any]], now: datetime, path: Path | No
 
 
 # -------------------------------------------------------------------------------- report
+#: A paid set's coverage status, best first. Only COVERED counts toward covered_share (D19: "a
+#: substitute whose strength is unmeasured counts as uncovered").
+PAID_STATUSES = ("COVERED", "MATCHED_UNVERIFIED", "CONTRADICTED", "UNMATCHED")
+
+
+def paid_status(
+    catalogue: list[dict[str, Any]], cands: list[dict[str, Any]]
+) -> dict[str, dict[str, Any]]:
+    """Per paid id: its status, the verifying substitutes, and whether every verification is the
+    vendor's own release (same_series) rather than an independent free series."""
+    by_paid: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
+    for c in cands:
+        by_paid[str(c["paid_id"])].append(c)
+    out: dict[str, dict[str, Any]] = {}
+    for e in catalogue:
+        cs = by_paid.get(e["id"], [])
+        v = [c for c in cs if verification(c) == "VERIFIED" and c.get("usable")]
+        u = [c for c in cs if verification(c) == "MATCHED_UNVERIFIED"]
+        r = [c for c in cs if verification(c) == "REJECTED"]
+        status = (
+            "COVERED" if v else "MATCHED_UNVERIFIED" if u else "CONTRADICTED" if r else "UNMATCHED"
+        )
+        out[e["id"]] = {
+            "status": status,
+            "sample_status": public_sample(e)["status"],
+            "verified_by": sorted({str(c["dataset_id"]) for c in v}),
+            "basis": (
+                None
+                if not v
+                else "same_series"
+                if all(c.get("same_series") for c in v)
+                else "independent"
+            ),
+            "best_correlation": max(
+                (
+                    float(c["correlation"])
+                    for c in cs
+                    if isinstance(c.get("correlation"), (int, float))
+                ),
+                default=UNMEASURED,
+            ),
+        }
+    return out
+
+
+def match_strength(cands: list[dict[str, Any]], lanes: Mapping[str, str]) -> dict[str, Any]:
+    """D19's `substitute_match_strength`: per substitute that matches any paid set, its best
+    MEASURED correlation to a paid public sample, else UNMEASURED -- never a coverage score."""
+    per: dict[str, dict[str, Any]] = {}
+    for c in cands:
+        if not is_match(c):
+            continue
+        d = per.setdefault(
+            str(c["dataset_id"]),
+            {
+                "substitute": c["substitute_id"],
+                "lane": lanes.get(str(c["dataset_id"]), "not_enrolled"),
+                "matched_pairs": 0,
+                "measured_pairs": 0,
+                "strength": UNMEASURED,
+                "verified_paid_ids": [],
+                "same_series_only": True,
+            },
+        )
+        d["matched_pairs"] += 1
+        corr = c.get("correlation")
+        if isinstance(corr, (int, float)):
+            d["measured_pairs"] += 1
+            d["strength"] = (
+                float(corr) if d["strength"] == UNMEASURED else max(d["strength"], float(corr))
+            )
+            if corr >= MIN_CORRELATION:
+                d["verified_paid_ids"].append(c["paid_id"])
+                d["same_series_only"] = d["same_series_only"] and bool(c.get("same_series"))
+    for d in per.values():
+        if not d["verified_paid_ids"]:
+            d["same_series_only"] = None
+    measured = sum(1 for d in per.values() if d["strength"] != UNMEASURED)
+    return {
+        "basis": (
+            f"Pearson correlation of monthly changes to the paid set's own public release; "
+            f"VERIFIED at >= {MIN_CORRELATION}; UNMEASURED where no public machine series is on "
+            "disk"
+        ),
+        "substitutes": len(per),
+        "measured": measured,
+        "unmeasured": len(per) - measured,
+        "by_dataset": dict(sorted(per.items())),
+    }
+
+
 def summarise(
     catalogue: list[dict[str, Any]],
     cands: list[dict[str, Any]],
     enrolled_ids: set[str],
     fed: Any,
     asia_classes: Iterable[str] = (),
+    status: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Per (class, region): paid sets, matched, best strength, enrolled substitutes, cells fed."""
+    """Per (class, region): paid sets, matched, covered (VERIFIED), matched-unverified, best
+    strength, enrolled substitutes, cells fed."""
+    status = status if status is not None else paid_status(catalogue, cands)
     groups: dict[tuple[str, str], dict[str, Any]] = {}
     for e in catalogue:
         g = groups.setdefault(
@@ -1587,6 +1854,9 @@ def summarise(
                 "asia_rows": 0,
                 "paid_sets": 0,
                 "matched": 0,
+                "covered": 0,
+                "matched_unverified": 0,
+                "contradicted": 0,
                 "enrolled_substitutes": set(),
                 "best_coverage": None,
                 "best_correlation": UNMEASURED,
@@ -1615,6 +1885,13 @@ def summarise(
             b = best_by_paid.get(pid)
             if pid in matched_paid:
                 g["matched"] += 1
+            st = (status.get(pid) or {}).get("status")
+            if st == "COVERED":
+                g["covered"] += 1
+            elif st == "MATCHED_UNVERIFIED":
+                g["matched_unverified"] += 1
+            elif st == "CONTRADICTED":
+                g["contradicted"] += 1
             if b is not None and isinstance(b.get("coverage"), (int, float)):
                 g["best_coverage"] = max(g["best_coverage"] or 0.0, b["coverage"])
                 if isinstance(b.get("correlation"), (int, float)):
@@ -1651,6 +1928,7 @@ def summarise(
                 "correlation": best_corr,
             },
             match_share=round(g["matched"] / g["paid_sets"], 4) if g["paid_sets"] else UNMEASURED,
+            covered_share=round(g["covered"] / g["paid_sets"], 4) if g["paid_sets"] else UNMEASURED,
         )
         out.append(g)
     return out
@@ -1665,8 +1943,11 @@ def render_md(doc: Mapping[str, Any]) -> str:
         "`hourly_cycle:paid_substitute_engine`. Edit the organ, never this file. -->",
         "",
         f"Generated **{doc['generated_at']}**. Catalogue **{h['catalogue_size']}** paid sets "
-        f"(floor {h['catalogue_floor']}); **{h['paid_with_match']}** have a free substitute at "
-        f"coverage >= {ENROL_THRESHOLD} -- coverage share **{h['coverage_share']}**. "
+        f"(floor {h['catalogue_floor']}). **Substituted (VERIFIED): "
+        f"{h['paid_sources_substituted']} -- covered share {h['covered_share']}**. "
+        f"Matched on metadata but UNVERIFIED: {h['matched_unverified']}; contradicted by a "
+        f"measured correlation: {h['contradicted']}; unmatched: {h['unmatched']}. "
+        f"Public samples: {h['public_samples']}. "
         f"Candidates generated **{h['candidates_generated']}** "
         f"({h['search_targets']} multilingual search targets + {h['library_candidates']} library "
         f"pairs + {h['discovered_candidates']} found by the forest); scored "
@@ -1674,8 +1955,8 @@ def render_md(doc: Mapping[str, Any]) -> str:
         "",
         f"Asia table: `{doc['asia']['status']}`.",
         "",
-        "| class | region | owner | paid sets | matched | share | best coverage | correlation "
-        "| enrolled | cells fed |",
+        "| class | region | owner | paid sets | covered | matched unverified | best coverage "
+        "| correlation | enrolled | cells fed |",
         "|---|---|---|---:|---:|---:|---:|---|---:|---|",
     ]
     for r in doc["by_class_region"]:
@@ -1687,8 +1968,8 @@ def render_md(doc: Mapping[str, Any]) -> str:
             else f"{cf['direct']}d/{cf['indirect']}i ({cf['queued']} queued)"
         )
         lines.append(
-            f"| {r['class']} | {r['region']} | {r['owner']} | {r['paid_sets']} | {r['matched']} | "
-            f"{r['match_share']} | {ms['coverage']} | {ms['correlation']} | {r['n_enrolled']} "
+            f"| {r['class']} | {r['region']} | {r['owner']} | {r['paid_sets']} | {r['covered']} | "
+            f"{r['matched_unverified']} | {ms['coverage']} | {ms['correlation']} | {r['n_enrolled']} "
             f"| {cf_s} |"
         )
     lines += [
@@ -1787,6 +2068,21 @@ def run(
     ready_ids = sorted({c["substitute_id"] for c in lib_c if enrolable(c)})
     lib_by_id = {s["id"]: s for s in library}
     ready = [lib_by_id[i] for i in ready_ids if i in lib_by_id]
+    by_sub: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for c in lib_c:
+        by_sub[str(c["substitute_id"])].append(c)
+    lanes: dict[str, str] = {}
+    best_corr: dict[str, float | str] = {}
+    for sid in ready_ids:
+        lanes[dataset_id({"id": sid})] = lane_of(by_sub[sid])
+        best_corr[dataset_id({"id": sid})] = max(
+            (
+                float(c["correlation"])
+                for c in by_sub[sid]
+                if enrolable(c) and isinstance(c.get("correlation"), (int, float))
+            ),
+            default=UNMEASURED,
+        )
 
     state = _read_json(p["state"]) or {}
     minted = set(state.get("minted") or [])
@@ -1822,9 +2118,14 @@ def run(
                 door=door,
                 budget=budget,
                 dry_run=dry_run,
+                lane=lanes.get(did, LANE_RESEARCH),
+                corr=best_corr.get(did, UNMEASURED),
             )
         )
     ws_rows = state_inputs(enrolled, classes=classes, universe=universe, now=now, lake=p["lake"])
+    for row in ws_rows:
+        row["lane"] = lanes.get(str(row["dataset_id"]), LANE_RESEARCH)
+        row["correlation_to_paid"] = best_corr.get(str(row["dataset_id"]), UNMEASURED)
     fed = (
         cells_fed(conn=registry_conn)
         if (registry_conn is not None or not dry_run)
@@ -1857,7 +2158,9 @@ def run(
                 "sources": roster_rows(library, matched),
             },
         )
-        drows = discovery_rows(library, matched, now, environ)
+        drows = discovery_rows(library, matched, now, environ) + sample_discovery_rows(
+            catalogue, now
+        )
         if drows:
             _atomic_json(p["intel"] / f"discoveries_paidsub_{now:%Y%m%d}.json", drows)
         write_world_state(ws_rows, now, p["world_state"])
@@ -1874,6 +2177,9 @@ def run(
                         "region": s.get("region"),
                         "enrolled_at": prev_enrolled.get(dataset_id(s)),
                         "lake": materialised.get(dataset_id(s)),
+                        "lane": lanes.get(dataset_id(s), LANE_RESEARCH),
+                        "validated_substitute": lanes.get(dataset_id(s)) == LANE_VALIDATED,
+                        "correlation": best_corr.get(dataset_id(s), UNMEASURED),
                         "uses": ["direct_cells", "indirect_cells", "WORLD_STATE_INPUTS"],
                         **_culture(s),
                     }
@@ -1894,7 +2200,11 @@ def run(
         )
 
     enrolled_ids = {dataset_id(s) for s in enrolled}
-    rows = summarise(catalogue, cands, enrolled_ids, fed, asia["owned_classes"])
+    status = paid_status(catalogue, cands)
+    rows = summarise(catalogue, cands, enrolled_ids, fed, asia["owned_classes"], status)
+    st_n = Counter(v["status"] for v in status.values())
+    covered = st_n.get("COVERED", 0)
+    strength = match_strength(cands, {d: lanes.get(d, LANE_RESEARCH) for d in enrolled_ids})
     paid_with_match = sum(r["matched"] for r in rows)
     n_scored = sum(1 for c in cands if isinstance(c.get("coverage"), (int, float)))
     floor = catalogue_floor(p["floor"])
@@ -1909,8 +2219,9 @@ def run(
         "enrolled_missing_a_use": sorted(
             u["dataset_id"] for u in uses if not (u["direct"] and u["indirect"])
         ),
-        "indirect_blocked": next((u["indirect_blocked"] for u in uses if u["indirect_blocked"]),
-                                 None),
+        "indirect_blocked": next(
+            (u["indirect_blocked"] for u in uses if u["indirect_blocked"]), None
+        ),
     }
     doc: dict[str, Any] = {
         "generated_at": _iso(now),
@@ -1929,15 +2240,28 @@ def run(
             "candidates_scored": n_scored,
             "enrolled": len(enrolled),
             "ready_awaiting_acquisition": len(ready) - len(enrolled),
+            # D19 (docs/cro/CRO_CYCLE.md): a paid source is SUBSTITUTED only when a free
+            # series' correlation to its public release is MEASURED at >= MIN_CORRELATION.
+            "paid_sources_named": len(catalogue),
+            "paid_sources_substituted": covered,
+            "covered_share": round(covered / len(catalogue), 4) if catalogue else UNMEASURED,
+            "covered_by_basis": dict(
+                Counter(v["basis"] for v in status.values() if v["status"] == "COVERED")
+            ),
+            "matched_unverified": st_n.get("MATCHED_UNVERIFIED", 0),
+            "contradicted": st_n.get("CONTRADICTED", 0),
+            "unmatched": st_n.get("UNMATCHED", 0),
+            "paid_status": {k: st_n.get(k, 0) for k in PAID_STATUSES},
+            "public_samples": dict(Counter(public_sample(e)["status"] for e in catalogue)),
             "paid_with_match": paid_with_match,
-            "coverage_share": round(paid_with_match / len(catalogue), 4)
+            "class_match_share": round(paid_with_match / len(catalogue), 4)
             if catalogue
             else UNMEASURED,
-            "coverage_basis": (
-                "class/region/frequency/history/latency match of a FREE series to the "
-                "paid set -- not entity-level replication; replication is the "
-                "correlation, measured only where both series are on disk"
+            "class_match_basis": (
+                "class/region/frequency/history/latency METADATA match of a free series to the "
+                "paid set; it is not coverage and never counts toward covered_share"
             ),
+            "enrolled_by_lane": dict(Counter(lanes.get(d, LANE_RESEARCH) for d in enrolled_ids)),
             "paid_with_enrolled": len(
                 {
                     c["paid_id"]
@@ -1949,10 +2273,13 @@ def run(
                 1 for c in cands if isinstance(c.get("correlation"), (int, float))
             ),
             "languages": sorted({g["language"] for g in grounds}),
+            "sample_hunt_targets": sum(1 for g in grounds if g.get("target_type") == "sample"),
             "unusable_free_key_missing": sorted(
                 {c["usable_reason"] for c in lib_c if not c["usable"]}
             )[:20],
         },
+        "substitute_match_strength": strength,
+        "paid_status": status,
         "three_uses": three,
         "lake_frames": dict(Counter(materialised.values())),
         "cells_fed": fed
@@ -1967,8 +2294,9 @@ def run(
         "rule": (
             "coverage = weighted mean of the MEASURED components among class .35, region .25, "
             f"frequency .15, history .15, latency .10; enrol at >= {ENROL_THRESHOLD} with >= "
-            f"{MIN_MEASURED_COMPONENTS} measured and correlation UNMEASURED or >= "
-            f"{MIN_CORRELATION}; "
+            f"{MIN_MEASURED_COMPONENTS} measured; a measured correlation < {MIN_CORRELATION} "
+            "blocks enrolment, a measured one >= it is the VALIDATED lane, and an UNMEASURED one "
+            "is the RESEARCH lane only (flagged in every cell's campaign id, never coverage); "
             "an enrolled substitute feeds direct cells, exogenous_gate cells and "
             "WORLD_STATE_INPUTS under one dataset_id"
         ),
@@ -2049,7 +2377,9 @@ def main(argv: list[str] | None = None) -> int:
     print(
         f"paid_substitute_engine: catalogue={h['catalogue_size']} "
         f"generated={h['candidates_generated']} scored={h['candidates_scored']} "
-        f"enrolled={h['enrolled']} coverage_share={h['coverage_share']} "
+        f"enrolled={h['enrolled']} substituted={h['paid_sources_substituted']}/"
+        f"{h['paid_sources_named']} covered_share={h['covered_share']} "
+        f"matched_unverified={h['matched_unverified']} "
         f"direct={doc['three_uses']['direct_cells']} "
         f"indirect={doc['three_uses']['indirect_cells']} "
         f"state_inputs={doc['three_uses']['world_state_inputs']} wall={doc['wall_s']}s"
