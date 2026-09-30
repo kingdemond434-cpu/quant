@@ -1,5 +1,9 @@
 # The desk cycle: two agents, twelve hours apart
 
+> **2026-09-29: the lanes now EXECUTE `docs/cro/CRO_CYCLE.md`** (under `docs/cro/QUANT_CONSTITUTION.md`).
+> This file remains the box-mechanics annex a pass consults on demand; the lane times are
+> 12:00 and 00:00 **Europe/Dublin**, gated by the launcher.
+
 > **This is the WINDOWS-BOX operating brief, not a new mandate.**
 >
 > `docs/MASTER_QUANT_CONSTITUTION.md` is authoritative and this is never a replacement, reduction

@@ -15,26 +15,36 @@ signal families. Deployment only after the same evidence standards.
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+DESK = Path(__file__).resolve().parent
+ROOT = DESK.parent.parent
+for _path in (ROOT, DESK):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
 
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
-BASE = Path(__file__).resolve().parent.parent
+from libs.portfolio.fusion_cost import costs_for_symbol  # noqa: E402
+
+BASE = DESK
 WINDOWS = {
-    "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
-    "london_am": dict(range_start=10, range_end=13, signal_at=13, wait_bars=8, rr=2.0, ttl_bars=12),
-    "ny_open": dict(range_start=13, range_end=14, signal_at=14, wait_bars=12, rr=2.0, ttl_bars=12),
-    "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
+    "asia": {"range_start": 7, "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
+    "london_am": {"range_start": 10, "range_end": 13, "signal_at": 13,
+                  "wait_bars": 8, "rr": 2.0, "ttl_bars": 12},
+    "ny_open": {"range_start": 13, "range_end": 14, "signal_at": 14,
+                "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
+    "afternoon": {"range_start": 14, "range_end": 17, "signal_at": 17,
+                  "wait_bars": 8, "rr": 2.0, "ttl_bars": 12},
 }
-COSTS = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100)
-STRESS = Costs(spread_per_lot=0.96, commission_per_lot=7.00, contract_oz=100)
+_META = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))["XAUUSD"]
+COSTS = costs_for_symbol(_META)
+STRESS = COSTS.stressed(2.0)
 E_MAX_9 = 1.49  # E[max of 9 iid standard normals] - gate family size
 
 GATES = {
@@ -56,7 +66,7 @@ def wf_oos(h1: pd.DataFrame, sigs: list, costs: Costs) -> list[float]:
     out = []
     for k in range(3):
         o0, o1 = k * fold, (k + 1) * fold if k < 2 else n
-        sub_sigs = [s for s, sl in zip(sigs, sig_locs) if o0 <= sl < o1]
+        sub_sigs = [s for s, sl in zip(sigs, sig_locs, strict=False) if o0 <= sl < o1]
         r = run_backtest(h1.iloc[o0:o1], sub_sigs, costs)
         if r.n < 20:
             out.append(np.nan)
@@ -74,9 +84,9 @@ def battery(h1: pd.DataFrame, sigs: list) -> dict:
             and r["max_dd_r"] > -30
             and len(wf) == 3 and all(w == w and w > 0 for w in wf)
             and r2["expectancy_r"] > 0 and r2["t_stat"] > 1.5)
-    return dict(n=r["n"], exp=r["expectancy_r"], t=r["t_stat"],
-                defl_t=defl_t, pf=r["profit_factor"], maxdd=r["max_dd_r"],
-                exp_stress=r2["expectancy_r"], wf=wf, gate=bool(gate))
+    return {"n": r["n"], "exp": r["expectancy_r"], "t": r["t_stat"],
+                "defl_t": defl_t, "pf": r["profit_factor"], "maxdd": r["max_dd_r"],
+                "exp_stress": r2["expectancy_r"], "wf": wf, "gate": bool(gate)}
 
 
 def main() -> None:
@@ -86,7 +96,7 @@ def main() -> None:
 
     win_sigs = {w: families.family_session_range_breakout(h1, **p)
                 for w, p in WINDOWS.items()}
-    out = {"swept_at": datetime.now(timezone.utc).isoformat(),
+    out = {"swept_at": datetime.now(UTC).isoformat(),
            "family": "hunt10_gate_family", "E_max_9": E_MAX_9,
            "gates": {}, "windows": {}}
     for gname, gfn in GATES.items():

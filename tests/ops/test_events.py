@@ -18,6 +18,23 @@ def test_emit_appends_one_line_and_flags_a_kind_outside_the_vocabulary(tmp_path:
     assert row["unknown_kind"] is True
     lines = p.read_text("utf-8").splitlines()
     assert len(lines) == 2 and json.loads(lines[0])["leg"] == "refresh_bars"
+    assert json.loads(lines[0])["schema_version"] == "1"
+    assert json.loads(lines[0])["artifact_id"]
+
+
+def test_typed_events_are_routed_and_acknowledged_without_mutation(tmp_path: Path) -> None:
+    events, acks = tmp_path / "events.jsonl", tmp_path / "acks.jsonl"
+    row = ev.emit("DATA_UPDATED", path=events, producer="bars", artifact_id="bars:1",
+                  topic="market_data", evidence_grade="MEASURED", priority=7,
+                  allowed_consumers=("research",))
+    assert row["ack_state"] == "UNACKNOWLEDGED"
+    assert [r["artifact_id"] for r in ev.unacknowledged(
+        consumer="research", events_path=events, ack_path=acks)] == ["bars:1"]
+    assert ev.unacknowledged(consumer="execution", events_path=events, ack_path=acks) == []
+    ev.acknowledge("bars:1", "research", path=acks)
+    assert ev.unacknowledged(consumer="research", events_path=events, ack_path=acks) == []
+    assert json.loads(events.read_text("utf-8").splitlines()[0])["ack_state"] == \
+        "UNACKNOWLEDGED", "acknowledging must not mutate the source event"
 
 
 def test_leg_events_emit_done_or_failed_plus_the_domain_transition(tmp_path: Path) -> None:

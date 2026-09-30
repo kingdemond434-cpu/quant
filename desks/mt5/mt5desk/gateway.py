@@ -53,7 +53,6 @@ from mt5desk.decision_core import (
     CLOSE_HOUR,
     GOLD_SYMBOL,
     MAX_TOTAL_REJECTIONS,
-    MIN_RATCHET_IMPROVEMENT_R,
     PROMOTED_MIN_EQUITY,
     REJECTION_STREAK_WINDOW_H,
     addon_desc,
@@ -222,6 +221,9 @@ from mt5desk.decision_core import (
     MIN_LOT_RISK_EUR as MIN_LOT_RISK_EUR,
 )
 from mt5desk.decision_core import (
+    OPPOSING_LEG as OPPOSING_LEG,
+)
+from mt5desk.decision_core import (
     RETCODE_MEANING as RETCODE_MEANING,
 )
 from mt5desk.decision_core import (
@@ -232,6 +234,9 @@ from mt5desk.decision_core import (
 )
 from mt5desk.decision_core import (
     bracket_spec as bracket_spec,
+)
+from mt5desk.decision_core import (
+    book_direction as book_direction,
 )
 from mt5desk.decision_core import (
     day_range as day_range,
@@ -249,7 +254,16 @@ from mt5desk.decision_core import (
     live_heat_ceiling as live_heat_ceiling,
 )
 from mt5desk.decision_core import (
+    load_sleeves_verbose as load_sleeves_verbose,
+)
+from mt5desk.decision_core import (
     min_lot_risk_eur as min_lot_risk_eur,
+)
+from mt5desk.decision_core import (
+    stamp_feed_health as stamp_feed_health,
+)
+from mt5desk.decision_core import (
+    stamp_market_constraints as stamp_market_constraints,
 )
 from mt5desk.gateway_config_fallback import (
     HEAT_HARD_CEILING as HEAT_HARD_CEILING,
@@ -824,6 +838,39 @@ def _state_vector_id() -> str:
 
 
 DECISIONS = BASE / "data" / "decision_ledger.jsonl"
+_PROCESS_INSTANCE_ID = f"{os.getpid()}:{datetime.now(UTC).isoformat(timespec='seconds')}"
+_SLEEVE_ID_CACHE: tuple[float, dict[str, str]] = (-1.0, {})
+
+
+def _strategy_state_identity(sleeve: object, symbol: object) -> str:
+    """Exact content identity for restart replay, from the canonical promoted sleeve file."""
+    global _SLEEVE_ID_CACHE
+    try:
+        mtime = SLEEVES_FILE.stat().st_mtime
+        if mtime != _SLEEVE_ID_CACHE[0]:
+            from libs.ops.production_contract import strategy_state_identity
+            doc = json.loads(SLEEVES_FILE.read_text("utf-8"))
+            rows = doc.get("sleeves") if isinstance(doc, dict) else []
+            dynamic = {"status", "risk_frac", "risk_frac_source", "admission",
+                       "forward_verdict", "shadow_exp", "shadow_n", "shadow_days",
+                       "admit_streak", "admit_scan", "restored_at", "restore_reason",
+                       "promoted_at", "principal_override", "artifact"}
+            ids: dict[str, str] = {}
+            for spec in rows if isinstance(rows, list) else []:
+                if not isinstance(spec, dict) or not spec.get("name"):
+                    continue
+                params = {k: v for k, v in spec.items()
+                          if k not in dynamic | {"name", "symbol", "timeframe", "family"}}
+                version = str((spec.get("artifact") or {}).get("version_hash")
+                              if isinstance(spec.get("artifact"), dict) else "") or _release_id()
+                ids[str(spec["name"])] = strategy_state_identity(
+                    mechanism=str(spec.get("family") or ""), parameters=params,
+                    symbol=str(spec.get("symbol") or ""),
+                    timeframe=str(spec.get("timeframe") or "H1"), version=version)
+            _SLEEVE_ID_CACHE = (mtime, ids)
+        return _SLEEVE_ID_CACHE[1].get(str(sleeve or ""), "")
+    except Exception:
+        return ""
 
 
 def _release_id() -> str:
@@ -854,7 +901,7 @@ def _record_decision(**row) -> None:
     raises -- on the money path a ledger fault must cost a row, and a row is cheaper than an
     order.
     """
-    from libs.research.decision_ledger import write_decision
+    from libs.research.decision_ledger import process_quality_verdict, write_decision
 
     row["time"] = now()
     row.setdefault("state_vector_id", _state_vector_id())
@@ -868,6 +915,39 @@ def _record_decision(**row) -> None:
     row.setdefault("exit_rule", "fixed_tp")
     row.setdefault("veto_reason", "" if row.get("taken") else str(row.get("reason") or ""))
     row.setdefault("portfolio_context", _decision_portfolio_context(row.get("sleeve")))
+    row.setdefault("state_identity", _strategy_state_identity(row.get("sleeve"),
+                                                               row.get("symbol")))
+    row.setdefault("process_instance_id", _PROCESS_INSTANCE_ID)
+    # STRUCTURED WHY-NOT.  The free-text reason remains intact, but every refusal now has a
+    # stable first blocker and an actual/required record.  A caller with several simultaneous
+    # failures may pass all of them; the gateway's sequential path naturally has one first gate.
+    if not row.get("taken"):
+        gate = str(row.get("first_blocking_gate") or row.get("reason") or "unclassified")
+        row.setdefault("first_blocking_gate", gate)
+        row.setdefault("failed_gates", [{"gate": gate,
+                                          "actual": row.get("detail", "refused"),
+                                          "required": "gate passes"}])
+    else:
+        row.setdefault("first_blocking_gate", "")
+        row.setdefault("failed_gates", [])
+    row.setdefault("suppressions", {
+        "repeat": bool(row.get("repeat_suppressed", False)),
+        "portfolio": bool(row.get("portfolio_suppressed", False)),
+        "risk": str(row.get("reason") or "") == "margin_guard",
+        "execution": str(row.get("reason") or "") in {
+            "broker_rejected", "entry_inside_freeze_band", "shadow_not_armed",
+            "release_identity_refused"},
+    })
+    row.setdefault("process_quality", process_quality_verdict(
+        {
+            "decision_timestamped": bool(row.get("time")),
+            "strategy_identified": bool(row.get("sleeve")),
+            "symbol_identified": bool(row.get("symbol")),
+            "release_identified": bool(row.get("release_id")),
+            "state_captured": bool(row.get("state_vector_id")),
+            "reason_recorded": bool(row.get("reason")),
+        }, evidence={"release_id": row.get("release_id"),
+                     "state_vector_id": row.get("state_vector_id")}))
     # THE ADDRESS THE DECISION SHARES WITH ITS INTENT (2026-09-08). A placed leg passes the id
     # `_record_intent` stamped; a veto or a refusal derives the same formula from its own row, so
     # every decision row has one and a placed one equals its intent's. Costs a field, never a row.
@@ -986,6 +1066,59 @@ def _record_intent(**row) -> str | None:
         with contextlib.suppress(Exception):
             row.setdefault("intent_id", _intent_id(row.get("symbol"), row.get("sleeve"),
                                                    row.get("side"), row["time"]))
+        # THE QUOTE AT DECISION, ON EVERY INTENT AND NOT ONLY THE BRACKET PATH.
+        # `libs/execution/fill_corpus.py` has named this handoff since it was written --
+        # "record decision_bid/decision_ask on every intent row, not only the bracket path" --
+        # and until now only `place_bracket` did. MEASURED 2026-09-23: of the thirty intents
+        # that join a real fill on this box, TWO carry a quote, so spread, slippage in points
+        # and every impact model read UNMEASURED on the other twenty-eight. Slippage without
+        # the market it was paid into averages over every situation at once and describes none.
+        # `setdefault`, so a caller that already read a tick keeps its own; a tick that cannot
+        # be read costs the fields and never the row, and never the order.
+        with contextlib.suppress(Exception):
+            if row.get("symbol") and row.get("decision_bid") is None:
+                _tk = mt5.symbol_info_tick(row["symbol"])
+                if _tk is not None:
+                    row.setdefault("decision_bid", float(_tk.bid))
+                    row.setdefault("decision_ask", float(_tk.ask))
+                    row.setdefault("spread_at_decision", float(_tk.ask) - float(_tk.bid))
+        # THE SEND-TO-ACK CLOCK, UNDER ITS OWN NAME, AND THE BOOK THE ORDER WENT TO.
+        # `latency_ms` is measured with `perf_counter` around `order_send` alone, so it IS the
+        # send-to-ack round trip -- but the fill corpus read it into
+        # `latency_decision_to_send_ms` and `latency_send_to_ack_ms` stayed empty on every row,
+        # which is the half of the shortfall model that prices WAITING. Both names are written
+        # now (the old one unchanged, so nothing that reads it moves) and the two wall clocks the
+        # round trip sits between are stamped, so send-to-fill is a fact and not a subtraction a
+        # reader has to guess at. `account` separates the live book from the prop book: until now
+        # an intent row named neither, and the two accounts' fills could only be told apart after
+        # the deal closed. RECORDING ONLY -- no branch below this changes an order.
+        with contextlib.suppress(Exception):
+            _lat = row.get("latency_ms")
+            if _lat is not None:
+                row.setdefault("latency_send_to_ack_ms", float(_lat))
+                row.setdefault("acked_at", row["time"])
+                with contextlib.suppress(Exception):
+                    _ack = datetime.fromisoformat(str(row["time"]).replace("Z", "+00:00"))
+                    row.setdefault(
+                        "sent_at",
+                        (_ack - timedelta(milliseconds=float(_lat))).isoformat())
+        with contextlib.suppress(Exception):
+            if row.get("account") is None:
+                _ai = mt5.account_info()
+                if _ai is not None:
+                    row.setdefault("account", int(getattr(_ai, "login", 0) or 0))
+                    row.setdefault("server", str(getattr(_ai, "server", "") or ""))
+                    from mt5desk.provenance import account_kind as _akind
+                    row.setdefault(
+                        "account_kind", _akind(getattr(_ai, "trade_mode", None)))
+        with contextlib.suppress(Exception):
+            if row.get("symbol") and row.get("point") is None:
+                _si = mt5.symbol_info(row["symbol"])
+                if _si is not None:
+                    row.setdefault("point", float(getattr(_si, "point", 0.0) or 0.0))
+                    row.setdefault("stops_level",
+                                   int(getattr(_si, "trade_stops_level", 0) or 0))
+                    row.setdefault("digits", int(getattr(_si, "digits", 0) or 0))
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
         with INTENTS.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, default=str) + "\n")
@@ -996,9 +1129,13 @@ def _record_intent(**row) -> str | None:
 
 
 def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
-                  sleeve_row: dict | None = None) -> dict:
-    """Send both legs of a bracket exactly as before; `sleeve_row` (the roster row, optional) is
-    read only to carry the sleeve's certificate and registry id onto the intent row."""
+                  sleeve_row: dict | None = None, blocked_side: str | None = None) -> dict:
+    """Send the bracket legs that agree with the current book.
+
+    ``blocked_side`` is the shared gold self-hedge rule: once XAU is directional, the leg that
+    would reverse it is recorded but not sent.  With no open direction it is ``None`` and this
+    remains the ordinary two-sided bracket.
+    """
     if _DESK_STALE is not None:
         log(f"[{sleeve}] refused: desk stale ({_DESK_STALE['verdict']}), no new risk")
         return {"ok": False, "stage": "desk_stale", "why": _DESK_STALE["why"]}
@@ -1022,6 +1159,15 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
 
     for side in ("buy_stop", "sell_stop"):
         s = spec[side]
+        if side == blocked_side:
+            why_blocked = "opposing gold leg suppressed; same strategy never pays to hedge itself"
+            log(f"NOT SENT [{sleeve}] {side}: {why_blocked}")
+            sent.append({"side": side, "retcode": None, "blocked": True,
+                         "comment": why_blocked})
+            _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                             price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                             taken=False, reason="self_hedge_prevented", detail=why_blocked)
+            continue
         # STOPS_LEVEL ZERO MEANS NO MINIMUM DISTANCE, NOT "ANY PRICE IS LEGAL" (fixed 2026-09-14).
         #
         # This was guarded `and _lvl > 0`, and Fusion reports trade_stops_level 0 on every symbol
@@ -1240,6 +1386,89 @@ def cancel_pending(st: dict, symbol: str) -> None:
             f"confirmed absent from orders_get")
 
 
+def cancel_filled_gold_siblings(st: dict) -> int:
+    """Cancel the unfilled half of every filled gold bracket and verify it is absent.
+
+    MT5 pending stops are not OCO. A live ``DWgold_*`` position and a pending order with the
+    same MAGIC, symbol and comment therefore identify the still-resting sibling without relying
+    on local state. The predicate deliberately excludes manual, scalp and family orders.
+    """
+    positions = [p for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])
+                 if int(getattr(p, "magic", 0) or 0) == MAGIC
+                 and str(getattr(p, "comment", "") or "").startswith("DWgold_")]
+    open_tags = {str(getattr(p, "comment", "") or "") for p in positions}
+    if not open_tags:
+        return 0
+    siblings = [o for o in (mt5.orders_get(symbol=GOLD_SYMBOL) or [])
+                if int(getattr(o, "magic", 0) or 0) == MAGIC
+                and str(getattr(o, "comment", "") or "") in open_tags]
+    removed = 0
+    for order in siblings:
+        if not st.get("armed"):
+            log(f"SHADOW would cancel filled gold bracket sibling {order.ticket} "
+                f"({order.comment})")
+            removed += 1
+            continue
+        try:
+            res = mt5.order_send({
+                "action": mt5.TRADE_ACTION_REMOVE,
+                "order": int(order.ticket),
+                "magic": MAGIC,
+                "comment": order_comment("oco_sibling"),
+            })
+        except Exception as exc:
+            log(f"OCO cancel FAILED for gold sibling {order.ticket}: "
+                f"{type(exc).__name__}: {exc}; order may still be live")
+            continue
+        rc = getattr(res, "retcode", None) if res is not None else None
+        still = any(int(getattr(x, "ticket", 0) or 0) == int(order.ticket)
+                    for x in (mt5.orders_get(symbol=GOLD_SYMBOL) or []))
+        if still:
+            log(f"OCO cancel NOT CONFIRMED for gold sibling {order.ticket} "
+                f"({order.comment}) retcode={rc}; order remains live")
+            continue
+        removed += 1
+        log(f"OCO cancelled gold bracket sibling {order.ticket} ({order.comment}) "
+            f"retcode={rc}; confirmed absent")
+    return removed
+
+
+def collapse_opposing_gold_positions(st: dict) -> int:
+    """Close-by redundant opposing gold-bracket positions while preserving net exposure."""
+    positions = [p for p in (mt5.positions_get(symbol=GOLD_SYMBOL) or [])
+                 if int(getattr(p, "magic", 0) or 0) == MAGIC
+                 and str(getattr(p, "comment", "") or "").startswith("DWgold_")]
+    buys = sorted((p for p in positions if p.type == mt5.POSITION_TYPE_BUY),
+                  key=lambda p: int(p.ticket))
+    sells = sorted((p for p in positions if p.type != mt5.POSITION_TYPE_BUY),
+                   key=lambda p: int(p.ticket))
+    paired = 0
+    while buys and sells:
+        buy, sell = buys.pop(0), sells.pop(0)
+        lots = min(float(buy.volume), float(sell.volume))
+        if lots <= 0:
+            continue
+        if not st.get("armed"):
+            log(f"SHADOW would CLOSE_BY gold hedge buy {buy.ticket} / sell {sell.ticket} "
+                f"({lots:.2f} lots each; net exposure unchanged)")
+            paired += 1
+            continue
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_CLOSE_BY,
+            "position": int(buy.ticket),
+            "position_by": int(sell.ticket),
+            "magic": MAGIC,
+            "comment": order_comment("portfolio_net"),
+        })
+        rc = getattr(res, "retcode", None) if res is not None else None
+        log(f"CLOSE_BY gold hedge buy {buy.ticket} / sell {sell.ticket} "
+            f"({lots:.2f} lots each) -> retcode={rc} "
+            f"{diagnose(rc, getattr(res, 'comment', '') if res is not None else '')}")
+        if rc == getattr(mt5, "TRADE_RETCODE_DONE", 10009):
+            paired += 1
+    return paired
+
+
 #: How many positions the DESK may hold on one symbol in one direction across EVERY sleeve.
 #: MEASURED 2026-09-16 on EURCHF: seven parameterisations of one discovered mechanism shorted a
 #: 12-pip box ~40 times in twelve hours, re-entering every bar while the pair drifted into their
@@ -1403,6 +1632,49 @@ def _original_stop_distance(st: dict, ticket: int, price_open: float, sl: float)
     return float(store[key])
 
 
+def _round_trip_per_price_unit(info: object, symbol: str) -> float | None:
+    """The round-trip commission expressed in PRICE units, or None if it cannot be derived.
+
+    THE UNIT TRAP THIS EXISTS TO AVOID. Commission is quoted in ACCOUNT currency per lot
+    (`fusion_cost.COMMISSION_PER_LOT_PER_SIDE = 2.00`, measured -- p10 = p50 = p90 over all 433
+    deals on 495044); a break-even stop is a PRICE. Converting between them by hand is where a
+    EUR-denominated account trading a USD-quoted instrument quietly books a small loss on every
+    scratch. `trade_tick_value / trade_tick_size` is the venue's own answer to "how much account
+    currency is one price unit worth, per lot", so the quote-currency conversion is the broker's
+    rather than ours, and the position's volume cancels out of both sides.
+
+    Returns None rather than a guess when the venue reports a degenerate tick value. A stop is
+    then left to the trail alone, which is the existing behaviour -- absence is never permission
+    to invent the number that decides where protection sits.
+    """
+    # Imported here rather than at module scope to match every other `libs` use in this file.
+    from libs.portfolio.fusion_cost import COMMISSION_PER_LOT_PER_SIDE
+
+    tick_value = float(getattr(info, "trade_tick_value", 0.0) or 0.0)
+    tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+    if not (tick_value > 0 and tick_size > 0):
+        log(f"MANAGE {symbol}: tick value/size degenerate "
+            f"({tick_value}/{tick_size}); break-even floor unavailable this pass")
+        return None
+    per_price_unit_per_lot = tick_value / tick_size
+    return (2.0 * COMMISSION_PER_LOT_PER_SIDE) / per_price_unit_per_lot
+
+
+def _rates_since_position(symbol: str, timeframe: int, opened_at: int,
+                          *, count: int = 2000) -> pd.DataFrame:
+    """Return terminal bars from the position's containing bar in broker-clock space."""
+    raw = mt5.copy_rates_from_pos(symbol, timeframe, 0, int(count))
+    if raw is None or len(raw) == 0:
+        return pd.DataFrame()
+    bars = pd.DataFrame(raw)
+    if "time" not in bars:
+        return pd.DataFrame()
+    ts = sorted({int(x) for x in bars["time"]})
+    step = min((b - a for a, b in zip(ts, ts[1:]) if b > a), default=60)
+    start = int(opened_at) - (int(opened_at) % max(1, step))
+    return bars[bars["time"].astype("int64") >= start].reset_index(drop=True)
+
+
 def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
     """Ratchet the stop on every open position. SHADOW UNLESS `st["armed"]`.
 
@@ -1438,67 +1710,115 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
             # -4.25 EUR, on holds the certificate would have carried to their time exit. Only a
             # position whose own signal carried a trail (`trail_k` recorded at the send) is
             # managed here; the gold and scalp lanes are unchanged.
+            #
+            # THE SKIP BECAME A FLOOR-ONLY PASS (2026-09-24) RATHER THAN A `continue`, because a
+            # `continue` here also refused the break-even stop the principal ordered that day --
+            # and three of the thirteen LIVE sleeves are `family_market` XAUUSD session-range
+            # BREAKOUTS, exactly the sleeves named in the order. The 2026-09-16 finding is
+            # preserved in full: no TRAIL runs on a fixed-bracket certificate. What now runs is
+            # the floor alone, which cannot tighten inside the bracket and can only refuse to
+            # leave a stop under water after the trade has already run 0.85R.
+            _floor_only = False
             _fam_name = _fixed_tags.get(str(getattr(p, "comment", "") or ""))
             if _fam_name is not None:
                 _trail = float(((st.get("generic") or {}).get(_fam_name) or {})
                                .get("trail_k") or 0.0)
                 if not _trail > 0.0:
-                    log(f"MANAGE ticket {p.ticket} ({symbol}): certified exit is a fixed "
-                        f"bracket and the time exit; not ratcheted")
-                    continue
+                    _floor_only = True
             dist = _original_stop_distance(st, p.ticket, p.price_open, p.sl)
             if dist is None:
                 log(f"MANAGE ticket {p.ticket} ({symbol}): no stop on the position; "
                     f"nothing to ratchet against and none invented")
                 continue
 
-            # Bars SINCE ENTRY only. A pre-entry extreme is a level the thesis never reached.
-            since = mt5.copy_rates_range(symbol, mt5.TIMEFRAME_H1,
-                                         datetime.fromtimestamp(p.time, tz=UTC),
-                                         datetime.now(tz=UTC))
-            if since is None or len(since) < 2:
-                log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than 2 bars since entry; "
-                    f"too early to locate an extreme")
+            # The floor consumes only the post-entry extreme, so it reads M1 and can protect a
+            # fast winner on the first completed minute. The certified chandelier remains H1.
+            timeframe = (getattr(mt5, "TIMEFRAME_M1", mt5.TIMEFRAME_H1)
+                         if _floor_only else mt5.TIMEFRAME_H1)
+            bars = _rates_since_position(symbol, timeframe, int(p.time))
+            minimum = 1 if _floor_only else 2
+            if len(bars) < minimum:
+                log(f"MANAGE ticket {p.ticket} ({symbol}): fewer than {minimum} "
+                    f"{'M1' if _floor_only else 'H1'} bars since entry; too early to locate "
+                    f"an extreme (broker-clock positional read)")
                 continue
-            bars = pd.DataFrame(since)
 
             # ATR on a longer window than the holding period, because a young position has too
             # few bars of its own to characterise volatility with.
-            h1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 400)
-            if h1 is None or len(h1) < ATR_N + 1:
-                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR unavailable; skipped")
-                continue
-            atr = atr_last(pd.DataFrame(h1))
-            if not (atr > 0):
-                log(f"MANAGE ticket {p.ticket} ({symbol}): ATR non-positive; skipped")
-                continue
+            # THE FLOOR MUST NOT DEPEND ON A NUMBER IT NEVER READS. ATR scales the chandelier and
+            # nothing else; in floor-only mode no chandelier is computed, so requiring 21 hours
+            # of H1 history would refuse the break-even stop on exactly the young position that
+            # has just run 0.85R in a fast tape -- a protection withheld for an input the
+            # decision does not consume.
+            atr = 0.0
+            if not _floor_only:
+                h1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_H1, 0, 400)
+                if h1 is None or len(h1) < ATR_N + 1:
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): ATR unavailable; skipped")
+                    continue
+                atr = atr_last(pd.DataFrame(h1))
+                if not (atr > 0):
+                    log(f"MANAGE ticket {p.ticket} ({symbol}): ATR non-positive; skipped")
+                    continue
 
             extreme, stall = _pm.extreme_and_stall(
                 highs=[float(x) for x in bars["high"]],
                 lows=[float(x) for x in bars["low"]], side=side)
+            # THE BREAK-EVEN FLOOR'S TWO INPUTS, BOTH READ FROM THE VENUE THIS PASS. `spread` is
+            # charged only on the short leg, because these are bid bars; `position_manager`
+            # owns that asymmetry and this only supplies the number.
+            cost_unit = _round_trip_per_price_unit(info, symbol)
+            spread_price = (float(getattr(info, "spread", 0) or 0)
+                            * float(getattr(info, "point", 0.0) or 0.0))
             decision = _pm.ratchet(
                 entry=float(p.price_open), current_stop=float(p.sl), stop_distance=dist,
-                extreme=extreme, atr=atr, side=side, bars_since_extreme=stall)
+                extreme=extreme, atr=atr, side=side, bars_since_extreme=stall,
+                cost_per_unit=cost_unit, spread=spread_price, floor_only=_floor_only)
 
             tag = f"MANAGE ticket {p.ticket} ({symbol})"
             if not decision.moves:
                 log(f"{tag}: {decision.reason}")
                 continue
-            if decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R:
-                log(f"{tag}: improvement {decision.improvement_r:+.3f}R below the "
-                    f"{MIN_RATCHET_IMPROVEMENT_R:.2f}R floor; not worth a modify")
+            # THE IMPROVEMENT FLOOR IS THE VENUE'S STOP STEP, NOT 0.05R (2026-09-29). A modify
+            # pays no spread and no commission; the 0.05R floor skipped real tightenings of the
+            # trail -- and, before the break-even exemption, the break-even move itself -- to
+            # save a request. Any move the venue can represent (one `trade_tick_size`, else one
+            # `point`) is sent, whether it is the trail or the break-even floor.
+            _step = (float(getattr(info, "trade_tick_size", 0.0) or 0.0)
+                     or float(getattr(info, "point", 0.0) or 0.0))
+            if not _pm.tightens_by_min_step(side=side, new_stop=float(decision.new_stop),
+                                            current_stop=float(p.sl), step=_step):
+                log(f"{tag}: move {p.sl:.5f} -> {decision.new_stop:.5f} is under one venue "
+                    f"stop step ({_step:g}); nothing the broker can represent")
                 continue
 
-            # THE VENUE'S OWN MINIMUM DISTANCE. A stop inside stops_level is rejected, and a
-            # rejection every pass is a management loop that looks busy and protects nothing.
+            # THE LEVEL MUST STILL BE A STOP WHEN IT ARRIVES, and the venue's own minimum
+            # distance is only half of that question. This block asked one thing -- is the
+            # proposed level inside `stops_level` of the market -- and only when the broker
+            # states a `stops_level` at all; on a symbol reporting zero it asked nothing. It
+            # never asked the other half: WHICH SIDE of the market the level is on. A trail
+            # computed off an extreme that price has since retraced past comes out BEHIND the
+            # market, which is not a tight stop but a market exit, and `ratchet` cannot see it
+            # because it compares the candidate to the current stop and never to the quote.
+            #
+            # HERE THAT COSTS NOTHING AND THAT IS WHY IT SURVIVED: MetaTrader answers 10016
+            # ("Invalid stops") and the account keeps the stop it had -- this log holds 92 such
+            # refusals against 15 accepted modifies. The desk's OTHER account has no such
+            # backstop: on 2026-09-24 TradeLocker accepted the identical mistake on E8 position
+            # 360287970193246861 and filled it at market, 24.13 points and 386.08 USD past the
+            # level the desk had just proven protected more. One predicate now answers both
+            # halves on both venues; `min_distance` folds the old stops_level test into it.
             stops_level = int(getattr(info, "trade_stops_level", 0) or 0)
             tick_size = float(getattr(info, "trade_tick_size", 0.0) or 0.0)
             tick_now = mt5.symbol_info_tick(symbol)
-            if stops_level and tick_size and tick_now is not None:
-                ref = tick_now.bid if side == 1 else tick_now.ask
-                if abs(ref - decision.new_stop) < stops_level * tick_size:
-                    log(f"{tag}: proposed stop {decision.new_stop:.5f} is inside the venue's "
-                        f"{stops_level}-point stops level; held")
+            if tick_now is not None:
+                rests, why_rest = _pm.stop_rests_at_venue(
+                    stop=float(decision.new_stop), side=side,
+                    bid=float(tick_now.bid), ask=float(tick_now.ask),
+                    min_distance=(stops_level * tick_size
+                                  if stops_level and tick_size else 0.0))
+                if not rests:
+                    log(f"{tag}: {why_rest}")
                     continue
 
             if not st["armed"]:
@@ -1515,10 +1835,15 @@ def manage_open_positions(st: dict, sleeves: list[dict]) -> None:
                 "magic": MAGIC,
             })
             rc = res.retcode if res else None
-            log(f"{tag}: MODIFY sl {p.sl:.5f} -> {decision.new_stop:.5f} "
+            # THE REASON TRAVELS WITH THE SEND, not only with the refusals. Until 2026-09-24 the
+            # armed path logged the level and the retcode but never `decision.reason`, so the
+            # log could not answer which mechanism moved the stop -- trail or break-even floor --
+            # which is the first question any audit of this change asks.
+            log(f"{tag}: MODIFY{' [BREAK-EVEN FLOOR]' if decision.breakeven_floor else ''} "
+                f"sl {p.sl:.5f} -> {decision.new_stop:.5f} "
                 f"(protected {decision.protected_r_before:+.3f}R -> "
                 f"{decision.protected_r_after:+.3f}R) retcode={rc} "
-                f"{diagnose(rc, res.comment if res else '')}")
+                f"{diagnose(rc, res.comment if res else '')} | {decision.reason}")
 
             # CONFIRM FROM THE BROKER, not from the return code. A retcode is an answer about
             # the request; the position is the answer about the account.
@@ -1583,7 +1908,8 @@ def _position_entry(pid) -> dict:
     records every other fill.
     """
     out = {"entry_price": 0.0, "sl": 0.0, "tp": 0.0, "comment": "",
-           "entry_order": None, "entry_deal": None, "position_id": pid}
+           "entry_order": None, "entry_deal": None, "position_id": pid,
+           "entry_time": None, "entry_side": None}
     if not pid:
         return out
     try:
@@ -1598,6 +1924,12 @@ def _position_entry(pid) -> dict:
                 out["entry_price"] = float(getattr(x, "price", 0.0) or 0.0)
                 out["entry_order"] = getattr(x, "order", None)
                 out["entry_deal"] = getattr(x, "ticket", None)
+                out["entry_side"] = getattr(x, "type", None)
+                stamp = float(getattr(x, "time_msc", 0) or 0) / 1000.0
+                if stamp <= 0:
+                    stamp = float(getattr(x, "time", 0) or 0)
+                if stamp > 0:
+                    out["entry_time"] = datetime.fromtimestamp(stamp, tz=UTC).isoformat()
                 break
     except Exception as exc:
         log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
@@ -1647,7 +1979,7 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
         return
     written = 0
     for d in deals:
-        if d.entry != mt5.DEAL_ENTRY_OUT:
+        if d.entry not in (mt5.DEAL_ENTRY_OUT, getattr(mt5, "DEAL_ENTRY_OUT_BY", 3)):
             continue
         if getattr(d, "ticket", None) in seen_deals:
             continue
@@ -1711,6 +2043,12 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                                        tick_size=float(getattr(sym_info, "trade_tick_size",
                                                                0.0) or 0.0))
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
+               # Preserve the legacy close-deal side, but expose the actual position side
+               # separately: a closing BUY belongs to a SHORT position.
+               "entry_side": ctx["entry_side"], "entry_time": ctx["entry_time"],
+               "exit_time": (datetime.fromtimestamp(float(d.time), tz=UTC).isoformat()
+                             if getattr(d, "time", 0) else None),
+               "timestamp_basis": "broker_deal_epoch",
                "side": d.type, "pl_quote": round(pl_quote, 2),
                "r_multiple": round(r, 4), "volume": d.volume,
                "commission": d.commission, "swap": d.swap, "deal": d.ticket,
@@ -1961,12 +2299,13 @@ def _net_routes(symbols: set[str]) -> None:
 
 
 def _closing_fill(ticket: int) -> tuple[float, float] | None:
-    """(lots closed, volume-weighted close price) from the position's DEAL_ENTRY_OUT deals, or
+    """(lots closed, volume-weighted close price) from OUT/OUT_BY deals, or
     None while the terminal has not recorded one. Read-only history, the same call
     `_position_entry` makes; never raises past its caller's guard."""
     lots = notional = 0.0
     for x in (mt5.history_deals_get(position=ticket) or ()):
-        if getattr(x, "entry", None) == mt5.DEAL_ENTRY_OUT:
+        if getattr(x, "entry", None) in (mt5.DEAL_ENTRY_OUT,
+                                        getattr(mt5, "DEAL_ENTRY_OUT_BY", 3)):
             v = float(getattr(x, "volume", 0.0) or 0.0)
             lots += v
             notional += v * float(getattr(x, "price", 0.0) or 0.0)
@@ -2346,8 +2685,13 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
     caller refuses the row by name. An empty dict is a valid answer -- a price-only family needs
     nothing beyond bars -- and is not a gap.
     """
-    params = dict(s.get("params") or {})
-    if not params:
+    # An explicit empty mapping is the COMPLETE default parameterisation for a price-only
+    # family.  Absence/None means the registry lost the parameters and must reconstruct them;
+    # treating both shapes as falsy made valid `{}` rows enter certificate recovery and refuse.
+    raw_params = s.get("params")
+    has_explicit_params = "params" in s and isinstance(raw_params, dict)
+    params = dict(raw_params or {})
+    if not has_explicit_params:
         recovered, why = _params_from_certificate(s)
         if recovered is None:
             return None, why
@@ -2821,6 +3165,13 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        intended=entry_ref, sl=float(g.stop), tp=float(g.target),
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice, latency_ms=_lat_ms,
+                       # A MARKET ORDER'S FILL IS KNOWN AT SEND TIME AND WAS THROWN AWAY. The
+                       # venue answers `order_send` with the price it filled at; recording it
+                       # here means slippage on this order is complete before it ever closes,
+                       # instead of waiting for a closing deal that may never come.
+                       fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
+                       fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
+                       deal_ticket=(getattr(res, "deal", None) if res else None),
                        **_sleeve_identity(s))
         log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} "
@@ -2947,12 +3298,21 @@ def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
 
 
 def _retarget_sleeve_positions(symbol: str, name: str, sl: float, tp: float) -> None:
-    """Move every slice's target to the basket's new average-entry target (stop unchanged)."""
+    """Move every slice's target to the basket's new average-entry target (stop unchanged).
+
+    THE STOP IS NEVER LOOSENED HERE (2026-09-29). This sent `sl` -- the basket's ORIGINAL
+    stop -- onto every slice, so a slice `manage_open_positions` had already trailed or floored
+    at break-even was pushed back to the opening level by an add-on. Each slice now keeps its
+    own broker-reported stop unless `sl` protects more.
+    """
     for p in _sleeve_positions(symbol, name):
+        side = 1 if p.type == mt5.POSITION_TYPE_BUY else -1
+        keep_sl = _pm.never_loosen(side=side, proposed=float(sl),
+                                   current=float(getattr(p, "sl", 0.0) or 0.0))
         res = mt5.order_send({"action": mt5.TRADE_ACTION_SLTP, "position": p.ticket,
-                              "symbol": symbol, "sl": float(sl), "tp": float(tp),
+                              "symbol": symbol, "sl": float(keep_sl), "tp": float(tp),
                               "magic": MAGIC})
-        log(f"[{name}] RETARGET ticket {p.ticket} tp={tp:.5f} -> "
+        log(f"[{name}] RETARGET ticket {p.ticket} sl={keep_sl:.5f} tp={tp:.5f} -> "
             f"retcode={res.retcode if res else None}")
 
 
@@ -3110,11 +3470,22 @@ def resolve_scalp_order(st: dict, s: dict, equity: float) -> dict:
         entries = addon_entries(basket["entries"], price, per)
         new_tp = sx.basket_target(entries, side, float(basket["target_atr"]),
                                   float(basket["atr"]))
+        # THE ADD-ON CARRIES THE BASKET'S CURRENT STOP, NOT ITS OPENING ONE (2026-09-29).
+        # `basket["stop"]` is the level recorded at the first slice; `manage_open_positions`
+        # may since have trailed the slices or floored them at break-even on the broker. The
+        # new slice takes the tightest stop the account holds, so an add-on can never re-open
+        # risk the desk has already locked away. Sizing (`dist`) is unchanged -- still priced at
+        # the basket's own stop, exactly as before -- so the order is never smaller for it.
+        stop_now = _pm.tightest_stop(
+            side=side,
+            stops=[float(basket["stop"]),
+                   *(float(getattr(p, "sl", 0.0) or 0.0)
+                     for p in _sleeve_positions(s["symbol"], name))]) or float(basket["stop"])
         return {"ok": True, "stage": "ok", "why": "resolved", "kind": "addon", "forming": forming,
                 "mark": True, "per": float(per), "mode": mode, "side": side, "price": price,
-                "stop": float(basket["stop"]), "tp": float(new_tp), "dist": float(dist),
+                "stop": float(stop_now), "tp": float(new_tp), "dist": float(dist),
                 "sym": sym, "tick": tick, "entries": [[float(p), float(u)] for p, u in entries],
-                "desc": addon_desc(side, per, s["symbol"], float(basket["stop"]), new_tp,
+                "desc": addon_desc(side, per, s["symbol"], float(stop_now), new_tp,
                                    len(entries)),
                 "basis": (f"promoted_lot: risk_frac={s.get('risk_frac')} x ramp(n_live={n_live}) "
                           f"at the basket's own {dist:.5g} stop, sliced to {per} ({mode})")}
@@ -3238,7 +3609,12 @@ def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
                        ticket=(getattr(res, "order", None) if res else None), retcode=rc,
                        policy_advice=policy_advice,
                        slice_depth=(len(plan["entries"]) if is_addon else 1),
-                       latency_ms=_lat_ms, **_sleeve_identity(s))
+                       latency_ms=_lat_ms,
+                       # As the family-market path: the venue's own fill, recorded at send.
+                       fill_price=(float(getattr(res, "price", 0.0) or 0.0) if res else None),
+                       fill_volume=(float(getattr(res, "volume", 0.0) or 0.0) if res else None),
+                       deal_ticket=(getattr(res, "deal", None) if res else None),
+                       **_sleeve_identity(s))
         log(f"[{name}] SCALP-EXEC {'ADD-ON' if is_addon else 'ORDER'} -> retcode={rc} "
             f"{diagnose(rc, getattr(res, 'comment', '') or '', _send_error(res))} | {desc}")
         if rc not in (10008, 10009):
@@ -3453,6 +3829,14 @@ def main() -> None:
         # degraded; a desk that cannot place or reconcile anything because management raised is
         # broken, and the second is strictly worse than the first.
         log(f"MANAGE FAILED (positions left untouched): {type(exc).__name__}: {exc}")
+    # MT5 brackets are not native OCO. Remove the unfilled sibling immediately after a fill,
+    # then repair any legacy opposite pair by CLOSE_BY without changing net exposure.
+    try:
+        cancel_filled_gold_siblings(st)
+        collapse_opposing_gold_positions(st)
+    except Exception as exc:
+        log(f"GOLD OCO/HEDGE REPAIR FAILED (positions left untouched): "
+            f"{type(exc).__name__}: {exc}")
     # A sleeve that left the roster leaves the book: retired names queued by the decay monitor
     # have their open positions closed here, one pass at a time, never from inside management.
     try:
@@ -3949,7 +4333,19 @@ def main() -> None:
                     log(f"release-refusal record failed (non-fatal) [{s['name']}]: "
                         f"{type(exc).__name__}: {exc}")
                 continue
-            res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s)
+            _gold_rows: list[dict] = []
+            if s["symbol"] == GOLD_SYMBOL:
+                for _pos in mt5.positions_get(symbol=GOLD_SYMBOL) or []:
+                    _typ = int(getattr(_pos, "type", -1))
+                    _gold_rows.append({"side": ("buy" if _typ == mt5.POSITION_TYPE_BUY else
+                                                 "sell" if _typ == mt5.POSITION_TYPE_SELL else
+                                                 None)})
+            _direction = book_direction(_gold_rows) if s["symbol"] == GOLD_SYMBOL else 0
+            if _direction is None:
+                log(f"[{s['name']}] bracket NOT placed: an open gold position side is unreadable")
+                continue
+            res = place_bracket(st, spec, s["name"], s["symbol"], lot, sleeve_row=s,
+                                blocked_side=OPPOSING_LEG.get(_direction))
             # THE LOT IS RECORDED WITH THE BRACKET (2026-09-09). Without it, the next pass had
             # to RE-SIZE an order the venue was already holding in order to charge heat for it --
             # a different number at a different equity, so the cap priced a trade the book does

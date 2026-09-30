@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 import sys
 import time
 from dataclasses import dataclass
@@ -156,6 +157,11 @@ GOLD_WINDOWS = [
     ("london_am", 13, (10, 13)),
     ("afternoon", 17, (14, 17)),
 ]
+
+#: The bracket leg that would trade against an already directional gold book.  Shared by the
+#: Fusion and E8 venue adapters so one strategy cannot hedge itself on one account while the
+#: other correctly suppresses the redundant leg.
+OPPOSING_LEG = {1: "sell_stop", -1: "buy_stop"}
 
 #: EUR put at risk by the venue's smallest tradeable position on gold. Below the equity where
 #: this equals Q_OPT, the FLOOR sets the risk and the policy does not -- deliberately kept, so a
@@ -1579,7 +1585,22 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
         sleeves.append({"name": name, "symbol": "XAUUSD",
                         "window": label, "sig_hour": sig_hour, "rng": rng,
                         "lot": "auto", "status": "LIVE"})
+    # FORWARD-CLOCK VERSIONS ARE EVIDENCE IDENTITIES, NOT EXTRA LIVE BETS.  The promoter keeps
+    # `gold_asia_v2/v3/v4` (and the corresponding London/afternoon rows) separately because each
+    # certificate and prospective clock must remain auditable.  Economically, however, every
+    # version maps to the same session range, the same signal hour and the same XAUUSD bracket.
+    # Appending them here stacked identical pending orders, charged the heat budget repeatedly
+    # and could make the venue margin guard reject the canonical window.  Keep those rows in the
+    # evidence ledgers, but fold them at the one boundary that grants live execution authority.
+    _gold_alias = re.compile(r"^gold_(asia|london_am|afternoon)_v\d+$", re.IGNORECASE)
     for s in promoted:
+        _alias = _gold_alias.fullmatch(str(s.get("name") or ""))
+        if _alias:
+            canonical = f"gold_{_alias.group(1).lower()}"
+            notes.append(
+                f"GOLD {s.get('name')}: evidence alias folded into {canonical}; "
+                "no duplicate live bracket or heat charge")
+            continue
         # GENERIC FAMILY SLEEVES (GAP 124, 2026-08-25): hunt-certified sleeves the promoter
         # admitted with exec="family_market" bypass the window whitelist -- their semantics
         # come from the certified family's own replay code, not from session brackets. They
@@ -1636,6 +1657,27 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
                         "risk_frac": s.get("risk_frac"),
                         "lot": "auto_ramp", "status": "LIVE"})
     return sleeves, notes
+
+
+def book_direction(positions: list[dict]) -> int | None:
+    """Direction shared by all readable gold positions: +1 buy, -1 sell, 0 flat/two-sided.
+
+    ``None`` is deliberately distinct from flat: an unreadable side cannot grant permission to
+    place either leg.  Venue adapters translate their native position rows to the tiny
+    ``{"side": "buy"|"sell"}`` contract before calling this function.
+    """
+    sides: set[int] = set()
+    for p in positions:
+        side = str(p.get("side") or p.get("Side") or "").strip().lower()
+        if side == "buy":
+            sides.add(1)
+        elif side == "sell":
+            sides.add(-1)
+        else:
+            return None
+    if len(sides) != 1:
+        return 0
+    return sides.pop()
 
 
 def hibernated(sleeves: list[dict], regime_state: dict) -> set[str]:

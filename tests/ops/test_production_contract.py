@@ -10,7 +10,9 @@ from libs.ops.production_contract import (
     latency_metrics,
     preflight_contract,
     reality_gap,
+    state_replay_parity,
     strategy_manifest,
+    strategy_state_identity,
     venue_eligibility,
 )
 
@@ -139,6 +141,22 @@ def test_hot_path_is_deterministic_and_ordered() -> None:
     assert first["path_hash"] == second["path_hash"]
     with pytest.raises(ValueError):
         deterministic_hot_path({}, {"x": 1}, signal, allocator, risk, adapter)
+
+
+def test_state_identity_is_content_addressed_and_warm_start_must_replay_exactly() -> None:
+    sid = strategy_state_identity(mechanism="range_reversion", parameters={"z": 2, "n": 20},
+                                  symbol="xauusd", timeframe="m5", version="abc")
+    assert sid == strategy_state_identity(
+        mechanism="range_reversion", parameters={"n": 20, "z": 2},
+        symbol="XAUUSD", timeframe="M5", version="abc")
+    rows = [{"state_identity": sid, "decided_at": "2026-09-27T10:00:00Z",
+             "decision": "ENTER", "signal": 1.2, "desired_order": {"qty": 1},
+             "state_after": {"last": 4}}]
+    same = state_replay_parity(rows, list(rows), boundary="2026-09-27T09:00:00Z")
+    assert same["status"] == "PASS"
+    changed = [{**rows[0], "decision": "SKIP"}]
+    got = state_replay_parity(rows, changed, boundary="2026-09-27T09:00:00Z")
+    assert got["status"] == "FAIL" and got["parity"] == 0.0
 
 
 def test_latency_and_recovery_permission_boundaries() -> None:

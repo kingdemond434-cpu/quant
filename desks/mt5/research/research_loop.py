@@ -16,7 +16,7 @@ import json
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -47,8 +47,10 @@ def next_pending() -> dict | None:
             it["status"] = "QUEUED"
             try:
                 QUEUE.write_text(json.dumps(q, indent=2), encoding="utf-8")
-            except Exception:
-                pass
+            except Exception as exc:
+                # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). The log line below
+                # announced the reset whether or not the queue had actually been rewritten.
+                log(f"queue NOT written after reset ({type(exc).__name__}: {exc})")
             log(f"stale RUNNING reset to QUEUED: {it['id']} (no live runner)")
             return it
     return None
@@ -67,14 +69,14 @@ def runner_alive() -> bool:
 
 
 def log(msg: str) -> None:
-    line = f"{datetime.now(timezone.utc).isoformat()} {msg}"
+    line = f"{datetime.now(UTC).isoformat()} {msg}"
     print(line, flush=True)
     with open(BASE / "logs" / "research_loop.log", "a", encoding="utf-8") as f:
         f.write(line + "\n")
 
 
 def until_next_hour() -> float:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     nxt = now.replace(minute=0, second=0, microsecond=0)
     nxt = nxt.replace(hour=nxt.hour + 1)
     return min(3600.0, max(60.0, (nxt - now).total_seconds()))
@@ -96,7 +98,7 @@ def hourly_demo_snapshot() -> None:
                           "cells": len(d.get("all", []))})
         except Exception:
             pass
-    row = {"ts": datetime.now(timezone.utc).isoformat(),
+    row = {"ts": datetime.now(UTC).isoformat(),
            "queue": counts, "queued_pending": int(next_pending() is not None),
            "experiments_done": len(done), "recent_demos": demos}
     with open(REPORTS / "hypothesis_demo.jsonl", "a", encoding="utf-8") as f:

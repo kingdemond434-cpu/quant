@@ -1,0 +1,1459 @@
+{
+ "source": "firm_mining",
+ "cluster": "statarb_multistrat",
+ "mined_at": "2026-09-27T02:00:00+00:00",
+ "discoveries": [
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "monthly_opex",
+    "mode": "post_flow_fade"
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000",
+    "EUSTX50",
+    "GER40",
+    "JPN225"
+   ],
+   "mechanism": "Expiry-day two-patch index path: SEBI documented aggressive constituent buying 09:15-11:46 (index lifted) then aggressive selling 11:49-close into a net-short options book. Tests whether on monthly-opex days the morning index move systematically reverses into the close on Fusion index CFDs (dealer/option-book unwind). The India pattern was manipulation by one dominant player; transfer to US/EU expiry is an untested hypothesis.",
+   "firm": "Jane Street",
+   "evidence": "DOCUMENTED (regulator finding, India, alleged manipulation); transfer to MT5 indices SPECULATED",
+   "source_url": "https://www.legal500.com/developments/thought-leadership/sebi-update-interim-order-against-jane-street-group-for-alleged-index-manipulation/",
+   "source_title": "Legal500: SEBI update - interim order against Jane Street Group for alleged index manipulation",
+   "quote": "buy orders placed at or above the Last Traded Price (LTP) in Patch I and sell orders at or below LTP in Patch II",
+   "horizon": "intraday (expiry day, ~5h)",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "hedging_demand_close",
+   "params": {
+    "require_elevated_vol": true
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000",
+    "GER40",
+    "EUSTX50"
+   ],
+   "mechanism": "'Extended marking the close': SEBI found aggressive selling in the final 60 minutes (from 14:30) to depress the closing level that settles options. Retail-usable form: abnormal last-hour displacement into a settlement close tends to be flow, not information, and partially reverses next session. Existing family; add an expiry-day-only variant via the conditioner gap below.",
+   "firm": "Jane Street",
+   "evidence": "DOCUMENTED (India, 3 days incl. 10 Jul 2024); MT5 transfer SPECULATED",
+   "source_url": "https://www.legal500.com/developments/thought-leadership/sebi-update-interim-order-against-jane-street-group-for-alleged-index-manipulation/",
+   "source_title": "Legal500: SEBI update - interim order against Jane Street Group for alleged index manipulation",
+   "quote": "engaged in aggressive selling in the final 60 minutes of trading, notably from 14:30:00 onwards, in BANKNIFTY constituent stocks and index futures",
+   "horizon": "last hour -> next session open",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "liquidity_gamma_reversal",
+   "params": {
+    "require_high_liquidity": true,
+    "require_failed_continuation": true
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30"
+   ],
+   "mechanism": "Options market makers (Citadel Securities, Jane Street, etc. as the SPX OMM population) are on average net long gamma in 0DTE; their delta-hedging sells rallies/buys dips, dampening intraday volatility and strengthening intraday reversal. Trade fades of large intraday displacements in S&P/Nasdaq CFDs when liquidity is high.",
+   "firm": "options market makers (industry; Citadel Securities/Jane Street class)",
+   "evidence": "DOCUMENTED (academic, proprietary Cboe OMM data)",
+   "source_url": "https://cdn.cboe.com/resources/education/research_publications/gammasqueezes.pdf",
+   "source_title": "Amaya, Garcia-Ares, Pearson, Vasquez (2025) 0DTE Index Options and Market Volatility: How Large is Their Impact?",
+   "quote": "the average across the 36 months is negative for all models, indicating a negative relation between OMM net gamma and the variance of index returns.",
+   "horizon": "intraday 1-4h",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "month_end",
+    "mode": "pre_flow"
+   },
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCAD"
+   ],
+   "mechanism": "Month-end mechanical rebalancing flows: multi-asset and equity-hedged funds rebalance at month-end, concentrated around the London 4pm fix; dealers (Citadel Securities GMI) flag flows dominating fundamentals around month/quarter/half-year ends.",
+   "firm": "Citadel Securities",
+   "evidence": "REPORTED (dealer research; page returned 403 to fetcher, quote from search-snippet)",
+   "source_url": "https://www.citadelsecurities.com/news-and-insights/global-market-intelligence-gmi-flows-and-fundamentals/",
+   "source_title": "Citadel Securities GMI: Flows and Fundamentals",
+   "quote": "mechanical flows: potential bond inflows and megacap trimming",
+   "horizon": "hours around month-end fix",
+   "asset_classes": [
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "quarter_end",
+    "mode": "pre_flow",
+    "side": 1
+   },
+   "symbols": [
+    "UST10Y",
+    "UST05Y",
+    "UKGILT"
+   ],
+   "mechanism": "Quarter-end pension/balanced-fund rebalancing -> bond inflows into quarter-end (Citadel Securities GMI 'potential bond inflows'). Long bond CFDs into the quarter-end window.",
+   "firm": "Citadel Securities",
+   "evidence": "REPORTED (search-snippet; page 403)",
+   "source_url": "https://www.citadelsecurities.com/news-and-insights/global-market-intelligence-gmi-flows-and-fundamentals/",
+   "source_title": "Citadel Securities GMI: Flows and Fundamentals",
+   "quote": "mechanical flows: potential bond inflows and megacap trimming",
+   "horizon": "days into quarter-end",
+   "asset_classes": [
+    "bonds"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "quarter_end",
+    "mode": "pre_flow",
+    "side": -1
+   },
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism": "Quarter-end rebalancing out of equities after strong quarters ('megacap trimming') -> short NAS100/US500 into the quarter-end window; pairs with the bond-inflow row.",
+   "firm": "Citadel Securities",
+   "evidence": "REPORTED (search-snippet; page 403)",
+   "source_url": "https://www.citadelsecurities.com/news-and-insights/global-market-intelligence-gmi-flows-and-fundamentals/",
+   "source_title": "Citadel Securities GMI: Flows and Fundamentals",
+   "quote": "mechanical flows: potential bond inflows and megacap trimming",
+   "horizon": "days into quarter-end",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "index_rebalance",
+    "mode": "post_flow_fade"
+   },
+   "symbols": [
+    "UK100",
+    "JPN225",
+    "US500"
+   ],
+   "mechanism": "Index-rebalance closes create concentrated, information-free closing-auction demand that dealers warehouse and then unwind; Jane Street's own ETF/index business (S&T) is built on pricing this flow. Fade the rebalance-close displacement next session.",
+   "firm": "Jane Street",
+   "evidence": "REPORTED (practitioner description of flow business); edge SPECULATED",
+   "source_url": "https://signalsandthreads.com/finding-signal-in-the-noise/",
+   "source_title": "Signals and Threads (Jane Street): Finding Signal in the Noise - ML and the Markets",
+   "quote": "what the flow might be like that tells you something about what the likely market impact is of the trading",
+   "horizon": "1 session after rebalance",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "pca_residual",
+   "params": {
+    "window": 1440,
+    "entry_z": 1.25
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDNOK",
+    "USDSEK"
+   ],
+   "mechanism": "Avellaneda-Lee PCA residual stat-arb transplanted to an FX-majors panel: remove top principal components (USD factor, risk factor) over a 60-trading-day window (=1440 H1 bars), model residual as OU, enter at |s|>1.25, exit near 0.5-0.75. The D.E. Shaw/PDT/Citadel stat-arb template (Citadel's HFT 'grew out of' stat-arb).",
+   "firm": "D.E. Shaw / Citadel / PDT (stat-arb template)",
+   "evidence": "DOCUMENTED (construction and backtest on US equities); FX transfer SPECULATED",
+   "source_url": "https://math.nyu.edu/~avellane/AvellanedaLeeStatArb20090616.pdf",
+   "source_title": "Avellaneda & Lee (2009) Statistical Arbitrage in the U.S. Equities Market",
+   "quote": "We select as entry point for trading any residual that deviates by 1.25 standard deviations from equilibrium",
+   "horizon": "days (mean-reversion time < 30 days)",
+   "asset_classes": [
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "pca_residual",
+   "params": {
+    "window": 1440,
+    "entry_z": 1.25
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XPTUSD",
+    "XPDUSD",
+    "XCUUSD"
+   ],
+   "mechanism": "Same PCA residual construction on precious/base metals (gold, silver, platinum, palladium, copper): first PC = metals/USD factor; trade idiosyncratic residual reversion.",
+   "firm": "D.E. Shaw / Citadel (stat-arb template)",
+   "evidence": "DOCUMENTED construction; metals transfer SPECULATED",
+   "source_url": "https://math.nyu.edu/~avellane/AvellanedaLeeStatArb20090616.pdf",
+   "source_title": "Avellaneda & Lee (2009) Statistical Arbitrage in the U.S. Equities Market",
+   "quote": "We select as entry point for trading any residual that deviates by 1.25 standard deviations from equilibrium",
+   "horizon": "days",
+   "asset_classes": [
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "pca_residual",
+   "params": {
+    "window": 1440,
+    "entry_z": 1.25
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "EUSTX50",
+    "JPN225",
+    "AUS200"
+   ],
+   "mechanism": "PCA residual reversion across global equity-index CFDs (global equity factor removed). Kakushadze: industry/cluster correlations created by long-horizon investors are what intraday/daily mean-reversion harvests; indices share one global factor.",
+   "firm": "WorldQuant (Kakushadze) / stat-arb",
+   "evidence": "DOCUMENTED (framework); index transfer SPECULATED",
+   "source_url": "https://arxiv.org/pdf/2006.05632",
+   "source_title": "Kakushadze (2020) Quant Bust 2020, arXiv:2006.05632",
+   "quote": "stocks in the same industries historically are highly correlated and when these correlations are temporarily undone, they are expected to snap back to normal",
+   "horizon": "days",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_asset_residual",
+   "params": {
+    "lookback": 1440,
+    "entry_z": 1.25,
+    "side_mode": "revert"
+   },
+   "symbols": [
+    "XAGUSD",
+    "XPTUSD"
+   ],
+   "mechanism": "Avellaneda-Lee 'ETF residual' variant: regress each instrument on its sector proxy (here XAUUSD as the precious-metals 'sector ETF') over 60 days and trade the residual s-score.",
+   "firm": "stat-arb template (Avellaneda-Lee)",
+   "evidence": "DOCUMENTED construction; SPECULATED transfer",
+   "source_url": "https://math.nyu.edu/~avellane/AvellanedaLeeStatArb20090616.pdf",
+   "source_title": "Avellaneda & Lee (2009) Statistical Arbitrage in the U.S. Equities Market",
+   "quote": "We select as entry point for trading any residual that deviates by 1.25 standard deviations from equilibrium",
+   "horizon": "days",
+   "asset_classes": [
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_asset_residual",
+   "params": {
+    "lookback": 1440,
+    "entry_z": 1.25,
+    "side_mode": "revert"
+   },
+   "symbols": [
+    "GER40",
+    "FRA40",
+    "NETH25",
+    "E35"
+   ],
+   "mechanism": "Sector-ETF residual analog for Europe: regress each national index on EUSTX50 and trade residual reversion (national index vs regional factor).",
+   "firm": "stat-arb template (Avellaneda-Lee)",
+   "evidence": "DOCUMENTED construction; SPECULATED transfer",
+   "source_url": "https://math.nyu.edu/~avellane/AvellanedaLeeStatArb20090616.pdf",
+   "source_title": "Avellaneda & Lee (2009) Statistical Arbitrage in the U.S. Equities Market",
+   "quote": "We select as entry point for trading any residual that deviates by 1.25 standard deviations from equilibrium",
+   "horizon": "days",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_asset_residual",
+   "params": {
+    "lookback": 1440,
+    "entry_z": 1.25,
+    "side_mode": "revert"
+   },
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism": "Gold residual vs its macro drivers (real rates via UST10Y, USD via USDX): D.E. Shaw lists real rates, growth/safe-haven and central-bank demand as gold's correlates; trade reversion of the unexplained residual.",
+   "firm": "D.E. Shaw",
+   "evidence": "DOCUMENTED (driver analysis); residual-reversion rule SPECULATED",
+   "source_url": "https://www.deshaw.com/library/worth-its-weight",
+   "source_title": "D. E. Shaw: Worth Its Weight? Assessing Gold's Portfolio Utility (2025)",
+   "quote": "this relationship may be confounded, or even canceled, by gold’s negative correlation to real rates, which are themselves positively correlated to inflation.",
+   "horizon": "days-weeks",
+   "asset_classes": [
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "relative_value",
+   "params": {
+    "entry_z": 1.25,
+    "exit_z": 0.5
+   },
+   "symbols": [
+    "XBRUSD",
+    "XTIUSD"
+   ],
+   "mechanism": "Classic pairs trade (151 Strategies §3.8; Quant Bust): short the rich leg, buy the cheap leg when a historically tight pair's spread deviates. Brent/WTI.",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "DOCUMENTED (standard construction); pair choice SPECULATED",
+   "source_url": "https://arxiv.org/pdf/2006.05632",
+   "source_title": "Kakushadze (2020) Quant Bust 2020, arXiv:2006.05632",
+   "quote": "shorting the “rich” stock (whose return is higher than the mean return of the two stocks) and buying the “cheap” stock",
+   "horizon": "days",
+   "asset_classes": [
+    "energy"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "relative_value",
+   "params": {
+    "entry_z": 1.25,
+    "exit_z": 0.5
+   },
+   "symbols": [
+    "AUDUSD",
+    "NZDUSD"
+   ],
+   "mechanism": "Pairs trade on the tightest commodity-bloc FX pair (AUD/NZD) - residual of one vs the other.",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "DOCUMENTED construction; pair SPECULATED",
+   "source_url": "https://arxiv.org/pdf/2006.05632",
+   "source_title": "Kakushadze (2020) Quant Bust 2020, arXiv:2006.05632",
+   "quote": "shorting the “rich” stock (whose return is higher than the mean return of the two stocks) and buying the “cheap” stock",
+   "horizon": "days",
+   "asset_classes": [
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "neg",
+     [
+      "div",
+      [
+       "zscore",
+       [
+        "delta",
+        "close",
+        24
+       ],
+       240
+      ],
+      [
+       "div",
+       "activity",
+       [
+        "mean",
+        "activity",
+        240
+       ]
+      ]
+     ]
+    ],
+    "norm": 240,
+    "entry_z": 1.25,
+    "side_mode": "follow"
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDNOK",
+    "USDSEK",
+    "XAUUSD"
+   ],
+   "mechanism": "Avellaneda-Lee 'trading time': divide the daily move by relative volume so contrarian bets favour moves on LOW volume and avoid betting against high-volume prints. 24h z-scored return / (activity / 240h mean activity), negated.",
+   "firm": "stat-arb template (Avellaneda-Lee)",
+   "evidence": "DOCUMENTED (improved ETF-residual Sharpe to 1.51 in 2003-07 on equities)",
+   "source_url": "https://math.nyu.edu/~avellane/AvellanedaLeeStatArb20090616.pdf",
+   "source_title": "Avellaneda & Lee (2009) Statistical Arbitrage in the U.S. Equities Market",
+   "quote": "It is as if we “believe more” a print that occurs on high volume and are less ready to bet against it.",
+   "horizon": "1-3 days",
+   "asset_classes": [
+    "fx",
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_sectional",
+   "params": {
+    "mode": "reversal",
+    "horizon": 120,
+    "ttl_bars": 120
+   },
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "COTTON",
+    "USCOCOA"
+   ],
+   "mechanism": "151 Strategies §10.3 futures contrarian: returns vs equal-weighted 'market' over the last week, buy losers/sell winners, weights suppressed by 1/sigma, rebalanced weekly (120 H1 bars ~ 1 trading week).",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "REPORTED (literature compendium)",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "source_title": "Kakushadze & Serur (2018) 151 Trading Strategies, SSRN 3247865 (Springer book edition later retracted)",
+   "quote": "It amounts to buying losers and selling winners w.r.t. the market index",
+   "horizon": "1 week",
+   "asset_classes": [
+    "energy",
+    "metals",
+    "softs"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "trade_when",
+     [
+      "zscore",
+      [
+       "sum",
+       "activity",
+       120
+      ],
+      240
+     ],
+     [
+      "neg",
+      [
+       "delta",
+       "close",
+       120
+      ]
+     ]
+    ],
+    "norm": 240,
+    "entry_z": 1.5,
+    "side_mode": "follow",
+    "hold_bars": 120
+   },
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "XAUUSD",
+    "XAGUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN"
+   ],
+   "mechanism": "151 Strategies §10.3.1 contrarian with market-activity filter: fade the weekly move only where weekly volume rose (larger volume changes indicate greater overreaction). Tick-activity proxy for volume; open-interest leg unavailable.",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "REPORTED (literature compendium)",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "source_title": "Kakushadze & Serur (2018) 151 Trading Strategies, SSRN 3247865 (Springer book edition later retracted)",
+   "quote": "larger volume changes are likely indicative of greater overreaction",
+   "horizon": "1 week",
+   "asset_classes": [
+    "energy",
+    "metals",
+    "softs"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "EUSTX50",
+    "JPN225",
+    "AUS200",
+    "HK50"
+   ],
+   "mechanism": "Kakushadze's intraday mean-reversion alpha is built on the overnight (close-to-next-open) return with a 4-factor model; the overnight return reverts intraday. Index CFDs: fade the cash-session gap.",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "DOCUMENTED (equities framework); index transfer SPECULATED",
+   "source_url": "https://arxiv.org/pdf/1408.2217",
+   "source_title": "Kakushadze (2014) Mean-Reversion and Optimization, arXiv:1408.2217",
+   "quote": "We define the overnight return as the close-to-next-open return",
+   "horizon": "intraday",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "neg",
+     [
+      "div",
+      [
+       "sub",
+       "close",
+       [
+        "min",
+        "low",
+        24
+       ]
+      ],
+      [
+       "sub",
+       [
+        "max",
+        "high",
+        24
+       ],
+       [
+        "min",
+        "low",
+        24
+       ]
+      ]
+     ]
+    ],
+    "norm": 240,
+    "entry_z": 1.5,
+    "side_mode": "follow",
+    "hold_bars": 24
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDNOK",
+    "USDSEK",
+    "XAUUSD",
+    "US500",
+    "GER40"
+   ],
+   "mechanism": "WQ Alpha#54 ~ -(close-low)/(high-low)*(open/close)^5: fade position within the day's range (the (open/close)^5 factor ~1 on H1/FX). Daily semantics via 24-bar high/low.",
+   "firm": "WorldQuant",
+   "evidence": "DOCUMENTED (published formula; equity cross-section, 0.6-6.4 day holds)",
+   "source_url": "https://arxiv.org/pdf/1601.00991",
+   "source_title": "Kakushadze (2015) 101 Formulaic Alphas, arXiv:1601.00991",
+   "quote": "Alpha#54: ((-1 * ((low - close) * (open^5))) / ((low - high) * (close^5)))",
+   "horizon": "1 day",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "add",
+     [
+      "zscore",
+      [
+       "std",
+       [
+        "abs",
+        "body"
+       ],
+       5
+      ],
+      24
+     ],
+     [
+      "corr",
+      "close",
+      "open",
+      12
+     ]
+    ],
+    "norm": 240,
+    "entry_z": 1.5,
+    "side_mode": "fade",
+    "hold_bars": 24
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDNOK",
+    "USDSEK",
+    "XAUUSD",
+    "US500"
+   ],
+   "mechanism": "WQ Alpha#18: -rank(stddev(|close-open|,5) + (close-open) + corr(close,open,10)); fade bars where body volatility and open/close co-movement are high. Body term dropped to satisfy grammar depth; sign via fade.",
+   "firm": "WorldQuant",
+   "evidence": "DOCUMENTED (published formula)",
+   "source_url": "https://arxiv.org/pdf/1601.00991",
+   "source_title": "Kakushadze (2015) 101 Formulaic Alphas, arXiv:1601.00991",
+   "quote": "Alpha#18: (-1 * rank(((stddev(abs((close - open)), 5) + (close - open)) + correlation(close, open, 10))))",
+   "horizon": "1 day",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "mul",
+     [
+      "neg",
+      [
+       "ts_rank",
+       "close",
+       12
+      ]
+     ],
+     [
+      "ts_rank",
+      "body",
+      12
+     ]
+    ],
+    "norm": 240,
+    "entry_z": 1.5,
+    "side_mode": "follow",
+    "hold_bars": 12
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDNOK",
+    "USDSEK",
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "mechanism": "WQ Alpha#38: -rank(ts_rank(close,10)) * rank(close/open): fade instruments at the top of their 10-bar range with a strong up-body.",
+   "firm": "WorldQuant",
+   "evidence": "DOCUMENTED (published formula)",
+   "source_url": "https://arxiv.org/pdf/1601.00991",
+   "source_title": "Kakushadze (2015) 101 Formulaic Alphas, arXiv:1601.00991",
+   "quote": "Alpha#38: ((-1 * rank(Ts_Rank(close, 10))) * rank((close / open)))",
+   "horizon": "hours-1 day",
+   "asset_classes": [
+    "fx",
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "neg",
+     [
+      "add",
+      [
+       "ts_rank",
+       [
+        "div",
+        [
+         "std",
+         "ret",
+         2
+        ],
+        [
+         "std",
+         "ret",
+         5
+        ]
+       ],
+       24
+      ],
+      [
+       "ts_rank",
+       [
+        "delta",
+        "close",
+        2
+       ],
+       24
+      ]
+     ]
+    ],
+    "norm": 240,
+    "entry_z": 1.5,
+    "side_mode": "follow",
+    "hold_bars": 8
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDNOK",
+    "USDSEK",
+    "XAUUSD",
+    "US500",
+    "NAS100"
+   ],
+   "mechanism": "WQ Alpha#34: rank((1-rank(std(ret,2)/std(ret,5))) + (1-rank(delta(close,1)))): buy after a calm short-vol ratio and a down move (short-term reversal conditioned on vol compression).",
+   "firm": "WorldQuant",
+   "evidence": "DOCUMENTED (published formula)",
+   "source_url": "https://arxiv.org/pdf/1601.00991",
+   "source_title": "Kakushadze (2015) 101 Formulaic Alphas, arXiv:1601.00991",
+   "quote": "Alpha#34: rank(((1 - rank((stddev(returns, 2) / stddev(returns, 5)))) + (1 - rank(delta(close, 1)))))",
+   "horizon": "hours",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "mul",
+     [
+      "ts_rank",
+      [
+       "div",
+       "activity",
+       [
+        "mean",
+        "activity",
+        24
+       ]
+      ],
+      24
+     ],
+     [
+      "ts_rank",
+      [
+       "neg",
+       [
+        "delta",
+        "close",
+        8
+       ]
+      ],
+      8
+     ]
+    ],
+    "norm": 240,
+    "entry_z": 1.5,
+    "side_mode": "follow",
+    "hold_bars": 12
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDNOK",
+    "USDSEK",
+    "XAUUSD",
+    "XTIUSD",
+    "US500"
+   ],
+   "mechanism": "WQ Alpha#43: ts_rank(volume/adv20,20) * ts_rank(-delta(close,7),8): buy recent losers when relative volume is high (capitulation reversal). Tick activity as volume proxy.",
+   "firm": "WorldQuant",
+   "evidence": "DOCUMENTED (published formula)",
+   "source_url": "https://arxiv.org/pdf/1601.00991",
+   "source_title": "Kakushadze (2015) 101 Formulaic Alphas, arXiv:1601.00991",
+   "quote": "Alpha#43: (ts_rank((volume / adv20), 20) * ts_rank((-1 * delta(close, 7)), 8))",
+   "horizon": "hours-1 day",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "energy",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "trade_when",
+     [
+      "zscore",
+      "activity",
+      24
+     ],
+     [
+      "mul",
+      [
+       "ts_rank",
+       [
+        "abs",
+        [
+         "delta",
+         "close",
+         8
+        ]
+       ],
+       48
+      ],
+      [
+       "neg",
+       [
+        "sign",
+        [
+         "delta",
+         "close",
+         8
+        ]
+       ]
+      ]
+     ]
+    ],
+    "norm": 240,
+    "entry_z": 1.5,
+    "side_mode": "follow",
+    "hold_bars": 8
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDNOK",
+    "USDSEK",
+    "XAUUSD",
+    "US500"
+   ],
+   "mechanism": "WQ Alpha#7: only when volume > adv20, fade the 7-bar move scaled by its 60-bar rank of magnitude (large moves on heavy activity fade).",
+   "firm": "WorldQuant",
+   "evidence": "DOCUMENTED (published formula)",
+   "source_url": "https://arxiv.org/pdf/1601.00991",
+   "source_title": "Kakushadze (2015) 101 Formulaic Alphas, arXiv:1601.00991",
+   "quote": "Alpha#7: ((adv20 < volume) ? ((-1 * ts_rank(abs(delta(close, 7)), 60)) * sign(delta(close, 7))) : (-1 * 1))",
+   "horizon": "hours",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "decay",
+     [
+      "div",
+      "body",
+      "range"
+     ],
+     24
+    ],
+    "norm": 240,
+    "entry_z": 1.5,
+    "side_mode": "follow",
+    "hold_bars": 24
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDNOK",
+    "USDSEK",
+    "XAUUSD",
+    "US500",
+    "GER40"
+   ],
+   "mechanism": "WQ Alpha#101 (intraday thrust) with BRAIN-style linear decay: 'decay means averaging your alpha signal within a time window' - lowers turnover without necessarily lowering mean return. Tests decayed canon wq101 as a distinct lower-turnover cell.",
+   "firm": "WorldQuant",
+   "evidence": "REPORTED (BRAIN operator practice, third-party summary)",
+   "source_url": "https://github.com/alexisdpc/WorldQuant-alpha-trading/blob/main/ImprovingAlphas.md",
+   "source_title": "WorldQuant BRAIN notes: Improving Alphas (third-party GitHub summary of BRAIN docs)",
+   "quote": "ts_decay_linear is a smoothing operator that reduces volatility without necessarily lowering mean return",
+   "horizon": "1 day",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "ensemble",
+   "params": {
+    "members": [
+     {
+      "family": "carry"
+     },
+     {
+      "family": "multi_speed_trend"
+     }
+    ]
+   },
+   "symbols": [
+    "AUDJPY",
+    "NZDJPY",
+    "USDJPY",
+    "EURJPY",
+    "USDMXN",
+    "USDZAR",
+    "USDTRY",
+    "EURCHF",
+    "AUDUSD",
+    "NZDUSD"
+   ],
+   "mechanism": "151 Strategies §8.4 momentum & carry combo: combine FX carry and FX trend with minimum-variance weights from the two strategies' historical return covariance (trend hedges carry crashes).",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "REPORTED (literature compendium)",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "source_title": "Kakushadze & Serur (2018) 151 Trading Strategies, SSRN 3247865 (Springer book edition later retracted)",
+   "quote": "A simple combination is based on minimizing the variance of the combo strategy using the sample covariance matrix of historical returns",
+   "horizon": "weeks",
+   "asset_classes": [
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "style_premia",
+   "params": {
+    "style": "carry",
+    "combo": "carry_x_momentum"
+   },
+   "symbols": [
+    "AUDJPY",
+    "NZDJPY",
+    "USDMXN",
+    "USDZAR",
+    "USDTRY",
+    "EURTRY",
+    "USDBRL",
+    "USDINR",
+    "USDIDR",
+    "EURCHF",
+    "USDJPY"
+   ],
+   "mechanism": "High-minus-low carry (151 §8.2.1) across Fusion FX with momentum confirmation: long top-quantile forward discount, short bottom.",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "REPORTED (literature compendium)",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "source_title": "Kakushadze & Serur (2018) 151 Trading Strategies, SSRN 3247865 (Springer book edition later retracted)",
+   "quote": "buying forwards on currencies in some top quantile by forward discount and selling forwards on currencies in the corresponding bottom quantile",
+   "horizon": "1 month",
+   "asset_classes": [
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {},
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "XCUUSD",
+    "US500",
+    "GER40",
+    "JPN225",
+    "UST10Y",
+    "UKGILT",
+    "EURUSD",
+    "USDJPY",
+    "AUDUSD"
+   ],
+   "mechanism": "151 §10.4 futures trend: w_i = gamma * sign(R_i)/sigma_i, with tanh(R/kappa) smoothing to stop sign flips on small |R| (reduces churn). Tests the tanh-smoothed variant across Fusion futures-like CFDs.",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "REPORTED (literature compendium)",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "source_title": "Kakushadze & Serur (2018) 151 Trading Strategies, SSRN 3247865 (Springer book edition later retracted)",
+   "quote": "There are ways to mitigate this, e.g., by smoothing via ηi = tanh(Ri/κ)",
+   "horizon": "weeks-months",
+   "asset_classes": [
+    "metals",
+    "energy",
+    "indices",
+    "bonds",
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "event_reaction",
+   "params": {
+    "mode": "drift",
+    "side": 1
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "GER40"
+   ],
+   "mechanism": "151 §19.5 trading on economic announcements: hold equities on FOMC days, flat otherwise (announcement-day equity premium).",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "REPORTED (literature compendium)",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "source_title": "Kakushadze & Serur (2018) 151 Trading Strategies, SSRN 3247865 (Springer book edition later retracted)",
+   "quote": "buying stocks on important announcement days (ADs), such as the FOMC announcements, and switching to risk-free assets during non-announcement days",
+   "horizon": "1 day",
+   "asset_classes": [
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "correlation_regime",
+   "params": {},
+   "symbols": [
+    "US500",
+    "UST10Y"
+   ],
+   "mechanism": "D.E. Shaw: the negative stock-bond correlation regime rests on anchored inflation; if inflation unanchors the correlation snaps positive. A break of the rolling US500/UST10Y correlation is a regime signal (condition gold/duration sleeves on it).",
+   "firm": "D.E. Shaw",
+   "evidence": "DOCUMENTED (research note); trading rule SPECULATED",
+   "source_url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_20190208_1.pdf",
+   "source_title": "D. E. Shaw Market Insights: Positively Negative - Stock-Bond Correlation (2019)",
+   "quote": "markets could snap back to a regime of positive correlations, potentially pushing the term premium much higher.",
+   "horizon": "weeks-months",
+   "asset_classes": [
+    "indices",
+    "bonds"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "formula",
+   "params": {
+    "expr": [
+     "trade_when",
+     [
+      "corr",
+      "risk",
+      "rates",
+      240
+     ],
+     [
+      "delta",
+      "close",
+      120
+     ]
+    ],
+    "norm": 240,
+    "entry_z": 1.0,
+    "side_mode": "follow",
+    "hold_bars": 120
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAUEUR",
+    "XAUAUD"
+   ],
+   "mechanism": "D.E. Shaw gold note: gold's portfolio utility rises when stocks and bonds are positively correlated. Trade gold's weekly trend only while the risk/rates driver correlation is positive (sign convention of the 'rates' terminal must be checked before judging).",
+   "firm": "D.E. Shaw",
+   "evidence": "DOCUMENTED (utility claim); timing rule SPECULATED",
+   "source_url": "https://www.deshaw.com/library/worth-its-weight",
+   "source_title": "D. E. Shaw: Worth Its Weight? Assessing Gold's Portfolio Utility (2025)",
+   "quote": "in a positive stock-bond correlation environment, the potential portfolio utility of gold increases, even if our forecast for gold remains unchanged.",
+   "horizon": "weeks",
+   "asset_classes": [
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "regime_transition",
+   "params": {
+    "side_mode": "exhaustion"
+   },
+   "symbols": [
+    "US500",
+    "XAUUSD",
+    "UST10Y",
+    "USDJPY"
+   ],
+   "mechanism": "Two Sigma GMM regime model (Crisis / Steady State / Inflation / Walking-on-Ice) gives per-period regime probabilities; 'Walking on Ice' tends to precede/follow Crisis. Use the existing HMM/regime family on multi-asset CFDs; leaving-probability as trigger.",
+   "firm": "Two Sigma",
+   "evidence": "DOCUMENTED (firm research, monthly 1971-2020)",
+   "source_url": "https://www.twosigma.com/wp-content/uploads/2021/10/Machine-Learning-Approach-to-Regime-Modeling_.pdf",
+   "source_title": "Two Sigma: Machine Learning Approach to Regime Modeling (PDF)",
+   "quote": "For any given historical period, the GMM will estimate probabilities that the market was in the four market conditions.",
+   "horizon": "weeks-months",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "bonds",
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "spread_state",
+   "params": {
+    "mode": "spike_reversion"
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "XAUUSD",
+    "US500",
+    "GER40"
+   ],
+   "mechanism": "Virtu: volatility widens spreads because takers pay more to transact - the liquidity provider's gain. Retail-side proxy: after a spread spike with a large move, the move was liquidity-driven and mean-reverts as spread normalises (liquidity provision in time).",
+   "firm": "Virtu",
+   "evidence": "DOCUMENTED (S-1 economics); retail reversion edge SPECULATED",
+   "source_url": "https://www.sec.gov/Archives/edgar/data/0001592386/000104746915008425/a2226102zs-1.htm",
+   "source_title": "Virtu Financial, Inc. Form S-1 (2015)",
+   "quote": "Increases in market volatility can cause bid/ask spreads to widen as market participants are willing to incur greater costs to transact, which we benefit from.",
+   "horizon": "1-6h",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "XAUUSD",
+    "GER40",
+    "US500"
+   ],
+   "mechanism": "PDT (Muller): short-horizon edge comes from providing temporal liquidity to over-trading institutions. Fade abnormal displacement that fails to continue (the over-trading footprint).",
+   "firm": "PDT Partners",
+   "evidence": "REPORTED (founder essay; no construction given)",
+   "source_url": "https://people.duke.edu/~charvey/Teaching/BA453_2004/Muller_Proprietary_trading.pdf",
+   "source_title": "Peter Muller (PDT) - Proprietary trading: truth and fiction, Quantitative Finance 1(1)",
+   "quote": "shorter horizon strategies get their edge from providing temporal liquidity to a market place or predicting short-term trends that arise from inefficient trading",
+   "horizon": "hours",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "indices"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "triangle",
+   "params": {
+    "leg_b_symbol": "XAUUSD",
+    "leg_c_symbol": "EURUSD",
+    "sign_b": 1,
+    "sign_c": -1
+   },
+   "symbols": [
+    "XAUEUR"
+   ],
+   "mechanism": "Virtu hedges in 'economically equivalent instruments'; 151 §8.5 triangular construction. XAUEUR = XAUUSD/EURUSD: trade CFD quote dislocations of the cross vs its synthetic (slower-updating cross). True triangular arbitrage is latency-bound and unreachable; this tests a z-scored residual at bar frequency.",
+   "firm": "Virtu / Kakushadze",
+   "evidence": "DOCUMENTED construction; retail edge SPECULATED (latency caveat)",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "source_title": "Kakushadze & Serur (2018) 151 Trading Strategies, SSRN 3247865 (Springer book edition later retracted)",
+   "quote": "Such opportunities are ephemeral, so fast market data and trade execution systems are critical here.",
+   "horizon": "minutes-hours",
+   "asset_classes": [
+    "metals",
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "triangle",
+   "params": {
+    "leg_b_symbol": "XAGUSD",
+    "leg_c_symbol": "EURUSD",
+    "sign_b": 1,
+    "sign_c": -1
+   },
+   "symbols": [
+    "XAGEUR"
+   ],
+   "mechanism": "Same synthetic-cross residual for XAGEUR = XAGUSD/EURUSD.",
+   "firm": "Virtu / Kakushadze",
+   "evidence": "DOCUMENTED construction; retail edge SPECULATED",
+   "source_url": "https://www.sec.gov/Archives/edgar/data/0001592386/000104746915008425/a2226102zs-1.htm",
+   "source_title": "Virtu Financial, Inc. Form S-1 (2015)",
+   "quote": "Our strategies are also designed to lock in returns through precise hedging in the primary instrument or in one or more economically equivalent instruments",
+   "horizon": "minutes-hours",
+   "asset_classes": [
+    "metals",
+    "fx"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "calendar_month",
+   "params": {},
+   "symbols": [
+    "XNGUSD"
+   ],
+   "mechanism": "D.E. Shaw Shale Game: gas injected Apr-Oct, withdrawn Nov-Mar; winter 'stock-out' risk creates a winter premium and weather-driven short-term volatility. Test month-of-year effects on XNGUSD (sweep active_month; side not given by source).",
+   "firm": "D.E. Shaw",
+   "evidence": "DOCUMENTED (seasonal market structure); directional rule SPECULATED",
+   "source_url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_vol_5_no_1.pdf",
+   "source_title": "D. E. Shaw Market Insights: Shale Game - North American Natural Gas (2014)",
+   "quote": "gas is injected into storage facilities from April to October (in “summer”) and drawn down from November to March (in “winter”).",
+   "horizon": "months",
+   "asset_classes": [
+    "energy"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "vol_transition",
+   "params": {},
+   "symbols": [
+    "XNGUSD"
+   ],
+   "mechanism": "Weather events plus shale supply features drive short-term NG volatility bursts (mainly winter): breakout-on-vol-expansion cell for XNGUSD.",
+   "firm": "D.E. Shaw",
+   "evidence": "DOCUMENTED (qualitative); rule SPECULATED",
+   "source_url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_vol_5_no_1.pdf",
+   "source_title": "D. E. Shaw Market Insights: Shale Game - North American Natural Gas (2014)",
+   "quote": "specific features of shale production, in tandem with weather events, may contribute to short-term volatility.",
+   "horizon": "days",
+   "asset_classes": [
+    "energy"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cot_positioning",
+   "params": {},
+   "symbols": [
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "COTTON",
+    "USCOCOA",
+    "COFARA",
+    "XTIUSD",
+    "XNGUSD",
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD"
+   ],
+   "mechanism": "151 §9.2 hedging pressure: HP = longs/(longs+shorts) per trader class from CFTC COT; cross-sectionally long high-speculator-HP (backwardation) commodities, short low. Existing COT families; this is the cross-sectional HP spec.",
+   "firm": "WorldQuant (Kakushadze)",
+   "evidence": "REPORTED (literature compendium)",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+   "source_title": "Kakushadze & Serur (2018) 151 Trading Strategies, SSRN 3247865 (Springer book edition later retracted)",
+   "quote": "the “hedging pressure” (HP), separately for hedgers and speculators, is calculated as the number of long contracts divided by the total number of contracts",
+   "horizon": "weeks",
+   "asset_classes": [
+    "softs",
+    "energy",
+    "metals"
+   ],
+   "source": "firm_mining",
+   "cluster": "statarb_multistrat",
+   "mined_at": "2026-09-27"
+  }
+ ]
+}

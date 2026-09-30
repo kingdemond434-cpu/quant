@@ -15,9 +15,17 @@ Two halves, deliberately split the way `check_strategy_breadth` is split:
                    which makes the commit gate the right place to catch it.
 
   (no flag)        THE STATE HALF. Reads `desks/mt5/reports/FORWARD_ENROLMENT.json` and fails when
-                   any certificate has been CLOCKLESS for longer than one cycle. An absent
-                   artifact is UNMEASURED -- a real answer on a clean checkout, never a pass
-                   dressed as one and never a failure the checkout cannot fix.
+                   any certificate has been CLOCKLESS for longer than one cycle, OR when a
+                   certificate HAS a clock that is accruing nothing. An absent artifact is
+                   UNMEASURED -- a real answer on a clean checkout, never a pass dressed as one
+                   and never a failure the checkout cannot fix.
+
+                   THE SECOND CLAUSE IS NOT A REFINEMENT, it is the half that was missing.
+                   Measured 2026-09-23: 28 certificates, 28 clocks, `n_missing` 0, and ZERO
+                   accruing -- 24 refused by a lane-vocabulary defect that made every FX symbol
+                   UNCLASSIFIED, 4 blocked on bars. A certificate that accrues nothing can never
+                   mature and so can never be promoted, which breaches AUTOMATIC PROMOTION just
+                   as completely as a missing clock. This fence reported COVERED throughout.
 
 WHY A CAP IS A DEFECT AND NOT A SAFETY MEASURE, stated here because the fence must be able to say
 it: a forward clock GATHERS EVIDENCE AND DEPLOYS NO CAPITAL. Enrolling every certificate raises
@@ -180,6 +188,34 @@ def check_state(report: Path | None = None, now: datetime | None = None
             f"CERTIFIED-NOT-ENROLLED {row.get('key')}: clockless for "
             f"{row.get('clockless_hours')}h, over the {CYCLE_HOURS}h cycle -- certified and "
             f"accruing no forward evidence ({row.get('why', '')})")
+    # ENROLLED IS NOT ACCRUING, AND THIS IS THE HALF THAT WAS MISSING.
+    #
+    # Measured on the box 2026-09-23: 28 certificates, 28 with a clock, `n_missing` 0 -- and not
+    # one of them accruing. 24 sat at REFUSED_BY_UNIVERSE_POLICY because every FX symbol read
+    # UNCLASSIFIED (a normalisation defect in `universe_policy`), 4 at BLOCKED_NO_BARS. This
+    # fence passed the whole time, because it asked whether a row EXISTED. A certificate that
+    # accrues nothing can never mature and so can never be promoted: the AUTOMATIC PROMOTION
+    # order (principal 2026-09-04) is breached exactly as completely as if the clock were absent,
+    # and the count that was supposed to detect it read zero.
+    #
+    # NOT A CAP. This fails on a STALL and demands the blocker be fixed; it never suggests
+    # retiring a clock or a certificate, and it rations nothing.
+    blocked = doc.get("blocked") or []
+    for row in blocked if isinstance(blocked, list) else []:
+        if not isinstance(row, dict):
+            continue
+        fails.append(
+            f"CERTIFIED-NOT-ACCRUING {row.get('key')}: clock exists in "
+            f"{row.get('lane')} at status {row.get('status')!r} and is gathering NO forward "
+            f"evidence -- the certificate cannot mature, so it can never be promoted "
+            f"({row.get('blocker') or row.get('why', '')})")
+    n_blocked = doc.get("n_blocked")
+    if isinstance(n_blocked, int):
+        notes.append(f"accruing={doc.get('n_accruing')} blocked={n_blocked} "
+                     f"by_status={doc.get('blocked_by_status')}")
+    elif "n_blocked" not in doc:
+        notes.append("this census predates the accruing measurement: whether the enrolled clocks "
+                     "gather evidence is UNMEASURED here, which is a real answer and not a pass")
     n_missing = doc.get("n_missing")
     if isinstance(n_missing, int) and n_missing and not overdue:
         notes.append(f"{n_missing} certificate(s) without a clock, none yet past one cycle: the "

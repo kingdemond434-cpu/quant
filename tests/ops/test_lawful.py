@@ -272,6 +272,10 @@ def test_a_MISSING_LAW_FAMILY_is_named_in_the_gap(tmp_path: Path, monkeypatch) -
     rather than by diffing two files by hand."""
     root = _tree(tmp_path)
     (root / "ops/principal_doctrine.txt").write_text("L1.1 only\n", "utf-8")
+    # The organ receives doctrine + docs/LAWS.md since the 2026-08-25 consolidation, so the
+    # check reads both and a tree without LAWS.md is UNREADABLE, not gapped.
+    (root / "docs").mkdir()
+    (root / "docs/LAWS.md").write_text("no family members here\n", "utf-8")
     import scripts.check_law_families as CLF
     monkeypatch.setattr(CLF, "FAMILIES", {"survival": (["L1.1", "L2.8a"], None, None)})
     ok, why = L._doctrine_carries_families(root)
@@ -281,7 +285,12 @@ def test_a_MISSING_LAW_FAMILY_is_named_in_the_gap(tmp_path: Path, monkeypatch) -
 
 def test_a_COMPLETE_doctrine_passes(tmp_path: Path, monkeypatch) -> None:
     root = _tree(tmp_path)
-    (root / "ops/principal_doctrine.txt").write_text("L1.1 and L2.8a both here\n", "utf-8")
+    # Split across the two files on purpose: L2.8a lives only in LAWS.md, which is the
+    # concatenation the organ actually receives (2026-08-26 regression: doctrine alone read
+    # every family as missing).
+    (root / "ops/principal_doctrine.txt").write_text("L1.1 here\n", "utf-8")
+    (root / "docs").mkdir()
+    (root / "docs/LAWS.md").write_text("and L2.8a here\n", "utf-8")
     import scripts.check_law_families as CLF
     monkeypatch.setattr(CLF, "FAMILIES", {"survival": (["L1.1", "L2.8a"], None, None)})
     assert L._doctrine_carries_families(root) == (True, "")

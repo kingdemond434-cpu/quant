@@ -1,14 +1,73 @@
 """Self-contained Gaussian HMM (diagonal emissions) -- no external HMM dependency.
 
 Implements Baum-Welch EM (fit), Viterbi (most-likely path), and the online forward filter
-(P(state_t | x_1..t)) in log-space via scipy.special.logsumexp. hmmlearn is not installed and a
-small, audited implementation is preferable to a heavy dependency for a 2-3 state market regime.
+(P(state_t | x_1..t)) in log-space via `logsumexp` below (scipy's algorithm, bit-identical).
+hmmlearn is not installed and a small, audited implementation is preferable to a heavy
+dependency for a 2-3 state market regime.
 """
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
-from scipy.special import logsumexp
+
+
+def logsumexp(a: np.ndarray, axis: int = 0, keepdims: bool = False) -> Any:
+    """`scipy.special.logsumexp` for a real float64 array, BIT-IDENTICAL, without its dispatch.
+
+    WHY THIS EXISTS (measured 2026-09-29, `desks/mt5/tests/test_judging_speed_equivalence.py`).
+    The forward-backward recursion calls logsumexp once per bar per EM iteration on a (k, k)
+    array. scipy 1.17 routes every call through the array-API layer (namespace detection, dtype
+    promotion, `at[].set` emulation, `isdtype` checks), which cost ~180 us per call against a few
+    microseconds of arithmetic -- 82% of the sealed gauntlet's build time on a docket sample,
+    because every `regime_transition` cell (and every `exit_operated` cell wrapping one) fits
+    60-iteration HMMs over thousands of days.
+
+    This is scipy's own algorithm, operation for operation and in the same order, for the only
+    case this module uses (real float64, no `b`, no `return_sign`): the same max-shift, the same
+    exclusion of the arg-max elements from the shifted sum, the same `log1p(s) + log(m) + max`,
+    and the same fallback to `log(sum(exp(a)))` where that is non-finite. The test pins it
+    bit-for-bit against scipy on random inputs including -inf, +inf and NaN rows.
+    """
+    a = np.asarray(a, dtype="float64")
+    if a.ndim == 0:
+        a = a.reshape(1)
+    if np.isfinite(a).all():
+        # THE ALL-FINITE CASE, which is every call the recursion makes on a well-posed model: the
+        # same operations as below with the branches that cannot fire removed. With every element
+        # finite the max is finite, at least one element equals it (m >= 1), the shifted sum is
+        # >= 0 (so the sign is +1, `s < -1` is false and `s == 0` gives the same 0 as `s / m`),
+        # and the only way out is non-finite is an overflow at the top of the float range --
+        # which drops through to the general path, so that case is answered identically too.
+        a_max = np.maximum.reduce(a, axis=axis, keepdims=True)
+        i_max = a == a_max
+        m = np.add.reduce(i_max.astype(a.dtype), axis=axis, keepdims=True, dtype=a.dtype)
+        s = np.add.reduce(np.exp(np.where(i_max, -np.inf, a) - a_max), axis=axis,
+                          keepdims=True, dtype=a.dtype) / m
+        out = np.log1p(s) + np.log(m) + a_max
+        if np.isfinite(out).all():
+            if not keepdims:
+                out = np.squeeze(out, axis=axis)
+            return out[()] if out.ndim == 0 else out
+    with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+        out_inf = np.log(np.sum(np.exp(a), axis=axis, keepdims=True))
+        a_max = np.max(a, axis=axis, keepdims=True)
+        i_max = a == a_max
+        shifted = a.copy()
+        shifted[i_max] = -np.inf
+        m = np.sum(i_max.astype(a.dtype), axis=axis, keepdims=True, dtype=a.dtype)
+        s = np.sum(np.exp(shifted - a_max), axis=axis, keepdims=True, dtype=a.dtype)
+        s = np.where(s == 0, s, s / m)
+        sgn = np.sign(s + 1) * np.sign(m)
+        s = np.where(s < -1, -s - 2, s)
+        m = np.abs(m)
+        out = np.log1p(s) + np.log(m) + a_max
+        out[sgn < 0] = np.nan
+    out = np.where(np.isfinite(out), out, out_inf)
+    if not keepdims:
+        out = np.squeeze(out, axis=axis)
+    return out[()] if out.ndim == 0 else out
 
 
 class GaussianHMM:

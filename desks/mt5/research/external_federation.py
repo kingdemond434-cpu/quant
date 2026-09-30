@@ -51,6 +51,7 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.research import external_federation as fed  # noqa: E402
+from research import factory_federation as factory_surface  # noqa: E402
 
 STATE = DESK / "data" / "external_federation.json"
 ALLOCATION = DESK / "data" / "external_allocation.json"
@@ -413,6 +414,12 @@ def main(argv: list[str] | None = None) -> int:
     alloc = fed.allocation(list(rows.values()), FEDERATION_BUDGET_S)
     packets = drain_packets(state, apply)
     made = record_work(rows, apply, a.budget_s - (time.monotonic() - t0))
+    # Non-code-host factories share this leg and this registry.  Keeping the pass here prevents
+    # the exact failure the addendum forbids: a second scheduler and a parallel hypothesis door.
+    # It receives the remaining budget, persists its own cursor/version ledger, and donates only
+    # through data/intelligence/, which the canonical compiler already consumes.
+    factory_budget = max(1.0, min(120.0, a.budget_s - (time.monotonic() - t0)))
+    factory_pass = factory_surface.run(apply=apply, budget_s=factory_budget)
 
     by_disp: dict[str, int] = {}
     for row in rows.values():
@@ -433,6 +440,7 @@ def main(argv: list[str] | None = None) -> int:
         "not_operational": {sid: missing for sid, missing in operational_rows.items() if missing},
         "lineages": {k: v for k, v in lineages.items() if v},
         "packets": packets, "work_recorded": made,
+        "factory_surfaces": factory_pass,
         "allocation_s": alloc,
         "sandbox_policy": fed.POLICY.__dict__,
         "unmeasured": ([] if packets.get("files") else
@@ -449,7 +457,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"external federation: {len(rows)} systems {by_disp} | new {len(new)} | "
           f"undisposed {len(doc['undisposed'])} | delta-stale {len(doc['delta_stale'])} | "
           f"packets {packets.get('files', 0)} donated {packets.get('donated', 0)} | "
-          f"work {made} in {doc['seconds']}s", flush=True)
+          f"factory {factory_pass.get('counts')} | work {made} in {doc['seconds']}s", flush=True)
     return 0
 
 

@@ -73,7 +73,9 @@ __all__ = [
 
 #: Bumped whenever a field is ADDED. Fields are never removed or repurposed: a reader of an old
 #: row must keep reading it, which is why every field below has a default.
-SCHEMA_VERSION = 1
+#: 2 (2026-09-23): slip_points, spread_points_at_decision, point, quote_mid_at_decision -- the
+#: friction in the venue's own unit beside the fraction-of-price it was already kept in.
+SCHEMA_VERSION = 2
 
 #: The markout clock the principal named. Seconds after the fill.
 MARKOUT_HORIZONS_S: tuple[float, ...] = (1.0, 5.0, 30.0, 300.0)
@@ -260,6 +262,15 @@ class FillRecord:
     slip_r: float | None = None
     spread_frac_at_decision: float | None = None
     spread_frac_at_fill: float | None = None
+    #: THE SAME FRICTION IN THE VENUE'S OWN UNIT (schema 2, 2026-09-23). A fraction of price is
+    #: the right unit for comparing XAUUSD with EURCHF and the wrong one for talking to a broker,
+    #: reading a stops level or arguing about a quote: all three are quoted in POINTS. Both are
+    #: kept because converting between them needs `point`, which only the intent row carries and
+    #: which is therefore recorded here too. Never derived at read time from a guessed point size.
+    slip_points: float | None = None          #: signed, worse-than-asked > 0, in symbol points
+    spread_points_at_decision: float | None = None
+    point: float | None = None                #: the symbol's point size at decision
+    quote_mid_at_decision: float | None = None
     commission_r: float | None = None
     latency_decision_to_send_ms: float | None = None
     latency_send_to_ack_ms: float | None = None

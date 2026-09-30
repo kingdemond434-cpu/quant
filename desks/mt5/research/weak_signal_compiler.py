@@ -16,9 +16,11 @@ gates -- deflated_sharpe, expected_value -- is a predictor with too little edge 
 which is exactly Brown's cloud cover. Those are the members. Cells that failed validity are not:
 a leak combined with a leak is a leak.
 
-THE WEIGHTS ARE RIDGE-SHRUNK TOWARD EQUAL. With a few hundred trades per member and dozens of
-members, unconstrained weights would fit the training block and nothing else. The shrinkage
-constant is the same n/(n+k) idiom as everywhere else, on the member's own training trade count.
+THE WEIGHTS USE JELINEK-MERCER SHRINKAGE. With a few hundred trades per member and dozens of
+members, unconstrained weights would fit the training block and nothing else. Each member's
+rare-state estimate is interpolated with the pooled training prior by n/(n+k), then L1-normalised.
+The module also exposes a maximum-entropy normalisation for preregistered challenger recipes;
+neither method is allowed to see a later block.
 
 PROPOSES ONLY. The compiled ensemble is donated as an EXACT_RECIPE candidate for the `ensemble`
 family with its members and frozen weights as params. The gauntlet judges it as one cell.
@@ -206,6 +208,59 @@ def _member_returns(d: pd.DataFrame, sigs, hold: int) -> pd.Series:
     return out
 
 
+def _maximum_entropy_weights(scores: np.ndarray, temperature: float = 1.0) -> np.ndarray:
+    """Signed maximum-entropy allocation over fixed training scores.
+
+    The absolute allocation is the entropy-regularised optimum (softmax); direction remains the
+    sign of the training estimate.  This is a representation primitive, not a performance claim.
+    """
+    values = np.asarray(scores, dtype=float)
+    if values.size == 0 or not np.any(np.isfinite(values)):
+        return np.zeros_like(values)
+    scale = max(float(temperature), 1e-12)
+    finite = np.nan_to_num(values)
+    active = finite != 0.0
+    if not np.any(active):
+        return np.zeros_like(values)
+    logits = np.abs(finite[active]) / scale
+    logits -= float(np.max(logits))
+    active_mass = np.exp(logits)
+    active_mass /= float(active_mass.sum()) or 1.0
+    mass = np.zeros_like(finite)
+    mass[active] = active_mass
+    return np.sign(finite) * mass
+
+
+def _fit_shrunk_weights(train: pd.DataFrame, keep: list[int], *,
+                        method: str = "jelinek_mercer") -> np.ndarray:
+    """Fit once on the preregistered block; later bars never alter the rare-state prior."""
+    means: list[float] = []
+    counts: list[int] = []
+    pooled_active: list[float] = []
+    for k in keep:
+        col = train[k]
+        active = col[col != 0.0]
+        means.append(float(active.mean()) if active.size else 0.0)
+        counts.append(int(active.size))
+        pooled_active.extend(float(x) for x in active.to_numpy())
+    prior = float(np.mean(pooled_active)) if pooled_active else 0.0
+    scores = np.asarray([
+        (n / (n + K_WEIGHT)) * mu + (K_WEIGHT / (n + K_WEIGHT)) * prior
+        for mu, n in zip(means, counts, strict=True)
+    ], dtype=float)
+    if method == "maximum_entropy":
+        # A robust training-only scale makes temperature comparable across instruments.
+        nz = np.abs(scores[np.nonzero(scores)])
+        temperature = float(np.median(nz)) if nz.size else 1.0
+        return _maximum_entropy_weights(scores, temperature)
+    if method != "jelinek_mercer":
+        raise ValueError(f"unknown weight method: {method}")
+    weights = scores
+    if not np.any(weights != 0.0):
+        return weights
+    return weights / (np.abs(weights).sum() or 1.0)
+
+
 def compile_symbol(sym: str, members: list[dict], meta: dict, hold: int = 12,
                    budget_s: float = 600.0) -> list[dict]:
     d = pc.bars(sym)
@@ -230,34 +285,31 @@ def compile_symbol(sym: str, members: list[dict], meta: dict, hold: int = 12,
     ret = pd.DataFrame({k: _member_returns(d, sig_by_member[k], hold) for k in keep})
     n = len(d)
     edges = [int(n * i / N_BLOCKS) for i in range(N_BLOCKS + 1)]
+    # ONE PREREGISTERED FIT. The previous implementation refit on blocks 1, 1+2 and 1+2+3,
+    # then evaluated all three OOS blocks using the final weights. That lets blocks 2 and 3
+    # choose the recipe used to score block 2 -- a quiet walk-forward leak. Medallion-style
+    # aggregation does not license hindsight: freeze on block one and judge every later block.
+    train = ret.iloc[edges[0]:edges[1]]
+    weights = _fit_shrunk_weights(train, keep)
+    if not np.any(weights != 0.0):
+        return []
+    weights_used = [round(float(x), 6) for x in weights]
+    best_k = max(
+        keep,
+        key=lambda k: abs(float(train[k][train[k] != 0].mean() or 0.0))
+        if (train[k] != 0).any() else 0.0,
+    )
     rows = []
     for thr in THRESHOLDS:
         oos_all: list[float] = []
         best_single_oos: list[float] = []
-        weights_used = None
         for b in range(1, N_BLOCKS):
-            tr = ret.iloc[edges[0]:edges[b]]
             te_idx = d.index[edges[b]:edges[b + 1]]
-            # SHRUNK WEIGHTS: each member's mean return at its own signal bars, shrunk toward
-            # zero by its trade count, then normalised. Sign carries direction; magnitude carries
-            # how much it has earned the right to vote.
-            w = []
-            for k in keep:
-                col = tr[k]
-                act = col[col != 0.0]
-                mu = float(act.mean()) if act.size else 0.0
-                lam = act.size / (act.size + K_WEIGHT)
-                w.append(lam * mu)
-            w = np.asarray(w)
-            if not np.any(w != 0.0):
-                continue
-            w = w / (np.abs(w).sum() or 1.0)
-            weights_used = [round(float(x), 6) for x in w]
             # Frozen combination on the test block: vote at each bar, trade when it crosses.
             from mt5desk.family_ensemble import family_ensemble
             mem = [dict(members[k]) for k in keep]
             sub = d.loc[: te_idx[-1]]
-            sigs = family_ensemble(sub, members=mem, weights=list(w), threshold=thr,
+            sigs = family_ensemble(sub, members=mem, weights=list(weights), threshold=thr,
                                    hold_bars=hold,
                                    _runner=lambda s_, f_, p_, df_, _c={k: sig_by_member[k]
                                                                         for k in keep}, _m=mem:
@@ -270,15 +322,12 @@ def compile_symbol(sym: str, members: list[dict], meta: dict, hold: int = 12,
             sc = pc.screen(d, sigs, cost, unfillable)
             if sc:
                 oos_all.append(sc["net_per_trade"] * sc["n_independent"])
-            # The strongest single member on the SAME test block, by training Sharpe.
-            best_k = max(keep, key=lambda k: abs(float(tr[k][tr[k] != 0].mean() or 0.0))
-                         if (tr[k] != 0).any() else 0.0)
+            # One benchmark chosen on the same frozen training block. Choosing a new best member
+            # after seeing each test block would give the control the same hindsight leak.
             single = pc.screen(d, [s for s in sig_by_member[best_k] if s.time >= te_idx[0]
                                    and s.time <= te_idx[-1]], cost, unfillable)
             if single:
                 best_single_oos.append(single["net_per_trade"] * single["n_independent"])
-        if weights_used is None:
-            continue
         full_sigs = None
         try:
             from mt5desk.family_ensemble import family_ensemble as fe
@@ -300,6 +349,8 @@ def compile_symbol(sym: str, members: list[dict], meta: dict, hold: int = 12,
         rows.append({"cell": f"{sym}.ensemble@{thr}", "symbol": sym, "threshold": thr,
                      "hold_bars": hold, "n_members": len(keep),
                      "members": [dict(members[k]) for k in keep], "weights": weights_used,
+                     "fit_rule": "first_quarter_only_then_frozen",
+                     "fit_end": str(d.index[edges[1]]),
                      "oos_net_total": round(oos_total, 8),
                      "best_single_oos_net_total": round(single_total, 8),
                      "beats_best_member": bool(np.isfinite(oos_total) and np.isfinite(single_total)

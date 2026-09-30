@@ -1028,6 +1028,47 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   RAM was free, and every new leg died of STATUS_COMMITMENT_LIMIT. When legs die with RAM free,
   measure COMMIT, never RAM.
 
+- **THERE IS ONE JUDGE, AND NO ORGAN MAY SCREEN ITS OWN OUTPUT BEFORE IT (2026-09-23).** A
+  producer PROPOSES; the sealed gauntlet DISPOSES. An organ that filters its own candidates on its
+  own score before queueing them has appointed itself a second judge, and every cell it silently
+  withheld is evidence the desk never got to weigh. An internal score is PROVENANCE and an
+  ORDERING HINT, never a gate: rank by it, publish it, charge the trials it implies -- and queue
+  the row regardless. MEASURED: the mathematics lab queued only objects that had passed its own
+  screen, so 236 discoveries in one day sat UNPROCESSED and twenty-three traditions burned compute
+  for zero cells while reading as barren producers. The same shape is a defect wherever it appears
+  -- a miner that drops its weak rows, a compiler that keeps only its best, a seat that sends its
+  favourites. Only the four immutable evaluator files may refuse a cell; anything else that
+  refuses one is a bug with an owner. The corollary binds too: a producer's output is credited to
+  the producer, under ONE derived key, because one organ wearing two identities reads as two
+  organs, one of them barren.
+
+- **FIX THE CLASS, ON A CLOCK, OR IT IS NOT FIXED (2026-09-23, principal: "fixes should always be
+  permanent and automated so it never needs builders again").** A defect is not closed when the
+  instance is repaired. It is closed when an organ DETECTS every instance of its class, REPAIRS
+  them on its own clock, and a fence FAILS if the class returns. The instance repair is the
+  cheapest part and the least valuable; a session that does only that has bought one hour and left
+  the next session the same bill. Three examples from one day, each the same shape: a writer with
+  no clock left one store empty, and the remedy was every writer's clock audited, not that file
+  written; two organs disagreed about what "collected" meant, and the remedy is a test that fails
+  on divergence, not one line changed; a queue was ordered on a field nothing had measured, and
+  the remedy is the measurement running continuously with its unpriced count ratcheting down, not
+  a one-off pricing pass. When a defect cannot be repaired automatically, the row says so with its
+  blocker and its owner, and that row's count also ratchets down. Human or agent labour is for
+  building the detector and the repair, never for being the repair.
+
+- **EVERY OBLIGATION IS INHERITED, NOT REMEMBERED (2026-09-23, principal: "all this is always, as
+  the quant grows, not just now").** Every invariant this desk wins must bind the things that do
+  not exist yet, or it is a sweep rather than a property. So: a new EXECUTABLE arrives with a
+  clock, an artifact, a named consumer and a row in the runtime attestation; a new SOURCE arrives
+  with a collection obligation and a place in the chain from collected to cells judged; a new
+  FAMILY arrives already inside the judge's coverage, because the family set is derived from the
+  registry and never typed; a new COUNTRY or REGION arrives at the current depth, breadth and
+  ingestion floors, which rise and never fall; a new DESTRUCTIVE PATH arrives guarded against
+  acting on an absence. The mechanism is always the same and is never a checklist a session has to
+  recall: the set is DERIVED from what the tree holds, the floor RATCHETS in the safe direction
+  only, and the fence fails on the thing that got worse. A number that has to be re-swept by hand
+  next month was not fixed, it was tidied.
+
 - **NOTHING IS RETIRED ON AN ABSENCE (2026-09-23, measured the hard way).** No organ may retire,
   purge, demote, delete or refuse anything on the authority of a reference store that is EMPTY,
   STALE BEYOND ITS LEASE, or UNREADABLE. Such a store is UNMEASURED, and UNMEASURED is a verdict
@@ -1066,6 +1107,34 @@ packs name has no resident, no discovery in its trailing window, or no candidate
   sixty of them producing inside the hour. Five distinct causes, five distinct remedies: a clock
   on the wrong machine, a seat retired without an inheritor, an environment provisioned on the
   wrong box, a mapping table never filled in, and an executable that landed without a leg.
+
+- **EVERY PRODUCER OWES CELLS (2026-09-23, principal's standing order: "make every research thing
+  we have produce maximum orthogonal strong cells for the gauntlet every hour, 24/7").** A
+  research organ exists to put testable, ORTHOGONAL cells in front of the one judge. An organ that
+  runs on a clock, consumes compute and emits no cell inside its own declared window is a defect
+  with an owner, exactly as a dark organ is: "it ran" is not production, and neither is a report.
+  An organ that is exploratory by design and produces no cell must DECLARE that — what it produces
+  instead and which consumer reads it — in `docs/research/productivity_blockers.json`, so the
+  exemption is stated rather than assumed; a broken one declares a blocker with an owner. The
+  fence is `scripts/check_producer_yield.py` (law gate), which derives its producer set from the
+  component registry and the census rather than a hand list and fails on three things: a producer
+  owing with no declaration, the OWING COUNT RISING, or throughput to the judge falling below its
+  own best with no stated reason. Ratchets fall only. **The column that matters is the last one:
+  cells emitted, unique cells after dedup, cells that reached the judge, and THE ORTHOGONALITY
+  EACH ADDED** — the marginal effective rank of the producer × (family|symbol|horizon) matrix
+  (`libs/risk/fx_exposure.effective_rank` via `libs/research/sandbox_rotation.breadth`), so a
+  hundred copies of one momentum rule score as one cell's worth of breadth and volume alone can
+  never move the number. The remedy for a barren organ is to make it produce or to retire it with
+  a reason — NEVER to throttle a productive one, and nothing in this law caps any producer.
+  MEASURED the day it landed: 227.5 cells/h reached the judge but only 23.4/h orthogonal
+  equivalent (effective rank 5.15 across 1,132 distinct cells — the producers are working the same
+  ground), and attributing cells by `research_candidates.generator` alone credited one
+  pass-through (`discovery_compiler`) with 103.5 cells/h while reporting real producers as barren;
+  the causing producer is on the JOINED `discoveries.generator`, and reading the stamp alone is
+  the false accusation this fence must never make. Two binding reasons found and recorded: 236
+  math_lab discoveries in 24h all left `UNPROCESSED` so the compiler never saw one, and twelve
+  japan miners keyed under their class name in `generator_yield` and their short name in the
+  lineage — one organ, two keys, which is a defect in the mapping, not a barren producer.
 
 - `ops/brain_env.sh` injects `ops/principal_doctrine.txt` (sealed core + universe mandate) AND
   this file into every organ's appended system prompt; research organs additionally open

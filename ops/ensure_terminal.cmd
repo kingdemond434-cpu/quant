@@ -16,16 +16,9 @@ rem
 rem An "ensure" that is not idempotent is not an ensure, it is a spawner.
 rem ===================================================================================
 
-set "EXE=C:\Program Files\Fusion Markets MetaTrader 5\terminal64.exe"
-set "LOG=C:\opt\quant\desks\mt5\logs\MT5-TerminalBoot.log"
-
-rem tasklist is the check the launcher never made.
-tasklist /FI "IMAGENAME eq terminal64.exe" 2>nul | find /I "terminal64.exe" >nul
-if not errorlevel 1 (
-    echo %DATE% %TIME% terminal already running; not launching a second>>"%LOG%"
-    exit /b 0
-)
-
-echo %DATE% %TIME% no terminal running; launching one>>"%LOG%"
-start "" "%EXE%"
-exit /b 0
+rem Keep PowerShell in its own file.  Escaped pipes in the old multiline `-Command` reached
+rem PowerShell as literal `^|`, failed to parse, and the fallback launched another terminal every
+rem ten minutes.  The script fails closed if duplicate cleanup fails; it never answers an error by
+rem spawning one more process.
+powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "C:\opt\quant\ops\ensure_terminal.ps1"
+exit /b %ERRORLEVEL%

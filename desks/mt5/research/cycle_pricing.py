@@ -20,10 +20,11 @@ principal's never-reduce-aggressiveness order). Three properties hold by constru
 pinned by tests:
 
   1. WINNERS GET MORE. A leg the board prices above the median is multiplied UP, to `CEIL`.
-  2. EVERY LEG KEEPS A SCOUT FLOOR. No leg is ever cut below `FLOOR` x its base, and no leg is
-     ever cut below `SCOUT_MIN_S` seconds. A leg priced last still runs; it must, because the
-     price is an estimate made from the desk's own past and the desk has been wrong about which
-     leg was worthless before (L1.25: failure to discover is never evidence there is nothing).
+  2. EVERY LEG KEEPS ITS CURRENT SHARE. No leg is ever cut below its base (`FLOOR` is 1.0 since
+     2026-09-29) and no leg below `SCOUT_MIN_S` seconds. A leg priced last still runs at the budget
+     it had; it must, because the price is an estimate made from the desk's own past and the desk
+     has been wrong about which leg was worthless before (L1.25: failure to discover is never
+     evidence there is nothing), and the principal's standing order forbids starving any miner.
   3. NEVER A GLOBAL REDUCTION. After clipping, the whole plan is rescaled so the TOTAL seconds
      allocated is never less than the total the legs would have had unpriced. The controller
      moves compute BETWEEN legs; it never quietly hands the hour back.
@@ -52,6 +53,7 @@ queue when the hour runs short.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import statistics
 import sys
@@ -76,7 +78,17 @@ OUT = R / "CYCLE_PRICING.json"
 #: THE SCOUT FLOOR AND THE WINNER'S CEILING. `FLOOR` is the fraction of its base budget the
 #: lowest-priced leg still gets; `CEIL` the multiple the best-priced leg may reach. Both are
 #: bounds on the RATIO, so the plan is a reallocation and not a resize.
-FLOOR, CEIL = 0.60, 2.00
+FLOOR, CEIL = 1.00, 2.00
+#: THE PRICE ALLOCATES SPARE COMPUTE ONLY (2026-09-29, Tier-1 #10). The floor was 0.60: a leg the
+#: board priced last lost 40% of its seconds to fund the winners, which is throttling a miner on an
+#: estimate. It is now par, and what a winner gets ABOVE par comes out of the MEASURED spare
+#: capacity of its department's clock (`spare_capacity`), never out of another leg. When the spare
+#: is unmeasured nothing extra is handed out: an absent measurement never buys seconds (L1.28a).
+SPARE_WINDOW_H = 24.0
+#: What one department clock may spend per pass. NOT an hour: `MT5-HourlyCore` runs its pass
+#: under ExecutionTimeLimit=PT40M (hourly_cycle's OWN_CLOCK_LEGS note), and a grant sized off 3600 s
+#: would push the core pass into the task kill. The tightest measured pass limit is the bound.
+CLOCK_S = 2400.0
 #: No leg is cut below this many seconds whatever the ratio says: below about a minute a
 #: subprocess leg spends its whole budget starting an interpreter and reading its inputs, so a
 #: smaller number is not a smaller budget, it is a guaranteed timeout with nothing written.
@@ -259,6 +271,85 @@ def _rank01(values: dict[str, float]) -> dict[str, float]:
     return out
 
 
+def _evig_prices() -> tuple[dict[str, float], str]:
+    """The unified EVIG acquisition's per-leg factors (Tier-1 B11), or an empty map and why.
+
+    ONE-SIDED AT THE SOURCE AND HERE. `evig_acquisition` publishes factors >= 1.0; this converts
+    them to a price by rank, so a leg the frontier says nothing about contributes nothing rather
+    than a zero -- the same rule the other three sources follow."""
+    try:
+        from evig_acquisition import leg_factors
+        return leg_factors()
+    except Exception as exc:
+        return {}, f"evig_acquisition unavailable ({type(exc).__name__}: {exc})"
+
+
+def _factory_prices() -> tuple[dict[str, float], str]:
+    """{leg: yield score} from the factory contracts (Tier-1 #11), or {} and why. The score is
+    the mean percentile of a producer's measured per-compute-hour yields -- unique cells,
+    survivors, marginal independent alpha rank and credited dE[log W] -- folded onto the leg that
+    runs it. Read, never written: `factory_contracts.py` owns the artifact."""
+    try:
+        from factory_contracts import leg_yield  # type: ignore[import-not-found]
+        return leg_yield()
+    except Exception as exc:
+        return {}, f"factory_contracts unavailable ({type(exc).__name__}: {exc})"
+
+
+def _department_of(leg: str) -> str:
+    try:
+        import hourly_cycle as hc  # type: ignore[import-not-found]
+        return str(hc.department_of(leg))
+    except Exception:
+        return "rest"
+
+
+def spare_capacity(window_h: float = SPARE_WINDOW_H) -> dict[str, Any]:
+    """MEASURED spare seconds per department clock, from the compute ledger.
+
+    A department clock is one hour of wall time per pass; what its legs actually burned per hour
+    over the window is `busy`, and the rest is `spare` -- seconds the clock already owns and did
+    not use. That, and only that, is what a winner may be granted above its base: nothing is taken
+    from another leg. No ledger rows in the window is UNMEASURED and grants nothing."""
+    now = datetime.now(tz=UTC)
+    busy: dict[str, float] = {}
+    n = 0
+    try:
+        lines = LEDGER.read_text(encoding="utf-8", errors="replace").splitlines()[-20000:]
+    except OSError:
+        lines = []
+    dept_cache: dict[str, str] = {}
+    for ln in lines:
+        try:
+            r = json.loads(ln)
+            t = datetime.fromisoformat(str(r.get("at")).replace("Z", "+00:00"))
+        except (ValueError, TypeError, AttributeError):
+            continue
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=UTC)
+        if (now - t).total_seconds() > window_h * 3600.0:
+            continue
+        name = str(r.get("run") or "")
+        wall = r.get("wall_s")
+        if not name or not isinstance(wall, (int, float)) or isinstance(wall, bool):
+            continue
+        if name not in dept_cache:
+            dept_cache[name] = _department_of(name)
+        d = dept_cache[name]
+        busy[d] = busy.get(d, 0.0) + float(wall)
+        n += 1
+    if not n:
+        return {"status": "UNMEASURED", "spare_s": {}, "busy_s_per_hour": {},
+                "why": f"no compute-ledger row in the last {window_h:g}h: spare is unmeasured "
+                       "and no leg is granted anything above its base"}
+    per_h = {d: round(v / window_h, 1) for d, v in busy.items()}
+    return {"status": "MEASURED", "window_h": window_h, "n_rows": n,
+            "busy_s_per_hour": per_h,
+            "spare_s": {d: round(max(0.0, CLOCK_S - v), 1) for d, v in per_h.items()},
+            "why": ("spare = one clock-hour minus the department's measured wall seconds per hour; "
+                    "a department absent from the ledger has no measured spare and grants nothing")}
+
+
 def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     """The hour's plan: a price, a factor and a planned budget for every leg with a base."""
     if bases is None:
@@ -275,7 +366,22 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
     # work and is the weakest claim of the three. A source that has nothing to say about a leg
     # contributes nothing rather than a zero, and the weights of the sources that DID speak are
     # renormalised -- otherwise "no opinion" would read as "priced lowest".
-    W = {"meta_controller": 0.55, "research_bandit": 0.30, "compute_policy": 0.15}
+    # THE FRONTIER JOINS THE PRICE STACK (Tier-1 B11, 2026-09-23). `evig_acquisition` ranks the
+    # bandit's ARMS, the docket's CELLS, the research tree's NODES and the frontier map's
+    # REGIONS on one percentile scale and hands back a per-leg factor. Until it existed the
+    # frontier ranked cells nobody could fund: three rankings in three currencies, none of which
+    # reached a budget. Its weight sits below the meta controller's (which speaks in the
+    # objective's own units) and beside the bandit's, because a percentile across families is a
+    # weaker claim than log-wealth per day and a stronger one than a tier prior.
+    evig, evig_why = _evig_prices()
+    e01 = _rank01(evig)
+    # THE FACTORY CONTRACTS JOIN THE STACK (Tier-1 #11, 2026-09-29): measured yield per compute
+    # hour of the producer a leg runs. Weighted beside the bandit: a percentile of measured
+    # per-hour yield is a stronger claim than a tier prior and weaker than log-wealth per day.
+    fac, fac_why = _factory_prices()
+    f01 = _rank01(fac)
+    W = {"meta_controller": 0.40, "research_bandit": 0.20, "evig_acquisition": 0.15,
+         "factory_contracts": 0.15, "compute_policy": 0.10}
     legs: dict[str, dict[str, Any]] = {}
     for leg, base in sorted(bases.items()):
         parts: list[tuple[str, float, float]] = []
@@ -283,6 +389,10 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
             parts.append(("meta_controller", W["meta_controller"], m01[leg]))
         if leg in b01:
             parts.append(("research_bandit", W["research_bandit"], b01[leg]))
+        if leg in e01:
+            parts.append(("evig_acquisition", W["evig_acquisition"], e01[leg]))
+        if leg in f01:
+            parts.append(("factory_contracts", W["factory_contracts"], f01[leg]))
         if leg in p01:
             parts.append(("compute_policy", W["compute_policy"], p01[leg]))
         if parts:
@@ -310,8 +420,27 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         s = float(v["score"])
         f = (1.0 + (s - median) / max(1e-9, 1.0 - median) * (CEIL - 1.0)) if s >= median else \
             (FLOOR + (s / max(1e-9, median)) * (1.0 - FLOOR))
-        v["factor"] = round(max(FLOOR, min(CEIL, f)), 4)
-        v["planned_s"] = max(SCOUT_MIN_S, round(v["base_s"] * v["factor"]))
+        v["price_factor"] = round(max(FLOOR, min(CEIL, f)), 4)
+
+    # THE EXTRA COMES OUT OF MEASURED SPARE, PER DEPARTMENT CLOCK. Every leg keeps its base; a
+    # leg priced above par ASKS for base x (price_factor - 1) more, and the asks inside one
+    # department are granted in full when its measured spare covers them and pro rata when it
+    # does not. The granted factor is what `applied_budget` spends.
+    spare = spare_capacity()
+    spare_s = spare.get("spare_s") if spare.get("status") == "MEASURED" else {}
+    asks: dict[str, float] = {}
+    want: dict[str, float] = {}
+    for leg, v in legs.items():
+        v["department"] = _department_of(leg)
+        asks[leg] = float(v["base_s"]) * (float(v["price_factor"]) - 1.0)
+        want[v["department"]] = want.get(v["department"], 0.0) + asks[leg]
+    grant_ratio = {d: (1.0 if w <= 0 else min(1.0, float((spare_s or {}).get(d, 0.0)) / w))
+                   for d, w in want.items()}
+    for leg, v in legs.items():
+        extra = asks[leg] * grant_ratio.get(v["department"], 0.0)
+        v["extra_s"] = int(round(extra))
+        v["factor"] = round(1.0 + (v["extra_s"] / v["base_s"] if v["base_s"] else 0.0), 4)
+        v["planned_s"] = max(SCOUT_MIN_S, int(v["base_s"]) + v["extra_s"])
 
     # NEVER A GLOBAL REDUCTION. Clipping and the scout minimum can only add; the rescale below
     # exists for the case where they do not, so the hour's total is never handed back.
@@ -331,30 +460,94 @@ def build_plan(bases: dict[str, int] | None = None) -> dict[str, Any]:
         "at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "sources": {"meta_controller": bool(meta), "meta_why": meta_why,
                     "research_bandit": bool(bandit), "compute_policy": bool(policy),
-                    "compute_policy_applied": policy_applied},
+                    "compute_policy_applied": policy_applied,
+                    "evig_acquisition": bool(evig), "evig_why": evig_why,
+                    "factory_contracts": bool(fac), "factory_why": fac_why},
+        "spare": spare,
+        "spare_granted_s": sum(int(v["extra_s"]) for v in legs.values()),
+        "department_grant_ratio": {d: round(r, 4) for d, r in sorted(grant_ratio.items())},
         "weights": W, "floor": FLOOR, "ceiling": CEIL, "scout_min_s": SCOUT_MIN_S,
         "scout_stale_h": SCOUT_STALE_H,
         "median_score": round(median, 6), "rescale": round(rescale, 4),
         "totals": {"base_s": total_base, "planned_s": total_planned,
                    "never_reduced": total_planned >= total_base},
         "legs": legs, "order": ordered, "applied": {},
-        "rule": ("every leg's seconds are its base times a factor derived by RANK from the meta "
-                 "controller's dE[log W] board, the bandit's arm shares and the compute policy's "
-                 "tier split, clipped to [FLOOR, CEIL] and floored at SCOUT_MIN_S; the hour's "
-                 "total is never below the unpriced total; order is price-descending with every "
-                 "leg staler than SCOUT_STALE_H pulled to the front"),
+        "rule": ("every leg keeps its base (its current share); a leg priced above the median "
+                 "by RANK over the meta controller's dE[log W] board, the bandit, the EVIG "
+                 "frontier, the factory contracts' measured yield and the compute policy asks for "
+                 "base x (price_factor - 1) more, granted out of its department clock's MEASURED "
+                 "spare seconds and never out of another leg; unmeasured spare grants nothing; "
+                 "order is price-descending with every leg staler than SCOUT_STALE_H pulled to "
+                 "the front"),
     }
 
 
-def order(names: list[str], legs: dict[str, dict[str, Any]] | None = None) -> list[str]:
-    """`names` in the order this hour should run them: scouts first, then price-descending."""
-    table = legs if legs is not None else plan().get("legs", {})
+def declare_spec(leg: str, rec: dict[str, Any]) -> None:
+    """Write this leg's JOB SPEC where `job_lock` reads it. I3's producer half. Never raises.
 
-    def key(n: str) -> tuple[int, float, str]:
+    I3'S GAP, IN THE LEDGER'S OWN WORDS: *"a job's spec carries a memory floor but no CPU count,
+    no deadline and no EVSI, so no scheduler can rank two competing jobs."* `job_lock.record_spec`
+    has accepted all four fields since the row's first half and NOTHING EVER CALLED IT -- the
+    declaration existed and no job ever declared. Every leg of the hourly cycle passes through
+    `applied_budget`, so this is the one place where all four are known at once:
+
+        mb          the leg's own measured high-water RSS, corrected upward by what it has
+                    actually used (`job_lock.measured_need_mb`) -- never a constant, and never
+                    sized off a machine (CLAUDE.md: measure the box the code runs on)
+        cpu         1, declared rather than assumed: every cycle leg is a single subprocess
+        deadline_s  the seconds this leg was actually granted this hour, which is exactly how
+                    long it may hold the box before pre-empting it is worth considering
+        evsi        the board's dE[log W] price for this leg -- what the desk expects to LEARN
+                    from the hour, which is the field a scheduler must rank on
+
+    It declares; it admits nothing and refuses nothing.
+    """
+    try:
+        from research.job_lock import measured_need_mb, record_spec
+    except Exception:                                          # pragma: no cover - import env
+        try:
+            from job_lock import (  # type: ignore[import-not-found,no-redef]
+                measured_need_mb,
+                record_spec,
+            )
+        except Exception:
+            return
+    try:
+        base_mb = int(rec.get("base_mb") or 0) or 256
+        need, _why = measured_need_mb(str(leg), base_mb)
+        score = rec.get("score")
+        record_spec(str(leg), mb=int(need), cpu=1,
+                    deadline_s=float(rec.get("applied_s") or rec.get("base_s") or 0.0) or None,
+                    evsi=float(score) if isinstance(score, (int, float)) else None)
+    except Exception:                                          # a declaration never costs a leg
+        return
+
+
+def order(names: list[str], legs: dict[str, dict[str, Any]] | None = None) -> list[str]:
+    """`names` in the order this hour should run them: scouts first, then price-descending.
+
+    I3's CONSUMER. Two legs the board prices identically -- which is common, because most legs
+    are priced by the same tier factor -- were separated by their own SPELLING. They are now
+    separated by what they DECLARED: `job_lock.admission_order` ranks by EVSI, then by the
+    shorter deadline, then by the smaller memory need. That is the "no scheduler can rank two
+    competing jobs" half of I3, cashed. It re-orders and refuses nothing: every named leg is
+    still returned, and the scout tier (a leg unrun for six hours) still outranks every price.
+    """
+    table = legs if legs is not None else plan().get("legs", {})
+    declared: dict[str, int] = {}
+    try:
+        from research.job_lock import admission_order
+    except Exception:                                          # pragma: no cover - import env
+        admission_order = None                                 # type: ignore[assignment]
+    if admission_order is not None:
+        with contextlib.suppress(Exception):
+            declared = {n: i for i, (n, _spec) in enumerate(admission_order(names))}
+
+    def key(n: str) -> tuple[int, float, int, str]:
         row = table.get(n) or {}
         st = row.get("stale_h")
         scout = 0 if (st is None or float(st) >= SCOUT_STALE_H) else 1
-        return (scout, -float(row.get("score") or 0.0), n)
+        return (scout, -float(row.get("score") or 0.0), declared.get(n, len(names)), n)
 
     return sorted(names, key=key)
 
@@ -402,6 +595,8 @@ def applied_budget(leg: str, base: float) -> tuple[int, dict[str, Any]]:
             applied = max(SCOUT_MIN_S, round(base_i * factor))
             rec = {"leg": leg, "base_s": base_i, "planned_s": int(row.get("planned_s") or applied),
                    "applied_s": applied, "factor": round(factor, 4),
+                   "price_factor": row.get("price_factor"), "extra_s": row.get("extra_s"),
+                   "department": row.get("department"),
                    "score": row.get("score"), "priced_by": row.get("priced_by"),
                    "rank": row.get("rank"), "applied": True,
                    "why": (f"rank score {row.get('score')} vs median {p.get('median_score')} "
@@ -409,6 +604,7 @@ def applied_budget(leg: str, base: float) -> tuple[int, dict[str, Any]]:
         rec["at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
         record(rec)
         out_s = rec["applied_s"]
+        declare_spec(leg, rec)
         return (int(out_s) if isinstance(out_s, (int, float)) else base_i), rec
     except Exception as exc:                                   # never stall a leg on a price
         return base_i, {"leg": leg, "base_s": base_i, "applied_s": base_i, "factor": 1.0,

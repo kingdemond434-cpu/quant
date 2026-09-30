@@ -54,6 +54,7 @@ param(
     [string] $DeskRoot,
     [string] $Python,
     [string] $AurumRoot,
+    [string] $InteractiveUser,
     [switch] $WhatIfOnly
 )
 
@@ -92,6 +93,15 @@ if (-not $Python) {
     }
 }
 $pyArgs = if ($Python -eq "py") { "-3 " } else { "" }
+
+if (-not $InteractiveUser) {
+    $terminalTask = Get-ScheduledTask -TaskName "MT5-TerminalBoot" -ErrorAction SilentlyContinue
+    if ($terminalTask -and $terminalTask.Principal.UserId) {
+        $InteractiveUser = $terminalTask.Principal.UserId
+    } else {
+        $InteractiveUser = $env:USERNAME
+    }
+}
 
 Write-Host ""
 Write-Host ("=" * 74)
@@ -273,51 +283,11 @@ $tasks = @(
                      -RepetitionInterval (New-TimeSpan -Minutes 5) `
                      -RepetitionDuration (New-TimeSpan -Days 3650) }
        Desc = "MT5 ruin rail in DRY-RUN: evaluates every rail every 5 minutes and stamps what it would do; arms nothing." },
-    # ---- THE DAILY CYCLE, TWO LANES TWELVE HOURS APART --------------------------------------
-    # Both execute docs\DESK_CYCLE_PROMPT.md; the lane decides which half they own. The split is
-    # what stops two agents editing the same files twelve hours apart and calling it progress:
-    # NOON owns conversion and research throughput, MIDNIGHT owns wiring, cadence and repair.
-    #
-    # DAILY AT A FIXED HOUR, not a repetition interval like every other task here. These are long
-    # passes whose value is in being ONE considered sweep rather than a poll, and a repetition
-    # trigger would stack a second agent on top of a first that had not finished.
-    #
-    # The launcher exits NON-ZERO when its CLI is absent, deliberately -- so a box without the
-    # agent installed shows a failing task rather than a green one that does nothing. That is the
-    # MT5-ShadowSync defect (exit 0 while publishing nothing for 33 hours) refused by design.
-    # HOURLY REPETITION ON TOP OF THE DAILY START, which is what makes an interrupted pass resume
-    # "right after it is back" instead of at the next daily slot. The launcher keeps a checkpoint:
-    # a firing that finds today's lane DONE costs one file read and exits, one that finds it
-    # RUNNING with a dead process resumes it with the finished stages named, one that finds
-    # nothing starts fresh. So the recovery window after a time-limit kill or a reboot is an hour,
-    # not a day -- and a healthy box pays eleven cheap no-ops for that.
-    @{ Name = "MT5-CycleNoon"
-       Kind = "ps1"
-       Script = "scripts\\Run-DeskCycle.ps1"
-       Args = "-Lane noon"
-       # -Once, NOT -Daily. PowerShell 5.1's `-Daily` parameter set does NOT accept
-       # -RepetitionInterval/-RepetitionDuration, so this registration failed with "Parameter set
-       # cannot be resolved using the specified named parameters" -- and BOTH cycle lanes were
-       # silently absent from the box for as long as the installer has existed. `-Once` at a
-       # dated 12:00 with a repetition is the supported shape and fires on the same clock: the
-       # trigger repeats every hour for eleven hours, every day, from that instant on.
-       Trigger = { New-ScheduledTaskTrigger -Once -At ([datetime]::Today.AddHours(12)) `
-                     -RepetitionInterval (New-TimeSpan -Hours 1) `
-                     -RepetitionDuration (New-TimeSpan -Hours 11) }
-       # ELEVEN HOURS, not twelve: the repetition must stop before the OTHER lane's daily start,
-       # or noon would still be waking up while midnight begins and the lane split -- the whole
-       # reason two agents can share this repository -- would be gone.
-       TimeLimit = (New-TimeSpan -Hours 10)
-       Desc = "Daily conversion pass: force the funnel, clock every certificate, chase miner yield." },
-    @{ Name = "MT5-CycleMidnight"
-       Kind = "ps1"
-       Script = "scripts\\Run-DeskCycle.ps1"
-       Args = "-Lane midnight"
-       Trigger = { New-ScheduledTaskTrigger -Once -At ([datetime]::Today) `
-                     -RepetitionInterval (New-TimeSpan -Hours 1) `
-                     -RepetitionDuration (New-TimeSpan -Hours 11) }
-       TimeLimit = (New-TimeSpan -Hours 10)
-       Desc = "Daily wiring pass: schedule the unwired, repair staleness and failing tasks." },
+    # ---- THE CRO CYCLE LANES (MT5-CycleNoon / MT5-CycleMidnight) ARE NOT IN THIS TABLE --------
+    # They run as the account that holds the claude/codex logins (S4U), not SYSTEM, and fire
+    # hourly all day with the Europe/Dublin window decided by Run-DeskCycle.ps1. Both facts are
+    # outside this table's shape, so scripts\install_cro_cycle_tasks.ps1 owns them and is called
+    # after the table below. (The -Once/11-hour shape that stood here fired on registration day only.)
     # THE ONE REAL DRILL, ON A CLOCK (2026-09-08). ops\reboot_drill.ps1 has always been the box's
     # post-reboot check -- terminal64 running, the eleven required tasks present and enabled, the
     # account read fresh -- and it was scheduled NOWHERE: grep for reboot_drill found only source
@@ -353,10 +323,8 @@ $tasks = @(
 #                     logon; ops/box-repair.ps1 documents the fix (schtasks /Change /RU <user>
 #                     /IT, elevated). Registering it from this table would create a task that
 #                     reports success and never produces a terminal, which is worse than absent.
-#   MT5-Universe      names no script in this checkout. Registering a guess would satisfy the
-#                     reboot drill's name check while running nothing -- the exact "capability
-#                     that is code, not a capability" failure the desk keeps paying for.
-# Both are reported by the drill as MISSING, which is the honest state until each is resolved.
+# MT5-Universe is registered in a dedicated interactive block below. It uses a repository-root
+# .cmd wrapper and MT5 IPC, so neither the Python table runner nor SYSTEM is a valid owner.
 
 # TWO ROOTS, EXACTLY AS `hourly_cycle._producer` RESOLVES THEM. The research organs live under
 # `desks/mt5/...`, but the publication and maintenance scripts live at the REPOSITORY root --
@@ -430,8 +398,26 @@ foreach ($t in $tasks) {
 
     try {
         Unregister-ScheduledTask -TaskName $t.Name -Confirm:$false -ErrorAction SilentlyContinue
-        $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-            -LogonType Interactive -RunLevel Limited
+        # Research, collection, validation and reporting must remain alive after
+        # the RDP session ends.  An Interactive principal silently turns every
+        # such task into a no-op on a headless box (2147946720: no logon
+        # session).  The terminal gateway is deliberately installed separately
+        # above because the MetaTrader IPC endpoint really is session-bound;
+        # nothing in this table is allowed to inherit that limitation.
+        # MetaTrader's Python IPC endpoint belongs to the interactive desktop session.  Running
+        # the gateway or shadow replay as SYSTEM returns -10004/-10005 even while terminal64 is
+        # healthy, which turns every certificate into a false no-bars clock.  All other jobs stay
+        # headless under SYSTEM.  The terminal task is the canonical source of the desktop owner.
+        if ($t.Name -in @("MT5-Gateway", "MT5-GatewayResident", "MT5-Shadow", "MT5-Gauntlet")) {
+            if (-not $InteractiveUser -or $InteractiveUser -eq "SYSTEM") {
+                throw "$($t.Name) requires the MT5 interactive desktop owner; pass -InteractiveUser"
+            }
+            $principal = New-ScheduledTaskPrincipal -UserId $InteractiveUser `
+                -LogonType Interactive -RunLevel Highest
+        } else {
+            $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+                -LogonType ServiceAccount -RunLevel Highest
+        }
         Register-ScheduledTask -TaskName $t.Name -Action $action `
             -Trigger (& $t.Trigger) -Settings $settings `
             -Description $t.Desc -Principal $principal | Out-Null
@@ -439,6 +425,60 @@ foreach ($t in $tasks) {
     } catch {
         Write-Host ("  [FAIL] {0,-14} {1}" -f $t.Name, $_.Exception.Message)
     }
+}
+
+# THE CRO CYCLE LANES, delegated so there is one registration of them (see the table comment).
+$croInstaller = Join-Path $DeskRoot "scripts\install_cro_cycle_tasks.ps1"
+if ($WhatIfOnly) {
+    Write-Host "  [DRY ] MT5-CycleNoon / MT5-CycleMidnight via install_cro_cycle_tasks.ps1"
+} elseif (Test-Path $croInstaller) {
+    try { & $croInstaller -NoStart | ForEach-Object { Write-Host "  [OK  ] $_" } }
+    catch { Write-Host ("  [FAIL] CRO cycle lanes {0}" -f $_.Exception.Message) }
+} else {
+    Write-Host "  [FAIL] CRO cycle installer missing: $croInstaller"
+}
+
+# FULL BROKER BAR LADDER, IN THE INTERACTIVE TERMINAL SESSION. The wrapper downloads every
+# missing M1/M5/M15/M30/H1/H4/D1 chart and repairs the registry even after a partial pass.
+# Measured 2026-09-28: the old hand-installed task reported success at 10:00 while its log had
+# not moved since 2026-09-22; it ran outside the MT5 desktop, after a disk-resize race had removed
+# 1,731 files. A task that cannot see the terminal cannot restore the evidence it promises.
+$universeCmd = Join-Path $RepoRoot "ops\run_universe.cmd"
+if (Test-Path $universeCmd) {
+    if ($WhatIfOnly) {
+        Write-Host "  [DRY ] MT5-Universe full seven-chart interactive collector"
+    } else {
+        try {
+            if (-not $InteractiveUser -or $InteractiveUser -eq "SYSTEM") {
+                throw "MT5-Universe requires the MT5 interactive desktop owner; pass -InteractiveUser"
+            }
+            $universeAction = New-ScheduledTaskAction -Execute "cmd.exe" `
+                -Argument ("/d /c {0}" -f $universeCmd) -WorkingDirectory $RepoRoot
+            # Offset the collector from the top-of-hour gauntlet. The shared research-terminal
+            # lease is the hard safety boundary; this offset avoids wasting either hourly trigger
+            # on a predictable collision during normal incremental operation.
+            $universeTrigger = New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMinutes(30)) `
+                -RepetitionInterval (New-TimeSpan -Hours 1) `
+                -RepetitionDuration (New-TimeSpan -Days 3650)
+            $universeSettings = New-ScheduledTaskSettingsSet `
+                -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+                -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
+                -ExecutionTimeLimit (New-TimeSpan -Hours 4) -MultipleInstances IgnoreNew
+            $universePrincipal = New-ScheduledTaskPrincipal -UserId $InteractiveUser `
+                -LogonType Interactive -RunLevel Highest
+            Unregister-ScheduledTask -TaskName "MT5-Universe" `
+                -Confirm:$false -ErrorAction SilentlyContinue
+            Register-ScheduledTask -TaskName "MT5-Universe" -Action $universeAction `
+                -Trigger $universeTrigger -Settings $universeSettings `
+                -Description "Fill every missing broker chart and repair the universe registry." `
+                -Principal $universePrincipal | Out-Null
+            Write-Host "  [OK  ] MT5-Universe registered"
+        } catch {
+            Write-Host ("  [FAIL] MT5-Universe {0}" -f $_.Exception.Message)
+        }
+    }
+} else {
+    Write-Host "  [FAIL] MT5-Universe wrapper missing: $universeCmd"
 }
 
 # The research supervisor is a persistent queue/experiment worker, not a one-shot task. A short
@@ -463,8 +503,10 @@ if (Test-Path $supervisor) {
                 -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
                 -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
                 -ExecutionTimeLimit (New-TimeSpan -Hours 72) -MultipleInstances IgnoreNew
-            $supPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-                -LogonType Interactive -RunLevel Limited
+            # This is a queue and experiment worker, not a terminal client.
+            # It must survive logoff just like the one-shot research workers.
+            $supPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+                -LogonType ServiceAccount -RunLevel Highest
             Unregister-ScheduledTask -TaskName "MT5-ResearchSupervisor" `
                 -Confirm:$false -ErrorAction SilentlyContinue
             Register-ScheduledTask -TaskName "MT5-ResearchSupervisor" -Action $supAction `
@@ -531,7 +573,10 @@ if ((Test-Path $adoptSeal) -and -not $WhatIfOnly) {
         $adoptSettings = New-ScheduledTaskSettingsSet `
             -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
             -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 2) `
-            -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -MultipleInstances IgnoreNew
+            # A cold adoption of the large evidence tree can exceed twenty minutes.  Keep this
+            # identical to install_adopt_release_task.ps1 so a full reinstall cannot restore the
+            # timeout/IgnoreNew starvation loop that left the box hundreds of commits behind.
+            -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
         # SYSTEM, ServiceAccount: the box's tasks run as SYSTEM (an Interactive principal only
         # fires while that user holds a desktop session, and the adoption then dies with it).
         $adoptPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
@@ -615,13 +660,15 @@ if (Test-Path $riskUnitsFence) {
 # the 22:00 UTC gateway/shadow_forward/promoter cycle has written the day's shadow state, so the
 # certification run sees the freshest evidence rather than racing it.
 $qquantGates = Join-Path $DeskRoot "research\qquant_gates.py"
+$qquantLauncher = Join-Path $DeskRoot "research\certifier_launcher.py"
 if (Test-Path $qquantGates) {
     if ($WhatIfOnly) {
         Write-Host "  [DRY ] MT5-QQuantGatesCertify daily original 10-gate certification run"
     } else {
         try {
             $qgLog = Join-Path $logDir "MT5-QQuantGatesCertify.log"
-            $qgCmd = "/d /s /c `"`"$Python`" $pyArgs`"$qquantGates`" >> `"$qgLog`" 2>&1`""
+            $qgEntrypoint = if (Test-Path $qquantLauncher) { $qquantLauncher } else { $qquantGates }
+            $qgCmd = "/d /s /c `"`"$Python`" $pyArgs`"$qgEntrypoint`" >> `"$qgLog`" 2>&1`""
             $qgAction = New-ScheduledTaskAction -Execute "cmd.exe" -Argument $qgCmd `
                 -WorkingDirectory $DeskRoot
             $qgTrigger = New-ScheduledTaskTrigger -Daily -At "23:00"
@@ -629,8 +676,11 @@ if (Test-Path $qquantGates) {
                 -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
                 -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 10) `
                 -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
-            $qgPrincipal = New-ScheduledTaskPrincipal -UserId $env:USERNAME `
-                -LogonType Interactive -RunLevel Limited
+            # Certification reads sealed files; it has no terminal IPC dependency.
+            # Keep it running after logoff so a healthy gate lane cannot silently
+            # disappear with an RDP session.
+            $qgPrincipal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+                -LogonType ServiceAccount -RunLevel Highest
             Unregister-ScheduledTask -TaskName "MT5-QQuantGatesCertify" `
                 -Confirm:$false -ErrorAction SilentlyContinue
             Register-ScheduledTask -TaskName "MT5-QQuantGatesCertify" -Action $qgAction `

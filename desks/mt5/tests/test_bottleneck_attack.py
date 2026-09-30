@@ -2,7 +2,7 @@
 machinery that already exists.
 
 What these pin:
-  * each of the four bottlenecks is measured from a PEER artifact, with a named fallback, and an
+  * each bottleneck is measured from a PEER artifact, with a named fallback, and an
     absent peer is UNMEASURED rather than zero (L1.28a) -- a bottleneck nobody measured cannot be
     reported as solved;
   * plumbing past its escalation window binds outright, because every other measurement is then a
@@ -55,7 +55,7 @@ def test_conversion_debt_reads_the_peer_organ_when_it_has_landed(tmp_path: Path)
 def test_an_absent_peer_is_unmeasured_never_zero(tmp_path: Path) -> None:
     _reports(tmp_path)
     for row in (ba.measure_judging(tmp_path), ba.measure_enrolment(tmp_path),
-                ba.measure_plumbing(tmp_path)):
+                ba.measure_evidence_accrual(tmp_path), ba.measure_plumbing(tmp_path)):
         assert row["severity"] is None, row["bottleneck"]
         assert row["status"] == "UNMEASURED"
         assert row["basis"], "an UNMEASURED verdict must name why"
@@ -96,6 +96,38 @@ def test_an_untimed_enrolment_stage_with_a_visible_queue_is_still_measured(
     row = ba.measure_enrolment(tmp_path)
     assert row["severity"] is not None and row["value"] == 40
     assert "UNMEASURED" in row["basis"]
+
+
+def test_forward_evidence_counts_only_blocked_or_mature_zero_trade_clocks(
+        tmp_path: Path) -> None:
+    d = _reports(tmp_path) / "shadow"
+    d.mkdir()
+    _write(d, "shadow_health.json", {
+        "configured_sleeves": 100,
+        "evidence_blocked_sleeves": 7,
+        "sleeves_with_forward_trades": 20,
+        "zero_trade_clocks": {
+            "count": 80, "mature_14d_without_trade": 13,
+            "by_status": {"ACTIVE": 73, "BLOCKED_NO_BARS": 7},
+        },
+    })
+    row = ba.measure_evidence_accrual(tmp_path)
+    assert row["value"] == 20 and row["severity"] == 0.2
+    assert row["blocked"] == 7 and row["mature_14d_without_trade"] == 13
+
+
+def test_new_quiet_forward_clocks_do_not_manufacture_a_bottleneck(tmp_path: Path) -> None:
+    d = _reports(tmp_path) / "shadow"
+    d.mkdir()
+    _write(d, "shadow_health.json", {
+        "configured_sleeves": 583,
+        "evidence_blocked_sleeves": 0,
+        "sleeves_with_forward_trades": 33,
+        "zero_trade_clocks": {"count": 550, "mature_14d_without_trade": 0,
+                               "by_status": {"ACTIVE": 550}},
+    })
+    row = ba.measure_evidence_accrual(tmp_path)
+    assert row["value"] == 0 and row["severity"] == 0.0
 
 
 def test_plumbing_past_its_window_scores_one_and_binds_outright(tmp_path: Path) -> None:
@@ -196,7 +228,7 @@ def test_the_pass_publishes_the_binding_constraint_and_what_it_moved(tmp_path: P
                  history=tmp_path / "h.jsonl")
     assert doc["binding"]["bottleneck"] == "judging_throughput"
     assert doc["compute_shift"]["validate"] > 1.0
-    assert len(doc["bottlenecks"]) == 4
+    assert len(doc["bottlenecks"]) == 5
     assert doc["moved"]["consumers"], "an organ must name who reads what it wrote"
     assert "trend_24h" in doc and doc["n_unmeasured"] >= 0
 

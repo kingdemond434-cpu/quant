@@ -490,7 +490,27 @@ def ticks_table(df: pd.DataFrame):
 def write_day(chunk: pd.DataFrame, out: Path) -> int:
     """Merge `chunk` into the day file at `out` and write it (zstd). Returns rows on disk."""
     import pyarrow.parquet as pq
-    prev = pd.read_parquet(out) if out.exists() else None
+    prev = None
+    if out.exists():
+        try:
+            prev = pd.read_parquet(out)
+        except Exception as exc:
+            # One historical writer produced parquet whose footer advertised ``ts`` while its
+            # physical column had zero values.  Arrow quite correctly refuses the whole table,
+            # which used to stop the hourly recorder before it could replace the bad generation.
+            # Every tick still has the authoritative integer ``time_msc``.  Salvage all physical
+            # columns except the derived ``ts`` and let merge_day rebuild it; never discard or
+            # silently replace a file when the remaining tick payload cannot be read.
+            try:
+                names = pq.ParquetFile(out).schema.names
+                salvage = [name for name in names if name != "ts"]
+                if "time_msc" not in salvage:
+                    raise ValueError("legacy tape has no time_msc recovery column")
+                prev = pq.read_table(out, columns=salvage).to_pandas()
+            except Exception as salvage_exc:
+                raise RuntimeError(
+                    f"cannot read or losslessly salvage existing tick day {out}: {salvage_exc}"
+                ) from exc
     merged = merge_day(prev, chunk)
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".parquet.tmp")

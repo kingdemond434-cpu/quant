@@ -229,25 +229,128 @@ def implement(gap: str, state: dict[str, bool]) -> dict[str, Any]:
             "reached": reached, "blocked_at": blocked, "pipeline": list(PIPELINE), "why": why}
 
 
+# --------------------------------------------------------------- the seats behind the roles
+#: The role this organisation names -> the benchmarked role `model_role_benchmark` allocates.
+#: C21. The four roles here are ADVERSARIAL POSITIONS ON ONE CLAIM; the benchmark's ten are
+#: COMPETENCES measured per seat. They are different vocabularies for the same staff, and the
+#: join is declared once here rather than re-guessed by every reader.
+ROLE_SEAT_SKILL: dict[str, tuple[str, ...]] = {
+    "ADVOCATE": ("hypothesis_scientist", "mechanism_miner"),
+    "SKEPTIC": ("adversarial_researcher", "failure_analyst"),
+    "REPLICATOR": ("implementer", "data_scout"),
+    "VALIDATOR": ("validator", "referee", "statistician"),
+}
+BENCHMARK = BASE / "reports" / "MODEL_ROLE_BENCHMARK.json"
+
+
+def seat_bindings(path: Path | None = None) -> dict[str, Any]:
+    """Which REAL seat holds each role, by measured competence. C21.
+
+    THE ROLES WERE HELD BY agent_a..agent_d, WHICH ARE NOT SEATS. This organisation published a
+    separation law, a reputation rule and a conflict refusal, and demonstrated all three on
+    invented identities -- so the law was real and the STAFF was fictional, and no measurement
+    anywhere said which vendor was actually arguing which side of a claim.
+
+    `model_role_benchmark` already scores every seat on nine skills and allocates ten roles by
+    weighted Wilson lower bound, refusing to assign a role no seat is measured on. This reads
+    that allocation and maps it onto the four adversarial positions. A role whose benchmarked
+    counterparts are all UNASSIGNED stays UNASSIGNED here, with the reason carried through --
+    never filled by rotation, which is the exact failure the benchmark exists to end.
+    """
+    p = BENCHMARK if path is None else path
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"status": "UNMEASURED",
+                "why": f"{p.name} unreadable ({type(exc).__name__}); roles stay unbound",
+                "by_role": {r: {"seat": None, "why": "no benchmark on this host"} for r in ROLES}}
+    allocated = doc.get("roles") if isinstance(doc.get("roles"), dict) else {}
+    by_role: dict[str, Any] = {}
+    for role, counterparts in ROLE_SEAT_SKILL.items():
+        chosen = None
+        for c in counterparts:
+            row = allocated.get(c)
+            if isinstance(row, dict) and row.get("assigned"):
+                chosen = {"seat": str(row["assigned"]), "via": c,
+                          "score": row.get("margin"), "why": ""}
+                break
+        by_role[role] = chosen or {
+            "seat": None, "via": None,
+            "why": (f"no seat is measured on any of {list(counterparts)}; the benchmark refuses "
+                    f"to assign an unearned role and so does this")}
+    seats = [v["seat"] for v in by_role.values() if v.get("seat")]
+    # THE SEPARATION LAW APPLIES TO THE BINDING ITSELF. If the benchmark's best seat wins two of
+    # these four positions, the organisation cannot staff a conflict-free review from it, and
+    # saying so is the measurement -- quietly reassigning would rebuild the round-robin.
+    duplicated = sorted({s for s in seats if seats.count(s) > 1})
+    return {"status": "MEASURED" if seats else "UNMEASURED",
+            "benchmark_at": doc.get("measured_at") or doc.get("at"),
+            "by_role": by_role, "n_bound": len(seats),
+            "conflicted_seats": duplicated,
+            "conflict_free": not duplicated and len(seats) == len(ROLES),
+            "why": ("a seat holding two positions on one claim makes a conflict-free review "
+                    "impossible to staff; it is reported, never silently reassigned"
+                    if duplicated else "")}
+
+
+def seat_records(bindings: dict[str, Any]) -> list[Record]:
+    """Reputation records for the seats actually bound, from the seats' own donation ledgers.
+
+    Volume is counted from `data/intelligence/<seat>/` -- the only place a seat's own output
+    lands -- and correctness from the hypothesis graph's verdicts on rows carrying that source.
+    A seat with fewer than MIN_CLAIMS_FOR_REPUTATION resolved claims reads UNRATED, which is the
+    honest state of every seat on this desk today and is what the ledger should say.
+    """
+    seats = sorted({str(v.get("seat")) for v in (bindings.get("by_role") or {}).values()
+                    if v.get("seat")})
+    if not seats:
+        return []
+    proposed: dict[str, int] = dict.fromkeys(seats, 0)
+    correct: dict[str, int] = dict.fromkeys(seats, 0)
+    for seat in seats:
+        d = BASE / "data" / "intelligence" / seat
+        try:
+            proposed[seat] = sum(1 for _ in d.glob("*.json")) if d.is_dir() else 0
+        except OSError:
+            proposed[seat] = 0
+    graph = BASE / "data" / "hypothesis_graph.jsonl"
+    if graph.exists():
+        try:
+            with graph.open("r", encoding="utf-8") as fh:
+                for line in fh:
+                    if '"CERTIFIED"' not in line:
+                        continue
+                    try:
+                        row = json.loads(line)
+                    except ValueError:
+                        continue
+                    src = str(row.get("source") or "").split(":")[0]
+                    if src in correct and str(row.get("fate")) == "CERTIFIED":
+                        correct[src] += 1
+        except OSError:
+            pass
+    return [Record(s, proposed=proposed[s], proposed_correct=correct[s]) for s in seats]
+
+
 # --------------------------------------------------------------------------- runner
 def run() -> dict[str, Any]:
-    demo_conflict = open_review(Review("gold scalp is promotable", {
-        "ADVOCATE": "agent_a", "SKEPTIC": "agent_b",
-        "REPLICATOR": "agent_c", "VALIDATOR": "agent_a"}))
-    demo_clean = open_review(Review("gold scalp is promotable", {
-        "ADVOCATE": "agent_a", "SKEPTIC": "agent_b",
-        "REPLICATOR": "agent_c", "VALIDATOR": "agent_d"}))
-    records = [
-        Record("volume_proposer", proposed=40, proposed_correct=2),
-        Record("careful_proposer", proposed=3, proposed_correct=2, objections=6,
-               objections_upheld=5),
-        Record("newcomer", proposed=2, proposed_correct=2),
-    ]
+    bindings = seat_bindings()
+    held = {r: (v.get("seat") or f"UNASSIGNED:{r}")
+            for r, v in (bindings.get("by_role") or {}).items()}
+    # The refusal is demonstrated on the REAL staffing: one seat, two positions. If the desk's
+    # seats are genuinely distinct this review is admissible and the example says so.
+    conflict_probe = open_review(Review("the bound staff can review one claim", dict(held)))
+    doubled = dict(held)
+    doubled["VALIDATOR"] = held.get("ADVOCATE", "UNASSIGNED:ADVOCATE")
+    demo_conflict = open_review(Review("advocate also validates", doubled))
+    records = seat_records(bindings)
     return {
         "measured_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "roles": list(ROLES),
+        # C21: WHICH REAL SEAT HOLDS EACH ROLE, by the benchmark's measured competence.
+        "seat_bindings": bindings,
         "review_refused_example": demo_conflict,
-        "review_admissible_example": demo_clean,
+        "review_admissible_example": conflict_probe,
         "reputations": [r.reputation() for r in records],
         "frontier_methods": frontier_methods(),
         "implementer": {
@@ -264,6 +367,11 @@ def main(argv: list[str] | None = None) -> int:
     doc = run()
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    b = doc["seat_bindings"]
+    print("research org: " + f"{b.get('n_bound')}/{len(ROLES)} role(s) bound to real seats "
+          + f"({b.get('status')}); "
+          + ", ".join(f"{r}={(v.get('seat') or 'UNASSIGNED')}"
+                      for r, v in (b.get("by_role") or {}).items()))
     print(f"research org: {len(ROLES)} separated roles, "
           f"{len(doc['frontier_methods']['admitted'])} method(s) admitted, "
           f"{len(doc['frontier_methods']['refused'])} refused")

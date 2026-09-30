@@ -84,16 +84,23 @@ def test_a_zero_target_reports_infinite_rather_than_a_comparable_number() -> Non
 
 
 def test_the_ceiling_is_refused_rather_than_estimated() -> None:
-    """Market impact needs realised fills, and matched_fills is 0 -- nothing has ever filled.
+    """A ceiling needs measured market impact, and the REASON is read, never asserted.
 
     A ceiling derived from a cost model nobody has validated against a fill is a number that
     would be believed and should not be. This is the same discipline the execution panel already
     applies to markout.
+
+    THIS TEST USED TO PIN THE LITERAL STRING "matched_fills is 0" -- and matched_fills is now 151,
+    so the assertion was pinning a claim that had stopped being true. What must hold is the
+    PROPERTY: no ceiling is invented, and the refusal cites the fill recorder's live measurement
+    (the count and the impact verdict) rather than a number frozen into a sentence.
     """
     row = capacity.assess({"name": "g", "symbol": "XAUUSD", "q_target": 0.005}, 742.0)
     assert row["ceiling_eur"] is None
     assert row["ceiling_status"] == "UNMEASURED"
-    assert "matched_fills is 0" in row["ceiling_why"]
+    why = row["ceiling_why"]
+    assert "matched_fills" in why or "FILL_RECORDER" in why
+    assert any(w in why for w in ("impact", "slope"))
 
 
 def test_over_risked_is_the_consumer_that_makes_this_more_than_an_artifact() -> None:

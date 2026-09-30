@@ -888,11 +888,17 @@ def test_filled_gold_bracket_cancels_only_its_own_pending_sibling() -> None:
                         comment="DWxau_m5_other"),
         SimpleNamespace(ticket=14, symbol="XAUUSD", magic=999, comment="DWgold_london_am"),
     ]
+    def send(req: dict) -> SimpleNamespace:
+        sent.append(req)
+        if req.get("action") == 12:
+            orders[:] = [o for o in orders if o.ticket != req["order"]]
+        return SimpleNamespace(retcode=10009, comment="")
+
     mt5 = SimpleNamespace(
         positions_get=lambda symbol=None: list(positions),
         orders_get=lambda symbol=None: list(orders),
         TRADE_ACTION_REMOVE=12, TRADE_RETCODE_DONE=10009,
-        order_send=lambda req: (sent.append(req) or SimpleNamespace(retcode=10009, comment="")))
+        order_send=send)
     ns = _exec(("cancel_filled_gold_siblings", "order_comment"),
                {"mt5": mt5, "log": lambda *_: None, "diagnose": lambda *a: "",
                 "MAGIC": 341953})
@@ -987,12 +993,14 @@ class _Terminal:
     TIMEFRAME_H1 = 16385
     TRADE_ACTION_PENDING, TRADE_ACTION_DEAL = 5, 1
     ORDER_TYPE_BUY, ORDER_TYPE_SELL, ORDER_TYPE_BUY_STOP, ORDER_TYPE_SELL_STOP = 0, 1, 4, 5
+    POSITION_TYPE_BUY, POSITION_TYPE_SELL = 0, 1
     ORDER_FILLING_RETURN, ORDER_TIME_GTC, ORDER_TIME_SPECIFIED = 2, 0, 1
     SYMBOL_EXPIRATION_SPECIFIED = 4
 
     def __init__(self, rows: list[dict], bid: float, ask: float) -> None:
         self.rows, self.bid, self.ask = rows, bid, ask
         self.pending: list[SimpleNamespace] = []
+        self.positions: list[SimpleNamespace] = []
         self.sent: list[dict] = []
 
     def terminal_info(self):
@@ -1014,7 +1022,7 @@ class _Terminal:
         return SimpleNamespace(equity=10_000.0, margin_free=9_000.0, login=1, server="demo")
 
     def positions_get(self, symbol=None):
-        return []
+        return list(self.positions)
 
     def symbol_info(self, symbol):
         return SimpleNamespace(trade_tick_size=0.01, trade_stops_level=20, point=0.01,
@@ -1076,6 +1084,8 @@ def _main_ns(tmp_path: Path, monkeypatch, mt5: _Terminal, *, paused: bool,
         "_record_vetoed_bracket": lambda *a, **k: False,
         "_expiry_request": lambda symbol, sleeve="", window=None: {"type_time": 0},
         "expire_stale_brackets": lambda st: 0,
+        "cancel_filled_gold_siblings": lambda st: 0,
+        "collapse_opposing_gold_positions": lambda st: 0,
         "cancel_pending": lambda st, symbol: None,
         "close_positions": lambda st, symbol, keep_tags=frozenset(): None,
         "scalp_position_tags": lambda sleeves: frozenset(),
@@ -1157,6 +1167,24 @@ def test_a_second_pass_in_one_day_recovers_the_bracket_the_terminal_holds_and_se
     assert f"recovered [gold_asia] bracket for {_DAY}" in ns["_logs"]
 
 
+def test_fusion_suppresses_the_same_opposing_gold_leg_as_e8(tmp_path, monkeypatch) -> None:
+    rows = _gold_rows()
+    mt5 = _Terminal(rows, *_quote(rows))
+    # Any readable open long XAU exposure makes a new sell-stop a self-hedge.  The position is
+    # deliberately manual (magic 0), proving the rule reads economic exposure rather than a
+    # fragile comment convention.
+    mt5.positions = [SimpleNamespace(symbol="XAUUSD", type=mt5.POSITION_TYPE_BUY,
+                                     volume=0.01, magic=0, comment="manual", ticket=77,
+                                     price_open=2000.0, sl=1900.0, tp=2200.0,
+                                     time=int(_WHEN.timestamp()))]
+    ns = _main_ns(tmp_path, monkeypatch, mt5, paused=False, state={"armed": True})
+
+    ns["main"]()
+
+    assert [r["type"] for r in mt5.sent] == [mt5.ORDER_TYPE_BUY_STOP]
+    assert any(d.get("reason") == "self_hedge_prevented" for d in ns["_decisions"])
+
+
 def test_the_pause_file_readers_look_under_data_and_main_consults_gateway_paused(
         tmp_path, monkeypatch) -> None:
     """THE PATH FACTS THE AUDIT MEASURED (E13, 2026-09-08). Every reader of the pause flag --
@@ -1206,16 +1234,15 @@ def _manage_mt5(comment: str, sent: list) -> SimpleNamespace:
         order_send=lambda req: sent.append(req))
 
 
-def test_a_family_position_with_a_fixed_certified_bracket_is_not_ratcheted() -> None:
-    """2026-09-16: five forex closes at a manage-tightened stop, five losses. The family lane's
-    certificates carry no trail, so the manage step leaves their stops where the certificate
-    put them."""
+def test_a_fixed_family_position_uses_only_the_fast_floor_not_the_trail() -> None:
+    """A fixed certificate keeps its fixed exit but may still receive the universal profit floor."""
     sent: list = []
     ns = _manage_ns(_manage_mt5(f"DW{_NAME}", sent))
     st = {"armed": True, "generic": {_NAME: {"trail_k": 0.0, "open_ttl_until": "x"}}}
     ns["manage_open_positions"](st, [_sleeve()])
     assert sent == []
-    assert any("certified exit is a fixed bracket" in x for x in ns["_logs"])
+    assert any("fewer than 1 M1 bars since entry" in x for x in ns["_logs"])
+    assert not any("ATR unavailable" in x for x in ns["_logs"])
 
 
 def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> None:
@@ -1224,7 +1251,7 @@ def test_a_family_position_whose_signal_carried_a_trail_is_still_managed() -> No
     st = {"armed": True, "generic": {_NAME: {"trail_k": 4.0}}}
     ns["manage_open_positions"](st, [_sleeve()])
     assert not any("fixed bracket" in x for x in ns["_logs"])
-    assert any("fewer than 2 bars since entry" in x for x in ns["_logs"])
+    assert any("fewer than 2 H1 bars since entry" in x for x in ns["_logs"])
 
 
 def test_the_family_send_records_whether_its_signal_carried_a_trail(tmp_path,

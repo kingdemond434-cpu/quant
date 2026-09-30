@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 import scripts.acquire_data as A
 
 NOW = "2026-09-08T12:00:00+00:00"
@@ -29,8 +30,8 @@ def _probe(url: str, **kw) -> dict:
 
 def _map() -> dict:
     return {"updated": "2026-08-30", "posture": "FREE-FIRST",
-            "sources": {"cex_trades_ohlcv": [
-                {"name": "public.bybit.com", "url": "https://public.bybit.com/",
+            "sources": {"fx_reference_rates": [
+                {"name": "stats.example-bank.test", "url": "https://stats.example-bank.test/",
                  "grade": "verified-clean (depth + survivorship, 2026-08-18)"}]}}
 
 
@@ -55,26 +56,26 @@ def test_a_probed_source_is_appended_at_unverified_with_its_probe_result() -> No
 
 def test_the_human_updated_date_and_existing_entries_are_never_touched() -> None:
     uni = _map()
-    before = json.dumps(uni["sources"]["cex_trades_ohlcv"], sort_keys=True)
+    before = json.dumps(uni["sources"]["fx_reference_rates"], sort_keys=True)
     A.merge_probes(uni, [_probe("https://www.sbv.gov.vn/")], now=NOW)
     assert uni["updated"] == "2026-08-30", "the human curation date is not the writer's to move"
-    assert json.dumps(uni["sources"]["cex_trades_ohlcv"], sort_keys=True) == before
+    assert json.dumps(uni["sources"]["fx_reference_rates"], sort_keys=True) == before
 
 
-@pytest.mark.parametrize("field,value", [("url", "https://public.bybit.com"),
-                                          ("url", "http://www.public.bybit.com/"),
-                                          ("title", "public.bybit.com")])
+@pytest.mark.parametrize("field,value", [("url", "https://stats.example-bank.test"),
+                                          ("url", "http://www.stats.example-bank.test/"),
+                                          ("title", "stats.example-bank.test")])
 def test_a_source_the_map_already_names_is_skipped_whole(field: str, value: str) -> None:
     """THE LOAD-BEARING REFUSAL: that entry carries a human licence verdict, and a machine
     writer that re-graded it would destroy the only evidence the desk has about the source."""
     uni = _map()
-    probe = _probe("https://public.bybit.com/") if field == "url" else _probe(
+    probe = _probe("https://stats.example-bank.test/") if field == "url" else _probe(
         "https://elsewhere.test/", title=value)
     if field == "url":
         probe["url"] = value
     rep = A.merge_probes(uni, [probe], now=NOW)
     assert rep["added"] == 0 and rep["skipped_already_known"] == 1
-    assert uni["sources"]["cex_trades_ohlcv"][0]["grade"].startswith("verified-clean")
+    assert uni["sources"]["fx_reference_rates"][0]["grade"].startswith("verified-clean")
     assert "machine_updated" not in uni, "a run that adds nothing does not stamp the file"
 
 

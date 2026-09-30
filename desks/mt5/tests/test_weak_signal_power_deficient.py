@@ -29,6 +29,35 @@ wsc = pytest.importorskip("research.weak_signal_compiler")
 from research.frontier_identity import cell_id  # noqa: E402
 
 
+def test_ensemble_weights_are_fit_once_and_cannot_see_later_blocks():
+    """Changing OOS returns must not change the frozen ensemble recipe."""
+    pd = pytest.importorskip("pandas")
+    train = pd.DataFrame({0: [0.0, 0.01, 0.02, 0.0], 1: [0.0, -0.01, -0.02, 0.0]})
+    w = wsc._fit_shrunk_weights(train, [0, 1])
+    with_later = pd.concat(
+        [train, pd.DataFrame({0: [-99.0, -99.0], 1: [99.0, 99.0]})], ignore_index=True
+    )
+    # The caller's frozen fit slice remains the first block regardless of what follows.
+    w_after = wsc._fit_shrunk_weights(with_later.iloc[: len(train)], [0, 1])
+    assert w_after == pytest.approx(w)
+    assert w[0] > 0 and w[1] < 0
+
+
+def test_jelinek_mercer_borrows_strength_for_a_rare_member():
+    pd = pytest.importorskip("pandas")
+    train = pd.DataFrame({0: [0.01, 0.02, 0.01, 0.02], 1: [0.0, 0.0, 0.01, 0.0]})
+    w = wsc._fit_shrunk_weights(train, [0, 1])
+    assert w[1] > 0, "a rare same-sign state should borrow the pooled training prior"
+    assert abs(w).sum() == pytest.approx(1.0)
+
+
+def test_maximum_entropy_weights_are_signed_and_normalised():
+    np = pytest.importorskip("numpy")
+    w = wsc._maximum_entropy_weights(np.asarray([0.2, -0.1, 0.0]), temperature=0.1)
+    assert w[0] > 0 and w[1] < 0 and w[2] == 0
+    assert np.abs(w).sum() == pytest.approx(1.0)
+
+
 def _write(tmp_path: Path, monkeypatch, verdicts: list[dict], docket: list[dict]) -> None:
     g = tmp_path / "universal_gates_external.json"
     d = tmp_path / "external_survivors.json"

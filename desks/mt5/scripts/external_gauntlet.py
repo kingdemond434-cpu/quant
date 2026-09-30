@@ -36,7 +36,7 @@ HYP = DATA / "hypotheses"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "desks" / "mt5"))
 
-from mt5desk import families  # noqa: E402
+from mt5desk import cell_modifiers, families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 from mt5desk.universe_registry import TIMEFRAME_MINUTES as _TF_MINUTES  # noqa: E402
 from research.frontier_identity import cell_id, economic_prior  # noqa: E402
@@ -405,18 +405,28 @@ def _frame_rows(frame) -> int:
 
 
 def _bars_for(sym: str, timeframe: str = "H1"):
-    """`<SYM>_<TF>.parquet` normalised to ITS OWN bar clock, or None when the chart is absent."""
+    """Replay bars on their native clock, from parquet or the promotion-authority terminal.
+
+    The trading box intentionally does not duplicate every broker chart into this checkout.
+    Refusing those charts made the gauntlet report zero eligible cells while shadow could replay
+    the same rules from Fusion.  The terminal fallback is deliberately strict: only a native
+    source carrying promotion authority is accepted, and research hosts without MT5 still fail
+    closed.
+    """
     key = (str(sym), str(timeframe).upper())
     if key in _FRAME_CACHE:
         _FRAME_CACHE.move_to_end(key)
         return _FRAME_CACHE[key]
     pq = UNI / f"{key[0]}_{key[1]}.parquet"
     if not pq.exists():
-        return None
-    # `families._h1` no longer FORCES an hourly clock: it normalises a frame that already is a
-    # chart and hands it back on that chart (it used to resample an M15 parquet of 100,000 bars
-    # into 25,001 H1 bars, silently). Same call, byte-identical H1 result, M5 stays M5.
-    frame = families._h1(pd.read_parquet(pq))
+        frame = _live_frame(key[0], key[1])
+        if frame is None:
+            return None
+    else:
+        # `families._h1` no longer FORCES an hourly clock: it normalises a frame that already is a
+        # chart and hands it back on that chart (it used to resample an M15 parquet of 100,000 bars
+        # into 25,001 H1 bars, silently). Same call, byte-identical H1 result, M5 stays M5.
+        frame = families._h1(pd.read_parquet(pq))
     if not isinstance(frame.index, pd.DatetimeIndex) or len(frame) == 0:
         return None
     _FRAME_CACHE[key] = frame
@@ -439,6 +449,17 @@ def _frame_for(sym: str, family: str, params: dict | None = None):
     return _bars_for(sym, timeframe_of(params, family))
 
 
+#: Why the last `build_cell` call returned None, when it knows. The sweep prints and records this
+#: instead of "parquet missing or build failed", which named the wrong cause for every one of them.
+LAST_BUILD_FAILURE: str | None = None
+
+
+def _build_failed(why: str) -> None:
+    global LAST_BUILD_FAILURE
+    LAST_BUILD_FAILURE = why
+    return None
+
+
 def build_cell(sym: str, family: str, params: dict, meta: dict,
                h1_override: pd.DataFrame | None = None):
     """Build a Cell from external survivor spec.
@@ -455,6 +476,8 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     family -- the desk's only certificates outside session_range_breakout, against a
     largest_family_share of 0.87 -- never started a forward clock at all.
     """
+    global LAST_BUILD_FAILURE
+    LAST_BUILD_FAILURE = None
     timeframe = timeframe_of(params, family)
     if h1_override is not None:
         # NEVER silently resample: `_frame_for` exists to keep an M5-native hypothesis off an H1
@@ -476,7 +499,7 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     else:
         h1 = _frame_for(sym, family, params)
     if h1 is None:
-        return None
+        return _build_failed(f"no {timeframe} bars for {sym}")
     # THE GAUNTLET MUST REACH EVERY FAMILY, not just the breakout module. Looking only in
     # `families` meant the 14 orthogonal generators were unreachable from the one door that grants
     # certificates -- so a carry or positioning edge could be written, tested by hand, and still
@@ -489,7 +512,8 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
         except ImportError:
             fn = None
     if fn is None:
-        return None
+        return _build_failed(f"no implementation of family {family!r} in families or "
+                             "families_orthogonal")
     # Reconstruct runtime-only data from the serializable candidate identity. Previously the
     # orthogonal sweep persisted `{}` for every peer/tape/macro/COT family, and discovered
     # cross-asset features were rebuilt without `extra`; both paths therefore produced zero
@@ -513,8 +537,16 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
         # them was repaired.
         elif family in {"cross_asset_residual", "pca_residual"}:
             factor_symbols = call_params.pop("factor_symbols", [])
-            call_params["factors"] = [d for d in (inputs._bars(str(s), timeframe)
-                                                  for s in factor_symbols) if d is not None]
+            loaded = [(str(s), inputs._bars(str(s), timeframe)) for s in factor_symbols]
+            if not loaded or any(d is None for _s, d in loaded):
+                # A partial basket is a different model.  Accepting USDX while silently dropping
+                # the named UST10Y leg minted clocks that looked ACTIVE but had never produced a
+                # signal even historically.  Fail the build instead of testing/certifying a
+                # strategy whose identity differs from the candidate.
+                missing = [s for s, d in loaded if d is None] or ["factor_symbols (none named)"]
+                return _build_failed(f"factor basket incomplete: no {timeframe} bars for "
+                                     f"{', '.join(missing)}")
+            call_params["factors"] = [d for _s, d in loaded]
         elif family in {"liquidity_regime", "orderflow_imbalance"}:
             call_params.pop("input_source", None)
             spread, flow = inputs._tape_series(sym, h1.index, timeframe)
@@ -558,7 +590,7 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
                 call_params["extra"] = resolve_inputs(sym, h1.index, all_symbols)
     except Exception as exc:
         print(f"  INPUT-FAIL {sym}.{family}: {type(exc).__name__}: {exc}")
-        return None
+        return _build_failed(f"input load failed: {type(exc).__name__}: {str(exc)[:200]}")
 
     # `timeframe` NAMES THE CHART TO LOAD, it is not a family argument -- the same rule
     # `family_inputs.strip_identity_keys` applies to `peer_symbol` and `factor_symbols`. Leaving
@@ -570,17 +602,26 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
     # forward clock and the live executor apply in `family_call.signals`, applied here to the
     # replay, so a cell certified inside a session is judged inside it.
     _session = call_params.pop("session", None)
+    # THE MINERS' VARIANT KEYS ARE APPLIED, NOT PASSED (`mt5desk.cell_modifiers`): a `regime`,
+    # `side_mode` or `entry_timing` handed to a family that does not take it raised TypeError, and
+    # 8,939 of 8,941 fresh cells in one sweep died below as "parquet missing or build failed".
+    # What cannot be applied honestly is refused BY NAME here, before any compute is spent.
+    call_params, _mods = cell_modifiers.split(fn, call_params)
+    _refused = cell_modifiers.refusal(_mods)
+    if _refused:
+        return _build_failed(f"NOT_RUN_MODIFIER: {_refused}")
     side = 1  # both sides tested externally; use LONG default
     try:
         sigs = fn(h1, side=side, **call_params)
     except TypeError:
         try:
             sigs = fn(h1, **call_params)
-        except Exception:
-            return None
+        except Exception as exc:
+            return _build_failed(f"{family} raised {type(exc).__name__}: {str(exc)[:200]}")
     if _session is not None:
         from mt5desk.family_call import session_filter
         sigs = session_filter(list(sigs or []), _session)
+    sigs = cell_modifiers.apply(list(sigs or []), h1, _mods)
     # CHARGE THE HOUR THIS CELL FILLS IN. `universe.json` carries ONE median spread per symbol,
     # collapsed at ingest, so every gate has been dividing by a number that averages away the hour
     # structure -- and the families that fill in thin books are exactly the ones that lose by it.
@@ -646,6 +687,44 @@ def canonical_symbol(sym: str, meta: dict) -> str:
     return folded.get(sym.upper(), sym)
 
 
+def _live_frame(sym: str, timeframe: str = "H1"):
+    """Return verified Fusion-native bars, or None; never substitute an untrusted proxy."""
+    if os.name != "nt":
+        return None
+    try:
+        from research.h1_source import fetch_h1
+        bars = fetch_h1(str(sym), datetime(2018, 1, 1, tzinfo=UTC),
+                        prefer="MT5", prefer_promotion_authority=True,
+                        require_coverage=True,
+                        timeframe=str(timeframe).upper())
+        if bars is None or bars.n <= 0 or not bars.promotion_authority:
+            return None
+        frame = families._h1(bars.df)
+        if not isinstance(frame.index, pd.DatetimeIndex) or len(frame) == 0:
+            return None
+        return frame
+    except Exception:
+        return None
+
+
+_LIVE_H1_AVAILABLE: dict[str, bool] = {}
+
+
+def _live_h1_available(sym: str) -> bool:
+    """True only when the traded Fusion terminal can supply replayable H1 bars.
+
+    The trading box intentionally keeps part of the universe in MT5 rather than duplicating
+    every H1 frame under this checkout.  Shadow uses the shared source chain and was replaying
+    those bars while gate zero rejected the same symbols solely because a local parquet was
+    absent.  A successful broker-native read is equivalent replay evidence; failures remain a
+    closed gate.  Non-Windows research hosts never claim this route.
+    """
+    key = str(sym)
+    if key not in _LIVE_H1_AVAILABLE:
+        _LIVE_H1_AVAILABLE[key] = _live_frame(key, "H1") is not None
+    return _LIVE_H1_AVAILABLE[key]
+
+
 def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
     """Can this desk ever place an order on `sym`, and hold bars to run a forward clock on it?
 
@@ -664,7 +743,7 @@ def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
     sym = canonical_symbol(sym, meta)
     if sym not in meta:
         return False, f"symbol {sym!r} is absent from the universe registry"
-    if not (UNI / f"{sym}_H1.parquet").exists():
+    if not (UNI / f"{sym}_H1.parquet").exists() and not _live_h1_available(sym):
         return False, f"symbol {sym!r} has no {sym}_H1.parquet; no clock can replay it"
     row = meta.get(sym)
     if isinstance(row, dict) and row.get("tradeable") is False:
@@ -718,7 +797,7 @@ def partition_at_economic_prior(specs: list[dict],
                 # spends the other nine gates and then fails to build with "parquet missing" --
                 # a message about the wrong file, at the wrong stage, after the compute is spent.
                 _tf = timeframe_of(spec.get("params"), str(spec.get("family") or ""))
-                if _tf != "H1" and not (UNI / f"{canon}_{_tf}.parquet").exists():
+                if _tf != "H1" and _bars_for(canon, _tf) is None:
                     ok, why = False, (f"symbol {canon!r} has no {canon}_{_tf}.parquet; the chart "
                                       f"this cell was hunted on is not on this box")
             if not ok:
@@ -2599,6 +2678,65 @@ def _repro_active() -> bool:
     return _REPRO is not None
 
 
+def iter_json_array(path: Path, chunk_chars: int = 1 << 20):
+    """Yield a top-level JSON array without materialising its million-row docket.
+
+    `external_survivors.json` exceeded 1.5m rows on the live desk. `json.loads(read_text())`
+    held the source text, the whole decoded list and two filtered copies at once, then died with
+    MemoryError before gate one. This incremental decoder preserves every row and the exact
+    ordering; callers make two bounded passes when they need a census before filtering.
+    """
+    decoder = json.JSONDecoder()
+    with Path(path).open("r", encoding="utf-8") as handle:
+        buf = ""
+        pos = 0
+        eof = False
+
+        def refill() -> bool:
+            nonlocal buf, pos, eof
+            if pos:
+                buf = buf[pos:]
+                pos = 0
+            more = handle.read(chunk_chars)
+            if not more:
+                eof = True
+                return False
+            buf += more
+            return True
+
+        refill()
+        while True:
+            while pos < len(buf) and buf[pos].isspace():
+                pos += 1
+            if pos < len(buf):
+                break
+            if not refill():
+                raise ValueError(f"{path} is empty; expected a JSON array")
+        if buf[pos] != "[":
+            raise ValueError(f"{path} is not a top-level JSON array")
+        pos += 1
+        while True:
+            while True:
+                while pos < len(buf) and (buf[pos].isspace() or buf[pos] == ","):
+                    pos += 1
+                if pos < len(buf) or eof:
+                    break
+                refill()
+            if pos < len(buf) and buf[pos] == "]":
+                return
+            if eof and pos >= len(buf):
+                raise ValueError(f"{path} ended before the JSON array closed")
+            try:
+                value, end = decoder.raw_decode(buf, pos)
+            except json.JSONDecodeError:
+                if eof:
+                    raise
+                refill()
+                continue
+            pos = end
+            yield value
+
+
 def main():
     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
 
@@ -2607,14 +2745,23 @@ def main():
     if not surv_file.exists():
         print("No external survivors found")
         return
-    survivors = json.loads(surv_file.read_text("utf-8"))
-    print(f"Loaded {len(survivors)} external survivors")
+    total = stamped_n = unstamped_n = 0
+    unstamped_sample: list[str] = []
+    for h in iter_json_array(surv_file):
+        total += 1
+        if isinstance(h, dict) and is_stamped(h):
+            stamped_n += 1
+        elif isinstance(h, dict):
+            unstamped_n += 1
+            if len(unstamped_sample) < 5:
+                unstamped_sample.append(str(h.get("family") or h.get("title"))[:40])
+    print(f"Loaded {total} external survivors by streaming census")
     _ack_docket(surv_file)
     # EMPTY INPUT IS A HALT, NOT A SWEEP (2026-08-26, measured). The hourly merge briefly wrote
     # a 0-row input; this gauntlet then ran "normally" on nothing and rewrote the AUTHORITY file
     # to n=0 -- wiping 21 certificates with exit code 0. Zero candidates means there is nothing
     # to judge, and a judge with an empty docket must not touch the records of past verdicts.
-    if not survivors:
+    if not total:
         print("HALT: 0 candidates in the input -- nothing to judge. Refusing to write any "
               "report or touch UNIVERSAL_SURVIVORS.json; an empty docket does not revoke past "
               "verdicts.")
@@ -2636,16 +2783,14 @@ def main():
     # are judged and the gap is named loudly, and from the first stamped donation onward every
     # unstamped row is refused. The rule can only get stricter, never looser, and the desk never
     # goes dark to enforce it.
-    stamped = [h for h in survivors if isinstance(h, dict) and is_stamped(h)]
-    unstamped = [h for h in survivors if isinstance(h, dict) and not is_stamped(h)]
-    if unstamped and stamped:
-        print(f"REFUSED {len(unstamped)} unstamped candidate(s) of {len(survivors)}: no "
+    stamped_only = bool(unstamped_n and stamped_n)
+    if stamped_only:
+        print(f"REFUSED {unstamped_n} unstamped candidate(s) of {total}: no "
               f"available_time / ingested_time / source_version / payload_hash. Re-donate "
               f"through proposer_common.donate. First: "
-              f"{[str(h.get('family') or h.get('title'))[:40] for h in unstamped[:5]]}")
-        survivors = stamped
-    elif unstamped:
-        print(f"PIT GAP: all {len(unstamped)} candidates are unstamped, so the refusal is "
+              f"{unstamped_sample}")
+    elif unstamped_n:
+        print(f"PIT GAP: all {unstamped_n} candidates are unstamped, so the refusal is "
               f"DEFERRED this pass -- judging them rather than halting certification. The "
               f"exclusion switches on with the first stamped donation and only tightens after.")
 
@@ -2654,7 +2799,9 @@ def main():
     # here: two rows differing only by chart are two cells, and folding them would hand one
     # verdict to both.
     cells = {}
-    for h in survivors:
+    for h in iter_json_array(surv_file):
+        if not isinstance(h, dict) or (stamped_only and not is_stamped(h)):
+            continue
         sym = h.get("symbol")
         fam = h.get("family")
         params = dict(h.get("params") or {})
@@ -2994,9 +3141,13 @@ def main():
             built_fresh += 1
             _stage0["unjudged_no_series_before_build"] += 1
         else:
-            print(f"  SKIP {key}: parquet missing or build failed")
-            blocked_build.append({**spec, "downstream_status": "NOT_RUN_BUILD_FAILED",
-                                  "why": "signal construction returned no executable cell"})
+            _why = LAST_BUILD_FAILURE or "parquet missing or build failed"
+            print(f"  SKIP {key}: {_why}")
+            blocked_build.append({**spec, "downstream_status": (
+                                      "NOT_RUN_MODIFIER" if _why.startswith("NOT_RUN_MODIFIER")
+                                      else "NOT_RUN_BUILD_FAILED"),
+                                  "why": LAST_BUILD_FAILURE
+                                  or "signal construction returned no executable cell"})
     if cache_hits:
         print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
               f"{len(eligible_specs) - cache_hits} to compute")
@@ -3557,11 +3708,27 @@ def _cli_main() -> int:
     # anything less lets it in on a false statement, anything more refuses it for room it will
     # not use. (`exclusive_job` still corrects the ask upward by the p75 of recorded peaks.)
     _need = 300 if _REPRO is not None else int(MEMORY_BUDGET_MB)
-    with exclusive_job(_job, need_mb=_need) as acquired:
-        if not acquired:
-            return 75
-        main()
-        return 0
+    # BOTH CERTIFIERS SHARE ONE HEAVY LANE.  The Windows scheduler can legitimately launch the
+    # legacy qquant battery while this resumable judge is building a docket.  Before this lease,
+    # each process was individually non-duplicated but the pair spawned independent worker pools;
+    # the live task then failed with 0x800705AF (insufficient system resources).  A five-minute
+    # trigger makes deferral cheap; overlapping two authorities is never useful.
+    # The judge reads local bars, but its cost-truth legs also attach to Fusion.  The full chart
+    # collector needs that same terminal and was interrupted when the two hourly triggers landed
+    # together.  Serialize only these research owners; the live gateway remains independent.
+    with exclusive_job("fusion_terminal_research_lane", need_mb=0) as terminal_lane:
+        if not terminal_lane:
+            print("external_gauntlet: DEFERRED -- broker chart collection owns Fusion research lane")
+            return 0
+        with exclusive_job("certification_lane", need_mb=_need) as lane:
+            if not lane:
+                print("external_gauntlet: DEFERRED -- another canonical certifier owns the lane")
+                return 0
+            with exclusive_job(_job, need_mb=0) as acquired:
+                if not acquired:
+                    return 0
+                main()
+                return 0
 
 
 if __name__ == "__main__":

@@ -269,7 +269,15 @@ def main() -> None:
         return
     _reap_deadman()
     if not _port_up(8080):
-        _spawn(["scripts/serve_dashboard.py", "--port", "8080"], "dashboard")
+        # --require-token IS NOT OPTIONAL HERE (measured 2026-09-24). A cloudflared quick tunnel
+        # reaches this origin over 127.0.0.1, so without the flag the loopback exemption in
+        # serve_dashboard._authorised() trusts every request arriving from the public internet and
+        # the page publishes live equity, open positions and P&L to anyone holding the hostname.
+        # The scheduled task MT5-DeskDashboard passes it; this respawn did not, so any crash of the
+        # dashboard silently swapped the gated server for an ungated one behind a live tunnel --
+        # the supervisor re-opening exactly the hole the server it supervises exists to close.
+        # (--host is left at serve_dashboard's own 0.0.0.0 default rather than repeated here.)
+        _spawn(["scripts/serve_dashboard.py", "--port", "8080", "--require-token"], "dashboard")
         acted.append("dashboard")
     # `_banned_universe_block()` is still called: it is the fence that REFUSES to start anything
     # trading the retired universe, and tests/scripts/test_watchdog_banned_universe.py pins it.

@@ -559,8 +559,34 @@ def _universe() -> set[str]:
 
 
 # ------------------------------------------------------------------------------- scheduling
+def _fair_order(grounds: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Round-robin clusters while keeping measured ROI weight inside each cluster."""
+    by_cluster: dict[str, list[dict[str, Any]]] = {}
+    for g in grounds:
+        by_cluster.setdefault(cluster_of(g), []).append(g)
+    for lst in by_cluster.values():
+        lst.sort(key=lambda g: -float(g.get("weight") or 1.0))
+    clusters = sorted(by_cluster)
+    out: list[dict[str, Any]] = []
+    for i in range(max((len(v) for v in by_cluster.values()), default=0)):
+        out.extend(by_cluster[c][i] for c in clusters if i < len(by_cluster[c]))
+    return out
+
+
+def _frontier_bucket(g: dict[str, Any], frontier_state: Any | None,
+                     now: datetime) -> int:
+    vector = getattr(frontier_state, "vectors", {}).get(str(g.get("name") or "")) \
+        if frontier_state is not None else None
+    if vector is None or str(getattr(vector, "outcome", "NAMED_ONLY")) == "NAMED_ONLY":
+        return 0
+    if str(getattr(vector, "outcome", "")) == "BLOCKED":
+        return 1 if vector.huntable(now)[0] else 3
+    return 2 if vector.huntable(now)[0] else 3
+
+
 def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] | None = None,
-             region: str | None = None) -> list[dict[str, Any]]:
+             region: str | None = None, frontier_state: Any | None = None
+             ) -> list[dict[str, Any]]:
     """The order a run works grounds in: round-robin across clusters (heaviest weight first
     inside each), rotated by the cursor the previous run left, so every forest gets its turn
     across runs and no region is worked only because it sorts first in a file."""
@@ -572,25 +598,24 @@ def schedule(grounds: list[dict[str, Any]], cursor: int = 0, *, only: set[str] |
                           cluster_of(g)} & only):
             continue
         picked.append(g)
-    by_cluster: dict[str, list[dict[str, Any]]] = {}
+    # FRONTIER BEFORE COVERAGE.  The coverage ledger already distinguishes ground that was only
+    # named, a transiently blocked attempt, covered ground whose cooldown expired, and genuinely
+    # picked-over ground.  Until now this scheduler ignored that information, so the 467
+    # NAMED_ONLY grounds competed equally with places the desk had already exhausted.  Preserve
+    # regional fairness and the ROI weights, but rotate each frontier bucket independently and
+    # place uncovered/retry-due ground first.  A mapping row can therefore never masquerade as a
+    # completed hunt or starve behind already-covered ground.
+    buckets: list[list[dict[str, Any]]] = [[], [], [], []]
+    now = datetime.now(tz=UTC)
     for g in picked:
-        by_cluster.setdefault(cluster_of(g), []).append(g)
-    for lst in by_cluster.values():
-        lst.sort(key=lambda g: -float(g.get("weight") or 1.0))
-    order = sorted(by_cluster)
+        buckets[_frontier_bucket(g, frontier_state, now)].append(g)
     out: list[dict[str, Any]] = []
-    i = 0
-    while any(by_cluster.values()):
-        for c in order:
-            if i < len(by_cluster[c]):
-                out.append(by_cluster[c][i])
-        i += 1
-        if all(i >= len(v) for v in by_cluster.values()):
-            break
-    if not out:
-        return out
-    start = cursor % len(out)
-    return out[start:] + out[:start]
+    for bucket in buckets:
+        ordered = _fair_order(bucket)
+        if ordered:
+            start = cursor % len(ordered)
+            out.extend(ordered[start:] + ordered[:start])
+    return out
 
 
 # ------------------------------------------------------------------------------- the run
@@ -1435,7 +1460,13 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         _share_state = None
     r = _Run(budget_s, fetch, set(only or []) or None, region)
     cursor = int(r.seen.get("cursor") or 0) if not (only or region) else 0
-    order = schedule(grounds, cursor, only=r.only, region=region)
+    try:
+        from libs.research import hunt_frontier as _hf
+        frontier_state = _hf.load(_frontier_path())
+    except Exception:  # a damaged accounting file may never stop the miner
+        frontier_state = None
+    order = schedule(grounds, cursor, only=r.only, region=region,
+                     frontier_state=frontier_state)
     # THE PROPOSER SEAT, OPTIONAL: which registered GROUND is worth this pass's seconds first.
     # An ORDER over the grounds the registry already holds -- the seat may reorder the crawl and
     # may never widen it, so a name it invents is discarded and no unregistered ground can be
@@ -1451,7 +1482,14 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         seat_hint = _reply.to_row()
         if _reply.measured and _reply.ordered != _names:
             _rank = {n: i for i, n in enumerate(_reply.ordered)}
-            order = sorted(order, key=lambda g: _rank.get(str(g.get("name") or ""), 10 ** 6))
+            # The seat may rank WITHIN the frontier, never move picked-over ground ahead of a
+            # NAMED_ONLY or retry-due vector.  Re-applying the frontier rank after its suggestion
+            # makes that boundary structural rather than prompt-dependent.
+            seat_order = sorted(order,
+                                key=lambda g: _rank.get(str(g.get("name") or ""), 10 ** 6))
+            now = datetime.now(tz=UTC)
+            order = sorted(seat_order,
+                           key=lambda g: _frontier_bucket(g, frontier_state, now))
     except Exception as _exc:                             # pragma: no cover - optional seat
         seat_hint = {"verdict": "UNMEASURED", "why": f"{type(_exc).__name__}: {_exc}"}
     total_w = sum(float(g.get("weight") or 1.0) for g in order) or 1.0
@@ -1567,6 +1605,9 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
            "by_region": by_region,
            "languages": sorted({str(g.get("language")) for g in grounds if g.get("language")}),
            "frontier": frontier,
+           "scheduler": {"policy": ("NAMED_ONLY -> retry-due BLOCKED -> cooldown-due covered "
+                                    "-> picked-over; regional round-robin inside each bucket"),
+                         "frontier_state_loaded": frontier_state is not None},
            "counts": r.counts, "claims_new": len(r.new), "claims_total": len(all_rows),
            "claims_by_channel": {ch: sum(1 for c in r.new if c.get("channel") == ch)
                                  for ch in ("direct", "indirect")},

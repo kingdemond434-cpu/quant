@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import itertools
+import json
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
-
 from mt5desk import families
 from mt5desk.data import load_gold
-from mt5desk.engine import Costs, run_backtest
+from mt5desk.engine import run_backtest
 
-costs = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100.0)
+from libs.portfolio.fusion_cost import costs_for_symbol
+
+DESK = Path(__file__).resolve().parents[1]
+_META = json.loads((DESK / "data" / "universe" / "universe.json").read_text("utf-8"))
+costs = costs_for_symbol(_META["XAUUSD"])
 gold = load_gold()
 
 
@@ -22,7 +26,7 @@ def stats(sigs, h1) -> dict:
 
 def fmt(name, st, combos, periods):
     print(f"== {name} ==")
-    for combo, st2 in zip(combos, periods):
+    for combo, st2 in zip(combos, periods, strict=False):
         print(f"  {combo}: n={st2['n']} exp={st2['expectancy_r']:.3f}R "
               f"t={st2['t_stat']:.2f} PF={st2['profit_factor']:.2f} "
               f"maxDD={st2['max_dd_r']:.1f}R")

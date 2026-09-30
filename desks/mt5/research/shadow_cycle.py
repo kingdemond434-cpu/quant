@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import traceback
 from datetime import UTC, datetime
 from pathlib import Path
@@ -35,6 +36,56 @@ ENROLLED_ADMISSIONS = frozenset({
     "VALIDITY_PASS_POWER_DEFICIENT",
     "FULL_10_PASS",
 })
+
+# The canonical bar producer runs hourly. Allow one cadence plus 15 minutes of scheduler jitter;
+# the replay is idempotent and catches every intervening M1/M5/M15 bar at the next snapshot.
+# A 30-minute consumer threshold made the second half of every healthy producer hour look failed.
+SCALP_BAR_MAX_AGE_SECONDS = 75 * 60
+
+
+def _fusion_gold_market_open(now: datetime) -> bool:
+    """Approximate the broker's 24/5 gold session for refresh decisions.
+
+    This is the same weekly boundary used by ``h1_source`` and ``scalp_shadow``.  A consumer
+    must not attempt a second terminal attachment merely because an authoritative Friday file
+    grows older while the venue is closed: no new bar exists to fetch, and the resulting MT5
+    ``-10004 / No IPC connection`` used to turn an otherwise healthy shadow census FAILED every
+    weekend.  Market-open freshness remains strict below.
+    """
+    t = now.astimezone(UTC)
+    weekday, hour = t.weekday(), t.hour
+    return not (weekday == 5 or (weekday == 4 and hour >= 22)
+                or (weekday == 6 and hour < 22))
+
+
+def _fresh_authoritative_scalp_bars(now: datetime | None = None) -> bool:
+    """True when the canonical Fusion collector already supplied the bounded scalp input.
+
+    The shadow cycle is a consumer, not a second terminal owner.  Re-attaching while the trading
+    terminal is serving another scheduled collector produces MT5 ``-10004 / No IPC connection``
+    even though all three authoritative files are already fresh.  We only skip the fallback pull
+    when provenance grants promotion authority and every required file is fresh and non-empty.
+    """
+    now = now or datetime.now(UTC)
+    universe = BASE / "data" / "universe"
+    source = _read(universe / "XAUUSD_scalp_source.json")
+    if source.get("promotion_authority") is not True:
+        return False
+    market_open = _fusion_gold_market_open(now)
+    for timeframe in ("M1", "M5", "M15"):
+        path = universe / f"XAUUSD_{timeframe}.parquet"
+        try:
+            age = now.timestamp() - path.stat().st_mtime
+        except OSError:
+            return False
+        if path.stat().st_size <= 0 or age < -60:
+            return False
+        # Closed-market bars cannot become fresher.  The source is still authoritative and the
+        # shadow engines account for elapsed MARKET-OPEN hours separately.  During an open
+        # session the ordinary 75-minute producer SLA remains an absolute requirement.
+        if market_open and age > SCALP_BAR_MAX_AGE_SECONDS:
+            return False
+    return True
 
 
 def _refresh_scalp_bars() -> None:
@@ -65,6 +116,8 @@ def _refresh_scalp_bars() -> None:
     needs no changes.
     """
     if os.name != "nt":
+        return
+    if _fresh_authoritative_scalp_bars():
         return
     import json as _json
     from datetime import UTC as _UTC
@@ -133,6 +186,22 @@ def _read(path: Path) -> dict:
         return {}
 
 
+def _canonical_certificate_count() -> int | None:
+    """Count only exact-policy ten-gate certificates from the single canonical store."""
+    try:
+        from gate_policy import all_ten_pass, is_exact_policy
+        doc = _read(BASE / "reports" / "UNIVERSAL_SURVIVORS.json")
+        if not is_exact_policy(doc.get("gate_policy")):
+            return None
+        rows = doc.get("survivors")
+        if not isinstance(rows, dict):
+            return 0
+        return sum(isinstance(row, dict) and all_ten_pass(row.get("gates"))
+                   for row in rows.values())
+    except (ImportError, OSError, ValueError, TypeError):
+        return None
+
+
 def _family_of_key(key: str) -> str:
     """The mechanism a shadow key names. Keys are minted, so this reads a field, not a guess."""
     k = str(key)
@@ -181,6 +250,77 @@ def _terminal_status(value: object) -> bool:
     return any(status == prefix or status.startswith(prefix + "_") for prefix in (
         "KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARANTINED",
     ))
+
+
+def _canonical_live_exposure(name: object) -> str:
+    """The executable exposure behind a promoted row.
+
+    Gold ``_v2/_v3/_v4`` rows are certificate lineages behind ONE window.  The gateway already
+    strips the suffix before pricing and places only the three parent brackets, but the health
+    report used to publish every lineage as an independent live sleeve.  That made a three-leg
+    book read as nine legs precisely where operators inspect concentration.  Only the explicit
+    gold-window aliases are folded; versions of any other strategy remain distinct.
+    """
+    text = str(name or "")
+    if re.fullmatch(r"gold_(?:asia|london_am|afternoon)_v\d+", text):
+        return re.sub(r"_v\d+$", "", text)
+    return text
+
+
+def _zero_trade_diagnostics(rows: list[dict], now: datetime) -> dict[str, object]:
+    """Explain zero-trade clocks without pretending a quiet hypothesis is a broken clock."""
+    by_status: dict[str, int] = {}
+    ages: list[float] = []
+    mature = 0
+    natural = 0
+    suppressed: list[str] = []
+    fresh_attempts = 0
+    for row in rows:
+        if int(row.get("n", 0) or 0) > 0:
+            continue
+        status = str(row.get("status") or "ACTIVE").upper()
+        by_status[status] = by_status.get(status, 0) + 1
+        attempted = row.get("last_attempt_at")
+        try:
+            attempt = datetime.fromisoformat(str(attempted).replace("Z", "+00:00"))
+            attempt = attempt if attempt.tzinfo else attempt.replace(tzinfo=UTC)
+            attempt_fresh = (now - attempt.astimezone(UTC)).total_seconds() <= 3 * 3600
+        except (TypeError, ValueError):
+            attempt_fresh = False
+        fresh_attempts += int(attempt_fresh)
+        has_bars = bool(str(row.get("bar_source") or "").strip())
+        has_error = bool(str(row.get("last_error") or "").strip())
+        if status == "ACTIVE" and attempt_fresh and has_bars and not has_error:
+            natural += 1
+        else:
+            suppressed.append(str(row.get("sleeve") or row.get("key") or
+                                  row.get("name") or "UNKNOWN"))
+        raw = row.get("forward_start") or row.get("enrolled_at")
+        try:
+            stamp = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            stamp = stamp if stamp.tzinfo else stamp.replace(tzinfo=UTC)
+            age = max(0.0, (now - stamp.astimezone(UTC)).total_seconds() / 86400.0)
+        except (TypeError, ValueError):
+            continue
+        ages.append(age)
+        if age >= 14.0:
+            mature += 1
+    return {
+        "count": sum(by_status.values()),
+        "by_status": dict(sorted(by_status.items())),
+        "age_measured": len(ages),
+        "median_age_days": (round(sorted(ages)[len(ages) // 2], 3) if ages else None),
+        "mature_14d_without_trade": mature,
+        "fresh_attempts": fresh_attempts,
+        "naturally_inactive": natural,
+        "suppressed_or_unproven": len(suppressed),
+        "suppressed_examples": suppressed[:40],
+        "rule": ("zero trades is not automatically a plumbing failure: blocked statuses name a "
+                 "repair; only ACTIVE + fresh attempt + valid bar source + no current error is "
+                 "natural inactivity. An ACTIVE clock older than 14 days is a low-frequency/selection "
+                 "finding routed to forward exploitation; no synthetic or backdated trade is "
+                 "ever created"),
+    }
 
 
 def run() -> tuple[dict, int]:
@@ -295,17 +435,21 @@ def run() -> tuple[dict, int]:
     _n_mechs = len({_family_of_key(k) for k in _active_keys if _family_of_key(k)})
     _n_hashes = len({_hash_of_key(k) for k in _active_keys if _hash_of_key(k)})
     terminal_rows = [row for row in rows if _terminal_status(row.get("status"))]
-    certified = (int(legacy.get("configured_sleeves", 0) or 0)
-                 + int(scalp.get("configured_sleeves", 0) or 0)
-                 + int(qquant.get("certified_qquant_sleeves", 0) or 0))
+    certified = _canonical_certificate_count()
     recorded = len(rows)
-    missing = [] if recorded >= certified else [f"{certified - recorded} certified sleeve(s)"]
+    if certified is None:
+        errors["certificate_census"] = "canonical exact-policy certificate store is unmeasured"
+        missing = []
+    else:
+        missing = [] if recorded >= certified else [f"{certified - recorded} certified sleeve(s)"]
     # `BLOCKED_SLEEVE_ERROR` is the per-sleeve isolation status shadow_forward writes when one
     # row cannot be evaluated (gap-wirer 2026-08-27). It MUST be counted here: the whole point of
     # isolating a failure is that the other rows keep accruing, and a failure that stops halting
     # the book while also stopping being VISIBLE is a worse trade than the crash it replaced.
     blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE",
-                                         "BLOCKED_UNIVERSAL_GATES", "BLOCKED_SLEEVE_ERROR"}
+                                         "BLOCKED_UNIVERSAL_GATES", "BLOCKED_SLEEVE_ERROR",
+                                         "BLOCKED_NO_BARS", "BLOCKED_INPUTS_UNAVAILABLE",
+                                         "REFUSED_BY_UNIVERSE_POLICY"}
                   for row in active_rows)
     # LIVE-ARM STATE, SURFACED HERE ON PURPOSE. `armed` lives in data/gateway_state.json,
     # box-local and gitignored -- no other brain (Hetzner, a future session, anyone without
@@ -318,11 +462,18 @@ def run() -> tuple[dict, int]:
     sleeves_doc = _read(BASE / "data" / "sleeves.json")
     live_sleeves = [s.get("name") for s in (sleeves_doc.get("sleeves") or [])
                     if isinstance(s, dict) and s.get("status") == "LIVE"]
+    _live_aliases: dict[str, list[str]] = {}
+    for _name in live_sleeves:
+        _live_aliases.setdefault(_canonical_live_exposure(_name), []).append(str(_name))
+    _live_exposures = sorted(_live_aliases)
+    _zero_trade = _zero_trade_diagnostics(active_rows, datetime.now(UTC))
     health = {
         "updated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "configured_sleeves": len(active_rows),
         "represented_sleeves": len(active_rows),
         "certified_sleeves_total": certified,
+        "forward_clocks_total": len(active_rows),
+        "certificate_basis": "reports/UNIVERSAL_SURVIVORS.json exact ten-gate policy",
         # THE DASHBOARD SAID 61 AND THE TRUTH WAS ABOUT SIX (added 2026-09-14).
         #
         # A sleeve count is not a breadth measure. Measured on the live book: one parameter hash,
@@ -349,12 +500,20 @@ def run() -> tuple[dict, int]:
         "sleeves_with_forward_trades": sum(
             int(row.get("n", 0) or 0) > 0 for row in active_rows
         ),
-        "evidence_blocked_sleeves": blocked,
+        "zero_trade_clocks": _zero_trade,
+        "evidence_blocked_sleeves": max(
+            blocked, int(_zero_trade.get("suppressed_or_unproven", 0) or 0)),
         "missing_sleeves": missing,
         "errors": errors,
         "seconds": round((datetime.now(UTC) - started).total_seconds(), 3),
         "gateway_armed": bool(gw.get("armed", False)),
-        "promoted_live_sleeves": live_sleeves,
+        # Executable exposures are the headline. Raw certificate rows remain alongside them for
+        # lineage audit, so folding aliases can never erase evidence or hide which certificate
+        # granted the parent window.
+        "promoted_live_sleeves": _live_exposures,
+        "promoted_live_certificate_rows": live_sleeves,
+        "live_exposure_aliases": {k: v for k, v in sorted(_live_aliases.items())
+                                  if len(v) > 1 or v[0] != k},
     }
     # AN ENROLMENT GAP IS A CENSUS, NOT A CRASH (fixed 2026-09-13, WS-005).
     #
@@ -383,7 +542,7 @@ def run() -> tuple[dict, int]:
         health["status"] = "FAILED"
     elif missing:
         health["status"] = "ENROLMENT_GAP"
-    elif blocked:
+    elif blocked or int(_zero_trade.get("suppressed_or_unproven", 0) or 0):
         health["status"] = "EVIDENCE_BLOCKED"
     else:
         health["status"] = "OPERATING"

@@ -36,7 +36,9 @@ __all__ = [
     "latency_metrics",
     "preflight_contract",
     "reality_gap",
+    "state_replay_parity",
     "strategy_manifest",
+    "strategy_state_identity",
     "venue_eligibility",
 ]
 
@@ -83,6 +85,54 @@ def strategy_manifest(
         raise ValueError(f"manifest missing {missing}")
     body = {"version": version, "parent_hash": parent_hash, "specification": dict(specification)}
     return {**body, "manifest_hash": _hash(body), "immutable": True}
+
+
+def strategy_state_identity(*, mechanism: str, parameters: Mapping[str, object], symbol: str,
+                            timeframe: str, version: str) -> str:
+    """Stable state address: mechanism + exact params + instrument + chart + code version.
+
+    A sleeve name is presentation and may be aliased; this content identity is what a warm start
+    and a continuous run must share before their post-boundary decisions may be compared.
+    """
+    body = {"mechanism": mechanism, "parameters": dict(parameters), "symbol": symbol.upper(),
+            "timeframe": timeframe.upper(), "version": version}
+    return _hash(body)
+
+
+def state_replay_parity(continuous: Sequence[Mapping[str, object]],
+                        resumed: Sequence[Mapping[str, object]], *,
+                        boundary: str) -> dict[str, object]:
+    """Prove warm-start decisions equal continuous-run decisions after ``boundary``.
+
+    Rows join on (state_identity, decided_at). Missing rows are mismatches, never silently
+    ignored.  This is a verifier only: it mutates no state and grants no trading authority.
+    """
+    fields = ("decision", "signal", "desired_order", "state_after")
+
+    def _after(rows: Sequence[Mapping[str, object]]) -> dict[tuple[str, str], Mapping[str, object]]:
+        return {(str(r.get("state_identity") or ""), str(r.get("decided_at") or "")): r
+                for r in rows if str(r.get("decided_at") or "") >= boundary}
+
+    left, right = _after(continuous), _after(resumed)
+    keys = sorted(set(left) | set(right))
+    mismatches: list[dict[str, object]] = []
+    bad_keys: set[tuple[str, str]] = set()
+    for key in keys:
+        a, b = left.get(key), right.get(key)
+        if a is None or b is None:
+            bad_keys.add(key)
+            mismatches.append({"key": key, "field": "row", "continuous": a is not None,
+                               "resumed": b is not None})
+            continue
+        for field in fields:
+            if _canonical(a.get(field)) != _canonical(b.get(field)):
+                bad_keys.add(key)
+                mismatches.append({"key": key, "field": field,
+                                   "continuous": a.get(field), "resumed": b.get(field)})
+    bad_rows = len(bad_keys)
+    return {"status": "PASS" if not mismatches else "FAIL", "boundary": boundary,
+            "post_boundary_rows": len(keys), "mismatches": mismatches,
+            "parity": 1.0 if not keys else 1.0 - bad_rows / len(keys)}
 
 
 def reality_gap(

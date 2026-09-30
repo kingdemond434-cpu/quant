@@ -79,8 +79,9 @@ def test_the_functions_are_defined_before_they_are_called() -> None:
     """PowerShell is interpreted top-down: a helper defined below its call site is a runtime
     error on the box and a silent no-op nowhere. There is no pwsh on this host to catch it."""
     src = _src()
-    for fn in ("Sync-Pull", "Merge-FetchHead"):
-        assert src.index(f"function {fn}") < src.index(f"{fn} -RepoRoot"), (
+    for fn, call in (("Sync-Pull", "Sync-Pull -RepoRoot"),
+                     ("Request-Adoption", "Request-Adoption -Branch")):
+        assert src.index(f"function {fn}") < src.index(call), (
             f"{fn} is called before it is defined")
 
 
@@ -106,45 +107,44 @@ def test_a_failed_fetch_does_not_abort_the_sync() -> None:
     """
     body = _sync_pull_body()
     fail = body.index("fetch failed rc=")
-    assert "return" in body[fail:fail + 200], (
+    terminal_fail = body.index("if ($rc -ne 0)", fail)
+    terminal_block = body[terminal_fail:body.index("\n    }", terminal_fail)]
+    assert "return" in terminal_block, (
         "a failed fetch no longer returns -- if it exits or throws, one unreachable minute of "
         "network costs the box its commit AND its push, which is strictly worse than the bug "
         "this pull was added to fix")
-    assert "exit" not in body[fail:fail + 200], (
+    assert "exit" not in terminal_block, (
         "the fetch-failure path exits; delivery is best-effort, publication is not")
 
 
-def test_a_merge_conflict_stops_and_leaves_it_to_a_human() -> None:
-    """The one thing a sync may never do on a tree that places trades is guess at a resolution.
+def test_inbound_code_is_delegated_to_the_release_adopter() -> None:
+    """The publisher must never own an inbound merge.
 
-    Unlike a failed fetch, a CONFLICT means the two histories genuinely disagree about live
-    trading code. Continuing past it would push a half-merged tree; resolving it automatically
-    would pick a winner nobody chose. It stops, and it says so.
+    Task Scheduler can terminate the parent publisher while a child Git merge remains alive.
+    That orphan releases the mutex with its parent but keeps the index lock, so the canonical
+    adopter collides with it. Inbound code belongs exclusively to MT5-AdoptRelease.
     """
     body = _sync_pull_body()
-    assert "merge conflicted -- a human resolves this, not a sync" in body, (
-        "the conflict path no longer names itself in the log -- a sync that stops silently is "
-        "indistinguishable from one that never ran")
-    conflict = body.index("merge conflicted")
-    assert "exit 1" in body[conflict:conflict + 200], (
-        "a conflicted merge no longer stops the sync -- it would go on to commit and push on top "
-        "of a tree it could not reconcile")
-    assert 'Git-In-Repo @("merge", "--abort")' in _src(), (
-        "the merge is not aborted, so the box is left sitting in a conflicted MERGE_HEAD state "
-        "and every subsequent sync fails on a dirty tree")
-
-
-def test_the_merge_logic_is_one_function_with_two_callers() -> None:
-    """Duplicated merge logic is how the two copies drift and one starts guessing.
-
-    Hoisting a pre-push fetch meant either duplicating the park/merge/restore block or extracting
-    it. This asserts the extraction held.
-    """
+    assert "Request-Adoption -Branch $Branch" in body
+    assert "Merge-FetchHead -RepoRoot" not in body
     src = _src()
-    assert src.count("function Merge-FetchHead") == 1, "the merge helper was duplicated or lost"
-    assert src.count("Merge-FetchHead -RepoRoot") >= 2, (
-        "only one caller -- either the pre-push fetch or the rejection path stopped merging")
-    assert src.index("function Merge-FetchHead") < src.index("Merge-FetchHead -RepoRoot")
+    assert 'Start-ScheduledTask -TaskName "MT5-AdoptRelease"' in src
+    assert "if ($script:InboundAdoptionRequired)" in src
+
+
+def test_no_publisher_path_invokes_the_legacy_merge_helper() -> None:
+    """The retained helper documents the old recovery path but must have no callers."""
+    src = _src()
+    assert src.count("function Merge-FetchHead") == 1
+    assert "Merge-FetchHead -RepoRoot" not in src
+
+
+def test_push_rejection_also_delegates_inbound_code() -> None:
+    src = _src()
+    loop = src[src.index("for ($attempt = 1;"):]
+    assert "Request-Adoption -Branch $branch" in loop
+    assert "local state commit is safe; publication resumes after canonical adoption" in loop
+    assert "Merge-FetchHead -RepoRoot" not in loop
 
 
 def test_dirty_files_are_parked_and_restored_never_discarded() -> None:
@@ -153,3 +153,36 @@ def test_dirty_files_are_parked_and_restored_never_discarded() -> None:
     code = _code()
     assert "Copy-Item" in code and "$parked" in code
     assert "stash" not in code, "R0423: never stash in a shared tree"
+
+
+def test_merge_blockers_are_read_from_one_native_merge_probe() -> None:
+    """Large discovery fetches must not monopolise the global Git-writer mutex.
+
+    The old loop ran ``git status`` separately for every incoming path. A 38k-path fetch could
+    therefore consume the Windows task's entire ten-minute allowance while holding the mutex,
+    preventing the canonical release adopter from ever starting. Whole-tree and bounded-path dirty
+    scans also failed on the multi-million-path box. Git's own merge preflight already identifies
+    tracked and untracked blockers in one index-native operation, so both lists must come from it.
+    """
+    code = _code()
+    start = code.index("function Merge-FetchHead")
+    body = code[start:code.index("\n}", start)]
+    assert "-c merge.autoStash=false merge --no-commit --no-ff FETCH_HEAD" in body
+    assert "local changes to the following files would be overwritten" in body
+    assert "untracked working tree files would be overwritten" in body
+    assert "$probeRc" in body and "$blockers" in body and "$untracked" in body
+    assert "status --porcelain -- $rel" not in body
+    assert "diff --name-only --no-ext-diff HEAD" not in body
+
+
+def test_sync_log_does_not_contaminate_boolean_function_results() -> None:
+    """PowerShell returns every success-stream object a function emits.
+
+    A log line emitted with Write-Output plus ``$false`` becomes a truthy array, causing the caller
+    to report a refused merge as successful. Task output belongs on the host stream instead.
+    """
+    code = _code()
+    start = code.index("function Write-SyncLog")
+    body = code[start:code.index("\n}", start)]
+    assert "Write-Host $line" in body
+    assert "Write-Output $line" not in body

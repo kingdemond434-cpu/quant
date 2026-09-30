@@ -32,6 +32,21 @@ from mt5desk import provenance  # noqa: E402
 _ACC = {"login": 5551234, "server": "FusionMarkets-Live", "kind": provenance.LIVE}
 
 
+def _open_live_policy(tmp_path: Path, monkeypatch, *symbols: str, unban_m15: bool = False
+                      ) -> None:
+    """Admit this file's fixture symbols through `mt5desk/live_policy.py` (bcbec41f, principal
+    2026-09-17: the live account is XAUUSD-only). Without it the promoter's write door
+    RETIRES every fixture row before the promotion mechanics under test are ever read. The
+    policy itself is pinned by test_live_policy.py and test_plumbing_watchdog.py."""
+    from mt5desk import live_policy
+    doc: dict = {"live_symbols": list(symbols), "by": "test fixture"}
+    if unban_m15:
+        doc["banned_timeframes"] = {"*": [], **{sym: [] for sym in symbols}}
+    pol = tmp_path / "live_sleeve_policy.json"
+    pol.write_text(json.dumps(doc), encoding="utf-8")
+    monkeypatch.setattr(live_policy, "POLICY_FILE", pol)
+
+
 @pytest.fixture
 def desk(tmp_path, monkeypatch):
     """A promoter pointed entirely at tmp_path, trading a known account."""
@@ -41,6 +56,8 @@ def desk(tmp_path, monkeypatch):
     (tmp_path / "logs").mkdir()
     monkeypatch.setattr(promoter, "SHADOW_DIR", shadow_dir)
     monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "data" / "sleeves.json")
+    _open_live_policy(tmp_path, monkeypatch, "CADJPY", "USDJPY", "EURJPY", "GBPJPY", "XAUUSD",
+                      "AUDNZD", "EURZAR")
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
     # THE GOLD BOOK'S FILES TOO. The promoter now RE-DERIVES a standing gold retirement against

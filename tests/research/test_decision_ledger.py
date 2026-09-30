@@ -16,6 +16,7 @@ from libs.research.decision_ledger import (
     REJECTION_CLASSES,
     Decision,
     counterfactual_summary,
+    process_quality_verdict,
     promotion_is_forbidden,
     summarise,
     systematic_bias,
@@ -122,3 +123,17 @@ def test_an_empty_ledger_says_the_surface_is_legible_only_where_it_said_yes() ->
 
 def test_the_bias_population_floor_is_not_silently_tiny() -> None:
     assert MIN_POPULATION_FOR_BIAS >= 50
+
+
+def test_why_not_is_structured_and_process_quality_is_not_pnl() -> None:
+    q = process_quality_verdict({"state_fresh": True, "release_known": None},
+                                evidence={"pnl": -99})
+    assert q["status"] == "UNMEASURED" and q["economic_outcome_is_separate"] is True
+    d = Decision(decision_id="why", strategy_id="s", symbol="XAUUSD", decided_at="t",
+                 outcome="RISK_REJECTED", first_blocking_gate="margin_guard",
+                 failed_gates=[{"gate": "margin_guard", "actual": 0.4, "required": 0.3}],
+                 suppressions={"risk": True}, process_quality=q)
+    rep = summarise([d])
+    assert rep["why_not"]["first_blocking_gate"] == {"margin_guard": 1}
+    assert rep["why_not"]["all_failed_gates"] == {"margin_guard": 1}
+    assert rep["process_quality"] == {"UNMEASURED": 1}

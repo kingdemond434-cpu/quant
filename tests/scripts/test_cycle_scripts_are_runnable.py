@@ -34,13 +34,10 @@ OPS = ROOT / "ops"
 
 #: Named exemptions, with the reason. An exemption without a reason is an oversight with a
 #: config entry, and the reason is what makes it reviewable when the blocker clears.
-_EXEMPT: dict[str, str] = {
-    "run_cashcarry_executor.py": (
-        "ORDER PATH, and the Codex seat rewrote ~840 lines of it on the VPS branch. A three-line "
-        "edit here would manufacture a merge conflict on the one file where a bad resolution can "
-        "place a trade. Bootstrap it AFTER that branch merges -- see TestKnownExemption below, "
-        "which fails once the exemption is spent"),
-}
+_EXEMPT: dict[str, str] = {}
+# SPENT 2026-09-05: the one exemption this dict carried, `run_cashcarry_executor.py`, went with the
+# Binance executors under the MT5 universe mandate (ops/crontab.manifest "RETIRED 2026-09-05").
+# TestKnownExemption below now pins that it stays spent.
 
 
 def _ops_invoked_scripts() -> list[Path]:
@@ -123,16 +120,18 @@ class TestTheForensicsDefectSpecifically:
 
 class TestKnownExemption:
     def test_the_executor_is_named_rather_than_silently_skipped(self) -> None:
-        """scripts/run_cashcarry_executor.py is the one ops script left without a bootstrap.
+        """The one ops script that was exempt, scripts/run_cashcarry_executor.py, is RETIRED.
 
-        DELIBERATE, and recorded here so it is a decision rather than an oversight: the Codex seat
-        rewrote ~840 lines of that file on the VPS branch, and it is the order path. A three-line
-        edit here would manufacture a merge conflict on the one file where a bad resolution can
-        place a trade. It gets the bootstrap after that branch is merged, not before.
+        It was exempted (the order path, mid-rewrite on the VPS branch) until "that branch
+        merges"; instead the file was deleted with the Binance executors on 2026-09-05 under the
+        MT5 universe mandate. So the exemption is spent: the file is gone, no ops shell invokes
+        it, and `_EXEMPT` no longer names it. A revived executor would have to carry the
+        bootstrap like every other script, which `test_script_can_resolve_libs_standalone`
+        enforces the moment an ops shell names it again.
         """
-        src = (ROOT / "scripts" / "run_cashcarry_executor.py").read_text("utf-8")
-        if _has_bootstrap(src):
-            pytest.skip("executor now has a bootstrap -- exemption is spent, delete this test")
-        assert _imports_libs(src), (
-            "the exemption assumes this file imports libs; if it no longer does, the exemption is "
-            "stale and should be removed rather than left as decoration")
+        assert not (ROOT / "scripts" / "run_cashcarry_executor.py").exists(), (
+            "the retired executor is back -- it must carry the sys.path bootstrap, not an "
+            "exemption")
+        assert "run_cashcarry_executor.py" not in _EXEMPT, (
+            "an exemption for a file that does not exist is decoration, not a decision")
+        assert all(p.name != "run_cashcarry_executor.py" for p in _ops_invoked_scripts())

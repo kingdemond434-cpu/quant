@@ -71,6 +71,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 from libs.moat import registry as reg  # noqa: E402
+from libs.research import set_aside as sa  # noqa: E402
 from research import axis_registry as ar  # noqa: E402
 
 GRAPH = DESK / "data" / "hypothesis_graph.jsonl"
@@ -110,6 +111,8 @@ MAX_GRAPH_ROWS = 200_000
 MAX_LEDGER_ROWS = 400_000
 MAX_FINDINGS = 40
 BUDGET_S = 240.0
+#: The name this organ files its named refusals under (libs/research/set_aside.py).
+ORGAN = "alpha_lineage_search"
 
 #: The six findings, in the order the report carries them.
 FINDINGS: tuple[str, ...] = ("untried_mutations", "abandoned_branches",
@@ -329,7 +332,13 @@ def untried_mutations(forest: dict[str, Any], edges: dict[str, dict[str, int]]
                     "why": f"{len(ids)} cells of {family} and not one edge on "
                            f"{', '.join(missing)}: the mechanism was sampled, not searched"})
     out.sort(key=lambda r: (-len(r["untried"]), -int(r["n_nodes"])))
-    return out[:MAX_FINDINGS]
+    # MAX_FINDINGS IS A BATCH BUDGET, NOT A SCREEN (LAWS 7: only the four immutable evaluator
+    # files may refuse a cell). The budget stays; what changes is that the remainder is NAMED --
+    # organ, stage, count set aside, the ordering key that chose the survivors -- in
+    # reports/SET_ASIDE_LEDGER.json, so "this finding is empty" can never be confused with "this
+    # finding was truncated at 40 of 900".
+    return sa.take(out, MAX_FINDINGS, organ=ORGAN, stage="untried_mutations",
+                   ordering="-len(untried), -n_nodes")
 
 
 def abandoned_branches(forest: dict[str, Any], now: datetime, abandon_days: float
@@ -371,7 +380,8 @@ def abandoned_branches(forest: dict[str, Any], now: datetime, abandon_days: floa
                     "why": f"the evidence still allows {bound[nid]:.2f} against a {fam} median of "
                            f"{med:.2f}, and nothing has descended from it in {age:.0f} days"})
     out.sort(key=lambda r: (-float(r["posterior_upper"]), -float(r["age_days"])))
-    return out[:MAX_FINDINGS]
+    return sa.take(out, MAX_FINDINGS, organ=ORGAN, stage="abandoned_branches",
+                   ordering="-posterior_upper, -age_days")
 
 
 def declared_grids() -> dict[str, dict[str, list[Any]]]:
@@ -423,7 +433,8 @@ def unexplored_neighbourhoods(forest: dict[str, Any], note: list[dict[str, Any]]
                                f"{', '.join(str(g['knob']) for g in gaps)}: the family's own "
                                f"bounds name the cells, and they were never built"})
     out.sort(key=lambda r: -sum(len(g["untried"]) for g in r["gaps"]))
-    return out[:MAX_FINDINGS]
+    return sa.take(out, MAX_FINDINGS, organ=ORGAN, stage="unexplored_neighbourhoods",
+                   ordering="-sum(len(gap.untried))")
 
 
 def _single_axis(forest: dict[str, Any], key: str) -> list[dict[str, Any]]:
@@ -446,7 +457,8 @@ def _single_axis(forest: dict[str, Any], key: str) -> list[dict[str, Any]]:
                     "why": f"{n_nodes} cells of {family} and every one at {key}={only!r}: the "
                            f"mechanism has never been asked whether it transfers"})
     out.sort(key=lambda r: -int(r["n_nodes"]))
-    return out[:MAX_FINDINGS]
+    return sa.take(out, MAX_FINDINGS, organ=ORGAN, stage=f"single_axis:{key}",
+                   ordering="-n_nodes")
 
 
 def single_asset_mechanisms(forest: dict[str, Any]) -> list[dict[str, Any]]:
@@ -475,7 +487,8 @@ def shared_ancestors(forest: dict[str, Any]) -> list[dict[str, Any]]:
                     "why": f"{len(fams)} families descend from one ancestor; they look "
                            f"independent to the allocator and share a parameterisation"})
     out.sort(key=lambda r: (-len(r["families"]), -int(r["n_descendants"])))
-    return out[:MAX_FINDINGS]
+    return sa.take(out, MAX_FINDINGS, organ=ORGAN, stage="shared_ancestors",
+                   ordering="-len(families), -n_descendants")
 
 
 # ------------------------------------------------------------------ the registry write

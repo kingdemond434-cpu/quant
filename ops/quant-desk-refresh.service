@@ -18,6 +18,5 @@ MemoryMax=300M
 # Never let a wedged git or a hung build hold the timer open until the next tick.
 TimeoutStartSec=180
 Nice=5
-
-[Install]
-WantedBy=default.target
+# No [Install]: this is timer-driven (quant-desk-refresh.timer) and is enabled THROUGH the timer.
+# An [Install] here would let `systemctl enable` arm a one-shot that runs once and never repeats.

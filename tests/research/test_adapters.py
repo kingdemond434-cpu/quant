@@ -92,7 +92,9 @@ def test_the_numpy_rebuilt_methods_run_today_and_carry_provenance() -> None:
     assert numerai.commit.startswith("desk:")
     pat = importlib.import_module("libs.research.adapters.bridgewater_pat_aia").run(bundle)
     assert pat.research_methods[0]["kind"] == "REBUILT_ROUTE"
-    assert len(pat.research_methods[0]["workflow"]) == 6
+    coverage = pat.representations[0]
+    assert coverage["n_stages"] == 6
+    assert len(coverage["stages"]) == 6
 
 
 def test_lagged_design_is_point_in_time_and_era_blocked() -> None:

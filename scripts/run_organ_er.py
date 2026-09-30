@@ -54,9 +54,11 @@ from __future__ import annotations
 import argparse
 import contextlib
 import json
+import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -133,8 +135,50 @@ def _tail_log(root: Path, name: str, n: int = 4000) -> str:
     return best
 
 
+def _exploration_family() -> dict[str, tuple[str, float, str]]:
+    """The ward's roster, read from the fence that OWNS it rather than copied here.
+
+    check_exploration declares every exploration organ, its artifact and its cadence; a second
+    copy in this file would be the duplicate-registry failure the SECONDARY map above already
+    cost the desk once.
+    """
+    from scripts.check_exploration import _FAMILY
+    return _FAMILY
+
+
+def runner_blocker(root: Path, runner: str | None) -> str | None:
+    """Why this host cannot INVOKE this organ's runner, or None when it can.
+
+    THE MISDIAGNOSIS THIS ENDS, measured on the trading box (VMI3571445) 2026-09-23.
+    `capability_hunt` and `deep_sweep_meta` are registered here with `ops/*.sh` runners, and
+    those runners `source ops/brain_env.sh` and drive the seat through `bash -c`. There is no
+    shell on this host at all -- `shutil.which("bash")`, `"sh"` and `"bash.exe"` all return None
+    -- and `scripts/run_capability_hunt.py:342` calls `bash` directly too, so neither organ can
+    be started here by any path. Both were nevertheless diagnosed UNKNOWN, "dark with no log --
+    re-fire once to PRODUCE one", and `treat()` would have run `["bash", ...]` straight into a
+    FileNotFoundError, once an hour, forever.
+
+    That is the EXACT patient the BLOCKED state exists for: a NAMED external dependency that no
+    amount of re-firing fixes. Naming it turns a permanent silent mistreatment into an
+    escalation a reader can act on -- and it deliberately does NOT clear the ward: a BLOCKED
+    organ in coma is still untreated, so the fence stays red until the dependency is real.
+    """
+    if not runner:
+        return None
+    if not (root / runner).exists():
+        return (f"registered runner {runner} does not exist in this tree -- the organ cannot be "
+                f"started here by any path, so a re-fire is a call into an absent file")
+    if runner.endswith(".sh") and not any(shutil.which(x) for x in ("bash", "sh", "bash.exe")):
+        return (f"registered runner {runner} is a POSIX shell script and this host has no shell "
+                f"(bash, sh and bash.exe all absent). It sources ops/brain_env.sh for the seat's "
+                f"auth, so there is no Windows path to it either -- this organ's clock belongs "
+                f"to the host that has a shell, and here it is UNRUNNABLE, not merely quiet")
+    return None
+
+
 def diagnose(root: Path, name: str, artifact: str, max_age_h: float,
-             *, now: float | None = None, manifest: str = "") -> dict[str, Any]:
+             *, now: float | None = None, manifest: str = "",
+             runners: dict[str, str] | None = None) -> dict[str, Any]:
     """Why is this organ dark? The treatment depends entirely on the answer."""
     now = now if now is not None else time.time()
     age = _age_hours(root / artifact, now)
@@ -163,9 +207,17 @@ def diagnose(root: Path, name: str, artifact: str, max_age_h: float,
                            "false alarm and double-counts one patient as two."),
                 "treatable_here": False, "coma": False}
 
+    unrunnable = runner_blocker(root, (runners if runners is not None else _RUNNERS).get(name))
+
     if not scheduled:
         dx, action = "UNSCHEDULED", ("add a manifest line -- re-firing by hand would hide the "
                                      "real fault, which is that nothing was ever going to run it")
+    elif unrunnable:
+        # NAMED BEFORE THE LOG IS READ, because the log cannot exist: an organ this host cannot
+        # start never wrote one here, and "no log" would otherwise read as UNKNOWN and prescribe
+        # the one treatment that is guaranteed to fail.
+        dx, action = "BLOCKED", (f"{unrunnable}. Escalate with that blocker -- no re-fire fixes "
+                                 f"a patient this host cannot start")
     elif any(m in log for m in _BLOCKED):
         dx, action = "BLOCKED", ("a NAMED external dependency is missing; escalate with the "
                                  "blocker -- no re-fire fixes a patient whose treatment is a "
@@ -192,8 +244,15 @@ def diagnose(root: Path, name: str, artifact: str, max_age_h: float,
             "coma": age is None or age > max_age_h + COMA_HOURS}
 
 
+#: The subprocess runner, injectable so a test can drive the ward without launching an organ.
+#: Typed as a callable returning Any rather than `CompletedProcess[str]`: the fakes the tests
+#: pass back a stub with `.returncode` and `.stderr`, and pinning the concrete class here would
+#: make the seam untestable, which is the one property it exists for.
+_Runner = Callable[..., Any]
+
+
 def treat(root: Path, dx: dict[str, Any], runner: str | None,
-          *, run=subprocess.run, timeout: int = 900) -> dict[str, Any]:
+          *, run: _Runner = subprocess.run, timeout: int = 900) -> dict[str, Any]:
     """Attempt the treatment, then check the ARTIFACT -- never the exit status.
 
     A re-fire that returns 0 and produces nothing is not a cure; exit status is the organ's
@@ -224,10 +283,13 @@ def treat(root: Path, dx: dict[str, Any], runner: str | None,
 
 def build_report(root: Path | None = None, *, do_treat: bool = False,
                  family: dict[str, tuple[str, float, str]] | None = None,
-                 runners: dict[str, str] | None = None, run=subprocess.run) -> dict[str, Any]:
+                 runners: dict[str, str] | None = None,
+                 run: _Runner = subprocess.run) -> dict[str, Any]:
     root = root or _ROOT
-    if family is None:
-        from scripts.check_exploration import _FAMILY as family
+    # THE ROSTER IS RESOLVED INTO ITS OWN NAME, never re-bound through the optional parameter:
+    # rebinding left `family` typed `dict | None` for the rest of the function, so every later
+    # read of it was an unchecked Optional the checker could only warn about.
+    ward_family = family if family is not None else _exploration_family()
     runners = runners if runners is not None else _RUNNERS
     try:
         manifest = (root / "ops/crontab.manifest").read_text("utf-8", errors="ignore")
@@ -235,7 +297,8 @@ def build_report(root: Path | None = None, *, do_treat: bool = False,
         manifest = ""
 
     log_error = ""
-    ward = [diagnose(root, n, rel, mx, manifest=manifest) for n, (rel, mx, _h) in family.items()]
+    ward = [diagnose(root, n, rel, mx, manifest=manifest, runners=runners)
+            for n, (rel, mx, _h) in ward_family.items()]
     sick = [d for d in ward if d["state"] != "HEALTHY"]
     comas = [d for d in sick if d["coma"]]
     treatments = []

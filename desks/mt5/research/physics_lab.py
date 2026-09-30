@@ -54,6 +54,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.research import set_aside as sa  # noqa: E402
 from research import math_lab as ML  # noqa: E402
 from research.mathlab import burden as B  # noqa: E402
 from research.mathlab import engines as E  # noqa: E402
@@ -79,7 +80,9 @@ MATHS_PER_PASS = 4
 MAX_TARGETS = 2
 MAX_CARDS_REVIEWED = 60
 MAX_CAUSAL = 6
-MAX_DONATIONS = 30
+#: UNCAPPED, for the reason `math_lab.MAX_DONATIONS` is: the gauntlet's trial charge is a pinned
+#: constant, so rationing donations buys no other cell anything and costs this one its judge.
+MAX_DONATIONS = -1
 UNMEASURED = "UNMEASURED"
 
 RULE = ("two independent civilizations with disjoint seeds over lockboxed panels; every object "
@@ -271,20 +274,35 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
             distinct = len(result.get("distinct") or set())
             passed = 0
             for obj, view in objects:
+                # A DEADLINE MAY COST AN OBJECT ITS SCORE, NEVER ITS CARD (2026-09-24). Both
+                # branches used to `continue`, so an object the clock or an exception reached
+                # first had no card, was never in `admitted_objects`, was never QUEUED in the
+                # registry and never donated -- invisible to the one judge. It now gets a card
+                # with an UNMEASURED burden and rides at the back of the donation queue.
+                scored = True
                 if time.monotonic() > judge_deadline:
                     unjudged += 1
-                    continue
-                try:
-                    B.judge(obj, view, distinct_forms=distinct,
-                            lifetime_trials=lifetime.get(tradition, 0), rng=rng,
-                            peers=[p for p in working if p.target != obj.target][:2],
-                            permutations=permutations)
-                except Exception as exc:
-                    obj.notes.append(f"{UNMEASURED}: burden.judge raised {type(exc).__name__}")
-                    continue
-                passed += int(obj.passed)
-                if obj.passed:
-                    passed_here.add(obj.canonical)
+                    scored = False
+                    obj.notes.append(f"{UNMEASURED}: the lab's own burden was not measured for "
+                                     f"this object (judge deadline); carded and donated unranked")
+                    with contextlib.suppress(Exception):
+                        obj.interpretation = B.interpret(obj, view)
+                else:
+                    try:
+                        B.judge(obj, view, distinct_forms=distinct,
+                                lifetime_trials=lifetime.get(tradition, 0), rng=rng,
+                                peers=[p for p in working if p.target != obj.target][:2],
+                                permutations=permutations)
+                    except Exception as exc:
+                        scored = False
+                        obj.notes.append(
+                            f"{UNMEASURED}: burden.judge raised {type(exc).__name__}")
+                        with contextlib.suppress(Exception):
+                            obj.interpretation = B.interpret(obj, view)
+                if scored:
+                    passed += int(obj.passed)
+                    if obj.passed:
+                        passed_here.add(obj.canonical)
                 card = I.card_from_object(
                     obj, domain="physics" if tradition in PHYSICS_REGISTRY else "mathematics",
                     method=tradition, civilization=civ, seed=CIVILIZATIONS[civ],
@@ -346,19 +364,40 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                            permutations=max(20, permutations // 4))
     multiplicity = I.multiplicity_ledger(cards, evaluated_by_method)
     cards.sort(key=lambda c: -(c.value if c.value is not None else -9e9))
+    # THE REVIEWERS HAD NEVER SEEN A CARD, AND THE ARTIFACT BLAMED THE CLOCK (2026-09-24).
+    # `by_status` on this box read {PROPOSED: 202, REVIEWED: 0, PROVISIONAL: 0, FORWARD: 0,
+    # FAILED: 0} and `unmeasured` said "202 cards did not reach the reviewers this pass (review
+    # deadline 540s)" -- of a pass that finished in 300s and never came near the deadline. The
+    # real gate was `if card.passed`: the lab's OWN burden screen scores every card, all 202
+    # scored negative, and a card it disliked was never handed to the discoverer and the
+    # destroyer. So peer review, the second-civilization replication, the cross-market transfer
+    # and the per-state reading -- the entire institution this leg exists to be -- had run zero
+    # times in the organ's life, and the one artifact that could have said so named the wrong
+    # cause. That is the same defect as the donation gate two blocks down, one layer earlier:
+    # an internal score used as a terminal refusal. The budget stands (`MAX_CARDS_REVIEWED` and
+    # the deadline, both counted as UNMEASURED when they bind); the screen does not. Review the
+    # best-valued cards the budget affords and let the REVIEWERS decide -- refusing is their
+    # job, and a card they reject is a measured rejection rather than a silent one.
     reviewed = 0
     for i, card in enumerate(cards):
         obj, view = objects_by_card[card.card_id]
         if time.monotonic() > review_deadline:
             unreviewed += 1
-            card.status = "FAILED" if not card.passed else card.status
+            # THE BUDGET RAN OUT; THAT IS NOT A VERDICT (LAWS 7, principal 2026-09-23: only the
+            # four immutable evaluator files may refuse a cell). This line used to stamp FAILED
+            # on any card the lab's own screen disliked the moment the clock ran out, which made
+            # `card.passed` -- an internal score -- a terminal judgement and left the card
+            # indistinguishable from one the reviewers actually rejected. The card keeps the
+            # status it has (PROPOSED = UNMEASURED, which is a real answer, L1.28a); the object
+            # is QUEUED in the registry either way by `record_registry` below.
             continue
         I.pit_check(card, view)
-        if not card.passed and i >= MAX_CARDS_REVIEWED:
-            card.status = "FAILED"
+        if i >= MAX_CARDS_REVIEWED:
+            # SAME CHANGE, SAME REASON: MAX_CARDS_REVIEWED is a review budget, not a screen.
+            unreviewed += 1
             continue
         I.consequence_engine(card, view)
-        if card.passed and reviewed < MAX_CARDS_REVIEWED:
+        if reviewed < MAX_CARDS_REVIEWED:
             reviewed += 1
             I.peer_review(card, view, seed=SEED + i, permutations=max(20, permutations // 4))
             if card.status == "REVIEWED":
@@ -371,7 +410,12 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
                 I.states_of(card, view, labels if view.target == first.target
                             else I.state_discovery(view))
         else:
-            card.status = "FAILED" if not card.passed else card.status
+            # The review budget is spent (`reviewed >= MAX_CARDS_REVIEWED`). That is not a
+            # refusal this organ is allowed to make, so the card keeps its status and is counted
+            # as unreviewed rather than stamped FAILED.
+            unreviewed += 1
+    sa.note("physics_lab", "cards_reviewed", kept=reviewed, considered=len(cards),
+            ordering="-card.value (cards are sorted by value before review)")
     front = I.pareto_front([c for c in cards if c.status != "FAILED"] or cards)
     for card in [c for c in cards if c.status in ("FORWARD", "PROVISIONAL")][:MAX_CAUSAL]:
         I.causal_scientist(card, objects_by_card[card.card_id][1], seed=SEED,
@@ -404,24 +448,44 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         I.atomic_json(METHODS, allocation)
 
     # ---- registry, donation, events
-    forward_objects = [objects_by_card[c.card_id][0] for c in cards
-                       if c.status in ("FORWARD", "PROVISIONAL")]
+    # THE CARD STATUS IS A RANK, NEVER A GATE (principal 2026-09-24: "all producers cells must
+    # reach gaunlet always 100%"). This read `[c for c in cards if c.status in
+    # ("FORWARD","PROVISIONAL")]` and the status line below said the quiet part out loud: "a card
+    # on one run is never FORWARD". So on a box where this organ runs once an hour and each pass
+    # is one run, the set was EMPTY BY CONSTRUCTION -- measured 2026-09-24, the physics wing has
+    # donated nothing ever and `data/intelligence/physics_lab/` does not exist. The replication
+    # protocol, the peer review and the card status all survive as the ORDERING of the queue and
+    # as provenance on every donated row; the ten gates are what decide.
+    _rank = {"FORWARD": 0, "PROVISIONAL": 1}
     seen: set[str] = set()
     unique_forward: list[MathObject] = []
-    for obj in forward_objects:
+    for card in sorted(cards, key=lambda c: (_rank.get(str(c.status), 2), -(c.value or -9e9))):
+        pair = objects_by_card.get(card.card_id)
+        if not pair:
+            continue
+        obj = pair[0]
         if obj.object_id not in seen:
             seen.add(obj.object_id)
             unique_forward.append(obj)
     already = set((_read_json(DONATED) or {}).get("object_ids") or [])
-    donation_rows, refused = ML.donation_rows(unique_forward[:MAX_DONATIONS], already)
+    donation_rows, refused = ML.donation_rows(
+        sa.take(unique_forward, MAX_DONATIONS, organ="physics_lab", stage="donations",
+                ordering="card status (FORWARD, PROVISIONAL, then the rest), then -value"),
+        already)
     for row in donation_rows:
         row["source"] = SOURCE
         row["kind"] = "hypothesis"
+    if refused:
+        sa.note("physics_lab", "untradeable_expression", kept=len(donation_rows),
+                considered=len(donation_rows) + len(refused),
+                ordering="G.tradeable(expression) is not None -- the formula executor must be "
+                         "able to evaluate the tree")
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "already_donated_in_a_previous_pass":
                                     len([o for o in unique_forward if o.object_id in already]),
-                                "rule": "only FORWARD/PROVISIONAL cards' objects are donated; "
-                                        "a card on one run is never FORWARD"}
+                                "rule": "every card's executable object is donated, ordered by "
+                                        "card status then value; the status is a RANK and the "
+                                        "ten gates are the only judge"}
     donated_by_tradition: dict[str, int] = {}
     if donation_rows and not dry_run:
         try:
@@ -460,9 +524,12 @@ def run(*, budget_s: float = 600.0, dry_run: bool = False, max_targets: int = MA
         unmeasured.append(f"budget: {unjudged} proposed objects were not judged this pass "
                           f"(judge deadline {0.72 * budget_s:.0f}s of a {budget_s:.0f}s budget)")
     if unreviewed:
-        unmeasured.append(f"budget: {unreviewed} cards did not reach the reviewers this pass "
-                          f"(review deadline {0.90 * budget_s:.0f}s); a card that misses review "
-                          f"stays PROPOSED and cannot be FORWARD")
+        unmeasured.append(f"budget: {unreviewed} of {len(cards)} cards did not reach the "
+                          f"reviewers this pass -- the review budget is {MAX_CARDS_REVIEWED} "
+                          f"cards and the deadline {0.90 * budget_s:.0f}s of a {budget_s:.0f}s "
+                          f"pass, and one of the two bound. A card that misses review stays "
+                          f"PROPOSED, which is UNMEASURED and not a refusal; it is still carded, "
+                          f"registered and donated, and the ten gates judge it like any other")
     if not seat_named:
         unmeasured.append("proposer_seat: no candidate mechanism name was proposed this pass "
                           "(no panel resolves, or no card was uninterpreted) -- UNMEASURED, and "

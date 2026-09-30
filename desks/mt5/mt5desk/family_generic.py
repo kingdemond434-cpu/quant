@@ -180,11 +180,14 @@ def family_generic(
 
     out: list[Signal] = []
     start = vol_n * 6
+    _a_atr = atr.to_numpy()
+    _a_mag = mag.to_numpy()
+    _a_d_close = d["close"].to_numpy()
     for i in range(start, len(d) - 1):
         if not mask[i]:
             continue
-        a = float(atr.iloc[i])
-        m = float(mag.iloc[i]) if np.isfinite(mag.iloc[i]) else np.nan
+        a = float(_a_atr[i])
+        m = float(_a_mag[i]) if np.isfinite(_a_mag[i]) else np.nan
         if not np.isfinite(a) or a <= 0 or not np.isfinite(m) or m == 0:
             continue
         # QUALITY: the event must be abnormal in the instrument's own terms.
@@ -193,7 +196,7 @@ def family_generic(
         side = int(np.sign(m)) * sign
         if side == 0:
             continue
-        px = float(d["close"].iloc[i])
+        px = float(_a_d_close[i])
         stop = px - side * stop_atr * a
         out.append(Signal(time=d.index[i], side=side, stop=stop,
                           target=px + side * stop_atr * a * rr, ttl_bars=hold,

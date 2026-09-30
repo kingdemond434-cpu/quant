@@ -538,16 +538,36 @@ def mine_github_topics() -> list[dict]:
     st = _state()
     stars = st.setdefault("gh_stars", {})
     out = []
-    for topic in ("mql5", "metatrader5", "forex-trading"):
+    # Cover the public agent/research ecosystem as a ROTATING frontier rather than repeatedly
+    # asking GitHub for the same first page of three MT5 topics. Four queries per pass stay below
+    # the unauthenticated API's practical burst budget; cursors make every relevant topic and
+    # every result page reachable over successive passes. Static mining is universal, while the
+    # external federation decides which systems earn scarce executable-sandbox compute.
+    topics = (
+        "mql5", "metatrader5", "forex-trading", "algorithmic-trading",
+        "quantitative-finance", "quantitative-trading", "trading-bot",
+        "multiagent-systems", "multi-agent-systems", "ai-agents",
+        "autonomous-agents", "scientific-discovery",
+    )
+    topic_cursor = int(st.get("gh_topic_cursor", 0)) % len(topics)
+    selected = [topics[(topic_cursor + i) % len(topics)] for i in range(4)]
+    pages = st.setdefault("gh_topic_pages", {})
+    for topic in selected:
+        page = max(1, int(pages.get(topic, 1)))
         data = fetch(f"https://api.github.com/search/repositories?q=topic:{topic}"
-                     "&sort=updated&per_page=15", as_json=True)
-        for it in data.get("items", []):
+                     f"&sort=updated&per_page=50&page={page}", as_json=True)
+        items = data.get("items", []) if isinstance(data, dict) else []
+        total = int(data.get("total_count", 0)) if isinstance(data, dict) else 0
+        last_page = max(1, min(20, (total + 49) // 50))  # GitHub search exposes <=1,000 rows.
+        pages[topic] = 1 if page >= last_page or not items else page + 1
+        for it in items:
             full, s = it.get("full_name", ""), int(it.get("stargazers_count", 0))
             delta = s - int(stars.get(full, s))
             stars[full] = s
             out.append(row("github_topics", "repo", full, it.get("html_url", ""),
                            (it.get("description") or "")[:400], topic=topic,
                            stars=s, star_delta=delta, pushed=it.get("pushed_at")))
+    st["gh_topic_cursor"] = (topic_cursor + len(selected)) % len(topics)
     STATE.write_text(json.dumps(st, indent=0), "utf-8")
     return out
 

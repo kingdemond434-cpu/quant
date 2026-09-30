@@ -56,13 +56,21 @@ def test_panel_stacking_is_deflated_not_counted_as_independent():
     """Why the test panel needs 5000 periods and not 400: a 12-instrument panel flattens to
     12*T rows, and counting those as independent would inflate every t-stat by sqrt(12). The
     harness deflates by panel_width, so n_eff is T -- and a cell only reads as powered when the
-    number of PERIODS (not rows) could have detected an effect at ic_min."""
+    number of PERIODS (not rows) could have detected an effect at ic_min.
+
+    THE DEFLATOR IS MEASURED NOW, not assumed to be the full K (axis_screen, 2026-08-11: "the
+    desk swung between the two endpoints and MEASURED NEITHER"), and the sweep measures it from
+    its own panel. So the dependence is built into the fixture: one COMMON signal across all
+    twelve instruments against a target dominated by the common factor makes the pooled IC's
+    product terms move together, and the measured breadth must collapse to ~1 bet per date. An
+    independent-noise signal would honestly measure ~12, which is not the property under test."""
     prices, _, _ = _panel(n_periods=1200, n_inst=12)
-    signal = np.random.default_rng(4).normal(size=prices.shape)
+    rng = np.random.default_rng(4)
+    signal = rng.normal(size=(prices.shape[0], 1)) + 0.05 * rng.normal(size=prices.shape)
     out = target_horizon_sweep(signal, prices, name="deflation", horizons=(1,))
     cell = next(c for c in out["cells"] if c["target"] == "absolute")
     assert cell["n"] > 12000                    # rows actually screened
-    assert cell["n_eff"] < 1300                 # ...but only ~T independent ones
+    assert cell["n_eff"] < 1.2 * 1200           # ...but only ~T independent ones
     assert cell["verdict"] == "SCREEN-UNDERPOWERED"
 
 

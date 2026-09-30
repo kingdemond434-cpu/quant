@@ -126,17 +126,27 @@ def test_dist_shift_has_a_production_caller() -> None:
         "L1.19 and L2.10, so both laws are enforced by nothing")
 
 
+#: THE PRODUCTION CALLER MOVED. `scripts/revalidate_clocks.py` was a crypto-era script deleted in
+#: the 2026-09-05 MT5 purge (libs/validation/shift_leak.py records it; so does
+#: run_intelligence_cycle.py). dist_shift's caller is now `desks/mt5/research/shift_watch.py`,
+#: which judges each LIVE symbol's H1 RETURNS and publishes a flag for re-validation -- it never
+#: auto-demotes (a demotion with no missed-growth line is a growth cut), so it does not reach the
+#: RevalidationController. The four tests below pin THAT wiring.
+_SHIFT_WATCH = _ROOT / "desks/mt5/research/shift_watch.py"
+
+
 def test_revalidate_clocks_wires_shift_to_the_controller() -> None:
-    """The producer must actually reach the CONSUMER. Importing dist_shift and discarding its
+    """The producer must actually reach a consumer. Importing dist_shift and discarding its
     verdict would satisfy the test above while enforcing nothing."""
-    src = (_ROOT / "scripts/revalidate_clocks.py").read_text("utf-8")
+    assert not (_ROOT / "scripts/revalidate_clocks.py").exists()
+    src = _SHIFT_WATCH.read_text("utf-8")
     tree = ast.parse(src)
     imported = {n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
     assert "libs.research.dist_shift" in imported
-    assert "libs.validation.revalidation" in imported
-    # the verdict must feed the controller's hard trigger, not just be printed
-    assert "structural_break=" in src
-    assert "RevalidationController()" in src
+    # the verdict must be attributed to the LIVE sleeves and published, not just printed
+    assert "split_and_check(r)" in src
+    assert 'OUT = DESK / "reports" / "DIST_SHIFT.json"' in src
+    assert '"shifted": shifted' in src
 
 
 def test_shift_verdict_maps_to_hard_triggers() -> None:
@@ -158,12 +168,11 @@ def test_shift_verdict_maps_to_hard_triggers() -> None:
 
 
 def test_zscore_transform_kills_the_trend_false_positive() -> None:
-    """The first wiring fed RAW LEVELS and got SHIFT on both axes with an identical haircut --
-    the welded-gate signature. A deterministic constant-increment ramp has no distributional
-    change at all, yet reports SHIFT on levels; the z-scored form is what the strategy consumes
-    and what the test must see."""
+    """The first wiring fed RAW LEVELS and got SHIFT on both axes -- the welded-gate signature. A
+    drifting random walk has no distributional change at all, yet reports SHIFT on levels. The
+    retired caller z-scored the series; shift_watch feeds log RETURNS, which is what cures it now,
+    and a genuine mean/variance regime change must still be caught."""
     import numpy as np
-    from scripts.revalidate_clocks import _z
 
     from libs.research.dist_shift import split_and_check
 
@@ -171,8 +180,9 @@ def test_zscore_transform_kills_the_trend_false_positive() -> None:
     # A drifting random walk -- what supply/price LEVELS actually look like, with no regime change.
     lvl = 1e6 + np.cumsum(rng.normal(100, 40, 900))
     assert split_and_check(lvl, name="lvl")["verdict"] == "SHIFT"        # the false positive
-    # Cured where it matters: the HARD trigger no longer fires on a pure trend artifact.
-    assert split_and_check(_z(lvl), name="lvl")["verdict"] != "SHIFT"
+    # Cured where it matters: shift_watch's transform (np.diff(np.log(close))) is not SHIFT.
+    assert split_and_check(np.diff(np.log(lvl)), name="lvl")["verdict"] != "SHIFT"
+    assert "np.diff(np.log(close))" in _SHIFT_WATCH.read_text("utf-8")
 
     # ...and a genuine mean/variance regime change is still caught.
     genuine = np.concatenate([rng.normal(0, 1, 700), rng.normal(3, 4, 200)])
@@ -183,8 +193,9 @@ def test_only_shift_strips_capital_not_drift() -> None:
     """DRIFT is a member of _HARD_TRIGGERS, and it fires on a single marginal indicator -- at
     n~900 the KS test is overpowered and a benign drifting random walk returns DRIFT. Passing that
     through would strip capital from healthy axes on noise. The caller maps only SHIFT."""
-    src = (_ROOT / "scripts/revalidate_clocks.py").read_text("utf-8")
+    src = _SHIFT_WATCH.read_text("utf-8")
     assert "drift=" not in src, "a bare DRIFT verdict must not reach a capital-blocking trigger"
+    assert "RevalidationController" not in src, "the watch publishes; it never strips capital"
 
     from libs.validation.revalidation import (
         RevalidationController,
@@ -197,10 +208,19 @@ def test_only_shift_strips_capital_not_drift() -> None:
     assert RevalidationController().assess(passing).production_capital_allowed
 
 
-def test_z_refuses_short_series() -> None:
-    import numpy as np
-    from scripts.revalidate_clocks import _z
-    assert len(_z(np.arange(5.0))) == 0
+def test_z_refuses_short_series(tmp_path: Path, monkeypatch) -> None:
+    """Too short to judge is UNMEASURED, never a verdict: shift_watch refuses under 200 bars."""
+    import pandas as pd
+    from desks.mt5.research import shift_watch as SW
+    monkeypatch.setattr(SW, "UNI", tmp_path)
+    pd.DataFrame({"close": [1.0 + 0.001 * i for i in range(150)]}).to_parquet(
+        tmp_path / "SHORT_H1.parquet")
+    assert SW._returns("SHORT") is None
+    assert SW._returns("ABSENT") is None
+    pd.DataFrame({"close": [1.0 + 0.001 * i for i in range(400)]}).to_parquet(
+        tmp_path / "LONG_H1.parquet")
+    r = SW._returns("LONG")
+    assert r is not None and len(r) == 399
 
 
 # ------------------------------------------------------------------------------------ end to end

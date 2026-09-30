@@ -1,0 +1,1696 @@
+{
+ "source": "firm_mining",
+ "cluster": "literature",
+ "mined_at": "2026-09-27T02:00:00+00:00",
+ "discoveries": [
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "london_fix",
+    "mode": "out_of",
+    "stamp_hour": 18,
+    "hold_bars": 6,
+    "side": 1
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD"
+   ],
+   "mechanism": "Dealers intermediate an unconditional client demand for USD at the fixes; USD appreciates into the fix and depreciates after it as dealer inventory is unwound (W-shaped USD path). Post-London-fix window is 11:00-17:00 ET (16:00-22:00 London): foreign currency up vs USD. Broker stamps assume the venue clock UTC+3 summer / UTC+2 winter (CLAUDE.md); stamp 18 opens at 16:00 London in both seasons.",
+   "firm": "Krohn, Mueller, Whelan (Bank of Canada / Warwick / CBS)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://wrap.warwick.ac.uk/id/eprint/177333/1/WRAP-foreign-exchange-fixings-returns-around-clock-Mueller-2023.pdf",
+   "source_title": "Foreign Exchange Fixings and Returns around the Clock",
+   "quote": "The U.S. dollar appreciates in the run-up to foreign exchange fixes and depreciates thereafter, tracing a W-shaped return pattern around the clock.",
+   "horizon": "6h after the 16:00 London fix",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "Dollar portfolio +1.84bp (t=5.48) post-London fix 1999-2019, G9 pairs; paper finds client-market cost-adjusted returns significantly NEGATIVE, liquidity-provision returns positive",
+   "cost_caveat": "Test at the desk's measured raw-spread + commission; the paper's client costs kill it, so it lives only if Fusion raw-spread costs are below ~1bp round trip or entries are passive limits.",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "london_fix",
+    "mode": "out_of",
+    "stamp_hour": 18,
+    "hold_bars": 6,
+    "side": -1
+   },
+   "symbols": [
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDSEK",
+    "USDNOK"
+   ],
+   "mechanism": "Mirror of the post-London-fix USD depreciation for USD-base pairs (USD falls after the fix => USDXXX down). Broker stamps assume the venue clock UTC+3 summer / UTC+2 winter (CLAUDE.md); stamp 18 opens at 16:00 London in both seasons.",
+   "firm": "Krohn, Mueller, Whelan",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://wrap.warwick.ac.uk/id/eprint/177333/1/WRAP-foreign-exchange-fixings-returns-around-clock-Mueller-2023.pdf",
+   "source_title": "Foreign Exchange Fixings and Returns around the Clock",
+   "quote": "the U.S. dollar gradually appreciates against all currencies ahead of the three major currency fixes in Tokyo, Frankfurt (the ECB fix) and London",
+   "horizon": "6h",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "same W-pattern; yen is the exception after London (depreciates post-London fix) - exclude USDJPY from this cell",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "london_open",
+    "mode": "out_of",
+    "stamp_hour": 10,
+    "hold_bars": 6,
+    "side": -1
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD"
+   ],
+   "mechanism": "Pre-ECB-fix leg of the W: USD appreciates 02:00-08:15 ET (07:00-13:15 London) into the 14:15 CET ECB fix. Approximated with the london_open catalogue moment (07:00 London = stamp 10 summer) held 6 bars; an exact ecb_fix label is a capability gap below.",
+   "firm": "Krohn, Mueller, Whelan",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://wrap.warwick.ac.uk/id/eprint/177333/1/WRAP-foreign-exchange-fixings-returns-around-clock-Mueller-2023.pdf",
+   "source_title": "Foreign Exchange Fixings and Returns around the Clock",
+   "quote": "",
+   "horizon": "6h, London morning",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "Dollar portfolio -1.68bp (USD up, t=-4.51) in the pre-ECB window 1999-2019",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "tokyo_open",
+    "mode": "into",
+    "stamp_hour": 3,
+    "lead_bars": 3,
+    "side": 1
+   },
+   "symbols": [
+    "USDJPY"
+   ],
+   "mechanism": "Tokyo 9:55 fix: Japanese importers' predictable USD buying at the fixing (especially gotobi days 5,10,15,20,25,30 and month-end) lifts USDJPY into the fix; USD reverts after (post-Tokyo window). tokyo_open (00:00 UTC) sits 55 min before the 9:55 JST fix; exact tokyo_fix label is a gap.",
+   "firm": "Ito & Yamada; Krohn, Mueller, Whelan",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.nber.org/papers/w22820",
+   "source_title": "Puzzles in the Forex Tokyo 'Fixing': Order Imbalances and Biased Pricing by Banks",
+   "quote": "The customer orders are biased toward buying the foreign currencies, which is predictable.",
+   "horizon": "3h into the Tokyo fix",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "Krohn: dollar portfolio -1.99bp pre-Tokyo, +2.10bp post-Tokyo (1999-2019); a yen strategy around the Tokyo fix grew $1 to $12.2 gross",
+   "conditioning": "gotobi days and month-end strengthen the effect (Ito-Yamada)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "tokyo_open",
+    "mode": "out_of",
+    "stamp_hour": 3,
+    "hold_bars": 5,
+    "side": -1
+   },
+   "symbols": [
+    "USDJPY",
+    "EURJPY",
+    "AUDJPY"
+   ],
+   "mechanism": "Post-Tokyo-fix unwind: USD (and crosses bought vs JPY for settlement) give back the fix premium after 9:55 JST.",
+   "firm": "Krohn, Mueller, Whelan",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://wrap.warwick.ac.uk/id/eprint/177333/1/WRAP-foreign-exchange-fixings-returns-around-clock-Mueller-2023.pdf",
+   "source_title": "Foreign Exchange Fixings and Returns around the Clock",
+   "quote": "",
+   "horizon": "5h after Tokyo fix",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "post-Tokyo window 20:55-02:00 ET, dollar portfolio +2.10bp (t=9.19)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "NZDUSD",
+    "EURGBP"
+   ],
+   "mechanism": "Abnormal price moves into the 4pm WMR fix revert after it: fix orders add volatility and negative serial correlation around the fix across 18 of 21 currencies. Complements Krohn: here the signal is the size of the pre-fix displacement, not the unconditional USD path.",
+   "firm": "Martin Evans (Georgetown)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://mpra.ub.uni-muenchen.de/81583/1/MPRA_paper_81583.pdf",
+   "source_title": "Forex Trading and the WMR Fix",
+   "quote": "forex price changes display extraordinary volatility and negative serial correlation around the Fix.",
+   "horizon": "1-3 bars after the fix",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "significant negative serial correlation in 18 currencies; 'large enough to support trading strategies ... that appeared economically attractive at the time' (pre-2015 reform)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "london_open",
+    "mode": "out_of",
+    "stamp_hour": 10,
+    "hold_bars": 6,
+    "side": -1
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD"
+   ],
+   "mechanism": "Local currencies depreciate during their own trading hours and appreciate outside them because local participants are net buyers of foreign currency in their own hours (order-flow corroborated). EUR/GBP weaken in European hours.",
+   "firm": "Breedon & Ranaldo (SNB)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.snb.ch/public/asset/en/www-snb-ch/publications/research/working-papers/2011/working_paper_2011_04/publications0_en/working_paper_2011_04.n.pdf",
+   "source_title": "Intraday Patterns in FX Returns and Order Flow",
+   "quote": "a significant tendency for currencies to depreciate during local trading hours.",
+   "horizon": "European session (~6h)",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "EUR/USD simple open-to-close strategy profitable after costs in 1997-2007 EBS data; hourly annualised log-return effects significant at 1%",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "ny_open",
+    "mode": "out_of",
+    "stamp_hour": 16,
+    "hold_bars": 5,
+    "side": 1
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD"
+   ],
+   "mechanism": "US-hours leg of the local-hours depreciation: USD weakens in US trading hours (foreign currency rises), as also found by Cornett et al. (1995) on IMM futures cited inside Breedon-Ranaldo.",
+   "firm": "Breedon & Ranaldo (SNB)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.snb.ch/public/asset/en/www-snb-ch/publications/research/working-papers/2011/working_paper_2011_04/publications0_en/working_paper_2011_04.n.pdf",
+   "source_title": "Intraday Patterns in FX Returns and Order Flow",
+   "quote": "local currencies tend to depreciate during their own trading hours and appreciate outside them",
+   "horizon": "US session",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "EUR/USD USD-session coefficient significant (JMCB 2013 Table 2)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "tokyo_open",
+    "mode": "out_of",
+    "stamp_hour": 3,
+    "hold_bars": 6,
+    "side": -1
+   },
+   "symbols": [
+    "AUDUSD"
+   ],
+   "mechanism": "AUD depreciates in its own (Asian) hours: AUDUSD down during the Sydney/Tokyo session (paper: AUD-session coefficient negative, USD-session positive).",
+   "firm": "Breedon & Ranaldo (SNB)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.snb.ch/public/asset/en/www-snb-ch/publications/research/working-papers/2011/working_paper_2011_04/publications0_en/working_paper_2011_04.n.pdf",
+   "source_title": "Intraday Patterns in FX Returns and Order Flow",
+   "quote": "",
+   "horizon": "Asian session",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "AUD/USD AUD-session annualised coefficient -0.028 (1%), USD-session +0.016 (1%)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "tokyo_open",
+    "mode": "out_of",
+    "stamp_hour": 3,
+    "hold_bars": 6,
+    "side": 1
+   },
+   "symbols": [
+    "USDJPY"
+   ],
+   "mechanism": "JPY depreciates in its own (Tokyo) hours: USDJPY up during the Tokyo session.",
+   "firm": "Breedon & Ranaldo (SNB)",
+   "evidence": "REPORTED",
+   "source_url": "https://www.snb.ch/public/asset/en/www-snb-ch/publications/research/working-papers/2011/working_paper_2011_04/publications0_en/working_paper_2011_04.n.pdf",
+   "source_title": "Intraday Patterns in FX Returns and Order Flow",
+   "quote": "",
+   "horizon": "Asian session",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "USD/JPY mixed on EBS quotes, significant on customer order flow",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "US500",
+    "lag": 1,
+    "direction": 1
+   },
+   "symbols": [
+    "USDJPY",
+    "USDCHF"
+   ],
+   "mechanism": "Safe-haven currencies (CHF, JPY) appreciate when US equities fall and FX vol rises, over horizons from hours to days; a lagged version tests whether the haven bid continues after an equity down-bar (USDJPY/USDCHF fall after US500 falls).",
+   "firm": "Ranaldo & Soderlind",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://academic.oup.com/rof/article-abstract/14/3/385/1592162",
+   "source_title": "Safe Haven Currencies",
+   "quote": "",
+   "horizon": "hours to days (H1-D1)",
+   "asset_classes": [
+    "fx",
+    "indices"
+   ],
+   "reported_effect": "safe-haven properties at granularities from a few hours to several days, ordinary days and crises, non-linear (stronger in stress)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_sectional",
+   "params": {
+    "mode": "momentum",
+    "horizon": 21,
+    "top_frac": 0.17
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDSEK",
+    "USDNOK",
+    "USDMXN",
+    "USDZAR",
+    "USDPLN",
+    "USDSGD",
+    "USDHUF",
+    "USDCZK"
+   ],
+   "mechanism": "Cross-sectional currency momentum: sort currencies (vs USD) on past 1-month excess return into sextiles; long top, short bottom, hold 1 month. Under/over-reaction; distinct from carry; profits concentrated in hard-to-trade currencies (limits to arbitrage).",
+   "firm": "Menkhoff, Sarno, Schmeling, Schrimpf (BIS)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://faculty.washington.edu/ss1110/IF/Sarno%20Currency%20Momentum%20JFE%20(1).pdf",
+   "source_title": "Currency momentum strategies",
+   "quote": "We find a significant cross-sectional spread in excess returns of up to 10% per annum (p.a.) between past winner and loser currencies.",
+   "horizon": "1 month (D1, 21 bars)",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "6-10% p.a. for 1-month holding (1976-2010); fades monotonically with longer holding; partially explained by transaction costs",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_sectional",
+   "params": {
+    "mode": "reversal",
+    "horizon": 1260
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDSEK",
+    "USDNOK",
+    "USDMXN",
+    "USDZAR",
+    "USDPLN",
+    "USDSGD"
+   ],
+   "mechanism": "Currency value: currencies that appreciated most over the past 5 years (strong real exchange rate) earn low subsequent excess returns; buy 5-year losers, sell 5-year winners. Better if RER is purged of productivity, NFA, export quality, output gap (capability gap).",
+   "firm": "Menkhoff, Sarno, Schmeling, Schrimpf",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://openaccess.city.ac.uk/id/eprint/14851/13/FXVALUE_Rev3_cepr.pdf",
+   "source_title": "Currency Value",
+   "quote": "going long countries with high 5-year appreciation rates forecasts low excess returns relative to currencies which depreciated over the last 5 years.",
+   "horizon": "1-12 months rebalance, 5y signal",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "simple RER value Sharpe ~0.5 p.a.; fundamentals-adjusted 0.8-0.9 p.a.; distinct from carry and momentum",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "style_premia",
+   "params": {
+    "style": "carry"
+   },
+   "symbols": [
+    "AUDJPY",
+    "NZDJPY",
+    "USDJPY",
+    "USDMXN",
+    "USDZAR",
+    "USDTRY",
+    "EURJPY",
+    "GBPJPY",
+    "USDCHF",
+    "EURCHF"
+   ],
+   "mechanism": "HML-FX carry: long high-interest-rate currencies, short low-rate funders; high-rate currencies load more on a global slope/risk factor. On CFDs carry is the broker swap differential (swap_diff).",
+   "firm": "Lustig, Roussanov, Verdelhan",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.nber.org/papers/w14082",
+   "source_title": "Common Risk Factors in Currency Markets",
+   "quote": "",
+   "horizon": "monthly+",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "HML-FX slope factor explains most cross-sectional variation between high and low interest-rate currency portfolios",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "style_premia",
+   "params": {
+    "style": "carry",
+    "combo": "carry_calm_vol"
+   },
+   "symbols": [
+    "AUDJPY",
+    "NZDJPY",
+    "USDMXN",
+    "USDZAR",
+    "GBPJPY",
+    "EURJPY"
+   ],
+   "mechanism": "Carry pays a premium for global FX-volatility risk: high-yielders fall when global FX vol spikes; low-yielders hedge. Holding carry only in calm/declining vol (or scaling by inverse variance, Moreira-Muir) harvests the premium while sidestepping the crash state.",
+   "firm": "Menkhoff et al.; Moreira & Muir; Brunnermeier, Nagel, Pedersen",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://faculty.washington.edu/ss1110/IF/Sarno%20JF%20Carry%20Trade%20(1).pdf",
+   "source_title": "Carry Trades and Global Foreign Exchange Volatility",
+   "quote": "",
+   "horizon": "weekly-monthly",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "global FX vol innovations explain >90% of the spread across 5 carry portfolios; vol-managed carry raises Sharpe (Moreira-Muir document it for the carry trade)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "drawdown_conditional",
+   "params": {},
+   "symbols": [
+    "AUDJPY",
+    "NZDJPY",
+    "USDMXN",
+    "USDZAR"
+   ],
+   "mechanism": "Carry crash dynamics: negative skew from sudden unwinding when funding liquidity falls; 'carry-trade losses reduce future crash risk but increase the price of crash risk' -> re-entry after a carry drawdown earns a higher premium.",
+   "firm": "Brunnermeier, Nagel, Pedersen",
+   "evidence": "SPECULATED",
+   "source_url": "https://www.nber.org/papers/w14473",
+   "source_title": "Carry Trades and Currency Crashes",
+   "quote": "",
+   "horizon": "weeks",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "documented negative skew and liquidity link; the re-entry trade itself is SPECULATED",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "carry",
+   "params": {},
+   "symbols": [
+    "US500",
+    "GER40",
+    "UK100",
+    "JPN225",
+    "AUS200",
+    "UST10Y",
+    "UKGILT",
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "COTTON"
+   ],
+   "mechanism": "Carry generalised to every asset: expected return = carry (model-free, known ex ante) + expected price change. For CFDs the broker's daily swap long/short encodes the futures basis / dividend-minus-rate / roll, so 'carry' is directly observable on every instrument.",
+   "firm": "Koijen, Moskowitz, Pedersen, Vrugt (AQR/LBS/Chicago)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.nber.org/system/files/working_papers/w19325/w19325.pdf",
+   "source_title": "Carry",
+   "quote": "carry predicts returns both in the cross section and time series for a variety of different asset classes",
+   "horizon": "monthly",
+   "asset_classes": [
+    "indices",
+    "bonds",
+    "energy",
+    "softs"
+   ],
+   "reported_effect": "carry strategies profitable across equities, bonds, commodities, currencies, Treasuries, credit, options; crash together in global recessions",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_sectional",
+   "params": {
+    "mode": "momentum",
+    "horizon": 252
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XPTUSD",
+    "XPDUSD",
+    "XCUUSD",
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "COTTON",
+    "USCOCOA",
+    "COFARA",
+    "OJ"
+   ],
+   "mechanism": "Value and momentum everywhere: 12-1 month momentum across commodities (and in every asset class), negatively correlated with value; combine both. Commodity cross-section is the cleanest CFD analogue.",
+   "firm": "Asness, Moskowitz, Pedersen (AQR)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf",
+   "source_title": "Value and Momentum Everywhere",
+   "quote": "",
+   "horizon": "12 months (skip 1)",
+   "asset_classes": [
+    "metals",
+    "energy",
+    "softs"
+   ],
+   "reported_effect": "value and momentum premia in every asset class; value-momentum negatively correlated within and across classes",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "AUDUSD",
+    "direction": 1
+   },
+   "symbols": [
+    "XCUUSD",
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "mechanism": "Commodity-currency exchange rates are forward-looking asset prices that embed expected commodity prices, so AUD/NZD/CAD/ZAR moves lead commodity price indices out of sample (not vice versa).",
+   "firm": "Chen, Rogoff, Rossi (Harvard/UCSC)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.nber.org/papers/w13901",
+   "source_title": "Can Exchange Rates Forecast Commodity Prices?",
+   "quote": "",
+   "horizon": "quarterly (test D1-weekly)",
+   "asset_classes": [
+    "fx",
+    "metals"
+   ],
+   "reported_effect": "robust in-sample and out-of-sample predictive power for global commodity prices, quarterly data 1-3 decades",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "XTIUSD",
+    "lag": 1,
+    "direction": -1
+   },
+   "symbols": [
+    "USDCAD"
+   ],
+   "mechanism": "Oil prices and the Canadian dollar are linked at the daily frequency (oil ~21% of Canadian exports); lagged oil shocks predict USDCAD but only ephemerally, after allowing for instability.",
+   "firm": "Ferraro, Rogoff, Rossi",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.nber.org/papers/w17998",
+   "source_title": "Can Oil Prices Forecast Exchange Rates?",
+   "quote": "the predictive ability is ephemeral, mostly appearing after instabilities have been appropriately taken into account",
+   "horizon": "1 day",
+   "asset_classes": [
+    "fx",
+    "energy"
+   ],
+   "reported_effect": "stable contemporaneous daily link; lagged predictability weak/time-varying - treat as a regime-gated lead_lag",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "US500",
+    "lag": 1,
+    "direction": 1
+   },
+   "symbols": [
+    "GER40",
+    "UK100",
+    "FRA40",
+    "EUSTX50",
+    "JPN225",
+    "AUS200",
+    "HK50"
+   ],
+   "mechanism": "News diffuses from the US with a lag: lagged US returns predict non-US index returns, not vice versa (information frictions). On D1 the Asian open after a US close is the tradable lag.",
+   "firm": "Rapach, Strauss, Zhou",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12041",
+   "source_title": "International Stock Return Predictability: What Is the Role of the United States?",
+   "quote": "",
+   "horizon": "monthly in paper; test D1 and next-session",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "lagged US returns significantly predict returns in numerous non-US industrialized countries",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cot_change_fade",
+   "params": {},
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD",
+    "XTIUSD",
+    "XNGUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "COTTON",
+    "USCOCOA",
+    "COFARA"
+   ],
+   "mechanism": "Short-term changes in speculators' (non-commercial) net positions are liquidity demands; commercials supply that liquidity and are paid for it, so futures returns move against recent speculator position changes.",
+   "firm": "Kang, Rouwenhorst, Tang (Yale)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12845",
+   "source_title": "A Tale of Two Premiums: The Role of Hedgers and Speculators in Commodity Futures Markets",
+   "quote": "",
+   "horizon": "1-4 weeks",
+   "asset_classes": [
+    "metals",
+    "energy",
+    "softs"
+   ],
+   "reported_effect": "liquidity-provision gains of commercials largely offset the hedging premium they pay (JF 2020)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cot_positioning",
+   "params": {},
+   "symbols": [
+    "XTIUSD",
+    "XNGUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR",
+    "COTTON",
+    "USCOCOA",
+    "COFARA",
+    "XAUUSD",
+    "XAGUSD",
+    "XCUUSD"
+   ],
+   "mechanism": "Hedging-pressure premium: long commodities where hedgers are net short and speculators net long, short where hedgers are net long; premium rises with market volatility.",
+   "firm": "Basu & Miffre (EDHEC/CME project)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1340873",
+   "source_title": "Capturing the risk premium of commodity futures: The role of hedging pressure",
+   "quote": "",
+   "horizon": "monthly",
+   "asset_classes": [
+    "energy",
+    "softs",
+    "metals"
+   ],
+   "reported_effect": "positive, significant long-short premia with Sharpe ratios exceeding long-only commodity portfolios",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cot_change_momentum",
+   "params": {},
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "AUDUSD"
+   ],
+   "mechanism": "FALSIFIER PRIOR: speculator net-position changes coincide with FX moves in the SAME week (75% directional hit) but carry no information for the following week. Expect cot_change_momentum on FX to fail once the Friday publication lag is respected (the desk's _cot_entries already enters the Monday after).",
+   "firm": "Klitgaard & Weir (NY Fed)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.newyorkfed.org/medialibrary/media/research/epr/04v10n1/0405klitpdf.pdf",
+   "source_title": "Exchange Rate Changes and Net Positions of Speculators in the Futures Market",
+   "quote": "net positions do not appear to be useful for anticipating exchange rate moves over the following week.",
+   "horizon": "1 week",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "contemporaneous 75% direction accuracy; ~no next-week predictability (6 currencies, 10 years)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "futures_roll",
+    "mode": "post_flow_fade"
+   },
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD",
+    "XNGUSD",
+    "CORN",
+    "WHEAT",
+    "SOYBEAN",
+    "SUGAR"
+   ],
+   "mechanism": "Index funds (GSCI) roll front to next contract on the 5th-9th business day; front-runners and the roll itself depress the front/next spread, which reverts afterwards. CFD transfer is SPECULATED: CFDs roll with the underlying, so the outright effect is diluted.",
+   "firm": "Yiqun Mou (Columbia)",
+   "evidence": "SPECULATED",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1716841",
+   "source_title": "Limits to Arbitrage and Commodity Index Investment: Front-Running the Goldman Roll",
+   "quote": "",
+   "horizon": "days around the roll window",
+   "asset_classes": [
+    "energy",
+    "softs"
+   ],
+   "reported_effect": "front-running spread strategies Sharpe up to 4.39, 2000-Mar 2010 (spread, not outright)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "event_reaction",
+   "params": {
+    "events": "inventory",
+    "mode": "drift"
+   },
+   "symbols": [
+    "XTIUSD",
+    "XBRUSD"
+   ],
+   "mechanism": "EIA weekly petroleum inventory surprises have an immediate inverse price impact; EIA-day returns predict subsequent intraday returns (informed traders arrive, liquidity thins), i.e., post-release drift.",
+   "firm": "Wen, Indriawan, Lien, Xu; Halova, Kurov, Kucher",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://ideas.repec.org/a/sae/enejou/v44y2023i5p149-172.html",
+   "source_title": "Intraday Return Predictability in the Crude Oil Market: The Role of EIA Inventory Announcements",
+   "quote": "",
+   "horizon": "intraday after Wed 10:30 ET release",
+   "asset_classes": [
+    "energy"
+   ],
+   "reported_effect": "EIA announcement days contribute to crude intraday momentum (Energy Journal 2023)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "event_reaction",
+   "params": {
+    "events": "inventory",
+    "mode": "drift"
+   },
+   "symbols": [
+    "XNGUSD"
+   ],
+   "mechanism": "Natural-gas weekly storage report (Thu 10:30 ET): surprise vs expectations moves price; the Halova-Kurov-Kucher correction for noisy expectations strengthens the measured impact.",
+   "firm": "Halova, Kurov, Kucher",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://onlinelibrary.wiley.com/doi/abs/10.1002/fut.21633",
+   "source_title": "Noisy Inventory Announcements and Energy Prices",
+   "quote": "",
+   "horizon": "intraday",
+   "asset_classes": [
+    "energy"
+   ],
+   "reported_effect": "inventory surprises significantly move energy prices once measurement error in expectations is addressed",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "calendar_month",
+   "params": {
+    "active_month": 9,
+    "side_bias": 1
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAUEUR",
+    "XAUAUD"
+   ],
+   "mechanism": "Gold autumn effect: September and November are the only months with significantly positive gold returns (hedging demand ahead of the equity 'Halloween' season, Indian wedding-season jewellery demand).",
+   "firm": "Dirk Baur",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://ideas.repec.org/a/eee/riibaf/v27y2013i1p1-11.html",
+   "source_title": "The autumn effect of gold",
+   "quote": "",
+   "horizon": "1 month",
+   "asset_classes": [
+    "metals"
+   ],
+   "reported_effect": "Sept +2.2% avg, Nov +1.8% avg, 1980-2010",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "calendar_month",
+   "params": {
+    "active_month": 11,
+    "side_bias": 1
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAUEUR",
+    "XAUAUD"
+   ],
+   "mechanism": "Second leg of the gold autumn effect (November).",
+   "firm": "Dirk Baur",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://ideas.repec.org/a/eee/riibaf/v27y2013i1p1-11.html",
+   "source_title": "The autumn effect of gold",
+   "quote": "",
+   "horizon": "1 month",
+   "asset_classes": [
+    "metals"
+   ],
+   "reported_effect": "Nov +1.8% avg, 1980-2010",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "comex_settle",
+    "mode": "fade"
+   },
+   "symbols": [
+    "XAUUSD",
+    "XAGUSD"
+   ],
+   "mechanism": "Benchmark-fixing leakage in gold: volume and volatility jump at the start of the London PM fix, and early-fix trades predict the fix direction (>90% in some cases) with no effect after publication; the tradable remnant is the pre-benchmark push and its fade. Mapped to the nearest catalogue moment (COMEX settle); the LBMA 15:00 London auction needs its own label (gap).",
+   "firm": "Caminschi & Heaney",
+   "evidence": "REPORTED",
+   "source_url": "https://onlinelibrary.wiley.com/doi/abs/10.1002/fut.21636",
+   "source_title": "Fixing a Leaky Fixing: Short-Term Market Reactions to the London PM Gold Price Fixing",
+   "quote": "",
+   "horizon": "minutes-1h",
+   "asset_classes": [
+    "metals"
+   ],
+   "reported_effect": "significant return advantages in the 4 minutes after fix start (pre-2015 fixing; post-2015 LBMA auction may differ)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "session_handoff",
+   "params": {
+    "direction": -1
+   },
+   "symbols": [
+    "XAUUSD",
+    "XPTUSD"
+   ],
+   "mechanism": "Gold/platinum Tokyo day session is dominated by liquidity (uninformed) trading while New York hours carry informed trading; Asian-session displacement should revert in London/NY while NY-session moves persist. SPECULATED trading translation of a microstructure finding.",
+   "firm": "Iwatsubo, Watkins, Xu (RIETI)",
+   "evidence": "SPECULATED",
+   "source_url": "https://www.rieti.go.jp/jp/publications/dp/17e120.pdf",
+   "source_title": "Intraday seasonality in efficiency, liquidity, volatility and volume: Platinum and gold futures in Tokyo and New York",
+   "quote": "",
+   "horizon": "intraday",
+   "asset_classes": [
+    "metals"
+   ],
+   "reported_effect": "liquidity trading prevalent in Tokyo day session, informed trading in NY day session",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "hedging_demand_close",
+   "params": {
+    "close_hour": 22,
+    "require_elevated_vol": true
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000"
+   ],
+   "mechanism": "Market intraday momentum: return from prior close to the last half-hour predicts the last half-hour, because option market makers and leveraged ETFs hedging short gamma must trade with the move into the close; stronger on volatile, high-volume and macro-news days, reverting over following days.",
+   "firm": "Gao, Han, Li, Zhou; Baltussen, Da, Lammers, Martens (Robeco)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www3.nd.edu/~zda/intramom.pdf",
+   "source_title": "Hedging demand and market intraday momentum",
+   "quote": "Hedging short gamma exposure requires trading in the direction of price movements, thereby creating price momentum.",
+   "horizon": "last 30-60 min of the cash session",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "Gao: predictive R2 1.6% (2.6% with the 12th half-hour), SPY 1993-2013; Baltussen: 60+ futures 1974-2020, momentum everywhere",
+   "note": "close_hour 22 = broker stamp of the last cash hour (15:00-16:00 ET) under UTC+3/+2 summer/winter alignment of US DST; verify per season",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "hedging_demand_close",
+   "params": {
+    "require_elevated_vol": true
+   },
+   "symbols": [
+    "UST10Y",
+    "UST05Y",
+    "XAUUSD",
+    "XTIUSD",
+    "EURUSD",
+    "USDJPY",
+    "GER40",
+    "UK100",
+    "JPN225"
+   ],
+   "mechanism": "Same gamma-hedging intraday momentum documented for bond, commodity and currency futures; each instrument's own settlement close must be used (UST 15:00 ET, COMEX gold 13:30 ET, NYMEX crude 14:30 ET, CME FX 14:00 ET).",
+   "firm": "Baltussen, Da, Lammers, Martens",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www3.nd.edu/~zda/intramom.pdf",
+   "source_title": "Hedging demand and market intraday momentum",
+   "quote": "we find strong market intraday momentum everywhere",
+   "horizon": "last 30 min before each venue close",
+   "asset_classes": [
+    "bonds",
+    "metals",
+    "energy",
+    "fx",
+    "indices"
+   ],
+   "reported_effect": "timing strategies with very high Sharpe ratios and >0.5 daily success rates across asset classes (Table 6); rest-of-day signal beats overnight in all classes but currencies",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "hedging_demand_close",
+   "params": {},
+   "symbols": [
+    "USDRUB",
+    "EURRUB"
+   ],
+   "mechanism": "FX intraday momentum on MICEX RUB: first half-hour predicts last half-hour, attributed to liquidity providers' aversion to overnight inventory (not informed trading).",
+   "firm": "Elaut, Frommel, Lampaert (Ghent)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2694985",
+   "source_title": "Intraday momentum in FX markets: Disentangling informed trading from liquidity provision",
+   "quote": "",
+   "horizon": "last 30 min of MICEX session",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "significant positive first-to-last half-hour relation 2005-2014 (tick data)",
+   "tradability": "EURRUB/USDRUB CFD liquidity and sanctions-era pricing make this low priority",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "london_open",
+    "mode": "into",
+    "stamp_hour": 10,
+    "lead_bars": 2,
+    "side": 1
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30"
+   ],
+   "mechanism": "S&P 500 futures earn their entire average return in the four hours around the European open, as European investors process overnight information and uncertainty (VIX futures) resolves; the other 20 hours average a noisy zero.",
+   "firm": "Bondarenko & Muravyev",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/abs/market-return-around-the-clock-a-puzzle/089E33AC0B4D3B9A02CBA31EDF6505B3",
+   "source_title": "Market Return Around the Clock: A Puzzle",
+   "quote": "",
+   "horizon": "~4h around 08:00 London (two cells: into + out_of)",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "Sharpe 1.6, positive every year 2006-2018, survives costs (E-mini)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "clock_transition",
+   "params": {
+    "label": "london_open",
+    "mode": "out_of",
+    "stamp_hour": 10,
+    "hold_bars": 2,
+    "side": 1
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30"
+   ],
+   "mechanism": "Second half of the European-open window (see previous row).",
+   "firm": "Bondarenko & Muravyev",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.cambridge.org/core/journals/journal-of-financial-and-quantitative-analysis/article/abs/market-return-around-the-clock-a-puzzle/089E33AC0B4D3B9A02CBA31EDF6505B3",
+   "source_title": "Market Return Around the Clock: A Puzzle",
+   "quote": "",
+   "horizon": "2h after London open",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "same",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "overnight_drift",
+   "params": {
+    "anchor_hour": 23
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "US30",
+    "US2000"
+   ],
+   "mechanism": "Tug of war between overnight and intraday clienteles: momentum profits accrue overnight, reversal-type profits intraday; the index-level overnight premium is the related night effect. Test long from cash close to next open.",
+   "firm": "Lou, Polk, Skouras (LSE)",
+   "evidence": "REPORTED",
+   "source_url": "https://personal.lse.ac.uk/polk/research/TugOfWar.pdf",
+   "source_title": "A tug of war: Overnight versus intraday expected returns",
+   "quote": "We document strong overnight and intraday firm-level return continuation along with an offsetting cross-period reversal effect",
+   "horizon": "overnight (cash close to open)",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "momentum overnight 3-factor alpha 0.95%/month (t=3.65) vs 0.11% intraday - firm level; index transfer REPORTED not documented",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "turn_of_month",
+   "params": {
+    "days_before": 1,
+    "days_after": 3,
+    "side_bias": 1
+   },
+   "symbols": [
+    "US500",
+    "US30",
+    "NAS100",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "JPN225",
+    "AUS200",
+    "EUSTX50"
+   ],
+   "mechanism": "Turn-of-the-month effect: returns from the last trading day through the third trading day of the new month far exceed other days (payroll/pension inflows, month-end institutional cash cycles).",
+   "firm": "McConnell & Xu (Purdue); Etula et al.",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://business.purdue.edu/faculty/mcconnell/publications/Equity-Returns-at-the-Turn-of-the-Month.pdf",
+   "source_title": "Equity Returns at the Turn of the Month",
+   "quote": "",
+   "horizon": "4 trading days",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "US 1926-2005: 0.15%/day over the 4-day turn vs -0.001% other days; present in 31 of 35 countries",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "month_end",
+    "mode": "post_flow_fade"
+   },
+   "symbols": [
+    "UST10Y",
+    "UST05Y",
+    "UKGILT",
+    "US500",
+    "GER40"
+   ],
+   "mechanism": "Dash for cash: the monthly payment cycle forces institutions to raise cash before month-end payment dates, temporarily raising the cost of debt and equity capital (prices pressured), then reverting after.",
+   "firm": "Etula, Rinne, Suominen, Vaittinen (Aalto)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://doi.org/10.1093/rfs/hhz054",
+   "source_title": "Dash for Cash: Monthly Market Impact of Institutional Liquidity Needs",
+   "quote": "",
+   "horizon": "days around month-end",
+   "asset_classes": [
+    "bonds",
+    "indices"
+   ],
+   "reported_effect": "systematic month-end patterns in liquid markets globally; mutual funds suffer liquidity-related trading",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "calendar_month",
+   "params": {
+    "side_bias": 1
+   },
+   "symbols": [
+    "US500",
+    "US30",
+    "NAS100",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "JPN225",
+    "AUS200",
+    "EUSTX50"
+   ],
+   "mechanism": "Halloween / Sell-in-May: Nov-Apr index returns far exceed May-Oct (near zero). calendar_month takes one active_month; sweep active_month over 11,12,1,2,3,4 as one declared family of 6 cells (count as 6 trials).",
+   "firm": "Bouman & Jacobsen",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.aeaweb.org/articles?id=10.1257%2F000282802762024683",
+   "source_title": "The Halloween Indicator, 'Sell in May and Go Away': Another Puzzle",
+   "quote": "",
+   "horizon": "6 months",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "present in 36 of 37 markets 1970-1998; UK evidence back to 1694",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "bond_auction",
+    "mode": "post_flow_fade"
+   },
+   "symbols": [
+    "UST10Y",
+    "UST05Y"
+   ],
+   "mechanism": "Anticipated, repeated supply shocks: Treasury prices fall in the days before scheduled auctions (dealers' limited risk capacity, slow end-investor capital) and recover shortly after.",
+   "firm": "Lou, Yan, Zhang (LSE/DePaul)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://personal.lse.ac.uk/loud/Shocks.pdf",
+   "source_title": "Anticipated and Repeated Shocks in Liquid Markets",
+   "quote": "Treasury security prices in the secondary market decrease significantly in the few days leading up to Treasury auctions and recover shortly thereafter",
+   "horizon": "few days around auction",
+   "asset_classes": [
+    "bonds"
+   ],
+   "reported_effect": "issuance cost 9-18bp of auction size (2007)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "central_bank",
+    "mode": "pre_flow"
+   },
+   "symbols": [
+    "US500",
+    "US30",
+    "NAS100",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "JPN225"
+   ],
+   "mechanism": "Pre-FOMC drift: equities rise in the 24h before scheduled FOMC announcements (not bonds, not other macro releases). NOTE forced_flow.pre_flow trades the 3-bar drift sign, not an unconditional long - the faithful test needs the signed-window gap below.",
+   "firm": "Lucca & Moench (NY Fed)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://conference.nber.org/confer/2013/MEs13/Lucca_Moench.pdf",
+   "source_title": "The Pre-FOMC Announcement Drift",
+   "quote": "the S&P500 index has on average increased 49 basis points in the 24 hours prior to the FOMC announcements.",
+   "horizon": "24h into 14:00 ET announcement",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "~80% of annual realized excess US equity return 1994-2011 earned in the pre-FOMC window; stronger when yield curve flat and implied vol high; international indices similar",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "forced_flow",
+   "params": {
+    "event_kind": "central_bank",
+    "mode": "pre_flow",
+    "side": -1
+   },
+   "symbols": [
+    "UST10Y"
+   ],
+   "mechanism": "Placebo/negative control: Lucca-Moench find NO pre-FOMC drift in Treasuries; a bond cell that 'passes' flags a leaky or overfit harness.",
+   "firm": "Lucca & Moench",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://conference.nber.org/confer/2013/MEs13/Lucca_Moench.pdf",
+   "source_title": "The Pre-FOMC Announcement Drift",
+   "quote": "we find no such effect in U.S. Treasury securities and other fixed income instruments.",
+   "horizon": "24h",
+   "asset_classes": [
+    "bonds"
+   ],
+   "reported_effect": "null expected (use as a harness canary)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     252
+    ]
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "XAUUSD",
+    "XAGUSD",
+    "XTIUSD",
+    "XNGUSD",
+    "XCUUSD",
+    "US500",
+    "GER40",
+    "JPN225",
+    "UK100",
+    "UST10Y",
+    "UKGILT",
+    "CORN",
+    "SOYBEAN",
+    "SUGAR"
+   ],
+   "mechanism": "Time-series momentum: sign of own past 12-month excess return, position scaled by ex-ante EWMA volatility; under-reaction then delayed over-reaction; speculators profit at hedgers' expense; best in extreme markets.",
+   "firm": "Moskowitz, Ooi, Pedersen (AQR)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://w4.stern.nyu.edu/facdir/lpederse/papers/TimeSeriesMomentum.pdf",
+   "source_title": "Time series momentum",
+   "quote": "A diversified portfolio of time series momentum strategies across all asset classes delivers substantial abnormal returns with little exposure to standard asset pricing factors",
+   "horizon": "1-12 months",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "energy",
+    "indices",
+    "bonds",
+    "softs"
+   ],
+   "reported_effect": "significant for each of 58 instruments, 1985-2009; partial reversal beyond 12 months",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     21,
+     63,
+     252
+    ]
+   },
+   "symbols": [
+    "EURUSD",
+    "USDJPY",
+    "GBPUSD",
+    "AUDUSD",
+    "USDCHF",
+    "XAUUSD",
+    "XAGUSD",
+    "XTIUSD",
+    "XNGUSD",
+    "US500",
+    "GER40",
+    "JPN225",
+    "UST10Y",
+    "UKGILT",
+    "CORN",
+    "WHEAT",
+    "SUGAR",
+    "COTTON"
+   ],
+   "mechanism": "Century of trend: equal-weighted 1-, 3- and 12-month TSMOM across 59 markets; positive in every decade since 1880 with low correlation to stocks/bonds, and positive in 8 of the 10 largest 60/40 drawdowns (crisis alpha).",
+   "firm": "Hurst, Ooi, Pedersen (AQR)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.aqr.com/Insights/Research/Journal-Article/A-Century-of-Evidence-on-Trend-Following-Investing",
+   "source_title": "A Century of Evidence on Trend-Following Investing",
+   "quote": "we construct an equal-weighted combination of 1-month, 3-month, and 12-month time series momentum strategies for 59 markets",
+   "horizon": "1-12 months",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "energy",
+    "indices",
+    "bonds",
+    "softs"
+   ],
+   "reported_effect": "positive average returns every decade 1880-2016; performed well in 8 of 10 largest crises",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "speeds": [
+     21,
+     252
+    ]
+   },
+   "symbols": [
+    "US500",
+    "NAS100",
+    "GER40",
+    "UK100",
+    "JPN225",
+    "XAUUSD",
+    "UST10Y",
+    "EURUSD",
+    "USDJPY"
+   ],
+   "mechanism": "Momentum turning points: slow (12m) signals miss turns, fast (1m) signals give false alarms; the four slow/fast sign states (Bull, Correction, Bear, Rebound) carry information - both negative predicts negative returns - and an intermediate/dynamic blend that re-weights after Corrections/Rebounds earns positive alpha.",
+   "firm": "Garg, Goulding, Harvey, Mazzoleni (Duke/Man-affiliated)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P158_Momentum_turning_points.pdf",
+   "source_title": "Momentum turning points",
+   "quote": "Intermediate-speed momentum portfolios, formed by blending slow and fast momentum strategies, translate predictive information in market cycles into positive unconditional alpha",
+   "horizon": "1-12 months",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "bonds",
+    "fx"
+   ],
+   "reported_effect": "dynamic slow/fast blend beats static speeds (JFE 2023)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {
+    "crisis_only": true
+   },
+   "symbols": [
+    "USDJPY",
+    "USDCHF",
+    "XAUUSD",
+    "UST10Y",
+    "UKGILT"
+   ],
+   "mechanism": "Cost-effective safe haven: a sleeve whose value is its payoff in equity crashes can raise the book's GEOMETRIC growth even with a small or negative arithmetic mean; judge it by portfolio delta E[log W], never standalone Sharpe. Trend in havens is the CFD-native convex payoff (no options).",
+   "firm": "Mark Spitznagel (Universa); Hurst et al. (AQR)",
+   "evidence": "REPORTED",
+   "source_url": "https://www.wiley.com/en-us/Safe+Haven%3A+Investing+for+Financial+Storms-p-9781119401797",
+   "source_title": "Safe Haven: Investing for Financial Storms",
+   "quote": "",
+   "horizon": "crisis episodes",
+   "asset_classes": [
+    "fx",
+    "metals",
+    "bonds"
+   ],
+   "reported_effect": "Spitznagel: 99.5% S&P + 0.5% tail insurance beat 100% S&P over the long history he shows (REPORTED, book)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "multi_speed_trend",
+   "params": {},
+   "symbols": [
+    "BTCUSD",
+    "ETHUSD",
+    "SOLUSD",
+    "LTCUSD",
+    "BNBUSD"
+   ],
+   "mechanism": "Cryptocurrency returns show strong time-series momentum and are forecast by investor-attention proxies (Google searches, Twitter counts); crypto is MT5 universe only as Fusion CFDs.",
+   "firm": "Liu & Tsyvinski (Yale)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.nber.org/papers/w24877",
+   "source_title": "Risks and Returns of Cryptocurrency",
+   "quote": "",
+   "horizon": "1-4 weeks",
+   "asset_classes": [
+    "crypto_cfd"
+   ],
+   "reported_effect": "strong TSMOM effect; attention predicts returns (RFS 2021)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "cross_sectional",
+   "params": {
+    "mode": "reversal",
+    "horizon": 5
+   },
+   "symbols": [
+    "US500",
+    "GER40",
+    "UK100",
+    "FRA40",
+    "JPN225",
+    "AUS200",
+    "HK50",
+    "NAS100",
+    "EUSTX50",
+    "NETH25",
+    "E35"
+   ],
+   "mechanism": "Short-term reversal = compensation for liquidity provision; its expected return rises sharply with lagged VIX as constrained intermediaries withdraw. Run as weekly cross-sectional index reversal conditioned on high implied/realised vol (conditioner is a gap if VIX is not on the box).",
+   "firm": "Stefan Nagel (Chicago/Stanford)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://www.nber.org/system/files/working_papers/w17653/w17653.pdf",
+   "source_title": "Evaporating Liquidity",
+   "quote": "the expected return from liquidity provision is strongly time-varying and highly predictable with the VIX index.",
+   "horizon": "1 week",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "even industry-portfolio reversal (weak unconditionally) earns high returns and Sharpe when VIX is high (2007-09)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "lead_lag",
+   "params": {
+    "driver_symbol": "US500",
+    "direction": 1
+   },
+   "symbols": [
+    "US2000"
+   ],
+   "mechanism": "Contrarian profits are largely cross-autocorrelation: large-cap returns lead small-cap returns, so a 'reversal' book is secretly a lead-lag book. Test US500 -> US2000 at short lags.",
+   "firm": "Lo & MacKinlay (MIT/Wharton)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://web.mit.edu/Alo/www/Papers/lo-mackinlay-90b.html",
+   "source_title": "When Are Contrarian Profits Due to Stock Market Overreaction?",
+   "quote": "",
+   "horizon": "days-weeks",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "weekly portfolio returns strongly positively autocorrelated via cross-autocorrelations; large stocks lead small",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "relative_value",
+   "params": {
+    "peer": "CA60"
+   },
+   "symbols": [
+    "AUS200"
+   ],
+   "mechanism": "Chan's canonical cointegrated pair EWA/EWC (Australia vs Canada, both commodity economies) translated to index CFDs; Kalman-filter hedge ratio and Bollinger-style z entry.",
+   "firm": "Ernest P. Chan",
+   "evidence": "REPORTED",
+   "source_url": "https://www.wiley.com/en-us/Algorithmic+Trading:+Winning+Strategies+and+Their+Rationale-p-9781118460146",
+   "source_title": "Algorithmic Trading: Winning Strategies and Their Rationale",
+   "quote": "",
+   "horizon": "days-weeks",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "book example EWA-EWC Kalman pair: 26.2% annualized, Sharpe 2.4, 2006-2012 (REPORTED, ETF data)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "relative_value",
+   "params": {
+    "peer": "NZDUSD"
+   },
+   "symbols": [
+    "AUDUSD"
+   ],
+   "mechanism": "Commodity-currency pair mean reversion (Chan: FX and futures intermarket spreads are the classic stationary portfolios); test cointegration and trade the spread z-score.",
+   "firm": "Ernest P. Chan",
+   "evidence": "SPECULATED",
+   "source_url": "https://www.wiley.com/en-us/Algorithmic+Trading:+Winning+Strategies+and+Their+Rationale-p-9781118460146",
+   "source_title": "Algorithmic Trading: Winning Strategies and Their Rationale",
+   "quote": "",
+   "horizon": "days-weeks",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "no paper-specific number for this pair",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "opening_range",
+   "params": {},
+   "symbols": [
+    "NAS100",
+    "US500",
+    "US30",
+    "GER40",
+    "UK100"
+   ],
+   "mechanism": "PRIOR (negative): the 5-minute opening-range breakout (Zarattini-Aziz, QQQ 2016-2023, 24% hit, +0.13R, no spread/slippage, no OOS) reproduces gross on five index CFDs 2015-2026 but is zero-to-negative net of costs. Keep only variants conditioned on 'in-play' days (volume/gap) and charge realistic spread.",
+   "firm": "Zarattini & Aziz; MQL5 replication",
+   "evidence": "REPORTED",
+   "source_url": "https://www.mql5.com/en/blogs/post/776235",
+   "source_title": "The opening-range breakout paper, replicated on five indices: gross reproduced, net zero",
+   "quote": "Net of costs no market is distinguishable from zero and four of five are negative.",
+   "horizon": "intraday",
+   "asset_classes": [
+    "indices"
+   ],
+   "reported_effect": "gross +0.131R on NQ CFD; net ~0 / negative on all five",
+   "second_source": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4416622",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "regime_transition",
+   "params": {},
+   "symbols": [
+    "US500",
+    "GER40",
+    "XAUUSD",
+    "EURUSD",
+    "USDJPY",
+    "UST10Y"
+   ],
+   "mechanism": "Two-state hidden Markov regimes with time-varying parameters capture abrupt, persistent shifts in mean/vol/correlation; allocating on filtered regime probabilities (model predictive control) cuts drawdowns vs static weights.",
+   "firm": "Nystrup, Madsen, Lindstrom (DTU); Ang & Timmermann",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://backend.orbit.dtu.dk/ws/files/139272081/Dynamic_Portfolio_Optimization_Across_Hidden_Market_Regimes_ACCEPTED.pdf",
+   "source_title": "Regime-based versus static asset allocation: Letting the data speak / Dynamic portfolio optimization across hidden market regimes",
+   "quote": "",
+   "horizon": "weeks-months",
+   "asset_classes": [
+    "indices",
+    "metals",
+    "fx",
+    "bonds"
+   ],
+   "reported_effect": "regime-based allocation adds value over static rebalancing, notably drawdown reduction (JPM 2015 / QF 2018)",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  },
+  {
+   "kind": "hypothesis",
+   "family": "style_premia",
+   "params": {
+    "style": "value"
+   },
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "AUDUSD",
+    "NZDUSD",
+    "USDJPY",
+    "USDCHF",
+    "USDCAD",
+    "USDSEK",
+    "USDNOK"
+   ],
+   "mechanism": "Combine value with momentum: AMP show value and momentum are negatively correlated within and across asset classes, so a 50/50 combination has a much higher Sharpe than either (pair this cell with the momentum cell above in the ensemble, not as a new trial).",
+   "firm": "Asness, Moskowitz, Pedersen (AQR)",
+   "evidence": "DOCUMENTED",
+   "source_url": "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf",
+   "source_title": "Value and Momentum Everywhere",
+   "quote": "",
+   "horizon": "monthly",
+   "asset_classes": [
+    "fx"
+   ],
+   "reported_effect": "negative value-momentum correlation across all classes studied",
+   "source": "firm_mining",
+   "cluster": "literature",
+   "mined_at": "2026-09-27"
+  }
+ ]
+}

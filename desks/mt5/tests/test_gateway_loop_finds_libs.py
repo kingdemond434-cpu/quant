@@ -72,8 +72,29 @@ def test_nothing_at_the_repo_root_shadows_a_bare_desk_import() -> None:
     root_dirs -= {"desks", "libs"}          # `libs` is the point; `desks` is never bare-imported
     pat = re.compile(r"^\s*(?:import|from)\s+(" + "|".join(map(re.escape, sorted(root_dirs)))
                      + r")(?:\s|\.|$)", re.M)
+    # `scripts` IS A NAMESPACE PACKAGE ON BOTH SIDES, SO IT CANNOT SHADOW. Neither the repo's
+    # scripts/ nor desks/mt5/scripts/ has an __init__.py, so `scripts` resolves to the union of
+    # the two and a submodule from either is found whichever comes first on sys.path. Research
+    # organs import root fences that way (allocator_liveness -> scripts.check_allocator_join,
+    # asia_plane -> scripts.check_source_routes, certificate_truth -> scripts.external_gauntlet).
+    # Such an import is safe exactly while that holds and the named module exists in the union;
+    # both are checked here, so an __init__.py appearing on either side fails this test again.
+    scripts_dirs = (_ROOT / "scripts", _DESK / "scripts")
+    assert not any((d / "__init__.py").exists() for d in scripts_dirs), (
+        "an __init__.py in a scripts/ dir turns the namespace union into shadowing")
+    sub = re.compile(r"^\s*(?:from\s+scripts\.(\w+)\s+import|from\s+scripts\s+import\s+(\w+))")
+
+    def _namespace_safe(stmt: str) -> bool:
+        m = sub.match(stmt)
+        name = m and (m.group(1) or m.group(2))
+        return bool(name) and any((d / f"{name}.py").exists() for d in scripts_dirs)
+
     offenders = []
     for py in list((_DESK / "mt5desk").glob("*.py")) + list((_DESK / "research").glob("*.py")):
-        for m in pat.finditer(py.read_text("utf-8", errors="replace")):
+        text = py.read_text("utf-8", errors="replace")
+        for m in pat.finditer(text):
+            line = text[m.start():text.find("\n", m.start())]
+            if m.group(1) == "scripts" and _namespace_safe(line):
+                continue
             offenders.append(f"{py.relative_to(_DESK)}: {m.group(0).strip()}")
     assert not offenders, offenders

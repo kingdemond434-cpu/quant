@@ -242,3 +242,19 @@ def test_dry_run_writes_nothing(desk) -> None:
     assert not fo.REPORT.exists() and not fo.REGISTRY_PATH.exists()
     assert not fo.DONATIONS.exists()
     assert _count("spawn_signal") + _count("delta_reopen") + _count("technique_transfer") == before
+
+
+def test_seat_consumption_reads_the_path_the_compiler_actually_writes() -> None:
+    """RE-POINTED 2026-09-24. `MINER_CANDIDATES` named `data/miner_candidates.json`, which nothing
+    in the tree writes and which has never existed; `miner_candidate_compiler` writes
+    `data/hypotheses/miner_candidates.json`, the path ten other readers use. So this function
+    opened an absent file every pass and reported the federation seats as UNMEASURED forever --
+    the defect class the plumbing watchdog's orphan check exists to find, inside a docstring
+    promising the compiler's own measurement.
+    """
+    import federation_ops as FO
+    from miner_candidate_compiler import OUT as COMPILER_OUT
+
+    assert FO.MINER_CANDIDATES == COMPILER_OUT, (
+        "the reader and the compiler must name ONE path; a second spelling is a second truth")
+    assert FO.MINER_CANDIDATES.parts[-2:] == ("hypotheses", "miner_candidates.json")

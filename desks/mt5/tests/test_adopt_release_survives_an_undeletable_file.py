@@ -275,10 +275,10 @@ def test_the_script_never_uses_the_operations_this_desk_has_banned() -> None:
     assert "stash" not in code
     for banned in ('"add", "-A"', '"add", "--all")', "add -A", '"add", "--all", "."'):
         assert banned not in code, f"{banned} is a bare add: it stages paths nobody enumerated"
-    # Every staging call must name paths: `add --all --` followed by an explicit pathspec list.
-    assert '@("add", "--all", "--") + $chunk' in code
+    # Every staging call must name paths: forced only for the enumerated target pathspec chunk.
+    assert '@("add", "-f", "--all", "--") + $chunk' in code
     # And the ordering that makes step 5 safe must still be there.
-    assert code.index("REFUSING to record the merge") < code.index('"merge", "-s", "ours"')
+    assert code.index("REFUSING to record the merge") < code.index('"commit-tree", $headTree')
 
 
 # ------------------------------------------------------------ the box's state is the box's
@@ -401,17 +401,17 @@ def test_the_script_keeps_before_it_deletes_and_verifies_outside_the_kept_set() 
     # 2026-09-23: the discovery corpus was split out of the state bucket (it is MT5-IntelShip's
     # to land, not this script's), so the state line now carries that exclusion. The PROPERTY
     # this pins is unchanged -- every state path is measured and none of them blocks.
-    assert ("$stateDrift = @($allDiff | Where-Object "
-            "{ (Test-StatePath $_) -and -not (Test-ShippedByOwnOrgan $_) })") in code
+    assert "$allDiff = @(Get-NonShippedDiff" in code
+    assert "$stateDrift = @($allDiff | Where-Object { Test-StatePath $_ })" in code
     assert "$drift      = @($allDiff | Where-Object { -not (Test-StatePath $_) })" in code
     assert "CODE path(s) still differ" in code, (
         "the refusal must say which kind of path blocked it, or the next reader re-widens the gate")
     assert "state path(s) differ and are NOT blocking" in code, (
         "state drift is reported, never silently dropped -- that is the difference between "
         "scoping a gate and weakening it")
-    # box-touched is measured from the merge base AFTER the box's own state is committed
-    assert (code.index("Box state captured before release adoption")
-            < code.index('"merge-base", "HEAD", $target'))
+    # Dirty local code is classified/refused BEFORE merge-base adoption. Mutable state is owned
+    # by ShadowSync and is deliberately not swept into an adopter commit.
+    assert code.index("$dirtyCode = @(") < code.index('"merge-base", "HEAD", $target')
     # and no merge base means every state path is the box's -- never "adopt everything"
     assert "if (-not $mergeBase) { return $true }" in code
 
@@ -522,6 +522,26 @@ def test_a_locked_file_is_retried_before_it_is_reported() -> None:
     assert "catch [System.IO.IOException]" in code
     assert "if ($tries -ge 3) { throw }" in code
     assert "Start-Sleep -Seconds 2" in code
+
+
+def test_partial_adoption_target_matches_do_not_become_permanent_false_conflicts() -> None:
+    """A killed pass may leave target bytes dirty against old HEAD; only divergence from the
+    fetched target is unknown local work. The comparison must cover every dirty path, including
+    target deletions, and the ordinary refusal must remain after it."""
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    # BATCHED since f82c4727 (2026-09-29): one `git diff --name-only $target -- <100 paths>` per
+    # batch instead of one `git diff --quiet` per path, which took hours on the live index. Every
+    # dirty path is still classified: each batch covers a slice of the whole normalised list.
+    compare = code.index("$normalisedDirty = @($dirty")
+    refuse = code.index("local code path(s) are dirty")
+    assert compare < refuse
+    block = code[compare:refuse]
+    assert "for ($start = 0; $start -lt $normalisedDirty.Count; $start += $batchSize)" in block
+    assert '@("diff", "--name-only", "--no-ext-diff", $target, "--") + $batch' in block
+    assert "foreach ($rel in $batch)" in block
+    assert "$stillDirty.Add($rel)" in block
+    assert "$dirty = @($stillDirty)" in block
+    assert "already equal the fetched target" in block
 
 
 def test_a_write_the_acl_refuses_falls_back_to_unlink_without_ever_going_first() -> None:

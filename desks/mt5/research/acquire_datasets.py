@@ -34,6 +34,7 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import defaultdict, deque
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -47,6 +48,7 @@ if str(_ROOT) not in sys.path:
 
 from libs.data.pit_certificate import certify  # noqa: E402
 from libs.data.pit_certificate import write as write_certificate  # noqa: E402
+from libs.research import country_lab as country_lab  # noqa: E402
 
 WORLD = DESK / "data" / "intelligence" / "world"
 STORE = DESK / "data" / "acquired"
@@ -62,6 +64,8 @@ FETCH_TIMEOUT_S = 25
 MAX_BYTES = 60 * 1024 * 1024          #: real statistical archives are tens of MB
 MAX_PER_RUN = 40                      #: bounded so one run cannot saturate the box's disk or hour
 MIN_ROWS = 200                        #: below this a series cannot support a rolling rank
+REFRESH_AFTER_S = 3600                #: an hourly owner must revisit changing public series
+REFUSED_RETRY_S = 24 * 3600           #: bad pages yield their seat to the rest of the world
 
 #: Column names that are plausibly a DATE. Checked in order; the first that parses wins.
 _DATE_COLS = ("date", "DATE", "Date", "time", "TIME", "Time", "timestamp", "TIMESTAMP",
@@ -141,9 +145,37 @@ def _fetch(url: str) -> tuple[bytes | None, str]:
 
 
 def _parse(raw: bytes, url: str) -> pd.DataFrame | None:
-    """CSV or JSON into a frame, or None. Never guesses a format it did not detect."""
+    """A detected tabular format into a frame, or ``None``.
+
+    Legacy government workbooks are a first-class input.  In particular the seeded EIA WTI
+    endpoint is BIFF8 ``.xls``; sending those bytes through the delimited-text reader produced a
+    plausible one-column frame and silently stranded the energy lane.  The repository already
+    has a dependency-free, structurally validating BIFF8 reader, so use that rather than adding
+    another parser or requiring ``xlrd`` on production.
+    """
     head = raw[:4096].lstrip()
     try:
+        if raw.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
+            from libs.data.xls_reader import read_xls
+
+            sheets = read_xls(raw)
+            grids = [sheet.rows() for sheet in sheets]
+            grids = [rows for rows in grids if rows]
+            if not grids:
+                return None
+            # Statistical publishers normally put notes in small tabs and observations in the
+            # largest.  Selecting by populated cells is deterministic and prevents a cover sheet
+            # from becoming the dataset merely because it is tab zero.
+            rows = max(grids, key=lambda values: sum(len(r) for r in values))
+            header_i = next((i for i, row in enumerate(rows)
+                             if sum(v not in (None, "") for v in row) >= 2), None)
+            if header_i is None:
+                return None
+            width = max(len(row) for row in rows[header_i:])
+            header = [str(v).strip() if v not in (None, "") else f"column_{i}"
+                      for i, v in enumerate(rows[header_i] + [None] * width)][:width]
+            body = [(row + [None] * width)[:width] for row in rows[header_i + 1:]]
+            return pd.DataFrame(body, columns=header)
         if head.startswith((b"{", b"[")):
             obj = json.loads(raw.decode("utf-8", errors="replace"))
             if isinstance(obj, dict):
@@ -190,7 +222,17 @@ def _dated(df: pd.DataFrame) -> pd.DataFrame | None:
         if col not in df.columns:
             continue
         try:
-            idx = pd.to_datetime(df[col], utc=True, errors="coerce")
+            raw = df[col]
+            numeric = pd.to_numeric(raw, errors="coerce")
+            plausible_excel = numeric.between(20_000, 80_000).sum() >= MIN_ROWS
+            if plausible_excel:
+                # Excel's 1900 date system, including its historical leap-year compatibility
+                # offset.  Numeric values must never be handed to ``to_datetime`` unqualified:
+                # pandas otherwise reads them as nanoseconds after 1970.
+                idx = pd.to_datetime(numeric, unit="D", origin="1899-12-30",
+                                     utc=True, errors="coerce")
+            else:
+                idx = pd.to_datetime(raw, utc=True, errors="coerce")
         except Exception:
             continue
         if idx.notna().sum() < MIN_ROWS:
@@ -215,25 +257,77 @@ def _numeric_series(df: pd.DataFrame, stem: str) -> dict[str, pd.Series]:
     return out
 
 
-def _endpoints(limit: int) -> list[tuple[str, str]]:
-    """(url, host) from the newest crawl files, deduped against what is already acquired."""
-    known: set[str] = set()
+def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, str]]:
+    """(url, host) from seeds/crawls, excluding only URLs refreshed within this hour.
+
+    The former implementation excluded every URL that had *ever* been acquired.  A successful
+    first fetch therefore disabled updates forever and made an hourly acquisition clock a one-shot
+    initializer.  Durable identity prevents duplicate series; recency must decide refetching.
+    """
+    fresh: set[str] = set()
+    now = now or datetime.now(UTC)
     if REGISTRY.exists():
         try:
-            known = set(json.loads(REGISTRY.read_text("utf-8")).get("by_url") or {})
+            previous = json.loads(REGISTRY.read_text("utf-8")).get("by_url") or {}
+            for url, meta in previous.items():
+                try:
+                    at = datetime.fromisoformat(str((meta or {}).get("at") or ""))
+                    if at.tzinfo is None:
+                        at = at.replace(tzinfo=UTC)
+                    retry_s = (REFRESH_AFTER_S if str((meta or {}).get("status") or "SUCCESS")
+                               == "SUCCESS" else REFUSED_RETRY_S)
+                    if (now - at.astimezone(UTC)).total_seconds() < retry_s:
+                        fresh.add(str(url))
+                except (TypeError, ValueError):
+                    continue
         except (OSError, ValueError):
-            known = set()
+            fresh = set()
     seen: set[str] = set()
     out: list[tuple[str, str]] = []
     # Seeds first: they are known to be dated, keyless and relevant, so a run never spends its
     # whole budget on discovered pages that turn out to be markup.
     for u in _SEED_ENDPOINTS:
-        if u in known or u in seen:
+        if u in fresh or u in seen:
             continue
         seen.add(u)
         out.append((u, urllib.parse.urlparse(u).netloc or "seed"))
         if len(out) >= limit:
             return out
+    # EVERY COUNTRY PACK, FAIRLY BY REGION. Declaring sources in 170+ native-market packs while
+    # the acquirer reads only crawler output is declaration theatre: none of those sources can
+    # ever reach a parser. Interleave regions so alphabetical country order cannot spend every
+    # hourly seat on one continent; recent-attempt suppression advances the frontier next hour.
+    buckets: dict[str, deque[tuple[str, str]]] = defaultdict(deque)
+    packs = DESK / "research" / "countries"
+    for pack_py in sorted(packs.glob("*/pack.py")):
+        code = pack_py.parent.name
+        if code.startswith("_") or code in {"global", "institutional", "jp"}:
+            continue
+        pack = country_lab.resolve_pack(code)
+        if pack is None:
+            continue
+        region = str(pack.region_command or "UNMEASURED")
+        urls: list[str] = []
+        for dataset in pack.datasets:
+            urls.extend(str(value) for value in (dataset.how_to_fetch, dataset.source)
+                        if str(value).startswith(("http://", "https://")))
+        for source in country_lab.source_rows(pack):
+            if not source.absent_reason:
+                urls.extend(str(value) for value in source.roots
+                            if str(value).startswith(("http://", "https://")))
+        for url in urls:
+            if url in seen or url in fresh or _KEYED.search(url):
+                continue
+            seen.add(url)
+            buckets[region].append((url, urllib.parse.urlparse(url).netloc or code))
+    active = deque(sorted(region for region, rows in buckets.items() if rows))
+    while active and len(out) < limit:
+        region = active.popleft()
+        out.append(buckets[region].popleft())
+        if buckets[region]:
+            active.append(region)
+    if len(out) >= limit:
+        return out
     for f in sorted(glob.glob(str(WORLD / "discoveries_*.json")), reverse=True):
         try:
             rows = json.loads(Path(f).read_text("utf-8"))
@@ -241,7 +335,7 @@ def _endpoints(limit: int) -> list[tuple[str, str]]:
             continue
         for r in rows:
             for u in (r.get("endpoints") or []):
-                if u in seen or u in known or _KEYED.search(u):
+                if u in seen or u in fresh or _KEYED.search(u):
                     continue
                 seen.add(u)
                 out.append((u, str(r.get("host") or "")))
@@ -270,33 +364,43 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
 
     for url, host in _endpoints(limit):
         tried += 1
+        attempt_at = datetime.now(UTC).isoformat(timespec="seconds")
+
+        def _refuse_url(why: str) -> None:
+            _refuse(why)
+            reg["by_url"][url] = {"host": host, "series": [], "at": attempt_at,
+                                  "status": "REFUSED", "refusal": why}
+
         raw, ctype = _fetch(url)
         if raw is None:
-            _refuse("served HTML, not data" if ctype == "html" else "unreachable")
+            _refuse_url("served HTML, not data" if ctype == "html" else "unreachable")
             continue
         if len(raw) > MAX_BYTES:
-            _refuse("larger than the per-file cap")
+            _refuse_url("larger than the per-file cap")
             continue
         df = _parse(raw, url)
         if df is None or df.empty:
-            _refuse("unparseable as CSV or JSON")
+            _refuse_url("unparseable as a supported workbook, archive, delimited file or JSON")
             continue
         dated = _dated(df)
         if dated is None:
-            _refuse("no usable date column -- refused rather than stamped with now")
+            _refuse_url("no usable date column -- refused rather than stamped with now")
             continue
         stem = re.sub(r"[^A-Za-z0-9]+", "_", f"{host}_{Path(url).stem}").strip("_")[:40]
         series = _numeric_series(dated, stem)
         if not series:
-            _refuse("no numeric column with enough history")
+            _refuse_url("no numeric column with enough history")
             continue
 
+        persisted: list[str] = []
+        failed_series: list[str] = []
         for name, s in series.items():
             path = STORE / f"{name}.parquet"
             try:
                 s.rename("value").to_frame().to_parquet(path)
             except Exception:
                 _refuse("could not persist")
+                failed_series.append(name)
                 continue
             # EVERY ACQUIRED SERIES IS CERTIFIED, at the only moment the desk holds both the
             # frame and what the acquirer knows about it. `authority: false` is not a refusal to
@@ -332,9 +436,14 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
                 "pit_blocking": blocking,
             }
             new_series.append(name)
-        reg["by_url"][url] = {"host": host, "series": list(series),
-                              "at": datetime.now(UTC).isoformat(timespec="seconds")}
-        kept += 1
+            persisted.append(name)
+        reg["by_url"][url] = {"host": host, "series": persisted,
+                              "failed_series": failed_series,
+                              "at": datetime.now(UTC).isoformat(timespec="seconds"),
+                              "status": ("PARTIAL" if failed_series else "SUCCESS")
+                              if persisted else "REFUSED",
+                              "refusal": "could not persist" if failed_series else None}
+        kept += int(bool(persisted))
 
     reg["updated_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     REGISTRY.write_text(json.dumps(reg, indent=1, default=str), encoding="utf-8")
@@ -375,7 +484,7 @@ def acquired_series(index: pd.Index | None = None, *,
         # can be built from. Series acquired before certification existed carry no flag and are
         # therefore withheld until the next acquisition run certifies them -- which is the
         # fail-closed direction, and the reason the registry keeps `pit_blocking` per series.
-        if require_authority and not meta.get("pit_authority"):
+        if require_authority and meta.get("pit_authority") is not True:
             continue
         try:
             df = pd.read_parquet(meta["path"])

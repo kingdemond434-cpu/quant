@@ -110,10 +110,10 @@ CENTRAL_BANK: dict[str, Any] = {
     "committee": "Monetary Policy Committee (MPC); votes are DISCLOSED as a count, which is a "
                  "harder observable than most EM central banks give",
     "policy_rate": "the repurchase (repo) rate; the prime lending rate is the repo + 3.50%",
-    "target": "3-6% CPI band since 2000. THE BAND IS THE MECHANISM: the SARB has publicly "
-              "preferred the 4.5% midpoint since 2017 and has been arguing for a LOWER point "
-              "target (3%) since 2023 -- so a reaction function fitted on the band's midpoint "
-              "and one fitted on its ceiling are two different models of the same bank.",
+    "target": "VERSIONED, never backfilled: 3-6% CPI band through 2025-11-11; from "
+              "2025-11-12 the target is 3% with a +/-1 percentage-point tolerance band. "
+              "INFLATION_TARGET_REGIMES below is the machine-readable authority. A reaction "
+              "function crossing the effective date without the regime indicator is invalid.",
     "meetings_per_year": 6,
     "schedule_rule": (
         "The MPC met eight times a year until 2016 and SIX times a year since. Dates for year N "
@@ -164,6 +164,22 @@ CENTRAL_BANK: dict[str, Any] = {
              "machine-readable without a licence -- which is rare for an EM central bank and is "
              "why the ZA data plane exists first.",
 }
+
+#: Point-in-time monetary-policy semantics.  The November 2025 announcement changed the LIVE
+#: framework; overwriting the historical 3-6% band would leak the new reaction function into old
+#: decisions.  Consumers therefore select the last row whose ``effective_from`` is no later than
+#: the observation's availability time.
+INFLATION_TARGET_REGIMES: tuple[dict[str, Any], ...] = (
+    {"effective_from": "2000-02-23", "effective_to": "2025-11-11",
+     "target_kind": "range", "lower_pct": 3.0, "point_pct": 4.5, "upper_pct": 6.0,
+     "known_at": "2000-02-23T00:00:00+02:00",
+     "source": "South African National Treasury/SARB historical inflation-target framework"},
+    {"effective_from": "2025-11-12", "effective_to": None,
+     "target_kind": "point_with_tolerance", "lower_pct": 2.0, "point_pct": 3.0,
+     "upper_pct": 4.0, "tolerance_pp": 1.0,
+     "known_at": "2025-11-12T00:00:00+02:00",
+     "source": "South African National Treasury and SARB announcement, 2025-11-12"},
+)
 
 
 # --------------------------------------------------------------------------- fixings
@@ -1048,7 +1064,8 @@ DATASETS: tuple[dict[str, Any], ...] = (
 ACTORS: tuple[dict[str, Any], ...] = (
     actor("South African Reserve Bank",
           holds="gold and foreign exchange reserves, the repo rate and the GFECRA",
-          forced_to=("set the repo rate against a 3-6% band it has publicly outgrown",
+          forced_to=("set the repo rate against the point-in-time target regime: the 3-6% "
+                     "historical band or, from 2025-11-12, 3% +/-1pp",
                      "buy foreign exchange opportunistically to rebuild reserves",
                      "value and distribute GFECRA gains to the National Treasury"),
           when="six scheduled MPC meetings a year at 13:00 UTC, plus a monthly reserves release "

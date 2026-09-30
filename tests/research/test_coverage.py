@@ -47,6 +47,10 @@ def test_the_axes_and_ladders_are_exactly_the_law() -> None:
                                "retail_ecology", "app_ecosystem", "media", "archive",
                                "physical_economy", "source_graph")
     assert len(C.SOURCE_LAYERS) == 10
+    assert {"1m", "5m", "15m", "30m", "event_0_5m", "event_1_5d"}.issubset(C.HORIZONS)
+    assert C.TIME_SEMANTICS == ("sampling_frequency", "feature_lookback",
+                                "forecast_horizon", "holding_horizon",
+                                "execution_deadline")
 
 
 def test_failed_and_forward_share_a_rung_and_decayed_sits_above_live() -> None:

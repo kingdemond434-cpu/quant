@@ -1,0 +1,1953 @@
+[
+ {
+  "kind": "capability_gap",
+  "area": "combination",
+  "title": "Single unified model (log-linear / maximum-entropy combiner) with 'is this new?' incrementality test",
+  "what_to_build": "Replace per-family independent sleeves with one model that predicts next-segment return for every symbol from ALL family signals as features: fit a regularised log-linear (maxent / multinomial-logistic on sign, or ridge on return) model walk-forward; admit a new feature only if it raises held-out log-likelihood after conditioning on existing features (partial-out test). Output = one expected-return vector per rebalance, fed to the optimizer. The Della Pietras published maxent from inside Renaissance (1996); Zuckerman attributes Mercer's key contribution to 'one system'.",
+  "data_needed": [
+   "existing desk bars",
+   "existing family signal histories"
+  ],
+  "firm": "Renaissance",
+  "evidence": "REPORTED",
+  "source_url": "https://ritholtz.com/2019/11/transcript-greg-zuckerman/",
+  "quote": "They combined all kinds of different signals and factors into one system, which is one of their great advantages",
+  "expected_value": "high",
+  "why": "Independent sleeves double-count correlated edges and each spends trial budget; a joint model measures marginal contribution directly and matches Simons' 'Is this really new, or embedded in what we've done already?'",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "combination",
+  "title": "Interpolated (Jelinek-Mercer) shrinkage for sparse conditional-return cells",
+  "what_to_build": "For every conditional cell the desk estimates (symbol x session segment x day-of-week x vol regime), estimate the cell mean as lambda*cell + (1-lambda)*parent (e.g. asset-class x segment) + ... down to the grand mean, with lambdas fit on held-out data (deleted interpolation) and bucketed by cell count. Trade the smoothed estimate. This is the exact method Mercer co-authored for sparse Markov-source parameters.",
+  "data_needed": [
+   "existing desk bars"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.semanticscholar.org/paper/Interpolated-estimation-of-Markov-source-parameters-Jelinek/6a923c9f89ed53b6e835b3807c0c1bd8d532687b",
+  "quote": "Interpolated estimation of Markov source parameters from sparse data",
+  "expected_value": "high",
+  "why": "The desk's 10-segment/dow/session cells are sparse; raw per-cell estimates are the overfitting and multiple-testing charge LAWS already measures. Shrinkage toward parents turns thousands of noisy cells into a few well-estimated ones without discarding them.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "combination",
+  "title": "Mutual-information clustering of instruments/states (Brown clustering) to pool data",
+  "what_to_build": "Cluster symbols (and discretised market states) by maximising average mutual information of adjacent-bar state transitions, exactly the class-based n-gram algorithm; then estimate conditional effects at the cluster level and back off to it (feeds the interpolation above).",
+  "data_needed": [
+   "existing desk bars"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://aclanthology.org/J92-4003/",
+  "quote": "we discuss several statistical algorithms for assigning words to classes based on the frequency of their co-occurrence with other words",
+  "expected_value": "medium",
+  "why": "Pooling across behaviourally similar instruments multiplies effective sample size for faint signals; the method is published by Brown and Mercer themselves.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Data cleaning organ with cross-source tie-out (Straus discipline)",
+  "what_to_build": "Hourly job that reconciles broker M1/H1 bars against at least one free reference per asset class (Dukascopy tick archive for FX/metals, stooq/Yahoo daily for indices, CME/ICE daily settlements via free delayed pages, FRED daily FX), flags gaps, spikes, stale quotes, DST/timezone shifts and roll jumps, and writes a per-symbol quality score that the gauntlet reads (a signal whose edge lives in flagged bars is rejected). Straus tied out numbers against exchange yearbooks and newspapers and chased omissions 'with religious zeal'; Patterson: 7 PhDs just cleaning data.",
+  "data_needed": [
+   "Dukascopy historical ticks",
+   "stooq",
+   "FRED",
+   "CME daily settlements",
+   "ECB reference rates"
+  ],
+  "firm": "Renaissance",
+  "evidence": "REPORTED",
+  "source_url": "https://news.ycombinator.com/item?id=19065226",
+  "quote": "7 Phd's just cleaning data and organizing the databases",
+  "expected_value": "high",
+  "why": "Faint 50.75%-hit-rate edges are the first thing destroyed by bad ticks and roll artefacts; a phantom edge from dirty bars costs trial budget and live money.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Five-minute (M5) segmentation research lane",
+  "what_to_build": "Build M5 bar history for FX majors, gold, index and energy CFDs and a miner that tests segment-to-segment predictability (each 5-min bin vs later bins same day, and the 10 weekly overnight/day segments) with Bonferroni/FDR at p<0.01 and sub-period stability. Laufer's shift from daily open/close to 5-minute bars is what surfaced the day-of-week and intraday 'ghost' effects.",
+  "data_needed": [
+   "MT5 M5 history",
+   "Dukascopy ticks"
+  ],
+  "firm": "Renaissance",
+  "evidence": "REPORTED",
+  "source_url": "https://twoquants.com/the-man-who-solved-the-market-part-1/",
+  "quote": "entered trades in the morning, at noon, and at the end of the day",
+  "expected_value": "medium",
+  "why": "Most desk families run on H1; the documented Medallion effects were intraday-segment effects that H1 bars partially blur.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Deep-history reference store (back to 1800s where free)",
+  "what_to_build": "Assemble long daily/monthly histories for gold, silver, FX, commodity and bond proxies from free archives (Bank of England 'Millennium of macroeconomic data', FRED, MeasuringWorth gold/silver, NBER Macrohistory, Shiller) so rare-event behaviour (crashes, devaluations, war shocks) can be stress-tested; Renaissance collected data 'from like the late 1800s'.",
+  "data_needed": [
+   "Bank of England Millennium dataset",
+   "FRED",
+   "NBER Macrohistory Database",
+   "MeasuringWorth",
+   "Shiller data"
+  ],
+  "firm": "Renaissance",
+  "evidence": "REPORTED",
+  "source_url": "https://ritholtz.com/2019/11/transcript-greg-zuckerman/",
+  "quote": "they were collecting stuff from like the late 1800s",
+  "expected_value": "medium",
+  "why": "A few years of CFD history contains few crises; tail-conditional behaviour (where Medallion made most) needs long samples.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Weather and commodity-report ingestion",
+  "what_to_build": "Scheduled fetchers for NOAA CPC heating/cooling degree days and forecasts, EIA weekly petroleum and gas storage, USDA WASDE/Crop Progress, written as dated rows the event_reaction and exogenous_conditioner families read with publication-lag discipline.",
+  "data_needed": [
+   "NOAA CPC degree days",
+   "EIA API (free key)",
+   "USDA NASS QuickStats",
+   "USDA WASDE PDFs"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/STMT%20-%20Renaissance%20(July%2022%202014)2.pdf",
+  "quote": "energy reports, crop reports, weather reports",
+  "expected_value": "medium",
+  "why": "Renaissance names these under oath as model inputs; they map directly to XNGUSD, XTIUSD, XBRUSD and the ag CFDs.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "News-flow intensity feature",
+  "what_to_build": "Count-based features (articles per hour per instrument/country from GDELT 2.0 event/GKG streams) as conditioners: abnormal news volume vs baseline. Zuckerman-reported inputs included news-feed frequency counts.",
+  "data_needed": [
+   "GDELT 2.0 (free)"
+  ],
+  "firm": "Renaissance",
+  "evidence": "REPORTED",
+  "source_url": "https://bagerbach.com/books/the-man-who-solved-the-market/",
+  "quote": "analyst predictions, news feed frequency counts, earnings reports",
+  "expected_value": "low",
+  "why": "Cheap, free, orthogonal to price; value unproven for CFDs.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "sizing",
+  "title": "Joint 'betting algorithm' optimizer re-run intraday",
+  "what_to_build": "One optimizer that sizes every open and candidate position jointly from the unified expected-return vector, a covariance estimate and an explicit per-symbol cost/impact term, re-run several times a day (Renaissance went from 5 to 16 order cycles a day). Each bet is a function of all other bets; the allocator's fractions go to the gateway un-re-shrunk.",
+  "data_needed": [
+   "existing desk bars",
+   "cost_truth measurements"
+  ],
+  "firm": "Renaissance",
+  "evidence": "REPORTED",
+  "source_url": "https://twoquants.com/the-man-who-solved-the-market-part-2/",
+  "quote": "conducted an optimization process that weighed thousands of potential trades before issuing electronic trade instructions",
+  "expected_value": "high",
+  "why": "'Every bet is a function of all the other bets, our risk profile, and what we expect to do' - independent sleeve sizing ignores overlap and cost.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "sizing",
+  "title": "Opportunity-conditioned two-sided leverage",
+  "what_to_build": "Make book leverage a function of measured opportunity (sum of predicted net edge / predicted variance across live signals) and model health, scaling UP when the opportunity set is rich (Medallion ran up to ~$20 of assets per $1; Zuckerman: '10 times or more ... depends on what the opportunities are') and down only when evidence shows E[log W] rises. Complies with GROWTH GOVERNANCE Rule 2.",
+  "data_needed": [
+   "desk forecast and fill history"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/STMT%20-%20Renaissance%20(July%2022%202014)2.pdf",
+  "quote": "the model generates a large number of recommendations, so that by virtue of the mathematical principle known as the law of large numbers",
+  "expected_value": "high",
+  "why": "Sworn: unlevered returns are 'very small'; leverage applied to a high-breadth, low-vol book is where the growth comes from.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Breadth ledger: count independent bets, target thousands",
+  "what_to_build": "Publish per-hour the effective number of independent bets (trades de-duplicated by signal correlation and symbol overlap) and the implied edge-per-bet; the hit rate needed at the desk's breadth to reach target Sharpe. Renaissance: right 50.75% of the time over 26-39 million trades/yr (PSI) - breadth, not accuracy, is the engine.",
+  "data_needed": [
+   "desk trade ledger"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/REPORT-Abuse%20of%20Structured%20Financial%20Products%20(Basket%20Options)%20(7-22-14,%20updated%209-30-14).pdf",
+  "quote": "a combined estimated average of 26-39 million trades per year",
+  "expected_value": "high",
+  "why": "Aligns with the Tier-1 principle 'more independent positive-Elog bets inside the same heat'; makes breadth a measured quantity.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Graduated admission for statistically strong but unexplained signals",
+  "what_to_build": "Admission rule: p<0.01 plus consistency across sub-periods; a signal with no economic story still enters, but at a small initial capital share that the allocator grows as forward evidence accrues. By 1997 over half of Medallion's signals were non-intuitive; such signals were kept because rivals are less likely to find them.",
+  "data_needed": [
+   "forward clock ledgers"
+  ],
+  "firm": "Renaissance",
+  "evidence": "REPORTED",
+  "source_url": "https://twoquants.com/the-man-who-solved-the-market-part-2/",
+  "quote": "By 1997, though, more than half of the trading signals Simons's team was discovering were nonintuitive.",
+  "expected_value": "medium",
+  "why": "Avoids both discarding real faint edges and over-committing to mirages.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Univariate-regression discipline with transform search and rubbish checks",
+  "what_to_build": "Before any multivariate model: for each candidate variable, one-target/one-regressor predictive regressions under a fixed menu of transforms (rank, winsorise, sign, log-abs, lagged differences), with automatic 'obviously rubbish' checks (effect concentrated in few bars, flips sign by sub-period, driven by flagged data). Patterson: simple regression was the most important tool.",
+  "data_needed": [
+   "existing desk data"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://news.ycombinator.com/item?id=19065226",
+  "quote": "our most important statistical tool was simple regression with one target and one independent variable",
+  "expected_value": "medium",
+  "why": "Cheap, interpretable screen that catches the data and transform mistakes Patterson says are the real failure mode.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Kernel (Nadaraya-Watson) regression on segment features",
+  "what_to_build": "Non-parametric kernel regression of next-segment return on a small vector of lagged segment returns/ranges/vol, walk-forward bandwidth selection; used as a feature generator for the unified model.",
+  "data_needed": [
+   "existing desk bars"
+  ],
+  "firm": "Renaissance",
+  "evidence": "REPORTED",
+  "source_url": "https://twoquants.com/the-man-who-solved-the-market-part-1/",
+  "quote": "incorporating higher dimensional kernel regression approaches",
+  "expected_value": "medium",
+  "why": "Reported as a core Axcom-era method; captures non-linear conditional reversion/continuation that linear rules miss.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "execution",
+  "title": "Order-slicing and simultaneous-submission awareness",
+  "what_to_build": "Renaissance patented splitting a large order into child orders submitted simultaneously across venues via GPS-clocked co-located servers to deny HFT front-running. For a single-broker retail desk the relevant part is measurement: record the latency and the quote move between signal time, send time and fill to detect last-look/adverse selection by symbol and hour, and time entries to minimise it.",
+  "data_needed": [
+   "MT5 order/fill timestamps"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://patents.google.com/patent/US20160035027",
+  "quote": "The trading server divides a large transaction order into multiple smaller transaction orders and combines each smaller transaction order with a transaction execution time.",
+  "expected_value": "low",
+  "why": "Documents RenTec's execution priorities; multi-venue sync itself is not applicable at retail size.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "risk",
+  "title": "Duplication (crowding) monitor",
+  "what_to_build": "Measure daily correlation of the desk's live P&L with public proxies of crowded quant/CTA books (SG CTA / trend indices, public managed-futures ETFs like DBMF/KMLM, generic FX carry and momentum baskets) and flag when the desk's signals coincide with a crowded unwind (Aug-2007 pattern). Report only - any size change must pass ΔE[log W].",
+  "data_needed": [
+   "public managed-futures ETF prices",
+   "published CTA index levels"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/REPORT-Abuse%20of%20Structured%20Financial%20Products%20(Basket%20Options)%20(7-22-14,%20updated%209-30-14).pdf",
+  "quote": "The only real risk I worry about, for a fund similar to RenTec, is duplication risk",
+  "expected_value": "medium",
+  "why": "Quant Quake 2007: correlated stat-arb books lost together while the market was flat.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "risk",
+  "title": "Software-bug containment for the order path",
+  "what_to_build": "Pre-trade sanity layer (separate from the Tier-3 deadman, which is not touched): reject orders whose size, direction count or notional deviate from the allocator's intended book by more than a tolerance, and alert. Brown cites >1 million lines of code and Knight Capital as a core reason for loss protection.",
+  "data_needed": [
+   "gateway order logs"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.govinfo.gov/content/pkg/CHRG-113shrg89882/html/CHRG-113shrg89882.htm",
+  "quote": "with over a million lines of code in our system, we too could face the risk of massive losses from a simple software bug",
+  "expected_value": "medium",
+  "why": "Protects against code failure without reducing intended aggressiveness.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "regime",
+  "title": "Tail/convexity awareness (barrier-option lesson)",
+  "what_to_build": "Medallion bought non-recourse barrier options for leverage AND loss protection. Retail CFD desks cannot buy that structure; the build is a measurement: stress the live book against historical divergence events (Mar-2000 Nasdaq/NYSE, Aug-2007, Mar-2020) using the deep-history store, and publish the loss at the 1-in-1000 day. Measurement only unless Rule 1 is met.",
+  "data_needed": [
+   "deep-history store"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/STMT%20-%20Renaissance%20(July%2022%202014)2.pdf",
+  "quote": "For a model-based high-leverage strategy like Medallion's, mitigating Black Swan risk through loss protection is therefore crucial.",
+  "expected_value": "low",
+  "why": "Documents why the most levered quant book still paid for convexity; informs tail sizing math.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Continuous model revision cadence",
+  "what_to_build": "Scheduled re-estimation of the unified model (e.g. nightly refit, intraday forecast refresh) with each new factor introduced gradually and its live contribution tracked. PSI: staff 'constantly worked on and modified the algorithm, carefully modeling new factors and introducing them ... over time'; RenTec viewed the rate of change as critical.",
+  "data_needed": [
+   "desk pipeline"
+  ],
+  "firm": "Renaissance",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/REPORT-Abuse%20of%20Structured%20Financial%20Products%20(Basket%20Options)%20(7-22-14,%20updated%209-30-14).pdf",
+  "quote": "carefully modeling new factors and introducing them into the algorithm over time",
+  "expected_value": "medium",
+  "why": "Static models decay; RIEF's slower adaptation vs Medallion in 2020 is the public contrast.",
+  "cluster": "renaissance"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "True long-horizon value (5-year reversal / PPP) for FX, commodities and bonds",
+  "what_to_build": "style_premia 'value' uses a 1000-H1-bar slow mean (~6 weeks) -- not AQR value. Build a value score: FX = negative 5-year change in the real exchange rate (spot deflated by CPI ratio) or deviation from OECD PPP; commodities = log(avg price 4.5-5.5y ago / current price); bonds = 5-year change in 10y yield (or real yield = 10y minus inflation forecast). Rank-z-score across the class, monthly.",
+  "data_needed": [
+   "OECD PPP series (free)",
+   "FRED/OECD CPI by country",
+   "MT5 daily bars >= 6 years",
+   "FRED DGS10 / OECD long rates"
+  ],
+  "firm": "AQR (Asness, Moskowitz, Pedersen)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf",
+  "source_title": "Value and Momentum Everywhere (Asness, Moskowitz, Pedersen), JF",
+  "quote": "for currencies, our value measure is the negative of the 5-year return on the exchange rate",
+  "expected_value": "high",
+  "why": "Value is the one AQR style the desk does not actually have (its 'value' is a 6-week mean-reversion). Value is negatively correlated with momentum (-0.64 in Investing With Style), which makes it the most diversifying addition to a trend-heavy book.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "combination",
+  "title": "Value x momentum combination sleeve",
+  "what_to_build": "Add a 'value_x_momentum' combo: 50/50 of rank-z-scored 5-year value and 12-1 momentum per asset class, each leg scaled to equal ex-ante vol, then the class books risk-weighted.",
+  "data_needed": [
+   "same as long-horizon value gap",
+   "MT5 daily bars"
+  ],
+  "firm": "AQR (Asness, Moskowitz, Pedersen)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf",
+  "source_title": "Value and Momentum Everywhere (Asness, Moskowitz, Pedersen), JF",
+  "quote": "a simple combination of the two is much closer to the efficient frontier than either strategy alone",
+  "expected_value": "high",
+  "why": "Negative correlation between value and momentum across every asset class is AQR's central portfolio result; the desk's COMBOS list lacks it.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "12-1 skip-month momentum and lag-selective trend",
+  "what_to_build": "Allow cross_sectional/multi_speed_trend to skip the most recent month (MOM2-12) and allow a lag mask: Man finds lags 1-4 and 9-11 months carry the trend premium while lags 5-8 underperform in every asset class. Build a 'lag_mask' param (sum of vol-scaled monthly returns over selected lags).",
+  "data_needed": [
+   "MT5 daily bars"
+  ],
+  "firm": "Man AHL (Hamill, Rattray, Van Hemert)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.man.com/insights/trend-following-equity-and-bond-crisis-alpha",
+  "source_title": "Trend Following: Equity and Bond Crisis Alpha (Hamill, Rattray, Van Hemert), Man Group",
+  "quote": "strategies based on the past four months' returns (lag 1 to 4) experienced consistently strong performance",
+  "expected_value": "medium",
+  "why": "Cheap to build; directly testable refinement of the trend premium using only price.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "regime",
+  "title": "Named macro series selector for macro_conditional (VIX, 2y yield, CPI)",
+  "what_to_build": "macro_conditional takes whichever DAILY_MACRO_SERIES is first available (DTWEXBGS). Add a 'macro_name' param recorded in the candidate identity so a cell can condition carry on VIXCLS, bonds/USD on the 1-year change of DGS2, and gold on real yields -- each a documented mechanism.",
+  "data_needed": [
+   "FRED VIXCLS",
+   "FRED DGS2",
+   "FRED DFII10",
+   "FRED CPIAUCSL"
+  ],
+  "firm": "AQR/Pedersen (Brunnermeier, Nagel, Pedersen)",
+  "evidence": "DOCUMENTED",
+  "source_url": "http://docs.lhpedersen.com/CarryTradesCurrencyCrashes.pdf",
+  "source_title": "Carry Trades and Currency Crashes (Brunnermeier, Nagel, Pedersen), NBER Macro Annual",
+  "quote": "an increase in global risk or risk aversion as measured by the VIX equity ‐option implied volatility index coin- cides with reduct",
+  "expected_value": "high",
+  "why": "Without it, VIX-gated carry, monetary-policy momentum and inflation-regime cells cannot be expressed as registered rows at all.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Macro momentum composite (growth, inflation, trade, monetary policy, risk sentiment)",
+  "what_to_build": "Per asset class, 1-year changes: growth forecast (bullish equities/FX, bearish bonds), inflation forecast (bearish equities/bonds, bullish FX), FX depreciation vs export basket (bullish equities), 2y-yield change (tightening bearish bonds/equities, bullish FX), 1y equity excess return (bullish equities/FX, bearish bonds). Equal-weight themes; monthly. Price-only legs (2y yields, equity returns, trade-weighted FX) can ship first.",
+  "data_needed": [
+   "FRED DGS2 and OECD short rates",
+   "OECD CLI / Philadelphia Fed SPF growth & CPI forecasts",
+   "BIS/FRED trade-weighted FX indices",
+   "MT5 index bars"
+  ],
+  "firm": "AQR (Jordan Brooks)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.aqr.com/-/media/AQR/Documents/Insights/White-Papers/A-Half-Century-of-Macro-Momentum.pdf",
+  "source_title": "A Half Century of Macro Momentum (Jordan Brooks), AQR",
+  "quote": "business cycle trends are captured using a 50/50 combination of one-year changes in real GDP growth forecasts and one-year changes in CPI inflation forecasts",
+  "expected_value": "high",
+  "why": "Reported Sharpe 1.2 (1970-2016), negative equity correlation, and a 50/50 blend with trend lifted Sharpe to 1.4 with max drawdown -12.8%: a second independent mechanism for the E8 'independent mechanisms' count.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Conditional month-end 60/40 rebalancing flow (equity vs bond weight deviation)",
+  "what_to_build": "Simulate a 60/40 US500/UST10Y portfolio from daily returns; the Calendar signal = equity-weight deviation since last month-end rebalance, Threshold signal = deviation within a band. When equities are overweight into month/quarter-end, short US500 / long UST10Y for 1 day (and vice versa). forced_flow month_end is unconditional and cannot express the sign.",
+  "data_needed": [
+   "MT5 daily bars US500, UST10Y (or FRED SP500, DGS10)"
+  ],
+  "firm": "Man-affiliated (Harvey, Mazzoleni, Melone)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.nber.org/system/files/working_papers/w33554/w33554.pdf",
+  "source_title": "The Unintended Consequences of Rebalancing (Harvey, Mazzoleni, Melone), NBER WP 33554",
+  "quote": "a one-standard-deviation increase in the Threshold (Calendar) signal leads to a decrease in equity returns of approximately 16 ba- sis points (bps) (17 bps)",
+  "expected_value": "high",
+  "why": "Managed portfolio front-running the signals has Sharpe > 1 over 1997-2023; mechanism is a named forced participant (pension/balanced funds) -- exactly the forced_flow admissibility standard.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "regime",
+  "title": "Similarity-based regime model (Man 'Regimes')",
+  "what_to_build": "Seven state variables (S&P 500, 10y-3m slope, WTI, copper, 3m T-bill, VIX, 3-year stock-bond correlation); 12-month change, z-scored over rolling 10 years capped +-3; Euclidean distance of today to each past month; take the 15% most similar months excluding the last 36; go long a sleeve/instrument if its subsequent-month return in similar months is positive; also short 'anti-regime' signal.",
+  "data_needed": [
+   "FRED SP500, T10Y3M, DCOILWTICO, TB3MS, VIXCLS, PCOPPUSDM (all free)",
+   "MT5 bars for stock-bond correlation"
+  ],
+  "firm": "Man Group (Mulliner, Harvey, Xia, Fang, Van Hemert)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P176_Regimes.pdf",
+  "source_title": "Regimes (Mulliner, Harvey, Xia, Fang, Van Hemert; Man Group), JPM",
+  "quote": "For each variable, we take a 12-month change and then normalize it by computing the Z-score over a rolling 10 years",
+  "expected_value": "high",
+  "why": "Non-parametric, walk-forward-able regime conditioner for sleeve weights; the paper reports significant long-similar/short-dissimilar alpha. Fits the allocator as a two-sided modifier.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "regime",
+  "title": "Inflation-regime conditioner",
+  "what_to_build": "Regime flag = US headline CPI YoY accelerating AND >= 5%. In regime: overweight trend sleeves and commodity longs (energy best), underweight nominal-bond longs; gold is volatile/unreliable. Two-sided: expand trend/commodity heat in regime.",
+  "data_needed": [
+   "FRED CPIAUCSL"
+  ],
+  "firm": "Man Group (Neville, Draaisma, Funnell, Harvey, Van Hemert)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P154_The_best_strategies.pdf",
+  "source_title": "The Best Strategies for Inflationary Times (Neville, Draaisma, Funnell, Harvey, Van Hemert; Man Group), JPM",
+  "quote": "We define inflationary regimes as the times when headline, year-over-year (YoY) inflation is accelerating and when the level moves to 5% or more.",
+  "expected_value": "medium",
+  "why": "Eight US inflation regimes: commodities positive real return in all, trend strongly positive, nominal bonds worst; directly maps to MT5 energy/metals/bond CFDs.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "sizing",
+  "title": "Vol-targeted position sizing with t-2 EWMA vol, per asset class",
+  "what_to_build": "Size each trend/style position as target_vol / sigma_hat where sigma_hat is an EWMA of daily returns known 24h ahead (returns to t-2), blend of half-lives (paper's slowest 90d). Expect Sharpe gains on index/credit-like CFDs and crypto CFDs (leverage effect), neutral Sharpe but thinner left tails on FX/bonds/commodities. Must be two-sided (sizes UP in calm).",
+  "data_needed": [
+   "MT5 daily bars"
+  ],
+  "firm": "Man AHL (Harvey et al.)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P135_The_impact_of.pdf",
+  "source_title": "The Impact of Volatility Targeting (Harvey, Hoyle, Korgaonkar, Rattray, Sargaison, Van Hemert), JPM",
+  "quote": "Sharpe ratios are higher with volatility scaling for risk assets (equities and credit)",
+  "expected_value": "high",
+  "why": "Two-sided dynamic sizing that raises exposure in calm regimes satisfies Growth Governance Rule 2 while cutting left tails; Man shows the benefit is asset-class dependent, so it should be applied per class, not globally.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "risk",
+  "title": "Replace drawdown-triggered de-risking with vol scaling",
+  "what_to_build": "Audit any drawdown-stop / de-risk rule on trend sleeves; Man shows drawdown rules act as a 'poor man's volatility scaling' and that trend drawdowns >10% were followed by +9.8% average 12-month returns. Log missed growth of each drawdown veto (rails.py) and prefer vol-scaling.",
+  "data_needed": [
+   "desk P&L ledger",
+   "SG Trend index history (public monthly)"
+  ],
+  "firm": "Man AHL (Van Hemert, Ganz, Harvey et al.)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P147_Drawdowns.pdf",
+  "source_title": "Drawdowns (Van Hemert, Ganz, Harvey, Rattray, Sanchez Martin, Yawitch; Man AHL), JPM",
+  "quote": "drawdown rules might be considered a “poor man’s volatility scaling.”",
+  "expected_value": "medium",
+  "why": "Directly supports Rule 1: a drawdown veto must prove it raises forward E[log W]; Man's evidence says for trend it usually does not.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Nonlinear forecast response function with saturation",
+  "what_to_build": "Map trend strength to position through a per-speed response function: flatter near zero for fast speeds, steeper for slow, and capped/declining at extreme signal (CFM finds trend predictability saturates for large signals; Man reduces very extended moves). Signal = (price - EMA_n)/EMA of |monthly changes| with n~5 months.",
+  "data_needed": [
+   "MT5 daily bars"
+  ],
+  "firm": "Aspect Capital",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://aspectcapital.s3.amazonaws.com/documents/Aspect_Capital_Insight__Series_-_Trend_Following_-_How.pdf",
+  "source_title": "Aspect Capital Insight: Trend Following: How?",
+  "quote": "for the faster/slower trend speeds, the forecast function might be flatter/steeper around zero (section A) to avoid overreaction/underreaction to newly developed trends",
+  "expected_value": "medium",
+  "why": "The desk's trend families are binary (sign/threshold); every CTA source uses a continuous, saturating forecast, which lowers turnover and reversal risk.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "regime",
+  "title": "Trend-opportunity monitors: Transtrend Trendpot and Graham Directional Indicator",
+  "what_to_build": "Compute per instrument monthly Trendpot (from 3 months of high/low/close: Upmove=min(Newhigh,Highend), Smoothup, Decline; Trendpot=Trendup/max(Decline,Trendup)) and Graham Trend Ratio (1y price change / daily variability), averaged across the universe (DI). Use as attribution and to test whether lagged DI predicts next-month trend-sleeve P&L (Transtrend explicitly says Trendpot has no predictive value -- test it, do not assume).",
+  "data_needed": [
+   "MT5 daily bars"
+  ],
+  "firm": "Transtrend / Graham Capital",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.trendfollowing.com/whitepaper/Transtrend_Presentation.pdf",
+  "source_title": "Transtrend: Potential profitability for trend following systems (Trendpot)",
+  "quote": "Trendpot is a backward looking measure that indicates for an individual market whether a medium to long-term trend following system could potentially have been profitable",
+  "expected_value": "low",
+  "why": "Explains trend-sleeve P&L (AQR: a 10% market move translates to ~5% trend return), guarding against killing a sound sleeve in a low-move regime; timing value is unproven.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Speed-decay prior: penalise fast trend on liquid instruments",
+  "what_to_build": "Winton's ten-year gross Sharpe of its fast (1-week turnover) trend system fell 1.85 -> 0.85 -> 0.00 across 1984-2013 while slow held ~0.6-0.9. Add a documented prior to the docket: fast-trend cells on majors need stronger OOS evidence; keep fast speeds only as the crisis-convexity leg.",
+  "data_needed": [
+   "desk docket metadata"
+  ],
+  "firm": "Winton Capital",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.trendfollowing.com/whitepaper/d.pdf",
+  "source_title": "Historical Performance of Trend Following, Winton Capital working paper",
+  "quote": "we see a significant decline in the performance of the fastest strategies even before transaction costs are accounted for",
+  "expected_value": "medium",
+  "why": "Protects the family-wise error budget from the most-decayed region of trend-space while keeping Man's crisis-alpha case for some speed.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Do not value-time style premia",
+  "what_to_build": "Record as a desk lesson: value-spread timing of value/momentum/defensive does not improve returns or risk-adjusted returns in a diversified multi-style book; spend trials elsewhere.",
+  "data_needed": [],
+  "firm": "AQR (Asness, Chandra, Ilmanen, Israel)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.aqr.com/-/media/AQR/Documents/Insights/Interviews/AQRPAJan18Asness-31518.pdf",
+  "source_title": "Contrarian Factor Timing Is Deceptively Difficult - Practical Applications (Asness, Chandra, Ilmanen, Israel)",
+  "quote": "Timing exposure to factors based on their valuations does not meaningfully improve either returns or risk-adjusted returns.",
+  "expected_value": "low",
+  "why": "Saves multiple-testing budget.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Defensive/BAB is undefined for FX and commodities",
+  "what_to_build": "style_premia 'defensive' is being applied to any instrument vs a risk driver. AQR explicitly does not define defensive for currencies, commodities or rate futures; restrict defensive cells to equity indices (and bond maturities) or flag others as un-sourced.",
+  "data_needed": [],
+  "firm": "AQR (Asness, Ilmanen, Israel, Moskowitz)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.aqr.com/-/media/AQR/Documents/Insights/Journal-Article/JOIM-Investing-With-Style.pdf",
+  "source_title": "Investing With Style (Asness, Ilmanen, Israel, Moskowitz), JOIM",
+  "quote": "We do not define defensive strategies for interest rate futures, currencies, and commodities because it is difficult to apply the low-beta or quality concepts",
+  "expected_value": "medium",
+  "why": "Removes un-sourced trials that raise the deflated-Sharpe bar for FX/metals cells.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "combination",
+  "title": "Rank-z-score cross-sectional weighting at 10% ex-ante vol per style",
+  "what_to_build": "For cross_sectional and any carry/value ranking: rank, subtract mean rank, divide by rank std to get weights; scale long and short books to equal ex-ante vol and each style to 10% annual vol before combining. Replace top_frac hard cut-offs.",
+  "data_needed": [
+   "MT5 bars",
+   "swap terms"
+  ],
+  "firm": "AQR (Asness, Ilmanen, Israel, Moskowitz)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.aqr.com/-/media/AQR/Documents/Insights/Journal-Article/JOIM-Investing-With-Style.pdf",
+  "source_title": "Investing With Style (Asness, Ilmanen, Israel, Moskowitz), JOIM",
+  "quote": "We then standardize the ranks by subtracting the mean rank from each rank and dividing each rank by the standard devi- ation of ranks",
+  "expected_value": "medium",
+  "why": "AQR 'craftsmanship alpha': signal-to-weight choices materially change style exposure and turnover.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Cross-sectional FX carry ranking from swap terms (carry1-12 smoothing)",
+  "what_to_build": "Rank all FX CFDs by swap differential (annualised), rank-weighted long high/short low; also a carry1-12 variant averaging the last 12 month-end carry readings (commodity carry is seasonal and carry1-12 performs better there).",
+  "data_needed": [
+   "Fusion swap terms history (recorded daily)"
+  ],
+  "firm": "AQR (Koijen, Moskowitz, Pedersen, Vrugt)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://w4.stern.nyu.edu/facdir/lpederse/papers/Carry.pdf",
+  "source_title": "Carry (Koijen, Moskowitz, Pedersen, Vrugt), JFE",
+  "quote": "for commodities, carry1-12 performs better, which may be due to the strong seasonal variation in commodity carry",
+  "expected_value": "high",
+  "why": "family_carry is single-instrument time-series; KMPV's headline results are cross-sectional and need recorded swap history (the desk records terms, but not as a history series).",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "combination",
+  "title": "FX composite: carry + 12-month trend + PPP value",
+  "what_to_build": "Blend per currency: IRD carry, 12-month FX trend (binary in the paper), and OECD PPP deviation; equal-weight the three rules (Man's 'blended' rule).",
+  "data_needed": [
+   "OECD PPP",
+   "central bank policy rates (free)",
+   "MT5 daily bars"
+  ],
+  "firm": "Man Group (Castro, Hamill, Harber, Harvey, Van Hemert)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P175_The_best_strategies.pdf",
+  "source_title": "The Best Strategies for FX Hedging (Castro, Hamill, Harber, Harvey, Van Hemert; Man Group), JPM",
+  "quote": "For the trend signal, we use a simple binary 12-month trend signal.",
+  "expected_value": "medium",
+  "why": "Three low-correlated FX signals with a published, simple, pre-specified combination -- low trial cost.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "sizing",
+  "title": "Risk-balanced sleeve allocation across growth/inflation environments",
+  "what_to_build": "Group sleeves by the environment they profit in (growth up: index longs; growth down: bond longs/trend; inflation up: commodities/gold/trend; inflation down: bonds) and balance risk across the four boxes rather than across instruments; use leverage to equalise low-vol assets.",
+  "data_needed": [
+   "desk sleeve returns",
+   "FRED CPI/GDP surprises"
+  ],
+  "firm": "Bridgewater Associates",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.bridgewater.com/_document/the-all-weather-story?id=00000171-8623-d7de-affd-feaf4ee20000",
+  "source_title": "The All Weather Story, Bridgewater Associates",
+  "quote": "The key was to put equal risk on each scenario",
+  "expected_value": "low",
+  "why": "Framework for the allocator's diversification of independent mechanisms; testable as ex-post sleeve clustering by macro sensitivity.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "execution",
+  "title": "Liquidity-providing execution for trend entries",
+  "what_to_build": "Man reports its own execution platform halves transaction costs vs bank algorithms, and faster trend is only viable after costs; Transtrend stresses liquidity-providing rather than liquidity-taking order flow in thin markets. Add passive/limit entry option for trend sleeves with fill-rate measurement.",
+  "data_needed": [
+   "MT5 tick/spread logs"
+  ],
+  "firm": "Man AHL / Transtrend",
+  "evidence": "REPORTED",
+  "source_url": "https://www.transtrend.com/en/insights/alternative-markets/",
+  "source_title": "Transtrend: Trading alternative markets",
+  "quote": "Order flows sent in a less responsible way can easily disrupt these markets.",
+  "expected_value": "medium",
+  "why": "Cost is the binding constraint on fast trend and on softs/EM FX trend at retail spreads.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "risk",
+  "title": "Carry crash guard: momentum-crash-style panic state",
+  "what_to_build": "Momentum and carry crash in panic states (market down, high ex-ante vol, then abrupt rebound). Build a panic-state flag (index 12m return < 0 and realised vol top decile) to scale the short-leg/carry exposure dynamically (Daniel-Moskowitz dynamic weighting), measured two-sided.",
+  "data_needed": [
+   "MT5 index bars",
+   "FRED VIXCLS"
+  ],
+  "firm": "AQR-affiliated (Daniel, Moskowitz)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.nber.org/system/files/working_papers/w20439/w20439.pdf",
+  "source_title": "Momentum Crashes (Daniel, Moskowitz), NBER WP 20439",
+  "quote": "crashes tend to occur in times of market stress, when the market has fallen and ex-ante measures of volatility are high",
+  "expected_value": "medium",
+  "why": "Carry and cross-sectional momentum share this negatively-skewed crash profile; a dynamic (not fixed) scaling is the published fix.",
+  "cluster": "systematic_macro"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "alpha_combination",
+  "title": "Decorrelation gate against the desk's consolidated forecast",
+  "what_to_build": "Admit a new sleeve/model only if its forecast (and simulated P&L) correlation to the CONSOLIDATED desk forecast (allocator-weighted blend of live sleeves) is below a threshold; store the decorrelation parameter inside the certificate hash so a later edit voids the certificate (the Wu failure mode: parameter stored outside reviewed code and silently lowered to ~0).",
+  "data_needed": [
+   "live sleeve forecasts per bar",
+   "allocator weights",
+   "certificate param hashes"
+  ],
+  "firm": "Two Sigma",
+  "evidence": "DOCUMENTED (SEC complaint + SEC order)",
+  "source_url": "https://www.sec.gov/files/litigation/briefs/2025/comp26398.pdf",
+  "quote": "Two Sigma required that each new Model it developed and approved be sufficiently uncorrelated to, or “decorrelated” from, existing Models and Consolidated Forecasts",
+  "expected_value": "HIGH - stops capital flowing to near-duplicates of existing sleeves (E8 plan counts independent mechanisms); raises effective N at the same heat",
+  "why": "Desk novelty is measured against CANON expressions, not against the live consolidated book; Wu case shows the parameter itself must be tamper-evident.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "alpha_combination",
+  "title": "Linear-cost mega-alpha weighting (regression-residual weights)",
+  "what_to_build": "Implement Kakushadze-Yu weights: normalise each alpha's expected return by its vol, regress on cluster/risk-factor loadings, weight ∝ residual/sigma. O(N), no PCA/matrix inversion; feed the ensemble family and allocator.",
+  "data_needed": [
+   "per-alpha return series",
+   "cluster labels"
+  ],
+  "firm": "WorldQuant (Kakushadze)",
+  "evidence": "DOCUMENTED (paper + source code)",
+  "source_url": "https://arxiv.org/pdf/1603.05937",
+  "quote": "Our algorithm does not require computing principal components or inverting large matrices, nor does it require iterations.",
+  "expected_value": "MEDIUM-HIGH - principled combination of hundreds of weak formula cells",
+  "why": "ensemble family takes hand weights; no documented optimal-weight procedure for many faint alphas.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "alpha_combination",
+  "title": "Trade alphas without an explicit combo layer",
+  "what_to_build": "Map alpha expected returns to per-instrument expected returns directly (Decoding Stock Market with Quant Alphas) and let the allocator size instruments, skipping the combo layer that adds noise and cost.",
+  "data_needed": [
+   "alpha position/forecast data per instrument"
+  ],
+  "firm": "WorldQuant (Kakushadze)",
+  "evidence": "DOCUMENTED (paper)",
+  "source_url": "https://arxiv.org/pdf/1708.02984",
+  "quote": "alpha combos cost hedge funds around 3% of the P&L, while alphas themselves cost around 10%.",
+  "expected_value": "MEDIUM",
+  "why": "Cost of combination is measured, not assumed.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "alpha_grammar",
+  "title": "Add hump (position hysteresis) operator and BRAIN Fitness metric",
+  "what_to_build": "Add `hump(x,h)` (hold previous position unless change exceeds h) to alpha_grammar and score candidates with Fitness = Sharpe*sqrt(|ret|/max(turnover,0.125)) alongside Sharpe, so the search prefers cost-robust expressions.",
+  "data_needed": [
+   "existing bar terminals"
+  ],
+  "firm": "WorldQuant",
+  "evidence": "REPORTED (third-party summary of BRAIN docs)",
+  "source_url": "https://github.com/alexisdpc/WorldQuant-alpha-trading/blob/main/ImprovingAlphas.md",
+  "quote": "The `hump` operator suppresses position changes below a threshold",
+  "expected_value": "MEDIUM - cuts turnover of formula cells on wide-spread symbols",
+  "why": "Grammar has decay/trade_when but no hysteresis; fitness penalises churn the way BRAIN does.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "alpha_grammar",
+  "title": "VWAP terminal (unlocks 30 of WQ101)",
+  "what_to_build": "Build a vwap terminal from tick data (sum(price*ticks)/sum(ticks) per bar) with its own PRICE typing so the grammar can express Alpha#41/#42/#5/#83 etc. without widening the PRICE x ACTIVITY rule.",
+  "data_needed": [
+   "tick-level bid/ask with tick counts"
+  ],
+  "firm": "WorldQuant",
+  "evidence": "DOCUMENTED (30 of 101 alphas need vwap)",
+  "source_url": "https://arxiv.org/pdf/1601.00991",
+  "quote": "Alpha#41: (((high * low)^0.5) - vwap)",
+  "expected_value": "MEDIUM",
+  "why": "alpha_grammar header records vwap alphas as a terminal-acquisition task.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "alpha_grammar",
+  "title": "Skewness operator for the commodity skewness premium",
+  "what_to_build": "Add ts_skew(x,w) operator; enables 151 §9.5 (buy lowest-skew, sell highest-skew commodities) and skew-conditioned gates.",
+  "data_needed": [
+   "daily returns"
+  ],
+  "firm": "WorldQuant (Kakushadze)",
+  "evidence": "REPORTED (literature compendium)",
+  "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+  "quote": "buying the commodity futures in the bottom quintile by skewness, and selling the futures in the top quintile",
+  "expected_value": "LOW-MEDIUM",
+  "why": "No skew operator exists; cross-sectional commodity premium untestable.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal_processing",
+  "title": "One-sided HP-filter terminal for FX trend",
+  "what_to_build": "Add a causal (one-sided/recursive) Hodrick-Prescott trend terminal; the textbook two-sided HP filter leaks future data and must never be used in backtests.",
+  "data_needed": [
+   "bars"
+  ],
+  "firm": "WorldQuant (Kakushadze)",
+  "evidence": "REPORTED (literature compendium)",
+  "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+  "quote": "before computing the moving averages, the higher-frequency noise can first be filtered out, e.g., using the so-called Hodrick-Prescott (HP) filter",
+  "expected_value": "LOW-MEDIUM",
+  "why": "Enables §8.1 'moving averages with HP filter' honestly.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "regime",
+  "title": "Multi-asset GMM factor-lens regime conditioner",
+  "what_to_build": "Monthly GMM (4 components) on residualised multi-asset factor returns (equity, rates, credit proxy, commodities, FX, inflation proxy, trend) -> regime probabilities published as an exogenous series for every family's conditioner.",
+  "data_needed": [
+   "daily closes US500, UST10Y, XAUUSD, XTIUSD, USDX, EM FX basket"
+  ],
+  "firm": "Two Sigma",
+  "evidence": "DOCUMENTED (firm research)",
+  "source_url": "https://www.twosigma.com/wp-content/uploads/2021/10/Machine-Learning-Approach-to-Regime-Modeling_.pdf",
+  "quote": "Market Condition 4 tends to occur around Crisis (and Steady State) periods, potentially indicating market fragility.",
+  "expected_value": "MEDIUM",
+  "why": "Gives every sleeve a common regime label; Walking-on-Ice as an early fragility flag.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "regime",
+  "title": "Mean-reversion book stand-down in liquidation regimes (two-sided)",
+  "what_to_build": "Gate residual/mean-reversion sleeves by a liquidation-regime detector (vol spike + correlation breakdown) and, symmetric per Growth Rule 1, re-lever them after the spike when reversion pays most; ledger the missed growth.",
+  "data_needed": [
+   "realised vol",
+   "rolling cross-asset correlation"
+  ],
+  "firm": "WorldQuant (Kakushadze)",
+  "evidence": "DOCUMENTED (analysis of COVID drawdown)",
+  "source_url": "https://arxiv.org/pdf/2006.05632",
+  "quote": "However, it breaks badly during violent market routs (when volatility spikes) such as the COVID-19 selloff.",
+  "expected_value": "MEDIUM - must prove forward E[log W] rises (Rule 1) or not ship",
+  "why": "Quant Bust and Avellaneda-Lee Aug-2007 unwind both show stat-arb failure is regime-specific.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "capital_allocation",
+  "title": "Pod-style sleeve drawdown ladder with capital recycling",
+  "what_to_build": "Per-sleeve ladder measured from the sleeve's allocated capital: at -5% halve the sleeve's allocation, at -7.5% retire it; freed capital immediately re-allocated to sleeves with best ΔE[log W] (never removed from the book). Treat as a research arm vs the current allocator; heat floor untouched.",
+  "data_needed": [
+   "per-sleeve equity curves",
+   "allocator ΔE[log W]"
+  ],
+  "firm": "Millennium",
+  "evidence": "REPORTED (Net Interest; repeated by secondary sources)",
+  "source_url": "https://www.netinterest.co/p/peak-pod",
+  "quote": "At Millennium, a 5% drawdown leads to the team having their risk cut in half; a 7.5% drawdown leads to a complete wind-down",
+  "expected_value": "UNCERTAIN - a cut is a risk reduction: under GROWTH GOVERNANCE it ships only if proven to raise forward E[log W] and must be two-sided (recycles capital to winners)",
+  "why": "The platform's value is recycling capital from failing strategies to working ones, not shrinking the book.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "capital_allocation",
+  "title": "Per-strategy loss target -> re-evaluation, and cost-fraction metric",
+  "what_to_build": "Record for each sleeve (a) a pre-specified loss target that triggers re-certification (not silent shrink), and (b) expected transaction costs as a fraction of expected gross profit, published per sleeve.",
+  "data_needed": [
+   "sleeve P&L",
+   "cost model"
+  ],
+  "firm": "PDT Partners",
+  "evidence": "REPORTED (founder essay)",
+  "source_url": "https://people.duke.edu/~charvey/Teaching/BA453_2004/Muller_Proprietary_trading.pdf",
+  "quote": "Also of interest is the fraction of expected gross profits consumed by expected transaction costs.",
+  "expected_value": "MEDIUM",
+  "why": "Muller: the higher the cost fraction, the more money lost when the model stops working.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "risk",
+  "title": "Path-level margin stress (time-portal check)",
+  "what_to_build": "For each sleeve simulate the full mark-to-market path (MAE, margin level) not just terminal P&L; reject specs whose intermediate margin path breaches the broker stop-out even if terminal EV is positive.",
+  "data_needed": [
+   "bar paths",
+   "Fusion margin/stop-out rules"
+  ],
+  "firm": "D.E. Shaw",
+  "evidence": "DOCUMENTED (firm research note)",
+  "source_url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_vol_1_no_2_20090706.pdf",
+  "quote": "investors often behave as if they are trading with the benefit of a “time portal” that allows them to leap effortlessly to a future point",
+  "expected_value": "MEDIUM",
+  "why": "Protects compounding without lowering size: kills specs that only look good at the terminus.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "execution",
+  "title": "Fill markout / post-trade impact surface per hour and symbol",
+  "what_to_build": "Measure own fills' markouts (mid move 1s/10s/60s after fill), reject/requote rate and slippage by hour and symbol; feed execution_state surface and cost model.",
+  "data_needed": [
+   "MT5 deal history with timestamps",
+   "tick mids"
+  ],
+  "firm": "XTX Markets",
+  "evidence": "DOCUMENTED (firm white papers)",
+  "source_url": "https://www.xtxmarkets.com/assets/clients/whitepaper-agency.pdf",
+  "quote": "Market impact is a big contributor to the cost of executing larger orders.",
+  "expected_value": "MEDIUM-HIGH",
+  "why": "LPs segment institutional vs retail flow and use last look; the desk's realised cost is broker/LP-specific and only measurable from its own fills.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "execution",
+  "title": "Order-type selection from short- vs long-horizon signal agreement",
+  "what_to_build": "When the long-horizon signal is on but a short-horizon signal opposes, rest a pending limit (earn spread, accept adverse selection); when both agree, go market. Log fill rate and markout by choice.",
+  "data_needed": [
+   "short-horizon signal",
+   "pending order fills"
+  ],
+  "firm": "WorldQuant (Kakushadze)",
+  "evidence": "REPORTED (literature compendium)",
+  "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3247865",
+  "quote": "modulate the short-horizon signal with a longer-horizon signal",
+  "expected_value": "MEDIUM",
+  "why": "Saves spread on the majority of entries without changing the signal.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "costs",
+  "title": "Index CFD financing-spread tracker",
+  "what_to_build": "Track implied S&P 500 futures financing spread vs SOFR (and Fusion swap rates on index CFDs) as a cost input and as a crowded-leverage indicator.",
+  "data_needed": [
+   "ES futures vs spot + SOFR",
+   "Fusion swap tables"
+  ],
+  "firm": "D.E. Shaw",
+  "evidence": "DOCUMENTED (firm research)",
+  "source_url": "https://www.deshaw.com/library/imbalance-sheet",
+  "quote": "this appears to stem from a financing spread for S&P 500 ® futures that’s been as high as four times its recent average.",
+  "expected_value": "LOW-MEDIUM",
+  "why": "Overnight index holds pay this; spread peaked >1.4% (Dec 2024) vs ~0.3% average.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Point-in-time vintages for every exogenous series",
+  "what_to_build": "Store each vendor/exogenous series (COT, macro, alt data) as dated vintages; conditioners read the vintage available at bar time, never the revised series.",
+  "data_needed": [
+   "vendor snapshots with retrieval timestamps"
+  ],
+  "firm": "Jane Street",
+  "evidence": "REPORTED (podcast chapter)",
+  "source_url": "https://signalsandthreads.com/wrestling-the-world-into-rows/",
+  "quote": "01:01:30 – Point-in-time data and vendor revisions",
+  "expected_value": "MEDIUM",
+  "why": "Revised data manufactures backtest edge; Jane Street's alt-data team treats vintages as core.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Purged, embargoed time-series CV for ML families",
+  "what_to_build": "Standardise purged k-fold with embargo and step-by-step online inference for any ML/feature model (the Jane Street Kaggle protocol).",
+  "data_needed": [
+   "feature matrices"
+  ],
+  "firm": "Jane Street",
+  "evidence": "REPORTED (competition solution repo)",
+  "source_url": "https://github.com/Wy66wy/Jane-Street-Real-Time-Market-Data-Forecasting",
+  "quote": "leak-free feature engineering, purged time-series validation, and timestep-by-timestep inference",
+  "expected_value": "MEDIUM",
+  "why": "High-noise/low-data regime: 'one unit of useful data and 99 units of garbage' (Signals and Threads).",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "calendar",
+  "title": "Expiry-day conditioner for any family",
+  "what_to_build": "Publish an expiry calendar (US monthly opex, weekly SPX 0DTE days, Eurex third-Friday, Osaka SQ, CME metals/energy options expiry) and let any family restrict to/exclude those days.",
+  "data_needed": [
+   "exchange expiry calendars"
+  ],
+  "firm": "Jane Street (SEBI order)",
+  "evidence": "DOCUMENTED (regulator order)",
+  "source_url": "https://www.legal500.com/developments/thought-leadership/sebi-update-interim-order-against-jane-street-group-for-alleged-index-manipulation/",
+  "quote": "particularly on derivative expiry days, spanning from 1 January 2023 to 31 May 2025.",
+  "expected_value": "MEDIUM",
+  "why": "Expiry-day dynamics (pinning, close marking, gamma unwind) are day-specific; current forced_flow only covers monthly_opex.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "research_process",
+  "title": "Returns-scale-with-vol check for formula cells",
+  "what_to_build": "Report each formula cell's return vs instrument volatility (expect R ~ V^0.8-0.85 for short holds) and cents-per-trade vs turnover; flag cells whose edge does not scale with vol as likely overfit.",
+  "data_needed": [
+   "cell returns",
+   "instrument vol"
+  ],
+  "firm": "WorldQuant",
+  "evidence": "DOCUMENTED (4,000 real alphas)",
+  "source_url": "https://arxiv.org/pdf/1509.08110",
+  "quote": "Thus, the portfolio return ... has no statistically significant dependence on the turnover",
+  "expected_value": "LOW-MEDIUM",
+  "why": "Cheap sanity prior from the largest public alpha sample.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "unreachable",
+  "title": "Latency/feed arbitrage (SIP vs direct feed, sub-ms market making)",
+  "what_to_build": "Do NOT build. Citadel Securities' order describes algorithms triggered by SIP-vs-direct-feed price differences; Citadel/Teza HFT and XTX/HRT/Jump/Virtu market making rely on co-location and sub-ms speed.",
+  "data_needed": [],
+  "firm": "Citadel Securities / Citadel / HRT / Jump / Virtu / XTX / Tower",
+  "evidence": "DOCUMENTED (SEC order; court opinion)",
+  "source_url": "https://www.sec.gov/litigation/admin/2017/33-10280.pdf",
+  "quote": "These algorithms generally used information from the depth of book feeds to inform CES’s view of market conditions",
+  "expected_value": "NONE at retail MT5 latency",
+  "why": "Recorded so no future session re-mines it.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "research_process",
+  "title": "Measure sleeve independence on DAILY returns, not monthly",
+  "what_to_build": "Compute pairwise sleeve correlations (and the E8 'independent mechanism' count) from daily returns and in stress windows; report both daily and monthly.",
+  "data_needed": [
+   "sleeve daily P&L"
+  ],
+  "firm": "D.E. Shaw",
+  "evidence": "DOCUMENTED (firm research note)",
+  "source_url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_vol_3_no_1_20110224.pdf",
+  "quote": "pairwise correlations between investment strategies are lower when measured on a daily basis than when measured using monthly data.",
+  "expected_value": "LOW-MEDIUM",
+  "why": "Independence claims drive the E8 pass probability; horizon of measurement changes the answer.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "capital_allocation",
+  "title": "Central real-time capital re-balancing across sleeves",
+  "what_to_build": "A central allocator view of all sleeve exposures that moves capital toward the best risk-adjusted, uncorrelated sleeves intraday-to-daily (the platform's re-allocation half of the pod model).",
+  "data_needed": [
+   "sleeve exposures",
+   "sleeve P&L",
+   "correlation matrix"
+  ],
+  "firm": "Millennium",
+  "evidence": "REPORTED (secondary analysis)",
+  "source_url": "https://www.confluencegp.com/articles-and-news/millennium-s-pod-system-how-platform-design-beats-star-portfolio-managers",
+  "quote": "A central team has real-time visibility into all pod-level exposures and can rebalance capital based on performance and risk metrics.",
+  "expected_value": "MEDIUM",
+  "why": "Two-sided by construction (capital flows to winners), consistent with Growth Rule 2.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "risk",
+  "title": "Risk measured by volatility/factor exposure, not notional leverage",
+  "what_to_build": "Report sleeve risk as forecast vol and factor exposure; hedged leverage (e.g. residual trades) can raise expected return while cutting risk.",
+  "data_needed": [
+   "positions",
+   "factor betas"
+  ],
+  "firm": "D.E. Shaw",
+  "evidence": "DOCUMENTED (firm research note)",
+  "source_url": "https://www.deshaw.com/assets/articles/DESCO_Market_Insights_vol_2_no_1_20100302.pdf",
+  "quote": "people sometimes act as if risk or volatility is proportional to the amount of leverage employed.",
+  "expected_value": "LOW-MEDIUM",
+  "why": "Supports hedged residual books inside the same heat.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "governance",
+  "title": "Model-change control on live sleeves",
+  "what_to_build": "Every parameter a live sleeve reads must be inside the certified spec hash; any change triggers re-certification and is logged; unexplained drift in a sleeve's correlation to the book raises an alert.",
+  "data_needed": [
+   "certificate registry",
+   "param store"
+  ],
+  "firm": "Two Sigma",
+  "evidence": "DOCUMENTED (SEC order)",
+  "source_url": "https://www.sec.gov/newsroom/press-releases/2025-15",
+  "quote": "in or before March 2019, Two Sigma employees identified and recognized vulnerabilities in certain Two Sigma investment models",
+  "expected_value": "MEDIUM",
+  "why": "$165m repaid after unauthorized parameter changes to more than a dozen models.",
+  "cluster": "statarb_multistrat"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Signed calendar-window family (fixed-direction windows on forced_flow_calendar kinds)",
+  "what_to_build": "New family (or forced_flow mode 'signed') taking event_kind, offset_start_min, offset_end_min, side: holds a FIXED direction over a window anchored to a calendar event, independent of prior drift. Unlocks: pre-FOMC equity long (Lucca-Moench), FOMC-day short USD in high-yielders (Mueller et al.), pre-auction short / post-auction long UST (Lou-Yan-Zhang), announcement-day equity premium (Savor-Wilson), gotobi Tokyo-fix USD long (Ito-Yamada).",
+  "data_needed": [
+   "forced_flow_calendar.json kinds central_bank, bond_auction, fixing (already computed)",
+   "US macro release calendar (CPI, NFP) with times"
+  ],
+  "firm": "Lucca & Moench; Mueller, Tahbaz-Salehi, Vedolin; Savor & Wilson",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://conference.nber.org/confer/2013/MEs13/Lucca_Moench.pdf",
+  "source_title": "The Pre-FOMC Announcement Drift",
+  "quote": "",
+  "expected_value": "Opens >=5 documented calendar mechanisms that forced_flow.pre_flow cannot express faithfully; Lucca-Moench alone was ~49bp per event (8/yr) pre-2011",
+  "why": "forced_flow's pre_flow direction = sign of the last 3 closes and post_flow_fade = opposite of window move; neither is an unconditional signed window, so the most-cited calendar anomalies are currently mis-specified when mapped",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "FOMC-day short-USD basket, scaled by rate differential",
+  "what_to_build": "On scheduled FOMC days go short USD vs a basket, overweighting high-rate currencies (MXN, ZAR, AUD, NZD); scale up when monetary-policy uncertainty is high and in easing cycles. Needs the signed-window family and a rate-differential ranking (broker swap is an adequate proxy).",
+  "data_needed": [
+   "central_bank calendar (have)",
+   "swap-rate or policy-rate differentials per currency"
+  ],
+  "firm": "Mueller, Tahbaz-Salehi, Vedolin (Warwick/Northwestern/BU)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.kellogg.northwestern.edu/faculty/alirezat/FXAnnouncements.pdf",
+  "source_title": "Exchange Rates and Monetary Policy Uncertainty",
+  "quote": "short the U.S. dollar and long other currencies exhibits significantly larger excess returns on days with scheduled Federal Open Market Committee (FOMC) announcements",
+  "expected_value": "High-rate portfolio earned 14.47bp/day on FOMC days vs 1.73bp other days; low-rate 5.19 vs -0.51bp",
+  "why": "8 events/yr, independent of the desk's session-clock mechanisms (adds breadth)",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "FOMC-cycle clock (even-week indicator)",
+  "what_to_build": "Derived clock: weeks since last FOMC (week 0 starts the day before the announcement); expose as a conditioner so index sleeves can be gated/sized by even vs odd FOMC-cycle weeks.",
+  "data_needed": [
+   "FOMC dates (have in forced_flow_calendar)"
+  ],
+  "firm": "Cieslak, Morse, Vissing-Jorgensen",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://faculty.haas.berkeley.edu/morse/research/papers/cycle_paper_cieslak_morse_vissingjorgensen.pdf",
+  "source_title": "Stock Returns over the FOMC Cycle",
+  "quote": "the equity premium realized in the US and worldwide is earned entirely in weeks 0, 2, 4 and 6 in FOMC cycle time",
+  "expected_value": "Conditioner for every long-index sleeve; even-week premium documented 1994-2016 and in 2014-2016 holdout",
+  "why": "cheap derived feature; tests a Fed-communication mechanism no current family encodes",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Add tokyo_fix (00:55 UTC), ecb_fix (13:15 UTC winter/12:15 summer) and lbma_gold_am/pm (10:30/15:00 London) to clock_transition CATALOGUE",
+  "what_to_build": "Extend family_clock_transition.CATALOGUE with the three FX fixes and two LBMA gold auctions so the W-pattern (Krohn) and gold-fix leakage (Caminschi-Heaney) are expressed at their true stamps rather than approximated by tokyo_open/london_open/comex_settle.",
+  "data_needed": [
+   "none - declared venue times"
+  ],
+  "firm": "Krohn, Mueller, Whelan; Caminschi & Heaney",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://wrap.warwick.ac.uk/id/eprint/177333/1/WRAP-foreign-exchange-fixings-returns-around-clock-Mueller-2023.pdf",
+  "source_title": "Foreign Exchange Fixings and Returns around the Clock",
+  "quote": "",
+  "expected_value": "Makes 4-6 documented fix cells exact; pre-ECB leg alone is -1.68bp USD-up per day across G9",
+  "why": "a mislabelled clock moment is a different hypothesis; approximations waste trials",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Month-end equity-hedge rebalancing signal for FX",
+  "what_to_build": "At month-end (London 4pm fix, last business day) sell the currency of the equity market that outperformed over the month (foreign investors re-size currency hedges): signal = relative MTD equity-index return (e.g., GER40 vs US500 for EURUSD, JPN225 for USDJPY, UK100 for GBPUSD), trade into the final fix, partial reversal after.",
+  "data_needed": [
+   "daily index CFD closes (have)",
+   "month_end calendar (have)"
+  ],
+  "firm": "Melvin & Prins (BlackRock/Norges-era practitioners)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://ideas.repec.org/a/eee/finmar/v22y2015icp50-72.html",
+  "source_title": "Equity hedging and exchange rates at the London 4 p.m. fix",
+  "quote": "",
+  "expected_value": "Documented 2004-2013 across the eight most liquid currencies; one event per month per pair, 8+ pairs",
+  "why": "no current family conditions a fix trade on cross-asset month-to-date performance",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Commodity term structure (front/second contract) for carry, basis and basis-momentum",
+  "what_to_build": "Ingest front and second-nearby settlement prices (CME/ICE delayed data or broker swap as proxy) for XTI, XBR, XNG, grains, softs, metals; compute basis (carry), basis-momentum = 12m momentum(front) - 12m momentum(second), and term-premium sorts.",
+  "data_needed": [
+   "front and 2nd-month futures settles",
+   "Fusion daily swap long/short per commodity CFD (proxy)"
+  ],
+  "firm": "Szymanowska et al.; Boons & Porras Prado; Koijen et al.; Gorton & Rouwenhorst",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/jofi.12738",
+  "source_title": "Basis-Momentum",
+  "quote": "",
+  "expected_value": "Szymanowska: basis/momentum/hedging-pressure sorts give spot premia 5-14% p.a.; basis-momentum outperforms benchmark characteristics in time series and cross section",
+  "why": "commodity carry is the single best-documented commodity predictor and the desk's carry family only sees FX swaps well",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Global macro panel for economic momentum and fundamental-adjusted currency value",
+  "what_to_build": "Monthly IP, retail sales, unemployment, CPI, PPI (21 DM + EM) with release-date stamping; plus productivity, NFA, export quality, output gap to purge RER. Feeds a cross-sectional 'economic momentum' currency sort and a fundamentals-adjusted value sort.",
+  "data_needed": [
+   "OECD/IMF/FRED macro series with vintage dates",
+   "IMF external balance (NFA) data"
+  ],
+  "firm": "Dahlquist & Hasseltoft; Menkhoff et al. (Currency Value); Della Corte, Riddiough, Sarno",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.sciencedirect.com/science/article/abs/pii/S0304405X19302211",
+  "source_title": "Economic Momentum and Currency Returns",
+  "quote": "",
+  "expected_value": "Economic-momentum FX Sharpe 0.70 with alpha vs carry/momentum/value; fundamentals-adjusted value Sharpe 0.8-0.9",
+  "why": "two distinct FX premia the desk cannot express price-only",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "FX option-implied data: risk reversals and implied vs realised vol (volatility risk premium)",
+  "what_to_build": "Daily 1M ATM implied vol and 25-delta risk reversals for G10 + key EM; compute VRP = expected realised - implied; sort currencies (sell high insurance cost, buy low) and use risk reversals as carry crash-risk conditioner.",
+  "data_needed": [
+   "FX options implied vols / risk reversals (Bloomberg/Refinitiv/CME options)"
+  ],
+  "firm": "Della Corte, Ramadorai, Sarno; Brunnermeier, Nagel, Pedersen",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.repository.cam.ac.uk/items/b09f6027-89c5-4b23-88ce-eae2c3fcbe68",
+  "source_title": "Volatility risk premia and exchange rate predictability",
+  "quote": "",
+  "expected_value": "VRP strategy: desirable return/diversification, returns come from spot moves not rate differentials",
+  "why": "only options data measure crash-insurance cost; price-only proxies miss it",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Consensus expectations for macro releases (surprise = actual - consensus)",
+  "what_to_build": "Stamp consensus and actual for NFP, CPI, retail sales, GDP, central-bank decisions; compute standardized surprises; event_reaction by sign and size, with asymmetric bad-news weighting.",
+  "data_needed": [
+   "economic calendar with consensus + actual (e.g., investing.com / ForexFactory scrape, or paid feed)"
+  ],
+  "firm": "Andersen, Bollerslev, Diebold, Vega",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://public.econ.duke.edu/~boller/Published_Papers/aer_03.pdf",
+  "source_title": "Micro Effects of Macro Announcements: Real-Time Price Discovery in Foreign Exchange",
+  "quote": "",
+  "expected_value": "Surprises produce conditional-mean jumps in USD pairs; bad news has larger impact than good news",
+  "why": "event_reaction without surprise sign is a coin flip on direction",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Institutional FX order flow (CLS / bank flow indices)",
+  "what_to_build": "Evaluate CLS hourly FX flow data or bank flow indices as an orderflow_imbalance source; order flow explained >60% of daily DM/USD changes in Evans-Lyons.",
+  "data_needed": [
+   "CLS FX flow data (paid)"
+  ],
+  "firm": "Evans & Lyons",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://faculty.georgetown.edu/evansm1/wpapers_files/orderflow.pdf",
+  "source_title": "Order Flow and Exchange Rate Dynamics",
+  "quote": "",
+  "expected_value": "R2 above 60% contemporaneous (DM/USD daily); predictive value lower and must be measured",
+  "why": "the desk's orderflow families lack a genuine interbank flow input",
+  "status": "price the feed before building",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Effective number of trials via ONC clustering feeding DSR",
+  "what_to_build": "Cluster all tested cells' return series with ONC (optimal number of clusters on the correlation matrix); use the effective number of uncorrelated trials K_eff and the cross-cluster Sharpe variance as the DSR inputs instead of the raw cell count.",
+  "data_needed": [
+   "per-cell OOS return series (have)"
+  ],
+  "firm": "Lopez de Prado & Lewis",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.tandfonline.com/doi/abs/10.1080/14697688.2019.1622311",
+  "source_title": "Detection of false investment strategies using unsupervised learning methods",
+  "quote": "",
+  "expected_value": "Raw trial counts (e.g., 597 trials rejecting 42/42 cells) overstate the multiple-testing charge when cells are correlated; K_eff restores power without fooling the gate",
+  "why": "CLAUDE.md records deflated_sharpe rejecting 42 of 42 at 597 trials; charging correlated variants as independent is a Rule-1 violation (timidity by arithmetic)",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Multi-signal combination charge (Novy-Marx n^k rule) for ensemble/formula families",
+  "what_to_build": "When an ensemble/weak_signal_compiler picks the best k of n signed signals, charge the gate as if the best of n^k single signals had been selected (or simulate the null by combining random signals).",
+  "data_needed": [
+   "registry of candidate signal pool size n and chosen k"
+  ],
+  "firm": "Robert Novy-Marx",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.nber.org/system/files/working_papers/w21329/w21329.pdf",
+  "source_title": "Backtesting Strategies Based on Multiple Signals",
+  "quote": "the best k out of n candidate signals yields a bias almost as large as ... selecting the single best of nk candidate signals",
+  "expected_value": "Prevents ensembles from laundering overfit members past the DSR gate",
+  "why": "critical values 'can be several times standard levels'",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Nonlinear Harvey-Liu Sharpe haircut and t>3 hurdle as a reported second opinion",
+  "what_to_build": "Publish, per certificate, the Harvey-Liu multiple-testing haircut (Bonferroni/Holm/BHY) next to DSR and PBO; the haircut is nonlinear (marginal Sharpes cut heavily, strong ones lightly).",
+  "data_needed": [
+   "trial counts and correlation (have)"
+  ],
+  "firm": "Harvey & Liu; Harvey, Liu, Zhu",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://people.duke.edu/~charvey/Research/Published_Papers/P118_and_the_cross.PDF",
+  "source_title": "... and the Cross-Section of Expected Returns",
+  "quote": "A new factor needs to clear a much higher hurdle, with a t-statistic greater than 3.0.",
+  "expected_value": "Cheap cross-check; a strategy passing DSR but failing BHY is a flag",
+  "why": "two independent multiple-testing frameworks disagreeing is information",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Minimum backtest length (MinBTL) and PBO per family before sweeping more parameters",
+  "what_to_build": "Compute MinBTL for the number of configurations a family sweeps; refuse sweeps whose history is shorter than MinBTL, report PBO via CSCV per family.",
+  "data_needed": [
+   "bar history per symbol (have)"
+  ],
+  "firm": "Bailey, Borwein, Lopez de Prado, Zhu",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.davidhbailey.com/dhbpapers/backtest-prob.pdf",
+  "source_title": "The Probability of Backtest Overfitting",
+  "quote": "Standard statistical techniques designed to prevent regression overfitting, such as hold-out, tend to be unreliable and inaccurate in the context of investment backtests.",
+  "expected_value": "Stops parameter grids from outgrowing the data (esp. M1-M15 session families with short history)",
+  "why": "PBO -> 1 as configurations grow on a fixed sample",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "CPCV path distribution as the certificate Sharpe input",
+  "what_to_build": "Use combinatorial purged CV (with embargo) to produce a distribution of OOS Sharpe paths per cell, and feed its mean/variance into DSR rather than a single walk-forward path; a 2024 controlled comparison found CPCV ahead of k-fold, purged k-fold and walk-forward on PBO and DSR.",
+  "data_needed": [
+   "labels with end times (triple-barrier ttl)"
+  ],
+  "firm": "Arian, Norouzi, Seco; Lopez de Prado",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.sciencedirect.com/science/article/abs/pii/S0950705124011110",
+  "source_title": "Backtest overfitting in the machine learning era: A comparison of out-of-sample testing methods in a synthetic controlled environment",
+  "quote": "",
+  "expected_value": "Lower false-discovery for the same compute",
+  "why": "walk-forward is one path; CPCV gives the variance the DSR needs",
+  "status": "verify: purged/combinatorial code exists in repo (50+/58 files match) - wire, don't rebuild",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Sample-uniqueness weights and sequential bootstrap for ML layers (meta-labeller, allocator models)",
+  "what_to_build": "For overlapping triple-barrier labels compute concurrency c_t and average uniqueness; weight samples by uniqueness and set bagging max_samples to average uniqueness (or use sequential bootstrap).",
+  "data_needed": [
+   "label start/end times (libs/features/labels.py has triple_barrier)"
+  ],
+  "firm": "Marcos Lopez de Prado (AFML ch.4)",
+  "evidence": "REPORTED",
+  "source_url": "https://mlfinpy.readthedocs.io/en/latest/Sampling.html",
+  "source_title": "Advances in Financial Machine Learning, ch. 4 Sample weights (uniqueness, sequential bootstrap) - mlfinpy docs",
+  "quote": "",
+  "expected_value": "Removes the inflation of in-sample fit from counting the same move many times",
+  "why": "no uniqueness/sequential-bootstrap code found in repo (grep: 0 files)",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Fractionally differentiated features (FFD) with minimum-d search",
+  "what_to_build": "For ML/meta-label features built from price levels (gold, indices, yields) use fixed-width-window fractional differencing at the smallest d passing ADF, preserving memory that integer differencing destroys.",
+  "data_needed": [
+   "price series (have)"
+  ],
+  "firm": "Marcos Lopez de Prado (AFML ch.5)",
+  "evidence": "REPORTED",
+  "source_url": "https://hudsonthames.org/fractional-differentiation/",
+  "source_title": "Fractionally Differentiated Features (AFML ch. 5) - Hudson & Thames",
+  "quote": "",
+  "expected_value": "Published examples: d* ~0.3-0.5 on equity index series with the transformed series still highly correlated to the level",
+  "why": "fracdiff appears only in 2-3 non-MT5 libs files",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Clustered feature importance (CFI) in feature admission",
+  "what_to_build": "Cluster features (ONC) then run MDA with whole clusters permuted and SFI per cluster, so substitute features (e.g., several vol measures) do not dilute each other's importance.",
+  "data_needed": [
+   "feature matrix (libs/regime/feature_admission.py)"
+  ],
+  "firm": "Marcos Lopez de Prado (ML for Asset Managers)",
+  "evidence": "REPORTED",
+  "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3517595",
+  "source_title": "Clustered Feature Importance (presentation slides) / Machine Learning for Asset Managers",
+  "quote": "",
+  "expected_value": "More stable feature admission; avoids discarding a real driver because a twin shares its credit",
+  "why": "no CFI implementation found",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "combination",
+  "title": "Meta-labelling as a two-sided sizing layer on every certified primary sleeve",
+  "what_to_build": "Keep the primary sleeve's side; train a secondary classifier on triple-barrier outcomes of its trades (features: session, vol state, spread state, calendar, regime) whose calibrated probability scales size UP as well as down (Rule 2), with purged CV and uniqueness weights.",
+  "data_needed": [
+   "trade logs with triple-barrier labels per sleeve",
+   "state features at entry"
+  ],
+  "firm": "Lopez de Prado; Joubert (Hudson & Thames)",
+  "evidence": "REPORTED",
+  "source_url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4032018",
+  "source_title": "Meta-Labeling: Theory and Framework",
+  "quote": "",
+  "expected_value": "Joubert: meta-labeling filters false positives and improves Sharpe and max drawdown on top of a primary strategy",
+  "why": "desk has meta_label code in execution_intelligence/build_allocator; extend to per-sleeve entry sizing with calibration",
+  "status": "partial in repo",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "combination",
+  "title": "Shrink ensemble weights toward equal weights (forecast-combination puzzle) with ridge",
+  "what_to_build": "Combine sleeve/alpha forecasts with ridge-shrunk weights whose shrinkage target is 1/N; choose shrinkage by purged CV. Complexity can help (Kelly-Malamud-Zhou) only with ridge regularisation.",
+  "data_needed": [
+   "sleeve forecast/return histories (have)"
+  ],
+  "firm": "Claeskens, Magnus, Vasnev, Wang; DeMiguel, Garlappi, Uppal; Kelly, Malamud, Zhou",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.janmagnus.nl/papers/JRM113a.pdf",
+  "source_title": "The forecast combination puzzle: A simple theoretical explanation",
+  "quote": "",
+  "expected_value": "Estimated-optimal weights are biased and higher-variance; 1/N was not consistently beaten by 14 optimisers (DGU); ridge-regularised high-complexity models improved OOS (KMZ)",
+  "why": "the ensemble family's weights should not be free parameters fitted in-sample",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "combination",
+  "title": "Grinold-Kahn breadth accountant: IR = TC * IC * sqrt(effective breadth)",
+  "what_to_build": "Measure per-sleeve IC, the transfer coefficient lost to lot/heat constraints, and effective breadth N_eff = N / (1 + (N-1) * avg_rho) from sleeve return correlations; report which additions raise sqrt(N_eff) most per unit heat (feeds E8 'independent mechanisms').",
+  "data_needed": [
+   "sleeve returns and signals (have)"
+  ],
+  "firm": "Grinold & Kahn; Clarke, de Silva, Thorley",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.cfainstitute.org/insights/professional-learning/refresher-readings/2026/analysis-active-portfolio-management",
+  "source_title": "The Fundamental Law of Active Management (Grinold 1989; Grinold & Kahn 2000; Clarke, de Silva, Thorley 2002)",
+  "quote": "",
+  "expected_value": "Makes 'count mechanisms, not certificates' quantitative; a correlated 4th sleeve adds almost no breadth",
+  "why": "desk has breadth.py / breadth_credit.py - verify it uses correlation-adjusted N_eff and TC",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "sizing",
+  "title": "Volatility-managed sizing with asset-class awareness (two-sided capital modifier)",
+  "what_to_build": "Scale each sleeve's exposure by c / sigma^2_{t-1} (previous-period realised variance), capped by the heat ceiling; apply fully to equity-index and carry sleeves (Sharpe gain documented), and to FX/commodity/bond sleeves only for tail control (Sharpe neutral).",
+  "data_needed": [
+   "realised variance per sleeve (have)"
+  ],
+  "firm": "Moreira & Muir; Harvey et al. (Man Group)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.nber.org/papers/w22208",
+  "source_title": "Volatility-Managed Portfolios",
+  "quote": "We construct portfolios that scale monthly returns by the inverse of their previous month's realized variance",
+  "expected_value": "Raises Sharpe for risk assets and carry; lowers left-tail severity everywhere - and INCREASES exposure in calm regimes (Rule 2)",
+  "why": "Man Group: Sharpe effect negligible for bonds, currencies, commodities; left tails reduced across all classes",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "sizing",
+  "title": "Dynamic momentum weighting from forecast mean and variance (crash-aware, two-sided)",
+  "what_to_build": "For trend/momentum sleeves, set weight proportional to forecast mean / forecast variance of the sleeve (mean falls in 'panic' states after market declines with high vol), which both cuts crash exposure and levers up in good states.",
+  "data_needed": [
+   "sleeve return history, market drawdown and vol state (have)"
+  ],
+  "firm": "Daniel & Moskowitz",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.kentdaniel.net/papers/published/jfe_16.pdf",
+  "source_title": "Momentum crashes",
+  "quote": "",
+  "expected_value": "Dynamic momentum approximately doubles alpha and Sharpe of static momentum",
+  "why": "fits 'dynamicness not timidity': exposure rises as often as it falls",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "sizing",
+  "title": "Kelly with parameter uncertainty: publish growth-vs-fraction curve per sleeve",
+  "what_to_build": "For each sleeve estimate f* and its sampling error; publish g(c f*) / g(f*) = c(2 - c) and the probability that the true f* is below the deployed fraction. Overbetting past 2f* gives negative growth, so estimation error in f* is a direct E[log W] cost. This is a measurement for the allocator, not a cap.",
+  "data_needed": [
+   "sleeve return distributions (have)"
+  ],
+  "firm": "Edward O. Thorp",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://gwern.net/doc/statistics/decision/2006-thorp.pdf",
+  "source_title": "The Kelly Criterion in Blackjack, Sports Betting, and the Stock Market",
+  "quote": "",
+  "expected_value": "Robust forward E[log W] is maximised at the fraction that is optimal under the posterior of f*, which can be above OR below the point estimate",
+  "why": "Rule 1-compliant: sizing derived from evidence, both directions",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "risk",
+  "title": "Factor-exposure accounting: DOL, HML-FX carry, trend, equity beta, vol",
+  "what_to_build": "Regress every sleeve on the dollar factor (average of all XXXUSD), HML-FX (carry basket), a TSMOM factor, US500 beta and a vol factor; report residual (true) alpha and common-factor crowding across sleeves.",
+  "data_needed": [
+   "daily sleeve P&L (have)",
+   "factor baskets built from universe CFDs"
+  ],
+  "firm": "Lustig, Roussanov, Verdelhan; Asness, Moskowitz, Pedersen",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.nber.org/papers/w14082",
+  "source_title": "Common Risk Factors in Currency Markets",
+  "quote": "",
+  "expected_value": "Reveals when 'independent mechanisms' are the same dollar or carry bet; directly improves E8 pass-probability estimates",
+  "why": "cross_asset_residual/pca_residual exist as families but not as a risk report over the live book",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Dollar-carry timing (average forward discount)",
+  "what_to_build": "Long a basket of all foreign currencies vs USD when the average forward discount (average foreign minus US short rate) is positive, short otherwise; add US IP growth as predictor.",
+  "data_needed": [
+   "policy/short rates for G10+EM (or broker swap rates)",
+   "US industrial production"
+  ],
+  "firm": "Lustig, Roussanov, Verdelhan",
+  "evidence": "DOCUMENTED",
+  "source_url": "http://web.mit.edu/adrienv/www/LRV_JFE_2014.pdf",
+  "source_title": "Countercyclical Currency Risk Premia",
+  "quote": "the average forward discount and U.S. industrial production growth rates forecast up to 25% of the dollar return variation at the one-year horizon.",
+  "expected_value": "Sharpe > 0.50, uncorrelated with HML carry; $100 (1983) -> $1,467",
+  "why": "a macro-timed dollar beta the desk has no family for",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "signal",
+  "title": "Same-slot time-of-day seasonality signal (intraday periodicity persistence)",
+  "what_to_build": "Signal = sign/magnitude of the average return of the same half-hour (or hour) slot over the past 20-40 days; hold for that slot. Also a daily 'same weekday' and yearly 'same calendar month' variant (return seasonalities).",
+  "data_needed": [
+   "intraday bars (have)"
+  ],
+  "firm": "Heston, Korajczyk, Sadka; Keloharju, Linnainmaa, Nyberg",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://arxiv.org/abs/1005.3535",
+  "source_title": "Intraday Patterns in the Cross-section of Stock Returns",
+  "quote": "",
+  "expected_value": "HKS: continuation at daily multiples of half-hours lasting at least 40 trading days; KLN: same-calendar-month strategy 13%/yr in stocks, also in commodities and country indices",
+  "why": "calendar_month/dow_effect are fixed-slot; nothing selects slots from their own history out-of-sample",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Diurnal-periodicity-adjusted volatility for ATR-threshold families",
+  "what_to_build": "Normalise returns by the time-of-day volatility profile (Andersen-Bollerslev flexible Fourier or simple slot averages) before computing ATR shocks, jump flags and 'abnormal displacement' in dip_atr_shock, jump, usd_session_shock, hedging_demand_close, fx_fixing_reversal.",
+  "data_needed": [
+   "intraday bars (have)"
+  ],
+  "firm": "Andersen & Bollerslev",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://finance.martinsewell.com/stylized-facts/volatility/AndersenBollerslev1997b.pdf",
+  "source_title": "Intraday periodicity and volatility persistence in financial markets",
+  "quote": "",
+  "expected_value": "Stops the London/NY open from being flagged 'abnormal' every day and the Asian lull from never qualifying; sharpens every displacement-threshold family",
+  "why": "intraday periodicity has a strong impact on dynamics of high-frequency returns; raw ATR mixes session regimes",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "execution",
+  "title": "VPIN / bulk-volume-classified toxicity from MT5 tick volume",
+  "what_to_build": "Compute a volume-time toxicity proxy (bulk volume classification on tick-volume buckets) per symbol; use as an execution_state input (widen/skip entries when toxicity high) and a jump-risk conditioner.",
+  "data_needed": [
+   "MT5 tick volume and tick prices (have on box)"
+  ],
+  "firm": "Easley, Lopez de Prado, O'Hara",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://academic.oup.com/rfs/article-abstract/25/5/1457/1569929",
+  "source_title": "Flow Toxicity and Liquidity in a High-frequency World",
+  "quote": "",
+  "expected_value": "Avoids entering into adverse-selection bursts; VPIN reportedly anticipated the 2010 flash crash",
+  "why": "only mechanism_census mentions VPIN; no implementation",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Import formulaic-alpha and 151-strategy catalogues as seeds for alpha_evolution/formula (FX/commodity/futures chapters only)",
+  "what_to_build": "Parse Kakushadze 101 Formulaic Alphas (price/volume expressions, avg holding 0.6-6.4 days, avg pairwise corr 15.9%) and the FX/commodity/futures/global-macro chapters of 151 Trading Strategies into formula-family seeds and hypothesis rows, cross-sectional over the MT5 hypothesis-lane universe (no single-name equities).",
+  "data_needed": [
+   "arXiv 1601.00991 text; 151 Trading Strategies SSRN PDF"
+  ],
+  "firm": "Kakushadze (WorldQuant); Kakushadze & Serur",
+  "evidence": "REPORTED",
+  "source_url": "https://arxiv.org/pdf/1601.00991",
+  "source_title": "101 Formulaic Alphas",
+  "quote": "",
+  "expected_value": "Hundreds of explicit, low-correlation seed expressions; must be charged as trials",
+  "why": "seeds from published formulas beat random genetic initialisation",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Alpha-correlation admission and turnover budget (WorldQuant practice)",
+  "what_to_build": "Admit a new alpha only if its correlation to existing live alphas is below a cutoff or it improves the combined book; track turnover vs cost per alpha.",
+  "data_needed": [
+   "live alpha return panel (have)"
+  ],
+  "firm": "Tulchinsky et al. (WorldQuant, Finding Alphas)",
+  "evidence": "REPORTED",
+  "source_url": "https://www.wiley.com/en-us/Finding+Alphas:+A+Quantitative+Approach+to+Building+Trading+Strategies,+2nd+Edition-p-9781119571278",
+  "source_title": "Finding Alphas (2nd ed.)",
+  "quote": "",
+  "expected_value": "Keeps breadth genuine as the book grows",
+  "why": "industrial alpha factories police correlation and turnover, not just Sharpe",
+  "status": "verify existing correlation gates",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Cost-realistic replication rule for exotic/thin CFDs (anomaly-zoo lesson)",
+  "what_to_build": "Replicate every literature-sourced cell first on liquid majors with measured spreads; flag cells whose edge exists only in exotics (USDTRY, EURRUB, USDZAR crosses, softs) as 'friction-category' and require net-of-measured-spread evidence.",
+  "data_needed": [
+   "measured spread per symbol/hour (have)"
+  ],
+  "firm": "Hou, Xue, Zhang; Chen & Zimmermann",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://global-q.org/uploads/1/2/2/6/122679606/houxuezhang2020rfs.pdf",
+  "source_title": "Replicating Anomalies",
+  "quote": "",
+  "expected_value": "HXZ: 65% of 452 anomalies fail |t|>1.96 once microcaps are controlled, 96% of trading-frictions category; CZ: clearly significant originals reproduce 98% in-sample - so decay is about frictions/OOS, not typos",
+  "why": "the CFD analogue of microcaps is thin exotic CFDs with wide, time-varying spreads",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Decompose reversal P&L into own-autocorrelation vs cross-autocorrelation",
+  "what_to_build": "For any cross-sectional reversal/contrarian book, decompose expected profit into own-autocovariance, cross-autocovariance (lead-lag) and mean-dispersion terms (Lo-MacKinlay) before certifying it as 'overreaction'.",
+  "data_needed": [
+   "cell return panels (have)"
+  ],
+  "firm": "Lo & MacKinlay",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://web.mit.edu/Alo/www/Papers/lo-mackinlay-90b.html",
+  "source_title": "When Are Contrarian Profits Due to Stock Market Overreaction?",
+  "quote": "",
+  "expected_value": "Correct mechanism labelling avoids double-counting a lead_lag edge as a reversal edge",
+  "why": "mechanism truth matters for independence counting",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "regime",
+  "title": "Adaptive-markets edge-decay monitor",
+  "what_to_build": "Track each certified mechanism's rolling IC / Sharpe with a change-point test and re-weight (not kill) sleeves as edges wax and wane with the ecology of participants.",
+  "data_needed": [
+   "live and shadow sleeve returns (have)"
+  ],
+  "firm": "Andrew W. Lo",
+  "evidence": "REPORTED",
+  "source_url": "http://stat.wharton.upenn.edu/~steele/Courses/434/434Context/EfficientMarket/AndyLoJPM2004.pdf",
+  "source_title": "The Adaptive Markets Hypothesis",
+  "quote": "",
+  "expected_value": "Earlier detection of decaying edges and of revived ones (two-sided)",
+  "why": "AMH: profit opportunities appear and disappear as market ecology changes",
+  "status": "verify libs/research/arena.py covers this",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "process",
+  "title": "Narang alpha-taxonomy coverage check (trend, reversion, technical sentiment, value/yield, growth, quality)",
+  "what_to_build": "Map every live sleeve to Narang's six theory-driven alpha classes plus the risk/transaction-cost/portfolio-construction/execution modules; report empty classes (e.g., growth = economic momentum, quality) as hunt targets.",
+  "data_needed": [
+   "sleeve registry (have)"
+  ],
+  "firm": "Rishi K. Narang",
+  "evidence": "REPORTED",
+  "source_url": "https://www.oreilly.com/library/view/inside-the-black/9781118416990/",
+  "source_title": "Inside the Black Box (2nd ed.)",
+  "quote": "",
+  "expected_value": "Directs hunting toward uncovered alpha classes; complements layers.py",
+  "why": "a practitioner's complete map of what a quant book contains",
+  "status": "verify libs/research/layers.py overlap",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data",
+  "title": "Reference data: AQR/Man public factor and trend datasets for benchmarking",
+  "what_to_build": "Download AQR 'Time Series Momentum' and 'Value and Momentum Everywhere' monthly factor data and use them as benchmarks/regressors for the desk's trend and style sleeves.",
+  "data_needed": [
+   "AQR datasets (public)"
+  ],
+  "firm": "Moskowitz, Ooi, Pedersen; Asness et al. (AQR)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://w4.stern.nyu.edu/facdir/lpederse/papers/TimeSeriesMomentum.pdf",
+  "source_title": "Time series momentum",
+  "quote": "",
+  "expected_value": "Immediate check whether desk trend sleeves are just the public factor (and whether their live Sharpe matches the benchmark's)",
+  "why": "free, authoritative benchmark series",
+  "cluster": "literature"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "event_calendar",
+  "title": "Benchmark-fix and gotobi event clock",
+  "what_to_build": "One DST-aware table of fix instants in broker time: Tokyo TTM 09:55 JST (00:55 UTC, no DST), ECB 14:15 CET, WMR 16:00 London (window ends 16:02:30), LBMA gold 10:30/15:00 and silver 12:00 London, COMEX gold settle 13:30 ET, NYMEX crude 14:30 ET; gotobi days with Japanese holiday roll and Monday flag; month-end, T-2 corporate day, quarter-end.",
+  "data_needed": [
+   "Japanese holiday calendar",
+   "UK/US/EU DST rules",
+   "LBMA auction times"
+  ],
+  "firm": "Krohn-Mueller-Whelan; Bessho-Sugimoto-Suzuki; forexdetox",
+  "evidence": "DOCUMENTED (effects), capability is plumbing",
+  "source_url": "https://forexdetox.substack.com/p/the-tokyo-fix-reversal-anomaly-on",
+  "quote": "Japan does not observe daylight saving time, so 09:55 JST is always 00:55 UTC.",
+  "expected_value": "Unlocks 8 of the hypotheses above; a one-hour clock error silently kills every fix study (the desk's own london_close_momentum note is a 2-3 hour offset case)",
+  "why": "fx_fixing_reversal and forced_flow take a single fix_hour/event_kind; the effects live at minute resolution at clocks that move differently under DST.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "family_parameterisation",
+  "title": "Cross-asset-conditioned forced_flow",
+  "what_to_build": "Let forced_flow take a conditioning series (e.g. month-to-date US500, EUSTX50, AUS200 return) and set side = sign(beta*condition) instead of prior FX drift; pre-register the beta sign from Melvin-Prins.",
+  "data_needed": [
+   "MT5 index CFD bars (have)",
+   "month-end calendar"
+  ],
+  "firm": "Melvin & Prins (BlackRock/UCSD)",
+  "evidence": "DOCUMENTED",
+  "source_url": "https://www.ecb.europa.eu/events/pdf/conferences/131216/Third_FX_Workshop_MELVIN_PRINS_Equity%20hedging%20and%20exchange%20rates%20Nov%202013.pdf",
+  "quote": "We test the hypothesis that hedging by international equity portfolio managers affects exchange rates",
+  "expected_value": "Converts a documented 2bp-per-1pp-equity slope into a tradable monthly signal on 4-5 USD pairs",
+  "why": "Current mode 'pre_flow' trades the prior drift, which is not the documented driver.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Walk-forward correlation of the whole parameter surface",
+  "what_to_build": "For each family x symbol, rank-correlate in-sample vs out-of-sample performance across ALL grid cells per walk-forward fold; accept structure only if the surface carries information, not if one best cell survives.",
+  "data_needed": [
+   "existing sweep grids"
+  ],
+  "firm": "Martyn Tinsley (Algo Advantage ep.053)",
+  "evidence": "REPORTED",
+  "source_url": "https://www.algoadvantage.io/podcast/053-martyn-tinsley-2/",
+  "quote": "whether the entire optimisation surface carries information from in-sample to out-of-sample performance",
+  "expected_value": "Cuts false promotions from lucky cells and rescues families discarded because one parameter failed OOS",
+  "why": "Single-best-cell OOS tests are high-variance under the desk's large trial counts.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Post-publication decay splitter",
+  "what_to_build": "For every hypothesis citing a published anomaly, report stats in three windows: pre-publication, publication->5y ago, last 5y; gate on the last window and on the trend across windows.",
+  "data_needed": [
+   "publication year per source (in rows)"
+  ],
+  "firm": "NY Fed (overnight drift), Kurov et al. (pre-FOMC), Crabel (ORB), Mou (index roll)",
+  "evidence": "DOCUMENTED (four independent decays found in this pass)",
+  "source_url": "https://libertystreeteconomics.newyorkfed.org/2026/07/the-disappearing-overnight-drift/",
+  "quote": "Five additional years of data later, that pattern appears to have faded",
+  "expected_value": "Prevents promoting dead anomalies whose full-sample stats are carried by pre-2015 data",
+  "why": "Several mined mechanisms are DOCUMENTED yet dead or contested now.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "50% out-of-sample haircut prior for mined and theory-backed predictors alike",
+  "what_to_build": "Shrink backtest Sharpe/E[log W] by ~50% before allocation unless forward evidence exists; apply equally to 'theory-backed' and 'agnostic' ideas.",
+  "data_needed": [],
+  "firm": "Samir Varma citing Federal Reserve Board paper 'Does Peer-Reviewed Research Help Predict Stock Returns?'",
+  "evidence": "DOCUMENTED (Fed paper: 29,000 mined accounting ratios vs 212 published predictors, both ~50% OOS retention)",
+  "source_url": "https://www.algoadvantage.io/podcast/050-samir-varma/",
+  "quote": "Both approaches retained around 50% of their predictive power out of sample.",
+  "expected_value": "Better-calibrated allocator inputs; less over-sizing of fresh certificates",
+  "why": "Growth governance requires robust forward E[log W]; unshrunk backtests overstate it.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "conditioner",
+  "title": "Tick-size-to-volatility ratio per underlying future",
+  "what_to_build": "Compute (underlying futures tick / daily vol) per instrument as a slow conditioner; route fast trend speeds only to large-tick markets.",
+  "data_needed": [
+   "futures tick sizes (static)",
+   "daily vol from MT5 bars"
+  ],
+  "firm": "CFM (Bouchaud et al.)",
+  "evidence": "REPORTED",
+  "source_url": "https://finance.biggo.com/podcast/57764de98bd370e7",
+  "quote": "The key variable is the ratio of tick size to volatility .",
+  "expected_value": "Explains where short-term trend still pays; avoids spending trials on small-tick FX/index fast trend",
+  "why": "multi_speed_trend votes all speeds on all symbols.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "execution",
+  "title": "Fast-alpha execution overlay",
+  "what_to_build": "Use sub-cost short-horizon signals (M5 mean reversion, fix-window reversal) only to time entries/exits of slower certified sleeves.",
+  "data_needed": [
+   "M5 bars (have for XAUUSD; extend)"
+  ],
+  "firm": "Concretum Group",
+  "evidence": "DOCUMENTED (SPY 2007-2026 note)",
+  "source_url": "https://concretumgroup.com/papers/",
+  "quote": "fast predictive signals which fail after transaction costs may still possess economic value when used as informational alpha rather than traded directly",
+  "expected_value": "Converts rejected fast cells into basis-point execution gains on every live trade",
+  "why": "The gauntlet discards sub-cost signals entirely.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Rebalance/entry timing-luck sweep",
+  "what_to_build": "Evaluate each daily/weekly sleeve across all entry-offset schedules and report dispersion; treat best-offset results as selection.",
+  "data_needed": [],
+  "firm": "Concretum Group (Zarattini, Pagani); concept also Newfound/Hoffstein",
+  "evidence": "DOCUMENTED (US momentum 1991-2024: ~350bp/yr best-worst schedule gap)",
+  "source_url": "https://concretumgroup.com/papers/",
+  "quote": "the difference between the best and worst rebalancing schedules reached nearly 350 basis points in annual returns",
+  "expected_value": "Removes an unpriced source of backtest luck",
+  "why": "Hourly-anchored families pick one anchor hour.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "portfolio",
+  "title": "Position buffering and EWMA vol in the allocator",
+  "what_to_build": "Trade only when the target position leaves a no-trade buffer; use EWMA vol for sizing to cut churn without shrinking exposure.",
+  "data_needed": [],
+  "firm": "Rob Carver (ex-Man AHL)",
+  "evidence": "REPORTED",
+  "source_url": "https://www.buysidedigest.com/podcast/rob-carver-on-trend-following-skew-and-the-total-portfolio-shift-systematic-investor-ep-375/",
+  "quote": "with buffering essentially you you only trade if your positions further away from the optimal position",
+  "expected_value": "Lower cost drag at unchanged heat (consistent with never-reduce-aggressiveness)",
+  "why": "Cost is the binding constraint on fix/clock strategies.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "cost_model",
+  "title": "Fix-window executable spread measurement",
+  "what_to_build": "Record Fusion tick bid/ask at +/-10 minutes around 00:55 UTC, 14:15 CET, 16:00 London and LBMA auction times; build a fix-specific cost surface.",
+  "data_needed": [
+   "Fusion MT5 ticks (tick_recorder exists)",
+   "Dukascopy/TrueFX ticks for history"
+  ],
+  "firm": "Krohn-Mueller-Whelan",
+  "evidence": "DOCUMENTED (fix strategies negative at full costs, positive at tighter spreads)",
+  "source_url": "https://sites.insead.edu/facultyresearch/research/file.cfm?fid=66802",
+  "quote": "Market participants that are able to trade at better bid-ask spreads may earn Sharpe ratios ranging between 0.5 and 0.7",
+  "expected_value": "Decides which of the fix hypotheses are executable at all",
+  "why": "The edge is smaller than a typical retail spread; measurement, not assumption.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data_ingest",
+  "title": "Consensus-surprise series for scheduled releases",
+  "what_to_build": "From the ff_calendar_vintage snapshots, store actual-minus-forecast per event (EIA crude inventories, NFP, CPI, PMIs incl. Caixin) keyed to release instant; feed event_reaction with signed surprise instead of dates only.",
+  "data_needed": [
+   "ForexFactory weekly JSON (verified live, includes forecast field)"
+  ],
+  "firm": "desk-generic",
+  "evidence": "SPECULATED",
+  "source_url": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+  "quote": "",
+  "expected_value": "Turns event_reaction from a timing family into an information family",
+  "why": "Dates alone throw away the sign of the news.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data_ingest",
+  "title": "London-listed and LME positioning (ICE COT, LME COTR)",
+  "what_to_build": "Weekly fetch of ICE Futures Europe COT (Brent, gasoil, London cocoa, robusta, white sugar) and LME Commitments of Traders (Cu, Al, Zn, Ni, Pb) into the cot families' input schema.",
+  "data_needed": [
+   "ice.com/report/122",
+   "lme.com commitments-of-traders (Cloudflare-protected from this container)"
+  ],
+  "firm": "ICE / LME",
+  "evidence": "SPECULATED",
+  "source_url": "https://www.ice.com/report/122",
+  "quote": "",
+  "expected_value": "Extends 6 COT families to UKCOCOA, COFROB, SUGAR, XBRUSD, XCUUSD, XALUSD, XZNUSD, XNIUSD, XPBUSD",
+  "why": "CFTC data does not cover London contracts.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "instrument_construction",
+  "title": "Synthetic spread instruments with trend rules",
+  "what_to_build": "Build equal-risk synthetic spreads from universe pairs (XBRUSD-XTIUSD, USCOCOA-UKCOCOA with GBPUSD conversion, COFARA-COFROB, SUGAR-SUGARRAW, XAUUSD/XAGUSD, XPTUSD-XPDUSD) and allow trend families to run on them.",
+  "data_needed": [
+   "MT5 bars (have)"
+  ],
+  "firm": "Takahe Capital",
+  "evidence": "REPORTED",
+  "source_url": "https://www.flirtingwithmodels.com/episodes/1iIqmQ7piJd",
+  "quote": "why spreads represent a fundamentally different opportunity set than outright futures",
+  "expected_value": "New low-correlation sleeves inside the same heat (more independent bets)",
+  "why": "relative_value only mean-reverts spreads.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "data_hygiene",
+  "title": "CFD roll calendar for commodity CFDs",
+  "what_to_build": "Detect/record Fusion's roll dates per commodity CFD (price jumps + swap changes) and mask roll bars in backtests; also the substrate for the index-roll hypothesis.",
+  "data_needed": [
+   "MT5 bars",
+   "broker contract specs"
+  ],
+  "firm": "Jane Street (Eric Mannes: futures metadata, multipliers)",
+  "evidence": "REPORTED",
+  "source_url": "https://signalsandthreads.com/wrestling-the-world-into-rows/",
+  "quote": "assumptions that are baked into your trading and risk systems, like this price will always be positive, that turn out to not be true",
+  "expected_value": "Removes roll artefacts from every commodity backtest",
+  "why": "Unmasked rolls look like gaps/jumps to price-only families.",
+  "cluster": "practitioners_data"
+ },
+ {
+  "kind": "capability_gap",
+  "area": "validation",
+  "title": "Pre-registered Monte Carlo kill thresholds",
+  "what_to_build": "For each live sleeve, resample backtest trades to derive drawdown/losing-streak percentiles and write the pause/stop rule before go-live.",
+  "data_needed": [],
+  "firm": "Kevin Davey (Better System Trader)",
+  "evidence": "REPORTED",
+  "source_url": "https://bettersystemtrader.com/6-ways-to-detect-a-failing-trading-strategy-with-kevin-davey/",
+  "quote": "The biggest mistake he sees traders make is not having any criteria defined until they are already in the middle of a drawdown.",
+  "expected_value": "Faster, less emotional retirement of decayed sleeves (retirement stays automatic per standing order)",
+  "why": "Single-path max drawdown understates uncertainty.",
+  "cluster": "practitioners_data"
+ }
+]

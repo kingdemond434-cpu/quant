@@ -1,0 +1,110 @@
+from __future__ import annotations
+
+import json
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+import pytest
+
+DESK = Path(__file__).resolve().parents[1]
+ROOT = DESK.parents[1]
+for p in (str(ROOT), str(DESK / "research")):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
+import global_research_acceptance as A  # noqa: E402
+
+
+def test_manifest_has_exactly_r01_to_r30_and_no_evidence_free_requirement() -> None:
+    doc = json.loads(A.MANIFEST.read_text("utf-8"))
+    assert doc["specification"] == "GLOBAL_RESEARCH_MAXIMUM_V1_20260927"
+    assert [r["id"] for r in doc["requirements"]] == [f"R{i:02d}" for i in range(1, 31)]
+    for row in doc["requirements"]:
+        assert row["implementation"] and row["tests"] and row["consumers"] and row["runtime"]
+
+
+def test_acceptance_never_calls_module_existence_complete(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"specification": "x", "completion_rule": "strict",
+                                    "frontier_rule": "open", "requirements": [{
+        "id": "R01", "title": "x", "priority": "P0",
+        "implementation": ["impl.py"], "tests": ["test_impl.py"],
+        "consumers": ["consumer.py"], "runtime": ["runtime.json"]}]}), "utf-8")
+    (root / "impl.py").write_text("", "utf-8")
+    result = A.audit(root=root, manifest=manifest, report=tmp_path / "out.json",
+                     now=datetime(2026, 9, 27, tzinfo=UTC))
+    assert result["rows"][0]["status"] == "PARTIAL"
+    assert any(x.startswith("tests:") for x in result["rows"][0]["missing_evidence"])
+    assert any(x.startswith("consumer") for x in result["rows"][0]["missing_evidence"])
+    assert any(x.startswith("runtime") for x in result["rows"][0]["missing_evidence"])
+
+
+def test_fresh_failed_or_wrong_release_runtime_is_not_verified(
+        tmp_path: Path, monkeypatch) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"specification": "x", "completion_rule": "strict",
+                                    "frontier_rule": "open", "requirements": [{
+        "id": "R01", "title": "x", "priority": "P0",
+        "implementation": ["impl.py"], "tests": ["test_impl.py"],
+        "consumers": ["consumer.py"], "runtime": ["runtime.json"]}]}), "utf-8")
+    for rel in ("impl.py", "test_impl.py", "consumer.py"):
+        (root / rel).write_text("assert False\n" if rel.startswith("test") else "", "utf-8")
+    (root / "runtime.json").write_text(json.dumps({
+        "status": "FAILED", "completed_work": 0, "tests_passed": False,
+        "commit": "wrong-sha", "completed_at": "2026-09-27T00:00:00+00:00"}), "utf-8")
+    monkeypatch.setattr(A, "_release_id", lambda _root: "right-sha")
+    got = A.audit(root=root, manifest=manifest, report=tmp_path / "out.json",
+                  now=datetime(2026, 9, 27, 1, tzinfo=UTC))
+    assert got["all_current_verified"] is False
+    errors = got["rows"][0]["checks"]["runtime"][0]["proof_errors"]
+    assert any(x.startswith("failed_status") for x in errors)
+    assert any(x.startswith("wrong_release") for x in errors)
+
+
+def test_undeclared_evidence_cannot_pass(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"specification": "x", "completion_rule": "strict",
+                                    "frontier_rule": "open", "requirements": [{
+        "id": "R01", "title": "x", "priority": "P0"}]}), "utf-8")
+    got = A.audit(root=root, manifest=manifest, report=tmp_path / "out.json",
+                  now=datetime(2026, 9, 27, tzinfo=UTC))
+    assert got["rows"][0]["status"] == "PARTIAL"
+    assert "runtime:UNDECLARED" in got["rows"][0]["missing_evidence"]
+
+
+@pytest.mark.parametrize("changes,error", [
+    ({"completed_work": None}, "completed_work_unmeasured"),
+    ({"completed_work": True}, "invalid_completed_work"),
+    ({"completed_work": "nan"}, "invalid_completed_work"),
+    ({"completed_work": "inf"}, "invalid_completed_work"),
+    ({"completed_work": 0}, "invalid_completed_work"),
+    ({"commit": "5"}, "invalid_release_identity"),
+    ({"completed_at": "2027-09-27T00:00:00Z"}, "future_internal_timestamp"),
+])
+def test_runtime_proof_rejects_false_completion(tmp_path, changes, error) -> None:
+    doc = {"status": "OK", "tests_passed": True, "completed_work": 3,
+           "commit": "5" * 40, "completed_at": "2026-09-27T00:00:00Z"}
+    doc.update(changes)
+    path = tmp_path / "receipt.json"
+    path.write_text(json.dumps(doc), "utf-8")
+    proof, errors = A._runtime_proof(path, instant=datetime(2026, 9, 27, tzinfo=UTC),
+                                     release="5" * 40)
+    assert proof["status"] == "INVALID"
+    assert error in errors
+
+
+def test_runtime_proof_accepts_matching_measured_receipt(tmp_path) -> None:
+    path = tmp_path / "receipt.json"
+    path.write_text(json.dumps({"status": "OK", "tests_passed": True,
+                               "completed_work": 3, "commit": "a" * 40,
+                               "completed_at": "2026-09-27T00:00:00Z"}), "utf-8")
+    _, errors = A._runtime_proof(path, instant=datetime(2026, 9, 27, tzinfo=UTC),
+                                 release="a" * 40)
+    assert errors == []

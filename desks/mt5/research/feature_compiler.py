@@ -385,7 +385,11 @@ def claim_series(rows: list[dict[str, Any]], universe: frozenset[str]
                  "series": len(out)}
 
 
-def calendar_series(path: Path = CALENDAR) -> tuple[list[R.Series], dict[str, Any]]:
+def calendar_series(path: Path | None = None) -> tuple[list[R.Series], dict[str, Any]]:
+    # Resolve at call time.  Tests, deployments and migrations legitimately redirect the desk
+    # root after import; a default bound to the old CALENDAR silently declared fresh events
+    # absent and removed the entire calendar modality from the feature factory.
+    path = CALENDAR if path is None else path
     doc = _read_json(path, {})
     events = doc.get("events") if isinstance(doc, dict) else None
     if not isinstance(events, list) or not events:

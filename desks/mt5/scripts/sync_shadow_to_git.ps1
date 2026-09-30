@@ -25,7 +25,11 @@ $log = Join-Path $DeskRoot "logs\sync_shadow_to_git.log"
 
 function Write-SyncLog($msg) {
     $line = "{0} {1}" -f (Get-Date -Format "o"), $msg
-    Write-Output $line
+    # Write-Output becomes a function return value in PowerShell. Merge-FetchHead returns a
+    # boolean, so a diagnostic line plus `$false` became a truthy two-item array and callers logged
+    # "merged" after a refusal. Host output remains visible to Task Scheduler without contaminating
+    # any function's result channel.
+    Write-Host $line
     try {
         New-Item -ItemType Directory -Force -Path (Split-Path $log) | Out-Null
         Add-Content -Path $log -Value $line -Encoding utf8
@@ -138,22 +142,11 @@ if (-not $gotLock) {
 # Returns $true on a clean merge, $false on conflict (caller decides whether that is fatal).
 function Merge-FetchHead {
     param([string]$RepoRoot, [string]$Branch)
-    $blockers = @()
-    $incoming = @(& git -C $RepoRoot diff --name-only HEAD FETCH_HEAD) | Where-Object { $_ }
-    foreach ($rel in $incoming) {
-        $st = @(& git -C $RepoRoot status --porcelain -- $rel) | Where-Object { $_ }
-        if ($st) { $blockers += $rel }
-    }
-    $parked = @{}
-    foreach ($rel in $blockers) {
-        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
-        if (Test-Path $full) {
-            $tmp = [System.IO.Path]::GetTempFileName()
-            Copy-Item -LiteralPath $full -Destination $tmp -Force
-            $parked[$rel] = $tmp
-            Git-In-Repo @("checkout", "--", $rel) | Out-Null
-        }
-    }
+    # Let Git's native unpack-tree preflight name the actual blockers. This is the only bounded
+    # method on the multi-million-path box: per-incoming-path status exploded subprocess count;
+    # a whole-tree diff took more than four minutes; even 128-path batches timed out when an
+    # incoming discovery commit named tens of thousands of artifacts. The merge preflight already
+    # computes exactly the two lists we need, using Git's index-native implementation.
     # UNTRACKED FILES BLOCK A MERGE TOO, AND PARKING TRACKED ONES DOES NOTHING FOR THEM.
     #
     # git raises TWO separate refusals and this only ever handled the first:
@@ -182,19 +175,52 @@ function Merge-FetchHead {
     $prev = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
-        $probe = @(& git -C $RepoRoot merge --no-commit --no-ff FETCH_HEAD 2>&1 |
+        # The trading checkout may enable merge.autoStash globally. A preflight must never
+        # snapshot the multi-gigabyte runtime tree: it only needs Git's native overlap check.
+        $probe = @(& git -C $RepoRoot -c merge.autoStash=false merge --no-commit --no-ff FETCH_HEAD 2>&1 |
                    ForEach-Object { "$_" })
+        $probeRc = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $prev
     }
     Git-In-Repo @("merge", "--abort") | Out-Null
+    $blockers = @()
     $untracked = @()
-    $inList = $false
+    $list = ""
     foreach ($line in $probe) {
         $s = "$line"
-        if ($s -match "untracked working tree files would be overwritten") { $inList = $true; continue }
-        if ($inList) {
-            if ($s -match "^\s+(\S.*)$") { $untracked += $Matches[1].Trim() } else { $inList = $false }
+        if ($s -match "local changes to the following files would be overwritten") {
+            $list = "tracked"
+            continue
+        }
+        if ($s -match "untracked working tree files would be overwritten") {
+            $list = "untracked"
+            continue
+        }
+        if ($list) {
+            if ($s -match "^\s+(\S.*)$") {
+                if ($list -eq "tracked") { $blockers += $Matches[1].Trim() }
+                else { $untracked += $Matches[1].Trim() }
+            } else {
+                $list = ""
+            }
+        }
+    }
+    if ($probeRc -ne 0 -and -not $blockers.Count -and -not $untracked.Count) {
+        $probeSummary = (($probe | Select-Object -First 8) -join " | ")
+        Write-SyncLog ("merge probe found a genuine conflict or Git refusal, not a parsed " +
+                       "dirty-tree blocker: " + $probeSummary)
+        return $false
+    }
+
+    $parked = @{}
+    foreach ($rel in $blockers) {
+        $full = Join-Path $RepoRoot ($rel -replace "/", "\")
+        if (Test-Path $full -PathType Leaf) {
+            $tmp = [System.IO.Path]::GetTempFileName()
+            Copy-Item -LiteralPath $full -Destination $tmp -Force
+            $parked[$rel] = $tmp
+            Git-In-Repo @("checkout", "--", $rel) | Out-Null
         }
     }
     foreach ($rel in $untracked) {
@@ -232,36 +258,51 @@ function Merge-FetchHead {
 
 
 
-# SHED REFETCHABLE BYTES BEFORE GIT NEEDS THEM. Measured 2026-09-07: the box hit 0 free and git
-# died as "cannot write loose object file: No space left on device", then `git stash` could not
-# save the worktree either -- so the machine could not pull the fix for the thing that was wrong
-# with it. A full disk does not present as a disk problem; it presents as git, parquet and the
-# tape all failing in unrelated-looking ways.
+# THE PUBLISHER MAY NOT DELETE RESEARCH INPUTS. On 2026-09-28 `Get-PSDrive C` returned a
+# transient 0-byte reading while the volume was being enlarged. This function believed it and
+# deleted 1,731 bar files even though the resized volume then exposed 903+ GB free. The hourly
+# universe task was also unable to see the interactive MT5 terminal, so 823 forward clocks were
+# left with seven charts between them. "Refetchable" is not the same as "safe to delete": bars
+# are the evidence surface while refetch is only a future possibility.
 #
-# The bar lake is the largest thing on this box that costs nothing to lose: 250 symbols x 21
-# charts, re-downloaded from the terminal already running, in minutes. The tick tape is larger
-# and is NEVER touched -- a tick nobody recorded cannot be re-obtained at any price -- and
-# universe.json stays, because only *.parquet is shed.
+# Disk reclamation belongs to `reclaim_disk.py`, which measures derived caches, duplicate rows
+# and protected data explicitly. A Git publisher has one authority: publish. If disk is below
+# its floor it records the blocker and lets the next pass retry; it never changes the data plane.
 function Free-DiskForGit {
     param([string]$RepoRoot, [double]$FloorGB = 1.5)
     $free = (Get-PSDrive C).Free / 1GB
     if ($free -ge $FloorGB) { return }
-    $lake = Join-Path $RepoRoot "desks\mt5\data\universe"
-    if (-not (Test-Path $lake)) {
-        Write-SyncLog "DISK: only $([math]::Round($free,2))GB free and no bar lake to shed -- git may fail"
-        return
+    Write-SyncLog ("DISK BLOCKER: $([math]::Round($free,2))GB free (floor ${FloorGB}GB). " +
+                   "Publisher left every bar/tick/evidence file untouched; reclaim_disk owns " +
+                   "measured cleanup and this pass may fail/retry.")
+}
+
+# CODE ADOPTION HAS ONE OWNER. The publisher used to merge FETCH_HEAD itself. On the trading
+# box a large merge outlived Task Scheduler's ten-minute limit: PowerShell was terminated,
+# released the named mutex, and left its child `git merge` running against `.git/index.lock`.
+# MT5-AdoptRelease then acquired the mutex legitimately and collided with that orphan. The
+# publisher owns runtime-state publication; MT5-AdoptRelease owns inbound code and sealing.
+# Keeping those authorities separate makes a timeout recoverable instead of corrupting the next
+# writer's window.
+$script:InboundAdoptionRequired = $false
+function Request-Adoption {
+    param([string]$Branch, [string]$Reason)
+    $script:InboundAdoptionRequired = $true
+    Write-SyncLog ("DEFER: origin/$Branch requires canonical adoption ($Reason); " +
+                   "publisher will not merge code or hold the git-writer lock through adoption")
+    try {
+        $task = Get-ScheduledTask -TaskName "MT5-AdoptRelease" -ErrorAction SilentlyContinue
+        if ($null -eq $task) {
+            Write-SyncLog "WARN: MT5-AdoptRelease task is absent; inbound code remains pending"
+        } elseif ($task.State -eq "Running") {
+            Write-SyncLog "MT5-AdoptRelease is already running"
+        } else {
+            Start-ScheduledTask -TaskName "MT5-AdoptRelease"
+            Write-SyncLog "requested MT5-AdoptRelease"
+        }
+    } catch {
+        Write-SyncLog ("WARN: could not request MT5-AdoptRelease: " + $_.Exception.Message)
     }
-    $files = @(Get-ChildItem -Path $lake -Filter *.parquet -File -ErrorAction SilentlyContinue)
-    if ($files.Count -eq 0) {
-        Write-SyncLog "DISK: only $([math]::Round($free,2))GB free and the bar lake is already shed -- git may fail"
-        return
-    }
-    $gb = [math]::Round((($files | Measure-Object -Property Length -Sum).Sum) / 1GB, 2)
-    $files | Remove-Item -Force -ErrorAction SilentlyContinue
-    $after = [math]::Round((Get-PSDrive C).Free / 1GB, 2)
-    Write-SyncLog ("DISK: $([math]::Round($free,2))GB free (floor ${FloorGB}GB) -- shed " +
-                   "$($files.Count) bar file(s), ${gb}GB reclaimed, ${after}GB free now. " +
-                   "Refetch: python desks\mt5\scripts\download_remaining.py")
 }
 
 # THE PULL, AND IT RUNS BEFORE EVERY EARLY EXIT. See Sync-Pull's caller near the top of the run.
@@ -293,12 +334,7 @@ function Sync-Pull {
     }
     $behind = @(& git -C $RepoRoot rev-list --count "HEAD..FETCH_HEAD") | Select-Object -First 1
     if (-not $behind -or [int]$behind -eq 0) { Write-SyncLog "up to date with origin/$Branch"; return }
-    Write-SyncLog "behind origin/$Branch by $behind commit(s) -- merging"
-    if (-not (Merge-FetchHead -RepoRoot $RepoRoot -Branch $Branch)) {
-        Write-SyncLog "ABORT: merge conflicted -- a human resolves this, not a sync"
-        exit 1
-    }
-    Write-SyncLog "merged $behind commit(s) from origin/$Branch"
+    Request-Adoption -Branch $Branch -Reason "$behind inbound commit(s)"
 }
 
 # Desk-relative paths of every state file this sync carries. Each MUST already be individually
@@ -367,6 +403,12 @@ foreach ($rel in $relPaths) {
 # correct -- an empty commit every fifteen minutes is noise. Delivery is not.
 $branch = (& git -C $RepoRoot rev-parse --abbrev-ref HEAD).Trim()
 Sync-Pull -RepoRoot $RepoRoot -Branch $branch
+if ($script:InboundAdoptionRequired) {
+    # Exit success: this pass completed its responsibility by handing inbound code to the one
+    # task allowed to adopt and seal it. The next scheduled publisher pass will publish runtime
+    # state after adoption converges.
+    exit 0
+}
 
 if ($existing.Count -eq 0) {
     Write-SyncLog "SKIP: none of the tracked state files exist yet on this box"
@@ -432,7 +474,7 @@ for ($attempt = 1; $attempt -le 3 -and -not $pushed; $attempt++) {
     $pushRc = Git-In-Repo @("push", "origin", $branch)
     if ($pushRc -eq 0) { $pushed = $true; break }
 
-    Write-SyncLog "push rejected (attempt $attempt), fetch+merge and retry"
+    Write-SyncLog "push rejected (attempt $attempt), checking whether canonical adoption is required"
     $fetchRc = Git-In-Repo @("fetch", "origin", $branch)
     if ($fetchRc -ne 0) { Write-SyncLog "ABORT: git fetch failed rc=$fetchRc"; exit 1 }
 
@@ -448,13 +490,13 @@ for ($attempt = 1; $attempt -le 3 -and -not $pushed; $attempt++) {
     # exact line was the final entry of roughly 800 consecutive passes between 2026-08-26 and
     # 2026-09-06 while the box committed locally and published nothing. A silence that reads like
     # progress is worse than an error: it is the reason nobody looked for eleven days.
-    if (-not (Merge-FetchHead -RepoRoot $RepoRoot -Branch $branch)) {
-        Write-SyncLog ("ABORT: could not merge origin/$branch into the local branch. The commit " +
-                       "is safe locally and nothing is lost, but this box is no longer publishing " +
-                       "and will not resume without a human. Run ``git status`` here.")
-        exit 1
+    $behind = @(& git -C $RepoRoot rev-list --count "HEAD..FETCH_HEAD") | Select-Object -First 1
+    if ($behind -and [int]$behind -gt 0) {
+        Request-Adoption -Branch $branch -Reason "push race left $behind inbound commit(s)"
+        Write-SyncLog "local state commit is safe; publication resumes after canonical adoption"
+        exit 0
     }
-    Write-SyncLog "merged origin/$branch, retrying push"
+    Write-SyncLog "push failed without an inbound commit; retrying after a short backoff"
     Start-Sleep -Seconds 2
 }
 

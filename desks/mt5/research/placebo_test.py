@@ -27,7 +27,8 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from mt5desk.engine import run_backtest  # noqa: E402
+from libs.portfolio.fusion_cost import costs_for_symbol  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
@@ -41,7 +42,8 @@ WINDOWS = {
     "ny_open": dict(range_start=13, range_end=14, signal_at=14, wait_bars=12, rr=2.0, ttl_bars=12),
     "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
 }
-BASE_COSTS = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100)
+_UNIVERSE_DOC = json.loads((UNI / "universe.json").read_text("utf-8"))
+_META = _UNIVERSE_DOC.get("symbols") or _UNIVERSE_DOC
 
 
 def null_market(h1: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
@@ -95,12 +97,9 @@ def null_market(h1: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
     return out
 
 
-def run_cell(h1: pd.DataFrame, win: str, p: dict, stress: float = 2.0) -> dict:
+def run_cell(h1: pd.DataFrame, sym: str, win: str, p: dict, stress: float = 2.0) -> dict:
     sigs = families.family_session_range_breakout(h1, **p)
-    res = run_backtest(h1, sigs, Costs(
-        spread_per_lot=BASE_COSTS.spread_per_lot * stress,
-        commission_per_lot=BASE_COSTS.commission_per_lot * stress,
-        contract_oz=BASE_COSTS.contract_oz))
+    res = run_backtest(h1, sigs, costs_for_symbol(_META.get(sym, {}), spread_stress=stress))
     return res.stats()
 
 
@@ -123,7 +122,7 @@ def main() -> int:
         for rep in range(N_REPS):
             null = null_market(h1, rng)
             for win, p in WINDOWS.items():
-                st = run_cell(null, win, p)
+                st = run_cell(null, sym, win, p)
                 st.update(sym=sym, win=win, rep=rep, survived=passes(st))
                 rows.append(st)
     df = pd.DataFrame(rows)

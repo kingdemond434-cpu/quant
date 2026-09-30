@@ -93,6 +93,20 @@ def test_the_sealed_commit_and_the_pure_seal_commit_are_a_licence(repo: Path) ->
     assert ri.verdict(repo).allows_new_risk()
 
 
+def test_seal_checks_code_without_scanning_or_refusing_dirty_state(repo: Path) -> None:
+    """Mutable evidence may move, but a local executable edit still refuses the seal."""
+    survivor = repo / release.SURVIVORS
+    survivor.write_text("{\"runtime\": true}\n", encoding="utf-8")
+    doc = release.seal(root=repo, write=False)
+    assert doc["worktree_dirty"] == []
+    assert doc["worktree_dirty_scope"] == "release_code_paths"
+
+    sizing = repo / SIZING
+    sizing.write_text("# unknown local hot patch\n", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="dirty tree"):
+        release.seal(root=repo, write=False)
+
+
 def test_a_diverged_sha_is_refused_and_named(sealed: Path) -> None:
     c = _commit(sealed, SIZING, "# new sizing\n", "code")
     v = ri.verdict(sealed)
@@ -292,8 +306,12 @@ def test_smoke_release_passes_on_a_sealed_signed_tree(sealed: Path, tmp_path: Pa
     _git(sealed, "checkout", "--", SIZING)
     judge = sealed / "desks/mt5/research/promoter.py"
     judge.write_bytes(judge.read_bytes().replace(b"\n", b"\r\n"))
+    # The immutable fence itself now hashes CRLF -> LF (scripts/check_immutable_evaluator.py,
+    # "Normalising CRLF -> LF makes the hash mean what it always claimed to mean"), so a CRLF
+    # checkout is no finding at all -- not even one the smoke has to excuse as `crlf_only`.
     rc, rep = _smoke(sealed, tmp_path / "smoke3.json")
-    assert rc == 0 and rep["checks"]["immutable"]["crlf_only"] == ["desks/mt5/research/promoter.py"]
+    imm = rep["checks"]["immutable"]
+    assert rc == 0 and imm["ok"] and imm["breaches"] == [] and imm["crlf_only"] == []
 
 
 # ------------------------------------------------------------------- the live manifest

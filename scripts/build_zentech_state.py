@@ -1570,8 +1570,11 @@ def build() -> dict[str, Any]:
                         "window_days": 7, "coverage": _cov,
                         "newest_tape_write": (_newest.isoformat(timespec="seconds")
                                               if _newest else None)}, indent=1), "utf-8")
-    except Exception:
-        pass
+    except Exception as exc:
+        # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). A dashboard input that silently
+        # fails to rebuild is a dashboard reporting a stale desk with full confidence.
+        print(f"zentech: tape coverage block NOT written ({type(exc).__name__}: {exc})",
+              flush=True)
     # The stall watchdog's latest verdict travels to the dashboard: healing nobody can see
     # is healing nobody can trust (principal 2026-08-27: "nothing should ever be stalled,
     # I won't be here to tell you").
@@ -1615,8 +1618,26 @@ def build() -> dict[str, Any]:
     return payload
 
 
+def _dashboard_block() -> dict[str, Any]:
+    """The joined dashboard document, re-injected on every publish.
+
+    `desks/mt5/research/desk_dashboard_state.py` writes the join hourly and merges it into this
+    payload itself; this publish runs every 15 minutes and would otherwise drop the block for
+    three quarters of every hour. Carrying it forward here is what makes `web/desk_state.json`
+    ONE file with a dashboard section rather than two files that can disagree. Its own
+    `generated_at` / `cadence_s` travel with it, so an old block renders as old rather than as
+    current -- the page says so before it shows a number."""
+    doc = _read(DESK / "reports" / "DESK_DASHBOARD_STATE.json")
+    if isinstance(doc, dict):
+        return doc
+    return {"status": "MISSING", "source": "desk_dashboard_state",
+            "why": ("desks/mt5/reports/DESK_DASHBOARD_STATE.json is absent on this host: the "
+                    "hourly leg desk_dashboard_state has not published here")}
+
+
 def main() -> int:
     payload = build()
+    payload["dashboard"] = _dashboard_block()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fd, name = tempfile.mkstemp(prefix=".zentech_state.", dir=OUT.parent)
     try:

@@ -54,7 +54,7 @@ import re
 import ssl
 import urllib.error
 import urllib.request
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -185,7 +185,14 @@ def _ctx() -> ssl.SSLContext:
 class Seat:
     name: str
     base_url: str
-    key: str
+    # `repr=False` IS THE WHOLE POINT OF THIS LINE (2026-09-24). `redacted` below has always
+    # existed and says in as many words that a key reaching a log file is a leaked key -- but a
+    # dataclass writes its own `__repr__` from every field, so the moment anything printed a Seat,
+    # logged one, put one in an f-string, or let one surface in a traceback frame, the key went
+    # out IN FULL and the careful helper beside it was simply bypassed. Found by a builder that
+    # was not looking for it. Opting the field out of the generated repr is what makes the
+    # redaction the ONLY way the key can be rendered, rather than the polite way.
+    key: str = field(repr=False)
     model: str = ""
     source: str = ""
 
@@ -193,6 +200,14 @@ class Seat:
     def redacted(self) -> str:
         """For logs and reports. A key that reaches a log file is a leaked key."""
         return f"{self.name}:{self.model or '<undiscovered>'} (key {self.key[:6]}...)"
+
+    def __repr__(self) -> str:
+        """Redacted by construction, so a bare `print(seat)` cannot leak.
+
+        Explicit rather than relying on `repr=False` alone: a later field added without the flag
+        would silently re-open the hole, and `str()` falls through to this too.
+        """
+        return f"Seat({self.redacted}, base_url={self.base_url!r}, source={self.source!r})"
 
 
 def seats() -> list[Seat]:

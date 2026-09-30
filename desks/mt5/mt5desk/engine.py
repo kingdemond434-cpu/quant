@@ -7,6 +7,7 @@ All times UTC. No lookahead: signals computed on closed bars only, entries at ne
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -120,7 +121,7 @@ class Costs:
         return replace(self, spread_per_lot=self.spread_per_lot * float(spread_mult))
 
     @classmethod
-    def from_symbol(cls, meta: dict, mult: float = 1.0,
+    def from_symbol(cls, meta: dict[str, Any], mult: float = 1.0,
                     commission_per_lot: float = 2.00, *,
                     spread_pts: float | None = None) -> Costs:
         """Costs for one symbol from its universe.json metadata.
@@ -307,15 +308,21 @@ def rollovers_between(t0: pd.Timestamp, t1: pd.Timestamp) -> float:
         b = b.tz_convert("UTC").tz_localize(None)
     if not (b > a):
         return 0.0
-    nights = 0.0
-    # The first rollover instant at or after the entry.
+    # The first rollover instant strictly after the entry.
     cur = a.normalize() + pd.Timedelta(hours=ROLLOVER_HOUR_UTC)
     if cur <= a:
         cur = cur + pd.Timedelta(days=1)
-    while cur <= b:
-        nights += 3.0 if cur.weekday() == TRIPLE_SWAP_WEEKDAY else 1.0
-        cur = cur + pd.Timedelta(days=1)
-    return nights
+    if cur > b:
+        return 0.0
+    # COUNTED, NOT WALKED. The rollover instants are cur, cur+1d, ..., the last one <= b: that is
+    # `k` of them, and each is one night plus two more when it falls on the triple-swap weekday.
+    # This was a Python loop of Timestamp additions, one per night per trade, and on the sealed
+    # gauntlet's build path it cost more than the bar loop it sits under; the count below is the
+    # same integer (so the same float), with no loop.
+    k = int((b - cur) // pd.Timedelta(days=1)) + 1
+    first_triple = (TRIPLE_SWAP_WEEKDAY - cur.weekday()) % 7
+    triples = 0 if first_triple >= k else 1 + (k - 1 - first_triple) // 7
+    return float(k + 2 * triples)
 
 
 def run_backtest(
@@ -332,7 +339,7 @@ def run_backtest(
     """
     o = df["open"].to_numpy()
     h = df["high"].to_numpy()
-    l = df["low"].to_numpy()
+    lows = df["low"].to_numpy()
     # KEEP THE PANDAS INDEX. `df.index.to_numpy()` on a tz-AWARE index returns an object array
     # of Timestamps and warns "no explicit representation of timezones available for
     # np.datetime64" -- benign in production, but under `filterwarnings = error` it turns the
@@ -361,7 +368,7 @@ def run_backtest(
     per_oz_cost = costs.per_oz_roundtrip() / costs.contract_oz
     last_exit_idx = -1  # single-position discipline: no overlapping trades
 
-    for sig, i0 in zip(signals, locs):
+    for sig, i0 in zip(signals, locs, strict=True):
         i = i0 + 1
         if i <= 0 or i >= len(idx) - 1:
             continue
@@ -383,7 +390,7 @@ def run_backtest(
                            or (sig.side < 0 and tgt > entry))
             hit = -1
             for j in range(i, min(i + sig.wait_bars, len(idx))):
-                if float(h[j]) >= tgt >= float(l[j]):
+                if float(h[j]) >= tgt >= float(lows[j]):
                     hit = j
                     break
             if hit < 0:
@@ -415,7 +422,7 @@ def run_backtest(
         last = min(len(idx), fill_bar + ttl)
         for j in range(fill_bar, last):
             bars_held = j - fill_bar + 1
-            hi, lo = float(h[j]), float(l[j])
+            hi, lo = float(h[j]), float(lows[j])
             # THE STOP IS EVALUATED FIRST, against the level in force at bar
             # open, and an add can only fill on a bar the stop survived. Within
             # one OHLC bar the path is unknown, so this denies the pyramid a
@@ -536,16 +543,18 @@ def run_backtest(
         # FINANCING, PER NIGHT ACTUALLY CROSSED. Zero for every intraday sleeve, which is why
         # this changes nothing for the scalp lane and is decisive for the overnight one. It is
         # charged on the whole stack (`units`), the same size the spread is charged on.
+        # Each bar's Timestamp is boxed ONCE per trade and shared by the financing count and the
+        # trade record (it was boxed twice each); a Timestamp is immutable, so sharing it is free.
+        entry_ts = pd.Timestamp(idx[fill_bar])
+        exit_ts = pd.Timestamp(idx[min(fill_bar + bars_held - 1, len(idx) - 1)])
         if costs.swap_per_lot_per_night:
-            nights = rollovers_between(pd.Timestamp(idx[fill_bar]),
-                                       pd.Timestamp(idx[min(fill_bar + bars_held - 1,
-                                                            len(idx) - 1)]))
+            nights = rollovers_between(entry_ts, exit_ts)
             if nights:
                 r -= (costs.financing(nights) / costs.contract_oz) * units / stop_dist
         trades.append(
             Trade(
-                entry_time=pd.Timestamp(idx[fill_bar]),
-                exit_time=pd.Timestamp(idx[min(fill_bar + bars_held - 1, len(idx) - 1)]),
+                entry_time=entry_ts,
+                exit_time=exit_ts,
                 side=side, entry=entry, exit=exit_price,
                 stop=sig.stop, target=sig.target,
                 bars_held=bars_held, r_multiple=float(r), reason=reason,
@@ -557,8 +566,8 @@ def run_backtest(
     return BacktestResult(trades=trades, signal_count=len(signals))
 
 
-def walk_forward_splits(n_bars: int, folds: int = 4) -> list[tuple[int, int, int]]:
-    """train / validation / untouched-OOS index triples over the bar count."""
+def walk_forward_splits(n_bars: int, folds: int = 4) -> list[tuple[int, int, int, int, int]]:
+    """Train start/end, validation end, and untouched-OOS start/end boundaries."""
     per = n_bars // (folds + 1)
     out = []
     for k in range(folds):

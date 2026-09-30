@@ -22,12 +22,21 @@ ROOT = Path(__file__).resolve().parents[3]
 DESK = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from libs.portfolio.fusion_cost import commission_roundtrip_price  # noqa: E402
 from libs.validation.dsr import probabilistic_sharpe_ratio  # noqa: E402
 
 DATA = DESK / "data" / "universe"
 OUT = DESK / "reports" / "scalp_reverse_engineering.json"
 VERSION = "public-scalp-reconstruction-2026-08-23-b"
-FUSION_COMMISSION_PRICE = 0.045  # $4.50 round turn / 100 oz XAUUSD contract
+
+
+def fusion_commission_price() -> float:
+    """Canonical measured Fusion commission converted through current XAUUSD metadata."""
+    registry = json.loads((DATA / "universe.json").read_text("utf-8"))
+    meta = registry.get("XAUUSD")
+    if not isinstance(meta, dict):
+        raise ValueError("XAUUSD metadata is missing from the universe registry")
+    return commission_roundtrip_price(meta)
 
 
 @dataclass(frozen=True)
@@ -107,6 +116,16 @@ def _atr(df: pd.DataFrame) -> np.ndarray:
     return tr.ewm(alpha=1 / 14, min_periods=14).mean().to_numpy(float)
 
 
+def measured_spreads(df: pd.DataFrame) -> np.ndarray:
+    """Missing costs are unmeasured, never a free-spread backtest."""
+    if "spread" not in df:
+        raise ValueError("recorded broker spread column is missing")
+    values = pd.to_numeric(df["spread"], errors="coerce").to_numpy(float)
+    if not np.isfinite(values).all() or (values < 0).any():
+        raise ValueError("recorded broker spreads contain invalid measurements")
+    return values * 0.01
+
+
 def simulate(
     df: pd.DataFrame,
     cfg: Config,
@@ -115,15 +134,26 @@ def simulate(
     signal_override: np.ndarray | None = None,
     atr_override: np.ndarray | None = None,
     detailed: bool = False,
+    executable: bool = False,
 ) -> np.ndarray | list[dict]:
-    """Return non-overlapping basket R. Same-bar ambiguity is always stop-first."""
+    """Return non-overlapping basket R. Same-bar ambiguity is always stop-first.
+
+    ``executable=True`` replays what `mt5desk.scalp_exec` can actually trade, and is what the
+    forward clock must use. The default arm reads ``atr[i]`` (bar i's own range, unknowable at
+    its open) and never checks the fill bar's high/low, so a bar that runs through the stop right
+    after the fill is not a loss. Measured 2026-09-29 on the four gold candidates (Fusion M5/M15,
+    recorded spread + commission): those two liberties are worth +0.04..+0.09R per trade, which
+    is the whole of the lane's apparent edge. The executable arm uses the last closed bar's ATR
+    and holds the bracket from the fill bar, stop first -- the same two rules
+    `mt5desk.scalp_families` already applies for the gauntlet.
+    """
     sig = _signals(df, cfg) if signal_override is None else signal_override
     atr = _atr(df) if atr_override is None else atr_override
     if len(sig) != len(df) or len(atr) != len(df):
         raise ValueError("signal and ATR arrays must align exactly with bars")
     opn, high, low, close = (df[c].to_numpy(float) for c in ("open", "high", "low", "close"))
-    point = 0.01
-    spreads = df.get("spread", pd.Series(0.0, index=df.index)).to_numpy(float) * point
+    spreads = (np.zeros(len(df)) if cost == "frictionless" else measured_spreads(df))
+    commission_price = 0.0 if cost == "frictionless" else fusion_commission_price()
     out: list[dict] = []
     i, n = max(40, cfg.lookback + 3), len(df) - 1
     event_indices = np.flatnonzero(sig != 0)
@@ -133,7 +163,7 @@ def simulate(
         if i >= n:
             break
         direction = int(sig[i])
-        a = float(atr[i])
+        a = float(atr[i - 1] if executable else atr[i])
         if not math.isfinite(a) or a <= 0:
             event_pos += 1
             continue
@@ -146,9 +176,9 @@ def simulate(
             entries = [(first, risk_sized_units(first, stop, 0.25))]
         cost_r = 0.0
         if cost != "frictionless":
-            cost_r += entries[0][1] * (spreads[i] + FUSION_COMMISSION_PRICE)
+            cost_r += entries[0][1] * (spreads[i] + commission_price)
         exit_price, j = float(close[i]), i
-        for j in range(i + 1, min(n, i + cfg.max_hold) + 1):
+        for j in range(i if executable else i + 1, min(n, i + cfg.max_hold) + 1):
             total_units = sum(u for _, u in entries)
             avg = sum(p * u for p, u in entries) / total_units
             target = avg + direction * cfg.target_atr * a
@@ -158,14 +188,15 @@ def simulate(
             if (direction > 0 and high[j] >= target) or (direction < 0 and low[j] <= target):
                 exit_price = target
                 break
-            if cfg.mode == "bounded_structural" and len(entries) < 4 and sig[j] == direction:
+            if (cfg.mode == "bounded_structural" and j > i and len(entries) < 4
+                    and sig[j] == direction):
                 p = float(opn[j])
                 distance = direction * (p - stop)
                 if distance > 0:
                     units = risk_sized_units(p, stop, 0.25)
                     entries.append((p, units))
                     if cost != "frictionless":
-                        cost_r += units * (spreads[j] + FUSION_COMMISSION_PRICE)
+                        cost_r += units * (spreads[j] + commission_price)
             exit_price = float(close[j])
         pnl_r = sum(u * direction * (exit_price - p) for p, u in entries) - cost_r
         out.append({
@@ -206,7 +237,8 @@ def _configs(timeframe: str) -> list[Config]:
 def run() -> dict:
     report: dict = {
         "version": VERSION, "evidence": "broker_native_bar_spread_plus_fusion_zero_commission",
-        "fusion_cost": "$4.50/lot round turn plus each bar's recorded broker spread",
+        "fusion_cost": ("measured account-currency commission converted through current XAUUSD "
+                        "tick metadata, plus each bar's recorded broker spread"),
         "selection": "first 60% chronological; report/promote on untouched last 40%",
         "same_bar_policy": "stop_first", "timeframes": {},
     }
@@ -217,6 +249,11 @@ def run() -> dict:
             report["timeframes"][tf] = {"status": "UNMEASURED", "reason": "missing broker bars"}
             continue
         df = pd.read_parquet(path).sort_index()
+        try:
+            measured_spreads(df)
+        except ValueError as exc:
+            report["timeframes"][tf] = {"status": "UNMEASURED", "reason": str(exc)}
+            continue
         cut = int(len(df) * 0.60)
         train, test = df.iloc[:cut], df.iloc[cut:]
         configs = _configs(tf)
