@@ -2573,7 +2573,41 @@ def refresh_bars() -> dict:
     out = _producer("refresh_tail", "scripts/refresh_tail.py")
     if out.get("exit_code") == 2:
         out["note"] = "no MT5 terminal on this host; bars are refreshed by the box that has one"
+        return out
+    # THE CHARTS THE JUDGE ASKED FOR (2026-09-30). `judge_coverage` parks every cell whose own
+    # chart was missing and publishes the (symbol, chart) demand as `bars_wanted`; a targeted
+    # `fetch_universe --symbols` run hydrates them here, so a parked cell is re-admitted the hour
+    # its bars land instead of waiting on a sweep that never asks for that chart. A symbol the
+    # broker does not list is recorded as skipped by fetch_universe's own receipt.
+    wanted = bars_wanted_symbols()
+    if wanted:
+        out["bars_wanted"] = {"symbols": wanted,
+                              "fetch": _producer("fetch_universe", "research/fetch_universe.py",
+                                                 "--symbols", ",".join(wanted))}
     return out
+
+
+#: Symbols per hour the targeted chart repair asks the terminal for; the demand beyond it waits
+#: one hour, ranked by how many parked cells each chart would release.
+BARS_WANTED_PER_HOUR = 25
+
+
+def bars_wanted_symbols(report: Path | None = None) -> list[str]:
+    """The symbols whose missing charts hold the most parked cells, from JUDGE_COVERAGE."""
+    try:
+        doc = json.loads((report or (BASE / "reports" / "JUDGE_COVERAGE.json"))
+                         .read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    wanted = doc.get("bars_wanted") if isinstance(doc, dict) else None
+    if not isinstance(wanted, dict):
+        return []
+    by_sym: dict[str, int] = {}
+    for key, n in wanted.items():
+        sym = str(key).rsplit("_", 1)[0].strip().upper()
+        if sym:
+            by_sym[sym] = by_sym.get(sym, 0) + int(n or 0)
+    return [s for s, _ in sorted(by_sym.items(), key=lambda kv: -kv[1])][:BARS_WANTED_PER_HOUR]
 
 
 def deep_forest() -> dict:

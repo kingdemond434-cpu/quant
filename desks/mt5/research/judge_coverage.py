@@ -87,6 +87,7 @@ import json
 import math
 import sys
 import time
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -662,12 +663,69 @@ UNRUNNABLE_BANK = HYP / "unrunnable_specs.json"
 UNIVERSE = BASE / "data" / "universe"
 
 
-def _bar_bytes(sym: str) -> int:
-    """The symbol's H1 bar file size -- the cheap monotone proxy for "the history grew"."""
+def _bar_bytes(sym: str, tf: str = "H1") -> int:
+    """The symbol's bar file size on `tf` -- the cheap monotone proxy for "the history grew"."""
     try:
-        return (UNIVERSE / f"{sym}_H1.parquet").stat().st_size
+        return (UNIVERSE / f"{sym}_{tf or 'H1'}.parquet").stat().st_size
     except OSError:
         return 0
+
+
+#: THE OTHER HALF OF THE PERMANENT CELL LEAK (2026-09-30). A cell the judge could not BUILD --
+#: its bars absent on its own chart, or its signal construction failing -- is recorded
+#: `passed: None, downstream_status: NOT_RUN_*`, which `judged_index` rightly refuses to call
+#: judged. So it stayed "never judged", which is the FIRST key of the docket order, and came back
+#: at the head of every sweep to fail again: measured on the box, 20,247 of 29,466 pre-warm
+#: builds failed on build/data in one sweep. Those cells are parked here with a named reason and
+#: re-admitted on the one event that could change the outcome -- their bars appearing or growing,
+#: or, for a construction failure, the passage of BUILD_FAILED_RETRY_DAYS (code ships in between).
+#: Deferrals for budget (NOT_RUN_BUILD_BUDGET_DEFERRED) are work not yet done and are never parked.
+PARKED_NOT_RUN = {"NOT_RUN_DATA_MISSING": "data_missing",
+                  "NOT_RUN_BUILD_FAILED": "build_failed"}
+BUILD_FAILED_RETRY_DAYS = 7.0
+
+
+def _prewarm_share(path: Path | None = None) -> float | None:
+    """The share of the last sweep's pre-warm builds that failed on build or data."""
+    doc = _read(path or GATES_REPORT)
+    pw = (doc or {}).get("prewarm") if isinstance(doc, dict) else None
+    if not isinstance(pw, dict):
+        return None
+    sub = int(pw.get("submitted") or 0)
+    fails = pw.get("failures") if isinstance(pw.get("failures"), dict) else {}
+    bad = sum(int(v or 0) for k, v in fails.items()
+              if str(k) in ("NOT_RUN_DATA_MISSING", "NOT_RUN_BUILD_FAILED", "FAIL_3X", "ERROR",
+                            "SAVE_FAILED"))
+    return round(bad / sub, 6) if sub else None
+
+
+def name_not_run(path: Path | None = None) -> dict[str, dict[str, Any]]:
+    """Every cell the judge could not build, with its named reason and the bars it needs."""
+    doc = _read(path or GATES_REPORT)
+    out: dict[str, dict[str, Any]] = {}
+    verdicts = (doc or {}).get("verdicts") if isinstance(doc, dict) else None
+    if not isinstance(verdicts, list):
+        return out
+    for v in verdicts:
+        if not isinstance(v, dict):
+            continue
+        reason = PARKED_NOT_RUN.get(str(v.get("downstream_status") or ""))
+        cell = str(v.get("cell") or "")
+        if not reason or not cell:
+            continue
+        sym = str(v.get("sym") or "")
+        tf = _tf_of(v)
+        why = str(v.get("why") or "")
+        for cand in ("M1", "M5", "M15", "M30", "H4", "D1"):
+            if f" {cand} parquet" in f" {why}":
+                tf = cand
+        out[cell] = {"reason": reason, "sym": sym, "family": v.get("family"), "tf": tf,
+                     "days": 0, "bar_bytes": _bar_bytes(sym, tf), "why": why[:200],
+                     "route": ("bars absent on the cell's own chart: re-admitted the moment "
+                               "they appear" if reason == "data_missing" else
+                               "signal construction failed: re-admitted on bar growth or after "
+                               f"{BUILD_FAILED_RETRY_DAYS:.0f} days of code changes")}
+    return out
 
 
 def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
@@ -740,9 +798,15 @@ CPCV_MIN_DAYS = 60
 def readmit_due(row: dict[str, Any], *, now: datetime | None = None) -> bool:
     """True when a parked cell's history has grown enough, or it has waited long enough."""
     parked_bytes = int(row.get("bar_bytes") or 0)
-    bars = _bar_bytes(str(row.get("sym") or ""))
+    bars = _bar_bytes(str(row.get("sym") or ""), str(row.get("tf") or "H1"))
     if parked_bytes <= 0:
         return bars > 0
+    if row.get("reason") == "build_failed":
+        _at = _ts(row.get("parked_at"))
+        _t = now or datetime.now(tz=UTC)
+        if _at is not None and (_t.timestamp() - _at.timestamp()) / 86400.0 \
+                >= BUILD_FAILED_RETRY_DAYS:
+            return True
     days = int(row.get("days") or 0)
     need = READMIT_GROWTH if days <= 0 else min(
         READMIT_GROWTH_CAP, max(READMIT_GROWTH, CPCV_MIN_DAYS / float(days)))
@@ -1168,7 +1232,14 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
     realised_seen = realised_pass_rates(ledger)
     unknown = unknown_breakdown()
     named_unknowns = name_unknowns()
-    unrunnable = update_unrunnable_bank(named_unknowns, at=at.isoformat(timespec="seconds"))
+    not_run = name_not_run()
+    unrunnable = update_unrunnable_bank({**named_unknowns, **not_run},
+                                        at=at.isoformat(timespec="seconds"))
+    bars_wanted: dict[str, int] = {}
+    for _r in not_run.values():
+        if _r.get("reason") == "data_missing":
+            _k = f"{_r.get('sym')}_{_r.get('tf')}"
+            bars_wanted[_k] = bars_wanted.get(_k, 0) + 1
     ranking = rank_by_value(backlog, rows, capacity)
     quota = allocate(backlog, capacity, ranking=ranking)
     judgeable = [r for r in rows if str(r.get("family") or "") not in banned]
@@ -1332,6 +1403,12 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
                               or {}).get("cells"),
         "unknown_unnamed": max(0, int(unknown.get("unknown_total") or 0)
                                - int(unknown.get("named_cells") or 0)),
+        "not_run_named": len(not_run),
+        "not_run_by_reason": dict(Counter(str(r.get("reason")) for r in not_run.values())),
+        "prewarm_fail_share": _prewarm_share(),
+        "prior_prewarm_fail_share": (prior.get("prewarm_fail_share")
+                                     if isinstance(prior, dict) else None),
+        "prior_drain_status": (prior.get("drain_status") if isinstance(prior, dict) else None),
         "unrunnable_parked": unrunnable.get("parked_this_pass"),
         "unrunnable_bank": unrunnable.get("bank_size"),
         "oldest_unjudged_age_h": (round(max(v for v in oldest.values() if v is not None), 2)
@@ -1375,6 +1452,9 @@ def build(docket: list[dict[str, Any]] | None = None, *, ledger: Path | None = N
             "neither judged nor passed, because nobody looked is not a failure"),
         "unknown_reasons": unknown,
         "unrunnable": unrunnable,
+        # THE BARS THE JUDGE ASKED FOR AND DID NOT HAVE, per symbol and chart: the demand the
+        # bar refresh reads (research/refresh_bars.py) so a missing chart is fetched, not waited on.
+        "bars_wanted": dict(sorted(bars_wanted.items(), key=lambda kv: -kv[1])),
         "value_ranking": ranking,
         "value_rule": ("remainder after every family's floor goes down expected value per "
                        "judge-second: p_optimistic (upper credible bound of the desk's own Beta "
@@ -1531,6 +1611,8 @@ def write(doc: dict[str, Any], *, report: Path | None = None,
                      for f, r in fams.items()},
         "unjudged_total": (doc.get("totals") or {}).get("unjudged_total"),
         "unknown_share": (doc.get("totals") or {}).get("unknown_share"),
+        "prewarm_fail_share": (doc.get("totals") or {}).get("prewarm_fail_share"),
+        "drain_status": (doc.get("totals") or {}).get("drain_status"),
         "priors_cursor": (doc.get("priors_learned") or {}).get("cursor") or "",
         "why": ("the baseline the carried-cohort ratchet is measured against: rows already in "
                 "this backlog and still unjudged at the next reading were STARVED, because a "
