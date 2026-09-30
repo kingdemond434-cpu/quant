@@ -2374,6 +2374,12 @@ def organ_review(topo: Mapping[str, Any] | None, fdr_rows: Mapping[str, Any] | N
         if wf is not None:
             ev["stress"] = {"worlds_measured": wf.get("worlds_measured"),
                             "flags": wf.get("flags") or [], "exp_x5": wf.get("exp_x5")}
+            # the closure and agent-based worlds, per certificate (organ_worlds): the panel's
+            # ecologist raises candidate-specific challenges from them (review_panel.ecologist)
+            ev["worlds"] = {"flags": wf.get("flags") or [],
+                            "baseline_expectancy": wf.get("baseline_expectancy"),
+                            "closure": wf.get("closure_worlds") or {},
+                            "agents": wf.get("agent_worlds") or {}}
         ev["red_queen"] = None if rq is None else {
             "attacks": len((rq.get("real_gauntlet") or {}).get("rows") or []) or
             rq.get("generation"), "killed": bool(leaks),
@@ -3226,6 +3232,9 @@ def organ_worlds() -> dict[str, Any]:
                "twin": str(key) in twin_keys,
                "exp_x5": (((hit or {}).get("scenarios") or {}).get("spread_x5") or {})
                .get("expectancy"),
+               # the untouched tape's expectancy: what the review panel's ecologist needs to
+               # tell a loss the closure world CAUSED from an edge that was never there
+               "baseline_expectancy": ((hit or {}).get("baseline") or {}).get("expectancy"),
                "swap_world": _swap_world_of(hit, worlds),
                "closure_worlds": {w: _named_world_of(hit, worlds, w)
                                   for w in closure_worlds.NAMES},
@@ -3311,9 +3320,29 @@ def _swap_world_of(hit: Mapping[str, Any] | None, worlds: list[Any]) -> dict[str
             "delta_expectancy": row.get("delta_expectancy"), "trades_touched": row.get("applied")}
 
 
+def _factory_honesty(hon_doc: Mapping[str, Any], key: str, row: Mapping[str, Any]) -> float:
+    """THE HONESTY CHANNEL's read side: the honesty multiplier of the factory that bore this
+    certificate, from the state `organ_predictions` writes (`prediction_accounting.honesty`).
+
+    The factory is resolved the way the writer resolved it -- `factory_of_key` names it per
+    certificate (the hypothesis graph's producer, else the hunt's) -- so the two sides cannot
+    disagree on a name. Until 2026-09-30 this read the raw `hunt` string, which matched the
+    writer's producer name only by accident, and `or 1.0` turned a MEASURED honesty of 0 into
+    1: a factory whose claims reality had wholly refuted was priced as honest. An unknown
+    factory is 1.0 (no evidence either way), never a guess."""
+    facs = hon_doc.get("factories") or {}
+    fac = (hon_doc.get("factory_of_key") or {}).get(str(key)) or _producer(row.get("hunt"))
+    h = (facs.get(fac) or {}).get("honesty") if isinstance(facs, Mapping) else None
+    try:
+        return 1.0 if h is None else float(h)
+    except (TypeError, ValueError):
+        return 1.0
+
+
 def _posterior_bids() -> tuple[list[opportunity_exchange.Bid], dict[str, float]]:
     shadow = shadow_rows()
-    hon = _state("honesty").get("factories") or {}
+    # suspended prediction accounting -> every factory is honest (1.0), as in organ_market
+    hon_doc: Mapping[str, Any] = {} if authority.suspended("predictions") else _state("honesty")
     live_book: dict[str, float] = {}
     alloc = _first(PF_ALLOCATION)
     if isinstance(alloc, dict) and isinstance(alloc.get("book"), dict):
@@ -3345,7 +3374,7 @@ def _posterior_bids() -> tuple[list[opportunity_exchange.Bid], dict[str, float]]
         fw = shadow.get(k) or {}
         n = int(fw.get("n") or 0)
         ev = float(((row.get("gates") or {}).get("expected_value") or {}).get("ev") or 0.0)
-        h = float(((hon.get(str(row.get("hunt"))) or {}).get("honesty")) or 1.0)
+        h = _factory_honesty(hon_doc, str(key), row)
         prior_mu = ev * h
         mu = prior_mu if n == 0 else (prior_mu * 10 + float(fw.get("exp_r") or 0.0) * n) / (
             10 + n)
@@ -3478,6 +3507,7 @@ def organ_predictions() -> dict[str, Any]:
     for k, v in outcomes.items():
         live_by[k].extend(x for _t, x in v)
     prod = _producer_of_cell()
+    factory_of_key: dict[str, str] = {}
     for key, row in survivors().items():
         if not isinstance(row, dict):
             continue
@@ -3485,14 +3515,19 @@ def organ_predictions() -> dict[str, Any]:
         fw = shadow.get(f"{spec.get('symbol')}.{spec.get('selector')}") or {}
         ev = float(((row.get("gates") or {}).get("expected_value") or {}).get("ev") or 0.0)
         lk = list(live_by.get(f"{spec.get('symbol')}.{spec.get('selector')}") or [])
+        fac = prod.get(str(row.get("cell") or "")) or _producer(row.get("hunt"))
+        factory_of_key[str(key)] = fac
         claims.append(prediction_accounting.Claim(
-            factory=prod.get(str(row.get("cell") or "")) or _producer(row.get("hunt")),
+            factory=fac,
             key=str(key), claimed_edge=ev,
             forward_edge=float(fw["exp_r"]) if fw.get("exp_r") is not None else None,
             forward_n=int(fw.get("n") or 0),
             live_edge=(sum(lk) / len(lk)) if lk else None, live_n=len(lk)))
     hon = prediction_accounting.honesty(claims)
-    _save_state("honesty", hon)
+    # the certificate -> factory map rides with the multipliers, so every reader of the
+    # channel (organ_market by producer, the exchange's posterior by certificate) resolves the
+    # factory exactly as it was scored here
+    _save_state("honesty", {**hon, "factory_of_key": factory_of_key})
     cutoff = (NOW - timedelta(days=30)).isoformat()
     _save_state("forecasts", {"forecasts": [f.__dict__ for f in ledger
                                             if f.made_at >= cutoff][-20_000:]})
@@ -3648,7 +3683,10 @@ def organ_shadow_desk() -> dict[str, Any]:
     rows = {r["name"]: r for r in _state("challengers").get("challengers") or []}
     code_name = f"code_{cand[:12]}"
     todo.append(("code", code_name if code_name in rows else "self_consistency", cand, {}))
-    cfgs = [r for r in rows.values() if r.get("component") == "config"][-SHADOW_MAX_CONFIG:]
+    # a config challenger the shadow desk already REJECTED (`_consume_shadow_verdicts`) gives
+    # its replay slot to the next live one: the hour's sandbox goes to an open question
+    cfgs = [r for r in rows.values() if r.get("component") == "config"
+            and r.get("status") != "REJECTED"][-SHADOW_MAX_CONFIG:]
     for r in cfgs:
         g = r.get("genome") if isinstance(r.get("genome"), dict) else {}
         todo.append(("config", str(r["name"]), str(g.get("sha") or inc),
@@ -3679,12 +3717,112 @@ def organ_shadow_desk() -> dict[str, Any]:
                  "verdict": (r.get("verdict") or {}).get("verdict")} for r in doc["runs"]]}
 
 
+#: shadow-desk wins on money-path components, waiting for the principal's words
+TWIN_PROPOSALS_NAME = "twin_proposals.json"
+#: a TWIN.json older than this is no verdict (the self-model counts it UNMEASURED)
+TWIN_MAX_AGE_H = 6.0
+
+
+def _consume_shadow_verdicts(doc: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """S28 -> S30: the shadow desk's paired verdicts (reports/TWIN.json) read back into the
+    challenger registry, where they have a consequence.
+
+      LOSS (REJECT)  the challenger row is marked REJECTED (rejected_at, rejected_by, the paired
+                     evidence). A rejected config is not replayed again (its slot goes to the
+                     next open challenger) and the twin's adoption for it stays REJECTED; a
+                     proposal it had earlier is withdrawn.
+      WIN (PROPOSE/PROMOTE)  every shadow-desk component (code, config) is money path, so a win
+                     is never adopted here: the row reads PROPOSED_TO_PRINCIPAL and a proposal
+                     (the genome, the paired evidence and the one-command rollback) is written
+                     to data/tier_s/twin_proposals.json for the principal to accept in words.
+      CONTINUE       nothing changes: an undecided pair is not a verdict.
+
+    Only registered challengers are touched (the `self_consistency` run is the desk replaying
+    itself and has no row). Nothing here writes a sleeve, a config or a release."""
+    doc = _read(TWIN_REPORT) if doc is None else doc
+    if not isinstance(doc, dict) or not isinstance(doc.get("runs"), list):
+        return {"status": "UNMEASURED", "why": "no shadow-desk report (reports/TWIN.json)",
+                "rejected": [], "proposed": []}
+    st = _state("challengers")
+    rows = [r for r in st.get("challengers") or [] if isinstance(r, dict)]
+    by_name = {str(r.get("name")): r for r in rows}
+    prop_path = STATE / TWIN_PROPOSALS_NAME
+    prop_doc = _read(prop_path)
+    proposals = {str(p.get("name")): p for p in (prop_doc or {}).get("proposals") or []
+                 if isinstance(p, dict)} if isinstance(prop_doc, dict) else {}
+    rejected: list[str] = []
+    proposed: list[str] = []
+    withdrawn: list[str] = []
+    for run in doc["runs"]:
+        if not isinstance(run, dict):
+            continue
+        name = str(run.get("name") or "")
+        row = by_name.get(name)
+        v = run.get("verdict")
+        if row is None or not isinstance(v, dict):
+            continue
+        verdict = str(v.get("verdict") or "CONTINUE")
+        evidence = {"verdict": verdict, "n": v.get("n"),
+                    "mean_improvement": v.get("mean_improvement"), "t": v.get("t"),
+                    "decision_agreement": run.get("decision_agreement"),
+                    "terminal_touches": v.get("terminal_touches"),
+                    "judged_at": doc.get("generated_utc"), "incumbent": doc.get("incumbent")}
+        if verdict == "REJECT":
+            if row.get("status") != "REJECTED":
+                rejected.append(name)
+            row.update(status="REJECTED", rejected_by="shadow_desk", shadow=evidence)
+            row.setdefault("rejected_at", NOW.isoformat())
+            if proposals.pop(name, None) is not None:
+                withdrawn.append(name)
+        elif verdict in ("PROPOSE", "PROMOTE"):
+            row.update(status="PROPOSED_TO_PRINCIPAL", shadow=evidence)
+            row.pop("rejected_at", None)
+            row.pop("rejected_by", None)
+            prev = proposals.get(name) or {}
+            proposals[name] = {
+                "name": name, "component": row.get("component"),
+                "genome": row.get("genome"), "genome_hash": row.get("genome_hash"),
+                "registered_at": row.get("registered_at"),
+                "proposed_since": prev.get("proposed_since") or NOW.isoformat(),
+                "evidence": evidence, "state": "AWAITING_PRINCIPAL",
+                "rollback": twin.rollback_plan(_release_history()),
+                "why": "the shadow desk's paired replay beat the sealed release on days after "
+                       "registration; money-path adoption is the principal's decision"}
+            proposed.append(name)
+    _save_state("challengers", {**st, "challengers": rows})
+    _write(prop_path, {"generated_utc": NOW.isoformat(),
+                       "proposals": sorted(proposals.values(), key=lambda p: str(p.get("name"))),
+                       "rule": "a shadow-desk WIN on a money-path component is a proposal for "
+                               "the principal; nothing here adopts it"})
+    return {"status": "READ", "report_at": doc.get("generated_utc"), "rejected": rejected,
+            "proposed": proposed, "withdrawn": withdrawn,
+            "open_proposals": len(proposals),
+            "rejected_total": sum(1 for r in rows if r.get("status") == "REJECTED")}
+
+
+def _shadow_doc_for_self_model() -> dict[str, Any]:
+    """TWIN.json as the self-model reads it: stale or absent is UNMEASURED, never clean."""
+    doc = _read(TWIN_REPORT)
+    if not isinstance(doc, dict):
+        return {"status": "UNMEASURED", "why": "no shadow-desk report (reports/TWIN.json)"}
+    at = replay.parse_t(doc.get("generated_utc"))
+    if at is None or (NOW - at).total_seconds() > TWIN_MAX_AGE_H * 3600:
+        return {"status": "UNMEASURED",
+                "why": f"reports/TWIN.json is older than {TWIN_MAX_AGE_H:g}h"}
+    return doc
+
+
 def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
     try:
         shadow = organ_shadow_desk()
     except Exception as exc:                       # the shadow desk never costs the twin
         shadow = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}",
                   "verdicts": {}}
+    try:
+        consumed = _consume_shadow_verdicts()
+    except Exception as exc:                       # never costs the twin either
+        consumed = {"status": "ERROR", "why": f"{type(exc).__name__}: {exc}", "rejected": [],
+                    "proposed": []}
     st = _state("challengers")
     out = []
     ex = _read(STATE / "exchange_book.json") or {}
@@ -3728,6 +3866,8 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
                                        bool(sealed_now.get("blocked")))
         if c["component"] == "validator":
             adoption = "PENDING"       # decided below, on the REAL gauntlet's verdicts only
+        elif c.get("status") == "REJECTED" and c["component"] in ("code", "config"):
+            adoption = "REJECTED"      # the shadow desk's loss stands until a new run reverses it
         out.append({"name": c["name"], "component": c["component"], **res,
                     "adoption": adoption})
     arena = _judge_validators(out, st.get("challengers") or [],
@@ -3735,8 +3875,10 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
     rb = twin.rollback_plan(_release_history())
     runs = shadow.get("runs") or []
     return {"challengers": out[-30:], "rollback": rb, "shadow_desk": shadow,
-            "validator_arena": arena,
+            "shadow_consumer": consumed, "validator_arena": arena,
             "metric": {"challengers": len(out),
+                       "shadow_rejected": len(consumed.get("rejected") or []),
+                       "principal_proposals": consumed.get("open_proposals"),
                        "adopted": sum(1 for r in out if r["adoption"] == "ADOPTED"),
                        "shadow_runs_measured": sum(1 for r in runs
                                                    if r.get("status") == "MEASURED"),
@@ -4126,7 +4268,10 @@ def organ_self_model(reports: dict[str, Any]) -> dict[str, Any]:
     prev = st.get("scorecard") or {}
     reg = self_model.regression(prev, card)
     ops_rows, ops_facts = self_model.operational_inventory(**_operational_self_facts())
-    defs = self_model.rank(self_model.inventory(reports) + ops_rows)
+    # the shadow desk's latest paired replay (reports/TWIN.json, written by the twin's last
+    # pass): candidate code that loses to the sealed release is a deficiency of the desk
+    inv = {**reports, "shadow_desk": _shadow_doc_for_self_model()}
+    defs = self_model.rank(self_model.inventory(inv) + ops_rows)
     best = st.get("best") or {}
     for k, better in self_model.SEALED_METRICS.items():
         v = card.get(k)
