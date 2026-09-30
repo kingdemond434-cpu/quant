@@ -4,10 +4,10 @@
 
 **This document attests to ONE host: `vm` (Linux 6.18.44-fc-v50), and describes no other machine.** Role measured as `non_trading_host`: gateway_state.json is 339.0h old -- no live trading loop is attested by this document.
 
-- Measured at **2026-09-30T15:48:11+00:00** (cadence 60 min; stale past 120 min)
+- Measured at **2026-09-30T15:48:44+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `UNMEASURED` on `UNMEASURED`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
 - Organs attested **923** of 1344 registry components (421 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
-- Pass cost 1.66s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
+- Pass cost 1.3s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
 |---|---:|---|
@@ -135,9 +135,9 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:proposer_seat` | `hourly_cycle:proposer_seat` | UNMEASURED UNMEASURED | `desks/mt5/data/hypotheses/miner_candidates.json` | 0.2h | 70.6M | `7d4ae862dd7f7a10` | UNMEASURED (artifact 70.6 MB, not parsed within budget) |
 | `leg:publish_dashboard` | `hourly_cycle:publish_dashboard` | 2026-09-12T10:58:02+00:00 ok | `web/desk_state.json` | 0.2h | 463K | `c449d4e6774e4427` | UNMEASURED |
 | `leg:publish_state` | `hourly_cycle:publish_state` | 2026-09-12T04:47:33+00:00 FAILED: TimeoutExpired:  | `web/desk_state.json` | 0.2h | 463K | `c449d4e6774e4427` | UNMEASURED |
-| `leg:queue_census` | `hourly_cycle:queue_census` | UNMEASURED UNMEASURED | `desks/mt5/data/events.jsonl` | 0.2h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
-| `leg:queue_cycle` | `hourly_cycle:queue_cycle` | 2026-09-12T09:15:47+00:00 ok | `desks/mt5/data/events.jsonl` | 0.2h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
-| `leg:recertify_canon` | `hourly_cycle:recertify_canon` | 2026-09-12T10:36:49+00:00 ok | `desks/mt5/data/events.jsonl` | 0.2h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
+| `leg:queue_census` | `hourly_cycle:queue_census` | UNMEASURED UNMEASURED | `desks/mt5/data/events.jsonl` | 0.0h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
+| `leg:queue_cycle` | `hourly_cycle:queue_cycle` | 2026-09-12T09:15:47+00:00 ok | `desks/mt5/data/events.jsonl` | 0.0h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
+| `leg:recertify_canon` | `hourly_cycle:recertify_canon` | 2026-09-12T10:36:49+00:00 ok | `desks/mt5/data/events.jsonl` | 0.0h | 45K | `0e85a5ff342f7ebe` | UNMEASURED (not a readable JSON object) |
 | `leg:refresh_bars` | `hourly_cycle:refresh_bars` | 2026-09-12T08:57:01+00:00 ok | `desks/mt5/data/universe/derived_series.json` | 0.2h | 4K | `1386a01c1249a37a` | UNMEASURED |
 | `leg:regime_monitor` | `hourly_cycle:regime_monitor` | 2026-09-12T08:58:22+00:00 ok | `desks/mt5/data/state_vector.json` | 0.2h | 12K | `298d8b9c819d1a21` | UNMEASURED |
 | `leg:research_dashboard` | `hourly_cycle:research_dashboard` | UNMEASURED UNMEASURED | `docs/research/RESEARCH_DASHBOARD.md` | 0.2h | 2K | `f584849771ecc211` | UNMEASURED (not a readable JSON object) |
