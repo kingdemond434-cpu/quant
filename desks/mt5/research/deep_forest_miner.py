@@ -1817,7 +1817,12 @@ def run(budget_s: float = 900.0, fetch: bool = True, only: list[str] | None = No
         b = by_region.setdefault(reg, {"cluster": cluster_of(g), "grounds": 0, "worked": 0,
                                        "productive": 0, "blocked": 0, "claims": 0, "datasets": 0,
                                        "story": 0, "dataset": 0, "macro": 0, "momentum_only": 0,
-                                       "languages": []})
+                                       "languages": [], "terms_fenced": 0})
+        if fenced_ground(g):
+            # Registered, never workable: counted apart, so `worked == grounds` stays a
+            # statement about the grounds the desk may actually fetch.
+            b["terms_fenced"] += 1
+            continue
         b["grounds"] += 1
         kind = "dataset" if g.get("kind") == "dataset" else ("macro" if g.get("kind") == "macro"
                                                               else "story")
