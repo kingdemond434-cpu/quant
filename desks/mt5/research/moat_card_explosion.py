@@ -439,7 +439,8 @@ def _live_slots(s: dict[str, Any], ks: list[str]) -> list[tuple[str, dict[str, A
         from libs.research import family_firing as ff
         taken = {json.dumps(dict(s["params"] or {}), sort_keys=True, default=str,
                             separators=(",", ":"))}
-        slots = ff.session_cells(s["family"], s["params"], ks, taken=taken)
+        slots = ff.session_cells(s["family"], s["params"], ks, taken=taken,
+                                 symbol=s.get("symbol") or None)
         return [(str(p.get("session") or "all"), {**(n or {}), "params": p} if n else None)
                 for _k, p, n in slots]
     except Exception:

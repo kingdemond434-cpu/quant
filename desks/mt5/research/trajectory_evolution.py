@@ -546,7 +546,7 @@ def mutate_params(g: Genome, step: str) -> tuple[dict[str, Any] | None, str]:
         # oracle's stand-in instead (`libs/research/family_firing.py`); UNMEASURED keeps it.
         try:
             from libs.research.family_firing import live_session
-            params, landed, remap = live_session(g.family, params, window)
+            params, landed, remap = live_session(g.family, params, window, g.symbol)
         except ImportError:
             landed, remap = window, None
         if remap and remap.get("remapped"):

@@ -29,10 +29,10 @@ passed or net-positive cell be DEAD, whatever the hours say.
 WHAT IT ANSWERS. For (family, chart, the params that move the hour) it returns the hours the
 family's signals land on, MEASURED once on cached bars through the same call the gauntlet makes
 (`fn(bars, side=1, **params)`, identity keys stripped, the cell's modifiers applied) and cached
-with a VERSION. From that, per session: LIVE (the window holds signals), DEAD (it holds none, on a
-pooled sample of at least `N_MIN` signals) or UNMEASURED. UNMEASURED IS NEVER DEAD: a family with
-too few signals, inputs that cannot be rebuilt here, or no bars for the chart leaves its variant
-exactly as it was. Nothing is ever dropped.
+with a VERSION, per SYMBOL (its own bars only). From that, per session: LIVE (the window holds
+signals), DEAD (it holds none, on at least `N_MIN` signals) or UNMEASURED. UNMEASURED IS NEVER
+DEAD: a family with too few signals, inputs that cannot be rebuilt here, or no bars for the
+symbol and chart leaves its variant exactly as it was. Nothing is ever dropped.
 
 WHAT A PRODUCER DOES WITH A DEAD VARIANT (`session_cells`, `replacements`). It mints the
 equivalent cell that CAN fire in its place, one for one, so the minted count never falls:
@@ -72,10 +72,12 @@ UNIVERSE = DESK / "data" / "universe"
 CACHE = DESK / "data" / "family_firing_hours.json"
 
 #: Bump when the measurement changes meaning; a cache written under another version is ignored
-#: (read as UNMEASURED), never trusted. The full version also carries the CONTENT HASH of
-#: `libs/regime/session_clock.py` (see `VERSION` below the clock import), so a change to the one
-#: clock conversion re-measures every key instead of serving market counts taken on the old clock.
-SCHEMA_VERSION = 4
+#: (read as UNMEASURED), never trusted. The full version also carries a hash of the clock's
+#: CONVERSION SETTINGS (`clock_hash`: the offset rule and the market-session table the classifier
+#: reads), so a change to the conversion re-measures every key, while an edit to the clock
+#: module's prose, tests or helpers does not void a cache that is still right.
+#: 5: keys carry the symbol and its asset class, and a key is measured on its own symbol only.
+SCHEMA_VERSION = 5
 UNMEASURED = "UNMEASURED"
 LIVE = "LIVE"
 DEAD = "DEAD"
@@ -94,18 +96,12 @@ TZ_MISMATCH = "SESSION_TZ_MISMATCH"
 #: The family's signals never land in the market's session at all: the cause a remap answers.
 NEVER_FIRES = "NEVER_FIRES_IN_SESSION"
 
-#: Pooled signals needed before an empty window is called DEAD. Below it the answer is
+#: Signals needed before an empty window is called DEAD. Below it the answer is
 #: UNMEASURED: thirty signals all outside a window is a structure, five is an anecdote.
 N_MIN = 30
 #: Bars of each frame a measurement reads, from the tail. Enough for a once-a-day family to fire
 #: well over N_MIN times on H1 (~3 years) and on M5 (~70 days), bounded so one key costs seconds.
 BAR_TAIL = 20_000
-#: Symbols pooled per key, the cell's own first. Stops early once the sample is thick.
-MAX_SYMBOLS = 3
-ENOUGH = 200
-REFERENCE_SYMBOLS = ("EURUSD", "GBPUSD", "USDJPY", "XAUUSD", "EURGBP", "GBPJPY", "GBPAUD",
-                     "AUDCAD", "NZDCAD", "AUDNZD", "USDCAD", "AUDUSD")
-
 #: The session axis the producers mint. `all` is never dead and never remapped.
 SESSION_NAMES = ("asia", "london", "ny")
 _FALLBACK_SESSIONS: dict[str, tuple[int, int] | None] = {
@@ -143,29 +139,54 @@ from libs.regime import session_clock  # noqa: E402
 MARKET_SESSIONS: dict[str, tuple[str, int, int]] = dict(session_clock.MARKET_SESSIONS)
 
 
-def clock_hash(path: Path | None = None) -> str:
-    """Content hash of the clock module, line endings normalised (the box checks out CRLF)."""
-    src = Path(path or session_clock.__file__)
-    try:
-        raw = src.read_bytes().replace(b"\r\n", b"\n")
-    except OSError:
-        return "unreadable"
+def clock_hash(settings: dict[str, Any] | None = None) -> str:
+    """Hash of the conversion settings the market counts depend on: the venue offset rule
+    (`SERVER_TZ` + `SERVER_SHIFT_H`) and the session table (`MARKET_SESSIONS`)."""
     import hashlib
-    return hashlib.sha256(raw).hexdigest()[:16]
+    cfg = settings if settings is not None else clock_settings()
+    raw = json.dumps(cfg, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 
-#: The cache version: schema + the clock's content. A cache written under any other clock is
-#: read as empty (UNMEASURED) and re-measured, never trusted.
+def clock_settings() -> dict[str, Any]:
+    return {"server_tz": session_clock.SERVER_TZ, "server_shift_h": session_clock.SERVER_SHIFT_H,
+            "market_sessions": {k: list(v) for k, v in session_clock.MARKET_SESSIONS.items()}}
+
+
+#: The cache version: schema + the clock's conversion settings. A cache written under any other
+#: conversion is read as empty (UNMEASURED) and re-measured, never trusted.
 VERSION = f"{SCHEMA_VERSION}+clock:{clock_hash()}"
-#: Server hours inside each market session in EVERY week of the year under New York + 7h:
-#: Tokyo 08-16 is server 01-09 (US winter) or 02-10 (US summer); London 08-16 is server 10-18,
-#: or 09-17 in the weeks US and UK DST disagree; New York 08-16 is always server 15-23. These
-#: are where a stand-in is anchored and the only hours a prediction may count.
-MARKET_SERVER_HOURS: dict[str, frozenset[int]] = {
-    "asia": frozenset(range(2, 9)), "london": frozenset(range(10, 17)),
-    "ny": frozenset(range(15, 23))}
-#: The market's 08:00 open in server hours (every week): the anchor a stand-in is shifted to.
-MARKET_OPEN_SERVER: dict[str, int] = {"asia": 2, "london": 10, "ny": 15}
+#: Years the every-day windows below are derived over: wide enough to hold every pairing of US
+#: and UK daylight-time dates the rules produce (the mismatch weeks move with the calendar).
+_DERIVE_YEARS = (2018, 2030)
+
+
+def _always_server_hours() -> dict[str, frozenset[int]]:
+    """Per session, the server hours that lie inside the market's own session on EVERY weekday
+    of `_DERIVE_YEARS`, derived from `session_clock.in_session` -- never written by hand.
+
+    London is the case that matters: server 10 is 08:00 London in most weeks but 07:00 in the
+    weeks the US has changed clocks and the UK has not (2026-03-09..27, 2026-10-26..30), so the
+    every-day London window is server 11-17, not 10-16."""
+    import pandas as pd
+    days = pd.bdate_range(f"{_DERIVE_YEARS[0]}-01-01", f"{_DERIVE_YEARS[1]}-12-31")
+    out: dict[str, frozenset[int]] = {}
+    for sess in MARKET_SESSIONS:
+        keep = []
+        for h in range(24):
+            mask = session_clock.in_session(days + pd.Timedelta(hours=h), sess)
+            if mask is not None and len(mask) and bool(mask.all()):
+                keep.append(h)
+        out[sess] = frozenset(keep)
+    return out
+
+
+#: Server hours inside each market session on every weekday under New York + 7h, DERIVED:
+#: asia 2-8, london 11-17, ny 15-22 (inclusive). Where a stand-in is anchored, and the only hours a
+#: prediction may count.
+MARKET_SERVER_HOURS: dict[str, frozenset[int]] = _always_server_hours()
+#: The earliest every-day server hour of each session: the anchor a stand-in is shifted to.
+MARKET_OPEN_SERVER: dict[str, int] = {s: min(h) for s, h in MARKET_SERVER_HOURS.items() if h}
 CLOCK_BASIS = (f"bars are broker stamps on {session_clock.SERVER_TZ} + "
                f"{session_clock.SERVER_SHIFT_H}h (libs/regime/session_clock.py); market sessions "
                "are Tokyo/London/New York 08:00-16:00 local, DST included")
@@ -256,16 +277,40 @@ def _modifier_keys() -> frozenset[str]:
         return frozenset({"regime", "side_mode", "entry_timing", "execution_style"})
 
 
-def key(family: str, params: dict[str, Any] | None) -> str:
-    """The cache key: family, chart, the EFFECTIVE hour params and any timing modifier.
+_CLASS_CACHE: dict[str, str] = {}
 
-    Only what can move the hour is in it: a lookback or a threshold changes how often a family
-    fires, not when, so every such variant shares one measurement."""
+
+def asset_class(symbol: str | None) -> str:
+    """The symbol's asset class from the broker registry (`universe_policy.asset_class_of`);
+    "" when unknown or unreachable."""
+    sym = str(symbol or "").strip().upper()
+    if not sym:
+        return ""
+    if sym not in _CLASS_CACHE:
+        try:
+            _ensure_path()
+            from research.universe_policy import asset_class_of  # type: ignore[import-not-found]
+            _CLASS_CACHE[sym] = str(asset_class_of(sym) or "")
+        except Exception:
+            _CLASS_CACHE[sym] = ""
+    return _CLASS_CACHE[sym]
+
+
+def key(family: str, params: dict[str, Any] | None, symbol: str | None = None) -> str:
+    """The cache key: SYMBOL and its ASSET CLASS, family, chart, the EFFECTIVE hour params and any
+    timing modifier.
+
+    The symbol is in it because firing hours are a property of the instrument's own bars
+    (EURUSD's are not CHFDKK's), so one symbol's measurement is never applied to another. A
+    lookback or a threshold changes how often a family fires, not when, so every such variant of
+    one symbol shares one measurement. No symbol, no measured key: the answer is UNMEASURED,
+    which leaves the variant exactly as it was."""
     p = dict(params or {})
+    sym = str(symbol or "").strip().upper()
     hp = {n: _norm(p.get(n, d)) for n, d in sorted(hour_params(family).items())}
     mods = {k: _norm(p[k]) for k in sorted(p) if k in ("entry_timing", "execution_style")}
-    return json.dumps([family, chart_of(family, p), hp, mods], sort_keys=True,
-                      separators=(",", ":"), default=str)
+    return json.dumps([family, chart_of(family, p), hp, mods, sym, asset_class(sym)],
+                      sort_keys=True, separators=(",", ":"), default=str)
 
 
 # ------------------------------------------------------------------------------ cache
@@ -308,8 +353,8 @@ def save_cache(doc: dict[str, Any], path: Path | None = None) -> None:
     doc = {**doc, "version": VERSION, "clock_hash": clock_hash(),
            "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
            "method": ("signals of fn(bars, side=1, **params) on the last "
-                      f"{BAR_TAIL} bars of up to {MAX_SYMBOLS} cached symbols per key; DEAD "
-                      f"needs >= {N_MIN} pooled signals and none in EITHER the market session "
+                      f"{BAR_TAIL} bars of the key's own symbol; DEAD "
+                      f"needs >= {N_MIN} signals and none in EITHER the market session "
                       f"or today's server-hour window; {LIVE_FILTER_ONLY} when only the market "
                       f"session is empty; {TZ_MISMATCH} when only the server-hour window is"),
            "clock": CLOCK_BASIS}
@@ -362,22 +407,6 @@ def _bars(symbol: str, chart: str) -> Any:
     if frame is None or len(frame) == 0:
         return None
     return frame.iloc[-BAR_TAIL:]
-
-
-def _symbols_for(chart: str, first: str | None) -> list[str]:
-    out: list[str] = []
-    for s in ([first] if first else []) + list(REFERENCE_SYMBOLS):
-        if s and s not in out and _source_chart(s, chart):
-            out.append(s)
-    if len(out) < MAX_SYMBOLS:
-        for c in (chart, *_FINER.get(chart, ())):
-            for pq in sorted(UNIVERSE.glob(f"*_{c}.parquet")):
-                s = pq.name[: -len(f"_{c}.parquet")]
-                if s not in out:
-                    out.append(s)
-                if len(out) >= MAX_SYMBOLS * 3:
-                    return out
-    return out
 
 
 def _signal_hours(family: str, symbol: str, bars: Any,
@@ -453,10 +482,15 @@ def stale(rec: dict[str, Any] | None, now: float | None = None) -> bool:
 
 def measure(family: str, params: dict[str, Any] | None,
             symbol: str | None = None) -> dict[str, Any]:
-    """Measure one key now. Always returns a record; failure is UNMEASURED with its reason."""
+    """Measure one key now, on `symbol`'s own bars only. Always returns a record; failure is
+    UNMEASURED with its reason."""
     p = dict(params or {})
     chart = chart_of(family, p)
     started = time.monotonic()
+    own = str(symbol or "").strip().upper()
+    if not own:
+        return {"status": UNMEASURED, "why": "no symbol: a firing set is measured per symbol",
+                "chart": chart, "host": _host(), "measured_at": time.time()}
     if family_fn(family) is None:
         return {"status": UNMEASURED, "why": f"no constructor for {family!r}", "chart": chart,
                 "host": _host(), "measured_at": time.time()}
@@ -464,9 +498,7 @@ def measure(family: str, params: dict[str, Any] | None,
     market: Counter[str] = Counter()
     used: list[str] = []
     whys: list[str] = []
-    for sym in _symbols_for(chart, symbol):
-        if len(used) >= MAX_SYMBOLS or sum(pooled.values()) >= ENOUGH:
-            break
+    for sym in ([own] if _source_chart(own, chart) else []):
         bars = _bars(sym, chart)
         if bars is None:
             continue
@@ -481,7 +513,9 @@ def measure(family: str, params: dict[str, Any] | None,
         pooled.update(hrs)
         market.update(mkt)
     n = int(sum(pooled.values()))
-    rec: dict[str, Any] = {"chart": chart, "n": n, "symbols": used, "host": _host(),
+    rec: dict[str, Any] = {"chart": chart, "n": n, "symbols": used, "symbol": own,
+                           "asset_class": asset_class(own), "per_symbol": True,
+                           "host": _host(),
                            "measured_at": time.time(),
                            "hours": {str(h): int(c) for h, c in sorted(pooled.items())},
                            "market_sessions": {s: int(market.get(s, 0))
@@ -491,7 +525,7 @@ def measure(family: str, params: dict[str, Any] | None,
         rec.update(status=UNMEASURED, why=("; ".join(whys[:3]) or f"no {chart} bars cached"))
     elif n < N_MIN:
         rec.update(status=UNMEASURED,
-                   why=f"{n} pooled signals < {N_MIN}: too few to call any window empty")
+                   why=f"{n} signals < {N_MIN}: too few to call any window empty")
     else:
         rec.update(status="MEASURED", why="ok")
     return rec
@@ -538,16 +572,16 @@ def verdict(rec: dict[str, Any] | None, session: str) -> str:
 
 
 def lookup(family: str, params: dict[str, Any] | None,
-           cache: dict[str, Any] | None = None) -> dict[str, Any] | None:
+           cache: dict[str, Any] | None = None, symbol: str | None = None) -> dict[str, Any] | None:
     doc = cache if cache is not None else current_cache()
-    return (doc.get("keys") or {}).get(key(family, params))
+    return (doc.get("keys") or {}).get(key(family, params, symbol))
 
 
 def firing(family: str, params: dict[str, Any] | None, *, cache: dict[str, Any] | None = None,
            measure_missing: bool = False, symbol: str | None = None) -> dict[str, Any]:
     """The record for this key: cached, measured now when asked, else UNMEASURED."""
     doc = cache if cache is not None else current_cache()
-    k = key(family, params)
+    k = key(family, params, symbol)
     rec = (doc.get("keys") or {}).get(k)
     if measure_missing and stale(rec):
         rec = measure(family, params, symbol)
@@ -839,7 +873,7 @@ def session_cells(family: str, base: dict[str, Any] | None, session_axis: Iterab
     out: list[tuple[str, dict[str, Any], dict[str, Any] | None]] = []
     for s, p in zip(axis, planned, strict=True):
         v = "all" if s == "all" else guarded_verdict(
-            firing(family, b, cache=doc), s, symbol=symbol, family=family, params=b,
+            firing(family, b, cache=doc, symbol=symbol), s, symbol=symbol, family=family, params=b,
             guard=_safe_guard() if symbol else None)
         if v == TZ_MISMATCH:
             out.append((s, p, {"dead_session": s, "remapped": False, "cause": TZ_MISMATCH,
@@ -878,7 +912,8 @@ def _safe_guard() -> dict[str, Any] | None:
 
 def standin(family: str, params: dict[str, Any] | None, session: str | None = None, *,
             cache: dict[str, Any] | None = None,
-            taken: set[str] | None = None) -> tuple[dict[str, Any], dict[str, Any] | None]:
+            taken: set[str] | None = None,
+            symbol: str | None = None) -> tuple[dict[str, Any], dict[str, Any] | None]:
     """The single-cell door, for a producer that mints ONE session variant (a proposer, a
     mutation): (params to mint, remap note). A LIVE or UNMEASURED variant comes back unchanged
     with no note; a DEAD one comes back as its first stand-in not in `taken`, or unchanged with a
@@ -890,21 +925,21 @@ def standin(family: str, params: dict[str, Any] | None, session: str | None = No
     if s == "all":
         return p, None
     try:
-        slots = session_cells(family, p, [s], cache=cache, taken=taken)
+        slots = session_cells(family, p, [s], cache=cache, taken=taken, symbol=symbol)
     except Exception:
         return p, None
     _label, out, note = slots[0]
     return out, note
 
 
-def live_session(family: str, params: dict[str, Any] | None,
-                 session: str | None) -> tuple[dict[str, Any], str, dict[str, Any] | None]:
+def live_session(family: str, params: dict[str, Any] | None, session: str | None,
+                 symbol: str | None = None) -> tuple[dict[str, Any], str, dict[str, Any] | None]:
     """`standin` for a proposer row that carries its session twice (in params and beside them):
     (params, session label, note). Never raises -- an oracle failure is UNMEASURED, which leaves
     the row exactly as proposed."""
     s = str(session or (params or {}).get("session") or "all").lower()
     try:
-        p, note = standin(family, params, s)
+        p, note = standin(family, params, s, symbol=symbol)
     except Exception:
         return dict(params or {}), s, None
     return p, str(p.get("session") or "all"), note

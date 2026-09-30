@@ -541,7 +541,8 @@ def proposal(niche: dict[str, str], family: str | None, symbols: list[str], work
     remap = None
     try:
         from libs.research.family_firing import live_session
-        params, sess, remap = live_session(family, params, sess)
+        params, sess, remap = live_session(family, params, sess,
+                                           symbols[0] if symbols else None)
     except ImportError:
         pass
     row = {"kind": "hypothesis", "family": family, "symbols": symbols, "params": params,

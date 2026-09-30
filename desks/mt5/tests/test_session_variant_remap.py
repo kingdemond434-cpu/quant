@@ -30,6 +30,9 @@ for p in (str(ROOT), str(BASE), str(BASE / "research")):
 
 from libs.research import family_firing as ff  # noqa: E402
 
+#: The symbol every in-memory cache below is keyed on: firing hours are measured per symbol.
+SYM = "EURUSD"
+
 
 def _rec(hours: dict[int, int], market: dict[str, int]) -> dict:
     return {"status": "MEASURED", "n": sum(hours.values()), "chart": "H1",
@@ -57,15 +60,15 @@ def test_verdicts_on_both_clocks() -> None:
 
 def test_live_filter_only_is_kept_and_never_remapped() -> None:
     fam = "overnight_gap_decay"
-    cache = _cache({ff.key(fam, {}): _rec({0: 269}, {})})
-    slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache)
+    cache = _cache({ff.key(fam, {}, SYM): _rec({0: 269}, {})})
+    slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache, symbol=SYM)
     assert len(slots) == 4
     assert slots[1] == ("asia", {"session": "asia"}, None)  # minted exactly as proposed, no mark
     for _s, _p, note in slots[2:]:                        # london / ny: neither clock -> DEAD
         assert note and note["dead_session"] in ("london", "ny")
         assert note["cause"] == ff.NEVER_FIRES
-    assert ff.replacements(fam, {}, "asia", cache=cache) == []
-    assert ff.standin(fam, {}, "asia", cache=cache) == ({"session": "asia"}, None)
+    assert ff.replacements(fam, {}, "asia", cache=cache, symbol=SYM) == []
+    assert ff.standin(fam, {}, "asia", cache=cache, symbol=SYM) == ({"session": "asia"}, None)
 
 
 def _canon(path: Path, cells: list[tuple[str, str, str]]) -> Path:
@@ -127,23 +130,53 @@ def test_net_positive_and_passed_verdicts_are_never_dead(tmp_path: Path) -> None
                               params={"session": "asia"}, guard=guard) == ff.DEAD
 
 
-def test_cache_version_follows_the_clock_module(tmp_path: Path) -> None:
+def test_cache_version_follows_the_clock_settings(tmp_path: Path) -> None:
     from libs.regime import session_clock
     assert ff.VERSION.endswith(ff.clock_hash())
-    assert ff.clock_hash() == ff.clock_hash(Path(session_clock.__file__))
-    moved = tmp_path / "session_clock.py"
-    src = Path(session_clock.__file__).read_bytes()
-    moved.write_bytes(src.replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
-    assert ff.clock_hash(moved) == ff.clock_hash()        # line endings are not a clock change
-    moved.write_bytes(src + b"\n# SERVER_SHIFT_H changed\n")
+    cfg = ff.clock_settings()
+    assert cfg["server_tz"] == session_clock.SERVER_TZ
+    assert cfg["server_shift_h"] == session_clock.SERVER_SHIFT_H
+    assert ff.clock_hash(dict(cfg)) == ff.clock_hash()      # same settings, same version
+    moved = {**cfg, "server_shift_h": cfg["server_shift_h"] + 1}
     assert ff.clock_hash(moved) != ff.clock_hash()
+    sess = {**cfg, "market_sessions": {**cfg["market_sessions"],
+                                       "london": ["Europe/London", 7, 16]}}
+    assert ff.clock_hash(sess) != ff.clock_hash()
     cache_path = tmp_path / "firing.json"
     ff.save_cache(_cache({"k": _rec({1: 40}, {})}), cache_path)
     assert ff.load_cache(cache_path)["keys"] == {"k": _rec({1: 40}, {})}
     doc = json.loads(cache_path.read_text(encoding="utf-8"))
     doc["version"] = f"{ff.SCHEMA_VERSION}+clock:{ff.clock_hash(moved)}"
     cache_path.write_text(json.dumps(doc), encoding="utf-8")
-    assert ff.load_cache(cache_path)["keys"] == {}         # another clock: re-measure
+    assert ff.load_cache(cache_path)["keys"] == {}         # another conversion: re-measure
+
+
+def test_always_in_session_hours_are_derived_from_the_clock() -> None:
+    import pandas as pd
+
+    from libs.regime import session_clock
+    # London: server 10 is outside London on the US/UK mismatch days of 2026; 11-17 never is.
+    assert ff.MARKET_SERVER_HOURS["london"] == frozenset(range(11, 18))
+    assert ff.MARKET_OPEN_SERVER == {"asia": 2, "london": 11, "ny": 15}
+    days = pd.bdate_range("2026-01-01", "2026-12-31")
+    out10 = days[~session_clock.in_session(days + pd.Timedelta(hours=10), "london")]
+    assert len(out10) == 20
+    assert {d.strftime("%m-%d") for d in out10} >= {"03-09", "03-27", "10-26", "10-30"}
+    for h in ff.MARKET_SERVER_HOURS["london"]:
+        assert session_clock.in_session(days + pd.Timedelta(hours=h), "london").all()
+
+
+def test_cache_key_carries_symbol_and_asset_class() -> None:
+    fam = "london_close_momentum"
+    a, b = ff.key(fam, {}, "EURUSD"), ff.key(fam, {}, "CHFDKK")
+    assert a != b
+    assert json.loads(a)[-2:] == ["EURUSD", ff.asset_class("EURUSD")]
+    assert ff.key(fam, {"lookback": 5}, "EURUSD") == a         # a non-hour param shares it
+    cache = _cache({a: _rec({16: 100}, {"ny": 100})})
+    assert ff.verdict(ff.firing(fam, {}, cache=cache, symbol="EURUSD"), "asia") == ff.DEAD
+    # EURUSD's firing set is never applied to CHFDKK.
+    assert ff.verdict(ff.firing(fam, {}, cache=cache, symbol="CHFDKK"), "asia") == ff.UNMEASURED
+    assert ff.measure(fam, {}, None)["status"] == ff.UNMEASURED
 
 
 def test_unmeasured_is_never_dead() -> None:
@@ -185,9 +218,9 @@ def test_the_oracle_uses_the_one_session_clock() -> None:
 # ------------------------------------------------------------------------------ remapping
 def test_session_cells_never_mint_fewer() -> None:
     fam = "london_close_momentum"
-    cache = _cache({ff.key(fam, {}): _rec({16: 100}, {"london": 0, "ny": 100})})
+    cache = _cache({ff.key(fam, {}, SYM): _rec({16: 100}, {"london": 0, "ny": 100})})
     axis = ("all", "asia", "london", "ny")
-    slots = ff.session_cells(fam, {}, axis, cache=cache)
+    slots = ff.session_cells(fam, {}, axis, cache=cache, symbol=SYM)
     assert len(slots) == len(axis)
     idents = {json.dumps(p, sort_keys=True) for _s, p, _n in slots}
     assert len(idents) == len(axis)                       # every minted cell distinct
@@ -196,16 +229,16 @@ def test_session_cells_never_mint_fewer() -> None:
     for s, p, n in slots:
         if n and n.get("remapped"):
             assert s == "ny" and p.get("session") == "ny" and p.get("regime") in ff.REHOME_REGIMES
-            assert ff.verdict(cache["keys"][ff.key(fam, p)], "ny") == ff.LIVE
+            assert ff.verdict(cache["keys"][ff.key(fam, p, SYM)], "ny") == ff.LIVE
 
 
 def test_hour_parameter_is_reanchored_to_the_market_open() -> None:
     fam = "session_range_breakout"
     if not ff.hour_params(fam):
         pytest.skip("family has no hour parameter on this tree")
-    cache = _cache({ff.key(fam, {}): _rec({7: 100}, {"asia": 100})},
+    cache = _cache({ff.key(fam, {}, SYM): _rec({7: 100}, {"asia": 100})},
                    verified=(f"{fam}|H1",))
-    slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache)
+    slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache, symbol=SYM)
     by = {s: (p, n) for s, p, n in slots}
     assert by["asia"][1] is None                           # it fires there already
     london, note = by["london"]
@@ -216,8 +249,8 @@ def test_hour_parameter_is_reanchored_to_the_market_open() -> None:
 
 def test_unverified_shift_is_not_trusted() -> None:
     fam = "session_range_breakout"
-    cache = _cache({ff.key(fam, {}): _rec({7: 100}, {"asia": 100})})
-    slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache)
+    cache = _cache({ff.key(fam, {}, SYM): _rec({7: 100}, {"asia": 100})})
+    slots = ff.session_cells(fam, {}, ("all", "asia", "london", "ny"), cache=cache, symbol=SYM)
     for _s, _p, n in slots:
         if n and n.get("remapped"):
             assert n["remap"] == "rehomed"                 # no guessed re-anchor
@@ -225,8 +258,8 @@ def test_unverified_shift_is_not_trusted() -> None:
 
 def test_tz_mismatch_is_counted_apart_and_never_remapped() -> None:
     fam = "london_close_momentum"
-    cache = _cache({ff.key(fam, {}): _rec({16: 100}, {"london": 100, "ny": 100})})
-    p, note = ff.standin(fam, {}, "london", cache=cache)
+    cache = _cache({ff.key(fam, {}, SYM): _rec({16: 100}, {"london": 100, "ny": 100})})
+    p, note = ff.standin(fam, {}, "london", cache=cache, symbol=SYM)
     assert p == {"session": "london"}
     assert note and note["cause"] == ff.TZ_MISMATCH and note["remapped"] is False
 
@@ -259,7 +292,7 @@ def test_unmeasured_from_another_host_is_retried() -> None:
 def test_compiler_expand_axes_keeps_its_count(monkeypatch: pytest.MonkeyPatch) -> None:
     from research import miner_candidate_compiler as mcc
     fam = "london_close_momentum"
-    cache = _cache({ff.key(fam, {}): _rec({16: 100}, {"ny": 100})})
+    cache = _cache({ff.key(fam, {}, SYM): _rec({16: 100}, {"ny": 100})})
     monkeypatch.setattr(ff, "current_cache", lambda path=None: cache)
     monkeypatch.setattr(mcc, "_charts_with_bars", lambda _s: [])
     monkeypatch.setattr(mcc, "_invariance", lambda _s, _f: None)
@@ -272,7 +305,7 @@ def test_compiler_expand_axes_keeps_its_count(monkeypatch: pytest.MonkeyPatch) -
 def test_breadth_sweep_slots_keep_their_count(monkeypatch: pytest.MonkeyPatch) -> None:
     from research import breadth_sweep as bs
     fam = "london_close_momentum"
-    cache = _cache({ff.key(fam, {}): _rec({16: 100}, {"ny": 100})})
+    cache = _cache({ff.key(fam, {}, SYM): _rec({16: 100}, {"ny": 100})})
     monkeypatch.setattr(ff, "current_cache", lambda path=None: cache)
     slots = bs._session_slots(fam, {}, "H1", "EURUSD")
     assert len(slots) == len(bs.SESSION_AXIS)
@@ -287,7 +320,7 @@ def test_leg_marks_donates_and_is_idempotent(tmp_path: Path,
     from libs.moat import registry
     fam = "london_close_momentum"
     cache_path = tmp_path / "firing.json"
-    ff.save_cache(_cache({ff.key(fam, {}): {**_rec({16: 100}, {"london": 100, "ny": 100}),
+    ff.save_cache(_cache({ff.key(fam, {}, SYM): {**_rec({16: 100}, {"london": 100, "ny": 100}),
                                             "host": ff._host(), "measured_at": 1e12}}),
                   cache_path)
     docket = tmp_path / "external_survivors.json"
@@ -308,7 +341,9 @@ def test_leg_marks_donates_and_is_idempotent(tmp_path: Path,
         assert doc["live"] == 1 and doc["remapped"] == 1
         assert doc["donation"]["created"] == 1
         marks = [json.loads(x) for x in (tmp_path / "DEAD.jsonl").read_text().splitlines()]
-        assert {m["cause"] for m in marks} == {ff.NEVER_FIRES, ff.TZ_MISMATCH}
+        # SESSION_TZ_MISMATCH is counted, never written to the sort-last sidecar.
+        assert {m["cause"] for m in marks} == {ff.NEVER_FIRES}
+        assert doc["session_tz_mismatch_in_sidecar"] == 0
         for m in marks:
             for k in svr.CULTURE_KEYS:
                 assert m[k]
@@ -332,8 +367,9 @@ def test_leg_keeps_certified_and_filter_only_variants_out_of_the_sidecar(
     import session_variant_remap as svr
     fam = "overnight_gap_decay"
     cache_path = tmp_path / "firing.json"
-    ff.save_cache(_cache({ff.key(fam, {}): {**_rec({0: 269}, {}), "host": ff._host(),
-                                            "measured_at": 1e12}}), cache_path)
+    ff.save_cache(_cache({ff.key(fam, {}, sym): {**_rec({0: 269}, {}), "host": ff._host(),
+                                                 "measured_at": 1e12}
+                          for sym in ("CHFDKK", "EURZAR")}), cache_path)
     docket = tmp_path / "external_survivors.json"
     rows = [{"genome_id": f"{sym}{s}", "symbol": sym, "family": fam, "params": {"session": s}}
             for sym in ("CHFDKK", "EURZAR") for s in ("asia", "london", "ny")]

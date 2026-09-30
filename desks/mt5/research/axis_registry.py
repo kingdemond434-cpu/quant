@@ -697,7 +697,7 @@ def _proposal(region: dict[str, str], mode: str, why: str, families: frozenset[s
     sess, remap = region["session"], None
     try:
         from libs.research.family_firing import live_session
-        params, sess, remap = live_session(fam, params, sess)
+        params, sess, remap = live_session(fam, params, sess, symbols[0] if symbols else None)
     except ImportError:
         pass
     row = {"kind": "hypothesis", "family": fam, "symbols": symbols, "params": params,

@@ -141,7 +141,7 @@ def classify_all(variants: list[dict], cache: dict, *, measure_s: float,
     measured = 0
     first: dict[str, dict] = {}
     for v in variants:
-        first.setdefault(ff.key(v["family"], v["params"]), v)
+        first.setdefault(ff.key(v["family"], v["params"], v["symbol"]), v)
     for k, v in first.items():
         if not ff.stale(cache["keys"].get(k)):
             continue
@@ -152,7 +152,7 @@ def classify_all(variants: list[dict], cache: dict, *, measure_s: float,
         measured += 1
     first_sym = first
     for v in variants:
-        rec = ff.lookup(v["family"], v["params"], cache)
+        rec = ff.lookup(v["family"], v["params"], cache, v["symbol"])
         v["verdict"] = ff.guarded_verdict(rec, v["session"], symbol=v["symbol"],
                                           family=v["family"], params=v["params"], guard=guard)
         if v["verdict"] == ff.PROTECTED:
@@ -177,10 +177,12 @@ def plan(variants: list[dict], idents: set[bytes], cache: dict, *,
         if v.get("verdict") not in (ff.DEAD, ff.TZ_MISMATCH):
             continue
         fam, sym, sess = v["family"], v["symbol"], v["session"]
-        rec = ff.lookup(fam, v["params"], cache) or {}
+        rec = ff.lookup(fam, v["params"], cache, sym) or {}
         if v["verdict"] == ff.TZ_MISMATCH:
-            # Dead ONLY on today's server-hour window: marked, never remapped -- the shared
-            # filter's move to the market clock (pass 2) makes this very cell live.
+            # Dead ONLY on today's server-hour window: never remapped -- the shared filter's move
+            # to the market clock (pass 2) makes this very cell live. Planned for the report
+            # but NOT written to the sidecar (`SIDECAR_VERDICTS`): the sealed patch sorts every
+            # sidecar row last, and these are held out until pass 2 re-measures them.
             rows.append({
                 "genome_id": v.get("genome_id"), "symbol": sym, "family": fam,
                 "params": v["params"], "session": sess, "chart": ff.chart_of(fam, v["params"]),
@@ -221,8 +223,16 @@ def plan(variants: list[dict], idents: set[bytes], cache: dict, *,
     return rows
 
 
+#: The only verdicts written to the sidecar the sealed patch sorts last (2026-09-30 audit of #145):
+#: DEAD alone. SESSION_TZ_MISMATCH stays out until it is re-measured on the market-clock filter;
+#: LIVE_FILTER_ONLY and PROTECTED_BY_EVIDENCE never reach `plan` at all.
+SIDECAR_VERDICTS = frozenset({ff.DEAD})
+
+
 def write_sidecar(rows: list[dict], path: Path = SIDECAR) -> None:
-    """Rewritten whole each pass: a DERIVED mark over the docket, never a ledger of its own."""
+    """Rewritten whole each pass: a DERIVED mark over the docket, never a ledger of its own.
+    Only rows whose verdict is in `SIDECAR_VERDICTS` are written."""
+    rows = [r for r in rows if r.get("verdict") in SIDECAR_VERDICTS]
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
@@ -326,7 +336,9 @@ def report(variants: list[dict], rows: list[dict], census: dict, cls: dict,
         "generated_at": _now(), "oracle_version": ff.VERSION,
         "docket": {**census, "path": str(DOCKET.relative_to(BASE))},
         "session_variants": n, "dead_found": dead, "live": live, "unmeasured": unm,
-        "session_tz_mismatch": tzm, "live_filter_only": lfo, "protected_by_evidence": prot,
+        "session_tz_mismatch": tzm, "session_tz_mismatch_in_sidecar": 0,
+        "sidecar_verdicts": sorted(SIDECAR_VERDICTS), "live_filter_only": lfo,
+        "protected_by_evidence": prot,
         "dead_share": round(dead / n, 4) if n else ff.UNMEASURED,
         "dead_share_of_measured": round(dead / judged, 4) if judged else ff.UNMEASURED,
         "dead_rule": ("DEAD only when NEITHER clock holds a signal (never on today's server-hour "
