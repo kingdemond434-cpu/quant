@@ -698,12 +698,20 @@ def modifier_policy(trades: list[dict[str, Any]]) -> dict[str, Any]:
         return {"status": UNMEASURED, "why": f"{MODIFIERS.name} absent or empty on this host"}
     for v in mods.values():
         v.sort(key=lambda x: x[0])
+    # TWO CLOCKS MEET HERE. A modifier row is stamped on the wall clock in TRUE UTC
+    # (`capital_modifiers`, datetime.now(UTC)); a trade's `t` is on the BAR clock (the broker's
+    # EET/EEST stamp under a UTC label, 2-3 h ahead -- `load_trades` moves live rows onto it).
+    # Joined raw, a trade picked up a modifier written up to three hours AFTER it entered. The
+    # entry is converted to true UTC through the desk's one broker-clock helper first.
+    from libs.regime import session_clock
+    entry_utc = (session_clock.server_to_utc(pd.DatetimeIndex([t["t"] for t in trades]))
+                 .as_unit("ns").asi8 if trades else np.asarray([], dtype="int64"))
     joined: dict[str, list[tuple[float, float]]] = defaultdict(list)
-    for t in trades:
+    for t, t_utc in zip(trades, entry_utc, strict=True):
         rows = mods.get(t["sleeve"])
         if not rows:
             continue
-        i = int(np.searchsorted([x[0].value for x in rows], t["t"].value, side="right")) - 1
+        i = int(np.searchsorted([x[0].value for x in rows], int(t_utc), side="right")) - 1
         if i < 0:
             continue
         _when, m, cat = rows[i]
