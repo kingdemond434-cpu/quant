@@ -142,7 +142,7 @@ def correlation_blocks(returns: dict[str, pd.Series]) -> tuple[dict[str, int | N
         blocks[long_enough[0]] = 0
         return blocks, dropped
     panel = pd.DataFrame({s: returns[s] for s in long_enough})
-    rho = panel.corr(min_periods=MIN_OVERLAP).abs().fillna(0.0).to_numpy(float)
+    rho = np.array(panel.corr(min_periods=MIN_OVERLAP).abs().fillna(0.0).to_numpy(float))
     np.fill_diagonal(rho, 1.0)
     dist = np.clip(1.0 - rho, 0.0, 1.0)
     from scipy.cluster.hierarchy import fcluster, linkage
