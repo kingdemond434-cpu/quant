@@ -788,7 +788,7 @@ def fixture_trace(data_dir: Path) -> dict[str, Any]:
     hooks.prior_verdict = lambda gcell: None
     ledger = data_dir / "fixture_gate_ledger.jsonl"
     src = acq.Source(id="fixture_mql5_codebase", fetcher="external_feed", kind="code",
-                     priority=1, name="fixture")
+                     priority=1, name="fixture", uses=list(acq.DEFAULT_USES["code"]))
     pipe = Pipeline(data_dir, data_dir / "reports", roster=[src], hooks=hooks,
                     gate_ledger=ledger)
     body = ("//+ RSI Reversal EA for EURUSD H1\n"
