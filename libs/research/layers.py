@@ -331,6 +331,10 @@ LEG_LAYER: dict[str, str] = {
     # compute. It buys INFORMATION about the producers themselves -- which of them opens ground
     # nothing else covers, and which of them converts the judge's hour into a certificate.
     "orthogonality_yield": "information",
+    # Where in strategy space the desk has looked and what it found per cell, which empty cells
+    # sit next to proven ground, and each candidate's expected correlation to the book. It buys
+    # INFORMATION about the search itself; its two consumers reorder or add, never remove.
+    "occupancy_map": "information",
     # What the multiplicity budget is charged in: nominal rows vs effective independent tests.
     "effective_trials": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
