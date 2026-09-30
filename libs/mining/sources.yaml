@@ -32,17 +32,20 @@ external_rosters:
   # fetcher `owned` = that lane's organ fetches and consumes the row; it is rostered here for
   # coverage and uses, never fetched twice.
   - path: desks/mt5/data/source_rosters/*.json
-  - path: desks/mt5/data/source_rosters/*.jsonl
-  - path: desks/mt5/data/source_rosters/*.yaml
+  - {path: desks/mt5/data/source_rosters/*.jsonl, optional: true}
+  - {path: desks/mt5/data/source_rosters/*.yaml, optional: true}
   - path: libs/mining/rosters/asia_thread_sources.yaml          # Asian quant practices thread
     defaults: {fetcher: owned, owner: asia_gap_thread}
   - path: desks/mt5/data/cell_emitter_sources.json              # breadth cell_emitter (#116)
+    pending: "breadth cell_emitter branch (#116) not merged"
     defaults: {fetcher: owned, owner: breadth/cell_emitter, kind: code,
                consumer: desks/mt5/research/cell_emitter.py, uses: [direct_cells, indirect_cells]}
   - path: desks/mt5/data/world_factory_sources.json             # breadth world factory (#123)
+    pending: "global media factory (#123) not merged"
     defaults: {fetcher: owned, owner: breadth/world_factory, kind: text,
                uses: [indirect_cells, allocation_intel]}
   - path: desks/mt5/data/alt_dataset_sources.json               # breadth alt datasets (#123)
+    pending: "global media factory (#123) not merged"
     defaults: {fetcher: owned, owner: breadth/alt_datasets, kind: text,
                uses: [indirect_cells, allocation_intel]}
   # ---- the remaining parallel source universes, folded in 2026-09-30 (coverage order, item 2).
@@ -55,6 +58,7 @@ external_rosters:
                consumer: desks/mt5/research/deep_forest_miner.py}
   - path: desks/mt5/data/asia_sources.json                      # Asia hard/aggregator planes
     rows: sources
+    seat_template: "miner:asia:{id}"                          # its docket rows name the source
     defaults: {fetcher: owned, owner: asia_desk, kind: text,
                consumer: desks/mt5/research/source_fixer.py,
                uses: [indirect_cells, allocation_intel]}
@@ -65,6 +69,7 @@ external_rosters:
                uses: [indirect_cells, allocation_intel]}
   - path: desks/mt5/data/free_stack_sources.json                # breadth free stack (#129)
     rows: sources
+    pending: "free stack (#129) not merged"
     defaults: {fetcher: owned, owner: breadth/free_stack, kind: text,
                consumer: desks/mt5/research/free_stack_hunter.py,
                uses: [indirect_cells, allocation_intel]}

@@ -75,6 +75,7 @@ class Source:
     url_key: str = ""                # canonical_url of the row's own URL: the cross-roster join
     aliases: list[str] = field(default_factory=list)  # ids other rosters gave the same source
     shares_page: list[str] = field(default_factory=list)  # distinct sources on the same page
+    seats: list[str] = field(default_factory=list)  # docket `source` strings it answers for
 
 
 _SLUG = re.compile(r"\W+", re.UNICODE)
@@ -220,7 +221,9 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
         handoff_deepening=bool(row.get("handoff_deepening", True)),
         feeds=[str(x) for x in (row.get("feeds_to") or [])],
         enabled=bool(row.get("enabled", True)), config=cfg, origin=origin,
-        url_key=canonical_url(_row_url(row)))
+        url_key=canonical_url(_row_url(row)),
+        seats=[str(x) for x in (row.get("seats") if isinstance(row.get("seats"), list)
+                                else [row["seats"]] if row.get("seats") else [])])
 
 
 def load_roster(path: Path = ROSTER, *, root: Path | None = None) -> list[Source]:
@@ -231,7 +234,8 @@ def load_roster(path: Path = ROSTER, *, root: Path | None = None) -> list[Source
     departments' `SourceRow`s. ONE CANONICAL ID PER SOURCE: a later row whose id was already
     seen is ignored (first definition wins, so no lane can silently redefine another's), and a
     later row from ANOTHER roster naming the same page (`canonical_url`) AND the same thing
-    (`slug` of the name) becomes an alias of the first rather than a second source. Same page,
+    (`slug` of the name) in the same region becomes an alias of the first rather than a second
+    source (two countries' packs naming one vendor page are two sources). Same page,
     different thing (a portal ground and one dataset on it) stays two sources, each naming the
     other in `shares_page` -- merging them would erase the dataset's own attribution."""
     doc = yaml.safe_load(Path(path).read_text("utf-8")) or {}
@@ -245,7 +249,7 @@ def load_roster(path: Path = ROSTER, *, root: Path | None = None) -> list[Source
             return
         first = by_url.get(s.url_key) if s.url_key else None
         if first is not None and first.origin != s.origin:
-            if slug(first.name) == slug(s.name):
+            if slug(first.name) == slug(s.name) and first.region == s.region:
                 first.aliases.append(s.id)
                 return
             first.shares_page.append(s.id)
@@ -274,7 +278,32 @@ def load_roster(path: Path = ROSTER, *, root: Path | None = None) -> list[Source
                     sid = derive_id(row, str(e["id_style"]), names)
                     names[sid] = str(row.get("name") or row.get("title") or "")
                     row = {**row, "id": sid}
+                if e.get("seat_template"):
+                    rid = row.get("id") or row.get("source_id")
+                    row = {**row, "seats": [str(e["seat_template"]).format(id=rid)]}
                 add(normalise_row(row, origin=fp, defaults=defaults))
+    return out
+
+
+def roster_files(path: Path = ROSTER, *, root: Path | None = None) -> list[dict[str, Any]]:
+    """Every external roster entry and what it matched. An entry matching nothing is MISSING --
+    loud, never a silent zero -- unless it declares `pending` (the lane's branch has not merged;
+    the reason is the value) or `optional` (a glob a lane may or may not use)."""
+    doc = yaml.safe_load(Path(path).read_text("utf-8")) or {}
+    base = root or Path(path).resolve().parents[2]
+    out = []
+    for entry in doc.get("external_rosters") or []:
+        e = entry if isinstance(entry, Mapping) else {"path": entry}
+        if e.get("packs"):
+            n = len(list((base / str(e["packs"])).glob("*/pack.py")))
+            out.append({"path": str(e["packs"]), "files": n,
+                        "state": "OK" if n else "MISSING"})
+            continue
+        n = len(glob.glob(str(base / str(e.get("path"))), recursive=True))
+        state = "OK" if n else ("PENDING" if e.get("pending") else
+                                "OPTIONAL_EMPTY" if e.get("optional") else "MISSING")
+        out.append({"path": str(e.get("path")), "files": n, "state": state,
+                    **({"pending": str(e["pending"])} if e.get("pending") and not n else {})})
     return out
 
 
@@ -890,7 +919,11 @@ def fetch_external_feed(src: Source, cursor: dict[str, Any], ctx: FetchContext
     root = ctx.root / str(cfg.get("root") or ".")
     fields = dict(cfg.get("fields") or {})
     offsets = dict(cursor.get("offsets") or {})
-    for pattern in cfg.get("paths") or []:
+    patterns = [str(p) for p in cfg.get("paths") or []]
+    if not any(glob.glob(str(root / p), recursive=True) for p in patterns):
+        # LOUD, never an `empty` run: the lane's feed is not on this machine
+        raise FileNotFoundError(f"no file matches {patterns} under {root}")
+    for pattern in patterns:
         for fp in sorted(glob.glob(str(root / str(pattern)), recursive=True)):
             if ctx.expired():
                 return
@@ -1038,6 +1071,8 @@ def acquire(src: Source, store: PitStore, cursors: CursorStore, ctx: FetchContex
                 cursors.save(src.id, cursor)
             if rep.fetched >= ctx.max_items or ctx.expired():
                 break
+    except FileNotFoundError as exc:               # a lane's feed absent from this machine
+        rep.outcome, rep.detail = "MISSING_FEED", str(exc)[:300]
     except Exception as exc:                       # one source's failure costs the others nothing
         rep.outcome, rep.detail = "ERROR", f"{type(exc).__name__}: {exc}"[:300]
     if rep.outcome == "ok":

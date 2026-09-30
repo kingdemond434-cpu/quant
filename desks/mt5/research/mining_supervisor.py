@@ -143,7 +143,7 @@ class Hooks:
 
 def _fallback_gcell(spec: Mapping[str, Any]) -> str:
     payload = json.dumps(dict(spec.get("params") or {}), sort_keys=True, separators=(",", ":"))
-    return f"{spec.get('sym')}.{spec.get('family')}.p=" + \
+    return f"{spec.get('sym') or spec.get('symbol')}.{spec.get('family')}.p=" + \
         hashlib.sha256(payload.encode()).hexdigest()[:16]
 
 
@@ -172,7 +172,9 @@ def desk_hooks() -> Hooks:
     h.bars_available = bars_available
     try:
         from research.frontier_identity import cell_id as _gcell
-        h.gauntlet_cell = lambda spec: str(_gcell(dict(spec)))
+        from research.frontier_identity import docket_cell as _dcell
+        # the judge's own row -> cell rule (symbol|sym, a row chart folded into params)
+        h.gauntlet_cell = lambda spec: str(_gcell(_dcell(dict(spec))))
     except Exception:
         pass
     try:
@@ -238,8 +240,10 @@ class Pipeline:
         self.cursors = acq.CursorStore(self.data / "cursors")
         self.feed = self.data / "mechanics_feed.jsonl"
         self.gate_ledger = Path(gate_ledger)
-        # the docket snapshot beside the gauntlet ledger: data/hypotheses/miner_candidates.json
-        self.candidates = self.gate_ledger.parent / "miner_candidates.json"
+        # THE docket the judge reads, beside its ledger: data/hypotheses/external_survivors.json.
+        # Its rows keep the producer's `source` string (`miner:asia:rbnz_series`) and URL; the
+        # compiler's miner_candidates.json does not (0 of 53,174 rows carry a URL).
+        self.docket = self.gate_ledger.parent / "external_survivors.json"
         self.roster = roster if roster is not None else acq.load_roster(root=root)
         self.by_id = {s.id: s for s in self.roster}
         self.hooks = hooks or Hooks()
@@ -757,68 +761,94 @@ class Pipeline:
         idx: dict[str, list[tuple[str, str]]] = {}
         for s in self.roster:
             if s.url_key:
-                host, _, path = s.url_key.partition("/")
-                idx.setdefault(host, []).append(("/" + path.split("?", 1)[0], s.id))
+                idx.setdefault(s.url_key.partition("/")[0], []).append((s.url_key, s.id))
         return idx
 
-    def attribute_source(self, cand: Mapping[str, Any],
-                         idx: Mapping[str, list[tuple[str, str]]]) -> str:
-        """The registry source a docket candidate came from, or "" when it names none we hold.
+    def _seat_index(self) -> dict[str, str]:
+        """DECLARED seats only: a docket `source` string a registry row says it answers for.
+        No name-alike fallback -- a seat nobody declared is an internal producer, not a source."""
+        out: dict[str, str] = {}
+        for s in self.roster:
+            for seat in s.seats:
+                out.setdefault(seat, s.id)
+        return out
 
-        URL first, longest path prefix on the same host; a host with exactly one registered
-        source takes it. Then the seat (`miner:<id>` naming a registry id or alias)."""
-        key = acq.canonical_url(cand.get("source_url"))
-        if key:
-            host, _, path = key.partition("/")
-            path = "/" + path.split("?", 1)[0]
-            rows = idx.get(host) or []
-            hits = sorted(((len(p), sid) for p, sid in rows
-                           if path == p or path.startswith(p.rstrip("/") + "/")), reverse=True)
-            if hits:
-                return hits[0][1]
-            if len({sid for _, sid in rows}) == 1:
-                return rows[0][1]
-        seat = str(cand.get("source") or "").removeprefix("miner:")
-        if seat in self.by_id:
-            return seat
-        return self._alias_of.get(seat, "")
+    @staticmethod
+    def attribute_url(url: Any, idx: Mapping[str, list[tuple[str, str]]]) -> str:
+        """The ONE registry source whose URL is this URL or its longest proper path prefix.
 
-    @property
-    def _alias_of(self) -> dict[str, str]:
-        return {a: s.id for s in self.roster for a in s.aliases}
+        A host-only registry URL matches only itself (never every page on the host), and a tie
+        at the winning length is ambiguous and credits nobody: a wrong credit is worse than none.
+        """
+        key = acq.canonical_url(url)
+        if not key:
+            return ""
+        host = key.partition("/")[0]
+        best: list[str] = []
+        best_len = -1
+        for rk, sid in idx.get(host) or []:
+            if rk == key:
+                hit = len(rk) + 1                         # exact beats any prefix
+            elif "/" in rk and "?" not in rk and key.startswith(rk + "/"):
+                hit = len(rk)
+            else:
+                continue
+            if hit > best_len:
+                best, best_len = [sid], hit
+            elif hit == best_len:
+                best.append(sid)
+        return best[0] if len(set(best)) == 1 else ""
+
+    def attribute_source(self, row: Mapping[str, Any], idx: Mapping[str, list[tuple[str, str]]],
+                         seats: Mapping[str, str]) -> tuple[str, str]:
+        """(source id, how): the declared seat first, then the row's own URL."""
+        sid = seats.get(str(row.get("source") or ""), "")
+        if sid:
+            return sid, "seat"
+        sid = self.attribute_url(row.get("source_url") or row.get("url"), idx)
+        return (sid, "url") if sid else ("", "")
 
     def attributed_evaluations(self, now: datetime | None = None) -> dict[str, Any]:
-        """Per registry source: docket cells EVALUATED within ACTIVE_WINDOW, joined through the
-        compiler's candidates (source_url / seat -> symbol, family, params -> gauntlet cell and
-        its chart x session expansion -> judged_cells). The docket snapshot is the compiler's
-        CURRENT one, so a candidate that has left it is not attributed: an undercount, stated."""
+        """Per registry source: docket cells EVALUATED within ACTIVE_WINDOW.
+
+        Reads the judge's own docket (`external_survivors.json`) and names each row's cell by the
+        judge's rule (`frontier_identity.docket_cell`), so a docket cell and its verdict share a
+        key by construction. A row is credited through a DECLARED seat or its URL, never a guess;
+        what stays unattributed is counted by producer so the gap is visible."""
         t = now or utcnow()
         try:
-            doc = json.loads(self.candidates.read_text("utf-8"))
+            rows = json.loads(self.docket.read_text("utf-8"))
         except (OSError, ValueError):
-            return {"by_source": {}, "basis": f"UNMEASURED: {self.candidates.name} unreadable"}
-        cands = doc.get("hypotheses") if isinstance(doc, dict) else doc
+            return {"by_source": {}, "basis": f"UNMEASURED: {self.docket.name} unreadable"}
+        if isinstance(rows, dict):
+            rows = rows.get("rows") or rows.get("items") or []
         judged = self.cells.judged_since(t - ACTIVE_WINDOW)
-        idx = self._url_index()
+        idx, seats = self._url_index(), self._seat_index()
         by: dict[str, set[str]] = {}
-        unattributed = 0
-        for c in cands if isinstance(cands, list) else []:
-            if not isinstance(c, dict) or not c.get("symbol") or not c.get("family"):
+        how: dict[str, int] = {}
+        unattributed: dict[str, int] = {}
+        for r in rows if isinstance(rows, list) else []:
+            if not isinstance(r, dict) or not r.get("family"):
                 continue
-            spec = {"symbol": c["symbol"], "family": c["family"],
-                    "params": dict(c.get("params") or {})}
-            ids = {self.hooks.gauntlet_cell(spec), *self._expanded(spec).values()}
-            hit = ids & judged.keys()
-            if not hit:
+            try:
+                cid = self.hooks.gauntlet_cell(r)
+            except Exception:
                 continue
-            sid = self.attribute_source(c, idx)
+            if cid not in judged:
+                continue
+            sid, via = self.attribute_source(r, idx, seats)
             if not sid:
-                unattributed += len(hit)
+                p = str(r.get("source") or "?").split(":")
+                k = ":".join(p[:2])
+                unattributed[k] = unattributed.get(k, 0) + 1
                 continue
-            by.setdefault(sid, set()).update(hit)
-        return {"by_source": {k: len(v) for k, v in by.items()},
-                "unattributed_judged_cells": unattributed,
-                "basis": f"{self.candidates.name} x judged_cells ({len(judged)} judged in window)"}
+            by.setdefault(sid, set()).add(cid)
+            how[via] = how.get(via, 0) + 1
+        top = dict(sorted(unattributed.items(), key=lambda kv: -kv[1])[:25])
+        return {"by_source": {k: len(v) for k, v in by.items()}, "credited_by": how,
+                "unattributed_judged_rows": sum(unattributed.values()),
+                "unattributed_top_producers": top,
+                "basis": f"{self.docket.name} x judged_cells ({len(judged)} judged in window)"}
 
     def register_cursors(self, now: datetime | None = None) -> int:
         """A durable cursor per canonical source, carrying its registration; fetch state kept."""
@@ -1180,6 +1210,10 @@ class Pipeline:
         """The one registry, bounded: per owner (sources, ACTIVE, COLD by reason), the join's
         basis and the schema other lanes register against. Row detail is the box report."""
         by_owner: dict[str, dict[str, Any]] = {}
+        cold_ids: dict[str, list[str]] = {}
+        for sid, v in sorted(srcs.items()):
+            if v.get("status") != "ACTIVE":
+                cold_ids.setdefault(str(v.get("cold_reason") or "?"), []).append(sid)
         for v in srcs.values():
             o = by_owner.setdefault(str(v.get("owner") or "?"), {"sources": 0, "active": 0,
                                                                  "cold": {}})
@@ -1198,7 +1232,11 @@ class Pipeline:
                 "aliases": sum(len(v.get("aliases") or []) for v in srcs.values()),
                 "sharing_a_page": sum(1 for v in srcs.values() if v.get("shares_page")),
                 "attribution": getattr(self, "_attribution", {}),
-                "by_owner": dict(sorted(by_owner.items()))}
+                "roster_files": acq.roster_files(root=self.root),
+                "by_owner": dict(sorted(by_owner.items())),
+                # EVERY COLD source by id, under its reason: committed, so a lane can see which
+                # of its sources has not reached the judge without asking the box
+                "cold_by_reason": cold_ids}
 
     def write_digest(self, m: Mapping[str, Any], now: datetime) -> None:
         """The committed digest (DIGEST): bounded, scalars and short rows only."""
