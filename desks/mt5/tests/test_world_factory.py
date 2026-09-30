@@ -269,7 +269,9 @@ def test_the_acquirer_reads_fetchable_alt_rows_after_its_seeds_and_skips_keyed(m
     n_seed = len(ad._SEED_ENDPOINTS)
     alt = [ad._alt_url(r) for r in ad.alt_rows() if ad._alt_fetchable(r)]
     assert alt and urls[n_seed:n_seed + len(alt)] == alt
-    assert not [u for u in urls if "patentsview" in u or "sentinel-hub" in u or "eogdata" in u]
+    blocked = {ad._alt_url(r) for r in ad.alt_rows() if not ad._alt_fetchable(r)}
+    assert blocked and not blocked & set(urls[n_seed:n_seed + len(alt)])
+    assert not [u for u in urls if "patentsview" in u or "sentinel-hub" in u]
     assert all("{today}" not in u for u in urls)
 
 
