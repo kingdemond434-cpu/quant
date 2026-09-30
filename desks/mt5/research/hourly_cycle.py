@@ -1007,7 +1007,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "conversion_maximiser", "trend_core",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
-                     "cross_sectional_breadth"),
+                     "cross_sectional_breadth",
+                     # the five EliteQuant-map families, screened on cost and seeded
+                     "elitequant_breadth"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -1763,6 +1765,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The class-book seeder stops itself at --budget-s 900 and resumes from its state file (each
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
+    "elitequant_breadth": 700,
     "event_surprise": 400,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
@@ -3626,6 +3629,12 @@ def main() -> None:
     xsb = _costed("cross_sectional_breadth", lambda: _producer(
         "cross_sectional_breadth", "research/cross_sectional_breadth.py", "--once",
         "--budget-s", "900"))
+    # FIVE MECHANISMS ABSORBED FROM THE ELITEQUANT MAP (2026-09-30): FFD level reversion, the
+    # Corwin-Schultz spread shock, backward sup-ADF bubbles, Carver's accel and skew. Screens
+    # every hypothesis-lane cell on cost and donates the payers through the one proposer door;
+    # writes reports/ELITEQUANT_BREADTH.json. Additive: no other miner is touched.
+    eqb = _costed("elitequant_breadth", lambda: _producer(
+        "elitequant_breadth", "research/elitequant_breadth.py", "--once", "--budget-s", "600"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -5238,6 +5247,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
+                    "elitequant_breadth": eqb,
                     "event_surprise": esur,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,

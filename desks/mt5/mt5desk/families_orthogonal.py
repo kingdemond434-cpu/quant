@@ -2343,3 +2343,15 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# FIVE MECHANISMS ABSORBED FROM THE ELITEQUANT MAP (2026-09-30): fractionally differentiated
+# level reversion, the Corwin-Schultz high-low spread shock, backward sup-ADF bubbles, Carver's
+# accel and skew rules. Each was absent from the desk (no family, no feature); each is price only
+# and fails on its own days (the reasons are in `families_elitequant.CULTURE`). Seeded per
+# hypothesis-lane symbol by `research/elitequant_breadth.py` through the one proposer door.
+from mt5desk.families_elitequant import ELITEQUANT_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(ELITEQUANT_FAMILIES)
+for _eq_name in ELITEQUANT_FAMILIES:
+    FAMILY_INPUTS[_eq_name] = ("price only", "data/universe/*_H1.parquet")
+del _eq_name
