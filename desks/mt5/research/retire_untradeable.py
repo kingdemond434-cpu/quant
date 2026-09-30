@@ -48,6 +48,11 @@ from libs.ops.reference_freshness import require_live_reference  # noqa: E402
 
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
+#: The artifact this organ writes, bound under the name `components.own_artifact` reads. Without
+#: it the organ's attested row was INHERITED from whichever reacher the registry's reach walk met
+#: first -- `formal_invariants.py` (which declares one) or `reference_freshness.py` (which does
+#: not) -- so a new, unrelated scheduled spec could flip the walk order and drop the row.
+OUT = SURVIVORS
 
 #: STUMP FLOOR, the same number `scripts/purge_untradeable_certs.py` carries.
 UNIVERSE_FLOOR = 50

@@ -156,8 +156,9 @@ def order_comment(name: str) -> str:
 #: because a position outlives the process that opened it.
 ORDER_TAGS = BASE / "data" / "order_tags.json"
 _ORDER_TAG_MAP: dict[str, dict[str, str]] | None = None
-#: Tags kept. A tag is needed only while its order or position is alive; this is years of the
-#: desk's order rate and still a few hundred kB.
+#: Tags kept. A tag is needed only while its order or position is alive, so this is headroom,
+#: not a sizing input: computed as 20,000 entries at ~60 bytes each, ~1.2 MB on disk, against a
+#: live book of at most a few hundred open orders and positions. It never sizes a trade.
 ORDER_TAGS_KEEP = 20_000
 
 
