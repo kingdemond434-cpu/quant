@@ -291,7 +291,7 @@ def _local_handoff(df: pd.DataFrame, source_tz: str, source_at: str, source_alig
     atr = _atr(d, vol_n).to_numpy()
     op = d["open"].to_numpy(dtype=float)
     cl = d["close"].to_numpy(dtype=float)
-    t_ns = d.index.asi8
+    t_ns = pd.DatetimeIndex(d.index).as_unit("ns").asi8   # ns whatever the index's own unit
     span_ns = _LC.bar_minutes(d.index) * 60_000_000_000
     day_ns = 24 * 3600 * 1_000_000_000
     trade_idx = np.flatnonzero(trd)

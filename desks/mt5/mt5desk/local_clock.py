@@ -66,7 +66,10 @@ def bar_minutes(index: pd.DatetimeIndex) -> int:
     """The chart's bar length in minutes (median spacing; 60 when it cannot be read)."""
     if len(index) < 2:
         return 60
-    d = np.diff(index.asi8) // 60_000_000_000
+    # in the index's own unit: asi8 is ns for datetime64[ns] but us for datetime64[us], and a
+    # fixed ns divisor read every us-resolution H1 chart as 2-minute bars (no bar ever matched)
+    idx = pd.DatetimeIndex(index)
+    d = np.asarray((idx[1:] - idx[:-1]) // pd.Timedelta(minutes=1), dtype=np.int64)
     d = d[d > 0]
     return int(np.median(d)) if len(d) else 60
 

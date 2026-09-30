@@ -371,3 +371,11 @@ def test_no_summary_is_unmeasured_and_reorders_nothing(tmp_path: Path) -> None:
     assert str(doc["gap_list"]).startswith(CC.UNMEASURED)
     assert {r["gap_state"] for r in doc["recipes"]} == {CC.UNMEASURED}
     assert doc["totals"]["cells_total"] >= 1000
+
+
+def test_bar_length_is_read_in_the_index_own_unit() -> None:
+    """A us-resolution chart once read as 2-minute bars across a weekend and matched nothing."""
+    from mt5desk import local_clock as LC
+    idx = _stamps("2026-01-05", "2026-02-27")
+    for unit in ("s", "ms", "us", "ns"):
+        assert LC.bar_minutes(idx.as_unit(unit)) == 60
