@@ -571,7 +571,7 @@ def to_mt5(node: Node) -> Translation:
                 return ["neg", tr(n[2])]
             raise Untranslatable("logical not")
         if kind == "tern":
-            raise Untranslatable("conditional (?:) needs a regime gate the grammar lacks")
+            return ternary(n)
         if kind == "bin":
             op, a, b = n[1], n[2], n[3]
             ca, cb = _num(a), _num(b)
@@ -661,6 +661,86 @@ def to_mt5(node: Node) -> Translation:
             notes.append("ts_product read as ts_sum of the series (log-sum proxy)")
             return ["sum", tr(args[0]), win(1)]
         raise Untranslatable(f"operator {name!r} has no MT5 grammar form")
+
+    def kind_of(e: Any) -> str:
+        if isinstance(e, (int, float)):
+            return "LIT"
+        try:
+            from libs.research import alpha_grammar as g
+        except Exception as exc:                          # numpy/pandas absent
+            raise Untranslatable(f"grammar unavailable: {exc}") from exc
+        return g.type_of(e)
+
+    def free(e: Any) -> Any:
+        """A sign-preserving pure number: the gate `if_pos` needs."""
+        k = kind_of(e)
+        if k in ("PRICE", "PRICE_DIFF"):
+            return ["atr_norm", e, 24]
+        if k in ("Z", "RANK", "RATIO", "RETURN", "COUNT", "VOLATILITY"):
+            return e
+        return ["sign", e]
+
+    def gate(c: Node) -> Any:
+        """A condition as a series that is > 0 exactly where it holds."""
+        if c[0] == "bin" and c[1] in ("||", "&&"):
+            parts = []
+            for side in (c[2], c[3]):
+                try:
+                    parts.append(["sign", gate(side)])
+                except Untranslatable as u:
+                    if c[1] != "||":
+                        raise
+                    notes.append(f"'||' arm dropped ({u.reason})")
+            if not parts:
+                raise Untranslatable("no translatable arm of '||'")
+            if len(parts) == 1:
+                return parts[0]
+            return ["max2" if c[1] == "||" else "min2", parts[0], parts[1]]
+        if c[0] == "bin" and c[1] in ("<", ">", "<=", ">="):
+            op, a, b = c[1], c[2], c[3]
+            ca, cb = _num(a), _num(b)
+            if ca is not None and cb is not None:
+                raise Untranslatable("comparison of two constants")
+            if ca is not None or cb is not None:
+                k = float(ca if ca is not None else cb or 0.0)
+                x = tr(b if ca is not None else a)
+                if k != 0:
+                    notes.append(f"threshold {k:g} read as the series' own {RANK_WINDOW}-bar mean")
+                    x = ["zscore", x, RANK_WINDOW]
+                above = (op in (">", ">=")) == (cb is not None)   # true when x is the big side
+                return free(x) if above else ["neg", free(x)]
+            x, y = tr(a), tr(b)
+            d = ["sub", y, x] if op in ("<", "<=") else ["sub", x, y]
+            return free(d)
+        if c[0] == "bin" and c[1] in ("==", "!="):
+            raise Untranslatable("equality test has no measure on a continuous series")
+        return free(tr(c))
+
+    def branch(e: Node) -> Any:
+        v = _num(e)
+        return float(v) if v is not None else tr(e)
+
+    def ternary(n: Node) -> Any:
+        g_ = gate(n[1])
+        a, b = branch(n[2]), branch(n[3])
+        if isinstance(a, float) and isinstance(b, float):
+            if a == b:
+                raise Untranslatable("both branches are the same constant")
+            notes.append("constant branches read as the gate's sign")
+            return ["sign", g_] if a > b else ["neg", ["sign", g_]]
+        ka, kb = kind_of(a), kind_of(b)
+        if "LIT" in (ka, kb):
+            lit, ser, kser = (a, b, kb) if ka == "LIT" else (b, a, ka)
+            if lit != 0 and kser not in ("Z", "RANK", "RATIO", "RETURN", "COUNT",
+                                         "VOLATILITY"):
+                notes.append("series branch normalised to meet a constant branch")
+                ser = free(ser) if kser in ("PRICE", "PRICE_DIFF") else ["zscore", ser,
+                                                                          RANK_WINDOW]
+            a, b = (lit, ser) if ka == "LIT" else (ser, lit)
+        elif ka != kb:
+            notes.append("branches of different kinds z-scored to meet")
+            a, b = ["zscore", a, RANK_WINDOW], ["zscore", b, RANK_WINDOW]
+        return ["if_pos", g_, a, b]
 
     try:
         out = tr(node)
