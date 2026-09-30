@@ -346,9 +346,10 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
 
 def test_the_window_moves_order_only_never_the_charge_or_the_judged_set(tmp_path: Path) -> None:
     """On the same docket the two windows charge the same m -- THE COUNT THE SEALED DEFLATED
-    SHARPE CHARGES (`stage1_record.dsr_charge`, called by the sealed patch), which is the full
-    union of screened cells for EVERY family, never the family's own count -- record the same
-    cells, and hand the sealed judge the same NON-EMPTY set to judge; only the order may differ."""
+    SHARPE CHARGES (patches/union_lifetime_trials/, restated as `stage1_record.dsr_charge`),
+    the full union of screened cells for EVERY family, never the family's own count -- record
+    the same cells, and hand the sealed judge the same NON-EMPTY set to judge; only the order
+    may differ."""
     from libs.research import experiment_ledger as EL
     assert S.WINDOW == "pre_wf" and set(S.WINDOWS) == {"pre_lockbox", "pre_wf"}
     rows = _real_rows(10)
@@ -373,7 +374,7 @@ def test_the_window_moves_order_only_never_the_charge_or_the_judged_set(tmp_path
         rank = REC.stage1_rank_for_specs(specs, G.cell_id, out / "rec.sqlite")
         # THE COUNT THE SEALED DSR CHARGES, derived the way the judge derives it: the ledger's
         # stage-1 union (EXPERIMENT_LEDGER `stage1_cells`, summed from STAGE1_TRIALS.jsonl) and
-        # per-family counts, through the ONE function the sealed patch calls.
+        # per-family counts, through the unsealed statement of union_lifetime_trials' rule.
         union, fam_counts = EL._stage1_counts(out / S.TRIALS.name)
         lifetime = {"status": "MEASURED", "family_trials": fam_counts,
                     "stage1_union_trials": union}

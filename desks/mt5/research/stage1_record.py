@@ -252,9 +252,13 @@ def dsr_charge(campaign: int, family: str, lifetime: dict[str, Any]) -> tuple[in
     survived is over that union. Charging max(campaign, family) under-charges by union/family:
     measured at 975k screened a day, 3.1x for exit_operated, 11.5x for htf_anchor and ~208x for
     turn_of_month. `lifetime` is the sealed `lifetime_trial_report` dict; its
-    `stage1_union_trials` field is read from the ledger's `stage1_cells`. A tightening only: never
-    below the campaign charge or the family's own count. The sealed patch
-    `two_stage_judge_sort_key.patch` calls THIS function, so the test that pins it pins the judge.
+    `stage1_union_trials` field is the ledger's `stage1_cells`. A tightening only: never below the
+    campaign charge or the family's own count. THE SEALED EDIT is written once, by
+    /mnt/project-files/patches/union_lifetime_trials/ (charged_lifetime_trials = max(campaign,
+    family, union)); this is the unsealed statement of the same rule, which the branch tests pin
+    and that patch's tests can compare against. What that patch READS is published here:
+    EXPERIMENT_LEDGER.json `stage1_cells` = the sum of STAGE1_TRIALS.jsonl `cells_screened` = the
+    sum of every run's union `m_charged` (`stage1_judge.trial_charge`).
     """
     n = int(campaign)
     parts = [f"campaign {n}"]

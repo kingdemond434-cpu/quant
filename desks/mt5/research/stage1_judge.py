@@ -150,9 +150,9 @@ UNMEASURED = "UNMEASURED"
 #: "pre_lockbox" (opt-in, STAGE1_WINDOW=pre_lockbox): everything before the lockbox lower bound
 #: (~48%; t=4 top decile ~93%), walk-forward region included, for ORDER only. In both modes the
 #: lockbox is never read, stage 1 never drops or parks a cell, and the trial charge is the full
-#: union of screened cells (`trial_charge`, and the count the sealed DSR charges,
-#: `stage1_record.dsr_charge`), pinned by a test. `ordering_bias_warning` flags a ranked cell that
-#: has waited >= 24h for the sealed judge. An unknown value falls back to pre_wf.
+#: union of screened cells (`trial_charge`; the sealed DSR charges it through
+#: patches/union_lifetime_trials/, restated as `stage1_record.dsr_charge`), pinned by a test.
+#: `ordering_bias_warning` flags a ranked cell that has waited >= 24h for the sealed judge. An unknown value falls back to pre_wf.
 WINDOWS = ("pre_wf", "pre_lockbox")
 DEFAULT_WINDOW = "pre_wf"
 WINDOW = os.environ.get("STAGE1_WINDOW", DEFAULT_WINDOW)
@@ -1251,9 +1251,10 @@ def trial_charge(results: list[dict[str, Any]]) -> dict[str, Any]:
     BH `m` in `finalise` (tested cells only) labels survivors and is NOT the charge.
 
     WHERE THE CHARGE LANDS. Every run's per-family `cells_screened` sums to this m; the experiment
-    ledger adds them into `stage1_cells`, and the sealed deflated Sharpe charges
-    `stage1_record.dsr_charge` = max(campaign, family, that UNION) once the two-stage patch lands
-    -- not max(campaign, family), which under-charged by union/family (audit PR143_v3)."""
+    ledger adds them into `stage1_cells` -- the union the sealed deflated Sharpe charges as
+    max(campaign, family, union) once /mnt/project-files/patches/union_lifetime_trials/ lands
+    (restated unsealed as `stage1_record.dsr_charge`), not max(campaign, family), which
+    under-charged by union/family (audit PR143_v3)."""
     charged = [r for r in results if r.get("verdict") in REC.VERDICTS
                and r.get("verdict") != REC.UNBUILDABLE
                and r.get("reason") != "R_GATE1_ECONOMIC_PRIOR"]
