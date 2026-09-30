@@ -203,6 +203,11 @@ def load_bars(symbol: str, timeframe: str = "H1", universe: Path | None = None) 
             tcol = None
         raw = frame[tcol] if tcol is not None else frame.index.to_series()
         stamps = pd.to_datetime(raw, utc=True, errors="coerce")
+        # EPOCH-NANOSECONDS, WHATEVER UNIT THE FILE WAS WRITTEN IN. pandas 2 keeps a parquet's
+        # own resolution (ms, us), and `astype("int64")` below then returns THOSE units: every
+        # hour and day this lane derives was off by 1000x or 1e6x and `minutes` read 1 on an H1
+        # file. Normalising the unit first makes the int64 the nanoseconds `Bars` is defined in.
+        stamps = stamps.astype("datetime64[ns, UTC]")
         keep = ~stamps.isna().to_numpy()
         t_ns = stamps[keep].astype("int64").to_numpy() if hasattr(stamps, "astype") else None
         if t_ns is None:
@@ -459,6 +464,280 @@ WINDOWS: dict[str, dict[str, Any]] = {
                   "rr": 2.0, "ttl_bars": 12},
 }
 
+# ------------------------------------------------ rules for hunt16 cells and carry (2026-09-30)
+# WHY THESE THREE. The admission door holds a NEW certificate until this lane says REPLICATED under
+# its spec, and a family with no written rule here can only ever be UNMEASURED -- so it is held for
+# ever. `dav_range_filter_adx` (hunt16), `hunt16_cell` (the registry door the sealed gauntlet builds
+# a hunt16 cell through) and `carry` had none. Each rule below is written from the family's stated
+# behaviour and rebuilt in THIS module's own code; nothing is imported from the implementations
+# (FORBIDDEN_IMPORTS, and `run_hunt16`/`run_hunt12` are read by no line here either).
+
+#: hunt16 selector -> the hour its signals are kept at (the window's signal hour, else its start).
+HUNT16_SIGNAL_HOUR: dict[str, int] = {"asia": 7, "london_am": 13, "ny_open": 14, "afternoon": 17}
+
+
+def _sma_strict(x: np.ndarray, n: int) -> np.ndarray:
+    """Trailing mean over exactly n values; undefined (NaN) until n are available or when any
+    of them is undefined."""
+    out = np.full(len(x), np.nan)
+    if n <= 0 or len(x) < n:
+        return out
+    ok = np.isfinite(x)
+    xs = np.where(ok, x, 0.0)
+    cs = np.concatenate([[0.0], np.cumsum(xs)])
+    cn = np.concatenate([[0], np.cumsum(ok.astype("int64"))])
+    for i in range(n - 1, len(x)):
+        if cn[i + 1] - cn[i + 1 - n] == n:
+            out[i] = (cs[i + 1] - cs[i + 1 - n]) / n
+    return out
+
+
+def _roll_strict(x: np.ndarray, n: int, fn: Callable[[np.ndarray], float]) -> np.ndarray:
+    out = np.full(len(x), np.nan)
+    for i in range(n - 1, len(x)):
+        w = x[i - n + 1:i + 1]
+        if np.all(np.isfinite(w)):
+            out[i] = fn(w)
+    return out
+
+
+def _true_range(b: Bars) -> np.ndarray:
+    prev = np.concatenate([[np.nan], b.c[:-1]])
+    tr = np.fmax(b.h - b.low, np.fmax(np.abs(b.h - prev), np.abs(b.low - prev)))
+    return np.asarray(tr, dtype="float64")
+
+
+def _adx_strict(b: Bars, n: int) -> np.ndarray:
+    """ADX as written: +DM = up move when it exceeds the down move and is positive, -DM the
+    mirror; DI = 100 x mean(DM, n) / mean(TR, n); DX = 100 x |DI+ - DI-| / (DI+ + DI-); ADX =
+    mean(DX, n). Every mean is a strict n-bar trailing mean; a zero denominator is undefined."""
+    up = np.concatenate([[np.nan], np.diff(b.h)])
+    dn = np.concatenate([[np.nan], -np.diff(b.low)])
+    plus = np.where((up > dn) & (up > 0), up, 0.0)
+    minus = np.where((dn > up) & (dn > 0), dn, 0.0)
+    atr_ = _sma_strict(_true_range(b), n)
+    atr_ = np.where(atr_ == 0, np.nan, atr_)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        pdi = 100.0 * _sma_strict(plus, n) / atr_
+        mdi = 100.0 * _sma_strict(minus, n) / atr_
+        den = pdi + mdi
+        dx = 100.0 * np.abs(pdi - mdi) / np.where(den == 0, np.nan, den)
+    return _sma_strict(dx, n)
+
+
+def _prior_ny_day_state(b: Bars) -> dict[int, str]:
+    """Day number -> the label of the most recent COMPLETED New York session strictly before it.
+
+    As written: a New York day is the bars stamped 13:00..22:00 inclusive; its range is compared
+    with the median range of the last 20 such days (at least 10): above 1.5x is TREND_DAY, below
+    0.75x RANGE_DAY, else NORMAL_DAY. It is FAILED_BREAK instead when the whole day's high broke
+    the previous New York day's whole-day high and the session closed back below it, or the low
+    mirror. A day with no earlier labelled session has no label."""
+    hour, day = b.hour, b.day
+    ny = (hour >= 13) & (hour <= 22)
+    days = sorted({int(d) for d in day[ny]})
+    if not days:
+        return {}
+    ny_hi: dict[int, float] = {}
+    ny_lo: dict[int, float] = {}
+    ny_close: dict[int, float] = {}
+    full_hi: dict[int, float] = {}
+    full_lo: dict[int, float] = {}
+    for i in range(len(b)):
+        d = int(day[i])
+        full_hi[d] = max(full_hi.get(d, -np.inf), float(b.h[i]))
+        full_lo[d] = min(full_lo.get(d, np.inf), float(b.low[i]))
+        if ny[i]:
+            ny_hi[d] = max(ny_hi.get(d, -np.inf), float(b.h[i]))
+            ny_lo[d] = min(ny_lo.get(d, np.inf), float(b.low[i]))
+            ny_close[d] = float(b.c[i])
+    rng = np.asarray([ny_hi[d] - ny_lo[d] for d in days])
+    labels: dict[int, str] = {}
+    for k, d in enumerate(days):
+        w = rng[max(0, k - 19):k + 1]
+        if len(w) < 10:
+            continue
+        med = float(np.median(w))
+        if not med or not np.isfinite(med):
+            continue
+        st = ("TREND_DAY" if rng[k] > 1.5 * med
+              else "RANGE_DAY" if rng[k] < 0.75 * med else "NORMAL_DAY")
+        if k > 0:
+            ph, pl = full_hi[days[k - 1]], full_lo[days[k - 1]]
+            yc = ny_close[d]
+            if ph and pl and ((full_hi[d] > ph and yc < ph) or (full_lo[d] < pl and yc > pl)):
+                st = "FAILED_BREAK"
+        labels[d] = st
+    out: dict[int, str] = {}
+    labelled = sorted(labels)
+    li, prev = 0, None
+    for d in sorted({int(x) for x in day}):
+        while li < len(labelled) and labelled[li] < d:
+            prev = labels[labelled[li]]
+            li += 1
+        if prev is not None:
+            out[d] = prev
+    return out
+
+
+def _direction(p: Mapping[str, Any]) -> int:
+    raw = p.get("direction")
+    if raw is None:
+        raw = p.get("_side") or 1
+    return -1 if str(raw).strip().upper() in ("SHORT", "-1", "SELL") else 1
+
+
+def _range_filter_adx_orders(b: Bars, side: int) -> list[Order]:
+    """The written rule of `dav_range_filter_adx`, both sides, every hour."""
+    n = 14
+    a = _sma_strict(_true_range(b), n)
+    dx = _adx_strict(b, n)
+    hi_ch = _roll_strict(b.c, n, np.max)
+    lo_ch = _roll_strict(b.c, n, np.min)
+    chan = 2.0 * a
+    out: list[Order] = []
+    with np.errstate(invalid="ignore"):
+        cond = ((b.c < lo_ch + 0.2 * chan) if side > 0 else (b.c > hi_ch - 0.2 * chan)) & (dx > 25)
+    for i in np.nonzero(cond)[0]:
+        stop = float(b.c[i] - side * 1.5 * a[i])
+        target = float(b.c[i] + side * 3.0 * a[i])
+        if np.isfinite(stop) and np.isfinite(target) and stop > 0 and target > 0:
+            out.append(Order(int(b.t[i]), side, stop, target, 12))
+    return out
+
+
+def _keep_hour_state(b: Bars, orders: list[Order], hour: int | None,
+                     state: str | None) -> list[Order]:
+    if hour is not None:
+        orders = [o for o in orders if (o.t_ns // 3_600_000_000_000) % 24 == int(hour)]
+    if state:
+        labels = _prior_ny_day_state(b)
+        want = str(state).upper()
+        orders = [o for o in orders if labels.get(int(o.t_ns // 86_400_000_000_000)) == want]
+    return orders
+
+
+def _build_dav_range_filter_adx(b: Bars, p: dict[str, Any]) -> list[Order]:
+    sel = str(p.get("_selector") or "").lower()
+    hour = p.get("signal_at")
+    if hour is None:
+        hour = HUNT16_SIGNAL_HOUR.get(sel)
+    state = p.get("day_state") or p.get("_condition")
+    return _keep_hour_state(b, _range_filter_adx_orders(b, _direction(p)), hour, state)
+
+
+def _build_hunt16_cell(b: Bars, p: dict[str, Any]) -> list[Order]:
+    base = str(p.get("base_family") or "")
+    builder = HUNT16_RULES.get(base)
+    if builder is None:
+        return []
+    return _keep_hour_state(b, builder(b, _direction(p)), p.get("signal_at"), p.get("day_state"))
+
+
+#: hunt16 base families with a written rule, for `hunt16_cell`. Adding a hunt16 family here is
+#: adding its rule text to `dav_range_filter_adx`'s shape; an absent base is no fill, UNMEASURED.
+HUNT16_RULES: dict[str, Callable[[Bars, int], list[Order]]] = {
+    "dav_range_filter_adx": _range_filter_adx_orders,
+}
+
+#: The venue's recorded contract terms (swap_long, swap_short, swap_mode, point, contract_size),
+#: one parquet vintage per day. Read by this module through pyarrow, latest observation wins.
+CONTRACT_TERMS = DESK / "data" / "tape" / "contract_terms"
+SWAP_MODE_POINTS = 1
+
+
+def swap_terms(symbol: str, terms_dir: Path | None = None) -> dict[str, Any] | None:
+    folder = Path(terms_dir or CONTRACT_TERMS)
+    if not symbol or not folder.exists():
+        return None
+    latest: dict[str, Any] | None = None
+    try:
+        import pyarrow.parquet as pq
+    except ImportError:
+        return None
+    for f in sorted(folder.glob("*.parquet")):
+        try:
+            rows = pq.read_table(f).to_pylist()
+        except Exception:
+            continue
+        rows = [r for r in rows if str(r.get("symbol") or "").upper() == symbol.upper()]
+        rows.sort(key=lambda r: str(r.get("observed_at") or ""))
+        if rows:
+            latest = rows[-1]
+    return latest
+
+
+def _build_carry(b: Bars, p: dict[str, Any]) -> list[Order]:
+    terms = swap_terms(str(p.get("symbol") or p.get("_symbol") or ""))
+    if not terms:
+        return []
+    try:
+        mode = int(terms["swap_mode"])
+        point = float(terms.get("point") or 0.0)
+        contract = float(terms.get("contract_size") or 0.0)
+        lo_sw, sh_sw = float(terms["swap_long"]), float(terms["swap_short"])
+    except (KeyError, TypeError, ValueError):
+        return []
+    if mode != SWAP_MODE_POINTS or point <= 0 or contract <= 0:
+        return []
+    lo_m, sh_m = lo_sw * point * contract, sh_sw * point * contract
+    side = 1 if lo_m > sh_m else -1
+    if abs(lo_m - sh_m) < float(p["min_edge_bp_per_day"]):
+        return []
+    n = int(p["atr_n"])
+    a = atr(b, n)
+    rng = _sma_strict(b.h - b.low, n)
+    med = _roll_strict(rng, n * 5, lambda w: float(np.median(w)))
+    quiet_req = bool(p.get("require_quiet", True))
+    stop_atr, rr, hold = float(p["stop_atr"]), float(p["rr"]), int(p["hold_bars"])
+    out: list[Order] = []
+    for i in range(n * 5, len(b) - 1):
+        if quiet_req and not (rng[i] < med[i]):
+            continue
+        ai = float(a[i])
+        if not np.isfinite(ai) or ai <= 0:
+            continue
+        px = float(b.c[i])
+        out.append(Order(int(b.t[i]), side, px - side * stop_atr * ai,
+                         px + side * stop_atr * ai * rr, hold))
+    return out
+
+
+SPEC_BOOK.update({
+    "dav_range_filter_adx": RuleSpec(
+        "dav_range_filter_adx",
+        "ATR = strict 14-bar mean of true range; ADX(14) from strict 14-bar means of +DM, -DM and "
+        "TR. hi/lo = the highest/lowest CLOSE of the last 14 bars, chan = 2 x ATR. LONG when close "
+        "< lo + 0.2 x chan and ADX > 25, SHORT when close > hi - 0.2 x chan and ADX > 25 (the "
+        "certificate's side picks one); entry next open, stop 1.5 x ATR and target 3 x ATR from "
+        "the signal close, time exit after 12 bars. Kept only at the selector's signal hour "
+        "(asia 7, london_am 13, ny_open 14, afternoon 17) and, when the certificate names a "
+        "condition, only on days whose most recent completed New York session (13:00-22:00) "
+        "carries that label (range vs its 20-day median: >1.5x TREND_DAY, <0.75x RANGE_DAY, "
+        "else NORMAL_DAY; FAILED_BREAK on a broken-and-rejected prior-day extreme).",
+        {"direction": None, "signal_at": None, "day_state": None},
+        _build_dav_range_filter_adx),
+    "hunt16_cell": RuleSpec(
+        "hunt16_cell",
+        "The named hunt16 base family's written rule (base_family; dav_range_filter_adx as "
+        "above) on the side `direction`, kept only at hour signal_at and only on days whose "
+        "most recent completed New York session carries day_state (same labelling as above).",
+        {"base_family": "", "direction": None, "signal_at": None, "day_state": None},
+        _build_hunt16_cell),
+    "carry": RuleSpec(
+        "carry",
+        "Side = the side with the larger nightly swap in money per lot (swap x point x "
+        "contract_size, from the venue's latest recorded contract terms; any swap_mode but "
+        "POINTS stands aside, as does a differential below min_edge_bp_per_day). On every bar "
+        "from 5 x atr_n on where the mean bar range over atr_n bars is below its own median over "
+        "5 x atr_n bars (require_quiet), a signal at the bar close: stop stop_atr x ATR(atr_n), "
+        "target rr x that, entry next open, time exit after hold_bars.",
+        {"symbol": "", "min_edge_bp_per_day": 0.5, "atr_n": 20, "hold_bars": 120,
+         "stop_atr": 2.0, "rr": 1.5, "require_quiet": True},
+        _build_carry),
+})
+
+
 #: Session selector -> [start, end) broker hours a non-breakout signal must fall in.
 SESSIONS: dict[str, tuple[int, int] | None] = {
     "asia": (0, 8), "london": (8, 16), "ny": (14, 22), "all": None, "continuous": None,
@@ -591,7 +870,8 @@ def sharpe(fills: Sequence[Fill]) -> tuple[float | None, int]:
 
 # -------------------------------------------------------------------------------- rebuild
 def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | None,
-                 side: str | int | None) -> tuple[dict[str, Any] | None, str]:
+                 side: str | int | None, *, symbol: str | None = None,
+                 condition: str | None = None) -> tuple[dict[str, Any] | None, str]:
     """The parameters the written rule names, with the selector's window (breakouts) or session
     (everything else) applied, or the reason there is no written rule."""
     spec = SPEC_BOOK.get(str(family or ""))
@@ -607,7 +887,16 @@ def resolve_spec(family: str, params: Mapping[str, Any] | None, selector: str | 
     s = str(side or "").upper()
     p["_side"] = 1 if s in ("LONG", "1") else -1 if s in ("SHORT", "-1") else 0
     p["_session"] = SESSIONS.get(sel) if not spec.selector_params else None
+    # The rules that need them read these; every other rule ignores them (hunt16 selectors name
+    # a signal hour, a hunt16 condition a prior-session day label, carry a symbol's swap terms).
+    p["_selector"], p["_symbol"], p["_condition"] = sel, str(symbol or ""), condition
+    if family in HUNT16_FAMILIES:
+        p["_session"] = None
     return p, "ok"
+
+
+#: Families whose selector names a hunt16 signal hour, not a session window to filter on.
+HUNT16_FAMILIES = frozenset({"dav_range_filter_adx", "hunt16_cell"})
 
 
 def rebuild(family: str, bars: Bars, p: Mapping[str, Any], cost_units: float
@@ -756,7 +1045,8 @@ def replicate_certificate(row: Mapping[str, Any], *, meta: Mapping[str, Any],
     out: dict[str, Any] = {"lane": "certificate", "key": str(row.get("cell") or f"{sym} {fam}"),
                            "symbol": sym, "family": fam, "verdict": UNMEASURED, "why": [],
                            "ours": {}, "theirs": {}}
-    p, why = resolve_spec(fam, spec.get("params"), spec.get("selector"), spec.get("side"))
+    p, why = resolve_spec(fam, spec.get("params"), spec.get("selector"), spec.get("side"),
+                          symbol=sym, condition=spec.get("condition"))
     if p is None:
         out["why"] = [why]
         return out
@@ -787,7 +1077,8 @@ def replicate_forward(row: Mapping[str, Any], *, meta: Mapping[str, Any], bars: 
                            "family": fam, "verdict": UNMEASURED, "why": [], "ours": {},
                            "theirs": {}, "divergence": {}}
     p, why = resolve_spec(fam, ident.get("params"), ident.get("selector"),
-                          ident.get("direction"))
+                          ident.get("direction"), symbol=sym,
+                          condition=ident.get("condition") or ident.get("state"))
     if p is None:
         out["why"] = [why]
         return out

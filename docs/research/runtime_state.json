@@ -26,11 +26,11 @@
   "LIVE": 123,
   "STALE": 0,
   "MISSING": 47,
-  "NEVER": 675,
+  "NEVER": 677,
   "UNMEASURED": 29
  },
  "scope": {
-  "attested": 874,
+  "attested": 876,
   "excluded": 454,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1328,
@@ -22159,6 +22159,56 @@
    "artifact_sha256": "7acc04b9cfddf89308b6e212ad003ca0134f1d00b8991ee37c86770b9a9c38d2",
    "summary": {},
    "progress_metric": "timer_runs",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "library:desks/mt5/research/rejudge_evicted.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/research/rejudge_evicted.py"
+   ],
+   "clock": "import:desks/mt5/research/certificate_hygiene.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/REJUDGE_EVICTED.json",
+   "artifact_declared": "desks/mt5/reports/REJUDGE_EVICTED.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED"
+  },
+  {
+   "organ": "library:desks/mt5/research/run_hunt16.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/research/run_hunt16.py"
+   ],
+   "clock": "import:desks/mt5/research/rejudge_evicted.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/REJUDGE_EVICTED.json",
+   "artifact_declared": "desks/mt5/reports/REJUDGE_EVICTED.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
    "consumer": "UNMEASURED"
   }
  ],
