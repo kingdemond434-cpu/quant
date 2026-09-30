@@ -238,6 +238,7 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
         assert needle in step, needle
     assert "6b. **Tier verdict" in cycle_text
     assert "FULLY WIRED OR IT DOES NOT COUNT" in step
+    assert "NO FORCED OR FAKE WORK" in step
     for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
                 "Cert to forward", "Deep-forest vectors", "Judged", "Live"):
         assert f"| {row} |" in step, row
