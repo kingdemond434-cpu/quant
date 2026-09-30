@@ -726,6 +726,182 @@
    "licence": "public page",
    "participant_structure": "institutional",
    "verified": "UNMEASURED"
+  },
+  {
+   "id": "boc_policy_rate_schedule",
+   "name": "Bank of Canada policy-rate announcement schedule",
+   "url": "https://www.bankofcanada.ca/2026/07/bank-canada-publishes-2027-schedule-policy-interest-rate-announcements-other-major-publications/",
+   "region": "ca",
+   "language": "en",
+   "jurisdiction": "CA",
+   "participant_structure": "policy_driven",
+   "fetcher": "owned",
+   "owner": "culture_gap_cells",
+   "consumer": "desks/mt5/research/culture_gap_cells.py",
+   "kind": "mechanics",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "auth": "none",
+   "cadence": "yearly",
+   "licence": "public press release",
+   "fact": "all policy interest rate announcements take place at 09:45 ET on eight scheduled dates a year",
+   "verified": "page"
+  },
+  {
+   "id": "nationalbanken_exchange_rates",
+   "name": "Danmarks Nationalbank daily exchange rates (release time)",
+   "url": "https://www.nationalbanken.dk/en/news-and-knowledge/press/archive/2015/danmarks-nationalbank-changes-release-time-of-the-daily-exchange-rates-07-12-2015",
+   "region": "dk",
+   "language": "da",
+   "jurisdiction": "DK",
+   "participant_structure": "policy_driven",
+   "fetcher": "owned",
+   "owner": "culture_gap_cells",
+   "consumer": "desks/mt5/research/culture_gap_cells.py",
+   "kind": "mechanics",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "auth": "none",
+   "cadence": "daily",
+   "licence": "public press release",
+   "fact": "the published exchange rates are a point-in-time snapshot at 14:15 CET, published at approximately 16:00 CET",
+   "verified": "page"
+  },
+  {
+   "id": "norges_bank_exchange_rates",
+   "name": "Norges Bank daily exchange rates",
+   "url": "https://www.norges-bank.no/en/topics/Statistics/exchange_rates/",
+   "region": "no",
+   "language": "no",
+   "jurisdiction": "NO",
+   "participant_structure": "policy_driven",
+   "fetcher": "owned",
+   "owner": "culture_gap_cells",
+   "consumer": "desks/mt5/research/culture_gap_cells.py",
+   "kind": "mechanics",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "auth": "none",
+   "cadence": "daily",
+   "licence": "public statistics page",
+   "fact": "daily exchange rates are published at approximately 16:00 CET on business days, based on market rates observed around 14:15 CET",
+   "verified": "secondary"
+  },
+  {
+   "id": "riksbank_exchange_rates",
+   "name": "Riksbank exchange rates: new publication time and source (FAQ)",
+   "url": "https://www.riksbank.com/en-gb/statistics/interest-rates-and-exchange-rates/explanations--interest-rates-and-exchange-rates/frequently-asked-questions-about-exchange-rates/faq-on-new-publication-time-and-new-source-for-exchange-rates/",
+   "region": "se",
+   "language": "sv",
+   "jurisdiction": "SE",
+   "participant_structure": "policy_driven",
+   "fetcher": "owned",
+   "owner": "culture_gap_cells",
+   "consumer": "desks/mt5/research/culture_gap_cells.py",
+   "kind": "mechanics",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "auth": "none",
+   "cadence": "daily",
+   "licence": "public FAQ",
+   "fact": "from 27 Nov 2023 the Riksbank's exchange rates are sourced from the ECB (14:10-14:15 CET concertation) and published around 16:15 on Swedish banking days, replacing the Nasdaq 12:10 publication",
+   "verified": "secondary"
+  },
+  {
+   "id": "wmr_4pm_fix_fca",
+   "name": "FCA Occasional Paper 46: the WM/Reuters 4pm fix",
+   "url": "https://www.fca.org.uk/publication/occasional-papers/occasional-paper-46.pdf",
+   "region": "gb",
+   "language": "en",
+   "jurisdiction": "GB",
+   "participant_structure": "settlement_constrained",
+   "fetcher": "owned",
+   "owner": "culture_gap_cells",
+   "consumer": "desks/mt5/research/culture_gap_cells.py",
+   "kind": "mechanics",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "auth": "none",
+   "cadence": "yearly",
+   "licence": "public regulator paper",
+   "fact": "the WM/Reuters 4pm fix is calculated over a 5-minute window from 15:57:30 to 16:02:30 London local time",
+   "verified": "page"
+  },
+  {
+   "id": "lse_closing_auction",
+   "name": "London Stock Exchange market close / closing auction",
+   "url": "https://docs.londonstockexchange.com/sites/default/files/documents/market_close_information_document_0.pdf",
+   "region": "gb",
+   "language": "en",
+   "jurisdiction": "GB",
+   "participant_structure": "institutional",
+   "fetcher": "owned",
+   "owner": "culture_gap_cells",
+   "consumer": "desks/mt5/research/culture_gap_cells.py",
+   "kind": "mechanics",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "auth": "none",
+   "cadence": "yearly",
+   "licence": "public exchange document",
+   "fact": "SETS and SETSqx run a closing auction 16:30-16:35 London time",
+   "verified": "secondary"
+  },
+  {
+   "id": "hkex_trading_hours_page",
+   "name": "HKEX securities market trading hours",
+   "url": "https://www.hkex.com.hk/Services/Trading-hours-and-Severe-Weather-Arrangements/Trading-Hours/Securities-Market?sc_lang=en",
+   "region": "hk",
+   "language": "zh",
+   "jurisdiction": "HK",
+   "participant_structure": "institutional",
+   "fetcher": "owned",
+   "owner": "culture_gap_cells",
+   "consumer": "desks/mt5/research/culture_gap_cells.py",
+   "kind": "mechanics",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "auth": "none",
+   "cadence": "yearly",
+   "licence": "public exchange page",
+   "fact": "pre-opening 09:00-09:30, morning 09:30-12:00, extended morning 12:00-13:00, afternoon 13:00-16:00, Closing Auction Session 16:00 to a random close between 16:08 and 16:10 Hong Kong time",
+   "verified": "page"
+  },
+  {
+   "id": "nyse_auctions",
+   "name": "NYSE auctions",
+   "url": "https://www.nyse.com/trade/auctions",
+   "region": "us",
+   "language": "en",
+   "jurisdiction": "US",
+   "participant_structure": "institutional",
+   "fetcher": "owned",
+   "owner": "culture_gap_cells",
+   "consumer": "desks/mt5/research/culture_gap_cells.py",
+   "kind": "mechanics",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "auth": "none",
+   "cadence": "yearly",
+   "licence": "public exchange page",
+   "fact": "NYSE closing-auction imbalance publication begins at 15:50 ET and the closing auction process begins at 16:00 ET",
+   "verified": "page"
   }
  ]
 }

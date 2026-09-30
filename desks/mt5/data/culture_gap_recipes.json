@@ -1866,6 +1866,392 @@
    ],
    "source_id": "bme_trading_hours",
    "mechanism": "local funds and index trackers transact at the 17:30 closing auction of the home exchange; the day's displacement continues into it"
+  },
+  {
+   "id": "ca_boc_announcement_hour",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "CA",
+    "participant_structure": "any"
+   },
+   "source_culture": "CA/en",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDCAD",
+    "CADJPY",
+    "CADCHF"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "America/Toronto",
+     "at": "09:45",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "boc_policy_rate_schedule",
+   "mechanism": "every Bank of Canada policy-rate announcement lands at 09:45 ET; displacement built into that hour reverses once the release is priced",
+   "note": "the cell fires in that hour every weekday; announcement days are 8 of ~250, so the gauntlet decides whether the hour carries anything on the other days"
+  },
+  {
+   "id": "ca_tsx_session_to_close",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "CA",
+    "participant_structure": "any"
+   },
+   "source_culture": "CA/en",
+   "participant_structure": "institutional",
+   "family": "session_handoff",
+   "symbols": [
+    "USDCAD",
+    "CADJPY",
+    "CADCHF"
+   ],
+   "windows": [
+    {
+     "param": "source_start_hour",
+     "tz": "America/Toronto",
+     "at": "09:30",
+     "align": "start"
+    },
+    {
+     "param": "trade_hour",
+     "tz": "America/Toronto",
+     "at": "16:00",
+     "align": "start"
+    }
+   ],
+   "fixed": {
+    "source_bars": 6
+   },
+   "grid": {
+    "direction": [
+     1,
+     -1
+    ],
+    "min_info_atr": [
+     0.3,
+     0.5
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "tsx_trading_hours",
+   "mechanism": "the CAD move made during the Toronto cash session (10:00-16:00 ET) carries into, or reverses in, the hour after the 16:00 TSX close when Canadian equity desks hand off"
+  },
+  {
+   "id": "dk_nationalbank_reference",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "DK",
+    "participant_structure": "any"
+   },
+   "source_culture": "DK/da",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDDKK",
+    "GBPDKK",
+    "CHFDKK"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Copenhagen",
+     "at": "14:15",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "nationalbanken_exchange_rates",
+   "mechanism": "Danmarks Nationalbank's daily reference rates are a 14:15 CET snapshot that Danish accounting and customs settle against; displacement into the snapshot reverses after it"
+  },
+  {
+   "id": "no_norges_bank_reference",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "NO",
+    "participant_structure": "any"
+   },
+   "source_culture": "NO/no",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDNOK",
+    "NOKSEK",
+    "NOKJPY",
+    "GBPNOK",
+    "CHFNOK"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Oslo",
+     "at": "14:15",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "norges_bank_exchange_rates",
+   "mechanism": "Norges Bank's daily exchange rates are observed around 14:15 CET and are the NOK reference Norwegian contracts use; displacement into the observation reverses after it"
+  },
+  {
+   "id": "se_riksbank_reference",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "SE",
+    "participant_structure": "any"
+   },
+   "source_culture": "SE/sv",
+   "participant_structure": "policy_driven",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDSEK",
+    "SEKJPY",
+    "GBPSEK",
+    "CHFSEK"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/Stockholm",
+     "at": "14:15",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "riksbank_exchange_rates",
+   "mechanism": "since 27 Nov 2023 the Riksbank's published SEK rates come from the ECB's 14:10-14:15 CET concertation (published ~16:15); Swedish reference flow is struck there and displacement into it reverses"
+  },
+  {
+   "id": "gb_wmr_london_fix",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "GB",
+    "participant_structure": "any"
+   },
+   "source_culture": "GB/en",
+   "participant_structure": "settlement_constrained",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "GBPUSD",
+    "GBPAUD",
+    "GBPCAD",
+    "GBPCHF",
+    "GBPNZD",
+    "GBPJPY"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Europe/London",
+     "at": "16:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "wmr_4pm_fix_fca",
+   "mechanism": "the WM/Reuters 4pm benchmark is calculated over 15:57:30-16:02:30 London; passive sterling flow must trade into it and the displacement reverses once it is struck"
+  },
+  {
+   "id": "gb_lse_closing_auction",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "GB",
+    "participant_structure": "any"
+   },
+   "source_culture": "GB/en",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "UK100"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "Europe/London",
+     "at": "16:30",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "Europe/London",
+     "at": "08:00",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "lse_closing_auction",
+   "mechanism": "UK index funds and trackers transact in the 16:30-16:35 LSE closing auction; the day's displacement continues into it"
+  },
+  {
+   "id": "hk_hkex_closing_auction",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "HK",
+    "participant_structure": "any"
+   },
+   "source_culture": "HK/zh",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "HK50",
+    "CHINAH"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "Asia/Hong_Kong",
+     "at": "16:00",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "Asia/Hong_Kong",
+     "at": "09:30",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "hkex_trading_hours_page",
+   "mechanism": "Hong Kong index trackers transact in the Closing Auction Session (16:00 to a random close 16:08-16:10); the day's displacement continues into it"
+  },
+  {
+   "id": "us_nyse_closing_imbalance",
+   "gap": {
+    "asset_class": "index",
+    "jurisdiction": "US",
+    "participant_structure": "any"
+   },
+   "source_culture": "US/en",
+   "participant_structure": "institutional",
+   "family": "hedging_demand_close",
+   "symbols": [
+    "US500",
+    "US30",
+    "NAS100",
+    "US2000"
+   ],
+   "windows": [
+    {
+     "param": "close_hour",
+     "tz": "America/New_York",
+     "at": "15:50",
+     "align": "contains"
+    },
+    {
+     "param": "rod_start_hour",
+     "tz": "America/New_York",
+     "at": "09:30",
+     "align": "start"
+    }
+   ],
+   "grid": {
+    "min_displacement_atr": [
+     0.5,
+     0.75,
+     1.0
+    ],
+    "require_elevated_vol": [
+     true,
+     false
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "nyse_auctions",
+   "mechanism": "NYSE closing-auction imbalances publish from 15:50 ET into the 16:00 close; index and ETF rebalancing flow continues the day's displacement into it"
   }
  ]
 }

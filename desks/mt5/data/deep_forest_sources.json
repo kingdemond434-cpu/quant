@@ -45,7 +45,7 @@
     "en"
    ],
    "market": "HK",
-   "grounds": 13
+   "grounds": 14
   },
   "sg": {
    "name": "Singapore",
@@ -251,7 +251,7 @@
     "en"
    ],
    "market": "US",
-   "grounds": 41
+   "grounds": 42
   },
   "gb": {
    "name": "United Kingdom",
@@ -260,7 +260,7 @@
     "en"
    ],
    "market": "GB",
-   "grounds": 10
+   "grounds": 12
   },
   "ca": {
    "name": "Canada",
@@ -270,7 +270,7 @@
     "fr"
    ],
    "market": "CA",
-   "grounds": 6
+   "grounds": 7
   },
   "global": {
    "name": "Global English",
@@ -333,7 +333,7 @@
     "sv"
    ],
    "market": "SE",
-   "grounds": 8
+   "grounds": 9
   },
   "dk": {
    "name": "Denmark",
@@ -342,7 +342,7 @@
     "da"
    ],
    "market": "DK",
-   "grounds": 4
+   "grounds": 5
   },
   "no": {
    "name": "Norway",
@@ -351,7 +351,7 @@
     "no"
    ],
    "market": "NO",
-   "grounds": 6
+   "grounds": 7
   },
   "fi": {
    "name": "Finland",
@@ -7637,6 +7637,86 @@
    "why": "Swiss banking and SNB coverage in the local press: the story side of the franc's policy and institutional cells",
    "url": "https://www.finews.ch/",
    "cluster": "eu"
+  },
+  {
+   "name": "Bank of Canada policy-rate announcement schedule",
+   "region": "ca",
+   "language": "en",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (policy_driven): all policy interest rate announcements take place at 09:45 ET on eight scheduled dates a year",
+   "url": "https://www.bankofcanada.ca/2026/07/bank-canada-publishes-2027-schedule-policy-interest-rate-announcements-other-major-publications/"
+  },
+  {
+   "name": "Danmarks Nationalbank daily exchange rates (release time)",
+   "region": "dk",
+   "language": "da",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (policy_driven): the published exchange rates are a point-in-time snapshot at 14:15 CET, published at approximately 16:00 CET",
+   "url": "https://www.nationalbanken.dk/en/news-and-knowledge/press/archive/2015/danmarks-nationalbank-changes-release-time-of-the-daily-exchange-rates-07-12-2015"
+  },
+  {
+   "name": "Norges Bank daily exchange rates",
+   "region": "no",
+   "language": "no",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (policy_driven): daily exchange rates are published at approximately 16:00 CET on business days, based on market rates observed around 14:15 CET",
+   "url": "https://www.norges-bank.no/en/topics/Statistics/exchange_rates/"
+  },
+  {
+   "name": "Riksbank exchange rates: new publication time and source (FAQ)",
+   "region": "se",
+   "language": "sv",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (policy_driven): from 27 Nov 2023 the Riksbank's exchange rates are sourced from the ECB (14:10-14:15 CET concertation) and published around 16:15 on Swedish banking days, replacing the Nasdaq 12:10 publication",
+   "url": "https://www.riksbank.com/en-gb/statistics/interest-rates-and-exchange-rates/explanations--interest-rates-and-exchange-rates/frequently-asked-questions-about-exchange-rates/faq-on-new-publication-time-and-new-source-for-exchange-rates/"
+  },
+  {
+   "name": "FCA Occasional Paper 46: the WM/Reuters 4pm fix",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (settlement_constrained): the WM/Reuters 4pm fix is calculated over a 5-minute window from 15:57:30 to 16:02:30 London local time",
+   "url": "https://www.fca.org.uk/publication/occasional-papers/occasional-paper-46.pdf"
+  },
+  {
+   "name": "London Stock Exchange market close / closing auction",
+   "region": "gb",
+   "language": "en",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (institutional): SETS and SETSqx run a closing auction 16:30-16:35 London time",
+   "url": "https://docs.londonstockexchange.com/sites/default/files/documents/market_close_information_document_0.pdf"
+  },
+  {
+   "name": "HKEX securities market trading hours",
+   "region": "hk",
+   "language": "zh",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (institutional): pre-opening 09:00-09:30, morning 09:30-12:00, extended morning 12:00-13:00, afternoon 13:00-16:00, Closing Auction Session 16:00 to a random close between 16:08 and 16:10 Hong Kong time",
+   "url": "https://www.hkex.com.hk/Services/Trading-hours-and-Severe-Weather-Arrangements/Trading-Hours/Securities-Market?sc_lang=en"
+  },
+  {
+   "name": "NYSE auctions",
+   "region": "us",
+   "language": "en",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (institutional): NYSE closing-auction imbalance publication begins at 15:50 ET and the closing auction process begins at 16:00 ET",
+   "url": "https://www.nyse.com/trade/auctions"
   }
  ],
  "engines": [
