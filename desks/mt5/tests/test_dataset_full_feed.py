@@ -124,15 +124,16 @@ def lake(tmp_path, monkeypatch) -> tuple[Path, Path]:
 
 
 def test_a_snapshot_page_accumulates_one_reading_per_vintage(lake) -> None:
-    """The recorded rates page carries no date: each fetch is one reading at its fetch time, and
-    the canonical frame is every vintage, not only the newest."""
+    """The rates payload carries no date: each fetch is one reading at its fetch time, and the
+    canonical frame is every vintage, not only the newest."""
     vault, series = lake
-    tmpl = (FIX / "rates_snapshot.html").read_text("utf-8")
+    tmpl = (FIX / "rates_snapshot.json").read_text("utf-8")
     t0 = datetime(2026, 9, 1, 8, tzinfo=UTC)
     for k in range(35):
         body = tmpl.replace("{POLICY}", f"{2.0 + 0.01 * k:.2f}").replace(
             "{DEPOSIT}", f"{1.5 + 0.02 * (k % 5):.2f}").encode()
-        _vault(vault, "cb_rates", body, (t0 + timedelta(days=k)).isoformat())
+        _vault(vault, "cb_rates", body, (t0 + timedelta(days=k)).isoformat(),
+               "application/json")
     reg = {"cb_rates": {"id": "cb_rates", "cadence": "daily", "pit": {"publication_lag_days": 0}}}
     doc = AP.parse_all()
     row = next(r for r in doc["rows"] if r["id"] == "cb_rates")
@@ -196,7 +197,8 @@ def test_fragments_fold_into_their_pack_in_the_census(tmp_path, monkeypatch) -> 
 def test_numeric_text_columns_become_fields() -> None:
     df = pd.DataFrame({"a": ["1,234.5", "2,000", "3.5%"], "b": ["x", "y", "z"]})
     out = AP._numeric_text(df.copy())
-    assert out["a"].tolist() == [1234.5, 2000.0, 3.5] and out["b"].dtype == object
+    assert out["a"].tolist() == [1234.5, 2000.0, 3.5]
+    assert out["b"].tolist() == ["x", "y", "z"]
 
 
 # ------------------------------------------------------------------ macro, grounds, seats

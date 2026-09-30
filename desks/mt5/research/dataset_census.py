@@ -79,6 +79,14 @@ def _read(p: Path, default: Any = None) -> Any:
         return default
 
 
+def _relp(p: Path) -> str:
+    """Repo-relative when under the repo, else the path as given (a test's tmp dir)."""
+    try:
+        return str(p.relative_to(ROOT))
+    except ValueError:
+        return str(p)
+
+
 def _iso(t: Any) -> str | None:
     try:
         return t.isoformat(timespec="seconds") if t is not None else None
@@ -173,7 +181,7 @@ def lake_datasets(series_dir: Path | None = None) -> list[dict[str, Any]]:
         try:
             df = pd.read_parquet(p) if p.suffix == ".parquet" else pd.read_csv(p)
         except Exception as exc:
-            out.append({"id": f"lake:{pack}", "kind": "lake", "path": str(p.relative_to(ROOT)),
+            out.append({"id": f"lake:{pack}", "kind": "lake", "path": _relp(p),
                         "fields": [], "country": (registered.get(pack) or {}).get("country"),
                         "pit": _pit(False, f"unreadable ({type(exc).__name__})")})
             continue
@@ -186,7 +194,7 @@ def lake_datasets(series_dir: Path | None = None) -> list[dict[str, Any]]:
         why = ("" if usable else "no available_time stamp: no honest join" if not stamped
                else "no numeric column" if not fields
                else f"{facts.get('points', 0)} reading(s), under {MIN_OBSERVATIONS}")
-        out.append({"id": f"lake:{pack}", "kind": "lake", "path": str(p.relative_to(ROOT)),
+        out.append({"id": f"lake:{pack}", "kind": "lake", "path": _relp(p),
                     "fields": fields, "country": (registered.get(pack) or {}).get("country"),
                     "source_names": [pack], "pit": _pit(usable, why, facts)})
     for pack, r in sorted(registered.items()):
@@ -210,19 +218,19 @@ def cot_datasets(data: Path | None = None) -> list[dict[str, Any]]:
         try:
             df = pd.read_parquet(p)
         except Exception as exc:
-            out.append({"id": f"cot:{rel}", "kind": "cot", "path": str(p.relative_to(ROOT)),
+            out.append({"id": f"cot:{rel}", "kind": "cot", "path": _relp(p),
                         "fields": [], "pit": _pit(False, f"unreadable ({type(exc).__name__})")})
             continue
         cols = _numeric_cols(df)
         fields = [{"field": f, "match": ""} for f in DS.pair_fields(cols) + cols]
         if "report_date" not in df.columns or not fields:
-            out.append({"id": f"cot:{rel}", "kind": "cot", "path": str(p.relative_to(ROOT)),
+            out.append({"id": f"cot:{rel}", "kind": "cot", "path": _relp(p),
                         "fields": fields, "pit": _pit(False, "no report_date or no numeric "
                                                              "column")})
             continue
         facts = _series_facts(DS.raw(f"cot:{rel}", fields[0]["field"], root=base))
         usable = facts["points"] >= MIN_OBSERVATIONS
-        out.append({"id": f"cot:{rel}", "kind": "cot", "path": str(p.relative_to(ROOT)),
+        out.append({"id": f"cot:{rel}", "kind": "cot", "path": _relp(p),
                     "fields": fields, "source_names": [p.stem, p.parent.name],
                     "pit": _pit(usable, "" if usable else
                                 f"{facts['points']} reading(s), under {MIN_OBSERVATIONS}",
@@ -351,14 +359,14 @@ def file_datasets(data: Path | None = None) -> list[dict[str, Any]]:
                    + (f"; its fetch failed for {len(failed)} series: "
                       f"{sorted(failed)[:4]}" if failed else "") + ")")
             out.append({"id": f"macro:{p.stem}", "kind": "macro",
-                        "path": str(p.relative_to(ROOT)), "fields": [],
+                        "path": _relp(p), "fields": [],
                         "source_names": names, "pit": _pit(False, why)})
             continue
         f0 = fields[0]
         facts = _series_facts(DS.macro_raw(p.stem, f0["field"], match=f0["match"],
                                            root=base / "axes"))
         usable = facts.get("points", 0) >= MIN_OBSERVATIONS
-        out.append({"id": f"macro:{p.stem}", "kind": "macro", "path": str(p.relative_to(ROOT)),
+        out.append({"id": f"macro:{p.stem}", "kind": "macro", "path": _relp(p),
                     "fields": fields, "source_names": names,
                     "pit": _pit(usable, "" if usable else
                                 f"{facts.get('points', 0)} reading(s) of {f0['field']}, under "
@@ -367,7 +375,7 @@ def file_datasets(data: Path | None = None) -> list[dict[str, Any]]:
                       *base.glob("*grounds*.json")})
     for p in grounds:
         row: dict[str, Any] = {"id": f"grounds:{p.stem}", "kind": "grounds",
-                               "path": str(p.relative_to(ROOT)), "fields": [],
+                               "path": _relp(p), "fields": [],
                                "source_names": [p.stem]}
         s = DS.grounds_raw(p.stem, root=base) if p.suffix == ".jsonl" else None
         if s is not None and len(s):
@@ -405,7 +413,7 @@ def _corpus() -> dict[str, dict[str, str]]:
         got: dict[str, str] = {}
         for p in paths:
             try:
-                got[str(p.relative_to(ROOT)).replace("\\", "/")] = p.read_text("utf-8", "replace")
+                got[_relp(p).replace("\\", "/")] = p.read_text("utf-8", "replace")
             except OSError:
                 continue
         return got

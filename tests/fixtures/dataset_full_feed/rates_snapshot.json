@@ -1,0 +1,4 @@
+{"title": "Current official rates", "rates": [
+ {"rate": "Policy rate", "level": {POLICY}},
+ {"rate": "Deposit facility", "level": {DEPOSIT}},
+ {"rate": "Lending facility", "level": 3.25}]}

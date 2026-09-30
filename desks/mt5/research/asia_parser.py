@@ -677,7 +677,7 @@ def fold_vintages(source_id: str, registry: dict[str, dict[str, Any]],
         h = h.sort_values("_first_seen", kind="stable")
         key = [c for c in h.columns if c not in _VINTAGE_ONLY and c != "_first_seen"]
         h = _numeric_text(h)
-        h = h.astype({c: "string" for c in h.columns if h[c].dtype == object})
+        h = h.astype({c: "string" for c in h.columns if pd.api.types.is_object_dtype(h[c])})
         h = h.drop_duplicates(subset=key, keep="first").drop(columns=["_first_seen"])
         h = h.reset_index(drop=True)
         real.mkdir(parents=True, exist_ok=True)
@@ -714,7 +714,8 @@ def _numeric_text(df: Any, min_share: float = 0.8) -> Any:
 
     from libs.data.pit_stamp import PIT_FIELDS
     for c in df.columns:
-        if c in PIT_FIELDS or df[c].dtype != object:
+        if c in PIT_FIELDS or not (pd.api.types.is_object_dtype(df[c])
+                                   or pd.api.types.is_string_dtype(df[c])):
             continue
         v = df[c].dropna().astype(str).str.strip()
         v = v[v != ""]
