@@ -177,10 +177,13 @@ def _credit_live(live: list[dict[str, Any]], certs: list[dict[str, Any]]) -> lis
     return out
 
 
-def build() -> dict[str, Any]:
-    now = datetime.now(tz=UTC)
+def certificates() -> list[dict[str, Any]]:
+    """LINK 1: certificate -> its originating docket row -> the scientist that proposed it.
 
-    # LINK 1: certificate -> its originating docket row -> the scientist that proposed it.
+    Shared with `live_calibration_posterior`, which needs the same join plus each certificate's
+    own gate readings (`gates`) -- one join, so the two organs can never credit a certificate to
+    two different scientists.
+    """
     surv = _read(SURVIVORS) or {}
     docket = _read(DOCKET)
     rows = [r for r in docket if isinstance(r, dict)] if isinstance(docket, list) else []
@@ -203,24 +206,19 @@ def build() -> dict[str, Any]:
             "source": source, "producer": origin.get("producer"),
             "lane": _lane_of(source),
             "attributed": bool(origin),
+            "gates": row.get("gates") if isinstance(row.get("gates"), dict) else {},
         })
+    return certs
 
-    # LINK 2: forward clock -> certificate. A clock's key carries symbol and selector; the
-    # certificate carries both, so the join is on what the desk actually records rather than on
-    # a name convention nobody guarantees.
-    fwd = _forward_rows()
-    live = _live_rows()
-    use_live = len(live) >= MIN_LIVE_DEALS
-    # LIVE CREDIT (2026-09-16): when the live ledger is thick enough, a live deal is credited
-    # through the sleeve that placed it (data/sleeves.json: name -> symbol, family) to the
-    # certificate and on to the scientist. Until this existed `use_live` only relabelled the
-    # forward join: live rows were read and never credited, so "evidence_source: live" was a
-    # label on forward evidence.
-    live_credited = _credit_live(live, certs) if use_live else []
+
+def match_forward(fwd: list[dict[str, Any]], certs: list[dict[str, Any]],
+                  ) -> tuple[list[dict[str, Any]], int]:
+    """LINK 2: forward clock -> certificate. A clock's key carries symbol and selector; the
+    certificate carries both, so the join is on what the desk actually records rather than on
+    a name convention nobody guarantees. Returns (credited rows, unmatched count)."""
     by_sym_fam: dict[str, list[dict[str, Any]]] = {}
     for c in certs:
         by_sym_fam.setdefault(c["symbol"], []).append(c)
-
     credited: list[dict[str, Any]] = []
     unmatched = 0
     for f in fwd:
@@ -238,6 +236,28 @@ def build() -> dict[str, Any]:
             continue
         credited.append({**f, "certificate": best["certificate"], "source": best["source"],
                          "lane": best["lane"], "family": best["family"], "selector": sel})
+    return credited, unmatched
+
+
+def build() -> dict[str, Any]:
+    now = datetime.now(tz=UTC)
+
+    # LINK 1: certificate -> its originating docket row -> the scientist that proposed it.
+    certs = certificates()
+
+    # LINK 2: forward clock -> certificate. A clock's key carries symbol and selector; the
+    # certificate carries both, so the join is on what the desk actually records rather than on
+    # a name convention nobody guarantees.
+    fwd = _forward_rows()
+    live = _live_rows()
+    use_live = len(live) >= MIN_LIVE_DEALS
+    # LIVE CREDIT (2026-09-16): when the live ledger is thick enough, a live deal is credited
+    # through the sleeve that placed it (data/sleeves.json: name -> symbol, family) to the
+    # certificate and on to the scientist. Until this existed `use_live` only relabelled the
+    # forward join: live rows were read and never credited, so "evidence_source: live" was a
+    # label on forward evidence.
+    live_credited = _credit_live(live, certs) if use_live else []
+    credited, unmatched = match_forward(fwd, certs)
 
     # LINK 3: the credit itself, rolled up to the scientist and the representation lane.
     def _rollup(rows_in: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:

@@ -113,6 +113,9 @@ rem code, rebuilds every promoted certificate from its frozen spec and is compar
 rem trade with the original. Daily, not hourly: it reloads every certified chart's bars.
 call :run "desks\mt5\research\independent_verifier.py" --apply --budget-s 1200
 call :run "desks\mt5\research\quantbench.py" --apply
+rem DR DRILL (audit item 19): journal replay, restore from the off-box copy and the duplicate-position
+rem guard, daily, against the committed stores -- never the live terminal.
+call :run "desks\mt5\scripts\dr_drill.py"
 if %FAILED% neq 0 (
     >>"%LOG%" echo === MT5-FrontierAudit end %DATE% %TIME%: %FAILED% organ^(s^) FAILED:%FAILED_NAMES%
     exit /b 1

@@ -205,6 +205,14 @@ LEG_LAYER: dict[str, str] = {
     # Realised R credited back to the scientist and lane that proposed each cell: the delayed
     # truth that reweights the predictor search (bandit worth, generator weights): prediction.
     "credit_assignment": "prediction",
+    # THE LIVE-TRUTH ORGANS (Tier-1 audit #6/#17/#18/#19/#20, 2026-09-29). The calibration
+    # posterior reweights the research budget by whether each producer's claims held live:
+    # prediction, beside credit_assignment. The constrained book is a sizing shadow; the
+    # experimental budget accounts for principal-override heat inside the book: portfolio. The
+    # redundancy organ and the forward-evidence series measure the machine itself: meta.
+    "live_calibration_posterior": "prediction", "constrained_book": "sizing",
+    "experimental_budget": "portfolio", "ops_redundancy": "meta",
+    "forward_evidence_tracker": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
     "axis_registry": "information", "forced_flow_calendar": "information",
     "standing_questions": "information",
