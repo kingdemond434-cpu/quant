@@ -171,8 +171,30 @@ def plan(runnable: Sequence[str], state_rows: Mapping[str, Any], *, budget_s: fl
               for sid, w in weighted.items()}
     for sid in scouts:
         shares[sid] = max(shares.get(sid, floor_s), floor_s)
+    # THE TIEBREAK IS AGE, NEVER THE ALPHABET (measured on the live box 2026-09-25).
+    #
+    # `shares` above is floored at `floor_s` and the exploit budget is far smaller than
+    # `len(ids) * floor_s` -- measured, 446s of exploit budget across 85 systems is 5.2s each,
+    # so `max(floor_s, 5)` returns 90 for EVERY system and the shares map is a constant. The ROI
+    # term and the breadth term both vanish into that floor: the allocation histogram on the box
+    # is literally `[(90, 85)]`. With `-shares` tied for all 81 non-scouts and `-marginal` 0.0
+    # for about 65 of them, the only key left with any information in it was `s` -- the system
+    # id, ascending -- and the pass is then cut by the wall clock at whatever it has reached.
+    #
+    # So the systems whose names sort last were cut on EVERY pass, for ever. `skipped_budget` on
+    # the box was byte-for-byte the alphabetical tail of the roster (`tensorly`, `tigramite`,
+    # `tradingagents_*`, `tsfresh`, `valuecell`, `verumtrade`, `vietnam_alpha`,
+    # `worldquant_brain_public`, `wq_research_engine`), and the reason published beside them named
+    # ROI and overdueness -- neither of which had entered the decision. Their only route to an
+    # hour was ageing past `window_s * 0.5` into a scout slot, four of which exist per pass.
+    #
+    # Ordering the tail by AGE makes the cut ROTATE: the systems that missed last pass sort
+    # first on this one, which is what the rule at the bottom of this function has always
+    # claimed. It rations nothing and funds nothing less -- the same budget, the same floor and
+    # the same scouts -- it only stops the cut landing on the same nine names every hour.
     order = scouts + sorted((s for s in ids if s not in set(scouts)),
-                            key=lambda s: (-shares.get(s, 0), -float(marginal.get(s, 0.0)), s))
+                            key=lambda s: (-shares.get(s, 0), -ages[s],
+                                           -float(marginal.get(s, 0.0)), s))
     return {
         "order": order, "shares": shares, "scouts": scouts, "n_scout_slots": n_scouts,
         "window_s": window_s, "cadence_s": cadence_s, "scout_budget_s": round(scout_cost, 1),

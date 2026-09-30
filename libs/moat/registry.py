@@ -524,6 +524,29 @@ def _evolve(conn: sqlite3.Connection) -> dict[str, int]:
     # that uses it, and it is invisible because nothing reports it as a limit.
     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_gridcell ON research_candidates"
                  "(grid_cell)")
+    # THE THIRD SCAN, AND THE ONE THAT BROKE REGISTRY -> JUDGE (measured on the trading box
+    # 2026-09-25). The two indexes above cured the WRITE doors; this is the same disease on the
+    # READ-BACK door, and it cost the desk every verdict it ever earned. `mark_candidate` is the
+    # ONLY writer of `judged_at`, and it matches `WHERE id=? OR donated_cell=?` -- `id` has the
+    # PK autoindex, `donated_cell` had nothing, and an OR across one indexed and one unindexed
+    # column cannot use either: EXPLAIN read `SCAN research_candidates` over 740,357 rows for
+    # every verdict poured. Measured on the box: 2.09 rows/s on the OR form against 78,094 rows/s
+    # on `id` alone. So `sync_from_desk` managed 203 verdict rows in a 300 s pass while the
+    # gauntlet appended ~3,500 an hour, and the `gate_verdicts` cursor sat at byte 226,198 of a
+    # 54,119,184-byte ledger -- 0.42% read, 227,497 verdicts unpoured, the file growing 113x
+    # faster than the cursor advanced. That is not a lag, it is a divergence: `judged_at` was set
+    # on 1,278 rows IN THE DESK'S WHOLE HISTORY, all of them at one instant (2026-09-12T17:06:46),
+    # and every candidate the sandboxes ever donated arrived, was claimed, was judged by the
+    # gauntlet -- and the registry never learned the verdict. With this index the planner reads
+    # `MULTI-INDEX OR` over both branches (11,131x on a 200k-row synthetic, both branches still
+    # matching), and the backlog drains in a single pass.
+    #
+    # THE GENERALISATION, now three times paid for: a door that scans the whole table on every
+    # call is a throttle on everything upstream of it, and it is invisible because nothing
+    # reports it as a limit -- the leg exits rc=0 with a cursor receipt and a report that says
+    # `rows: 203`, which reads like a quiet hour rather than a severed funnel.
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_donated_cell ON research_candidates"
+                 "(donated_cell)")
     # THE SECOND SCAN, AND THE ONE THAT SET THE DESK'S WHOLE MINT RATE (measured on the box
     # 2026-09-23). `record_discovery` asks "have I seen this discovery?" -- `SELECT discovery_id
     # FROM discoveries WHERE content_hash=?` -- and `discoveries.content_hash` carried no index,
@@ -1774,6 +1797,15 @@ SYNC_CYCLE_S = 3600.0
 #: stream (28 MB) and it runs first because a verdict marks the candidate it enqueues -- so it is
 #: bounded by a SHARE, never by the whole pass, and the verdicts behind it can never be starved.
 GRAPH_BUDGET_SHARE = 0.4
+#: THE VERDICT STREAM'S OWN ROW CAP, as a multiple of `max_rows` (measured 2026-09-25). The shared
+#: 20,000-row cap was sized when every stream cost the same per row; the verdicts did not, because
+#: `mark_candidate` scanned the whole candidate table per row (see `ix_candidates_donated_cell`).
+#: With that index the verdicts are the CHEAPEST stream on the pass, and a cap sized for the
+#: expensive case is now the only thing standing between a 227,497-row backlog and a single pass.
+#: The wall-clock deadline is still the real guard -- this only stops the ROW COUNT being the
+#: binding constraint on the funnel's last stage. Raising it can never cost another stream time:
+#: the verdicts run inside the same `over()` deadline every other stream respects.
+VERDICT_ROWS_MULTIPLE = 25
 #: How often a stream persists its cursor mid-loop. The leg runs as a subprocess under the hour's
 #: budget and is SIGKILLed when it overruns, and a kill between the last row and the cursor write
 #: replays every row of the batch -- so progress is durable every this many rows, not once.
@@ -2162,7 +2194,8 @@ def sync_from_desk(desk: Path | None = None, *, max_rows: int = 20000,
             n = 0
             for r, at_pos in _iter_new_lines(
                     c, "gate_verdicts",
-                    d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl", max_rows):
+                    d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl",
+                    max_rows * VERDICT_ROWS_MULTIPLE):
                 pos = at_pos
                 cell = str(r.get("cell") or "")
                 if not cell:

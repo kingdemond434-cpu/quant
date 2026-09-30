@@ -490,6 +490,115 @@ def seal_duty_cycle(path: Path, now: datetime) -> dict[str, Any]:
     return out
 
 
+# ------------------------------------------------- 4b. THE STREAMS (a cursor that stopped moving)
+
+#: How much of a cursored stream may sit unread before the funnel is severed rather than busy.
+#:
+#: A THIRD SHAPE THIS FENCE COULD NOT SEE, AND IT COST THE DESK EVERY VERDICT IT EARNED (measured
+#: 2026-09-25). `registry_sync` ran every hour, exited zero, advanced its cursor and rewrote its
+#: report every single pass -- so its SELF channel was perfect AND its PRODUCT channel moved too,
+#: because the pass really did pour rows. It poured 203 of them. The gate verdict ledger was
+#: growing by ~3,500 rows an hour and the `gate_verdicts` cursor sat at byte 226,198 of a
+#: 54,119,184-byte file: 0.42% read, 227,497 verdicts unpoured, the input growing 113x faster
+#: than the cursor advanced. `judged_at` had been set on 1,278 candidates in the desk's whole
+#: history, all at one instant, while the sandboxes donated, the docket carried them and the
+#: judge ruled on them. The cause was a missing index making the read-back door scan 740,357 rows
+#: per verdict at 2.09 rows/s (see `ix_candidates_donated_cell`).
+#:
+#: NEITHER EXISTING CHANNEL CAN EVER CATCH THAT. "It ran" was true, "its output moved" was true,
+#: and the funnel was still severed -- because for a CURSORED stream the honest question is not
+#: whether the cursor moved but whether it is KEEPING UP with its input. A pipeline whose input
+#: grows faster than its cursor is diverging, and divergence is monotone: it never recovers on
+#: its own and every hour makes it worse. So the measurement is the unread FRACTION, not an age.
+#:
+#: 25%: a stream that has read three quarters of its input is working through a backlog; one that
+#: has read less than that, on a host that runs the clocks, is not going to catch up. The real
+#: break measured 99.58% unread, four times past this line, so this is sized well inside the
+#: failure it exists for.
+STREAM_UNREAD_MAX_FRACTION = 0.25
+
+#: Below this an unread tail is one pass's normal lag, not a severed funnel, whatever the ratio.
+STREAM_UNREAD_MIN_BYTES = 2_000_000
+
+
+def stream_backlogs(base: Path) -> dict[str, Any]:
+    """Every cursored stream: how much of its input the registry has actually read.
+
+    UNMEASURED IS A VERDICT (L1.28a). A host with no registry, no cursor table or no stream file
+    reports exactly that and convicts nobody -- the build box legitimately has none of this. What
+    this can never do is report a severed stream as healthy because the organ above it exited
+    zero, which is the whole reason it exists.
+    """
+    out: dict[str, Any] = {"status": UNMEASURED, "streams": [], "breaches": []}
+    try:
+        sys.path.insert(0, str(base))
+        from libs.moat import registry as R
+    except Exception as exc:                       # pragma: no cover - import guard
+        out["why"] = f"libs.moat.registry not importable here: {type(exc).__name__}: {exc}"
+        return out
+    if not R.path().exists():
+        out["why"] = f"no registry at {R.path()}: this host holds no cursored stream"
+        return out
+    # THE TREE BEING JUDGED OWNS ITS REGISTRY. `R.path()` is process-global, so a scan of another
+    # tree (a test box, a mirror checkout) would otherwise read THIS process's registry and judge
+    # that tree's streams against another host's cursors -- a verdict about the wrong object.
+    try:
+        R.path().resolve().relative_to(Path(base).resolve())
+    except ValueError:
+        out["why"] = (f"the registry in scope ({R.path()}) is not under {base}: this tree's "
+                      "cursored streams are UNMEASURED here, never judged against another tree")
+        return out
+    try:
+        conn = R.connect()
+    except Exception as exc:                       # pragma: no cover - locked/absent db
+        out["why"] = f"registry not readable: {type(exc).__name__}: {exc}"
+        return out
+    try:
+        for key, rel in R.SYNC_STREAMS:
+            path = R.stream_path(key, desk=base / "desks" / "mt5")
+            if path is None or not Path(path).exists():
+                path = base / Path(*rel.split("/"))
+            row = conn.execute("SELECT value FROM sync_cursor WHERE key=?", (key,)).fetchone()
+            cursor = None
+            if row is not None:
+                try:
+                    cursor = int(row["value"])
+                except (TypeError, ValueError):
+                    cursor = None
+            size = Path(path).stat().st_size if Path(path).exists() else None
+            rec: dict[str, Any] = {"stream": key, "path": str(path), "cursor": cursor,
+                                   "size_bytes": size}
+            if size is None:
+                rec["verdict"] = UNMEASURED
+                rec["why"] = "no input file on this host"
+            elif cursor is None:
+                rec["verdict"] = "NO_CURSOR"
+                rec["why"] = (f"the registry holds no '{key}' cursor: every row on disk is "
+                              "invisible to it, and nothing says so")
+                out["breaches"].append(rec)
+            else:
+                unread = max(0, size - min(cursor, size))
+                frac = (unread / size) if size else 0.0
+                rec.update(unread_bytes=unread, unread_fraction=round(frac, 4))
+                if unread >= STREAM_UNREAD_MIN_BYTES and frac > STREAM_UNREAD_MAX_FRACTION:
+                    rec["verdict"] = "STREAM_DIVERGING"
+                    rec["why"] = (
+                        f"{unread:,} of {size:,} bytes ({frac:.1%}) of {key} have never been "
+                        "read. The organ above this cursor can run, exit zero and advance it "
+                        "every pass while the funnel stays severed -- a cursor that moves is not "
+                        "a cursor that keeps up")
+                    out["breaches"].append(rec)
+                else:
+                    rec["verdict"] = "OK"
+            out["streams"].append(rec)
+        out["status"] = "MEASURED"
+    except Exception as exc:                       # pragma: no cover - schema drift
+        out["why"] = f"{type(exc).__name__}: {exc}"
+    finally:
+        conn.close()
+    return out
+
+
 # --------------------------------------------------------------------------- 5. THE RATCHET
 
 DEBT_REL = "docs/research/organ_cadence_debt.json"
@@ -632,6 +741,22 @@ def scan(root: Path | None = None, *, now: datetime | None = None) -> dict[str, 
             continue
         if r["verdict"] in _BREACH and r["organ"] in known:
             doc["notes"].append(f"{r['organ']}: {r['verdict']}, declared in {DEBT.name}")
+
+    # THE CURSORED STREAMS. Judged only where the clocks actually run: on a mirror a stale cursor
+    # is the mirror being a mirror, exactly as for every other verdict in this file.
+    streams = stream_backlogs(base)
+    doc["streams"] = streams
+    if streams.get("status") != "MEASURED":
+        doc["notes"].append(
+            f"stream backlogs UNMEASURED: {streams.get('why') or 'no reason recorded'}")
+    elif here:
+        for rec in streams.get("breaches") or []:
+            doc["ok"] = False
+            doc["problems"].append(f"{rec['stream']}: {rec['verdict']} -- {rec['why']}")
+    else:
+        doc["notes"].append(
+            "stream backlogs measured but not judged: this host does not run the clocks, so a "
+            "cursor behind its input is a mirror, not a severed funnel")
 
     doc["verdict"] = "OK" if doc["ok"] else "DARK"
     return doc

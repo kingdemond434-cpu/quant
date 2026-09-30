@@ -342,3 +342,179 @@ def test_thresholds_catch_the_day_it_happens() -> None:
     assert fence.WINDOW_H <= 24.0
     assert fence.PRODUCT_STALE_CADENCES <= 12.0
     assert fence.MIN_OK_RUNS >= 2, "one clean run is not evidence that an organ runs fine"
+
+
+# ------------------------------- 6. THE STREAM THAT KEPT ITS CURSOR AND STOPPED KEEPING UP
+#
+# The shape neither existing channel can see. On 2026-09-25 `registry_sync` ran hourly, exited
+# zero, advanced its cursor and rewrote its report every pass -- self channel perfect, product
+# channel moving -- while the `gate_verdicts` cursor sat at byte 226,198 of a 54,119,184-byte
+# ledger. 227,497 verdicts unpoured, the input growing 113x faster than the cursor advanced, and
+# `judged_at` set on 1,278 candidates in the desk's whole history. "It ran" was true and "its
+# output moved" was true and the funnel was still severed.
+
+
+def _registry_at(tmp: Path, cursors: dict[str, int]):
+    """A real registry at a temp path carrying the given cursor values."""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT))
+    from libs.moat import registry as R
+    R.set_path(tmp / "data" / "alpha_registry.sqlite")
+    (tmp / "data").mkdir(parents=True, exist_ok=True)
+    conn = R.connect()
+    for key, value in cursors.items():
+        conn.execute("INSERT OR REPLACE INTO sync_cursor(key, value, updated_at) VALUES(?,?,?)",
+                     (key, str(value), "2026-09-25T00:00:00+00:00"))
+    conn.commit()
+    conn.close()
+    return R
+
+
+@pytest.fixture
+def registry_box(box: Path):
+    """A clock-running host with a real registry, restored to the canonical path afterwards."""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT))
+    from libs.moat import registry as R
+    before = R.path()
+    yield box
+    R.set_path(before)
+
+
+def test_a_cursor_that_moves_but_never_keeps_up_is_a_severed_funnel(registry_box: Path) -> None:
+    """THE REGRESSION. A cursor 0.42% through its input, on a host that runs the clocks."""
+    led = "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"
+    _write(registry_box, led, "x" * 54_000_000)
+    _registry_at(registry_box, {"gate_verdicts": 226_198})
+
+    got = fence.stream_backlogs(registry_box)
+    assert got["status"] == "MEASURED", got
+    rec = next(r for r in got["streams"] if r["stream"] == "gate_verdicts")
+    assert rec["verdict"] == "STREAM_DIVERGING", rec
+    assert rec["unread_fraction"] > 0.99
+    assert any(b["stream"] == "gate_verdicts" for b in got["breaches"])
+
+
+def test_a_stream_that_is_keeping_up_is_not_a_defect(registry_box: Path) -> None:
+    """A cursor near the end of its input is a stream doing its job; convicting it would make the
+    fence fire on every healthy pass and it would be off within the week."""
+    led = "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"
+    _write(registry_box, led, "x" * 54_000_000)
+    _registry_at(registry_box, {"gate_verdicts": 53_900_000})
+
+    rec = next(r for r in fence.stream_backlogs(registry_box)["streams"]
+               if r["stream"] == "gate_verdicts")
+    assert rec["verdict"] == "OK", rec
+
+
+def test_a_small_unread_tail_is_one_passs_lag_whatever_the_ratio(registry_box: Path) -> None:
+    """A brand-new stream is 100% unread and is not broken. The byte floor is what says so."""
+    led = "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"
+    _write(registry_box, led, "x" * 1000)
+    _registry_at(registry_box, {"gate_verdicts": 0})
+
+    rec = next(r for r in fence.stream_backlogs(registry_box)["streams"]
+               if r["stream"] == "gate_verdicts")
+    assert rec["verdict"] == "OK", rec
+
+
+def test_a_stream_with_no_cursor_at_all_is_a_breach(registry_box: Path) -> None:
+    """A restore wiped all four cursor keys once and nothing said so; every row on disk was then
+    invisible to the registry. A missing receipt is a defect, never a fresh start."""
+    led = "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl"
+    _write(registry_box, led, "x" * 54_000_000)
+    _registry_at(registry_box, {"hypothesis_graph": 10})
+
+    got = fence.stream_backlogs(registry_box)
+    rec = next(r for r in got["streams"] if r["stream"] == "gate_verdicts")
+    assert rec["verdict"] == "NO_CURSOR", rec
+
+
+def test_a_host_with_no_registry_is_unmeasured_not_clean(tmp_path: Path) -> None:
+    """UNMEASURED is a verdict (L1.28a). The build box holds no live registry and must not be
+    reported as a host whose streams are healthy."""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT))
+    from libs.moat import registry as R
+    before = R.path()
+    try:
+        R.set_path(tmp_path / "data" / "nothing.sqlite")
+        got = fence.stream_backlogs(tmp_path)
+        assert got["status"] == fence.UNMEASURED
+        assert got["why"]
+    finally:
+        R.set_path(before)
+
+
+def test_a_diverging_stream_fails_the_scan_on_a_clock_host(registry_box: Path) -> None:
+    """WIRED, not merely measured: the breach must reach `scan`'s verdict, or it is a number in a
+    report nobody acts on."""
+    _write(registry_box, "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl", "x" * 54_000_000)
+    _registry_at(registry_box, {"gate_verdicts": 1000})
+    _declare_ledger(registry_box, {"alpha": "desks/mt5/reports/alpha.json"})
+    ok_runs = [("alpha", NOW - timedelta(hours=h), True) for h in (1, 2, 3)]
+    _write(registry_box, EVENTS, _events(ok_runs))
+    _touch(registry_box / "desks" / "mt5" / "reports" / "alpha.json", NOW)
+
+    doc = fence.scan(registry_box, now=NOW)
+    assert doc["ok"] is False
+    assert doc["verdict"] == "DARK"
+    assert any("STREAM_DIVERGING" in p for p in doc["problems"]), doc["problems"]
+
+
+def test_a_mirror_host_is_not_convicted_for_a_stale_cursor(registry_box: Path,
+                                                           monkeypatch: pytest.MonkeyPatch
+                                                           ) -> None:
+    """On a host that does not run the clocks a cursor behind its input is the mirror being a
+    mirror -- the same rule every other verdict in this file already follows."""
+    monkeypatch.setattr(fence, "runs_clocks_here", lambda _root: False)
+    _write(registry_box, "desks/mt5/data/hypotheses/gate_verdict_ledger.jsonl", "x" * 54_000_000)
+    _registry_at(registry_box, {"gate_verdicts": 1000})
+    _declare_ledger(registry_box, {"alpha": "desks/mt5/reports/alpha.json"})
+    _write(registry_box, EVENTS, _events([("alpha", NOW - timedelta(hours=1), True)]))
+
+    doc = fence.scan(registry_box, now=NOW)
+    assert not any("STREAM_DIVERGING" in p for p in doc["problems"]), doc["problems"]
+
+
+def test_the_read_back_door_is_indexed(registry_box: Path) -> None:
+    """THE FIX ITSELF, PINNED. `mark_candidate` matches `WHERE id=? OR donated_cell=?`; with no
+    index on `donated_cell` an OR across one indexed and one unindexed column can use neither,
+    and SQLite reads `SCAN research_candidates` -- 740,357 rows per verdict, measured at 2.09
+    rows/s on the trading box against 87,931 rows/s with the index. That single missing index is
+    why the desk stamped `judged_at` on 1,278 candidates in its whole history while the gauntlet
+    ruled on 228,469 cells."""
+    R = _registry_at(registry_box, {})
+    conn = R.connect()
+    try:
+        names = {r["name"] for r in conn.execute("PRAGMA index_list('research_candidates')")}
+        assert "ix_candidates_donated_cell" in names, (
+            "no index on research_candidates(donated_cell): the verdict read-back door is a full "
+            "table scan again, and judged_at will silently stop advancing")
+        plan = " ".join(str(r[-1]) for r in conn.execute(
+            "EXPLAIN QUERY PLAN UPDATE research_candidates SET status=? "
+            "WHERE id=? OR donated_cell=?", ("judged", "a", "b")))
+        assert "SCAN research_candidates" not in plan, plan
+        assert "MULTI-INDEX OR" in plan or "SEARCH" in plan, plan
+    finally:
+        conn.close()
+
+
+def test_a_registry_outside_the_judged_tree_is_unmeasured_not_borrowed(tmp_path: Path) -> None:
+    """`registry.path()` is process-global. Judging one tree's streams against ANOTHER tree's
+    cursors is a verdict about the wrong object -- measured on the build host when this fence was
+    ported: a scan of a test box read the host's own registry and reported its missing
+    `desk_lessons` cursor as the box's defect."""
+    import sys as _sys
+    _sys.path.insert(0, str(ROOT))
+    from libs.moat import registry as R
+    before = R.path()
+    try:
+        _registry_at(tmp_path / "elsewhere", {"gate_verdicts": 0})
+        judged = tmp_path / "judged"
+        judged.mkdir()
+        got = fence.stream_backlogs(judged)
+        assert got["status"] == fence.UNMEASURED
+        assert "not under" in got["why"]
+    finally:
+        R.set_path(before)
