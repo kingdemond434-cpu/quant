@@ -30,6 +30,27 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 LEGS = ("hour_surface", "hour_prior", "alpha_periodic_table")
 
 
+@pytest.fixture
+def cycle_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """THE CYCLE'S OWN PATH, rebuilt for the test rather than inherited from the process.
+
+    ROOT CAUSE of the CI-only failure (2026-09-30, mt5-money-path, `-n auto --dist loadfile`):
+    the module-level insert above is a no-op when `research` is ALREADY on sys.path, and a test
+    file that ran earlier on the same worker (test_alt_data_fetch_yield, test_deep_forest, ...)
+    had put `desks/mt5/side_channels` at sys.path[0] AND left `alpha_periodic_table` cached in
+    sys.modules from there. The bare-name import then returned the implementation, not the leg
+    -- `'side_channels' == 'research'` -- and the monkeypatched REPORT was never written by the
+    module under test. Serially the order differed and it passed, so it read as flaky.
+
+    `daily_cycle` puts BASE and BASE/research on its path and never side_channels; that is
+    rebuilt here, and the cached module is dropped so the import resolves on this path.
+    """
+    keep = [p for p in sys.path if Path(p).name != "side_channels"
+            and p not in (str(_DESK), str(_DESK / "research"))]
+    monkeypatch.setattr(sys, "path", [str(_DESK / "research"), str(_DESK), *keep])
+    monkeypatch.delitem(sys.modules, "alpha_periodic_table", raising=False)
+
+
 def _feedback_list() -> list[str]:
     """The module names `_state_research_feedback` iterates, read from the source."""
     tree = ast.parse((_DESK / "research" / "daily_cycle.py").read_text("utf-8"))
@@ -134,7 +155,8 @@ def test_hour_prior_turns_a_surface_into_a_bounded_prior(tmp_path, monkeypatch) 
 
 
 def test_the_periodic_table_writes_the_map_and_refuses_to_flatter_its_coverage(tmp_path,
-                                                                              monkeypatch
+                                                                              monkeypatch,
+                                                                              cycle_path
                                                                               ) -> None:
     import alpha_periodic_table as leg
     from side_channels import alpha_periodic_table as impl
@@ -154,7 +176,7 @@ def test_the_periodic_table_writes_the_map_and_refuses_to_flatter_its_coverage(t
     assert (tmp_path / "matrix" / "mechanism_matrix.csv").exists()
 
 
-def test_the_bare_name_resolves_to_the_leg_on_the_cycles_own_path() -> None:
+def test_the_bare_name_resolves_to_the_leg_on_the_cycles_own_path(cycle_path) -> None:
     """`daily_cycle` imports by bare name off BASE/research; the implementation must not shadow
     the leg there, or the cycle would run a module it never meant to."""
     import alpha_periodic_table as leg
