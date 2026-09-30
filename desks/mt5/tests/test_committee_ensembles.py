@@ -49,7 +49,8 @@ def desk(tmp_path, monkeypatch):
 
 
 def _planted() -> dict[str, list[ce.Subject]]:
-    good_cell = ens._momentum_cell(12)
+    ens._PASS_SEED[0] = 0                  # fixtures are seed-dependent: pin them per build
+    good_cell = ens._event_cell(12)
     return {
         ens.SCIENTIFIC: [
             ce.Subject(ens.SCIENTIFIC, "g_bad", {"mechanism": {"note": "", "status": "UNNAMED",
@@ -438,7 +439,7 @@ def test_the_gauntlets_survivors_are_red_teamed_first_from_l1(monkeypatch):
     assert subs[0].committee == ens.SCIENTIFIC and "mechanism" not in subs[0].evidence
     state = ce.blank_state()
     bank = ce.Subject(ens.SCIENTIFIC, "b", {"mechanism": {"note": ""}})
-    subs[0].evidence["cell"] = ens._momentum_cell(12)
+    subs[0].evidence["cell"] = ens._event_cell(12)
     ex, _counts = ens._examine_committee(ens.SCIENTIFIC, [bank, subs[0]], state, 60.0, 0.0)
     assert ex[0]["key"] == "survivor:c1" and ex[0]["levels"][0] == 1
 
@@ -450,3 +451,15 @@ def test_dead_organs_never_judges_the_desk_from_a_non_trading_hosts_attestation(
     assert r.verdict == ce.UNMEASURED
     r = ce.run_seat(sp, {"program": {"census": census, "host_role": "trading_host"}}, "p")
     assert r.verdict == ce.FAIL
+
+
+def test_forensic_skips_rows_the_metric_fence_refuses(tmp_path, monkeypatch):
+    d = tmp_path / "mql5"
+    d.mkdir()
+    rows = [ens._GOOD | {"url": "u/good"}, ens._GOOD | {"url": "u/bad", "win_pct": 2296.0}]
+    (d / "discoveries_20260930_2000.json").write_text(json.dumps(rows))
+    monkeypatch.setattr(ens, "_fence", lambda r: ["win_pct:IMPOSSIBLE_METRIC"]
+                        if float(r.get("win_pct") or 0) > 100 else [])
+    subs = ens.forensic_subjects(d, tmp_path / "absent.json")
+    assert [s.key for s in subs] == ["u/good"]
+    assert ens.FENCED == [{"url": "u/bad", "reasons": ["win_pct:IMPOSSIBLE_METRIC"]}]

@@ -289,6 +289,25 @@ def _momentum_cell(seed: int, n: int = 800, flip_after: int | None = None) -> di
     return _cell(df, sigs, 0.0)
 
 
+def _sawtooth_cell(seed: int, n: int = 1200) -> dict[str, Any]:
+    """The placebo TRAP: a price that alternates between two levels, so every two-bar trade --
+    real, shifted, flipped or random -- returns exactly zero. Signals at seed-drawn bars with
+    seed-drawn sides look like a strategy and cannot beat a single placebo."""
+    import numpy as np
+    import pandas as pd
+    rng = np.random.default_rng(_s(seed))
+    close = np.where(np.arange(n) % 2 == 0, 1.0, 1.0 + float(rng.uniform(0.0005, 0.002)))
+    open_ = np.r_[close[1], close[:-1]]
+    idx = pd.date_range("2026-01-05", periods=n, freq="h", tz="UTC")
+    df = pd.DataFrame({"open": open_, "high": np.maximum(open_, close) * 1.0002,
+                       "low": np.minimum(open_, close) * 0.9998, "close": close}, index=idx)
+    at = sorted(rng.choice(np.arange(20, n - 10, 7), size=60, replace=False))
+    sides = rng.choice([-1, 1], size=60)
+    return _cell(df, [Sig(idx[t], int(sd), float(close[t]) * (1 - 0.01 * sd),
+                          float(close[t]) * (1 + 0.01 * sd), 1)
+                      for t, sd in zip(at, sides, strict=True)], 0.0)
+
+
 def _event_cell(seed: int, n: int = 1200, events: int = 60) -> dict[str, Any]:
     """A CAUSAL edge sharp in time, the clean twin a placebo battery must tell apart: a bar
     whose wick marks a rejection is followed by two bars in the wick's direction. The signal
@@ -437,7 +456,7 @@ _falsifier_seat("truncation", 3, "LEAKAGE", 2.0,
                 lambda: _cell(_bars(seed=16), [], 0.0, _peeking_family),
                 lambda: _cell(_bars(seed=17), [], 0.0, _causal_family), "placebo_battery")
 _falsifier_seat("placebo_battery", 4, "LEAKAGE", 20.0,
-                lambda: _cell(_bars(seed=18), _longs(_bars(seed=18), 4), 0.0),
+                lambda: _sawtooth_cell(18),
                 lambda: _event_cell(19), "")
 
 
@@ -738,8 +757,24 @@ def effect_sample(sp: ce.Specialist, e: Mapping[str, Any], key: str) -> ce.Resul
     return _r(sp, PASS, 0.5, n_oos=n)
 
 
+#: MQL5 rows the metric fence refused on the last read (reported under the Forensic committee).
+FENCED: list[dict[str, Any]] = []
+
+
+def _fence(row: Mapping[str, Any]) -> list[str]:
+    """`libs.research.metric_fence.fence_row` when it is on this tree (#169); until then no
+    row is refused here and `record_integrity` still flags an impossible metric."""
+    import importlib
+    try:
+        metric_fence = importlib.import_module("libs.research.metric_fence")
+    except ImportError:
+        return []
+    return [str(x) for x in metric_fence.fence_row(row)]
+
+
 def forensic_subjects(mql5: Path | None = None, queue: Path | None = None) -> list[ce.Subject]:
     out: list[ce.Subject] = []
+    FENCED.clear()
     d = mql5 or MQL5
     files = sorted(d.glob("discoveries_*.json"), reverse=True)[:6] if d.is_dir() else []
     seen: set[str] = set()
@@ -750,6 +785,12 @@ def forensic_subjects(mql5: Path | None = None, queue: Path | None = None) -> li
             if not isinstance(r, dict) or not r.get("url") or r["url"] in seen:
                 continue
             seen.add(str(r["url"]))
+            bad = _fence(r)
+            if bad:
+                # IMPOSSIBLE_METRIC (#169's metric fence): a parser defect, not a trader. It is
+                # counted here and never becomes a subject, so no seat is scored on it.
+                FENCED.append({"url": r["url"], "reasons": bad[:5]})
+                continue
             syms = [str(s) for s in r.get("symbols") or [] if s]
             rec = {k: r.get(k) for k in ("growth_pct", "weeks", "pf", "max_dd_pct", "trades",
                                          "win_pct", "author_other_signals", "phenotypes",
@@ -1834,6 +1875,8 @@ def run(*, budget_s: float = DEFAULT_BUDGET_S, write: bool = True,
         ex, counts = _examine_committee(name, pool, state, share_s, now_ts)
         examined_all += ex
         res = [r for e in ex for r in e["results"]]
+        if name == FORENSIC and subjects is None:
+            counts["fenced_impossible_metric"] = len(FENCED)
         per[name] = counts | {
             "status": "RETIRED_PROBE" if name in retired_c else "RAN",
             "budget_s": round(share_s, 2),
