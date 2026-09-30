@@ -1,0 +1,46 @@
+{
+ "class": "corporate_events",
+ "label": "Corporate filings, disclosures, earnings and guidance events",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:capital_iq_s_p:key_developments",
+   "vendor": "Capital IQ (S&P)",
+   "dataset": "Key Developments",
+   "class": "corporate_events",
+   "region": "global",
+   "measures": "Corporate event feed",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:eventvestor_wall_street_horizon:corporate_event_data",
+   "vendor": "EventVestor (Wall Street Horizon)",
+   "dataset": "Corporate event data",
+   "class": "corporate_events",
+   "region": "US",
+   "measures": "Corporate events and dividends",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:j_quants_pro_jpx:j_quants_pro",
+   "vendor": "J-Quants Pro (JPX)",
+   "dataset": "J-Quants Pro",
+   "class": "corporate_events",
+   "region": "JP",
+   "measures": "Japanese listed company financials and disclosures",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  }
+ ]
+}

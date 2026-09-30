@@ -1,0 +1,46 @@
+{
+ "class": "patents",
+ "label": "Patents and innovation filings",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:clarivate:derwent_innovation",
+   "vendor": "Clarivate",
+   "dataset": "Derwent Innovation",
+   "class": "patents",
+   "region": "global",
+   "measures": "Patent family data",
+   "frequency": "weekly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:ifi_claims:patent_database",
+   "vendor": "IFI Claims",
+   "dataset": "Patent database",
+   "class": "patents",
+   "region": "global",
+   "measures": "Global patent data",
+   "frequency": "weekly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:lexisnexis:patentsight",
+   "vendor": "LexisNexis",
+   "dataset": "PatentSight",
+   "class": "patents",
+   "region": "global",
+   "measures": "Patent asset index",
+   "frequency": "weekly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  }
+ ]
+}

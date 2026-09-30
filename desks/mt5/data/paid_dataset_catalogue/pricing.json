@@ -1,0 +1,46 @@
+{
+ "class": "pricing",
+ "label": "Online prices, CPI nowcasts and e-commerce pricing",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:adobe:adobe_digital_price_index",
+   "vendor": "Adobe",
+   "dataset": "Adobe Digital Price Index",
+   "class": "pricing",
+   "region": "US",
+   "measures": "E-commerce price index",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:pricestats_state_street:online_inflation_series",
+   "vendor": "PriceStats (State Street)",
+   "dataset": "Online inflation series",
+   "class": "pricing",
+   "region": "global",
+   "measures": "Daily online-price inflation",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:truflation:truflation_inflation_index",
+   "vendor": "Truflation",
+   "dataset": "Truflation inflation index",
+   "class": "pricing",
+   "region": "US",
+   "measures": "Daily alternative inflation index",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  }
+ ]
+}

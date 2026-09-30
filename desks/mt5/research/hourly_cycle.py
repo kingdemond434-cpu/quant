@@ -886,6 +886,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # PAID-DATASET SUBSTITUTES (principal 2026-09-30, "all paid datasets alternatives ...
+    # thousands"): the hunt's queues and the three uses of every enrolled substitute are
+    # refreshed hourly; ~2 s plus a bounded catalogue crawl.
+    "paid_substitute_engine",
 })
 
 
@@ -1053,6 +1057,7 @@ LEG_DEPARTMENT: dict[str, str] = {
     # GLOBAL-LAYER forests (web, academic+code, physical data, market data) -- layers of the
     # world that would be mined seventeen times over if each region hunted them itself.
     **dict.fromkeys(("global_research_os", "acquire_datasets", "source_experiment_census",
+                     "paid_substitute_engine",
                      *GLOBAL_FOREST_LEGS), "regions"),
     # the forest federation: one department per regional civilization, each its own resident
     **{f"forest_{_fid}": _fid for _fid in FOREST_DEPARTMENTS},
@@ -1605,6 +1610,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # itself; the parent cap must sit above that bound so it writes registry/report instead of
     # being killed after fetching data but before publishing ownership and refusals.
     "acquire_datasets": 1_100,
+    # The paid-substitute engine: a 120 s catalogue crawl (its own deadline) plus ~2-10 s of
+    # scoring, enrolment and queue writes; the cap sits above so the report is always written.
+    "paid_substitute_engine": 300,
     # The causal invariance organ stops itself at --budget-s 600 and writes; the cap sits above.
     "causal_invariance": 700,
     # 28 organs, 416 s measured end to end in the cloud checkout on 2026-09-30 (immune 160 s,
@@ -4116,6 +4124,11 @@ def main() -> None:
     # census named it as owner, but no named cycle leg invoked it; production's registry therefore
     # stayed frozen at 2026-09-24 while every regional pack kept declaring sources. Run it after
     # the OS declares today's needs and before the census measures source-to-experiment closure.
+    # FREE REPLICAS OF PAID DATASETS (principal 2026-09-30). Before the acquirer, so the
+    # endpoints of newly matched substitutes are in this hour's discoveries; every enrolled
+    # substitute feeds direct, exogenous_gate and WORLD_STATE_INPUTS under one dataset_id.
+    pse = _costed("paid_substitute_engine", lambda: _producer(
+        "paid_substitute_engine", "research/paid_substitute_engine.py", "--crawl-budget-s", "120"))
     acq = _costed("acquire_datasets", lambda: _producer(
         "acquire_datasets", "research/acquire_datasets.py"))
     # GLOBAL SOURCE-TO-EXPERIMENT CONSERVATION.  All regions use the same measured chain:
@@ -5218,7 +5231,7 @@ def main() -> None:
                     "replication_civilization": rpc,
                     "science_controller": scc,
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
-                    "acquire_datasets": acq,
+                    "acquire_datasets": acq, "paid_substitute_engine": pse,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
                     "math_lab": mlb, "expression_factory": xpf, "physics_lab": phl,

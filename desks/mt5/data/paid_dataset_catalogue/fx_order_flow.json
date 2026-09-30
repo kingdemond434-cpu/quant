@@ -1,0 +1,59 @@
+{
+ "class": "fx_order_flow",
+ "label": "FX volumes, order flow and dealer positioning",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:cls_group:cls_fx_volume_and_flow_data",
+   "vendor": "CLS Group",
+   "dataset": "CLS FX volume and flow data",
+   "class": "fx_order_flow",
+   "region": "global",
+   "measures": "Settled FX volumes and flow by counterparty type",
+   "frequency": "hourly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:ebs_cme:ebs_market_data",
+   "vendor": "EBS (CME)",
+   "dataset": "EBS market data",
+   "class": "fx_order_flow",
+   "region": "global",
+   "measures": "Interdealer spot FX order book and trades",
+   "frequency": "intraday",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:refinitiv_fx_matching:fx_matching_data",
+   "vendor": "Refinitiv FX Matching",
+   "dataset": "FX Matching data",
+   "class": "fx_order_flow",
+   "region": "global",
+   "measures": "Interdealer FX order book and trades",
+   "frequency": "intraday",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:state_street_global_markets:iflow",
+   "vendor": "State Street Global Markets",
+   "dataset": "iFlow",
+   "class": "fx_order_flow",
+   "region": "global",
+   "measures": "Custodial cross-border investor flows by currency",
+   "frequency": "daily",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  }
+ ]
+}

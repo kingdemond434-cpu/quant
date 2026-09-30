@@ -1,0 +1,59 @@
+{
+ "class": "web_traffic",
+ "label": "Web traffic, search interest and page views",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:ahrefs:seo_link_analysis",
+   "vendor": "Ahrefs",
+   "dataset": "SEO & Link Analysis",
+   "class": "web_traffic",
+   "region": "global",
+   "measures": "Website referral traffic and search metrics",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": null
+  },
+  {
+   "id": "paid:comscore:web_streaming_audience",
+   "vendor": "Comscore",
+   "dataset": "Web & Streaming Audience",
+   "class": "web_traffic",
+   "region": "global",
+   "measures": "Detailed web and streaming service audience measurements",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": null
+  },
+  {
+   "id": "paid:semrush:digital_marketing_intelligence",
+   "vendor": "SEMrush",
+   "dataset": "Digital Marketing Intelligence",
+   "class": "web_traffic",
+   "region": "global",
+   "measures": "Search engine volumes and website referral traffic",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": null
+  },
+  {
+   "id": "paid:similarweb:web_traffic_analytics",
+   "vendor": "SimilarWeb",
+   "dataset": "Web Traffic Analytics",
+   "class": "web_traffic",
+   "region": "global",
+   "measures": "Website visitor counts and engagement metrics",
+   "frequency": "UNSTATED",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "public_listing:https://paperswithbacktest.com/datasets/best-alternative-data",
+   "public_sample": null
+  }
+ ]
+}

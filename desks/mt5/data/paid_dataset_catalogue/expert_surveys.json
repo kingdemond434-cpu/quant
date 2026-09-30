@@ -1,0 +1,85 @@
+{
+ "class": "expert_surveys",
+ "label": "Business and expert surveys (PMI-like, diffusion indices)",
+ "note": "Public listing metadata only (vendor, dataset, class, region, measure, frequency). No paid data is held or fetched. seed_source is honest: public_listing:<url> rows were read from that page on 2026-09-30; model_knowledge_unverified rows name real products not page-verified in-session.",
+ "entries": [
+  {
+   "id": "paid:au_jibun_bank_s_p_global:japan_pmi",
+   "vendor": "au Jibun Bank/S&P Global",
+   "dataset": "Japan PMI",
+   "class": "expert_surveys",
+   "region": "JP",
+   "measures": "Japan PMI",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:caixin_s_p_global:caixin_china_pmi",
+   "vendor": "Caixin/S&P Global",
+   "dataset": "Caixin China PMI",
+   "class": "expert_surveys",
+   "region": "CN",
+   "measures": "China private-sector PMI",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:ism:ism_report_on_business",
+   "vendor": "ISM",
+   "dataset": "ISM Report On Business",
+   "class": "expert_surveys",
+   "region": "US",
+   "measures": "Manufacturing and services diffusion indices",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:reuters_tankan:reuters_tankan",
+   "vendor": "Reuters Tankan",
+   "dataset": "Reuters Tankan",
+   "class": "expert_surveys",
+   "region": "JP",
+   "measures": "Monthly Japanese business sentiment poll",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:s_p_global_ihs_markit:pmi",
+   "vendor": "S&P Global (IHS Markit)",
+   "dataset": "PMI",
+   "class": "expert_surveys",
+   "region": "global",
+   "measures": "Purchasing managers' diffusion indices",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  },
+  {
+   "id": "paid:zew:zew_financial_market_survey_full_data",
+   "vendor": "ZEW",
+   "dataset": "ZEW Financial Market Survey (full data)",
+   "class": "expert_surveys",
+   "region": "DE",
+   "measures": "Financial analyst expectations",
+   "frequency": "monthly",
+   "history_years": "UNMEASURED",
+   "latency_days": "UNMEASURED",
+   "seed_source": "model_knowledge_unverified",
+   "public_sample": null
+  }
+ ]
+}
