@@ -75,3 +75,35 @@ def test_every_source_carries_the_roster_schema() -> None:
         assert s.region in ("JP", "KR", "CN") and s.lang in ("ja", "ko", "zh")
         assert s.failure_mode_hypothesis and s.participant_structure
         assert s.crowding_prior in ("low", "medium", "high")
+
+
+def test_the_feeds_file_ships_tracked_and_both_per_blog_sources_say_unconfigured(
+        tmp_path: Path) -> None:
+    import json
+    import subprocess
+    import sys
+
+    root = Path(__file__).resolve().parents[2]
+    cfg = root / "desks" / "mt5" / "data" / "blog_social_feeds.json"
+    doc = json.loads(cfg.read_text("utf-8"))
+    per_blog = [s.id for s in bss.SOURCES if "{id}" in s.url]
+    assert sorted(per_blog) == ["ameblo_user_rss", "livedoor_user_rss"]
+    for sid in per_blog:
+        assert isinstance(doc[sid], list), sid
+    ignored = subprocess.run(["git", "check-ignore", "-q", str(cfg.relative_to(root))],
+                             cwd=root, check=False)
+    assert ignored.returncode == 1, "blog_social_feeds.json must not be gitignored"
+    desk = root / "desks" / "mt5"
+    for p in (str(desk), str(desk / "research")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import blog_social_mining as bsm
+
+    assert cfg == bsm.FEEDS_CFG
+    body = (FIX / "ameblo_rss20.xml").read_text("utf-8")
+    rep = bsm.fetch_pass(NOW, store=tmp_path / "store", get=lambda url: body,
+                         sources=tuple(bss.BY_ID[s] for s in per_blog), pause_s=0,
+                         feeds_cfg=cfg)
+    for sid in per_blog:
+        want = "UNCONFIGURED" if not doc[sid] else bss.POSTURE_OK
+        assert rep["postures"][sid]["posture"] == want, rep["postures"][sid]

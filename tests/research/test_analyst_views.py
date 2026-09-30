@@ -215,6 +215,16 @@ def test_a_planted_drift_is_admitted_and_a_null_is_not() -> None:
     assert abs(null["placebo_t_mean"]) < 1.0
 
 
+def test_the_per_cell_placebo_admits_a_planted_cell_and_not_a_null_one() -> None:
+    obs, bars = _synthetic(900, 25, 0.004, seed=7)
+    got = av.placebo_contract(obs, bars, n_placebo=200, seed=1, key=av.cell_key)
+    assert set(got) == {"A|src|direct|", "B|src|direct|", "C|src|direct|"}
+    assert all(v["status"] == "ADMIT" for v in got.values()), got
+    obs0, bars0 = _synthetic(900, 25, 0.0, seed=11)
+    null = av.placebo_contract(obs0, bars0, n_placebo=200, seed=1, key=av.cell_key)
+    assert null and all(v["status"] != "ADMIT" for v in null.values()), null
+
+
 def test_a_thin_source_is_unmeasured_not_passed() -> None:
     obs, bars = _synthetic(300, 3, 0.01, seed=3)
     got = av.placebo_contract(obs, bars)["src"]

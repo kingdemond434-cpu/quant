@@ -153,7 +153,11 @@ def test_cell_schema() -> None:
     groups = [_group("NVIDIA", "yahoo_upgrades", "direct", "", 4.0, 55.0),
               _group("USDKRW", "naver_research", "lead", "kr_semis", -3.9, -40.0),
               _group("Apple", "yahoo_upgrades", "direct", "", 0.5, 5.0)]
-    cands, trials, refused = ac.cell_rows(groups, {"yahoo_upgrades": {"status": "ADMIT"}})
+    admit = {"5d": {"NVIDIA|yahoo_upgrades|direct|": {"status": "ADMIT", "p_placebo": 0.01},
+                    "USDKRW|naver_research|lead|kr_semis": {"status": "ADMIT"},
+                    "Apple|yahoo_upgrades|direct|": {"status": "ADMIT"}}}
+    cands, trials, refused = ac.cell_rows(groups, {"yahoo_upgrades": {"status": "ADMIT"}},
+                                          cell_placebo=admit)
     assert trials == 3 and not refused and len(cands) == 2
     nv, krw = cands
     assert nv["family"] == "analyst_revision_drift" and nv["params"]["side"] == 1
@@ -169,6 +173,7 @@ def test_cell_schema() -> None:
         assert c["provenance"]["source_culture"] == c["source_culture"]
     assert krw["source_culture"] == "KR/ko" and krw["crowding_prior"] == "low"
     assert nv["evidence"]["contract_status"] == "ADMIT"
+    assert nv["evidence"]["cell_placebo"]["status"] == "ADMIT"
     # the families the cells name are registered where the compiler and the gauntlet look
     from mt5desk import families_orthogonal as fo
     for c in cands:
@@ -182,13 +187,42 @@ def test_cells_pass_the_real_donation_door(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(pc, "_record_in_registry", lambda *_a, **_k: None)
     monkeypatch.setattr(pc, "_preregister", lambda *_a, **_k: {"preregistered": 0, "failed": 0})
     cands, trials, _ = ac.cell_rows(
-        [_group("Apple", "yahoo_upgrades", "direct", "", 4.0, 55.0)], {})
+        [_group("Apple", "yahoo_upgrades", "direct", "", 4.0, 55.0)], {},
+        cell_placebo={"5d": {"Apple|yahoo_upgrades|direct|": {"status": "ADMIT"}}})
     path = pc.donate("alpha_capture", cands, trials)
     assert path is not None
     doc = json.loads(Path(path).read_text("utf-8"))
     assert doc["counts"]["donated"] == 1 and doc["counts"]["refused_wrong_lane"] == 0
     row = doc["discoveries"][0]
     assert row["available_time"] and row["payload_hash"]
+
+
+def test_a_high_t_cell_is_not_donated_without_its_own_placebo_admit() -> None:
+    groups = [_group("NVIDIA", "yahoo_upgrades", "direct", "", 6.0, 80.0),
+              _group("Apple", "yahoo_upgrades", "direct", "", 6.0, 80.0),
+              _group("Meta", "yahoo_upgrades", "direct", "", 6.0, 80.0)]
+    gate = {"5d": {"NVIDIA|yahoo_upgrades|direct|": {"status": "REJECT"},
+                   "Apple|yahoo_upgrades|direct|": {"status": av.UNMEASURED}}}
+    for placebo in (gate, None):                 # REJECT, UNMEASURED, absent: none is a pass
+        cands, trials, refused = ac.cell_rows(groups, {}, cell_placebo=placebo)
+        assert not cands and trials == 3 and len(refused) == 3
+        assert all("placebo gate" in r["why"] for r in refused)
+
+
+def test_the_report_never_collides_with_execution_intelligence() -> None:
+    import re
+    ei = (DESK / "research" / "execution_intelligence.py").read_text("utf-8")
+    theirs = re.search(r'CAPTURE_REPORT = _DESK / "reports" / "([^"]+)"', ei)
+    assert theirs is not None and theirs.group(1) == "ALPHA_CAPTURE.json"
+    ours = {ac.REPORT.name, ac.CONTRACT.name, ac.INTEL.name}
+    assert theirs.group(1) not in ours
+    assert ac.REPORT.name == "ANALYST_VIEWS.json"
+    assert ac.CONTRACT.name == "ANALYST_VIEWS_CONTRACT.json"
+    state = json.loads((ROOT / "docs" / "research" / "runtime_state.json").read_text("utf-8"))
+    rows = [r for r in state.get("organs") or state.get("rows") or []
+            if isinstance(r, dict)
+            and r.get("organ") == "executable:desks/mt5/research/alpha_capture.py"]
+    assert rows and rows[0]["artifact_declared"] == "desks/mt5/reports/ANALYST_VIEWS.json"
 
 
 # ------------------------------------------------------------------------------ one pass
@@ -288,6 +322,12 @@ def test_one_offline_pass_writes_every_artifact(desk: dict[str, Any]) -> None:
     assert statuses.get("sec_8k_guidance") == av.UNMEASURED
     assert rep["cells"]["candidates"] == 0          # a day of history clears nothing, honestly
     assert not desk["donated"]
+    # the small COMMITTED digest carries this organ's section (reports/ is gitignored)
+    dig = json.loads(ac.DIGEST.read_text("utf-8"))["organs"]["alpha_capture"]
+    assert dig["status"] == "LIVE" and dig["rows"] == rep["store"]["rows_total"]
+    assert set(dig["measured"]) == set(ac.SOURCES) and not dig["unmeasured"]
+    assert dig["gain"]["sec_8k_guidance"] == av.UNMEASURED
+    assert dig["cells"]["donated"] == 0
     # the SEC request carried the declared User-Agent path, Yahoo went through the crumb
     assert any("getcrumb" in c for c in calls) and any("efts.sec.gov" in c for c in calls)
     # a second pass inside the cadence fetches nothing

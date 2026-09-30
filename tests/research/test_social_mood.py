@@ -103,3 +103,44 @@ def test_deltas_use_only_prior_days_and_a_spike_reads_as_a_positive_z() -> None:
                                           timedelta(days=19)], observed_days=_days(19))
                if r.instrument == "JPN225"]
     assert rows_18[-1].attention_delta_z == rows[-2].attention_delta_z
+
+
+def _pub(i: int, title: str, published: datetime, seen: datetime, author: str,
+         source: str) -> sm.Post:
+    return sm.Post(source=source, ident=f"b{i}", title=title, first_seen_at=seen,
+                   author=author, published_at=published)
+
+
+def _distinct(k: int) -> str:
+    words = ("円安", "決算", "配当", "半導体", "銀行株", "指数", "先物", "為替介入", "金利",
+             "原油", "金価格", "日銀", "米国債", "雇用統計", "物価", "新興株", "商社", "自動車",
+             "海運", "不動産")
+    return f"{words[k % len(words)]}について{'の' * (k // len(words))}メモ"
+
+
+def test_a_blog_feed_of_twenty_posts_over_twenty_days_in_one_fetch_survives() -> None:
+    fetched = T0 + timedelta(days=21)                          # ONE fetch returns the whole feed
+    for source in ("hatena_bookmark_search_rss", "ameblo_user_rss"):
+        feed = [_pub(k, _distinct(k), T0 + timedelta(days=k), fetched, "kabu_blogger", source)
+                for k in range(20)]
+        kept, rep = sm.bot_filter(feed)
+        assert rep.dropped["burst_account"] == 0 and len(kept) == 20, source
+
+
+def test_a_real_burst_by_post_time_is_still_filtered() -> None:
+    seen = [T0 + timedelta(hours=h) for h in range(sm.BURST_MAX + 2)]   # spread across fetches
+    burst = [_pub(k, _distinct(k), T0 + timedelta(minutes=k), seen[k], "spam",
+                  "dcinside_stock_gallery") for k in range(sm.BURST_MAX + 2)]
+    kept, rep = sm.bot_filter(burst)
+    assert rep.dropped["burst_account"] == sm.BURST_MAX + 2 and not kept
+
+
+def test_single_author_feed_sources_are_the_configured_per_blog_sources() -> None:
+    from libs.data import blog_social_sources as bss
+    per_blog = {s.id for s in bss.SOURCES if "{id}" in s.url}
+    assert per_blog == set(sm.SINGLE_AUTHOR_FEED_SOURCES)
+    # exempt: a configured blog posting many times inside an hour is still one blog
+    feed = [_pub(k, _distinct(k), T0 + timedelta(minutes=k), T0 + timedelta(hours=1),
+                 "one_blog", "livedoor_user_rss") for k in range(20)]
+    kept, rep = sm.bot_filter(feed)
+    assert rep.dropped["burst_account"] == 0 and len(kept) == 20
