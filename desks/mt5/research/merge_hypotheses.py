@@ -833,6 +833,35 @@ def main() -> int:
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
                   f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
             return 0
+    # PRE-REGISTRATION, BOTH HALVES, HERE (2026-09-30). This merge runs on the hour BEFORE the
+    # judge reads the docket, so it is the last point where a card can honestly precede a
+    # verdict. First the last sweep's verdicts are stamped and put on the hypothesis graph (the
+    # writer it never had -- its last fate was 2026-09-03), so the judged set is current; then
+    # every docket row is stamped with the card that fixes its exact spec, and every never-judged
+    # cell without one goes into this hour's batch card. A fault here costs the stamps, never a
+    # row: the docket is written either way.
+    prereg: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from libs.research import prereg_join as _pj_join
+        from libs.research.hypothesis_graph import Graph as _Graph
+        from research.frontier_identity import cell_id as _cell_id
+        _g = _Graph()
+        prereg = {"verdicts": _pj_join.record_gate_ledger(graph=_g, specs=rows_out),
+                  "docket": _pj_join.preregister_docket(rows_out, graph=_g, cell_id=_cell_id),
+                  "status": "APPLIED"}
+        _d = prereg["docket"]
+        print(f"   preregistration: {_d['already']} carded, {_d['new_specs']} new spec(s) in "
+              f"batch {_d['batch_hash']}, {_d['retrospective']} judged before any card; "
+              f"verdicts -> graph: {prereg['verdicts'].get('recorded', 0)} recorded")
+    except Exception as exc:
+        prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     TARGET.write_text(json.dumps(rows_out, indent=1, default=str), "utf-8")
     _lease(TARGET)
     (HYP / "merge_report.json").write_text(json.dumps({
@@ -887,6 +916,7 @@ def main() -> int:
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
+        "preregistration": prereg,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "
