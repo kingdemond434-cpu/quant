@@ -296,10 +296,15 @@ def run(apply: bool) -> dict:
         })
 
     sched = doc.get("scheduler") if isinstance(doc.get("scheduler"), dict) else {}
-    if sched and not sched.get("read") and not sched.get("existence_only"):
+    # EXISTENCE-ONLY IS NOT A READ (audit 2026-09-30). On a schtasks timeout process_health lists
+    # the task directory instead: that proves which tasks exist and nothing about how any of them
+    # ran, so every FAILING verdict is unmeasured and the scheduler still needs a human.
+    if sched and not sched.get("read"):
         escalated.append({
             "task": "(scheduler)", "verdict": "UNMEASURED", "code": None,
-            "why": str(sched.get("why") or "the scheduler could not be read"),
+            "why": (str(sched.get("why") or "the scheduler could not be read")
+                    + ("; existence-only fallback: task files listed, run results unread"
+                       if sched.get("existence_only") else "")),
             "diagnosis": ("process_health could not enumerate scheduled tasks, so no organ has a "
                           "scheduling verdict this pass. Check `schtasks /query` responds on the "
                           "box; a hung Task Scheduler service is the usual cause."),

@@ -344,14 +344,43 @@ def _dict_get(doc: Any, key: str) -> Any:
     return doc.get(key) if isinstance(doc, dict) else None
 
 
+#: The census is an hourly leg (and an issue-board clock); three hours is two missed passes.
+SILENT_ORGANS_MAX_AGE_H = 3.0
+
+
+def _census_age_h(doc: dict[str, Any]) -> float | None:
+    """Hours since the census was measured, from its own stamp; None when undated."""
+    stamp = doc.get("measured_at") or doc.get("at")
+    if not isinstance(stamp, str) or not stamp:
+        return None
+    try:
+        t = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=UTC)
+    return (datetime.now(UTC) - t).total_seconds() / 3600.0
+
+
 def _r07_silent_failures() -> dict[str, Any]:
     dim = "silent_scheduled_failures"
     census = _read(SILENT_ORGANS)
-    if isinstance(census, dict) and census.get("status") in ("GREEN", "AMBER", "RED"):
+    # THE CENSUS IS THE ONLY READING WHEN IT EXISTS, INCLUDING AN UNMEASURED ONE (audit
+    # 2026-09-30). The old gate accepted GREEN/AMBER/RED only, so an UNMEASURED census fell
+    # through to the summed fallback below -- the very sum the census exists to replace -- and a
+    # fence that could not see was re-read as a count. A stale census is UNMEASURED too.
+    if isinstance(census, dict) and census.get("status") in ("GREEN", "AMBER", "RED",
+                                                             "UNMEASURED"):
         n = _num(census.get("n_silent"))
-        basis = (f"{_rel(SILENT_ORGANS)} n_silent, per organ "
+        basis = (f"{_rel(SILENT_ORGANS)} n_silent, fence {census.get('fence')}, per organ "
                  f"{census.get('by_verdict') or {}} (new={len(census.get('new_silent') or [])})")
-        if n is None:
+        age_h = _census_age_h(census)
+        if age_h is None or age_h > SILENT_ORGANS_MAX_AGE_H:
+            return _mk(dim, None, f"UNMEASURED: {basis}; the census is "
+                                  + ("undated" if age_h is None else f"{age_h:.1f}h old")
+                                  + f" against {SILENT_ORGANS_MAX_AGE_H:g}h -- "
+                                  "scripts/check_silent_organs.py has stopped", _stamp(census))
+        if census.get("status") == "UNMEASURED" or n is None:
             # A floor is not a count: at least one source was unreadable.
             return _mk(dim, None, f"UNMEASURED: {basis}; floor "
                                   f"{census.get('n_silent_floor')} -- "
@@ -364,7 +393,8 @@ def _r07_silent_failures() -> dict[str, Any]:
     read, total, bad_legs = [], 0.0, 0
     counts = _dict(health, "counts")
     sched = _dict(health, "scheduler")
-    scheduler_unread = bool(sched) and not sched.get("read") and not sched.get("existence_only")
+    # Existence-only (the schtasks-timeout fallback) proves a task exists, not how it ran: unread.
+    scheduler_unread = bool(sched) and not sched.get("read")
     if counts:
         if scheduler_unread:
             # NOT_SCHEDULED needs a scheduler reading to mean anything (2026-09-30: 71 of 71

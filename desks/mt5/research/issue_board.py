@@ -396,8 +396,50 @@ def desk_state_issues(root: Path | None = None) -> list[Issue]:
     return out
 
 
+SILENT_ORGANS = "desks/mt5/reports/SILENT_ORGANS.json"
+
+
+def silent_organ_issues(root: Path | None = None) -> list[Issue]:
+    """THE SILENT-ORGAN FENCE, ON THE BOARD (audit R2, 2026-09-30).
+
+    `scripts/check_silent_organs.py` wrote a RED or UNMEASURED fence that nothing read: its exit
+    was a declared verdict and no board, pager or dashboard looked at the artifact. A RED fence
+    (a NEW silent organ, or a watchdog escalation) is STALLED; an UNMEASURED one is BLIND -- the
+    desk cannot say which of its organs are working. Neither is auto-repairable: the fix is the
+    named organ's, and re-running the census would only re-read the same inputs. An absent or
+    stale census is already a `missing:`/`stale:silent_organs` issue from CADENCE.
+    """
+    r = root or ROOT
+    try:
+        doc = json.loads((r / SILENT_ORGANS).read_text("utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(doc, dict):
+        return []
+    fence = str(doc.get("fence") or doc.get("status") or "")
+    out: list[Issue] = []
+    if fence == "RED":
+        names = list(doc.get("new_silent") or []) + [
+            e for e in doc.get("escalated") or [] if e not in (doc.get("new_silent") or [])]
+        out.append(Issue(
+            "silent_organs:red", "STALLED",
+            f"{len(names)} organ(s) newly silent or escalated",
+            "Named: " + ", ".join(str(n) for n in names[:8]) + (" ..." if len(names) > 8 else "")
+            + f". Read {SILENT_ORGANS} for each row's verdict and why.",
+            repair=None, auto=False))
+    elif fence == "UNMEASURED":
+        why = "; ".join(f"{u.get('what')}: {u.get('why')}" for u in doc.get("unmeasured") or []
+                        if isinstance(u, dict))
+        out.append(Issue(
+            "silent_organs:unmeasured", "BLIND",
+            f"the silent-organ fence cannot see (floor {doc.get('n_silent_floor')} silent)",
+            (why or "no reason recorded")[:400], repair=None, auto=False))
+    return out
+
+
 def collect(root: Path | None = None) -> list[Issue]:
-    return stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
+    return (stale_producers(root) + raised_alarms(root) + desk_state_issues(root)
+            + silent_organ_issues(root))
 
 
 def repair_budget_s() -> float | None:

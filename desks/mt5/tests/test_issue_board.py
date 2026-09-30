@@ -88,3 +88,27 @@ def test_falsifier_budget_never_exceeds_the_cycle_cap(monkeypatch: pytest.Monkey
     monkeypatch.delenv("QUANT_LEG_BUDGET_S")
     fr.main(["--report", str(tmp_path / "r.json")])
     assert got[1] == fr.DEFAULT_BUDGET_SEC
+
+
+# ------------------------------------------------ audit R2 (2026-09-30): the fence reaches the board
+def test_a_red_or_unmeasured_silent_fence_is_on_the_board(tmp_path: Path) -> None:
+    import json
+    p = tmp_path / issue_board.SILENT_ORGANS
+    p.parent.mkdir(parents=True)
+    p.write_text(json.dumps({"fence": "RED", "new_silent": ["leg:x"],
+                             "escalated": ["escalated:(scheduler)"]}))
+    [i] = issue_board.silent_organ_issues(tmp_path)
+    assert i.key == "silent_organs:red" and i.severity == "STALLED" and not i.auto
+    assert "leg:x" in i.detail and "escalated:(scheduler)" in i.detail
+    p.write_text(json.dumps({"fence": "UNMEASURED", "n_silent_floor": 3, "unmeasured": [
+        {"what": "hourly-cycle legs", "why": "sync_marker.json is STALE"}]}))
+    [i] = issue_board.silent_organ_issues(tmp_path)
+    assert i.key == "silent_organs:unmeasured" and i.severity == "BLIND"
+    assert "STALE" in i.detail
+    p.write_text(json.dumps({"fence": "AMBER"}))
+    assert issue_board.silent_organ_issues(tmp_path) == []
+
+
+def test_collect_reads_the_silent_fence() -> None:
+    import inspect
+    assert "silent_organ_issues(root)" in inspect.getsource(issue_board.collect)

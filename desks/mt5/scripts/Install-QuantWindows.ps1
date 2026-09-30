@@ -133,15 +133,14 @@ New-Item -ItemType Directory -Force -Path $logDir | Out-Null
 #: stamp, so running it hourly gives exactly one daily-cycle run per day and
 #: catches up whenever the box is awake instead of missing a fixed minute.
 $tasks = @(
-    @{ Name = "MT5-Gateway"
-       Script = "research\run_gateway_loop.py"
-       Trigger = { New-ScheduledTaskTrigger -Once -At (Get-Date).Date `
-                     -RepetitionInterval (New-TimeSpan -Minutes 1) `
-                     -RepetitionDuration (New-TimeSpan -Days 3650) }
-       Desc = "One gateway pass per minute; file-locked against overlap." },
-    # THE RESIDENT GATEWAY, AND WHY IT EXISTS BESIDE THE PER-MINUTE TASK.
+    # THE PER-MINUTE GATEWAY TASK IS RETIRED FROM THIS INSTALLER (audit 2026-09-30). It has been
+    # Disabled on the box since 2026-09-16 and box_tasks.manifest no longer declares it; the
+    # gateway runs as MT5-GatewayResident below. Re-registering it here re-created an Interactive
+    # per-minute task beside the resident, a second pass runner nobody wanted.
     #
-    # `MT5-Gateway` runs as Administrator with LogonType=Interactive, because the MT5 Python API
+    # THE RESIDENT GATEWAY, AND WHY IT EXISTS.
+    #
+    # The retired per-minute task ran as Administrator with LogonType=Interactive, because the MT5 Python API
     # reaches terminal64 over local IPC and the terminal lives in the interactive session -- a
     # task under SYSTEM sits in Session 0, cannot see it, and would fail to initialise. But an
     # Interactive task only executes while that user holds a desktop session: without one it
@@ -408,7 +407,7 @@ foreach ($t in $tasks) {
         # the gateway or shadow replay as SYSTEM returns -10004/-10005 even while terminal64 is
         # healthy, which turns every certificate into a false no-bars clock.  All other jobs stay
         # headless under SYSTEM.  The terminal task is the canonical source of the desktop owner.
-        if ($t.Name -in @("MT5-Gateway", "MT5-GatewayResident", "MT5-Shadow", "MT5-Gauntlet")) {
+        if ($t.Name -in @("MT5-GatewayResident", "MT5-Shadow", "MT5-Gauntlet")) {
             if (-not $InteractiveUser -or $InteractiveUser -eq "SYSTEM") {
                 throw "$($t.Name) requires the MT5 interactive desktop owner; pass -InteractiveUser"
             }
@@ -754,7 +753,7 @@ if ($AurumRoot) {
 
 Write-Host ""
 Write-Host "VERIFY -- these are the only checks that mean anything:"
-Write-Host "  Get-ScheduledTask MT5-Gateway,MT5-Hourly | Select TaskName,State"
+Write-Host "  Get-ScheduledTask MT5-GatewayResident,MT5-Hourly | Select TaskName,State"
 Write-Host "  Start-ScheduledTask -TaskName MT5-Hourly     # force one run now"
 Write-Host "  Get-Content logs\MT5-Hourly.log -Tail 40"
 Write-Host "  Get-Content reports\shadow\shadow_state.json | Select-Object -First 30"

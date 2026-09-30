@@ -844,9 +844,10 @@ VERDICT_EXITS: dict[str, tuple[int, ...]] = {
     "model_skill": (2,),
     "deep_forest": (1,),
     "maintain_miners": (2,),
-    # The silent-organ fence exits 2 when an organ went silent since the previous reading: the
-    # fence doing its job, not the leg failing (scripts/check_silent_organs.py).
-    "silent_organs": (2,),
+    # `silent_organs` IS DELIBERATELY ABSENT (audit R2, 2026-09-30). It exits 2 on a RED fence and
+    # 3 on an UNMEASURED one, and a declared verdict records as `verdict_exit=N`, which every
+    # streak and completion reader counts as ok -- so a RED fence paged nobody. Recorded as
+    # `exit_code=N` it reaches the issue board like any failed leg; box_heartbeat pages on it.
 }
 
 

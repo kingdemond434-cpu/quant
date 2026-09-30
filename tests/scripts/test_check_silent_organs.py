@@ -120,7 +120,8 @@ def test_audit_R1_simulation_scheduler_timeout_never_reads_green_or_clears(tmp_p
     _w(out, first)
     so.PROCESS_HEALTH, so.SYNC_MARKER = tmp_path / "process_health.json", m
     so.NEVER_STALE = tmp_path / "none.json"
-    assert so.main(["--out", str(out)]) == 0          # nothing NEW; but never GREEN
+    # nothing NEW, but never GREEN -- and never exit 0: an UNMEASURED fence is not a clean one
+    assert so.main(["--out", str(out)]) == so.UNMEASURED_EXIT
     assert json.loads(out.read_text())["status"] == "UNMEASURED"
 
 
@@ -132,7 +133,11 @@ def test_audit_R1b_carried_rows_keep_streak_and_first_seen(tmp_path: Path) -> No
     row = {r["organ"]: r for r in second["organs"]}["leg:x"]
     assert row["verdict"] == "UNMEASURED" and row["carried"] is True
     assert row["first_seen"] == first["organs"][0]["first_seen"]
-    assert row["passes_silent"] == 1 and second["cleared"] == []
+    # A carried pass is still a pass on the list: the streak counts it (audit 2026-09-30).
+    assert row["passes_silent"] == 2 and second["cleared"] == []
+    third = so.build(health_path=h, marker_path=tmp_path / "gone.json", previous=second,
+                     never_stale_path=tmp_path / "n.json")
+    assert {r["organ"]: r for r in third["organs"]}["leg:x"]["passes_silent"] == 3
 
 
 def test_audit_R2_a_watchdog_escalation_is_a_red_fence_item(tmp_path: Path) -> None:
@@ -143,3 +148,96 @@ def test_audit_R2_a_watchdog_escalation_is_a_red_fence_item(tmp_path: Path) -> N
     doc = so.build(health_path=h, marker_path=m, never_stale_path=ns)
     assert doc["fence"] == "RED" and doc["escalated"] == ["escalated:(scheduler)"]
     assert [r["organ"] for r in doc["organs"]].count("escalated:MT5-A") == 0
+
+
+# ------------------------------------------------------------------- audit v2 (2026-09-30)
+def test_fourteen_day_old_inputs_read_unmeasured_never_green(tmp_path: Path) -> None:
+    """The probe that came back GREEN: clean-looking inputs, stamped two weeks ago."""
+    old = "2026-09-16T12:00:00+00:00"
+    h = _w(tmp_path / "process_health.json", {"at": old, "scheduler": {"read": True},
+                                              "processes": [{"name": "MT5-A", "verdict": "OK"}]})
+    m = _w(tmp_path / "sync_marker.json", {"last_cycle": old, "x": {"exit_code": 0}})
+    now = so.datetime(2026, 9, 30, 12, tzinfo=so.UTC)
+    doc = so.build(health_path=h, marker_path=m, now=now, never_stale_path=tmp_path / "n.json")
+    assert doc["status"] == "UNMEASURED" and doc["fence"] == "UNMEASURED"
+    assert doc["n_silent"] is None
+    assert set(doc["inputs"]["stale"]) == {"process_health", "sync_marker"}
+    assert all("STALE" in u["why"] for u in doc["unmeasured"])
+
+
+def test_stale_inputs_do_not_clear_what_was_silent(tmp_path: Path) -> None:
+    h, m = _inputs(tmp_path, {"x": {"status": "LEG_FAILED", "error": "boom"}}, [])
+    first = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
+    old = "2026-09-16T12:00:00+00:00"
+    m = _w(tmp_path / "sync_marker.json", {"last_cycle": old, "x": {"exit_code": 0}})
+    now = so.datetime(2026, 9, 30, 12, tzinfo=so.UTC)
+    second = so.build(health_path=h, marker_path=m, previous=first, now=now,
+                      never_stale_path=tmp_path / "n.json")
+    assert second["cleared"] == []
+    assert {r["organ"]: r["verdict"] for r in second["organs"]}["leg:x"] == "UNMEASURED"
+
+
+def test_skipped_unmeasured_and_absent_legs_are_unmeasured_rows(tmp_path: Path) -> None:
+    h, m = _inputs(tmp_path, {"a": {"status": "SKIPPED", "why": "not this box"},
+                              "b": {"status": "SKIPPED_BY_PLAN", "plan": "core"},
+                              "c": {"status": "UNMEASURED"},
+                              "d": None,
+                              "e": {"status": "ROTATED_OUT"},
+                              "ok": {"exit_code": 0}}, [])
+    doc = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
+    verdicts = {r["organ"]: r["verdict"] for r in doc["organs"]}
+    assert verdicts == {f"leg:{k}": "UNMEASURED" for k in "abcde"}
+    assert doc["status"] == doc["fence"] == "UNMEASURED"
+    assert doc["n_silent"] is None and doc["n_silent_floor"] == 0
+    assert doc["n_unmeasured_legs"] == 5
+
+
+def test_an_unmeasured_leg_is_never_new_but_a_later_failure_is(tmp_path: Path) -> None:
+    h, m = _inputs(tmp_path, {"x": {"exit_code": 0}}, [])
+    first = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
+    h, m = _inputs(tmp_path, {"x": {"status": "SKIPPED_BY_PLAN"}}, [])
+    second = so.build(health_path=h, marker_path=m, previous=first,
+                      never_stale_path=tmp_path / "n.json")
+    assert second["new_silent"] == [] and second["fence"] == "UNMEASURED"
+    h, m = _inputs(tmp_path, {"x": {"status": "LEG_FAILED", "error": "boom"}}, [])
+    third = so.build(health_path=h, marker_path=m, previous=second,
+                     never_stale_path=tmp_path / "n.json")
+    assert third["new_silent"] == ["leg:x"] and third["fence"] == "RED"
+
+
+def test_an_undeclared_nonzero_exit_is_silent_and_a_declared_one_is_not(tmp_path: Path) -> None:
+    h, m = _inputs(tmp_path, {"pf_allocator": {"exit_code": 1, "tail": "Traceback"},
+                              "model_skill": {"exit_code": 2},
+                              "silent_organs": {"exit_code": 2}}, [])
+    doc = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
+    assert {r["organ"]: r["verdict"] for r in doc["organs"]} == {
+        "leg:pf_allocator": "EXIT_NONZERO"}
+    assert "silent_organs" not in so._declared_verdict_exits()
+    assert so._declared_verdict_exits()["model_skill"] == (2,)
+
+
+def test_schtasks_timeout_existence_only_listing_reads_unmeasured(tmp_path: Path) -> None:
+    """A task listing proves a task EXISTS; it is not a measurement of how it ran."""
+    h = _w(tmp_path / "process_health.json", {
+        "at": "t", "processes": [{"name": "MT5-A", "verdict": "UNMEASURED"}],
+        "scheduler": {"read": False, "existence_only": True, "source": "tasks_dir",
+                      "why": "schtasks /query did not answer within 180s; existence read"}})
+    m = _w(tmp_path / "sync_marker.json", {"last_cycle": "t"})
+    doc = so.build(health_path=h, marker_path=m, never_stale_path=tmp_path / "n.json")
+    assert doc["status"] == doc["fence"] == "UNMEASURED" and doc["n_silent"] is None
+    assert "existence-only" in doc["unmeasured"][0]["why"]
+
+
+def test_a_watchdog_that_refused_to_judge_is_unmeasured(tmp_path: Path) -> None:
+    h, m = _inputs(tmp_path, {}, [])
+    ns = _w(tmp_path / "NEVER_STALE.json", {"status": "UNMEASURED", "escalated": [],
+                                            "why": "the health reading is 900 min old"})
+    doc = so.build(health_path=h, marker_path=m, never_stale_path=ns)
+    assert doc["fence"] == "UNMEASURED" and "900 min" in doc["unmeasured"][0]["why"]
+
+
+def test_the_fence_exit_is_not_a_declared_verdict_in_the_cycle() -> None:
+    """Audit R2: a declared verdict records as verdict_exit=N, which reads as ok everywhere."""
+    src = (ROOT / "desks" / "mt5" / "research" / "hourly_cycle.py").read_text(encoding="utf-8")
+    block = src.split("VERDICT_EXITS: dict[str, tuple[int, ...]] = {", 1)[1].split("}", 1)[0]
+    assert '"silent_organs"' not in block

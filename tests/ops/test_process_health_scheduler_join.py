@@ -140,3 +140,14 @@ def test_no_code_still_names_the_retired_gateway_task() -> None:
                 "ops/organ_contract.py"):
         text = (ROOT / rel).read_text(encoding="utf-8")
         assert not re.search(r'"MT5-Gateway"', text), rel
+
+
+def test_no_box_script_registers_requires_or_restarts_the_retired_gateway_task() -> None:
+    """Audit 2026-09-30: the installer re-registered MT5-Gateway, the reboot drill required (and
+    so re-ENABLED) it, and the migration restarted it. Executable lines must name the resident;
+    comments may still tell the history."""
+    for rel in ("desks/mt5/scripts/Install-QuantWindows.ps1", "ops/reboot_drill.ps1",
+                "ops/migrate_to_new_box.ps1"):
+        for n, line in enumerate((ROOT / rel).read_text(encoding="utf-8-sig").splitlines(), 1):
+            code = line.split("#", 1)[0]
+            assert not re.search(r"MT5-Gateway(?!Resident)", code), f"{rel}:{n}: {line.strip()}"
