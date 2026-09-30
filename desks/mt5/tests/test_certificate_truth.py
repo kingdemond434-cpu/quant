@@ -377,17 +377,10 @@ def test_an_empty_canon_is_unmeasured_and_never_the_ground_for_retiring_a_clock(
 
 
 def test_the_fence_fails_on_residue_and_passes_once_the_lane_is_the_truth(desk: Path, capsys):
-    # The FAILING half is the box gate's (--require-state). Without it the stores are the
-    # committed SNAPSHOT of the box, which no commit can migrate, so the portable fence reports
-    # them and passes (scripts/check_certificate_truth.py, 2026-09-29) -- still naming each one.
-    assert FENCE.main(["--base", str(desk)]) == 0
-    out = capsys.readouterr().out
-    assert "FATAL BANNED_CERTIFICATE" in out and "SNAPSHOT" in out and "--once --apply" in out
-    assert FENCE.main(["--base", str(desk), "--require-state"]) == 2
+    assert FENCE.main(["--base", str(desk)]) == 2
     out = capsys.readouterr().out
     assert "FATAL BANNED_CERTIFICATE" in out and "--once --apply" in out
     CT.apply(CT.Paths.at(desk))
-    assert FENCE.main(["--base", str(desk), "--require-state"]) == 0
     assert FENCE.main(["--base", str(desk)]) == 0
     assert (desk / "reports" / "CERTIFICATE_TRUTH.json").exists()
 
@@ -508,8 +501,7 @@ def test_the_canon_and_the_clock_census_cannot_drift_apart_silently(desk: Path,
     assert doc["canon"]["status"] == "EMPTY" and doc["canon"]["restorable_n"] == 1
     assert _kinds(doc)["CANON_EMPTY_WITH_RESTORABLE_EVIDENCE"] == 1
     assert "CANON_EMPTY_WITH_RESTORABLE_EVIDENCE" in CT.FATAL_KINDS
-    # the box gate fails on it (without --require-state it is reported as a SNAPSHOT, rc 0)
-    assert FENCE.main(["--base", str(desk), "--require-state"]) == 2
+    assert FENCE.main(["--base", str(desk)]) == 2
     assert "CANON_EMPTY_WITH_RESTORABLE_EVIDENCE" in capsys.readouterr().out
     CT.repair(paths)                                   # the hourly pass, no --apply
     after = CT.audit(paths)
