@@ -505,6 +505,10 @@ NOT_SOURCED_HERE = {
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
+    "world_macro_state": "the world series is named on the recipe by world_macro_proposer, which "
+                         "reads the world dataset hunter's per-symbol exposure and charges its own "
+                         "band x direction x hold grid; a sweep that paired every symbol with "
+                         "every ingested series would be an uncharged search over thousands",
     "style_premia": "style_premia_sweep supplies the instrument's own rollover (broker_swaps) and "
                     "the risk driver and charges the whole style x instrument grid itself",
     "event_reaction": "its events are DATED FACTS FROM OUTSIDE THE TAPE -- an insider cluster's "
