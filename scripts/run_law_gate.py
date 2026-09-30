@@ -151,6 +151,7 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # and a REFUSED_CONSERVATIVE row must carry the sentence saying whose aggressiveness it
     # would have cut. Portable: it reads only tracked files.
     ("check_tier5_audit.py", ()),
+    ("check_tier_s_program.py", ()),          # Tier S admission rule: no layer without a contract
     # THE PLUMBING-INVARIANT HIERARCHY (Tier-1 B26). Not "are the money-path laws tested" --
     # they always were -- but WHAT EACH TEST SPEAKS FOR: one hand-written state (EXAMPLE), a
     # generator's draws (PROPERTY), or the whole finite domain (PROOF). The fence is that the
@@ -590,6 +591,14 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # touches the tree: committing on a builder's behalf, with four builders live, would be a
     # worse failure than the one it reports. State, because it measures a working tree.
     ("check_box_reversion.py", ("--require-git",)),
+    # THE ORDER PROTOCOL IS CALLED VERIFIED ONLY WHEN THE GATEWAY BACKS IT (Tier S S31). Reads the
+    # formal organ's FORMAL.json -- the model check, the AST conformance of the real send sites,
+    # the counterexamples driven through the real decision core -- and fails on a model VIOLATION,
+    # on fewer implementation-backed invariants than the best ever recorded, and on an absent or
+    # stale report. A proven model the gateway does not fully implement passes as MODEL_ONLY with
+    # the missing knobs named: the honest state, never the word "verified". It touches no money
+    # path and forces no change to one. State, because FORMAL.json is written by the box's tier_s.
+    ("check_formal_claim.py", ("--require-state",)),
 )
 
 

@@ -561,6 +561,43 @@ def gold_min_lot() -> float:
     return float(max(val, GOLD_MIN_LOT))
 
 
+#: ALLOCATOR SOVEREIGNTY (principal, 2026-09-29, superseding the 2026-09-07 gold floor and the
+#: 2026-09-12 "every sleeve trades at least the venue minimum" orders): the optimiser is the final
+#: capital authority. A target of zero sends no order; a target below the symbol's own venue
+#: minimum is economically unimplementable at this equity and sends no order either -- it is
+#: never rounded UP to the minimum, because that makes the broker's minimum lot a positive prior
+#: on every live strategy. A positive target at or above the minimum is sent exactly as sized.
+#:
+#: REVERSIBLE WITHOUT A PUSH: `data/ALLOCATOR_SOVEREIGN.json` holding {"enabled": false} restores
+#: the pre-2026-09-29 floors on the next gateway pass. Absent or unreadable -> sovereign.
+ALLOCATOR_SOVEREIGN = True
+ALLOCATOR_SOVEREIGN_FILE = _DESK / "data" / "ALLOCATOR_SOVEREIGN.json"
+
+
+def allocator_sovereign() -> bool:
+    """Whether zero and below-minimum targets send no order (the default)."""
+    try:
+        raw = json.loads(ALLOCATOR_SOVEREIGN_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return bool(ALLOCATOR_SOVEREIGN)
+    if isinstance(raw, dict) and raw.get("enabled") is False:
+        return False
+    return bool(ALLOCATOR_SOVEREIGN)
+
+
+def implementable_lot(raw_lot: float, symbol: str = GOLD_SYMBOL,
+                      info: object | None = None, ceiling: float = 5.0) -> float:
+    """The lot the venue can take for a target of `raw_lot`, or 0.0 when it is below the minimum.
+
+    Snapped DOWN to the 0.01 grain first (never up), then refused -- not lifted -- when under the
+    symbol's own `volume_min`. `min` last, so nothing passes the per-order ceiling.
+    """
+    lot = _lot_steps(max(float(raw_lot), 0.0))
+    if not (lot > 0.0) or lot + 1e-9 < venue_min_lot(symbol, info):
+        return 0.0
+    return float(min(lot, ceiling))
+
+
 def gold_lot(equity: float, dist_usd: float | None = None,
              info: object | None = None) -> float:
     """The gold book's lot: fixed-fractional sizing, floored at `gold_min_lot()`.
@@ -574,6 +611,10 @@ def gold_lot(equity: float, dist_usd: float | None = None,
     would be a size CUT there, delivered as an increase, on the one book with forward evidence
     behind it.
     """
+    if allocator_sovereign():
+        d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
+        raw = Q_OPT * equity / (d * _eur_per_price_unit(GOLD_SYMBOL, info))
+        return implementable_lot(raw, GOLD_SYMBOL, info)
     return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot()))
 
 
@@ -610,6 +651,19 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
         frac = float(h_i)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return floor_lot, "gold_lot: the allocator's fraction is not a number"
+    if allocator_sovereign():
+        # THE OPTIMISER IS SOVEREIGN (2026-09-29). Zero sends nothing; a positive fraction is
+        # sized at exactly that fraction and refused, not lifted, below the venue minimum.
+        if not (frac > 0.0):
+            return 0.0, "sovereign: the allocator gave this window no heat; no order"
+        q_eff = min(frac, MAX_RISK_FRAC) * decay_factor(decay_faded)
+        d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
+        lot = implementable_lot(q_eff * equity / (d * _eur_per_price_unit(GOLD_SYMBOL, info)),
+                                GOLD_SYMBOL, info)
+        if not (lot > 0.0):
+            return 0.0, (f"sovereign: allocator h_i={frac:.4f} (q_eff {q_eff:.4f}) is below "
+                         f"the venue minimum at this equity; no order")
+        return lot, f"sovereign: allocator_book h_i={frac:.4f} (q_eff {q_eff:.4f})"
     if not (frac > 0.0):
         # ZERO IS AN ANSWER EVERYWHERE ELSE AND MUST NOT BE ONE HERE. `allocator_book` carries a
         # zeroed sleeve at 0.0 so the gateway's skip path fires -- but for gold that skip would
@@ -686,8 +740,10 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
             h_i = float(risk_frac)  # type: ignore[arg-type]
         except (TypeError, ValueError):
             h_i = 0.0
+        if not (h_i > 0.0) and allocator_sovereign():
+            return 0.0              # the optimiser said "do not own this" (2026-09-29)
         if not (h_i > 0.0):
-            # THE PRINCIPAL'S ORDER, 2026-09-12: a live sleeve is never skipped for being
+            # THE PRINCIPAL'S ORDER, 2026-09-12 (superseded 2026-09-29 unless sovereignty is off): a live sleeve is never skipped for being
             # unsizeable. This returned 0.0 and three gateway sites then logged "allocator gave
             # this sleeve no heat; skipped". Gold has had this exemption since 2026-09-07; the
             # rest of the book gets it now. The venue minimum is the symbol's OWN minimum, so a
@@ -696,6 +752,12 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
         q_eff = min(h_i, MAX_RISK_FRAC) * decay_factor(decay_faded)
     else:
         q_eff = ramped_fraction(risk_frac, live_n, decay_faded)
+    if allocator_sovereign():
+        # BELOW THE MINIMUM IS UNIMPLEMENTABLE, NOT 0.01 (2026-09-29). `auto_lot` lifts to 0.01;
+        # the raw fraction is sized here instead and refused under the symbol's own minimum.
+        d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
+        return implementable_lot(q_eff * equity / (d * _eur_per_price_unit(symbol, info)),
+                                 symbol, info)
     lot = auto_lot(equity, dist_usd, symbol, info, q=q_eff)
     # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
     # exists to prevent, on exactly the sleeves with the least forward evidence.

@@ -1,0 +1,455 @@
+{
+ "coverage": {
+  "filled": 20,
+  "possible": 691200,
+  "share": 2.8935185185185186e-05,
+  "qd_score": 5.1368
+ },
+ "empty_projections": [
+  {
+   "mechanism": "UNKNOWN",
+   "asset_class": "commodities"
+  },
+  {
+   "mechanism": "UNKNOWN",
+   "asset_class": "forex_exotics"
+  },
+  {
+   "mechanism": "breakout_liquidity",
+   "asset_class": "forex_exotics"
+  },
+  {
+   "mechanism": "carry_rollover",
+   "asset_class": "commodities"
+  },
+  {
+   "mechanism": "carry_rollover",
+   "asset_class": "forex"
+  },
+  {
+   "mechanism": "range_reversion",
+   "asset_class": "commodities"
+  },
+  {
+   "mechanism": "range_reversion",
+   "asset_class": "forex_exotics"
+  },
+  {
+   "mechanism": "session_handover",
+   "asset_class": "commodities"
+  },
+  {
+   "mechanism": "UNKNOWN",
+   "session": "ny"
+  },
+  {
+   "mechanism": "breakout_liquidity",
+   "session": "ny"
+  },
+  {
+   "mechanism": "carry_rollover",
+   "session": "ny"
+  },
+  {
+   "mechanism": "range_reversion",
+   "session": "asia"
+  },
+  {
+   "mechanism": "session_handover",
+   "session": "ny"
+  },
+  {
+   "mechanism": "breakout_liquidity",
+   "horizon": "intrabar"
+  },
+  {
+   "mechanism": "breakout_liquidity",
+   "horizon": "sub_1d"
+  },
+  {
+   "mechanism": "carry_rollover",
+   "horizon": "intrabar"
+  },
+  {
+   "mechanism": "carry_rollover",
+   "horizon": "sub_1d"
+  },
+  {
+   "mechanism": "range_reversion",
+   "horizon": "intrabar"
+  },
+  {
+   "mechanism": "range_reversion",
+   "horizon": "sub_1d"
+  },
+  {
+   "mechanism": "session_handover",
+   "horizon": "intrabar"
+  },
+  {
+   "mechanism": "session_handover",
+   "horizon": "sub_1d"
+  },
+  {
+   "information_source": "carry",
+   "asset_class": "commodities"
+  },
+  {
+   "information_source": "carry",
+   "asset_class": "forex"
+  },
+  {
+   "economic_actor": "UNKNOWN",
+   "session": "ny"
+  },
+  {
+   "economic_actor": "cross_session_risk_transferor",
+   "session": "ny"
+  },
+  {
+   "economic_actor": "negative_carry_holder",
+   "session": "ny"
+  },
+  {
+   "economic_actor": "overextended_liquidity_taker",
+   "session": "asia"
+  },
+  {
+   "economic_actor": "stop_loss_holder",
+   "session": "ny"
+  },
+  {
+   "corr_cluster": "cc:AUDCAD",
+   "mechanism": "carry_rollover"
+  },
+  {
+   "corr_cluster": "cc:AUDCAD",
+   "mechanism": "range_reversion"
+  },
+  {
+   "corr_cluster": "cc:AUDCAD",
+   "mechanism": "session_handover"
+  },
+  {
+   "corr_cluster": "cc:AUDCHF",
+   "mechanism": "UNKNOWN"
+  },
+  {
+   "corr_cluster": "cc:AUDCHF",
+   "mechanism": "breakout_liquidity"
+  },
+  {
+   "corr_cluster": "cc:AUDCHF",
+   "mechanism": "carry_rollover"
+  },
+  {
+   "corr_cluster": "cc:AUDCHF",
+   "mechanism": "range_reversion"
+  },
+  {
+   "corr_cluster": "cc:AUDJPY",
+   "mechanism": "UNKNOWN"
+  },
+  {
+   "corr_cluster": "cc:AUDJPY",
+   "mechanism": "carry_rollover"
+  },
+  {
+   "corr_cluster": "cc:AUDJPY",
+   "mechanism": "range_reversion"
+  },
+  {
+   "corr_cluster": "cc:AUDJPY",
+   "mechanism": "session_handover"
+  },
+  {
+   "corr_cluster": "cc:AUDNZD",
+   "mechanism": "breakout_liquidity"
+  }
+ ],
+ "weak": [
+  {
+   "niche": {
+    "mechanism": "UNKNOWN",
+    "asset_class": "forex",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "intrabar",
+    "information_source": "price_only",
+    "economic_actor": "UNKNOWN",
+    "regime": "band_conditional",
+    "execution_style": "market",
+    "direction": "?",
+    "complexity": "moderate",
+    "capacity": "liq_mid",
+    "corr_cluster": "cc:AUDCAD"
+   },
+   "quality": -0.07188606299210376
+  },
+  {
+   "niche": {
+    "mechanism": "UNKNOWN",
+    "asset_class": "forex",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "sub_1d",
+    "information_source": "price_only",
+    "economic_actor": "UNKNOWN",
+    "regime": "band_conditional",
+    "execution_style": "market",
+    "direction": "?",
+    "complexity": "moderate",
+    "capacity": "liq_low",
+    "corr_cluster": "cc:AUDCAD"
+   },
+   "quality": -0.05512999999999929
+  },
+  {
+   "niche": {
+    "mechanism": "UNKNOWN",
+    "asset_class": "forex",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "sub_1d",
+    "information_source": "price_only",
+    "economic_actor": "UNKNOWN",
+    "regime": "band_conditional",
+    "execution_style": "market",
+    "direction": "?",
+    "complexity": "moderate",
+    "capacity": "liq_mid",
+    "corr_cluster": "cc:USDCAD"
+   },
+   "quality": -0.01094405241932872
+  },
+  {
+   "niche": {
+    "mechanism": "UNKNOWN",
+    "asset_class": "forex",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "sub_1d",
+    "information_source": "price_only",
+    "economic_actor": "UNKNOWN",
+    "regime": "band_conditional",
+    "execution_style": "market",
+    "direction": "?",
+    "complexity": "moderate",
+    "capacity": "liq_mid",
+    "corr_cluster": "cc:AUDCAD"
+   },
+   "quality": 0.05261393700789624
+  },
+  {
+   "niche": {
+    "mechanism": "breakout_liquidity",
+    "asset_class": "forex",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "sub_4h",
+    "information_source": "price_only",
+    "economic_actor": "stop_loss_holder",
+    "regime": "unconditional",
+    "execution_style": "stop",
+    "direction": "?",
+    "complexity": "simple",
+    "capacity": "liq_high",
+    "corr_cluster": "cc:AUDJPY"
+   },
+   "quality": 0.1653592295493282
+  },
+  {
+   "niche": {
+    "mechanism": "breakout_liquidity",
+    "asset_class": "commodities",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "sub_4h",
+    "information_source": "price_only",
+    "economic_actor": "stop_loss_holder",
+    "regime": "unconditional",
+    "execution_style": "stop",
+    "direction": "?",
+    "complexity": "simple",
+    "capacity": "liq_high",
+    "corr_cluster": "cc:AUDCAD"
+   },
+   "quality": 0.1777554379661056
+  },
+  {
+   "niche": {
+    "mechanism": "UNKNOWN",
+    "asset_class": "forex",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "intrabar",
+    "information_source": "price_only",
+    "economic_actor": "UNKNOWN",
+    "regime": "band_conditional",
+    "execution_style": "market",
+    "direction": "?",
+    "complexity": "moderate",
+    "capacity": "liq_high",
+    "corr_cluster": "cc:AUDCAD"
+   },
+   "quality": 0.182
+  },
+  {
+   "niche": {
+    "mechanism": "UNKNOWN",
+    "asset_class": "forex",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "intrabar",
+    "information_source": "price_only",
+    "economic_actor": "UNKNOWN",
+    "regime": "band_conditional",
+    "execution_style": "market",
+    "direction": "?",
+    "complexity": "moderate",
+    "capacity": "liq_low",
+    "corr_cluster": "cc:EURCHF"
+   },
+   "quality": 0.2306
+  },
+  {
+   "niche": {
+    "mechanism": "session_handover",
+    "asset_class": "forex",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "sub_4h",
+    "information_source": "price_only",
+    "economic_actor": "cross_session_risk_transferor",
+    "regime": "unconditional",
+    "execution_style": "market",
+    "direction": "?",
+    "complexity": "simple",
+    "capacity": "liq_low",
+    "corr_cluster": "cc:AUDCHF"
+   },
+   "quality": 0.2377
+  },
+  {
+   "niche": {
+    "mechanism": "UNKNOWN",
+    "asset_class": "forex",
+    "session": "asia",
+    "chart": "H1",
+    "horizon": "sub_4h",
+    "information_source": "price_only",
+    "economic_actor": "UNKNOWN",
+    "regime": "band_conditional",
+    "execution_style": "market",
+    "direction": "?",
+    "complexity": "moderate",
+    "capacity": "liq_low",
+    "corr_cluster": "cc:EURCHF"
+   },
+   "quality": 0.2558
+  }
+ ],
+ "emitted": {
+  "kind": "qd_niches",
+  "emitted": 150
+ },
+ "axes": [
+  "mechanism",
+  "asset_class",
+  "session",
+  "chart",
+  "horizon",
+  "information_source",
+  "economic_actor",
+  "regime",
+  "execution_style",
+  "direction",
+  "complexity",
+  "capacity",
+  "corr_cluster"
+ ],
+ "corr_clusters": {
+  "status": "MEASURED",
+  "threshold": 0.5,
+  "min_overlap": 200,
+  "n_symbols": 32,
+  "n_clusters": 11,
+  "clusters": {
+   "cc:AUDCAD": [
+    "AUDCAD",
+    "AUDSGD",
+    "AUDUSD",
+    "EURUSD",
+    "GBPUSD",
+    "NZDCAD",
+    "NZDUSD",
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "cc:AUDJPY": [
+    "AUDJPY",
+    "CADJPY",
+    "CHFJPY",
+    "EURJPY",
+    "GBPJPY",
+    "NZDJPY",
+    "USDJPY"
+   ],
+   "cc:ADAUSD": [
+    "ADAUSD",
+    "AVAXUSD",
+    "BCHUSD",
+    "BNBUSD",
+    "BTCUSD",
+    "ETHUSD"
+   ],
+   "cc:EURAUD": [
+    "EURAUD",
+    "GBPAUD"
+   ],
+   "cc:EURCHF": [
+    "EURCHF",
+    "USDCHF"
+   ],
+   "cc:USDCAD": [
+    "USDCAD"
+   ],
+   "cc:AUDHUF": [
+    "AUDHUF"
+   ],
+   "cc:AUDCHF": [
+    "AUDCHF"
+   ],
+   "cc:EURGBP": [
+    "EURGBP"
+   ],
+   "cc:AUS200": [
+    "AUS200"
+   ],
+   "cc:AUDNZD": [
+    "AUDNZD"
+   ]
+  }
+ },
+ "capacity_axis": {
+  "counts": {
+   "liquidity_proxy": 32
+  },
+  "status": "MEASURED",
+  "why": null
+ },
+ "elites_measured_on": {
+  "capacity": 17,
+  "corr_cluster": 17
+ },
+ "metric": {
+  "niche_share": 2.8935185185185186e-05,
+  "qd_score": 5.1368,
+  "filled": 20,
+  "corr_clusters": 11,
+  "capacity_measured_elites": 17,
+  "cluster_measured_elites": 17
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 0.48
+}

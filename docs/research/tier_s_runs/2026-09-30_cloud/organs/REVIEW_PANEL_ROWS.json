@@ -1,0 +1,2774 @@
+{
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "rows": [
+  {
+   "candidate": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "179 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 28% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.XAUUSD.session_range_breakout",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.XAUUSD.session_range_breakout",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "5 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 14 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.USDJPY.session_range_breakout",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.USDJPY.session_range_breakout",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 52% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 15 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.CADJPY.session_range_breakout",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.CADJPY.session_range_breakout",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 37% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 14 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.GBPJPY.session_range_breakout",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.GBPJPY.session_range_breakout",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.951 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 59% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURJPY.session_range_breakout",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.EURJPY.session_range_breakout",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 52% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 13 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "5 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 14 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.XAUUSD.session_range_breakout.rr=2.0_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "5 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 14 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.XAUUSD.session_range_breakout.rr=2.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "5 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 14 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 45% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 15 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 50% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 15 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 52% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 15 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.CADJPY.session_range_breakout.rr=2.0_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 38% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 14 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.CADJPY.session_range_breakout.rr=2.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 37% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 14 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "5 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.XAUUSD.session_range_breakout.rr=1.5_wb=8",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 14 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.CADJPY.session_range_breakout.rr=1.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 28% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 14 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.956 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 54% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.952 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 59% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 50% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=1.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 13 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 53% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=2.0_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 13 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "microstructure",
+     "kind": "COST_FRAGILE",
+     "claim": "x3 cost keeps 52% of EV",
+     "severity": "HIGH",
+     "resolves_when": "stress_x5_positive",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURJPY.session_range_breakout.rr=2.5_wb=12",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 13 trades (label WEAK)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "561 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "489 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.952 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "658 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "543 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.974 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "689 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "426 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "727 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "704 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "609 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "verdict": "CHALLENGED",
+   "challenges": [
+    {
+     "candidate": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "464 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURCHF.discovered.p=6c7943b997558157",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURCHF.discovered.p=6c7943b997558157",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=6c7943b997558157",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=6c7943b997558157",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=6c7943b997558157",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURCHF.discovered.p=a5bbf78b5c8595c0",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURCHF.discovered.p=a5bbf78b5c8595c0",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=a5bbf78b5c8595c0",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=a5bbf78b5c8595c0",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=a5bbf78b5c8595c0",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.986 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURCHF.discovered.p=c7d53510458ba32c",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURCHF.discovered.p=c7d53510458ba32c",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "705 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=c7d53510458ba32c",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=c7d53510458ba32c",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=c7d53510458ba32c",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=c7d53510458ba32c",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURCHF.discovered.p=e266baf78567bef3",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURCHF.discovered.p=e266baf78567bef3",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=e266baf78567bef3",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=e266baf78567bef3",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=e266baf78567bef3",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURCHF.discovered.p=16bd35526c7f3515",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURCHF.discovered.p=16bd35526c7f3515",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=16bd35526c7f3515",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=16bd35526c7f3515",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=16bd35526c7f3515",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "5 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURCHF.discovered.p=4cba1afa572a99cd",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURCHF.discovered.p=4cba1afa572a99cd",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=4cba1afa572a99cd",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=4cba1afa572a99cd",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURCHF.discovered.p=4cba1afa572a99cd",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "5 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.986 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "576 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "8 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.AUDCAD.discovered.p=8030fb339510dceb",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.AUDCAD.discovered.p=8030fb339510dceb",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "8 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=8030fb339510dceb",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=8030fb339510dceb",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=8030fb339510dceb",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=8030fb339510dceb",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "6 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.984 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "495 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "488 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.AUDUSD.discovered.p=8e61ea22743f15b7",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.AUDUSD.discovered.p=8e61ea22743f15b7",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=8e61ea22743f15b7",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=8e61ea22743f15b7",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=8e61ea22743f15b7",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.AUDUSD.discovered.p=a5bbf78b5c8595c0",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.AUDUSD.discovered.p=a5bbf78b5c8595c0",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=a5bbf78b5c8595c0",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=a5bbf78b5c8595c0",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDUSD.discovered.p=a5bbf78b5c8595c0",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURUSD.discovered.p=6d034b421914e1a2",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURUSD.discovered.p=6d034b421914e1a2",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "494 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=6d034b421914e1a2",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "1 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=6d034b421914e1a2",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=6d034b421914e1a2",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=6d034b421914e1a2",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=6d034b421914e1a2",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "412 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "1 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "505 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "8 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.USDCHF.discovered.p=19dd11ec392fa005",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.USDCHF.discovered.p=19dd11ec392fa005",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "485 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCHF.discovered.p=19dd11ec392fa005",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "5 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCHF.discovered.p=19dd11ec392fa005",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.USDCHF.discovered.p=19dd11ec392fa005",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.USDCHF.discovered.p=19dd11ec392fa005",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCHF.discovered.p=19dd11ec392fa005",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.USDCAD.discovered.p=56aadf0a3018c790",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.USDCAD.discovered.p=56aadf0a3018c790",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.961 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=56aadf0a3018c790",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "413 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=56aadf0a3018c790",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=56aadf0a3018c790",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=56aadf0a3018c790",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=56aadf0a3018c790",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=56aadf0a3018c790",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.USDCAD.discovered.p=193aadf2caba3698",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.USDCAD.discovered.p=193aadf2caba3698",
+     "reviewer": "statistician",
+     "kind": "DSR_MARGIN",
+     "claim": "DSR 0.956 is within 0.04 of the bar",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=193aadf2caba3698",
+     "reviewer": "econometrician",
+     "kind": "SHORT_SAMPLE",
+     "claim": "359 days",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=193aadf2caba3698",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=193aadf2caba3698",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.00 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=193aadf2caba3698",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=193aadf2caba3698",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.USDCAD.discovered.p=193aadf2caba3698",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 1 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  },
+  {
+   "candidate": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+   "verdict": "FAILED",
+   "challenges": [
+    {
+     "candidate": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+     "reviewer": "execution",
+     "kind": "NO_FILL_EVIDENCE",
+     "claim": "0 matched fills",
+     "severity": "MEDIUM",
+     "resolves_when": "matched_fills_10",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+     "reviewer": "portfolio",
+     "kind": "CLONE",
+     "claim": "uniqueness 0.22 vs the book",
+     "severity": "MEDIUM",
+     "resolves_when": "uniqueness_03",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+     "reviewer": "causal",
+     "kind": "NO_FALSIFIER",
+     "claim": "no machine-readable falsifier for the mechanism",
+     "severity": "HIGH",
+     "resolves_when": "falsifier_declared",
+     "state": "FAILED"
+    },
+    {
+     "candidate": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+     "reviewer": "reproducibility",
+     "kind": "NOT_REPLICATED",
+     "claim": "replication absent",
+     "severity": "HIGH",
+     "resolves_when": "replication_agrees",
+     "state": "OPEN"
+    },
+    {
+     "candidate": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+     "reviewer": "epistemologist",
+     "kind": "UNDECIDED",
+     "claim": "forward edge undecided on 0 trades (label UNKNOWN)",
+     "severity": "MEDIUM",
+     "resolves_when": "forward_n_40",
+     "state": "OPEN"
+    }
+   ]
+  }
+ ]
+}
