@@ -22,76 +22,71 @@ PROMPT = REPO / "docs" / "DESK_CYCLE_PROMPT.md"
 INSTALLER = DESK / "scripts" / "Install-QuantWindows.ps1"
 
 
+CRO_INSTALLER = DESK / "scripts" / "install_cro_cycle_tasks.ps1"
+CRO = REPO / "docs" / "cro"
+
+
 def _installer() -> str:
     return INSTALLER.read_text("utf-8")
 
 
-def _block(name: str) -> str:
-    m = re.search(rf'@\{{\s*Name\s*=\s*"{re.escape(name)}"(.*?)(?=@\{{\s*Name\s*=|\n\)\n)',
-                  _installer(), re.S)
-    assert m, f"{name} is not in the installer table"
-    return m.group(1)
+def _cro_installer() -> str:
+    return CRO_INSTALLER.read_text("utf-8")
 
 
 # ------------------------------------------------------------------ the pair exists
-def test_both_lanes_are_registered() -> None:
+def test_both_lanes_are_registered_by_one_owner() -> None:
+    src = _cro_installer()
     for name in ("MT5-CycleNoon", "MT5-CycleMidnight"):
-        assert f'Name = "{name}"' in _installer()
-
-
-def test_the_lanes_run_at_noon_and_midnight_twelve_hours_apart() -> None:
-    assert '-Daily -At "12:00"' in _block("MT5-CycleNoon")
-    assert '-Daily -At "00:00"' in _block("MT5-CycleMidnight")
+        assert f"Name = '{name}'" in src
+    # The full installer and the absent-task registrar delegate instead of registering a second shape.
+    assert "install_cro_cycle_tasks.ps1" in _installer()
+    assert "install_cro_cycle_tasks.ps1" in (DESK / "scripts" / "register_absent_box_tasks.ps1").read_text("utf-8")
 
 
 def test_each_lane_passes_its_own_lane_argument() -> None:
-    """The lane selects a slot and a checkpoint file -- not a scope.
+    """The lane selects a slot and a checkpoint file -- not a scope."""
+    src = _cro_installer()
+    assert "Lane = 'noon'" in src and "Lane = 'midnight'" in src
+    assert "-Lane {1}" in src
 
-    Both passes run the complete prompt. The argument still matters: without it the two lanes
-    would share one checkpoint and the midnight pass would read noon's DONE and exit.
-    """
-    assert "-Lane noon" in _block("MT5-CycleNoon")
-    assert "-Lane midnight" in _block("MT5-CycleMidnight")
+
+# ------------------------------------------------------------------ the clock
+def test_the_trigger_repeats_every_day_not_only_on_registration_day() -> None:
+    """A -Once trigger with an eleven-hour repetition fired on the day it was registered and
+    never again. A -Daily trigger carrying an hourly repetition fires every hour of every day."""
+    src = _cro_installer()
+    assert "New-ScheduledTaskTrigger -Daily" in src
+    assert "$trigger.Repetition = " in src
+    assert "-RepetitionInterval (New-TimeSpan -Hours 1)" in src
+    assert "-RepetitionDuration (New-TimeSpan -Days 1)" in src
+
+
+def test_the_lane_window_is_read_on_the_dublin_clock() -> None:
+    """12:00 Irish time is the principal's slot; the box's zone and DST must not move it."""
+    src = LAUNCHER.read_text("utf-8")
+    assert '"GMT Standard Time"' in src
+    assert "ConvertTimeFromUtc" in src
+    assert re.search(r'\$WindowStart = if \(\$Lane -eq "noon"\) \{ 12 \} else \{ 0 \}', src)
+    assert "$WindowEnd   = $WindowStart + 11" in src
+
+
+def test_the_lanes_run_as_the_cli_login_account_headless() -> None:
+    """Under SYSTEM neither CLI is logged in and the lane exits 3 every day."""
+    src = _cro_installer()
+    assert "-LogonType S4U" in src
+    assert "-ExecutionTimeLimit (New-TimeSpan -Hours 10)" in src
+    assert "-MultipleInstances IgnoreNew" in src
 
 
 # ------------------------------------------------------------------ resumption
-def test_both_lanes_repeat_hourly_so_an_interrupted_pass_resumes_within_the_hour() -> None:
-    """Without repetition, a pass killed by the time limit waits a full DAY to continue.
-
-    The daily trigger alone gives a 24-hour recovery window; hourly repetition makes it one hour,
-    and a healthy box pays for that with cheap no-ops that exit on a single file read.
-    """
-    for name in ("MT5-CycleNoon", "MT5-CycleMidnight"):
-        block = _block(name)
-        assert "RepetitionInterval (New-TimeSpan -Hours 1)" in block, name
-
-
-def test_the_repetition_stops_before_the_other_lane_starts() -> None:
-    """Eleven hours, not twelve.
-
-    At twelve the noon lane would still be waking up as midnight begins, and two agents in one
-    repository is exactly what the lane split exists to prevent.
-    """
-    for name in ("MT5-CycleNoon", "MT5-CycleMidnight"):
-        block = _block(name)
-        m = re.search(r"RepetitionDuration \(New-TimeSpan -Hours (\d+)\)", block)
-        assert m, f"{name} declares no repetition duration"
-        assert int(m.group(1)) < 12, f"{name} repeats into the other lane's slot"
-
-
-def test_the_time_limit_leaves_room_for_the_other_lane() -> None:
-    for name in ("MT5-CycleNoon", "MT5-CycleMidnight"):
-        m = re.search(r"TimeLimit = \(New-TimeSpan -Hours (\d+)\)", _block(name))
-        assert m and int(m.group(1)) <= 11, f"{name} may still be running when the other starts"
-
-
 def test_a_second_instance_is_refused_by_the_scheduler_and_by_the_script() -> None:
     """Hourly repetition plus a slow pass is a stack unless something says no -- twice.
 
     The scheduler setting is not readable from the script, and the script's check is not visible
     in the task list, so both exist.
     """
-    assert "-MultipleInstances IgnoreNew" in _installer()
+    assert "-MultipleInstances IgnoreNew" in _cro_installer()
     src = LAUNCHER.read_text("utf-8")
     assert "ALREADY RUNNING" in src
     assert "Test-ProcessAlive" in src
@@ -185,3 +180,47 @@ def test_the_prompt_closes_canonically() -> None:
     assert "Reconcile, never overwrite" in text
     assert "Seal alone" in text
     assert "running SHA == RELEASE.code_sha" in text
+
+
+# ------------------------------------------------------------------ the CRO system
+def test_the_three_cro_documents_are_in_the_repository() -> None:
+    for name in ("CRO_CYCLE.md", "QUANT_CONSTITUTION.md", "QUANT_REFERENCE.md"):
+        assert (CRO / name).is_file(), name
+    assert "THIS IS AN ACTION CYCLE, NOT A REPORTING CYCLE" in (CRO / "CRO_CYCLE.md").read_text("utf-8")
+
+
+def test_the_brief_loads_cycle_first_constitution_second_reference_on_demand() -> None:
+    src = LAUNCHER.read_text("utf-8")
+    first = src.index("1. docs/cro/CRO_CYCLE.md")
+    second = src.index("2. docs/cro/QUANT_CONSTITUTION.md")
+    third = src.index("3. docs/cro/QUANT_REFERENCE.md")
+    assert first < second < third
+    assert "ON DEMAND ONLY" in src
+    assert 'docs\\cro\\CRO_CYCLE.md' in src
+
+
+def test_one_controller_at_a_time_through_the_canonical_lease() -> None:
+    src = LAUNCHER.read_text("utf-8")
+    assert "controller_checkpoint.py claim" in src
+    assert "controller_checkpoint.py release" in src
+    assert "exit 5" in src
+
+
+def test_the_next_lane_gets_the_previous_lanes_work_to_verify() -> None:
+    src = LAUNCHER.read_text("utf-8")
+    assert "$OtherStateFile" in src and "work_items" in src
+    assert "cro_cycle_ledger.jsonl" in src
+
+
+def test_the_agents_run_headless_without_a_blanket_permission_bypass() -> None:
+    src = LAUNCHER.read_text("utf-8")
+    assert '"-p"' in src and '"exec", "--full-auto"' in src
+    assert "dangerously" not in src
+    assert '"Bash(git push --force:*)"' in src
+
+
+def test_a_fresh_pass_starts_only_at_the_slot_later_firings_only_resume() -> None:
+    """Once a day at 12:00 (Claude) / 00:00 (Codex) Dublin; the hourly firings only resume."""
+    src = LAUNCHER.read_text("utf-8")
+    assert "$DublinNow.Hour -ne $WindowStart" in src
+    assert "$unfinishedToday" in src

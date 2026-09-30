@@ -11,6 +11,7 @@ context window, so it is an INDEX, never a copy.
 |---|---|
 | `docs/LAWS.md` | **Everyone and everything.** Universe (MT5/Fusion ONLY — crypto-exchange ground is never hunted again), objective, the full law compendium, survival rails, Tier-3 never-touch, promotion firewall, operating laws, enforcement wiring |
 | `docs/RESEARCH.md` | **The whole research system** — every miner, hunter, digger, generator, screen, test: hunt space, sources and search discipline, track-record/leaderboard/championship mining, §33 conversion, validation gauntlet, survivor factory, cadence |
+| `docs/cro/` | **The twice-daily CRO cycle.** `CRO_CYCLE.md` is the procedure both lanes execute (MT5-CycleNoon = Claude 12:00 Dublin, MT5-CycleMidnight = Codex 00:00 Dublin, via `desks/mt5/scripts/Run-DeskCycle.ps1`); `QUANT_CONSTITUTION.md` governs it; `QUANT_REFERENCE.md` is read per subsystem on demand. Ledger: `desks/mt5/data/cro_cycle_ledger.jsonl` |
 
 Everything else governance-shaped is a bannered ANNEX (unabridged detail, never standing orders);
 `docs/MANDATE_COVERAGE.md` maps every document's disposition. The sealed immutable core lives in
