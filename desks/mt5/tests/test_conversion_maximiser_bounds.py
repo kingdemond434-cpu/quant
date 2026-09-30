@@ -53,7 +53,10 @@ def test_the_tail_is_skipped_by_name_when_the_budget_is_spent(desk) -> None:  # 
         _plant(desk["conn"], f"c_t{i}", family="range_reversion", symbol="TESTFX",
                mechanism="mean reversion after an overnight gap")
     t0 = time.monotonic()
-    out = _run(desk, budget_s=0.01)
+    # A budget SPENT AT CONSTRUCTION, not a small one: 0.01 s was a race, since the pre-tail work
+    # on three planted rows finishes inside it on a fast runner (CI 2026-09-30 ran every tail
+    # stage). At 0.0 `Budget.left()` is never above the write reserve, on any machine.
+    out = _run(desk, budget_s=0.0)
     assert time.monotonic() - t0 < 30.0
     tail = out["bounds"]["tail_stages_s"]
     assert tail and set(tail.values()) == {"SKIPPED_BUDGET"}
