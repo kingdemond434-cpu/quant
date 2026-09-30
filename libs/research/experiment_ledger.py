@@ -47,9 +47,7 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
     total = 0
     by_fam: dict[str, int] = {}
     intel = DESK / "data" / "intelligence"
-    if not intel.exists():
-        return 0, {}
-    for f in glob.glob(str(intel / "*" / "discoveries_*.json")):
+    for f in (glob.glob(str(intel / "*" / "discoveries_*.json")) if intel.exists() else []):
         try:
             doc = json.loads(Path(f).read_text("utf-8"))
         except (OSError, ValueError):
@@ -72,6 +70,23 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             k = int(row.get("pairings") or 0) if isinstance(row, dict) else 0
             total += k
             by_fam["model_pairing"] = by_fam.get("model_pairing", 0) + k
+    except (OSError, ValueError, TypeError):
+        pass
+    # SCREENS THAT FOUND NOTHING ARE TRIALS TOO. A pass with no candidate writes no discovery
+    # file, so its width is appended to screen_trials.jsonl instead (research/
+    # cross_sectional_breadth.py) and charged here, per family.
+    try:
+        for ln in (DESK / "data" / "screen_trials.jsonl").read_text("utf-8").splitlines():
+            if not ln.strip():
+                continue
+            row = json.loads(ln)
+            fams = row.get("by_family") if isinstance(row, dict) else None
+            if not isinstance(fams, dict):
+                continue
+            for fam, k in fams.items():
+                n = int(k or 0)
+                total += n
+                by_fam[str(fam)] = by_fam.get(str(fam), 0) + n
     except (OSError, ValueError, TypeError):
         pass
     return total, by_fam

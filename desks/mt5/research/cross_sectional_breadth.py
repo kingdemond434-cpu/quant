@@ -64,6 +64,10 @@ BREADTH = BASE / "reports" / "EFFECTIVE_BREADTH.json"
 BREADTH_LEDGER = ROOT / "web" / "breadth_ledger.json"
 CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 VERDICTS = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+#: Screened cells a pass did NOT charge through a discovery file's `tests_run` (a null pass, or
+#: one whose rows the door refused). `libs/research/experiment_ledger` reads it into the lifetime
+#: trial census, so a screen that found nothing still pays for what it looked at.
+TRIALS_LEDGER = BASE / "data" / "screen_trials.jsonl"
 UNMEASURED = "UNMEASURED"
 
 #: The sealed gauntlet's own floor: a daily series under 60 days is dropped before any gate.
@@ -330,6 +334,7 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
             for c in cands:
                 cells_state[c["ident"]]["donated_at"] = at
                 by_family[c["family"]]["seeded_this_pass"] += 1
+    trials = _charge_trials(by_family, donation, dry_run)
     if not dry_run:
         _save_state(state)
     seeded_total = Counter(str(v.get("family")) for v in cells_state.values()
@@ -349,6 +354,7 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
         "cells_by_class": {k: dict(v) for k, v in sorted(by_class.items())},
         "candidates_this_pass": len(cands), "donated_this_pass": donated,
         "donation": donation,
+        "trials_charged": trials,
         "symbols_without_bars": sorted(set(no_bars)),
         "errors": dict(errors),
         "firing_of_seeded": _firing_summary([v for v in measured if v.get("donated_at")]),
@@ -357,6 +363,43 @@ def seed(*, budget_s: float = 900.0, dry_run: bool = False,
         "firing_of_held_back": _firing_summary(
             [v for v in measured if int(v.get("trade_days_lb") or 0) < SEED_FLOOR]),
     }
+
+
+def _charge_trials(by_family: dict[str, Counter], donation: dict[str, Any],
+                   dry_run: bool) -> dict[str, Any]:
+    """Charge every cell this pass SCREENED to the trial census, hit or no hit.
+
+    A NULL PASS IS NOT FREE. The census (`libs/research/experiment_ledger`) counts screened cells
+    from each discovery file's `tests_run`, and a pass with no candidate writes no file -- so a
+    pass that screened thousands of cells and found nothing charged ZERO trials, and every later
+    survivor was deflated as if those looks had never happened. When a donation file carried the
+    width (`tests_run`), it is already charged; otherwise the full screened width goes to
+    TRIALS_LEDGER, per family. A dry run screens nothing it keeps, and charges nothing."""
+    width = {f: int(c.get("measured_this_pass", 0)) for f, c in by_family.items()
+             if int(c.get("measured_this_pass", 0)) > 0}
+    total = sum(width.values())
+    if dry_run:
+        return {"screened": total, "charged_via": "none (dry run)"}
+    if not total:
+        return {"screened": 0, "charged_via": "nothing screened this pass"}
+    if donation.get("status") == "DONATED":
+        return {"screened": total, "charged_via": "discovery file tests_run"}
+    row = {"at": _now(), "source": SOURCE, "screened": total, "by_family": width,
+           "why": f"no discovery file carried tests_run ({donation.get('status')})"}
+    try:
+        TRIALS_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+        with TRIALS_LEDGER.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True) + "\n")
+    except OSError as exc:
+        return {"screened": total, "charged_via": f"UNMEASURED: ledger write failed ({exc})"}
+    return {"screened": total, "charged_via": _rel_ledger()}
+
+
+def _rel_ledger() -> str:
+    try:
+        return str(TRIALS_LEDGER.relative_to(ROOT))
+    except ValueError:
+        return str(TRIALS_LEDGER)
 
 
 def _firing_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:

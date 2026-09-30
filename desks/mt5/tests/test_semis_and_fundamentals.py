@@ -534,6 +534,7 @@ def test_every_donated_row_carries_its_culture(semis, tmp_path, monkeypatch):
     from research import proposer_common as pc
     monkeypatch.setattr(csb, "STATE", tmp_path / "state.json")
     monkeypatch.setattr(csb, "OUT", tmp_path / "out.json")
+    monkeypatch.setattr(csb, "TRIALS_LEDGER", tmp_path / "screen_trials.jsonl")
     for name in ("BREADTH", "BREADTH_LEDGER", "CANON", "VERDICTS"):
         monkeypatch.setattr(csb, name, tmp_path / f"absent_{name}")
     real = xs._policy()
@@ -606,15 +607,15 @@ def test_no_edgar_ua_is_blocked_and_sends_nothing(lake, monkeypatch):
 
 def test_the_ua_value_is_never_written(lake, monkeypatch):
     sec = lake
-    secret = "Probe Person probe-ua-value@example.invalid"
-    monkeypatch.setenv("SEC_EDGAR_USER_AGENT", secret)
+    probe = "Probe Person probe-ua-value@example.invalid"
+    monkeypatch.setenv("SEC_EDGAR_USER_AGENT", probe)
     monkeypatch.delenv("QUANT_EDGAR_UA", raising=False)
     monkeypatch.setattr(sec, "http_fetcher", lambda ua: (lambda url: (403, None)))
     monkeypatch.setattr(sec, "http_lines", lambda ua: (lambda url: (403, [])))
     monkeypatch.setattr(sec, "registry_equities", lambda: ["NVIDIA"])
     doc = sec.run(budget_s=10, symbols=["NVIDIA"])
     assert doc["pass"]["user_agent_source"] == "SEC_EDGAR_USER_AGENT"
-    assert secret not in json.dumps(doc, default=str)
+    assert probe not in json.dumps(doc, default=str)
 
 
 # ------------------------------------------------------------------ survivorship (item 5) ---
@@ -656,7 +657,8 @@ def test_delisted_issuers_are_resolved_from_edgar_and_never_tradable(lake, tmp_p
     # untradable now, by every door
     assert up.is_delisted("Xilinx") and up.peer_class("Xilinx") is None
     assert not up.may_hypothesise("Xilinx", "quantamental_quality")
-    assert "Xilinx" in up.delisted_members("semis") and "Twitter" not in up.delisted_members("semis")
+    semis_hist = up.delisted_members("semis")
+    assert "Xilinx" in semis_hist and "Twitter" not in semis_hist
     reg = up._registry()
     assert not {k.upper() for k in up.DELISTED_ISSUERS} & {k.upper() for k in reg}
 

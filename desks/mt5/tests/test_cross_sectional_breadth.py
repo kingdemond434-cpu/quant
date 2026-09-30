@@ -223,6 +223,7 @@ def test_seeder_donates_only_cells_over_the_floor(universe, tmp_path, monkeypatc
     monkeypatch.setattr(csb, "BREADTH_LEDGER", tmp_path / "absent2.json")
     monkeypatch.setattr(csb, "CANON", tmp_path / "absent3.json")
     monkeypatch.setattr(csb, "VERDICTS", tmp_path / "absent4.jsonl")
+    monkeypatch.setattr(csb, "TRIALS_LEDGER", tmp_path / "screen_trials.jsonl")
     donated: list[list[dict]] = []
 
     def fake_donate(source, rows, tests_run):
@@ -372,3 +373,35 @@ def test_one_argument_doors_still_work():
     judged, off, _, _ = mh.split_by_lane([{"symbol": "X", "family": "f"}],
                                          lambda s: "event", "now")
     assert not judged and len(off) == 1
+
+
+def test_a_null_pass_still_charges_its_full_screened_width(universe, tmp_path, monkeypatch):
+    """A pass with no hits writes no discovery file, so it used to charge ZERO trials. The full
+    screened width now goes to the census, per family, and the lifetime ledger counts it."""
+    from libs.research import experiment_ledger as el
+    from research import cross_sectional_breadth as csb
+    from research import proposer_common as pc
+    monkeypatch.setattr(xs, "_policy", lambda: _stub_policy(MEMBERS))
+    for name, fname in (("STATE", "state.json"), ("OUT", "out.json"), ("BREADTH", "a.json"),
+                        ("BREADTH_LEDGER", "b.json"), ("CANON", "c.json"),
+                        ("VERDICTS", "d.jsonl")):
+        monkeypatch.setattr(csb, name, tmp_path / fname)
+    desk = tmp_path / "desk"
+    monkeypatch.setattr(csb, "TRIALS_LEDGER", desk / "data" / "screen_trials.jsonl")
+    monkeypatch.setattr(csb, "SEED_FLOOR", 10**9)          # nothing can clear: a null pass
+    monkeypatch.setattr(pc, "donate", lambda *a, **k: pytest.fail("a null pass donated"))
+    doc = csb.run(budget_s=600, symbols=MEMBERS[:2])
+    seeding = doc["seeding"]
+    width = sum(int(c.get("measured_this_pass", 0))
+                for c in seeding["cells_by_family"].values())
+    assert width > 0 and seeding["candidates_this_pass"] == 0
+    assert seeding["trials_charged"]["screened"] == width
+    rows = [json.loads(ln) for ln in (desk / "data" / "screen_trials.jsonl")
+            .read_text("utf-8").splitlines()]
+    assert len(rows) == 1 and sum(rows[0]["by_family"].values()) == width
+    monkeypatch.setattr(el, "DESK", desk)
+    total, by_fam = el._proposer_counts()
+    assert total == width and by_fam == rows[0]["by_family"]
+    # the same day again screens nothing new and charges nothing twice
+    csb.run(budget_s=600, symbols=MEMBERS[:2])
+    assert len((desk / "data" / "screen_trials.jsonl").read_text("utf-8").splitlines()) == 1

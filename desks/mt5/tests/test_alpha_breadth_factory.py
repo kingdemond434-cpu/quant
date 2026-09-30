@@ -93,7 +93,7 @@ def test_occupancy_names_the_empty_clusters_and_keeps_unclassified_separate() ->
     o = ac.occupancy(["session_liquidity", "session_liquidity", "mean_reversion",
                       ac.UNCLASSIFIED])
     assert o["n_occupied"] == 2
-    assert o["n_empty"] == 13
+    assert o["n_empty"] == 15          # seventeen declared, two occupied
     assert o["n_unclassified"] == 1
     # UNCLASSIFIED is NOT distributed over the real clusters -- it is its own count.
     assert ac.UNCLASSIFIED not in o["occupied"]
