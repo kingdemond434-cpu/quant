@@ -152,6 +152,25 @@ Checked in the code. The organ and kernel tests pass. I ran `tier_s.production_i
 
 For the genuine controls, `deflated_sharpe` is the only failing gate on 351 of 600, and it fails on all 600. The cause is the constant variance of Sharpes, 0.014863, against a measured value near 0.0008. Until the DSR variance is measured rather than fixed, no new genuine edge can pass the ten gates. This belongs to the institutional thread's DSR item (CS1/I3). #52 still carries the constant in `effective_trials.py:309` and `gate_policy.py:84`.
 
+### 2026-09-30 00:55Z: Institutional engineering batch (PR #64 at `3bf0886c`)
+
+Checked in the code. The four new test files pass (24 tests) in a clean worktree.
+
+| Gap | Now | Evidence |
+|---|---|---|
+| Cost surfaces were spread × hour only (I7, CS2) | **Built, unconsumed** | `cost_surfaces.py` builds instrument × session × size × vol × direction × order-type surfaces from real fills and runs as an hourly leg. No sizing, admission or gauntlet code reads `COST_SURFACES.json`; the organ itself lists its unadopted consumers. Latency and adverse selection are not surfaced. With 0 matched fills, the surfaces have no data yet. |
+| MT5-FrontierAudit had no installer and swallowed failures | **Fixed** | `run_frontier_audit.cmd` exits 1 when any organ fails. `install_frontier_audit_task.ps1` is idempotent, and `Adopt-And-Seal.ps1` registers the task if it is missing. |
+| `shadow_forward.py` opened shadow.log at import | **Fixed** | The log is opened per write, and a test covers it. |
+| Judging capacity: no measured drain (I8, DP4) | **Partly fixed** | `JUDGING_RATE.json` publishes verdicts/hour, the backlog, the creation rate and the time to drain. Judge workers come from measured free cores and are applied through the env file the gauntlet launchers read. There is no box reading yet, so the drain is unproven. |
+| 14 hourly legs with no layer | **Fixed** | `libs/research/layers.py` |
+
+Still short:
+
+- **The softened gate is still there.** Commit `3bf0886c` carries the "box-state fences read UNMEASURED off the box" change. Off the box, `check_certificate_truth.py` now exits 0 while the 474 divergences stay unmigrated.
+- **Cost surfaces need a consumer.** Admission and sizing must read them, and latency and adverse selection must be added.
+- **The judging drain needs evidence.** One box reading of `JUDGING_RATE.json` with creation ≤ judging is required.
+- **Not live.** The PR is not merged and CI is not green.
+
 ## A1 — Audit critical sequence (CS), named defects (D), 10/10 acceptance table (AC)
 
 LIVE = origin/claude/llm-auto-upgrade-verify-gcjac3 @ adaba442. INST = owner "Institutional truth discipline fixes"; TS = owner "Tier S research institution build". I ran the law-gate fences on clean worktrees of LIVE, #52 and #53. I also ran the #52 lockbox tests (23 passed) and the #53 sovereignty/cost-basis/min-lot tests (34 passed).
