@@ -105,5 +105,8 @@ def test_the_fill_record_prices_the_entry_not_the_exit() -> None:
     # a CLOSING deal row: fill_price is where it exited, entry_price where it entered
     deal = {"order": 221208826, "deal": 198773659, "symbol": "XAUUSD", "entry_time": T,
             "fill_price": px - 11.6, "entry_price": 4351.57, "r_multiple": -1.0}
-    rec = fc.build_records([case], deals=[deal])[0]
+    rec = fc.build_records([case], deals=[deal],
+                           decisions=[{"intent_id": case.intent_id, "ticket": 221208826,
+                                       "time": T, "symbol": "XAUUSD"}])[0]
+    assert rec.deal == 198773659
     assert rec.fill_price == pytest.approx(4351.57)
