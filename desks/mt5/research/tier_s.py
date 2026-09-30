@@ -893,12 +893,51 @@ def organ_red_queen() -> dict[str, Any]:
     if res["challenger"] and not authority.suspended("red_queen"):
         _register_challenger("validator", f"red_queen_gen{gen}", res["challenger"],
                              res["best_defender"])
+    # S33: SCHEDULING and SEARCH-POLICY challengers beside the validator genomes. The search
+    # policy population evolves here; the scheduler champion is the one S05 evolved (last hour's
+    # state), re-examined on the held-out days. A challenger that beats the desk's incumbent
+    # (the split it actually spent) on days evolution never saw is registered for the twin.
+    from libs.tiers import program_evolution as pe
+    arch: dict[str, Any] = {}
+    try:
+        data = _program_data(("scheduler", "search_policy"))
+        sp_rep, sp_st = pe.run(("search_policy",), _state("architecture_challengers"), data, gen)
+        _save_state("architecture_challengers", sp_st)
+        arch["search_policy"] = sp_rep["search_policy"]
+        champ = ((_state("program_evolution").get("scheduler") or {}).get("champion"))
+        if champ and data.get("scheduler"):
+            held = pe.score("scheduler", champ, data["scheduler"], pe.TRAIN_SHARE, 1.0)
+            inc = pe.score("scheduler", pe.INCUMBENT["scheduler"], data["scheduler"],
+                           pe.TRAIN_SHARE, 1.0)
+            lift = (None if held.get("fitness") is None or inc.get("fitness") is None
+                    else round(float(held["fitness"]) - float(inc["fitness"]), 6))
+            arch["scheduler"] = {"status": held.get("status"), "why": held.get("why"),
+                                 "champion": champ, "champion_heldout": held.get("fitness"),
+                                 "incumbent_heldout": inc.get("fitness"), "heldout_lift": lift,
+                                 "beats_incumbent_heldout": lift is not None and lift > 0}
+        else:
+            arch["scheduler"] = {"status": "UNMEASURED",
+                                 "why": "no scheduler champion yet (S05 evolves it)"
+                                 if not champ else "no judgement days by producer"}
+        for comp in ("scheduler", "search_policy"):
+            row = arch[comp]
+            if row.get("beats_incumbent_heldout") and not authority.suspended("red_queen"):
+                _register_challenger(comp, f"{comp}_gen{gen}", row["champion"],
+                                     {"heldout": row.get("champion_heldout"),
+                                      "incumbent_heldout": row.get("incumbent_heldout"),
+                                      "lift": row.get("heldout_lift")})
+    except Exception as exc:
+        arch = {"status": "ERROR", "error": f"{type(exc).__name__}: {exc}"}
     return {"generation": gen, **{k: v for k, v in res.items() if k != "next_attackers"},
-            "real_gauntlet": real,
+            "real_gauntlet": real, "architecture_challengers": arch,
             "metric": {"attack_success": res["attack_success"],
                        "defender_balanced": res["best_defender"]["balanced"],
                        "real_attack_success": real.get("attack_success"),
-                       "real_genuine_power": real.get("genuine_power")}}
+                       "real_genuine_power": real.get("genuine_power"),
+                       "scheduler_heldout_lift": (arch.get("scheduler") or {})
+                       .get("heldout_lift"),
+                       "search_policy_heldout_lift": (arch.get("search_policy") or {})
+                       .get("heldout_lift")}}
 
 
 def organ_online_fdr() -> dict[str, Any]:
@@ -1219,6 +1258,52 @@ def _gauntlet_s_per_verdict() -> float:
     return cpu / n if cpu > 0 and n else 30.0
 
 
+def _program_data(kinds: Iterable[str]) -> dict[str, Any]:
+    """The desk's own evidence for each evolved PROGRAM kind (libs/tiers/program_evolution.py):
+    aligned H1 returns (portfolio), OHLC (execution, regime), and day x arm judgement counts
+    from the gate ledger -- the hypothesis graph's fate events when the ledger splits into fewer
+    than two arms -- by producer (scheduler) and by family (search_policy). None = UNMEASURED."""
+    from libs.tiers import panel
+    from libs.tiers import program_evolution as pe
+    kinds = set(kinds)
+    out: dict[str, Any] = {}
+    if kinds & {"portfolio", "execution", "regime"}:
+        frames = panel.load_frames(UNIVERSE, eligible=_may_hypothesise, bars=3000,
+                                   max_symbols=24)
+        rets = panel.log_returns(frames)
+        out["portfolio"] = rets.dropna(how="all").to_numpy() if len(rets.columns) >= 2 \
+            else None
+        ohlc = pe.ohlc_arrays(dict(list(frames.items())[:12])) if frames else None
+        out["execution"] = out["regime"] = ohlc or None
+    if kinds & {"scheduler", "search_policy"}:
+        gate = _jsonl(GATE_LEDGER)
+        graph: list[dict[str, Any]] | None = None
+        born: dict[str, str] = {}
+
+        def _graph() -> list[dict[str, Any]]:
+            nonlocal graph
+            if graph is None:
+                graph = _jsonl(HGRAPH, 400_000)
+                for r in graph:
+                    if r.get("fate") == "BORN" and r.get("id"):
+                        born[str(r["id"])] = _producer(r.get("source"))
+            return graph
+        if "scheduler" in kinds:
+            prod = _producer_of_cell() if gate else {}
+            days = pe.arm_days(gate, lambda r: prod.get(str(r.get("cell") or ""))
+                               or _producer(r.get("source")))
+            if len({a for d in days.values() for a in d}) < 2:
+                g = _graph()
+                days = pe.arm_days(g, lambda r: born.get(str(r.get("id") or "")))
+            out["scheduler"] = days or None
+        if "search_policy" in kinds:
+            days = pe.arm_days(gate, lambda r: str(r.get("family") or ""))
+            if len({a for d in days.values() for a in d}) < 2:
+                days = pe.arm_days(_graph(), lambda r: str(r.get("family") or ""))
+            out["search_policy"] = days or None
+    return out
+
+
 def organ_genomes() -> dict[str, Any]:
     """Researcher genomes: each emits EXACT recipes; fitness is what the gauntlet made of them.
 
@@ -1379,6 +1464,18 @@ def organ_genomes() -> dict[str, Any]:
                             "emitted": {k: v[-400:] for k, v in emitted.items()},
                             "fitness": fit_rows})
     best = max((f for _g, f in scored), default=0.0)
+    # S05: PORTFOLIO, EXECUTION, REGIME-DETECTOR and SCHEDULER programs evolved beside the
+    # strategy genomes, scored offline on the desk's own artifacts; never deployed
+    from libs.tiers import program_evolution as pe
+    prog_kinds = ("portfolio", "execution", "regime", "scheduler")
+    try:
+        prog_rep, prog_st = pe.run(prog_kinds, _state("program_evolution"),
+                                   _program_data(prog_kinds), gen + 1)
+        _save_state("program_evolution", prog_st)
+    except Exception as exc:
+        prog_rep = {"status": "ERROR", "error": f"{type(exc).__name__}: {exc}"}
+    prog_measured = [k for k in prog_kinds
+                     if (prog_rep.get(k) or {}).get("status") == "MEASURED"]
     judged_rows = [r for r in fit_rows if r["judged"]]
     arm = control_arm.compare(
         [r["fitness"] for r in judged_rows if not control_arm.in_control(r["genome"], "genomes")],
@@ -1386,9 +1483,14 @@ def organ_genomes() -> dict[str, Any]:
     return {"generation": gen + 1, "population": len(nxt), "control_arm": arm,
             "diversity": evolution.diversity(nxt), "best_fitness": best,
             "fitness_rows": sorted(fit_rows, key=lambda r: -r["fitness"])[:12],
-            "cpu_s_per_verdict": s_per, "emitted": out,
+            "cpu_s_per_verdict": s_per, "emitted": out, "programs": prog_rep,
             "metric": {"best_fitness": best, "diversity": evolution.diversity(nxt),
-                       "judged_emissions": sum(r["judged"] for r in fit_rows)}}
+                       "judged_emissions": sum(r["judged"] for r in fit_rows),
+                       "program_kinds_measured": len(prog_measured),
+                       "program_diversity": ({k: prog_rep[k].get("diversity")
+                                              for k in prog_measured} or None),
+                       "program_heldout_lift": ({k: prog_rep[k].get("heldout_lift")
+                                                 for k in prog_measured} or None)}}
 
 
 def _expr_str(expr: Any) -> str:
