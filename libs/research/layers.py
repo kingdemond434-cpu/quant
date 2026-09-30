@@ -244,6 +244,7 @@ LEG_LAYER: dict[str, str] = {
     "elitequant_breadth": "prediction",
     # model-proposed cells, screened and donated to the gauntlet: prediction, like the seeders
     "analyst_panel": "prediction",
+    "zoo_breadth": "prediction",
     "event_surprise": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",

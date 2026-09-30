@@ -120,3 +120,28 @@ def test_leg_is_wired():
     assert '_costed("analyst_panel"' in text
     assert LEG_LAYER["analyst_panel"] == "prediction"
     assert "analyst_panel" in ps.ORGANS
+
+
+def test_china_lens_only_on_cn_analogues_and_carries_cn_culture(monkeypatch, tmp_path):
+    from research import proposer_common as pc
+    d = _bars()
+    monkeypatch.setattr(ap, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(ap, "symbols", lambda: ["USDCNH"])
+    monkeypatch.setattr(pc, "universe_meta", lambda: {"USDCNH": {}})
+    monkeypatch.setattr(pc, "bars", lambda s: d)
+    monkeypatch.setattr(pc, "cost_frac", lambda *a: 1e-5)
+    monkeypatch.setattr(pc, "screen", lambda d, sigs, cost: {
+        "t_gross": 2.1, "n_independent": 40, "clears_cost": True})
+    got: dict = {}
+
+    def _donate(source, rows, tests_run):
+        got["rows"] = rows
+        return tmp_path / "donated.json"
+    monkeypatch.setattr(pc, "donate", _donate)
+    monkeypatch.setattr(pc, "donation_counts", lambda: {"donated": len(got.get("rows", []))})
+    calls: list = []
+    rep = ap.run(ask=_fake_ask(calls))
+    assert rep["calls"] == 6 and any(t.startswith("您是") for t in calls)
+    cn = [r for r in got["rows"] if r["evidence"]["analyst"] == "china_market_analyst"]
+    assert cn and all(r["source_culture"] == "CN/zh" for r in cn)
+    assert not ap.LENS_ONLY["china_market_analyst"]("EURUSD")

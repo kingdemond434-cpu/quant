@@ -22,7 +22,8 @@ WHAT A PASS DOES:
   1. Picks the next hypothesis-lane symbol(s) in rotation and describes them to the panel from
      the bars in the store only: returns, realised vol, range position, trend and gap structure,
      all up to the last closed bar. No news text, no prices after the last bar, nothing sealed.
-  2. Each of the four analysts proposes cells in the desk's OWN grammar: one registered price-only
+  2. Each of the four analysts (plus, on the CN analogues, TradingAgents-CN's China-market
+     analyst) proposes cells in the desk's OWN grammar: one registered price-only
      family, its parameters, the mechanism in its lens, and a falsifier. `_valid_cell` refuses an
      unregistered family, an unknown parameter, a value off its type or outside 1/4x..4x of the
      family default, and a cell with no falsifier. A mechanism no family can express is kept as
@@ -100,13 +101,34 @@ ANALYSTS: dict[str, tuple[str, str]] = {
                           "You are the sentiment analyst. Propose cells whose mechanism is "
                           "crowd behaviour: chasing breakouts, capitulation after drawdowns, "
                           "bubbles and their bursts, crowded retail levels."),
+    # TradingAgents-CN's 中国市场分析师 (Apache-2.0 part of hsliuping/TradingAgents-CN): the A-share
+    # lens, asked only about the CN analogues the desk can trade (CNH, China50/HK50, copper,
+    # gold, oil). Its rows carry source_culture CN/zh.
+    "china_market_analyst": ("retail_heavy",
+                             "您是专业的中国市场分析师 (China market analyst). Propose cells whose "
+                             "mechanism is how Chinese participants move this instrument: "
+                             "涨跌停/T+1 overnight carry-over, 北向资金 northbound flow "
+                             "days, policy announcements, the 09:30/13:00 Beijing session "
+                             "opens, retail breakout chasing on 期货 futures, PBoC fixing "
+                             "for CNH."),
 }
+#: Lenses asked only about some instruments, and the culture their rows carry.
+LENS_ONLY: dict[str, Callable[[str], bool]] = {"china_market_analyst": lambda s: _cn_analogue(s)}
+LENS_CULTURE: dict[str, str] = {"china_market_analyst": "CN/zh"}
 
 #: The bear's vocabulary is the committees' failure classes, so an attack here and a committee
 #: explanation there are the same kind of object.
 FAILURE_CLASSES: tuple[str, ...] = ("COST_DEATH", "NO_EDGE", "SELECTION_BIAS", "STATE_FRAGILE",
                                     "LEAKAGE", "LOW_SAMPLE", "EXECUTION_FAILURE",
                                     "CORRELATION_DUPLICATE", "TAIL_FAILURE")
+
+
+def _cn_analogue(symbol: str) -> bool:
+    try:
+        from mt5desk.families_cn_cta import CN_ANALOGUES
+    except Exception:                                      # pragma: no cover - optional module
+        return False
+    return symbol.upper() in {a.upper() for a in CN_ANALOGUES}
 
 
 def _now() -> str:
@@ -286,6 +308,8 @@ def debate(symbol: str, context: list[str], cat: Mapping[str, Mapping[str, Any]]
     for role, (_, task) in ANALYSTS.items():
         if meter["calls"] >= calls_left:
             break
+        if role in LENS_ONLY and not LENS_ONLY[role](symbol):
+            continue
         reply = ask(ORGAN, "candidates", task=f"{task} Instrument: {symbol}.", grammar=grammar,
                     context=context, n=n, validate=valid)
         meter["calls"] += 1
@@ -430,7 +454,7 @@ def run(*, budget_s: float = 420.0, n_symbols: int = 1, calls: int = 10, dry_run
                                 "origin": ORIGIN, "analyst": c["analyst"],
                                 "red_team": c.get("red_team") or [],
                                 "proposed_at": c["proposed_at"], "hindsight_prior": True})
-            culture = {"source_culture": "GLOBAL/llm",
+            culture = {"source_culture": LENS_CULTURE.get(c["analyst"], "GLOBAL/llm"),
                        "participant_structure": ANALYSTS[c["analyst"]][0],
                        "crowding_prior": "high",
                        "failure_mode_hypothesis": c["falsifier"][:200]}

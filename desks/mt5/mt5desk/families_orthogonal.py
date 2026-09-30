@@ -2382,3 +2382,18 @@ FAMILY_INPUTS["commodity_fx_residual"] = (
     "price only", "the cell's H1 bars plus its export commodity's (economic_drivers.ROLES), "
     "read as of the cell's own daily decision bar from data/universe/*_H1.parquet")
 del _qt_name
+
+# THE ALPHA ZOO AS CLASS BOOKS (2026-09-30): 317 published alphas (GTJA 191, Qlib 158, Alpha101,
+# academic) vendored from HKUDS/Vibe-Trading (MIT) under mt5desk/alpha_zoo/, each ranked within
+# the cell's peer class on each date. Loads its own class panel keyed by the cell's `symbol`, like
+# the cross-sectional families. Judged book-first by `research/zoo_breadth.py`.
+from mt5desk.family_zoo_alpha import ZOO_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(ZOO_FAMILIES)
+FAMILY_INPUTS["zoo_alpha_class"] = (
+    "the symbol's peer class (research.universe_policy.peer_class) as a daily OHLCV panel, "
+    "each date built from bars stamped that UTC date", "data/universe/*_H1.parquet")
+FAMILY_TIMEFRAMES["zoo_alpha_class"] = (
+    ("H1",), "decides once a day on the class's completed daily panel, entering at the cell's "
+             "first bar of the next date")
+

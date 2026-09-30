@@ -1011,7 +1011,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # the five EliteQuant-map families, screened on cost and seeded
                      "elitequant_breadth",
                      # TradingAgents' four analysts + bull/bear debate, proposing cells on the seat
-                     "analyst_panel"),
+                     "analyst_panel",
+                     # the vendored alpha zoo (GTJA191/Qlib158/Alpha101), judged book-first
+                     "zoo_breadth"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -1770,6 +1772,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     "elitequant_breadth": 700,
     # analyst_panel stops itself at --budget-s 420 and at 10 seat calls; the cap sits above.
     "analyst_panel": 540,
+    # zoo_breadth stops measuring books at --budget-s 600 and screens survivor legs for at most
+    # 120s more; the cap sits above both.
+    "zoo_breadth": 900,
     "event_surprise": 400,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
@@ -3645,6 +3650,11 @@ def main() -> None:
     # Never a trade decision and never a size. UNMEASURED and inert when no seat resolves.
     anp = _costed("analyst_panel", lambda: _producer(
         "analyst_panel", "research/analyst_panel.py", "--once", "--budget-s", "420"))
+    # THE ALPHA ZOO (Vibe-Trading, 2026-09-30): 317 published alphas ranked within every peer
+    # class; a book whose daily rank IC survives deflation over every book measured has its legs
+    # screened on cost and donated; writes reports/ZOO_BREADTH.json. Additive.
+    zoob = _costed("zoo_breadth", lambda: _producer(
+        "zoo_breadth", "research/zoo_breadth.py", "--once", "--budget-s", "600"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -5258,6 +5268,7 @@ def main() -> None:
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "elitequant_breadth": eqb, "analyst_panel": anp,
+                    "zoo_breadth": zoob,
                     "event_surprise": esur,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
