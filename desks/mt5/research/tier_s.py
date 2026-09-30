@@ -2929,6 +2929,9 @@ def organ_worlds() -> dict[str, Any]:
     twin_doc = _read(REPORTS / "DIGITAL_TWIN.json") or {}
     twin_keys = {str(k) for k in (twin_doc.get("sleeves") or twin_doc.get("results") or {})} \
         if isinstance(twin_doc, dict) else set()
+    shadow_doc = _read(TWIN_REPORT) or {}          # the shadow desk's replayed sleeves
+    if isinstance(shadow_doc, dict):
+        twin_keys |= {str(k) for k in shadow_doc.get("sleeves_replayed") or []}
     rows, untested = [], []
     for key, row in survivors().items():
         if not isinstance(row, dict):
@@ -3254,7 +3257,105 @@ def _register_challenger(component: str, name: str, genome: Any,
     _save_state("challengers", {"challengers": list(rows.values())[-200:]})
 
 
+#: the shadow desk's hourly load: the code candidate plus this many config challengers
+SHADOW_MAX_CONFIG = 2
+TWIN_REPORT = REPORTS / "TWIN.json"
+
+
+def _git_out(*args: str) -> str | None:
+    import subprocess
+    try:
+        return subprocess.run(["git", *args], cwd=ROOT, check=True, capture_output=True,
+                              text=True, timeout=60).stdout.strip() or None
+    except (subprocess.SubprocessError, OSError):
+        return None
+
+
+def _shadow_sleeves() -> list[dict[str, Any]]:
+    """The LIVE sleeves the shadow desk replays, as `synthetic_regimes.load_sleeves` resolves
+    them (parameters from the certificate when the sleeve row carries none)."""
+    import dataclasses
+    try:
+        import synthetic_regimes as sr
+        sl, _gaps = sr.load_sleeves()
+    except Exception:
+        return []
+    return sorted((dataclasses.asdict(s) for s in sl if s.lane == "live"),
+                  key=lambda r: str(r["name"]))
+
+
+def _shadow_candidate_ref() -> str | None:
+    """The code MT5-AdoptRelease would land next: the tracked branch's origin head when the
+    clone has one, else HEAD."""
+    branch = _git_out("rev-parse", "--abbrev-ref", "HEAD")
+    for ref in ((f"origin/{branch}",) if branch and branch != "HEAD" else ()) + ("HEAD",):
+        sha = _git_out("rev-parse", "--verify", f"{ref}^{{commit}}")
+        if sha:
+            return sha
+    return None
+
+
+def organ_shadow_desk() -> dict[str, Any]:
+    """Layer 28's shadow desk: the candidate code (and up to `SHADOW_MAX_CONFIG` config
+    challengers) replayed beside the sealed live release on one snapshot of the live inputs, in
+    a sandbox (`libs/tiers/shadow_desk.py`). Paired output -> reports/TWIN.json."""
+    hist = _release_history()
+    inc_ref = hist[-1]["sha"] if hist else None
+    inc = _git_out("rev-parse", "--verify", f"{inc_ref}^{{commit}}") if inc_ref else None
+    doc: dict[str, Any] = {"generated_utc": NOW.isoformat(), "incumbent": inc_ref, "runs": [],
+                           "rule": "only days after a challenger's registration count; the "
+                                   "sandbox never reaches the live terminal"}
+    if inc is None:
+        doc.update(status="UNMEASURED", why=("no sealed release in LIVE_MANIFEST/RELEASE.json"
+                                             if not inc_ref else
+                                             f"sealed release {inc_ref} is not in this clone"))
+        _write(TWIN_REPORT, doc)
+        return doc
+    sleeves = _shadow_sleeves()
+    cand = _shadow_candidate_ref() or inc
+    todo: list[tuple[str, str, str, dict[str, Any]]] = []
+    if cand != inc and not authority.suspended("twin"):
+        _register_challenger("code", f"code_{cand[:12]}", {"sha": cand}, None)
+    rows = {r["name"]: r for r in _state("challengers").get("challengers") or []}
+    code_name = f"code_{cand[:12]}"
+    todo.append(("code", code_name if code_name in rows else "self_consistency", cand, {}))
+    cfgs = [r for r in rows.values() if r.get("component") == "config"][-SHADOW_MAX_CONFIG:]
+    for r in cfgs:
+        g = r.get("genome") if isinstance(r.get("genome"), dict) else {}
+        todo.append(("config", str(r["name"]), str(g.get("sha") or inc),
+                     dict(g.get("config") or {})))
+    verdicts: dict[str, Any] = {}
+    for component, name, ref, config in todo:
+        row = rows.get(name)
+        ch = twin.Challenger(component, name, str(row["registered_at"]) if row else
+                             NOW.isoformat(), str(row["genome_hash"]) if row else "self")
+        rep = twin.shadow(ch, ref, inc, sleeves, config=config)
+        rep["name"], rep["component"] = name, component
+        doc["runs"].append(rep)
+        if row:
+            verdicts[name] = rep["verdict"]
+    doc["status"] = ("MEASURED" if any(r.get("status") == "MEASURED" for r in doc["runs"])
+                     else "UNMEASURED")
+    doc["sleeves_replayed"] = sorted({s["name"] for r in doc["runs"]
+                                      for s in r.get("sleeves") or []
+                                      if s.get("status") == "MEASURED"})
+    _write(TWIN_REPORT, doc)
+    return {"status": doc["status"], "incumbent": inc, "candidate": cand,
+            "verdicts": verdicts, "runs": [
+                {"name": r["name"], "status": r.get("status"), "why": r.get("why"),
+                 "n_measured": r.get("n_measured"), "pairs": len(r.get("pairs") or []),
+                 "decision_agreement": r.get("decision_agreement"),
+                 "terminal_touches": len((r.get("sandbox") or {}).get("terminal_touches")
+                                         or []),
+                 "verdict": (r.get("verdict") or {}).get("verdict")} for r in doc["runs"]]}
+
+
 def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
+    try:
+        shadow = organ_shadow_desk()
+    except Exception as exc:                       # the shadow desk never costs the twin
+        shadow = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}",
+                  "verdicts": {}}
     st = _state("challengers")
     out = []
     ex = _read(STATE / "exchange_book.json") or {}
@@ -3291,7 +3392,9 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
                 inc = sum(float(lb.get(k, 0.0)) * v for k, v in pnl.items())
                 cha = sum(float(book.get(k, 0.0)) * v for k, v in pnl.items())
                 pairs.append((f"{day}T23:59:59+00:00", inc, cha))
-        res = twin.evaluate(ch, pairs)
+        shadow_res = (shadow.get("verdicts") or {}).get(c["name"])
+        res = shadow_res if c["component"] in ("code", "config") and shadow_res \
+            else twin.evaluate(ch, pairs)
         adoption = self_model.adoption(c, res["verdict"], res["money_path"],
                                        bool(sealed_now.get("blocked")))
         if c["component"] == "validator":
@@ -3356,9 +3459,14 @@ def organ_twin(sealed_now: Mapping[str, Any]) -> dict[str, Any]:
             row["adoption"] = "REJECTED_ON_SEALED"
     _save_state("sealed_scores", {"scores": scores})
     rb = twin.rollback_plan(_release_history())
-    return {"challengers": out[-30:], "rollback": rb,
+    runs = shadow.get("runs") or []
+    return {"challengers": out[-30:], "rollback": rb, "shadow_desk": shadow,
             "metric": {"challengers": len(out),
-                       "adopted": sum(1 for r in out if r["adoption"] == "ADOPTED")}}
+                       "adopted": sum(1 for r in out if r["adoption"] == "ADOPTED"),
+                       "shadow_runs_measured": sum(1 for r in runs
+                                                   if r.get("status") == "MEASURED"),
+                       "shadow_terminal_touches": sum(int(r.get("terminal_touches") or 0)
+                                                      for r in runs)}}
 
 
 def _release_history() -> list[dict[str, Any]]:

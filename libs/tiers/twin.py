@@ -29,7 +29,9 @@ from typing import Any
 from libs.tiers.replay import parse_t
 
 MONEY_PATH_COMPONENTS = frozenset({"allocator", "sizing", "admission", "certificates",
-                                   "order_flow", "promoter", "gateway"})
+                                   "order_flow", "promoter", "gateway",
+                                   # a shadow-desk candidate: new code, or a sleeve's parameters
+                                   "code", "config"})
 
 
 @dataclass(frozen=True)
@@ -83,3 +85,33 @@ def rollback_plan(releases: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
                                "--apply-rollback"),
             "effect": "one revert commit on the box branch; MT5-AdoptRelease adopts it within "
                       "the hour"}
+
+
+def shadow_verdict(ch: Challenger, report: Mapping[str, Any], *, min_pairs: int = 30,
+                   t_crit: float = 2.0) -> dict[str, Any]:
+    """The twin's paired verdict on a SHADOW-DESK replay (`libs/tiers/shadow_desk.py`): the
+    candidate's code or config decided on the same snapshot of live inputs as the incumbent, in a
+    sandbox. Only days after registration count (`evaluate`). A candidate that reached for the
+    terminal from inside the sandbox is never promoted on that run, whatever its pairs say."""
+    if report.get("status") != "MEASURED":
+        return {"verdict": "CONTINUE", "n": 0, "why": report.get("why") or "not measured",
+                "money_path": ch.component in MONEY_PATH_COMPONENTS}
+    pairs = [(str(p[0]), float(p[1]), float(p[2])) for p in report.get("pairs") or []]
+    res = evaluate(ch, pairs, min_pairs=min_pairs, t_crit=t_crit)
+    touches = list((report.get("sandbox") or {}).get("terminal_touches") or [])
+    if touches and res["verdict"] in {"PROMOTE", "PROPOSE"}:
+        res = {**res, "verdict": "CONTINUE",
+               "why": f"the candidate reached for the terminal in the sandbox ({touches[:3]})"}
+    return {**res, "terminal_touches": len(touches),
+            "decision_agreement": report.get("decision_agreement")}
+
+
+def shadow(ch: Challenger, candidate_ref: str, incumbent_ref: str,
+           sleeves: Sequence[Mapping[str, Any]], *,
+           config: Mapping[str, Mapping[str, Any]] | None = None,
+           **kw: Any) -> dict[str, Any]:
+    """Replay the candidate beside live in the shadow desk and judge the pairs: one call."""
+    from libs.tiers import shadow_desk
+    rep = shadow_desk.run(shadow_desk.Candidate(ch.name, candidate_ref, dict(config or {})),
+                          incumbent_ref, sleeves, **kw)
+    return {**rep, "verdict": shadow_verdict(ch, rep)}
