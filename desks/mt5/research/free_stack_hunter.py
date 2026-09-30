@@ -575,7 +575,8 @@ def build_report(rows: list[dict[str, Any]], complaints: list[str], cursor: dict
             "machine_use_allowed": (st.get("access") or {}).get("machine_use_allowed",
                                                                 r["machine_use_allowed"]),
             "redistribute_allowed": (st.get("access") or {}).get("redistribute_allowed"),
-            "status": UNMEASURED if never else st.get("last_status"),
+            # a hard-boundary refusal is a verdict the pass reached, so it is shown as one
+            "status": st.get("last_status") or UNMEASURED,
             "attempts": int(st.get("attempts") or 0), "successes":
                 UNMEASURED if never else int(st.get("successes") or 0),
             "requests": int(st.get("requests") or 0), "failures": st.get("failures") or {},

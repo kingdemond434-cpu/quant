@@ -236,9 +236,11 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
               live=False)
     per = rep["per_source"]
     assert per["app_rank_apple"]["status"] == "OK"
-    assert per["tushare"]["status"] == "NEEDS_CREDENTIAL"
-    assert per["jp_patents"]["status"] == "NEEDS_BULK_FILE"
-    assert per["baostock"]["status"] in ("NOT_INSTALLED", "OK", "BLOCKED")
+    # the access classifier reads an authenticated route as PRIVATE (hard boundary); the pass
+    # shows that verdict and never runs the source
+    for sid in ("tushare", "jp_patents", "baostock"):
+        assert per[sid]["status"] == "REFUSED_HARD_BOUNDARY", sid
+        assert per[sid]["attempts"] == 0 and per[sid]["last_error"], sid
     assert per["akshare"]["status"] == "OK"
     assert per["congress_trades"]["status"] == "OK"
     assert per["coinpaprika"]["status"] == "OK"
@@ -272,15 +274,14 @@ def test_hunter_pass_on_fixtures_writes_yield_series_catalogue_and_state(store, 
     assert rep2["ran_this_pass"][0]["raw_rows"] == 0
 
 
-def test_jp_patents_ingest_a_bulk_file_from_the_inbox(store, tmp_path) -> None:
-    from free_stack_hunter import run
-    roster = _roster(tmp_path, ["jp_patents"])
+def test_jp_patents_parse_a_bulk_file_from_the_inbox(store, tmp_path) -> None:
     inbox = store.inbox / "jp_patents"
     inbox.mkdir(parents=True)
+    h = fs.fetch_jp_patents(fixture_fetch, {"id": "jp_patents"}, {}, NOW, inbox=inbox)
+    assert h.status == "NEEDS_BULK_FILE"
     (inbox / "extract.tsv").write_bytes(_fx("patents.synthetic.tsv"))
-    rep = run(budget_s=60, fetch=fixture_fetch, store=store, roster=roster, now=NOW, live=False)
-    assert rep["per_source"]["jp_patents"]["status"] == "OK"
-    assert rep["per_source"]["jp_patents"]["obs_total"] > 0
+    h = fs.fetch_jp_patents(fixture_fetch, {"id": "jp_patents"}, {}, NOW, inbox=inbox)
+    assert h.status == "OK" and h.obs
 
 
 def test_ir_tone_delta_needs_two_documents(store, tmp_path) -> None:
@@ -314,11 +315,17 @@ def _series(root: Path, name: str, n: int = 80) -> None:
 def test_alt_series_momentum_fires_on_the_crossing_after_the_lag(tmp_path: Path) -> None:
     from mt5desk.family_alt_series import family_alt_series_momentum
     _series(tmp_path, "fs_t")
-    sigs = family_alt_series_momentum(_bars(), source="fs_t", signal="x", lookback=1,
+    sigs = family_alt_series_momentum(_bars(1600), source="fs_t", signal="x", lookback=1,
                                       threshold=2.0, z_window=30, series_root=tmp_path)
     assert sigs
-    step_avail = pd.Timestamp("2026-02-10", tz="UTC") + pd.Timedelta(hours=24)
-    assert min(s.time for s in sigs) >= step_avail
+    # 1600 hourly bars reach 2026-03-08, past the step. The step is published 2026-02-10 and
+    # held back one publication day: the crossing fires
+    # exactly at availability and never inside the lag (noise crossings elsewhere are allowed)
+    step = pd.Timestamp("2026-02-10", tz="UTC")
+    step_avail = step + pd.Timedelta(hours=24)
+    times = [s.time for s in sigs]
+    assert step_avail in times
+    assert not [t for t in times if step <= t < step_avail]
     assert family_alt_series_momentum(_bars(), source="absent", signal="x",
                                       series_root=tmp_path) == []
 
