@@ -51,10 +51,12 @@ for _p in (str(ROOT), str(DESK), str(DESK / "research")):
         sys.path.insert(0, _p)
 
 from libs.tiers import (  # noqa: E402
+    agent_worlds,
     allocator_tilts,
     authority,
     bitemporal,
     chaos,
+    closure_worlds,
     contracts,
     control_arm,
     cross_science,
@@ -2916,7 +2918,8 @@ def _macro_world(symbols: list[str]) -> dict[str, Any]:
 
 def organ_worlds() -> dict[str, Any]:
     """Layer 16, joined per certificate: which stress worlds each certificate has been through
-    (synthetic_regimes' sixteen worlds, the digital twin's replays) and which it has NOT. A
+    (synthetic_regimes' worlds -- the closure and agent-based families included -- and the
+    shadow desk's replays) and which it has NOT. A
     certificate no world has touched is named -- an untested edge is not a robust one -- and the
     flags it earned are carried to the review panel as the evidence of a named failure mode."""
     sr = _read(REPORTS / "SYNTHETIC_REGIMES.json") or {}
@@ -2946,7 +2949,11 @@ def organ_worlds() -> dict[str, Any]:
                "twin": str(key) in twin_keys,
                "exp_x5": (((hit or {}).get("scenarios") or {}).get("spread_x5") or {})
                .get("expectancy"),
-               "swap_world": _swap_world_of(hit, worlds)}
+               "swap_world": _swap_world_of(hit, worlds),
+               "closure_worlds": {w: _named_world_of(hit, worlds, w)
+                                  for w in closure_worlds.NAMES},
+               "agent_worlds": {w: _named_world_of(hit, worlds, w)
+                                for w in agent_worlds.NAMES}}
         rows.append(rec)
         if not measured:
             untested.append(str(key))
@@ -2956,16 +2963,61 @@ def organ_worlds() -> dict[str, Any]:
     flagged = sum(1 for r in rows if r["flags"])
     swap_states = Counter(str(r["swap_world"]["status"]) for r in rows)
     swap_dead = sum(1 for r in rows if "dies_on_swap_rollover" in (r["flags"] or []))
+    closure = _world_family_summary(rows, worlds, "closure_worlds", closure_worlds.NAMES,
+                                    CLOSURE_FLAGS)
+    agents = _world_family_summary(rows, worlds, "agent_worlds", agent_worlds.NAMES,
+                                   AGENT_FLAGS)
     return {"worlds": worlds, "n_certificates": n, "untested": untested[:60],
             "flagged": flagged,
             "swap_world": {"name": swap_world.NAME, "what": swap_world.WHAT,
                            "in_synthetic_regimes": swap_world.NAME in worlds,
                            "by_status": dict(swap_states), "dies_on_swap_rollover": swap_dead},
+            "closure_worlds": closure, "agent_worlds": agents,
             "metric": {"stress_tested_share": (n - len(untested)) / n if n else None,
                        "flagged_share": flagged / n if n else None,
                        "worlds": len(worlds),
                        "swap_world_measured_share": swap_states.get("MEASURED", 0) / n
-                       if n else None}}
+                       if n else None,
+                       "closure_world_measured_share": closure["measured_share"],
+                       "agent_world_measured_share": agents["measured_share"]}}
+
+
+#: the named failure modes each world family can earn (synthetic_regimes.FLAG_RULES)
+CLOSURE_FLAGS: tuple[str, ...] = ("dies_on_market_closure", "needs_the_closed_session",
+                                  "halt_fragile")
+AGENT_FLAGS: tuple[str, ...] = ("dies_in_herding_market", "dies_in_value_market",
+                                "dies_when_liquidity_withdraws")
+
+
+def _named_world_of(hit: Mapping[str, Any] | None, worlds: list[Any],
+                    name: str) -> dict[str, Any]:
+    """This certificate's reading in one named synthetic world, or why there is none."""
+    if name not in worlds:
+        return {"status": "UNMEASURED", "why": f"SYNTHETIC_REGIMES.json predates {name} "
+                "(its next pass on the box carries it)"}
+    if not hit:
+        return {"status": "UNMEASURED", "why": "no synthetic-regime row for this certificate"}
+    row = (hit.get("scenarios") or {}).get(name) or {}
+    if row.get("status") != "MEASURED":
+        return {"status": "UNMEASURED", "why": row.get("why") or "scenario absent from the row"}
+    return {"status": "MEASURED", "expectancy": row.get("expectancy"),
+            "delta_expectancy": row.get("delta_expectancy"), "applied": row.get("applied")}
+
+
+def _world_family_summary(rows: list[dict[str, Any]], worlds: list[Any], key: str,
+                          names: Iterable[str], flags: Iterable[str]) -> dict[str, Any]:
+    """Per world family: which of its worlds the synthetic organ carries, each world's status
+    counts across certificates, the certificates measured in at least one of them, and how many
+    earned each of the family's named failure modes."""
+    names, flags = list(names), list(flags)
+    n = len(rows)
+    by_world = {w: dict(Counter(str(r[key][w]["status"]) for r in rows)) for w in names}
+    touched = sum(1 for r in rows if any(v.get("status") == "MEASURED"
+                                         for v in r[key].values()))
+    return {"names": names, "in_synthetic_regimes": [w for w in names if w in worlds],
+            "by_world": by_world, "certificates_measured": touched,
+            "flags": {f: sum(1 for r in rows if f in (r["flags"] or [])) for f in flags},
+            "measured_share": touched / n if n else None}
 
 
 def _swap_world_of(hit: Mapping[str, Any] | None, worlds: list[Any]) -> dict[str, Any]:
