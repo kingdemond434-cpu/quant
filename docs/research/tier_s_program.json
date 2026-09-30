@@ -487,19 +487,22 @@
    "title": "Opportunity exchange: bids cleared by robust E[log W] (shadow)",
    "files": [
     "libs/tiers/opportunity_exchange.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/allocator_tilts.py",
+    "libs/portfolio/allocator_evidence.py",
+    "desks/mt5/research/pf_allocator.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/EXCHANGE.json",
-   "status": "BLOCKED_ON_USER",
+   "status": "DONE",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.expected_log_growth",
     "better": "up",
     "organ": "exchange"
    },
-   "remaining": "the exchange's book steering the allocator (hookup 4): waits for PR #53 to run live cleanly, and live allocator edits are refused by the permission rule"
+   "remaining": ""
   },
   {
    "id": "S26",
