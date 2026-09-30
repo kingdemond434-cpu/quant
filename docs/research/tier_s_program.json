@@ -2,10 +2,11 @@
  "doc": "Tier S research institution programme (46 layers). Data; scripts/check_tier_s_program.py is its gate and renders docs/research/TIER_S_PROGRAM.md.",
  "admission_rule": "A subsystem ships only with a measurable contract (gain in: ALPHA_DISCOVERY, FALSIFICATION, INFO_PER_COMPUTE, FDR_REDUCTION, CALIBRATION, EXECUTION_CAPTURE, OPERATIONAL_RISK, PRODUCTIVITY). Evaluated hourly by tier_s.contracts: ADMITTED, REJECTED or UNMEASURED. Blueprint CLOSED 2026-09-29: no new categories.",
  "statuses": {
-  "DONE": "runs hourly, writes its artifact, and meets the principal's wording on the research side",
+  "DONE": "attested by the trading box: its artifact is fresh on the box and its contract is not REJECTED (data/tier_s/box_evidence.json, written by the box's own tier_s pass)",
   "PARTIAL": "runs hourly; `remaining` names what the wording asks that it does not yet do",
   "BLOCKED_ON_USER": "research side runs; the money-path consumer is refused by this environment's permission rule",
-  "BLOCKED_ON_BOX": "needs the trading box (a sandbox or state only it holds)"
+  "BLOCKED_ON_BOX": "needs the trading box (a sandbox or state only it holds)",
+  "BUILT": "code complete, wired hourly and tested; not DONE until the trading box attests its artifact"
  },
  "layers": [
   {
@@ -43,13 +44,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/DATA_OS.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.gate_yield",
     "better": "up",
     "organ": "data_os"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S03",
@@ -66,13 +68,14 @@
    ],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.hypotheses",
     "better": "up",
     "organ": "world_science"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S04",
@@ -87,13 +90,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/MARKET.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_researchers",
     "better": "up",
     "organ": "market"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S05",
@@ -108,13 +112,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GENOMES.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.diversity",
     "better": "up",
     "organ": "genomes"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S06",
@@ -130,13 +135,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/QD.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.qd_score",
     "better": "up",
     "organ": "qd"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S07",
@@ -148,14 +154,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GENOMES.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.best_fitness",
     "better": "up",
     "organ": "genomes"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S08",
@@ -167,14 +173,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/MARKET.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.independently_discovered",
     "better": "up",
     "organ": "market"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S09",
@@ -188,13 +194,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.defender_balanced",
     "better": "up",
     "organ": "red_queen"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S10",
@@ -209,7 +216,7 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/IMMUNE.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.immune_score",
@@ -217,7 +224,7 @@
     "organ": "immune",
     "bar": 0.9
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S11",
@@ -231,14 +238,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/ONLINE_FDR.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FDR_REDUCTION",
     "metric": "metric.over_budget_share",
     "better": "down",
     "organ": "online_fdr"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S12",
@@ -271,14 +278,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FAILURE_MEMORY.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FDR_REDUCTION",
     "metric": "metric.theorems",
     "better": "up",
     "organ": "failure_memory"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S14",
@@ -290,14 +297,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TOPOLOGY.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.effective_discoveries",
     "better": "up",
     "organ": "topology"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S15",
@@ -312,13 +319,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TOPOLOGY.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.effective_rank",
     "better": "up",
     "organ": "topology"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S16",
@@ -332,13 +340,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "stress_tested_share",
     "better": "up",
     "organ": "worlds"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S17",
@@ -350,14 +359,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/THEORY.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.complete_share",
     "better": "up",
     "organ": "theory"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S18",
@@ -371,13 +380,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/THEORY.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.supported",
     "better": "up",
     "organ": "theory"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S19",
@@ -390,13 +400,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.hypotheses",
     "better": "up",
     "organ": "world_science"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S20",
@@ -408,14 +419,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/REVIEW.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.resolved_share",
     "better": "up",
     "organ": "review"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S21",
@@ -428,13 +439,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TEST_INVENTION.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.candidate_gates",
     "better": "up",
     "organ": "test_invention"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S22",
@@ -448,14 +460,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GRAMMAR.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_primitives",
     "better": "up",
     "organ": "grammar"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S23",
@@ -466,14 +478,14 @@
    "extends": [],
    "clock": "hourly_cycle:execution_science",
    "artifact": "desks/mt5/reports/EXECUTION_SCIENCE.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "EXECUTION_CAPTURE",
     "metric": "attribution.median_drag_as_share_of_signal_alpha",
     "better": "down",
     "organ": "report:EXECUTION_SCIENCE.json"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S24",
@@ -485,14 +497,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/EXCHANGE.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "EXECUTION_CAPTURE",
     "metric": "metric.defer_share",
     "better": "up",
     "organ": "exchange"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S25",
@@ -507,14 +519,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/EXCHANGE.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.expected_log_growth",
     "better": "up",
     "organ": "exchange"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S26",
@@ -527,13 +539,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/PREDICTIONS.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.accounted_share",
     "better": "up",
     "organ": "predictions"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S27",
@@ -546,14 +559,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/PREDICTIONS.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.overconfidence",
     "better": "down",
     "organ": "predictions"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S28",
@@ -566,14 +579,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TWIN.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.challengers",
     "better": "up",
     "organ": "twin"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S29",
@@ -586,13 +599,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/SELF_MODEL.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.regressed",
     "better": "down",
     "organ": "self_model"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S30",
@@ -628,14 +642,15 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FORMAL.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.protocol_proven",
     "better": "up",
     "organ": "formal",
     "bar": 1.0
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S32",
@@ -649,13 +664,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/REVIEW.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.challenged",
     "better": "up",
     "organ": "review"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S33",
@@ -670,13 +686,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.defender_balanced",
     "better": "up",
     "organ": "red_queen"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S34",
@@ -690,13 +707,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/IMMUNE.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.balanced",
     "better": "up",
     "organ": "immune"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S35",
@@ -710,13 +728,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/DATA_OS.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.calibrated_rankers",
     "better": "up",
     "organ": "data_os"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S36",
@@ -729,14 +748,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FRONTIER.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.coverage",
     "better": "up",
     "organ": "frontier"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S37",
@@ -749,13 +768,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/EPISTEMIC.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.decidable_share",
     "better": "up",
     "organ": "epistemic"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S38",
@@ -768,14 +788,14 @@
    "extends": [],
    "clock": "hourly_cycle:replication_civilization",
    "artifact": "desks/mt5/reports/REPLICATION.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "counts.REPLICATED",
     "better": "up",
     "organ": "report:REPLICATION.json"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S39",
@@ -789,14 +809,15 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FORMAL.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.knobs_evidenced",
     "better": "up",
     "organ": "formal",
     "bar": 1.0
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S40",
@@ -808,14 +829,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/MARKET.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "INFO_PER_COMPUTE",
     "metric": "metric.independently_discovered",
     "better": "up",
     "organ": "market"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S41",
@@ -827,7 +848,7 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/REPLAY.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.reconstructible_share",
@@ -835,7 +856,7 @@
     "organ": "replay",
     "bar": 1.0
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S42",
@@ -849,13 +870,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/CHAOS.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.drills_failing",
     "better": "down",
     "organ": "chaos"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S43",
@@ -870,13 +892,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.hypotheses",
     "better": "up",
     "organ": "world_science"
-   }
+   },
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S44",
@@ -890,14 +913,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/GRAMMAR.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_primitives",
     "better": "up",
     "organ": "grammar"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S45",
@@ -909,14 +932,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FAILURE_MEMORY.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.rows_per_statement",
     "better": "up",
     "organ": "failure_memory"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S46",
@@ -929,14 +952,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TRUTH_KERNEL.json",
-   "status": "DONE",
+   "status": "BUILT",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.constitution_violation",
     "better": "down",
     "organ": "truth_kernel"
    },
-   "remaining": ""
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   }
  ],
  "leg_contracts": [

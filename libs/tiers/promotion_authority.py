@@ -3,7 +3,8 @@ needed", every blueprint wired live).
 
 `block(name)` is called by `research/promoter.py` beside `blind_review_veto`, with the same
 consequence and the same limits: it WITHHOLDS A NEW LIVE ROW, it sizes nothing and it never
-touches an open position or a row already holding capital. Six verdicts can withhold:
+touches an open position or a row already holding capital. Six verdicts can withhold, and a
+check that raises withholds too (`DOOR_ERROR`, fail closed):
 
   CONSTITUTION_VIOLATED  the truth kernel's rule set in force loosens the sealed constitution
                          without a principal ratification of its exact hash;
@@ -172,12 +173,25 @@ def _panel_and_theory(name: str) -> str | None:
 
 
 def block(name: str) -> str | None:
-    """The first reason this certificate may not be written LIVE now, or None."""
-    for fn in (_constitution, _replication, _fdr, _panel_and_theory):
-        why = fn(name)
+    """The first reason this certificate may not be written LIVE now, or None.
+
+    FAILS CLOSED (verifier, 2026-09-30): a check that raises WITHHOLDS with `DOOR_ERROR`, it is
+    never skipped. Before this, one exception anywhere in here reached the promoter's wrapper
+    and dropped all six checks at once. The withheld row is billed by `tier_s_evidence_block`
+    like every other door verdict, so a broken check costs a measured amount of growth rather
+    than silently waving certificates through."""
+    checks = [(fn.__name__, lambda fn=fn: fn(name))
+              for fn in (_constitution, _replication, _fdr, _panel_and_theory)]
+    checks.append(("_freeze", _freeze))
+    for label, fn in checks:
+        try:
+            why = fn()
+        except Exception as exc:  # any failure must withhold, never pass
+            return (f"DOOR_ERROR: the {label.lstrip('_')} check raised "
+                    f"{type(exc).__name__}: {exc}; withheld until it runs clean")
         if why:
             return why
-    return _freeze()
+    return None
 
 
 def record(name: str, why: str, *, lane: str, exp_r: Any = None, n: Any = None) -> None:

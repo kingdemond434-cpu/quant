@@ -16,6 +16,9 @@ research productivity. This fence is that admission rule, enforced at every law-
   * the contract parses (`libs.tiers.contracts.problems`) and its `organ` is a Tier S organ
     (`desks/mt5/research/tier_s.py`) or `report:<FILE>` whose writer is itself a known leg;
   * a DONE layer carries an empty `remaining`: "done, except" is PARTIAL;
+  * a DONE layer is ATTESTED BY THE TRADING BOX (verifier, 2026-09-30): its artifact fresh on
+    the box and its contract not REJECTED, in the box-written data/tier_s/box_evidence.json
+    (`libs/tiers/box_evidence`). Code complete and tested elsewhere is BUILT, never DONE;
   * every hourly leg the programme ADDED (`LEG_CONTRACTED`) carries a parsing contract in
     `leg_contracts`, read from its own report -- a new leg with no contract is refused.
 
@@ -39,13 +42,15 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from check_tier5_audit import clock_known, clocks  # noqa: E402
 
-from libs.tiers import contracts  # noqa: E402
+from libs.tiers import box_evidence, contracts  # noqa: E402
 
 LEDGER = ROOT / "docs" / "research" / "tier_s_program.json"
 RENDERED = ROOT / "docs" / "research" / "TIER_S_PROGRAM.md"
 VERDICTS = ROOT / "desks" / "mt5" / "reports" / "tier_s" / "CONTRACTS.json"
 ORGAN_SRC = ROOT / "desks" / "mt5" / "research" / "tier_s.py"
-STATUSES = ("DONE", "PARTIAL", "BLOCKED_ON_USER", "BLOCKED_ON_BOX")
+STATUSES = ("DONE", "BUILT", "PARTIAL", "BLOCKED_ON_USER", "BLOCKED_ON_BOX")
+#: the trading box's own attestation, committed by the box's sync (libs/tiers/box_evidence)
+BOX_EVIDENCE = ROOT / "desks" / "mt5" / "data" / "tier_s" / "box_evidence.json"
 N_LAYERS = 46
 #: the hourly legs the Tier S programme added outside the 46 layers: each needs a contract
 LEG_CONTRACTED = ("tier_s", "adversary_evolution", "execution_science", "frontier_map",
@@ -61,8 +66,15 @@ def organs(root: Path) -> set[str]:
         re.findall(r'reports\["([a-z_]+)"\] = _run', src))
 
 
-def check(ledger: dict[str, Any], root: Path) -> tuple[list[str], Counter[str]]:
+def check(ledger: dict[str, Any], root: Path,
+          evidence: Any = None) -> tuple[list[str], Counter[str]]:
     problems: list[str] = []
+    if evidence is None:
+        try:
+            evidence = json.loads((root / BOX_EVIDENCE.relative_to(ROOT)).read_text("utf-8"))
+        except (OSError, ValueError):
+            evidence = {}
+    on_box = box_evidence.attested(evidence)
     known = clocks(root)
     names = organs(root)
     counts: Counter[str] = Counter()
@@ -77,6 +89,10 @@ def check(ledger: dict[str, Any], root: Path) -> tuple[list[str], Counter[str]]:
         if st not in STATUSES:
             problems.append(f"{lid}: status {st!r} not in {STATUSES}")
         rem = str(r.get("remaining") or "").strip()
+        if st == "DONE" and lid not in on_box:
+            problems.append(f"{lid}: DONE without the trading box's attestation "
+                            f"({box_evidence.TRADING_HOST} in data/tier_s/box_evidence.json); "
+                            "code that is complete but unattested is BUILT")
         if st == "DONE" and rem:
             problems.append(f"{lid}: DONE but `remaining` names unfinished work")
         if st != "DONE" and not rem:

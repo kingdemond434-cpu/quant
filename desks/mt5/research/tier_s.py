@@ -3763,6 +3763,12 @@ def main(argv: list[str] | None = None) -> int:
                            if isinstance(v, dict) and v.get("emitted")}}
     if not only:
         _write(SUMMARY, summary)
+        # A layer is DONE only on the trading box's own evidence (libs/tiers/box_evidence).
+        try:
+            from libs.tiers import box_evidence
+            box_evidence.attest()
+        except Exception as exc:                    # pragma: no cover - host dependent
+            errors["box_evidence"] = f"{type(exc).__name__}: {exc}"
     print(json.dumps({"total_seconds": summary["total_seconds"],
                       "errors": list(summary["errors"])}), flush=True)
     return 1 if errors and len(errors) == len(timings) else 0

@@ -66,3 +66,72 @@ def test_door_reads_fresh_verdicts_and_respects_suspension(monkeypatch: Any,
     assert (pa._panel_and_theory("EURUSD.x") or "").startswith("THEORY_REFUTED")
     monkeypatch.setattr(authority, "suspended", lambda organ, *a, **k: True)
     assert pa._panel_and_theory("EURUSD.x") is None
+
+
+def test_door_fails_closed_when_a_check_raises(monkeypatch: Any) -> None:
+    from libs.tiers import promotion_authority as pa
+
+    def boom(*a: Any, **k: Any) -> None:
+        raise RuntimeError("firewall table unreadable")
+
+    for fn in ("_constitution", "_replication", "_fdr", "_panel_and_theory"):
+        monkeypatch.setattr(pa, fn, lambda name: None)
+    monkeypatch.setattr(pa, "_freeze", lambda: None)
+    assert pa.block("EURUSD.x") is None
+    monkeypatch.setattr(pa, "_fdr", boom)
+    why = pa.block("EURUSD.x") or ""
+    assert why.startswith("DOOR_ERROR: the fdr check raised RuntimeError"), why
+    monkeypatch.setattr(pa, "_fdr", lambda name: None)
+    monkeypatch.setattr(pa, "_freeze", boom)
+    assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR: the freeze check")
+
+
+def test_done_needs_the_trading_boxs_own_attestation(tmp_path: Path) -> None:
+    import importlib.util
+    import sys as _sys
+
+    from libs.tiers import box_evidence as be
+    root = Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location("chk_ts", root / "scripts" /
+                                                  "check_tier_s_program.py")
+    assert spec and spec.loader
+    chk = importlib.util.module_from_spec(spec)
+    _sys.modules["chk_ts"] = chk
+    spec.loader.exec_module(chk)
+    ledger = json.loads((root / "docs" / "research" / "tier_s_program.json").read_text("utf-8"))
+    problems, _ = chk.check(ledger, root, evidence={})
+    assert problems == [], problems
+    lid = next(r["id"] for r in ledger["layers"] if r["status"] == "BUILT")
+    for r in ledger["layers"]:
+        if r["id"] == lid:
+            r["status"], r["remaining"] = "DONE", ""
+    problems, _ = chk.check(ledger, root, evidence={})
+    assert any("without the trading box's attestation" in p for p in problems), problems
+    cloud = {"host": "runsc", "layers": {lid: {"ok": True}}}
+    problems, _ = chk.check(ledger, root, evidence=cloud)
+    assert any(lid in p for p in problems), "a cloud host's word never counts"
+    box = {"host": be.TRADING_HOST, "layers": {lid: {"ok": True}}}
+    problems, _ = chk.check(ledger, root, evidence=box)
+    assert problems == [], problems
+
+
+def test_attest_reads_freshness_and_the_contract_verdict(tmp_path: Path) -> None:
+    from libs.tiers import box_evidence as be
+    now = datetime.now(UTC)
+    (tmp_path / "docs" / "research").mkdir(parents=True)
+    (tmp_path / "docs" / "research" / "tier_s_program.json").write_text(json.dumps(
+        {"layers": [{"id": "S01", "artifact": "a.json"}, {"id": "S02", "artifact": "b.json"},
+                    {"id": "S03", "artifact": "c.json"}, {"id": "S04", "artifact": "d.json"}]}),
+        "utf-8")
+    (tmp_path / "a.json").write_text(json.dumps({"generated_utc": now.isoformat()}), "utf-8")
+    (tmp_path / "b.json").write_text(json.dumps({"generated_utc": "2020-01-01T00:00:00+00:00"}),
+                                     "utf-8")
+    (tmp_path / "c.json").write_text(json.dumps({"generated_utc": now.isoformat()}), "utf-8")
+    cp = tmp_path / be.CONTRACTS.relative_to(be.ROOT)
+    cp.parent.mkdir(parents=True)
+    cp.write_text(json.dumps({"layers": {"S03": {"verdict": "REJECTED"}}}), "utf-8")
+    doc = be.attest(root=tmp_path, out=tmp_path / "ev.json", host=be.TRADING_HOST, now=now)
+    ok = {k for k, v in doc["layers"].items() if v["ok"]}
+    assert ok == {"S01"}, doc
+    assert be.attested(doc) == {"S01"}
+    assert be.attested({**doc, "host": "runsc"}) == set()
