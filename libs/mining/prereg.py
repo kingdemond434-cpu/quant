@@ -13,8 +13,9 @@ moved under it.
 
 TRIAL LINEAGE. Every contract carries `trial_family_id` and `parent_cell_id`. A descendant (an
 amendment, a symbol transfer, a regime child of the same rule) inherits its parent's family.
-This is LINEAGE, recorded for the reader; no organ charges multiplicity by it yet. The
-multiple-testing charge is the gauntlet's own deflated-Sharpe trial count.
+This is LINEAGE: `experiment_ledger` reads it (via the mining digest) as the lineage view of
+trials it already counts, and the multiple-testing charge stays the gauntlet's own
+deflated-Sharpe trial count per registered family.
 """
 from __future__ import annotations
 

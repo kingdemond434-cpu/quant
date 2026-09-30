@@ -20,9 +20,10 @@ WHAT ONE PASS DOES
    (a mutated or mismatched contract is FAILS_PREREG) and mapped to a rejection code or a
    survivor.
 5. Publish: `reports/mining/metrics_<date>.json` (and MINING_METRICS.json, the latest), the
-   end-to-end trace, and the mechanics feed (`data/mining/mechanics_feed.jsonl`). NOTHING READS
-   THE FEED YET: breadth wires it into exogenous_gate as a conditioner series when that hook
-   exists; risk and cost consumers are money-path work queued for the desktop pass.
+   end-to-end trace, and the mechanics feed (`data/mining/mechanics_feed.jsonl`). Its consumer
+   is `conditioners`: each page's facts become a PIT series in the lake the
+   `exogenous_conditioner` family reads, and conditioner cells once a series is long enough.
+   Risk and cost consumers are money-path work queued for the desktop pass.
 
 NOTHING HERE HAS CAPITAL AUTHORITY. A survivor is a gauntlet survivor like any other; the
 promoter and allocator decide what happens to it, through their own sealed paths.

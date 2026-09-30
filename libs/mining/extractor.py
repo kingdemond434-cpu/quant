@@ -12,8 +12,8 @@ Three readers, chosen by the source's `kind` in the roster:
                quantity / direction / horizon claims in 26 languages
     mechanics  broker specs, swap schedules, execution policies, prop-firm rules: numeric FACTS
                (swap long/short, commission, max daily loss %, drawdown %, profit target %,
-               leverage), published to the mechanics feed (no reader yet; see
-               mining_supervisor), not cells
+               leverage), published to the mechanics feed, which becomes
+               exogenous_conditioner series and cells (mining_supervisor.conditioners)
 
 Regex is the first pass because it is exact and free. The LLM pass is the existing deepening
 worker (`story_mechanism`): a claim that names a mechanism the regex cannot compile is handed to
