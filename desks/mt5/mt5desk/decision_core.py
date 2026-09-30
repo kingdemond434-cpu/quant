@@ -1871,6 +1871,43 @@ def entry_is_legal(price: float, side: str, bid: float, ask: float,
     return True, ""
 
 
+def window_end_hour(window: str | None) -> float | None:
+    """The SERVER hour at which a gold window's session ends, or None for a window this table
+    does not know (a promoted family sleeve keeps its own rules).
+
+    Same derivation as `bracket_deadline` -- the next window's signal hour, or CLOSE_HOUR for the
+    last -- but in the one clock the windows are written in. `hour` everywhere a window is placed
+    is the broker's tick clock, so the comparison is exact with no UTC offset to get wrong.
+    """
+    sig = next((float(w[1]) for w in GOLD_WINDOWS if w[0] == window), None)
+    if sig is None:
+        return None
+    later = [float(w[1]) for w in GOLD_WINDOWS if float(w[1]) > sig]
+    return min(later) if later else float(CLOSE_HOUR)
+
+
+def window_session_ended(window: str | None, hour: float) -> bool:
+    """Has this gold window's own session already ended at server hour `hour`?
+
+    A LATE PASS PLACED A STALE BRACKET (measured 2026-09-30 on both accounts). Placement had a
+    lower bound (the signal hour) and only the day's cancel hour above it, so a pass that first
+    ran hours late -- after a restart, an adoption, an outage -- sent the window's bracket off a
+    range the session had already left behind:
+
+      * E8 2026-09-21: asia, london_am and afternoon all placed at 20:29 server in one pass;
+        2026-09-23 london_am at 19:42 and 2026-09-24 london_am at 16:07 (session ended 17:00),
+        whose sell stop sat 1.3 points from the afternoon's and both filled in the same second:
+        two full stops, -950 USD, on one move.
+      * Fusion 2026-09-25: the asia and london_am sells both filled after 17:00 server and both
+        stopped, then both reversed and stopped again: -122.90 EUR, the worst gold day.
+
+    The certified bracket is the one placed at its signal hour. After the session that formed
+    the range is over, the order is a different, uncertified trade, so it is not placed.
+    """
+    end = window_end_hour(window)
+    return end is not None and float(hour) >= end
+
+
 def bracket_deadline(sleeve: str, window: str | None = None,
                      now: datetime | None = None) -> datetime:
     """When this sleeve's bracket stops belonging to the session whose range formed it.

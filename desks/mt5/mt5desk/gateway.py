@@ -88,6 +88,8 @@ from mt5desk.decision_core import (
     state_allows,
     stop_distance,
     ttl_expired,
+    window_end_hour,
+    window_session_ended,
 )
 from mt5desk.independence import measure_from_ledger
 from mt5desk.sizing import decay_factor
@@ -3687,6 +3689,14 @@ def resolve_pending_bracket(s: dict, hour: float, today) -> dict:
         return {"ok": False, "stage": "past_cancel_hour",
                 "why": f"cancel hour {CANCEL_HOUR} passed at {hour:.1f}; a bracket sent now is "
                        f"taken back by this same pass"}
+    _win = s.get("window") or (s["name"][len("gold_"):] if str(s.get("name", "")).startswith(
+        "gold_") else None)
+    if window_session_ended(_win, hour):
+        # A LATE PASS MUST NOT SEND A STALE BRACKET. See `decision_core.window_session_ended`
+        # for the two measured losses; the window's certified trade is gone once its session is.
+        return {"ok": False, "stage": "session_ended",
+                "why": f"{_win} session ended at {window_end_hour(_win):.1f} server; a bracket "
+                       f"placed at {hour:.1f} would trade a stale range"}
     sym = mt5.symbol_info(s["symbol"])
     if sym is None:
         return {"ok": False, "stage": "no_symbol_info", "why": f"no symbol_info {s['symbol']}"}
@@ -4231,6 +4241,8 @@ def main() -> None:
                     log(f"[{s['name']}] {_pend['why']}")
                 elif _pend["stage"] == "no_stop":
                     log(f"[{s['name']}] SKIPPED: {_pend['why']}")
+                elif _pend["stage"] == "session_ended":
+                    log(f"[{s['name']}] NOT PLACED: {_pend['why']}")
                 continue
             sym, df = _pend["sym"], _pend["df"]
             hi, lo, spec, dist = _pend["hi"], _pend["lo"], _pend["spec"], _pend["dist"]

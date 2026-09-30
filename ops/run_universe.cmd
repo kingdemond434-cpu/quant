@@ -31,10 +31,18 @@ if not exist "%PYTHON%" set "PYTHON=py"& set "PYARGS=-3"
 echo(>>"%LOG%"
 echo ==== run_universe %DATE% %TIME% ====>>"%LOG%"
 
+rem FIRST refresh every existing chart. Measured 2026-09-30, this task returned 0 hourly while
+rem forward clocks were blocked because existing M5/M15/M30/H1 files had not moved for 13+ hours.
+rem Missing-series hydration and existing-series freshness are separate jobs; both belong to the
+rem one interactive task guaranteed to own a logged-in Fusion terminal.
+"%PYTHON%" %PYARGS% -u -W ignore "C:\opt\quant\desks\mt5\scripts\refresh_tail.py" >>"%LOG%" 2>&1
+set RCR=%ERRORLEVEL%
+echo refresh_tail rc=%RCR%>>"%LOG%"
+
 rem download_all_symbols is missing-series incremental: after the first fill it requests only
 rem new symbols/timeframes. expand_universe re-downloaded every existing series before reaching
 rem H4, so an hourly execution limit could leave H4 permanently at zero while repeatedly paying
-rem for M1..H1. Existing files are refreshed by refresh_tail in the hourly research cycle.
+rem for M1..H1.
 rem Unbuffered output is operational evidence: a four-hour recovery must expose its current cell
 rem while it runs, not publish thousands of verdict lines only after the process exits.
 "%PYTHON%" %PYARGS% -u -W ignore "C:\opt\quant\desks\mt5\scripts\download_all_symbols.py" >>"%LOG%" 2>&1
@@ -53,5 +61,6 @@ rem when it is most worth running; chaining it behind `&&` meant it had never ru
 set RC2=%ERRORLEVEL%
 echo repair_universe_registry rc=%RC2%>>"%LOG%"
 
+if not "%RCR%"=="0" if not "%RCR%"=="2" exit /b %RCR%
 if not "%RC1%"=="0" exit /b %RC1%
 exit /b %RC2%

@@ -35,6 +35,7 @@ def test_external_gauntlet_recovers_only_exact_gate_archive_rows() -> None:
 
 def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
     wrapper = (DESK.parents[1] / "ops" / "run_universe.cmd").read_text("utf-8")
+    assert "scripts\\refresh_tail.py" in wrapper
     assert "scripts\\download_all_symbols.py" in wrapper
     assert "research\\expand_universe.py" not in wrapper
     assert "C:\\Program Files\\Python314\\python.exe" in wrapper
@@ -62,5 +63,11 @@ def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:
 def test_gauntlet_and_universe_share_the_fusion_research_lane() -> None:
     gauntlet = _text("scripts/external_gauntlet.py")
     assert 'exclusive_job("fusion_terminal_research_lane"' in gauntlet
+    # The terminal lease belongs only to the missing-parquet broker fallback. Holding it around
+    # main() starves the chart refresher for most of every hour and blocks forward evidence.
+    live_frame = gauntlet.split("def _live_frame", 1)[1].split("\ndef ", 1)[0]
+    cli = gauntlet.split("def _cli_main", 1)[1]
+    assert 'exclusive_job("fusion_terminal_research_lane"' in live_frame
+    assert 'exclusive_job("fusion_terminal_research_lane"' not in cli
     installer = _text("scripts/Install-QuantWindows.ps1")
     assert "(Get-Date).Date.AddMinutes(30)" in installer

@@ -42,6 +42,14 @@ MIN_CYCLE_S = int(os.environ.get("DEPT_MIN_CYCLE_S", "600"))              # neve
 PAUSE_S = int(os.environ.get("DEPT_PAUSE_S", "30"))
 MIN_FREE_MB = float(os.environ.get("DEPT_MIN_FREE_MB", "4096"))
 RECYCLE_PASSES = int(os.environ.get("DEPT_RECYCLE_PASSES", "48"))
+# Department singletons stop one department duplicating itself; they do not stop twenty
+# different departments from observing the same free-memory snapshot and all starting together.
+# That race was measured on the trading box on 2026-09-30: 20+ hourly_cycle children overlapped,
+# while deepening/descendant/gauntlet workers held tens of GB each.  Bound cross-department
+# passes with OS-held slots.  Three keeps useful parallel discovery on the 98GB box while leaving
+# the terminal, gateway, gauntlet and core loop headroom.  A crashed process releases its byte
+# lock in the kernel, so there is no stale-file recovery path.
+CONCURRENT_PASSES = max(1, int(os.environ.get("DEPT_CONCURRENT_PASSES", "3")))
 # A department child still has a hard timeout.  Plan strictly inside it so every admitted
 # oldest-first tranche can checkpoint and publish instead of losing the same tail every pass.
 PASS_BUDGET_FILL = min(
@@ -107,6 +115,51 @@ def claim_singleton(dept: str):
         fh.write(f"{os.getpid()} {datetime.now(tz=UTC).isoformat(timespec='seconds')}\n")
         fh.flush()
     return fh
+
+
+def claim_capacity_slot(slots: int = CONCURRENT_PASSES):
+    """Claim one of the shared department-pass slots, or None when all are busy."""
+    LOCKS.mkdir(parents=True, exist_ok=True)
+    for index in range(max(1, int(slots))):
+        path = LOCKS / f"dept_capacity_{index}.lock"
+        try:
+            fh = open(path, "a+", encoding="utf-8")  # noqa: SIM115 -- held across the pass
+        except OSError:
+            continue
+        try:
+            if sys.platform == "win32":
+                import msvcrt
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            fh.close()
+            continue
+        with contextlib.suppress(OSError):
+            fh.seek(0)
+            fh.truncate()
+            fh.write(f"{os.getpid()} {datetime.now(tz=UTC).isoformat(timespec='seconds')}\n")
+            fh.flush()
+        return fh
+    return None
+
+
+def wait_for_capacity(dept: str, *, slots: int = CONCURRENT_PASSES,
+                      poll_s: int = PAUSE_S):
+    """Wait fairly for bounded cross-department capacity without abandoning work."""
+    announced = False
+    while True:
+        handle = claim_capacity_slot(slots)
+        if handle is not None:
+            if announced:
+                log(dept, f"capacity available: admitted to one of {slots} department slots")
+            return handle
+        if not announced:
+            log(dept, f"waiting: all {slots} department pass slots are occupied")
+            announced = True
+        time.sleep(max(1, int(poll_s)))
 
 
 def _tree_runner():
@@ -264,9 +317,17 @@ def main(argv: list[str] | None = None) -> int:
         while True:
             passes += 1
             wait_for_memory(dept)
+            capacity = wait_for_capacity(dept)
             started = time.monotonic()
             heartbeat(dept, passes)
-            res = run_pass(dept)
+            try:
+                # Recheck after admission: several residents may have waited on memory before
+                # taking different slots.  The second check prevents the same snapshot race.
+                wait_for_memory(dept)
+                res = run_pass(dept)
+            finally:
+                with contextlib.suppress(OSError):
+                    capacity.close()
             log(dept, f"pass {passes}: {res['status']} rc={res['rc']} in {res['seconds']}s")
             heartbeat(dept, passes, done_inc=1)
             if a.once:

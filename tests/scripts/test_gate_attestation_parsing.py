@@ -61,8 +61,9 @@ def test_a_real_shadow_still_voids_it():
 
 def test_a_modified_tracked_py_always_voids_it(monkeypatch):
     """The guarantee the field exists to make: changed code means the sha was not what ran."""
-    monkeypatch.setattr(ga, "_git", lambda *a: (
-        "abc123" if a[0] == "rev-parse" else " M desks/mt5/mt5desk/gateway.py"))
+    monkeypatch.setattr(ga, "_git", lambda *a: "abc123" if a[0] == "rev-parse" else "")
+    monkeypatch.setattr(ga, "_working_tree_rows",
+                        lambda: [" M desks/mt5/mt5desk/gateway.py"])
     monkeypatch.setattr(ga, "_tracked_py", lambda: {"desks/mt5/mt5desk/gateway.py"})
     doc = ga.attest("fast", "pass")
     assert doc["tree_clean"] is False

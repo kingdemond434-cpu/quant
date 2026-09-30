@@ -58,6 +58,8 @@ from mt5desk.decision_core import (  # noqa: E402
     book_direction,
     bracket_from_bars,
     h1_frame,
+    window_end_hour,
+    window_session_ended,
 )
 
 SYMBOL = "XAUUSD"
@@ -98,6 +100,12 @@ def plan(df: Any, hour: float, state: dict, *, tick_size: float = 0.01,
         if name in windows:
             continue
         if hour < float(sig_hour) or hour >= CANCEL_HOUR:
+            continue
+        if window_session_ended(name, hour):
+            # A late pass (restart, IPC outage) must not send a bracket off a range its own
+            # session already left: 2026-09-21 all three windows went out at 20:29 server in one
+            # pass, and 2026-09-24 a 3h-late london_am sat on the afternoon's level and both
+            # stopped in the same second (-950 USD). See decision_core.window_session_ended.
             continue
         built = bracket_from_bars(df, rng, sig_hour, tick_size, stops_level)
         if built is None:
@@ -149,9 +157,15 @@ def manage_actions(state: dict, hour: float, open_ids: set[int],
         if not resting:
             continue
         placed_hour = float(w.get("placed_hour") or 0.0)
+        # THE BRACKET DIES WITH ITS SESSION, as the Fusion gateway's `bracket_deadline` has it.
+        # A flat 6h TTL kept a london_am leg resting four hours into the afternoon, where it sat
+        # beside the afternoon's own leg at almost the same level (2026-09-24: 4250.93 and
+        # 4252.19, both filled at 15:01Z, both stopped). The flat TTL stays as the fallback for a
+        # window the table does not know.
+        end = window_end_hour(name)
         if hour >= CANCEL_HOUR:
             acts.extend({"act": "eod_cancel", "window": name, "order_id": oid} for oid in resting)
-        elif hour - placed_hour >= BRACKET_TTL_HOURS:
+        elif (end is not None and hour >= end) or hour - placed_hour >= BRACKET_TTL_HOURS:
             acts.extend({"act": "ttl_cancel", "window": name, "order_id": oid} for oid in resting)
     return acts
 

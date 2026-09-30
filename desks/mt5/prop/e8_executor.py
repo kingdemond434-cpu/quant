@@ -394,6 +394,29 @@ def twin_fade(symbol: str, family: str, *, now: datetime | None = None) -> tuple
     return 1.0, f"twin fade 1.00: MT5 twins n={n} wins={wins} exp={exp:+.2f}R"
 
 
+def _quote_ccy_from_symbol(symbol: str) -> str:
+    """The quote currency of a plain six-letter FX pair (EURCHF -> CHF); '' for anything else."""
+    core = "".join(ch for ch in str(symbol).upper() if ch.isalpha())
+    return core[3:6] if len(core) == 6 else ""
+
+
+def _usd_per_unit(venue: Any, ccy: str) -> float | None:
+    """USD value of one unit of `ccy` from the venue's own mid, or None when it cannot be read.
+
+    Tries CCYUSD (multiply) then USDCCY (invert). A rate the venue will not quote is never
+    guessed: None sends the caller to its under-sized fallback.
+    """
+    for pair, invert in ((f"{ccy}USD", False), (f"USD{ccy}", True)):
+        try:
+            bid, ask = venue.quote(pair)
+        except Exception:
+            continue
+        mid = (float(bid) + float(ask)) / 2.0
+        if mid > 0:
+            return 1.0 / mid if invert else mid
+    return None
+
+
 def lot_for_risk(venue: Any, symbol: str, stop_dist: float, risk_usd: float) -> tuple[float, str]:
     """Lot such that a stop-out costs about `risk_usd`, floored at the venue minimum.
 
@@ -419,17 +442,25 @@ def lot_for_risk(venue: Any, symbol: str, stop_dist: float, risk_usd: float) -> 
     if contract is None:
         return float(vmin), (f"venue states no contract size; sent at the venue minimum {vmin} "
                              "rather than at a size derived from a guessed one")
-    quote_ccy = str(d.get("currency") or d.get("quoteCurrency") or "").upper()
+    quote_ccy = str(d.get("currency") or d.get("quoteCurrency") or d.get("quotingCurrency")
+                    or _quote_ccy_from_symbol(symbol)).upper()
     loss_per_lot = contract * stop_dist
     basis = (f"contract {contract:g} x stop {stop_dist:.6g} = "
              f"{loss_per_lot:.2f} {quote_ccy or '?'}/lot")
     if quote_ccy and quote_ccy != "USD":
-        # NOT CONVERTED, AND NOT PRETENDED OTHERWISE. The account is USD; a JPY- or CHF-quoted
-        # loss per lot is not dollars. Rather than apply a rate this file has not measured, it
-        # takes the venue minimum and names the gap, which is smaller than the intended risk and
-        # never larger.
-        return float(vmin), (basis + f"; quote is {quote_ccy}, not USD, and no measured rate -- "
-                                     f"sent at the venue minimum {vmin} (UNDER-sized, never over)")
+        # CONVERTED AT THE VENUE'S OWN QUOTE, or not at all. The account is USD; a JPY-, CHF-,
+        # CAD- or NZD-quoted loss per lot is not dollars. MEASURED 2026-09-30 on E8: the venue's
+        # details carried no currency for FX, so every cross was sized as if USD-quoted -- CHF
+        # pairs ~25% OVER-sized (6.91 lots of EURCHF short on 2026-09-15), NZD pairs ~40% under,
+        # and JPY crosses 150x under at the 0.01 floor. Where no rate can be read, the venue
+        # minimum and a named gap, which is smaller than the intended risk and never larger.
+        usd_per_quote = _usd_per_unit(venue, quote_ccy)
+        if usd_per_quote is None:
+            return float(vmin), (basis + f"; quote is {quote_ccy}, not USD, and no measured rate "
+                                         f"-- sent at the venue minimum {vmin} (UNDER-sized, "
+                                         f"never over)")
+        loss_per_lot *= usd_per_quote
+        basis += f" x {usd_per_quote:.6g} USD/{quote_ccy} = {loss_per_lot:.2f} USD/lot"
     lot = risk_usd / loss_per_lot
     step = None
     for k in ("lotStep", "volumeStep", "step"):
