@@ -114,6 +114,14 @@ def build_failure_kind(why: str) -> str:
         return "factor_basket_incomplete"
     if "no peer_symbol" in w:
         return "no_peer_symbol_named"
+    if "no driver_symbol" in w:
+        return "no_driver_symbol_named"
+    if "driver missing" in w:
+        return "no_bars_for_driver"
+    if "no microstructure surface" in w:
+        return "no_microstructure_surface"
+    if "no event calendar" in w:
+        return "no_event_calendar"
     if w.startswith("no ") and " bars for peer " in w:
         return "no_bars_for_peer"
     if w.startswith("no ") and " bars for " in w:
@@ -163,15 +171,24 @@ def docket_sample(path: Path, n: int, seed: int, iter_rows: Any,
 
 def load_overlay(overlay: Path) -> list[str]:
     """Pre-load every module under `overlay` (paths relative to `desks/mt5`) under its package
-    name, so later imports resolve to the overlay's version. Returns the module names loaded."""
+    name, so later imports resolve to the overlay's version. Returns the module names loaded.
+
+    A file under `scripts/` loads as a top-level module (that directory is on the path), so a
+    patched `scripts/external_gauntlet.py` replaces the judge. Each module's `__file__` is set to
+    the TREE's path before it executes: the desk derives its data roots from `__file__`
+    (`BASE = Path(__file__).parents[3]`), and a module that believed it lived in the overlay
+    would read an empty universe and measure nothing."""
     loaded: list[str] = []
     for f in sorted(overlay.rglob("*.py")):
         rel = f.relative_to(overlay).with_suffix("")
-        name = ".".join(rel.parts)
+        if "__pycache__" in rel.parts:
+            continue
+        name = rel.name if rel.parts[0] == "scripts" else ".".join(rel.parts)
         spec = importlib.util.spec_from_file_location(name, f)
         if spec is None or spec.loader is None:
             continue
         mod = importlib.util.module_from_spec(spec)
+        mod.__file__ = str(DESK / f.relative_to(overlay))
         sys.modules[name] = mod
         spec.loader.exec_module(mod)
         parent, _, child = name.rpartition(".")
@@ -312,13 +329,18 @@ def measure(cells: list[dict[str, Any]], *, meta: dict[str, Any], eg: Any, budge
     cut = (pd.Timestamp(lockbox_cut_override).date() if lockbox_cut_override
            else lockbox_cut(series, frac=frac))
     dev, _held = carve_lockbox(series, cut)
+    # THE PER-CELL CARVE, by the judge's own rule when it has one: `cell_dev_cut` (the re-chained
+    # sealed patch, shared by the sharded and unsharded sweep), else `cell_lockbox_cut` (its first
+    # form), else none -- an unpatched judge carves every cell at the campaign cut.
+    dev_cut = getattr(eg, "cell_dev_cut", None)
     own_cut = getattr(eg, "cell_lockbox_cut", None)
     carved_own = 0
     for i, rec in enumerate(built):
         d = dev[i]
-        if own_cut is not None and cut is not None and series[i] is not None and \
-                d is not None and len(d) < NEED_DAYS:
-            own = own_cut(series[i])
+        if cut is not None and series[i] is not None and d is not None and \
+                len(d) < NEED_DAYS and (dev_cut is not None or own_cut is not None):
+            own = (dev_cut(series[i], cut, frac=frac) if dev_cut is not None
+                   else own_cut(series[i]))
             if own is not None and own > cut:
                 s = series[i]
                 d = s[s.index < own]
@@ -501,6 +523,7 @@ def main(argv: list[str] | None = None) -> int:
         "sample": n, "overlay": overlaid,
         "judge": {"named_unknowns": hasattr(eg, "classify_unknown"),
                   "cell_lockbox_cut": hasattr(eg, "cell_lockbox_cut"),
+                  "cell_dev_cut": hasattr(eg, "cell_dev_cut"),
                   "constitution": hasattr(eg, "constitution_thresholds")},
         "coarse_proxy": bool(a.coarse_proxy),
         "memory": {"available_mb": round(avail_mb), "rss_cap_mb": round(rss_cap),

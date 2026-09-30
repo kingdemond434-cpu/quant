@@ -54,6 +54,10 @@ def test_build_failures_aggregate_by_kind_not_by_symbol() -> None:
     assert k("NOT_RUN_MODIFIER: regime='risk_off'") == "modifier_refused"
     assert k("relative_value: no peer_symbol on the candidate") == "no_peer_symbol_named"
     assert k("no H1 bars for peer FOO") == "no_bars_for_peer"
+    assert k("lead_lag driver missing: no H1 bars for EURNOK") == "no_bars_for_driver"
+    assert k("lead_lag: no driver_symbol on the cell") == "no_driver_symbol_named"
+    assert k("execution_state: no microstructure surface for X in Y") == \
+        "no_microstructure_surface"
 
 
 def test_the_sample_is_fixed_by_seed_whatever_the_row_order(tmp_path: Path) -> None:
