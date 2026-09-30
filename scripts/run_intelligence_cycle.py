@@ -507,7 +507,7 @@ def _derive_inputs() -> dict[str, Any]:
     try:
         from libs.ops.intelligence_inputs import write_all
         counts = write_all()
-    except Exception as e:  # noqa: BLE001 - one derivation must not take the cycle with it
+    except Exception as e:  # one derivation must not take the cycle with it
         return _cap("input_derivation", "ERROR", f"{type(e).__name__}: {e}")
     return _cap("input_derivation", "ACTIVE",
                 "derived cadence production, capability snapshots and strategy horizons from "

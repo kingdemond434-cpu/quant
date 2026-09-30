@@ -32,6 +32,7 @@ import json
 import statistics
 from collections import defaultdict
 from datetime import UTC, datetime
+from itertools import pairwise
 from pathlib import Path
 from typing import Any
 
@@ -81,7 +82,7 @@ def cadence_production(rows: list[dict[str, Any]]) -> dict[str, Any]:
     jobs, unmeasured = [], []
     for job, rs in sorted(_by_job(rows).items()):
         stamps = [t for t in (_ts(r) for r in rs) if t is not None]
-        gaps = [(b - a) / 60.0 for a, b in zip(stamps, stamps[1:], strict=False) if b > a]
+        gaps = [(b - a) / 60.0 for a, b in pairwise(stamps) if b > a]
         if not gaps:
             unmeasured.append({"job": job, "fires": len(rs),
                                "why": "one fire: no interval can be measured"})

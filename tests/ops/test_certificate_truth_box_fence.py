@@ -1,4 +1,4 @@
-"""The box's own hourly law gate fails a drifted certificate store, and the hourly leg never migrates.
+"""The box's hourly law gate fails a drifted certificate store; the hourly leg never migrates.
 
 ONE CERTIFICATE TRUTH (principal 2026-09-22) has two halves. `scripts/check_certificate_truth.py`
 with `--require-state` is the live half: on a host with desk state, an absent authority file or
