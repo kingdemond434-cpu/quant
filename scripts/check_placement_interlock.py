@@ -55,6 +55,9 @@ VPS law gate red for good. So:
     UNMEASURED -- `ok` is None, not True, because it is not a clean pass, but it does not fail
     the gate either: stale rows are no evidence of a halt NOW, and a gate red on every machine
     that was never going to trade gets switched off. Nothing is written to the committed report.
+    ON THE TRADING BOX (identified by machine id through `libs/ops/host_identity`) the same
+    verdict FAILS and is written like every other one: the report, an alert-ledger entry and a
+    PLACEMENT_UNMEASURED event -- the gateway stopped writing evidence (PR #130 audit).
   * a live ledger (or a gateway state whose `last_reconcile` is live) with no readable rows:
     UNMEASURED and FAILS (L1.28a, WS-005), because "no evidence" is what the outage looked like.
 
@@ -72,8 +75,10 @@ branch by `desks/mt5/scripts/sync_shadow_to_git.ps1` (declared in `release.NON_C
 written only on a host where the fence is applicable -- an entry in `data/alert_ledger.json`
 so the condition has a lifecycle rather than only a count, and a PLACEMENT_HALTED /
 PLACEMENT_CLEAR row on the desk's event log (`desks/mt5/data/events.jsonl`). Registered in
-`scripts/run_law_gate.py` `_STATE_FENCES`, so the box's law-gate rotation runs it on a clock
-and a halt reddens the gate itself. (Recovered from the unpushed box commit fe09b89b,
+`scripts/run_law_gate.py` `_STATE_FENCES`, so the box's law-gate rotation runs it and a halt
+reddens the gate itself, AND run every hour as the `placement_interlock` leg of
+`desks/mt5/research/hourly_cycle.py` -- the rotation reaches a given fence only every few
+hours, and a halt costs a window an hour. (Recovered from the unpushed box commit fe09b89b,
 ported onto origin 2026-09-30.)
 
     python scripts/check_placement_interlock.py
@@ -83,7 +88,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import socket
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -96,33 +100,31 @@ DESK = ROOT / "desks" / "mt5"
 OUT_REL = "desks/mt5/data/placement_interlock.json"
 OUT = ROOT / Path(*OUT_REL.split("/"))
 
-#: The trading box (the Contabo host that runs the gateway), named once in
-#: `libs/tiers/box_evidence.py` and read from there; the literal is only the fallback for a
-#: checkout where that module cannot be imported.
-_TRADING_HOST_FALLBACK = "vmi3571445"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from libs.ops import host_identity  # noqa: E402
 
 
 def trading_host() -> str:
-    try:
-        if str(ROOT) not in sys.path:
-            sys.path.insert(0, str(ROOT))
-        from libs.tiers.box_evidence import TRADING_HOST
-        return str(TRADING_HOST)
-    except Exception:
-        return _TRADING_HOST_FALLBACK
+    """The trading box's display name (config/trading_host.json), the same one
+    `libs/tiers/box_evidence.TRADING_HOST` reports. A name, never the identity."""
+    return host_identity.trading_hostname()
 
 
-def _hostname() -> str:
-    return socket.gethostname()
+def _identify() -> host_identity.HostIdentity:
+    return host_identity.identify()
 
 
 def on_trading_host() -> bool:
-    """True on the box that places orders, identified by hostname exactly as
-    `libs/tiers/box_evidence.py` does (a prefix match on TRADING_HOST). There an UNMEASURED
-    verdict means the gateway stopped writing the evidence this fence reads, and that FAILS:
-    24h after the gateway dies the ledger falls out of the live window, and an exit 0 would read
-    green on the one host where a silent halt costs money. Off the box it stays exit 0."""
-    return _hostname().lower().startswith(trading_host().lower())
+    """True on the box that places orders -- keyed on the machine id recorded in
+    config/trading_host.json through `libs/ops/host_identity`, the one helper every fence shares.
+    There an UNMEASURED verdict means the gateway stopped writing the evidence this fence reads,
+    and that FAILS: 24h after the gateway dies the ledger falls out of the live window, and an
+    exit 0 would read green on the one host where a silent halt costs money. This is a fence that
+    must fail LOUD, so it spends an UNMEASURED identity on the loud side (`may_be_trading`: an
+    unrecorded or unreadable id with the trading hostname still counts as the box, and the
+    report says the identity was UNMEASURED). Off the box it stays exit 0."""
+    return _identify().may_be_trading
 
 
 LEDGER_REL = "desks/mt5/data/decision_ledger.jsonl"
@@ -488,6 +490,13 @@ def record_event(doc: dict[str, Any], root: Path | None = None) -> str | None:
     except Exception:
         return None
     try:
+        if doc.get("verdict") == UNMEASURED:
+            # Only reachable ON the trading box (escalate_unmeasured): the evidence stopped.
+            events.emit("PLACEMENT_UNMEASURED", producer="check_placement_interlock",
+                        priority=2, host=(doc.get("host") or {}).get("hostname"),
+                        machine_id=(doc.get("host") or {}).get("machine_id"),
+                        problems=[str(p)[:300] for p in doc.get("problems", [])][:12])
+            return "PLACEMENT_UNMEASURED"
         if doc.get("ok"):
             events.emit("PLACEMENT_CLEAR", producer="check_placement_interlock",
                         rows_scanned=doc.get("rows_scanned"))
@@ -500,6 +509,26 @@ def record_event(doc: dict[str, Any], root: Path | None = None) -> str | None:
         return "PLACEMENT_HALTED"
     except Exception:
         return None
+
+
+def escalate_unmeasured(doc: dict[str, Any], ident: host_identity.HostIdentity) -> dict[str, Any]:
+    """UNMEASURED ON THE TRADING BOX IS A FAILURE, AND A FAILURE IS WRITTEN DOWN (PR #130 audit).
+
+    Off the box an UNMEASURED verdict is stale published rows and writes nothing. On the box it
+    is the gateway having stopped writing placement evidence, so it gets every surface the other
+    verdicts get: `ok` False (the alert ledger opens it), `applicable` True (the committed report
+    is written) and a PLACEMENT_UNMEASURED event. The verdict stays UNMEASURED -- the fence does
+    not know it is a halt, only that it can no longer tell (L1.28a)."""
+    if doc.get("ok") is not None or doc.get("verdict") != UNMEASURED:
+        return doc
+    doc["ok"] = False
+    doc["applicable"] = True
+    doc["escalated_on_trading_host"] = True
+    doc["problems"].append(
+        f"UNMEASURED on the trading host ({ident.trading_hostname}; identity {ident.verdict}: "
+        f"{ident.why}): the gateway has stopped writing placement evidence here, and silence on "
+        "the box that places orders is not a pass (L1.28a)")
+    return doc
 
 
 def write_artifact(doc: dict[str, Any], target: Path | None = None) -> Path:
@@ -516,17 +545,20 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     doc = scan()
+    ident = _identify()
+    doc["host"] = ident.as_dict()
+    if doc["ok"] is None and on_trading_host():
+        escalate_unmeasured(doc, ident)
     if not args.no_write:
         # Only a host where the fence is applicable writes the committed report: an off-box
-        # checkout must never dirty a box-state path with a verdict about stale copies.
+        # checkout must never dirty a box-state path with a verdict about stale copies. On the
+        # trading box an UNMEASURED verdict IS applicable (escalate_unmeasured) and is written.
         if doc.get("applicable"):
             write_artifact(doc)
         doc["alert"] = record_alert(doc)
         doc["event"] = record_event(doc)
     if args.json:
         print(json.dumps(doc, indent=2, default=str))
-        if doc["ok"] is None and on_trading_host():
-            return 2
         return 2 if doc["ok"] is False else 0
 
     print(f"placement interlock: {doc.get('verdict')}; "
@@ -537,12 +569,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  note: {note}")
     for problem in doc["problems"]:
         print(f"  FAIL: {problem}")
+    if doc.get("escalated_on_trading_host"):
+        print("check_placement_interlock: FAILED -- UNMEASURED on the trading host "
+              f"({trading_host()}): the gateway has stopped writing placement evidence here, "
+              "and silence on the box that places orders is not a pass (L1.28a)")
+        return 2
     if doc["ok"] is None:
-        if on_trading_host():
-            print("check_placement_interlock: FAILED -- UNMEASURED on the trading host "
-                  f"({trading_host()}): the gateway has stopped writing placement evidence here, "
-                  "and silence on the box that places orders is not a pass (L1.28a)")
-            return 2
         print("check_placement_interlock: UNMEASURED -- no live placement evidence on this host "
               "(not a clean pass; nothing here to halt)")
         return 0

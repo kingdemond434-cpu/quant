@@ -37,6 +37,17 @@ GATEWAY_STATE = "desks/mt5/data/gateway_state.json"
 IDENTITY = "desks/mt5/data/release_identity.json"
 
 NOW = datetime(2026, 9, 24, 16, 50, tzinfo=UTC)
+BOX_ID = "0123456789abcdef0123456789abcdef"
+OFF_BOX_ID = "fedcba9876543210fedcba9876543210"
+_CONFIG = {"hostname": "vmi3571445", "machine_id": BOX_ID}
+
+
+def _as_host(monkeypatch: pytest.MonkeyPatch, machine_id: str | None, hostname: str,
+             config: dict[str, object] | None = None) -> None:
+    """Pin the fence's view of which machine it runs on, through the shared helper."""
+    from libs.ops import host_identity
+    ident = host_identity.classify(machine_id, hostname, _CONFIG if config is None else config)
+    monkeypatch.setattr(fence, "_identify", lambda: ident)
 
 
 def _write(root: Path, rel: str, text: str) -> Path:
@@ -280,7 +291,7 @@ def test_stale_rows_off_the_box_pass_the_gate_and_write_no_committed_report(
     out = tmp_path / "report.json"
     monkeypatch.setattr(fence, "ROOT", tmp_path)
     monkeypatch.setattr(fence, "OUT", out)
-    monkeypatch.setattr(fence, "_hostname", lambda: "ubuntu-4gb-hel1-5")
+    _as_host(monkeypatch, OFF_BOX_ID, "ubuntu-4gb-hel1-5")
 
     assert fence.main([]) == 0
     printed = capsys.readouterr().out
@@ -300,15 +311,14 @@ def test_unmeasured_on_the_trading_host_fails(
     monkeypatch.setattr(fence, "OUT", tmp_path / "report.json")
     monkeypatch.setattr(fence, "record_alert", lambda doc: None)
     monkeypatch.setattr(fence, "record_event", lambda doc: None)
-    monkeypatch.setattr(fence, "trading_host", lambda: "vmi3571445")
-    monkeypatch.setattr(fence, "_hostname", lambda: "VMI3571445")
+    _as_host(monkeypatch, BOX_ID, "vmi3571445")
 
     assert fence.scan(tmp_path, now=NOW)["ok"] is None
     assert fence.main(["--no-write"] + (["--json"] if as_json else [])) == 2
     printed = capsys.readouterr().out
     assert "UNMEASURED" in printed
 
-    monkeypatch.setattr(fence, "_hostname", lambda: "ubuntu-4gb-hel1-5")
+    _as_host(monkeypatch, OFF_BOX_ID, "ubuntu-4gb-hel1-5")
     assert fence.main(["--no-write"] + (["--json"] if as_json else [])) == 0
 
 
@@ -402,3 +412,71 @@ def test_the_report_is_published_on_a_committed_box_state_path() -> None:
     sync = (ROOT / "desks" / "mt5" / "scripts" / "sync_shadow_to_git.ps1").read_text("utf-8")
     block = sync.split("$relPaths = @(", 1)[1].split("\n)", 1)[0]
     assert f'"{rel}"' in block, "the box's sync does not publish the report"
+
+
+# ------------------------------------ 6. audit follow-ups: identity, UNMEASURED written, hourly
+def test_the_trading_host_is_keyed_on_the_machine_id_not_the_hostname(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """FOLLOW-UP 1. The recorded machine id decides; a hostname is a label. Another machine that
+    calls itself vmi3571445 is OFF the box, the box renamed is still the box, and an unrecorded
+    id is UNMEASURED -- spent on the loud side only when the hostname also matches."""
+    _as_host(monkeypatch, BOX_ID, "renamed-box")
+    assert fence.on_trading_host() is True
+    _as_host(monkeypatch, OFF_BOX_ID, "vmi3571445")
+    assert fence.on_trading_host() is False
+    _as_host(monkeypatch, OFF_BOX_ID, "vmi3571445", {"hostname": "vmi3571445"})
+    assert fence.on_trading_host() is True       # UNMEASURED identity, trading hostname: loud
+    _as_host(monkeypatch, None, "ubuntu-4gb-hel1-5")
+    assert fence.on_trading_host() is False      # UNMEASURED identity, other hostname
+
+
+def test_the_fence_reads_the_shared_host_helper() -> None:
+    """One answer for every fence: no hostname prefix, no socket, no gateway-state mtime here."""
+    src = (ROOT / "scripts" / "check_placement_interlock.py").read_text("utf-8")
+    assert "host_identity" in src
+    assert "socket" not in src and ".startswith(trading_host" not in src
+
+
+def test_unmeasured_on_the_box_writes_its_report_alert_and_event(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """FOLLOW-UP 2. UNMEASURED on the trading box used to exit 2 and write NOTHING: no report,
+    no alert, no event -- a failing verdict nobody could read afterwards. It is written now like
+    every other verdict; off the box it still writes nothing (stale published copies)."""
+    from libs.ops import events
+    _stale_published_copy(tmp_path)
+    out = tmp_path / "report.json"
+    log = tmp_path / "events.jsonl"
+    monkeypatch.setattr(fence, "ROOT", tmp_path)
+    monkeypatch.setattr(fence, "OUT", out)
+    monkeypatch.setattr(events, "PATH", log)
+    _as_host(monkeypatch, BOX_ID, "vmi3571445")
+
+    assert fence.main([]) == 2
+    report = json.loads(out.read_text("utf-8"))
+    assert report["verdict"] == "UNMEASURED" and report["ok"] is False
+    assert report["host"]["verdict"] == "TRADING" and report["host"]["machine_id"] == BOX_ID
+    assert any("UNMEASURED on the trading host" in p for p in report["problems"])
+    row = json.loads(log.read_text("utf-8").splitlines()[-1])
+    assert row["kind"] == "PLACEMENT_UNMEASURED" and row["machine_id"] == BOX_ID
+    ledger = json.loads((tmp_path / "data" / "alert_ledger.json").read_text("utf-8"))
+    assert fence.ALERT_ID in json.dumps(ledger)
+
+    # Off the box: the same stale rows write no report and no event.
+    out.unlink()
+    before = log.read_text("utf-8")
+    _as_host(monkeypatch, OFF_BOX_ID, "ubuntu-4gb-hel1-5")
+    assert fence.main([]) == 0
+    assert not out.exists() and log.read_text("utf-8") == before
+
+
+def test_the_fence_runs_every_hour() -> None:
+    """FOLLOW-UP 3. The law gate's `--rotate` rotation reaches a state fence every few hours; a
+    halt costs a window an hour. The fence is an hourly_cycle leg on the core plan, in a layer."""
+    hc = (ROOT / "desks" / "mt5" / "research" / "hourly_cycle.py").read_text("utf-8")
+    assert '_producer("placement_interlock", "scripts/check_placement_interlock.py")' in hc
+    assert '_costed("placement_interlock", placement_interlock)' in hc
+    assert '"placement_interlock": pil' in hc
+    core = hc[hc.index("CORE_LEGS: frozenset[str] = frozenset({"):]
+    assert '"placement_interlock"' in core[:core.index("})")]
+    from libs.research import layers
+    assert layers.LEG_LAYER.get("placement_interlock") == "meta"
