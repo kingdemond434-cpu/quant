@@ -267,3 +267,14 @@ def test_a_banned_grammar_is_never_screened_or_forwarded(sandbox, monkeypatch) -
     assert "clock" not in doc["by_grammar"]
     assert all(r["family"] != "mass_screen_clock" for r in doc["forwarded_sample"])
     assert not any(g.startswith("discovered") for g in doc["by_grammar"])
+
+
+def test_each_symbol_is_screened_once_per_day(sandbox, monkeypatch) -> None:
+    tmp, frames = sandbox
+    frames["SYNC"] = bars(400, seed=3)
+    monkeypatch.setattr(MS, "hypothesis_symbols", lambda: ["SYNC"])
+    first = MS.run(budget_s=600, workers=1, out_dir=tmp / "o4", dry_run=True)
+    assert first["status"] == "MEASURED" and first["run"]["cells"] > 0
+    again = MS.run(budget_s=600, workers=1, out_dir=tmp / "o4", dry_run=True)
+    assert again["status"] == "NOTHING_DUE" and again["run"]["cells"] == 0
+    assert again["per_day"]["cells_screened"] == first["run"]["cells"]

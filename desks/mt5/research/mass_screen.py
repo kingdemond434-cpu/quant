@@ -730,9 +730,17 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
         _write_json(report, doc)
         return doc
     cursor = _read_json(cursor_p, {}) if not symbols else {}
-    start = int(cursor.get("next", 0)) % len(universe)
-    epoch = int(cursor.get("epoch", 0))
-    order = universe[start:] + universe[:start]
+    # ONCE PER SYMBOL PER UTC DAY. Re-screening the same cells on the same bars every hour would
+    # test nothing new and still charge millions of trials; each symbol is screened once its bars
+    # hold a new day, least-recently-screened first, and a run with nothing left for today says
+    # so rather than repeating the day's work.
+    today = datetime.now(tz=UTC).date().isoformat()
+    screened_on: dict[str, str] = dict(cursor.get("screened_on") or {})
+    epoch = today
+    order = sorted((s for s in universe if screened_on.get(s) != today),
+                   key=lambda s: (screened_on.get(s, ""), universe.index(s)))
+    if symbols:
+        order = list(universe)
     w, winfo = derive_workers(workers)
     banned = banned_grammars()
     skip = tuple(sorted(banned))
@@ -780,11 +788,12 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
             for f in live:
                 f.cancel()
     wall = time.monotonic() - started
-    nxt_idx = start + done
-    if nxt_idx >= len(universe):
-        epoch += nxt_idx // len(universe)
-    new_cursor = {"next": nxt_idx % len(universe), "epoch": epoch, "updated_utc": _now(),
-                  "universe": len(universe)}
+    for r in results:
+        if not r.get("error"):
+            screened_on[r["symbol"]] = today
+    new_cursor = {"epoch": epoch, "updated_utc": _now(), "universe": len(universe),
+                  "screened_today": sum(1 for s in universe if screened_on.get(s) == today),
+                  "screened_on": screened_on}
 
     # ---- run-level FDR over EVERY cell screened --------------------------------------------
     m = int(sum(int(r.get("cells") or 0) for r in results))
@@ -841,7 +850,12 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
     day = _day_totals(runs_p)
     cores = int(winfo.get("cores") or w)
     doc = {
-        "generated_utc": ts, "status": "MEASURED" if results else UNMEASURED,
+        "generated_utc": ts,
+        "status": ("MEASURED" if results else
+                   "NOTHING_DUE" if not order else UNMEASURED),
+        "why": None if results else (
+            f"every one of {len(universe)} symbols already screened on {epoch}; the day's "
+            f"totals are in per_day" if not order else "no symbol finished inside the budget"),
         "run_id": run_id, "dry_run": bool(dry_run),
         "law": ("screen on the TRAINING window only (first TRAIN_FRAC of history, clipped per "
                 "cell to the start of its walk-forward/lockbox test region); >= MIN_DAYS trading "
@@ -872,10 +886,13 @@ def run(*, budget_s: float = 900.0, workers: int | None = None, symbols: list[st
             "workers": w, "wall_s": round(wall, 2), "numba": bool(MR._HAVE_NUMBA),
             "projected_cells_per_day_all_cores": (int(cps_core * cores * 86400)
                                                   if cps_core else UNMEASURED),
-            "projected_cells_per_day_at_this_duty": (int(cps * 24 * min(wall, budget_s))
-                                                     if cps else UNMEASURED),
-            "note": ("projections are cells/core-second x cores x 86,400 and cells/sec x this "
-                     "run's wall seconds x 24 hourly runs; measured, not asserted"),
+            "distinct_cells_per_day_one_screen_per_symbol": (
+                int(m / done * len(universe)) if done else UNMEASURED),
+            "hours_of_this_run_to_cover_the_universe": (
+                round(wall * len(universe) / done / 3600, 3) if done else UNMEASURED),
+            "note": ("capacity = cells/core-second x cores x 86,400; the DISTINCT daily figure "
+                     "is cells per symbol x the hypothesis-lane universe, because each symbol "
+                     "is screened once per UTC day; measured, not asserted"),
         },
         "workers": winfo,
         "windows": {"train_frac": TRAIN_FRAC, "wf_splits": WF_SPLITS, "wf_test_div": WF_TEST_DIV,
