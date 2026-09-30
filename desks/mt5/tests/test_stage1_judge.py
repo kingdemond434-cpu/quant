@@ -12,6 +12,7 @@ import json
 import math
 import sqlite3
 import sys
+import types
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
@@ -223,22 +224,28 @@ def test_the_published_stage1_projection_meets_the_target() -> None:
 # ------------------------------------------------------------------------ the record, the order
 def test_stage1_only_reorders_by_score_and_never_parks_a_reject(tmp_path: Path) -> None:
     """Named priority, then every TESTED cell by score descending (a BH reject with a high t
-    goes ahead of a survivor with a lower one), then unruled, then untested, then unbuildable."""
+    goes ahead of a survivor with a lower one) -- an UNSCREENABLE_TRAIN_WINDOW cell at the neutral
+    t = 0, ahead of every negative-t cell (audit R2) -- then unruled, untested, unbuildable."""
     db = tmp_path / "r.sqlite"
     con = REC.connect(db)
     for cid, v, basis, score in (("a", REC.PASS, "BH_SURVIVOR", 4.0),
                                  ("b", REC.PASS, "UNSCREENABLE_TRAIN_WINDOW", None),
                                  ("c", REC.REJECT, None, 5.0), ("d", REC.UNBUILDABLE, None, None),
-                                 ("e", REC.REJECT, None, -1.0), ("f", REC.REJECT, None, 0.5)):
+                                 ("e", REC.REJECT, None, -1.0), ("f", REC.REJECT, None, 0.5),
+                                 ("g", REC.REJECT, None, -0.2), ("h", REC.REJECT, None, -3.0)):
         con.execute("INSERT INTO cells(cid, verdict, basis, score, ruled_at) VALUES(?,?,?,?,?)",
                     (cid, v, basis, score, "2026-09-30T00:00:00+00:00"))
     con.commit()
     con.close()
     pri = tmp_path / "priority_remint.json"
     pri.write_text(json.dumps({"attestation": "x", "cells": ["e"]}))
-    t = REC.tiers(["a", "b", "c", "d", "e", "f", "z"], db, REC.priority_cells([pri]))
+    t = REC.tiers(["a", "b", "c", "d", "e", "f", "g", "h", "z"], db, REC.priority_cells([pri]))
     order = sorted(t, key=lambda c: t[c])
-    assert order == ["e", "c", "a", "f", "z", "b", "d"]
+    assert order == ["e", "c", "a", "f", "b", "g", "h", "z", "d"]
+    assert t["b"] == (REC.TIER_SCORED, -REC.NEUTRAL_SCORE)
+    # the stored row still says "not tested": the neutral rank is the reader's, not a fake score
+    assert S.score_of({"verdict": REC.PASS, "basis": "UNSCREENABLE_TRAIN_WINDOW", "t": 3.0}) \
+        is None
     assert t["c"] == (REC.TIER_SCORED, -5.0) and t["z"] == REC.UNRULED_RANK
     assert REC.tiers(["a"], tmp_path / "absent.sqlite", set()) == {"a": REC.UNRULED_RANK}
     # a record written before the score column still opens, and reads untested
@@ -254,7 +261,7 @@ def test_stage1_only_reorders_by_score_and_never_parks_a_reject(tmp_path: Path) 
     assert REC.tiers(["q"], old, set()) == {"q": (REC.TIER_UNTESTED, 0.0)}
 
 
-def test_warmer_orders_the_backlog_by_stage1_score_as_a_permutation() -> None:
+def test_warmer_keeps_the_sealed_order_named_queues_first_as_a_permutation() -> None:
     import warm_gauntlet_cache as W
     specs = [{"sym": s, "_never_judged": nj} for s, nj in
              (("unb", True), ("old", False), ("hi", True), ("unruled", True), ("pri", True),
@@ -262,7 +269,9 @@ def test_warmer_orders_the_backlog_by_stage1_score_as_a_permutation() -> None:
     rank = {"unb": (4, 0.0), "old": (1, -9.0), "hi": (1, -3.0), "unruled": (2, 0.0),
             "pri": (0, 0.0), "lo": (1, 1.0)}
     out = W.backlog_first(specs, {id(sp): rank[sp["sym"]] for sp in specs})
-    assert [sp["sym"] for sp in out] == ["pri", "hi", "lo", "unruled", "unb", "old"]
+    # AUDIT R1: named priority first, then the backlog in the order it arrived (the sealed order,
+    # where stage 1 is only a late key), then re-judges -- the score never re-sorts the backlog
+    assert [sp["sym"] for sp in out] == ["pri", "unb", "hi", "unruled", "lo", "old"]
     assert W.backlog_first(specs, None) == sorted(
         specs, key=lambda sp: 0 if sp["_never_judged"] else 1)
 
@@ -336,10 +345,12 @@ def test_every_backlog_cell_is_ruled_charged_recorded_and_rescreenable(tmp_path:
 
 
 def test_the_window_moves_order_only_never_the_charge_or_the_judged_set(tmp_path: Path) -> None:
-    """THE CONDITION ON THE pre_lockbox DEFAULT (coordinator's ruling 2026-09-30): on the same
-    docket, the two windows charge the same m over the full union, record the same cells, and
-    hand the sealed judge the same set to judge -- only the order may differ."""
-    assert S.WINDOW == "pre_lockbox" and set(S.WINDOWS) == {"pre_lockbox", "pre_wf"}
+    """On the same docket the two windows charge the same m -- THE COUNT THE SEALED DEFLATED
+    SHARPE CHARGES (`stage1_record.dsr_charge`, called by the sealed patch), which is the full
+    union of screened cells for EVERY family, never the family's own count -- record the same
+    cells, and hand the sealed judge the same NON-EMPTY set to judge; only the order may differ."""
+    from libs.research import experiment_ledger as EL
+    assert S.WINDOW == "pre_wf" and set(S.WINDOWS) == {"pre_lockbox", "pre_wf"}
     rows = _real_rows(10)
     docket = tmp_path / "docket.json"
     docket.write_text(json.dumps(rows))
@@ -360,52 +371,110 @@ def test_the_window_moves_order_only_never_the_charge_or_the_judged_set(tmp_path
                  for r in rows]
         import external_gauntlet as G
         rank = REC.stage1_rank_for_specs(specs, G.cell_id, out / "rec.sqlite")
-        got[win] = {"m": doc["stage1"]["fdr"]["charge"]["m_charged"],
+        # THE COUNT THE SEALED DSR CHARGES, derived the way the judge derives it: the ledger's
+        # stage-1 union (EXPERIMENT_LEDGER `stage1_cells`, summed from STAGE1_TRIALS.jsonl) and
+        # per-family counts, through the ONE function the sealed patch calls.
+        union, fam_counts = EL._stage1_counts(out / S.TRIALS.name)
+        lifetime = {"status": "MEASURED", "family_trials": fam_counts,
+                    "stage1_union_trials": union}
+        charged = {f: REC.dsr_charge(1, f, lifetime)[0] for f in fam_counts}
+        m = doc["stage1"]["fdr"]["charge"]["m_charged"]
+        assert union == m > 0
+        assert set(charged.values()) == {m}, (charged, m)   # every family pays the UNION
+        if len(fam_counts) > 1:                             # ... not its own count (the defect)
+            assert any(REC.dsr_charge(1, f, {"status": "MEASURED", "family_trials": fam_counts})[0]
+                       < m for f in fam_counts)
+        assert doc["stage1"]["fdr"]["charge"]["every_ranked_cell_charged"] is True
+        # THE JUDGED SET, non-vacuous: every docket cell keeps a place in the sealed order (none
+        # dropped), and stage 1 actually RANKED some of them on this docket
+        judged = {G.cell_id(sp) for sp in specs if id(sp) in rank}
+        ranked = {G.cell_id(sp) for sp in specs if rank.get(id(sp), (2, 0.0))[0] == 1}
+        assert judged and ranked and len(judged) == len({G.cell_id(sp) for sp in specs})
+        got[win] = {"m": m, "dsr_charged": charged,
                     "screened": sum(t["cells_screened"] for t in trials),
                     "by_family": {t["family"]: t["cells_screened"] for t in trials},
-                    "cids": cids, "ruled": doc["run"]["ruled"],
-                    "judged_set": {G.cell_id(sp) for sp in specs if id(sp) in rank},
+                    "cids": cids, "ruled": doc["run"]["ruled"], "judged_set": judged,
                     "unbuildable": doc["run"]["unbuildable"]}
         assert got[win]["m"] == got[win]["screened"] > 0
+        assert doc["window_check"]["used"] == win and doc["window_check"]["wf_cut_check"] == \
+            "MATCH"
     a, b = got["pre_lockbox"], got["pre_wf"]
-    for k in ("m", "screened", "by_family", "cids", "ruled", "judged_set", "unbuildable"):
+    for k in ("m", "dsr_charged", "screened", "by_family", "cids", "ruled", "judged_set",
+              "unbuildable"):
         assert a[k] == b[k], k
     assert len(a["judged_set"]) == len({G.cell_id(sp) for sp in specs})
 
 
-def test_ordering_bias_is_flagged_after_24h_of_a_backlog_that_does_not_clear() -> None:
+def test_ordering_bias_fires_on_a_ranked_cell_the_sealed_judge_left_for_24h() -> None:
+    """PR143_v3 item 7: the flag reads the SEALED side (a stage-1-ranked cell absent from the
+    sealed seen-cells record) and FAILS the throughput fence when it fires."""
     now = datetime(2026, 10, 2, 12, tzinfo=UTC)
-
-    def runs(nets: list, hours_apart: float = 1.0) -> list[dict]:
-        k = len(nets)
-        return [{"ts": (now - timedelta(hours=(k - 1 - i) * hours_apart)).isoformat(),
-                 "net_backlog_change": n} for i, n in enumerate(nets)]
-    # 25 hourly runs, every one >= 0: flagged, with the window
-    w = S.ordering_bias_warning(runs([0, *([5_000] * 24)]), now, "pre_lockbox")
-    assert w["ordering_bias_warning"] is True and w["window"] == "pre_lockbox"
-    assert w["hours_not_clearing"] >= 24
-    # a single clearing run inside the last 24h breaks the streak
-    assert S.ordering_bias_warning(runs([*([5_000] * 20), -1, *([5_000] * 4)]), now,
-                                   "pre_lockbox")["ordering_bias_warning"] is False
-    # under 24h of not clearing is not yet a warning
-    assert S.ordering_bias_warning(runs([5_000] * 10), now, "pre_wf")[
-        "ordering_bias_warning"] is False
-    # shrinking: no warning; unmeasured is never read as >= 0
-    assert S.ordering_bias_warning(runs([-40_000] * 30), now, "pre_lockbox")[
-        "ordering_bias_warning"] is False
-    assert S.ordering_bias_warning(runs(["UNMEASURED"] * 30), now, "pre_lockbox")[
+    old = (now - timedelta(hours=30)).isoformat()
+    w = S.ordering_bias_warning(old, 3_000, now, "pre_wf")
+    assert w["ordering_bias_warning"] is True and w["window"] == "pre_wf"
+    assert w["oldest_age_hours"] >= 24
+    assert S.ordering_bias_warning((now - timedelta(hours=3)).isoformat(), 3_000, now,
+                                   "pre_wf")["ordering_bias_warning"] is False
+    assert S.ordering_bias_warning(None, 0, now, "pre_wf")["ordering_bias_warning"] is False
+    assert S.ordering_bias_warning(None, "UNMEASURED", now, "pre_wf")[
         "ordering_bias_warning"] == "UNMEASURED"
-    assert S.ordering_bias_warning(
-        runs([*([5_000] * 5), "UNMEASURED", *([5_000] * 5)]), now, "pre_lockbox")[
-        "ordering_bias_warning"] is False
+    assert S.ordering_bias_warning("garbage", 5, now, "pre_wf")[
+        "ordering_bias_warning"] == "UNMEASURED"
+    # THE FENCE READS IT: a document that would PASS on throughput FAILS on the ordering bias
+    doc = _doc(160_000, 100_000, 1_400_000)
+    assert S.throughput_fence(doc)["status"] == "PASS"
+    doc["ordering_bias"] = w
+    f = S.throughput_fence(doc)
+    assert f["status"] == "FAIL" and "ordering bias" in f["why"]
+    assert f["ordering_bias_warning"] is True
     # the summary the throughput artifact embeds carries the flag and the window
     import tempfile
     with tempfile.TemporaryDirectory() as d:
         rp = Path(d) / "r.json"
-        rp.write_text(json.dumps({"status": "OK", "window": "pre_lockbox",
+        rp.write_text(json.dumps({"status": "OK", "window": "pre_wf",
                                   "ordering_bias_warning": True, "ordering_bias": w}))
         sm = S.summary(rp)
-        assert sm["ordering_bias_warning"] is True and sm["window"] == "pre_lockbox"
+        assert sm["ordering_bias_warning"] is True and sm["window"] == "pre_wf"
+
+
+def test_the_stream_counts_ranked_cells_the_sealed_judge_has_not_judged(tmp_path: Path) -> None:
+    """select_backlog feeds the flag: a ranked cell in the sealed seen record is NOT counted."""
+    import external_gauntlet as G
+    rows = _real_rows(3)[:3]
+    docket = tmp_path / "docket.json"
+    docket.write_text(json.dumps(rows))
+    con = REC.connect(tmp_path / "r.sqlite")
+    cids = [G.cell_id({"sym": G.canonical_symbol(r["symbol"], {}), "family": r["family"],
+                       "params": r["params"]}) for r in rows]
+    for k, c in enumerate(cids):
+        con.execute("INSERT INTO cells(cid, verdict, basis, score, ruled_at) VALUES(?,?,?,?,?)",
+                    (c, REC.REJECT, None, 1.0 + k, f"2026-09-2{k + 1}T00:00:00+00:00"))
+    con.commit()
+    now = datetime(2026, 10, 2, tzinfo=UTC)
+    _, census = S.select_backlog(G, {}, con, cap=100, now=now, docket=docket,
+                                 seen={S.h64(cids[0])})
+    assert census["ranked_unsealed"] == 2
+    assert census["oldest_ranked_unsealed_at"] == "2026-09-22T00:00:00+00:00"
+    con.close()
+
+
+def test_the_window_is_pre_wf_and_proven_against_the_sealed_walk_forward_cut() -> None:
+    """PR143_v3 item 0: pre_wf is the default; the runtime check replays the sealed splitter and
+    MATCHes on this tree; a mismatch falls back to pre_wf and says why."""
+    assert S.DEFAULT_WINDOW == "pre_wf" and S.WINDOW == "pre_wf"
+    chk = S.wf_cut_check()
+    assert chk["status"] == "MATCH", chk
+    assert chk["checked_lengths"] >= 3000 and chk["sealed_expr_present"]
+    assert S.resolve_window("pre_lockbox", chk)[0] == "pre_lockbox"
+    import external_gauntlet as G
+    bad = types.SimpleNamespace(WF_SPLITS=G.WF_SPLITS + 1, run_gauntlet=G.run_gauntlet)
+    chk2 = S.wf_cut_check(bad)
+    assert chk2["status"] == "MISMATCH" and chk2["n_mismatches"] > 0
+    used, rec = S.resolve_window("pre_lockbox", chk2)
+    assert used == "pre_wf" and rec["fell_back"] is True and rec["used"] == "pre_wf"
+    unread = S.wf_cut_check(types.SimpleNamespace())
+    assert unread["status"] == "UNMEASURED"
+    assert S.resolve_window("pre_lockbox", unread)[0] == "pre_wf"
 
 
 def test_sealed_judged_cells_are_not_backlog(tmp_path: Path) -> None:
@@ -581,10 +650,27 @@ def test_zero_spread_stress_is_monotone_and_fails_closed_without_a_basis() -> No
               and float(v.get("median_spread_pts") or 0) > 0 and v.get("tick_size"))
     a, _ = F.stress_costs_for(nz, meta, 3.0)
     assert a.spread_per_lot == G.costs_for(nz, meta, mult=3.0).spread_per_lot
+    # THE FILL HOUR (PR143_v3): with the cell's fill hour, the stress arm is 3x the MEASURED
+    # fill-hour spread the 1x arm pays -- not 3x the commission-only basis (1.16x of it on EURUSD)
+    surf = {"symbols": {"EURUSD": {"hours": {"9": {"status": "MEASURED", "p50": 12.0}}},
+                        nz: {"hours": {"1": {"status": "MEASURED", "p50": 50_000.0}}}}}
+    c1h = G.Costs.from_symbol(meta["EURUSD"], spread_pts=12.0)          # the sealed 1x arm
+    c3h, how_h = F.stress_costs_for("EURUSD", meta, 3.0, hour=9, surface=surf)
+    assert how_h["basis"] == "fill_hour_09_spread" and how_h["basis_pts"] == 12.0
+    assert c3h.spread_per_lot == pytest.approx(3.0 * c1h.spread_per_lot)
+    assert c3h.spread_per_lot > c3.spread_per_lot                       # the old basis was ~4.6
+    # a spread symbol whose fill hour is thin: 3x the fill hour, never below the registry stress
+    b3, how_b = F.stress_costs_for(nz, meta, 3.0, hour=1, surface=surf)
+    assert how_b["basis_pts"] == 50_000.0
+    assert b3.spread_per_lot > G.costs_for(nz, meta, mult=3.0).spread_per_lot
+    # an unmeasured fill hour changes nothing: the rules above apply
+    assert F.stress_costs_for("EURUSD", meta, 3.0, hour=4, surface=surf)[1]["basis"] == \
+        how["basis"]
     # nothing measured: fail closed
     bare = {"X": {"median_spread_pts": 0.0, "tick_size": 1e-5, "contract_size": 1e5}}
     none, why = F.stress_costs_for("X", bare, 3.0, quotes={})
     assert none is None and why["status"] == "UNMEASURED"
+    assert F.stress_costs_for("X", bare, 3.0, quotes={}, hour=9, surface={})[0] is None
     rows = [{"cid": "u", "verdict": "EVALUATED", "p": 1e-12, "mean_r": 0.3, "mean_r_x3": None,
              "stress_unmeasured": True}]
     S.finalise(rows)

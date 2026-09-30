@@ -63,9 +63,15 @@ KINDS = (
     # verdict and the why, so a refusal is a transition with a time on it rather than a quiet
     # no-op -- which is the only way an operator learns that a writer upstream has gone silent.
     "REFERENCE_STAND_DOWN",
-    # Stage 1's backlog has not cleared for 24h (net change >= 0 on every run): the screen's
-    # window now biases WHICH cells the sealed judge reaches, not just when. Carries the window.
+    # A stage-1-ranked cell has waited >= 24h for a SEALED judgement: the screen's window now
+    # biases WHICH cells the sealed judge ever reaches. Carries the window and the oldest age.
     "STAGE1_ORDERING_BIAS",
+    # Stage 1's walk-forward bound is not proven equal to the sealed gauntlet's actual cut: the run
+    # fell back to the pre_wf window (research/stage1_judge.wf_cut_check).
+    "STAGE1_WINDOW_MISMATCH",
+    # The sealed judge could not read stage 1's order (the record) or its trial union (the
+    # experiment ledger) and fell back -- written by the two-stage sealed patch, never silent.
+    "STAGE1_FALLBACK",
     # The box's state is fresh on the box and stale on origin: delivery is broken, the desk is not
     # idle (libs/ops/state_publication.py). Written by publish_state; read by stall_watch.
     "STATE_FLOW_STALLED",

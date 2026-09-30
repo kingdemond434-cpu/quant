@@ -21,6 +21,17 @@ THE BASIS, one function for every caller (`research/stage1_judge.py` imports it;
 
 The 1x arm is never changed: a measured zero spread plus commission is the true cost; only the
 stress arm needed a basis to multiply.
+
+THE FILL-HOUR SPREAD IS THE BASIS WHEN IT IS MEASURED (audit PR143_v3, 2026-09-30). The sealed 1x
+arm charges the spread of the hour the cell FILLS in (`cost_surface.json`, `build_cell`), but the
+3x arm multiplied the registry number -- for the majors the commission-only basis above. Measured:
+EURUSD's fill-hour spread is 12 pts and its commission basis ~4.6 pts, so the "3x" arm charged
+~13.8 pts, 1.16x the fill-hour spread the 1x arm already paid. And on a spread symbol whose fill
+hour is thin (EURZAR: 1,918 pts at hour 01 against a 310 pooled median) the 3x arm charged LESS
+than the 1x arm. So, for EVERY symbol, when the caller names the fill hour and the surface has it
+MEASURED, the stress arm charges `mult x max(fill-hour spread, registry spread)`: three times what
+the 1x arm pays, never below the registry stress it replaces (a tightening only). With no measured
+fill hour, the rules above apply unchanged, fail-closed branch included.
 """
 from __future__ import annotations
 
@@ -31,6 +42,7 @@ from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 COST_TRUTH_QUOTES = DESK / "data" / "cost_truth_quotes.json"
+COST_SURFACE = DESK / "data" / "cost_surface.json"
 #: Declared per-symbol floors in POINTS, for a symbol whose quote and commission are both
 #: unmeasured. Empty by default: an undeclared, unmeasured symbol fails closed.
 DECLARED_FLOOR_PTS: dict[str, float] = {}
@@ -99,13 +111,62 @@ def stress_basis_pts(sym: str, meta_row: dict[str, Any],
     return pts, how
 
 
+_SURFACE: list[Any] = []
+
+
+def load_surface(path: Path | None = None) -> dict[str, Any] | None:
+    """`data/cost_surface.json`, loaded once per process (None when absent or unreadable)."""
+    if path is None and _SURFACE:
+        return _SURFACE[0]
+    try:
+        doc = json.loads(Path(path or COST_SURFACE).read_text("utf-8"))
+        doc = doc if isinstance(doc, dict) else None
+    except (OSError, ValueError):
+        doc = None
+    if path is None:
+        _SURFACE.append(doc)
+    return doc
+
+
+def fill_hour_spread_pts(sym: str, hour: int | None,
+                         surface: dict[str, Any] | None = None) -> float | None:
+    """The MEASURED spread (points, p50) at the cell's fill hour, or None when unknown."""
+    if hour is None:
+        return None
+    surf = load_surface() if surface is None else surface
+    if not surf:
+        return None
+    try:
+        from research.cost_surface import spread_pts
+        v = spread_pts(surf, sym, int(hour))
+    except Exception:
+        return None
+    return float(v) if v is not None and math.isfinite(float(v)) and float(v) > 0 else None
+
+
 def stress_costs_for(sym: str, meta: dict[str, Any], mult: float, *,
-                     quotes: dict[str, dict[str, Any]] | None = None) -> tuple[Any, dict[str, Any]]:
-    """(Costs | None, how). mult <= 1 or a registry spread > 0: exactly `from_symbol(row, mult)`.
-    A zero-spread symbol under stress: the spread arm is `mult x basis`; None when unmeasured."""
+                     quotes: dict[str, dict[str, Any]] | None = None,
+                     hour: int | None = None,
+                     surface: dict[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
+    """(Costs | None, how). mult <= 1: exactly `from_symbol(row, mult)`. Under stress with a
+    MEASURED fill-hour spread (any symbol): `mult x max(fill-hour, registry spread)`. Otherwise a
+    registry spread > 0 is `from_symbol(row, mult)`, and a zero-spread symbol's spread arm is
+    `mult x basis`; None when nothing is measured (fail closed)."""
     from mt5desk.engine import Costs
     row = meta.get(sym, {}) if isinstance(meta, dict) else {}
-    if float(mult) <= 1.0 or not is_zero_spread(row):
+    if float(mult) <= 1.0:
+        return Costs.from_symbol(row, mult=mult), {"symbol": sym, "basis": "registry"}
+    fill = fill_hour_spread_pts(sym, hour, surface)
+    if fill is not None:
+        try:
+            reg = float(row.get("median_spread_pts", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            reg = 0.0
+        pts = max(fill, reg)
+        return Costs.from_symbol(row, mult=mult, spread_pts=pts), {
+            "symbol": sym, "status": "MEASURED", "basis": f"fill_hour_{int(hour):02d}_spread",  # type: ignore[arg-type]
+            "fill_hour_spread_pts": fill, "registry_spread_pts": reg, "basis_pts": pts}
+    if not is_zero_spread(row):
         return Costs.from_symbol(row, mult=mult), {"symbol": sym, "basis": "registry"}
     pts, how = stress_basis_pts(sym, row, quotes)
     if pts is None:

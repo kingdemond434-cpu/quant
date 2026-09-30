@@ -551,13 +551,15 @@ def backlog_first(specs: list[dict], rank: dict[int, tuple[int, float]] | None =
     """
     if rank is None:
         return sorted(specs, key=lambda sp: 0 if sp.get("_never_judged", True) else 1)
-    # THE TWO-STAGE JUDGE'S ORDER INSIDE THE BACKLOG (2026-09-30, `research/stage1_record`):
-    # named priorities (v4 re-mint, re-judge queues) first, then every TESTED cell by its
-    # stage-1 score descending, then cells stage 1 has not reached, then untested and
-    # unbuildable cells -- still warmed, never dropped, never parked by a low score. A
-    # permutation; a missing rank reads as "not yet ruled".
-    return sorted(specs, key=lambda sp: (0 if sp.get("_never_judged", True) else 1,
-                                         rank.get(id(sp), (2, 0.0))))
+    # THE TWO-STAGE JUDGE'S ORDER (2026-09-30, `research/stage1_record`; audit R1, PR143_v3):
+    # the NAMED re-judge queues (group 0: v4 re-mint, evicted, rollover, zero-spread) go first,
+    # as the sealed patch puts them; then the backlog before re-judges, and NOTHING ELSE moves.
+    # Stage 1's score is NOT a sort key here any more: it is a LATE key inside the sealed order
+    # (`judge_docket_order.order(stage1_rank=...)`), after intraday-first, the CEO docket, bucket
+    # balance and symbol rotation, so re-sorting by it here would override the principal's order.
+    # A permutation; a missing rank reads as "not yet ruled".
+    return sorted(specs, key=lambda sp: (0 if rank.get(id(sp), (2, 0.0))[0] == 0 else 1,
+                                         0 if sp.get("_never_judged", True) else 1))
 
 
 def stage1_ranks(G, specs: list[dict]) -> dict[int, tuple[int, float]] | None:
@@ -737,9 +739,10 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
     # THE SAME DOCKET, IN THE SAME ORDER, THE SEALED SWEEP WILL READ. Cells the family trim leaves
     # out of this sweep are not warmed now: the next sweep would not look at them, and their key
     # may roll over with the data day before one does. They stay in the docket.
-    keep, order_census = O.sealed_keep(G, specs)
+    rank = stage1_ranks(G, specs)
+    keep, order_census = O.sealed_keep(G, specs, stage1_rank=rank)
     n_never = int(order_census["keep_never_judged"])
-    keep = backlog_first(keep, stage1_ranks(G, keep))
+    keep = backlog_first(keep, rank)
     ordered_by = "sealed docket order (judge_docket_order), backlog first"
     print(f"  order: {ordered_by} -- {order_census['keep']} of {len(specs)} eligible cell(s) in "
           f"the next sweep's docket, {n_never} of them never judged; "

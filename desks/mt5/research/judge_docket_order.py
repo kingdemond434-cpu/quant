@@ -54,6 +54,35 @@ SEALED_SORT_KEY_SOURCE = (
     "                        timeframe_of(sp.get(\"params\"), str(sp.get(\"family\") or \"\")),\n"
     "                        str(sp.get(\"family\") or \"\")))")
 
+#: The same key once `two_stage_judge_sort_key.patch` lands (/mnt/project-files/patches/
+#: two_stage_judge/): stage 1's rank is inserted as a LATER key -- after never-judged, the
+#: intraday-first chart rank, the CEO docket, bucket balance and symbol rotation (cursor, symbol,
+#: chart), ahead of the family name only (audit R1, PR143_v3). The drift test accepts either text
+#: and `order(stage1_rank=...)` restates the patched one.
+SEALED_SORT_KEY_SOURCE_STAGE1 = (
+    "key=lambda sp: (_is_new(sp),\n"
+    "                        _tf_rank(sp),\n"
+    "                        _ceo_rank(sp),\n"
+    "                        _judged_in_bucket.get(_bucket(sp), 0),\n"
+    "                        _cursor.get(str(sp.get(\"sym\") or \"\"), \"\"),\n"
+    "                        str(sp.get(\"sym\") or \"\"),\n"
+    "                        timeframe_of(sp.get(\"params\"), str(sp.get(\"family\") or \"\")),\n"
+    "                        _stage1_rank(sp),\n"
+    "                        str(sp.get(\"family\") or \"\")))")
+
+#: Where a cell the stage-1 record does not know sits: exactly today's order.
+UNRULED_RANK = (2, 0.0)
+
+
+def sealed_sort_key_source(sealed_src: str) -> str | None:
+    """The sort-key text the sealed source carries today (unpatched or stage-1 patched), or None
+    when it carries neither -- the drift the tests fail on."""
+    for k in (SEALED_SORT_KEY_SOURCE, SEALED_SORT_KEY_SOURCE_STAGE1):
+        if k in sealed_src:
+            return k
+    return None
+
+
 INTRADAY = ("M1", "M5", "M15", "M30")
 
 
@@ -170,8 +199,14 @@ def _ceo_families(G: Any) -> set[str]:
     return out
 
 
-def order(G: Any, specs: list[dict]) -> list[dict]:
-    """The sealed eight-key sort (see SEALED_SORT_KEY_SOURCE). Requires `stamp_new` first."""
+def order(G: Any, specs: list[dict],
+          stage1_rank: dict[int, tuple[int, float]] | None = None) -> list[dict]:
+    """The sealed eight-key sort (see SEALED_SORT_KEY_SOURCE). Requires `stamp_new` first.
+
+    With `stage1_rank` ({id(spec): (group, -score)}), the patched nine-key sort
+    (SEALED_SORT_KEY_SOURCE_STAGE1): stage 1 orders cells only where every principal key ties --
+    it never overrides intraday-first, the CEO docket, bucket balance or symbol rotation."""
+    s1 = stage1_rank or {}
     tf_of = G.timeframe_of
 
     def _bucket(sp: dict) -> tuple[str, str]:
@@ -202,6 +237,7 @@ def order(G: Any, specs: list[dict]) -> list[dict]:
         cursor.get(str(sp.get("sym") or ""), ""),
         str(sp.get("sym") or ""),
         tf_of(sp.get("params"), str(sp.get("family") or "")),
+        s1.get(id(sp), UNRULED_RANK),
         str(sp.get("family") or "")))
 
 
@@ -259,19 +295,33 @@ def allocate(G: Any, specs: list[dict]) -> list[dict]:
     return keep
 
 
-def sealed_keep(G: Any, specs: list[dict], *, novelty: bool = True) -> tuple[list[dict], dict]:
+def sealed_keep(G: Any, specs: list[dict], *, novelty: bool = True,
+                stage1_rank: dict[int, tuple[int, float]] | None = None
+                ) -> tuple[list[dict], dict]:
     """The cells the next sweep will read, in the order its pre-warm will build them.
 
     Returns (keep, census). Every spec is stamped `_never_judged`; `census["outside_keep"]` counts
     eligible cells the family trim leaves for a later sweep (never dropped from the docket).
+    With `stage1_rank`, the two-stage patch's order: stage 1 as the late key, and the NAMED
+    re-judge queues (group 0) moved to the front before the novelty screen and the yield trim and
+    restored after them, exactly as the patch does.
     """
     n_new = stamp_new(G, specs)
     kept, n_banned = drop_banned(specs)
-    ordered = order(G, kept)
+    ordered = order(G, kept, stage1_rank)
+    named: list[dict] = []
+    if stage1_rank:
+        named = [sp for sp in ordered if stage1_rank.get(id(sp), UNRULED_RANK)[0] == 0]
+        if named:
+            ordered = named + [sp for sp in ordered
+                               if stage1_rank.get(id(sp), UNRULED_RANK)[0] != 0]
     n_redundant = 0
     if novelty:
         ordered, n_redundant = drop_redundant(G, ordered)
     keep = allocate(G, ordered)
+    if named:
+        ids = {id(sp) for sp in named}
+        keep = named + [sp for sp in keep if id(sp) not in ids]
     return keep, {"eligible": len(specs), "never_judged": n_new, "banned_set_aside": n_banned,
                   "novelty_set_aside": n_redundant, "keep": len(keep),
                   "keep_never_judged": sum(1 for sp in keep if sp.get("_never_judged")),

@@ -28,13 +28,21 @@ THE FULL TRAINING WINDOW (audit 2026-09-30). Everything before those two lower b
 earlier version also capped the window at mass_screen's TRAIN_FRAC (30%) of the chart calendar,
 which left ~16% of history and made the screen blind below t~10. That cap is gone.
 
-THE WINDOW (coordinator's ruling 2026-09-30). The default, "pre_lockbox", screens everything
-before the lockbox lower bound, walk-forward region included, for ORDER ONLY; "pre_wf"
-(STAGE1_WINDOW=pre_wf, opt-in) also stops at the walk-forward lower bound. The 1x daily-series
+THE WINDOW (coordinator's ruling 2026-09-30, REVERSED the same day -- PR143_v3). The default,
+"pre_wf", screens only days before BOTH the walk-forward lower bound and the lockbox lower bound,
+so the sealed walk-forward test region stays out-of-sample. "pre_lockbox" (STAGE1_WINDOW=
+pre_lockbox, opt-in) also reads the walk-forward region, for ORDER only. WHY THE REVERSAL: the
+sealed judge takes ~8.3k cells in against ~5.3k out a day, so the backlog grows ~3k/day and the
+stage-1 rank decides which cells are EVER judged, not just when; a rank read off ~48% of the
+walk-forward test region would then select on the region that is supposed to be held out. A
+runtime check (`wf_cut_check`) proves on every run that the bound stage 1 uses is the gauntlet's
+actual walk-forward cut; on a mismatch it is loud (event STAGE1_WINDOW_MISMATCH and the artifact's
+`window_check`) and the run falls back to pre_wf. The 1x daily-series
 VALUES outside the chosen window are never touched and the lockbox is never read in either mode;
 the 3x stress arm is replayed on the signal prefix alone. The trial charge (`trial_charge`) and
 the set of cells the sealed judge eventually judges are identical under both windows; the ordering
-bias the default buys is flagged (`ordering_bias_warning`) once the backlog stops clearing for 24h.
+bias is flagged -- and fails `throughput_fence` -- once a stage-1-ranked cell has waited 24h for a
+SEALED judgement (`ordering_bias_warning`).
 (The in-sample gates -- DSR, CPCV, PBO -- span the series by construction; that overlap is inherent
 to any pre-screen and is why stage 1 carries zero promotion authority.)
 
@@ -134,21 +142,23 @@ UNRUNNABLE_BANK = HYP / "unrunnable_specs.json"
 DEAD_SIDECAR = HYP / "DEAD_SESSION_VARIANTS.jsonl"
 SESSION_TZ_MISMATCH = "SESSION_TZ_MISMATCH"
 UNMEASURED = "UNMEASURED"
-#: THE SCREEN'S WINDOW. "pre_lockbox" (DEFAULT, coordinator's ruling 2026-09-30): everything
-#: before the lockbox lower bound (~48% of a typical cell's days; a planted t=4 edge ranks in the
-#: top decile ~93% of the time, `planted_edge_control`). It reads the walk-forward region for
-#: ORDER only: the lockbox is never read, stage 1 never drops or parks a cell, and the trial
-#: charge is over the full union of screened cells whichever window is used (`trial_charge`,
-#: pinned by a test), so the window moves only WHICH cell is judged first, never whether a cell is
-#: judged or what m the desk charges. The ordering bias that buys is negligible only while the
-#: backlog clears: `ordering_bias_warning` flags 24h of net backlog change >= 0.
-#: "pre_wf" (opt-in, STAGE1_WINDOW=pre_wf): days before BOTH the walk-forward-test and the
-#: lockbox lower bounds (~16%; t=4 top decile ~62%).
-WINDOWS = ("pre_lockbox", "pre_wf")
-WINDOW = os.environ.get("STAGE1_WINDOW", "pre_lockbox")
+#: THE SCREEN'S WINDOW. "pre_wf" (DEFAULT, coordinator's ruling PR143_v3, 2026-09-30): days
+#: before BOTH the walk-forward-test and the lockbox lower bounds (~16% of a typical cell's days;
+#: a planted t=4 edge ranks in the top decile ~62% of the time, `planted_edge_control`). The
+#: walk-forward test region stays out-of-sample, which matters because the backlog GROWS (~8.3k
+#: in, ~5.3k sealed out a day): the rank decides which cells are ever judged.
+#: "pre_lockbox" (opt-in, STAGE1_WINDOW=pre_lockbox): everything before the lockbox lower bound
+#: (~48%; t=4 top decile ~93%), walk-forward region included, for ORDER only. In both modes the
+#: lockbox is never read, stage 1 never drops or parks a cell, and the trial charge is the full
+#: union of screened cells (`trial_charge`, and the count the sealed DSR charges,
+#: `stage1_record.dsr_charge`), pinned by a test. `ordering_bias_warning` flags a ranked cell that
+#: has waited >= 24h for the sealed judge. An unknown value falls back to pre_wf.
+WINDOWS = ("pre_wf", "pre_lockbox")
+DEFAULT_WINDOW = "pre_wf"
+WINDOW = os.environ.get("STAGE1_WINDOW", DEFAULT_WINDOW)
 if WINDOW not in WINDOWS:
-    WINDOW = "pre_lockbox"
-#: Hours of unbroken net backlog change >= 0 after which the window's ordering bias is flagged.
+    WINDOW = DEFAULT_WINDOW
+#: Hours a stage-1-ranked cell may wait for a SEALED judgement before the ordering bias is flagged.
 ORDERING_BIAS_HOURS = 24.0
 #: Sealed-judged cells the rollover trigger collects per run while a change is active.
 RR_POPULATION_CAP = 200_000
@@ -249,7 +259,7 @@ def train_boundary(days: np.ndarray, first_bar: date, last_bar: date, cut_lb: da
     wf_day = (days[r].astype("datetime64[D]").astype(date) if 0 <= r < n
               else last_bar + timedelta(days=1))
     if (window or WINDOW) == "pre_lockbox":
-        # THE DEFAULT: the development series up to the lockbox lower bound, walk-forward region
+        # OPT-IN: the development series up to the lockbox lower bound, walk-forward region
         # included (for ORDER only). The lockbox is never read in either mode.
         end = min(cal, cut_lb)
         return end, {"calendar": cal.isoformat(), "wf_lb": wf_day.isoformat(),
@@ -260,6 +270,80 @@ def train_boundary(days: np.ndarray, first_bar: date, last_bar: date, cut_lb: da
                  "lockbox_lb": cut_lb.isoformat(), "wf_rank_lb": r, "binding": (
                      "calendar" if end == cal else "walk_forward" if end == wf_day
                      else "lockbox"), "window": "pre_wf"}
+
+
+#: Development lengths the runtime walk-forward check replays (every length up to 3,000 days,
+#: then a sparse tail): a mismatch anywhere a real cell can sit is caught.
+WF_CHECK_LENGTHS = (*range(1, 3001), 4000, 5000, 7500, 10000)
+
+
+def wf_cut_check(G: Any = None, lengths: Any = WF_CHECK_LENGTHS) -> dict[str, Any]:
+    """PROVE, AT RUNTIME, THAT STAGE 1'S WALK-FORWARD BOUND IS THE GAUNTLET'S ACTUAL CUT.
+
+    The pre_wf window stops at `mass_screen.wf_start_rank`, a restatement of the sealed walk-
+    forward call (`WalkForwardEngine().evaluate(arr, n_splits=WF_SPLITS, test_size=max(20,
+    len(arr) // 6))`). This replays the SAME splitter the sealed engine calls
+    (`libs.validation.walk_forward.walk_forward_splits`) with the sealed module's own WF_SPLITS
+    over every length in `lengths`, and checks the sealed source still carries the test-size
+    expression the mirror restates. MATCH only when every length agrees; any disagreement,
+    unreadable source or import failure is MISMATCH / UNMEASURED -- never a pass by absence."""
+    out: dict[str, Any] = {"status": UNMEASURED, "checked_lengths": 0, "mismatches": []}
+    try:
+        import mass_screen as MS
+
+        from libs.validation.walk_forward import walk_forward_splits
+        if G is None:
+            import external_gauntlet as G  # type: ignore[no-redef]
+        splits = int(G.WF_SPLITS)
+        src = inspect.getsource(G.run_gauntlet)
+    except Exception as exc:
+        out["why"] = f"{type(exc).__name__}: {exc}"
+        return out
+    expr = f"test_size=max({MS.WF_MIN_TEST}, len(arr) // {MS.WF_TEST_DIV})"
+    out.update(sealed_wf_splits=splits, mirror_wf_splits=MS.WF_SPLITS, sealed_expr=expr,
+               sealed_expr_present=expr in src and "n_splits=WF_SPLITS" in src)
+    bad: list[dict[str, int]] = []
+    n = 0
+    for k in lengths:
+        n += 1
+        try:
+            sp = walk_forward_splits(int(k), n_splits=splits,
+                                     test_size=max(MS.WF_MIN_TEST, int(k) // MS.WF_TEST_DIV),
+                                     anchored=True, embargo=0)
+            actual = min(int(s.test[0]) for s in sp)
+        except Exception:
+            actual = 0      # too short: the sealed WF runs no test region (TOO_SHORT)
+        mine = int(MS.wf_start_rank(int(k)))
+        if mine != actual:
+            bad.append({"n_days": int(k), "sealed_first_test_rank": actual,
+                        "stage1_first_test_rank": mine})
+    out["checked_lengths"] = n
+    out["mismatches"] = bad[:20]
+    out["n_mismatches"] = len(bad)
+    ok = (not bad and splits == MS.WF_SPLITS and out["sealed_expr_present"])
+    out["status"] = "MATCH" if ok else "MISMATCH"
+    out["why"] = ("stage 1's walk-forward bound equals the sealed cut at every checked length"
+                  if ok else
+                  f"{len(bad)} length(s) disagree; sealed WF_SPLITS {splits} vs mirror "
+                  f"{MS.WF_SPLITS}; sealed test-size expression present: "
+                  f"{out['sealed_expr_present']}")
+    return out
+
+
+def resolve_window(requested: str, check: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    """The window this run uses: the requested one when the walk-forward check is MATCH; pre_wf
+    (FAIL CLOSED) otherwise, with the reason recorded."""
+    rec = {"requested": requested, "wf_cut_check": check.get("status"),
+           "why": check.get("why")}
+    if check.get("status") == "MATCH":
+        rec["used"] = requested
+        rec["fell_back"] = False
+        return requested, rec
+    rec["used"] = DEFAULT_WINDOW
+    rec["fell_back"] = requested != DEFAULT_WINDOW
+    rec["rule"] = ("the walk-forward bound is not proven equal to the sealed cut: fail closed to "
+                   "pre_wf (the tighter window) and say so")
+    return DEFAULT_WINDOW, rec
 
 
 def universe_earliest(uni: Path) -> date | None:
@@ -551,8 +635,10 @@ def evaluate_engine(spec: dict[str, Any]) -> dict[str, Any]:
         # A STRESS THAT STRESSES (audit 2026-09-30): a zero-spread symbol's 3x arm charges 3x a
         # measured basis (cost-truth quote + round-turn commission), never 3x zero; no basis ->
         # the stress fails closed. `research/stress_cost_floor` is shared with the sealed patch.
+        # THE FILL HOUR (PR143_v3): the 1x arm (`obj["costs"]`) charges the spread of the hour
+        # the cell fills in; the stress arm scales THAT measured spread, not the registry's.
         from research.stress_cost_floor import stress_costs_for
-        costs3, s_how = stress_costs_for(sym, meta, G.COST_SCENARIO)
+        costs3, s_how = stress_costs_for(sym, meta, G.COST_SCENARIO, hour=obj.get("_fill_hour"))
         out["stress_basis"] = s_how.get("basis") or s_how.get("status")
         if costs3 is None:
             out.update(verdict="EVALUATED", p=p, t=t, mean_r=mean, mean_r_x3=None,
@@ -931,7 +1017,8 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
                               "tiers": dict.fromkeys(REC.TIER_NAMES.values(), 0),
                               "due_rescreen": 0, "created_24h": 0, "created_7d": 0,
                               "wrong_space": 0, "key_space_mismatch_rows": 0,
-                              "dead_session_variants": 0}
+                              "dead_session_variants": 0,
+                              "ranked_unsealed": 0, "oldest_ranked_unsealed_at": None}
     bank = bank or set()
     dead_gid, dead_ident = dead or ({}, {})
     judged_specs: list[dict[str, Any]] = []
@@ -953,6 +1040,14 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
         known = REC.states(con, [c for c, _ in pending]) if con is not None else {}
         for cid, sp in pending:
             st = known.get(cid)
+            if st is not None and REC.tier_of_state(st) == REC.TIER_SCORED:
+                # RANKED BY STAGE 1 AND NOT YET SEALED-JUDGED (pending holds backlog cells only):
+                # the ordering-bias clock, in the same stream.
+                census["ranked_unsealed"] += 1
+                ra = str(st.get("ruled_at") or "")
+                if ra and (census["oldest_ranked_unsealed_at"] is None
+                           or ra < census["oldest_ranked_unsealed_at"]):
+                    census["oldest_ranked_unsealed_at"] = ra
             tier = REC.TIER_PRIORITY if cid in priority else REC.tier_of_state(st)
             census["tiers"][REC.TIER_NAMES[tier]] += 1
             dc = sp.get("dead_cause")
@@ -1105,8 +1200,11 @@ def bh_cut(pvals: list[float], m: int, q: float) -> float:
 
 
 def score_of(r: dict[str, Any]) -> float | None:
-    """The stage-2 ORDER score: the training-window t-statistic of a TESTED cell, else None
-    (untested or unbuildable, which sort after every scored cell and are never dropped)."""
+    """The stage-2 ORDER score: the training-window t-statistic of a TESTED cell, else None.
+    None is stored for an UNSCREENABLE_TRAIN_WINDOW cell too (it was not tested, and the record's
+    `score` means "tested"), but `stage1_record.rank_of_state` ranks that basis at the NEUTRAL
+    t = 0 -- ahead of every negative-t cell (audit R2). Untested-for-other-reasons and
+    unbuildable cells sort after every ranked cell and are never dropped."""
     if r.get("verdict") == REC.UNBUILDABLE or r.get("basis") == "UNSCREENABLE_TRAIN_WINDOW":
         return None
     t = r.get("t")
@@ -1150,44 +1248,62 @@ def trial_charge(results: list[dict[str, Any]]) -> dict[str, Any]:
     whether or not the training window gave it a statistic. Neither the unbuildable cause nor the
     economic prior reads the training window, so this m is identical under every WINDOW; so is
     the set of cells the sealed gauntlet eventually judges, because stage 1 only reorders. The
-    BH `m` in `finalise` (tested cells only) labels survivors and is NOT the charge."""
+    BH `m` in `finalise` (tested cells only) labels survivors and is NOT the charge.
+
+    WHERE THE CHARGE LANDS. Every run's per-family `cells_screened` sums to this m; the experiment
+    ledger adds them into `stage1_cells`, and the sealed deflated Sharpe charges
+    `stage1_record.dsr_charge` = max(campaign, family, that UNION) once the two-stage patch lands
+    -- not max(campaign, family), which under-charged by union/family (audit PR143_v3)."""
     charged = [r for r in results if r.get("verdict") in REC.VERDICTS
                and r.get("verdict") != REC.UNBUILDABLE
                and r.get("reason") != "R_GATE1_ECONOMIC_PRIOR"]
+    charged_ids = {id(r) for r in charged}
+    ranked = [r for r in results if score_of(r) is not None
+              or r.get("basis") in REC.NEUTRAL_BASES]
     return {"m_charged": len(charged), "cells_ruled": sum(
                 1 for r in results if r.get("verdict") in REC.VERDICTS),
+            "cells_ranked": len(ranked),
+            "every_ranked_cell_charged": all(id(r) in charged_ids for r in ranked),
             "basis": ("full union of screened cells (ruled, not unbuildable, not refused by the "
                       "sealed economic prior); window-invariant by construction")}
 
 
-def ordering_bias_warning(runs: list[dict[str, Any]], now: datetime, window: str,
+def ordering_bias_warning(oldest_ranked_at: str | None, ranked_unsealed: Any,
+                          now: datetime, window: str,
                           hours: float = ORDERING_BIAS_HOURS) -> dict[str, Any]:
-    """TRUE when the backlog has not cleared for `hours`: every run in the unbroken newest streak
-    measured net backlog change >= 0 and the streak's first run is at least `hours` old. Then the
-    window's ordering bias (the cells it ranks first are judged first, and the tail waits) stops
-    being negligible, and the artifact says so with the window. An unmeasured net breaks the
-    streak (it is never read as >= 0), and with no measured run at all the verdict is UNMEASURED."""
-    streak: list[dict[str, Any]] = []
-    measured = 0
-    for r in reversed(runs):
-        n = r.get("net_backlog_change")
-        if not isinstance(n, (int, float)) or isinstance(n, bool):
-            break
-        measured += 1
-        if n < 0:
-            break
-        streak.append(r)
-    since = None
-    with contextlib.suppress(Exception):
-        since = datetime.fromisoformat(str(streak[-1]["ts"])) if streak else None
-    age_h = round((now - since).total_seconds() / 3600.0, 2) if since else 0.0
-    warn = bool(streak) and age_h >= hours
-    out: dict[str, Any] = {
-        "ordering_bias_warning": warn if measured else UNMEASURED, "window": window,
-        "hours_not_clearing": age_h, "threshold_hours": hours,
-        "runs_in_streak": len(streak), "since": since.isoformat() if since else None,
-        "rule": (f"net backlog change >= 0 on every run for {hours:g}h: the {window} window's "
-                 "ordering bias is no longer negligible (the tail it ranks last is not reached)")}
+    """TRUE when a cell stage 1 RANKED has waited `hours` or more without a SEALED judgement.
+
+    WHAT IT MEASURES AND WHY (audit PR143_v3). The earlier version read stage 1's own RULED
+    backlog, which stage 1 drains by construction, so it could never fire. The bias that matters is
+    on the SEALED side: the gauntlet takes ~8.3k cells in against ~5.3k out a day, and once a
+    ranked cell sits unjudged the rank -- read off the window -- is deciding which cells are ever
+    judged. So the input is the oldest stage-1 ranking (group 1: scored, or neutral) among docket
+    cells the sealed seen-cells record does not hold, collected in `select_backlog`'s one stream.
+    Its time is the cell's LATEST stage-1 ruling (a re-screen resets it), so the age is a LOWER
+    bound. No ranked unsealed cell: False. A count or time this run could not read: UNMEASURED,
+    never False (L1.28a)."""
+    rule = (f"a stage-1-ranked cell unjudged by the sealed gauntlet for >= {hours:g}h: the "
+            f"{window} window's rank is deciding which cells are ever judged")
+    out: dict[str, Any] = {"window": window, "threshold_hours": hours,
+                           "ranked_unsealed": ranked_unsealed,
+                           "oldest_ranked_unsealed_at": oldest_ranked_at,
+                           "basis": "sealed: stage-1-ranked docket cells absent from the sealed "
+                                    "seen-cells record; age from their latest stage-1 ruling",
+                           "rule": rule}
+    if not isinstance(ranked_unsealed, int) or isinstance(ranked_unsealed, bool):
+        out.update(ordering_bias_warning=UNMEASURED, oldest_age_hours=UNMEASURED)
+        return out
+    if ranked_unsealed == 0:
+        out.update(ordering_bias_warning=False, oldest_age_hours=0.0)
+        return out
+    try:
+        since = datetime.fromisoformat(str(oldest_ranked_at))
+        since = since if since.tzinfo else since.replace(tzinfo=UTC)
+    except (TypeError, ValueError):
+        out.update(ordering_bias_warning=UNMEASURED, oldest_age_hours=UNMEASURED)
+        return out
+    age_h = round(max(0.0, (now - since).total_seconds()) / 3600.0, 2)
+    out.update(ordering_bias_warning=age_h >= hours, oldest_age_hours=age_h)
     return out
 
 
@@ -1305,12 +1421,31 @@ def throughput_fence(doc: dict[str, Any]) -> dict[str, Any]:
                      f"{int(target):,}/day target")
     if net >= 0:
         fails.append(f"the backlog does not shrink: net {int(net):+,}/day")
+    # THE ORDERING BIAS IS A FENCE, NOT A NOTE (PR143_v3): a ranked cell unjudged by the sealed
+    # gauntlet for 24h means the stage-1 window is choosing what is ever judged.
+    ob = doc.get("ordering_bias") if isinstance(doc.get("ordering_bias"), dict) else {}
+    if ob.get("ordering_bias_warning") is True:
+        fails.append(f"ordering bias: a stage-1-ranked cell has waited "
+                     f"{ob.get('oldest_age_hours')}h for the sealed judge "
+                     f"({ob.get('ranked_unsealed')} ranked and unjudged, window "
+                     f"{ob.get('window')})")
     return {"status": "FAIL" if fails else "PASS", "projected_per_day": int(proj),
             "target_per_day": int(target), "net_backlog_change_per_day": int(net),
-            "backlog": backlog,
+            "backlog": backlog, "ordering_bias_warning": ob.get("ordering_bias_warning",
+                                                                UNMEASURED),
             "why": ("; ".join(fails) + f" with {backlog:,} cells waiting") if fails else (
                 f"stage 1 projects {int(proj):,}/day (target {int(target):,}); the backlog of "
                 f"{backlog:,} shrinks {int(-net):,}/day")}
+
+
+def _loud(kind: str, msg: str, *, quiet: bool, **fields: Any) -> None:
+    """Print to stderr always; append the typed event unless this is a dry/out-dir run."""
+    print(msg, file=sys.stderr, flush=True)
+    if quiet:
+        return
+    with contextlib.suppress(Exception):
+        from libs.ops import events as EV
+        EV.emit(kind, producer="stage1_judge", **fields)
 
 
 def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None = None,
@@ -1332,6 +1467,18 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     docket = docket or DOCKET
     seen_path = seen_path or SEEN_CELLS
     import external_gauntlet as G
+    # THE WINDOW IS PROVEN, NOT ASSUMED (PR143_v3): stage 1's walk-forward bound must equal the
+    # sealed cut on this tree, or the run falls back to pre_wf -- loudly.
+    wf_check = wf_cut_check(G)
+    win, window_rec = resolve_window(win, wf_check)
+    window_rec["check"] = wf_check
+    if wf_check.get("status") != "MATCH":
+        _loud("STAGE1_WINDOW_MISMATCH",
+              f"stage1_judge WINDOW CHECK {wf_check.get('status')}: {wf_check.get('why')}; "
+              f"running {win} (requested {window_rec['requested']})",
+              quiet=dry_run or out_dir is not None, window=win,
+              requested=window_rec["requested"], check=wf_check.get("status"),
+              n_mismatches=wf_check.get("n_mismatches"))
     meta = _read_json(G.UNI / "universe.json", {})
     meta = meta if isinstance(meta, dict) else {}
     prev_runs = _tail_runs(runs_p)
@@ -1613,21 +1760,22 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     run_row["net_backlog_change"] = (n_meas if isinstance(n_meas, int)
                                      else nb.get("scheduled_pace")
                                      if isinstance(nb.get("scheduled_pace"), int) else UNMEASURED)
-    obw = ordering_bias_warning([*prev_runs, run_row], now, win)
+    obw = ordering_bias_warning(census.get("oldest_ranked_unsealed_at"),
+                                census.get("ranked_unsealed") if con is not None else UNMEASURED,
+                                now, win)
     doc["ordering_bias"] = obw
     doc["ordering_bias_warning"] = obw["ordering_bias_warning"]
+    # THE FENCE READS IT (PR143_v3): re-derived now that the ordering bias is on the document.
+    doc["fence"] = throughput_fence(doc)
     doc["window"] = win
+    doc["window_check"] = window_rec
     if obw["ordering_bias_warning"] is True:
-        msg = (f"stage1_judge ORDERING BIAS: net backlog change >= 0 for "
-               f"{obw['hours_not_clearing']}h (window {win}); the ordering is no longer "
-               "negligible")
-        print(msg, file=sys.stderr, flush=True)
-        if not dry_run and out_dir is None:
-            with contextlib.suppress(Exception):
-                from libs.ops import events as EV
-                EV.emit("STAGE1_ORDERING_BIAS", producer="stage1_judge", window=win,
-                        hours_not_clearing=obw["hours_not_clearing"],
-                        net_backlog_change=run_row["net_backlog_change"])
+        _loud("STAGE1_ORDERING_BIAS",
+              f"stage1_judge ORDERING BIAS: a ranked cell has waited {obw['oldest_age_hours']}h "
+              f"for the sealed judge ({obw['ranked_unsealed']:,} ranked and unjudged, window "
+              f"{win}); the rank now decides which cells are ever judged",
+              quiet=dry_run or out_dir is not None, window=win,
+              oldest_age_hours=obw["oldest_age_hours"], ranked_unsealed=obw["ranked_unsealed"])
     if not dry_run or out_dir is not None:
         _append(runs_p, [run_row])
     doc["requeue"] = requeue

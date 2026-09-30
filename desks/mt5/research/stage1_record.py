@@ -24,7 +24,12 @@ The rank every consumer uses is a (group, -score) pair, lower first:
                               zero-spread stress re-judge list: other queues keep precedence.
   group 1  SCORED          -- every cell stage 1 TESTED, by its training-window t-statistic,
                               DESCENDING (BH survivors and non-survivors alike: the score orders,
-                              the BH verdict is reported).
+                              the BH verdict is reported). A cell forwarded with basis
+                              UNSCREENABLE_TRAIN_WINDOW (enough history, too little of it before
+                              the boundary -- mostly RECENT intraday cells) ranks here at the
+                              NEUTRAL score t = 0: stage 1 has no evidence either way, so it sits
+                              behind every positive-t cell and ahead of every negative-t one,
+                              never behind the cells the screen measured as losing (audit R2).
   group 2  NOT_YET_RULED   -- cells stage 1 has not reached.
   group 3  UNTESTED        -- ruled but not testable on the training window (too few training
                               days, no signals, under 60 days): judged after every scored cell.
@@ -56,6 +61,10 @@ TIER_SCORED = 1
 TIER_UNRULED = 2
 TIER_UNTESTED = 3
 TIER_UNBUILDABLE = 4
+#: Bases that forward a cell with no training-window statistic because the screen could not test
+#: it, not because it failed: they rank at the neutral score (t = 0) inside group 1.
+NEUTRAL_BASES = ("UNSCREENABLE_TRAIN_WINDOW",)
+NEUTRAL_SCORE = 0.0
 TIER_NAMES = {TIER_PRIORITY: "named_priority", TIER_SCORED: "scored_by_stage1_t",
               TIER_UNRULED: "not_yet_ruled", TIER_UNTESTED: "untested_on_training_window",
               TIER_UNBUILDABLE: "unbuildable_named_cause"}
@@ -153,15 +162,18 @@ def tier_of_state(state: dict[str, Any] | None) -> int:
         return TIER_UNRULED
     if state.get("verdict") == UNBUILDABLE:
         return TIER_UNBUILDABLE
-    if state.get("score") is not None:
+    if state.get("score") is not None or state.get("basis") in NEUTRAL_BASES:
         return TIER_SCORED
     return TIER_UNTESTED
 
 
 def rank_of_state(state: dict[str, Any] | None) -> tuple[int, float]:
-    """(group, -score): lower sorts first, so a higher score comes first inside group 1."""
+    """(group, -score): lower sorts first, so a higher score comes first inside group 1. An
+    unscreenable-train-window cell reads the neutral score (t = 0), whatever its row holds."""
     g = tier_of_state(state)
     if g == TIER_SCORED:
+        if state.get("score") is None:  # type: ignore[union-attr]
+            return (g, -NEUTRAL_SCORE)
         try:
             return (g, -float(state["score"]))  # type: ignore[index]
         except (TypeError, ValueError):
@@ -223,3 +235,60 @@ def stage1_rank_for_specs(specs: list[dict], cell_id_fn, path: Path | None = Non
             cids[id(sp)] = ""
     t = tiers([c for c in cids.values() if c], path)
     return {k: t.get(c, UNRULED_RANK) if c else UNRULED_RANK for k, c in cids.items()}
+
+
+#: THE DESK'S STAGE-1 TRIAL COUNT in `EXPERIMENT_LEDGER.json` (`libs.research.experiment_ledger`):
+#: the sum of `cells_screened` over every stage-1 run and family -- the FULL UNION of screened
+#: cells, the population stage 1 ranked every judged cell out of.
+LEDGER_UNION_KEY = "stage1_cells"
+
+
+def dsr_charge(campaign: int, family: str, lifetime: dict[str, Any]) -> tuple[int, str]:
+    """THE COUNT THE SEALED DEFLATED SHARPE CHARGES a cell, once the two-stage patch lands:
+    max(campaign charge, the family's lifetime trials, stage 1's union of screened cells).
+
+    WHY THE UNION AND NOT THE FAMILY (audit 2026-09-30). Stage 1 ranks every judged cell out of
+    ONE population -- every cell it screened, across families -- so the selection a judged cell
+    survived is over that union. Charging max(campaign, family) under-charges by union/family:
+    measured at 975k screened a day, 3.1x for exit_operated, 11.5x for htf_anchor and ~208x for
+    turn_of_month. `lifetime` is the sealed `lifetime_trial_report` dict; its
+    `stage1_union_trials` field is read from the ledger's `stage1_cells`. A tightening only: never
+    below the campaign charge or the family's own count. The sealed patch
+    `two_stage_judge_sort_key.patch` calls THIS function, so the test that pins it pins the judge.
+    """
+    n = int(campaign)
+    parts = [f"campaign {n}"]
+    fam_n = (lifetime.get("family_trials") or {}).get(family) if isinstance(lifetime, dict) \
+        else None
+    if isinstance(fam_n, int) and not isinstance(fam_n, bool) and fam_n > 0:
+        n = max(n, fam_n)
+        parts.append(f"lifetime family trials {fam_n}")
+    else:
+        parts.append(f"family {family or '?'} absent from the lifetime ledger")
+    union = lifetime.get("stage1_union_trials") if isinstance(lifetime, dict) else None
+    if isinstance(union, int) and not isinstance(union, bool) and union > 0:
+        n = max(n, union)
+        parts.append(f"stage-1 union of screened cells {union}")
+    else:
+        parts.append("stage-1 union UNMEASURED")
+    return n, "; ".join(parts)
+
+
+def stage1_union_from_trials(path: Path | None = None) -> int | None:
+    """The union read straight from STAGE1_TRIALS.jsonl, for the sealed fallback when the
+    experiment ledger is unreadable: never silently dropped. None when the file is unreadable."""
+    p = Path(path) if path else DESK / "data" / "STAGE1_TRIALS.jsonl"
+    total = 0
+    try:
+        with p.open(encoding="utf-8") as fh:
+            for ln in fh:
+                try:
+                    row = json.loads(ln)
+                except ValueError:
+                    continue
+                if isinstance(row, dict) and not row.get("dry_run"):
+                    with contextlib.suppress(TypeError, ValueError):
+                        total += int(row.get("cells_screened") or 0)
+    except OSError:
+        return None
+    return total
