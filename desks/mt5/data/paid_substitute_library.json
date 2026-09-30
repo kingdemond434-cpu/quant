@@ -2959,7 +2959,7 @@
    "name": "Opportunity Insights Economic Tracker (Affinity card spending, Womply, jobs)",
    "publisher_type": "github",
    "url": "https://github.com/OpportunityInsights/EconomicTracker",
-   "endpoint": null,
+   "endpoint": "https://raw.githubusercontent.com/OpportunityInsights/EconomicTracker/main/data/Affinity%20-%20National%20-%20Daily.csv",
    "classes": [
     "card_consumer",
     "jobs",

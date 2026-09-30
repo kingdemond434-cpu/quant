@@ -42,11 +42,12 @@ WHAT ONE PASS DOES (leg `paid_substitute_engine`, hourly):
          band (world_cells' shape exactly);
        * ALLOCATION -- an entry in `reports/WORLD_STATE_INPUTS.json` under `paid_substitutes`.
      Every cell carries the dataset_id as `params.source` AND as the registry's `source_id`, plus
-     `campaign_id = paid_substitute:<dataset_id>`, so a fence can match cell to dataset. A cell
-     whose series is not yet in the lake is enqueued with status `awaiting_data`; an indirect cell
-     whose family is not yet importable is enqueued `awaiting_family`. Neither is claimable by
-     the judge, so no trial is charged on a series that does not exist; each pass promotes them
-     to `queued` the moment the lake frame (or the family) lands.
+     `campaign_id = paid_substitute:<dataset_id>`, so a fence can match cell to dataset.
+     ENROLMENT IS HAVING THE SERIES: a ready match whose series acquire_datasets has not fetched
+     is AWAITING_ACQUISITION (its endpoint is in this hour's discoveries, drained by the
+     acquirer's own hourly leg). Nothing is minted on a series that does not exist -- no trial is
+     charged to the shared multiple-testing budget for a question that cannot be asked yet, and
+     nothing is parked in the registry (no-queues law, 2026-09-23): every cell is `queued`.
   5. REPORT. `reports/PAID_SUBSTITUTE_COVERAGE.json` + `.md`: per class and region -- paid sets,
      sets with a matched substitute, match strength, enrolled substitutes, the cells they fed.
 
@@ -1333,13 +1334,14 @@ def emit_uses(
     budget: list[int] | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    """The three uses of one enrolled substitute. Idempotent: a cell is enqueued once, ever."""
+    """The three uses of one ENROLLED substitute (its lake frame exists). Idempotent: a cell is
+    enqueued once, ever, as `queued` -- claimable on arrival, never parked (the no-queues law,
+    2026-09-23). An indirect cell needs `family_exogenous_gate`; on a tree without it the use is
+    reported BLOCKED with that reason instead of minting cells nothing can execute."""
     did = dataset_id(sub)
     have_series = series_present(did, lake)
     have_gate = gate_family_available()
-    bases = gate_bases()
-    status_direct = "queued" if have_series else "awaiting_data"
-    status_gate = ("queued" if have_series else "awaiting_data") if have_gate else "awaiting_family"
+    bases = gate_bases() if have_gate else []
     raw = targets_of(sub, classes)
     d_targets = admissible_targets(raw, "exogenous_conditioner", universe)
     g_targets = admissible_targets(raw, "exogenous_gate", universe)
@@ -1355,7 +1357,7 @@ def emit_uses(
         "department": "information",
         "source_id": did,
         "campaign_id": f"paid_substitute:{did}",
-        "pit_status": "STAMPED" if have_series else "AWAITING_SERIES",
+        "pit_status": "STAMPED",
         "required_data": [f"desks/mt5/data/lake/series/{did}.parquet"],
         "causal_rationale": mech,
         **culture,
@@ -1371,9 +1373,15 @@ def emit_uses(
         "direct_targets": d_targets,
         "gate_targets": g_targets,
         "gate_bases": bases,
-        "status_direct": status_direct,
-        "status_gate": status_gate,
+        "indirect_blocked": (
+            None
+            if have_gate
+            else "family_exogenous_gate is not on this tree (it lands with the world factory, #123)"
+        ),
     }
+    if not have_series:
+        stats["errors"].append("no lake frame: not enrolled, nothing minted")
+        return stats
     left = budget if budget is not None else [CELLS_PER_PASS]
     enqueue = None if dry_run else (door or _registry_door())
 
@@ -1404,7 +1412,7 @@ def emit_uses(
                     _key("d", did, SIGNAL, tf, sym, chart),
                     family="exogenous_conditioner",
                     symbol=sym,
-                    status=status_direct,
+                    status="queued",
                     params={"source": did, "signal": SIGNAL, "transform": tf},
                     mechanism=mech,
                     chart=chart,
@@ -1424,7 +1432,7 @@ def emit_uses(
                     _key("g", did, SIGNAL, base, sym, band),
                     family="exogenous_gate",
                     symbol=sym,
-                    status=status_gate,
+                    status="queued",
                     params={
                         "base_family": base,
                         "base_params": {},
@@ -1446,42 +1454,6 @@ def emit_uses(
                 )
     stats["errors"] = stats["errors"][:6]
     return stats
-
-
-def promote(
-    dataset_ids: Iterable[str], *, lake: Path | None = None, conn: sqlite3.Connection | None = None
-) -> dict[str, int]:
-    """Flip parked cells to `queued` the moment their series (and, for gates, their family) is
-    there. Only this engine's own rows, only from the two parking states."""
-    ids = [d for d in dataset_ids if series_present(d, lake)]
-    out = {"direct": 0, "indirect": 0}
-    if not ids:
-        return out
-    close = conn is None
-    try:
-        if conn is None:
-            from libs.moat.registry import connect
-
-            conn = connect()
-        fams = ["exogenous_conditioner"] + (["exogenous_gate"] if gate_family_available() else [])
-        for did in ids:
-            for fam in fams:
-                cur = conn.execute(
-                    "UPDATE research_candidates SET status='queued' WHERE source_id=? AND "
-                    "origin=? AND family=? AND status IN ('awaiting_data','awaiting_family')",
-                    (did, GENERATOR, fam),
-                )
-                out["direct" if fam == "exogenous_conditioner" else "indirect"] += int(
-                    cur.rowcount or 0
-                )
-        conn.commit()
-    except Exception:
-        return out
-    finally:
-        if close and conn is not None:
-            with contextlib.suppress(Exception):
-                conn.close()
-    return out
 
 
 def cells_fed(*, conn: sqlite3.Connection | None = None) -> dict[str, dict[str, int]] | str:
@@ -1801,9 +1773,9 @@ def run(
     grounds = search_targets(catalogue, classes)
     cands = lib_c + disc_c
     matched = {c["substitute_id"] for c in lib_c if is_match(c)}
-    enrol_ids = sorted({c["substitute_id"] for c in lib_c if enrolable(c)})
+    ready_ids = sorted({c["substitute_id"] for c in lib_c if enrolable(c)})
     lib_by_id = {s["id"]: s for s in library}
-    enrolled = [lib_by_id[i] for i in enrol_ids if i in lib_by_id]
+    ready = [lib_by_id[i] for i in ready_ids if i in lib_by_id]
 
     state = _read_json(p["state"]) or {}
     minted = set(state.get("minted") or [])
@@ -1812,11 +1784,23 @@ def run(
     uses: list[dict[str, Any]] = []
     materialised: dict[str, str] = {}
     budget = [CELLS_PER_PASS]
-    for sub in enrolled:
+    # ENROLMENT IS HAVING THE SERIES. A ready substitute (matched, free, machine endpoint) whose
+    # series acquire_datasets has not fetched yet is AWAITING_ACQUISITION: its endpoint is in this
+    # hour's discoveries, which the acquirer drains on its own hourly leg. Nothing is minted on a
+    # series that does not exist, so no trial is charged against the shared multiple-testing budget
+    # for a question that cannot yet be asked, and nothing is parked in the registry.
+    enrolled: list[dict[str, Any]] = []
+    for sub in ready:
         did = dataset_id(sub)
+        materialised[did] = (
+            materialise(sub, lake=p["lake"], acquired=acquired)
+            if not dry_run
+            else ("PRESENT" if series_present(did, p["lake"]) else "NOT_ACQUIRED")
+        )
+        if not series_present(did, p["lake"]):
+            continue
+        enrolled.append(sub)
         prev_enrolled.setdefault(did, _iso(now))
-        if not dry_run:
-            materialised[did] = materialise(sub, lake=p["lake"], acquired=acquired)
         uses.append(
             emit_uses(
                 sub,
@@ -1829,11 +1813,6 @@ def run(
                 dry_run=dry_run,
             )
         )
-    promoted = (
-        {"direct": 0, "indirect": 0}
-        if dry_run
-        else promote([dataset_id(s) for s in enrolled], lake=p["lake"], conn=registry_conn)
-    )
     ws_rows = state_inputs(enrolled, classes=classes, universe=universe, now=now, lake=p["lake"])
     fed = (
         cells_fed(conn=registry_conn)
@@ -1919,6 +1898,8 @@ def run(
         "enrolled_missing_a_use": sorted(
             u["dataset_id"] for u in uses if not (u["direct"] and u["indirect"])
         ),
+        "indirect_blocked": next((u["indirect_blocked"] for u in uses if u["indirect_blocked"]),
+                                 None),
     }
     doc: dict[str, Any] = {
         "generated_at": _iso(now),
@@ -1936,6 +1917,7 @@ def run(
             "discovered_candidates": len(disc_c),
             "candidates_scored": n_scored,
             "enrolled": len(enrolled),
+            "ready_awaiting_acquisition": len(ready) - len(enrolled),
             "paid_with_match": paid_with_match,
             "coverage_share": round(paid_with_match / len(catalogue), 4)
             if catalogue
@@ -1961,7 +1943,6 @@ def run(
             )[:20],
         },
         "three_uses": three,
-        "promoted": promoted,
         "lake_frames": dict(Counter(materialised.values())),
         "cells_fed": fed
         if isinstance(fed, str)

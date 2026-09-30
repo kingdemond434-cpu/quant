@@ -186,37 +186,62 @@ class _Door:
         return f"c{len(self.calls)}", True
 
 
+def _acquire(tmp: Path, sub_ids: list[str]) -> Path:
+    """An acquired-series registry, in acquire_datasets' own shape, for the named substitutes."""
+    pd = pytest.importorskip("pandas")
+    np = pytest.importorskip("numpy")
+    lib = {s["id"]: s for s in pse.load_library()}
+    reg: dict = {"by_url": {}, "series": {}}
+    idx = pd.date_range("2015-01-01", periods=2_500, freq="D", tz="UTC")
+    for i, sid in enumerate(sub_ids):
+        name = f"acq_{sid}"
+        path = tmp / f"{name}.parquet"
+        pd.Series(np.cumsum(np.random.default_rng(i).normal(size=len(idx))), index=idx,
+                  name="value").to_frame().to_parquet(path)
+        reg["by_url"][lib[sid]["endpoint"]] = {"series": [name]}
+        reg["series"][name] = {"path": str(path)}
+    out = tmp / "acquired.json"
+    out.write_text(json.dumps(reg), "utf-8")
+    return out
+
+
 def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
+    """Standing rule 2026-09-30: an enrolled substitute feeds direct cells, exogenous_gate
+    cells and WORLD_STATE_INPUTS at enrolment, every cell carrying the dataset_id."""
     p = _paths(tmp_path)
     (tmp_path / "reports").mkdir()
+    p["acquired"] = _acquire(tmp_path, ["fred_bamlh0a0hym2", "cboe_vix"])
     p["world_state"].write_text(json.dumps({"series": [{"source": "other"}], "n_series": 1}),
                                 "utf-8")
     door = _Door()
     doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
                   registry_conn=sqlite3.connect(":memory:"))
     enrolled = json.loads(p["enrolled"].read_text("utf-8"))["enrolled"]
-    assert doc["headline"]["enrolled"] == len(enrolled) > 0
     ids = {e["dataset_id"] for e in enrolled}
+    assert ids == {"psub_fred_bamlh0a0hym2", "psub_cboe_vix"} and doc["headline"]["enrolled"] == 2
+    assert doc["headline"]["ready_awaiting_acquisition"] > 0
     direct = [c for c in door.calls if c["family"] == "exogenous_conditioner"]
     gates = [c for c in door.calls if c["family"] == "exogenous_gate"]
+    assert {c["status"] for c in door.calls} == {"queued"}      # nothing parked
     for did in ids:
         d = [c for c in direct if c["source_id"] == did]
-        g = [c for c in gates if c["source_id"] == did]
-        assert d and g, did                       # direct AND indirect, at enrolment
-        for c in d + g:
+        assert d, did
+        for c in d + [c for c in gates if c["source_id"] == did]:
             assert c["params"]["source"] == did    # the fence's match key, in params ...
             assert c["campaign_id"] == f"paid_substitute:{did}"   # ... and in provenance
             assert c["origin"] == pse.GENERATOR
             for k in ("source_culture", "participant_structure", "failure_mode_hypothesis"):
                 assert c[k]
-        # no series in the lake yet: parked, never claimable by the judge
-        assert {c["status"] for c in d} == {"awaiting_data"}
-        assert {c["status"] for c in g} <= {"awaiting_data", "awaiting_family"}
+    if pse.gate_family_available():
+        assert {c["source_id"] for c in gates} == ids
+        assert doc["three_uses"]["enrolled_missing_a_use"] == []
+    else:                                        # the use is reported BLOCKED, never faked
+        assert not gates and "exogenous_gate" in doc["three_uses"]["indirect_blocked"]
     ws = json.loads(p["world_state"].read_text("utf-8"))
     assert ws["series"] == [{"source": "other"}]   # the world factory's block is preserved
-    assert {r["dataset_id"] for r in ws["paid_substitutes"]["series"]} == ids
-    assert all(r["z_lagged"] == pse.UNMEASURED for r in ws["paid_substitutes"]["series"])
-    assert doc["three_uses"]["enrolled_missing_a_use"] == []
+    rows = ws["paid_substitutes"]["series"]
+    assert {r["dataset_id"] for r in rows} == ids
+    assert all(isinstance(r["z_lagged"], float) for r in rows)
     # idempotent: a second pass enqueues nothing new
     n = len(door.calls)
     pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
@@ -224,35 +249,24 @@ def test_every_enrolled_substitute_feeds_all_three_uses(tmp_path: Path) -> None:
     assert len(door.calls) == n
 
 
-def test_enrolment_needs_a_machine_route_and_emits_to_the_fetchers(tmp_path: Path) -> None:
+def test_nothing_is_minted_before_the_series_exists(tmp_path: Path) -> None:
+    """A ready match with no acquired series is AWAITING_ACQUISITION: its endpoint goes to the
+    acquirer, and no cell is minted (no trial charged, nothing parked)."""
     p = _paths(tmp_path)
-    pse.run(now=NOW, fetch=False, paths=p, environ={}, door=_Door(), asia_globs=[],
-            registry_conn=sqlite3.connect(":memory:"))
+    door = _Door()
+    doc = pse.run(now=NOW, fetch=False, paths=p, environ={}, door=door, asia_globs=[],
+                  registry_conn=sqlite3.connect(":memory:"))
+    assert door.calls == [] and doc["headline"]["enrolled"] == 0
+    assert doc["headline"]["ready_awaiting_acquisition"] > 0
     lib = {s["id"]: s for s in pse.load_library()}
-    for e in json.loads(p["enrolled"].read_text("utf-8"))["enrolled"]:
-        assert str(lib[e["substitute"]].get("endpoint") or "").startswith("http")
     grounds = json.loads(p["forest"].read_text("utf-8"))["grounds"]
     assert len(grounds) >= 3_000
     assert json.loads(p["seeds"].read_text("utf-8"))["urls"]
     assert json.loads(p["roster"].read_text("utf-8"))["sources"]
     disc = list(p["intel"].glob("discoveries_paidsub_*.json"))
-    assert disc and all(r["endpoints"] for r in json.loads(disc[0].read_text("utf-8")))
-
-
-def test_parked_cells_promote_when_the_series_lands(tmp_path: Path) -> None:
-    pd = pytest.importorskip("pandas")
-    con = sqlite3.connect(":memory:")
-    con.execute("create table research_candidates (id text, source_id text, origin text, "
-                "family text, status text)")
-    con.executemany("insert into research_candidates values (?,?,?,?,?)", [
-        ("a", "psub_x", pse.GENERATOR, "exogenous_conditioner", "awaiting_data"),
-        ("b", "psub_x", "someone_else", "exogenous_conditioner", "awaiting_data"),
-        ("c", "psub_y", pse.GENERATOR, "exogenous_conditioner", "awaiting_data")])
-    assert pse.promote(["psub_x", "psub_y"], lake=tmp_path, conn=con)["direct"] == 0
-    pd.DataFrame({"value": [1.0], "available_time": [NOW]}).to_parquet(tmp_path / "psub_x.parquet")
-    assert pse.promote(["psub_x", "psub_y"], lake=tmp_path, conn=con)["direct"] == 1
-    got = dict(con.execute("select id, status from research_candidates").fetchall())
-    assert got == {"a": "queued", "b": "awaiting_data", "c": "awaiting_data"}
+    rows = json.loads(disc[0].read_text("utf-8"))
+    assert rows and all(r["endpoints"] and r["dataset_id"].startswith("psub_") for r in rows)
+    assert all(lib[r["dataset_id"][5:]]["auth"] == "none" for r in rows)
 
 
 def test_materialise_stamps_available_time_after_the_period(tmp_path: Path) -> None:
