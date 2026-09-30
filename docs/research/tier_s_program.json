@@ -85,19 +85,22 @@
     "desks/mt5/research/tier_s.py",
     "libs/tiers/blinding.py",
     "libs/tiers/firewall.py",
-    "desks/mt5/tests/test_tier_s_adversarial.py"
+    "desks/mt5/tests/test_tier_s_adversarial.py",
+    "desks/mt5/research/miner_candidate_compiler.py",
+    "desks/mt5/research/proposer_common.py",
+    "desks/mt5/tests/test_tier_s_enforcement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/MARKET.json",
-   "status": "PARTIAL",
+   "status": "BUILT",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_researchers",
     "better": "up",
     "organ": "market"
    },
-   "remaining": "verifier 2026-09-30, being built: blinding enforced at runtime on what proposers read, not only a static audit; then the trading box's own attestation"
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S05",
@@ -189,19 +192,23 @@
     "libs/tiers/red_queen.py",
     "desks/mt5/research/adversary_evolution.py",
     "desks/mt5/research/tier_s.py",
-    "desks/mt5/tests/test_tier_s_adversarial.py"
+    "desks/mt5/tests/test_tier_s_adversarial.py",
+    "libs/tiers/prejudge_screen.py",
+    "desks/mt5/side_channels/run_external_backtest.py",
+    "desks/mt5/research/merge_hypotheses.py",
+    "desks/mt5/tests/test_tier_s_enforcement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "status": "PARTIAL",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.defender_balanced",
     "better": "up",
     "organ": "red_queen"
    },
-   "remaining": "verifier 2026-09-30, being built: a Red Queen finding changing a (research-side) gate a candidate passes through; then the trading box's own attestation"
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S10",
@@ -434,19 +441,21 @@
    "files": [
     "libs/tiers/test_invention.py",
     "desks/mt5/research/tier_s.py",
-    "desks/mt5/tests/test_tier_s_adversarial.py"
+    "desks/mt5/tests/test_tier_s_adversarial.py",
+    "libs/tiers/prejudge_screen.py",
+    "desks/mt5/tests/test_tier_s_enforcement.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TEST_INVENTION.json",
-   "status": "PARTIAL",
+   "status": "BUILT",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.candidate_gates",
     "better": "up",
     "organ": "test_invention"
    },
-   "remaining": "verifier 2026-09-30, being built: the ratifications file filled automatically, with ratified tests running on candidates; then the trading box's own attestation"
+   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
   },
   {
    "id": "S22",
