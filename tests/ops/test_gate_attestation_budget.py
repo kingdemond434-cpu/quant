@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -16,6 +17,47 @@ def test_attestation_record_budget_covers_three_bounded_git_reads() -> None:
     spec.loader.exec_module(module)
 
     assert module.ATTEST_RECORD_TIMEOUT_S >= 3 * 60
+
+
+def test_gate_collection_manifest_contains_only_tracked_pytest_patterns(
+        monkeypatch, tmp_path) -> None:
+    path = ROOT / "scripts" / "run_gate_attestation.py"
+    spec = importlib.util.spec_from_file_location("run_gate_attestation_manifest", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(module, "TEST_MANIFEST", tmp_path / "gate_tests.txt")
+    monkeypatch.setattr(module.subprocess, "run", lambda *a, **kw: SimpleNamespace(
+        returncode=0,
+        stdout="tests/test_alpha.py\nlibs/research/model.py\nresearch/placebo_test.py\n",
+        stderr="",
+    ))
+    paths, error = module._tracked_python_paths()
+    manifest, error = module._tracked_test_manifest(paths)
+    assert error == "" and manifest == module.TEST_MANIFEST
+    assert manifest.read_text("utf-8").splitlines() == [
+        "tests/test_alpha.py", "research/placebo_test.py"]
+
+
+def test_ruff_population_uses_canonical_discovery_and_rejects_outside_paths(
+        monkeypatch) -> None:
+    path = ROOT / "scripts" / "run_gate_attestation.py"
+    spec = importlib.util.spec_from_file_location("run_gate_attestation_ruff", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    inside = module.ROOT / "libs" / "alpha.py"
+    monkeypatch.setattr(module.subprocess, "run", lambda *a, **kw: SimpleNamespace(
+        returncode=0, stdout=f"{inside}\n", stderr=""))
+    paths, error = module._ruff_discovered_paths("python")
+    assert error == ""
+    assert paths == ["libs/alpha.py"]
+
+    monkeypatch.setattr(module.subprocess, "run", lambda *a, **kw: SimpleNamespace(
+        returncode=0, stdout=f"{module.ROOT.parent / 'outside.py'}\n", stderr=""))
+    paths, error = module._ruff_discovered_paths("python")
+    assert paths == []
+    assert "outside the release root" in error
 
 
 def test_tracked_python_census_runs_once_for_many_untracked_files(monkeypatch, tmp_path) -> None:
