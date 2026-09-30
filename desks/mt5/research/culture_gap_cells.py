@@ -409,7 +409,7 @@ def donate_cells(rows: list[dict[str, Any]]) -> dict[str, Any]:
     if not rows:
         return {"donated": 0, "path": None}
     try:
-        import proposer_common as PC
+        from research import proposer_common as PC
         path = PC.donate(SEAT, rows, tests_run=len(rows))
         counts = PC.donation_counts()
         return {"donated": int(counts.get("donated") or 0), "path": str(path) if path else None,

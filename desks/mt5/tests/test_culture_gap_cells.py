@@ -108,10 +108,9 @@ def test_a_conditioner_without_its_pack_series_is_unmeasured(tmp_path: Path,
 
 def _isolate_door(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Point the donation door (intake dir, pre-registration ledger, registry backup) at tmp."""
-    import proposer_common as PC
-
     from libs.moat import registry as R
     from libs.research import preregistration as PR
+    from research import proposer_common as PC
     intel = tmp_path / "intel"
     monkeypatch.setattr(PC, "INTEL", intel)
     monkeypatch.setattr(PR, "LEDGER", tmp_path / "prereg.jsonl")
@@ -199,9 +198,12 @@ def test_recipe_to_donation_to_compiler_to_a_docket_row_with_all_four_fields(
         assert cand["family"] == "fx_fixing_reversal" != "discovered"
         assert cand["params"]["session"] == "all"
         assert cand["mechanism_status"] == "NAMED" and len(cand["mechanism_note"]) >= 12
-        for f in CC.FIELDS:
-            assert cand[f] and cand[f] != CC.UNMEASURED, f
         how = cand[CC.DERIVATION_FIELD]
+        for f in CC.FIELDS:                     # all four ride; none is laundered to a value
+            assert cand[f], f
+            assert (how[f] == CC.UNMEASURED) == (cand[f] == CC.UNMEASURED), f
+        assert cand["failure_mode_hypothesis"] != CC.UNMEASURED
+        assert cand["crowding_prior"] in CC.CROWDING_PRIORS
         assert cand["source_culture"] == "CN/zh"
         assert how["source_culture"] == how["participant_structure"] == CC.DECLARED
         assert how["failure_mode_hypothesis"] != CC.DECLARED     # inferred, not laundered
