@@ -152,6 +152,16 @@ MODULES = [
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
     "desks/mt5/research/shadow_forward.py",
+    # Steps the daily chain gained after the list above was written, re-derived from
+    # daily_cycle.py's imports by the test named above (2026-09-30).
+    "desks/mt5/research/build_allocator.py",
+    "desks/mt5/research/daily_research_os.py",
+    "desks/mt5/research/export_aurum_findings.py",
+    "desks/mt5/research/module_rent.py",
+    "desks/mt5/research/probation_runner.py",
+    "desks/mt5/research/research_gap_map.py",
+    "desks/mt5/research/simplifier.py",
+    "desks/mt5/research/wiring_ceo.py",
     # THE BAR SOURCE `shadow_forward` REPLAYS ON, unwatched until now. It gained a `timeframe`
     # argument on 2026-09-05 and the forward loop passes it for every clock, so a stale copy
     # raises TypeError on the FIRST sleeve of every pass -- the whole forward book reads
