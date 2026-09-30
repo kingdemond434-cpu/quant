@@ -672,7 +672,7 @@ def _build_carry(b: Bars, p: dict[str, Any]) -> list[Order]:
     if not terms:
         return []
     try:
-        mode = int(terms.get("swap_mode"))
+        mode = int(terms["swap_mode"])
         point = float(terms.get("point") or 0.0)
         contract = float(terms.get("contract_size") or 0.0)
         lo_sw, sh_sw = float(terms["swap_long"]), float(terms["swap_short"])
