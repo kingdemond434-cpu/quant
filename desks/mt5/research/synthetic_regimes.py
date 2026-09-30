@@ -250,7 +250,7 @@ def _scale_col(df: pd.DataFrame, col: str, lo: int, hi: int, k: float) -> int:
     """Multiply `col` over [lo, hi) by k. Returns how many rows were touched (0 = column absent)."""
     if col not in df.columns or hi <= lo:
         return 0
-    vals = np.asarray(df[col], dtype="float64")
+    vals = np.array(df[col], dtype="float64", copy=True)   # writable under pandas 3 (CoW)
     vals[lo:hi] *= k
     df[col] = vals
     return int(hi - lo)
