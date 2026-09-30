@@ -501,7 +501,7 @@ LEG_LAYER: dict[str, str] = {
     # Walking inside a registered ground's own front door is COLLECTION: it fetches documents and
     # files them as that ground's claims. It mints nothing and predicts nothing.
     "ground_depth": "information",
-    "fill_recorder": "execution",
+    "fill_recorder": "execution", "cost_surfaces": "execution",
     "actor_pressure": "information",
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
     "shortfall_model": "execution",
