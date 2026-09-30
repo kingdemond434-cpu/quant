@@ -64,7 +64,7 @@ def test_assumed_lags_are_flagged_not_dropped() -> None:
 # ------------------------------------------------------------------ 2-3 the certificate path
 @pytest.fixture()
 def edge(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    import edge_search as es
+    from research import edge_search as es
     desk = tmp_path / "desks" / "mt5"
     (desk / "data").mkdir(parents=True)
     (tmp_path / "data").mkdir()
