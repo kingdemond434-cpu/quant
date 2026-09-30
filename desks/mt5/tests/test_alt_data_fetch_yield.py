@@ -365,3 +365,29 @@ def test_a_vector_without_counts_is_unmeasured_never_zero(attempts, expect) -> N
                                   "last_attempt": "2026-09-29T00:00:00+00:00"}}}
     out = ady.vectors(frontier, None, datetime(2026, 9, 30, tzinfo=UTC))
     assert out["rows_by_vector"]["v"]["successes"] == expect
+
+
+# ----------------------------------------------------------------------------- where rows land
+def test_a_regional_track_record_compiles_to_a_registered_non_banned_family() -> None:
+    """The regional rows reach the gauntlet through the compiler's STRUCTURED_TRACK_RECORD door
+    (miner_candidate_compiler.compile_row), NEVER through edge_search's banned `discovered`."""
+    from research import family_policy as fp
+    from research import miner_candidate_compiler as mcc
+    row = rsh.row("share4you", "track_record", "Ivan", "https://s.test/t/1", region="CIS",
+                  stats={"return_pct": 55.2}, mechanism_tags=["trend", "gold"])
+    cands, disp = mcc.compile_row("share4you", row, {"XAUUSD", "EURUSD"})
+    assert disp == "STRUCTURED_TRACK_RECORD" and cands
+    fams = {c["family"] for c in cands}
+    assert fams == {"trend_ma_cross"} and not any(fp.family_banned(f) for f in fams)
+    assert all(mcc._registered_cached(f) for f in fams)
+
+
+def test_deep_forest_tasks_carry_no_banned_family() -> None:
+    from research import family_policy as fp
+    rows = [{"claim": "黄金夜盘突破后次日延续上涨概率高。", "claim_hash": "h1", "ground": "g",
+             "url": "https://x/1", "lang": "zh", "quantities": ["突破"], "score": 2.0,
+             "source": "deep_forest", "instruments": {"analogues": ["XAUUSD"],
+                                                      "transfer_only": []}}]
+    tasks = dfm.build_tasks(rows)
+    assert tasks and all(t["kind"] == "story_mechanism" for t in tasks)
+    assert not any(fp.family_banned(t.get("family")) for t in tasks)

@@ -1,8 +1,7 @@
 """ALT_DATA_YIELD.json -- what the alt-data miners actually reach, per platform, vector and leg.
 
-    python research/alt_data_yield.py          # rebuild the artifact from the ledgers
-
-NOT A LEG OF ITS OWN. The artifact is rewritten at the end of every pass of the organs that move
+A LIBRARY, NOT A LEG OF ITS OWN (no entry point, on purpose: a second clock would be a
+shadow). The artifact is rewritten at the end of every pass of the organs that move
 it -- `deep_forest_miner.run` (the hourly `deep_forest` leg and, through `forest_runner`'s
 practitioner role, every `forest_*` leg) and `regional_survivor_hunters.run_and_save` (the
 seed-miner clock). This file only COMPOSES what those organs already record:
@@ -288,16 +287,3 @@ def write(out: Path | None = None, **paths: Any) -> dict[str, Any]:
     doc = build(**{k: Path(v) for k, v in paths.items() if v is not None})
     _atomic(out or OUT, json.dumps(doc, indent=1, ensure_ascii=False, default=str))
     return doc
-
-
-def main() -> int:
-    doc = write()
-    s = doc["summary"]
-    print(f"ALT_DATA_YIELD platforms {s['platforms_yielding']}/{s['platforms']} yielding; "
-          f"vectors attempted this week {s['vectors_attempted_this_week']}/{s['vectors_named']}"
-          f"; never attempted {s['vectors_never_attempted']}; written {OUT}")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
