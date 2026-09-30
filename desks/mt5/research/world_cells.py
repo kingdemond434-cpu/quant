@@ -421,7 +421,20 @@ def gate_bases() -> list[str]:
         xs = set(CROSS_SECTIONAL_FAMILIES)
     except Exception:                                     # noqa: BLE001
         xs = set()
-    return sorted(f for f in live_family_names() if f not in xs and gateable(f))
+    try:
+        from mt5desk.families_orthogonal import FAMILY_INPUTS
+    except Exception:                                     # noqa: BLE001
+        FAMILY_INPUTS = {}
+
+    def _price_only(name: str) -> bool:
+        # An orthogonal family declares its input; only "price only" rebuilds from bars alone
+        # (`correlation_regime` needs a peer, `calendar_month` a source-named month). Families
+        # outside that dict are the decorated/hunt16 populations, all bar-built.
+        inp = FAMILY_INPUTS.get(name)
+        return inp is None or str(inp[0]).startswith("price only")
+
+    return sorted(f for f in live_family_names()
+                  if f not in xs and gateable(f) and _price_only(f))
 
 
 Enqueue = Callable[..., tuple[str, bool]]
