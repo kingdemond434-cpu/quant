@@ -240,6 +240,7 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
     assert "FULLY WIRED OR IT DOES NOT COUNT" in step
     assert "NO FORCED OR FAKE WORK" in step
     assert "JUDGING THROUGHPUT TO MAXIMUM" in step
+    assert "CONVERSIONS TO MAXIMUM" in step
     assert "Desktop/box data is the more accurate source" in step
     for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
                 "Cert to forward", "Deep-forest vectors", "Judged", "Live"):
