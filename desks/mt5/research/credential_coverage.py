@@ -245,9 +245,13 @@ def markdown(doc: Mapping[str, Any]) -> str:
     for m in doc["name_mismatches"]:
         lines.append(f"| `{m['var']}` | `{m['consumer']}` | {m['branch']} | "
                      f"{', '.join(m['reads'])} |")
-    lines += ["", "## No key needed", "", "| Provider | Wired in | Status |", "|---|---|---|"]
+    lines += ["", "## No key needed", "", "| Provider | Wired in | Status | Terms |",
+              "|---|---|---|---|"]
     for k in doc["keyless"]:
-        lines.append(f"| {k['provider']} | {', '.join(k['wired_in']) or '-'} | {k['status']} |")
+        terms = ("ok" if k.get("machine_use_allowed", True)
+                 else f"NO MACHINE USE -- {k.get('terms') or 'provider terms'}")
+        lines.append(f"| {k['provider']} | {', '.join(k['wired_in']) or '-'} | {k['status']} | "
+                     f"{terms} |")
     return "\n".join(lines) + "\n"
 
 

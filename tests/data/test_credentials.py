@@ -237,6 +237,9 @@ def test_reddit_is_fenced_by_its_terms_and_off_the_actionable_list() -> None:
     ranked, rest = md.split("## Considered and not built", 1)
     assert "REDDIT" not in ranked
     assert "`REDDIT_CLIENT_ID`" in rest and "commercial use" in rest
+    anon = next(k for k in doc["keyless"] if k["provider"].startswith("Reddit anonymous"))
+    assert anon["machine_use_allowed"] is False               # flagged for its owner lanes
+    assert "NO MACHINE USE" in rest.split("## No key needed", 1)[1]
 
 
 def test_a_bad_registry_file_does_not_crash_the_coverage_leg(tmp_path: Path) -> None:
