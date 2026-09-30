@@ -14,11 +14,11 @@ sleeve registry held ~693 clocks, 124 of a banned family, and four other stores 
 own count. Each store was internally consistent; the lie was between them, and nothing compared
 them until a person did.
 
-STATE FENCE. In CI or a fresh clone the stores are either absent or the committed SNAPSHOT of the
-box's state, which no commit can migrate; both are reported (UNMEASURED / SNAPSHOT) and pass
-unless `--require-state` is given (the hourly box gate passes it, where they ARE the live stores).
+STATE FENCE. In CI or a fresh clone none of the stores exist; that is "no desk state", not a
+broken law, so the fence passes with the verdict UNMEASURED unless `--require-state` is given
+(the hourly box gate passes it, where an absent authority file IS a defect).
 
-Exit: 2 with --require-state on a fatal divergence or no desk state; 0 otherwise.
+Exit: 2 on a fatal divergence (or, with --require-state, on no desk state); 0 clean.
 """
 from __future__ import annotations
 
@@ -66,16 +66,6 @@ def main(argv: list[str] | None = None) -> int:
           f"{c['source']}; {doc['n_divergences']} divergence(s), {len(fatal)} fatal {doc['by_kind']}")
     for d in fatal[:12]:
         print(f"   FATAL {d['kind']} {d['store']}: {d['key'][:90]}")
-    if fatal and not a.require_state:
-        # THE STORES IN A CHECKOUT ARE A SNAPSHOT OF THE BOX, NOT THE BOX (2026-09-29). They are
-        # tracked, the box keeps its own copies (Adopt-Release preserves every state path) and a
-        # commit here cannot migrate them -- `CLAUDE.md`: "never fix the box by editing a ledger
-        # on origin". Failing the portable half on them made CI permanently red on a divergence
-        # no commit could clear. The box's hourly gate passes --require-state and still fails.
-        print("   SNAPSHOT: these divergences are in the committed copy of the box's state; the "
-              "box gate (--require-state) judges the live stores. Migrate on the box: python "
-              "desks/mt5/research/certificate_truth.py --once --apply")
-        return 0
     if fatal:
         print("   migrate once on the box: python desks/mt5/research/certificate_truth.py --once --apply")
         return 2
