@@ -240,6 +240,8 @@ LEG_LAYER: dict[str, str] = {
     "engine_registry": "meta",
     "counterfactual_attribution": "meta",
     "trend_core": "prediction",
+    # the within-class rank legs are claims about relative returns: prediction, like trend_core
+    "cross_sectional_breadth": "prediction",
     "event_surprise": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",

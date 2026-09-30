@@ -2276,3 +2276,25 @@ ORTHOGONAL_FAMILIES.update(MASS_SCREEN_FAMILIES)
 for _ms_name in MASS_SCREEN_FAMILIES:
     FAMILY_INPUTS[_ms_name] = ("price only (lead: the named leader's bars too)",
                                "data/universe/*_H1.parquet")
+
+# CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
+# nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a
+# certificate: `family_cross_sectional` takes its peers as an argument and the sealed gauntlet's
+# `build_cell` has no branch that supplies them, so every such cell rebuilt with peers=None and
+# returned []. These six load their own class panel from the bar store given only `symbol`, so the
+# gauntlet builds them through its ordinary `fn(h1, **params)` call. Registered here because this
+# dict is the door `external_gauntlet.build_cell`, `executables.resolve_family`,
+# `families.get_family_func` and `miner_candidate_compiler._registered_family` all read.
+from mt5desk.families_cross_sectional import CROSS_SECTIONAL_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(CROSS_SECTIONAL_FAMILIES)
+for _xs_name in CROSS_SECTIONAL_FAMILIES:
+    FAMILY_INPUTS[_xs_name] = ("the symbol's peer class (research.universe_policy.peer_class), "
+                               "read as of each decision bar from the bar store",
+                               "data/universe/*_H1.parquet")
+    FAMILY_TIMEFRAMES[_xs_name] = (
+        ("H1",),
+        "ranks the class once a day at a broker decision HOUR from the H1 store; on a four-hour "
+        "or daily chart the decision hour does not exist, and below the hour the class panel "
+        "(read at H1) would be joined to a finer clock than it carries")
+del _xs_name
