@@ -206,5 +206,10 @@ def test_the_solve_reports_the_paired_gap_of_a_named_value() -> None:
     act = _active()
     noise = np.random.default_rng(2).normal(0.0, 0.5, act.shape)
     res = sgd._solve((1.0, 2.0, 3.0), lambda v: noise + 0.3 - 0.2 * abs(v - 2.0),
+                     act, 0.005, 3.0, "lower", against=2.0)
+    gap = res["gap_vs_today"]
+    assert gap["value"] == 2.0 and gap["delta_elog_per_day"] > 0 and gap["holds"] is True
+    # 1.0 and 3.0 sit symmetrically off the peak: no gap, so it does not hold.
+    res = sgd._solve((1.0, 2.0, 3.0), lambda v: noise + 0.3 - 0.2 * abs(v - 2.0),
                      act, 0.005, 3.0, "lower", against=1.0)
-    assert res["gap_vs_today"]["value"] == 1.0 and res["gap_vs_today"]["se"] > 0
+    assert res["gap_vs_today"]["holds"] is False
