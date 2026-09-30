@@ -2630,6 +2630,9 @@ def _params_from_certificate(s: dict[str, object]) -> tuple[dict[str, object] | 
         return None, (f"{want!r} names no parameters and the default identity {derived!r} does "
                       f"not extend it; refusing to guess a parameterisation")
 
+    canon = _params_from_canon(s, want)
+    if canon is not None:
+        return canon, ""
     docket = _docket_rows()
     if not docket:
         return None, f"no docket on this box to recover params for cell {want!r}"
@@ -2686,6 +2689,80 @@ def _send_error(res: object) -> object:
         return None
 
 
+def _certified_digest_cell(s: dict) -> str:
+    """The certificate's `<SYM>[@TF].<family>.p=<digest>` identity, or "" when it names none."""
+    cert = s.get("certificate")
+    cell = str(cert.get("cell") or "") if isinstance(cert, dict) else (
+        cert.strip() if isinstance(cert, str) else "")
+    want = cell.split(".", 1)[1] if cell.startswith("external.") else cell
+    return want if re.search(r"\.p=[0-9a-f]{8,}$", want) else ""
+
+
+def _params_match_certificate(s: dict, family: str, params: dict) -> bool:
+    """True unless the certificate names a parameter digest these params do not reproduce.
+
+    A certificate with no digest (bare names, qquant descriptors, forward clocks) has nothing to
+    check against, so the row stands -- that is the pre-existing behaviour for every such sleeve.
+    """
+    want = _certified_digest_cell(s)
+    if not want:
+        return True
+    try:
+        from research.frontier_identity import cell_id
+        got = cell_id({"sym": want.split(".", 1)[0].split("@", 1)[0], "family": family,
+                       "params": params})
+    except Exception:
+        return True
+    return got == want
+
+
+def _canon_rows() -> dict[str, object]:
+    """`UNIVERSAL_SURVIVORS.canon.json` survivors keyed by certificate cell, re-read on change."""
+    global _CANON_CACHE
+    p = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+    try:
+        mtime = p.stat().st_mtime
+    except OSError:
+        return {}
+    if _CANON_CACHE is None or _CANON_CACHE[0] != mtime:
+        try:
+            doc = json.loads(p.read_text("utf-8"))
+            rows = doc.get("survivors") if isinstance(doc, dict) else None
+            _CANON_CACHE = (mtime, rows if isinstance(rows, dict) else {})
+        except (OSError, ValueError):
+            _CANON_CACHE = (mtime, {})
+    return _CANON_CACHE[1]
+
+
+_CANON_CACHE: tuple[float, dict[str, object]] | None = None
+
+
+def _params_from_canon(s: dict, want: str) -> dict[str, object] | None:
+    """The certificate's own `shadow_spec.params` from the sealed canon, VERIFIED by digest.
+
+    The canon is where the certificate was minted, so it is the authoritative copy of what was
+    certified; the docket is a research artifact that may not hold a given symbol's row at all.
+    Accepted only when hashing the params reproduces the certificate's own identity.
+    """
+    cert = s.get("certificate")
+    cell = str(cert.get("cell") or "") if isinstance(cert, dict) else str(cert or "")
+    row = _canon_rows().get(cell) or _canon_rows().get(f"external.{want}")
+    if not isinstance(row, dict):
+        return None
+    spec = row.get("shadow_spec")
+    found = spec.get("params") if isinstance(spec, dict) else None
+    if not isinstance(found, dict):
+        return None
+    try:
+        from research.frontier_identity import cell_id
+        sym_w, fam_w = want.split(".", 2)[:2]
+        ok = cell_id({"sym": sym_w.split("@", 1)[0], "family": fam_w,
+                      "params": found}) == want
+    except Exception:
+        return None
+    return dict(found) if ok else None
+
+
 def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None, str]:
     """The keyword params a non-hunt16 certified cell is called with, or (None, reason).
 
@@ -2710,6 +2787,19 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
         if recovered is None:
             return None, why
         params = dict(recovered)
+    elif not _params_match_certificate(s, family, params):
+        # A LOSSY ROW IS NOT AN EXPLICIT PARAMETERISATION (measured 2026-09-30). Nine LIVE
+        # `xauusd_cross_asset_residual_asia_p_*` rows carry `params: {"timeframe": "M15"}` --
+        # the chart and nothing else -- while their certificate `XAUUSD@M15.cross_asset_residual.
+        # p=e95ea804f8e3f059` was earned with `factor_symbols`, `beta_win`, `entry_z` and four
+        # more. Trusting the row refused every one ("no factor symbols named on the candidate")
+        # and, had the family not needed factors, would have traded defaults under the
+        # certificate's name. When the row does not hash back to the certified digest the
+        # certificate's own parameters are recovered and verified; if they cannot be, the row is
+        # used as before, so no sleeve that traded yesterday is refused today.
+        recovered, _why = _params_from_certificate(s)
+        if recovered is not None:
+            params = dict(recovered)
     try:
         from mt5desk.family_inputs import resolve, strip_identity_keys
     except Exception as exc:
