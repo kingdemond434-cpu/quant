@@ -61,7 +61,14 @@ def _full(ledger, n: int | None = None, cost: str = "capital", recurrence: int =
     from the budget in force, with forty rows of margin, so the test tracks the real ceiling.
     """
     if n is None:
-        n = desk_memory.BUDGET_CHARS // len(_row(1)) + 40
+        # Per-row cost measured through the REAL renderer, not the raw JSON length (the rendered
+        # form is shorter, so sizing off the JSON under-filled the budget).
+        probe = ledger.parent / "_size_probe.jsonl"
+        probe.write_text("\n".join(_row(i, cost, recurrence) for i in range(1, 11)) + "\n",
+                         "utf-8")
+        per_row = max(len(desk_memory.corpus(path=probe)[0]) // 10, 1)
+        probe.unlink()
+        n = desk_memory.BUDGET_CHARS // per_row + 40
     ledger.write_text("\n".join(_row(i, cost, recurrence) for i in range(1, n + 1)) + "\n",
                       "utf-8")
 
