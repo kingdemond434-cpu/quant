@@ -504,8 +504,13 @@ def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credit
     doc = _run_grounds(monkeypatch, tmp_path, _SRC["grounds"], budget=3000)
     statuses = {g["ground"]: g for g in doc["grounds"]}
     assert len(statuses) == len(_SRC["grounds"])
+    # A TERMS-FENCED ground (Reddit, 2026-09-30; libs/data/terms_fence.py) is refused by name
+    # and never fetched -- and only a fenced ground may carry that status.
+    fenced = {str(g["name"]) for g in _SRC["grounds"] if dfm.fenced_ground(g)}
+    assert {k for k, v in statuses.items() if v["status"] == "BLOCKED_WITH_SUBSTITUTE"} == fenced
     bad = {k: (v["status"], v.get("errors") or v.get("error")) for k, v in statuses.items()
-           if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")}
+           if v["status"] not in ("PRODUCTIVE", "REACHED_NO_CLAIMS", "UNREACHABLE")
+           and k not in fenced}
     assert not bad, bad
     # The fixture world serves the same page everywhere, so most grounds see claims already
     # banked (REACHED_NO_CLAIMS); the first of each route converts and every route resolves.
