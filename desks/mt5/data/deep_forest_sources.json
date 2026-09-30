@@ -26,7 +26,7 @@
     "ko"
    ],
    "market": "KR",
-   "grounds": 18
+   "grounds": 19
   },
   "tw": {
    "name": "Taiwan",
@@ -414,7 +414,7 @@
     "pt"
    ],
    "market": "BR",
-   "grounds": 20
+   "grounds": 21
   },
   "mx": {
    "name": "Mexico",
@@ -7717,6 +7717,26 @@
    "weight": 1.0,
    "why": "culture-gap ground (institutional): NYSE closing-auction imbalance publication begins at 15:50 ET and the closing auction process begins at 16:00 ET",
    "url": "https://www.nyse.com/trade/auctions"
+  },
+  {
+   "name": "The Investor: Korea's near-24-hour won market",
+   "region": "kr",
+   "language": "ko",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (settlement_constrained): onshore won-dollar trading runs near 24h from 7 Jul 2026 (06:00 Mon to 06:00 Sat KST in US summer); the 15:30 KST reference rate and market average rate remain in place",
+   "url": "https://www.theinvestor.co.kr/article/10798527"
+  },
+  {
+   "name": "CME Special Executive Report: BRL PTAX methodology",
+   "region": "br",
+   "language": "pt",
+   "route": "http",
+   "kind": "local_market_mechanics",
+   "weight": 1.0,
+   "why": "culture-gap ground (settlement_constrained): PTAX averages four BCB dealer consultations at 10:00, 11:00, 12:00 and 13:00-13:10 Brasilia time and is announced soon after the last one (about 13:15)",
+   "url": "https://www.cmegroup.com/rulebook/files/S_5886.pdf"
   }
  ],
  "engines": [

@@ -2252,6 +2252,121 @@
    ],
    "source_id": "nyse_auctions",
    "mechanism": "NYSE closing-auction imbalances publish from 15:50 ET into the 16:00 close; index and ETF rebalancing flow continues the day's displacement into it"
+  },
+  {
+   "id": "kr_won_reference_rate",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "KR",
+    "participant_structure": "any"
+   },
+   "source_culture": "KR/ko",
+   "participant_structure": "settlement_constrained",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDKRW"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "Asia/Seoul",
+     "at": "15:30",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "kr_won_market_hours_2026",
+   "mechanism": "the 15:30 KST onshore reference rate and market average rate, on which USD/KRW NDFs settle, are struck at the old session close; displacement into it reverses after",
+   "note": "the onshore market trades near 24h since 7 Jul 2026; the 15:30 reference stays until the authorities move it"
+  },
+  {
+   "id": "br_ptax_fixing",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "BR",
+    "participant_structure": "any"
+   },
+   "source_culture": "BR/pt",
+   "participant_structure": "settlement_constrained",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDBRL"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "America/Sao_Paulo",
+     "at": "13:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "bcb_ptax_cme_ser",
+   "mechanism": "PTAX, the rate BRL NDFs and futures settle on, averages four BCB dealer consultations and closes with the 13:00-13:10 Brasilia window; displacement into it reverses after"
+  },
+  {
+   "id": "mx_banxico_fix",
+   "gap": {
+    "asset_class": "fx",
+    "jurisdiction": "MX",
+    "participant_structure": "any"
+   },
+   "source_culture": "MX/es",
+   "participant_structure": "settlement_constrained",
+   "family": "fx_fixing_reversal",
+   "symbols": [
+    "USDMXN",
+    "EURMXN",
+    "GBPMXN",
+    "MXNJPY"
+   ],
+   "windows": [
+    {
+     "param": "fix_hour",
+     "tz": "America/Mexico_City",
+     "at": "12:00",
+     "align": "contains"
+    }
+   ],
+   "grid": {
+    "pre_window_bars": [
+     1,
+     2
+    ],
+    "min_displacement_atr": [
+     0.6,
+     0.9
+    ]
+   },
+   "charts": [
+    "H1"
+   ],
+   "source_id": "banxico_fix",
+   "mechanism": "Banco de Mexico informs the FIX, the peso's settlement reference for dollar obligations, from 12:00 Mexico City time; displacement into it reverses after"
   }
  ]
 }
