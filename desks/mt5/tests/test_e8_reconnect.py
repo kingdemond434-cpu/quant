@@ -280,13 +280,14 @@ def test_an_unowned_position_on_the_leg_side_since_the_failure_stops_the_resend(
     assert "MISSED GROWTH" in g.LOG.read_text()
 
 
-def test_yesterdays_own_leg_in_the_history_is_not_adopted_as_todays(monkeypatch) -> None:
+def test_yesterdays_own_leg_in_the_history_is_not_adopted_as_todays() -> None:
     """The likely real trigger: after the rollover empties the windows, yesterday's own filled
     leg (same side, same level, same size) still sits in the two-day history."""
     v, st = _Venue(), _state()
     hist = [_order(55, "buy", 4340.0, status="Filled", positionId=9)]
-    monkeypatch.setattr(g, "_journal_rows",
-                        lambda: [{"status": "SENT", "order_id": 55, "window": "asia"}])
+    import json
+    g.INTENTS.write_text(json.dumps({"status": "SENT", "order_id": 55, "window": "asia"}) + "\n",
+                         "utf-8")
     _retry(v, st, hist_rows=hist, filled={55: 9})
     assert st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 901 and len(v.sent) == 1
 

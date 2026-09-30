@@ -942,7 +942,10 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
         # hide a send that landed.
         sent_at = _iso_ms(leg.get("first_at"))
         since = (sent_at + skew if skew is not None
-                 else max(sent_at - UNMEASURED_SKEW_MS, last_rollover_ms(sent_at)))
+                 # the matcher allows LEG_MATCH_WINDOW_MS of slack below `since`; none of it
+                 # may reach back past the rollover
+                 else max(sent_at - UNMEASURED_SKEW_MS,
+                          last_rollover_ms(sent_at) + LEG_MATCH_WINDOW_MS))
         oid = None
         for book in (open_orders, done):
             oid = oid or matching_resting_order(book, side, float(leg["price"]), known,
