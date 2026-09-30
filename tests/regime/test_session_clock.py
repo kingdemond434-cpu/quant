@@ -23,9 +23,18 @@ def test_naive_stamps_read_the_same_as_utc_labelled_ones() -> None:
 
 
 def test_the_dst_edges_never_raise() -> None:
-    # 03:30 on the spring-forward day does not exist; 03:30 on the autumn day happens twice.
-    got = sc.server_to_utc(_idx("2026-03-29 03:30", "2026-10-25 03:30"))
+    # 09:30 stamp on the US spring-forward day is 02:30 New York, which does not exist; 08:30
+    # stamp on the autumn day is 01:30 New York, which happens twice.
+    got = sc.server_to_utc(_idx("2026-03-08 09:30", "2026-11-01 08:30"))
     assert len(got) == 2 and got.tz is not None
+
+
+def test_the_clock_follows_us_daylight_dates_not_the_eus() -> None:
+    # 2026-03-16: New York is on daylight time, Europe is not yet. The venue is UTC+3 (the week
+    # opened Monday 00:00 stamp = 17:00 New York Sunday = 21:00 UTC), where EET would say UTC+2.
+    assert int(sc.utc_hours(_idx("2026-03-16 00:00"))[0]) == 21
+    # 2026-10-28: Europe is back on winter time, New York is not yet: still UTC+3.
+    assert int(sc.utc_hours(_idx("2026-10-28 10:00"))[0]) == 7
 
 
 def test_london_is_the_london_open_in_both_seasons() -> None:

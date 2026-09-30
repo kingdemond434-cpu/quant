@@ -313,11 +313,11 @@ def covered_symbols() -> list[str]:
 
 
 def bar_stamps_to_utc_ns(stamps_ns: np.ndarray) -> np.ndarray:
-    """BAR stamps (the broker's EET/EEST wall clock under a UTC label) -> true UTC nanoseconds.
+    """BAR stamps (the venue's New York + 7 h wall clock under a UTC label) -> true UTC ns.
 
     THE TWO CLOCKS MEET HERE. `available` is a TRUE UTC instant (an SEC acceptance time), while
-    every stamp a family hands this module is a bar stamp from the store, two hours ahead of UTC
-    in winter and three in summer. Compared raw, a 10-Q accepted after the US close (16:05 ET
+    every stamp a family hands this module is a bar stamp from the store, three hours ahead of
+    UTC while New York is on daylight time and two otherwise (US DST dates, not the EU's). Compared raw, a 10-Q accepted after the US close (16:05 ET
     = 20:05 UTC in summer) read as "known" at the 22:00 bar -- which is 19:00 UTC, an hour
     BEFORE the filing existed: an earnings reaction read with lookahead. The conversion is
     `libs.regime.session_clock.server_to_utc`, the desk's one broker-clock helper (PR #134).

@@ -1,8 +1,9 @@
 """Fundamentals are known at a TRUE UTC instant; bar stamps are the broker's clock (2026-09-30).
 
-`fundamentals_pit.asof` compared SEC acceptance times (true UTC) with bar stamps (EET/EEST under
-a UTC label, 2-3 h ahead), so a filing accepted after the US close read as known at a bar that
-closed before it existed. The conversion is `libs.regime.session_clock` (PR #134)."""
+`fundamentals_pit.asof` compared SEC acceptance times (true UTC) with bar stamps (the venue's
+New York + 7 h clock under a UTC label, 2-3 h ahead), so a filing accepted after the US close read
+as known at a bar that closed before it existed. The conversion is `libs.regime.session_clock`
+(PR #134). Every expected offset here is DERIVED from that helper, never from a box offset file."""
 from __future__ import annotations
 
 import sys
@@ -27,15 +28,33 @@ def _ns(*stamps: str) -> np.ndarray:
     return pd.DatetimeIndex(list(stamps), tz="UTC").as_unit("ns").asi8
 
 
-def test_a_london_0800_utc_bar_is_broker_1000_in_winter_and_1100_in_summer() -> None:
-    winter = session_clock.server_to_utc(pd.DatetimeIndex(["2026-01-15 10:00"], tz="UTC"))
-    summer = session_clock.server_to_utc(pd.DatetimeIndex(["2026-07-15 11:00"], tz="UTC"))
-    assert (winter.hour[0], summer.hour[0]) == (8, 8)
-    got = fp.bar_stamps_to_utc_ns(_ns("2026-01-15 10:00", "2026-07-15 11:00"))
-    assert list(pd.DatetimeIndex(got, tz="UTC").hour) == [8, 8]
-    london = session_clock.in_session(pd.DatetimeIndex(["2026-01-15 10:00", "2026-07-15 11:00"],
-                                                       tz="UTC"), "london")
-    assert london is not None and london.tolist() == [True, True]
+def _broker_offset_h(day: str) -> int:
+    """The venue's UTC offset on `day`, derived from the helper: a noon stamp minus its UTC."""
+    stamp = pd.DatetimeIndex([f"{day} 12:00"], tz="UTC")
+    return int((stamp[0] - session_clock.server_to_utc(stamp)[0]) / pd.Timedelta(hours=1))
+
+
+@pytest.mark.parametrize("day,expected_broker_hour", [
+    ("2026-01-15", 10),      # winter both sides: UTC+2
+    ("2026-07-15", 11),      # summer both sides: UTC+3
+    ("2026-03-16", None),    # US on daylight time, EU not yet: NY+7 differs from EET here
+    ("2026-10-28", None),    # EU back on winter time, US not yet
+])
+def test_a_london_0800_utc_bar_is_the_broker_hour_the_helper_derives(day, expected_broker_hour):
+    offset = _broker_offset_h(day)
+    hour = 8 + offset
+    if expected_broker_hour is not None:
+        assert hour == expected_broker_hour
+    else:
+        # the DST-mismatch weeks: New York is on daylight time, so the venue is UTC+3 -- where an
+        # EET/EEST clock would have said UTC+2
+        assert offset == 3
+    stamp = f"{day} {hour:02d}:00"
+    assert session_clock.server_to_utc(pd.DatetimeIndex([stamp], tz="UTC")).hour[0] == 8
+    got = fp.bar_stamps_to_utc_ns(_ns(stamp))
+    assert list(pd.DatetimeIndex(got, tz="UTC").hour) == [8]
+    london = session_clock.in_session(pd.DatetimeIndex([stamp], tz="UTC"), "london")
+    assert london is not None and london.tolist() == [True]
 
 
 @pytest.fixture
