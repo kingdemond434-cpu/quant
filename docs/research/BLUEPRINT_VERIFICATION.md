@@ -88,6 +88,52 @@ Verified at 2026-09-30 ~00:00Z against the live branch `claude/llm-auto-upgrade-
 - No item fell outside both threads' scope.
 
 
+## Re-verification log
+
+### 2026-09-30 00:30Z: Tier S batch 2 (PR #55 at `03fdd97b`)
+
+Checked in the code. `test_tier_s_organs.py`, `tests/tiers` and `test_cycle_pricing.py` pass in a clean worktree. `check_tier_s_program.py` passes and reports 17 DONE, 22 PARTIAL, 6 BLOCKED_ON_USER and 1 BLOCKED_ON_BOX.
+
+| Gap | Now | Evidence |
+|---|---|---|
+| Compute pricing could cut a leg to 0.6x (the never-reduce-mining rule) | **Fixed** | `cycle_pricing.py` sets `FLOOR = 1.00`, and a test pins it |
+| `grammar.json` had no reader (T22, H14) | **Fixed** | `grammar_bias.bias()` is read by `expression_factory.py:90`, `alpha_evolution.mutate/random_expr` and `alpha_grammar` |
+| Broken-relationship residuals relabelled `range_reversion` | **Fixed** | `tier_s.py:2036` emits `cross_asset_residual` on the target; info and network hits emit `lead_lag` |
+| Cross-science hits collapsed onto existing families (H13) | **Fixed** | They drain through `expression_factory` as `cross_science:<lab>`, with conversion counted per lab |
+| `falsify_first` gene ignored | **Fixed** | The `falsify_order` allele now ranks which candidates a genome spends rows on (`tier_s.py:1120`), and a test proves the ranking changes |
+| `SELF_MODEL_DOCKET` unread (T29) | **Fixed** | `implementer._self_model_rows` feeds intake |
+| `matched_fills_10` resolver could never resolve (T20) | **Fixed** | The resolver falls back to `live_mean_r`, which the evidence builder now writes (`tier_s.py:1430`) |
+| REJECTED contracts had no consequence (ADM) | **Partly fixed** | Covered in the first bullet below |
+| Six new hourly legs had no contract | **Fixed** | Contracted in `tier_s_program.json`, and the checker passes |
+
+Still short:
+
+- **Admission teeth are thin.** `AUTHORITY.json` is written every hour. A REJECTED verdict now suspends steering, but only two organs have a consumer that checks `suspended()`: `market` in `cycle_pricing` and `grammar` in `grammar_bias`. An organ is suspended only when *every* layer it owns is REJECTED. The baseline is the layer's own earliest readings, not a control arm.
+- **No money-path authority (Priority 1).** The builder reports these as blocked by the permission filter:
+  - the promoter honouring FREEZE;
+  - `pf_allocator` clearing the exchange;
+  - online FDR gating certificates;
+  - a replication MISMATCH blocking promotion;
+  - money-path code reading the constitution;
+  - `may()` callers.
+- **Self-grading is unchanged.**
+  - Traps and the Red Queen still run against the reference validator, and traps are not blind.
+  - Architecture adoption is still judged on the training suite.
+  - Formal conformance is still a keyword grep.
+  - The meta-benchmark still has 132 cases.
+- **Scope gaps remain.**
+  - The world model is price-only.
+  - MAP-Elites now keys on 12 axes (was 5; not re-audited).
+  - Ancestry is single-parent.
+  - Rank is descriptor-only.
+  - Execution capture never reaches `pf_allocator`.
+  - The digital twin is not a shadow desk.
+  - Chaos never kills processes.
+  - Lineage is post-hoc.
+- **Not live.** Still PR-only: CI is not green, and there is no box artifact.
+
+Row verdicts for T20, T22, T29, H13, H14 and ADM stay PARTIAL until #55 is merged and a box run is evidenced. Their wiring gaps above are closed.
+
 ## A1 — Audit critical sequence (CS), named defects (D), 10/10 acceptance table (AC)
 
 LIVE = origin/claude/llm-auto-upgrade-verify-gcjac3 @ adaba442. INST = owner "Institutional truth discipline fixes"; TS = owner "Tier S research institution build". I ran the law-gate fences on clean worktrees of LIVE, #52 and #53. I also ran the #52 lockbox tests (23 passed) and the #53 sovereignty/cost-basis/min-lot tests (34 passed).
