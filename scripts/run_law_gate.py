@@ -371,6 +371,12 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # It can only ever demand MORE rows per second; there is no threshold here that minting or
     # judging less can satisfy. State, because it reads the hourly THROUGHPUT.json.
     ("check_throughput_ratchet.py", ()),
+    # SOURCE PROVENANCE IS A RATCHET (six-event trace 2026-09-30: 0 of 53,174 candidates named
+    # their source). Fails when the share of NEW compiled candidates carrying a content hash, a
+    # retrieval time and a URL or source id falls below its floor. The external-URL share is
+    # reported, never fenced -- an internal generator reads no page. State: reads the hourly
+    # miner_candidates.json; absent is UNMEASURED.
+    ("check_provenance_floor.py", ()),
     ("check_promotion_gate.py", ()),           # L1.6 -- expansion is bought with evidence
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it

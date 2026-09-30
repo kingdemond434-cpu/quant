@@ -1435,6 +1435,8 @@ def _write_discoveries(rows: list[dict[str, Any]]) -> Path | None:
     try:
         WORLD.mkdir(parents=True, exist_ok=True)
         out = WORLD / f"discoveries_deepforest_{datetime.now(tz=UTC):%Y%m%d_%H%M}.json"
+        from libs.research.source_provenance import stamp_rows
+        rows = stamp_rows([dict(r) for r in rows])
         out.write_text(json.dumps(rows, indent=1, ensure_ascii=False, default=str), "utf-8")
         return out
     except OSError:
@@ -1532,6 +1534,12 @@ def _task(row: dict[str, Any], tellings: list[dict[str, Any]] | None = None) -> 
             "evidence_grade": row.get("evidence_grade"), "claimed_performance": perf,
             "transfer_only": inst.get("transfer_only") or [], "claim_hash": row.get("claim_hash"),
             "provenance": prov, "n_tellings": len(prov),
+            # SOURCE PROVENANCE in the compiler's vocabulary (libs.research.source_provenance):
+            # the page the best telling came from, when it was fetched, and the page's hash.
+            "source_url": str(row.get("url") or ""),
+            "retrieved_at": row.get("available_time") or row.get("fetched_utc"),
+            "content_hash": row.get("source_hash") or row.get("claim_hash"),
+            "ground": row.get("ground"),
             "event_time": row.get("event_time"), "published_time": row.get("published_time"),
             "available_time": row.get("available_time") or row.get("fetched_utc"),
             "score": row.get("score"), "status": None,

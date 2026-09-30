@@ -85,6 +85,13 @@ def _row(c: Mapping[str, Any]) -> dict[str, Any] | None:
         # the producer already set, so this is the registry's recorded time and not `now()`.
         "available_time": str(c.get("created_at") or ""),
         "payload_hash": str(c.get("content_hash") or ""),
+        # SOURCE PROVENANCE (libs.research.source_provenance): the registry's source and
+        # discovery ids -- a country pack's ground id, a donation's cell -- plus its birth time
+        # and content hash, so a registry cell names its source in the docket like a miner's.
+        "source_id": str(c.get("source_id") or c.get("discovery_id") or ""),
+        "discovery_id": str(c.get("discovery_id") or ""),
+        "retrieved_at": str(c.get("created_at") or ""),
+        "content_hash": str(c.get("content_hash") or ""),
     }
 
 
@@ -99,7 +106,7 @@ def candidate_rows(conn: sqlite3.Connection, *, tradeable: Mapping[str, str] | N
     ban = banned or frozenset()
     cur = conn.execute(
         "SELECT id, symbol, family, params_json, chart, origin, mechanism, grid_cell, score,"
-        " created_at, content_hash FROM research_candidates "
+        " created_at, content_hash, source_id, discovery_id FROM research_candidates "
         "WHERE symbol IS NOT NULL AND symbol != '' AND family IS NOT NULL AND family != '' "
         "AND judged_at IS NULL AND COALESCE(status,'') != 'survived' ORDER BY score DESC, seq")
     while True:
