@@ -39,6 +39,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 import promoter  # noqa: E402
 from mt5desk import decision_core as _dc  # noqa: E402
+from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk import provenance  # noqa: E402
 from mt5desk import scalp_exec as sx  # noqa: E402
 
@@ -310,6 +311,9 @@ def _exec(names: tuple[str, ...], ns: dict) -> dict:
     scalp lane's pure steps live there since the 2026-09-05 split); the caller's fakes win."""
     seed = {k: v for k, v in vars(_dc).items() if not k.startswith("__")}
     seed["_core"] = _dc
+    # The add-on stop and the retarget read the never-loosen rule from `position_manager`,
+    # which the gateway imports as `_pm` at module scope (2026-09-29).
+    seed["_pm"] = _pm
     seed.update(ns)
     keep = [n for n in _GW_TREE.body if isinstance(n, ast.FunctionDef) and n.name in names]
     exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), seed)
