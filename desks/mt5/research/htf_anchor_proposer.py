@@ -176,6 +176,7 @@ def bind_census(budget_s: float = 240.0) -> dict[str, Any]:
     cursor = int(prev.get("cursor") or 0) % max(1, len(pairs))
     t0 = time.time()
     done = 0
+    measured_now: set[str] = set()
     # THE BASE FAMILY IS RUN ONCE PER (chart, family), NOT ONCE PER MULTIPLE. Going through
     # `family_exit_operated` here would rebuild the base signals for every point of the grid --
     # four passes over the same bars to answer one question about the operator, and the operator
@@ -204,6 +205,7 @@ def bind_census(budget_s: float = 240.0) -> dict[str, Any]:
                 except Exception:
                     continue
                 r = exit_reasons(base, out)
+                measured_now.add(f"{chart}|{fam}|{mult}")
                 seen[f"{chart}|{fam}|{mult}"] = {
                     "chart": chart, "family": fam, "symbol": sym, "expansion_mult": mult,
                     "n": r["signals"], "shortened": r["shortened"],
@@ -225,6 +227,7 @@ def bind_census(budget_s: float = 240.0) -> dict[str, Any]:
         "pairs_measured": len(measured_pairs),
         "pairs_unmeasured": len(pairs) - len(measured_pairs),
         "pairs_this_pass": done,
+        "cells_measured_this_pass": len(measured_now),
         "rows": rows,
         "binding": [{"chart": c, "family": f, "expansion_mult": m} for c, f, m in binding],
         "inert": [{"chart": r["chart"], "family": r["family"],
@@ -238,6 +241,33 @@ def bind_census(budget_s: float = 240.0) -> dict[str, Any]:
     CENSUS.parent.mkdir(parents=True, exist_ok=True)
     CENSUS.write_text(json.dumps(doc, indent=1), "utf-8")
     return doc
+
+
+def hypotheses_tested(cands: list[dict[str, Any]], census: dict[str, Any]) -> dict[str, int]:
+    """THE TRUE TRIAL CHARGE OF ONE PASS: distinct hypotheses, never census rows.
+
+    This proposer charged `len(census["rows"])`, and the census file ACCUMULATES: every pass
+    merges its readings into the ones on disk, so the same (chart, family, multiple) reading was
+    charged again on every pass for its whole life, while the 1,200 cells actually minted per pass
+    -- the hypotheses the desk then judges -- were charged nothing (audit of #137, 2026-09-30).
+
+    Two populations, each counted once, each by identity:
+      minted  distinct (symbol, family, params) in this pass's slice. The ring wraps, so a grid
+              smaller than the slice repeats cells; a repeat is one hypothesis, not two.
+      census  distinct (chart, family, multiple) readings MEASURED this pass. The census is a
+              screen that selects arm B's cells, and a screen that looked has tested. A census
+              doc without the per-pass count is charged its whole `rows` (never fewer than
+              actually tested -- unknown resolves UP, never to zero).
+    The claim-selection trials the source's own search spent (`claim_selection_trials` on each
+    row) are NOT added here: `libs.research.claim_selection` charges the claim family once in its
+    lifetime ledger, and adding them per pass would charge the same 200 on every pass.
+    """
+    minted = len({json.dumps([c.get("symbol"), c.get("family"), c.get("params")],
+                             sort_keys=True, default=str) for c in cands})
+    per_pass = census.get("cells_measured_this_pass")
+    screened = (int(per_pass) if isinstance(per_pass, int) and per_pass >= 0
+                else len(census.get("rows") or []))
+    return {"minted": minted, "census_screened": screened, "total": minted + screened}
 
 
 def _row(sym: str, family: str, params: dict[str, Any], note: str) -> dict[str, Any]:
@@ -337,7 +367,8 @@ def main(argv: list[str] | None = None) -> int:
     CURSOR.write_text(json.dumps({"at": nxt, "of": len(every),
                                   "written": time.strftime("%Y-%m-%dT%H:%M:%SZ",
                                                            time.gmtime())}), "utf-8")
-    path = donate(source=SEAT, candidates=cands, tests_run=len(census.get("rows", [])))
+    tested = hypotheses_tested(cands, census)
+    path = donate(source=SEAT, candidates=cands, tests_run=tested["total"])
     counts = donation_counts()
     doc = {
         "built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -352,6 +383,7 @@ def main(argv: list[str] | None = None) -> int:
         "refused_unstamped": counts.get("refused_unstamped", 0),
         "contract": str(path) if path else None,
         "census": str(CENSUS),
+        "tests_run": tested,
         "prior": ("the source video reported Sharpe 1.87 as the MAXIMUM of ~200 searched "
                   "variations with no multiplicity charge, on one single-name equity; its own "
                   "Monte Carlo median was ~1.30. Recorded so the 1.87 is never read as evidence."),
