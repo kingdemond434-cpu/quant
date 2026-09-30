@@ -102,14 +102,25 @@ def test_import_is_idempotent(tmp_path):
 
 
 def test_imported_lessons_never_reach_the_trading_brief(tmp_path):
-    """The end-to-end safety property, asserted against the REAL consumer rather than inferred."""
-    from scripts.run_conviction_trader import _playbook_brief
+    """The safety property: an imported finding SUGGESTS only and can never reach a brief.
+
+    The consumer this was asserted against, `scripts/run_conviction_trader.py` (whose
+    `_playbook_brief` admitted only SUPPORTED lessons), was deleted with the retired crypto
+    discretionary sleeve on 2026-09-05. What keeps an import out of ANY brief is the row itself:
+    PROVISIONAL, zero support, no trades, origin and authority stated -- so that is pinned.
+    """
+    from scripts import run_strategy_coverage as RSC
+    assert not (RSC._ROOT / "scripts/run_conviction_trader.py").exists()
     _grave(tmp_path, ["tftrailbreakout", "kama_squeeze"])
     (tmp_path / "data").mkdir(exist_ok=True)
-    import_to_playbook(tmp_path)
-    brief = _playbook_brief(tmp_path)
-    assert "no SUPPORTED lessons" in brief
-    assert "trend" not in brief.lower()          # the imported claim itself is nowhere in it
+    assert import_to_playbook(tmp_path)["n_filed"] >= 1
+    pb = json.loads((tmp_path / RSC._PLAYBOOK).read_text("utf-8"))
+    imported = [lv for lv in pb["lessons"] if lv.get("imported_from")]
+    assert imported
+    for lv in imported:
+        assert lv["status"] == "PROVISIONAL" and lv["support"] == 0 and lv["trades"] == []
+        assert "SUPPORTED" not in lv["status"]
+        assert "SUGGESTS ONLY" in lv["authority"] and "NOT from a closed trade" in lv["origin"]
 
 
 def test_an_unreadable_corpus_reports_unreadable_not_never_hunted(tmp_path):
