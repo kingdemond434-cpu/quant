@@ -687,23 +687,31 @@ if (-not $permitAccepted) {
 if ($dirty.Count -gt 0) {
     $stillDirty = New-Object System.Collections.Generic.List[string]
     $alreadyTarget = 0
-    # Do not launch one `git diff` per path. On the large live index each invocation refreshes
-    # the tree, so a resumable adoption with hundreds of already-landed files took hours. Ask
-    # Git for the paths that still differ in bounded batches, then classify in memory.
+    # Do not use `git diff` here. Even one eight-path diff refreshes the enormous live index and
+    # has taken minutes on the trading box. Compare the working-tree blob directly with the
+    # immutable target blob. This deliberately ignores mode: Sync-IndexMode below repairs the
+    # target mode after content adoption, while NTFS cannot represent that bit faithfully.
     $normalisedDirty = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
-    $batchSize = 100
-    for ($start = 0; $start -lt $normalisedDirty.Count; $start += $batchSize) {
-        $end = [Math]::Min($start + $batchSize - 1, $normalisedDirty.Count - 1)
-        $batch = @($normalisedDirty[$start..$end])
-        $args = @("diff", "--name-only", "--no-ext-diff", $target, "--") + $batch
-        $different = @{}
-        Invoke-Git $args | ForEach-Object {
-            $name = "$_".Trim().Trim('"')
-            if ($name) { $different[$name] = $true }
-        }
-        foreach ($rel in $batch) {
-            if ($different.ContainsKey($rel)) { [void]$stillDirty.Add($rel) }
+    foreach ($rel in $normalisedDirty) {
+        $tree = @(Invoke-Git @("ls-tree", $target, "--", $rel) -AllowFail)
+        $targetExists = ($LASTEXITCODE -eq 0 -and $tree.Count -gt 0)
+        $full = Join-Path $RepoRoot ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
+        if (-not $targetExists) {
+            if (Test-Path -LiteralPath $full) { [void]$stillDirty.Add($rel) }
             else { $alreadyTarget++ }
+            continue
+        }
+        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) {
+            [void]$stillDirty.Add($rel)
+            continue
+        }
+        $fields = ($tree[0] -split '\s+')
+        $targetBlob = if ($fields.Count -ge 3) { $fields[2] } else { "" }
+        $worktreeBlob = ("$(Invoke-Git @("hash-object", "--no-filters", "--", $rel) -AllowFail)").Trim()
+        if ($LASTEXITCODE -eq 0 -and $targetBlob -and $worktreeBlob -eq $targetBlob) {
+            $alreadyTarget++
+        } else {
+            [void]$stillDirty.Add($rel)
         }
     }
     if ($alreadyTarget -gt 0) {
