@@ -551,6 +551,9 @@ LEG_LAYER: dict[str, str] = {
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
     # what it produces, the same rule as the rest of this table.
     "acquire_datasets": "information", "dukascopy_backfill": "information",
+    # free-key datasets as PIT series and their cells: information, like acquire_datasets; the
+    # ledger of which keys are set measures the desk itself: meta
+    "keyed_sources": "information", "credential_coverage": "meta",
     "source_experiment_census": "information",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",

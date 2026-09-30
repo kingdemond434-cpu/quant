@@ -136,7 +136,12 @@ def run(bundle: A.ResearchBundle, ctx: CellContext) -> ExternalResearchPacket:
     fetched: dict[str, Any] = {"attempted": False, "why": ""}
     network_ok = ctx.network_allowed and fed.POLICY.network == "allowlist"
     if network_ok and not ctx.dry_run:
-        ua = os.environ.get("QUANT_EDGAR_UA", "")
+        # EVERY NAME THE DESK HAS USED FOR THIS ONE CONTACT STRING (libs/data/credentials.py):
+        # the principal's SEC_EDGAR_USER_AGENT, the disclosure lane's SEC_EDGAR_UA, and this
+        # file's original QUANT_EDGAR_UA -- one set name lights every EDGAR reader.
+        ua = next((os.environ[n].strip() for n in ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT",
+                                                   "SEC_EDGAR_UA")
+                   if os.environ.get(n, "").strip()), "")
         allowed, why = machine_use_allowed(FULL_TEXT)
         if not ua:
             fetched = {"attempted": False, "why": "no User-Agent configured (QUANT_EDGAR_UA); SEC "

@@ -1,0 +1,780 @@
+{
+ "roster": "keyed_sources",
+ "writer": "hand-maintained; read by desks/mt5/research/keyed_sources.py",
+ "shape": "id, cadence, auth, licence, region, lang, url (+ kind, key_env, series, rule, culture, uses)",
+ "sources": [
+  {
+   "id": "eia_petroleum_weekly",
+   "name": "EIA weekly petroleum stocks (WPSR)",
+   "kind": "eia_v2",
+   "cadence": "weekly",
+   "auth": "key_env:EIA_API_KEY",
+   "key_env": [
+    "EIA_API_KEY"
+   ],
+   "licence": "US federal government work (public domain); EIA API terms",
+   "region": "US",
+   "lang": "en",
+   "url": "https://api.eia.gov/v2/petroleum/stoc/wstk/data/",
+   "route": "petroleum/stoc/wstk",
+   "frequency": "weekly",
+   "rule": {
+    "lag_days": 6,
+    "hour": 17,
+    "why": "week ends Friday; WPSR prints Wednesday 10:30 ET, Thursday in holiday weeks -> Thursday 17:00 UTC is late in both"
+   },
+   "series": {
+    "crude_stocks": {
+     "code": "WCESTUS1",
+     "instruments": {
+      "XTIUSD": -1,
+      "XBRUSD": -1,
+      "USDCAD": 1
+     }
+    },
+    "cushing_stocks": {
+     "code": "W_EPC0_SAX_YCUOK_MBBL",
+     "instruments": {
+      "XTIUSD": -1
+     }
+    },
+    "gasoline_stocks": {
+     "code": "WGTSTUS1",
+     "instruments": {
+      "XTIUSD": -1,
+      "XBRUSD": -1
+     }
+    },
+    "distillate_stocks": {
+     "code": "WDISTUS1",
+     "instruments": {
+      "XBRUSD": -1,
+      "XTIUSD": -1
+     }
+    }
+   },
+   "mechanism": "weekly US inventories are the physical balance of the crude market; a draw against the seasonal norm tightens the front of the curve",
+   "source_culture": "US/en",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "fails when hurricane shut-ins or SPR releases move stocks for policy or weather reasons the market already priced from other feeds",
+   "crowding_prior": "high",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "eia_petroleum_weekly series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime; applied by mt5desk.cell_modifiers once #131's alt: conditioner lands, reported BLOCKED_DEPENDENCY before that"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "eia_natgas_storage",
+   "name": "EIA weekly natural gas storage (Lower 48)",
+   "kind": "eia_v2",
+   "cadence": "weekly",
+   "auth": "key_env:EIA_API_KEY",
+   "key_env": [
+    "EIA_API_KEY"
+   ],
+   "licence": "US federal government work (public domain)",
+   "region": "US",
+   "lang": "en",
+   "url": "https://api.eia.gov/v2/natural-gas/stor/wkly/data/",
+   "route": "natural-gas/stor/wkly",
+   "frequency": "weekly",
+   "rule": {
+    "lag_days": 7,
+    "hour": 17,
+    "why": "week ends Friday; report Thursday 10:30 ET, Wed/Fri in holiday weeks -> Friday 17:00 UTC"
+   },
+   "series": {
+    "ng_storage_l48": {
+     "code": "NW2_EPG0_SWO_R48_BCF",
+     "instruments": {
+      "XNGUSD": -1
+     }
+    }
+   },
+   "mechanism": "storage injections against the five-year norm are the weather-adjusted supply balance of US gas",
+   "source_culture": "US/en",
+   "participant_structure": "physical_flow",
+   "failure_mode_hypothesis": "fails when LNG export outages or reclassifications move the number without a change in the weather balance",
+   "crowding_prior": "high",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "eia_natgas_storage series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime; applied by mt5desk.cell_modifiers once #131's alt: conditioner lands, reported BLOCKED_DEPENDENCY before that"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "ndl_metals_energy",
+   "name": "Nasdaq Data Link free tables: LBMA gold/silver PM fix, OPEC basket",
+   "kind": "ndl",
+   "cadence": "daily",
+   "auth": "key_env:NASDAQ_DATA_LINK_KEY",
+   "key_env": [
+    "NASDAQ_DATA_LINK_KEY",
+    "NASDAQ_DATA_LINK_API_KEY",
+    "QUANDL_API_KEY"
+   ],
+   "licence": "Nasdaq Data Link free-data terms; LBMA/OPEC attribution",
+   "region": "GLOBAL",
+   "lang": "en",
+   "url": "https://data.nasdaq.com/api/v3/datasets/",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 1,
+    "hour": 0,
+    "why": "the PM fix is set 15:00 London; the next UTC midnight is after it"
+   },
+   "series": {
+    "lbma_gold_pm_usd": {
+     "code": "LBMA/GOLD",
+     "column": "USD (PM)",
+     "instruments": {
+      "XAUUSD": 1,
+      "XAUEUR": 1
+     }
+    },
+    "lbma_silver_usd": {
+     "code": "LBMA/SILVER",
+     "column": "USD",
+     "instruments": {
+      "XAGUSD": 1
+     }
+    },
+    "opec_basket": {
+     "code": "OPEC/ORB",
+     "column": "Value",
+     "instruments": {
+      "XBRUSD": 1,
+      "XTIUSD": 1
+     }
+    }
+   },
+   "mechanism": "the auction fixes and the OPEC reference basket are the physical-settlement prices contracts are written on; their gap to the screen is a settlement-flow signal",
+   "source_culture": "GLOBAL",
+   "participant_structure": "settlement_constrained",
+   "failure_mode_hypothesis": "fails when the fix is dominated by the screen it is compared with (liquid days), which is when settlement flows are smallest",
+   "crowding_prior": "medium",
+   "note": "dataset codes are the legacy Quandl free codes; if Nasdaq has moved them to QDL datatables set series.<name>.table=true and code=QDL/LBMA",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "ndl_metals_energy series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime; applied by mt5desk.cell_modifiers once #131's alt: conditioner lands, reported BLOCKED_DEPENDENCY before that"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "estat_jp_macro",
+   "name": "e-Stat: household spending and machinery orders",
+   "kind": "estat",
+   "cadence": "daily",
+   "auth": "key_env:ESTAT_APP_ID",
+   "key_env": [
+    "ESTAT_APP_ID"
+   ],
+   "licence": "e-Stat API terms (free application ID; attribution to the Statistics Bureau / Cabinet Office)",
+   "region": "JP",
+   "lang": "ja",
+   "url": "https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 45,
+    "hour": 0,
+    "why": "household spending prints ~5-6 weeks after the month, machinery orders ~6-7 weeks; 45 days is the floor, the leg lifts it to first sight"
+   },
+   "series": {
+    "household_spending_real_yoy": {
+     "stats_id_env": "KS_ESTAT_HOUSEHOLD_STATS_ID",
+     "statsDataId": "0002070001",
+     "query": "cdTab=01",
+     "lag_days": 45,
+     "instruments": {
+      "USDJPY": -1,
+      "EURJPY": -1,
+      "JPN225": 1
+     }
+    },
+    "machinery_orders_core": {
+     "stats_id_env": "KS_ESTAT_MACHINERY_STATS_ID",
+     "statsDataId": "0003348237",
+     "query": "",
+     "lag_days": 55,
+     "instruments": {
+      "USDJPY": -1,
+      "AUDJPY": 1,
+      "JPN225": 1
+     }
+    }
+   },
+   "parser": "research.alt_proxies.parse_estat_cpi (#131)",
+   "mechanism": "domestic demand and core capex orders lead BoJ normalisation pricing and the domestic half of the Nikkei's earnings",
+   "source_culture": "JP/ja",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "fails in months when a consumption-tax or subsidy calendar moves spending mechanically, a Japan-specific schedule",
+   "crowding_prior": "medium",
+   "note": "statsDataId defaults are UNCONFIRMED; override with the env var the series names",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "estat_jp_macro series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime; applied by mt5desk.cell_modifiers once #131's alt: conditioner lands, reported BLOCKED_DEPENDENCY before that"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "kosis_kr_macro",
+   "name": "KOSIS: Korea CPI and exports",
+   "kind": "kosis",
+   "cadence": "daily",
+   "auth": "key_env:KOSIS_API_KEY",
+   "key_env": [
+    "KOSIS_API_KEY"
+   ],
+   "licence": "KOSIS OpenAPI terms (KOGL type 1, attribution)",
+   "region": "KR",
+   "lang": "ko",
+   "url": "https://kosis.kr/openapi/Param/statisticsParameterData.do",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 3,
+    "hour": 0,
+    "why": "CPI prints on the first business days of the next month; trade on the 1st"
+   },
+   "series": {
+    "kr_cpi": {
+     "orgId": "101",
+     "tblId": "DT_1J22003",
+     "itmId": "T+",
+     "objL1": "0",
+     "pick": {
+      "C1": "0"
+     },
+     "instruments": {
+      "USDKRW": -1,
+      "AUDUSD": 1
+     }
+    },
+    "kr_exports": {
+     "orgId": "360",
+     "tblId": "DT_1R11001_FRM101",
+     "itmId": "T+",
+     "objL1": "ALL",
+     "lag_days": 2,
+     "instruments": {
+      "USDKRW": -1,
+      "AUDUSD": 1,
+      "NAS100": 1,
+      "JPN225": 1
+     }
+    }
+   },
+   "mechanism": "Korean exports are the first monthly read of the global goods cycle and of semiconductor demand; CPI sets the BoK path for the won",
+   "source_culture": "KR/ko",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "fails when Chuseok and Lunar New Year working-day shifts distort the month, a calendar that does not coincide with US surprise regimes",
+   "crowding_prior": "medium",
+   "note": "orgId/tblId defaults are UNCONFIRMED; a wrong id returns KOSIS's own err object, recorded",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "kosis_kr_macro series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime; applied by mt5desk.cell_modifiers once #131's alt: conditioner lands, reported BLOCKED_DEPENDENCY before that"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "ecos_bok",
+   "name": "Bank of Korea ECOS: base rate, export price index, M2",
+   "kind": "ecos",
+   "cadence": "daily",
+   "auth": "key_env:ECOS_API_KEY",
+   "key_env": [
+    "ECOS_API_KEY"
+   ],
+   "licence": "ECOS OpenAPI terms (free key, attribution to the Bank of Korea)",
+   "region": "KR",
+   "lang": "ko",
+   "url": "https://ecos.bok.or.kr/api/StatisticSearch",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 20,
+    "hour": 0,
+    "why": "monthly ECOS tables land in the third week of the next month; the leg lifts it to first sight"
+   },
+   "series": {
+    "bok_base_rate": {
+     "stat": "722Y001",
+     "cycle": "M",
+     "item": "0101000",
+     "lag_days": 1,
+     "instruments": {
+      "USDKRW": -1
+     }
+    },
+    "kr_export_price_idx": {
+     "stat": "402Y014",
+     "cycle": "M",
+     "item": "*AA",
+     "instruments": {
+      "USDKRW": -1,
+      "NAS100": 1,
+      "JPN225": 1
+     }
+    },
+    "kr_m2": {
+     "stat": "101Y003",
+     "cycle": "M",
+     "item": "BBHS00",
+     "lag_days": 45,
+     "instruments": {
+      "USDKRW": 1,
+      "AUDUSD": 1
+     }
+    }
+   },
+   "mechanism": "Korean export prices lead the chip cycle's pricing; BoK policy and money growth set the won's carry",
+   "source_culture": "KR/ko",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "fails when FX intervention (the NPS swap line, verbal intervention) overrides the macro read, a Korea-specific policy reflex",
+   "crowding_prior": "low",
+   "note": "stat/item codes are UNCONFIRMED; a wrong code returns ECOS's INFO/ERROR code, recorded",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "ecos_bok series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime; applied by mt5desk.cell_modifiers once #131's alt: conditioner lands, reported BLOCKED_DEPENDENCY before that"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "bls_components",
+   "name": "BLS API v2: CPI components, average hourly earnings, PPI final demand",
+   "kind": "bls",
+   "cadence": "daily",
+   "auth": "key_env:BLS_API_KEY",
+   "key_env": [
+    "BLS_API_KEY"
+   ],
+   "licence": "US federal government work (public domain); BLS API terms",
+   "region": "US",
+   "lang": "en",
+   "url": "https://api.bls.gov/publicAPI/v2/timeseries/data/",
+   "rule": {
+    "lag_days": 17,
+    "hour": 14,
+    "why": "CPI and PPI print by mid-month 12:30 UTC; +17 days is after every scheduled date"
+   },
+   "series": {
+    "cpi_core_services": {
+     "code": "CUSR0000SASLE",
+     "instruments": {
+      "EURUSD": -1,
+      "USDJPY": 1,
+      "XAUUSD": -1,
+      "US500": -1,
+      "NAS100": -1
+     }
+    },
+    "cpi_shelter": {
+     "code": "CUSR0000SAH1",
+     "instruments": {
+      "EURUSD": -1,
+      "USDJPY": 1,
+      "US500": -1
+     }
+    },
+    "avg_hourly_earnings": {
+     "code": "CES0500000003",
+     "lag_days": 10,
+     "instruments": {
+      "EURUSD": -1,
+      "USDJPY": 1,
+      "XAUUSD": -1,
+      "US500": -1
+     }
+    },
+    "ppi_final_demand": {
+     "code": "WPSFD4",
+     "instruments": {
+      "EURUSD": -1,
+      "USDJPY": 1,
+      "US500": -1
+     }
+    }
+   },
+   "mechanism": "the sticky components (services ex-energy, shelter, wages) are what the Fed path is priced on; the headline FRED list does not carry them",
+   "source_culture": "US/en",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "fails when owners'-equivalent-rent methodology or seasonal-factor revisions move the components without new information",
+   "crowding_prior": "high",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "bls_components series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime; applied by mt5desk.cell_modifiers once #131's alt: conditioner lands, reported BLOCKED_DEPENDENCY before that"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "reddit_oauth",
+   "name": "Reddit OAuth app-only: instrument mentions in trading subreddits",
+   "kind": "reddit",
+   "cadence": "4h",
+   "auth": "key_env:REDDIT_CLIENT_ID+REDDIT_SECRET",
+   "key_env": [
+    "REDDIT_CLIENT_ID",
+    "REDDIT_SECRET"
+   ],
+   "licence": "Reddit Data API terms (free, non-commercial research, OAuth app)",
+   "region": "US",
+   "lang": "en",
+   "url": "https://oauth.reddit.com/r/<sub>/new",
+   "rule": {
+    "lag_days": 1,
+    "hour": 0,
+    "why": "a day's count is complete at the next UTC midnight; only completed days are recorded"
+   },
+   "subreddits": [
+    "Forex",
+    "Gold",
+    "Silverbugs",
+    "oil",
+    "wallstreetbets",
+    "Daytrading",
+    "stocks"
+   ],
+   "keywords": {
+    "XAUUSD": [
+     "gold",
+     "xau",
+     "xauusd"
+    ],
+    "XAGUSD": [
+     "silver",
+     "xag"
+    ],
+    "XTIUSD": [
+     "oil",
+     "crude",
+     "wti"
+    ],
+    "EURUSD": [
+     "eurusd",
+     "euro"
+    ],
+    "USDJPY": [
+     "usdjpy",
+     "yen",
+     "jpy"
+    ],
+    "NAS100": [
+     "nasdaq",
+     "nq",
+     "qqq"
+    ],
+    "US500": [
+     "spx",
+     "spy",
+     "s&p"
+    ]
+   },
+   "series": {
+    "mentions_XAUUSD": {
+     "instruments": {
+      "XAUUSD": 1
+     }
+    },
+    "mentions_XAGUSD": {
+     "instruments": {
+      "XAGUSD": 1
+     }
+    },
+    "mentions_XTIUSD": {
+     "instruments": {
+      "XTIUSD": 1
+     }
+    },
+    "mentions_EURUSD": {
+     "instruments": {
+      "EURUSD": 1
+     }
+    },
+    "mentions_USDJPY": {
+     "instruments": {
+      "USDJPY": 1
+     }
+    },
+    "mentions_NAS100": {
+     "instruments": {
+      "NAS100": 1
+     }
+    },
+    "mentions_US500": {
+     "instruments": {
+      "US500": 1
+     }
+    }
+   },
+   "mechanism": "retail attention spikes precede retail order flow into the named instrument, which mean-reverts once the crowd is positioned",
+   "source_culture": "US/en",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "fails when attention is news-driven and institutional flow arrives with it, which a mention count cannot tell apart",
+   "crowding_prior": "high",
+   "note": "the anonymous JSON reader (#129 free_stack reddit, side_channels/reddit_miner) keeps running; this is the keyed reach beyond its rate limit",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "reddit_oauth series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime; applied by mt5desk.cell_modifiers once #131's alt: conditioner lands, reported BLOCKED_DEPENDENCY before that"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "telegram_mtproto",
+   "name": "Telegram MTProto (Telethon): KO/RU finance channels, instrument mentions",
+   "kind": "telegram",
+   "cadence": "4h",
+   "auth": "key_env:TELEGRAM_API_ID+TELEGRAM_API_HASH+session",
+   "key_env": [
+    "TELEGRAM_API_ID",
+    "TELEGRAM_API_HASH"
+   ],
+   "licence": "Telegram API terms of service (public channels only)",
+   "region": "GLOBAL",
+   "lang": "ko,ru",
+   "url": "mtproto://<channel>",
+   "session_file": "desks/mt5/data/secrets/telegram_keyed.session",
+   "channels": [
+    "kbs_economy",
+    "yonhapnews_economy",
+    "markettwits",
+    "russianmacro",
+    "bitkogan",
+    "centralbank_russia",
+    "smartlabnews"
+   ],
+   "rule": {
+    "lag_days": 1,
+    "hour": 0,
+    "why": "completed UTC days only"
+   },
+   "keywords": {
+    "XAUUSD": [
+     "gold",
+     "золото",
+     "금값",
+     "금 시세"
+    ],
+    "XTIUSD": [
+     "нефть",
+     "brent",
+     "유가",
+     "원유"
+    ],
+    "USDKRW": [
+     "환율",
+     "원달러",
+     "원·달러"
+    ],
+    "USDJPY": [
+     "엔화",
+     "иена",
+     "иены"
+    ],
+    "USDCNH": [
+     "юань",
+     "위안"
+    ],
+    "HK50": [
+     "hang seng",
+     "항셍",
+     "гонконг"
+    ]
+   },
+   "series": {
+    "mentions_XAUUSD": {
+     "instruments": {
+      "XAUUSD": 1
+     }
+    },
+    "mentions_XTIUSD": {
+     "instruments": {
+      "XTIUSD": 1
+     }
+    },
+    "mentions_USDKRW": {
+     "instruments": {
+      "USDKRW": 1
+     }
+    },
+    "mentions_USDJPY": {
+     "instruments": {
+      "USDJPY": 1
+     }
+    },
+    "mentions_USDCNH": {
+     "instruments": {
+      "USDCNH": 1
+     }
+    },
+    "mentions_HK50": {
+     "instruments": {
+      "HK50": 1
+     }
+    }
+   },
+   "mechanism": "Korean and Russian retail finance channels move with their own retail flows (kimchi-premium gold buying, ruble-hedging into gold), a different crowd from US social media",
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "fails when sanctions or capital controls cut the channel's audience off from the instrument it discusses, a non-Western constraint US forums never hit",
+   "crowding_prior": "low",
+   "note": "t.me/s preview scraping (#129, deep_forest_miner) reaches ~20 recent posts; the keyed client reads full history. A session is created ONCE by hand, never by this organ",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "telegram_mtproto series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime; applied by mt5desk.cell_modifiers once #131's alt: conditioner lands, reported BLOCKED_DEPENDENCY before that"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only; the allocator is not edited"
+    }
+   },
+   "machine_use_allowed": true
+  }
+ ]
+}
