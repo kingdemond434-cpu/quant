@@ -42,13 +42,14 @@ def immutable_list(source: bytes | str) -> tuple[str, ...]:
     tree = ast.parse(source)
     for node in tree.body:
         targets: list[ast.expr] = []
+        value_node: ast.expr | None = None
         if isinstance(node, ast.Assign):
-            targets = list(node.targets)
+            targets, value_node = list(node.targets), node.value
         elif isinstance(node, ast.AnnAssign) and node.value is not None:
-            targets = [node.target]
-        if any(isinstance(t, ast.Name) and t.id == "IMMUTABLE" for t in targets):
-            value = ast.literal_eval(node.value)  # type: ignore[arg-type]
-            return tuple(str(v) for v in value)
+            targets, value_node = [node.target], node.value
+        if value_node is not None and any(isinstance(t, ast.Name) and t.id == "IMMUTABLE"
+                                          for t in targets):
+            return tuple(str(v) for v in ast.literal_eval(value_node))
     return ()
 
 
