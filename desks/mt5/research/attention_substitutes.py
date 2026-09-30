@@ -30,7 +30,8 @@ ONE PASS, inside `--budget-s`:
      available_time, value, source_id, vintage_id) -- the frame
      `mt5desk.family_exogenous_conditioner` loads.
   3. Mint `exogenous_conditioner` cells on each mapped instrument ({level_z, delta_z} x
-     {1.0, 1.5, 2.0} sd x {+1, -1}), a ring slice per pass, through `proposer_common.donate`
+     {1.0, 1.5, 2.0} sd x {+1, -1}), each cell ONCE (never re-charged), up to PER_PASS a pass,
+     through `proposer_common.donate`
      -- the stamped, lane-filtered, pre-registered door -- which writes
      `data/intelligence/attention_substitutes/discoveries_*.json` with `tests_run` = cells minted,
      so every one is charged to the trial census. The compiler reads that directory like any seat.
@@ -77,7 +78,7 @@ WINDOW_DAYS = 400
 LAG_H = 24
 #: Minimum points before a series may mint cells (the conditioner's own MIN_OBSERVATIONS).
 MIN_POINTS = 30
-#: Cells donated per pass (a ring slice over the whole grid, cursor persisted).
+#: New cells donated per pass; a cell already donated is never donated (or charged) again.
 PER_PASS = 240
 EXO_GRID: dict[str, tuple[Any, ...]] = {"transform": ("level_z", "delta_z"),
                                         "threshold": (1.0, 1.5, 2.0),
@@ -95,7 +96,8 @@ ROSTER: dict[str, dict[str, Any]] = {
                "gdelt": '"silver price"'},
     "XPTUSD": {"wiki": [("en.wikipedia", "Platinum")], "gdelt": '"platinum price"'},
     "XCUUSD": {"wiki": [("en.wikipedia", "Copper")], "gdelt": '"copper price"'},
-    "XTIUSD": {"wiki": [("en.wikipedia", "Price_of_oil"), ("en.wikipedia", "West_Texas_Intermediate")],
+    "XTIUSD": {"wiki": [("en.wikipedia", "Price_of_oil"),
+                        ("en.wikipedia", "West_Texas_Intermediate")],
                "gdelt": '"oil price"'},
     "XBRUSD": {"wiki": [("en.wikipedia", "Brent_Crude")], "gdelt": '"brent crude"'},
     "XNGUSD": {"wiki": [("en.wikipedia", "Natural_gas")], "gdelt": '"natural gas price"'},
@@ -340,12 +342,20 @@ def build_grid(plan: list[dict[str, Any]], lake_points: Mapping[str, int], now: 
     return cells, skipped
 
 
-def _ring(items: list[dict[str, Any]], cursor: int, n: int) -> tuple[list[dict[str, Any]], int]:
-    if not items or n <= 0:
-        return [], cursor
-    start = cursor % len(items)
-    take = (items[start:] + items[:start])[:n]
-    return take, (start + len(take)) % len(items)
+def cell_key(c: Mapping[str, Any]) -> str:
+    p = c.get("params") or {}
+    return "|".join(str(x) for x in (c.get("symbol"), c.get("family"), p.get("source"),
+                                     p.get("transform"), p.get("threshold"),
+                                     p.get("side_when_high")))
+
+
+def _fresh(cells: list[dict[str, Any]], donated: set[str], n: int) -> list[dict[str, Any]]:
+    """Up to `n` cells never donated before. EACH CELL IS DONATED -- AND CHARGED -- ONCE: the
+    trial census divides one family-wise error budget across every hypothesis the desk tested,
+    so re-donating an identical cell every hour would charge the FX and metals book for trials
+    nobody ran. A new series (a door that comes online, a roster row added) mints its cells on
+    the next pass."""
+    return [c for c in cells if cell_key(c) not in donated][:max(0, n)]
 
 
 # ---------------------------------------------------------------------------- volume ------
@@ -449,14 +459,16 @@ def run(*, budget_s: float = 240.0, fetch: Fetch | None = None, dry_run: bool = 
                 pass
     gate, gate_why = universe_gate(paths)
     cells, skipped = build_grid(plan, lake_points, now, gate)
-    take, nxt = _ring(cells, int(state.get("cursor") or 0), PER_PASS)
+    donated_keys = set(state.get("donated") or [])
+    take = _fresh(cells, donated_keys, PER_PASS)
     donation: dict[str, Any] = {"donated": 0}
     if take and not dry_run:
         from proposer_common import donate, donation_counts
         path = donate(SEAT, take, len(take))
         donation = {**donation_counts(), "path": str(path) if path else None}
-        state["cursor"] = nxt
-        _atomic(paths.state, state)
+        if path:
+            state["donated"] = sorted(donated_keys | {cell_key(c) for c in take})
+            _atomic(paths.state, state)
     by_door: dict[str, int] = {}
     for r in recs.values():
         k = f"{r['door']}:{str(r['status']).split(':', 1)[0]}"
@@ -467,6 +479,7 @@ def run(*, budget_s: float = 240.0, fetch: Fetch | None = None, dry_run: bool = 
            "fenced_platforms": tf.registry_rows(),
            "series": recs, "status_counts": by_door,
            "cells": {"grid": len(cells), "built": len(take),
+                     "donated_ever": len(state.get("donated") or []),
                      "minted": int(donation.get("donated") or 0),
                      "trials_charged": 0 if dry_run else int(donation.get("donated") or 0),
                      "universe_gate": gate_why or "OK", "skipped": skipped,

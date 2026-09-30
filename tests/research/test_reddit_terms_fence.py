@@ -277,6 +277,11 @@ def test_substitutes_publish_pit_lake_series_and_charge_every_minted_cell(
     assert all(c["family"] == "exogenous_conditioner" for c in donated["rows"])
     assert any("US500" in why for why in cells["skipped"].values())
     assert json.loads(paths.report.read_text("utf-8"))["status"] == "RAN"
+    # EACH CELL IS CHARGED ONCE: a second pass over the same series donates nothing new.
+    donated.clear()
+    again = A.run(fetch=_fake_fetch([]), paths=paths, now=NOW + timedelta(hours=1))
+    assert again["cells"]["minted"] == 0 and not donated
+    assert again["cells"]["donated_ever"] == cells["minted"]
 
 
 def test_volume_is_measured_before_and_after_and_unmeasured_is_named(tmp_path: Path) -> None:
