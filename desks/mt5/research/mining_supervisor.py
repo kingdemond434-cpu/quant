@@ -86,6 +86,7 @@ COND_MIN_OBS = max(60, int(_FAMILY_MIN_OBS))
 #: into cost facts and prop-rule limits (extractor.COST_FACTS / RULE_FACTS). Never minted as cells.
 #: An archive capture: web.archive.org/web/<timestamp>[flags]/<original url>.
 _WAYBACK = re.compile(r"^(?:https?://)?(?:www\.)?web\.archive\.org/web/\d+[a-z_]*/(.+)$", re.I)
+_INDEX_PAGE = re.compile(r"/(?:index|default)\.(?:html?|php|aspx?)$", re.I)
 _SECOND_LEVEL = frozenset({"co", "com", "gov", "org", "ac", "or", "ne", "go", "net", "edu"})
 
 
@@ -810,7 +811,8 @@ class Pipeline:
         best_len = -1
         page = key.split("?", 1)[0]
         for rk, sid in rows:
-            rp = rk.split("?", 1)[0]                      # a listing's query is not its scope
+            # a listing's query is not its scope, nor is its index page: /x/index.htm scopes /x
+            rp = _INDEX_PAGE.sub("", rk.split("?", 1)[0])
             if rk == key:
                 hit = len(rk) + 1                         # exact beats any prefix
             elif "/" in rp and (page == rp or page.startswith(rp + "/")):

@@ -1,0 +1,123 @@
+{
+ "note": "Pages the judge's docket already carries (external_survivors.json source_url) that no other roster named, registered so each judged cell traces to a source (coordinator, dataset rule, 2026-09-30). GitHub repos use the canonical id github:<owner>/<repo> (lower-case), shared with the repo-mining lane. The BoJ bond-statistics PDF traces to ground:jp:日本銀行_統計 through its /en/statistics scope, so it needs no row here. The broker's swap table is not a web page (mt5://symbol_info), so it traces by its declared seat.",
+ "sources": [
+  {
+   "id": "github:clementinemaster/forex-stgfx-advanced-strategy-mt4",
+   "name": "Clementinemaster/forex-stgfx-advanced-strategy-mt4 (GitHub)",
+   "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
+   "owner": "repo_mining",
+   "kind": "code",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "consumer": "desks/mt5/research/run_external_backtest.py",
+   "licence": "repo licence; concept only",
+   "fetcher": "owned",
+   "cadence": "daily",
+   "region": "global"
+  },
+  {
+   "id": "github:clementinemaster/forex-prime-trx-mt4-strategy",
+   "name": "Clementinemaster/forex-prime-trx-mt4-strategy (GitHub)",
+   "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
+   "owner": "repo_mining",
+   "kind": "code",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "consumer": "desks/mt5/research/run_external_backtest.py",
+   "licence": "repo licence; concept only",
+   "fetcher": "owned",
+   "cadence": "daily",
+   "region": "global"
+  },
+  {
+   "id": "youtube_video_corpus",
+   "name": "YouTube trading videos (transcript corpus)",
+   "url": "https://www.youtube.com/watch",
+   "seats": [
+    "miner:youtube"
+   ],
+   "owner": "scout:youtube_corpus",
+   "kind": "text",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "consumer": "scripts/collect_youtube_corpus.py",
+   "licence": "public video; concept only",
+   "fetcher": "owned",
+   "cadence": "daily",
+   "region": "global"
+  },
+  {
+   "id": "mql5_code_items",
+   "name": "MQL5 CodeBase item pages (MT4 and MT5, every category)",
+   "url": "https://www.mql5.com/en/code",
+   "owner": "scout:world_crawler",
+   "kind": "code",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "consumer": "desks/mt5/research/deep_forest_miner.py",
+   "licence": "MQL5.com terms; concept only, code never copied",
+   "fetcher": "owned",
+   "cadence": "daily",
+   "region": "global"
+  },
+  {
+   "id": "quantifiable_edges_blog",
+   "name": "Quantifiable Edges blog",
+   "url": "https://quantifiableedges.com",
+   "owner": "scout:intelligence",
+   "kind": "text",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "us",
+   "language": "en",
+   "consumer": "desks/mt5/research/miner_candidate_compiler.py",
+   "fetcher": "owned",
+   "cadence": "daily"
+  },
+  {
+   "id": "quantish_blog",
+   "name": "Quantish blog",
+   "url": "https://blog.quantish.io",
+   "owner": "scout:world_crawler",
+   "kind": "text",
+   "uses": [
+    "direct_cells",
+    "indirect_cells"
+   ],
+   "region": "us",
+   "language": "en",
+   "consumer": "desks/mt5/research/deep_forest_miner.py",
+   "fetcher": "owned",
+   "cadence": "daily"
+  },
+  {
+   "id": "fusion_symbol_info_swaps",
+   "name": "Fusion MT5 symbol_info swap long/short (the terminal's own table)",
+   "url": "",
+   "seats": [
+    "miner:broker_swaps"
+   ],
+   "owner": "scout:broker_swaps",
+   "kind": "text",
+   "uses": [
+    "direct_cells",
+    "allocation_intel"
+   ],
+   "consumer": "desks/mt5/side_channels/seed_miners.py",
+   "region": "global",
+   "licence": "the broker's own terminal data",
+   "fetcher": "owned",
+   "cadence": "daily"
+  }
+ ]
+}

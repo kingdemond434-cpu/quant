@@ -994,6 +994,9 @@ def test_archive_captures_config_urls_and_named_seats_on_the_same_site(tmp_path:
     assert pipe.attribute_url("https://web.archive.org/web/2019/https://www.mql5.com/en/forum/9",
                               idx) == "mql5_forum_en"
     assert pipe.attribute_url("https://www.mql5.com/en/code/1", idx) == ""
+    boj = {"boj.or.jp": [("boj.or.jp/en/statistics/index.htm", "boj_stats")]}
+    # an index page scopes its directory
+    assert pipe.attribute_url("http://www.boj.or.jp/en/statistics/set/x.pdf", boj) == "boj_stats"
     dx = "https://web.archive.org/web/20191210165044/https://www.darwinex.com/darwin/AJG.4.21"
     assert pipe.attribute_source({"source": "miner:darwinex", "source_url": dx}, idx, seats) \
         == ("darwinex", "seat+site")
