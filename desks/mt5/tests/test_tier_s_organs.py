@@ -322,3 +322,57 @@ def test_invent_from_needs_cases() -> None:
     from libs.tiers import test_invention
     out = test_invention.invent_from(mb.ValidatorConfig(), [], [])
     assert out["candidate_gates"] == [] and out["n_tried"] == 0
+
+
+# ------------------------------------------------------------------ the promotion door
+def test_promotion_authority_withholds_on_evidence_only(monkeypatch: Any, tmp_path: Path) -> None:
+    from datetime import UTC, datetime
+
+    from libs.tiers import promotion_authority as pa
+    now = datetime.now(UTC).isoformat()
+    monkeypatch.setattr(pa, "ROOT", tmp_path)
+    for attr in ("REPLICATION", "FDR_ROWS", "FREEZE", "LEDGER"):
+        monkeypatch.setattr(pa, attr, tmp_path / "reports" / f"{attr}.json")
+    (tmp_path / "reports").mkdir()
+    assert pa.block("EURUSD.x.asia") is None, "absent verdicts withhold nothing"
+    pa.REPLICATION.write_text(json.dumps({"verdicts": [
+        {"key": "external.EURUSD.x.asia", "verdict": "MISMATCH"}]}), "utf-8")
+    assert str(pa.block("EURUSD.x.asia")).startswith("REPLICATION_MISMATCH")
+    pa.REPLICATION.write_text("{}", "utf-8")
+    pa.FDR_ROWS.write_text(json.dumps({"generated_utc": now, "certified": [
+        {"test_id": "GBPUSD.y.ny", "over_budget": True, "p": 0.04}]}), "utf-8")
+    assert str(pa.block("GBPUSD.y.ny")).startswith("ONLINE_FDR_OVER_BUDGET")
+    pa.FDR_ROWS.write_text("{}", "utf-8")
+    # a freeze counts only when the PRODUCTION certifier's score DROPPED
+    pa.FREEZE.write_text(json.dumps({"at": now, "verdict": "FREEZE", "judge":
+                                     "reference_validator", "why": "immune score fell"}), "utf-8")
+    assert pa.block("A") is None
+    pa.FREEZE.write_text(json.dumps({"at": now, "verdict": "FREEZE", "judge": "production:ab",
+                                     "why": "immune score 0.8 below the floor 0.9"}), "utf-8")
+    assert pa.block("A") is None
+    pa.FREEZE.write_text(json.dumps({"at": now, "verdict": "FREEZE", "judge": "production:ab",
+                                     "why": "immune score fell 0.99 -> 0.90"}), "utf-8")
+    assert str(pa.block("A")).startswith("IMMUNE_FREEZE")
+    pa.FREEZE.write_text(json.dumps({"at": "2020-01-01T00:00:00+00:00", "verdict": "FREEZE",
+                                     "judge": "production:ab", "why": "fell"}), "utf-8")
+    assert pa.block("A") is None, "a stale freeze lapses"
+    pa.record("A", "IMMUNE_FREEZE: x", lane="main", exp_r=0.2, n=40)
+    row = json.loads(pa.LEDGER.read_text("utf-8").splitlines()[0])
+    assert row["reason"] == "IMMUNE_FREEZE" and row["exp_r"] == 0.2
+
+
+def test_the_door_is_a_billed_rail_and_the_promoter_calls_it() -> None:
+    from libs.portfolio import rails
+    r = rails.rail("tier_s_evidence_block")
+    assert r.measure == "measure_tier_s_block"
+    src = (DESK / "research" / "promoter.py").read_text("utf-8")
+    assert src.count("tier_s_block(key)") == 2, "both promotion lanes consult the door"
+    import missed_growth
+    assert "measure_tier_s_block" in missed_growth.MEASURES
+
+
+def test_firewall_may_guards_the_promoter_role() -> None:
+    from libs.tiers import firewall
+    with pytest.raises(firewall.FirewallError):
+        firewall.may("promoter", "read", "desks/mt5/data/intelligence/kimi/x.json")
+    firewall.may("promoter", "read", "desks/mt5/reports/REPLICATION.json")
