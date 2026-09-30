@@ -57,6 +57,7 @@ FILLS = DESK / "reports" / "FILL_ATTRIBUTION.json"
 EXECQ = DESK / "reports" / "execution_quality.json"
 LEDGER = DESK / "data" / "live_ledger.jsonl"
 POSTERIOR = DESK / "reports" / "POSTERIOR_ALPHA.json"
+RESIDUAL_SEARCH = DESK / "reports" / "RESIDUAL_SEARCH.json"
 QUEUE = DESK / "data" / "residual_queue.jsonl"
 REPORT = DESK / "reports" / "RESIDUAL_QUEUE.json"
 
@@ -430,6 +431,36 @@ def _losses() -> list[dict]:
     return [r for r in out if r]
 
 
+def _residual_search() -> list[dict]:
+    """The book's residual after its mechanism clusters and certified sleeves, by bucket, and
+    what each gate's refusals would have earned relaxed (`research/residual_search.py`).
+
+    Only BH-rejected buckets are queued -- a bucket the correction did not keep is noise the
+    producer already counted -- and the residual is by construction what neither the cluster nor
+    the sleeve explains, so its share is 1.0. A gate is queued only when its relaxed arm is
+    MEASURED; an unpriced gate is the producer's UNMEASURED, not a residual."""
+    doc = _read_json(RESIDUAL_SEARCH) or {}
+    out: list[dict | None] = []
+    for f in (doc.get("residual") or {}).get("findings") or []:
+        if not isinstance(f, dict):
+            continue
+        out.append(item("returns", "", f"residual_search:{f.get('axis')}={f.get('bucket')}",
+                        f.get("mean_residual_r"), "R", 1.0, "residual_search",
+                        f"the book's residual is {f.get('mean_residual_r')} R at "
+                        f"{f.get('axis')}={f.get('bucket')} over {f.get('n')} trades "
+                        f"(t={f.get('t')}, BH-rejected)"))
+    gates = ((doc.get("counterfactual_policy") or {}).get("gates") or {}).get("gates") or {}
+    for name, g in gates.items():
+        rel = (g or {}).get("relaxed") or {}
+        if not rel.get("n") or rel.get("verdict") in (None, "UNMEASURED"):
+            continue
+        out.append(item("strategy_loss", "", f"gate_relaxed:{name}", rel.get("sum_r"), "R",
+                        1.0, "residual_search",
+                        f"relaxing gate {name} would have earned {rel.get('sum_r')} R over "
+                        f"{rel.get('n')} priced refusals ({rel.get('verdict')})"))
+    return [r for r in out if r]
+
+
 def collect() -> tuple[list[dict], dict[str, dict]]:
     """Every producer, normalised. An absent artifact is `absent` with n=0 -- never an error."""
     plan = (("standing_questions", STANDING, _standing), ("factor_residual", FACTOR, _factor),
@@ -437,7 +468,8 @@ def collect() -> tuple[list[dict], dict[str, dict]]:
             ("counterfactual_world", COUNTERFACTUAL, _counterfactual),
             ("opportunity_gap", GAP, _gap), ("missed_growth", MISSED, _missed),
             ("fill_attribution", FILLS, _fills), ("execution_quality", EXECQ, _execq),
-            ("live_ledger", LEDGER, _losses), ("posterior_alpha", POSTERIOR, None))
+            ("live_ledger", LEDGER, _losses), ("posterior_alpha", POSTERIOR, None),
+            ("residual_search", RESIDUAL_SEARCH, _residual_search))
     items: list[dict] = []
     sources: dict[str, dict] = {}
     for name, path, fn in plan:

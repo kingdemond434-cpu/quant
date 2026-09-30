@@ -87,6 +87,12 @@ LEG_LAYER: dict[str, str] = {
     "alpha_periodic_table": "prediction", "regime_coverage": "prediction",
     "arena": "meta", "prosecutor": "meta", "scaling_laws": "meta", "dead_architecture": "meta",
     "producer_census": "meta", "productivity_census": "meta",
+    # Every producer's reach against what it minted, and the share the sealed judge can build:
+    # the machine measuring its own breadth, which is meta.
+    "producer_breadth": "meta",
+    # The video-derived anchor/exit grid mints claims about returns: prediction, like
+    # `empty_cluster_forcer`, which it runs beside.
+    "htf_anchor": "prediction",
     # The north star over certified edges and the per-producer contracts that price spare compute
     # (Tier-1 #9/#11): the machine measuring what its research bought, which is meta.
     "alpha_rank": "meta", "factory_contracts": "meta",
@@ -231,7 +237,8 @@ LEG_LAYER: dict[str, str] = {
     "model_role_benchmark": "meta", "research_departments": "meta",
     "qd_frontier": "information", "blind_reviewer": "meta",
     "evaluator_lab": "meta", "value_of_data": "information", "research_api_status": "meta",
-    "artifact_chain": "meta", "residual_queue": "information", "unseen_frontier": "information",
+    "artifact_chain": "meta", "residual_queue": "information",
+    "residual_search": "information", "unseen_frontier": "information",
     "attribution_reconcile": "meta",
     "macro_state_engine": "information",
     "research_artifacts": "meta",
@@ -240,6 +247,7 @@ LEG_LAYER: dict[str, str] = {
     "trend_core": "prediction",
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
+    "specialist_cell": "prediction",
     "event_surprise": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",

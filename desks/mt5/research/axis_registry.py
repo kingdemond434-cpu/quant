@@ -168,7 +168,6 @@ _FAMILY_GROUPS: dict[str, str] = {
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
                                                " retail_overlap_reversal",
-    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
@@ -181,6 +180,19 @@ _FAMILY_GROUPS: dict[str, str] = {
     "trend_persistence cross_asset market": "cross_sectional_class_momentum",
     "range_reversion cross_asset market": "cross_sectional_class_reversal",
     "forced_liquidation cross_asset market": "crisis_only_class_defensive",
+    # The specialist families of 2026-09-30 (`mt5desk.families_specialist`). Carry unwound on a
+    # risk proxy's break is a margin call on the levered carry holder; the month-end rebalance
+    # bets on a fixed-weight allocator's flow against the equity-minus-bond gap; a crop-cycle
+    # window is a calendar-constrained hedger's premium. `entry_conditioned` is an OPERATOR over a
+    # base cell, like `exit_operated`: its mechanism is its base's, so no single row names it.
+    # NEITHER OF THE FIRST TWO IS PRICE-ONLY: carry_risk_off reads the swap terms (exogenous) and
+    # a risk proxy's bars; month_end_rebalance conditions on a bond proxy's bars. Their
+    # information source is `carry` / `cross_asset` here and `exogenous` / `conditioned` in
+    # `gauntlet_buildability.information_class`; a test pins that neither reads `price_only`.
+    "forced_liquidation carry market": "carry_risk_off",
+    "calendar_seasonality cross_asset market": "month_end_rebalance",
+    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
+                                               " seasonal_window",
     "range_reversion price_only limit": "dav_range_filter_adx ict_fvg mean_reversion_bollinger"
                                         " mean_reversion_rsi range_reversion",
     "range_reversion price_only market": "engulfing_reversal pin_bar_reversal",
@@ -201,7 +213,8 @@ _FAMILY_GROUPS: dict[str, str] = {
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
     f"{UNKNOWN} price_only market": "discovered",
-    f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated",
+    f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
+                                       " entry_conditioned",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
     # base family's entries, so its mechanism and style are its base's and no single row names
     # them. `exogenous_conditioner` bets on a data pack's own published series (a market-order
