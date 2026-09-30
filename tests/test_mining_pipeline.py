@@ -67,9 +67,12 @@ def _pipe(tmp: Path, sources: list[acq.Source] | None = None, **hook_kw: Any) ->
     hooks = MS.Hooks(universe={"EURUSD", "XAUUSD", "GBPUSD", "USDJPY"}, donate=donate,
                      **hook_kw)
     roster = sources if sources is not None else [
-        acq.Source(id="codebase", fetcher="external_feed", kind="code", priority=1),
-        acq.Source(id="forum_ru", fetcher="external_feed", kind="text", priority=1),
-        acq.Source(id="cold_source", fetcher="rss", kind="text", priority=2)]
+        acq.Source(id="codebase", fetcher="external_feed", kind="code", priority=1,
+                   uses=["direct_cells", "indirect_cells"]),
+        acq.Source(id="forum_ru", fetcher="external_feed", kind="text", priority=1,
+                   uses=["direct_cells", "indirect_cells"]),
+        acq.Source(id="cold_source", fetcher="rss", kind="text", priority=2,
+                   uses=["direct_cells", "indirect_cells"])]
     pipe = MS.Pipeline(tmp / "mining", tmp / "reports", roster=roster, hooks=hooks,
                        gate_ledger=tmp / "gate_verdict_ledger.jsonl", root=tmp)
     pipe._donated = donated
@@ -151,12 +154,14 @@ def test_trial_lineage(tmp_path: Path) -> None:
     _put(pipe, "codebase", "https://mql5/code/1", EA_RSI.replace("PERIOD_H1", "PERIOD_H1"))
     pipe.process(now=T0)
     q = pipe.cells.by_status("QUEUED")
-    assert len(q) == 2
-    fams = {c.trial_family_id for c in q}
-    assert len(fams) == 1
-    parent = [c for c in q if not c.parent_cell_id]
-    kids = [c for c in q if c.parent_cell_id]
+    direct = [c for c in q if c.use == "direct_cells"]
+    assert len(direct) == 2
+    assert len({c.trial_family_id for c in q}) == 1, "transfers and regime children left the family"
+    parent = [c for c in direct if not c.parent_cell_id]
+    kids = [c for c in direct if c.parent_cell_id]
     assert len(parent) == 1 and len(kids) == 1 and kids[0].parent_cell_id == parent[0].cell_id
+    indirect = [c for c in q if c.use == "indirect_cells"]
+    assert indirect and all(c.parent_cell_id in {d.cell_id for d in direct} for c in indirect)
 
 
 def test_duplicate_mechanism_rejected(tmp_path: Path) -> None:
@@ -295,13 +300,16 @@ def test_end_to_end_trace_and_metrics(tmp_path: Path) -> None:
          title="RSI EA for EURUSD")
     m0 = pipe.run_pass(60, fetch=False, now=T0)
     assert m0["trace"]["stage_reached"] == "EVALUATING"
-    c = pipe.cells.by_status("EVALUATING")[0]
+    evaluating = pipe.cells.by_status("EVALUATING")
+    c = next(x for x in evaluating if x.use == "direct_cells")
+    rows = [{"at": iso(T0), "cell": x.gauntlet_cell, "passed": x.cell_id == c.cell_id,
+             "terminal_gate": "PASSED" if x.cell_id == c.cell_id else "walk_forward"}
+            for x in evaluating]
     (tmp_path / "gate_verdict_ledger.jsonl").write_text(
-        json.dumps({"at": iso(T0), "cell": c.gauntlet_cell, "passed": True,
-                    "terminal_gate": "PASSED"}) + "\n", "utf-8")
+        "".join(json.dumps(r) + "\n" for r in rows), "utf-8")
     m = pipe.run_pass(60, fetch=False, now=T0 + timedelta(hours=1))
     tr = m["trace"]
-    assert tr["complete"] and tr["outcome"] == "SURVIVOR"
+    assert tr["complete"]
     assert tr["source_uri"] == "https://www.mql5.com/en/code/123"
     assert tr["preregistration_sha256"] == pipe.prereg.sha(tr["cell_id"])
     for k in ("sources_active", "sources_total", "cells_acquired_24h", "cells_compiled_24h",
@@ -310,8 +318,14 @@ def test_end_to_end_trace_and_metrics(tmp_path: Path) -> None:
               "median_time_source_to_evaluation_hours", "queue_age_p95_days",
               "binding_constraint"):
         assert k in m, k
-    assert m["cells_survived_24h"] == 1 and m["rejection_rate"] == 0.0
+    n = len(evaluating)
+    assert m["cells_survived_24h"] == 1 and m["cells_evaluated_24h"] == n
+    assert m["rejection_rate"] == round((n - 1) / n, 4)
     assert any("too loose" in w for w in m["warnings"])
+    by_use = m["cells_by_use_24h"]
+    assert by_use["direct_cells"]["created"] == 1 and by_use["indirect_cells"]["created"] >= 2
+    assert by_use["direct_cells"]["survived"] == 1
+    assert set(by_use) == {"direct_cells", "indirect_cells", "allocation_intel"}
     assert any("degraded" in w for w in m["warnings"])
     assert (tmp_path / "reports" / f"metrics_{T0 + timedelta(hours=1):%Y-%m-%d}.json").exists()
     donated = pipe._donated[0]
@@ -361,8 +375,10 @@ def test_translation_is_not_an_independent_cell(tmp_path: Path) -> None:
     _put(pipe, "forum_ru", "https://f/en", en, kind="text", lang="en")
     _put(pipe, "forum_ru", "https://f/ru", ru, kind="text", lang="ru")
     pipe.process(now=T0)
-    assert len(pipe.cells.by_status("QUEUED")) == 1
-    assert len(pipe.cells.by_status("BLOCKED_DUPLICATE_MECHANISM")) == 1
+    queued = pipe.cells.by_status("QUEUED")
+    assert len([c for c in queued if c.use == "direct_cells"]) == 1
+    dups = pipe.cells.by_status("BLOCKED_DUPLICATE_MECHANISM")
+    assert len(dups) == len(queued), "every cell of the translation folds onto the original"
 
 
 def test_prior_art_in_the_gauntlet_is_a_duplicate(tmp_path: Path) -> None:
@@ -550,3 +566,78 @@ def test_extractor_reads_code_and_prose() -> None:
                                  "Commission $4.5 per lot.")
     assert facts == {"leverage": 500.0, "swap_long": -6.2, "swap_short": 1.1,
                      "commission_per_lot": 4.5}
+
+
+def test_every_source_declares_uses_and_useless_is_cold(tmp_path: Path) -> None:
+    for s in acq.load_roster(root=ROOT):
+        assert s.uses and set(s.uses) <= set(acq.USES), s.id
+    srcs = [acq.Source(id="useless", fetcher="rss", uses=[]),
+            acq.Source(id="alloc", fetcher="page_snapshot", kind="mechanics",
+                       uses=["allocation_intel"])]
+    st = _pipe(tmp_path, sources=srcs).source_status(T0)
+    assert st["useless"]["status"] == "COLD" and st["useless"]["cold_reason"] == "serves no use"
+    assert st["alloc"]["status"] == "COLD" and "allocation_intel only" in st["alloc"]["cold_reason"]
+
+
+def test_regime_stated_in_text_becomes_an_indirect_cell(tmp_path: Path) -> None:
+    pipe = _pipe(tmp_path)
+    _put(pipe, "forum_ru", "https://f/1", "On EURUSD H1, RSI(14) below 25 is a buy, but only "
+         "at month end and in high volatility.", kind="text")
+    pipe.process(now=T0)
+    regimes = {c.spec["params"].get("regime") for c in pipe.cells.by_status("QUEUED")
+               if c.use == "indirect_cells" and c.spec}
+    assert {"month_end", "high_vol"} <= regimes
+    assert regimes <= {"high_vol", "low_vol", "month_end", "quarter_end"}
+
+
+def test_robots_txt_is_obeyed_for_page_crawls(tmp_path: Path) -> None:
+    pages = {"https://m.example/robots.txt": "User-agent: *\nDisallow: /code/viewcode\n",
+             "https://m.example/code": '<a href="/code/viewcode/7">x</a><a href="/code/8">y</a>',
+             "https://m.example/code/viewcode/7": "source", "https://m.example/code/8": "page"}
+    src = acq.Source(id="cb", fetcher="html_listing", respect_robots=True, config={
+        "listing": ["https://m.example/code"], "item_regex": r"/code/(viewcode/)?\d+$"})
+    store = PitStore(tmp_path / "m.db")
+    rep = acq.acquire(src, store, acq.CursorStore(tmp_path / "c"), acq.FetchContext(
+        http_get=_fake_http(pages), deadline=time.monotonic() + 5, now=T0), force=True)
+    assert rep.new == 1
+    assert {r["source_uri"] for r in store.as_of(T0)} == {"https://m.example/code/8"}
+    blocked = acq.Source(id="all", fetcher="page_snapshot", respect_robots=True,
+                         config={"pages": ["https://m.example/code/viewcode/7"]})
+    rep2 = acq.acquire(blocked, store, acq.CursorStore(tmp_path / "c"), acq.FetchContext(
+        http_get=_fake_http(pages), deadline=time.monotonic() + 5, now=T0), force=True)
+    assert rep2.outcome == "BLOCKED_ROBOTS"
+
+
+def test_other_lanes_rosters_are_absorbed_as_owned_rows(tmp_path: Path) -> None:
+    got = {s.id: s for s in acq.load_roster(root=ROOT)}
+    asia = [s for s in got.values() if s.origin.endswith("asia_thread_sources.yaml")]
+    assert asia and all(s.fetcher == "owned" and s.uses for s in asia)
+    y = got.get("yahoo_upgrades")
+    assert y is not None and y.cadence_minutes == 60 and y.auth == "none"
+    assert y.consumer.endswith("alpha_capture.py")
+    # breadth's files, in their own shapes (grounds / sources / rows)
+    d = tmp_path / "desks" / "mt5" / "data"
+    d.mkdir(parents=True)
+    (d / "cell_emitter_sources.json").write_text(json.dumps({"grounds": [
+        {"id": "vnpy_cta", "cadence": "hourly (leg cell_emitter)", "auth": "none (token used)",
+         "license": "MIT", "language": "python", "region": "cn"}]}), "utf-8")
+    (d / "world_factory_sources.json").write_text(json.dumps({"sources": [
+        {"id": "news_event_stream", "kind": "news", "organ": "desks/mt5/research/x.py",
+         "cadence": "hourly"}]}), "utf-8")
+    (d / "alt_dataset_sources.json").write_text(json.dumps({"rows": [
+        {"id": "alt_power_iowa", "class": "satellite", "url": "https://power"}]}), "utf-8")
+    roster_file = tmp_path / "libs" / "mining" / "sources.yaml"
+    roster_file.parent.mkdir(parents=True)
+    roster_file.write_text((ROOT / "libs" / "mining" / "sources.yaml").read_text("utf-8"),
+                           "utf-8")
+    got2 = {s.id: s for s in acq.load_roster(roster_file, root=tmp_path)}
+    v = got2["vnpy_cta"]
+    assert v.fetcher == "owned" and v.cadence_minutes == 60 and v.auth == "none"
+    assert v.licence == "MIT" and v.uses == ["direct_cells", "indirect_cells"]
+    w = got2["news_event_stream"]
+    assert w.kind == "text" and w.consumer == "desks/mt5/research/x.py"
+    assert got2["alt_power_iowa"].uses == ["indirect_cells", "allocation_intel"]
+    rep = acq.acquire(v, PitStore(tmp_path / "m.db"), acq.CursorStore(tmp_path / "c"),
+                      acq.FetchContext(http_get=_fake_http({}), deadline=time.monotonic() + 5,
+                                       now=T0), force=True)
+    assert rep.outcome == "OWNED" and rep.fetched == 0
