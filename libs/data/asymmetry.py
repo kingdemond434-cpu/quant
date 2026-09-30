@@ -290,7 +290,9 @@ def replication_cost_profile(factors: Mapping[str, object]) -> dict[str, object]
         }
     return {
         "status": "MEASURED" if len(measured) == len(REPLICATION_FACTORS) else "PARTIALLY_MEASURED",
-        "replication_difficulty": sum(measured.values()) / len(measured),
+        # fsum: a correctly-rounded sum, so ten factors all at 0.8 average to 0.8 rather than
+        # 0.7999999999999999 (plain left-to-right summation accumulates the rounding residue).
+        "replication_difficulty": math.fsum(measured.values()) / len(measured),
         "hardest_factor": max(measured, key=lambda name: measured[name]),
         "weakest_factor": min(measured, key=lambda name: measured[name]),
         "factors": measured,
