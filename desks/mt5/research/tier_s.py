@@ -1061,9 +1061,20 @@ def organ_qd() -> dict[str, Any]:
     except Exception:
         axis_cell = None
     axes = ("mechanism", "asset_class", "session", "chart", "horizon", "information_source",
-            "economic_actor", "regime", "execution_style", "direction", "complexity")
+            "economic_actor", "regime", "execution_style", "direction", "complexity",
+            "capacity", "corr_cluster")
     arch = evolution.Archive(axes)
     shadow = shadow_rows()
+    # CAPACITY and CORRELATION-CLUSTER axes (libs/tiers/qd_axes.py): measured per symbol from the
+    # bar lake's aligned H1 returns and reports/CAPACITY.json; "?" where unmeasured
+    from libs.tiers import panel, qd_axes
+    surv_syms = {str(_spec(r).get("symbol") or r.get("sym") or "")
+                 for r in survivors().values() if isinstance(r, dict)}
+    frames = panel.load_frames(UNIVERSE, eligible=_may_hypothesise, bars=3000, max_symbols=80)
+    frames.update(panel.load_frames(UNIVERSE, surv_syms - set(frames), bars=3000,
+                                    eligible=_may_hypothesise, max_symbols=80))
+    ccl = qd_axes.correlation_clusters(panel.log_returns(frames))
+    cap = qd_axes.capacity_bands(_read(REPORTS / "CAPACITY.json"), frames)
     for key, row in survivors().items():
         if not isinstance(row, dict):
             continue
@@ -1084,12 +1095,15 @@ def organ_qd() -> dict[str, Any]:
         n_par = len(params) if isinstance(params, dict) else 0
         ax.update({"direction": str(spec.get("side") or spec.get("direction") or "?"),
                    "complexity": "simple" if n_par <= 3 else "moderate" if n_par <= 8
-                   else "complex", "family": fam, "symbol": sym})
+                   else "complex", "family": fam, "symbol": sym,
+                   "capacity": cap["labels"].get(sym, "?"),
+                   "corr_cluster": ccl["labels"].get(sym, "?")})
         arch.add(str(key), {k: ax.get(k, "?") for k in (*axes, "family", "symbol")}, q)
     cov = arch.coverage()
     empty = arch.marginal_empty([("mechanism", "asset_class"), ("mechanism", "session"),
                                  ("mechanism", "horizon"), ("information_source", "asset_class"),
-                                 ("economic_actor", "session")], top=400)
+                                 ("economic_actor", "session"), ("corr_cluster", "mechanism"),
+                                 ("capacity", "mechanism")], top=400)
     # empty (mechanism, asset class) niches -> registered families of that mechanism on symbols
     # of that class that are eligible for hypotheses
     vocab = _family_vocab()
@@ -1119,6 +1133,10 @@ def organ_qd() -> dict[str, Any]:
                 and ("economic_actor" not in e or actor.get((cls3.get(f) or ("",))[0])
                      == e["economic_actor"])]
         pool = by_cls.get(str(e["asset_class"]), []) if "asset_class" in e else all_syms
+        if "corr_cluster" in e:
+            pool = [s for s in all_syms if ccl["labels"].get(s) == e["corr_cluster"]]
+        if "capacity" in e:
+            pool = [s for s in all_syms if cap["labels"].get(s) == e["capacity"]]
         extra = {"session": e["session"]} if e.get("session") not in (None, "all", "?") \
             else {}
         label = ", ".join(f"{k}={v}" for k, v in e.items())
@@ -1131,10 +1149,18 @@ def organ_qd() -> dict[str, Any]:
                     r["params"] = extra
                 rows.append(r)
     emitted = _emit("qd_niches", rows)
+    filled_on = {a: sum(1 for c in arch.cells.values() if (c["desc"] or {}).get(a) != "?")
+                 for a in ("capacity", "corr_cluster")}
     return {"coverage": cov, "empty_projections": empty[:40], "weak": arch.weak(10),
-            "emitted": emitted,
+            "emitted": emitted, "axes": list(axes),
+            "corr_clusters": {k: v for k, v in ccl.items() if k != "labels"},
+            "capacity_axis": {k: v for k, v in cap.items() if k not in ("labels", "source")},
+            "elites_measured_on": filled_on,
             "metric": {"niche_share": cov.get("share"), "qd_score": cov.get("qd_score"),
-                       "filled": cov.get("filled")}}
+                       "filled": cov.get("filled"),
+                       "corr_clusters": ccl.get("n_clusters"),
+                       "capacity_measured_elites": filled_on["capacity"],
+                       "cluster_measured_elites": filled_on["corr_cluster"]}}
 
 
 def _gate_by_symfam() -> dict[str, list[tuple[str, bool]]]:
@@ -2029,14 +2055,32 @@ def organ_formal() -> dict[str, Any]:
     except Exception as exc:
         existing = {"error": f"{type(exc).__name__}: {exc}"}
     conformance = _protocol_conformance()
+    # S39: WORLD-SEARCH over architecture failure worlds (environment faults with every knob ON),
+    # minimal failing fault sets with their shortest traces (libs/tiers/failure_worlds.py)
+    from libs.tiers import core_drive, failure_worlds
+    worlds = failure_worlds.search(max_size=3)
+    # S31: every counterexample trace (knob ablations + failure worlds) DRIVEN through the real
+    # decision_core in a temp dir (libs/tiers/core_drive.py)
+    try:
+        from mt5desk import decision_core as dc  # type: ignore[import-not-found]
+        driven = core_drive.drive_all(core_drive.counterexamples(abl, worlds), dc)
+    except Exception as exc:
+        driven = {"status": "UNMEASURED", "why": f"{type(exc).__name__}: {exc}"}
     return {"protocol": {"desk_all_proven": abl["desk_all_proven"],
                          "states": abl["runs"]["desk"]["states"],
                          "invariants": abl["runs"]["desk"]["invariants"],
                          "depends_on": abl["depends_on"]},
             "desk_all_proven": abl["desk_all_proven"],
             "conformance": conformance, "structural_invariants": existing,
+            "failure_worlds": worlds, "decision_core_drive": driven,
             "metric": {"protocol_proven": 1.0 if abl["desk_all_proven"] else 0.0,
-                       "knobs_evidenced": conformance.get("evidenced_share")}}
+                       "knobs_evidenced": conformance.get("evidenced_share"),
+                       "worlds_searched": worlds["worlds_searched"],
+                       "failure_worlds": worlds["n_failing"],
+                       "traces_driven": driven.get("traces_driven"),
+                       "core_blocked_share": driven.get("blocked_share"),
+                       "core_gaps": (len(driven["core_gaps"]) if "core_gaps" in driven
+                                     else None)}}
 
 
 def _protocol_conformance() -> dict[str, Any]:
