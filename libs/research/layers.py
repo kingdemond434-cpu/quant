@@ -506,6 +506,9 @@ LEG_LAYER: dict[str, str] = {
     "destroyer_pool": "prediction", "counterfactual_timeframes": "prediction",
     "shortfall_model": "execution",
     "quantbench": "meta", "evidence_chain": "meta", "clock_ledger": "meta",
+    # The identity chain grades the joins between the desk's own records and the placebo audit
+    # grades its own gates against planted defects: the machine measuring the machine.
+    "identity_chain": "meta", "placebo_audit": "meta",
     "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the

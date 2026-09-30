@@ -292,6 +292,11 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "seven structural invariants, each PROVEN by exhaustion, ENFORCED by a complete static "
         "enumeration, or carried as a named OBLIGATION -- never as a weaker check reported as "
         "the same thing"),
+    "MT5-FrontierAudit (independent verifier)": (
+        "desks/mt5/reports/INDEPENDENT_VERIFIER.json", 1560,
+        "every promoted certificate rebuilt by a second implementation that imports no desk "
+        "code -- signals, fills, costs and R compared trade by trade, with UNSUPPORTED and "
+        "UNMEASURED published as themselves and never as agreement"),
     "MT5-FrontierAudit (meta R&D)": (
         "desks/mt5/reports/META_RND.json", 1560,
         "the arena a challenger research-system must beat -- sealed traps, the adversary, the "

@@ -845,7 +845,7 @@ CORE_LEGS: frozenset[str] = frozenset({
     "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
     "fill_recorder",
     "actor_pressure", "destroyer_pool", "quantbench",
-    "evidence_chain",
+    "evidence_chain", "identity_chain",
     "clock_ledger", "shortfall_model", "counterfactual_timeframes", "meta_rnd",
     "prosecutor", "scaling_laws", "arena", "session_capital", "session_allocation",
     "allocator_join", "rebalance_trigger", "edge_reliability", "edge_confidence", "capacity",
@@ -952,7 +952,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
-                     "fast_admission", "canon_publication"),
+                     "fast_admission", "canon_publication", "placebo_audit"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -4544,6 +4544,12 @@ def main() -> None:
     fcx = _costed("forecast_contract", forecast_contract)
     mz = _costed("model_league", model_league)
     ad = _costed("adversaries", adversaries)
+    # POSITIVE CONTROLS BESIDE THE CANARIES (item 16, 2026-09-29): one known-good strategy and
+    # eight planted-defect twins through the same gauntlet docket, plus the lookahead sentinel on
+    # a causal family and two leaking twins. Publishes audit recall and the positive pass rate;
+    # ~3 s measured, one run_gauntlet call.
+    pla = _costed("placebo_audit", lambda: _producer(
+        "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
     ssm_leg = _costed("session_structure", session_structure)
@@ -4784,6 +4790,12 @@ def main() -> None:
         "quantbench", "research/quantbench.py", "--once", "--budget-s", "120"))
     evc = _costed("evidence_chain", lambda: _producer(
         "evidence_chain", "research/evidence_chain.py", "--once", "--budget-s", "120"))
+    # THE MONEY HALF OF THE IDENTITY CHAIN (item 1, 2026-09-29). evidence_chain roots every
+    # certificate; this walks every live deal back through order, sleeve, allocation,
+    # certificate and clock to the bars, grades each link EXACT / CONTENT / FUZZY / BROKEN, and
+    # appends the resolved chain to data/identity_chain.jsonl. Cheap: it reads JSON records.
+    idc = _costed("identity_chain", lambda: _producer(
+        "identity_chain", "research/identity_chain.py", "--once", "--budget-s", "60"))
     ckl = _costed("clock_ledger", lambda: _producer(
         "clock_ledger", "research/clock_ledger.py", "--once", "--budget-s", "60"))
     shm = _costed("shortfall_model", lambda: _producer(
@@ -4994,6 +5006,7 @@ def main() -> None:
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
+                    "placebo_audit": pla,
                     "publish_dashboard": pd_, "opportunity_gap": og, "experiment_cache": xc,
                     "ml_layer": mll, "market_intel": mi, "experiment_design": xd,
                     "research_org": ro, "edge_confidence": ec, "rebalance_trigger": rt,
@@ -5013,7 +5026,8 @@ def main() -> None:
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr,
                     "actor_pressure": apr, "destroyer_pool": dpo,
-                    "quantbench": qbn, "evidence_chain": evc, "clock_ledger": ckl,
+                    "quantbench": qbn, "evidence_chain": evc, "identity_chain": idc,
+                    "clock_ledger": ckl,
                     "shortfall_model": shm, "counterfactual_timeframes": ctf, "meta_rnd": mrd,
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "prosecutor": pc, "scaling_laws": slw,
