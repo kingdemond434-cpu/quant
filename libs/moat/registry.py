@@ -562,15 +562,6 @@ def _evolve(conn: sqlite3.Connection) -> dict[str, int]:
     conn.execute("CREATE INDEX IF NOT EXISTS ix_exp_status ON experiments(status)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prov_from ON provenance(from_kind, from_id)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_prov_to ON provenance(to_kind, to_id)")
-    # THE THIRD SCAN, AND IT SAT IN EVERY STATUS WRITE ON THE FILE (measured 2026-09-30).
-    # `mark_candidate` updates `WHERE id=? OR donated_cell=?`, and `donated_cell` carried no
-    # index, so EXPLAIN read `SCAN research_candidates` for every status change any organ makes:
-    # 152 ms a call on a 650,000-row copy with a warm cache, and the live table holds ~1.6M rows.
-    # The conversion drain makes one or two of these per row it touches, INSIDE a `batch()` that
-    # holds the write lock, which is the 0.72 rows/s the box measured and the 53.5 s lock tail
-    # every other producer queued behind. With the index both arms of the OR are SEARCHes.
-    conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_donated_cell ON research_candidates"
-                 "(donated_cell)")
     return added
 
 
