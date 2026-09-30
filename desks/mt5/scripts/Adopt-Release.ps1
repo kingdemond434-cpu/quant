@@ -609,7 +609,12 @@ if (-not $NoFetch) {
         # held by another process and a permission fault on .git all look exactly the same, and
         # each has a different remedy. A deployment path that cannot say why it failed is the
         # same defect this desk keeps finding one level up: activity reported, outcome withheld.
-        try { $out = & git -C $RepoRoot fetch origin $Branch 2>&1 | Out-String }
+        # A scheduled fetch used to spawn detached `git maintenance run --auto` / `git gc`.
+        # That child outlived this script's writer-mutex phase and then contended with the
+        # adoption commit for index/object locks (measured 2026-09-30: adopter blocked behind
+        # pack-objects for tens of minutes).  Maintenance is an explicit operation on this live
+        # repository; a release fetch may not create an unowned background writer.
+        try { $out = & git -C $RepoRoot -c maintenance.auto=false -c gc.auto=0 fetch origin $Branch 2>&1 | Out-String }
         finally { $ErrorActionPreference = $prev }
         if ($LASTEXITCODE -eq 0) { $ok = $true; break }
         Write-Host ("  fetch attempt {0} failed (exit {1}) -- retrying in {2}s"    `
