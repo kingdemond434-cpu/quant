@@ -73,6 +73,8 @@ ORGAN_FILE: dict[str, str] = {
     "data_acquisition_scientist": "research/data_acquisition_scientist.py",
     "meta_controller": "research/meta_controller.py",
     "standing_questions": "research/standing_questions.py",
+    "scientific_committee": "research/committees.py",
+    "forensic_committee": "research/committees.py",
 }
 
 

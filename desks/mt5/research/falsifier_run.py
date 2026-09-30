@@ -252,7 +252,37 @@ def falsify(inputs: dict, deadline: float,
 
 
 def _premortems(certs: dict[str, dict]) -> tuple[dict[str, dict], str]:
-    """The graveyard model's failure class per certificate, so it can jump the queue."""
+    """Each certificate's most likely failure class, so it can jump the queue.
+
+    The adversarial committee's lead class wins where it has argued the cell
+    (`research/committees.py`): it is a class argued FOR THIS CELL, where the graveyard's is a
+    family-level prior. Either way it is ORDER ONLY -- the same battery runs and nothing passes
+    or fails differently for it (L1.60).
+    """
+    pre, basis = _graveyard_premortems(certs)
+    try:
+        from libs.research.hypothesis_graph import node_id
+        from research import committees as cm
+    except Exception:
+        return pre, basis
+    n = 0
+    for cid, c in certs.items():
+        spec = c.get("shadow_spec") or {}
+        try:
+            hint = cm.premortem_for(node_id(str(spec.get("symbol") or ""),
+                                            str(spec.get("family") or ""),
+                                            dict(spec.get("params") or {})))
+        except Exception:
+            hint = None
+        if hint:
+            pre[cid] = hint
+            n += 1
+    return pre, (f"{basis}; the adversarial committee's lead class leads for {n} certificate(s)"
+                 if n else basis)
+
+
+def _graveyard_premortems(certs: dict[str, dict]) -> tuple[dict[str, dict], str]:
+    """The graveyard model's failure class per certificate."""
     try:
         from libs.research.graveyard_model import GraveyardModel
         from libs.research.hypothesis_graph import Graph

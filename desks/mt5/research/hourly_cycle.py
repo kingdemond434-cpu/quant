@@ -963,7 +963,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "replication_civilization", "certificate_truth", "model_search",
                      "loop_liveness", "counterexample_agent", "judging_throughput",
                      "duty_cycle", "forward_enrolment", "residual_gate",
-                     "fast_admission", "canon_publication", "placebo_audit"),
+                     "fast_admission", "canon_publication", "placebo_audit", "committees"),
                     "validate"),
     # macro: the cross-asset / macro brain
     **dict.fromkeys(("fred_macro", "futures_lead_lag", "causal_graph", "residual_factors",
@@ -1600,6 +1600,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # above that: a cap BELOW an organ's own budget is the truncated-job defect that cost this
     # desk eighty-four forward clocks.
     "control_plane": 660,
+    # The committees stop themselves at --budget-s 600 (experiments included); the cap sits above.
+    "committees": 720,
     "probation": 1_800,   # a pass is 40 organs; at 720 s it was cut at ~12 min every hour
     "enrol_clocks": 2_700,
     # Both stop themselves at --budget-s 300 and write their artifact; the caps sit above their
@@ -4787,6 +4789,13 @@ def main() -> None:
     # UNMEASURED and every factory runs exactly as it does today.
     prs = _costed("proposer_seat", lambda: _producer(
         "proposer_seat", "libs/research/proposer_seat.py", "--once", "--budget-s", "300"))
+    # THE TWO ADVERSARIAL COMMITTEES (2026-09-25 brief, landed 2026-09-30). Seat roles argue
+    # competing explanations; the deterministic judge picks the cheapest separating falsifiers
+    # and runs them on the gauntlet's own cell. Contracts and kills are defect reports: nothing
+    # is certified, promoted, sized or vetoed. Metered, settled against the graph, and
+    # self-scrapping when its kills stop paying for its calls. Dark seat -> UNMEASURED.
+    cmt = _costed("committees", lambda: _producer(
+        "committees", "research/committees.py", "--once", "--budget-s", "600"))
     # KIMI'S ONLY CLOCK WAS A VPS TIMER (measured 2026-09-23). `quant-kimi-hunter.timer` fires
     # hourly on the VPS; the box that holds the credentials ran it never, so
     # `data/intelligence/kimi` was 240 hours stale on the trading box while deepseek -- whose
@@ -5183,7 +5192,7 @@ def main() -> None:
                     "ensemble_optimizer": eo, "frontier_unknowns": uk,
                     "frontier_ontology": fo, "exit_study": xs,
                     "graveyard_model": gm, "world_crawler": wc,
-                    "proposer_seat": prs, "kimi_hunt": kh,
+                    "proposer_seat": prs, "committees": cmt, "kimi_hunt": kh,
                     "release_identity": ri, "burn_in": bi, "layer_census": lc,
                     "control_plane": cp, "plumbing_watchdog": pwd_,
                     "bottleneck_attack": bka, "desk_dashboard_state": dds,
