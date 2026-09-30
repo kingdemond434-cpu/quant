@@ -376,6 +376,16 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
             refusals[why] = refusals.get(why, 0) + n
     except Exception as exc:                                                # noqa: BLE001
         _refuse(f"repo-mined feeds failed: {type(exc).__name__}")
+    # The DTCC public FX option tape (via OpenBB's cftc provider): a few daily slices a pass.
+    try:
+        from libs.data import repo_mined_feeds as _rmf
+        tape = _rmf.absorb_dtcc(reg, STORE, fetch=_fetch, certify=certify,
+                                write_certificate=write_certificate)
+        tried += 1
+        kept += int(bool(tape["new_series"]))
+        new_series.extend(tape["new_series"])
+    except Exception as exc:                                                # noqa: BLE001
+        _refuse(f"DTCC FX option tape failed: {type(exc).__name__}")
 
     for url, host in _endpoints(limit):
         tried += 1

@@ -208,45 +208,77 @@ def absorb(reg: dict[str, Any], store: Path, *, fetch: Callable[[str], tuple[byt
             _refuse(feed, "unparseable in the shape this feed is documented to have")
             continue
         frames = first_print_frames(feed, shaped, store / "first_print", now)
-        persisted: list[str] = []
-        for name, f in frames.items():
-            name = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_")[:48]
-            if len(f) < 200 or f["value"].nunique() < 10:
-                continue
-            path = store / f"{name}.parquet"
-            as_available(f).to_frame().to_parquet(path)
-            prior = reg["series"].get(name) or {}
-            try:
-                cert = certify({"dataset": name, "url": feed.url, "host": "repo_mined_feeds",
-                                "provider": feed.origin, "selection": SELECTION,
-                                "revised": feed.revised, "publication_lag_s": feed.lag_s,
-                                "history_starts": prior.get("first"),
-                                "schema_hash": prior.get("schema_hash"),
-                                "settle_backfill_s": feed.settle_s},
-                               f, now=now)
-                write_certificate(cert)
-                blocking = sorted(set(cert.failures()) | set(cert.unmeasured()))
-                authority, cert_id = bool(cert.authority), cert.certificate_id
-                schema_hash = cert.span.get("schema_hash")
-            except Exception as exc:
-                blocking = [f"certify failed: {type(exc).__name__}: {exc}"]
-                authority, cert_id, schema_hash = False, "", prior.get("schema_hash")
-            reg["series"][name] = {
-                "path": str(path), "url": feed.url, "host": "repo_mined_feeds",
-                "rows": len(f), "first": str(f.index.min()), "last": str(f.index.max()),
-                "acquired_at": now.isoformat(timespec="seconds"), "schema_hash": schema_hash,
-                "pit_certificate": cert_id, "pit_authority": authority,
-                "pit_blocking": blocking, "stamped_by": "available_time (first print)",
-                "mt5_use": feed.use, "origin": feed.origin,
-            }
-            persisted.append(name)
-            report["new_series"].append(name)
+        persisted = [n for name, f in frames.items()
+                     if (n := _register(reg, store, name, f, url=feed.url, provider=feed.origin,
+                                        revised=feed.revised, lag_s=feed.lag_s,
+                                        settle_s=feed.settle_s, use=feed.use,
+                                        certify=certify, write_certificate=write_certificate,
+                                        now=now))]
+        report["new_series"].extend(persisted)
         reg["by_url"][feed.url] = {"host": "repo_mined_feeds", "series": persisted,
                                    "at": now.isoformat(timespec="seconds"),
                                    "status": "SUCCESS" if persisted else "REFUSED",
                                    "refusal": None if persisted else "no series with history"}
         report["kept"] += int(bool(persisted))
     return report
+
+
+def _register(reg: dict[str, Any], store: Path, name: str, f: pd.DataFrame, *, url: str,
+              provider: str, revised: bool, lag_s: int, settle_s: int, use: str,
+              certify: Callable[..., Any], write_certificate: Callable[[Any], Any],
+              now: datetime) -> str | None:
+    """Persist one available-time series, certify it, and enter it in the acquirer's registry."""
+    name = re.sub(r"[^A-Za-z0-9]+", "_", name).strip("_")[:48]
+    if len(f) < 200 or f["value"].nunique() < 10:
+        return None
+    path = store / f"{name}.parquet"
+    as_available(f).to_frame().to_parquet(path)
+    prior = reg["series"].get(name) or {}
+    try:
+        cert = certify({"dataset": name, "url": url, "host": "repo_mined_feeds",
+                        "provider": provider, "selection": SELECTION, "revised": revised,
+                        "publication_lag_s": lag_s, "history_starts": prior.get("first"),
+                        "schema_hash": prior.get("schema_hash"), "settle_backfill_s": settle_s},
+                       f, now=now)
+        write_certificate(cert)
+        blocking = sorted(set(cert.failures()) | set(cert.unmeasured()))
+        authority, cert_id = bool(cert.authority), cert.certificate_id
+        schema_hash = cert.span.get("schema_hash")
+    except Exception as exc:
+        blocking = [f"certify failed: {type(exc).__name__}: {exc}"]
+        authority, cert_id, schema_hash = False, "", prior.get("schema_hash")
+    reg["series"][name] = {
+        "path": str(path), "url": url, "host": "repo_mined_feeds",
+        "rows": len(f), "first": str(f.index.min()), "last": str(f.index.max()),
+        "acquired_at": now.isoformat(timespec="seconds"), "schema_hash": schema_hash,
+        "pit_certificate": cert_id, "pit_authority": authority,
+        "pit_blocking": blocking, "stamped_by": "available_time",
+        "mt5_use": use, "origin": provider,
+    }
+    return name
+
+
+def absorb_dtcc(reg: dict[str, Any], store: Path, *,
+                fetch: Callable[[str], tuple[bytes | None, str]],
+                certify: Callable[..., Any], write_certificate: Callable[[Any], Any],
+                now: datetime | None = None) -> dict[str, Any]:
+    """The DTCC public FX option tape (`libs/data/dtcc_fx_options.py`): reduce this pass's
+    slices, then register every pair feature with enough history."""
+    from libs.data import dtcc_fx_options as dtcc
+    now = now or datetime.now(UTC)
+    root = store / "dtcc_fx"
+    rep = dtcc.ingest(root, fetch=fetch, now=now)
+    names = [n for name, f in dtcc.frames(root, now).items()
+             if (n := _register(reg, store, name, f, url=dtcc.MANIFEST_URL,
+                                provider="DTCC PPD via github.com/OpenBB-finance/OpenBB",
+                                revised=False, lag_s=int(dtcc.AVAILABLE_AFTER.total_seconds()),
+                                settle_s=0, use="the MT5 FX pair named in the series",
+                                certify=certify, write_certificate=write_certificate, now=now))]
+    reg["by_url"][dtcc.MANIFEST_URL] = {"host": "repo_mined_feeds", "series": names,
+                                        "at": now.isoformat(timespec="seconds"),
+                                        "status": "SUCCESS" if names else "PENDING",
+                                        "refusal": None if names else rep.get("status")}
+    return {**rep, "new_series": names}
 
 
 def settle_note() -> dict[str, Any]:
