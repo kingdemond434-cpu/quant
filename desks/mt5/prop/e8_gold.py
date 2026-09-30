@@ -218,6 +218,34 @@ def matching_resting_order(open_orders: list[dict], side: str, price: float,
     return None
 
 
+def position_since_failure(positions: list[dict], side: str, first_at: Any, state: dict,
+                           filled: dict[int, int]) -> bool:
+    """Is there an open XAU position on this leg's side, opened at or after the failed send, that
+    no window or carried row owns and no order of ours opened? Such a position may be the
+    "failed" send itself, filled; sending again would double it. Unknown open time counts."""
+    want = "buy" if side == "buy_stop" else "sell"
+    rows = [w for bucket in ("windows", "carried") for w in (state.get(bucket) or {}).values()]
+    owned = {int(w["position_id"]) for w in rows if w.get("position_id") is not None}
+    # Positions opened by orders this lane KNOWS it sent; any other fill may be the lost send.
+    known = {int(leg["id"]) for w in rows for leg in (w.get("orders") or {}).values()
+             if leg.get("id") is not None}
+    ours = {int(pid) for oid, pid in filled.items() if int(oid) in known}
+    try:
+        since_ms = int(datetime.fromisoformat(str(first_at)).timestamp() * 1000)
+    except (TypeError, ValueError):
+        since_ms = 0
+    for p in positions:
+        if str(p.get("side") or "").lower() != want:
+            continue
+        pid = int(p.get("id") or 0)
+        if pid in owned or pid in ours:
+            continue
+        opened = int(p.get("openDate") or 0)
+        if opened == 0 or opened >= since_ms:
+            return True
+    return False
+
+
 def manage_actions(state: dict, hour: float, open_ids: set[int],
                    filled: dict[int, int], position_ids: set[int]) -> list[dict]:
     """What to do with today's windows, given the venue's resting order ids (`open_ids`), the
@@ -595,10 +623,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         open_ids = set()
         doc["orders_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
     filled: dict[int, int] = {}
+    hist_rows: list[dict] = []
     try:
         hist = venue._api.get_all_orders(history=True, lookback_period="2D")
-        rows = hist.to_dict("records") if hasattr(hist, "to_dict") else list(hist)
-        for o in rows:
+        hist_rows = hist.to_dict("records") if hasattr(hist, "to_dict") else list(hist)
+        for o in hist_rows:
             if str(o.get("status") or "").lower() == "filled" and o.get("positionId"):
                 filled[int(o["id"])] = int(o["positionId"])
     except Exception as exc:
@@ -619,7 +648,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         _retry_failed_legs(venue, state, doc, hour=hour, now=now, open_orders=open_orders,
                            orders_ok="orders_unreadable" not in doc, filled=filled,
                            xau_positions=xau_positions, positions_ok=positions_ok,
-                           stood_down=stood_down)
+                           stood_down=stood_down, armed=armed, hist_rows=hist_rows,
+                           history_ok="history_unreadable" not in doc)
         open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
@@ -754,14 +784,19 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
 
 def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: datetime,
                        open_orders: list[dict], orders_ok: bool, filled: dict[int, int],
-                       xau_positions: list[dict], positions_ok: bool, stood_down: bool) -> None:
+                       xau_positions: list[dict], positions_ok: bool, stood_down: bool,
+                       armed: bool, hist_rows: list[dict], history_ok: bool) -> None:
     """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
     appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
 
-    Fails CLOSED: with the order book or the position book unreadable nothing is re-sent (a
-    duplicate or a self-hedge is worse than a missing leg), and a guard stand-down holds too.
+    Fails CLOSED: nothing is re-sent on a disarmed pass, with the order book, the order history
+    or the position book unreadable (a duplicate or a self-hedge is worse than a missing leg), or
+    while the guard stands down. A send that errored may still have LANDED -- resting, or already
+    filled and closed back to the level -- so before any re-send the leg is looked for as a
+    resting order, then as a filled order in the history, then as a position on its side opened
+    since the failed send.
     """
-    if stood_down or not orders_ok or not positions_ok:
+    if not armed or stood_down or not orders_ok or not positions_ok or not history_ok:
         return
     try:
         bid, ask = venue.quote(SYMBOL)
@@ -791,11 +826,23 @@ def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: 
             continue
         levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
         oid = matching_resting_order(open_orders, side, float(leg["price"]), known)
+        if oid is None:
+            done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
+            oid = matching_resting_order(done, side, float(leg["price"]), known)
+        if oid is None and position_since_failure(xau_positions, side, leg.get("first_at"),
+                                                  state, filled):
+            why = ("a position on this side opened after the failed send and no window owns it: "
+                   "it may be that send, so the leg is not sent again")
+            w["failed"].pop(side, None)
+            w.setdefault("abandoned", {})[side] = {**leg, "why": why}
+            doc["actions"].append({**act, "act": "leg_abandon", "why": why})
+            log(f"[{name}] {side} dropped leg abandoned: {why}")
+            continue
         row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
                **levels, "armed": True, "retry_of": leg.get("first_at")}
         if oid is not None:
             row.update({"status": "SENT", "order_id": oid, "adopted": True})
-            log(f"[{name}] {side} the failed send had landed: adopted resting order {oid}")
+            log(f"[{name}] {side} the failed send had landed: adopted order {oid}")
         else:
             try:
                 oid = venue.place_stop(SYMBOL, "buy" if side == "buy_stop" else "sell",

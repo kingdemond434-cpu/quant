@@ -165,7 +165,8 @@ def _retry(venue: _Venue, st: dict, *, hour: float = 8.0, **kw: Any) -> dict:
     from datetime import UTC, datetime
     doc: dict = {"actions": []}
     args = {"open_orders": list(venue.book), "orders_ok": True, "filled": {},
-            "xau_positions": [], "positions_ok": True, "stood_down": False, **kw}
+            "xau_positions": [], "positions_ok": True, "stood_down": False, "armed": True,
+            "hist_rows": [], "history_ok": True, **kw}
     g._retry_failed_legs(venue, st, doc, hour=hour, now=datetime.now(UTC), **args)
     return doc
 
@@ -198,7 +199,8 @@ def test_a_second_failure_counts_the_attempt_and_keeps_the_leg() -> None:
 
 
 @pytest.mark.parametrize("kw", [{"stood_down": True}, {"orders_ok": False},
-                                {"positions_ok": False}])
+                                {"positions_ok": False}, {"armed": False},
+                                {"history_ok": False}])
 def test_nothing_is_re_sent_blind(kw) -> None:
     v, st = _Venue(), _state()
     _retry(v, st, **kw)
@@ -211,3 +213,28 @@ def test_an_abandoned_leg_leaves_the_retry_queue_with_its_reason() -> None:
     w = st["windows"]["asia"]
     assert v.sent == [] and "failed" not in w
     assert w["abandoned"]["buy_stop"]["why"] == "the window's session is over"
+
+
+def test_a_send_that_landed_and_filled_is_adopted_from_history_not_doubled() -> None:
+    v, st = _Venue(), _state()
+    hist = [{"id": 55, "side": "buy", "stopPrice": 4340.0, "status": "Filled", "positionId": 9}]
+    _retry(v, st, hist_rows=hist, filled={55: 9})
+    assert v.sent == [] and st["windows"]["asia"]["orders"]["buy_stop"]["id"] == 55
+
+
+def test_an_unowned_position_on_the_leg_side_since_the_failure_stops_the_resend() -> None:
+    v, st = _Venue(), _state()
+    pos = [{"id": 9, "side": "buy", "openDate": 4_102_444_800_000}]      # 2100: after first_at
+    doc = _retry(v, st, xau_positions=pos)
+    w = st["windows"]["asia"]
+    assert v.sent == [] and "failed" not in w and "buy_stop" in w["abandoned"]
+    assert doc["actions"][0]["act"] == "leg_abandon"
+
+
+def test_a_position_that_predates_the_failure_or_is_ours_does_not_block() -> None:
+    old = [{"id": 9, "side": "buy", "openDate": 1_000}]                  # 1970: before it
+    assert g.position_since_failure(old, "buy_stop", LEG["first_at"], _state(), {}) is False
+    ours = [{"id": 9, "side": "buy", "openDate": 4_102_444_800_000}]
+    st = _state()
+    assert g.position_since_failure(ours, "buy_stop", LEG["first_at"], st, {11: 9}) is False
+    assert g.position_since_failure(ours, "sell_stop", LEG["first_at"], st, {}) is False
