@@ -5,7 +5,7 @@ filed as PROPOSED retirements with their evidence. Nothing is deleted, moved or 
     python desks/mt5/research/dormant_components.py            # measure and print, write nothing
     python desks/mt5/research/dormant_components.py --apply    # also file the proposals
 
-WHY THIS DECIDES SOMETHING AND THE CENSUS DID NOT. `scripts/check_dead_architecture.py` already
+WHY THIS DECIDES SOMETHING AND THE CENSUS DID NOT. The dead-architecture census (`check_dead_architecture` in scripts) already
 names UNREACHED organs (no clock on any of the four scheduling planes, no detected reader), and
 says in its own docstring that UNREACHED is "a list for a person to review, never a death
 certificate". Nobody reviewed it: the list was recomputed and discarded. This organ takes that
@@ -17,7 +17,7 @@ rejects (by giving the organ a clock or a reader, which withdraws the proposal o
 THREE FACTS, ALL REQUIRED, EACH FROM ITS OWN SOURCE:
 
     no clock       check_dead_architecture's scheduler-manifest planes (exact) AND the component
-                   registry (`desks/mt5/ops/components.py`): no spec that claims the file is
+                   registry (`components` in the desk's ops package): no spec that claims the file is
                    scheduled. Two independent readers must both find no clock.
     no reader      check_dead_architecture: no production file reads any artifact it writes and
                    none imports it. That half is a heuristic that UNDER-reports readers, which is
@@ -31,7 +31,11 @@ PROPOSED IS NOT RETIRED. Every reader of retirements.jsonl that treats a row as 
 (`libs/ops/producer_census.retirements`, the batteries fence) skips `status == "PROPOSED"`, so a
 proposal never removes an organ from any census. One row per path: a path already proposed or
 already retired is not proposed again. Clock: the daily MT5-FrontierAudit lane
-(`ops/run_frontier_audit.cmd`). Artifact: `desks/mt5/reports/DORMANT_COMPONENTS.json`.
+(the lane's runner in ops). Artifact: `desks/mt5/reports/DORMANT_COMPONENTS.json`.
+
+The two organs it reads are loaded by file location and named WITHOUT path literals on purpose:
+the component registry's reach walk treats a path literal as "this organ invokes that one", and a
+second invoker for those two would re-attribute organs they reach to this lane.
 """
 from __future__ import annotations
 
