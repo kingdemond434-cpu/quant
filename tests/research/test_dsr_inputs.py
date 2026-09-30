@@ -189,8 +189,11 @@ def test_stale_and_future_documents_are_refused(measured: Path) -> None:
 
 
 def test_no_constant_survives_in_the_organ() -> None:
-    src = (ROOT / "libs" / "research" / "dsr_inputs.py").read_text("utf-8")
-    assert "0.014863" not in src and "0.0002" not in src
+    import ast
+    tree = ast.parse((ROOT / "libs" / "research" / "dsr_inputs.py").read_text("utf-8"))
+    floats = {n.value for n in ast.walk(tree)
+              if isinstance(n, ast.Constant) and isinstance(n.value, float)}
+    assert not floats & {0.014863, 0.0002, 0.00082}
     et = (ROOT / "desks" / "mt5" / "research" / "effective_trials.py").read_text("utf-8")
     assert "0.014863 if" not in et
 
