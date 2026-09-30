@@ -720,7 +720,10 @@ def _mine_grounds(run: Run, res: RoleResult, budget_s: float) -> None:
         res.note("ground_mining", f"{UNMEASURED}: {mine_s:.0f}s left in the pass, below one fetch")
         return
     try:
-        import deep_forest_miner as dfm
+        try:                          # one module object, whichever root imported it first
+            from research import deep_forest_miner as dfm
+        except ImportError:
+            import deep_forest_miner as dfm  # type: ignore[no-redef]
         doc = dfm.run(budget_s=mine_s, fetch=True, only=names, write=True,
                       report_path=REPORTS / f"DEEP_FOREST_{run.forest}.json",
                       leg=f"forest_{run.forest}")
