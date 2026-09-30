@@ -208,7 +208,10 @@ def test_the_forcer_names_a_cluster_whose_every_family_the_sealed_judge_cannot_b
     monkeypatch.setattr(ecf, "MANDATE", tmp_path / "absent.json")
     doc = ecf.plan()
     rows = {r["cluster"]: r for r in doc["clusters"]}
-    assert rows["cross_asset_lead_lag"]["verdict"] == "BLOCKED_BY_SEALED_GAUNTLET"
+    # `lead_lag_class_catchup` (the class books, 2026-09-30) loads its own leader panel, so the
+    # lead-lag cluster now has a family the sealed judge CAN build and is no longer blocked.
+    assert gb.family_verdict("lead_lag_class_catchup")[0] == gb.BUILDABLE
+    assert rows["cross_asset_lead_lag"]["verdict"] != "BLOCKED_BY_SEALED_GAUNTLET"
     assert rows["event_surprise"]["verdict"] == "BLOCKED_BY_SEALED_GAUNTLET"
     assert rows["news_reaction"]["verdict"] == "UNREACHABLE"
     assert doc["n_cells_minted"] == 0, "no zero-signal cell is ever forced"
@@ -263,7 +266,9 @@ def test_the_leg_measures_each_producer_from_the_registry(tmp_path: Path) -> Non
     assert cag["cells_7d"] == 1 and cag["buildable_share"] == 0.0
     assert cag["status"] == "LEFT_UNTESTABLE"
     unfed = {u["cluster"]: u["why"] for u in doc["totals"]["empty_clusters_unfed"]}
-    assert unfed["cross_asset_lead_lag"].startswith("BLOCKED_BY_SEALED_GAUNTLET")
+    # cross_asset_graph's plain lead_lag cannot be built, but the cluster holds a buildable
+    # family (`lead_lag_class_catchup`), so the leg names it UNMINTED, not blocked.
+    assert unfed["cross_asset_lead_lag"].startswith("UNMINTED")
     assert unfed["options_implied"].startswith("NO_FAMILY")
 
 
