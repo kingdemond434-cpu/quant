@@ -1,0 +1,1305 @@
+{
+ "at": "2026-09-30T19:53:38+00:00",
+ "backlog": {
+  "cells": 54634,
+  "docket_cells": 57538,
+  "due_rescreen": 0,
+  "excluding_wrong_space": 54634,
+  "oldest_age_days": 33.77,
+  "oldest_first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "sealed_judged": 2904,
+  "seen_cells": "MEASURED",
+  "stamped_only_ratchet": false,
+  "tiers": {
+   "named_priority": 0,
+   "not_yet_ruled": 5432,
+   "scored_by_stage1_t": 874,
+   "unbuildable_named_cause": 47242,
+   "untested_on_training_window": 1086
+  },
+  "wrong_space": 0
+ },
+ "backlog_cells": 54634,
+ "backlog_excluding_wrong_space": 54634,
+ "backlog_total": 54634,
+ "boundary": {
+  "lockbox_cut_lower_bound": "2022-03-13",
+  "min_days_full": 60,
+  "min_train_days": 20,
+  "universe_earliest_bar": "2010-07-02",
+  "window": "pre_wf"
+ },
+ "creation": {
+  "basis": "distinct docket cells by first_seen; the larger of the last 24h and the 7-day mean",
+  "burndown_inflow_per_hour": "UNMEASURED",
+  "created_24h": 0,
+  "created_7d": 34613
+ },
+ "creation_per_day": 4945,
+ "days_to_clear": {
+  "measured_trailing_24h": 1.2,
+  "projected_18c_50pct": 0.0,
+  "projected_18c_50pct_if_every_cell_is_built": 0.02,
+  "projected_18c_50pct_including_wrong_space": 0.0,
+  "rule": "backlog_excluding_wrong_space / (stage-1 per day - creation per day); GROWING when creation is not outrun",
+  "scheduled_pace": 0.09
+ },
+ "days_to_clear_backlog": {
+  "at_measured_pace": 1.08,
+  "at_projected_18c_50pct": 0.0,
+  "at_scheduled_pace": 0.09,
+  "basis": "backlog_excluding_wrong_space"
+ },
+ "dry_run": false,
+ "fence": {
+  "backlog": 54634,
+  "net_backlog_change_per_day": -27155028,
+  "projected_per_day": 974760,
+  "status": "PASS",
+  "target_per_day": 100280,
+  "why": "stage 1 projects 974,760/day (target 100,280); the backlog of 54,634 shrinks 27,155,028/day"
+ },
+ "law": "stage 1 rules on EVERY never-judged docket cell from its training window only (before the sealed walk-forward test region and a lower bound on the lockbox cut), BH at q over every cell evaluated in the run, 3x spread stress; every evaluated cell charged in STAGE1_TRIALS.jsonl; only survivors go to the sealed gauntlet, at the front of its order, behind v4 re-mint and evicted re-judges; a reject is re-screenable and never deleted; stage 1 has no promotion authority",
+ "net_backlog_change_per_day": {
+  "basis": "creation minus RULED cells per day (a ruled cell leaves the unruled backlog)",
+  "measured_trailing_24h": -45711,
+  "projected_18c_50pct": -27155028,
+  "scheduled_pace": -602927
+ },
+ "priority_file": "data/hypotheses/priority_stage1.json",
+ "record_census": {
+  "PASS_TO_STAGE2:UNSCREENABLE_TRAIN_WINDOW": 790,
+  "REJECT_STAGE1:R_BH_NOT_SIGNIFICANT": 1533,
+  "REJECT_STAGE1:R_NO_SIGNALS": 175,
+  "REJECT_STAGE1:R_UNDER_60_DAYS": 566,
+  "UNBUILDABLE:0 signals over full history inside session 'asia'": 234,
+  "UNBUILDABLE:0 signals over full history inside session 'asia'; the unfiltered family fires there on the UTC clock": 9,
+  "UNBUILDABLE:0 signals over full history inside session 'london'": 326,
+  "UNBUILDABLE:0 signals over full history inside session 'london'; the unfiltered family fires there on the UTC clock": 14,
+  "UNBUILDABLE:0 signals over full history inside session 'ny'": 313,
+  "UNBUILDABLE:0 signals over full history inside session 'ny'; the unfiltered family fires there on the UTC clock": 6,
+  "UNBUILDABLE:0 signals: driver 'CHFNOK' bars not reached by the build": 8,
+  "UNBUILDABLE:0 signals: driver 'EURNOK' bars not reached by the build": 8,
+  "UNBUILDABLE:calendar_month raised TypeError: family_calendar_month() missing 2 required keyword-only arguments: 'active_month' and 'side_bias'": 4,
+  "UNBUILDABLE:conditioner='carry': no conditioning series is wired for a second information axis, so the interaction cannot be measured": 692,
+  "UNBUILDABLE:conditioner='cross_asset': no conditioning series is wired for a second information axis, so the interaction cannot be measured": 544,
+  "UNBUILDABLE:conditioner='event': no conditioning series is wired for a second information axis, so the interaction cannot be measured": 724,
+  "UNBUILDABLE:conditioner='macro': no conditioning series is wired for a second information axis, so the interaction cannot be measured": 704,
+  "UNBUILDABLE:conditioner='microstructure': no conditioning series is wired for a second information axis, so the interaction cannot be measured": 684,
+  "UNBUILDABLE:conditioner='positioning': no conditioning series is wired for a second information axis, so the interaction cannot be measured": 728,
+  "UNBUILDABLE:conditioner='seasonality': no conditioning series is wired for a second information axis, so the interaction cannot be measured": 708,
+  "UNBUILDABLE:cot_change_momentum raised TypeError: family_cot_change_momentum() missing 1 required positional argument: 'cot'": 4,
+  "UNBUILDABLE:cot_comm_follow raised TypeError: family_cot_comm_follow() missing 1 required positional argument: 'cot'": 8,
+  "UNBUILDABLE:execution_style='limit': the replay fills at the next open; a limit fill needs a queue/fill model this desk does not have yet": 1216,
+  "UNBUILDABLE:factor basket incomplete: no H1 bars for factor_symbols (none named)": 83,
+  "UNBUILDABLE:factor basket incomplete: no M15 bars for factor_symbols (none named)": 60,
+  "UNBUILDABLE:factor basket incomplete: no M5 bars for factor_symbols (none named)": 4,
+  "UNBUILDABLE:macro condition 'macro_state'='eur_aaa_10y': no point-in-time macro state series is wired into the replay": 24,
+  "UNBUILDABLE:macro condition 'macro_state'='eur_aaa_1y': no point-in-time macro state series is wired into the replay": 24,
+  "UNBUILDABLE:macro condition 'positioning'='comm_pct_oi_high': no point-in-time macro state series is wired into the replay": 24,
+  "UNBUILDABLE:macro condition 'positioning'='comm_pct_oi_low': no point-in-time macro state series is wired into the replay": 4,
+  "UNBUILDABLE:no D1 bars for ADAUSD": 21,
+  "UNBUILDABLE:no D1 bars for AUDCAD": 21,
+  "UNBUILDABLE:no D1 bars for AUDCHF": 21,
+  "UNBUILDABLE:no D1 bars for AUDHUF": 21,
+  "UNBUILDABLE:no D1 bars for AUDJPY": 21,
+  "UNBUILDABLE:no D1 bars for AUDNZD": 22,
+  "UNBUILDABLE:no D1 bars for AUDSGD": 21,
+  "UNBUILDABLE:no D1 bars for AUDUSD": 21,
+  "UNBUILDABLE:no D1 bars for AUS200": 21,
+  "UNBUILDABLE:no D1 bars for AVAXUSD": 21,
+  "UNBUILDABLE:no D1 bars for BCHUSD": 21,
+  "UNBUILDABLE:no D1 bars for BNBUSD": 21,
+  "UNBUILDABLE:no D1 bars for BTCUSD": 21,
+  "UNBUILDABLE:no D1 bars for CADJPY": 21,
+  "UNBUILDABLE:no D1 bars for CHFJPY": 21,
+  "UNBUILDABLE:no D1 bars for ETHUSD": 21,
+  "UNBUILDABLE:no D1 bars for EURAUD": 21,
+  "UNBUILDABLE:no D1 bars for EURCHF": 21,
+  "UNBUILDABLE:no D1 bars for EURGBP": 21,
+  "UNBUILDABLE:no D1 bars for EURJPY": 21,
+  "UNBUILDABLE:no D1 bars for EURUSD": 21,
+  "UNBUILDABLE:no D1 bars for GBPAUD": 21,
+  "UNBUILDABLE:no D1 bars for GBPJPY": 21,
+  "UNBUILDABLE:no D1 bars for GBPUSD": 21,
+  "UNBUILDABLE:no D1 bars for NZDCAD": 21,
+  "UNBUILDABLE:no D1 bars for NZDJPY": 21,
+  "UNBUILDABLE:no D1 bars for NZDUSD": 21,
+  "UNBUILDABLE:no D1 bars for USDCAD": 21,
+  "UNBUILDABLE:no D1 bars for USDCHF": 21,
+  "UNBUILDABLE:no D1 bars for USDJPY": 21,
+  "UNBUILDABLE:no D1 bars for XAGUSD": 21,
+  "UNBUILDABLE:no D1 bars for XAUUSD": 21,
+  "UNBUILDABLE:no H4 bars for ADAUSD": 56,
+  "UNBUILDABLE:no H4 bars for AUDCAD": 56,
+  "UNBUILDABLE:no H4 bars for AUDCHF": 57,
+  "UNBUILDABLE:no H4 bars for AUDHUF": 56,
+  "UNBUILDABLE:no H4 bars for AUDJPY": 56,
+  "UNBUILDABLE:no H4 bars for AUDNZD": 57,
+  "UNBUILDABLE:no H4 bars for AUDSGD": 56,
+  "UNBUILDABLE:no H4 bars for AUDUSD": 56,
+  "UNBUILDABLE:no H4 bars for AUS200": 56,
+  "UNBUILDABLE:no H4 bars for AVAXUSD": 56,
+  "UNBUILDABLE:no H4 bars for BCHUSD": 56,
+  "UNBUILDABLE:no H4 bars for BNBUSD": 56,
+  "UNBUILDABLE:no H4 bars for BTCUSD": 56,
+  "UNBUILDABLE:no H4 bars for CADJPY": 68,
+  "UNBUILDABLE:no H4 bars for CHFJPY": 56,
+  "UNBUILDABLE:no H4 bars for ETHUSD": 56,
+  "UNBUILDABLE:no H4 bars for EURAUD": 56,
+  "UNBUILDABLE:no H4 bars for EURCHF": 56,
+  "UNBUILDABLE:no H4 bars for EURGBP": 56,
+  "UNBUILDABLE:no H4 bars for EURJPY": 68,
+  "UNBUILDABLE:no H4 bars for EURUSD": 56,
+  "UNBUILDABLE:no H4 bars for GBPAUD": 56,
+  "UNBUILDABLE:no H4 bars for GBPJPY": 65,
+  "UNBUILDABLE:no H4 bars for GBPUSD": 56,
+  "UNBUILDABLE:no H4 bars for NZDCAD": 56,
+  "UNBUILDABLE:no H4 bars for NZDJPY": 56,
+  "UNBUILDABLE:no H4 bars for NZDUSD": 56,
+  "UNBUILDABLE:no H4 bars for USDCAD": 56,
+  "UNBUILDABLE:no H4 bars for USDCHF": 56,
+  "UNBUILDABLE:no H4 bars for USDJPY": 68,
+  "UNBUILDABLE:no H4 bars for XAGUSD": 56,
+  "UNBUILDABLE:no H4 bars for XAUUSD": 71,
+  "UNBUILDABLE:no M1 bars for GBPAUD": 4,
+  "UNBUILDABLE:no M1 bars for NZDJPY": 4,
+  "UNBUILDABLE:no M15 bars for GBPAUD": 1,
+  "UNBUILDABLE:no M15 bars for NZDJPY": 1,
+  "UNBUILDABLE:no M30 bars for AUDCAD": 1372,
+  "UNBUILDABLE:no M30 bars for AUDNZD": 284,
+  "UNBUILDABLE:no M30 bars for BCHUSD": 1,
+  "UNBUILDABLE:no M30 bars for ETHUSD": 1,
+  "UNBUILDABLE:no M30 bars for GBPAUD": 10,
+  "UNBUILDABLE:no M30 bars for NZDCAD": 24,
+  "UNBUILDABLE:no M30 bars for NZDJPY": 10,
+  "UNBUILDABLE:no M30 bars for XAGUSD": 5,
+  "UNBUILDABLE:no M30 bars for XAUUSD": 1024,
+  "UNBUILDABLE:no M5 bars for BCHUSD": 1,
+  "UNBUILDABLE:no M5 bars for ETHUSD": 1,
+  "UNBUILDABLE:no M5 bars for GBPAUD": 3,
+  "UNBUILDABLE:no M5 bars for GBPJPY": 1,
+  "UNBUILDABLE:no M5 bars for NZDJPY": 2,
+  "UNBUILDABLE:no M5 bars for XAGUSD": 3,
+  "UNBUILDABLE:no implementation of family 'dav_range_filter_adx' in families or families_orthogonal": 2,
+  "UNBUILDABLE:publication-lagged transform: no point-in-time input series is wired for it": 4,
+  "UNBUILDABLE:regime='risk_off' has no desk definition (volatility and month/quarter-end are defined; a risk-on/off state needs a named risk series first)": 636,
+  "UNBUILDABLE:regime='risk_on' has no desk definition (volatility and month/quarter-end are defined; a risk-on/off state needs a named risk series first)": 636,
+  "UNBUILDABLE:residual='equity': this family does not residualise its input, and building it un-residualised would test the parent under the child's name": 836,
+  "UNBUILDABLE:residual='gold': this family does not residualise its input, and building it un-residualised would test the parent under the child's name": 856,
+  "UNBUILDABLE:residual='usd': this family does not residualise its input, and building it un-residualised would test the parent under the child's name": 288,
+  "UNBUILDABLE:symbol 'CA60' has no CA60_H1.parquet; no clock can replay it": 251,
+  "UNBUILDABLE:symbol 'CADCHF' has no CADCHF_H1.parquet; no clock can replay it": 189,
+  "UNBUILDABLE:symbol 'CHFDKK' has no CHFDKK_H1.parquet; no clock can replay it": 195,
+  "UNBUILDABLE:symbol 'CHFHUF' has no CHFHUF_H1.parquet; no clock can replay it": 494,
+  "UNBUILDABLE:symbol 'CHFNOK' has no CHFNOK_H1.parquet; no clock can replay it": 1416,
+  "UNBUILDABLE:symbol 'CHFPLN' has no CHFPLN_H1.parquet; no clock can replay it": 179,
+  "UNBUILDABLE:symbol 'CHFSEK' has no CHFSEK_H1.parquet; no clock can replay it": 191,
+  "UNBUILDABLE:symbol 'CHFSGD' has no CHFSGD_H1.parquet; no clock can replay it": 183,
+  "UNBUILDABLE:symbol 'CHINAH' has no CHINAH_H1.parquet; no clock can replay it": 180,
+  "UNBUILDABLE:symbol 'COFARA' has no COFARA_H1.parquet; no clock can replay it": 268,
+  "UNBUILDABLE:symbol 'COFROB' has no COFROB_H1.parquet; no clock can replay it": 204,
+  "UNBUILDABLE:symbol 'CORN' has no CORN_H1.parquet; no clock can replay it": 205,
+  "UNBUILDABLE:symbol 'COTTON' has no COTTON_H1.parquet; no clock can replay it": 356,
+  "UNBUILDABLE:symbol 'DOGEUSD' has no DOGEUSD_H1.parquet; no clock can replay it": 271,
+  "UNBUILDABLE:symbol 'DOTUSD' has no DOTUSD_H1.parquet; no clock can replay it": 196,
+  "UNBUILDABLE:symbol 'E35' has no E35_H1.parquet; no clock can replay it": 180,
+  "UNBUILDABLE:symbol 'EOSUSD' has no EOSUSD_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'EURCAD' has no EURCAD_H1.parquet; no clock can replay it": 663,
+  "UNBUILDABLE:symbol 'EURCZK' has no EURCZK_H1.parquet; no clock can replay it": 592,
+  "UNBUILDABLE:symbol 'EURDKK' has no EURDKK_H1.parquet; no clock can replay it": 188,
+  "UNBUILDABLE:symbol 'EURHKD' has no EURHKD_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'EURHUF' has no EURHUF_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'EURILS' has no EURILS_H1.parquet; no clock can replay it": 180,
+  "UNBUILDABLE:symbol 'EURMXN' has no EURMXN_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'EURNOK' has no EURNOK_H1.parquet; no clock can replay it": 194,
+  "UNBUILDABLE:symbol 'EURNZD' has no EURNZD_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'EURPLN' has no EURPLN_H1.parquet; no clock can replay it": 180,
+  "UNBUILDABLE:symbol 'EURRUB' has no EURRUB_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'EURSEK' has no EURSEK_H1.parquet; no clock can replay it": 192,
+  "UNBUILDABLE:symbol 'EURSGD' has no EURSGD_H1.parquet; no clock can replay it": 360,
+  "UNBUILDABLE:symbol 'EURTRY' has no EURTRY_H1.parquet; no clock can replay it": 177,
+  "UNBUILDABLE:symbol 'EURZAR' has no EURZAR_H1.parquet; no clock can replay it": 214,
+  "UNBUILDABLE:symbol 'EUSTX50' has no EUSTX50_H1.parquet; no clock can replay it": 276,
+  "UNBUILDABLE:symbol 'FRA40' has no FRA40_H1.parquet; no clock can replay it": 180,
+  "UNBUILDABLE:symbol 'GBPCAD' has no GBPCAD_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'GBPCHF' has no GBPCHF_H1.parquet; no clock can replay it": 181,
+  "UNBUILDABLE:symbol 'GBPDKK' has no GBPDKK_H1.parquet; no clock can replay it": 364,
+  "UNBUILDABLE:symbol 'GBPHUF' has no GBPHUF_H1.parquet; no clock can replay it": 179,
+  "UNBUILDABLE:symbol 'GBPMXN' has no GBPMXN_H1.parquet; no clock can replay it": 205,
+  "UNBUILDABLE:symbol 'GBPNOK' has no GBPNOK_H1.parquet; no clock can replay it": 209,
+  "UNBUILDABLE:symbol 'GBPNZD' has no GBPNZD_H1.parquet; no clock can replay it": 416,
+  "UNBUILDABLE:symbol 'GBPPLN' has no GBPPLN_H1.parquet; no clock can replay it": 180,
+  "UNBUILDABLE:symbol 'GBPSEK' has no GBPSEK_H1.parquet; no clock can replay it": 194,
+  "UNBUILDABLE:symbol 'GBPSGD' has no GBPSGD_H1.parquet; no clock can replay it": 348,
+  "UNBUILDABLE:symbol 'GBPTRY' has no GBPTRY_H1.parquet; no clock can replay it": 177,
+  "UNBUILDABLE:symbol 'GBPZAR' has no GBPZAR_H1.parquet; no clock can replay it": 190,
+  "UNBUILDABLE:symbol 'GER40' has no GER40_H1.parquet; no clock can replay it": 499,
+  "UNBUILDABLE:symbol 'HK50' has no HK50_H1.parquet; no clock can replay it": 288,
+  "UNBUILDABLE:symbol 'HKDJPY' has no HKDJPY_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'JPN225' has no JPN225_H1.parquet; no clock can replay it": 623,
+  "UNBUILDABLE:symbol 'LNKUSD' has no LNKUSD_H1.parquet; no clock can replay it": 196,
+  "UNBUILDABLE:symbol 'LTCUSD' has no LTCUSD_H1.parquet; no clock can replay it": 198,
+  "UNBUILDABLE:symbol 'MATICUSD' has no MATICUSD_H1.parquet; no clock can replay it": 252,
+  "UNBUILDABLE:symbol 'MXNJPY' has no MXNJPY_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'NAS100' has no NAS100_H1.parquet; no clock can replay it": 423,
+  "UNBUILDABLE:symbol 'NETH25' has no NETH25_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'NOKJPY' has no NOKJPY_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'NOKSEK' has no NOKSEK_H1.parquet; no clock can replay it": 179,
+  "UNBUILDABLE:symbol 'NZDCHF' has no NZDCHF_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'NZDHUF' has no NZDHUF_H1.parquet; no clock can replay it": 179,
+  "UNBUILDABLE:symbol 'NZDSGD' has no NZDSGD_H1.parquet; no clock can replay it": 368,
+  "UNBUILDABLE:symbol 'OJ' has no OJ_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'SEKJPY' has no SEKJPY_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'SGDJPY' has no SGDJPY_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'SOLUSD' has no SOLUSD_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'SOYBEAN' has no SOYBEAN_H1.parquet; no clock can replay it": 481,
+  "UNBUILDABLE:symbol 'SUGAR' has no SUGAR_H1.parquet; no clock can replay it": 204,
+  "UNBUILDABLE:symbol 'SUGARRAW' has no SUGARRAW_H1.parquet; no clock can replay it": 199,
+  "UNBUILDABLE:symbol 'UK100' has no UK100_H1.parquet; no clock can replay it": 272,
+  "UNBUILDABLE:symbol 'UKCOCOA' has no UKCOCOA_H1.parquet; no clock can replay it": 256,
+  "UNBUILDABLE:symbol 'UKGILT' has no UKGILT_H1.parquet; no clock can replay it": 186,
+  "UNBUILDABLE:symbol 'US2000' has no US2000_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'US30' has no US30_H1.parquet; no clock can replay it": 428,
+  "UNBUILDABLE:symbol 'US500' has no US500_H1.parquet; no clock can replay it": 364,
+  "UNBUILDABLE:symbol 'USCOCOA' has no USCOCOA_H1.parquet; no clock can replay it": 204,
+  "UNBUILDABLE:symbol 'USDBRL' has no USDBRL_H1.parquet; no clock can replay it": 506,
+  "UNBUILDABLE:symbol 'USDCNH' has no USDCNH_H1.parquet; no clock can replay it": 235,
+  "UNBUILDABLE:symbol 'USDCZK' has no USDCZK_H1.parquet; no clock can replay it": 177,
+  "UNBUILDABLE:symbol 'USDDKK' has no USDDKK_H1.parquet; no clock can replay it": 188,
+  "UNBUILDABLE:symbol 'USDHKD' has no USDHKD_H1.parquet; no clock can replay it": 180,
+  "UNBUILDABLE:symbol 'USDHUF' has no USDHUF_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'USDIDR' has no USDIDR_H1.parquet; no clock can replay it": 312,
+  "UNBUILDABLE:symbol 'USDILS' has no USDILS_H1.parquet; no clock can replay it": 371,
+  "UNBUILDABLE:symbol 'USDINR' has no USDINR_H1.parquet; no clock can replay it": 404,
+  "UNBUILDABLE:symbol 'USDKRW' has no USDKRW_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'USDMXN' has no USDMXN_H1.parquet; no clock can replay it": 269,
+  "UNBUILDABLE:symbol 'USDNOK' has no USDNOK_H1.parquet; no clock can replay it": 200,
+  "UNBUILDABLE:symbol 'USDPLN' has no USDPLN_H1.parquet; no clock can replay it": 177,
+  "UNBUILDABLE:symbol 'USDRUB' has no USDRUB_H1.parquet; no clock can replay it": 179,
+  "UNBUILDABLE:symbol 'USDSEK' has no USDSEK_H1.parquet; no clock can replay it": 232,
+  "UNBUILDABLE:symbol 'USDSGD' has no USDSGD_H1.parquet; no clock can replay it": 180,
+  "UNBUILDABLE:symbol 'USDTHB' has no USDTHB_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'USDTRY' has no USDTRY_H1.parquet; no clock can replay it": 584,
+  "UNBUILDABLE:symbol 'USDX' has no USDX_H1.parquet; no clock can replay it": 339,
+  "UNBUILDABLE:symbol 'USDZAR' has no USDZAR_H1.parquet; no clock can replay it": 721,
+  "UNBUILDABLE:symbol 'UST05Y' has no UST05Y_H1.parquet; no clock can replay it": 482,
+  "UNBUILDABLE:symbol 'UST10Y' has no UST10Y_H1.parquet; no clock can replay it": 194,
+  "UNBUILDABLE:symbol 'WHEAT' has no WHEAT_H1.parquet; no clock can replay it": 470,
+  "UNBUILDABLE:symbol 'XAGEUR' has no XAGEUR_H1.parquet; no clock can replay it": 220,
+  "UNBUILDABLE:symbol 'XALUSD' has no XALUSD_H1.parquet; no clock can replay it": 215,
+  "UNBUILDABLE:symbol 'XAUAUD' has no XAUAUD_H1.parquet; no clock can replay it": 228,
+  "UNBUILDABLE:symbol 'XAUEUR' has no XAUEUR_H1.parquet; no clock can replay it": 221,
+  "UNBUILDABLE:symbol 'XBRUSD' has no XBRUSD_H1.parquet; no clock can replay it": 803,
+  "UNBUILDABLE:symbol 'XCUUSD' has no XCUUSD_H1.parquet; no clock can replay it": 452,
+  "UNBUILDABLE:symbol 'XLMUSD' has no XLMUSD_H1.parquet; no clock can replay it": 252,
+  "UNBUILDABLE:symbol 'XNGUSD' has no XNGUSD_H1.parquet; no clock can replay it": 482,
+  "UNBUILDABLE:symbol 'XNIUSD' has no XNIUSD_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'XPBUSD' has no XPBUSD_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'XPDUSD' has no XPDUSD_H1.parquet; no clock can replay it": 220,
+  "UNBUILDABLE:symbol 'XPTUSD' has no XPTUSD_H1.parquet; no clock can replay it": 376,
+  "UNBUILDABLE:symbol 'XTIUSD' has no XTIUSD_H1.parquet; no clock can replay it": 258,
+  "UNBUILDABLE:symbol 'XZNUSD' has no XZNUSD_H1.parquet; no clock can replay it": 176,
+  "UNBUILDABLE:symbol 'ZARJPY' has no ZARJPY_H1.parquet; no clock can replay it": 179,
+  "UNBUILDABLE:unsupported family parameter(s): population; refusing rather than testing a different rule": 696,
+  "UNBUILDABLE:unsupported family parameter(s): w; refusing rather than testing a different rule": 52
+ },
+ "requeue": {
+  "engine_rollover": {
+   "change": {
+    "active": false
+   },
+   "fingerprint": {
+    "counter_sha": "157dc4dcd19b",
+    "fp": "21/2/157dc4dcd19b",
+    "rollover_hour": 21,
+    "triple_swap_weekday": 2
+   },
+   "queue_file": "priority_rollover_rejudge.json",
+   "status": "NO_CHANGE"
+  },
+  "zero_spread_stress": {
+   "at": "2026-09-30T19:47:03+00:00",
+   "attestation": "zero-spread stress basis: sealed patch not landed (3x == 1x on EURUSD)",
+   "queued": 0,
+   "source": "research/zero_spread_rejudge.py",
+   "status": "WAITING_FOR_SEALED_PATCH",
+   "symbols": [
+    "AUDJPY",
+    "AUDSGD",
+    "AUDUSD",
+    "EURAUD",
+    "EURCAD",
+    "EURGBP",
+    "EURUSD",
+    "GBPCAD",
+    "GBPUSD",
+    "NZDCAD",
+    "NZDUSD",
+    "USDCAD",
+    "USDCHF",
+    "USDJPY"
+   ],
+   "would_queue": 16
+  }
+ },
+ "run": {
+  "backlog": 54634,
+  "built": 1454,
+  "cells_per_core_sec": 2.888,
+  "cells_per_wall_sec": 3.638,
+  "dry_run": false,
+  "forward_unscreened": 254,
+  "parent_cpu_s": 3.18,
+  "pass_bh": 0,
+  "preflight_ruled": 0,
+  "reject": 850,
+  "ruled": 1454,
+  "ruled_per_core_sec": 2.8694,
+  "run_id": "s1_20260930T194658_9d30bb",
+  "seen_s": 0.1,
+  "select_s": 2.58,
+  "stage2_build_s_per_cell": null,
+  "tested": 659,
+  "tested_per_core_sec": 1.3087,
+  "ts": "2026-09-30T19:53:38+00:00",
+  "unbuildable": 350,
+  "wall_s": 399.62,
+  "worker_peak_mb": 462.3,
+  "worker_s": 503.55,
+  "workers": 3
+ },
+ "snapshot_note": "A committed SNAPSHOT of desks/mt5/reports/JUDGING_TWO_STAGE.json from two runs of the stage1_judge leg in the cloud build container (4 cores, 57,538-row docket, most non-FX symbols without bars, so the ruled/tested mix is the container's, not the box's). The live artifact is gitignored box state, rewritten hourly on the trading box.",
+ "stage1": {
+  "by_family": {
+   "adx_channel_hybrid": {
+    "cells": 16,
+    "cells_per_core_sec": 3.91,
+    "core_s": 4.096,
+    "engine_cells": 16,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 16,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "asia_momentum": {
+    "cells": 20,
+    "cells_per_core_sec": 2.77,
+    "core_s": 7.225,
+    "engine_cells": 10,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 10,
+    "unbuildable": 10,
+    "vector_cells": 0
+   },
+   "carry": {
+    "cells": 4,
+    "cells_per_core_sec": 112.8,
+    "core_s": 0.035,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 1,
+    "unbuildable": 3,
+    "vector_cells": 0
+   },
+   "clock_transition": {
+    "cells": 4,
+    "cells_per_core_sec": 8.73,
+    "core_s": 0.458,
+    "engine_cells": 1,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 1,
+    "unbuildable": 3,
+    "vector_cells": 0
+   },
+   "comex_settlement": {
+    "cells": 4,
+    "cells_per_core_sec": 3.03,
+    "core_s": 1.321,
+    "engine_cells": 2,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 2,
+    "unbuildable": 2,
+    "vector_cells": 0
+   },
+   "correlation_regime": {
+    "cells": 33,
+    "cells_per_core_sec": 9620.99,
+    "core_s": 0.003,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 9,
+    "unbuildable": 24,
+    "vector_cells": 0
+   },
+   "cross_asset_residual": {
+    "cells": 40,
+    "cells_per_core_sec": 71428.57,
+    "core_s": 0.001,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 0,
+    "unbuildable": 40,
+    "vector_cells": 0
+   },
+   "drawdown_conditional": {
+    "cells": 4,
+    "cells_per_core_sec": 15.21,
+    "core_s": 0.263,
+    "engine_cells": 2,
+    "forward_unscreened": 2,
+    "pass_bh": 0,
+    "reject": 2,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "event_reaction": {
+    "cells": 4,
+    "cells_per_core_sec": 4081.63,
+    "core_s": 0.001,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 1,
+    "unbuildable": 3,
+    "vector_cells": 0
+   },
+   "execution_state": {
+    "cells": 20,
+    "cells_per_core_sec": 115.72,
+    "core_s": 0.173,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 5,
+    "unbuildable": 15,
+    "vector_cells": 0
+   },
+   "exit_operated": {
+    "cells": 468,
+    "cells_per_core_sec": 2.42,
+    "core_s": 193.305,
+    "engine_cells": 423,
+    "forward_unscreened": 57,
+    "pass_bh": 0,
+    "reject": 411,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "failed_breakout": {
+    "cells": 12,
+    "cells_per_core_sec": 0.86,
+    "core_s": 13.95,
+    "engine_cells": 9,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 9,
+    "unbuildable": 3,
+    "vector_cells": 0
+   },
+   "forced_flow": {
+    "cells": 4,
+    "cells_per_core_sec": 0.39,
+    "core_s": 10.303,
+    "engine_cells": 2,
+    "forward_unscreened": 2,
+    "pass_bh": 0,
+    "reject": 1,
+    "unbuildable": 1,
+    "vector_cells": 0
+   },
+   "fx_fixing_reversal": {
+    "cells": 12,
+    "cells_per_core_sec": 3.95,
+    "core_s": 3.041,
+    "engine_cells": 6,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 6,
+    "unbuildable": 6,
+    "vector_cells": 0
+   },
+   "hedging_demand_close": {
+    "cells": 4,
+    "cells_per_core_sec": 6.26,
+    "core_s": 0.639,
+    "engine_cells": 1,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 1,
+    "unbuildable": 3,
+    "vector_cells": 0
+   },
+   "htf_anchor_trend": {
+    "cells": 126,
+    "cells_per_core_sec": 7.59,
+    "core_s": 16.592,
+    "engine_cells": 126,
+    "forward_unscreened": 84,
+    "pass_bh": 0,
+    "reject": 42,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "ict_fvg": {
+    "cells": 8,
+    "cells_per_core_sec": 1.97,
+    "core_s": 4.066,
+    "engine_cells": 8,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 8,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "jump": {
+    "cells": 40,
+    "cells_per_core_sec": 17.2,
+    "core_s": 2.326,
+    "engine_cells": 27,
+    "forward_unscreened": 23,
+    "pass_bh": 0,
+    "reject": 17,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "lead_lag": {
+    "cells": 42,
+    "cells_per_core_sec": 6194.69,
+    "core_s": 0.007,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 9,
+    "unbuildable": 33,
+    "vector_cells": 0
+   },
+   "liquidity_gamma_reversal": {
+    "cells": 64,
+    "cells_per_core_sec": 5.82,
+    "core_s": 10.991,
+    "engine_cells": 6,
+    "forward_unscreened": 6,
+    "pass_bh": 0,
+    "reject": 42,
+    "unbuildable": 16,
+    "vector_cells": 0
+   },
+   "liquidity_regime": {
+    "cells": 8,
+    "cells_per_core_sec": 6349.21,
+    "core_s": 0.001,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 2,
+    "unbuildable": 6,
+    "vector_cells": 0
+   },
+   "london_close_momentum": {
+    "cells": 16,
+    "cells_per_core_sec": 4.25,
+    "core_s": 3.763,
+    "engine_cells": 8,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 8,
+    "unbuildable": 8,
+    "vector_cells": 0
+   },
+   "macro_conditional": {
+    "cells": 3,
+    "cells_per_core_sec": 4761.9,
+    "core_s": 0.001,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 0,
+    "unbuildable": 3,
+    "vector_cells": 0
+   },
+   "mean_reversion_bollinger": {
+    "cells": 16,
+    "cells_per_core_sec": 4.25,
+    "core_s": 3.765,
+    "engine_cells": 16,
+    "forward_unscreened": 2,
+    "pass_bh": 0,
+    "reject": 14,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "mean_reversion_rsi": {
+    "cells": 12,
+    "cells_per_core_sec": 3.12,
+    "core_s": 3.841,
+    "engine_cells": 12,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 12,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "momentum_volgate": {
+    "cells": 20,
+    "cells_per_core_sec": 1.29,
+    "core_s": 15.484,
+    "engine_cells": 20,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 20,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "multi_speed_trend": {
+    "cells": 20,
+    "cells_per_core_sec": 0.78,
+    "core_s": 25.487,
+    "engine_cells": 10,
+    "forward_unscreened": 10,
+    "pass_bh": 0,
+    "reject": 0,
+    "unbuildable": 10,
+    "vector_cells": 0
+   },
+   "opening_range": {
+    "cells": 4,
+    "cells_per_core_sec": 4.51,
+    "core_s": 0.887,
+    "engine_cells": 3,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 3,
+    "unbuildable": 1,
+    "vector_cells": 0
+   },
+   "orderflow_imbalance": {
+    "cells": 24,
+    "cells_per_core_sec": 6486.49,
+    "core_s": 0.004,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 6,
+    "unbuildable": 18,
+    "vector_cells": 0
+   },
+   "overnight_drift": {
+    "cells": 4,
+    "cells_per_core_sec": 4.43,
+    "core_s": 0.903,
+    "engine_cells": 2,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 2,
+    "unbuildable": 2,
+    "vector_cells": 0
+   },
+   "overnight_gap_decay": {
+    "cells": 14,
+    "cells_per_core_sec": 17.5,
+    "core_s": 0.8,
+    "engine_cells": 6,
+    "forward_unscreened": 3,
+    "pass_bh": 0,
+    "reject": 4,
+    "unbuildable": 7,
+    "vector_cells": 0
+   },
+   "pca_residual": {
+    "cells": 21,
+    "cells_per_core_sec": 26582.28,
+    "core_s": 0.001,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 0,
+    "unbuildable": 21,
+    "vector_cells": 0
+   },
+   "pin_bar_reversal": {
+    "cells": 13,
+    "cells_per_core_sec": 4.11,
+    "core_s": 3.161,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 13,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "pullback_entry": {
+    "cells": 12,
+    "cells_per_core_sec": 4.13,
+    "core_s": 2.907,
+    "engine_cells": 10,
+    "forward_unscreened": 7,
+    "pass_bh": 0,
+    "reject": 5,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "range_reversion": {
+    "cells": 36,
+    "cells_per_core_sec": 3.69,
+    "core_s": 9.746,
+    "engine_cells": 36,
+    "forward_unscreened": 8,
+    "pass_bh": 0,
+    "reject": 28,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "regime_transition": {
+    "cells": 20,
+    "cells_per_core_sec": 0.18,
+    "core_s": 110.41,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 10,
+    "unbuildable": 10,
+    "vector_cells": 0
+   },
+   "relative_value": {
+    "cells": 45,
+    "cells_per_core_sec": 11627.91,
+    "core_s": 0.004,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 12,
+    "unbuildable": 33,
+    "vector_cells": 0
+   },
+   "retail_overlap_reversal": {
+    "cells": 8,
+    "cells_per_core_sec": 4.24,
+    "core_s": 1.887,
+    "engine_cells": 6,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 6,
+    "unbuildable": 2,
+    "vector_cells": 0
+   },
+   "session_range_breakout": {
+    "cells": 20,
+    "cells_per_core_sec": 1.36,
+    "core_s": 14.678,
+    "engine_cells": 10,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 10,
+    "unbuildable": 10,
+    "vector_cells": 0
+   },
+   "spread_state": {
+    "cells": 24,
+    "cells_per_core_sec": 3.63,
+    "core_s": 6.607,
+    "engine_cells": 24,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 24,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "style_premia": {
+    "cells": 49,
+    "cells_per_core_sec": 8.91,
+    "core_s": 5.499,
+    "engine_cells": 13,
+    "forward_unscreened": 8,
+    "pass_bh": 0,
+    "reject": 5,
+    "unbuildable": 36,
+    "vector_cells": 0
+   },
+   "trend_ma_cross": {
+    "cells": 20,
+    "cells_per_core_sec": 2.93,
+    "core_s": 6.824,
+    "engine_cells": 20,
+    "forward_unscreened": 5,
+    "pass_bh": 0,
+    "reject": 15,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "triangle": {
+    "cells": 25,
+    "cells_per_core_sec": 6345.18,
+    "core_s": 0.004,
+    "engine_cells": 0,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 7,
+    "unbuildable": 18,
+    "vector_cells": 0
+   },
+   "turn_of_month": {
+    "cells": 7,
+    "cells_per_core_sec": 4.17,
+    "core_s": 1.68,
+    "engine_cells": 7,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 7,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "vol_mean_reversion": {
+    "cells": 37,
+    "cells_per_core_sec": 4.47,
+    "core_s": 8.28,
+    "engine_cells": 33,
+    "forward_unscreened": 8,
+    "pass_bh": 0,
+    "reject": 26,
+    "unbuildable": 3,
+    "vector_cells": 0
+   },
+   "vol_transition": {
+    "cells": 7,
+    "cells_per_core_sec": 8.48,
+    "core_s": 0.825,
+    "engine_cells": 7,
+    "forward_unscreened": 7,
+    "pass_bh": 0,
+    "reject": 0,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "volatility_squeeze": {
+    "cells": 36,
+    "cells_per_core_sec": 5.64,
+    "core_s": 6.378,
+    "engine_cells": 27,
+    "forward_unscreened": 22,
+    "pass_bh": 0,
+    "reject": 14,
+    "unbuildable": 0,
+    "vector_cells": 0
+   },
+   "volume_spike": {
+    "cells": 4,
+    "cells_per_core_sec": 4.33,
+    "core_s": 0.924,
+    "engine_cells": 4,
+    "forward_unscreened": 0,
+    "pass_bh": 0,
+    "reject": 4,
+    "unbuildable": 0,
+    "vector_cells": 0
+   }
+  },
+  "cells_per_core_sec_median": 3.29,
+  "fdr": {
+   "m": 659,
+   "method": "benjamini_hochberg",
+   "p_cut": 0.0,
+   "q": 0.05,
+   "rejected_null": 0,
+   "testable": 659
+  },
+  "measured_per_day_trailing_24h": 50656,
+  "projected_per_day_18c_50pct": 974760,
+  "projected_per_day_this_host_50pct": 216613,
+  "rejects_by_reason": {
+   "R_BH_NOT_SIGNIFICANT": 659,
+   "R_NO_SIGNALS": 53,
+   "R_UNDER_60_DAYS": 138
+  },
+  "ruled_per_core_sec_median": 34.928,
+  "scheduled_pace_per_day": 607872,
+  "target_per_day": 100280,
+  "target_rule": "100,000/day on day one (2026-09-30T19:39:30+00:00), linear to 500,000/day by day 14",
+  "tested_per_core_sec_median": 1.2535
+ },
+ "stage1_built_per_day_projected_18c_50pct": 2558692,
+ "stage1_per_day": 50656,
+ "stage1_per_day_projected_18c_50pct": 974760,
+ "stage1_per_day_projected_basis": "PROJECTION from the measured TESTED rate (cells with a training-window statistic per core-second) x 18 cores x 0.5 duty x 86,400 s; not a measurement",
+ "stage1_per_day_scheduled": 607872,
+ "stage1_ruled_per_day_projected_18c_50pct": 27159973,
+ "stage1_ruled_projection_note": "the RULED rate counts no-build preflight rulings (untradeable, modifier-refused, dead session), whose share depends on the host's bars; the built-rate projection is the bound if every cell needs a build",
+ "stage1_tested_per_day": 1533,
+ "stage1_tested_per_day_scheduled": 18396,
+ "stage1_tested_share_of_ruled": 0.0303,
+ "stage2": {
+  "build_s_per_cell_measured": "UNMEASURED",
+  "forwarded_per_day_trailing_24h": 790,
+  "forwarded_unscreened_this_run": 254,
+  "gate_s_per_cell_from_burndown": "UNMEASURED",
+  "projected_capacity_per_day": "UNMEASURED",
+  "projection_basis": "no stage-1 survivor has been timed through the sealed build yet",
+  "sealed_rulings_on_forwarded": {
+   "forwarded_total": 790,
+   "judged_24h": 0,
+   "judged_total": 0,
+   "status": "MEASURED"
+  },
+  "survivors_forwarded_this_run": 0
+ },
+ "stage2_per_day": 0,
+ "status": "MEASURED",
+ "unbuildable_by_cause_this_run": {
+  "FACTOR_BASKET_INCOMPLETE": 61,
+  "MISSING_DRIVER": 8,
+  "NEVER_FIRES_IN_SESSION": 272,
+  "SESSION_CLOCK_MISMATCH": 9
+ },
+ "unbuildable_by_family_and_cause": {
+  "adx_channel_hybrid": {
+   "MODIFIER_REFUSED": 44,
+   "NO_CHART_BARS": 40,
+   "UNTRADEABLE_SYMBOL": 88
+  },
+  "asia_momentum": {
+   "MODIFIER_REFUSED": 208,
+   "NEVER_FIRES_IN_SESSION": 78,
+   "NO_CHART_BARS": 100,
+   "UNTRADEABLE_SYMBOL": 75
+  },
+  "calendar_month": {
+   "FAMILY_RAISED": 4,
+   "UNTRADEABLE_SYMBOL": 8
+  },
+  "carry": {
+   "NEVER_FIRES_IN_SESSION": 15,
+   "NO_CHART_BARS": 6,
+   "UNTRADEABLE_SYMBOL": 88
+  },
+  "clock_transition": {
+   "NEVER_FIRES_IN_SESSION": 18,
+   "NO_CHART_BARS": 8,
+   "UNTRADEABLE_SYMBOL": 21
+  },
+  "comex_settlement": {
+   "NEVER_FIRES_IN_SESSION": 12,
+   "NO_CHART_BARS": 10,
+   "UNTRADEABLE_SYMBOL": 36
+  },
+  "correlation_regime": {
+   "MODIFIER_REFUSED": 912,
+   "NEVER_FIRES_IN_SESSION": 81,
+   "NO_CHART_BARS": 282,
+   "UNTRADEABLE_SYMBOL": 629
+  },
+  "cot_change_momentum": {
+   "FAMILY_RAISED": 4
+  },
+  "cot_comm_follow": {
+   "FAMILY_RAISED": 8,
+   "NO_CHART_BARS": 4,
+   "UNTRADEABLE_SYMBOL": 4
+  },
+  "cot_positioning": {
+   "UNTRADEABLE_SYMBOL": 8
+  },
+  "cross_asset_residual": {
+   "FACTOR_BASKET_INCOMPLETE": 79,
+   "MODIFIER_REFUSED": 988,
+   "NO_CHART_BARS": 290,
+   "UNTRADEABLE_SYMBOL": 644
+  },
+  "dav_range_filter_adx": {
+   "NO_CHART_BARS": 2,
+   "NO_FAMILY_IMPLEMENTATION": 2
+  },
+  "dow_effect": {
+   "NEVER_FIRES_IN_SESSION": 2,
+   "UNTRADEABLE_SYMBOL": 16
+  },
+  "drawdown_conditional": {
+   "MODIFIER_REFUSED": 200,
+   "NEVER_FIRES_IN_SESSION": 3,
+   "NO_CHART_BARS": 56,
+   "UNTRADEABLE_SYMBOL": 109
+  },
+  "engulfing_reversal": {
+   "MODIFIER_REFUSED": 64,
+   "NO_CHART_BARS": 12,
+   "UNTRADEABLE_SYMBOL": 196
+  },
+  "event_reaction": {
+   "NEVER_FIRES_IN_SESSION": 9,
+   "UNTRADEABLE_SYMBOL": 20
+  },
+  "execution_state": {
+   "MODIFIER_REFUSED": 128,
+   "NEVER_FIRES_IN_SESSION": 45,
+   "NO_CHART_BARS": 32,
+   "UNTRADEABLE_SYMBOL": 396
+  },
+  "exit_operated": {
+   "NO_CHART_BARS": 1120,
+   "UNTRADEABLE_SYMBOL": 12769
+  },
+  "failed_breakout": {
+   "NO_CHART_BARS": 4,
+   "SESSION_CLOCK_MISMATCH": 8,
+   "UNTRADEABLE_SYMBOL": 12
+  },
+  "forced_flow": {
+   "NEVER_FIRES_IN_SESSION": 1,
+   "UNTRADEABLE_SYMBOL": 236
+  },
+  "formula": {
+   "NEVER_FIRES_IN_SESSION": 3,
+   "NO_CHART_BARS": 236,
+   "PARAM_SIGNATURE_MISMATCH": 696
+  },
+  "fx_fixing_reversal": {
+   "NEVER_FIRES_IN_SESSION": 13,
+   "NO_CHART_BARS": 8,
+   "UNTRADEABLE_SYMBOL": 8
+  },
+  "hedging_demand_close": {
+   "NEVER_FIRES_IN_SESSION": 12,
+   "NO_CHART_BARS": 4,
+   "SESSION_CLOCK_MISMATCH": 6,
+   "UNTRADEABLE_SYMBOL": 20
+  },
+  "htf_anchor_trend": {
+   "NO_CHART_BARS": 1344,
+   "UNTRADEABLE_SYMBOL": 7119
+  },
+  "ict_fvg": {
+   "MODIFIER_REFUSED": 80,
+   "NO_CHART_BARS": 4,
+   "UNTRADEABLE_SYMBOL": 128
+  },
+  "jump": {
+   "MODIFIER_REFUSED": 436,
+   "NEVER_FIRES_IN_SESSION": 1,
+   "NO_CHART_BARS": 60,
+   "UNTRADEABLE_SYMBOL": 276
+  },
+  "lead_lag": {
+   "MISSING_DRIVER": 16,
+   "MODIFIER_REFUSED": 260,
+   "NEVER_FIRES_IN_SESSION": 46,
+   "NO_CHART_BARS": 4,
+   "UNTRADEABLE_SYMBOL": 432
+  },
+  "level_breakout": {
+   "NO_CHART_BARS": 2,
+   "UNTRADEABLE_SYMBOL": 15
+  },
+  "liquidity_gamma_reversal": {
+   "MODIFIER_REFUSED": 672,
+   "NEVER_FIRES_IN_SESSION": 68,
+   "NO_CHART_BARS": 148,
+   "SESSION_CLOCK_MISMATCH": 1,
+   "UNTRADEABLE_SYMBOL": 1143
+  },
+  "liquidity_regime": {
+   "MODIFIER_REFUSED": 176,
+   "NEVER_FIRES_IN_SESSION": 27,
+   "NO_CHART_BARS": 44,
+   "UNTRADEABLE_SYMBOL": 368
+  },
+  "london_close_momentum": {
+   "NEVER_FIRES_IN_SESSION": 13,
+   "NO_CHART_BARS": 17,
+   "SESSION_CLOCK_MISMATCH": 13,
+   "UNTRADEABLE_SYMBOL": 39
+  },
+  "lvc_asia_london": {
+   "NO_CHART_BARS": 2,
+   "UNTRADEABLE_SYMBOL": 11
+  },
+  "macro_conditional": {
+   "MODIFIER_REFUSED": 4,
+   "NEVER_FIRES_IN_SESSION": 42,
+   "NO_CHART_BARS": 19,
+   "UNTRADEABLE_SYMBOL": 38
+  },
+  "mean_reversion_bollinger": {
+   "MODIFIER_REFUSED": 92,
+   "NO_CHART_BARS": 13,
+   "UNTRADEABLE_SYMBOL": 106
+  },
+  "mean_reversion_rsi": {
+   "MODIFIER_REFUSED": 24,
+   "NO_CHART_BARS": 16,
+   "UNTRADEABLE_SYMBOL": 163
+  },
+  "momentum_volgate": {
+   "MODIFIER_REFUSED": 128,
+   "NO_CHART_BARS": 82,
+   "UNTRADEABLE_SYMBOL": 129
+  },
+  "monday_gap": {
+   "NO_CHART_BARS": 3,
+   "UNTRADEABLE_SYMBOL": 12
+  },
+  "multi_speed_trend": {
+   "MODIFIER_REFUSED": 88,
+   "NEVER_FIRES_IN_SESSION": 22,
+   "NO_CHART_BARS": 40,
+   "UNTRADEABLE_SYMBOL": 153
+  },
+  "opening_range": {
+   "NEVER_FIRES_IN_SESSION": 4,
+   "NO_CHART_BARS": 4,
+   "UNTRADEABLE_SYMBOL": 8
+  },
+  "orderflow_imbalance": {
+   "MODIFIER_REFUSED": 152,
+   "NEVER_FIRES_IN_SESSION": 48,
+   "NO_CHART_BARS": 36,
+   "UNTRADEABLE_SYMBOL": 272
+  },
+  "overnight_drift": {
+   "NEVER_FIRES_IN_SESSION": 15,
+   "NO_CHART_BARS": 4,
+   "UNTRADEABLE_SYMBOL": 72
+  },
+  "overnight_gap_decay": {
+   "NEVER_FIRES_IN_SESSION": 25,
+   "NO_CHART_BARS": 15,
+   "UNTRADEABLE_SYMBOL": 69
+  },
+  "pca_residual": {
+   "FACTOR_BASKET_INCOMPLETE": 68,
+   "MODIFIER_REFUSED": 600,
+   "NO_CHART_BARS": 136,
+   "UNTRADEABLE_SYMBOL": 712
+  },
+  "pin_bar_reversal": {
+   "MODIFIER_REFUSED": 92,
+   "NO_CHART_BARS": 26,
+   "UNTRADEABLE_SYMBOL": 144
+  },
+  "pullback_entry": {
+   "MODIFIER_REFUSED": 144,
+   "NO_CHART_BARS": 60,
+   "UNTRADEABLE_SYMBOL": 108
+  },
+  "range_reversion": {
+   "MODIFIER_REFUSED": 204,
+   "NO_CHART_BARS": 38,
+   "PARAM_SIGNATURE_MISMATCH": 52,
+   "UNTRADEABLE_SYMBOL": 429
+  },
+  "regime_transition": {
+   "MODIFIER_REFUSED": 88,
+   "NEVER_FIRES_IN_SESSION": 24,
+   "NO_CHART_BARS": 32,
+   "UNTRADEABLE_SYMBOL": 100
+  },
+  "relative_value": {
+   "MODIFIER_REFUSED": 824,
+   "NEVER_FIRES_IN_SESSION": 69,
+   "NO_CHART_BARS": 228,
+   "UNTRADEABLE_SYMBOL": 659
+  },
+  "retail_overlap_reversal": {
+   "NEVER_FIRES_IN_SESSION": 9,
+   "NO_CHART_BARS": 4,
+   "UNTRADEABLE_SYMBOL": 8
+  },
+  "session_range_breakout": {
+   "NEVER_FIRES_IN_SESSION": 30,
+   "NO_CHART_BARS": 80,
+   "UNTRADEABLE_SYMBOL": 58
+  },
+  "spread_state": {
+   "MODIFIER_REFUSED": 200,
+   "NO_CHART_BARS": 52,
+   "UNTRADEABLE_SYMBOL": 300
+  },
+  "style_premia": {
+   "MODIFIER_REFUSED": 524,
+   "NEVER_FIRES_IN_SESSION": 81,
+   "NO_CHART_BARS": 93,
+   "SESSION_CLOCK_MISMATCH": 1,
+   "UNTRADEABLE_SYMBOL": 826
+  },
+  "trend_ma_cross": {
+   "MODIFIER_REFUSED": 476,
+   "NO_CHART_BARS": 120,
+   "UNTRADEABLE_SYMBOL": 256
+  },
+  "triangle": {
+   "MODIFIER_REFUSED": 664,
+   "NEVER_FIRES_IN_SESSION": 51,
+   "NO_CHART_BARS": 164,
+   "UNTRADEABLE_SYMBOL": 796
+  },
+  "turn_of_month": {
+   "NO_CHART_BARS": 8,
+   "UNTRADEABLE_SYMBOL": 4
+  },
+  "usd_session_shock": {
+   "UNTRADEABLE_SYMBOL": 16
+  },
+  "vol_mean_reversion": {
+   "MODIFIER_REFUSED": 312,
+   "NEVER_FIRES_IN_SESSION": 3,
+   "NO_CHART_BARS": 46,
+   "UNTRADEABLE_SYMBOL": 233
+  },
+  "vol_transition": {
+   "MODIFIER_REFUSED": 144,
+   "NO_CHART_BARS": 54,
+   "UNTRADEABLE_SYMBOL": 137
+  },
+  "volatility_squeeze": {
+   "MODIFIER_REFUSED": 404,
+   "NEVER_FIRES_IN_SESSION": 3,
+   "NO_CHART_BARS": 60,
+   "UNTRADEABLE_SYMBOL": 304
+  },
+  "volume_spike": {
+   "NO_CHART_BARS": 7,
+   "UNTRADEABLE_SYMBOL": 124
+  }
+ },
+ "unknown_causes": {
+  "dead_session_sidecar": "ABSENT: DEAD_SESSION_VARIANTS.jsonl not on this host (nothing changes)",
+  "dead_session_variants_on_backlog": 0,
+  "forwarded_to_stage2_with_an_unknown_class": 0,
+  "rule": "before: the share of ruled cells the sealed judge would have spent a slot on and returned UNKNOWN/NOT_RUN (no data, no driver, never fires in its session, build failure, under 60 days, no signals); after: forwarded cells in those classes, 0 by construction",
+  "share_excluding_wrong_space": 0.3721,
+  "share_including_wrong_space": 0.3721,
+  "share_of_ruled_that_the_sealed_judge_would_rule_unknown": 0.3721,
+  "this_run": {
+   "DATA_MISSING": 61,
+   "MISSING_DRIVER": 8,
+   "NEVER_FIRES_IN_SESSION": 272,
+   "NO_SIGNALS": 53,
+   "SESSION_CLOCK_MISMATCH": 9,
+   "TOO_FEW_DAYS": 138
+  },
+  "wrong_space_rows": 0
+ },
+ "workers": {
+  "available_mb": 6762,
+  "basis": "psutil, measured this run",
+  "busy_pct": 65.4,
+  "cores": 4,
+  "free_cores_less_one": 1,
+  "memory_cap_workers": 5,
+  "override": 3,
+  "worker_mb": 575,
+  "workers": 3
+ },
+ "wrong_space": {
+  "bank": "UNMEASURED: unrunnable_specs.json absent on this host",
+  "bucket": "WRONG_SPACE",
+  "key_space_mismatch_rows": 0,
+  "rows": 0,
+  "rule": "docket rows whose judge-space cell id is in judge_coverage's build-failure bank while judge_coverage's own key (chart beside params) misses it; counted, kept on the docket, NOT screened as real cells; they clear when sealed pass 2 lands the stripped judge_coverage docket_cell_id hunk"
+ }
+}
