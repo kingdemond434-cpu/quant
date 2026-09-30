@@ -167,3 +167,10 @@ def test_a_cited_artifact_needs_a_writer_and_outputs_are_digested(tmp_path: Path
     row = be.layer_evidence({"id": "S01", "artifact": "e.json"}, {}, tmp_path,
                             datetime.now(UTC))
     assert row["ok"] is False and "ERROR" in row["why"]
+
+
+def test_the_door_reviews_rows_already_live(monkeypatch: Any) -> None:
+    from libs.tiers import promotion_authority as pa
+    monkeypatch.setattr(pa, "block",
+                        lambda n: "REPLICATION_MISMATCH: x" if n == "bad" else None)
+    assert pa.review_live(["good", "bad"]) == {"bad": "REPLICATION_MISMATCH: x"}
