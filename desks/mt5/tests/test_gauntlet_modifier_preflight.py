@@ -17,3 +17,8 @@ def test_modifier_preflight_keeps_executable_variant() -> None:
         "family": "overnight_drift",
         "params": {"anchor_hour": 8, "regime": "high_vol", "timeframe": "M5"},
     }) is None
+
+
+def test_loky_reuses_the_gauntlets_measured_worker_ceiling() -> None:
+    assert int(gauntlet.os.environ["LOKY_MAX_CPU_COUNT"]) >= 1
+    assert int(gauntlet.os.environ["LOKY_MAX_CPU_COUNT"]) <= gauntlet.WORKERS
