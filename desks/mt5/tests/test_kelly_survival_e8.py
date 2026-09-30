@@ -3,7 +3,7 @@ aggressiveness within survival").
 
 `research/kelly_survival.py` solves, per gold window, the E8 risk fraction with the fastest median
 pass whose P(static floor) + P(daily breach) stays under EPS_STOP. `prop/e8_gold.py` reads it
-through `decision_core.load_kelly_survival`; absent, stale or not-OK means every window keeps
+through `mt5desk.kelly_sizing.load_kelly_survival`; absent, stale or not-OK means every window keeps
 `RISK_FRAC`, exactly as before the solve existed.
 """
 from __future__ import annotations
