@@ -482,6 +482,10 @@ def _direct_producers(dc: dict[str, Any], usable: list[dict[str, Any]], on_chart
     if not lane:
         skipped["direct_producer_without_a_lane"] += 1
         return []
+    try:
+        from libs.research.dataset_exploitation import instruments_for
+    except Exception:
+        instruments_for = None  # type: ignore[assignment]
     out: list[Producer] = []
     for d in usable:
         ds = str(d["id"])
@@ -489,6 +493,11 @@ def _direct_producers(dc: dict[str, Any], usable: list[dict[str, Any]], on_chart
         c = cults.get(tag) or {}
         part = str(c.get("participant_structure") or
                    ("institutional" if d.get("kind") == "cot" else UNMEASURED))
+        # A dataset that names its own instruments (a CFTC file's futures, a pack's targets, a
+        # culture's home symbols) takes its stance there first; one that names none, everywhere.
+        own = (tuple(instruments_for(d, set(lane), cults)) if instruments_for is not None
+               else ())
+        d_lane = own or lane
         for fdef in (d.get("fields") or [])[:nf]:
             fld, match = str(fdef.get("field") or ""), str(fdef.get("match") or "")
             if not fld:
@@ -503,7 +512,7 @@ def _direct_producers(dc: dict[str, Any], usable: list[dict[str, Any]], on_chart
             key = f"{fld}|{match}" if match else fld
             out.append(Producer(
                 pid=f"{fam}.{ds}.{key}", family=fam, klass="dataset", chart=chart,
-                session="all", transform="direct", mods=(), lane=lane,
+                session="all", transform="direct", mods=(), lane=d_lane,
                 cluster=cluster_of(fam), quota=quota, base=p, culture=tag, participant=part,
                 failure_mode=(f"{ds}.{fld}{' [' + match + ']' if match else ''} alone decides "
                               f"the side, so it fails when that {tag} reading stops leading "
