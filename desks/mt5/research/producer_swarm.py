@@ -314,7 +314,19 @@ def instantiate(reg: dict[str, Any] | None = None, *,
     ds_census: dict[str, Any] = {}
     out += _dataset_producers(reg, fams, bars, quota, skipped, datasets, ds_census)
     by_culture: Counter[str] = Counter(p.culture for p in out)
-    census = {"producers": len(out), "families": len(fams),
+    mechanisms = sorted({p.family for p in out})
+    census = {
+              # THE BREADTH FIGURE IS DISTINCT MECHANISMS: the family code paths the roster
+              # runs. `producers` / `permutations` is those code paths crossed with classes,
+              # charts, sessions, transforms, cultures and dataset fields -- a secondary count.
+              "distinct_mechanisms": len(mechanisms), "mechanisms": mechanisms,
+              "permutations": len(out),
+              "breadth_rule": ("breadth = distinct mechanisms (family code paths); producers "
+                               "and permutations count the axis combinations of those same "
+                               "code paths and are never the breadth figure"),
+              "non_western_share": non_western_share(by_culture),
+              "cultures": culture_coverage(out, reg),
+              "producers": len(out), "families": len(fams),
               "global_producers": n_global, "culture_producers": n_culture,
               "dataset_producers": len(out) - n_global - n_culture,
               "by_culture": dict(sorted(by_culture.items())),
@@ -325,6 +337,57 @@ def instantiate(reg: dict[str, Any] | None = None, *,
               "classes": {k: sum(1 for v in klass_of.values() if v == k) for k in classes},
               "unclassified_symbols": sorted(s for s, k in klass_of.items() if k is None)[:50]}
     return sorted(out, key=lap_key), census
+
+
+def _western(tag: str) -> bool | None:
+    """True / False for a jurisdiction, None for GLOBAL, UNMEASURED or a tag nothing can place
+    (the schema's rule, `libs/research/cell_culture.is_western`)."""
+    try:
+        from libs.research import cell_culture as CC
+        return CC.is_western(CC.culture_tag(tag) or tag)
+    except Exception:
+        return None
+
+
+def non_western_share(counts: Counter[str] | dict[str, int]) -> Any:
+    """Share of `counts` (by culture tag) whose culture is a NON-WESTERN jurisdiction. GLOBAL
+    (the CFTC's institutional positioning included) and UNMEASURED are not non-Western: they
+    stay in the denominator and never in the numerator."""
+    total = sum(int(v) for v in counts.values())
+    if not total:
+        return UNMEASURED
+    return round(sum(int(v) for k, v in counts.items() if _western(str(k)) is False) / total, 4)
+
+
+#: The instrument every gold-token culture lane collapses to when no home instrument has bars.
+XAU_ONLY = frozenset({"XAUUSD"})
+
+
+def culture_coverage(roster: list[Producer], reg: dict[str, Any]) -> dict[str, Any]:
+    """The declared cultures, how many have real producers, and which lanes are XAUUSD-only.
+
+    A culture whose tokens match only the gold symbol (the AE, IN, TR and ZA lanes on a tree
+    whose AED / INR / TRY / ZAR / SA40 bars are absent) mints the SAME XAUUSD cells under four
+    flags: counted as a culture with producers, and flagged, because it is one instrument's
+    session variants, not four cultures' home markets."""
+    cults = cultures_of(reg)
+    per: dict[str, dict[str, Any]] = {}
+    for tag in cults:
+        ps = [p for p in roster if p.culture == tag and not p.dataset]
+        lane = sorted({s for p in ps for s in p.lane})
+        per[tag] = {"producers": len(ps), "lane_symbols": lane,
+                    "xauusd_only": bool(ps) and set(lane) <= XAU_ONLY,
+                    "status": ("NO_PRODUCER: no instrument matching its tokens has bars on "
+                               "disk" if not ps else
+                               "XAUUSD_ONLY: its lane is the gold symbol alone" if
+                               set(lane) <= XAU_ONLY else "HOME_INSTRUMENTS")}
+    with_p = sorted(t for t, v in per.items() if v["producers"])
+    return {"declared": len(per), "with_producers": len(with_p),
+            "with_home_instruments": sum(1 for v in per.values()
+                                         if v["status"] == "HOME_INSTRUMENTS"),
+            "xauusd_only_lanes": sorted(t for t, v in per.items() if v["xauusd_only"]),
+            "without_producers": sorted(t for t, v in per.items() if not v["producers"]),
+            "by_culture": per}
 
 
 def _culture_producers(reg: dict[str, Any], fams: list[str], bars: dict[str, set[str]],
@@ -669,11 +732,56 @@ def visit(p: Producer, quota: int, reg: dict[str, Any], known: set[str],
     return out, ("MINTED" if out else "EXHAUSTED")
 
 
+def charge_keys(minted: list[tuple[Producer, dict[str, Any]]]) -> dict[str, list[str]]:
+    """family -> the hypothesis-graph node ids of the cells minted this pass (the key the judge's
+    verdict row is recorded under), sorted and unique: the census's dedup key."""
+    from libs.research.hypothesis_graph import node_id
+    out: dict[str, set[str]] = {}
+    for p, c in minted:
+        out.setdefault(p.family, set()).add(node_id(c["symbol"], p.family, dict(c["params"])))
+    return {f: sorted(v) for f, v in out.items()}
+
+
+#: The four culture fields of `libs/research/cell_culture.py` (the schema every cell carries).
+CULTURE_KEYS: tuple[str, ...] = ("source_culture", "participant_structure",
+                                 "failure_mode_hypothesis", "crowding_prior")
+
+
+@lru_cache(maxsize=65536)
+def _culture_fields(tag: str, participant: str, failure_mode: str,
+                    family: str) -> tuple[tuple[str, str], ...]:
+    from libs.research import cell_culture as CC
+    raw = str(tag or "").strip()
+    if not raw or raw == UNMEASURED:
+        culture = UNMEASURED
+    elif raw == CC.GLOBAL or CC.CULTURE_RE.match(raw):
+        culture = raw
+    else:
+        # the swarm registry's plain jurisdiction ("JP") in the schema's form ("JP/ja"); a tag
+        # the schema cannot place ("LATAM") is UNMEASURED there and kept as `swarm_culture`
+        culture = CC.culture_tag(raw) or UNMEASURED
+    # crowding_prior BY THE MODULE'S OWN RULES: `high` for a textbook family from an English
+    # source, `low` for a non-English culture's family with no English equivalent in the last
+    # published English-coverage set, and UNMEASURED otherwise -- never guessed.
+    try:
+        crowd = str(CC.infer({"family": family, "source_culture": culture,
+                              "participant_structure": participant,
+                              "failure_mode_hypothesis": failure_mode})["crowding_prior"])
+    except Exception:
+        crowd = UNMEASURED
+    return (("source_culture", culture),
+            ("participant_structure", participant or UNMEASURED),
+            ("failure_mode_hypothesis", failure_mode or UNMEASURED),
+            ("crowding_prior", crowd if crowd in ("low", "medium", "high") else UNMEASURED),
+            ("swarm_culture", raw or UNMEASURED))
+
+
 def culture_fields(p: Producer) -> dict[str, str]:
-    """The three plain keys every swarm cell carries (principal, 2026-09-30 14:18)."""
-    return {"source_culture": p.culture or UNMEASURED,
-            "participant_structure": p.participant or UNMEASURED,
-            "failure_mode_hypothesis": p.failure_mode or UNMEASURED}
+    """The four culture fields every swarm cell carries (principal, 2026-09-30 14:18, and the
+    schema of `libs/research/cell_culture.py`): source_culture, participant_structure,
+    failure_mode_hypothesis and crowding_prior (low / medium / high / UNMEASURED), plus the
+    swarm registry's own tag as `swarm_culture`."""
+    return dict(_culture_fields(p.culture, p.participant, p.failure_mode, p.family))
 
 
 def mechanism(p: Producer, cell: dict[str, Any]) -> str:
@@ -716,6 +824,7 @@ def write_cells(minted: list[tuple[Producer, dict[str, Any]]], *, conn=None) -> 
                 out["attempted"] += 1
                 try:
                     extra: dict[str, Any] = {}
+                    cf = culture_fields(p)
                     if p.culture and p.culture not in ("GLOBAL", UNMEASURED):
                         extra["region"] = p.culture
                     if p.dataset:
@@ -726,7 +835,8 @@ def write_cells(minted: list[tuple[Producer, dict[str, Any]]], *, conn=None) -> 
                         asset_class=p.klass, generator=SOURCE, source_id=p.pid,
                         trial_family=p.family, transformation=p.transform,
                         producer="desks/mt5/research/producer_swarm.py",
-                        lineage={**culture_fields(p), "producer_id": p.pid}, **extra)
+                        lineage={**cf, "producer_id": p.pid},
+                        **{k: cf[k] for k in CULTURE_KEYS}, **extra)
                 except Exception:
                     out["failed"] += 1
                     continue
@@ -806,8 +916,12 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
     wrote = ({"attempted": 0, "created": 0, "already_present": 0, "failed": 0,
               "why": "dry run: nothing written"} if dry_run else write_cells(minted, conn=conn))
     by_fam: Counter[str] = Counter(p.family for p, _c in minted)
+    cells_by_fam = charge_keys(minted)
     trial_rows = [{"ts": ts, "family": f, "cells_screened": n, "source": SOURCE,
-                   "rule": "every minted swarm cell is a trial of its family",
+                   "rule": ("every minted swarm cell is a trial of its family AT GENERATION; "
+                            "`cells` are hypothesis-graph node ids, so experiment_ledger "
+                            "charges each once and skips it when the graph holds it judged"),
+                   "cells": cells_by_fam.get(f, []),
                    "dry_run": bool(dry_run)} for f, n in sorted(by_fam.items())]
     if not dry_run or out_dir is not None:
         _append(trials_p, trial_rows)
@@ -847,20 +961,29 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
                  "by_culture": dict(sorted(cult_cells.items())),
                  "non_global_share_of_cells": (round(1 - cult_cells.get("GLOBAL", 0)
                                                      / len(minted), 4) if minted else None),
+                 "non_western_share_of_cells": non_western_share(cult_cells),
                  "by_dataset": dict(sorted(ds_cells.items())),
                  "by_family": dict(sorted(by_fam.items())), "by_class": dict(cls_cells),
                  "by_chart": dict(chart_cells), "by_cluster": dict(clus_cells)},
         "holes_targeted": hole_axes,
         "unfed_datasets_targeted": (sorted(unfed)[:200] if unfed is not None else
                                     "every dataset producer: no dataset census read yet"),
-        "culture_rule": ("every cell carries source_culture, participant_structure and "
-                         "failure_mode_hypothesis (registry lineage_json); culture producers "
+        "culture_rule": ("every cell carries source_culture, participant_structure, "
+                         "failure_mode_hypothesis and crowding_prior (libs/research/"
+                         "cell_culture.py; registry columns and lineage_json); culture producers "
                          "take culture_visit_share of the ceiling before the breadth holes"),
         "cell_sample": sample,
         "dedup": kinfo,
         "write": wrote,
         "projection": {
-            "producers": n,
+            # NOT MEASURED. Every figure below is this ONE hour's plan multiplied out; the
+            # measured daily count is PRODUCER_BREADTH.json's cells_24h.
+            "basis": ("projected_from_single_dry_run_hour" if dry_run
+                      else "projected_from_single_hour"),
+            "measured": False,
+            "cells_per_day": {("projected_from_single_dry_run_hour" if dry_run
+                               else "projected_from_single_hour"): len(minted) * 24},
+            "producers": n, "distinct_mechanisms": census.get("distinct_mechanisms"),
             "visits_per_day": min(n, hplan["ring_k"] * 24) + 24 * (
                 len(hplan["hole"]) + len(hplan["culture"]) + len(hplan["dataset"])),
             "lap_hours": hplan["lap_hours_at_this_size"],
@@ -872,7 +995,8 @@ def run(*, dry_run: bool = False, now: datetime | None = None, reg: dict[str, An
             "note": ("an upper bound: a producer whose reachable cells all exist mints nothing "
                      "and says EXHAUSTED; the measured figure is PRODUCER_BREADTH.json's"),
         },
-        "trials_recorded": trial_rows,
+        "trials_recorded": [{k: v for k, v in r.items() if k != "cells"} | {
+            "cells_keyed": len(r["cells"])} for r in trial_rows],
         "wall_s": round(time.monotonic() - t0, 2),
     }
     _write(report, doc)

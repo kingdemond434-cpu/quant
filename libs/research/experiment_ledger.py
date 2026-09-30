@@ -28,18 +28,26 @@ DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "EXPERIMENT_LEDGER.json"
 
 
-def _graph_counts() -> tuple[int, dict[str, int]]:
+def _graph_judged() -> tuple[int, dict[str, int], set[str]]:
+    """(judged cells, per family, their graph node ids) from the hypothesis graph."""
     try:
         from libs.research.hypothesis_graph import Graph
         cur = Graph().current()
     except Exception:
-        return 0, {}
+        return 0, {}, set()
     by_fam: dict[str, int] = {}
-    for r in cur.values():
+    ids: set[str] = set()
+    for nid, r in cur.items():
         if r.get("fate") in ("FAILED", "BURIED", "CERTIFIED", "JUDGED"):
             f = str(r.get("family") or "?")
             by_fam[f] = by_fam.get(f, 0) + 1
-    return sum(by_fam.values()), by_fam
+            ids.add(str(nid))
+    return sum(by_fam.values()), by_fam, ids
+
+
+def _graph_counts() -> tuple[int, dict[str, int]]:
+    total, by_fam, _ids = _graph_judged()
+    return total, by_fam
 
 
 def _proposer_counts() -> tuple[int, dict[str, int]]:
@@ -126,6 +134,60 @@ def _unknown_unknown_counts(path: Path | None = None) -> tuple[int, dict[str, in
 REGIME_SPLIT_TRIALS = DESK / "data" / "REGIME_SPLIT_TRIALS.jsonl"
 
 
+#: THE PRODUCER SWARM'S MINT LEDGER (desks/mt5/research/producer_swarm.py). Every cell the swarm
+#: GENERATES is a trial of its family from the moment it is minted -- not only once a judge gets to
+#: it, because a cell that sits unjudged in a 10^5-row docket was still drawn from the search and
+#: the family-wise error budget must know it. Each row names its cells by the hypothesis graph's
+#: node id (`cells`), so a cell is charged ONCE: a cell the graph already holds as judged is
+#: counted there and skipped here, and a cell minted in two rows is counted once. A legacy row
+#: without `cells` cannot be deduplicated and is charged by its `cells_screened` (deflate more,
+#: never less).
+PRODUCER_SWARM_TRIALS = DESK / "data" / "PRODUCER_SWARM_TRIALS.jsonl"
+
+
+def _swarm_counts(judged: set[str] | frozenset[str] = frozenset(),
+                  path: Path | None = None) -> tuple[int, dict[str, int], int]:
+    """(cells charged, per family, cells skipped as already judged) from the swarm's ledger.
+    Dry runs are skipped. Absent ledger: (0, {}, 0)."""
+    try:
+        lines = (path or PRODUCER_SWARM_TRIALS).read_text("utf-8").splitlines()
+    except OSError:
+        return 0, {}, 0
+    seen: set[str] = set()
+    by_fam: dict[str, int] = {}
+    total = skipped = 0
+    for ln in lines:
+        if not ln.strip():
+            continue
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            continue
+        if not isinstance(row, dict) or row.get("dry_run"):
+            continue
+        fam = str(row.get("family") or "producer_swarm")
+        cells = row.get("cells")
+        if isinstance(cells, list):
+            k = 0
+            for c in cells:
+                cid = str(c)
+                if cid in seen:
+                    continue
+                seen.add(cid)
+                if cid in judged:
+                    skipped += 1
+                    continue
+                k += 1
+        else:
+            try:
+                k = int(row.get("cells_screened") or 0)
+            except (TypeError, ValueError):
+                continue
+        total += k
+        by_fam[fam] = by_fam.get(fam, 0) + k
+    return total, by_fam, skipped
+
+
 def _prereg_counts() -> int:
     try:
         from libs.research.preregistration import cards
@@ -135,8 +197,13 @@ def _prereg_counts() -> int:
 
 
 def lifetime(write: bool = True) -> dict[str, Any]:
-    g_total, g_fam = _graph_counts()
+    g_total, g_fam, g_ids = _graph_judged()
     p_total, p_fam = _proposer_counts()
+    s_total, s_fam, s_judged = _swarm_counts(g_ids)
+    del g_ids
+    for fam, k in s_fam.items():
+        p_fam[fam] = p_fam.get(fam, 0) + k
+    p_total += s_total
     m_total, m_fam = _mass_screen_counts()
     for fam, k in m_fam.items():
         p_fam[fam] = p_fam.get(fam, 0) + k
@@ -157,11 +224,16 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "judged_cells": g_total, "screened_cells": p_total, "preregistered_cards": prereg,
            "mass_screen_cells": m_total, "unknown_unknown_cells": u_total,
            "regime_split_union_cells": r_total,
+           "producer_swarm_cells": s_total,
+           "producer_swarm_cells_already_judged": s_judged,
            "by_family": dict(sorted(by_fam.items(), key=lambda kv: -kv[1])),
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl and every "
                     "unknown-unknown cell in UNKNOWN_UNKNOWN_TRIALS.jsonl, and every "
-                    "regime-split cell of the lifetime union in REGIME_SPLIT_TRIALS.jsonl); "
+                    "regime-split cell of the lifetime union in REGIME_SPLIT_TRIALS.jsonl, and "
+                    "every "
+                    "producer-swarm cell at GENERATION from PRODUCER_SWARM_TRIALS.jsonl, "
+                    "deduplicated by graph node id against the judged cells); "
                     "consumers may only deflate MORE with it, never less")}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)

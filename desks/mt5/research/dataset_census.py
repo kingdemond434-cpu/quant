@@ -311,10 +311,94 @@ def discover() -> list[dict[str, Any]]:
         if d["kind"] == "lake" and d.get("country"):
             d["source_culture"] = str(d["country"]).upper()
         elif d["kind"] == "cot":
-            d["source_culture"] = named.get("cot", "US")
+            # The CFTC's positioning is GLOBAL institutional futures flow, not a culture's own
+            # (and never a non-Western one); the registry may name another tag.
+            d["source_culture"] = named.get("cot", "GLOBAL")
         else:
             d["source_culture"] = culture_of(name.split("/")[-1], named, tags)
     return out
+
+
+# ------------------------------------------------------------------ fetched or only listed
+#: The one generic collector every registered lake pack is fetched by, and its clock. It is
+#: already on the hourly cycle; this census reads its state, it never fetches.
+LAKE_FETCHER = "desks/mt5/research/asia_collector.py"
+LAKE_FETCHER_CLOCK = "hourly_cycle:asia_collector"
+LAKE_STATE = DATA / "lake" / "collector_state.json"
+LAKE_SERIES = DATA / "lake" / "series"
+LAKE_VAULT = DATA / "lake" / "vault"
+#: Collector statuses meaning the source's bytes were fetched (NEEDS_PARSER: vaulted, unparsed).
+FETCHED_STATUSES = frozenset({"COLLECTED", "UNCHANGED", "NOT_MODIFIED", "NEEDS_PARSER"})
+#: The CRO duty whose fence reads `unfed` (the dataset-exploitation fence).
+D18 = "D18"
+
+
+def _lake_series_files(pack: str, series_dir: Path | None = None) -> list[str]:
+    """Every series file the collector or the parser bank writes for `pack`: `<pack>.parquet|csv|
+    json|txt` and the parser's per-table `<pack>__t<i>.parquet|csv`."""
+    base = series_dir or LAKE_SERIES
+    if not base.is_dir():
+        return []
+    out = [base / f"{pack}{ext}" for ext in (".parquet", ".csv", ".json", ".txt")
+           if (base / f"{pack}{ext}").exists()]
+    out += sorted(p for p in base.glob(f"{pack}__t*") if p.suffix in (".parquet", ".csv"))
+    return [str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else str(p) for p in out]
+
+
+def fetch_facts(d: dict[str, Any], collector_state: dict[str, Any] | None) -> dict[str, Any]:
+    """`fetched`, `series_file_present` and the fetcher, for one dataset -- measured from disk
+    and the collector's own state, never assumed. `fetched` is UNMEASURED for a lake pack when the
+    collector's state file is absent and no series or vault holds it (this tree does not carry
+    `data/lake/`, which is box state): nothing can say whether it was fetched."""
+    kind = d["kind"]
+    name = d["id"].split(":", 1)[1]
+    if kind == "lake":
+        files = _lake_series_files(name)
+        row = (collector_state or {}).get(name) if isinstance(collector_state, dict) else None
+        status = str((row or {}).get("last_status") or "") if isinstance(row, dict) else ""
+        vaulted = (LAKE_VAULT / name).exists()
+        if files or vaulted or status in FETCHED_STATUSES:
+            fetched: Any = True
+        elif collector_state is None:
+            fetched = UNMEASURED
+        else:
+            fetched = False
+        return {"fetched": fetched, "series_file_present": bool(files), "series_files": files,
+                "fetcher": LAKE_FETCHER, "fetcher_clock": LAKE_FETCHER_CLOCK,
+                "collector_status": status or (UNMEASURED if collector_state is None
+                                               else "NEVER_ATTEMPTED"),
+                "last_attempt_epoch": ((row or {}).get("last_attempt_epoch")
+                                       if isinstance(row, dict) else None)}
+    if kind == "cot":
+        present = bool(d.get("path")) and (ROOT / str(d["path"])).exists()
+        return {"fetched": present, "series_file_present": present,
+                "series_files": [str(d["path"])] if present else [],
+                "fetcher": None, "fetcher_clock": None}
+    if kind == "intel":
+        n = int(((d.get("pit") or {}).get("snapshot_files")) or 0)
+        return {"fetched": n > 0, "series_file_present": n > 0, "series_files": n,
+                "fetcher": f"the {name} seat", "fetcher_clock": None}
+    # macro axis records and grounds files name series; they are not one
+    return {"fetched": False, "series_file_present": False, "series_files": [],
+            "fetcher": None, "fetcher_clock": None}
+
+
+def unfed_d18(ff: dict[str, Any], feeds_producer: Any) -> tuple[Any, str]:
+    """(unfed under CRO duty D18, why). A dataset with no fetched series file is UNFED whatever
+    else is true of it -- it is a museum label, not a series anything can read; one with a
+    series that fed no producer in 7d is UNFED too. UNMEASURED only when the series is present
+    and nothing can say whether it fed."""
+    if not ff.get("series_file_present"):
+        why = ("NO_FETCHED_SERIES: fetched, but no series file was written (the bytes need a "
+               "parser)" if ff.get("fetched") is True else
+               "NO_FETCHED_SERIES: never fetched" if ff.get("fetched") is False else
+               "NO_FETCHED_SERIES: no series file on disk and the collector's state is absent")
+        return True, why
+    if feeds_producer is False:
+        return True, "NOT_PRODUCING: a series is on disk and no producer minted from it in 7d"
+    if feeds_producer is True:
+        return False, ""
+    return UNMEASURED, "series on disk; whether it fed a producer is UNMEASURED"
 
 
 # ------------------------------------------------------------------ who reads what
@@ -426,6 +510,8 @@ def census(now: datetime | None = None, db: Path | None = None,
     reg_ok = not reg_note.startswith(UNMEASURED)
     comp_ok = not comp_note.startswith(UNMEASURED)
     rows: dict[str, Any] = {}
+    lake_state = _read(LAKE_STATE, None)
+    lake_state = lake_state if isinstance(lake_state, dict) else None
     for d in ds:
         names = [str(x) for x in d.get("source_names") or []]
         prod = _readers(d, texts["producers"])
@@ -468,7 +554,12 @@ def census(now: datetime | None = None, db: Path | None = None,
             },
             "feeds_producer": fed, "why": why,
         }
+        # WHAT D18 READS: fetched, a series file on disk, and unfed with its reason.
+        ff = fetch_facts(d, lake_state)
+        u, u_why = unfed_d18(ff, fed)
+        rows[d["id"]].update({**ff, "unfed": u, "unfed_why": u_why})
     unfed = sorted(k for k, r in rows.items() if r["feeds_producer"] is False)
+    d18_unfed = sorted(k for k, r in rows.items() if r["unfed"] is True)
     kinds = Counter(r["kind"] for r in rows.values())
     return {
         "generated_at": now.isoformat(timespec="seconds"),
@@ -491,5 +582,28 @@ def census(now: datetime | None = None, db: Path | None = None,
                                                  if r["uses"]["allocation"]["organs"])},
         "unfed": unfed,
         "unfed_conditionable": [k for k in unfed if rows[k]["pit_series"]["usable"]],
+        # CRO DUTY D18 (the dataset-exploitation fence): every dataset without a fetched series
+        # file is UNFED, and so is one whose series fed nothing in 7d. `unfed` above is the
+        # narrower producer view the swarm steers by and is kept as it was.
+        "d18": {"duty": D18,
+                "rule": ("unfed = no fetched series file on disk, or a series that fed no "
+                         "producer in 7d; UNMEASURED only when a series is present and nothing "
+                         "can tell whether it fed"),
+                "lake_collector_state": (str(LAKE_STATE.relative_to(ROOT)) if lake_state
+                                         is not None else f"{UNMEASURED}: "
+                                         f"{LAKE_STATE.relative_to(ROOT)} absent"),
+                "datasets": len(rows),
+                "fetched": sum(1 for r in rows.values() if r["fetched"] is True),
+                "fetched_unmeasured": sum(1 for r in rows.values()
+                                          if r["fetched"] == UNMEASURED),
+                "series_file_present": sum(1 for r in rows.values()
+                                           if r["series_file_present"]),
+                "unfed": len(d18_unfed),
+                "unfed_no_fetched_series": sum(1 for r in rows.values() if r["unfed"] is True
+                                               and not r["series_file_present"]),
+                "unfed_not_producing": sum(1 for r in rows.values() if r["unfed"] is True
+                                           and r["series_file_present"]),
+                "unmeasured": sum(1 for r in rows.values() if r["unfed"] == UNMEASURED),
+                "unfed_ids": d18_unfed},
         "datasets": rows,
     }

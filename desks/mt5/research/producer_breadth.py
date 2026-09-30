@@ -764,7 +764,7 @@ def swarm_section(now: datetime, db: Path | None, *, scheduled: bool, clocks: li
                   datasets: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Every swarm producer measured individually, and rolled up by family and by culture."""
     try:
-        from research.producer_swarm import instantiate
+        from research.producer_swarm import culture_fields, instantiate, non_western_share
         roster, census = (instantiate(datasets=datasets) if datasets is not None
                           else instantiate())
     except BaseException as exc:          # SystemExit from an unreadable registry included
@@ -804,7 +804,9 @@ def swarm_section(now: datetime, db: Path | None, *, scheduled: bool, clocks: li
                                    idle_why=idle_why)
         rows[p.pid] = {"family": p.family, "class": p.klass, "chart": p.chart,
                        "session": p.session, "transform": p.transform, "cluster": p.cluster,
-                       "source_culture": p.culture, "participant_structure": p.participant,
+                       **{k: v for k, v in culture_fields(p).items()
+                          if k in ("source_culture", "participant_structure", "crowding_prior",
+                                   "swarm_culture")},
                        "dataset": p.dataset or None,
                        "lane_symbols": lane_n, "cells_24h": n24, "cells_7d": n7,
                        "symbols_24h": b24["symbols"], "symbols_7d": b7["symbols"],
@@ -844,7 +846,10 @@ def swarm_section(now: datetime, db: Path | None, *, scheduled: bool, clocks: li
             "by_culture": dict(sorted(cult.items())),
             "non_global_share_of_cells_24h": (
                 round(1 - cult.get("GLOBAL", {}).get("cells_24h", 0) / c24, 4) if c24 and measured
-                else UNMEASURED)}
+                else UNMEASURED),
+            "non_western_share_of_cells_24h": (
+                non_western_share({k: v["cells_24h"] for k, v in cult.items()})
+                if c24 and measured else UNMEASURED)}
 
 
 def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]:
@@ -992,6 +997,9 @@ def build(now: datetime | None = None, db: Path | None = None) -> dict[str, Any]
         unfed.append({"cluster": c, "why": why, "buildable_families": b["buildable"],
                       "unbuildable_families": b["unbuildable"]})
     holes = coverage_holes(tallies, swarm, lane, sreg, reachable_clusters, fed24)
+    swarm["culture_gap"] = culture_gap_section(
+        now, db, sorted(str(k) for k in (sreg.get("cultures") or {})
+                        if not str(k).startswith("_")))
     measured = [r for r in rows.values() if isinstance(r["cells_7d"], int)]
     totals = {
         "producers": len(rows),
@@ -1075,6 +1083,65 @@ def coverage_holes(tallies: dict[str, Tally], swarm: dict[str, Any], lane: list[
                      "aimed at these first")}
 
 
+#: The culture-gap producers (branch claude/culture-gap-producers): read and counted when that
+#: organ is on this tree, reported as a gap when it is not -- never duplicated here.
+CULTURE_GAP_MODULE = BASE / "research" / "culture_gap_cells.py"
+CULTURE_GAP_REPORT = BASE / "reports" / "CULTURE_GAP_CELLS.json"
+CULTURE_GAP_GENERATOR = "culture_gap_cells"
+
+
+def culture_gap_section(now: datetime, db: Path | None,
+                        declared: list[str]) -> dict[str, Any]:
+    """The cultures the swarm cannot reach and whether a culture-gap producer reaches them.
+
+    Counts the registry's cells in 7d by the jurisdiction of their `source_culture` column (every
+    producer, not only the swarm) and the culture-gap organ's own cells by generator, for the
+    swarm registry's declared cultures. Absent organ: `present` False and every declared culture
+    with no cell is listed as the gap it is."""
+    present = CULTURE_GAP_MODULE.exists()
+    out: dict[str, Any] = {"producer": str(CULTURE_GAP_MODULE.relative_to(ROOT)),
+                           "present": present,
+                           "report": (str(CULTURE_GAP_REPORT.relative_to(ROOT))
+                                      if CULTURE_GAP_REPORT.exists() else None)}
+    db = db if db is not None else REGISTRY_DB
+    by_j: Counter[str] = Counter()
+    gap_cells: Counter[str] = Counter()
+    if not db.exists():
+        out["registry"] = f"{UNMEASURED}: no registry at {db}"
+    else:
+        cut7 = (now - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S")
+        ts = "replace(substr(created_at,1,19),' ','T')"
+        try:
+            con = sqlite3.connect(f"file:{db}?mode=ro", uri=True, timeout=10)
+            try:
+                cols = {r[1] for r in con.execute("pragma table_info(research_candidates)")}
+                if "source_culture" not in cols:
+                    out["registry"] = (f"{UNMEASURED}: registry has no source_culture column "
+                                       "(the culture door has not run on it)")
+                else:
+                    gen = "generator" if "generator" in cols else "''"
+                    q = (f"select source_culture, {gen}, count(*) from "  # noqa: S608
+                         f"research_candidates where {ts} >= ? group by 1, 2")
+                    for sc, g, n in con.execute(q, (cut7,)):
+                        j = str(sc or "").split("/", 1)[0].upper()
+                        by_j[j] += int(n or 0)
+                        if str(g or "") == CULTURE_GAP_GENERATOR:
+                            gap_cells[j] += int(n or 0)
+                    out["registry"] = f"registry {db.name}: 7d cells by source_culture"
+            finally:
+                con.close()
+        except sqlite3.Error as exc:
+            out["registry"] = f"{UNMEASURED}: registry query failed ({type(exc).__name__})"
+    measured = not str(out.get("registry", "")).startswith(UNMEASURED)
+    out["cells_7d_by_culture"] = ({t: by_j.get(t, 0) for t in declared} if measured
+                                  else UNMEASURED)
+    out["culture_gap_cells_7d"] = ({t: gap_cells.get(t, 0) for t in declared} if measured
+                                   else UNMEASURED)
+    out["culture_gap_producer_cultures"] = (sorted(t for t in declared if gap_cells.get(t))
+                                            if measured else UNMEASURED)
+    return out
+
+
 def dataset_section(now: datetime, db: Path | None) -> tuple[list[dict[str, Any]] | None,
                                                              dict[str, Any]]:
     """(the discovered datasets, the census) -- UNMEASURED with its reason, never an empty 0."""
@@ -1131,7 +1198,18 @@ def headline(rows: dict[str, Any], swarm: dict[str, Any], unfed: list[dict[str, 
     # leads the list the CRO duty reads rather than being cut off at its tail.
     gaps = [f"dataset {k} feeds no producer: {rows_ds.get(k, {}).get('why', '')}"
             for k in (ds.get("unfed_conditionable") or [])[:5]] + gaps
-    return {"producers_total": total["producers"], "active": total["active"],
+    roster = swarm.get("roster") or {}
+    cov = roster.get("cultures") or {}
+    gap = swarm.get("culture_gap") or {}
+    d18 = ds.get("d18") or {}
+    return {
+            # THE BREADTH FIGURE: distinct mechanisms (the swarm's family code paths). The swarm's
+            # producer count is those code paths crossed with its axes -- permutations, kept as
+            # the secondary field it is.
+            "breadth_figure": "distinct_mechanisms",
+            "distinct_mechanisms": roster.get("distinct_mechanisms", UNMEASURED),
+            "permutations": roster.get("permutations", UNMEASURED),
+            "producers_total": total["producers"], "active": total["active"],
             "idle": total["idle"], "narrow": total["narrow"],
             "untestable": total["untestable"], "unmeasured": total["unmeasured"],
             "hand_written": legacy, "swarm": sw,
@@ -1141,11 +1219,31 @@ def headline(rows: dict[str, Any], swarm: dict[str, Any], unfed: list[dict[str, 
                           "unfed_conditionable": dt.get("unfed_conditionable")}
                          if dt else {"status": ds.get("status", UNMEASURED),
                                      "why": ds.get("why")}),
+            # CRO D18 (the dataset-exploitation fence) reads these: every dataset without a
+            # fetched series file is UNFED.
+            "datasets_d18": ({k: d18.get(k) for k in (
+                "datasets", "fetched", "fetched_unmeasured", "series_file_present", "unfed",
+                "unfed_no_fetched_series", "unfed_not_producing", "unmeasured")}
+                if d18 else {"status": UNMEASURED, "why": "no dataset census"}),
             "culture": {"swarm_by_culture_producers": {
                             k: v.get("producers") for k, v in
                             (swarm.get("by_culture") or {}).items()},
                         "non_global_share_of_swarm_cells_24h":
-                            swarm.get("non_global_share_of_cells_24h", UNMEASURED)},
+                            swarm.get("non_global_share_of_cells_24h", UNMEASURED),
+                        # GLOBAL (the CFTC included) is never non-Western
+                        "non_western_share_of_swarm_cells_24h":
+                            swarm.get("non_western_share_of_cells_24h", UNMEASURED),
+                        "non_western_share_of_swarm_producers":
+                            roster.get("non_western_share", UNMEASURED),
+                        "cultures_declared": cov.get("declared", UNMEASURED),
+                        "cultures_with_real_producers": cov.get("with_producers", UNMEASURED),
+                        "cultures_with_home_instruments":
+                            cov.get("with_home_instruments", UNMEASURED),
+                        "xauusd_only_lanes": cov.get("xauusd_only_lanes", UNMEASURED),
+                        "cultures_without_producers": cov.get("without_producers", UNMEASURED),
+                        "culture_gap_producer_present": gap.get("present", UNMEASURED),
+                        "culture_gap_producer_cultures":
+                            gap.get("culture_gap_producer_cultures", UNMEASURED)},
             "top_gaps": gaps[:25]}
 
 
@@ -1169,8 +1267,10 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(doc, indent=1, default=str))
     else:
         h = doc["headline"]
-        print(f"producer_breadth: {h['producers_total']} producer(s) ({h['swarm']['producers']} "
-              f"swarm), {h['active']} active, {h['idle']} idle, {h['narrow']} narrow, "
+        print(f"producer_breadth: {h.get('distinct_mechanisms')} distinct mechanism(s) (the "
+              f"breadth figure); {h['producers_total']} producer permutation(s) "
+              f"({h['swarm']['producers']} swarm), {h['active']} active, {h['idle']} idle, "
+              f"{h['narrow']} narrow, "
               f"{h['untestable']} untestable, {h['unmeasured']} unmeasured")
         print(f"  hand-written: {t['producers']} producer(s), {t['scheduled']} on a clock, "
               f"{t['measured']} measured; cells 24h {t['cells_24h']}, 7d {t['cells_7d']}; "
@@ -1181,6 +1281,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  datasets: {dh.get('total')} on disk, {dh.get('feeding')} feeding a producer, "
               f"{dh.get('unfed')} unfed ({dh.get('unfed_conditionable')} conditionable, wired "
               f"first by producer_swarm), {dh.get('unmeasured')} unmeasured")
+        d18 = (doc.get("headline") or {}).get("datasets_d18") or {}
+        print(f"  D18: {d18.get('fetched')} fetched, {d18.get('series_file_present')} with a "
+              f"series file, {d18.get('unfed')} UNFED ({d18.get('unfed_no_fetched_series')} "
+              f"without a fetched series)")
         print(f"  -> {path}")
     return 0
 
