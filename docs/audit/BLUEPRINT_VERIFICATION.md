@@ -1,7 +1,7 @@
 # Blueprint verification matrix
 
 Independent check of every blueprint the principal gave on 2026-09-29, verified against the code rather than the builders' ledgers.
-**Re-scored in full 2026-09-30 ~14:30Z under the principal's strict definition of DONE**, against the live branch `claude/llm-auto-upgrade-verify-gcjac3` at `d30be2ce` (the sealed merge of #52, #53 and #55). The code findings were re-checked at the live tip `aadf1e49`, whose only changes are the gauntlet preflight (re-signed in fc6c34e5), the QB-002 re-pin, test fixes (#96, #97) and a CRO doc (#105). Tier S is on LIVE, so every row now carries one mark set.
+**Re-scored in full 2026-09-30 ~13:30Z under the principal's strict definition of DONE**, against the live branch `claude/llm-auto-upgrade-verify-gcjac3` at `d30be2ce` (the sealed merge of #52, #53 and #55). The code findings were re-checked at the live tip `aadf1e49`, whose only changes are the gauntlet preflight (re-signed in fc6c34e5), the QB-002 re-pin, test fixes (#96, #97) and a CRO doc (#105). Tier S is on LIVE, so every row now carries one mark set.
 The earlier scoring (4 criteria, at `adaba442`) is in git history and summarised in the re-verification log.
 
 ## Verdict rules (strict, principal 2026-09-30)
@@ -61,7 +61,7 @@ What stops rows reaching DONE, in order of how many rows each blocks:
 
 ## Re-verification log
 
-### 2026-09-30 14:30Z: full re-score after the sealed merge (LIVE `d30be2ce`, checked again at tip `aadf1e49`)
+### 2026-09-30 13:30Z: full re-score after the sealed merge (LIVE `d30be2ce`, checked again at tip `aadf1e49`)
 
 #52, #53 and #55 were merged with one reviewed re-sign. All 138 rows were re-scored on LIVE by five independent read-only passes, with about 1,400 tests run under the CI's pinned pandas 2.3.3. Result: **0 DONE, 130 PARTIAL, 0 branch-only, 4 MISSING, 1 EXCLUDED, 3 TIME-BOUND.**
 
