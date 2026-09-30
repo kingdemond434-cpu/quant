@@ -67,7 +67,8 @@ def measure(now: float | None = None, tasks: tuple[tuple[str, Path, int, str], .
                          else doc.get("status") or doc.get("verdict"))
             except (OSError, ValueError, AttributeError):
                 armed = "UNREADABLE"
-        rows.append({"task": name, "artifact": str(art.relative_to(ROOT)), "state": state,
+        rel = art.relative_to(ROOT) if art.is_relative_to(ROOT) else art
+        rows.append({"task": name, "artifact": str(rel), "state": state,
                      "age_s": None if age is None else round(age), "max_age_s": 2 * cadence,
                      "reported": armed, "install": installer})
     bad = [r["task"] for r in rows if r["state"] != "REGISTERED"]
