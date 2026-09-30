@@ -101,11 +101,14 @@ def test_constraint_search_finds_a_planted_conjunction_and_prunes() -> None:
     a = rng.choice((-1.0, 1.0), n)
     b = rng.choice((-1.0, 1.0), n)
     c = rng.choice((-1.0, 1.0), n)
-    fwd = rng.normal(0, 1.0, n)
-    fwd[(a > 0) & (b < 0)] += 0.6
+    # an interaction with NO marginal effect (plus a drift every clause would otherwise ride):
+    # only the two-literal conjunctions carry it
+    fwd = rng.normal(0, 1.0, n) + 0.6 * (-a * b) + 0.3
     res = cross_science.constraint_search(fwd, {"a": a, "b": b, "c": c})
     clauses = [tuple(s["clause"]) for s in res["satisfying"]]
-    assert ("a+", "b-") in clauses
+    assert ("a+", "b-") in clauses and ("a+", "b+") in clauses
+    assert not any(len(x) == 1 for x in clauses), "the drift is not a clause"
+    assert not any("c+" in x or "c-" in x for x in clauses)
     # minimality: no satisfying clause strictly contains another satisfying clause
     sets = [set(x) for x in clauses]
     assert not any(x < y for x in sets for y in sets)

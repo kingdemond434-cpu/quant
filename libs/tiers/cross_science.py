@@ -389,6 +389,8 @@ def constraint_search(fwd: F, lits: Mapping[str, F], *, max_len: int = 3,
     satisfying clauses and the count of clauses evaluated (the multiplicity charge)."""
     n = len(fwd)
     half = n // 2
+    # the clause must beat the half's own drift: a trending sample makes every clause "positive"
+    fwd = np.concatenate([fwd[:half] - fwd[:half].mean(), fwd[half:] - fwd[half:].mean()])
     names = sorted(lits)
     atoms = [(k, p) for k in names for p in (1, -1)]
     sat: list[dict[str, Any]] = []
