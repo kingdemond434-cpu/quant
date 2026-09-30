@@ -28,12 +28,19 @@ import json
 import os
 import re
 import subprocess
+from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 DATA, REP = "desks/mt5/data", "desks/mt5/reports"
 #: A seat's own output is not a mined external source (it is a model talking), so it is excluded.
 LLM_SEAT = re.compile(r"chatgpt|gpt|deepseek|kimi|llm|claude|codex", re.I)
+
+
+def _before(a: Any, b: Any) -> bool:
+    """True when both parse and a is strictly earlier than b; an unparseable side is never true."""
+    ta, tb = ts(a), ts(b)
+    return ta is not None and tb is not None and ta < tb
 
 
 def ts(v: Any) -> datetime | None:
@@ -55,7 +62,7 @@ def load(root: str, rel: str) -> Any:
         return None
 
 
-def jsonl(root: str, rel: str):
+def jsonl(root: str, rel: str) -> Iterator[Any]:
     try:
         with open(os.path.join(root, rel), encoding="utf-8") as fh:
             for ln in fh:
@@ -67,7 +74,7 @@ def jsonl(root: str, rel: str):
         return
 
 
-def git_meta(root: str, rel: str) -> dict:
+def git_meta(root: str, rel: str) -> dict[str, Any]:
     """Last commit on this checkout, and the last BOX-authored commit on any ref (the box
     commits as "Contabo MT5 Desk"); the live branch is an orphan, so the first is re-rooting."""
     out = {}
@@ -85,9 +92,11 @@ def git_meta(root: str, rel: str) -> dict:
     return out
 
 
-def ev(name: str, instances: list[dict], sources: list[str], note: str = "") -> dict:
+def ev(
+    name: str, instances: list[dict[str, Any]], sources: list[str], note: str = ""
+) -> dict[str, Any]:
     instances = [i for i in instances if ts(i.get("at"))]
-    instances.sort(key=lambda i: ts(i["at"]))
+    instances.sort(key=lambda i: ts(i["at"]) or datetime.min.replace(tzinfo=UTC))
     return {
         "event": name,
         "latest": instances[-1] if instances else None,
@@ -97,7 +106,7 @@ def ev(name: str, instances: list[dict], sources: list[str], note: str = "") -> 
     }
 
 
-def e1_source_to_cell(root: str) -> dict:
+def e1_source_to_cell(root: str) -> dict[str, Any]:
     """Named external source (URL) -> hypothesis card -> docket cell id with a gauntlet verdict."""
     out = []
     for p in sorted(glob.glob(os.path.join(root, "data/intelligence/hypotheses/H-*.yaml"))):
@@ -150,7 +159,7 @@ def e1_source_to_cell(root: str) -> dict:
     )
 
 
-def e2_prereg_before_verdict(root: str) -> dict:
+def e2_prereg_before_verdict(root: str) -> dict[str, Any]:
     """A verdict record that CARRIES a prereg_hash registered strictly before the verdict."""
     cards = {r.get("prereg_hash"): r for r in jsonl(root, f"{DATA}/preregistrations.jsonl")}
     out = []
@@ -160,9 +169,7 @@ def e2_prereg_before_verdict(root: str) -> dict:
         if (
             c
             and n.get("fate") in ("FAILED", "CERTIFIED")
-            and ts(c.get("registered_utc"))
-            and ts(n.get("at"))
-            and ts(c["registered_utc"]) < ts(n["at"])
+            and _before(c.get("registered_utc"), n.get("at"))
         ):
             out.append(
                 {
@@ -178,9 +185,7 @@ def e2_prereg_before_verdict(root: str) -> dict:
         if (
             c
             and r.get("canonical_verdict")
-            and ts(r.get("reconciled_at"))
-            and ts(c.get("registered_utc"))
-            and ts(c["registered_utc"]) < ts(r["reconciled_at"])
+            and _before(c.get("registered_utc"), r.get("reconciled_at"))
         ):
             out.append(
                 {
@@ -205,13 +210,13 @@ def e2_prereg_before_verdict(root: str) -> dict:
     )
 
 
-def _fails(stages: dict) -> list[str]:
+def _fails(stages: dict[str, Any]) -> list[str]:
     return [
         g for g, s in (stages or {}).items() if isinstance(s, dict) and s.get("passed") is False
     ]
 
 
-def e3_reject_with_gate(root: str) -> dict:
+def e3_reject_with_gate(root: str) -> dict[str, Any]:
     out = []
     for p in glob.glob(os.path.join(root, REP, "gauntlet_*.json")):
         rep = load(root, os.path.relpath(p, root)) or {}
@@ -247,7 +252,7 @@ def e3_reject_with_gate(root: str) -> dict:
     )
 
 
-def e4_survivor_forward(root: str, min_days: float, min_n: int) -> dict:
+def e4_survivor_forward(root: str, min_days: float, min_n: int) -> dict[str, Any]:
     surv = (load(root, f"{REP}/UNIVERSAL_SURVIVORS.json") or {}).get("survivors") or {}
     shadow = load(root, f"{REP}/shadow/shadow_state.json") or {}
     out = []
@@ -289,11 +294,11 @@ def e4_survivor_forward(root: str, min_days: float, min_n: int) -> dict:
     )
 
 
-def e5_live_fill(root: str) -> dict:
+def e5_live_fill(root: str) -> dict[str, Any]:
     sleeves = {
         r.get("name"): r for r in (load(root, f"{DATA}/sleeves.json") or {}).get("sleeves") or []
     }
-    deals: dict[Any, list] = {}
+    deals: dict[Any, list[Any]] = {}
     for d in jsonl(root, f"{DATA}/live_ledger.jsonl"):
         for k in ("entry_order", "position_id"):
             if d.get(k):
@@ -334,7 +339,7 @@ def e5_live_fill(root: str) -> dict:
     )
 
 
-def e6_decay_retirement(root: str) -> dict:
+def e6_decay_retirement(root: str) -> dict[str, Any]:
     out, voided = [], []
     for k, r in (load(root, f"{DATA}/GOLD_RETIRED.json") or {}).items():
         out.append(
@@ -383,7 +388,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default=f"{REP}/six_event_trace.json")
     a = ap.parse_args(argv)
     root = os.path.abspath(a.root)
-    now = ts(a.now) if a.now else datetime.now(UTC)
+    now = (ts(a.now) if a.now else None) or datetime.now(UTC)
     events = [
         e1_source_to_cell(root),
         e2_prereg_before_verdict(root),
