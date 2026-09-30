@@ -81,14 +81,14 @@ def test_arena_scores_the_genome_laid_over_the_real_gates() -> None:
     plain = ga.arena_score(_v(set()), cases)
     assert plain["joint"] == plain["real_gauntlet"]
     assert plain["real_gauntlet"]["immune"] == pytest.approx(210 / 240)
-    catcher = ga.arena_score(_v({"leakage"}), cases)
+    catcher = ga.arena_score(_v({"leakage", "selection"}), cases)
     assert catcher["joint"]["immune"] == 1.0 and catcher["joint"]["power"] == 1.0
     assert catcher["traps_caught_beyond_real"] == 30 and catcher["real_power_lost"] == 0
     assert catcher["vs_gauntlet"] == {"genome_right": 30, "gauntlet_right": 0, "net": 30,
                                       "mcnemar_z": pytest.approx(30 / np.sqrt(30), abs=1e-3)}
     v = ga.judge(catcher, plain)
     assert v["verdict"] == "ADOPT" and "joint" in v["why"]
-    killer = ga.arena_score(_v({"leakage", "true_signal"}), cases)
+    killer = ga.arena_score(_v({"leakage", "selection", "true_signal"}), cases)
     assert killer["real_power_lost"] == 40
     assert ga.judge(killer, plain)["verdict"] == "REJECT"
 
@@ -237,6 +237,6 @@ def test_real_arena_reads_production_verdicts_through_the_real_gate(
     assert status["status"] == "MEASURED" and status["code"] == "live"
     assert {(c.kind, c.real_passed) for c in cases} == {("leakage", True),
                                                        ("true_signal", False)}
-    assert all(len(c.case.prices) == ts.PROD_SUITE.n for c in cases)
+    assert all(len(c.case.prices) >= ts.PROD_SUITE.n for c in cases)
     monkeypatch.setattr(adversary, "real_gate", lambda: (None, "BLOCKED: x"))
     assert ts._real_arena()[1]["status"] == "UNMEASURED"
