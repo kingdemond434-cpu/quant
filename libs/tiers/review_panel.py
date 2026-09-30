@@ -1,7 +1,7 @@
 """AI PEER REVIEW PANELS (Tier S layer 20): independent, typed reviewers that raise falsification
 challenges which must be answered by evidence, not argued away.
 
-Eight reviewers, each given a DIFFERENT slice of the candidate's record (a reviewer that sees
+Typed reviewers, each given a DIFFERENT slice of the candidate's record (a reviewer that sees
 everything converges with the others; independence is the point):
 
     statistician      the selection-aware significance gates only (DSR, PBO, SPA, trials)
@@ -12,6 +12,7 @@ everything converges with the others; independence is the point):
     causal            the economic prior and the mechanism record (is there a falsifier?)
     reproducibility   the independent-replication verdict
     adversarial       the Red Queen's attacks on this exact candidate
+    ecologist         the closure and agent-based stress worlds this candidate was replayed in
 
 Each returns typed CHALLENGES. A challenge names the condition that would resolve it
 (`resolves_when`) as a predicate over the evidence the desk will publish later -- a replication
@@ -76,6 +77,68 @@ def _matched_fills_10(ev: Evidence) -> bool | None:
     return None if live is None else live > 0
 
 
+#: the closure worlds that GAP the tape (the market or the instrument reopens elsewhere): a
+#: position held through one meets a price nobody could trade at in between. `session_closed`
+#: removes a session instead, which starves a signal rather than gapping a held position.
+CLOSURE_GAP_WORLDS: tuple[str, ...] = ("market_closure_gap", "instrument_halt")
+CLOSURE_WORLDS: tuple[str, ...] = ("market_closure_gap", "session_closed", "instrument_halt")
+#: every agent-based ecology (libs/tiers/agent_worlds.NAMES)
+AGENT_WORLDS: tuple[str, ...] = ("abm_momentum_herd", "abm_value_anchor",
+                                 "abm_liquidity_withdrawal")
+#: the named failure modes those worlds earn (synthetic_regimes.FLAG_RULES)
+CLOSURE_FLAGS: tuple[str, ...] = ("dies_on_market_closure", "needs_the_closed_session",
+                                  "halt_fragile")
+AGENT_FLAGS: dict[str, str] = {"dies_in_herding_market": "abm_momentum_herd",
+                               "dies_in_value_market": "abm_value_anchor",
+                               "dies_when_liquidity_withdraws": "abm_liquidity_withdrawal"}
+
+
+def _measured_exp(ev: Evidence, family: str, world: str) -> float | None:
+    """The candidate's own expectancy (R) in one named world, or None when it was not measured."""
+    row = _g(ev, "worlds", family, world)
+    if not isinstance(row, Mapping) or row.get("status") != "MEASURED":
+        return None
+    return _f(row.get("expectancy"))
+
+
+def _closure_gap_losses(ev: Evidence) -> list[str] | None:
+    """The gap worlds in which the candidate's OWN positive edge became a loss: positive
+    expectancy on the untouched tape, negative on its replay through the gap. None while the
+    baseline or every gap world is unmeasured -- absence is never a clean verdict. A candidate
+    with no edge of its own returns [] here: the gap did not cause that loss."""
+    base = _f(_g(ev, "worlds", "baseline_expectancy"))
+    exps = {w: _measured_exp(ev, "closure", w) for w in CLOSURE_GAP_WORLDS}
+    if base is None or all(v is None for v in exps.values()):
+        return None
+    if base <= 0:
+        return []
+    return [w for w, v in exps.items() if v is not None and v < 0]
+
+
+def _closure_gap_survives(ev: Evidence) -> bool | None:
+    lost = _closure_gap_losses(ev)
+    return None if lost is None else not lost
+
+
+def _agent_worlds_survive(ev: Evidence) -> bool | None:
+    """False when the candidate LOSES in every agent ecology (all three measured, all three
+    negative): no market made of traders keeps it alive. True as soon as one measured ecology
+    is non-negative; None while any is unmeasured and none has survived."""
+    exps = [_measured_exp(ev, "agents", w) for w in AGENT_WORLDS]
+    if any(v is not None and v >= 0 for v in exps):
+        return True
+    if any(v is None for v in exps):
+        return None
+    return False
+
+
+def _closure_agent_measured(ev: Evidence) -> bool | None:
+    """True once any closure or agent world has replayed the candidate; open (None) until then."""
+    fams = (("closure", CLOSURE_WORLDS), ("agents", AGENT_WORLDS))
+    return True if any(_measured_exp(ev, fam, w) is not None
+                       for fam, ws in fams for w in ws) else None
+
+
 #: predicate name -> function(evidence) -> True when the challenge is answered in the candidate's
 #: favour, False when answered against it, None while still open
 RESOLVERS: dict[str, Callable[[Evidence], bool | None]] = {
@@ -94,6 +157,10 @@ RESOLVERS: dict[str, Callable[[Evidence], bool | None]] = {
                                       else not bool(_g(ev, "red_queen", "killed"))),
     "online_fdr_admits": lambda ev: (None if _g(ev, "online_fdr") is None
                                      else not bool(_g(ev, "online_fdr", "over_budget"))),
+    # the candidate's own replays through the closure and agent-based worlds (organ_worlds)
+    "closure_gap_survives": _closure_gap_survives,
+    "agent_worlds_survive": _agent_worlds_survive,
+    "closure_agent_measured": _closure_agent_measured,
 }
 
 
@@ -211,6 +278,53 @@ def conflict(cid: str, ev: Evidence) -> list[Challenge]:
     return out
 
 
+def ecologist(cid: str, ev: Evidence) -> list[Challenge]:
+    """The closure and agent-based worlds (Tier S layer 16), read per candidate. Only a failure
+    is a finding, and the severity follows who caused it:
+
+      HIGH    CLOSURE_GAP_LOSS        the candidate's own positive edge turns negative when the
+                                      market or the instrument shuts and reopens gapped: its
+                                      positions were caught by the gap
+      HIGH    LOSES_IN_EVERY_ECOLOGY  negative expectancy in all three agent ecologies
+      MEDIUM  CLOSURE_FRAGILE         a closure flag without either (a starved session, or no
+                                      edge of its own to break); answered by forward evidence
+      MEDIUM  ECOLOGY_DEPENDENT       it dies in two of the three ecologies (LOW for one)
+      LOW     WORLDS_UNMEASURED       no closure or agent world has replayed it yet
+
+    Both HIGH challenges resolve on the candidate's OWN replays (`closure_gap_survives`,
+    `agent_worlds_survive`), which is what makes them candidate-specific at the door."""
+    out: list[Challenge] = []
+    flags = {str(f) for f in (_g(ev, "worlds", "flags") or [])}
+    lost = _closure_gap_losses(ev)
+    if lost:
+        base = _f(_g(ev, "worlds", "baseline_expectancy")) or 0.0
+        exps = ", ".join(f"{w} {_measured_exp(ev, 'closure', w) or 0.0:+.3f}R" for w in lost)
+        out.append(Challenge(cid, "ecologist", "CLOSURE_GAP_LOSS",
+                             f"its own edge ({base:+.3f}R on the untouched tape) loses when the "
+                             f"venue gaps: {exps}", "HIGH", "closure_gap_survives"))
+    elif flags & set(CLOSURE_FLAGS):
+        out.append(Challenge(cid, "ecologist", "CLOSURE_FRAGILE",
+                             f"closure flags {sorted(flags & set(CLOSURE_FLAGS))}", "MEDIUM",
+                             "forward_n_40"))
+    if _agent_worlds_survive(ev) is False:
+        exps_a = {w: _measured_exp(ev, "agents", w) or 0.0 for w in AGENT_WORLDS}
+        out.append(Challenge(cid, "ecologist", "LOSES_IN_EVERY_ECOLOGY",
+                             "negative in all three agent ecologies: "
+                             + ", ".join(f"{w} {v:+.3f}R" for w, v in exps_a.items()),
+                             "HIGH", "agent_worlds_survive"))
+    else:
+        dies = sorted(w for f, w in AGENT_FLAGS.items() if f in flags)
+        if dies:
+            out.append(Challenge(cid, "ecologist", "ECOLOGY_DEPENDENT",
+                                 f"dies in {', '.join(dies)}",
+                                 "MEDIUM" if len(dies) >= 2 else "LOW", "forward_n_40"))
+    if _g(ev, "worlds") is not None and _closure_agent_measured(ev) is None:
+        out.append(Challenge(cid, "ecologist", "WORLDS_UNMEASURED",
+                             "no closure or agent-based world has replayed this candidate",
+                             "LOW", "closure_agent_measured"))
+    return out
+
+
 #: reviewer -> (function, the evidence keys it is allowed to see)
 PANEL: dict[str, tuple[Callable[[str, Evidence], list[Challenge]], tuple[str, ...]]] = {
     "statistician": (statistician, ("gates", "online_fdr")),
@@ -223,6 +337,7 @@ PANEL: dict[str, tuple[Callable[[str, Evidence], list[Challenge]], tuple[str, ..
     "adversarial": (adversarial, ("red_queen",)),
     "epistemologist": (epistemologist, ("epistemic",)),
     "conflict": (conflict, ("firewall",)),
+    "ecologist": (ecologist, ("worlds",)),
 }
 
 
