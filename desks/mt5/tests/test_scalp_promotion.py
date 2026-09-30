@@ -61,7 +61,10 @@ def _open_live_policy(tmp_path: Path, monkeypatch, *symbols: str, unban_m15: boo
     are ever read. The policy itself is pinned by test_live_policy.py and
     test_plumbing_watchdog.py."""
     from mt5desk import live_policy
-    doc: dict = {"live_symbols": list(symbols), "by": "test fixture"}
+    # `banned_execs: []` because the principal stood the scalp lane down on 2026-09-29
+    # (live_policy.DEFAULT_BANNED_EXECS); this file tests the promotion MECHANICS, and the
+    # stand-down itself is pinned by test_live_policy.py.
+    doc: dict = {"live_symbols": list(symbols), "by": "test fixture", "banned_execs": []}
     if unban_m15:
         doc["banned_timeframes"] = {"*": [], **{sym: [] for sym in symbols}}
     pol = tmp_path / "live_sleeve_policy.json"
