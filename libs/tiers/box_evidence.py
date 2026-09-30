@@ -8,7 +8,11 @@ any branch or on the box.
 `attest()` runs at the end of every `tier_s` pass, on whichever host runs it, and writes
 `data/tier_s/box_evidence.json`: for each layer, whether its artifact is on THIS host's disk,
 how old it is, and its contract's latest verdict from `reports/tier_s/CONTRACTS.json`. The
-file lives under `data/`, so it is box state and reaches git through the box's own sync.
+file lives under `data/`, so it is box state and reaches git through the box's own sync. It
+also carries a digest of each output the verifier named (TIER_S, ALPHA_RANK, ONLINE_FDR_ROWS,
+IMMUNE, allocator_tilts, research_budget with its `authoritative` flag, the door verdicts and the
+contracts), because those are written under gitignored `reports/` or box-local `data/` and were
+otherwise readable nowhere off the box.
 
 `scripts/check_tier_s_program.py` then accepts `status: DONE` only for a layer the committed
 file attests from TRADING_HOST, with a fresh artifact and a contract verdict other than
@@ -18,6 +22,7 @@ never counts.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import socket
 from datetime import UTC, datetime
@@ -32,6 +37,21 @@ OUT = DESK / "data" / "tier_s" / "box_evidence.json"
 #: the Contabo trading box (CLAUDE.md, measured 2026-09-24): the only host whose word counts
 TRADING_HOST = "vmi3571445"
 MAX_AGE_H = 6.0
+#: the verifier's named outputs (2026-09-30): each is gitignored or box-local where it is
+#: written, so the box's evidence file carries a digest of each -- stamp, hash and headline
+#: fields -- into git through the box's own sync
+PUBLISHED: dict[str, str] = {
+    "TIER_S": "desks/mt5/reports/TIER_S.json",
+    "ALPHA_RANK": "desks/mt5/reports/ALPHA_RANK.json",
+    "ONLINE_FDR_ROWS": "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "IMMUNE": "desks/mt5/reports/tier_s/IMMUNE.json",
+    "allocator_tilts": "desks/mt5/data/tier_s/allocator_tilts.json",
+    "research_budget": "desks/mt5/data/research_budget.json",
+    "door_verdicts": "desks/mt5/data/tier_s/door_verdicts.json",
+    "CONTRACTS": "desks/mt5/reports/tier_s/CONTRACTS.json",
+}
+#: whole documents small enough, and consequential enough, to carry verbatim
+VERBATIM = frozenset({"allocator_tilts"})
 
 
 def _json(p: Path) -> Any:
@@ -55,6 +75,35 @@ def _stamp(doc: Any, p: Path) -> datetime | None:
         return None
 
 
+def digest(p: Path, *, verbatim: bool = False) -> dict[str, Any]:
+    """Stamp, hash and headline of one output: every top-level scalar, and the size of every
+    top-level list or mapping (one level into `rows`)."""
+    if not p.is_file():
+        return {"exists": False}
+    raw = p.read_bytes()
+    doc = _json(p)
+    ts = _stamp(doc, p)
+    out: dict[str, Any] = {"exists": True, "bytes": len(raw),
+                           "sha256": hashlib.sha256(raw).hexdigest(),
+                           "stamp": ts.isoformat(timespec="seconds") if ts else None}
+    if isinstance(doc, dict):
+        head: dict[str, Any] = {}
+        for k, v in doc.items():
+            if isinstance(v, (str, int, float, bool)) or v is None:
+                head[k] = v if not isinstance(v, str) else v[:200]
+            elif isinstance(v, (list, dict)):
+                head[f"n_{k}"] = len(v)
+        rows = doc.get("rows")
+        if isinstance(rows, list):
+            for flag in ("over_budget", "certified"):
+                head[f"n_rows_{flag}"] = sum(1 for r in rows
+                                             if isinstance(r, dict) and r.get(flag))
+        out["head"] = head
+        if verbatim:
+            out["doc"] = doc
+    return out
+
+
 def layer_evidence(layer: dict[str, Any], verdicts: dict[str, Any], root: Path,
                    now: datetime) -> dict[str, Any]:
     lid = str(layer.get("id"))
@@ -63,10 +112,14 @@ def layer_evidence(layer: dict[str, Any], verdicts: dict[str, Any], root: Path,
     if not layer.get("artifact") or not art.is_file():
         return {"ok": False, "artifact": layer.get("artifact"), "verdict": verdict,
                 "why": "artifact absent on this host"}
-    ts = _stamp(_json(art), art)
+    doc = _json(art)
+    ts = _stamp(doc, art)
     age_h = None if ts is None else round((now - ts).total_seconds() / 3600, 2)
-    ok = age_h is not None and 0 <= age_h <= MAX_AGE_H and verdict != "REJECTED"
+    errored = isinstance(doc, dict) and str(doc.get("status")) == "ERROR"
+    ok = (age_h is not None and 0 <= age_h <= MAX_AGE_H and verdict != "REJECTED"
+          and not errored)
     why = ("fresh artifact, contract not rejected" if ok else
+           "the organ raised: its artifact is an ERROR record" if errored else
            "contract REJECTED" if verdict == "REJECTED" else
            f"artifact {age_h}h old (limit {MAX_AGE_H}h)")
     return {"ok": ok, "artifact": layer.get("artifact"), "age_h": age_h, "verdict": verdict,
@@ -84,7 +137,9 @@ def attest(*, root: Path = ROOT, out: Path | None = None, host: str | None = Non
     doc = {"generated_utc": now.isoformat(timespec="seconds"),
            "host": host or socket.gethostname(), "trading_host": TRADING_HOST,
            "counts_toward_done": (host or socket.gethostname()).lower().startswith(TRADING_HOST),
-           "n_ok": sum(1 for v in rows.values() if v["ok"]), "layers": rows}
+           "n_ok": sum(1 for v in rows.values() if v["ok"]), "layers": rows,
+           "published": {k: digest(root / rel, verbatim=k in VERBATIM)
+                         for k, rel in PUBLISHED.items()}}
     dest = out or (root / OUT.relative_to(ROOT))
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(".json.tmp")

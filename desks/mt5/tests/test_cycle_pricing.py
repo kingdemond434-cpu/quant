@@ -329,3 +329,21 @@ def test_factory_contracts_publish_leg_independent_alpha(tmp_path: Path) -> None
     assert got == {"deepen": 0.3, "mine": 0.1} and why == ""
     p.write_text(json.dumps({"at": datetime.now(tz=UTC).isoformat(timespec="seconds")}), "utf-8")
     assert fc.leg_alpha_rank(p)[0] == {}
+
+
+def test_alpha_rank_binds_both_ways_inside_the_floor(tmp_path: Path, monkeypatch: Any) -> None:
+    """Bottom-quartile alpha rank withdraws a boost the other sources gave; top-quartile alpha
+    rank earns a boost the other sources withheld; nothing ever drops below its base."""
+    _isolate(tmp_path, monkeypatch, meta={}, bandit={}, policy={}, ledger=_spare_ledger())
+    monkeypatch.setattr(cp, "_kind_legs", lambda: {}, raising=True)
+    monkeypatch.setattr(cp, "_meta_prices",
+                        lambda: ({"leg2": 1.0, "leg4": 0.0, "leg6": 0.5}, "ok"), raising=True)
+    monkeypatch.setattr(cp, "_bandit_prices", dict, raising=True)
+    monkeypatch.setattr(cp, "_policy_factors", lambda: ({}, False), raising=True)
+    monkeypatch.setattr(cp, "_alpha_rank_prices",
+                        lambda: ({"leg2": 0.0, "leg4": 1.0, "leg6": 0.5}, ""), raising=True)
+    legs = cp.build_plan(BASES)["legs"]
+    assert legs["leg2"]["price_factor"] == 1.0 and "capped" in legs["leg2"]["alpha_rank_bound"]
+    assert legs["leg4"]["price_factor"] > 1.0 and "raised" in legs["leg4"]["alpha_rank_bound"]
+    for name, v in legs.items():
+        assert v["factor"] >= 1.0 and v["planned_s"] >= v["base_s"], f"{name} was cut"

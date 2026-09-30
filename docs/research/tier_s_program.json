@@ -44,14 +44,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/DATA_OS.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.gate_yield",
     "better": "up",
     "organ": "data_os"
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: the bitemporal store on a real research data path (point-in-time reads through it); then the trading box's own attestation"
   },
   {
    "id": "S03",
@@ -90,14 +90,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/MARKET.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.n_researchers",
     "better": "up",
     "organ": "market"
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: blinding enforced at runtime on what proposers read, not only a static audit; then the trading box's own attestation"
   },
   {
    "id": "S05",
@@ -194,14 +194,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.defender_balanced",
     "better": "up",
     "organ": "red_queen"
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: a Red Queen finding changing a (research-side) gate a candidate passes through; then the trading box's own attestation"
   },
   {
    "id": "S10",
@@ -278,14 +278,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FAILURE_MEMORY.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FDR_REDUCTION",
     "metric": "metric.theorems",
     "better": "up",
     "organ": "failure_memory"
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: failure memory read by a hypothesis generator; then the trading box's own attestation"
   },
   {
    "id": "S14",
@@ -340,14 +340,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "stress_tested_share",
     "better": "up",
     "organ": "worlds"
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: closure worlds and agent-based worlds; then the trading box's own attestation"
   },
   {
    "id": "S17",
@@ -439,14 +439,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TEST_INVENTION.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.candidate_gates",
     "better": "up",
     "organ": "test_invention"
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: the ratifications file filled automatically, with ratified tests running on candidates; then the trading box's own attestation"
   },
   {
    "id": "S22",
@@ -478,14 +478,14 @@
    "extends": [],
    "clock": "hourly_cycle:execution_science",
    "artifact": "desks/mt5/reports/EXECUTION_SCIENCE.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "EXECUTION_CAPTURE",
     "metric": "attribution.median_drag_as_share_of_signal_alpha",
     "better": "down",
     "organ": "report:EXECUTION_SCIENCE.json"
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: execution_science writing its report every run, with tests; then the trading box's own attestation"
   },
   {
    "id": "S24",
@@ -579,14 +579,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/TWIN.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "PRODUCTIVITY",
     "metric": "metric.challengers",
     "better": "up",
     "organ": "twin"
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: rollback tests and a shadow desk replaying candidate code against live inputs; then the trading box's own attestation"
   },
   {
    "id": "S29",
@@ -626,7 +626,7 @@
     "better": "up",
     "organ": "twin"
    },
-   "remaining": "adopting money-path challengers: refused by the permission rule; research challengers adopt automatically"
+   "remaining": "adopting money-path challengers: refused by the permission rule; research challengers adopt automatically; and (verifier 2026-09-30) evolution adopting on the real gauntlet's verdict, not a ValidatorConfig"
   },
   {
    "id": "S31",
@@ -642,7 +642,7 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/FORMAL.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "OPERATIONAL_RISK",
     "metric": "metric.protocol_proven",
@@ -650,7 +650,7 @@
     "organ": "formal",
     "bar": 1.0
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: a consumer of FORMAL.json with consequence; then the trading box's own attestation"
   },
   {
    "id": "S32",
@@ -686,14 +686,14 @@
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/RED_QUEEN.json",
-   "status": "BUILT",
+   "status": "PARTIAL",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "metric.defender_balanced",
     "better": "up",
     "organ": "red_queen"
    },
-   "remaining": "the trading box's own attestation: #55 adopted on the box and a tier_s pass there writing this artifact fresh with its contract not REJECTED"
+   "remaining": "verifier 2026-09-30, being built: validator genomes judged by the real gauntlet's verdict, not a ValidatorConfig; then the trading box's own attestation"
   },
   {
    "id": "S34",

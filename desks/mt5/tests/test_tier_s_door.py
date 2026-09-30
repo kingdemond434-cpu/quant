@@ -146,3 +146,42 @@ def test_freeze_tilts_heat_toward_out_of_sample_evidence_heat_neutrally() -> Non
     assert fz["a"]["freeze_factor"] > 1.0 > fz["b"]["freeze_factor"]
     mean = (fz["a"]["freeze_factor"] + fz["b"]["freeze_factor"]) / 2
     assert abs(mean - 1.0) < 1e-6, "the book's total heat is untouched"
+
+
+def test_a_cited_artifact_needs_a_writer_and_outputs_are_digested(tmp_path: Path) -> None:
+    import importlib.util
+    import sys as _sys
+
+    from libs.tiers import box_evidence as be
+    root = Path(__file__).resolve().parents[3]
+    spec = importlib.util.spec_from_file_location("chk_ts2", root / "scripts" /
+                                                  "check_tier_s_program.py")
+    assert spec and spec.loader
+    chk = importlib.util.module_from_spec(spec)
+    _sys.modules["chk_ts2"] = chk
+    spec.loader.exec_module(chk)
+    ledger = json.loads((root / "docs" / "research" / "tier_s_program.json").read_text("utf-8"))
+    ledger["layers"][0]["artifact"] = "desks/mt5/reports/tier_s/NOBODY_WRITES_THIS.json"
+    problems, _ = chk.check(ledger, root, evidence={})
+    assert any("has no writer" in p for p in problems), problems
+    p = tmp_path / "x.json"
+    p.write_text(json.dumps({"generated_utc": "2026-09-30T00:00:00+00:00",
+                             "authoritative": True, "rows": [{"over_budget": True}, {}]}),
+                 "utf-8")
+    d = be.digest(p)
+    assert d["exists"] and d["head"]["authoritative"] is True
+    assert d["head"]["n_rows"] == 2 and d["head"]["n_rows_over_budget"] == 1
+    assert be.digest(tmp_path / "absent.json") == {"exists": False}
+    err = tmp_path / "e.json"
+    err.write_text(json.dumps({"status": "ERROR",
+                               "generated_utc": datetime.now(UTC).isoformat()}), "utf-8")
+    row = be.layer_evidence({"id": "S01", "artifact": "e.json"}, {}, tmp_path,
+                            datetime.now(UTC))
+    assert row["ok"] is False and "ERROR" in row["why"]
+
+
+def test_the_door_reviews_rows_already_live(monkeypatch: Any) -> None:
+    from libs.tiers import promotion_authority as pa
+    monkeypatch.setattr(pa, "block",
+                        lambda n: "REPLICATION_MISMATCH: x" if n == "bad" else None)
+    assert pa.review_live(["good", "bad"]) == {"bad": "REPLICATION_MISMATCH: x"}

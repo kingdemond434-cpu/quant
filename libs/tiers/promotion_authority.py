@@ -199,6 +199,25 @@ def block(name: str) -> str | None:
     return None
 
 
+LIVE_DOOR = DESK / "data" / "tier_s" / "live_door.json"
+
+
+def review_live(live_names: list[str]) -> dict[str, str]:
+    """{LIVE row name: the reason the door would withhold it if it were promoted now}.
+
+    The door must also act on rows ALREADY LIVE (verifier, 2026-09-30): a certificate whose
+    replication failed, whose FDR budget was spent or whose own forward clock turned against it
+    after it went live is no better for having gone live first. This is the same `block`, fail
+    closed, run over the live book; the `door` organ publishes it as `data/tier_s/live_door.json`
+    for the promoter's automatic retirement to read, billed like every door verdict."""
+    out: dict[str, str] = {}
+    for name in live_names:
+        why = block(name)
+        if why:
+            out[name] = why
+    return out
+
+
 def record(name: str, why: str, *, lane: str, exp_r: Any = None, n: Any = None) -> None:
     """Append one withheld promotion to the ledger `missed_growth` bills."""
     firewall.may("promoter", "write", str(LEDGER.relative_to(ROOT)))

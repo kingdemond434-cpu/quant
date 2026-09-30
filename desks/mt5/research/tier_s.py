@@ -3496,9 +3496,23 @@ def organ_door() -> dict[str, Any]:
     _write(DOOR_VERDICTS, {"generated_utc": NOW.isoformat(), "rows": rows,
                            "consumer": "libs/tiers/promotion_authority.py block()"})
     fam_status = Counter(str((v.get("theory") or {}).get("status")) for v in rows.values())
+    # THE DOOR OVER ROWS ALREADY LIVE: the same fail-closed `block`, run on the live book
+    from libs.tiers import promotion_authority
+    sj = _read(SLEEVES_JSON)
+    srows = sj.get("sleeves") if isinstance(sj, dict) else sj
+    live_names = sorted({str(r["name"]) for r in (srows if isinstance(srows, list) else [])
+                         if isinstance(r, dict) and r.get("name")
+                         and str(r.get("status") or "").upper() == "LIVE"})
+    live_withheld = promotion_authority.review_live(live_names)
+    _write(promotion_authority.LIVE_DOOR, {
+        "generated_utc": NOW.isoformat(), "n_live": len(live_names), "rows": live_withheld,
+        "consumer": "research/promoter.py automatic retirement (desktop batch: promoter.py is "
+                    "sealed)"})
     return {"n_rows": len(rows), "n_withheld": len(blocking), "withheld": dict(
         sorted(blocking.items())[:40]), "theory_status": dict(fam_status),
-            "metric": {"door_rows": len(rows), "door_withheld": len(blocking)}}
+            "n_live": len(live_names), "live_withheld": live_withheld,
+            "metric": {"door_rows": len(rows), "door_withheld": len(blocking),
+                       "live_withheld": len(live_withheld)}}
 
 
 def epistemic_census(reports: Mapping[str, Any]) -> dict[str, Any]:

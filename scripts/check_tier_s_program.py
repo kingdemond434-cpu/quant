@@ -11,7 +11,9 @@ research productivity. This fence is that admission rule, enforced at every law-
 
   * status is DONE, PARTIAL, BLOCKED_ON_USER or BLOCKED_ON_BOX, and every status but DONE names
     what is left in `remaining` -- a layer cannot read as finished while its wording is not met;
-  * every cited file exists; the clock is one the repository knows (the same clock vocabulary
+  * every cited file exists, and the cited artifact has a WRITER in the repository (a tier_s
+    organ of that name, or a cited file that names it) -- the ledger may not cite an output
+    nothing produces (verifier, 2026-09-30); the clock is one the repository knows (the same clock vocabulary
     as check_tier5_audit.py); the artifact is named;
   * the contract parses (`libs.tiers.contracts.problems`) and its `organ` is a Tier S organ
     (`desks/mt5/research/tier_s.py`) or `report:<FILE>` whose writer is itself a known leg;
@@ -66,6 +68,19 @@ def organs(root: Path) -> set[str]:
         re.findall(r'reports\["([a-z_]+)"\] = _run', src))
 
 
+def writes(artifact: str, cited: list[str], organ_names: set[str], root: Path) -> bool:
+    """Does something in this repository write the cited artifact? A tier_s organ `x` writes
+    reports/tier_s/X.json through `_run`; anything else must be named in a cited .py file."""
+    a = Path(artifact)
+    if a.parent.as_posix() == "desks/mt5/reports/tier_s" and a.stem.lower() in organ_names:
+        return True
+    for f in cited:
+        p = root / f
+        if f.endswith(".py") and p.is_file() and a.name in p.read_text("utf-8", errors="replace"):
+            return True
+    return False
+
+
 def check(ledger: dict[str, Any], root: Path,
           evidence: Any = None) -> tuple[list[str], Counter[str]]:
     problems: list[str] = []
@@ -107,6 +122,9 @@ def check(ledger: dict[str, Any], root: Path,
             problems.append(f"{lid}: clock {r.get('clock')!r} is not one the repo knows")
         if not r.get("artifact"):
             problems.append(f"{lid}: no artifact")
+        elif not writes(str(r["artifact"]), files + list(r.get("extends") or []), names, root):
+            problems.append(f"{lid}: cited artifact {r['artifact']} has no writer: no tier_s "
+                            "organ of that name and no cited file names it")
         raw = r.get("contract")
         problems.extend(f"{lid}: {p}" for p in contracts.problems(raw))
         organ = str((raw or {}).get("organ") or "")
