@@ -835,13 +835,15 @@ def name_unknowns(path: Path | None = None) -> dict[str, dict[str, Any]]:
     return out
 
 
-#: The key that names a peer/driver/factor family's second instrument. Mirrors
-#: `discovery_compiler.PEER_KEY_BY_FAMILY` + `FACTOR_FAMILIES` (a test pins the two together).
+#: The key that names a peer/driver/factor/triangle family's other instrument. Mirrors
+#: `discovery_compiler.PEER_KEY_BY_FAMILY` + `FACTOR_FAMILIES` + the first key of
+#: `LEG_FAMILIES` (a test pins them together).
 REQUIRED_INPUT_KEY: dict[str, str] = {"relative_value": "peer_symbol",
                                       "correlation_regime": "peer_symbol",
                                       "lead_lag": "driver_symbol",
                                       "cross_asset_residual": "factor_symbols",
-                                      "pca_residual": "factor_symbols"}
+                                      "pca_residual": "factor_symbols",
+                                      "triangle": "leg_b_symbol"}
 
 
 def unrunnable_bank(path: Path | None = None) -> dict[str, dict[str, Any]]:

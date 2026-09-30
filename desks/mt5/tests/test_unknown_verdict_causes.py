@@ -173,7 +173,8 @@ def test_no_candidate_instrument_leaves_the_child_unchanged_never_refused() -> N
 
 
 def test_the_two_input_maps_agree() -> None:
-    expected = {**dc.PEER_KEY_BY_FAMILY, **dict.fromkeys(dc.FACTOR_FAMILIES, "factor_symbols")}
+    expected = {**dc.PEER_KEY_BY_FAMILY, **dict.fromkeys(dc.FACTOR_FAMILIES, "factor_symbols"),
+                **{f: keys[0] for f, keys in dc.LEG_FAMILIES.items()}}
     assert expected == jc.REQUIRED_INPUT_KEY
 
 
