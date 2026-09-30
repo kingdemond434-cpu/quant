@@ -519,7 +519,11 @@ def latency_stage(conn: sqlite3.Connection | None, stream: Mapping[str, Any], pa
             doc = _read(p)
             surv = doc.get("survivors") if isinstance(doc, Mapping) else None
             if isinstance(surv, Mapping):
-                canon.update({str(k): v for k, v in surv.items() if isinstance(v, Mapping)})
+                for k, v in surv.items():
+                    # A row that carries its stamp wins over one that does not.
+                    if isinstance(v, Mapping) and (v.get("gated_at")
+                                                   or str(k) not in canon):
+                        canon[str(k)] = v
         pairs = []
         for cell, (cls, _sub, _fam, _sym, at) in stream["latest"].items():
             row = canon.get(f"external.{cell}")
