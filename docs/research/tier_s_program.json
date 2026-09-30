@@ -36,19 +36,20 @@
    "title": "World data OS: bitemporal store and point-in-time audit",
    "files": [
     "libs/tiers/bitemporal.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/data_os.py",
+    "desks/mt5/tests/test_tier_s_world.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/DATA_OS.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "CALIBRATION",
-    "metric": "metric.pit_share",
+    "metric": "metric.gate_yield",
     "better": "up",
     "organ": "data_os"
-   },
-   "remaining": "one per-source record joining ingestion_ledger, data_registry and vintage; acquisition gain scored on gate yield instead of pit_share"
+   }
   },
   {
    "id": "S03",
@@ -56,21 +57,22 @@
    "files": [
     "libs/tiers/world_edges.py",
     "desks/mt5/research/tier_s.py",
-    "libs/tiers/world_macro.py"
+    "libs/tiers/world_macro.py",
+    "libs/tiers/graph_edges.py",
+    "desks/mt5/tests/test_tier_s_world.py"
    ],
    "extends": [
     "desks/mt5/research/hourly_cycle.py"
    ],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.hypotheses",
     "better": "up",
     "organ": "world_science"
-   },
-   "remaining": "classify the world_causal_graph / cross_asset_graph edge list itself; credit, vol, inflation, liquidity and flow nodes are UNMEASURED until their datasets (FRED axis, a flow source) are on the host -- rates, carry, dollar and positioning run hourly (libs/tiers/world_macro.py)"
+   }
   },
   {
    "id": "S04",
@@ -320,19 +322,20 @@
    "title": "Counterfactual world lab: sixteen stress worlds joined per certificate",
    "files": [
     "desks/mt5/research/synthetic_regimes.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/swap_world.py",
+    "desks/mt5/tests/test_tier_s_world.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "FALSIFICATION",
     "metric": "stress_tested_share",
     "better": "up",
     "organ": "worlds"
-   },
-   "remaining": "a per-bar swap/rollover stress world; the other sixteen worlds run hourly on the box"
+   }
   },
   {
    "id": "S17",
@@ -358,19 +361,20 @@
    "title": "Theory-evidence graph: Beta posteriors weighted live 3 / forward 2 / backtest 1",
    "files": [
     "libs/tiers/theory.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/theory_context.py",
+    "desks/mt5/tests/test_tier_s_world.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/THEORY.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "CALIBRATION",
     "metric": "metric.supported",
     "better": "up",
     "organ": "theory"
-   },
-   "remaining": "jurisdiction and regime as evidence context; the graph persisted between passes"
+   }
   },
   {
    "id": "S19",
@@ -852,19 +856,20 @@
    "files": [
     "libs/tiers/cross_science.py",
     "desks/mt5/research/market_ecology.py",
-    "desks/mt5/research/tier_s.py"
+    "desks/mt5/research/tier_s.py",
+    "libs/tiers/science_labs.py",
+    "desks/mt5/tests/test_tier_s_world.py"
    ],
    "extends": [],
    "clock": "hourly_cycle:tier_s",
    "artifact": "desks/mt5/reports/tier_s/WORLD_SCIENCE.json",
-   "status": "PARTIAL",
+   "status": "DONE",
    "contract": {
     "gain": "ALPHA_DISCOVERY",
     "metric": "metric.hypotheses",
     "better": "up",
     "organ": "world_science"
-   },
-   "remaining": "operations-research and motif labs on the row stream"
+   }
   },
   {
    "id": "S44",
