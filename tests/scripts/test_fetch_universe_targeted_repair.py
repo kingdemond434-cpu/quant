@@ -13,5 +13,7 @@ def test_targeted_symbol_filter_is_additive_and_has_its_own_receipt() -> None:
     assert '"--symbols"' in src
     assert "candidates = [s for s in candidates if s.upper() in requested]" in src
     assert 'coverage_name = "bar_coverage_targeted.json" if requested else' in src
+    assert '"status": "INIT_FAILED"' in src
+    assert "raise SystemExit(2)" in src
     assert "registry = merge(registry, summary" in src
     assert "registry.update(summary)" not in code

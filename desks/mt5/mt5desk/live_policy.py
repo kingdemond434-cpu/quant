@@ -60,6 +60,20 @@ DEFAULT_BANNED_TIMEFRAMES: dict[str, frozenset[str]] = {
     "*": frozenset({"M15"}), "XAUUSD": frozenset({"M15"})}
 #: Families banned for live capital here as well as in research (see research/family_policy.py).
 DEFAULT_BANNED_FAMILIES: frozenset[str] = frozenset({"discovered"})
+#: Execution lanes that may not take live capital. The principal, 2026-09-29: "the scalp on mt5
+#: seems unprofitable make it optimal n on e8 too both same". Measured the same day on the box's
+#: Fusion M5/M15 bars (recorded spread + commission), replaying what `scalp_exec` can actually
+#: trade -- last closed bar's ATR, bracket live from the fill bar: every candidate is <= 0 over its
+#: whole history in the single-slice mode a small lot falls back to (M5 overlap -0.094R/287, M5 NY
+#: -0.061R/594, M15 -0.023R/1695 and /2748) and ~0 in the four-slice basket (M5 overlap
+#: +0.005R/287, forward -0.003R/65). The forward clock that promoted them read bar i's own ATR and
+#: skipped the fill bar, worth +0.04..+0.09R a trade. An honest re-search of 4,176 family x session
+#: x geometry configs found no train->test persistence (rank corr -0.08, 62% negative out of
+#: sample). The optimal allocation for the lane is zero; E8 has no scalp lane and gets none.
+#: Lifting this is the principal's word in `data/live_sleeve_policy.json` ("banned_execs": []).
+DEFAULT_BANNED_EXECS: frozenset[str] = frozenset({"scalp_market"})
+EXEC_ORDER = ("principal 2026-09-29: the gold scalp lane is stood down (executable replay "
+              "<= 0R per trade after costs on every candidate); E8 carries no scalp lane")
 ORDER = ("principal 2026-09-17: forex sleeves and the XAUUSD M15 sleeve are disabled in the "
          "live account (measured cause: -73.24 EUR of forex deals in three days on account "
          "495044 while XAUUSD made +24.94)")
@@ -71,6 +85,7 @@ class Policy:
     banned_timeframes: Mapping[str, frozenset[str]] = field(
         default_factory=lambda: dict(DEFAULT_BANNED_TIMEFRAMES))
     banned_families: frozenset[str] = DEFAULT_BANNED_FAMILIES
+    banned_execs: frozenset[str] = DEFAULT_BANNED_EXECS
     source: str = "defaults"
     by: str = ORDER
 
@@ -78,6 +93,7 @@ class Policy:
         return {"live_symbols": sorted(self.live_symbols),
                 "banned_timeframes": {k: sorted(v) for k, v in self.banned_timeframes.items()},
                 "banned_families": sorted(self.banned_families),
+                "banned_execs": sorted(self.banned_execs),
                 "source": self.source, "by": self.by}
 
 
@@ -94,6 +110,7 @@ def policy(path: Path | None = None) -> Policy:
     syms = doc.get("live_symbols")
     tfs = doc.get("banned_timeframes")
     fams = doc.get("banned_families")
+    execs = doc.get("banned_execs")
     live = frozenset(str(s).upper() for s in syms) if isinstance(syms, list) and syms \
         else DEFAULT_LIVE_SYMBOLS
     banned_tf: dict[str, frozenset[str]] = dict(DEFAULT_BANNED_TIMEFRAMES)
@@ -103,7 +120,9 @@ def policy(path: Path | None = None) -> Policy:
                 banned_tf[str(sym).upper()] = frozenset(str(v).upper() for v in values)
     banned_fam = frozenset(str(f).lower() for f in fams) if isinstance(fams, list) \
         else DEFAULT_BANNED_FAMILIES
-    return Policy(live, banned_tf, banned_fam, source=str(p),
+    banned_exec = frozenset(str(e).lower() for e in execs) if isinstance(execs, list) \
+        else DEFAULT_BANNED_EXECS
+    return Policy(live, banned_tf, banned_fam, banned_exec, source=str(p),
                   by=str(doc.get("by") or ORDER))
 
 
@@ -127,6 +146,9 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     fam = str(row.get("family") or "").strip().lower()
     if fam and fam in p.banned_families:
         return f"family {fam!r} is banned from live capital -- {p.by}"
+    ex = str(row.get("exec") or "").strip().lower()
+    if ex and ex in p.banned_execs:
+        return f"exec lane {ex!r} is stood down -- {EXEC_ORDER}"
     return None
 
 

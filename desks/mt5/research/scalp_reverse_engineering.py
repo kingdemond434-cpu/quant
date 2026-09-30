@@ -134,8 +134,19 @@ def simulate(
     signal_override: np.ndarray | None = None,
     atr_override: np.ndarray | None = None,
     detailed: bool = False,
+    executable: bool = False,
 ) -> np.ndarray | list[dict]:
-    """Return non-overlapping basket R. Same-bar ambiguity is always stop-first."""
+    """Return non-overlapping basket R. Same-bar ambiguity is always stop-first.
+
+    ``executable=True`` replays what `mt5desk.scalp_exec` can actually trade, and is what the
+    forward clock must use. The default arm reads ``atr[i]`` (bar i's own range, unknowable at
+    its open) and never checks the fill bar's high/low, so a bar that runs through the stop right
+    after the fill is not a loss. Measured 2026-09-29 on the four gold candidates (Fusion M5/M15,
+    recorded spread + commission): those two liberties are worth +0.04..+0.09R per trade, which
+    is the whole of the lane's apparent edge. The executable arm uses the last closed bar's ATR
+    and holds the bracket from the fill bar, stop first -- the same two rules
+    `mt5desk.scalp_families` already applies for the gauntlet.
+    """
     sig = _signals(df, cfg) if signal_override is None else signal_override
     atr = _atr(df) if atr_override is None else atr_override
     if len(sig) != len(df) or len(atr) != len(df):
@@ -152,7 +163,7 @@ def simulate(
         if i >= n:
             break
         direction = int(sig[i])
-        a = float(atr[i])
+        a = float(atr[i - 1] if executable else atr[i])
         if not math.isfinite(a) or a <= 0:
             event_pos += 1
             continue
@@ -167,7 +178,7 @@ def simulate(
         if cost != "frictionless":
             cost_r += entries[0][1] * (spreads[i] + commission_price)
         exit_price, j = float(close[i]), i
-        for j in range(i + 1, min(n, i + cfg.max_hold) + 1):
+        for j in range(i if executable else i + 1, min(n, i + cfg.max_hold) + 1):
             total_units = sum(u for _, u in entries)
             avg = sum(p * u for p, u in entries) / total_units
             target = avg + direction * cfg.target_atr * a
@@ -177,7 +188,8 @@ def simulate(
             if (direction > 0 and high[j] >= target) or (direction < 0 and low[j] <= target):
                 exit_price = target
                 break
-            if cfg.mode == "bounded_structural" and len(entries) < 4 and sig[j] == direction:
+            if (cfg.mode == "bounded_structural" and j > i and len(entries) < 4
+                    and sig[j] == direction):
                 p = float(opn[j])
                 distance = direction * (p - stop)
                 if distance > 0:
