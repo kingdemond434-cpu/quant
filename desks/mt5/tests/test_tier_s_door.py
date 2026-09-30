@@ -185,3 +185,16 @@ def test_the_door_reviews_rows_already_live(monkeypatch: Any) -> None:
     monkeypatch.setattr(pa, "block",
                         lambda n: "REPLICATION_MISMATCH: x" if n == "bad" else None)
     assert pa.review_live(["good", "bad"]) == {"bad": "REPLICATION_MISMATCH: x"}
+
+
+def test_an_unloadable_door_withholds_rather_than_waves_through(monkeypatch: Any) -> None:
+    import sys as _sys
+
+    _research = Path(__file__).resolve().parent.parent / "research"
+    monkeypatch.syspath_prepend(str(_research))
+    import promoter
+    import libs.tiers as _tiers
+    monkeypatch.setitem(_sys.modules, "libs.tiers.promotion_authority", None)
+    monkeypatch.delattr(_tiers, "promotion_authority", raising=False)
+    why = promoter.tier_s_block("any.cert")
+    assert why and why.startswith("DOOR_ERROR"), why

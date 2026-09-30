@@ -1673,15 +1673,18 @@ def tier_s_block(name: str) -> str | None:
     blueprint wired live, no approvals). Same door and limits as `blind_review_veto`: it withholds
     a NEW live row only. Replication MISMATCH, an online-FDR over-budget certificate, or a
     production-judged immune DROP -- see `libs/tiers/promotion_authority.py`, billed as the rail
-    `tier_s_evidence_block`. An unimportable module withholds nothing."""
+    `tier_s_evidence_block`. FAILS CLOSED: an unimportable or raising door withholds the row
+    with `DOOR_ERROR`, the verdict `promotion_authority.block` gives a raising check. It used to
+    return None here, which waved every certificate through whenever the door itself broke."""
     try:
         root = str(Path(__file__).resolve().parents[3])
         if root not in sys.path:
             sys.path.insert(0, root)
         from libs.tiers import promotion_authority
         return promotion_authority.block(name)
-    except Exception:
-        return None
+    except Exception as exc:
+        return (f"DOOR_ERROR: the Tier S door did not load ({type(exc).__name__}: {exc}); "
+                "withheld until it does")
 
 
 def _record_tier_s_block(name: str, why: str, lane: str, row: dict) -> None:

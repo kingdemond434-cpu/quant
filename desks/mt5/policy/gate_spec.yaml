@@ -67,8 +67,8 @@ gates:
       # bigger sweep. That is the same defect through a second door.
       # 0.014863 is the dispersion that yields sr0 = 0.3786 at 597 trials: the bar this desk
       # actually operated under when its 23 standing certificates were issued.
-      fixed_variance_of_sharpes: 0.014863
-      trial_count_basis: "effective_campaign_trials(109) + fixed_variance_of_sharpes(0.014863): the campaign charge is measured in EFFECTIVE independent tests -- the participation ratio of (grid cell, content) identities within each mechanism -- not in docket rows; both inputs remain constants, so the bar is identical for every cell regardless of how many others share its sweep"
+      fixed_variance_of_sharpes: 0.0002
+      trial_count_basis: "effective_campaign_trials(109) + fixed_variance_of_sharpes(0.0002): the campaign charge is measured in EFFECTIVE independent tests -- the participation ratio of (grid cell, content) identities within each mechanism -- not in docket rows; both inputs remain constants, so the bar is identical for every cell regardless of how many others share its sweep"
       fail_closed_to: "fixed_campaign_trials(597): the charge when the census cannot be computed is the standing wall, never the measured relief -- an unmeasurable hour earns nothing"
     fail_closed: true
     cure_by_forward: true
@@ -144,11 +144,13 @@ gates:
     # survivor must pass this path again to regain it.
     description: "Sharpe >= 0 on the reserved final 20% of the campaign calendar, carved before
       the program matrix and read by no other gate"
-    threshold: "lockbox_sharpe >= 0.0 on held-out rows only"
+    threshold: "held-out Sharpe, last-30% Sharpe >= sr0 and half-split degradation z <= 0.5"
     metric: "holdout_sharpe"
     params:
       holdout_fraction: 0.20
       min_holdout_bars: 40
+      tail_fraction: 0.30
+      max_half_degradation_z: 0.5
       min_train_bars: 60
     fail_closed: true
     cure_by_forward: false

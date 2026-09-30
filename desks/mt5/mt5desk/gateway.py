@@ -949,8 +949,8 @@ def _record_decision(**row) -> None:
         "portfolio": bool(row.get("portfolio_suppressed", False)),
         "risk": str(row.get("reason") or "") == "margin_guard",
         "execution": str(row.get("reason") or "") in {
-            "broker_rejected", "entry_inside_freeze_band", "shadow_not_armed",
-            "release_identity_refused"},
+            "broker_rejected", "entry_inside_freeze_band", "no_quote_at_decision",
+            "shadow_not_armed", "release_identity_refused"},
     })
     row.setdefault("process_quality", process_quality_verdict(
         {
@@ -1201,6 +1201,18 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
         #     buy_stop 4357.47 vs ask 4371.25  (13.78 below)
         # Price had run past the range high between the range completing and the order going out,
         # which is the ordinary behaviour of a breakout, not an anomaly.
+        # NO QUOTE, NO ORDER. With no tick the legality check above cannot run, and this used to
+        # send both legs blind -- a buy_stop under the ask is rejected with 10015 at best and
+        # rests as the wrong order type at worst. Unavailable, same shape as the freeze band.
+        if _t is None:
+            why_noquote = "symbol_info_tick returned None; entry legality cannot be checked"
+            log(f"NOT AVAILABLE [{sleeve}] {side}: {why_noquote}")
+            sent.append({"side": side, "retcode": None, "unavailable": True,
+                         "comment": why_noquote})
+            _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                             price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                             taken=False, reason="no_quote_at_decision", detail=why_noquote)
+            continue
         if _t is not None:
             legal, why_illegal = entry_is_legal(
                 float(s["price"]), side, float(_t.bid), float(_t.ask), _point, _lvl)
@@ -1242,10 +1254,18 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
         # written and nothing ever wrote it -- it is the one execution feature that cannot be
         # reconstructed afterwards. Recorded, never acted on.
         _t0 = time.perf_counter()
-        res = mt5.order_send(req)
+        # A RAISING SEND IS A FAILED LEG, NOT A CRASHED PASS. The exception used to escape before
+        # `note_placement` saved st["brackets"], so the pass forgot a leg the broker may already
+        # hold and could place it again next pass.
+        _send_exc: Exception | None = None
+        try:
+            res = mt5.order_send(req)
+        except Exception as exc:
+            res, _send_exc = None, exc
         _lat_ms = round((time.perf_counter() - _t0) * 1000.0, 3)
         code = res.retcode if res else None
-        why = diagnose(code, getattr(res, "comment", "") or "", _send_error(res))
+        why = (f"order_send raised {type(_send_exc).__name__}: {_send_exc}" if _send_exc is not None
+               else diagnose(code, getattr(res, "comment", "") or "", _send_error(res)))
         if why:
             log(f"ORDER FAILED [{sleeve}] {side}: {why}")
         # THE INTENT, RECORDED AT PLACEMENT. Without this line slippage is unknowable: once the

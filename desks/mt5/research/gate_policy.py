@@ -109,7 +109,8 @@ ATTESTATION = {
     "regime_control": REGIME_CONTROL,
     "cpcv_mean_oos_sharpe_min_exclusive": 0.0,
     "lockbox_oos_sharpe_min": 0.0,
-    "lockbox_basis": "reserved_final_calendar_fraction_carved_before_program_matrix",
+    "lockbox_basis": ("reserved_final_calendar_fraction_carved_before_program_matrix; held, recent-tail "
+                      "and half-split reads all clear the cell's deflated hurdle sr0 (v4)"),
     "lifetime_trial_floor": "max(campaign charge, per-family lifetime trials in EXPERIMENT_LEDGER)",
     "expected_value_min_exclusive": 0.0,
 }
@@ -180,8 +181,20 @@ def carve_lockbox(series: list[Any], cut: Any) -> tuple[list[Any], list[Any]]:
     return dev, held
 
 
-def lockbox_stage(held: Any, sharpe: Any, min_days: int = LOCKBOX_MIN_DAYS) -> dict[str, Any]:
-    """Gate 9's verdict from the held-out slice alone. `sharpe` is the desk's Sharpe function."""
+#: THE LOCKBOX BAR (v4, measured 2026-09-30 on the sealed 2,100-case suite; dsr/LOCKBOX_BAR.md).
+#: `held Sharpe >= 0` let an 80-day coin through one time in two, and 146/150 lookup tables fitted
+#: to noise passed all ten gates the moment the DSR variance came down. Three reads, all at the
+#: SAME deflated hurdle the DSR gate uses (sr0): the held-out tail must clear it, the most recent
+#: `tail_fraction` of the whole series must clear it, and the first half may not beat the second
+#: by more than `max_half_degradation_z` standard errors -- an edge that lived only in the fitted
+#: window fails, a persistent one does not.
+LOCKBOX_TAIL_FRAC = float(_LOCKBOX_PARAMS.get("tail_fraction", 0.30))
+LOCKBOX_MAX_HALF_Z = float(_LOCKBOX_PARAMS.get("max_half_degradation_z", 0.5))
+
+
+def lockbox_stage(held: Any, sharpe: Any, min_days: int = LOCKBOX_MIN_DAYS, *,
+                  dev: Any = None, sr0: float = 0.0) -> dict[str, Any]:
+    """Gate 9's verdict. `sharpe` is the desk's Sharpe function; `sr0` the cell's DSR hurdle."""
     n = 0 if held is None else len(held)
     if n < min_days:
         return {"passed": False, "lockbox_sharpe": None, "n_days": int(n),
@@ -189,8 +202,19 @@ def lockbox_stage(held: Any, sharpe: Any, min_days: int = LOCKBOX_MIN_DAYS) -> d
                 "why": (f"held-out window is {n} days, under the {min_days}-day floor; "
                         f"no lockbox evidence exists")}
     import numpy as _np
-    sr = float(sharpe(_np.asarray(held, dtype=float)))
-    return {"passed": bool(sr >= 0.0), "lockbox_sharpe": round(sr, 4), "n_days": int(n),
+    h = _np.asarray(held, dtype=float)
+    sr = float(sharpe(h))
+    hurdle = max(0.0, float(sr0)) if _np.isfinite(sr0) else float("inf")
+    full = h if dev is None else _np.concatenate([_np.asarray(dev, dtype=float), h])
+    m = len(full)
+    tail_sr = float(sharpe(full[int(m * (1.0 - LOCKBOX_TAIL_FRAC)):]))
+    half = m // 2
+    half_z = ((float(sharpe(full[:half])) - float(sharpe(full[half:]))) / _np.sqrt(2.0 / half)
+              if half >= 2 else float("inf"))
+    ok = bool(sr >= hurdle and tail_sr >= hurdle and half_z <= LOCKBOX_MAX_HALF_Z)
+    return {"passed": ok, "lockbox_sharpe": round(sr, 4), "n_days": int(n),
+            "hurdle_sr0": round(hurdle, 4), "tail_sharpe": round(tail_sr, 4),
+            "half_degradation_z": round(float(half_z), 4),
             "basis": ATTESTATION["lockbox_basis"]}
 
 

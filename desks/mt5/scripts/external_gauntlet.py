@@ -348,8 +348,13 @@ def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
 
 def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
     res = run_backtest(df, sigs, costs)
-    s = pd.Series({pd.Timestamp(t.entry_time).date(): t.r_multiple for t in res.trades},
-                  dtype=float)
+    # ONE ROW PER TRADE, THEN SUMMED PER DAY. This was a dict keyed by entry date, so a second
+    # trade on the same day OVERWROTE the first before the groupby ever saw it: only the last
+    # trade of each day survived, and on pure noise a multi-trade family read +0.46 R/day against
+    # a true +0.018 R/trade (test_mass_screen.py). Every gate downstream judged that biased series.
+    trades = list(res.trades)
+    s = pd.Series([float(t.r_multiple) for t in trades],
+                  index=[pd.Timestamp(t.entry_time).date() for t in trades], dtype=float)
     return s.groupby(level=0).sum()
 
 
@@ -2610,7 +2615,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
 
         # Lockbox: the reserved tail, which no gate above has read (policy v3).
-        stages["lockbox"] = lockbox_stage(lock_daily[orig_i], sharpe_ratio)
+        stages["lockbox"] = lockbox_stage(lock_daily[orig_i], sharpe_ratio, dev=arr,
+                                          sr0=float(dsr.sr0_threshold))
 
         # Expected Value
         ev = float(arr.mean())
