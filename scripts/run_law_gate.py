@@ -332,6 +332,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # first census measured 63,110 rows waiting and a 654 h oldest row, and a fence tuned to pass
     # on today's backlog would pin that backlog in place (L1.43).
     ("check_no_queues.py", ()),
+    # THE BOX'S STATE REACHES GIT, OR THIS IS RED (2026-09-30). The last box state sync landed
+    # 2026-09-12 and the stamps inside every box file on the live branch stop 2026-09-16; for two
+    # weeks every reader off the box measured a frozen copy and no fence said so. Six hours,
+    # stated in the fence. STATE, never --laws-only: a red here must not wedge the push that heals it.
+    ("check_box_state_freshness.py", ()),
     ("check_universe_integrity.py", ()),       # bars: corrupt is quarantined, stale named
     ("check_external_federation.py", ("--require-state",)),   # LAWS 5h -- the live half
     # LAWS 5h / L1.32 -- the SANDBOX half: no runnable federated system goes a rotation window
