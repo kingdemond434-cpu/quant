@@ -468,6 +468,39 @@ def measure_causal_invariance(r: Any, _alloc: dict[str, Any],
                     f"yet. No candidate was refused: the rail can only cost queue position.")}
 
 
+def measure_tier_s_block(r: Any, alloc: dict[str, Any],
+                         _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the Tier S promotion door withheld, priced by the forward expectancy it carried.
+
+    Each withheld row's clock had a forward mean R (`exp_r`) when it was refused. A door whose
+    refusals carry POSITIVE forward R on average is costing growth (those were paying clocks);
+    one whose refusals carry NEGATIVE R is earning its place. Per refusal, log-wealth forgone is
+    mean R x the heat one sleeve carries in the current book -- the same unit `measure_veto`
+    uses. Fewer than ten priced refusals is UNMEASURED, said with the count."""
+    rows: list[dict[str, Any]] = []
+    try:
+        for line in (BASE / "data" / "tier_s" / "promotion_blocks.jsonl").read_text(
+                "utf-8").splitlines():
+            if line.strip():
+                rows.append(json.loads(line))
+    except (OSError, ValueError):
+        rows = []
+    if not rows:
+        return {"verdict": NOT_BINDING, "n": 0, "value_logw_per_day": 0.0,
+                "why": "the Tier S door has withheld no promotion on this host"}
+    by: dict[str, int] = {}
+    for x in rows:
+        by[str(x.get("reason"))] = by.get(str(x.get("reason")), 0) + 1
+    rs = [float(x["exp_r"]) for x in rows if isinstance(x.get("exp_r"), (int, float))]
+    if len(rs) < 10:
+        return {"verdict": UNMEASURED, "n": len(rows), "by_reason": by,
+                "why": f"{len(rs)} withheld row(s) carry a forward R; ten are needed to price"}
+    q = float(np.mean(list((alloc.get("book") or {}).values()) or [0.0]))
+    m = float(np.mean(rs))
+    return {"verdict": COSTS if m > 0 else EARNS, "n": len(rows), "by_reason": by,
+            "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 

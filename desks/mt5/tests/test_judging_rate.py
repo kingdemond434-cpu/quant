@@ -132,3 +132,80 @@ def test_run_publishes_the_rate_artifact(tmp_path: Path, monkeypatch) -> None:
     assert rate["verdicts"]["counts"]["1h"] == 1
     assert rate["backlog"] == UNMEASURED
     assert payload["rate"]["eta_to_drain"]["status"] == UNMEASURED
+
+
+# ------------------------------------------------ publish first, then a bounded best-effort apply
+def _isolate(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(jt, "OUT", tmp_path / "JUDGING_THROUGHPUT.json")
+    monkeypatch.setattr(jt, "RATE_OUT", tmp_path / "JUDGING_RATE.json")
+    monkeypatch.setattr(jt, "ENV_FILE", tmp_path / "env.json")
+    monkeypatch.setattr(jt, "BACKPRESSURE", tmp_path / "bp.json")
+    monkeypatch.setattr(jt, "BURNDOWN", tmp_path / "bd.json")
+    monkeypatch.setattr(jt, "GATE_LEDGER", _ledger(tmp_path / "l.jsonl", [NOW]))
+    monkeypatch.setattr(jt, "REGISTRY", tmp_path / "none.sqlite")
+    monkeypatch.setattr(jt, "measure_cpu", lambda *a, **k: {"cpu_source": UNMEASURED,
+                                                             "busy_other_cores": UNMEASURED})
+    monkeypatch.setattr(jt, "apply_env", lambda *a, **k: {})
+    monkeypatch.setattr(jt, "task_time_limit_s", lambda *a, **k: None)
+
+
+def test_every_artifact_is_on_disk_before_the_apply_runs(tmp_path: Path, monkeypatch) -> None:
+    """CRO 2026-09-30: `schtasks /Change` sat ahead of the writes and timed out at 60 s, so the
+    leg died past its budget and JUDGING_RATE.json went 4.4 h stale. Writes come first now."""
+    _isolate(tmp_path, monkeypatch)
+    seen: dict[str, bool] = {}
+
+    def _machine(decision, box):
+        seen["rate"] = (tmp_path / "JUDGING_RATE.json").exists()
+        seen["out"] = (tmp_path / "JUDGING_THROUGHPUT.json").exists()
+        seen["env"] = (tmp_path / "env.json").exists()
+        raise TimeoutError("setx hung")
+
+    monkeypatch.setattr(jt, "apply_machine_env", _machine)
+    monkeypatch.setattr(jt, "apply_cadence", lambda m, box: {"status": "APPLIED", "minutes": m})
+    payload = jt.run(write=True, now=NOW, apply=True)
+    assert seen == {"rate": True, "out": True, "env": True}
+    doc = json.loads((tmp_path / "JUDGING_THROUGHPUT.json").read_text("utf-8"))
+    assert doc["applied"]["machine_env"]["status"] == "FAILED"
+    assert "setx hung" in doc["applied"]["machine_env"]["why"]
+    assert doc["applied"]["cadence"]["status"] == "APPLIED", "one failed step skips no other"
+    assert payload["seconds"] >= payload["measure_seconds"] >= 0
+
+
+def test_the_apply_budget_bounds_every_subprocess() -> None:
+    import time
+    assert jt._sub_timeout() == jt.SUBPROCESS_TIMEOUT_S
+    jt._APPLY_DEADLINE[:] = [time.monotonic() + 5.0]
+    try:
+        assert 1.0 < jt._sub_timeout() <= 5.0
+        jt._APPLY_DEADLINE[:] = [time.monotonic()]
+        try:
+            jt._sub_timeout()
+            raise AssertionError("a spent budget must refuse the next call")
+        except TimeoutError:
+            pass
+    finally:
+        jt._APPLY_DEADLINE[:] = []
+    assert jt.SUBPROCESS_TIMEOUT_S * 2 + jt.APPLY_BUDGET_S < 300, "inside the 300 s leg budget"
+
+
+def test_a_growing_backlog_is_demand_on_the_judge(tmp_path: Path, monkeypatch) -> None:
+    """JUDGING_BURNDOWN.json is consumed here: GROWING raises cadence exactly as a deep queue."""
+    monkeypatch.setattr(jt, "BURNDOWN", tmp_path / "bd.json")
+    (tmp_path / "bd.json").write_text(json.dumps(
+        {"burn_down": {"status": "GROWING", "net_per_day": -3000.0}}), encoding="utf-8")
+    bd = jt._burndown()
+    assert bd["burndown_status"] == "GROWING"
+    shallow = {**QUEUE, "depth": 1, **bd}
+    d = jt.plan(BOX, shallow, COSTS)
+    assert d["limiting_resource"] == "backlog_growing"
+    assert d["cadence_minutes"] == jt.CADENCE_FAST_MIN
+    (tmp_path / "bd.json").unlink()
+    assert jt._burndown()["burndown_status"] == UNMEASURED
+
+
+def test_the_warmer_is_no_longer_pinned_through_the_env(tmp_path: Path) -> None:
+    d = jt.plan(BOX, QUEUE, COSTS)
+    assert "WARM_WORKERS" not in jt.env_for(d)
+    assert "WARM_WORKERS" not in jt.ENV_KEYS
+    assert "WARM_WORKERS" in jt.RETIRED_MACHINE_KEYS

@@ -1,0 +1,18 @@
+{
+ "n_rows": 58,
+ "n_withheld": 0,
+ "withheld": {},
+ "theory_status": {
+  "UNMEASURED": 38,
+  "SUPPORTED": 20
+ },
+ "n_live": 40,
+ "live_withheld": {},
+ "metric": {
+  "door_rows": 58,
+  "door_withheld": 0,
+  "live_withheld": 0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 0.071
+}

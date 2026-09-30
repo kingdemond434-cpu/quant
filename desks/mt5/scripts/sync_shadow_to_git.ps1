@@ -377,7 +377,14 @@ $relPaths = @(
     "desks/mt5/data/decision_ledger.jsonl",
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
-    "desks/mt5/reports/attribution_chain.json"
+    "desks/mt5/reports/attribution_chain.json",
+    # THE TIER S BOX ATTESTATION (2026-09-30). Every tier_s pass writes it: per layer, whether
+    # its artifact is fresh on THIS host and its contract not REJECTED, plus digests of TIER_S,
+    # ALPHA_RANK, ONLINE_FDR_ROWS, IMMUNE, allocator_tilts, research_budget, the door verdicts
+    # and CONTRACTS (all gitignored or box-local where written). A Tier S layer is DONE only on
+    # this file as committed from the trading box (scripts/check_tier_s_program.py).
+    "desks/mt5/data/tier_s/box_evidence.json",
+    "desks/mt5/data/tier_s/live_door.json"
 )
 $existing = @()
 foreach ($rel in $relPaths) {

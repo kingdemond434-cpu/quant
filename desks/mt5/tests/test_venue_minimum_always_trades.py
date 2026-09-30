@@ -18,6 +18,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parent.parent
 for _p in (str(DESK), str(ROOT)):
@@ -98,3 +100,13 @@ def test_the_venue_maximum_still_caps_the_floor() -> None:
                            tick_size=0.00001, volume_min=0.5, volume_step=0.5,
                            volume_max=0.2, risk_frac=0.03, live_n=0)
     assert lots == 0.2
+
+
+@pytest.fixture(autouse=True)
+def _legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These pin the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}). Sovereign behaviour is pinned in
+    test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")
