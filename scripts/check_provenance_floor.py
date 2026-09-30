@@ -16,6 +16,11 @@ external-URL share is published beside it and deliberately NOT fenced: the desk'
 generators read no web page, and a fence on URLs could only be satisfied by producing less.
 
 An absent artifact is UNMEASURED and does not fail (L1.28a: a verdict, not a pass by silence).
+
+THE CERTIFICATE HALF (2026-09-30). The #104 re-score found `certificate_provenance.json` covering
+20 of the 52 current certificates. `check_certificates` fails when a birth record computed
+against TODAY's certificate store leaves any current certificate without a row carrying its
+source lineage (certificate -> docket row -> donation -> source row, or UNMEASURED where it ends).
 """
 from __future__ import annotations
 
@@ -75,14 +80,28 @@ def check(artifact: Path = ARTIFACT, floor_path: Path = FLOOR) -> tuple[int, str
     return 0, "OK\n" + "\n".join(lines)
 
 
+def check_certificates() -> tuple[int, str]:
+    """The certificate half: every CURRENT certificate has a birth-record row with a source
+    lineage (`certificate_provenance.coverage_gate`). Coverage below the number of current
+    certificates on a record that saw today's store fails."""
+    desk = ROOT / "desks" / "mt5"
+    for p in (str(desk), str(desk / "research")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import certificate_provenance as cp  # type: ignore[import-not-found]
+    return cp.coverage_gate(cp._json(cp.RECORD), cp.certificates())
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--artifact", type=Path, default=ARTIFACT)
     ap.add_argument("--floor", type=Path, default=FLOOR)
     args = ap.parse_args()
     code, msg = check(args.artifact, args.floor)
-    print(msg, flush=True)
-    return code
+    print("candidates: " + msg, flush=True)
+    c2, m2 = check_certificates()
+    print("certificates: " + m2, flush=True)
+    return max(code, c2)
 
 
 if __name__ == "__main__":
