@@ -1106,6 +1106,21 @@ EMPTY_CLUSTER_FAMILIES: dict[str, Callable[..., list[Signal]]] = {
     "lead_lag_session_handoff": family_lead_lag_session_handoff,
 }
 
+#: The families that run on EVERY chart of the ladder, as the desk's default is. Each decides by
+#: TIMESTAMP, never by a stamp-hour a coarse chart lacks: the implied and COT families take one
+#: decision per weekday (the last bar at or before `decision_hour`, which on D1 is the day's one
+#: bar), join their daily or weekly external series by instant, and hold `hold_d` DAYS through
+#: `bars_per_day`; the consensus family enters on the first bar that OPENS after the release on
+#: any chart, and its `hold_bars` is a WALL-CLOCK span rescaled by `WALL_CLOCK_PARAMS`. The rest
+#: read an hour-wide event bar, a session's opening stamp-hour or an H1 driver panel, so they stay
+#: pinned to H1 with that reason (families_orthogonal.FAMILY_TIMEFRAMES).
+ALL_CHART_FAMILIES: frozenset[str] = frozenset({
+    "implied_vol_risk_premium", "implied_vol_shock_fade", "implied_vol_term_inversion",
+    "positioning_crowding_unwind", "positioning_hedging_pressure", "positioning_flow_momentum",
+    "event_surprise_consensus"})
+#: Bar-count parameters that mean a WALL-CLOCK span (rescaled from their H1 defaults).
+WALL_CLOCK: dict[str, tuple[str, ...]] = {"event_surprise_consensus": ("hold_bars",)}
+
 #: What makes a cell of each family, the grid the producer sweeps (its trial count is charged in
 #: the producer's census row). Instrument-dependent keys (cond_symbol, base_family) come from the
 #: producer's declared maps, not from this grid.

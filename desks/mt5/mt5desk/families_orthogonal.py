@@ -2345,15 +2345,24 @@ FAMILY_TIMEFRAMES["dataset_conditioned"] = (
 # input from `symbol` (and `cond_symbol` / `base_family` where it has one), so `build_cell`'s
 # ordinary `fn(h1, side=1, **params)` builds it. `symbol` is required, so a default-parameter sweep
 # sets them aside; `research/empty_cluster_breadth` enumerates, measures and charges the grid.
-from mt5desk.families_empty_clusters import EMPTY_CLUSTER_FAMILIES  # noqa: E402
+from mt5desk.families_empty_clusters import (  # noqa: E402
+    ALL_CHART_FAMILIES as _EC_ALL_CHARTS,
+)
+from mt5desk.families_empty_clusters import (  # noqa: E402
+    EMPTY_CLUSTER_FAMILIES,
+)
 from mt5desk.families_empty_clusters import INPUTS as _EC_INPUTS  # noqa: E402
+from mt5desk.families_empty_clusters import WALL_CLOCK as _EC_WALL_CLOCK  # noqa: E402
 
 ORTHOGONAL_FAMILIES.update(EMPTY_CLUSTER_FAMILIES)
+WALL_CLOCK_PARAMS.update(_EC_WALL_CLOCK)
 for _ec_name in EMPTY_CLUSTER_FAMILIES:
     FAMILY_INPUTS[_ec_name] = _EC_INPUTS[_ec_name]
+    if _ec_name in _EC_ALL_CHARTS:
+        continue
     FAMILY_TIMEFRAMES[_ec_name] = (
         ("H1",),
-        "decides on broker HOURS (a daily decision hour, a release's bar, a session open) and "
-        "joins its external series to the H1 clock; on another chart the hour it reads does not "
-        "exist or the external series is joined to a clock it does not carry")
+        "reads an HOUR-WIDE event bar, a session open's stamp-hour or an H1 driver panel, and "
+        "counts its read and hold in H1 bars; on another chart the hour it reads does not exist "
+        "or the driver is joined to a clock it does not carry")
 del _ec_name

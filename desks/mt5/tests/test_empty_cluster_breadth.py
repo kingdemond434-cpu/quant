@@ -227,13 +227,50 @@ def test_registered_classified_charged_and_pinned():
             ec.EMPTY_CLUSTER_FAMILIES[fam]
         assert classify_family(fam) == cluster
         assert fam in CONSTRUCTION_CLASS, f"{fam} is charged to no declared census class"
-        assert fo.FAMILY_TIMEFRAMES[fam][0] == ("H1",)
+        if fam in ec.ALL_CHART_FAMILIES:
+            assert fam not in fo.FAMILY_TIMEFRAMES, f"{fam} decides by timestamp: every chart"
+        else:
+            assert fo.FAMILY_TIMEFRAMES[fam][0] == ("H1",)
         assert fo.FAMILY_INPUTS[fam] == ec.INPUTS[fam]
         assert fam in osw.NOT_SOURCED_HERE
     assert set(ec.TARGETS.values()) == set(CLUSTERS)
     for fam in ("cot_net_fade", "cot_change_fade", "cot_change_momentum", "cot_comm_follow"):
         assert classify_family(fam) == "positioning_flow"
     assert classify_family("execution_state") == "execution_entry"
+
+
+def _resample(df: pd.DataFrame, rule: str) -> pd.DataFrame:
+    return df.resample(rule, label="left", closed="left").agg(
+        {"open": "first", "high": "max", "low": "min", "close": "last",
+         "tick_volume": "sum", "spread": "mean"}).dropna()
+
+
+@pytest.mark.parametrize("family", ["implied_vol_risk_premium", "positioning_flow_momentum",
+                                    "event_surprise_consensus"])
+def test_an_all_chart_family_takes_the_same_decisions_on_every_chart(world, family):
+    """The families left unpinned decide by TIMESTAMP: the same days fire on H1, H4 and D1, and
+    the hold spans the same market time (days x bars_per_day, or a rescaled wall-clock span)."""
+    from mt5desk import families_orthogonal as fo
+    if family == "event_surprise_consensus":
+        rows = [{"currency": "JPY", "z": 2.0 if i % 2 else -2.0,
+                 "release_utc": str(pd.Timestamp("2019-03-01 23:50") + pd.Timedelta(days=17 * i))}
+                for i in range(60)]
+        ec.CONSENSUS_STORE.write_text("\n".join(json.dumps(r) for r in rows), "utf-8")
+    h1 = world["frames"]["AUDJPY"]
+    base = _params(family, "AUDJPY")
+    days, spans = {}, {}
+    for tf, rule in (("H1", None), ("H4", "4h"), ("D1", "1D")):
+        frame = h1 if rule is None else _resample(h1, rule)
+        kw = {**base, **fo.timeframe_overrides(family, tf)} if tf != "H1" else base
+        if family == "event_surprise_consensus" and tf != "H1":
+            kw["hold_bars"] = fo.timeframe_overrides(family, tf)["hold_bars"]
+        sigs = ec.EMPTY_CLUSTER_FAMILIES[family](frame, **kw)
+        assert sigs, f"{family} fires nothing on {tf}"
+        days[tf] = len({s.time.normalize() for s in sigs})
+        spans[tf] = sigs[0].ttl_bars * {"H1": 1, "H4": 4, "D1": 24}[tf]
+    assert min(days.values()) >= 0.8 * max(days.values()), days
+    if family != "event_surprise_consensus":
+        assert len(set(spans.values())) == 1, spans
 
 
 def test_gauntlet_buildability_reads_them_as_buildable():

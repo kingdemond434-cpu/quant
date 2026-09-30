@@ -212,8 +212,11 @@ def test_the_forcer_names_a_cluster_whose_every_family_the_sealed_judge_cannot_b
     # lead-lag cluster now has a family the sealed judge CAN build and is no longer blocked.
     assert gb.family_verdict("lead_lag_class_catchup")[0] == gb.BUILDABLE
     assert rows["cross_asset_lead_lag"]["verdict"] != "BLOCKED_BY_SEALED_GAUNTLET"
-    assert rows["event_surprise"]["verdict"] == "BLOCKED_BY_SEALED_GAUNTLET"
-    assert rows["news_reaction"]["verdict"] == "UNREACHABLE"
+    # `families_empty_clusters` (2026-09-30) gives event_surprise and news_reaction self-loading
+    # families the sealed judge builds, owned by `empty_cluster_breadth`: neither is blocked or
+    # unreachable any more, and the forcer names the producer rather than forcing zero cells.
+    for c in ("event_surprise", "news_reaction"):
+        assert rows[c]["verdict"] not in ("BLOCKED_BY_SEALED_GAUNTLET", "UNREACHABLE"), rows[c]
     assert doc["n_cells_minted"] == 0, "no zero-signal cell is ever forced"
 
 
@@ -269,7 +272,9 @@ def test_the_leg_measures_each_producer_from_the_registry(tmp_path: Path) -> Non
     # cross_asset_graph's plain lead_lag cannot be built, but the cluster holds a buildable
     # family (`lead_lag_class_catchup`), so the leg names it UNMINTED, not blocked.
     assert unfed["cross_asset_lead_lag"].startswith("UNMINTED")
-    assert unfed["options_implied"].startswith("NO_FAMILY")
+    # options_implied now holds buildable families (`implied_vol_*`); none was minted in this
+    # registry, so the leg names it UNMINTED -- the cluster's remedy is a producer run, not a family.
+    assert unfed["options_implied"].startswith("UNMINTED")
 
 
 def test_a_producer_no_source_can_see_is_unmeasured_never_zero(
