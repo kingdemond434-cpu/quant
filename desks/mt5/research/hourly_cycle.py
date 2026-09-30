@@ -878,6 +878,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE INGESTION-EXPLOITATION GATE (LAWS 5c): an artifact read and two ratchets, every pass.
     # The LEDGER it reads is heavy and stays in the data department; the gate is not.
     "ingestion_exploitation",
+    # THE FOREST-ATTEMPT FENCE (2026-09-30): every deep-forest ground attempted daily, or
+    # LOW_EV_RETIRED by name; a reader of the miner's per-ground ledgers, a second at most.
+    "forest_attempts",
     # THE LIVE-TRUTH ORGANS (Tier-1 audit #6/#17/#18/#19/#20, 2026-09-29): readers of artifacts
     # the desk already writes, each a few seconds. The calibration posterior runs before the
     # tracker, which reads it.
@@ -1016,7 +1019,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "alpha_replenishment", "research_dashboard",
                      "research_roi", "experiment_spine", "implementer",
                      "research_debt", "paradigm_router", "meta_controller", "research_bandit",
-                     "ingestion_exploitation", "coverage_tensor", "research_evolution",
+                     "ingestion_exploitation", "forest_attempts",
+                     "coverage_tensor", "research_evolution",
                      "compute_economics", "control_plane", "attribution_reconcile",
                      "fence_battery", "organ_battery", "research_artifacts", "engine_registry",
                      "search_paradigm_census", "producer_census", "productivity_census",
@@ -3826,15 +3830,22 @@ def main() -> None:
     # registered, disposed, and given EXACTLY ONE downstream state; a stranded unit becomes a
     # discovery so `discovery_compiler` closes it rather than a report nobody reads. It runs
     # AFTER the compiler on purpose: this hour's conversions are what it measures. Data dept.
+    # 480 s (was 240): the index now streams the WHOLE registry instead of its first 20,000
+    # rows, and every stranded unit is routed and drained in the same pass; the 720 s default
+    # cap still sits above it, so the pass writes before any kill.
     igl = _costed("ingestion_ledger", lambda: _producer("ingestion_ledger",
                                                         "research/ingestion_ledger.py",
-                                                        "--budget-s", "240",
+                                                        "--budget-s", "480",
                                                         "--grace-hours", "24"))
     # ITS GATE: the exploitation ratchet (up only), the DATA STRANDING ratchet (down only) and
     # the twelve-question data-utilization audit per dataset. A cheap reader, so it is a CORE
     # leg -- a gate that never ran is a claim the desk cannot cash (L1.49). Meta dept.
     ige = _costed("ingestion_exploitation", lambda: _producer(
         "ingestion_exploitation", "scripts/check_ingestion_exploitation.py"))
+    # THE FOREST-ATTEMPT FENCE: attempted / never-attempted / yielded / retired / overdue per
+    # deep-forest ground, one history line an hour, RED when never-attempted does not fall.
+    fat = _costed("forest_attempts", lambda: _producer(
+        "forest_attempts", "scripts/check_forest_attempts.py"))
     # THE MINING OBJECTIVE (M17/M18): the five sovereign KPIs, the miner reward and the
     # separation-of-powers check, from the registry. Meta.
     mob = _costed("mining_objective", lambda: _producer("mining_objective",
@@ -5198,6 +5209,7 @@ def main() -> None:
                     "unused_information": mui, "discovery_compiler": dcp,
                     "conversion_maximiser": cvm, "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
+                    "forest_attempts": fat,
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
                     "evidence_router": evr, "research_roi": rroi,
