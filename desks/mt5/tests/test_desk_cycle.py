@@ -237,12 +237,14 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
     ):
         assert needle in step, needle
     assert "6b. **Tier verdict" in cycle_text
+    assert "EVERY PASS IS THE LAST CHANCE" in cycle_text
     for n, duty in enumerate((
         "Read desktop over git", "Tier verdict", "Judging throughput to maximum",
         "Permanent backlog guard", "Same-day certificate and clock",
         "Conversions per stage to maximum", "Dataset hunting at world scale",
         "Hypothesis volume", "Breadth of the book", "Machinery gaps to tier-1",
         "Fully wired or it does not count", "No forced or fake work",
+        "Every item fully completed this pass",
     ), start=1):
         assert f"| D{n} | **{duty}** |" in step, duty
     for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
