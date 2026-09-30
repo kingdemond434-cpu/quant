@@ -319,7 +319,7 @@ def test_the_watchdogs_own_task_is_registered_the_same_way() -> None:
 def test_all_four_git_writers_use_the_lock_helper() -> None:
     """The lock moved to MT5-GitWriter-v2 because the legacy name could not be OPENED under
     another principal's descriptor. A writer that reverts to its own mutex re-opens the outage."""
-    writers = ("Adopt-And-Seal.ps1", "intel_ship_adopt.ps1", "Seal-IfClean.ps1",
+    writers = ("Adopt-And-Seal.ps1", "intel_ship_adopt.ps1",
                "sync_shadow_to_git.ps1")
     for name in writers:
         src = (ROOT / "desks/mt5/scripts" / name).read_text(encoding="utf-8", errors="replace")

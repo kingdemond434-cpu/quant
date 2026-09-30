@@ -292,12 +292,15 @@ def test_every_git_writer_on_the_box_takes_the_same_process_level_lock() -> None
     legacy_at = helper.index("$LegacyName = ")
     assert "exit" not in helper[legacy_at:legacy_at + 400], "a legacy miss must never refuse"
     for src, name in ((SYNC, "sync"), (ADOPT_CODE, "adopt"),
-                      ((_DESK / "scripts" / "Seal-IfClean.ps1").read_text("utf-8"), "seal"),
                       ((_DESK / "scripts" / "intel_ship_adopt.ps1").read_text("utf-8"), "intel")):
         assert '. (Join-Path $PSScriptRoot "GitWriterMutex.ps1")' in src, name
         assert "Open-GitWriterMutex" in src, name
         assert 'New-Object System.Threading.Mutex($false, "Local\\MT5-GitWriter")' not in src, name
     assert "catch [System.Threading.AbandonedMutexException] { $gotLock = $true }" in ADOPT_CODE
+    legacy_seal = (_DESK / "scripts" / "Seal-IfClean.ps1").read_text("utf-8")
+    active = legacy_seal.split("#>", 1)[1].split("<# RETIRED IMPLEMENTATION", 1)[0]
+    assert "MT5-SealIfClean retired" in active
+    assert "git commit" not in active and "release.seal" not in active
     # the sync takes it after its yield and before its first git operation; a miss yields (exit 0)
     lock_at = SYNC.index("Open-GitWriterMutex")
     assert SYNC.index("SKIP: MT5-AdoptRelease is adopting") < lock_at

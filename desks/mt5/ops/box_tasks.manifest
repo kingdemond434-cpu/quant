@@ -204,7 +204,7 @@ TASK name="MT5-ProcessHealth" trigger="every 30 minutes" runs="ops/run_process_h
 TASK name="MT5-ReleaseAuthority" trigger="every 15 minutes" runs="ops/run_release_authority.cmd" installer="NONE" lane="ops"
 TASK name="MT5-ResearchReports" trigger="at system start-up (resident)" runs="desks/mt5/scripts/run_research_reports.py" installer="NONE" lane="research"
 TASK name="MT5-RiskUnitsFence" trigger="every 1 hour, at :02" runs="scripts/check_risk_units.py" installer="NONE" lane="ops"
-TASK name="MT5-SealIfClean" trigger="every 10 minutes" runs="desks/mt5/scripts/Seal-IfClean.ps1" installer="NONE" lane="ops"
+TASK name="MT5-SealIfClean" trigger="legacy compatibility only" runs="retired; MT5-AdoptRelease owns sealing" installer="NONE" lane="ops"
 TASK name="MT5-AccountState" trigger="every 15 minutes" runs="ops/run_account_state.cmd" installer="NONE" lane="ops"
 TASK name="MT5-AllocatorFast" trigger="every 15 minutes" runs="desks/mt5/research/pf_allocator.py" installer="NONE" lane="research"
 TASK name="MT5-AxisIngest" trigger="daily 04:40" runs="ops/run_axis_ingest.cmd" installer="NONE" lane="data"
