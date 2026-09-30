@@ -97,7 +97,7 @@ def test_the_feeds_file_ships_tracked_and_both_per_blog_sources_say_unconfigured
     for p in (str(desk), str(desk / "research")):
         if p not in sys.path:
             sys.path.insert(0, p)
-    import blog_social_mining as bsm
+    import blog_social_mining as bsm  # type: ignore[import-not-found]
 
     assert cfg == bsm.FEEDS_CFG
     body = (FIX / "ameblo_rss20.xml").read_text("utf-8")
