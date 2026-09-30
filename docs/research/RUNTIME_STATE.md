@@ -6,7 +6,7 @@
 
 - Measured at **2026-09-30T11:20:18+00:00** (cadence 60 min; stale past 120 min)
 - Tree: `UNMEASURED` on `UNMEASURED`; release seal ok=`False` running=`b794c18abb61` sealed=`1eba97937191`
-- Organs attested **874** of 1328 registry components (454 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
+- Organs attested **884** of 1328 registry components (454 declare no artifact, so there is nothing to hash: component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py)
 - Pass cost 0.78s; 0 hash(es) skipped over budget; 0 summary/-ies trimmed for size
 
 | state | organs | meaning |
@@ -14,7 +14,7 @@
 | **LIVE** | 123 | artifact present and newer than the organ's derived max silence |
 | **STALE** | 0 | artifact present but older than the organ's derived max silence |
 | **MISSING** | 47 | artifact absent while this host recorded the organ running |
-| **NEVER** | 675 | no artifact and no run record on this host |
+| **NEVER** | 685 | no artifact and no run record on this host |
 | **UNMEASURED** | 29 | artifact present, cadence undeclared -- nothing here may call it late |
 
 The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hourly and this repository deliberately does not carry it; the SHA-256 below lets a reader ask for any one artifact by name and check that what arrives is what this host published at the time stamped here.
@@ -199,7 +199,7 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `leg:timeframe_coverage` | `hourly_cycle:timeframe_coverage` | 2026-09-12T10:58:00+00:00 exit_code=1 | `desks/mt5/reports/TIMEFRAME_COVERAGE.json` | UNMEASURED | - | `UNMEASURED` | outcome=exit_code=1 |
 | `leg:world_crawler` | `hourly_cycle:world_crawler` | 2026-09-12T11:03:41+00:00 ok | `desks/mt5/reports/SOURCE_REGISTRY.json` | UNMEASURED | - | `UNMEASURED` | outcome=ok |
 
-## NEVER (675)
+## NEVER (685)
 
 | organ | clock | last run | artifact | age | size | sha256 | published |
 |---|---|---|---|---:|---:|---|---|
@@ -878,6 +878,16 @@ The hash is not the body. `desks/mt5/reports/**` is ~50 MB the box rewrites hour
 | `timer:quant-prompt-prefix` | `quant-prompt-prefix` | UNMEASURED UNMEASURED | `data/prompt_prefix.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-sameday-fence` | `quant-sameday-fence` | UNMEASURED UNMEASURED | `data/sameday_pipeline.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 | `timer:quant-unit-parity` | `quant-unit-parity` | UNMEASURED UNMEASURED | `data/unit_parity.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `fence:check_formal_claim` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `fence:check_tier_s_program` | `run_law_gate.py` | UNMEASURED UNMEASURED | `data/law_gate.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:adversary_evolution` | `hourly_cycle:adversary_evolution` | UNMEASURED UNMEASURED | `desks/mt5/reports/ADVERSARY_EVOLUTION.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:execution_science` | `hourly_cycle:execution_science` | UNMEASURED UNMEASURED | `desks/mt5/reports/EXECUTION_SCIENCE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:frontier_map` | `hourly_cycle:frontier_map` | UNMEASURED UNMEASURED | `desks/mt5/reports/FRONTIER_MAP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:judging_burndown` | `hourly_cycle:judging_burndown` | UNMEASURED UNMEASURED | `desks/mt5/reports/JUDGING_BURNDOWN.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:market_ecology` | `hourly_cycle:market_ecology` | UNMEASURED UNMEASURED | `desks/mt5/reports/MARKET_ECOLOGY.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:research_diversity_archive` | `hourly_cycle:research_diversity_archive` | UNMEASURED UNMEASURED | `desks/mt5/reports/RESEARCH_DIVERSITY_ARCHIVE.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `leg:tier1_gap` | `hourly_cycle:tier1_gap` | UNMEASURED UNMEASURED | `desks/mt5/reports/TIER1_GAP.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
+| `task:MT5-CacheWarm` | `MT5-CacheWarm` | UNMEASURED UNMEASURED | `desks/mt5/reports/WARM_GAUNTLET.json` | UNMEASURED | - | `UNMEASURED` | UNMEASURED |
 
 ## UNMEASURED (29)
 
