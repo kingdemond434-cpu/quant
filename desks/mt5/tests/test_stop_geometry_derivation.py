@@ -83,7 +83,9 @@ def test_every_value_dead_is_stated_and_today_stands() -> None:
 def test_a_price_distance_in_the_risk_field_is_not_an_r() -> None:
     # 2026-09-16 family rows: risk_quote is a signed price distance and r_multiple 0.0.
     assert sgd.ledger_r({"r_multiple": 0.0, "pl_quote": -3.24, "risk_quote": -0.00026}) is None
-    assert sgd.ledger_r({"r_multiple": 0.0, "pl_quote": 1.0, "risk_quote": 2.0}) is None
+    # A positive MONEY risk is a real denominator: P/L over it is the R.
+    assert sgd.ledger_r({"r_multiple": 0.0, "pl_quote": 1.0, "risk_quote": 2.0}) == \
+        pytest.approx(0.5)
     assert sgd.ledger_r({"r_multiple": -1.0966, "pl_quote": -6.2, "risk_quote": 5.67}) == \
         pytest.approx(-1.0966)
 

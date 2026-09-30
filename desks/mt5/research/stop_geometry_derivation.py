@@ -108,6 +108,13 @@ FAMILY_DELAY_M15_BARS = 1
 MIN_SAMPLES = 200
 
 
+def _rel(p: Path) -> str:
+    try:
+        return p.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(p)
+
+
 def _read_json(path: Path) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8-sig"))
@@ -509,7 +516,7 @@ def derive() -> dict[str, Any]:
         "death_line": DEATH_LINE, "eps_death": EPS_DEATH, "horizon_days": HORIZON,
         "n_paths": N_PATHS,
         "provenance": {"module": "desks/mt5/research/stop_geometry_derivation.py",
-                       "inputs": [str(p.relative_to(ROOT)) for p in
+                       "inputs": [_rel(p) for p in
                                   (SLEEVES, LEDGER, SURVIVORS, COST_SURFACE, BARS)]},
         "aggressiveness_note": "neither constant changes EUR at risk per trade (promoted_lot "
                                "sizes against the stop sent); lower m and higher tau keep the "
