@@ -63,9 +63,13 @@ import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk.config import DATA, REPORTS  # noqa: E402
+from mt5desk.config import DATA, desk_root  # noqa: E402
 
 OUT = DATA / "lake" / "alfred"
+#: The leg's own artifact, bound as a module-level constant through `desk_root()` so the
+#: component registry reads it without importing this module (`components.own_artifact`) and
+#: the runtime attestation carries a row for the `fetch_alfred` leg.
+REPORT = desk_root() / "reports" / "alfred_vintages.json"
 OUT.mkdir(parents=True, exist_ok=True)
 
 API = "https://api.stlouisfed.org/fred/series/observations"
@@ -260,8 +264,7 @@ def main(argv: list[str] | None = None) -> int:
             "fix": ("free key at https://fredaccount.stlouisfed.org/apikeys, then write it to "
                     "secrets/fred_api_key (one line) or export FRED_API_KEY"),
             "written": 0})
-        (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2),
-                                                      encoding="utf-8")
+        REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
         print("ALFRED UNAVAILABLE -- no API key.")
         print(report["fix"])
         return 0 if leg else 2
@@ -329,7 +332,7 @@ def main(argv: list[str] | None = None) -> int:
                    "failed": failed, "release_lag_days": lags,
                    "path": str(OUT),
                    "usage": "research: from research.fetch_alfred import vintage_as_of"})
-    (REPORTS / "alfred_vintages.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(f"\n{written} written to {OUT}"
           + (f", {len(skipped)} already present" if skipped else "")
           + (f", {len(failed)} REJECTED/failed: {', '.join(failed)}" if failed else ""))

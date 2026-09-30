@@ -1221,10 +1221,24 @@ def _event_days(spec: str, symbol: str) -> int:
     return len(load_events(spec, symbol, root=EVENTS))
 
 
+#: Event-lane rows `enumerate_specs` refused to mint on its last pass, by named cause. Published in
+#: the organ's report as `stream_refusals`; a refused row is counted, never silently dropped.
+STREAM_REFUSALS: dict[str, int] = {}
+
+
 def enumerate_specs(res: Resolver, frames: Mapping[str, int]) -> list[dict[str, Any]]:
-    """Every hypothesis the stream now has the history to support, as compiler EXACT_RECIPE rows."""
+    """Every hypothesis the stream now has the history to support, as compiler EXACT_RECIPE rows.
+
+    THE STREAM FENCE AT THE EMITTER (2026-09-30). Every event_reaction / news_reaction row carries
+    the `event_stream` it was minted from; a row whose stream would not parse is refused here
+    with the family's own named cause (`family_event_reaction.stream_refusal`,
+    MISSING_EVENT_STREAM) and counted in `STREAM_REFUSALS`, so nothing this organ donates can
+    reach the judge and be read against the generic macro calendar instead of its disclosures.
+    """
     from mt5desk.disclosure_events import make_spec
+    from mt5desk.family_event_reaction import MISSING_EVENT_STREAM, stream_refusal
     from mt5desk.family_exogenous_gate import gateable
+    STREAM_REFUSALS.clear()
     rows: list[dict[str, Any]] = []
     stats: dict[tuple[str, str, str, int], set[str]] = defaultdict(set)
     for src in SOURCES:
@@ -1249,6 +1263,10 @@ def enumerate_specs(res: Resolver, frames: Mapping[str, int]) -> list[dict[str, 
             fam = "event_reaction" if cat in SCHEDULED else "news_reaction"
             min_count = 1 if scope != "transmits" else _burst_threshold(cc, cat)
             spec = make_spec(cc, scope_name[scope], cat, dirn, min_count)
+            if not spec or stream_refusal(sym, spec) is not None:
+                STREAM_REFUSALS[MISSING_EVENT_STREAM] = (
+                    STREAM_REFUSALS.get(MISSING_EVENT_STREAM, 0) + 2)  # drift + fade
+                continue
             side = -1 if dirn == "down" else 1
             for mode in ("drift", "fade"):
                 rows.append({"kind": "hypothesis", "family": fam, "symbols": [sym], "country": cc,
@@ -1443,6 +1461,7 @@ def run(*, budget_s: float = 600.0, fixtures: Path | None = None, dry_run: bool 
         "series": frames,
         "state_instruments": len((state or {}).get("instruments") or {}),
         "donation": donation, "grounds": grounds, "uses": USES,
+        "stream_refusals": dict(STREAM_REFUSALS),
         "elapsed_s": round(time.monotonic() - t0, 2),
         "rule": ("fetch, classify, map, stamp, donate. Nothing sizes or judges; a keyed source "
                  "with no key is BLOCKED_NO_KEY and its yield UNMEASURED, never zero"),
