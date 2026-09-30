@@ -687,23 +687,33 @@ if (-not $permitAccepted) {
 if ($dirty.Count -gt 0) {
     $stillDirty = New-Object System.Collections.Generic.List[string]
     $alreadyTarget = 0
-    # Do not launch one `git diff` per path. On the large live index each invocation refreshes
-    # the tree, so a resumable adoption with hundreds of already-landed files took hours. Ask
-    # Git for the paths that still differ in bounded batches, then classify in memory.
+    # Do not use `git diff` here. Even one eight-path diff refreshes the enormous live index and
+    # has taken minutes on the trading box. Compare the working-tree blob directly with the
+    # immutable target blob. This deliberately ignores mode: Sync-IndexMode below repairs the
+    # target mode after content adoption, while NTFS cannot represent that bit faithfully.
     $normalisedDirty = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
-    $batchSize = 100
-    for ($start = 0; $start -lt $normalisedDirty.Count; $start += $batchSize) {
-        $end = [Math]::Min($start + $batchSize - 1, $normalisedDirty.Count - 1)
-        $batch = @($normalisedDirty[$start..$end])
-        $args = @("diff", "--name-only", "--no-ext-diff", $target, "--") + $batch
-        $different = @{}
-        Invoke-Git $args | ForEach-Object {
-            $name = "$_".Trim().Trim('"')
-            if ($name) { $different[$name] = $true }
-        }
-        foreach ($rel in $batch) {
-            if ($different.ContainsKey($rel)) { [void]$stillDirty.Add($rel) }
+    foreach ($rel in $normalisedDirty) {
+        $tree = @(Invoke-Git @("ls-tree", $target, "--", $rel) -AllowFail)
+        $targetExists = ($LASTEXITCODE -eq 0 -and $tree.Count -gt 0)
+        $full = Join-Path $RepoRoot ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
+        if (-not $targetExists) {
+            if (Test-Path -LiteralPath $full) { [void]$stillDirty.Add($rel) }
             else { $alreadyTarget++ }
+            continue
+        }
+        if (-not (Test-Path -LiteralPath $full -PathType Leaf)) {
+            [void]$stillDirty.Add($rel)
+            continue
+        }
+        $fields = ($tree[0] -split '\s+')
+        $targetBlob = if ($fields.Count -ge 3) { $fields[2] } else { "" }
+        # Apply the path's configured clean filter so a canonical LF blob and its ordinary
+        # Windows CRLF checkout compare equal, exactly as Git would stage them.
+        $worktreeBlob = ("$(Invoke-Git @("hash-object", "--path=$rel", "--", $rel) -AllowFail)").Trim()
+        if ($LASTEXITCODE -eq 0 -and $targetBlob -and $worktreeBlob -eq $targetBlob) {
+            $alreadyTarget++
+        } else {
+            [void]$stillDirty.Add($rel)
         }
     }
     if ($alreadyTarget -gt 0) {
@@ -725,13 +735,14 @@ function Get-NonShippedDiff {
 
 function Get-ShippedDiffCount {
     param([string] $From, [string] $To)
-    # `--shortstat` preserves the exact audit count without shipping tens of thousands of path
-    # strings through the PowerShell pipeline.  The detailed corpus remains visible to the organ
-    # that owns and lands it (MT5-IntelShip).
-    $args = @("diff", "--shortstat", $From, $To, "--") + $ShippedPathspecs
-    $summary = "$(Invoke-Git $args -AllowFail)"
-    if ($LASTEXITCODE -ne 0 -or $summary -notmatch '(\d+) files? changed') { return 0 }
-    return [int]$Matches[1]
+    # The adopter only needs to know whether the independently-owned corpus differs. Counting
+    # every changed discovery file scans tens of thousands of paths three times and used to hold
+    # the release mutex for minutes. `--quiet` stops at the first difference; IntelShip owns the
+    # exact per-path ledger. Return 1 as a presence flag, never as a fabricated exact count.
+    $args = @("diff", "--quiet", "--no-renames", $From, $To, "--") + $ShippedPathspecs
+    $null = Invoke-Git $args -AllowFail
+    if ($LASTEXITCODE -eq 1) { return 1 }
+    return 0
 }
 if ($dirty.Count -gt 0) {
     $dirtyPaths = @($dirty | ForEach-Object { "$_".Trim().Trim('"') })
@@ -902,7 +913,7 @@ foreach ($rec in $records) {
 }
 Write-Host ("  wrote {0} modified, {1} added, {2} deleted in place; {3} state path(s) origin no longer tracks untracked here (left on disk)" -f $written, $added, $removed, $untracked)
 if ($shipped -gt 0) {
-    Write-Host ("  left {0} discovery path(s) to MT5-IntelShip (intel_ship_adopt.ps1, hourly at :01, branch intel-ship/send)" -f $shipped)
+    Write-Host "  discovery drift exists and is left to MT5-IntelShip (hourly at :01, branch intel-ship/send)"
 }
 if ($kept.Count -gt 0) {
     Write-Host ("  kept {0} state path(s) this box wrote since it diverged (the box's evidence wins; origin's copy is reverted by the next push):" -f $kept.Count)
@@ -1111,7 +1122,7 @@ while ($drift.Count -gt 0 -and $repairPasses -lt 2) {
     }
 }
 if ($shippedDriftCount -gt 0) {
-    Write-Host ("  {0} discovery path(s) differ and are MT5-IntelShip's to land, not this script's" -f $shippedDriftCount)
+    Write-Host "  discovery drift remains and is MT5-IntelShip's to land, not this script's"
 }
 if ($stateDrift.Count -gt 0) {
     Write-Host ("  {0} state path(s) differ and are NOT blocking: the box's organs own them and " -f $stateDrift.Count)
