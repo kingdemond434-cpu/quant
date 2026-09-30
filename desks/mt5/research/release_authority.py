@@ -88,10 +88,35 @@ def _age_h(p: Path, now: datetime) -> float | None:
         return None
 
 
+def _current_identity(ident: dict[str, Any], rel: dict[str, Any]) -> dict[str, Any]:
+    """The identity verdict for THE CURRENT SEAL, not the one before it.
+
+    MEASURED 2026-09-30: Adopt-And-Seal publishes this bit straight after writing a new seal and
+    BEFORE the recycled gateway rewrites release_identity.json, so the file it read still judged
+    the PREVIOUS seal. The noon pass saw may_create_exposure=false with undrifted REFUSED for
+    paths the new seal already named, while the gateway, measuring live, allowed new risk. When
+    the file names a different release_id than RELEASE.json, the verdict is re-measured live
+    (never written: release_identity's own writer owns that file)."""
+    rel_id, ident_id = str(rel.get("release_id") or ""), str(ident.get("release_id") or "")
+    if not rel_id or not ident_id or rel_id == ident_id:
+        return ident
+    try:
+        sys.path.insert(0, str(DESK))
+        from mt5desk import release_identity  # type: ignore[import-not-found]
+        live = release_identity.verdict(ROOT, write=False).to_dict()
+    except Exception as exc:
+        return {**ident, "verdict": "UNMEASURED",
+                "reason": (f"release_identity.json judged release {ident_id}, the seal is "
+                           f"{rel_id}, and a live verdict failed: {type(exc).__name__}: {exc}")}
+    live["remeasured_because"] = f"release_identity.json judged {ident_id}, the seal is {rel_id}"
+    return live
+
+
 def measure(now: datetime | None = None) -> dict[str, Any]:
     """The bit and every clause behind it. Pure over the artifacts; never raises."""
     now = now or datetime.now(tz=UTC)
     att, ident, rel = _read(ATTESTATION), _read(IDENTITY), _read(RELEASE)
+    ident = _current_identity(ident, rel)
 
     running_sha = str(ident.get("running_sha") or "") or _git("rev-parse", "HEAD")
     sealed_sha = str(rel.get("code_sha") or rel.get("sha") or "")
@@ -121,6 +146,11 @@ def measure(now: datetime | None = None) -> dict[str, Any]:
         tested, tested_why = False, "no attestation and no running sha: UNMEASURED"
     if tested and att_age is not None and att_age > MAX_ATTESTATION_AGE_H:
         tested_why += f"; attestation is {att_age:.1f}h old"
+    rel_age = _age_h(RELEASE, now)
+    if not tested and att_age is not None and rel_age is not None and att_age > rel_age:
+        # The seal triggers MT5-GateAttest asynchronously, so at seal time the attestation on
+        # disk is always the previous tree's. Said plainly, so "pending" is not read as "red".
+        tested_why += "; the attestation predates this seal (MT5-GateAttest re-runs after it)"
 
     # CLAUSE 2 -- SEALED. A seal exists and names the same code tree the box is running. State
     # commits ride on top of a seal by design, so the comparison is on code, never on commits.
@@ -140,6 +170,8 @@ def measure(now: datetime | None = None) -> dict[str, Any]:
     verdict = str(ident.get("verdict") or ("OK" if ident.get("ok") else "")).upper()
     undrifted = verdict == "OK"
     undrifted_why = (f"release_identity verdict={verdict or 'ABSENT'}"
+                     + (f" (live: {ident['remeasured_because']})"
+                        if ident.get("remeasured_because") else "")
                      + (f": {str(ident.get('reason'))[:180]}" if not undrifted and
                         ident.get("reason") else ""))
 
