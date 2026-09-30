@@ -150,3 +150,12 @@ def measured_dsr_inputs_module(tmp_path_factory: pytest.TempPathFactory) -> Iter
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(dsr_inputs, "REPORT", path)
         yield path
+
+
+@pytest.fixture(autouse=True)
+def _order_door_writes_to_tmp(tmp_path_factory, monkeypatch):
+    """THE ORDER DOOR'S LEDGER NEVER LANDS IN THE REPO FROM A TEST. `mt5desk.order_door` appends
+    one row per money action to `desks/mt5/data/order_door_ledger.jsonl` -- the box's real
+    evidence. Every test that drives a lane through a fake venue goes through that door."""
+    monkeypatch.setenv("MT5_ORDER_DOOR_DIR", str(tmp_path_factory.mktemp("order_door")))
+    yield

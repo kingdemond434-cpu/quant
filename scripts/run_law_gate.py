@@ -343,6 +343,11 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # first census measured 63,110 rows waiting and a 654 h oldest row, and a fence tuned to pass
     # on today's backlog would pin that backlog in place (L1.43).
     ("check_no_queues.py", ()),
+    # THE BOX'S STATE REACHES GIT, OR THIS IS RED (2026-09-30). The last box state sync landed
+    # 2026-09-12 and the stamps inside every box file on the live branch stop 2026-09-16; for two
+    # weeks every reader off the box measured a frozen copy and no fence said so. Six hours,
+    # stated in the fence. STATE, never --laws-only: a red here must not wedge the push that heals it.
+    ("check_box_state_freshness.py", ()),
     # A LEG TAKEN OFF EVERY PLAN RUNS ONLY IF ITS OWN TASK EXISTS AND IS ARMED. `OWN_CLOCK_LEGS`
     # in hourly_cycle.py names them; this asks the Task Scheduler, so it is state and box-only.
     ("check_own_clock_legs.py", ()),

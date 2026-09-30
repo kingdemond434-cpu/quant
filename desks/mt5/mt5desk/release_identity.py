@@ -99,6 +99,8 @@ NON_CODE: frozenset[str] = frozenset({
     # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
     "desks/mt5/reports/LOCKBOX_RECERT.json",
     "desks/mt5/reports/REMINT_STATUS.json",
+    "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
+    "desks/mt5/reports/BOX_STATE_FLOW.json",
 })
 
 #: STATE DIRECTORIES, verbatim from libs/ops/release.STATE_PREFIXES (mirrored, not imported --
