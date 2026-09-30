@@ -775,6 +775,434 @@
     }
    },
    "machine_use_allowed": true
+  },
+  {
+   "id": "bis_policy_rates",
+   "name": "BIS central bank policy rates (WS_CBPOL, monthly)",
+   "kind": "sdmx",
+   "cadence": "daily",
+   "auth": "none",
+   "key_env": [],
+   "credential": "KEYLESS:BIS",
+   "licence": "BIS statistics terms (free reuse with attribution)",
+   "region": "GLOBAL",
+   "lang": "en",
+   "url": "https://stats.bis.org/api/v1/data/WS_CBPOL/",
+   "base": "https://stats.bis.org/api/v1/data/WS_CBPOL/",
+   "start_param": "startPeriod",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 7,
+    "hour": 0,
+    "why": "a month's policy rate is its last decision, published within days; +7 days is after BIS's update"
+   },
+   "series": {
+    "policy_rate_US": {
+     "path": "M.US/all?format=csv",
+     "instruments": {
+      "EURUSD": -1,
+      "USDJPY": 1,
+      "XAUUSD": -1,
+      "USDX": 1
+     }
+    },
+    "policy_rate_XM": {
+     "path": "M.XM/all?format=csv",
+     "instruments": {
+      "EURUSD": 1,
+      "EURJPY": 1
+     }
+    },
+    "policy_rate_JP": {
+     "path": "M.JP/all?format=csv",
+     "instruments": {
+      "USDJPY": -1,
+      "EURJPY": -1
+     }
+    },
+    "policy_rate_GB": {
+     "path": "M.GB/all?format=csv",
+     "instruments": {
+      "GBPUSD": 1
+     }
+    },
+    "policy_rate_AU": {
+     "path": "M.AU/all?format=csv",
+     "instruments": {
+      "AUDUSD": 1,
+      "AUDJPY": 1
+     }
+    },
+    "policy_rate_CA": {
+     "path": "M.CA/all?format=csv",
+     "instruments": {
+      "USDCAD": -1
+     }
+    },
+    "policy_rate_CH": {
+     "path": "M.CH/all?format=csv",
+     "instruments": {
+      "USDCHF": -1
+     }
+    },
+    "policy_rate_NZ": {
+     "path": "M.NZ/all?format=csv",
+     "instruments": {
+      "NZDUSD": 1
+     }
+    },
+    "policy_rate_KR": {
+     "path": "M.KR/all?format=csv",
+     "instruments": {
+      "USDKRW": -1
+     }
+    }
+   },
+   "mechanism": "the policy-rate path sets carry and the rate differential every FX cross is priced on; BIS publishes one comparable panel",
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "fails when intervention, yield-curve control or capital controls (JP, CH, KR) decouple the currency from its policy rate",
+   "crowding_prior": "high",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "bis_policy_rates series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime (mt5desk.cell_modifiers alt: conditioner, #131)"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "bis_reer",
+   "name": "BIS real effective exchange rates, broad (WS_EER)",
+   "kind": "sdmx",
+   "cadence": "daily",
+   "auth": "none",
+   "key_env": [],
+   "credential": "KEYLESS:BIS",
+   "licence": "BIS statistics terms (free reuse with attribution)",
+   "region": "GLOBAL",
+   "lang": "en",
+   "url": "https://stats.bis.org/api/v1/data/WS_EER/",
+   "base": "https://stats.bis.org/api/v1/data/WS_EER/",
+   "start_param": "startPeriod",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 20,
+    "hour": 0,
+    "why": "monthly REER lands mid-following-month"
+   },
+   "series": {
+    "reer_US": {
+     "path": "M.R.B.US/all?format=csv",
+     "instruments": {
+      "EURUSD": 1,
+      "USDJPY": -1,
+      "USDX": -1
+     }
+    },
+    "reer_XM": {
+     "path": "M.R.B.XM/all?format=csv",
+     "instruments": {
+      "EURUSD": -1
+     }
+    },
+    "reer_JP": {
+     "path": "M.R.B.JP/all?format=csv",
+     "instruments": {
+      "USDJPY": 1
+     }
+    },
+    "reer_GB": {
+     "path": "M.R.B.GB/all?format=csv",
+     "instruments": {
+      "GBPUSD": -1
+     }
+    },
+    "reer_AU": {
+     "path": "M.R.B.AU/all?format=csv",
+     "instruments": {
+      "AUDUSD": -1
+     }
+    },
+    "reer_CN": {
+     "path": "M.R.B.CN/all?format=csv",
+     "instruments": {
+      "USDCNH": 1
+     }
+    },
+    "reer_KR": {
+     "path": "M.R.B.KR/all?format=csv",
+     "instruments": {
+      "USDKRW": 1
+     }
+    },
+    "reer_CH": {
+     "path": "M.R.B.CH/all?format=csv",
+     "instruments": {
+      "USDCHF": 1
+     }
+    }
+   },
+   "mechanism": "a real effective rate far from its own history is valuation stretch; trade and reserve managers lean against it over months",
+   "source_culture": "GLOBAL",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "fails when a terms-of-trade shock (commodity FX) or a managed peg (CNH) moves fair value itself",
+   "crowding_prior": "medium",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "bis_reer series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime (mt5desk.cell_modifiers alt: conditioner, #131)"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "oecd_cli_bci",
+   "name": "OECD composite leading indicators and business confidence (SDMX)",
+   "kind": "sdmx",
+   "cadence": "daily",
+   "auth": "none",
+   "key_env": [],
+   "credential": "KEYLESS:OECD",
+   "licence": "OECD terms (CC BY 4.0)",
+   "region": "GLOBAL",
+   "lang": "en",
+   "url": "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI,4.1/",
+   "base": "https://sdmx.oecd.org/public/rest/data/OECD.SDD.STES,DSD_STES@DF_CLI,4.1/",
+   "start_param": "startPeriod",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 40,
+    "hour": 0,
+    "why": "the CLI for month M is released around the 10th of M+1 with a one-month lag; 40 days is late, the leg lifts it to first sight"
+   },
+   "series": {
+    "cli_USA": {
+     "path": "USA.M.LI...AA...H?format=csvfile",
+     "instruments": {
+      "US500": 1,
+      "USDJPY": 1
+     }
+    },
+    "cli_JPN": {
+     "path": "JPN.M.LI...AA...H?format=csvfile",
+     "instruments": {
+      "JPN225": 1
+     }
+    },
+    "cli_DEU": {
+     "path": "DEU.M.LI...AA...H?format=csvfile",
+     "instruments": {
+      "GER40": 1,
+      "EURUSD": 1
+     }
+    },
+    "cli_GBR": {
+     "path": "GBR.M.LI...AA...H?format=csvfile",
+     "instruments": {
+      "UK100": 1,
+      "GBPUSD": 1
+     }
+    },
+    "cli_CHN": {
+     "path": "CHN.M.LI...AA...H?format=csvfile",
+     "instruments": {
+      "CHINAH": 1,
+      "AUDUSD": 1
+     }
+    },
+    "cli_KOR": {
+     "path": "KOR.M.LI...AA...H?format=csvfile",
+     "instruments": {
+      "USDKRW": -1
+     }
+    },
+    "cli_AUS": {
+     "path": "AUS.M.LI...AA...H?format=csvfile",
+     "instruments": {
+      "AUS200": 1,
+      "AUDUSD": 1
+     }
+    },
+    "bci_USA": {
+     "path": "USA.M.BCICP...AA...H?format=csvfile",
+     "instruments": {
+      "US500": 1,
+      "USDJPY": 1
+     }
+    },
+    "bci_JPN": {
+     "path": "JPN.M.BCICP...AA...H?format=csvfile",
+     "instruments": {
+      "JPN225": 1
+     }
+    },
+    "bci_DEU": {
+     "path": "DEU.M.BCICP...AA...H?format=csvfile",
+     "instruments": {
+      "GER40": 1,
+      "EURUSD": 1
+     }
+    },
+    "bci_CHN": {
+     "path": "CHN.M.BCICP...AA...H?format=csvfile",
+     "instruments": {
+      "CHINAH": 1,
+      "AUDUSD": 1
+     }
+    }
+   },
+   "mechanism": "the CLI turns ahead of the business cycle by six to nine months; index and pro-cyclical FX repricing follows the turn",
+   "source_culture": "GLOBAL",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "fails when heavy revisions rewrite the turning point (the first vintage is kept, so the cell sees what was known) and in policy-driven cycles (CN)",
+   "crowding_prior": "medium",
+   "note": "dimension keys are UNCONFIRMED; OECD returns its own error text for a wrong key, recorded",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "oecd_cli_bci series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime (mt5desk.cell_modifiers alt: conditioner, #131)"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only"
+    }
+   },
+   "machine_use_allowed": true
+  },
+  {
+   "id": "imf_reserves",
+   "name": "IMF COFER reserve currency shares and IRFCL official reserves (SDMX)",
+   "kind": "sdmx",
+   "cadence": "daily",
+   "auth": "none",
+   "key_env": [],
+   "credential": "KEYLESS:IMF",
+   "licence": "IMF data terms (free reuse with attribution)",
+   "region": "GLOBAL",
+   "lang": "en",
+   "url": "https://api.imf.org/external/sdmx/2.1/data/",
+   "base": "https://api.imf.org/external/sdmx/2.1/data/",
+   "start_param": "startPeriod",
+   "confirm_on_box": true,
+   "rule": {
+    "lag_days": 95,
+    "hour": 0,
+    "why": "COFER for quarter Q is released at the end of the following quarter; IRFCL monthly ~60 days (per-series lag)"
+   },
+   "series": {
+    "cofer_usd_share": {
+     "path": "IMF.STA,COFER/G001.AFXRA_SHRO_USD.PT.Q?format=csv",
+     "instruments": {
+      "USDX": 1,
+      "XAUUSD": -1,
+      "EURUSD": -1
+     }
+    },
+    "cofer_eur_share": {
+     "path": "IMF.STA,COFER/G001.AFXRA_SHRO_EUR.PT.Q?format=csv",
+     "instruments": {
+      "EURUSD": 1
+     }
+    },
+    "cofer_cny_share": {
+     "path": "IMF.STA,COFER/G001.AFXRA_SHRO_CNY.PT.Q?format=csv",
+     "instruments": {
+      "USDCNH": -1
+     }
+    },
+    "reserves_CN": {
+     "path": "IMF.STA,IRFCL/CHN.IRFCLDT1_IRFCL54_USD.USD.M?format=csv",
+     "lag_days": 60,
+     "instruments": {
+      "USDCNH": -1,
+      "XAUUSD": 1
+     }
+    },
+    "reserves_JP": {
+     "path": "IMF.STA,IRFCL/JPN.IRFCLDT1_IRFCL54_USD.USD.M?format=csv",
+     "lag_days": 60,
+     "instruments": {
+      "USDJPY": -1
+     }
+    },
+    "reserves_KR": {
+     "path": "IMF.STA,IRFCL/KOR.IRFCLDT1_IRFCL54_USD.USD.M?format=csv",
+     "lag_days": 60,
+     "instruments": {
+      "USDKRW": -1
+     }
+    }
+   },
+   "mechanism": "official reserve managers are slow, large, price-insensitive holders; a drawdown of reserves is intervention (defending the currency), a shift in currency shares is diversification flow",
+   "source_culture": "GLOBAL",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "fails when valuation effects (the dollar's own move) change reported shares without any reallocation, and when intervention is hidden in forwards",
+   "crowding_prior": "low",
+   "note": "dataflow and dimension keys are UNCONFIRMED against the 2025 IMF SDMX API; a wrong key returns the IMF's own error, recorded",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "imf_reserves series as their own cells: level_z / delta_z extremes on each mapped instrument"
+    },
+    "indirect": {
+     "families": [
+      "<certified parent family> + params.conditioner alt:ks_<id>__<series>:chg_z:gt|lt:0"
+     ],
+     "organ": "research/keyed_sources.py",
+     "note": "certified parents gated by the series' PIT change regime (mt5desk.cell_modifiers alt: conditioner, #131)"
+    },
+    "allocation": {
+     "artifact": "desks/mt5/reports/KEYED_SOURCES_ALLOCATION_INTEL.json",
+     "organ": "research/keyed_sources.py",
+     "note": "per instrument, the latest PIT-available z / chg_z of every mapped series, read-only"
+    }
+   },
+   "machine_use_allowed": true
   }
  ]
 }

@@ -108,17 +108,26 @@ class Donations:
         return {"donated": len(cands), "path": None}
 
 
-def test_every_source_is_blocked_auth_without_its_key(tmp_path: Path) -> None:
+def test_every_keyed_source_is_blocked_auth_without_its_key(tmp_path: Path) -> None:
     paths = _paths(tmp_path)
     don = Donations()
-    doc = K.run(paths, environ={}, get=lambda r: pytest.fail("no fetch without a key"),
-                donate=don, now=NOW)
-    for sid, rec in doc["sources"].items():
-        var = _row(sid)["key_env"][0]
-        assert rec["status"] == f"BLOCKED_AUTH:{var}", sid
-    assert doc["cells"]["minted"] == 0 and doc["cells"]["grid_direct"] == 0
-    assert json.loads(paths.report.read_text("utf-8"))["status_counts"] == {
-        "BLOCKED_AUTH": len(doc["sources"])}
+    asked: list[str] = []
+
+    def get(req: ks.Request) -> bytes:
+        asked.append(req.url)
+        raise OSError("offline in tests")
+
+    doc = K.run(paths, environ={}, get=get, donate=don, now=NOW)
+    keyed = [sid for sid in doc["sources"] if _row(sid)["key_env"]]
+    keyless = [sid for sid in doc["sources"] if not _row(sid)["key_env"]]
+    assert len(keyed) >= 9 and {"bis_policy_rates", "bis_reer", "oecd_cli_bci",
+                                "imf_reserves"} <= set(keyless)
+    for sid in keyed:
+        assert doc["sources"][sid]["status"] == f"BLOCKED_AUTH:{_row(sid)['key_env'][0]}", sid
+    for sid in keyless:                     # no key needed: fetched, and the failure is named
+        assert doc["sources"][sid]["status"] == "ERROR", sid
+    assert all(any(h in u for h in ("bis.org", "oecd.org", "imf.org")) for u in asked)
+    assert doc["cells"]["minted"] == 0 and doc["cro_duty"] == "D18"
 
 
 def _weekly_eia(n: int, start: date, last: float) -> bytes:
@@ -309,3 +318,59 @@ def test_roster_rows_carry_the_shared_shape_culture_and_three_uses() -> None:
             "retail_heavy", "institutional", "tax_driven", "policy_driven", "physical_flow",
             "broker_specific", "settlement_constrained", "mixed"), r["id"]
         assert "crypto" not in json.dumps(r).lower() or r["id"] == "", r["id"]
+
+
+# ------------------------------------------------------------------ keyless SDMX doors ----
+def test_parse_sdmx_csv_for_bis_oecd_imf() -> None:
+    bis = ks.parse_sdmx_csv((FX / "bis_cbpol.csv").read_bytes(), {}, "policy_rate_US")
+    assert [(o.period, o.value) for o in bis] == [(date(2026, 7, 31), 4.375),
+                                                 (date(2026, 8, 31), 4.125)]   # annual dropped
+    oecd = ks.parse_sdmx_csv((FX / "oecd_cli.csv").read_bytes(), {}, "cli_USA")   # BOM header
+    assert [o.value for o in oecd] == [100.21, 100.35]
+    imf = ks.parse_sdmx_csv((FX / "imf_cofer.csv").read_bytes(), {}, "cofer_usd_share")
+    assert {o.period for o in imf} == {date(2026, 3, 31), date(2025, 12, 31)}
+    assert ks.parse_sdmx_csv((FX / "sdmx_error.html").read_bytes(), {}, "x") == []
+
+
+def _monthly_csv(n: int, last: date, base: float) -> bytes:
+    lines = ["DATAFLOW,TIME_PERIOD,OBS_VALUE"]
+    y, m = last.year, last.month
+    for i in range(n):
+        lines.append(f"X,{y:04d}-{m:02d},{base + (i * 7) % 5 - 2}")
+        y, m = (y - 1, 12) if m == 1 else (y, m - 1)
+    return "\n".join(lines).encode()
+
+
+def test_keyless_bis_door_stores_pit_and_mints_all_three_uses(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from mt5desk import cell_modifiers
+    monkeypatch.setattr(cell_modifiers, "alt_conditioner", lambda v: None, raising=False)
+    paths = _paths(tmp_path)
+    paths.survivors.parent.mkdir(parents=True, exist_ok=True)
+    paths.survivors.write_text(json.dumps({"survivors": {"p1": {"shadow_spec": {
+        "symbol": "EURUSD", "family": "session_range_breakout", "params": {}}}}}), "utf-8")
+    don = Donations()
+
+    def get(req: ks.Request) -> bytes:
+        if "stats.bis.org" in req.url and "WS_CBPOL/M.US/" in req.url:
+            return _monthly_csv(40, date(2026, 8, 1), 4.0)
+        raise OSError("offline")
+
+    doc = K.run(paths, environ={}, get=get, donate=don, now=NOW)
+    rec = doc["sources"]["bis_policy_rates"]
+    assert rec["status"] == "OK" and rec["series_points"] == {"policy_rate_US": 40}
+    assert rec["credential_vars"] == ["KEYLESS:BIS"]
+    assert "partial_errors" in rec                          # the other eight areas, named
+    import pandas as pd
+    df = pd.read_csv(paths.series / "ks_bis_policy_rates__policy_rate_US.csv")
+    assert df["available_time"].notna().all()
+    direct = [c for seat, cs, _ in don.calls if seat == K.SEAT for c in cs]
+    indirect = [c for seat, cs, _ in don.calls if seat == K.INDIRECT_SEAT for c in cs]
+    syms = list(_row("bis_policy_rates")["series"]["policy_rate_US"]["instruments"])
+    assert len(direct) == 8 * len(syms)
+    assert len(indirect) == 2 and all(c["params"]["conditioner"].startswith(
+        "alt:ks_bis_policy_rates__policy_rate_US:chg_z:") for c in indirect)
+    assert all(c["credential_var"] == "KEYLESS:BIS" for c in direct + indirect)
+    assert all(t == len(cs) for _, cs, t in don.calls)       # every minted cell charged
+    alloc = json.loads(paths.allocation.read_text("utf-8"))["instruments"]
+    assert any(x["source"] == "bis_policy_rates" for x in alloc["EURUSD"])

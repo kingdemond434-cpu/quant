@@ -127,11 +127,17 @@ def build(now: datetime | None = None, environ: Mapping[str, str] | None = None,
         st = cred.status(v, environ, root)
         est = cred.estimate_for(v)
         cons = []
+        # Name states against the CANONICAL name when nothing is set, so the report says ahead
+        # of time which readers a principal's `setx` would leave dark.
+        states = {s["path"]: s for s in cred.consumer_states(v, st["present_as"] or [v.env],
+                                                             root)}
         for c in v.consumers:
             w = wired(c, clocks, root)
+            _, reads = cred.effective_reads(c, v, root)
             cons.append({"path": c.path, "branch": c.branch, "leg": c.leg,
-                         "reads": [n for n in c.reads if not n.startswith("file:")],
-                         "secrets_keys": [n for n in c.reads if n.startswith("file:")],
+                         "reads": [n for n in reads if not n.startswith("file:")],
+                         "secrets_keys": [n for n in reads if n.startswith("file:")],
+                         "name_state": states[c.path]["state"],
                          "note": c.note, **w, **cells_24h(v.env, c, now, desk)})
         rows.append({
             "env": v.env, "accepted_names": list(v.accepted), "secrets_keys": list(v.secrets),
@@ -140,7 +146,8 @@ def build(now: datetime | None = None, environ: Mapping[str, str] | None = None,
             "families": list(v.families), "kind": v.kind, "group": v.group or None,
             "principal_list": v.principal_list, "built": v.built,
             "status": st["status"], "present_as": st["present_as"],
-            "dark_consumers": st["dark_consumers"], "consumers": cons,
+            "dark_consumers": st["dark_consumers"],
+            "resolved_on_merge": st.get("resolved_on_merge", []), "consumers": cons,
             "estimate": {"label": "ESTIMATE", "cells_per_day": est.cells_per_day,
                          "grid": est.grid or None, "per_pass_cap": est.per_pass_cap,
                          "series_or_pairs": est.series, "symbols": est.symbols,
@@ -163,21 +170,35 @@ def build(now: datetime | None = None, environ: Mapping[str, str] | None = None,
     keyless = []
     for k in cred.KEYLESS:
         present = [p for p in k.get("wired_in") or () if (root / p).exists()]
-        keyless.append({**k, "wired_in": list(k.get("wired_in") or ()),
-                        "status": "WIRED" if present else "NOT_WIRED"})
+        row = {**k, "wired_in": list(k.get("wired_in") or ()),
+               "status": "WIRED" if present else "NOT_WIRED"}
+        if k.get("credential") and present:
+            # A keyless door the keyed_sources leg reads: its clock and its own cells, the same
+            # measurement a keyed var gets (cells attributed by `credential_var`).
+            c = cred.Consumer(present[0], (), cred.LIVE, cred.KS_LEG,
+                              tuple(k.get("seats") or ()))
+            w = wired(c, clocks, root)
+            row.update({"status": "WIRED" if w["wired"] == "WIRED" else w["wired"],
+                        "clocks": w.get("clocks", []),
+                        **cells_24h(str(k["credential"]), c, now, desk)})
+        keyless.append(row)
     counts: dict[str, int] = {}
     for r in rows:
         counts[r["status"]] = counts.get(r["status"], 0) + 1
     return {"generated_at": now.isoformat(timespec="seconds"), "host": platform.node(),
             "writer": "research/credential_coverage.py",
+            # The CRO duty this artifact answers (#121's duty table): credential coverage.
+            "cro_duty": "D24",
             "rule": ("presence only -- no value is read, printed or written. BLOCKED_AUTH until "
-                     "set; MISMATCHED_NAME when set under a name a consumer does not read. "
+                     "set; MISMATCHED_NAME when set under a name a consumer does not read (a "
+                     "consumer on another branch whose reader accepts it is RESOLVED_ON_MERGE, "
+                     "not a mismatch). "
                      "cells_24h is read from the consumers' own donation files; UNMEASURED when "
                      "that file tree is absent here. estimate.cells_per_day is an ESTIMATE "
                      "(declared series x symbols x cells per pair, bounded by the per-pass cap "
                      "x 24)"),
             "status_counts": counts, "vars": ranked,
-            "name_mismatches": cred.name_mismatches(),
+            "name_mismatches": cred.name_mismatches(root),
             "status_words_mapped_to_BLOCKED_AUTH": sorted(cred.BLOCKED_SYNONYMS),
             "keyless": keyless}
 

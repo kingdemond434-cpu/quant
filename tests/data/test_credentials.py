@@ -168,3 +168,49 @@ def test_cells_24h_are_read_from_the_consumers_donation_files(tmp_path: Path) ->
     assert got["cells_24h"] == 3 and got["attribution"] == "per_var" and got["files"] == 1
     got = cc.cells_24h("KOSIS_API_KEY", c, now, desk)
     assert got["cells_24h"] == 0                          # measured zero: the seat exists
+
+
+def test_a_branch_that_accepts_the_name_is_resolved_on_merge_not_mismatched() -> None:
+    v = cred.CredentialVar(
+        env="SEC_EDGAR_USER_AGENT", provider="p", signup_url="https://x", free_tier="",
+        unlocks="", instruments=(), families=(),
+        consumers=(cred.Consumer("desks/mt5/research/not_here_yet.py",
+                                 ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT"), "claude/x (#1)"),
+                   cred.Consumer("desks/mt5/research/sandboxes/edgar_transmission.py",
+                                 ("QUANT_EDGAR_UA",))),
+        aliases=("QUANT_EDGAR_UA", "SEC_EDGAR_UA"))
+    st = cred.status(v, environ={"SEC_EDGAR_USER_AGENT": SENTINEL})
+    # edgar_transmission is on this checkout and its FILE accepts all three names, whatever the
+    # declaration says; the off-branch reader accepts the name on its branch.
+    assert st["status"] == cred.SET
+    assert st["resolved_on_merge"] == ["desks/mt5/research/not_here_yet.py"]
+
+
+def test_every_edgar_reader_on_this_branch_accepts_all_three_names() -> None:
+    import subprocess
+    out = subprocess.run(["git", "grep", "-l", "QUANT_EDGAR_UA\\|SEC_EDGAR_UA\\|"
+                          "SEC_EDGAR_USER_AGENT", "--", "*.py", ":!tests", ":!libs/data"],
+                         cwd=ROOT, capture_output=True, text=True, check=False).stdout.split()
+    readers = [p for p in out if "environ" in (ROOT / p).read_text("utf-8")]
+    assert readers
+    for p in readers:
+        text = (ROOT / p).read_text("utf-8")
+        for name in ("QUANT_EDGAR_UA", "SEC_EDGAR_USER_AGENT", "SEC_EDGAR_UA"):
+            assert name in text, (p, name)
+
+
+def test_coverage_names_its_cro_duty_and_measures_the_keyless_doors(tmp_path: Path) -> None:
+    cc = _cc()
+    desk = _desk(tmp_path)
+    now = datetime(2026, 9, 30, 12, tzinfo=UTC)
+    seat = desk / "data" / "intelligence" / "keyed_sources"
+    seat.mkdir()
+    (seat / f"discoveries_{(now - timedelta(hours=1)):%Y%m%d_%H%M}.json").write_text(
+        json.dumps({"discoveries": [{"credential_var": "KEYLESS:BIS"}] * 5}), "utf-8")
+    doc = cc.build(now=now, environ={}, root=cc.ROOT, desk=desk)
+    assert doc["cro_duty"] == "D24"
+    by = {k["provider"].split()[0]: k for k in doc["keyless"]}
+    for prov in ("BIS", "OECD", "IMF"):
+        assert by[prov]["status"] == "WIRED", prov
+        assert "desks/mt5/research/hourly_cycle.py" in by[prov]["clocks"]
+    assert by["BIS"]["cells_24h"] == 5 and by["OECD"]["cells_24h"] == 0

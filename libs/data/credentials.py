@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -203,27 +204,76 @@ def present_names(v: CredentialVar, environ: Mapping[str, str] | None = None,
     return got
 
 
+RESOLVED_ON_MERGE = "RESOLVED_ON_MERGE"
+
+
+def effective_reads(c: Consumer, v: CredentialVar, root: Path = ROOT
+                    ) -> tuple[bool, tuple[str, ...]]:
+    """(on_this_checkout, the names this consumer actually accepts).
+
+    ON THIS CHECKOUT THE FILE IS THE TRUTH: the accepted names are the ones its text names (a
+    reader that goes through `accepted_names` accepts them all), plus its declared secrets-file
+    reads. So the day a lane's reader is merged with the extra name, the status follows with no
+    registry edit. OFF THIS CHECKOUT the registry's declared reads for that branch stand."""
+    p = root / c.path
+    if "/" not in c.path or not p.is_file():
+        return False, c.reads
+    try:
+        text = p.read_text("utf-8", errors="replace")
+    except OSError:
+        return False, c.reads
+    if "accepted_names" in text:
+        names: tuple[str, ...] = v.accepted
+    else:
+        cands = dict.fromkeys((*v.accepted, *(n for n in c.reads if not n.startswith("file:"))))
+        names = tuple(n for n in cands if re.search(rf"(?<![A-Z0-9_]){n}(?![A-Z0-9_])", text))
+    return True, (*names, *(n for n in c.reads if n.startswith("file:")))
+
+
+def consumer_states(v: CredentialVar, found: list[str], root: Path = ROOT
+                    ) -> list[dict[str, Any]]:
+    """Per consumer: LIT (reads a present name, here), DARK (reads none of them), or
+    RESOLVED_ON_MERGE (not on this checkout; its own branch reads a present name, so the
+    mismatch closes when that branch merges)."""
+    out: list[dict[str, Any]] = []
+    for c in v.consumers:
+        here, reads = effective_reads(c, v, root)
+        hit = any(n in reads for n in found)
+        state = ("LIT" if hit and here else RESOLVED_ON_MERGE if hit else "DARK")
+        out.append({"path": c.path, "branch": c.branch, "on_this_checkout": here,
+                    "reads": [n for n in reads if not n.startswith("file:")], "state": state})
+    return out
+
+
 def status(v: CredentialVar, environ: Mapping[str, str] | None = None,
            root: Path = ROOT) -> dict[str, Any]:
-    """SET / MISMATCHED_NAME / BLOCKED_AUTH for one variable, with the consumers left dark."""
+    """SET / MISMATCHED_NAME / BLOCKED_AUTH for one variable, with the consumers left dark.
+    A consumer on another branch whose reader accepts the present name is RESOLVED_ON_MERGE,
+    listed apart, never counted as a mismatch."""
     found = present_names(v, environ, root)
     if not found:
         return {"status": BLOCKED_AUTH, "present_as": [], "dark_consumers": [c.path for c in
-                                                                           v.consumers]}
-    dark = [c.path for c in v.consumers if not any(n in c.reads for n in found)]
+                                                                           v.consumers],
+                "resolved_on_merge": []}
+    states = consumer_states(v, found, root)
+    dark = [s["path"] for s in states if s["state"] == "DARK"]
     return {"status": MISMATCHED_NAME if dark else SET, "present_as": found,
-            "dark_consumers": dark}
+            "dark_consumers": dark,
+            "resolved_on_merge": [s["path"] for s in states if s["state"] == RESOLVED_ON_MERGE]}
 
 
-def name_mismatches() -> list[dict[str, Any]]:
-    """Static: every consumer that does NOT read the canonical (principal's) name."""
+def name_mismatches(root: Path = ROOT) -> list[dict[str, Any]]:
+    """Every consumer that does NOT accept the canonical (principal's) name -- read from the
+    file where it is on this checkout, from the declared branch reads where it is not."""
     out: list[dict[str, Any]] = []
     for v in REGISTRY:
         for c in v.consumers:
-            if v.env not in c.reads:
+            here, reads = effective_reads(c, v, root)
+            if v.env not in reads:
                 out.append({"var": v.env, "consumer": c.path, "branch": c.branch,
-                            "reads": [n for n in c.reads if not n.startswith("file:")],
-                            "secrets": [n for n in c.reads if n.startswith("file:")]})
+                            "on_this_checkout": here,
+                            "reads": [n for n in reads if not n.startswith("file:")],
+                            "secrets": [n for n in reads if n.startswith("file:")]})
     return out
 
 
@@ -264,7 +314,7 @@ def setx_line(v: CredentialVar) -> str:
     return f'setx {v.env} "<{v.kind}>"'
 
 
-__all__ = ["BLOCKED_AUTH", "BY_ENV", "KEYLESS", "MISMATCHED_NAME", "REGISTRY", "SET", "UNMEASURED",
-           "Consumer", "CredentialVar", "Estimate", "accepted_names", "env_present", "estimate_for",
-           "name_mismatches", "normalise_status", "present_names", "secret_present", "setx_line",
-           "status"]
+__all__ = ["BLOCKED_AUTH", "BY_ENV", "KEYLESS", "MISMATCHED_NAME", "REGISTRY", "RESOLVED_ON_MERGE",
+           "SET", "UNMEASURED", "Consumer", "CredentialVar", "Estimate", "accepted_names",
+           "consumer_states", "effective_reads", "env_present", "estimate_for", "name_mismatches",
+           "normalise_status", "present_names", "secret_present", "setx_line", "status"]

@@ -10,6 +10,8 @@ never UNMEASURED-as-success and never 0.
 
 ONE PASS, inside `--budget-s`:
 
+  0. ALSO THE KEYLESS SDMX DOORS (BIS policy rates and REER, OECD CLI/BCI, IMF COFER and
+     IRFCL reserves): `kind: sdmx`, `key_env: []`, attributed to `KEYLESS:<provider>`.
   1. READS THE ROSTER `data/source_rosters/keyed_sources.json` (id, cadence, auth, licence,
      region, lang, url, plus series, release rule, culture and `uses` per row).
   2. VISITS DUE SOURCES STALEST FIRST. Cursor state (`data/keyed_sources/state.json`) is written
@@ -475,11 +477,17 @@ def _parents(paths: Paths) -> dict[str, list[dict[str, Any]]]:
     return out
 
 
+def credential_of(row: Mapping[str, Any]) -> str:
+    """The var a row's cells are attributed to: its first key, or `KEYLESS:<provider>`."""
+    return str((row.get("key_env") or [None])[0] or row.get("credential")
+               or f"KEYLESS:{row.get('id')}")
+
+
 def _base(row: Mapping[str, Any], sym: str, series: str, now: datetime) -> dict[str, Any]:
     stamp = now.isoformat(timespec="seconds")
     return {"symbols": [sym], "available_time": stamp, "event_time": stamp,
             **{k: row.get(k, UNMEASURED) for k in CULTURE_KEYS},
-            "uses": row.get("uses"), "credential_var": (row.get("key_env") or [None])[0],
+            "uses": row.get("uses"), "credential_var": credential_of(row),
             "required_data": [f"desks/mt5/data/lake/series/{lake_name(row['id'], series)}.csv"]}
 
 
@@ -591,7 +599,8 @@ def run(paths: Paths = Paths(), *, budget_s: float = 300.0, fetch: bool = True,
         st = sst.setdefault(sid, {})
         store_p = paths.obs / f"{sid}.json"
         store = _read(store_p, {}) or {}
-        rec: dict[str, Any] = {"kind": row["kind"], "credential_vars": row.get("key_env"),
+        rec: dict[str, Any] = {"kind": row["kind"],
+                               "credential_vars": row.get("key_env") or [credential_of(row)],
                                "store_rows": len(store)}
         try:
             resolve_keys(row, environ)
@@ -650,6 +659,8 @@ def run(paths: Paths = Paths(), *, budget_s: float = 300.0, fetch: bool = True,
     _atomic(paths.allocation, allocation_intel(roster, pts_by, now))
     doc = {"generated_at": now.isoformat(timespec="seconds"),
            "writer": "research/keyed_sources.py", "roster": str(paths.roster.name),
+           # CRO duty D18 (#121): every dataset feeds direct, indirect and allocation uses.
+           "cro_duty": "D18",
            "roster_complaints": bad, "sources": recs,
            "status_counts": _counts(recs),
            "cells": {"grid_direct": len(direct), "grid_indirect": len(indirect),

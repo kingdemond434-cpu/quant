@@ -86,6 +86,9 @@ def _period(text: str) -> date | None:
             return date(int(m[1]), int(m[2]), int(m[3]))
         except ValueError:
             return None
+    m = re.fullmatch(r"(\d{4})-?Q([1-4])", t)
+    if m:
+        return _month_end(int(m[1]), int(m[2]) * 3)
     m = re.fullmatch(r"(\d{4})-?M?(\d{2})", t)
     if m and 1 <= int(m[2]) <= 12:
         return _month_end(int(m[1]), int(m[2]))
@@ -353,12 +356,49 @@ def parse_reddit_listing(body: bytes) -> list[tuple[datetime, str]]:
     return out
 
 
+# ======================================================= keyless SDMX (BIS, OECD, IMF) ======
+def sdmx_requests(row: Mapping[str, Any], key: str, start: str | None) -> list[Request]:
+    """One SDMX-CSV request per series: `row.base` + the series' `path`. No key; `start` (when
+    the store already holds history) narrows the window to recent periods and revisions."""
+    out: list[Request] = []
+    for sid, spec in (row.get("series") or {}).items():
+        path = str((spec or {}).get("path") or "")
+        if not path:
+            continue
+        url = str(row.get("base") or "") + path
+        if start and row.get("start_param"):
+            url += ("&" if "?" in url else "?") + f"{row['start_param']}={start[:7]}"
+        out.append(Request(url, headers={"Accept": "application/vnd.sdmx.data+csv, text/csv"},
+                           part=sid))
+    return out
+
+
+def parse_sdmx_csv(body: bytes, row: Mapping[str, Any], part: str = "") -> list[Obs]:
+    """SDMX-CSV (BIS, OECD, IMF all serve it): one observation per line, `TIME_PERIOD` and
+    `OBS_VALUE` columns (any case). Monthly, quarterly and daily periods; annual rows are
+    skipped. An HTML or XML error page parses to nothing, which the leg records."""
+    import csv
+    import io
+    text = body.decode("utf-8-sig", errors="replace")
+    rd = csv.DictReader(io.StringIO(text))
+    cols = {c.upper(): c for c in rd.fieldnames or []}
+    tcol, vcol = cols.get("TIME_PERIOD"), cols.get("OBS_VALUE")
+    if not tcol or not vcol:
+        return []
+    out: list[Obs] = []
+    for r in rd:
+        p, v = _period(str(r.get(tcol) or "")), _num(r.get(vcol))
+        if p and v is not None:
+            out.append(Obs(part, p, v))
+    return out
+
+
 # ============================================================================ registry ======
 Builder = Callable[[Mapping[str, Any], str, "str | None"], list[Request]]
 Parser = Callable[..., list[Obs]]
 
 BUILDERS: dict[str, Builder] = {"eia_v2": eia_requests, "ndl": ndl_requests,
                                 "kosis": kosis_requests, "ecos": ecos_requests,
-                                "bls": bls_requests}
+                                "bls": bls_requests, "sdmx": sdmx_requests}
 PARSERS: dict[str, Parser] = {"eia_v2": parse_eia, "ndl": parse_ndl, "kosis": parse_kosis,
-                              "ecos": parse_ecos, "bls": parse_bls}
+                              "ecos": parse_ecos, "bls": parse_bls, "sdmx": parse_sdmx_csv}
