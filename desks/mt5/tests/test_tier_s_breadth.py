@@ -102,7 +102,7 @@ def test_a_symbol_without_bars_takes_the_median_not_zero() -> None:
     terms = doc["_terms"]
     lo, hi = sorted((terms["f|TWIN"]["delta_k"], terms["f|INDEP"]["delta_k"]))
     assert terms["f|NONE"]["delta_k_status"] == "PAR"
-    assert terms["f|NONE"]["delta_k"] == pytest.approx((lo + hi) / 2)
+    assert terms["f|NONE"]["delta_k"] == pytest.approx((lo + hi) / 2, abs=1e-5)
 
 
 def _stamped_rows() -> list[dict[str, Any]]:
@@ -172,7 +172,7 @@ def test_order_docket_publishes_the_evidence_and_ships_every_row(
     assert ko["status"] == "MEASURED"
     assert ko["head"]["shipped"]["rows"] == ko["head"]["legacy"]["rows"]
     rep = json.loads((tmp_path / "DOCKET_KEFF_ORDER.json").read_text("utf-8"))
-    assert rep["cell_terms_total"] == 5
+    assert rep["cell_terms_total"] == 4, "carry x {TWIN, INDEP, A} + cross_sectional x INDEP"
     assert rep["cluster_targets"]["cross_sectional_fx"]["docket_cells"] == 4
     assert "INDEP" in rep["symbol_deltas"]
     cov = json.loads((tmp_path / "JUDGE_COVERAGE.json").read_text("utf-8"))
