@@ -1,7 +1,8 @@
 {
- "generated_at": "2026-09-30T14:41:06+00:00",
+ "generated_at": "2026-09-30T15:49:16+00:00",
  "contract": "regime_allocation",
  "verdict": "INCONCLUSIVE",
+ "admits": false,
  "headline": {
   "arm": "geo_asset",
   "against": "geo",
@@ -117,6 +118,8 @@
   }
  },
  "design": {
+  "universe": "bars",
+  "universe_note": "trend (63d TSMOM) and range (5d reversal) sleeves built from bars: a regime-sensitivity bench, not the desk's edges; the box re-runs this on its real sleeves and that verdict rules",
   "assets": [
    "EURUSD",
    "GBPUSD",
@@ -284,5 +287,5 @@
    "trend_share_geo": 0.5271
   }
  ],
- "runtime_s": 342.6
+ "runtime_s": 303.9
 }
