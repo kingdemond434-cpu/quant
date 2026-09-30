@@ -1101,6 +1101,28 @@ def allocation_view(now: datetime | None = None) -> dict:
     return view
 
 
+def _same_mechanism(row: dict, key: str, symbol: str, family: str, selector: str) -> bool:
+    """False when a row was reached ONLY through the `sym|selector` short key and prices a
+    DIFFERENT mechanism than the sleeve asking.
+
+    THE SHORT KEY BORROWED ANOTHER MECHANISM'S HEAT (measured 2026-09-30 on the trading box).
+    The book held one XAUUSD asia row, `XAUUSD_session_range_breakout_asia` at 1.04%. Nine
+    `xauusd_cross_asset_residual_asia_p_*` sleeves matched none of the allocator's rows by name
+    or by `xauusd|cross_asset_residual|asia`, fell through to `xauusd|asia`, and each was written
+    LIVE at that 1.04% "already funded by the allocator" -- 9.4% of heat parked on a mechanism the
+    allocator never priced, on sleeves the gateway then refused at execution. `_index` already
+    drops a short key two book rows claim; it cannot see that ONE book row and many sleeves claim
+    it. The short key exists for sleeves that carry no mechanism (the gold windows), so it still
+    joins those, and any row that itself names no mechanism.
+    """
+    sym, sel = str(symbol).strip().lower(), str(selector).strip().lower()
+    fam = str(family).strip().lower()
+    if not (sym and sel and fam) or key != f"{sym}|{sel}":
+        return True
+    row_fam = str(row.get("family") or "").strip().lower()
+    return not row_fam or row_fam == fam
+
+
 def admission_of(view: dict, name: str, symbol: str = "", family: str = "",
                  selector: str = "") -> tuple[dict | None, str]:
     """The sleeve's current reading and the key it joined on, or (None, why there is none).
@@ -1118,11 +1140,11 @@ def admission_of(view: dict, name: str, symbol: str = "", family: str = "",
     keys = _join_keys(name, symbol, family, selector)
     for k in keys:
         row = (view.get("candidates") or {}).get(k)
-        if isinstance(row, dict):
+        if isinstance(row, dict) and _same_mechanism(row, k, symbol, family, selector):
             return row, f"joined on {k!r}"
     for k in keys:
         row = (view.get("book") or {}).get(k)
-        if isinstance(row, dict):
+        if isinstance(row, dict) and _same_mechanism(row, k, symbol, family, selector):
             # Already funded by the allocator: its marginal was measured when it entered and its
             # heat IS the current reading. There is no candidate row for something already held.
             return ({"delta_elogw_per_day": None, "heat_earned": float(row.get("heat") or 0.0),
@@ -1131,10 +1153,27 @@ def admission_of(view: dict, name: str, symbol: str = "", family: str = "",
                     f"joined on {k!r} (funded book)")
     for k in keys:
         row = (view.get("zeroed") or {}).get(k)
-        if isinstance(row, dict):
+        if isinstance(row, dict) and _same_mechanism(row, k, symbol, family, selector):
             return ({"delta_elogw_per_day": None, "heat_earned": 0.0, "admit": False,
                      "why": str(row.get("why") or "this solve gave the sleeve no heat")},
                     f"joined on {k!r} (zeroed by this solve)")
+    # A SHORT-KEY ROW THAT PRICES ANOTHER MECHANISM IS A READING, AND ITS ANSWER IS "NOT YOU".
+    # Returning None here would be read as UNMEASURED, and UNMEASURED lets a row that already
+    # holds capital KEEP it -- so the nine cross_asset_residual sleeves would have held their
+    # borrowed 1.04% forever. The allocator did price this symbol and window; every unit of its
+    # heat there belongs to a named other mechanism, so this sleeve's share of it is zero, which
+    # is a refusal the demotion may act on. The heat itself never moves: it stays on the book
+    # row the allocator actually solved, so nothing is reported short.
+    for src in ("candidates", "book", "zeroed"):
+        for k in keys:
+            row = (view.get(src) or {}).get(k)
+            if isinstance(row, dict) and not _same_mechanism(row, k, symbol, family, selector):
+                return ({"delta_elogw_per_day": None, "heat_earned": 0.0, "admit": False,
+                         "why": (f"the only allocator row on {k!r} prices "
+                                 f"{str(row.get('family') or '?')!r}, not {family!r}; the "
+                                 f"allocator has not priced this mechanism, so none of that "
+                                 f"row's heat is this sleeve's")},
+                        f"joined on {k!r} (different mechanism: not a reading for this sleeve)")
     return None, (f"no allocator row answers to any of {keys!r}: this sleeve is not in the priced "
                   f"universe, or the admission scan's budget did not reach it, so its marginal "
                   f"contribution has not been measured on this pass")
