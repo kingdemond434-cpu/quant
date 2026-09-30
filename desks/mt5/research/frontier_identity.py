@@ -65,6 +65,59 @@ def cell_id(cell: dict[str, Any]) -> str:
     return f"{cell['sym']}{tf}.{cell['family']}.p={digest}"
 
 
+def docket_cell(row: dict[str, Any]) -> dict[str, Any]:
+    """A DOCKET ROW, normalised into the cell the judge will key its verdict by.
+
+    THE ONE PLACE THE ROW->CELL RULE LIVES, and the reason it has to exist at all. `cell_id`
+    answers "what is this cell called"; it cannot answer "which cell is this ROW", because a
+    producer may carry the chart in `params["timeframe"]`, on the row's own `timeframe` field, or
+    in both. `external_gauntlet.main` groups the docket into cells by folding a non-H1 ROW chart
+    into `params` and then naming the cell from `params` alone -- so the chart is inside the
+    identity DIGEST. Any reader that instead hands `cell_id` a separate `timeframe` key gets the
+    right `@TF` suffix over a digest computed WITHOUT the chart, and lands in a different key
+    space that happens to look identical for H1.
+
+    WHAT THAT COST, MEASURED ON THE BOX 2026-09-24/25. `judge_coverage` banks every cell whose
+    build failed (88,488 rows) under the judge's own verdict key, and filters the docket by that
+    bank under the second key. Overlap of the bank with the 539,462-row docket:
+
+        bank INTERSECT judge_coverage's keys     0
+        bank INTERSECT the judge's own keys  78,771
+
+    So the bank held the answer for 78,771 docket rows and removed none of them: the judge
+    rebuilt every one of them, every pass, and its pre-warm failure count never moved
+    (81,588 -> 88,246 -> 109,792 -> 93,320). 192,757 of 539,462 rows (35.7%) were keyed
+    differently by the two sides. The same gap silently told the coverage table that every
+    non-H1 cell it had ever judged was still unjudged, because `judged_index` reads the gate
+    ledger, which is in the judge's key space too.
+
+    Two shapes diverge, and they diverge in OPPOSITE directions -- which is why a partial
+    overlap, rather than none at all, is what a reader saw:
+
+      * chart on the row only  (row `timeframe` M15, absent from params)
+          judge: GBPAUD@M15.cross_asset_residual.p=6403309d7977b134   (chart IS in the digest)
+          here : GBPAUD@M15.cross_asset_residual.p=a7abf4646a7e6aca   (chart is NOT)
+      * chart in params, row says H1 (the orthogonal sweep writes both, row stamped H1)
+          judge: UK100@M1.exogenous_conditioner.p=4174b6f6734b5405
+          here : UK100.exogenous_conditioner.p=4174b6f6734b5405       (suffix lost entirely)
+
+    `timeframe_of` reads the cell-level field FIRST, so passing `timeframe` beside `params`
+    overrides the chart the params themselves name. Returning a cell with NO separate
+    `timeframe` key is therefore load-bearing, not tidiness: params alone must decide.
+    """
+    params = dict(row.get("params") or {})
+    row_tf = str(row.get("timeframe") or "").upper()
+    if row_tf and row_tf != REFERENCE_TIMEFRAME and "timeframe" not in params:
+        params["timeframe"] = row_tf
+    return {"sym": row.get("symbol") or row.get("sym"), "family": row.get("family"),
+            "params": params}
+
+
+def docket_cell_id(row: dict[str, Any]) -> str:
+    """The judge's identity for a docket ROW. See `docket_cell` for why the row needs its own."""
+    return cell_id(docket_cell(row))
+
+
 def economic_prior(cell: dict[str, Any]) -> dict[str, Any]:
     """Fail closed for unconstrained statistical finds; named mechanisms remain hypotheses."""
     status = str(cell.get("mechanism_status") or "")
