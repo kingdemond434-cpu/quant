@@ -554,8 +554,11 @@ def test_the_slide_is_a_tolerance_and_the_ceiling_is_absolute() -> None:
 def test_load_sleeves_keeps_live_rows_only_and_never_raises(tmp_path) -> None:
     p = tmp_path / "sleeves.json"
     assert dc.load_sleeves(p) == []
-    p.write_text(json.dumps({"sleeves": [{"name": "a", "status": "LIVE"},
-                                         {"name": "b", "status": "RETIRED"}]}), "utf-8")
+    # The rows carry an admitted symbol: since bcbec41f `load_sleeves` also applies the live
+    # policy (XAUUSD-only), and a row with no symbol is refused by it (test_live_policy.py).
+    p.write_text(json.dumps({"sleeves": [{"name": "a", "symbol": "XAUUSD", "status": "LIVE"},
+                                         {"name": "b", "symbol": "XAUUSD",
+                                          "status": "RETIRED"}]}), "utf-8")
     assert [s["name"] for s in dc.load_sleeves(p)] == ["a"]
     p.write_text("{ nope", "utf-8")
     assert dc.load_sleeves(p) == []
@@ -611,6 +614,31 @@ def test_roster_drops_a_retired_gold_window_and_says_why() -> None:
     assert [s["name"] for s in sleeves] == ["gold_london_am"]
     assert notes == ["GOLD gold_asia: RETIRED (roll20 t=-1.2); not emitted this pass",
                      "GOLD gold_afternoon: RETIRED (no reason recorded); not emitted this pass"]
+
+
+def test_roster_folds_gold_evidence_versions_into_one_live_window() -> None:
+    promoted = [
+        {"name": "gold_asia_v2", "symbol": "XAUUSD", "window": "asia"},
+        {"name": "gold_asia_v14", "symbol": "XAUUSD", "window": "asia"},
+        {"name": "gold_london_am_v3", "symbol": "XAUUSD", "window": "london_am"},
+        {"name": "gold_afternoon_v4", "symbol": "XAUUSD", "window": "afternoon"},
+    ]
+
+    sleeves, notes = dc.roster({}, promoted)
+
+    assert [s["name"] for s in sleeves] == [
+        "gold_asia", "gold_london_am", "gold_afternoon"]
+    assert len(notes) == 4
+    assert all("evidence alias folded" in note for note in notes)
+    assert all("no duplicate live bracket or heat charge" in note for note in notes)
+
+
+def test_gold_book_direction_is_shared_by_both_venue_adapters() -> None:
+    assert dc.book_direction([]) == 0
+    assert dc.book_direction([{"side": "buy"}, {"side": "BUY"}]) == 1
+    assert dc.book_direction([{"side": "sell"}]) == -1
+    assert dc.book_direction([{"side": "buy"}, {"side": "sell"}]) == 0
+    assert dc.book_direction([{"side": "unknown"}]) is None
 
 
 def test_hibernated_maps_gold_windows_and_promoted_tags() -> None:

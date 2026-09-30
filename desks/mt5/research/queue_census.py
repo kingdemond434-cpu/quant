@@ -121,13 +121,21 @@ QUEUES: tuple[dict[str, Any], ...] = (
      "drainer": "discovery_compiler (registry.set_discovery_state)",
      "owner_leg": "discovery_compiler", "cycle_h": 1.0,
      "note": "BLOCKED is a parked state with no re-examination clock"},
-    {"id": "miner_deepening", "kind": "json_key", "key": "tasks",
-     "path": BASE / "data" / "hypotheses" / "miner_deepening_queue.json",
-     "time_field": None, "file_time_field": "built_at",
+    {"id": "miner_deepening", "kind": "artifact",
+     "carry_artifact": BASE / "reports" / "DEEPENING_BACKLOG.json",
+     "depth_key": "depth", "age_key": "oldest_age_h",
+     "carry_keys": ("depth", "oldest_age_h", "oldest_at", "rows_stamped", "decisions_per_h",
+                    "days_to_clear", "lanes"),
      "writer": "research/miner_candidate_compiler.py",
      "drainer": "research/deepening_worker.py", "owner_leg": "deepen", "cycle_h": 1.0,
-     "note": ("ROWS CARRY NO TIMESTAMP: age is measurable only at file granularity via built_at. "
-              "Stamping each task at build time is the fix")},
+     "note": ("AGE IS MEASURED BY THE DRAIN, NOT THE QUEUE FILE (2026-09-24). This row read the "
+              "queue file directly and reported UNMEASURED -- 28,450 rows, no per-row time -- "
+              "with 'stamp the rows at build time' as the fix. Stamping there does not work: "
+              "miner_candidate_compiler REWRITES the whole file every hour, so a build-time "
+              "stamp resets hourly and would report a backlog permanently one hour old. "
+              "deepening_worker publishes DEEPENING_BACKLOG.json instead, carrying the depth and "
+              "the age of the oldest row measured from when the DRAIN first saw it, which is the "
+              "number the no-queues law is actually asking for")},
     {"id": "mechanism_naming", "kind": "json_list",
      "path": BASE / "data" / "hypotheses" / "mechanism_naming_queue.json",
      "time_field": "asked_at", "status_field": None, "consumed_field": "consumed_at",

@@ -358,6 +358,8 @@ def sweep(n_paths: int = 8_000) -> dict[str, Any]:
                         })
     return {
         "generated_utc": datetime.now(UTC).isoformat(),
+        # Paths per cell: the Monte Carlo error is ~sqrt(p(1-p)/n_paths), so a reader needs it.
+        "n_paths": int(n_paths),
         "account": {
             "firm": "E8 Markets", "product": "E8 Pro", "balance_usd": BALANCE,
             "profit_target": TARGET, "static_drawdown": STATIC_DD,

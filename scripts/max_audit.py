@@ -3947,6 +3947,13 @@ _TERMINAL_ARTIFACTS = {
         "its own: staleness here is staleness of the source, which is governed where the source "
         "is. Claimed as a directory class because the vault takes a new file for every lesson "
         "the desk ever records.",
+    # AUDIT COMPLETION LEDGERS (2026-09-29). One per external audit: which item landed where,
+    # and what is blocked on whom. Claimed as a directory class because each audit adds one.
+    "docs/audit/":
+        "AUDIT COMPLETION LEDGERS: an item-by-item record of where each audit item landed (PR, "
+        "clock, artifact) and what blocks the rest. It is a dated record, not a live measurement: "
+        "each item's live state is owned by the organ and fence it names, so the ledger owes no "
+        "cadence of its own and is amended by the session that closes an item.",
     # OPERATIONAL RUNBOOKS. These describe how to act on a box, not what the desk has measured,
     # so they accumulate no inventory and owe no cadence -- but "no law" is recorded here as a
     # DECISION rather than left as an omission.
@@ -3964,6 +3971,14 @@ _TERMINAL_ARTIFACTS = {
     "docs/DESK_CYCLE_PROMPT.md":
         "A TEMPLATE, not a finding: the standing prompt a cycle is launched with. It owes no "
         "cadence for the same reason a protocol library does -- it accumulates no inventory.",
+    "docs/cro/CRO_CYCLE.md":
+        "A TEMPLATE, not a finding: the procedure both CRO lanes execute (Run-DeskCycle.ps1). "
+        "Same class as DESK_CYCLE_PROMPT -- it changes when the procedure changes.",
+    "docs/cro/QUANT_CONSTITUTION.md":
+        "STANDING LAW supplied by the principal, subordinate to ops/principal_doctrine.txt. It "
+        "accumulates no inventory, so a re-work clock would schedule edits to law nobody found wrong.",
+    "docs/cro/QUANT_REFERENCE.md":
+        "A REFERENCE MANUAL consulted on demand by the CRO lanes. Procedure, not measurement.",
     "docs/LIVE_BRANCH_RECONCILIATION_2026-09-05.md":
         "A DATED MEASUREMENT, stamped in its own filename, recording the branch state at "
         "2026-09-05. Its content is true of that instant and of no other, so a re-work clock "
@@ -4295,6 +4310,77 @@ _TERMINAL_ARTIFACTS = {
         "on a clock. It changes only by principal revision of the plan, same as the other DOCTRINE "
         "rows in docs/research/ARTIFACT_GOVERNANCE.md, where this classification is also recorded "
         "in the human-readable table.",
+    # DERIVED RENDERINGS (classified 2026-09-29, 12 of the 21 docs artifacts the birth-property
+    # fence named). Each page says DERIVED in its own header and is rewritten whole by the organ
+    # named beside it; its freshness is that organ's clock, governed where the organ is (the
+    # component registry, the runtime attestation). It holds no inventory of its own.
+    "docs/research/CLOCK_LIVENESS.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/clock_liveness.py (hourly leg clock_liveness). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/COST_TRUTH.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/cost_truth.py (hourly leg cost_truth). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/IMPLEMENTATION.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/implementer.py from reports/IMPLEMENTER.json. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/LOOP_LIVENESS.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/loop_liveness.py. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/PLUMBING_ALERTS.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/plumbing_watchdog.py, every pass. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/PLUMBING_INVARIANTS.md":
+        "DERIVED RENDERING, rewritten whole by scripts/check_plumbing_invariants.py --render (a law-gate fence). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/PRODUCTIVITY_CENSUS.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/productivity_census.py. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/RESEARCH_DASHBOARD.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/research_dashboard.py (hourly leg research_dashboard). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/RUNTIME_STATE.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/runtime_attestation.py (hourly leg runtime_attestation). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/SANDBOX_ROSTER.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/sandbox_roster.py. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/SELF_REPAIR.md":
+        "DERIVED RENDERING, rewritten whole by desks/mt5/research/self_repair_registry.py (hourly leg self_repair). Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    "docs/research/TIER5_AUDIT.md":
+        "DERIVED RENDERING, rewritten whole by scripts/check_tier5_audit.py from docs/research/tier5_audit.json. Nothing in it is authored; its "
+        "staleness is its producer's, which the component registry and runtime attestation "
+        "govern.",
+    # DATED RESEARCH WRITE-UPS (2026-09-29): forensic records of one investigation each.
+    "docs/research/GOLD_LOSS_RECHECK_20260929.md":
+        "FORENSIC WRITE-UP, dated: a read-only recheck of the gold losses and exits on "
+        "2026-09-29. It records what was measured that day; it accumulates no inventory and a "
+        "re-work clock would re-date a finding nobody had found wrong.",
+    "docs/research/RENTECH_TEARDOWN.md":
+        "FORENSIC WRITE-UP, dated 2026-09-24, public sources only: what the job specs and the "
+        "public record support. It is the record of one reading, not a queue: a mechanism it "
+        "names reaches the gauntlet through the miner's ordinary door (the firm_mining donation "
+        "of 2026-09-27 covers the Renaissance cluster), never through this page.",
+    "docs/research/READING_LIST.md":
+        "A PROTOCOL LIBRARY: literature to READ by hand because the miner cannot convert prose "
+        "that names no registered family. It is a list of inputs, not measurements; an item "
+        "read becomes a mined row through the ordinary door.",
+    "docs/research/firm_mining/":
+        "DIRECTORY CLASS, the 2026-09-27 five-cluster firm mining. Its findings were DONATED as "
+        "rows to desks/mt5/data/intelligence/firm_mining/discoveries_*.json, which the "
+        "candidate compiler reads (CLAUDE.md: seat output goes through data/intelligence/); "
+        "the markdown is the narrative record of that donation, not inventory awaiting one.",
 }
 
 
@@ -4875,7 +4961,12 @@ def check_test_suite_collectable(defects) -> None:
     best = int(rec.get("max_collected", 0))
     if n > best:
         TEST_RECORD.parent.mkdir(parents=True, exist_ok=True)
+        # MERGED, NEVER REPLACED. The record has a second writer (`libs/ops/suite_record`, the
+        # `pass_fail` block from scripts/record_suite_run.py); writing a fresh three-key dict
+        # here silently erased it on every raise of the collection mark -- the state-eraser
+        # class tests/ops/test_suite_record.py pins.
         TEST_RECORD.write_text(json.dumps({
+            **rec,
             "max_collected": n, "at": datetime.now(tz=UTC).isoformat(),
             "note": "high-water mark of COLLECTABLE test modules; ratchets UP only. A suite may "
                     "never quietly shrink -- deleting a test is a decision, not a side effect.",
@@ -4888,6 +4979,32 @@ def check_test_suite_collectable(defects) -> None:
             "deleted file at a time while 'tests pass' stays true the entire way down. Restore "
             f"them, or record in {TEST_RECORD.relative_to(ROOT)} why the coverage is legitimately "
             "gone."))
+
+
+def check_test_suite_pass_fail(defects) -> None:
+    """The PASS/FAIL half of the suite record (`libs/ops/suite_record.grade`).
+
+    The collection ratchet above cannot see a test that imports fine and FAILS; this reads the
+    block `scripts/record_suite_run.py` writes and raises a defect for every non-OK grade. A DICT
+    LOOKUP on purpose: a status `grade()` gains without a key here is a KeyError, loud on the
+    first run, rather than a silent skip (tests/ops/test_suite_record.py pins the two together).
+    """
+    from libs.ops import suite_record
+    keys = {
+        "RED": "test-suite-red",
+        "RED-ENTRENCHED": "test-suite-red-entrenched",
+        "FELL": "test-suite-fell",
+        "UNMEASURED": "test-suite-pass-fail-unmeasured",
+        "STALE": "test-suite-pass-fail-stale",
+    }
+    try:
+        rec = json.loads(TEST_RECORD.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        rec = {}
+    status, detail = suite_record.grade(rec if isinstance(rec, dict) else {})
+    if status == "OK":
+        return
+    defects.append((keys[status], f"test suite {status}: {detail}"))
 
 
 #: Triage registers excluded from §35 because they disposition their own items inline. The
@@ -6980,6 +7097,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
                       ("naive-datetime", check_naive_datetime),
                       ("host-memory", check_host_memory_headroom),
                       ("test-suite", check_test_suite_collectable),
+                      ("test-suite-pass-fail", check_test_suite_pass_fail),
                       ("triage-disposition", check_triage_disposition),
                       ("artifact-governance", check_artifact_governance),
                       ("orphan-code", check_orphan_code),
@@ -8509,12 +8627,16 @@ def check_unwired_modules(defects) -> None:
                     # register the module AND its parent packages, matching the AST roll-up
                     for i in range(2, len(parts) + 1):
                         imported.add(".".join(parts[:i]))
-    for area in ("scripts", "libs", "ops"):
+    # `desks` IS A CALLER SURFACE TOO (2026-09-29): the MT5 desk's organs under desks/mt5/ import
+    # libs/ directly, and leaving them out reported ~90 libs modules the trading desk actually
+    # uses as orphans. Its tests/ trees are excluded for the same reason tests/ is: a test
+    # importing a module proves it works, not that anything uses it.
+    for area in ("scripts", "libs", "ops", "desks"):
         base = ROOT / area
         if not base.exists():
             continue
         for p in base.rglob("*.py"):
-            if "__pycache__" in p.parts:
+            if "__pycache__" in p.parts or (area == "desks" and "tests" in p.parts):
                 continue
             try:
                 tree = ast.parse(p.read_text("utf-8", errors="ignore"))
@@ -8590,15 +8712,23 @@ def check_unwired_modules(defects) -> None:
     # script). Research one-shots stay unaudited on purpose: not every script needs a caller, and
     # a check that said otherwise would produce 69 defects nobody could act on.
     sole_importer: dict[str, str] = {}
+    # Walked ONCE, not once per module: the per-module rglob was O(modules x files) in directory
+    # walks alone. The MT5 desk (minus its tests) counts as an importer for the reason above.
+    script_files = list(ROOT.joinpath("scripts").glob("*.py"))
+    other_files = [
+        f for f in (*(ROOT / "libs").rglob("*.py"),
+                    *(p for p in (ROOT / "desks").rglob("*.py") if "tests" not in p.parts))
+        if "__pycache__" not in f.parts
+    ]
     for mod in modules:
         importers = [
             str(f.relative_to(ROOT))
-            for f in ROOT.joinpath("scripts").glob("*.py")
+            for f in script_files
             if mod in _imports_of(f)
         ]
         others = [
-            f for f in (ROOT / "libs").rglob("*.py")
-            if "__pycache__" not in f.parts and mod in _imports_of(f)
+            f for f in other_files
+            if mod in _imports_of(f)
             and ".".join(f.relative_to(ROOT).with_suffix("").parts) != mod
         ]
         if len(importers) == 1 and not others:
@@ -8612,6 +8742,11 @@ def check_unwired_modules(defects) -> None:
         f for pat in ("ops/*", "scripts/*.py", ".github/workflows/*", "docs/*.md")
         for f in ROOT.glob(pat) if f.is_file()
     ]
+    # The MT5 desk's cycle is a scheduler too: desks/mt5/research/hourly_cycle.py runs scripts as
+    # legs (`_producer("research_api_status", "scripts/research_api_status.py")`) and
+    # batteries.py lists more. Its tests are not invokers.
+    invoker_files += [p for p in (ROOT / "desks").rglob("*.py")
+                      if "tests" not in p.parts and "__pycache__" not in p.parts]
     # Scripts that cannot run on this platform at all. `run_autodiscovery.py` imports MetaTrader5,
     # a Windows-only broker bridge already carried in the optional-dependency allowlist -- wiring
     # it into a Linux cadence would schedule a guaranteed ImportError every cycle, which is noise

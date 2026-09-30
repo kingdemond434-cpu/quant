@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+
 import scripts.check_change_window as cw
 import scripts.check_mechanism_attribution as ma
 import scripts.record_capital_event as rce

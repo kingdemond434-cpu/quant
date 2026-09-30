@@ -54,7 +54,8 @@ def test_shadow_basis_still_refuses_because_it_would_measure_the_model_on_itself
     assert "cost model measured against itself" in out["why"]
 
 
-def test_a_live_basis_with_no_fills_says_so_with_counts_rather_than_a_zero():
+def test_a_live_basis_with_no_fills_says_so_with_counts_rather_than_a_zero(tmp_path, monkeypatch):
+    monkeypatch.setattr(attr, "BASE", tmp_path)
     out = attr._execution_term("live")
     assert out["value"] == UNMEASURED
     assert "NOT a clean bill of health" in out["why"]
@@ -197,6 +198,23 @@ def test_the_position_entry_returns_the_bridge_to_the_intent():
     assert env["_position_context"](_Deal()) == (2000.5, 1981.4, 2038.2, "DWgold_asia")
 
 
+def test_entry_context_keeps_execution_timestamp_and_opening_direction():
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    class Venue(_FakeMT5):
+        @staticmethod
+        def history_deals_get(position=None):
+            return [SimpleNamespace(entry=0, price=2000.5, order=7, ticket=71,
+                                    type=1, time_msc=1_790_000_000_123)]
+
+    env = _gateway_func("_position_entry", ns={"mt5": Venue, "datetime": datetime, "UTC": UTC})
+    row = env["_position_entry"](7)
+    assert row["entry_side"] == 1
+    assert datetime.fromisoformat(row["entry_time"]).timestamp() == 1_790_000_000.123
+    assert env["_position_entry"](None)["entry_time"] is None
+
+
 def test_the_intent_row_carries_the_market_it_was_sent_into():
     """Slippage without the conditions it was paid in averages over every situation at once."""
     import ast
@@ -246,7 +264,10 @@ def test_record_intent_stamps_the_state_and_never_raises(tmp_path):
     assert row["intent_id"] == iid and len(iid) == 16
 
     # An unwritable path must be swallowed: telemetry may never break the money path.
-    env["INTENTS"] = Path("/proc/definitely/not/writable/x.jsonl")
+    # A regular file cannot be a parent on Windows or POSIX; /proc is POSIX-only.
+    parent_file = tmp_path / "not_a_directory"
+    parent_file.write_text("fixture", encoding="utf-8")
+    env["INTENTS"] = parent_file / "x.jsonl"
     assert env["_record_intent"](sleeve="S") is None
 
 
@@ -301,8 +322,10 @@ def _bracket_env(tmp_path, mt5):
     import time
     decisions: list[dict] = []
     env = _gateway_func("place_bracket", "_record_intent", "_intent_id", "_minute_of",
-                        "_sleeve_identity",
+                        "_sleeve_identity", "order_comment",
                         ns={"mt5": mt5, "time": time, "MAGIC": 341953, "now": lambda: _STAMP,
+                            "_DESK_STALE": None, "COMMENT_MAX": 29,
+                            "_send_error": lambda result: None,
                             "INTENTS": tmp_path / "intents.jsonl",
                             "_state_vector_id": lambda: "sv1", "_release_id": lambda: "rel1",
                             "entry_is_legal": lambda *a: (True, ""),
@@ -373,6 +396,8 @@ def test_a_decision_row_carries_the_intent_id_through_the_ledger_writer(tmp_path
     env = _gateway_func("_record_decision", "_intent_id", "_minute_of",
                         ns={"DECISIONS": path, "now": lambda: _STAMP,
                             "_state_vector_id": lambda: "sv1", "_release_id": lambda: "rel1",
+                            "_strategy_state_identity": lambda *args: {},
+                            "_PROCESS_INSTANCE_ID": "test-process",
                             "_decision_portfolio_context": lambda s: {}, **_ID_NS})
     env["_record_decision"](sleeve="gold_asia", symbol="XAUUSD", side="buy_stop", lot=0.06,
                             price=1.0, sl=0.9, tp=1.2, taken=False, reason="margin_guard")

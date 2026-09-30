@@ -106,11 +106,11 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
     #
     # Budgets are the task's own cadence plus one period of slack, so a single skipped run is not
     # an alarm and two are.
-    "E8-Book":            ("desks/mt5/reports/E8_BOOK.json", 120,
-                           "which sleeves the prop account is allowed to trade this hour"),
     "E8-Executor":        ("desks/mt5/reports/E8_EXEC.json", 120,
-                           "what the prop account actually sent, or refused and why -- silence "
-                           "here is indistinguishable from a flat book"),
+                           "guard and management of inherited E8 positions; legacy FX entry is "
+                           "retired"),
+    "E8-Gold":            ("desks/mt5/reports/E8_GOLD.json", 15,
+                           "the mirrored Fusion gold windows actually sent, or refused and why"),
     "E8-Spreads":         ("desks/mt5/reports/E8_SPREADS.json", 120,
                            "the venue cost sample the executor's spread fence refuses against"),
     # NO E8-Guard ROW, AND REMOVING IT IS THE POINT. I added one earlier tonight naming
@@ -292,6 +292,11 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "seven structural invariants, each PROVEN by exhaustion, ENFORCED by a complete static "
         "enumeration, or carried as a named OBLIGATION -- never as a weaker check reported as "
         "the same thing"),
+    "MT5-FrontierAudit (independent verifier)": (
+        "desks/mt5/reports/INDEPENDENT_VERIFIER.json", 1560,
+        "every promoted certificate rebuilt by a second implementation that imports no desk "
+        "code -- signals, fills, costs and R compared trade by trade, with UNSUPPORTED and "
+        "UNMEASURED published as themselves and never as agreement"),
     "MT5-FrontierAudit (meta R&D)": (
         "desks/mt5/reports/META_RND.json", 1560,
         "the arena a challenger research-system must beat -- sealed traps, the adversary, the "
@@ -353,6 +358,13 @@ CONTRACTS: dict[str, tuple[str, int, str]] = {
         "whether the desk's strategy LAYERS are separable -- the share of fitness variance each "
         "axis pair carries in its interaction alone, and what the joint genome scores against "
         "the fixed recipe out of sample"),
+    # Tier-5 audit XCI/107 and XCIV (2026-09-29): both were built and ran on no clock.
+    "MT5-FrontierAudit (market posteriors)": (
+        "desks/mt5/reports/MARKET_POSTERIORS.json", 1560,
+        "F3: nine market axes as posteriors, two estimators each, disagreement kept per axis"),
+    "MT5-FrontierAudit (chart allocation)": (
+        "desks/mt5/reports/CHART_ALLOCATION.json", 1560,
+        "research effort per chart, inverse to the docket share each chart already holds"),
 }
 
 

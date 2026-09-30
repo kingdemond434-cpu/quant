@@ -41,37 +41,278 @@ for p in (str(BASE), str(BASE / "research"), str(ROOT)):
 SOURCE = "fund_playbook"
 OUT = BASE / "data" / "intelligence" / SOURCE
 REPORT = BASE / "reports" / "FUND_PLAYBOOK.json"
+MEDALLION_REPORT = BASE / "reports" / "MEDALLION_PUBLIC_CORPUS.json"
+MEDALLION_COVERAGE = BASE / "reports" / "MEDALLION_COVERAGE.json"
+PUBLIC_METHOD_COVERAGE = BASE / "reports" / "PUBLIC_QUANT_METHOD_COVERAGE.json"
 
 A, B, C = "A", "B", "C"
+
+SENATE_2014_STATEMENT = (
+    "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/"
+    "STMT%20-%20Renaissance%20%28July%2022%202014%292.pdf"
+)
+SENATE_2014_REPORT = (
+    "https://www.hsgac.senate.gov/wp-content/uploads/imo/media/doc/"
+    "REPORT-Abuse%20of%20Structured%20Financial%20Products%20%28Basket%20Options%29%20"
+    "%287-22-14%2C%20updated%209-30-14%29.pdf"
+)
+SIMONS_2008_TESTIMONY = (
+    "https://www.govinfo.gov/content/pkg/CHRG-110hhrg56582/pdf/CHRG-110hhrg56582.pdf"
+)
+
+# These are explicit specialisations of organs the desk already owns.  They make the six final
+# Medallion frontier laws inspectable without creating a second crawler, graph, ensemble, or
+# scheduler.  A missing owner is a wiring defect and is tested below.
+MEDALLION_FRONTIER_LAWS = {
+    "autonomous_data_edge_discovery": "desks/mt5/research/data_prospector.py",
+    "surprise_relative_to_expectations": "desks/mt5/research/event_surprise.py",
+    "dynamic_directed_cross_asset_graph": "desks/mt5/research/cross_asset_graph.py",
+    "whole_book_residual_search": "desks/mt5/research/factor_residual_engine.py",
+    "source_representation_execution_search": "desks/mt5/research/coverage_tensor.py",
+    "missing_dimension_meta_research": "desks/mt5/research/unknown_unknowns.py",
+}
+
+# Publicly reported METHOD classes map to canonical owners.  This is deliberately a wiring map,
+# not a claim that the desk owns Renaissance's private implementation or signals.
+MEDALLION_METHOD_OWNERS = {
+    "many_weak_signals_one_frozen_model": (
+        "desks/mt5/research/weak_signal_compiler.py",
+        "desks/mt5/mt5desk/family_ensemble.py",
+    ),
+    "latent_regimes_and_online_state_probabilities": (
+        "libs/regime/hmm.py",
+        "desks/mt5/research/regime_router.py",
+    ),
+    "factor_neutral_residual_reversion": (
+        "desks/mt5/research/factor_residual_engine.py",
+        "desks/mt5/research/cross_asset_graph.py",
+    ),
+    "forced_flow_and_calendar_effects": (
+        "desks/mt5/research/actor_atlas.py",
+        "desks/mt5/research/actor_pressure.py",
+    ),
+    "nonlinear_representation_search": (
+        "desks/mt5/research/representation_discovery.py",
+    ),
+    "rare_state_smoothing_and_maximum_entropy": (
+        "desks/mt5/research/weak_signal_compiler.py",
+        "desks/mt5/research/representation_discovery.py",
+    ),
+    "point_in_time_clean_history": (
+        "libs/data/quality.py",
+        "libs/data/pit_certificate.py",
+        "desks/mt5/research/pit_audit.py",
+    ),
+    "cost_impact_and_capacity_gating": (
+        "desks/mt5/research/cost_truth.py",
+        "desks/mt5/research/capacity.py",
+        "libs/execution/digital_twin.py",
+    ),
+    "portfolio_kelly_on_combined_forecasts": (
+        "libs/portfolio/kelly_surface.py",
+        "libs/portfolio/posterior_growth.py",
+    ),
+    "independent_bets_and_breadth_conditioned_heat": (
+        "desks/mt5/research/independence_intake.py",
+        "libs/portfolio/posterior_growth.py",
+    ),
+    "joint_intraday_cost_aware_sizing": (
+        "libs/portfolio/optimize.py",
+        "desks/mt5/research/cost_truth.py",
+    ),
+    "cross_source_data_quality": (
+        "libs/data/quality.py",
+        "desks/mt5/research/fetch_dukascopy.py",
+        "desks/mt5/research/pit_audit.py",
+    ),
+    "session_handoffs_and_ten_segment_week": (
+        "desks/mt5/research/actor_pressure.py",
+        "desks/mt5/research/axis_proposer.py",
+    ),
+    "opening_gap_fade_and_stress_reversal": (
+        "desks/mt5/research/institutional_cards.py",
+        "desks/mt5/research/tail_alpha_search.py",
+    ),
+    "cluster_residuals_with_correlation_regime_guard": (
+        "desks/mt5/research/factor_residual_engine.py",
+        "desks/mt5/research/cross_asset_graph.py",
+    ),
+    "m5_intraday_research_lane": (
+        "desks/mt5/research/chart_allocator.py",
+        "desks/mt5/research/counterfactual_timeframes.py",
+    ),
+    "weekday_weekend_effects_with_stability_falsifiers": (
+        "desks/mt5/research/axis_proposer.py",
+        "desks/mt5/research/falsifier_run.py",
+    ),
+    "report_only_crowding_monitor": (
+        "desks/mt5/research/crowding_miner.py",
+        "libs/research/crowding_hazard.py",
+    ),
+    "graduated_nonintuitive_signal_admission": (
+        "desks/mt5/research/fast_admission.py",
+        "libs/research/marginal_admission.py",
+    ),
+}
+
+PUBLIC_METHOD_OWNERS = {
+    "Renaissance|weak_signal_combination_regimes_flows_costs": (
+        "desks/mt5/research/weak_signal_compiler.py", "libs/regime/hmm.py",
+        "desks/mt5/research/actor_pressure.py", "desks/mt5/research/cost_truth.py"),
+    "Bridgewater|macro_surprise_quadrants_risk_balance": (
+        "desks/mt5/research/macro_state_engine.py", "libs/portfolio/risk_parity.py"),
+    "DE_Shaw|relative_value_residuals_cost_optimal_execution": (
+        "desks/mt5/research/factor_residual_engine.py",
+        "desks/mt5/research/cost_truth.py"),
+    "Two_Sigma|feature_store_pit_walk_forward_research_platform": (
+        "libs/data/feature_store.py", "libs/data/pit_certificate.py",
+        "desks/mt5/research/representation_discovery.py"),
+    "AQR|value_momentum_carry_defensive": (
+        "desks/mt5/research/institutional_cards.py",
+        "desks/mt5/research/curve_strategy_screen.py"),
+    "Man_AHL_Winton|multi_speed_trend_vol_target": (
+        "desks/mt5/research/trend_core.py", "libs/risk/vol_target.py"),
+    "Citadel_Millennium|marginal_growth_allocation_risk_budgets": (
+        "libs/research/marginal_admission.py", "libs/portfolio/posterior_growth.py"),
+    "public_data|dukascopy_and_venue_tick_truth": (
+        "desks/mt5/research/fetch_dukascopy.py",
+        "desks/mt5/research/dukascopy_backfill.py",
+        "desks/mt5/research/cost_truth.py"),
+    "volatility_risk_premium|vol_curve_as_state": (
+        "desks/mt5/research/curve_strategy_screen.py",
+        "desks/mt5/research/tail_alpha_search.py"),
+    "event_news_surprise|actual_minus_consensus_and_reaction": (
+        "desks/mt5/research/event_surprise.py",
+        "desks/mt5/research/event_response_atlas.py",
+        "desks/mt5/research/news_event_stream.py"),
+    "term_structure_roll|curves_and_swap_proxies": (
+        "desks/mt5/research/fetch_futures_curves.py",
+        "desks/mt5/research/curve_strategy_screen.py"),
+    "seasonality|calendar_and_physical_cycles": (
+        "desks/mt5/research/actor_pressure.py", "desks/mt5/research/axis_proposer.py"),
+    "tail_hedging_convexity|portfolio_crash_protection": (
+        "desks/mt5/research/tail_alpha_search.py", "libs/discovery/tail_risk.py"),
+    "capacity_decay|measure_then_retire": (
+        "desks/mt5/research/capacity.py", "desks/mt5/research/decay_monitor.py"),
+    "peer_review_and_full_test_trail": (
+        "desks/mt5/research/blind_reviewer.py", "libs/research/hypothesis_graph.py",
+        "libs/research/review_rubric.py"),
+}
+
+
+def _m(claim_id: str, grade: str, claim: str, *, state: str, currentness: str,
+       source: str, source_id: str, disposition: str, falsifier: str, **kwargs: object) -> dict:
+    """One Medallion public-evidence claim, never a prestige shortcut."""
+    return {"claim_id": claim_id, "fund": "Renaissance", "grade": grade, "claim": claim,
+            "claim_state": state, "currentness": currentness, "source_url": source,
+            "canonical_source_id": source_id, "disposition": disposition,
+            "falsifier": falsifier, **kwargs}
+
+
+MEDALLION_CARDS: list[dict] = [
+    _m("rt_many_weak_predictions", A,
+       "predictions profitable only slightly more often than not; recommendation breadth and "
+       "aggregation reduce outcome variance", state="DIRECT_CONFIRMED_METHOD",
+       currentness="HISTORICAL_ONLY", source=SENATE_2014_STATEMENT,
+       source_id="HSGAC-2014-RENTEC-STATEMENT", disposition="IMPLEMENTED",
+       falsifier="weak_signal_compiler fails to beat its best member on untouched OOS data",
+       family="ensemble", symbols=[], params={},
+       note="owned by weak_signal_compiler + family_ensemble; no duplicate cell donation"),
+    _m("rt_balanced_relative_book", A,
+       "balanced long/short country books and relative recent-winner/loser effects",
+       state="DIRECT_CONFIRMED_HISTORICAL_STRATEGY", currentness="HISTORICAL_ONLY",
+       source=SIMONS_2008_TESTIMONY, source_id="US-HOUSE-2008-SIMONS",
+       disposition="GENERATING",
+       falsifier="index residual ranks have no positive net OOS expectancy after full costs",
+       family="cross_asset_residual", symbols=["NAS100", "US30", "GER40", "UK100", "JPN225"],
+       params={"factor_symbols": ["US500"], "lookback": 120, "beta_win": 120,
+               "entry_z": 2.0, "ttl_bars": 48, "side_mode": "revert"},
+       why="MT5 ANALOGUE: remove the global index factor, then test reversion in the residual; "
+           "single-name statistical mining remains excluded by mandate"),
+    _m("rt_liquid_global_systematic", A,
+       "computer-generated systematic trading across liquid global stocks, bonds, currencies "
+       "and commodities", state="DIRECT_CONFIRMED_METHOD", currentness="HISTORICAL_ONLY",
+       source=SIMONS_2008_TESTIMONY, source_id="US-HOUSE-2008-SIMONS",
+       disposition="GENERATING", falsifier="multi-asset trend descendants add no independent "
+       "OOS value beyond the current book", family="multi_speed_trend",
+       symbols=["EURUSD", "USDJPY", "XAUUSD", "XAGUSD", "XBRUSD", "US500", "UST10Y"],
+       params={"speeds": [5, 10, 21, 63, 126, 252], "hold_days": 5,
+               "min_agreement": 0.6},
+       why="persistent hedging and slow institutional repositioning can create trends across "
+           "otherwise unrelated liquid markets"),
+    _m("rt_public_information_inputs", A,
+       "models consumed public news, analyst, energy, crop, weather, filing, accounting, quote "
+       "and trade information", state="DIRECT_CONFIRMED_INPUT", currentness="HISTORICAL_ONLY",
+       source=SENATE_2014_STATEMENT, source_id="HSGAC-2014-RENTEC-STATEMENT",
+       disposition="GENERATING", falsifier="PIT public-information descendants add no OOS "
+       "information after novelty residualisation", family="event_reaction",
+       symbols=["XAUUSD", "XBRUSD", "XTIUSD", "CORN", "WHEAT", "SUGAR"],
+       params={"input_source": "public_information_surprise"},
+       blocked_on="PIT actual/expectation ledgers for each report family",
+       why="the tradeable object is information arrival relative to the market's prior, not the "
+           "raw level or the source's prestige"),
+    _m("rt_quotes_and_trades", A,
+       "quotes and trades from markets around the world were model inputs",
+       state="DIRECT_CONFIRMED_INPUT", currentness="HISTORICAL_ONLY",
+       source=SENATE_2014_STATEMENT, source_id="HSGAC-2014-RENTEC-STATEMENT",
+       disposition="GENERATING", falsifier="Fusion tick imbalance has no net OOS edge after "
+       "spread, commission and latency", family="orderflow_imbalance",
+       symbols=["XAUUSD", "EURUSD", "USDJPY", "US500", "XBRUSD"],
+       params={"input_source": "fusion_tick_tape"},
+       why="aggressive quote/trade imbalance measures short-lived informed or forced flow; the "
+           "Fusion tape is a broker proxy, not a centralized book"),
+    _m("rt_high_turnover", A,
+       "very high recommendation and trade turnover was critical to the historical strategy",
+       state="DIRECT_CONFIRMED_HISTORICAL_STRATEGY", currentness="HISTORICAL_ONLY",
+       source=SENATE_2014_REPORT, source_id="HSGAC-2014-BASKET-OPTIONS-REPORT",
+       disposition="RESEARCH_ONLY", falsifier="effective independent bets do not increase after "
+       "costs when holding horizons shorten", family=None, symbols=[], params={},
+       note="turnover is an outcome to measure, never a target or permission to overtrade"),
+    _m("rt_short_lived_temporal", B,
+       "short-lived temporal anomalies were repeatedly re-estimated intraday",
+       state="STRONG_SECONDARY_REPORT", currentness="HISTORICAL_ONLY", source="",
+       source_id="ZUCKERMAN-2019-RECONSTRUCTION", disposition="GENERATING",
+       falsifier="clock-shift and day-label placebos match or beat the measured effect",
+       family="clock_transition", symbols=["XAUUSD", "EURUSD", "US500", "XBRUSD"],
+       params={"label": "session_transition", "stamp_hour": None, "mode": "fade", "side": 1,
+               "lead_bars": 1, "hold_bars": 2},
+       blocked_on="stamp hour must be resolved by plumbing_miner for each venue clock",
+       why="scheduled inventory transfer and liquidity changes can produce repeatable transition "
+           "effects; the clock relabel is the required null"),
+    _m("rt_cross_market_information", B,
+       "a broad multi-market system can use one liquid market's state to predict another",
+       state="INFERENCE", currentness="UNKNOWN", source=SENATE_2014_STATEMENT,
+       source_id="HSGAC-2014-RENTEC-STATEMENT", disposition="GENERATING",
+       falsifier="driver-target directionality vanishes under lag reversal and block bootstrap",
+       family="lead_lag", symbols=["XAUUSD", "USDJPY", "AUDUSD", "XBRUSD", "US500"],
+       params={"driver_symbol": "USDX", "lag_bars": 1, "threshold_z": 1.5,
+               "ttl_bars": 4, "side_mode": "continue"},
+       why="information reprices the most liquid driver first and transmits to exposed markets; "
+           "the directed edge must survive common-factor controls"),
+    _m("rt_turbulence_conditioning", B,
+       "predictor strength changed with turbulence and market state",
+       state="FORMER_EMPLOYEE_PUBLIC_STATEMENT", currentness="UNKNOWN", source="",
+       source_id="PUBLIC-INTERVIEW-TURBULENCE", disposition="GENERATING",
+       falsifier="state-conditioned rules fail to beat the unconditional preregistered control",
+       family="vol_transition", symbols=["XAUUSD", "EURUSD", "US500", "XBRUSD", "UST10Y"],
+       params={"window": 63, "fast_window": 10, "high_q": 0.8, "low_q": 0.2,
+               "ttl_bars": 12},
+       why="volatility transitions change risk-bearing capacity and forced-flow intensity; the "
+           "regime is frozen before OOS evaluation"),
+    _m("rt_external_managers_as_instruments", A,
+       "outside manager return streams were historically modeled as instruments and beta hedged",
+       state="DIRECT_CONFIRMED_HISTORICAL_STRATEGY", currentness="HISTORICAL_ONLY", source="",
+       source_id="SIMONS-PUBLIC-MANAGER-PORTFOLIO", disposition="BLOCKED_ON_DATA",
+       falsifier="PIT public strategy streams have no stable conditional predictability after "
+       "fees and selection-bias controls", family=None, symbols=[], params={},
+       blocked_on="survivorship-safe PIT public manager/strategy return streams",
+       why="model the behavior and regimes of public strategies, never copy a manager's claim"),
+]
 
 #: Each card: who, what they said (paraphrased), the grade, and how this desk states it.
 #: `family`/`params`/`symbols` make it executable; `blocked_on` names the missing input instead.
 CARDS: list[dict] = [
-    # ---------------------------------------------------------------- Renaissance
-    {"fund": "Renaissance", "grade": A, "claim": "predictions profitable only slightly more often "
-     "than not; volume of recommendations does the work (Senate statement)",
-     "family": "ensemble", "note": "the weak-signal compiler IS this card; nothing to donate here",
-     "symbols": [], "params": {}},
-    {"fund": "Renaissance", "grade": A, "claim": "stock book approximately balanced long/short, "
-     "buying recent losers and selling recent winners (Simons, 2008 testimony)",
-     "family": "cross_asset_residual", "symbols": ["Apple", "Microsoft", "Amazon", "Nvidia",
-     "Alphabet-A", "Meta", "Tesla", "JPMorganChase", "ExxonMobil", "Berkshire"],
-     "params": {"factor_symbols": ["US500"], "lookback": 120, "beta_win": 120, "entry_z": 2.0,
-                "ttl_bars": 48, "side_mode": "revert"},
-     "why": "market-neutral residual reversion in single names: the residual to the index is "
-            "the idiosyncratic return, and its mean reversion is the stated mechanism"},
-    {"fund": "Renaissance", "grade": B, "claim": "an early effect came from the 15-minute gap "
-     "between S&P options and futures closing times (Zuckerman)",
-     "family": "clock_transition", "symbols": ["US500", "NAS100", "US30"],
-     "params": {"label": "cash_equity_close", "stamp_hour": None, "mode": "fade", "side": 1,
-                "lead_bars": 1, "hold_bars": 2},
-     "why": "venue-timing mismatch around the cash close; plumbing_miner resolves the stamp hour"},
-    {"fund": "Renaissance", "grade": B, "claim": "five-minute bars became important for finding "
-     "nonrandom effects (Laufer, book-derived)", "family": None, "symbols": [],
-     "blocked_on": "M5 bars for book symbols", "why": "intraday temporal-sequence mining"},
-    {"fund": "Renaissance", "grade": C, "claim": "win rate ~50.75% (attributed to Mercer, "
-     "social)", "family": None, "symbols": [], "params": {},
-     "note": "a calibration target for the ensemble's hit rate, not a hypothesis"},
+    *MEDALLION_CARDS,
     # ---------------------------------------------------------------- Bridgewater
     {"fund": "Bridgewater", "grade": A, "claim": "trade growth/inflation SURPRISES relative to "
      "what is discounted, not levels", "family": "event_reaction",
@@ -118,12 +359,10 @@ CARDS: list[dict] = [
     {"fund": "AQR", "grade": A, "claim": "naive factor timing deteriorates after lags and costs",
      "family": None, "symbols": [], "params": {},
      "note": "a NEGATIVE card: multi_speed_trend does not time itself, by design"},
-    {"fund": "AQR", "grade": A, "claim": "betting-against-beta / defensive: low-beta names "
-     "outperform per unit of risk", "family": "cross_asset_residual",
-     "symbols": ["JohnsonJohnson", "ProcterGamble", "CocaCola", "Walmart", "PepsiCo"],
-     "params": {"factor_symbols": ["US500"], "lookback": 240, "beta_win": 240, "entry_z": 1.5,
-                "ttl_bars": 120, "side_mode": "continue"},
-     "why": "residual continuation in low-beta names: the defensive premium as a residual drift"},
+    {"fund": "AQR", "grade": A, "claim": "betting-against-beta / defensive: low-beta assets "
+     "outperform per unit of risk", "family": None, "symbols": [], "params": {},
+     "note": "single-name statistical mining is excluded; retain as a public factor prior for "
+             "the event-only equity lane and cross-asset style-premia research"},
     # ---------------------------------------------------------------- Man AHL
     {"fund": "Man AHL", "grade": A, "claim": "multi-speed trend; fastest speeds carry the crisis "
      "alpha", "family": "multi_speed_trend",
@@ -168,9 +407,16 @@ def rows() -> tuple[list[dict], list[dict], list[dict]]:
     for c in CARDS:
         base = {"source": SOURCE, "kind": "fund_claim", "fund": c["fund"],
                 "evidence_grade": c["grade"], "title": f"{c['fund']} [{c['grade']}]: {c['claim'][:90]}",
-                "text": c["claim"], "url": "", "mechanism": c.get("why") or c.get("note") or "",
+                "text": c["claim"], "url": c.get("source_url") or "",
+                "claim_id": c.get("claim_id"),
+                "canonical_source_id": c.get("canonical_source_id"),
+                "claim_state": c.get("claim_state"), "currentness": c.get("currentness"),
+                "disposition": c.get("disposition"), "falsifier": c.get("falsifier"),
+                "mechanism": c.get("why") or c.get("note") or "",
                 "found_at": datetime.now(tz=UTC).isoformat()}
-        if not c.get("family"):
+        # A public claim that merely describes an owned desk capability (for example the
+        # weak-signal ensemble) is evidence/coverage, not a zero-symbol candidate.
+        if not c.get("family") or not c.get("symbols"):
             info.append({**base, "note": c.get("note"), "blocked_on": c.get("blocked_on")})
             continue
         if c.get("blocked_on"):
@@ -229,6 +475,51 @@ def run() -> dict:
                        for r in deepen], "donated_to": str(path)}
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(doc, indent=1, default=str), "utf-8")
+    medallion = {
+        "generated_utc": datetime.now(tz=UTC).isoformat(),
+        "scope": "publicly defensible Renaissance/Medallion evidence; never proprietary claims",
+        "claims": MEDALLION_CARDS,
+        "frontier_laws": MEDALLION_FRONTIER_LAWS,
+        "method_owners": MEDALLION_METHOD_OWNERS,
+        "promotion_authority": False,
+        "canonical_route": "fund_playbook -> miner_candidate_compiler -> canonical gauntlet",
+    }
+    MEDALLION_REPORT.write_text(json.dumps(medallion, indent=1, default=str), "utf-8")
+    med_ids = {c["claim_id"] for c in MEDALLION_CARDS}
+    generated = [r for r in donate if r.get("claim_id") in med_ids]
+    blocked = [r for r in deepen if r.get("claim_id") in med_ids]
+    coverage = {
+        "generated_utc": datetime.now(tz=UTC).isoformat(),
+        "claims": len(MEDALLION_CARDS),
+        "by_disposition": {d: sum(c["disposition"] == d for c in MEDALLION_CARDS)
+                           for d in sorted({c["disposition"] for c in MEDALLION_CARDS})},
+        "executable_descendants": len(generated),
+        "blocked_descendants": len(blocked),
+        "informational_or_owned": sum(not c.get("family") for c in MEDALLION_CARDS),
+        "frontier_laws": MEDALLION_FRONTIER_LAWS,
+        "method_owners": MEDALLION_METHOD_OWNERS,
+        "unowned_frontier_laws": [name for name, rel in MEDALLION_FRONTIER_LAWS.items()
+                                  if not (ROOT / rel).exists()],
+        "unowned_methods": [name for name, rels in MEDALLION_METHOD_OWNERS.items()
+                            if any(not (ROOT / rel).exists() for rel in rels)],
+        "terminal_state": "CURRENT_PUBLIC_FRONTIER_EXHAUSTED_NEVER_DONE_FOREVER",
+        "rule": "source pedigree changes the prior and provenance, never a gate or capital authority",
+    }
+    MEDALLION_COVERAGE.write_text(json.dumps(coverage, indent=1, default=str), "utf-8")
+    public_methods = {
+        "generated_utc": datetime.now(tz=UTC).isoformat(),
+        "scope": "public method classes only; no claim to any firm's private implementation",
+        "owners": PUBLIC_METHOD_OWNERS,
+        "unowned": [name for name, rels in PUBLIC_METHOD_OWNERS.items()
+                    if any(not (ROOT / rel).exists() for rel in rels)],
+        "candidate_generator": "desks/mt5/research/institutional_cards.py",
+        "canonical_route": "public evidence -> named mechanism -> canonical gauntlet -> forward",
+        "single_name_equities": "EVENT_LANE_ONLY",
+        "market_making_at_retail_latency": "NON_TRANSFERABLE",
+        "terminal_state": "CURRENT_PUBLIC_FRONTIER_EXHAUSTED_NEVER_DONE_FOREVER",
+    }
+    PUBLIC_METHOD_COVERAGE.write_text(
+        json.dumps(public_methods, indent=1, default=str), "utf-8")
     return doc
 
 

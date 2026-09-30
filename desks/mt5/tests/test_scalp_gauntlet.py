@@ -43,10 +43,14 @@ from desks.mt5.research import scalp_family_expansion as fam  # noqa: E402
 from desks.mt5.research import scalp_reverse_engineering as core  # noqa: E402
 from desks.mt5.research import scalp_shadow  # noqa: E402
 from gate_policy import ATTESTATION, GATES, all_ten_pass, charged_trial_count  # noqa: E402
-
 from mt5desk import scalp_exec as sx  # noqa: E402
 from mt5desk import scalp_families as sf  # noqa: E402
 from mt5desk.engine import Costs, Signal, run_backtest  # noqa: E402
+
+from libs.portfolio.fusion_cost import (  # noqa: E402
+    COMMISSION_PER_LOT_PER_SIDE,
+    commission_roundtrip_price,
+)
 
 SPREAD_PTS = 14.5
 #: An XAUUSD registry row in the live shape (contract 100 oz, tick 0.01, EUR-account tick value).
@@ -75,9 +79,19 @@ def _ten(passed: bool = True) -> dict[str, dict[str, Any]]:
 
 
 def _matched_costs() -> Costs:
-    """The engine's cost per unit equals `simulate`'s spread*point + FUSION_COMMISSION_PRICE."""
-    return Costs(spread_per_lot=SPREAD_PTS * 0.01 * 100.0, commission_per_lot=2.25,
-                 contract_oz=100.0, quote_per_account=1.0)
+    """The engine and standalone scalp replay use the same account-currency conversion."""
+    meta = META["XAUUSD"]
+    return Costs.from_symbol(meta, mult=1.0,
+                             commission_per_lot=COMMISSION_PER_LOT_PER_SIDE)
+
+
+def test_scalp_replay_uses_canonical_account_currency_commission(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(core, "DATA", _DESK / "data" / "universe")
+    actual = core.fusion_commission_price()
+    meta = json.loads((_DESK / "data" / "universe" / "universe.json").read_text("utf-8"))["XAUUSD"]
+    assert actual == pytest.approx(commission_roundtrip_price(meta))
+    assert actual != pytest.approx(0.045)  # the retired USD/100 oz hard-code
 
 
 @pytest.fixture
@@ -218,7 +232,8 @@ def test_one_cell_per_candidate_priced_at_the_honest_baseline(desk) -> None:
         tf, choice = sg.CANDIDATES[c["_scalp"]["name"]]
         # `Costs.from_symbol` at mult 2.0: pts x tick x contract x 2, commission untouched.
         assert c["costs"].spread_per_lot == pytest.approx(SPREAD_PTS * 0.01 * 100.0 * 2.0)
-        assert c["costs"].commission_per_lot == 2.25 and c["costs"].contract_oz == 100.0
+        assert c["costs"].commission_per_lot == COMMISSION_PER_LOT_PER_SIDE
+        assert c["costs"].contract_oz == 100.0
         assert c["mechanism_status"] == "NAMED" and c["family"] == choice.family
         assert c["params"] == sg.recipe(tf, choice)
         assert c["_scalp"]["timeframe"] == tf
@@ -258,7 +273,8 @@ def test_the_real_ten_gates_judge_scalp_cells(desk, monkeypatch) -> None:
     report = sg.run(data_dir=desk.data_dir, out=desk.out, meta=META)
     assert report["status"] == "MEASURED" and report["rc"] == 0 and report["n_judged"] == 2
     for v in report["verdicts"]:
-        assert tuple(v["stages"]) == GATES and v["days"] >= 60
+        assert all(gate in v["stages"] for gate in GATES) and v["days"] >= 60
+        assert set(v["stages"]) - set(GATES) == {"swap_cost"}
         assert v["stages"]["economic_prior"]["passed"] is True
         assert v["stages"]["deflated_sharpe"]["n_trials"] == report["gauntlet"]["n_trials"]
     expected, basis = charged_trial_count(2, None, None)
@@ -307,10 +323,15 @@ def test_multiplicity_is_the_lanes_full_swept_grid_and_an_undercharge_withholds(
     assert grid["family_expansion"]["total"] == selection + 14 * len(tfs)
     assert grid["total"] == grid["reverse_engineering"]["total"] + grid["family_expansion"]["total"]
     assert grid["total"] == 570
-    # The sealed charge covers the grid today; the certificate is minted only while it does.
+    # The current policy need not cover this historical search. Never alter the gate to
+    # satisfy a test: explicitly prove that an undercovered pass is withheld below.
     charge, _ = charged_trial_count(4, None, None)
-    assert charge >= grid["total"]
+    assert charge >= 2
     desk.bars("M15", 3000)
+    current = FakeGauntlet({"xau_m15_anti_breakout": "pass"}, n_trials=charge)
+    current_report = sg.run(data_dir=desk.data_dir, out=desk.out, gauntlet=current, meta=META)
+    assert current_report["multiplicity"]["covered_by_charge"] == (charge >= grid["total"])
+    assert bool(current_report["certificates"]) == (charge >= grid["total"])
     short = FakeGauntlet({"xau_m15_anti_breakout": "pass"}, n_trials=grid["total"] - 1)
     report = sg.run(data_dir=desk.data_dir, out=desk.out, gauntlet=short, meta=META)
     assert report["certificates"] == {}

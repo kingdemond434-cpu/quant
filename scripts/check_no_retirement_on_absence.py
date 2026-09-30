@@ -66,8 +66,8 @@ ARTIFACT = ROOT / "desks" / "mt5" / "reports" / "DESTRUCTIVE_PATHS.json"
 #: branch and the survivor-ledger branch), owned by another builder in the same session (it is
 #: restoring the 837 rows the empty canon retired). One require_live_reference at the top of
 #: apply() closes both; it lands in that builder's edit rather than in a second one racing it in
-#: the same file.
-UNGUARDED_CEILING = 2
+#: the same file. 2026-09-29: 0 -- that guard landed.
+UNGUARDED_CEILING = 0
 
 #: Undeclared candidates the tree scan finds. Also ratchets down: each one is either given a row
 #: (and a status) or shown to be a false positive of the two-condition rule. 2026-09-23: 6 --

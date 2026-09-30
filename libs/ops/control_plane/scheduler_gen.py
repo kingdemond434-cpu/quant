@@ -79,7 +79,9 @@ def desired_rows(registry: Registry) -> dict[str, dict[str, str]]:
                      key=lambda s: (not s.component_id.startswith(("task:", "resident:")),
                                     s.component_id))
     for s in ordered:
-        if s.kind not in ("task", "resident") or not s.scheduled:
+        # This manifest rebuilds the Windows trading box only.  Git hooks and other `host=any`
+        # tasks are event-driven components, not Windows Task Scheduler registrations.
+        if s.host != "box" or s.kind not in ("task", "resident") or not s.scheduled:
             continue
         name = s.schedule
         runs = s.code_paths[0] if s.code_paths else "UNKNOWN"
@@ -385,12 +387,16 @@ def apply(registry: Registry, *, out_dir: Path | None = None, runner: Any = None
 
 # ----------------------------------------------------------------------------- VPS timers
 def timer_validate(registry: Registry, root: Path | None = None) -> dict[str, Any]:
-    """Every host=vps component must have a .timer AND a .service in ops/. Repo-only, so it means
-    the same in CI, a fresh clone and on the box -- the VPS's live table is not reachable here."""
+    """Every repo-managed VPS timer must have a .timer AND a .service in ops/.
+
+    Cron rows and SYSTEMD declarations imported from ``crontab.manifest`` are observations of
+    external clocks, not unit files owned by this generator.  Treating those as missing unit
+    pairs produced hundreds of false failures and made the real managed-timer check useless.
+    """
     base = root or ROOT
     rows: list[dict[str, Any]] = []
     for s in registry.all():
-        if s.host != "vps":
+        if s.host != "vps" or not s.component_id.startswith("timer:"):
             continue
         unit = s.schedule
         timer = base / "ops" / f"{unit}.timer"

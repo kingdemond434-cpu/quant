@@ -60,6 +60,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -94,6 +95,16 @@ POP, GENS, ELITE, DEPTH = 40, 5, 8, 3
 STAGE0_FRAC = 0.35
 LAMBDA_CORR, LAMBDA_NOVEL, LAMBDA_CX = 0.8, 0.5, 0.03
 RECIPE = {"norm": 240, "entry_z": 1.5, "hold_bars": 8, "atr_n": 20, "stop_atr": 2.0, "rr": 1.5}
+#: THE REST OF THE GENOME, AND ITS RANGE (Tier-1 B5). Every bound BRACKETS the standing default
+#: on both sides: a variant may hold four times as long or a quarter as long, stop twice as wide
+#: or half as wide, target 4R or 1R. Nothing here is a risk cap -- the stop is the definition of
+#: the R unit, so a wider stop is the same heat measured against a larger denominator, and a
+#: bound that only shrank would be exactly the timid modifier the standing order forbids.
+RECIPE_BOUNDS: dict[str, tuple[float, float]] = {
+    "hold_bars": (2.0, 48.0), "stop_atr": (1.0, 4.0), "rr": (1.0, 4.0), "entry_z": (0.75, 3.0),
+}
+#: Multiplicative hill-climb steps, both directions. Six screens per parameter at most.
+RECIPE_STEPS: tuple[float, ...] = (0.5, 0.75, 1.5, 2.0)
 SIDE_MODES = ("follow", "fade")
 #: How many finalists per instrument pay for the two EXPENSIVE fitness terms: the portfolio
 #: growth solve (two optimisations over a world population) and the +-20% fragility sweep (six
@@ -117,6 +128,25 @@ def search_policy(path: Path | None = None) -> dict:
     except (OSError, ValueError, AttributeError):
         var = None
     if not isinstance(var, dict) or not isinstance(var.get("config"), dict):
+        # THE PROGRAM DATABASE FILLS THE DEFAULT THE ARCHIVE DID NOT SET (Tier-1 Q3).
+        # `algorithm_db` evolves parameterised SEARCH-POLICY configs and scores each against this
+        # organ's own report (proposals per expression tried). The research-evolution archive
+        # still wins wherever it names a variant -- this only replaces the module constants, and
+        # only with a config that has a MEASURED score. An unevaluated champion changes nothing.
+        try:
+            import algorithm_db
+            ch = algorithm_db.champion("search_policy")
+            cfg2 = ch.get("params") if ch.get("score") is not None else None
+            if isinstance(cfg2, dict):
+                if isinstance(cfg2.get("fresh_frac"), (int, float)):
+                    pol["fresh_frac"] = float(min(0.6, max(0.05, cfg2["fresh_frac"])))
+                if isinstance(cfg2.get("refine_top"), (int, float)):
+                    pol["refine_top"] = int(min(12, max(2, cfg2["refine_top"])))
+                pol["variant"] = str(ch.get("program_id") or "")
+                pol["basis"] = (f"algorithm_db champion {ch.get('program_id')} "
+                                f"(score {ch.get('score')} from {ch.get('evaluator')})")
+        except Exception:
+            pass
         return pol
     cfg = var["config"]
     ff, rt = cfg.get("fresh_frac"), cfg.get("refine_top")
@@ -417,6 +447,11 @@ class _Evaluator:
         self.generator_weights: dict = {}
         self.generator_failures: list[str] = []
         self.population_yield: list[dict] = []
+        #: What `evolve_recipe` changed for each finalist: the rest of the genome, and by how
+        #: much its marginal dE[log W] moved (Tier-1 B5).
+        self.recipe_evolution: list[dict] = []
+        #: Recipe variants that could not be screened, by name. Reported, never silent.
+        self.recipe_failures: list[str] = []
         self.sharpes: list[float] = []                     # for the multiplicity charge
 
     @staticmethod
@@ -517,7 +552,23 @@ class _Evaluator:
             score_fn=(self._rescore(expr, side_mode) if with_fragility else None),
             position=position,
             peer_daily=tuple(v for kk, v in self.pnls.items() if kk != key),
-            family="formula")
+            family="formula",
+            # THE DECLARED GENOME SLOTS the two breadth credits are measured on (Tier-1 D5).
+            # `asset_class` comes from MetaTrader's own registry through `universe_policy`, never
+            # a symbol list, so a name the registry has not classified reads UNCLASSIFIED and the
+            # scarcity term measures the cell it actually lands in rather than a guessed one.
+            slots=self._slots(side_mode))
+
+    def _slots(self, side_mode: str) -> dict[str, str]:
+        """The candidate's genome slots for `alpha_fitness`' breadth credits (Tier-1 D5)."""
+        try:
+            from research.universe_policy import asset_class_of
+            klass = str(asset_class_of(self.sym))
+        except Exception:
+            klass = ""
+        return {k: v for k, v in (("instrument", self.sym), ("mechanism", "formula"),
+                                  ("asset_class", klass), ("horizon", "H1"),
+                                  ("regime", str(side_mode))) if v}
 
     def _rescore(self, expr: ag.Expr, side_mode: str):
         """A stage-0 re-screen under perturbed recipe parameters, for the fragility sweep.
@@ -626,6 +677,115 @@ class _Evaluator:
             self._archive_put(k, float(terms.score()))
             done.append(k)
         return done
+
+    # ------------------------------------------------- the rest of the genome (Tier-1 B5)
+    def evolve_recipe(self, top: int = REFINE_TOP, deadline: float | None = None,
+                      ) -> list[dict[str, Any]]:
+        """Evolve HOLD, STOP and REWARD:RISK with the expression, scored on marginal E[log W].
+
+        THE GAP THIS CLOSES, in the ledger's words: "the genome evolves the expression and side
+        mode under a FIXED recipe (hold, stop, rr)". It did: every candidate this organ has ever
+        proposed held for 8 bars, stopped at 2 ATR and targeted 1.5R, because `RECIPE` is a
+        module constant. An expression whose edge lives at a 24-bar horizon was being scored at
+        8 bars and discarded for not having one -- the search was over a slice of the genome and
+        reported as a search over the genome.
+
+        COORDINATE ASCENT, NOT A SECOND POPULATION. The expression search runs first and this
+        hill-climbs the recipe of each FINALIST, which is the cheap half of a joint search: the
+        expensive object is the expression (thousands evaluated), the recipe is three numbers
+        with a small feasible range, and sweeping it for the handful of survivors buys most of
+        the joint optimum for a few dozen extra screens. Every variant is charged as a trial.
+
+        SCORED ON MARGINAL dE[log W], not on the composite. `alpha_fitness.evaluate` already
+        computes `delta_elog` through `robust_elog.marginal_delta_elog` -- the same solver the
+        allocator runs -- so the recipe that WINS is the one that adds most growth to the book
+        in hand, with the composite score as the tiebreak when the growth term is unmeasured.
+
+        THE BOUNDS ONLY WIDEN. `RECIPE_BOUNDS` brackets the standing defaults on both sides; a
+        variant may hold longer or shorter, stop wider or tighter, target more or less. Nothing
+        here caps risk: the stop is a MEASUREMENT of the risk unit, and a wider stop with a
+        proportionally larger R denominator is the same heat expressed differently.
+        """
+        import time as _time
+        out: list[dict[str, Any]] = []
+        ranked = sorted((k for k, r in self.rows.items() if r.get("refined")),
+                        key=lambda k: -float(self.rows[k].get("fitness") or -9.0))
+        for k in ranked[:top]:
+            if deadline is not None and _time.monotonic() > deadline:
+                break
+            row = self.rows[k]
+            expr, side_mode = row["params"]["expr"], row["params"]["side_mode"]
+            z = self.zs.get(k)
+            if z is None:
+                continue
+            base = {p: float(RECIPE[p]) for p in RECIPE_BOUNDS}
+            best = {"params": dict(base), "delta_elog": None, "score": float(
+                row.get("fitness") or -9.0), "n_variants": 0}
+            for param, (lo, hi) in RECIPE_BOUNDS.items():
+                for mult in RECIPE_STEPS:
+                    if deadline is not None and _time.monotonic() > deadline:
+                        break
+                    trial = dict(best["params"])
+                    val = float(np.clip(trial[param] * mult, lo, hi))
+                    if abs(val - trial[param]) < 1e-9:
+                        continue
+                    trial[param] = val
+                    try:
+                        got = self._score_recipe(expr, side_mode, z, trial, row, k)
+                    except Exception as exc:
+                        # ONE VARIANT MAY FAIL WITHOUT COSTING THE SEARCH THAT FOUND IT. The
+                        # expression population is already evaluated by the time this stage runs;
+                        # a screen that raises on one hold length must not discard it.
+                        self.recipe_failures.append(f"{k}|{param}={val}: {type(exc).__name__}")
+                        continue
+                    if got is None:
+                        continue
+                    best["n_variants"] = int(best["n_variants"]) + 1
+                    better = ((got["delta_elog"] or 0.0) > (best["delta_elog"] or 0.0)
+                              if (got["delta_elog"] or best["delta_elog"]) is not None
+                              else got["score"] > best["score"])
+                    if better:
+                        best = {**got, "params": trial,
+                                "n_variants": int(best["n_variants"])}
+            if best["n_variants"]:
+                row["params"] = {**row["params"], **{p: (int(v) if p == "hold_bars" else v)
+                                                     for p, v in best["params"].items()}}
+                row["recipe_evolved"] = {
+                    "from": base, "to": best["params"], "n_variants": best["n_variants"],
+                    "delta_elog": best["delta_elog"], "score": best["score"],
+                    "scored_on": ("marginal_delta_elog against the book in hand"
+                                  if best["delta_elog"] is not None else
+                                  "composite fitness (the growth term was unmeasured)"),
+                    "bounds": {p: list(v) for p, v in RECIPE_BOUNDS.items()}}
+                out.append({"key": k, **row["recipe_evolved"]})
+                self._archive_put(k, float(best["score"]))
+        self.recipe_evolution = out
+        return out
+
+    def _score_recipe(self, expr: ag.Expr, side_mode: str, z: pd.Series,
+                      trial: dict[str, float], row: dict, key: str) -> dict[str, Any] | None:
+        """One recipe variant of one expression, through the same measurement as everything else."""
+        merged = {**RECIPE, **trial, "expr": expr, "side_mode": side_mode}
+        got = pc.screen(self.d, family_formula(self.d, drivers=self.drivers, **merged),
+                        self.cost, self.unfillable)
+        if got is None:
+            return None
+        flip = 1.0 if side_mode == "follow" else -1.0
+        hold = max(1, round(float(trial.get("hold_bars", RECIPE["hold_bars"]))))
+        entry_z = float(trial.get("entry_z", RECIPE["entry_z"]))
+        # The R denominator IS the stop: a wider stop is a larger risk unit, not more risk.
+        risk = self.risk_frac * (float(trial.get("stop_atr", RECIPE["stop_atr"]))
+                                 / float(RECIPE["stop_atr"]))
+        held = _position_path(z * flip, entry_z, hold)
+        pnl = _daily_pnl_proxy(z * flip, self.ret, entry_z, hold, risk, held=held)
+        refs = [v for kk, v in self.zs.items() if kk != key]
+        terms = af.evaluate(self._candidate(expr, side_mode, {**row, **got, "params": merged},
+                                            z, pnl, refs, with_fragility=False, key=key,
+                                            position=held),
+                            self.book, cfg=_search_worlds())
+        d_elog = float(terms.as_dict().get("delta_elog") or 0.0)
+        return {"delta_elog": (d_elog if d_elog != 0.0 else None),
+                "score": float(terms.score())}
 
 
 def _search_worlds():
@@ -760,6 +920,15 @@ def evolve(sym: str, d: pd.DataFrame, cost: float, drivers: dict[str, pd.DataFra
     for e, sm in population[:ELITE]:
         ev.promote(e, sm, list(ev.zs.values()))
     ev.refine()
+    # THE REST OF THE GENOME (Tier-1 B5): hold, stop and reward:risk hill-climbed for the
+    # finalists on marginal dE[log W], inside bounds that widen the standing recipe in both
+    # directions. Bounded by whatever is left of this instrument's budget, and skipped entirely
+    # when there is none -- a joint search that overran its clock would cost the cycle the legs
+    # after it, which is the failure mode `_producer`'s timeout exists to contain.
+    try:
+        ev.evolve_recipe(deadline=started + budget_s)
+    except Exception as exc:
+        ev.recipe_failures.append(f"evolve_recipe: {type(exc).__name__}: {exc}")
     return ev
 
 
@@ -844,6 +1013,48 @@ def random_or_canon(rng: np.random.Generator, allow_drivers: bool) -> ag.Expr:
     if rng.random() < 0.15:
         return json.loads(json.dumps(list(ag.CANON.values())[int(rng.integers(len(ag.CANON)))]))
     return ag.random_expr(rng, DEPTH, allow_drivers)
+
+
+def reward_term_shares(rows: list[dict]) -> dict[str, object]:
+    """Per FITNESS TERM: its share of the sweep's total positive credit, and per POPULATION the
+    mean of the two breadth terms (Tier-1 D5).
+
+    THE REWARD IS THE FITNESS. `generators.GFlowNet` maps the scored history's fitness to
+    R(x) = exp(beta x (f - f_max)) and samples trajectories in proportion to it, so a term added
+    to `alpha_fitness.WEIGHTS` is a term the sampler is trained on. This is the measurement that
+    the two breadth credits actually moved reward mass: an empty `by_term` means nothing was
+    scored this sweep (UNMEASURED), never that the terms are inert.
+    """
+    scored = [r for r in rows if isinstance(r.get("terms"), dict)]
+    if not scored:
+        return {"status": "UNMEASURED", "why": "no scored row carries a term vector this sweep"}
+    credit: dict[str, float] = {}
+    mean: dict[str, float] = {}
+    for name, w in af.WEIGHTS.items():
+        vals = [float(r["terms"].get(name) or 0.0) for r in scored]
+        mean[name] = sum(vals) / len(vals)
+        if name not in af.PENALTIES:
+            credit[name] = max(0.0, w * sum(vals))
+    total = sum(credit.values())
+    by_pop: dict[str, dict[str, float]] = {}
+    for r in scored:
+        pop = str(r.get("population") or "unspecified")
+        slot = by_pop.setdefault(pop, {"n": 0.0, "mechanism_distance": 0.0, "axis_scarcity": 0.0})
+        slot["n"] += 1.0
+        for name in ("mechanism_distance", "axis_scarcity"):
+            slot[name] += float(r["terms"].get(name) or 0.0)
+    for slot in by_pop.values():
+        n = max(1.0, slot["n"])
+        for name in ("mechanism_distance", "axis_scarcity"):
+            slot[name] = round(slot[name] / n, 4)
+    return {"status": "MEASURED", "n_scored": len(scored),
+            "by_term": {k: round((v / total) if total > 0 else 0.0, 4)
+                        for k, v in sorted(credit.items())},
+            "mean_term": {k: round(v, 5) for k, v in sorted(mean.items())},
+            "breadth_by_population": by_pop,
+            "rule": ("share of the sweep's total positive weighted credit per term; the GFlowNet "
+                     "is trained on exactly this fitness, so these ARE the sampler's reward "
+                     "proportions (Tier-1 D5)")}
 
 
 def generator_yield(rows: list[dict]) -> dict[str, dict]:
@@ -982,6 +1193,14 @@ def run(symbols: list[str] | None = None, budget_s: float = 1500.0, seed: int = 
               # not: a fitness computed on an empty desk must never read like one computed
               # against a full book.
               "fitness_weights": dict(af.WEIGHTS),
+              # WHICH TERM BOUGHT THE SAMPLING (Tier-1 D5). The GFlowNet's reward IS this
+              # fitness -- R(x) = exp(beta x (f - f_max)) over the scored history -- so adding
+              # `mechanism_distance` and `axis_scarcity` to the fitness IS training the sampler
+              # on the augmented reward. This says by how much: each term's share of the total
+              # positive credit, and each POPULATION's mean on the two breadth terms, so a
+              # generation that converged on one mode is visible as a number rather than a
+              # suspicion.
+              "reward_terms": reward_term_shares(rows),
               # THE ARCHIVE'S OCCUPANCY: how much of the descriptor space the search has lit.
               "map_elites": map_elites_summary(per_symbol, regime_labels_known()),
               "book": book.source,

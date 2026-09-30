@@ -117,8 +117,12 @@ def record(fence: str, of: str, n_scanned: object, passed: bool,
                "passed": bool(passed), "vacuous": is_vacuous(n_scanned, passed)}
         with p.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(row, sort_keys=True) + "\n")
-    except Exception:
-        pass
+    except Exception as exc:
+        # LOUD, NOT SILENT (2026-09-23 swallowed-write audit). A denominator row that fails to
+        # land leaves a fence's vacuity unmeasured, and this handler used to say nothing at all.
+        print(f"denominator: row for {fence!r} NOT written "
+              f"({type(exc).__name__}: {exc}) -- this run's denominator is unrecorded",
+              flush=True)
 
 
 def load(root: Path | None = None, *, now: float | None = None) -> dict[str, dict[str, Any]]:

@@ -134,7 +134,11 @@ def test_a_cell_never_built_is_PENDING_and_conservation_still_holds(tmp_path: Pa
 def test_gauntlet_records_missing_data_and_build_failures_instead_of_dropping_them() -> None:
     source = (ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py").read_text("utf-8")
     assert '"downstream_status": "NOT_RUN_DATA_MISSING"' in source
-    assert '"downstream_status": "NOT_RUN_BUILD_FAILED"' in source
+    # The build-failure record now also separates a modifier refusal from a build failure, so the
+    # status is a conditional expression across lines; whitespace is normalised to read it whole.
+    flat = " ".join(source.split())
+    assert ('blocked_build.append({**spec, "downstream_status": ( "NOT_RUN_MODIFIER" if '
+            '_why.startswith("NOT_RUN_MODIFIER") else "NOT_RUN_BUILD_FAILED"),') in flat
     assert 'result["n_cells_blocked_build_or_data"]' in source
     assert "blocked_verdicts" in source
 

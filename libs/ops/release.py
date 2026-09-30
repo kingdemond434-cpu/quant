@@ -40,6 +40,7 @@ import json
 import os
 import subprocess
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -76,6 +77,17 @@ IMMUTABLE_MANIFEST = "desks/mt5/data/IMMUTABLE_MANIFEST.json"
 ALLOCATOR_PROOF = "desks/mt5/reports/ALLOCATOR_PROOF.json"
 PYPROJECT = "pyproject.toml"
 DATA_SCHEMA_VERSION = "pit-1;features-2026-09-04.1"
+
+# Executable/research paths whose working-tree drift can make a seal dishonest.  The live box
+# holds tens of thousands of tracked evidence files; asking ``git status`` to stat that lake made
+# every adoption spend minutes under the release mutex.  These are the same path roots used by
+# Adopt-Release's preflight.  State is deliberately absent: a seal hashes HEAD's blobs and state
+# writers are allowed to advance independently.
+RELEASE_CODE_PATHS: tuple[str, ...] = (
+    "desks/mt5/mt5desk", "desks/mt5/prop", "desks/mt5/research",
+    "desks/mt5/policy", "desks/mt5/scripts", "libs", "ops", "scripts",
+    "pyproject.toml",
+)
 
 #: Paths a commit may touch and still be "the same code" as the sealed commit. The manifest
 #: itself (the pure seal commit) and the files the Windows box WRITES and commits through
@@ -190,7 +202,29 @@ def _rev(spec: str, root: Path) -> str | None:
 def _norm(b: bytes) -> bytes:
     """CRLF-insensitive. The Windows box checks out with autocrlf, so a byte-exact digest of a
     working file would differ from the LF blob the seal hashed and refuse every release."""
+    # A file copied through two Windows text layers can contain CRCRLF. Treat that as the same
+    # single logical newline too; otherwise an unchanged release is refused solely by transport.
+    while b"\r\r\n" in b:
+        b = b.replace(b"\r\r\n", b"\r\n")
     return b.replace(b"\r\n", b"\n")
+
+
+@lru_cache(maxsize=512)
+def _read_commit(rel: str, root_text: str, commit: str) -> bytes | None:
+    """Return one immutable commit blob, reusing it within later hash calculations.
+
+    `_describe` hashes the same money-path blobs once as a set and again per file. On the
+    Windows trading box each `git show` costs seconds against the large repository, turning a
+    22-file seal into a multi-minute mutex hold. A commit's blob cannot change, so this removes
+    only duplicate reads without changing the release hash contract.
+    """
+    root = Path(root_text)
+    try:
+        result = subprocess.run([_git_exe(), "show", f"{commit}:{rel}"], cwd=root,
+                                capture_output=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result.stdout if result.returncode == 0 else None
 
 
 def _read(rel: str, root: Path, commit: str | None) -> bytes | None:
@@ -200,12 +234,7 @@ def _read(rel: str, root: Path, commit: str | None) -> bytes | None:
             return (root / Path(*rel.split("/"))).read_bytes()
         except OSError:
             return None
-    try:
-        r = subprocess.run([_git_exe(), "show", f"{commit}:{rel}"], cwd=root, capture_output=True,
-                           timeout=10)
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return r.stdout if r.returncode == 0 else None
+    return _read_commit(rel, str(root.resolve()), commit)
 
 
 def hash_paths(paths: tuple[str, ...] | list[str], root: Path | None = None,
@@ -279,6 +308,14 @@ def dirty_paths(root: Path | None = None, *, code_only: bool = False) -> list[st
     its artifact between one sync and the next, so a tracked ledger is dirty for most of every
     hour by design; a seal that refused on that could only ever be taken in the seconds after a
     sync, which is why the unattended one never was."""
+    if code_only:
+        # Path-scoped diff is materially different from running status and filtering afterward:
+        # Git never stats the evidence lake, so the safety check remains fast as data compounds.
+        out = _git(["diff", "--name-only", "--no-ext-diff", "HEAD", "--",
+                    *RELEASE_CODE_PATHS], _root(root))
+        if not out:
+            return []
+        return sorted({p.strip().strip('"') for p in out.splitlines() if p.strip()})
     out = _git(["status", "--porcelain", "--untracked-files=no"], _root(root))
     if not out:
         return []
@@ -362,8 +399,7 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
     head = git_head(r)
     if head == "unknown":
         raise RuntimeError("cannot seal: git HEAD is unknown here (no git, or not a repository)")
-    dirty = dirty_paths(r)
-    dirty_code = [p for p in dirty if not is_state_path(p)]
+    dirty_code = dirty_paths(r, code_only=True)
     if dirty_code and not allow_dirty:
         raise RuntimeError(f"cannot seal a dirty tree ({len(dirty_code)} tracked code path(s) "
                            f"differ from HEAD: {dirty_code[:5]}); commit them or pass allow_dirty")
@@ -377,7 +413,8 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
     doc.update(sealed=True, sealed_at=doc["generated_utc"],
                sealed_by=by or os.environ.get("GITHUB_ACTOR") or "operator",
                ci_run_id=os.environ.get("GITHUB_RUN_ID"),
-               tested_sha=head if tested else None, worktree_dirty=dirty,
+               tested_sha=head if tested else None, worktree_dirty=dirty_code,
+               worktree_dirty_scope="release_code_paths",
                previous_code_sha=prev_sha, previous_release_id=prev_id)
     if write:
         _write(doc, root)
@@ -480,6 +517,10 @@ STATE_FILES: frozenset[str] = frozenset({
     "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
     "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",
     "desks/mt5/swap_exposure.json",
+    # Generated by the trade-path auditor beside the documentation rather than under reports/.
+    # It is evidence from the running box, not executable input; omitting it made every otherwise
+    # clean adoption stop at the final dirty-code fence.
+    "desks/mt5/docs/TRADE_PATH_REPORT.md",
 })
 
 

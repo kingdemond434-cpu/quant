@@ -24,7 +24,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import scripts.estimate_contributions as C
-
 from libs.doctrine.contribution import Contribution
 
 

@@ -109,7 +109,11 @@ def test_the_live_doctrine_is_dense_not_repetitive() -> None:
         return
     t = DOCTRINE.read_text("utf-8")
     n = sum(len(v) for v in extract(t).values())
-    assert n > 150, f"only {n} commitments found -- the extractor or the doctrine changed shape"
+    # The floor was 150 against the pre-2026-08-25 doctrine. That file was COMPACTED by principal
+    # order (its own second paragraph: the duty text moved to docs/LAWS.md and docs/RESEARCH.md,
+    # "zero law regression"), to ~8k chars carrying 44 commitments -- measured 2026-09-29. The
+    # floor now guards the compacted file; the density bar below is unchanged and still binds.
+    assert n >= 40, f"only {n} commitments found -- the extractor or the doctrine changed shape"
     assert len(t) / n < M._DOCTRINE_CHARS_PER_COMMITMENT
 
 

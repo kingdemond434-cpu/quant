@@ -175,6 +175,48 @@ def test_the_cli_exits_on_the_verdict(registry, tmp_path: Path, capsys) -> None:
     assert "conversion debt: BREACH" in out
 
 
+def test_a_verdict_ledger_ahead_of_the_registry_is_a_breach(registry, tmp_path: Path,
+                                                            monkeypatch) -> None:
+    """CONVERSION DOES NOT END AT A TESTABLE CELL (measured 2026-09-23).
+
+    3,368 gauntlet verdicts sat in `data/hypotheses/gate_verdict_ledger.jsonl` while the registry
+    held no `gate_verdicts` cursor key at all -- wiped by the 2026-09-17 restore -- so every one
+    of them was converted work the desk could not cash, and `cells_judged` read 0 for every
+    source, every pack and every region while nothing anywhere failed. Both halves are fenced
+    here: a stream with no receipt, and a verdict older than one sync cycle still unpoured.
+    """
+    desk = tmp_path / "desk"
+    (desk / "data" / "hypotheses").mkdir(parents=True)
+    monkeypatch.setattr(R, "DESK", desk)
+    ledger = desk / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+    old = (datetime.now(tz=UTC) - timedelta(hours=9)).isoformat()
+    ledger.write_text(json.dumps({"cell": "AUDNZD.carry.p=deadbeef", "sym": "AUDNZD",
+                                  "family": "carry", "passed": False, "at": old}) + "\n",
+                      encoding="utf-8")
+    _donate(registry, 2)
+    ratchet = tmp_path / "ratchet.json"
+
+    # 1. no receipt at all: the stream has never been read and nothing said so
+    verdict = ccd.measure(None, ratchet)
+    assert verdict["status"] == "BREACH" and verdict["rc"] == 2
+    assert "gate_verdicts" in verdict["why"], verdict["why"]
+
+    # 2. receipts present, the verdict still unpoured and older than one cycle
+    for key, _rel in R.SYNC_STREAMS:
+        registry.execute("INSERT OR REPLACE INTO sync_cursor(key, value, updated_at) "
+                         "VALUES(?,'0',?)", (key, R.now()))
+    registry.commit()
+    verdict = ccd.measure(None, ratchet)
+    assert verdict["status"] == "BREACH"
+    assert "more than one sync cycle" in verdict["why"], verdict["why"]
+
+    # 3. poured: the clause clears itself, and the ratchet is measured as usual
+    R.sync_from_desk(desk, lessons=tmp_path / "none.jsonl", conn=registry)
+    verdict = ccd.measure(None, ratchet)
+    assert verdict["verdict_backlog"]["status"] == "OK", verdict["verdict_backlog"]
+    assert verdict["status"] in ("SEEDED", "OK")
+
+
 def test_the_fence_is_registered_in_the_law_gate() -> None:
     """An unwired fence is a defect (LAWS 7): it must run at every law-gate boundary."""
     source = (ROOT / "scripts" / "run_law_gate.py").read_text(encoding="utf-8")

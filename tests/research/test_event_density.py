@@ -241,8 +241,16 @@ def test_every_shadow_runner_passes_its_own_annualisation() -> None:
     import pathlib
     import re
     root = pathlib.Path(__file__).resolve().parents[2]
-    for name in ("run_shadow_forward", "run_crossasset_shadow", "run_crypto_shadow",
-                 "run_trend_shadow", "run_trend_regime_shadow"):
+    # Four of the five named runners were crypto-era shadows deleted in the 2026-09-05 MT5
+    # purge; they stay named so a resurrection is caught, and the survivors are DERIVED (every
+    # script calling forward_verdict) so a new runner cannot slip past a hand-kept list.
+    for gone in ("run_shadow_forward", "run_crypto_shadow", "run_trend_shadow",
+                 "run_trend_regime_shadow"):
+        assert not (root / f"scripts/{gone}.py").exists(), f"{gone} was retired 2026-09-05"
+    runners = sorted(p.stem for p in (root / "scripts").glob("*.py")
+                     if "forward_verdict(" in p.read_text("utf-8", errors="ignore"))
+    assert "run_crossasset_shadow" in runners, runners
+    for name in runners:
         src = (root / f"scripts/{name}.py").read_text("utf-8")
         assert "forward_verdict(" in src, name
         assert "periods_per_year=_PPY" in src, f"{name} does not pass its own _PPY"

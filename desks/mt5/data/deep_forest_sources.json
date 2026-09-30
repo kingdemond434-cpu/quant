@@ -6765,6 +6765,252 @@
    "weight": 1.0,
    "why": "BCRA decisions and controls (ARS transfer note)",
    "url": "https://www.bcra.gob.ar/Noticias/"
+  },
+  {
+   "name": "Platform-native strategy ecosystems",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "platform_native_strategy", "weight": 1.4,
+   "why": "Public Pine, EasyLanguage, NinjaScript, AFL, LEAN, Backtrader and cTrader rules; extract deterministic mechanisms and failure reports, never copy opaque bots",
+   "site": "tradingview.com", "queries": ["public strategy source code walk forward", "Pine strategy failure repainting costs"]
+  },
+  {
+   "name": "Verified public performance and copy leaderboards",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "verified_leaderboard", "weight": 1.4,
+   "why": "Darwinex, FX Blue, Myfxbook, cTrader Copy, Collective2 and contest histories; infer mechanisms and decay, never copy trades",
+   "site": "darwinex.com", "queries": ["public strategy track record drawdown history", "Darwinex strategy interview methodology"]
+  },
+  {
+   "name": "Repository archaeology beyond README",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "repo_archaeology", "weight": 1.5,
+   "why": "Issues, PRs, discussions, forks, abandoned branches, commits, tests and release notes expose actual strategy and research-system failures",
+   "site": "github.com", "queries": ["quant trading issue backtest leakage bug", "algorithmic trading abandoned branch failed strategy"]
+  },
+  {
+   "name": "External strategy and fund graveyard",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "external_failure", "weight": 1.5,
+   "why": "Blown-up EAs, closed funds, retired signals, failed winners and negative postmortems correct public survivor bias",
+   "site": "web.archive.org", "queries": ["failed trading strategy postmortem closed fund", "retired expert advisor failure drawdown"]
+  },
+  {
+   "name": "Broker execution and MT5 archaeology",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "broker_execution_rules", "weight": 1.5,
+   "why": "Symbol specifications, spreads, swaps, rollover, margin, maintenance, order restrictions, outages and MT5 quirks generate venue-specific testable effects",
+   "site": "fusionmarkets.com", "queries": ["MT5 symbol specification swap schedule rollover execution policy", "Fusion Markets maintenance margin order restriction"]
+  },
+  {
+   "name": "Exchange rulebook and microstructure revisions",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "exchange_rulebook", "weight": 1.4,
+   "why": "Auction, fixing, tick-size, expiry, settlement, circuit-breaker and holiday-rule changes create falsifiable event and execution mechanisms",
+   "site": "cmegroup.com", "queries": ["rulebook tick size change settlement expiry circular", "auction fixing procedure revision market notice"]
+  },
+  {
+   "name": "Options volatility specialist ecology",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "options_volatility", "weight": 1.3,
+   "why": "Public skew, term structure, dispersion, dealer gamma/vanna/charm and expiry research can condition executable MT5 instruments",
+   "site": "cboe.com", "queries": ["volatility term structure skew dealer gamma research", "option expiry gamma vanna charm market effect"]
+  },
+  {
+   "name": "Futures curves delivery and roll mechanics",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "futures_term_structure", "weight": 1.4,
+   "why": "Carry, basis, roll yield, calendars, OI migration, storage, notice and convergence transmit into commodity and index CFDs",
+   "site": "cmegroup.com", "queries": ["open interest migration roll yield delivery convergence", "contango backwardation storage calendar spread research"]
+  },
+  {
+   "name": "ETF index and benchmark flow mechanics",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "benchmark_flows", "weight": 1.3,
+   "why": "Index changes, creations/redemptions, futures rolls, passive rebalance and month/quarter-end fixing create forced-flow hypotheses",
+   "site": "msci.com", "queries": ["index rebalance announcement effective date flow", "ETF creation redemption futures roll benchmark fixing"]
+  },
+  {
+   "name": "Newsletters podcasts webinars and conference archives",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "longform_media", "weight": 1.1,
+   "why": "Public newsletters, RSS, podcast transcripts, Spaces, webinars, slides and conference interviews reveal rules omitted from papers",
+   "site": "substack.com", "queries": ["systematic trading podcast transcript strategy rules", "quant conference slides execution research"]
+  },
+  {
+   "name": "Books manuals courses and global thesis repositories",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "longform_research", "weight": 1.0,
+   "why": "Public manuals, course notes, syllabi and MSc/PhD repositories expose testable methods; summarize concepts without reproducing copyrighted text",
+   "site": "dspace.org", "queries": ["algorithmic trading thesis repository", "systematic trading course notes strategy validation"]
+  },
+  {
+   "name": "Global finance and execution patent ecology",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "patent", "weight": 1.1,
+   "why": "USPTO, EPO, WIPO and Asian patent records disclose forecasting, routing, market-data and alternative-data mechanisms",
+   "site": "patentscope.wipo.int", "queries": ["market prediction order routing patent", "alternative data trading signal patent"]
+  },
+  {
+   "name": "Quant and market-structure job postings",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "job_posting", "weight": 0.9,
+   "why": "Public vacancies reveal datasets, horizons, instruments, research domains and technical stacks without private information",
+   "site": "linkedin.com", "queries": ["quant researcher alternative data futures job", "market microstructure researcher systematic macro vacancy"]
+  },
+  {
+   "name": "Fund letters factsheets and manager disclosures",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "fund_disclosure", "weight": 1.1,
+   "why": "Public letters, presentations, factsheets, interviews and risk disclosures reveal mechanism, regime and failure evidence",
+   "site": "sec.gov", "queries": ["systematic fund investor letter strategy drawdown", "CTA factsheet methodology risk disclosure"]
+  },
+  {
+   "name": "Regulatory investment filings and holdings",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "regulatory_filing", "weight": 1.0,
+   "why": "ADV, 13F/13D/13G, N-PORT, UCITS, CTA/CPO and prospectus disclosures provide participant and portfolio context",
+   "site": "sec.gov", "queries": ["Form ADV systematic investment strategy", "N-PORT holdings quantitative fund"]
+  },
+  {
+   "name": "Enforcement court and disciplinary mechanics",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "enforcement_court", "weight": 1.2,
+   "why": "Public enforcement, court and exchange disciplinary records document exact market mechanics, manipulation and failure modes",
+   "site": "cftc.gov", "queries": ["enforcement order trading algorithm market mechanics", "disciplinary notice execution failure order handling"]
+  },
+  {
+   "name": "Vendor scanner product and app reverse engineering",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "vendor_product", "weight": 1.0,
+   "why": "Public manuals, feature lists, screenshots, changelogs and reviews reveal useful capabilities and what breaks in practice",
+   "site": "chromewebstore.google.com", "queries": ["trading scanner changelog review false alert", "broker plugin indicator manual strategy"]
+  },
+  {
+   "name": "Public messaging and regional trading communities",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "public_messaging", "weight": 1.0,
+   "why": "Lawfully public Telegram, Discord, WeChat, QQ, LINE and Kakao surfaces contain native-language mechanisms and failure reports",
+   "site": "t.me", "queries": ["public systematic trading channel strategy rules", "public forex journal postmortem"]
+  },
+  {
+   "name": "Prediction and betting market microstructure",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "prediction_market", "weight": 1.0,
+   "why": "Prediction and betting exchanges expose skilled-participant, information-arrival and transferable market-design mechanisms",
+   "site": "ssrn.com", "queries": ["prediction market informed trader microstructure", "betting exchange liquidity price discovery"]
+  },
+  {
+   "name": "Activist short seller and forensic accounting research",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "activist_forensics", "weight": 0.9,
+   "why": "Public short reports, rebuttals and forensic work generate event, attention and cross-asset transmission hypotheses",
+   "site": "sec.gov", "queries": ["short seller report rebuttal price reaction", "forensic accounting activist research public"]
+  },
+  {
+   "name": "Accounting anomalies and corporate events",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "accounting_corporate_events", "weight": 0.9,
+   "why": "Accruals, issuance, revisions, distress, guidance, buybacks, splits, insider trades, M&A and restructurings feed index/FX/event transmission, not single-name statistical sleeves",
+   "site": "sec.gov", "queries": ["accounting anomaly earnings revision post announcement drift", "buyback issuance merger event market transmission"]
+  },
+  {
+   "name": "Rates credit repo and auction specialist ecology",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "rates_credit", "weight": 1.2,
+   "why": "Yield curves, swap spreads, auction tails, repo, funding stress, credit spreads and issuance calendars transmit to bonds, FX, gold and indices",
+   "site": "newyorkfed.org", "queries": ["repo funding stress auction tail market reaction", "swap spread issuance calendar FX gold"]
+  },
+  {
+   "name": "Physical commodities power gas and emissions",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "physical_commodity", "weight": 1.3,
+   "why": "Outages, production, stocks, crops, grid load, generation, interconnectors, storage, renewables and emissions create physical-to-CFD hypotheses",
+   "site": "eia.gov", "queries": ["refinery outage inventory storage market impact", "grid load generation interconnector gas emissions price"]
+  },
+  {
+   "name": "Shipping freight ports and supply-chain operations",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "shipping_supply_chain", "weight": 1.2,
+   "why": "Public AIS summaries, port queues, freight indices, canals, customs, lead times and utilization transmit to energy, commodities, FX and indices",
+   "site": "unctad.org", "queries": ["port congestion freight index commodity price lead", "shipping canal disruption FX energy transmission"]
+  },
+  {
+   "name": "Weather climate and public geospatial observations",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "weather_geospatial", "weight": 1.2,
+   "why": "Forecasts, degree days, drought, hurricanes, ENSO, rivers, snowpack, night lights, crop and port imagery create surprise and physical-activity features",
+   "site": "noaa.gov", "queries": ["weather forecast revision commodity price", "public satellite night lights port crop activity"]
+  },
+  {
+   "name": "Digital exhaust consumer and procurement signals",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "digital_activity", "weight": 1.0,
+   "why": "Search, traffic, app/package rankings, jobs, prices, mobility, public spending and contract awards form public surprise and activity sensors",
+   "site": "trends.google.com", "queries": ["search trends nowcast economic activity", "government contract award procurement market signal"]
+  },
+  {
+   "name": "Outage incident and operational postmortem ecology",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "incident_postmortem", "weight": 1.2,
+   "why": "Exchange, broker, network, cyber, cloud and payment outages expose fragility, forced flow and execution opportunity mechanisms",
+   "site": "statuspage.io", "queries": ["exchange outage postmortem trading impact", "broker payment network incident market reaction"]
+  },
+  {
+   "name": "Dead web magazines mailing lists and code archives",
+   "region": "global", "language": "en", "route": "wayback",
+   "kind": "dead_web", "weight": 1.0,
+   "why": "Dead blogs, SourceForge, Google Code, old forums, mailing lists, Usenet, PDFs and magazines preserve forgotten mechanisms and failures",
+   "url": "https://web.archive.org/web/https://www.traders.com/",
+   "queries": ["archived trading system rules", "old quantitative trading mailing list"]
+  },
+  {
+   "name": "Retractions replication failures and negative results",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "negative_knowledge", "weight": 1.3,
+   "why": "Corrections, retractions, failed replications and unstable parameters prevent repeated dead research and generate boundary hypotheses",
+   "site": "retractionwatch.com", "queries": ["finance anomaly failed replication", "trading strategy correction retraction parameter instability"]
+  },
+  {
+   "name": "Citation strategy repo and dataset genealogy",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "genealogy", "weight": 1.2,
+   "why": "Paper citations, strategy renames, repo forks, mentors and shared datasets reveal fake independence before compute is spent",
+   "site": "github.com", "queries": ["fork genealogy quantitative trading strategy", "finance dataset lineage vendor factor replication"]
+  },
+  {
+   "name": "Local regulation tax settlement and participant ecology",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "local_market_mechanics", "weight": 1.2,
+   "why": "Capital controls, taxes, settlement, fixing, short-sale and price-limit rules plus participant obligations create country-specific forced behavior",
+   "site": "iosco.org", "queries": ["local market settlement tax fixing price limit", "exporter pension fund CTA dealer forced flow"]
+  },
+  {
+   "name": "Crowding popularity and decay evidence",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "crowding_decay", "weight": 1.2,
+   "why": "Factor exposures, public-code prevalence, positioning and search/social popularity measure duplication and expected edge decay",
+   "site": "ssrn.com", "queries": ["factor crowding strategy decay", "public code popularity trading alpha decay"]
+  },
+  {
+   "name": "Cross-disciplinary methods and alternative representations",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "distant_domain", "weight": 1.3,
+   "why": "Signal processing, control, queueing, ecology, epidemiology, information theory, physics, robotics, games, wavelets, topology and event-time methods become research challengers",
+   "site": "arxiv.org", "queries": ["novel time series method change point graph signal", "queueing control information theory market transfer"]
+  },
+  {
+   "name": "Synthetic agent-based and mechanism-design markets",
+   "region": "institutional", "language": "en", "route": "search",
+   "kind": "synthetic_market", "weight": 1.0,
+   "why": "ABM, order-book simulations and mechanism-design experiments supply adversarial falsifiers and synthetic regimes, never primary evidence",
+   "site": "arxiv.org", "queries": ["agent based order book synthetic market validation", "market mechanism design simulation regime"]
+  },
+  {
+   "name": "Meta-strategy allocation and research-process archaeology",
+   "region": "global", "language": "en", "route": "search",
+   "kind": "research_process", "weight": 1.4,
+   "why": "Allocation, ensembles, timing, retirement, resurrection, AutoResearch, scientific agents and search optimizers improve the alpha factory itself",
+   "site": "github.com", "queries": ["autonomous scientific research agent hypothesis evaluation", "strategy ensemble allocation decay resurrection framework"]
   }
  ],
  "engines": [

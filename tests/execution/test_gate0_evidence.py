@@ -9,29 +9,39 @@ the SAME `s1_entry_met` -- measured both True from the real artifacts.
 
 from __future__ import annotations
 
-import importlib.util
 import json
-import sys
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from libs.execution import gate0_evidence, staging
-from libs.ops.input_provenance import Inputs
 
 _ROOT = Path(__file__).resolve().parents[2]
 
 
-def _load_guard() -> Any:
-    """Import scripts/run_live_guard.py by path -- `scripts/` is not a package."""
-    spec = importlib.util.spec_from_file_location(
-        "_rlg_under_test", _ROOT / "scripts" / "run_live_guard.py")
-    assert spec is not None and spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = mod
-    spec.loader.exec_module(mod)
-    return mod
+#: THE TWO ORGANS THIS FILE ORIGINALLY PINNED ARE RETIRED. `scripts/run_live_guard.py` (the
+#: executor-side evaluator) and `scripts/check_gate0_ready.py` (the launch-day board) were deleted
+#: with the cash-carry desk under the MT5 universe mandate (ops/crontab.manifest "RETIRED
+#: 2026-09-05"). What survives is the shared reader and the gate it feeds, so the guard-side tests
+#: below now build the evidence FROM THE SHARED READER -- the only construction a revived organ
+#: may use -- and the one-reader tests pin that no surviving code re-reads the phantom key.
+_RETIRED = ("scripts/run_live_guard.py", "scripts/check_gate0_ready.py")
+
+
+def _evidence(root: Path) -> dict[str, Any]:
+    """The S1 evidence as the shared reader supplies it, on an unarmed box.
+
+    An unreadable symbol count OMITS the key rather than publishing a fabricated 0 -- the rule
+    `run_live_guard._promo_evidence` followed -- so the gate's own default does the refusing.
+    """
+    ev: dict[str, Any] = {"principal_signoff": gate0_evidence.principal_signoff(root),
+                          "keys_present": False, "connector_verified": False,
+                          "capital_fraction": 0.1}
+    n = gate0_evidence.symbol_count(root)
+    if n is not None:
+        ev["symbol_count"] = n
+    return ev
 
 
 @pytest.fixture
@@ -74,46 +84,41 @@ class TestSharedReader:
 
 class TestGuardEvidenceNoLongerFabricated:
     def test_signoff_is_seen_without_the_phantom_key(self, box: Path) -> None:
-        """THE ROW ITSELF (R0536): stage_state.json has no such key and never will."""
+        """THE ROW ITSELF (R0536): stage_state.json has no such key and never will. The reader
+        must see consent from the signoff FILE, and a stray key in stage_state must not override
+        it in either direction."""
         assert "principal_signoff" not in json.loads(
             (box / "data/stage_state.json").read_text())
-        ev = _load_guard()._promo_evidence(
-            Inputs("t"), root=box, keys_present=False, connector_verified=False,
-            capital_fraction=0.1)
-        assert ev["principal_signoff"] is True
+        assert _evidence(box)["principal_signoff"] is True
+        (box / "data/stage_state.json").write_text(
+            json.dumps({"stage": "S0", "principal_signoff": False}), "utf-8")
+        assert _evidence(box)["principal_signoff"] is True
 
     def test_symbol_count_survives_an_absent_ramp_file(self, box: Path) -> None:
         """THE ROW ITSELF (R0537): ramp_state.json has never existed on this box."""
         assert not (box / "data/ramp_state.json").exists()
-        ev = _load_guard()._promo_evidence(
-            Inputs("t"), root=box, keys_present=False, connector_verified=False,
-            capital_fraction=0.1)
-        assert ev["symbol_count"] == 4
+        assert _evidence(box)["symbol_count"] == 4
 
     def test_unreadable_config_omits_the_key_rather_than_publishing_zero(
             self, box: Path) -> None:
         (box / "data/cashcarry_config.json").write_text("{not json", "utf-8")
-        inp = Inputs("t")
-        ev = _load_guard()._promo_evidence(
-            inp, root=box, keys_present=False, connector_verified=False, capital_fraction=0.1)
+        ev = _evidence(box)
         assert "symbol_count" not in ev              # never a fabricated 0
         assert staging.s1_entry_met(ev)[0] is False  # the gate's own default refuses
-        assert any("cashcarry_config" in r["path"] for r in inp.block())
+        assert "symbol_count_4_5=False" in staging.s1_entry_met(ev)[1]
 
     def test_the_two_criteria_agree_with_the_board(self, box: Path) -> None:
-        """L1.61: both organs feed one gate, so their readings must be the same reading."""
-        ev = _load_guard()._promo_evidence(
-            Inputs("t"), root=box, keys_present=False, connector_verified=False,
-            capital_fraction=0.1)
+        """L1.61: both organs fed one gate, so their readings had to be the same reading. Both
+        organs are retired; the reader they shared is what the gate reads now."""
+        for rel in _RETIRED:
+            assert not (_ROOT / rel).exists(), f"{rel} is back -- pin it to the shared reader"
+        ev = _evidence(box)
         assert ev["principal_signoff"] is gate0_evidence.principal_signoff(box)
         assert ev["symbol_count"] == gate0_evidence.symbol_count(box)
 
     def test_repair_opens_no_gate_on_an_unarmed_box(self, box: Path) -> None:
         """THE LOAD-BEARING ONE. Two criteria go True; the gate stays SHUT on genuine grounds."""
-        ev = _load_guard()._promo_evidence(
-            Inputs("t"), root=box, keys_present=False, connector_verified=False,
-            capital_fraction=0.1)
-        met, why = staging.s1_entry_met(ev)
+        met, why = staging.s1_entry_met(_evidence(box))
         assert met is False
         assert "keys_present=False" in why
         assert "principal_signoff=True" in why and "symbol_count_4_5=True" in why
@@ -121,16 +126,30 @@ class TestGuardEvidenceNoLongerFabricated:
 
 class TestOneReaderNotTwo:
     def test_both_organs_import_the_shared_reader(self) -> None:
-        """A second encoding of one human act is how these two boards drifted for 20 days."""
-        for rel in ("scripts/run_live_guard.py", "scripts/check_gate0_ready.py"):
-            src = (_ROOT / rel).read_text("utf-8")
-            assert "gate0_evidence" in src, f"{rel} must use the shared Gate-0 reader"
+        """A second encoding of one human act is how these two boards drifted for 20 days. Both
+        organs are retired; the reader must still be the ONLY place Gate-0 consent is decoded."""
+        for rel in _RETIRED:
+            assert not (_ROOT / rel).exists(), (
+                f"{rel} is back -- it must use the shared Gate-0 reader (gate0_evidence)")
+        readers = sorted(
+            str(p.relative_to(_ROOT)) for d in ("scripts", "libs", "desks")
+            for p in (_ROOT / d).rglob("*.py")
+            if "__pycache__" not in p.parts and "gate0_signoff.json" in p.read_text(
+                "utf-8", errors="ignore"))
+        # claim_registry only NAMES the file in the criterion's description string.
+        assert readers == ["libs/execution/gate0_evidence.py", "libs/ops/claim_registry.py"], (
+            readers)
 
     def test_the_phantom_key_is_gone_from_the_guard(self) -> None:
-        """Regression pin: the exact defect was a read of a key nothing writes."""
-        src = (_ROOT / "scripts/run_live_guard.py").read_text("utf-8")
-        assert 'stage_state.json", {})\n' not in src
-        assert '.get("principal_signoff")' not in src
+        """Regression pin: the exact defect was a read of a key nothing writes. The guard is gone;
+        nothing that survives may bring the read back."""
+        offenders = sorted(
+            str(p.relative_to(_ROOT)) for d in ("scripts", "libs", "desks")
+            for p in (_ROOT / d).rglob("*.py")
+            if "__pycache__" not in p.parts
+            and 'stage_state.json", {})\n' in (t := p.read_text("utf-8", errors="ignore"))
+            and '.get("principal_signoff")' in t)
+        assert offenders == []
 
     def test_registry_no_longer_calls_these_two_sides_fabricated(self) -> None:
         """The registry is read FROM the producer's code; a stale flag accuses a measurement."""

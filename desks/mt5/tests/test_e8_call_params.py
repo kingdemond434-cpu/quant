@@ -59,6 +59,12 @@ def test_identity_keys_are_stripped():
     assert got["feature"] == "x"
 
 
+def test_session_is_identity_metadata_not_a_family_keyword():
+    """The live E8 catalogue carries a session selector beside flat family parameters."""
+    got = e8._call_params({"params": {"session": "asia", "lookback": 24}})
+    assert got == {"lookback": 24}
+
+
 def test_a_missing_or_malformed_params_block_is_empty_not_a_crash():
     assert e8._call_params({}) == {}
     assert e8._call_params({"params": None}) == {}

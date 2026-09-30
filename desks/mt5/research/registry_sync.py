@@ -21,6 +21,7 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 ROOT = DESK.parents[1]
@@ -37,9 +38,10 @@ RULE = ("one canonical registry: every candidate, trial, run, card, memory and w
         "is populated by the organs that do the work, and this leg bridges what is not yet wired")
 
 
-def run(*, dry_run: bool = False, max_rows: int = 20000) -> dict:
+def run(*, dry_run: bool = False, max_rows: int = 20000,
+        budget_s: float | None = None) -> dict[str, Any]:
     t0 = time.monotonic()
-    synced = {} if dry_run else R.sync_from_desk(max_rows=max_rows)
+    synced = {} if dry_run else R.sync_from_desk(max_rows=max_rows, budget_s=budget_s)
     ok, n_chain = R.verify_trial_chain()
     counts = R.counts()
     doc = {
@@ -56,13 +58,21 @@ def run(*, dry_run: bool = False, max_rows: int = 20000) -> dict:
         "generator_yields": R.generator_yields()[:50],
         "workers_alive": [w["worker_id"] for w in R.workers_alive()],
         "trial_chain": {"ok": ok, "n": n_chain},
+        # THE STREAMS AND THEIR RECEIPTS. A cursor key the sync knows about and the registry does
+        # not is a stream that has silently stopped (the 2026-09-17 restore wiped all four, and
+        # the gate verdicts then sat unsynced for six days while cells_judged read 0 everywhere).
+        # Published here so the leg's own artifact says which stream is behind and by how much.
+        "streams": (synced.get("streams") if isinstance(synced, dict) else None),
+        "cursor_keys_missing": (synced.get("cursor_keys_missing")
+                                if isinstance(synced, dict) else None),
+        "verdict_backlog": R.verdict_backlog(),
         "seconds": round(time.monotonic() - t0, 2),
         "rule": RULE,
     }
     return doc
 
 
-def _write(doc: dict) -> None:
+def _write(doc: dict[str, Any]) -> None:
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     tmp = REPORT.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
@@ -72,9 +82,13 @@ def _write(doc: dict) -> None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--once", action="store_true", help="one pass (this leg only ever does one)")
     ap.add_argument("--max-rows", type=int, default=20000)
+    ap.add_argument("--budget-s", type=float, default=None,
+                    help="wall-clock budget: each stream stops on it with its cursor PERSISTED, "
+                         "so the next pass resumes instead of restarting")
     a = ap.parse_args(argv)
-    doc = run(dry_run=a.dry_run, max_rows=a.max_rows)
+    doc = run(dry_run=a.dry_run, max_rows=a.max_rows, budget_s=a.budget_s)
     if not a.dry_run:
         _write(doc)
     chain = doc["research_chain"]

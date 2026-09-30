@@ -59,6 +59,7 @@ __all__ = [
     "counterfactual_summary",
     "decision_from_row",
     "outcome_for",
+    "process_quality_verdict",
     "promotion_is_forbidden",
     "read",
     "summarise",
@@ -191,6 +192,16 @@ class Decision:
     provenance: dict[str, Any] = field(default_factory=dict)
     ticket: int | None = None
     retcode: int | None = None
+    #: Structured WHY-NOT fields. `reason` remains human-readable; these are machine-queryable.
+    first_blocking_gate: str = ""
+    failed_gates: list[dict[str, Any]] = field(default_factory=list)
+    suppressions: dict[str, Any] = field(default_factory=dict)
+    #: Deterministic process-quality judgement, deliberately separate from economic outcome/P&L.
+    process_quality: dict[str, Any] = field(default_factory=dict)
+    #: Content address of mechanism + parameters + symbol + timeframe + code version.
+    state_identity: str = ""
+    #: Gateway process instance, so restart-boundary parity is observable rather than inferred.
+    process_instance_id: str = ""
     schema_version: int = SCHEMA_VERSION
 
     def __post_init__(self) -> None:
@@ -270,7 +281,29 @@ def decision_from_row(row: Mapping[str, Any]) -> Decision:
         execution=str(r.get("execution") or ""), exit_rule=str(r.get("exit_rule") or ""),
         veto_reason=veto, portfolio_context=dict(r.get("portfolio_context") or {}),
         provenance=dict(r.get("provenance") or {}), ticket=_i("ticket"), retcode=_i("retcode"),
+        first_blocking_gate=str(r.get("first_blocking_gate") or veto),
+        failed_gates=[dict(x) for x in (r.get("failed_gates") or [])
+                      if isinstance(x, Mapping)],
+        suppressions=dict(r.get("suppressions") or {}),
+        process_quality=dict(r.get("process_quality") or {}),
+        state_identity=str(r.get("state_identity") or ""),
+        process_instance_id=str(r.get("process_instance_id") or ""),
         schema_version=int(r.get("schema_version") or SCHEMA_VERSION))
+
+
+def process_quality_verdict(checks: Mapping[str, bool | None], *,
+                            evidence: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """Judge whether the declared process ran correctly, never whether the trade made money.
+
+    `None` is UNMEASURED rather than false success.  Callers choose the checks appropriate to
+    their decision path; the ledger preserves both the verdict and the exact evidence behind it.
+    """
+    failed = sorted(k for k, value in checks.items() if value is False)
+    unmeasured = sorted(k for k, value in checks.items() if value is None)
+    status = "PASS" if not failed and not unmeasured else "FAIL" if failed else "UNMEASURED"
+    return {"status": status, "checks": dict(checks), "failed": failed,
+            "unmeasured": unmeasured, "evidence": dict(evidence or {}),
+            "economic_outcome_is_separate": True}
 
 
 def write_decision(path: Path | str, decision: Decision | Mapping[str, Any], *,
@@ -422,6 +455,17 @@ def summarise(decisions: list[Decision]) -> dict[str, object]:
     rejected = len(decisions) - executed
     unresolved = sum(1 for d in decisions if d.rejected and not d.resolved)
     bias = systematic_bias(decisions)
+    blockers: dict[str, int] = {}
+    failed: dict[str, int] = {}
+    quality: dict[str, int] = {}
+    for d in decisions:
+        if d.first_blocking_gate:
+            blockers[d.first_blocking_gate] = blockers.get(d.first_blocking_gate, 0) + 1
+        for gate in d.failed_gates:
+            name = str(gate.get("gate") or "UNKNOWN")
+            failed[name] = failed.get(name, 0) + 1
+        q = str(d.process_quality.get("status") or "UNMEASURED")
+        quality[q] = quality.get(q, 0) + 1
     return {
         "decisions": len(decisions),
         "executed": executed,
@@ -431,6 +475,11 @@ def summarise(decisions: list[Decision]) -> dict[str, object]:
         "counterfactuals": counterfactual_summary(decisions),
         "unresolved_rejections": unresolved,
         "systematic_bias": bias,
+        "why_not": {
+            "first_blocking_gate": dict(sorted(blockers.items(), key=lambda x: -x[1])),
+            "all_failed_gates": dict(sorted(failed.items(), key=lambda x: -x[1])),
+        },
+        "process_quality": dict(sorted(quality.items())),
         "headline": (
             f"{len(bias)} rejection rule(s) show a systematic bias across their populations: "
             f"{[b['rejection_class'] for b in bias]}" if bias else

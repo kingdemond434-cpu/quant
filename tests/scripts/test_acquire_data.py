@@ -26,7 +26,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import scripts.acquire_data as A
-
 from libs.hypmax.ontology import SEED_QUESTIONS, map_dataset
 
 

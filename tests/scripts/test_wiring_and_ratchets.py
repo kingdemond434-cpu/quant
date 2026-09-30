@@ -37,10 +37,41 @@ def test_the_unwired_check_resolves_absolute_imports() -> None:
     set, so processing libs/alpha/card.py erased the record that another file had imported it --
     every module deleted its own inbound edges and 241 of 244 modules reported as orphans. A check
     that loud is ignored on sight."""
+    # The live-tree bar was `n < 30`. It went stale when 7401f769 (2026-09-27) retired ~15k lines
+    # of callers and left ~200 GENUINE orphans (spot-checked: libs.alpha_factory.evaluator and
+    # libs.data.universe have no importer anywhere) -- the codebase, not the walker. The
+    # inverted-walker signature was 241 of 244 modules, so the live bar is now "well under half";
+    # the absolute-import resolution itself is pinned exactly on a synthetic tree below.
     d = _defects(M.check_unwired_modules)
-    if d:
-        n = int(d[0][1].split()[0])
-        assert n < 30, f"{n} orphans -- the import walker is broken again, not the codebase"
+    unwired = [x for x in d if x[0] == "unwired-modules"]
+    if unwired:
+        n = int(unwired[0][1].split()[0])
+        n_modules = sum(1 for p in (ROOT / "libs").rglob("*.py") if "__pycache__" not in p.parts)
+        assert n < n_modules / 2, (
+            f"{n} orphans of {n_modules} modules -- the import walker is broken again")
+
+
+def test_the_unwired_check_resolves_absolute_imports_exactly(tmp_path, monkeypatch) -> None:
+    """Hermetic: one module imported absolutely from a script, one from the MT5 desk, one only
+    from a desk TEST, one by nothing. Exactly the last two are orphans."""
+    for rel in ("libs/__init__.py", "libs/pkg/__init__.py", "libs/pkg/used.py",
+                "libs/pkg/desk_used.py", "libs/pkg/test_only.py", "libs/pkg/orphan.py"):
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_text("X = 1\n", "utf-8")
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts/caller.py").write_text("from libs.pkg.used import X\n", "utf-8")
+    (tmp_path / "desks/mt5/research").mkdir(parents=True)
+    (tmp_path / "desks/mt5/research/organ.py").write_text("import libs.pkg.desk_used\n", "utf-8")
+    (tmp_path / "desks/mt5/tests").mkdir(parents=True)
+    (tmp_path / "desks/mt5/tests/test_x.py").write_text("import libs.pkg.test_only\n", "utf-8")
+    monkeypatch.setattr(M, "ROOT", tmp_path)
+    d = [x for x in _defects(M.check_unwired_modules) if x[0] == "unwired-modules"]
+    assert d, "the orphans were not reported"
+    msg = d[0][1]
+    assert msg.startswith("2 library module(s)"), msg
+    assert "libs.pkg.orphan" in msg and "libs.pkg.test_only" in msg
+    assert "libs.pkg.used" not in msg.replace("libs.pkg.used_", "")
+    assert "libs.pkg.desk_used" not in msg
 
 
 def test_a_package_is_reachable_through_its_submodules() -> None:

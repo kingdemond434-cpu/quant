@@ -101,7 +101,21 @@ SECTORS: tuple[str, ...] = ("energy_oil_gas", "power_utilities", "metals_mining"
                             "textiles_light_industry", "households_labour")
 SESSIONS: tuple[str, ...] = ("asia", "tokyo_fix", "london", "london_fix", "ny", "overlap",
                              "close", "gotobi", "holiday")
-HORIZONS: tuple[str, ...] = ("1h", "4h", "1d", "5d", "20d")
+# Forecast/holding horizons represented by the coverage tensor.  This is deliberately broader
+# than the old daily-macro vocabulary: sampling frequency is a separate coordinate on an
+# experiment specification and MUST NOT be inferred from this value.  Event-relative horizons
+# keep a release study distinct from an ordinary bar study even when both ultimately hold 1h.
+HORIZONS: tuple[str, ...] = (
+    "1m", "5m", "15m", "30m", "1h", "4h", "1d", "5d", "20d",
+    "event_pre", "event_0_5m", "event_5_30m", "event_30m_4h", "event_1_5d",
+)
+
+# The five clocks of a replayable hypothesis.  They are named here so coverage producers cannot
+# collapse "M5 data with a 4h hold decided 30s after CPI" into the ambiguous label "intraday".
+TIME_SEMANTICS: tuple[str, ...] = (
+    "sampling_frequency", "feature_lookback", "forecast_horizon", "holding_horizon",
+    "execution_deadline",
+)
 EXECUTIONS: tuple[str, ...] = ("market", "limit", "stop", "bracket", "session_window")
 FRESHNESS: tuple[str, ...] = ("realtime", "intraday", "daily", "weekly", "monthly", "quarterly",
                               "archive")

@@ -27,6 +27,18 @@ import numpy as np
 import pandas as pd
 
 
+def sharpe_ratio(x: Any) -> float:
+    """Annualised Sharpe of a return array; the same formula `full_pipeline.sharpe_ratio` uses.
+
+    It was called here and never defined, so every reservoir evaluation that reached 30 trades
+    raised NameError instead of reporting a lockbox Sharpe.
+    """
+    arr = np.asarray(x, dtype=float)
+    if len(arr) < 2 or arr.std() == 0:
+        return 0.0
+    return float(arr.mean() / arr.std() * np.sqrt(252))
+
+
 @dataclass
 class ReservoirConfig:
     """Configuration for the untouched reservoir."""

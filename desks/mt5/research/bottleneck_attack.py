@@ -6,8 +6,8 @@ THE PRINCIPAL'S ORDER (2026-09-23): "do something which 24/7 makes these happen 
 always maximised." A desk that improves everything improves nothing at a rate anyone can see. The
 throughput of a pipeline is the throughput of its narrowest stage, so the only compute that buys
 anything is compute spent on the stage that is actually binding -- and the desk has never NAMED
-that stage hourly from measurement. It has four standing bottlenecks and it has been paying all
-four the same attention:
+that stage hourly from measurement. It has five standing bottlenecks and it has been paying all
+five the same attention:
 
     CONVERSION DEBT      discoveries the registry holds that no cell has ever been cut from.
                          Owner department: discovery.
@@ -15,6 +15,8 @@ four the same attention:
                          difference builds. Owner: validate.
     ENROLMENT LATENCY    hours from a certificate minting to a forward clock accruing on it.
                          Evidence that never starts is evidence that never arrives. Owner: forward.
+    EVIDENCE ACCRUAL     enrolled clocks that are blocked, or have remained active for fourteen
+                         days without one trade. A clock row is not evidence. Owner: forward.
     PLUMBING DEFECTS     the pipes themselves (`plumbing_watchdog`). Owner: meta.
 
 PLUMBING DOMINATES BY CONSTRUCTION, and that is not a preference. While an adoption clock is dead
@@ -46,7 +48,7 @@ reason named, never a zero -- a bottleneck nobody measured cannot be declared ab
 measuring it is itself a move (L1.28a).
 
     desks/mt5/reports/BOTTLENECK_ATTACK.json   the binding constraint, what it moved, and the
-                                               trend of all four over the last day, so "is it
+                                               trend of all five over the last day, so "is it
                                                getting better" is answerable every morning.
 """
 from __future__ import annotations
@@ -79,7 +81,7 @@ COMPONENT = "leg:bottleneck_attack"
 
 UNMEASURED = "UNMEASURED"
 
-#: The four standing bottlenecks and the department that owns each. The owner is where compute
+#: The five standing bottlenecks and the department that owns each. The owner is where compute
 #: goes when that bottleneck binds, and it is a DEPARTMENT because that is the unit the auction
 #: and `research_budget` already price -- inventing a new unit here would mean inventing a new
 #: allocator to spend it, which is the thing this organ exists not to do.
@@ -87,6 +89,7 @@ OWNER: dict[str, str] = {
     "conversion_debt": "discovery",
     "judging_throughput": "validate",
     "enrolment_latency": "forward",
+    "evidence_accrual": "forward",
     "plumbing_defects": "meta",
 }
 
@@ -283,7 +286,48 @@ def measure_enrolment(root: Path | None = None) -> dict[str, Any]:
                 source="absent")
 
 
-# ------------------------------------------------------------------- 4. plumbing defects
+# ----------------------------------------------------------- 4. enrolled clocks that earn nothing
+def measure_evidence_accrual(root: Path | None = None) -> dict[str, Any]:
+    """Blocked or mature zero-trade clocks, never merely the count of quiet new clocks.
+
+    A prospective clock cannot be backfilled and a rare signal cannot be forced to trade.  The
+    actionable population is therefore (a) an explicit blocked status, which the forward
+    department can repair, plus (b) a clock that has remained active for fourteen days without a
+    trade, which is evidence that the selection/frequency assumption needs a descendant.  New
+    clocks and venue-closed time are not defects and receive no severity.
+    """
+    base = root or ROOT
+    doc = _read(base / "desks" / "mt5" / "reports" / "shadow" / "shadow_health.json")
+    if not doc:
+        return _row("evidence_accrual", severity=None, value=UNMEASURED,
+                    unit="blocked or mature zero-trade clocks",
+                    basis="reports/shadow/shadow_health.json is absent or unreadable",
+                    source="absent")
+    total = _num(doc.get("configured_sleeves"))
+    blocked = _num(doc.get("evidence_blocked_sleeves"))
+    zero = doc.get("zero_trade_clocks") or {}
+    mature = _num(zero.get("mature_14d_without_trade")) if isinstance(zero, Mapping) else None
+    if total is None or total <= 0 or blocked is None or mature is None:
+        return _row("evidence_accrual", severity=None, value=UNMEASURED,
+                    unit="blocked or mature zero-trade clocks",
+                    basis=("the shadow census predates zero-trade age diagnostics or carries no "
+                           "configured population; absence is UNMEASURED, never zero"),
+                    source="reports/shadow/shadow_health.json")
+    affected = min(total, max(0.0, blocked) + max(0.0, mature))
+    return _row(
+        "evidence_accrual", severity=affected / total, value=int(affected),
+        unit="blocked or >=14d zero-trade clocks",
+        basis=("(explicitly blocked + active for >=14 days without a trade) / configured clocks; "
+               "new/quiet clocks are not called broken and no trade is synthesized"),
+        source="reports/shadow/shadow_health.json",
+        detail={"configured": int(total), "blocked": int(blocked),
+                "mature_14d_without_trade": int(mature),
+                "with_forward_trades": int(_num(doc.get("sleeves_with_forward_trades")) or 0),
+                "zero_trade_by_status": (zero.get("by_status") if isinstance(zero, Mapping)
+                                         else {})})
+
+
+# ------------------------------------------------------------------- 5. plumbing defects
 def measure_plumbing(root: Path | None = None) -> dict[str, Any]:
     """The pipes. A defect past its escalation window is severity 1.0 and binds outright.
 
@@ -326,7 +370,7 @@ def binding(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         return {"bottleneck": UNMEASURED, "owner": "meta", "severity": None,
                 "why": ("every bottleneck is UNMEASURED " + f"({', '.join(unmeasured)}): the "
                         "binding constraint is the desk's own measurement, and the move is to "
-                        "make these four organs produce")}
+                        "make these five organs produce")}
     best = max(measured, key=lambda r: (float(r["severity"]), -order.index(str(r["bottleneck"]))))
     return {"bottleneck": str(best["bottleneck"]), "owner": str(best["owner"]),
             "severity": best["severity"], "value": best.get("value"), "unit": best.get("unit"),
@@ -439,7 +483,8 @@ def run(*, budget_s: float = 300.0, root: Path | None = None, now: datetime | No
     t = now or _now()
     t0 = time.monotonic()
     rows = [measure_conversion_debt(base), measure_judging(base),
-            measure_enrolment(base), measure_plumbing(base)]
+            measure_enrolment(base), measure_evidence_accrual(base),
+            measure_plumbing(base)]
     bind = binding(rows)
     shift = compute_shift(bind)
     tr = trend(rows, t, history)

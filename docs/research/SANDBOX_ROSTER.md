@@ -4,14 +4,14 @@
 > `reports/SANDBOX_ROSTER.json`. Never edit this file: edit the organs that write the
 > artifacts it reads.
 
-Generated 2026-09-23T09:51:41+00:00. 128 rows: 123 roster seeds, 58 adapters, 5 rebuilt cells.
+Generated 2026-09-23T19:53:44+00:00. 128 rows: 123 roster seeds, 123 adapters, 5 rebuilt cells.
 
-- **Runs on this host:** 38 / 128
-- **Has ever run:** 40  |  **has produced:** 31  |  **candidates donated:** 413
-- **Library installed and imported:** 32  |  **permanently unavailable (with evidence):** 15  |  **no wheel pinned:** 11  |  **not yet attempted:** 65
-- **Licence read at a pin:** 38 / 128
-- **Roster seeds still waiting for an adapter:** 65 (named in the table; nothing can run them until one exists)
-- **Federation effective rank (independent cells spanned):** 4.8781 over 97 cells
+- **Runs on this host:** 78 / 128
+- **Has ever run:** 78  |  **has produced:** 65  |  **candidates donated:** 2028
+- **Library installed and imported:** 38  |  **permanently unavailable (with evidence):** 19  |  **no wheel pinned:** 61  |  **not yet attempted:** 0
+- **Licence read at a pin:** 44 / 128
+- **Roster seeds still waiting for an adapter:** 0 (named in the table; nothing can run them until one exists)
+- **Federation effective rank (independent cells spanned):** 10.116 over 495 cells
 
 Disposition census: DIRECT 82, REBUILT 29, WRAPPED 17
 
@@ -19,134 +19,134 @@ Disposition census: DIRECT 82, REBUILT 29, WRAPPED 17
 
 | system | disposition | licence | capability family | runs here | last run (h) | runs | candidates | breadth | status / why |
 |---|---|---|---|---|---|---|---|---|---|
-| `pyextremes` | DIRECT | MIT | extreme_value | yes | 0.05 | 6 | 34 | 0.979 | PRODUCED: already importable in the shared venv |
-| `numerai_method` | REBUILT | UNVERIFIED | portfolio_research | yes | 0.07 | 8 | 18 | 0.841 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `ray` | DIRECT | Apache-2.0 | distributed_compute | yes | 0.01 | 5 | 48 | 0.551 | PRODUCED: already importable in the shared venv |
-| `cell:coevolution_cell` | REBUILT | desk (own code; mechanism rebuilt from alphagen, openevolve, pyribs) | factor_model_coevolution | yes | 0.03 | 8 | 93 | 0.516 | PRODUCED: fallback: numpy factor grammar x numpy model zoo, alternating coevolution, walk-forward; upstream available: [] |
-| `cell:path_signature_lab` | REBUILT | desk (own code; mechanism rebuilt from roughpy) | rough_paths | yes | 0.07 | 8 | 26 | 0.507 | PRODUCED: fallback: numpy truncated signature (Chen's identity, level <= 3) over discrete increments; upstream available: [] |
-| `nevergrad` | DIRECT | MIT | evolutionary_search | yes | 0.06 | 6 | 54 | 0.464 | PRODUCED: already importable in the shared venv |
-| `pymoo` | DIRECT | Apache-2.0 | multiobjective_search | yes | 5.04 | 5 | 65 | 0.216 | PRODUCED: already importable in the shared venv |
-| `ripser` | DIRECT | MIT | topology | yes | 5.08 | 5 | 5 | 0.089 | PRODUCED: already importable in the shared venv |
-| `ruptures` | DIRECT | BSD-2-Clause | change_point | yes | 5.04 | 4 | 3 | 0.089 | PRODUCED: already importable in the shared venv |
-| `aeon` | DIRECT | BSD-3-Clause | time_series_mining | yes | 0.02 | 6 | 67 | 0.000 | PRODUCED: already importable in the shared venv |
-| `causal_learn` | DIRECT | MIT | causal_discovery | yes | 5.03 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `cell:conformal_calibration` | REBUILT | desk (own code; mechanism rebuilt from mapie) | conformal_uncertainty | yes | 5.02 | 7 | 0 | 0.000 | PRODUCED:  |
-| `cell:edgar_transmission` | REBUILT | desk (own code; mechanism rebuilt from the desk's own method) | financial_nlp | yes | 5.02 | 7 | 0 | 0.000 | UNMEASURED:  |
-| `cell:rl_execution_challenger` | REBUILT | desk (own code; mechanism rebuilt from ray, openspiel) | execution_engine | yes | 5.02 | 7 | 0 | 0.000 | PRODUCED:  |
-| `dowhy` | DIRECT | MIT | causal_discovery | yes | 5.02 | 5 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
-| `dspy` | DIRECT | MIT | prompt_optimization | yes | 5.02 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
-| `easytpp` | DIRECT | Apache-2.0 | point_process | yes | 5.02 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `featuretools` | DIRECT | BSD-3-Clause | feature_synthesis | yes | 5.02 | 5 | 0 | 0.000 | PRODUCED: installed and imported |
-| `mapie` | DIRECT | BSD-3-Clause | conformal_uncertainty | yes | 5.01 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `openevolve` | DIRECT | Apache-2.0 | program_evolution | yes | 5.01 | 5 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
-| `pgmpy` | DIRECT | MIT | graphical_models | yes | 5.01 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pydmd` | DIRECT | MIT | dynamical_systems | yes | 5.0 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pymc` | DIRECT | Apache-2.0 | probabilistic_programming | yes | 5.16 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pysindy` | DIRECT | MIT | dynamical_systems | yes | 5.16 | 4 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `pysr` | DIRECT | Apache-2.0 | symbolic_regression | yes | 5.13 | 4 | 0 | 0.000 | UNMEASURED: installed and imported |
-| `pyvinecopulib` | DIRECT | MIT | copula_dependence | yes | 5.35 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `quantconnect_cloud` | WRAPPED | Apache-2.0 | research_reliability | yes | 5.35 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `quantrocket` | WRAPPED | Apache-2.0 | data_tooling | yes | 5.35 | 2 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
-| `reservoirpy` | DIRECT | MIT | reservoir_computing | yes | 5.34 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `river` | DIRECT | BSD-3-Clause | online_learning | yes | 5.34 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `roughpy` | DIRECT | BSD-3-Clause | rough_paths | yes | 5.34 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `sbi` | DIRECT | Apache-2.0 | simulation_based_inference | yes | 5.1 | 2 | 0 | 0.000 | UNMEASURED: installed and imported |
-| `scikit_mine` | DIRECT | BSD-3-Clause | pattern_mining | yes | 0.07 | 2 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `stumpy` | DIRECT | BSD-3-Clause | time_series_mining | yes | 5.64 | 1 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
-| `tensorly` | DIRECT | BSD-3-Clause | tensor_methods | yes | 5.59 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tigramite` | DIRECT | GPL-3.0 | causal_discovery | yes | 5.43 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tsfresh` | DIRECT | MIT | feature_synthesis | yes | 5.42 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
-| `tslearn` | DIRECT | BSD-2-Clause | time_series_mining | yes | 5.25 | 1 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
+| `aeon` | DIRECT | BSD-3-Clause | time_series_mining | yes | 0.38 | 8 | 141 | 0.794 | PRODUCED: already importable in the shared venv |
+| `quantsplaybook` | REBUILT | UNVERIFIED | research_reproduction | yes | 0.12 | 1 | 240 | 0.785 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `alphacrafter` | DIRECT | UNVERIFIED | regime_selection | yes | 0.33 | 1 | 40 | 0.772 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `l1vsun` | REBUILT | UNVERIFIED | information_acquisition | yes | 0.27 | 1 | 40 | 0.772 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `inst_optiver_imc_hrt` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.27 | 1 | 40 | 0.745 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `rohonchain` | REBUILT | UNVERIFIED | causal_discovery | yes | 0.09 | 1 | 40 | 0.745 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `stumpy` | DIRECT | BSD-3-Clause | time_series_mining | yes | 0.4 | 4 | 81 | 0.708 | PRODUCED: already importable in the shared venv |
+| `hummingbot` | REBUILT | UNVERIFIED | microstructure | yes | 0.28 | 1 | 35 | 0.706 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `quantaalpha` | DIRECT | UNVERIFIED | trajectory_evolution | yes | 0.16 | 1 | 40 | 0.668 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `pyextremes` | DIRECT | MIT | extreme_value | yes | 0.43 | 9 | 102 | 0.467 | PRODUCED: already importable in the shared venv |
+| `numerai_method` | REBUILT | UNVERIFIED | portfolio_research | yes | 0.43 | 11 | 27 | 0.375 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `cell:coevolution_cell` | REBUILT | desk (own code; mechanism rebuilt from alphagen, openevolve, pyribs) | factor_model_coevolution | yes | 0.4 | 11 | 129 | 0.323 | PRODUCED: fallback: numpy factor grammar x numpy model zoo, alternating coevolution, walk-forward; upstream available: [] |
+| `nevergrad` | DIRECT | MIT | evolutionary_search | yes | 0.39 | 9 | 81 | 0.223 | PRODUCED: already importable in the shared venv |
+| `cell:path_signature_lab` | REBUILT | desk (own code; mechanism rebuilt from roughpy) | rough_paths | yes | 0.39 | 11 | 31 | 0.203 | PRODUCED: fallback: numpy truncated signature (Chen's identity, level <= 3) over discrete increments; upstream available: [] |
+| `ray` | DIRECT | Apache-2.0 | distributed_compute | yes | 0.39 | 8 | 84 | 0.198 | PRODUCED: already importable in the shared venv |
+| `agonalpha` | DIRECT | UNVERIFIED | artifact_search | yes | 0.43 | 2 | 80 | 0.170 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `quantharness` | WRAPPED | UNVERIFIED | walk_forward_harness | yes | 0.15 | 1 | 40 | 0.170 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `pymoo` | DIRECT | Apache-2.0 | multiobjective_search | yes | 0.38 | 8 | 108 | 0.121 | PRODUCED: already importable in the shared venv |
+| `ripser` | DIRECT | MIT | topology | yes | 0.38 | 8 | 6 | 0.052 | PRODUCED: already importable in the shared venv |
+| `ruptures` | DIRECT | BSD-2-Clause | change_point | yes | 0.33 | 7 | 3 | 0.026 | UNMEASURED: already importable in the shared venv |
+| `alpha101` | REBUILT | UNVERIFIED | dsl_program_search | yes | 0.33 | 1 | 240 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `inst_man_aqr_winton` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.28 | 1 | 240 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `hubble` | REBUILT | UNVERIFIED | dsl_program_search | yes | 0.28 | 1 | 120 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `alphaagent` | DIRECT | UNVERIFIED | structural_novelty | yes | 0.33 | 1 | 40 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `ai_berkshire` | DIRECT | UNVERIFIED | multi_agent_debate | yes | 0.33 | 2 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `ai_quant_agent` | WRAPPED | UNVERIFIED | data_source | yes | 0.43 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `ai_trader` | WRAPPED | UNVERIFIED | multi_agent_debate | yes | 0.43 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `aitradingarena` | REBUILT | UNVERIFIED | telemetry_source | yes | 0.43 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `akshare` | DIRECT | MIT | data_source | yes | 0.43 | 1 | 0 | 0.000 | TEXT_ONLY: installed and imported |
+| `arcticdb` | DIRECT | Apache-2.0 | data_tooling | yes | 0.33 | 1 | 0 | 0.000 | TEXT_ONLY: installed and imported |
+| `ashare_agents` | WRAPPED | UNVERIFIED | data_source | yes | 0.33 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `astockarena` | WRAPPED | UNVERIFIED | multi_agent_debate | yes | 0.33 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `bl888m` | REBUILT | UNVERIFIED | information_acquisition | yes | 0.33 | 1 | 0 | 0.000 | UNMEASURED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `bridgewater_pat_aia` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.33 | 8 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `causal_learn` | DIRECT | MIT | causal_discovery | yes | 0.32 | 6 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `cell:conformal_calibration` | REBUILT | desk (own code; mechanism rebuilt from mapie) | conformal_uncertainty | yes | 0.3 | 8 | 0 | 0.000 | PRODUCED: fallback: adaptive conformal inference (ACI) around a ridge forecast, numpy only; upstream available: [] |
+| `cell:edgar_transmission` | REBUILT | desk (own code; mechanism rebuilt from the desk's own method) | financial_nlp | yes | 0.3 | 8 | 0 | 0.000 | UNMEASURED: fallback: cached EDGAR full-text hits and XBRL frames compiled into daily filing bursts; upstream available: [] |
+| `cell:rl_execution_challenger` | REBUILT | desk (own code; mechanism rebuilt from ray, openspiel) | execution_engine | yes | 0.3 | 8 | 0 | 0.000 | PRODUCED: fallback: tabular Q-learning over the twin's empirical outcomes + simulated-annealing QUBO; upstream available: [] |
+| `contesttrade` | WRAPPED | UNVERIFIED | multi_agent_debate | yes | 0.3 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `deshaw_tools` | DIRECT | UNVERIFIED | data_tooling | yes | 0.3 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `dowhy` | DIRECT | MIT | causal_discovery | yes | 0.29 | 6 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
+| `dspy` | DIRECT | MIT | prompt_optimization | yes | 0.29 | 6 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `easytpp` | DIRECT | Apache-2.0 | point_process | yes | 0.29 | 6 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `featuretools` | DIRECT | BSD-3-Clause | feature_synthesis | yes | 0.28 | 6 | 0 | 0.000 | PRODUCED: installed and imported |
+| `hithink` | WRAPPED | UNVERIFIED | data_source | yes | 0.28 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `inst_citadel` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.28 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `inst_deshaw` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.28 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `inst_highflyer` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.28 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `inst_renaissance` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.27 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `inst_two_sigma` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.27 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `inst_ubiquant_lingjun_minghong` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.27 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `inst_xtx` | REBUILT | UNVERIFIED | institutional_capability | yes | 0.27 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `lean` | DIRECT | Apache-2.0 | replay_parity | yes | 0.27 | 1 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `mapie` | DIRECT | BSD-3-Clause | conformal_uncertainty | yes | 0.26 | 6 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `nautilus` | DIRECT | LGPL-3.0 | replay_parity | yes | 0.26 | 1 | 0 | 0.000 | TEXT_ONLY: installed and imported |
+| `openbb` | DIRECT | AGPL-3.0 | data_source | yes | - | 0 | 0 | 0.000 | NEVER_RUN: installed and imported |
+| `openevolve` | DIRECT | Apache-2.0 | program_evolution | yes | 0.26 | 6 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `openfr` | WRAPPED | UNVERIFIED | multi_agent_debate | yes | 0.26 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `pgmpy` | DIRECT | MIT | graphical_models | yes | 0.25 | 6 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pydmd` | DIRECT | MIT | dynamical_systems | yes | 0.25 | 6 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pymc` | DIRECT | Apache-2.0 | probabilistic_programming | yes | 0.23 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pyrqa` | DIRECT | Apache-2.0 | recurrence_analysis | yes | 0.23 | 1 | 0 | 0.000 | PRODUCED: installed and imported |
+| `pysindy` | DIRECT | MIT | dynamical_systems | yes | 0.23 | 5 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `pysr` | DIRECT | Apache-2.0 | symbolic_regression | yes | 0.19 | 5 | 0 | 0.000 | UNMEASURED: installed and imported |
+| `pyvinecopulib` | DIRECT | MIT | copula_dependence | yes | 0.18 | 3 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `quantconnect_cloud` | WRAPPED | Apache-2.0 | research_reliability | yes | 0.15 | 3 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `quanti` | WRAPPED | UNVERIFIED | regime_selection | yes | 0.14 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `quantmind` | WRAPPED | UNVERIFIED | data_source | yes | 0.14 | 1 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `quantrocket` | WRAPPED | Apache-2.0 | data_tooling | yes | 0.14 | 3 | 0 | 0.000 | TEXT_ONLY: already importable in the shared venv |
+| `reservoirpy` | DIRECT | MIT | reservoir_computing | yes | 0.12 | 3 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `river` | DIRECT | BSD-3-Clause | online_learning | yes | 0.1 | 3 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `roughpy` | DIRECT | BSD-3-Clause | rough_paths | yes | 0.09 | 3 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `sbi` | DIRECT | Apache-2.0 | simulation_based_inference | yes | 0.08 | 3 | 0 | 0.000 | UNMEASURED: installed and imported |
+| `scikit_mine` | DIRECT | BSD-3-Clause | pattern_mining | yes | 0.06 | 3 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tensorly` | DIRECT | BSD-3-Clause | tensor_methods | yes | 15.62 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tigramite` | DIRECT | GPL-3.0 | causal_discovery | yes | 15.47 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tsfresh` | DIRECT | MIT | feature_synthesis | yes | 15.46 | 1 | 0 | 0.000 | PRODUCED: already importable in the shared venv |
+| `tslearn` | DIRECT | BSD-2-Clause | time_series_mining | yes | 15.29 | 1 | 0 | 0.000 | UNMEASURED: already importable in the shared venv |
 | `abides` | DIRECT | UNVERIFIED | market_simulation | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `agonalpha` | DIRECT | UNVERIFIED | artifact_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/agonalpha.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Externa |
-| `ai_berkshire` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/ai_berkshire.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exte |
-| `ai_hedge_fund` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/ai_hedge_fund.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ext |
-| `ai_quant_agent` | WRAPPED | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/ai_quant_agent.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ex |
+| `ai_hedge_fund` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `ai_scientist` | DIRECT | UNVERIFIED | automated_science | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `ai_trader` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/ai_trader.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Externa |
-| `aitradingarena` | REBUILT | UNVERIFIED | telemetry_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/aitradingarena.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ex |
-| `akshare` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/akshare.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalR |
-| `alpha101` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/alpha101.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> External |
 | `alpha_search` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `alphaagent` | DIRECT | UNVERIFIED | structural_novelty | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/alphaagent.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Extern |
-| `alphacrafter` | DIRECT | UNVERIFIED | regime_selection | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/alphacrafter.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exte |
 | `alphagen` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `alphaquanter` | DIRECT | UNVERIFIED | rl_policy_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/alphaquanter.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exte |
-| `arcticdb` | DIRECT | UNVERIFIED | data_tooling | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/arcticdb.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> External |
-| `ashare_agents` | WRAPPED | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/ashare_agents.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ext |
-| `astockarena` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/astockarena.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exter |
-| `atlas_gic` | DIRECT | UNVERIFIED | trajectory_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/atlas_gic.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Externa |
-| `autohedge` | REBUILT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/autohedge.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Externa |
-| `autohypothesis` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/autohypothesis.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ex |
-| `bl888m` | REBUILT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/bl888m.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
+| `alphaquanter` | DIRECT | UNVERIFIED | rl_policy_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `atlas_gic` | DIRECT | UNVERIFIED | trajectory_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `autohedge` | REBUILT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: upstream cannot run without an LLM provider API key through swarms; the orchestration IS the LLM call |
+| `autohypothesis` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `botorch` | DIRECT | UNVERIFIED | bayesian_optimization | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
-| `bridgewater_pat_aia` | REBUILT | UNVERIFIED | institutional_capability | NO | 5.04 | 7 | 0 | 0.000 | PRODUCED: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `chronos2` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
-| `contesttrade` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/contesttrade.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exte |
 | `cvxportfolio` | DIRECT | UNVERIFIED | portfolio_optimization | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: importing the module crashes the interpreter on this host -- covered by: UNCOVERED: c |
 | `darts` | DIRECT | UNVERIFIED | forecast_zoo | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL is missing on this host -- covered by: UNCOVERED: capabilit |
 | `darwin_godel_machine` | REBUILT | UNVERIFIED | agent_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `deshaw_tools` | DIRECT | UNVERIFIED | data_tooling | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/deshaw_tools.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exte |
-| `dexter` | DIRECT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/dexter.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
+| `dexter` | DIRECT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `dso` | DIRECT | UNVERIFIED | symbolic_regression | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `fingpt` | DIRECT | UNVERIFIED | financial_nlp | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/fingpt.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
-| `finrl` | DIRECT | UNVERIFIED | rl_policy_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/finrl.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRes |
-| `finrobot` | DIRECT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/finrobot.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> External |
-| `hithink` | WRAPPED | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/hithink.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalR |
-| `hubble` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/hubble.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
-| `hummingbot` | REBUILT | UNVERIFIED | microstructure | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/hummingbot.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Extern |
+| `fingpt` | DIRECT | UNVERIFIED | financial_nlp | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `finrl` | DIRECT | UNVERIFIED | rl_policy_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed and the package does not import on this host: finrl.meta reaches stable-baselines3 -> torch, and torch does not load here (WinErro |
+| `finrobot` | DIRECT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: upstream cannot run without an LLM provider API key (OPENAI_API_KEY / config_api_keys) at import and at every agent step |
 | `idtxl` | DIRECT | UNVERIFIED | information_theory | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `inalpha` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inalpha.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalR |
-| `inst_citadel` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_citadel.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exte |
-| `inst_deshaw` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_deshaw.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exter |
-| `inst_highflyer` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_highflyer.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ex |
-| `inst_man_aqr_winton` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_man_aqr_winton.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle)  |
-| `inst_optiver_imc_hrt` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_optiver_imc_hrt.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) |
-| `inst_renaissance` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_renaissance.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) ->  |
-| `inst_two_sigma` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_two_sigma.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ex |
-| `inst_ubiquant_lingjun_minghong` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_ubiquant_lingjun_minghong.py does not exist, so nothing can run this seed. The task is to write the adapter (r |
-| `inst_xtx` | REBUILT | UNVERIFIED | institutional_capability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/inst_xtx.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> External |
+| `inalpha` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `kats` | DIRECT | UNVERIFIED | change_point | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the distribution's build backend does not run on this interpreter -- a source-only dependency pinned to a numpy this Python has no wheel for -- covere |
-| `kronos` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/kronos.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
-| `kymatio` | DIRECT | BSD-3-Clause | signal_scattering | NO | 5.72 | 1 | 0 | 0.000 | UNMEASURED: the wheel installed but the module does not import on this host: the distribution calls an API the desk's own scientific core has removed (measured on |
-| `l1vsun` | REBUILT | UNVERIFIED | information_acquisition | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/l1vsun.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
-| `lean` | DIRECT | UNVERIFIED | replay_parity | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/lean.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRese |
+| `kronos` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `kymatio` | DIRECT | BSD-3-Clause | signal_scattering | NO | 15.75 | 1 | 0 | 0.000 | UNMEASURED: the wheel installed but the module does not import on this host: the distribution calls an API the desk's own scientific core has removed (measured on |
 | `merlion` | DIRECT | UNVERIFIED | anomaly_detection | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the source build failed on this host -- covered by: UNCOVERED: capability family 'anomaly_detection' needs a REBUILT cell under research/sandboxes/ wh |
-| `ml_quant_trading` | DIRECT | UNVERIFIED | representation_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/ml_quant_trading.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) ->  |
+| `ml_quant_trading` | DIRECT | UNVERIFIED | representation_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `moment` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: a build-time dependency is source-only and does not build on this interpreter -- covered by: UNCOVERED: capability family 'foundation_model' needs a R |
-| `nautilus` | DIRECT | UNVERIFIED | replay_parity | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/nautilus.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> External |
 | `neuralforecast` | DIRECT | UNVERIFIED | forecast_zoo | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
-| `nexquant` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/nexquant.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> External |
-| `openbb` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/openbb.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
-| `openfr` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/openfr.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
+| `nexquant` | DIRECT | UNVERIFIED | evolutionary_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `openspiel` | DIRECT | UNVERIFIED | game_theory | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: importing the module crashes the interpreter on this host -- covered by: REBUILT cell |
 | `pyg_temporal` | DIRECT | UNVERIFIED | graph_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN: a build-time dependency is source-only and does not build on this interpreter -- covered by: UNCOVERED: capability family 'graph_learning' needs a REB |
 | `pyribs` | DIRECT | UNVERIFIED | quality_diversity | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: REBUILT c |
-| `pyrqa` | DIRECT | UNVERIFIED | recurrence_analysis | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `qlib` | DIRECT | UNVERIFIED | representation_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/qlib.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRese |
-| `quantaalpha` | DIRECT | UNVERIFIED | trajectory_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/quantaalpha.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exter |
-| `quantagent` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/quantagent.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Extern |
-| `quantharness` | WRAPPED | UNVERIFIED | walk_forward_harness | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/quantharness.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Exte |
-| `quanti` | WRAPPED | UNVERIFIED | regime_selection | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/quanti.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRe |
+| `qlib` | DIRECT | UNVERIFIED | representation_learning | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no distribution for this interpreter/platform at the pinned version -- covered by: UNCOVERED: capability family 'representation_learning' needs a REBU |
+| `quantagent` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
 | `quantifact` | DIRECT | UNVERIFIED | research_reliability | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
-| `quantmind` | WRAPPED | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/quantmind.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Externa |
-| `quantsplaybook` | REBUILT | UNVERIFIED | research_reproduction | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/quantsplaybook.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ex |
-| `rd_agent` | DIRECT | UNVERIFIED | factor_model_coevolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/rd_agent.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> External |
+| `rd_agent` | DIRECT | UNVERIFIED | factor_model_coevolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: upstream cannot run without an LLM provider API key (the R&D loop's proposer and coder are LLM calls) |
 | `riskfolio` | DIRECT | UNVERIFIED | portfolio_optimization | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: importing the module crashes the interpreter on this host -- covered by: UNCOVERED: c |
-| `rohonchain` | REBUILT | UNVERIFIED | causal_discovery | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/rohonchain.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Extern |
 | `timesfm` | DIRECT | UNVERIFIED | foundation_model | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL refuses to initialise on this host -- covered by: UNCOVERED |
 | `tpot` | DIRECT | UNVERIFIED | program_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the wheel installed but the module does not import on this host: a native dependency's DLL is missing on this host -- covered by: UNCOVERED: capabilit |
-| `tradingagents` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/tradingagents.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ext |
-| `tradingagents_cn` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/tradingagents_cn.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) ->  |
-| `tradingagents_kr` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/tradingagents_kr.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) ->  |
-| `tushare` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/tushare.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalR |
-| `valuecell` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/valuecell.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Externa |
-| `verumtrade` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/verumtrade.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Extern |
-| `vietnam_alpha` | WRAPPED | UNVERIFIED | trajectory_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/vietnam_alpha.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> Ext |
-| `vnpy` | REBUILT | UNVERIFIED | execution_engine | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/vnpy.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalRese |
-| `worldquant_brain_public` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/worldquant_brain_public.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bund |
-| `wq_research_engine` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/wq_research_engine.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) - |
-| `zvt` | DIRECT | UNVERIFIED | data_tooling | NO | - | 0 | 0 | 0.000 | NEVER_RUN: NO ADAPTER: libs/research/adapters/zvt.py does not exist, so nothing can run this seed. The task is to write the adapter (run(bundle) -> ExternalResea |
+| `tradingagents` | DIRECT | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: upstream cannot run without an LLM provider API key AND a FinnHub data key; the debate loop is LLM calls end to end |
+| `tradingagents_cn` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `tradingagents_kr` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `tushare` | DIRECT | UNVERIFIED | data_source | NO | - | 0 | 0 | 0.000 | NEVER_RUN: upstream cannot run without a TuShare Pro API token (register + points quota) for every data call; the free tier still authenticates per request |
+| `valuecell` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `verumtrade` | WRAPPED | UNVERIFIED | multi_agent_debate | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `vietnam_alpha` | WRAPPED | UNVERIFIED | trajectory_evolution | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `vnpy` | REBUILT | UNVERIFIED | execution_engine | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no distribution for this interpreter/platform at the pinned version -- covered by: UNCOVERED: capability family 'execution_engine' needs a REBUILT cel |
+| `worldquant_brain_public` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `wq_research_engine` | REBUILT | UNVERIFIED | dsl_program_search | NO | - | 0 | 0 | 0.000 | NEVER_RUN: no wheel was resolved on this interpreter: pin a commit or a wheel before a sandbox may install it (LAWS 5m forbids a floating pin) |
+| `zvt` | DIRECT | UNVERIFIED | data_tooling | NO | - | 0 | 0 | 0.000 | NEVER_RUN: the source build failed on this host -- covered by: UNCOVERED: capability family 'data_tooling' needs a REBUILT cell under research/sandboxes/ whose U |
 
 ## What each column means
 

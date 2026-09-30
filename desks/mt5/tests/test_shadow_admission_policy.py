@@ -9,6 +9,7 @@ for path in (DESK, DESK / "research", DESK.parent.parent):
     if str(path) not in sys.path:
         sys.path.insert(0, str(path))
 
+from gate_policy import _SPEC_FIXED_TRIALS as _CHARGE  # noqa: E402
 from gate_policy import (  # noqa: E402
     ATTESTATION,
     COST_SCENARIO,
@@ -22,6 +23,13 @@ from gate_policy import (  # noqa: E402
     all_ten_pass,
     charged_trial_count,
 )
+
+#: The standing campaign charge. Since 2026-09-23 `research/effective_trials.py` writes the
+#: redundancy-corrected count into policy/gate_spec.yaml (109 when this was written) and the
+#: judge reads it from there; it may only ever be at or BELOW the historic fixed 597, because a
+#: lower count is a lower bar and the bar never gets harsher. The tests pin the property -- one
+#: constant charge, never above 597 -- rather than a literal the spec is designed to move.
+_LEGACY_CHARGE = 597
 from shadow_admission import authorized_specs, partition_work  # noqa: E402
 
 
@@ -43,7 +51,8 @@ def test_original_thresholds_are_one_fixed_policy() -> None:
     # THE BAR IS FIXED (principal, standing instruction): it never raises and never gets
     # harsher. The attestation must say so, because it is the field that pins what a certificate
     # was judged under.
-    assert ATTESTATION["trial_count_basis"].startswith("fixed_campaign_trials(597)")
+    assert isinstance(_CHARGE, int) and 2 <= _CHARGE <= _LEGACY_CHARGE
+    assert f"campaign_trials({_CHARGE})" in ATTESTATION["trial_count_basis"]
 
 
 def test_charge_is_fixed_and_never_scales_with_sweep_size() -> None:
@@ -55,7 +64,7 @@ def test_charge_is_fixed_and_never_scales_with_sweep_size() -> None:
     that changed was how many other cells the docket happened to hold that hour. 506 cells
     cleared every VALIDITY gate and failed only the deflated Sharpe against the inflated bar.
     """
-    expected = (597, "fixed_campaign_trials(597)")
+    expected = (_CHARGE, f"fixed_campaign_trials({_CHARGE})")
     # Two orders of magnitude of sweep size, one charge.
     assert charged_trial_count(17, 17.0, "null_calibrated_participation_ratio") == expected
     assert charged_trial_count(368, 277.40, "null_calibrated_participation_ratio") == expected
@@ -75,7 +84,7 @@ def test_a_bad_census_can_never_make_the_bar_harsher() -> None:
     right when the failure protects against a false pass; here it protected against nothing and
     penalised the candidate for a measurement problem it had no part in.
     """
-    expected = (597, "fixed_campaign_trials(597)")
+    expected = (_CHARGE, f"fixed_campaign_trials({_CHARGE})")
     assert charged_trial_count(368, 1.0, "null_calibrated_participation_ratio") == expected
     assert charged_trial_count(368, 246.46, "hand_tuned") == expected
     assert charged_trial_count(
@@ -83,14 +92,17 @@ def test_a_bad_census_can_never_make_the_bar_harsher() -> None:
     # The charge is bounded above by the fixed count no matter what is passed in.
     for raw in (2, 368, 99_999):
         n, _basis = charged_trial_count(raw, None, "unmeasurable")
-        assert n <= 597
+        assert n <= _CHARGE <= _LEGACY_CHARGE
 
 
 def test_partial_extra_or_failed_gate_sets_never_admit() -> None:
     stages = _stages()
     assert all_ten_pass(stages)
     assert not all_ten_pass({k: v for k, v in stages.items() if k != "pbo"})
-    assert not all_ten_pass({**stages, "harsher_overlay": {"passed": True}})
+    # Supplementary gates are additive: every original gate remains mandatory and an extra gate
+    # must pass, but a passed eleventh measurement cannot invalidate the original ten.
+    assert all_ten_pass({**stages, "harsher_overlay": {"passed": True}})
+    assert not all_ten_pass({**stages, "harsher_overlay": {"passed": False}})
     stages["pbo"] = {"passed": False}
     assert not all_ten_pass(stages)
 

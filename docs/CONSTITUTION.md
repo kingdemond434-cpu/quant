@@ -2847,6 +2847,48 @@ measured reason instead of inertia.
 
 FENCED by `scripts/check_margin_topology.py` over `libs/portfolio/margin_topology.py`.
 
+## L1.65 A DATA GAUGE DENOMINATED IN WHAT SURVIVES CANNOT SEE A LOSS
+
+*(Recorded 2026-09-29 under R0643: this law has been fenced since 2026-08 by
+`scripts/check_data_recoverability.py` and cited by that fence, by `libs/ops/ledger_reversion.py`
+and by `scripts/max_audit.py`, while appearing nowhere in this document, the enforcement matrix or
+the scheduler manifest. The text below is the fence's own, not a new rule.)*
+
+Every data gauge on this desk is denominated in what is ON DISK NOW, so all of them improve when
+data is destroyed: `mine_moat` printed `coverage_pct 100.0` twenty-four seconds after 19.46 GB of
+tape was deleted, because `cells_filled` and `cells_total` collapsed together. L1.0 names "data
+span" as a ratchet, and it is the only one whose fall cannot be re-earned by working harder.
+
+**OPERATIVE.** Span NOW is compared against the deepest span the desk has EVER held, and every
+fall carries a recovery class READ FROM A PROBE rather than asserted: LOSS-RECOVERABLE (a verified
+free path exists -- the fix is a fetch), LOSS-PERMANENT (unbuyable time; this one pages) or
+CONTRADICTED (doctrine calls a stream irreplaceable while a probe shows it reachable). No
+high-water history is UNMEASURED and never OK (L1.28a); a host that cannot read the data is
+NOT-READABLE-HERE, distinct from 0%. The repair is UPWARD (L1.49): a fall is never fixed by
+lowering the mark, and the high-water ledger is append-only.
+
+FENCED by `scripts/check_data_recoverability.py` over `libs/research/recoverability.py`.
+
+## L1.66 A RUNNING PROCESS'S VALUES ARE THE VALUES ON DISK, OR THE DESK CANNOT SAY WHAT IT RUNS
+
+*(Recorded 2026-09-29 under R0643, as L1.65 above: fenced by `scripts/check_frozen_values.py`
+since 2026-08 and absent from this document until now. The text is the fence's own.)*
+
+`check_stale_daemons` asks whether a long-lived process runs the committed CODE. This is the other
+half: whether it runs the committed VALUES. A module-scope read executes once, at import; edit
+the artifact and disk and memory disagree for the life of the process, silently, with every
+producer-side and artifact-side gauge green. L1.44's freshness registry, L1.55's provenance and
+L1.49's reachability are each blind to it by construction.
+
+**OPERATIVE.** It measures EXPOSURE, not damage: FROZEN-STALE means the in-memory value CANNOT BE
+PROVEN to match disk, never that it provably differs -- overstating that would make a detector
+that cries wolf (L1.43/L1.37). A read whose artifact cannot be resolved is COUNTED as UNRESOLVED,
+never dropped; daemons running with nothing examined is UNMEASURED, never OK. The repair is UPWARD
+(L1.49): move the read inside the function that consumes it. A restart is NOT a repair; it
+re-freezes the same value one tick later.
+
+FENCED by `scripts/check_frozen_values.py` over `libs/ops/value_staleness.py`.
+
 ## L1.67 A POSITION SIZED IN THE WRONG INSTRUMENT'S UNITS IS A BET NOBODY PLACED
 
 Every fence on this desk asks whether a number was FRESH (L1.44), whether its inputs were
@@ -2914,3 +2956,44 @@ CORRECT in both directions at once: it cuts a JPY cross from 7.41% to 1.13% and 
 gold's" -- byte-identical on this desk until now, and only one of them is a position size.
 
 FENCED by `scripts/check_risk_units.py` over `desks/mt5/mt5desk/risk_units.py`.
+
+## L1.68 EVERY USEFUL RESEARCH INPUT REACHES A TESTABLE-CELL DISPOSITION
+
+**THE CONSERVATION LAW.** Every useful country pack, regional forest, institutional or
+high-return reconstruction, paper, repository, forum, video, public strategy, dataset, macro
+release, physical-economy observation, broker/tick record, graveyard failure, AI-scientist
+output and external research system enters one canonical chain:
+
+`INPUT -> CLAIM -> MECHANISM -> RULE -> ORTHOGONAL DESCENDANTS -> GAUNTLET CELLS`.
+
+For every source family, at every measured pass:
+
+`inputs = testable + explicitly_unresolved + valid_refusals`, with `silently_lost = 0`.
+
+An unresolved input is not a parking place. It carries its blocker, owner, first-seen time,
+age, repair action, next attempt and reopening condition, stays at the front of resumable work,
+and remains debt until repaired or validly refused. A refusal is valid only at an already sealed
+universe or lane boundary and names the policy change that would reopen it. Missing data,
+falsifier, family, instrument, language, access label or converter capacity is work, not a
+refusal. An absent measurement is UNMEASURED, never zero or passing.
+
+**BREADTH, NOT PARAMETER SPAM.** A named mechanism is expanded over economically meaningful
+asset, horizon, session/calendar, regime, direction, representation and cross-asset/execution
+dimensions. Exact and economic-exposure duplicates are removed before expensive tests, and the
+remaining descendants pay their effective multiplicity charge. The objective is maximum
+structurally distinct falsifiable descendants and independent forward contribution, never raw
+row count.
+
+**ONE DOOR.** Every source uses the same canonical AlphaCell contract, multiplicity ledger,
+cheap falsification, universal gauntlet and prospective forward-evidence path. No source, model,
+country or prestige label receives an easier gate. The system publishes disposition coverage,
+gauntlet-ready cells per useful mechanism, orthogonal cells per input, forward survivors per
+novel cell, and prospective/live delta-E[log W] per research compute. Any metric whose causal
+join is unavailable stays UNMEASURED with an owner.
+
+The standing frontier question is: **what have we learned anywhere that has not yet become a
+falsifiable experiment?** A non-empty answer is conversion debt and must be worked, not narrated.
+
+OPERATIVE in `desks/mt5/research/conversion_maximiser.py`, the canonical compiler/explosion
+chain and the hourly gauntlet; audited in `CONVERSION_MAXIMISER.json` by the per-source identity
+and zero-silent-loss fields.

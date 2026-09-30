@@ -45,6 +45,93 @@ def test_unknown_is_reported_not_raised():
     assert asset_class("") == "unknown"
 
 
+# ======================== A TICKER ROOT IS A WORD, NOT A PREFIX ========================
+#
+# THE DEFECT, measured on the trading box 2026-09-24. The root lists were matched with a bare
+# `startswith`/`in`, so a root that happened to open an English word claimed the instrument:
+# UnionPacific, UnitedHealth and UnitedParcelService read `crypto` ("UNI" = Uniswap),
+# GoldmanSachs read `metal` ("GOLD") and Nike read `index` ("NIK" = Nikkei). Five US share CFDs
+# in the hypothesis-discovery lane, which the two-lane order (principal 2026-09-06) puts in the
+# news/earnings lane -- and `libs/portfolio/robust_elog._asset_class` POOLS sleeves by this same
+# class for correlation shrinkage, so UnionPacific was borrowing BTCUSD's mean and GoldmanSachs
+# was borrowing gold's.
+
+@pytest.mark.parametrize("sym", [
+    "UnionPacific", "UnitedHealth", "UnitedParcelService",   # read `crypto` -- "UNI"
+    "GoldmanSachs",                                          # read `metal`  -- "GOLD"
+    "Nike",                                                  # read `index`  -- "NIK"
+])
+def test_share_cfds_named_after_a_ticker_root_are_equities(sym):
+    """By name: these five are the measured casualties and a later edit may not lose them."""
+    assert asset_class(sym) == "equity"
+
+
+@pytest.mark.parametrize("sym,expected", [
+    ("BTCUSD", "crypto"), ("ETHUSD", "crypto"), ("ADAUSD", "crypto"),
+    ("AVAXUSD", "crypto"), ("BCHUSD", "crypto"), ("UNIUSD", "crypto"),
+    ("XAUUSD", "metal"), ("XAGEUR", "metal"), ("GOLD", "metal"),
+    ("UST05Y", "bond"), ("UST10Y", "bond"), ("UKGILT", "bond"),
+    ("EUSTX50", "index"), ("GER40", "index"), ("NETH25", "index"),
+    ("SUGARRAW", "soft"), ("UKCOCOA", "soft"), ("USCOCOA", "soft"),
+])
+def test_the_real_ticker_roots_still_reach_their_class(sym, expected):
+    """The other direction, in the same breath: fixing the false positives by deleting the true
+    positives is the failure mode. `UNIUSD` is the Uniswap CFD and stays crypto; `SUGARRAW`,
+    `UKCOCOA` and `USCOCOA` are why the soft list must keep matching mid-symbol."""
+    assert asset_class(sym) == expected
+
+
+@pytest.mark.parametrize("name", [
+    "Solaris", "SolarEdge",     # SOL
+    "Unilever", "Uniswap",      # UNI
+    "Dotdash",                  # DOT
+    "LinkedIn",                 # LINK
+    "Ethan",                    # ETH
+    "GoldFields",               # GOLD
+])
+def test_a_crypto_ticker_inside_a_company_name_is_not_crypto(name):
+    """THE RULE, not the five symbols: the match must be WORD-BOUNDARY anchored.
+
+    None of these is on the broker's list today, which is the point -- a symbol exception list is
+    right on the day it is written and silently wrong the day the broker adds a name. The case the
+    broker already supplies is the boundary: a root followed by a lower-case letter is the opening
+    of a word, never a ticker.
+    """
+    assert asset_class(name) == "equity"
+
+
+def test_a_ticker_root_is_bounded_at_both_ends_of_a_broker_code():
+    """`UST|05Y` is a Treasury note and `UST|EC` is the Nasdaq index. Only the TAIL tells them
+    apart, and the prefix-only repair of 2026-08-28 could not: it read USTEC as a bond."""
+    assert asset_class("UST05Y") == "bond"
+    assert asset_class("USTEC") == "index"
+
+
+def test_no_symbol_the_registry_calls_an_equity_reads_as_a_hypothesis_class():
+    """The general property, driven over MetaTrader's OWN registry rather than a symbol list.
+
+    This is what would have caught the defect the day the whole-broker expansion landed: every
+    single-name share the broker declares must read as a share to the desk's classifier too, or
+    the trial budget the two-lane order reserved for FX and metals is spent on equities anyway.
+    """
+    import json
+    p = _DESK / "data" / "universe" / "universe.json"
+    if not p.exists():
+        pytest.skip("universe.json not present")
+    registry = json.loads(p.read_text(encoding="utf-8"))
+    leaked = {
+        sym: asset_class(sym)
+        for sym, row in registry.items()
+        if isinstance(row, dict)
+        and str(row.get("asset_class") or row.get("category") or "").strip().lower().startswith(
+            ("equit", "share", "stock"))
+        and asset_class(sym) != "equity"
+    }
+    assert not leaked, (
+        "the pattern classifier hands these single-name shares to a hypothesis class, so they "
+        f"spend trial budget the two-lane order reserved for FX and metals: {leaked}")
+
+
 def _inst(sym="EURUSD", **kw):
     base = dict(symbol=sym, asset_class=asset_class(sym), bars=5000, contract_size=100_000.0,
                 tick_size=1e-5, tick_value=0.62, min_volume=0.01, volume_step=0.01,

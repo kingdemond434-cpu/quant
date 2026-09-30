@@ -126,11 +126,34 @@ FRAGILITY_PCT = 0.20
 #:   existing_exposure 1.0  the candidate family's share of certified sleeves in the canon, in
 #:                      [0, 1]. A proposal into a family holding half the book pays half a point
 #:                      of growth -- the hurdle for the eleventh trend signal, said as a number.
+#:   mechanism_distance 0.5  share of the candidate's declared genome slots that differ from the
+#:                      NEAREST certified survivor, in [0, 1] (Tier-1 D5 / C5). Novelty prices
+#:                      correlation of the P&L; this prices distance in MECHANISM SPACE, which is
+#:                      what makes a reward-proportional sampler explore instead of converging on
+#:                      one mode -- a cell nothing in the canon resembles is worth half a point
+#:                      before it has earned anything.
+#:   axis_scarcity 0.5  1 / (1 + occupancy) of the candidate's AXIS_REGISTRY cell, in (0, 1]
+#:                      (Tier-1 D5 / C3). The desk has mined `forex x trend` a thousand times and
+#:                      `energy x gamma_hedging_state` never; sampling in proportion to a reward
+#:                      that ignores that is sampling in proportion to what was already easy.
 WEIGHTS: dict[str, float] = {
     "delta_elog": 1.0, "oos": 0.5, "novelty": 0.5, "tail": 2.0, "state_breadth": 0.5,
     "capacity": 0.5, "cost": 1.0, "fragility": 1.0, "complexity": 0.03, "multiplicity": 0.5,
     "turnover": 0.5, "crowding": 1.0, "existing_exposure": 1.0,
+    # BOTH ARE CREDITS AND NEITHER IS IN `PENALTIES`. A breadth term that could SUBTRACT would be
+    # a shrink on the search by another name; these can only ever lift a candidate in an unmined
+    # region, never push one in a crowded region below what it earned on its own evidence.
+    "mechanism_distance": 0.5, "axis_scarcity": 0.5,
 }
+#: The genome slots mechanism distance is measured over. A slot both sides declare is comparable;
+#: a slot either side leaves blank or UNKNOWN is skipped, so declining to declare buys nothing.
+SLOT_NAMES: tuple[str, ...] = ("asset_class", "instrument", "mechanism", "session",
+                               "horizon", "regime")
+#: The breadth grid the scarcity term counts occupancy in (`axis_registry`, hourly leg).
+AXIS_REGISTRY_PATH = DESK / "reports" / "AXIS_REGISTRY.json"
+#: Which occupancy plane is read. `axis_registry` publishes several crossed planes; this is the
+#: one whose cell a proposal can actually declare before it has been tested.
+AXIS_PLANE = "asset_classxmechanism"
 #: The terms the fitness SUBTRACTS. Held as data so `score` cannot disagree with the formula in
 #: this module's docstring.
 PENALTIES: frozenset[str] = frozenset({"cost", "fragility", "complexity", "multiplicity",
@@ -691,6 +714,131 @@ def certified_family_shares(canon: Path | None = None) -> tuple[dict[str, float]
     return shares, n
 
 
+_SLOTS_CACHE: dict[str, tuple[float, tuple[dict[str, str], ...]]] = {}
+
+
+def survivor_slots(canon: Path | None = None) -> tuple[dict[str, str], ...]:
+    """The certified canon as GENOME SLOTS -- what mechanism distance is measured against.
+
+    A certificate names an instrument and a family and nothing else the search can compare, so
+    those are the slots read; a cell key of the form `SYM.family.params` supplies the family when
+    `shadow_spec` does not. Cached on mtime like `certified_family_shares`, for the same reason.
+    """
+    canon = CANON_PATH if canon is None else canon
+    key = str(canon)
+    try:
+        mtime = float(Path(canon).stat().st_mtime)
+    except OSError:
+        return ()
+    hit = _SLOTS_CACHE.get(key)
+    if hit is not None and hit[0] == mtime:
+        return hit[1]
+    rows: list[dict[str, str]] = []
+    for cert in (_read_json(canon).get("survivors") or {}).values():
+        if not isinstance(cert, dict):
+            continue
+        _spec = cert.get("shadow_spec")
+        spec: dict[str, Any] = _spec if isinstance(_spec, dict) else {}
+        cell = str(cert.get("cell") or "")
+        parts = cell.split(".")
+        fam = str(spec.get("family") or cert.get("family")
+                  or (parts[1] if len(parts) > 1 else ""))
+        sym = str(spec.get("symbol") or cert.get("sym") or (parts[0] if parts else ""))
+        slot = {k: v for k, v in (("instrument", sym), ("mechanism", fam),
+                                  ("session", str(spec.get("session") or "")),
+                                  ("horizon", str(spec.get("horizon") or "")),
+                                  ("asset_class", str(spec.get("asset_class") or "")),
+                                  ("regime", str(spec.get("regime") or ""))) if v}
+        if slot:
+            rows.append(slot)
+    out = tuple(rows)
+    _SLOTS_CACHE[key] = (mtime, out)
+    return out
+
+
+def mechanism_distance_term(slots: Mapping[str, Any],
+                            survivors: Sequence[Mapping[str, Any]] | None = None,
+                            *, canon: Path | None = None) -> tuple[float, str]:
+    """Share of comparable genome slots that differ from the NEAREST certified survivor, [0, 1].
+
+    1.0 is a mechanism the canon has nothing like; 0.0 is a re-run of something already certified.
+    Only slots BOTH sides declare are compared, and `UNKNOWN` is not a declaration -- a proposal
+    that declares nothing is UNMEASURED (0.0 by absence, named), never distant by default, which
+    is the direction that keeps the term from paying for vagueness.
+    """
+    mine = {k: str(v).strip() for k, v in dict(slots or {}).items()
+            if k in SLOT_NAMES and str(v).strip() and str(v).strip().upper() != "UNKNOWN"}
+    if not mine:
+        return 0.0, "candidate declares no genome slot; mechanism distance UNMEASURED"
+    pool = tuple(survivors) if survivors is not None else survivor_slots(canon)
+    if not pool:
+        return 0.0, "no certified survivor to measure distance against; UNMEASURED"
+    best = 1.0
+    nearest = ""
+    compared = False
+    for row in pool:
+        shared = [k for k in mine if str(row.get(k) or "").strip()
+                  and str(row.get(k)).strip().upper() != "UNKNOWN"]
+        if not shared:
+            continue
+        diff = sum(1 for k in shared if str(row[k]).strip() != mine[k]) / float(len(shared))
+        if not compared or diff < best:
+            best, nearest = diff, "|".join(f"{k}={row.get(k)}" for k in shared)
+            compared = True
+    if not compared:
+        return 1.0, (f"no certified survivor declares any of {sorted(mine)}; the candidate's "
+                     f"mechanism is unshared with the canon")
+    return float(best), (f"{best:.2f} of the comparable slots differ from the nearest survivor "
+                         f"({nearest})")
+
+
+_AXIS_CACHE: dict[str, tuple[float, dict[str, int]]] = {}
+
+
+def axis_occupancy(registry: Path | None = None, plane: str = AXIS_PLANE) -> dict[str, int]:
+    """`cell -> how many hypotheses the breadth grid has ever placed there`, from AXIS_REGISTRY."""
+    p = AXIS_REGISTRY_PATH if registry is None else registry
+    key = f"{p}|{plane}"
+    try:
+        mtime = float(Path(p).stat().st_mtime)
+    except OSError:
+        return {}
+    hit = _AXIS_CACHE.get(key)
+    if hit is not None and hit[0] == mtime:
+        return hit[1]
+    occ = _read_json(p).get("occupancy")
+    cells = occ.get(plane) if isinstance(occ, dict) else None
+    out: dict[str, int] = {}
+    if isinstance(cells, dict):
+        for cell, states in cells.items():
+            if isinstance(states, Mapping):
+                out[str(cell)] = int(sum(int(v or 0) for v in states.values()))
+            else:
+                out[str(cell)] = int(states or 0)
+    _AXIS_CACHE[key] = (mtime, out)
+    return out
+
+
+def axis_scarcity_term(asset_class: str, mechanism: str, *,
+                       registry: Path | None = None,
+                       occupancy: Mapping[str, int] | None = None) -> tuple[float, str]:
+    """1 / (1 + occupancy) of this (asset class, mechanism) cell, in (0, 1].
+
+    An EMPTY cell reads 1.0 -- the whole point of the term is that the region nobody has mined is
+    the region a reward-proportional sampler should visit. An absent registry is UNMEASURED (0.0
+    by absence) rather than 1.0: a missing file must never read as a frontier.
+    """
+    a = str(asset_class or "").strip() or "UNKNOWN"
+    m = str(mechanism or "").strip() or "UNKNOWN"
+    occ = dict(occupancy) if occupancy is not None else axis_occupancy(registry)
+    if not occ:
+        return 0.0, "AXIS_REGISTRY.json carries no occupancy plane; axis scarcity UNMEASURED"
+    cell = f"{a}|{m}"
+    n = int(occ.get(cell, 0))
+    return 1.0 / (1.0 + float(n)), (f"cell {cell} holds {n} hypothes(es) in the breadth grid's "
+                                    f"{AXIS_PLANE} plane; scarcity 1/(1+{n})")
+
+
 def existing_exposure_term(family: str, *, canon: Path | None = None) -> tuple[float, str]:
     """The candidate family's share of certified sleeves, in [0, 1].
 
@@ -730,6 +878,10 @@ class FitnessTerms:
     turnover: float = 0.0
     crowding: float = 0.0
     existing_exposure: float = 0.0
+    #: The two BREADTH credits (Tier-1 D5): distance in mechanism space from the nearest certified
+    #: survivor, and the emptiness of the breadth-grid cell the candidate lands in.
+    mechanism_distance: float = 0.0
+    axis_scarcity: float = 0.0
     #: Term name -> why it is what it is. Every term has one, measured or not.
     why: dict[str, str] = field(default_factory=dict)
     #: Terms that could NOT be measured and are therefore 0.0 by absence, not by measurement.
@@ -792,6 +944,9 @@ class Candidate:
     peer_daily: tuple[pd.Series, ...] = ()
     #: The family the candidate would be certified under (existing exposure). "" is unmeasured.
     family: str = ""
+    #: The candidate's DECLARED genome slots (`SLOT_NAMES`) -- what the two breadth credits are
+    #: measured on. `instrument` and `mechanism` default to `symbol` and `family` when absent.
+    slots: Mapping[str, Any] = field(default_factory=dict)
 
 
 def evaluate(candidate: Candidate, book: Book | None = None, *, cfg: Any = None,
@@ -846,10 +1001,23 @@ def evaluate(candidate: Candidate, book: Book | None = None, *, cfg: Any = None,
     detail["crowding"] = cr_detail
     crowd = _take("crowding", cr_value, cr_why)
     expo = _take("existing_exposure", *existing_exposure_term(candidate.family))
+    # THE TWO BREADTH CREDITS (Tier-1 D5). Both are read off the candidate's DECLARED slots, so
+    # a proposer that declares nothing gets 0.0 with `UNMEASURED` on the reason -- absence is a
+    # verdict here exactly as it is everywhere else (L1.28a).
+    slots = dict(candidate.slots or {})
+    if candidate.symbol and "instrument" not in slots:
+        slots["instrument"] = candidate.symbol
+    if candidate.family and "mechanism" not in slots:
+        slots["mechanism"] = candidate.family
+    mdist = _take("mechanism_distance", *mechanism_distance_term(slots))
+    scarce = _take("axis_scarcity", *axis_scarcity_term(
+        str(slots.get("asset_class") or ""), str(slots.get("mechanism") or "")))
+    detail["slots"] = slots
     terms = FitnessTerms(delta_elog=d_elog, oos=oos, novelty=nov, tail=tail,
                          state_breadth=breadth, capacity=cap, cost=cost, fragility=frag,
                          complexity=cx, multiplicity=mult, turnover=turn, crowding=crowd,
-                         existing_exposure=expo, why=why,
+                         existing_exposure=expo, mechanism_distance=mdist,
+                         axis_scarcity=scarce, why=why,
                          unmeasured=tuple(sorted(set(unmeasured))), detail=detail)
     detail["score"] = round(score(terms, weights), 6)
     detail["book"] = bk.source

@@ -3,6 +3,12 @@
 # Missing CLI/auth/lease never stops deterministic collectors or the completed research cycle.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+# SEALED AGAINST MID-RUN REWRITE (2026-09-29). This controller is the unit's ExecStart since
+# 2026-09-12 and holds its slot for hours; bash reads a script by byte offset, so a commit that
+# changes this file's length mid-run resumes execution inside a line (measured on 63680c05; see
+# ops/run_midnight_frontier.sh). Every path inside the group ends in an exit, so bash never
+# reads past the closing brace. DO NOT UNWRAP THE BRACE AND DO NOT ADD A LINE AFTER IT.
+{
 
 MODE="${1:-run}"
 if [ "$MODE" = "--pipeline-start" ]; then
@@ -267,3 +273,4 @@ else
 fi
 echo "midnight-codex: controller_rc=$CODEX_RC checkpoint_rc=$CHECKPOINT_RC transfer_rc=$TRANSFER_RC; log=$LOG; last-message=$LAST_MESSAGE"
 exit "$FINAL_RC"
+}

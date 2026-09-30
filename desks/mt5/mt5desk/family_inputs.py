@@ -35,11 +35,54 @@ already made once, for the entire life of the carry family.
 """
 from __future__ import annotations
 
+import os
+from collections import OrderedDict
 from typing import Any
 
 #: Families that need nothing beyond bars are absent here on purpose: `resolve` returning an
 #: empty dict for them is the correct answer, not a gap.
 _PEER_FAMILIES = frozenset({"relative_value", "correlation_regime"})
+
+# Broker-native fallback frames live only for one shadow pass and stay row-bounded.  The local
+# parquet reader remains first; this cache exists for certificates whose named peer/factor has
+# not yet been materialised on disk but is available from the same Fusion terminal as the primary
+# instrument.  Without it the primary chart could be healthy while every multi-asset certificate
+# was falsely classified as a natural zero-trade clock.
+_RUNTIME_BAR_CACHE: OrderedDict[tuple[str, str, str], Any] = OrderedDict()
+_RUNTIME_BAR_CACHE_ROWS = 900_000
+
+
+def _runtime_bars(inputs: Any, symbol: str, timeframe: str, primary: Any) -> Any:
+    local = inputs._bars(str(symbol), str(timeframe))
+    if local is not None or os.name != "nt" or primary is None or not hasattr(primary, "index"):
+        return local
+    try:
+        import pandas as pd
+        from research.h1_source import fetch_h1
+
+        start = pd.Timestamp(primary.index.min())
+        if start.tzinfo is None:
+            start = start.tz_localize("UTC")
+        else:
+            start = start.tz_convert("UTC")
+        key = (str(symbol), str(timeframe).upper(), start.floor("D").isoformat())
+        cached = _RUNTIME_BAR_CACHE.get(key)
+        if cached is not None:
+            _RUNTIME_BAR_CACHE.move_to_end(key)
+            return cached
+        source = fetch_h1(str(symbol), start.to_pydatetime(), prefer="MT5",
+                          prefer_promotion_authority=True, require_coverage=True,
+                          timeframe=str(timeframe).upper())
+        if source is None or source.n <= 0 or not source.promotion_authority:
+            return None
+        frame = source.df
+        _RUNTIME_BAR_CACHE[key] = frame
+        while (sum(len(v) for v in _RUNTIME_BAR_CACHE.values()) > _RUNTIME_BAR_CACHE_ROWS
+               and len(_RUNTIME_BAR_CACHE) > 1):
+            _RUNTIME_BAR_CACHE.popitem(last=False)
+        return frame
+    except Exception:
+        return None
 
 
 def timeframe_of(params: dict[str, Any] | None) -> str:
@@ -105,7 +148,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             peer_symbol = call.get("peer_symbol")
             if not peer_symbol:
                 return None, "no peer_symbol on the candidate"
-            peer = inputs._bars(str(peer_symbol), tf)
+            peer = _runtime_bars(inputs, str(peer_symbol), tf, h1)
             if peer is None:
                 return None, f"peer bars unavailable for {peer_symbol}"
             extra["peer"] = peer
@@ -145,7 +188,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             drivers: dict[str, Any] = {}
             for t in need:
                 for cand in ROLES.get(t.upper(), ()):
-                    b = inputs._bars(str(cand), tf)
+                    b = _runtime_bars(inputs, str(cand), tf, h1)
                     if b is not None:
                         drivers[t] = b
                         break
@@ -158,7 +201,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             drv = call.get("driver_symbol")
             if not drv:
                 return None, "no driver_symbol on the candidate"
-            b = inputs._bars(str(drv), tf)
+            b = _runtime_bars(inputs, str(drv), tf, h1)
             if b is None:
                 return None, f"driver bars unavailable for {drv}"
             extra["driver"] = b
@@ -177,7 +220,7 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             try:
                 from mt5desk.economic_drivers import ROLES
                 for cand in ROLES.get("RISK", ()):
-                    b = inputs._bars(str(cand), tf)
+                    b = _runtime_bars(inputs, str(cand), tf, h1)
                     if b is not None:
                         extra["risk"] = b
                         break
@@ -191,9 +234,14 @@ def resolve(sym: str, family: str, params: dict[str, Any],
         # parquets were all present. Same input contract, same branch.
         if family in {"cross_asset_residual", "pca_residual"}:
             names = call.get("factor_symbols") or []
-            factors = [d for d in (inputs._bars(str(s), tf) for s in names) if d is not None]
-            if not factors:
-                return None, f"no factor bars available of {len(names)} named"
+            if not names:
+                return None, "no factor symbols named on the candidate"
+            loaded = [(str(s), _runtime_bars(inputs, str(s), tf, h1)) for s in names]
+            missing = [s for s, d in loaded if d is None]
+            if missing:
+                return None, (f"factor bars unavailable for {missing}; all {len(names)} named "
+                              "factors are required to preserve the certified model")
+            factors = [d for _s, d in loaded]
             extra["factors"] = factors
             return extra, "ok"
 
@@ -303,7 +351,11 @@ def strip_identity_keys(family: str, params: dict[str, Any]) -> dict[str, Any]:
 #:
 #: One definition, because a filter and its exception list drifting apart is exactly this bug.
 IDENTITY_KEYS = frozenset({"peer_symbol", "factor_symbols", "input_symbol",
-                           "input_source", "timeframe",
+                           "input_source", "timeframe", "session",
+                           # `session` selects WHEN the certified cell runs.  It is carried in
+                           # certificate envelopes and sleeve identities, but no registered
+                           # family accepts it as a keyword.  Passing it through made otherwise
+                           # valid E8 cells fail with `unexpected keyword argument 'session'`.
                            # The fill surface's vintage: it identifies WHICH map selected the
                            # cell's windows and is not an argument any family accepts.
                            "surface_generated_at"})

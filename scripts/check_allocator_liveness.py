@@ -98,6 +98,21 @@ def check(*, require_state: bool = False) -> dict[str, Any]:
             "n_inputs_unmeasured": rep.get("n_inputs_unmeasured")}
 
 
+#: R0237: the exit code is `fence_exit` over a DECLARED pass set, never "fail on one named status,
+#: pass on everything else" -- that sent any unforeseen or misspelled status down `else 0`. The
+#: set is exactly the statuses this fence already exited 0 on (behaviour unchanged for every
+#: status it can emit); what changes is that a status nobody declared now fails closed.
+_PASSING = frozenset({"OK", "UNMEASURED"})
+
+
+def _exit(status: object) -> int:
+    root = str(Path(__file__).resolve().parents[1])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.ops.fence_exit import fence_exit
+    return fence_exit(status, _PASSING, fail=1)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=str(__doc__ or "").split("\n")[0])
     ap.add_argument("--json", action="store_true")
@@ -119,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
                   f"sum_risk_frac={lb.get('sum_risk_frac')}")
         for f in findings:
             print(f"  BREACH {f['check']}: {str(f['why'])[:220]}")
-    return 1 if res["status"] == "FAIL" else 0
+    return _exit(res["status"])
 
 
 if __name__ == "__main__":

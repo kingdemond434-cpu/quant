@@ -24,10 +24,13 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from mt5desk.engine import run_backtest  # noqa: E402
+from libs.portfolio.fusion_cost import costs_for_symbol  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
-COSTS = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100)
+_UNIVERSE = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
+_META = _UNIVERSE.get("symbols") or _UNIVERSE
+COSTS = costs_for_symbol(_META.get("XAUUSD", {}))
 
 ASIA = dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12)
 

@@ -56,6 +56,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from libs.research import set_aside as sa  # noqa: E402
 from research.mathlab import burden as B  # noqa: E402
 from research.mathlab import engines as E  # noqa: E402
 from research.mathlab import grammar as G  # noqa: E402
@@ -94,7 +95,15 @@ MAX_TARGETS = 4
 MAX_PEERS = 10
 MAX_DATASET_COLUMNS = 12
 MAX_REPRESENTATION_COLUMNS = 8
-MAX_DONATIONS = 40
+#: DONATION IS UNCAPPED (principal 2026-09-24: "all producers cells must reach gaunlet always
+#: 100%"). This read 40 and the lab admitted 132 objects in the pass that was measured, so the
+#: batch budget was the binding constraint on a producer that had already been told its screen
+#: may not gate. There is no multiplicity reason to ration: the gauntlet's trial charge is a
+#: PINNED CONSTANT in `policy/gate_spec.yaml` and does not rise with the number of cells tested,
+#: so volume costs compute and costs no other cell a thing. `set_aside.take` treats a negative
+#: limit as "every row", and the stage still writes its ledger line with considered == kept so
+#: "the lab donated N" stays readable as "the lab had N".
+MAX_DONATIONS = -1
 #: Derived worker cap, exactly as `miner_candidate_compiler` derives its row cap: from memory
 #: ACTUALLY FREE, floored, so an unreadable counter changes nothing.
 WORKER_FLOOR = 2
@@ -892,6 +901,10 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
     """
     out: dict[str, Any] = {"discoveries": 0, "new": 0, "links": 0, "representations": 0,
                            "generator_yield": 0, "trials": []}
+    #: What each tradition actually put in front of the judge this pass. The trial charge is
+    #: taken off THIS, not off the lab's internal pass count: charging fewer trials than were
+    #: queued would understate the multiplicity the gauntlet now has to deflate.
+    queued_by_tradition: dict[str, int] = {}
     try:
         from libs.moat import registry as reg
     except Exception as exc:
@@ -921,9 +934,19 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
                 continue
             out["discoveries"] += 1
             out["new"] += int(created)
+            # THE LAB PROPOSES; THE ONE JUDGE DECIDES (principal, 2026-09-23: "make all maths and
+            # physics discoveries reach the gauntlet as testable cells"). This line used to read
+            # `"QUEUED" if obj.passed else "UNPROCESSED"`, which made the lab's own internal
+            # screen a SECOND JUDGE -- and the desk has exactly one. Measured the day it changed:
+            # all 236 discoveries minted in 24h sat UNPROCESSED, so discovery_compiler never saw
+            # one and twenty-three traditions burned compute for zero cells. Every minted object
+            # is now QUEUED through the normal door; `obj.passed` and `obj.value` survive as
+            # PROVENANCE on the discovery payload and as the donation ORDERING hint below, never
+            # as a gate. More cells means more multiplicity, and the trial charge below counts
+            # what was queued rather than what the lab liked.
             with contextlib.suppress(Exception):
-                reg.set_discovery_state(did, "QUEUED" if obj.passed else "UNPROCESSED",
-                                        conn=conn)
+                reg.set_discovery_state(did, "QUEUED", conn=conn)
+            queued_by_tradition[obj.tradition] = queued_by_tradition.get(obj.tradition, 0) + 1
             if obj.provenance.residual_discovery_id:
                 try:
                     reg.link("discovery", obj.provenance.residual_discovery_id, "discovery", did,
@@ -955,7 +978,9 @@ def record_registry(objects: list[MathObject], per_tradition: dict[str, dict[str
                 **B.record_trials(tradition, distinct_forms=int(row.get("distinct", 0)),
                                   evaluated=int(row.get("evaluated", 0)),
                                   target=str(row.get("target") or ""),
-                                  passed=int(row.get("passed", 0)), conn=conn)})
+                                  passed=max(int(row.get("passed", 0)),
+                                             queued_by_tradition.get(tradition, 0)),
+                                  conn=conn)})
         return out
     finally:
         with contextlib.suppress(Exception):
@@ -1049,8 +1074,21 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         charged = B.effective_trials(distinct, lifetime.get(tradition, 0))
         passed = 0
         for obj, view in objects:
+            # THE WALL CLOCK MAY NOT DELETE AN OBJECT, ONLY ITS SCORE (2026-09-24). Both branches
+            # below used to `continue`, which dropped the object out of `judged` -- so it was
+            # never deduped, never recorded QUEUED in the registry and never donated. Measured on
+            # the trading box the day this changed: 98 proposed objects a pass left by the
+            # deadline and 0 by the exception, all of them invisible to the one judge. The lab's
+            # burden is a RANK, so an object that could not be ranked rides at the back of the
+            # queue with an UNMEASURED score; it is the gauntlet's ten gates that decide it, and
+            # they measure it themselves from the spec.
             if time.monotonic() > judge_deadline:
                 unjudged += 1
+                obj.notes.append(f"{UNMEASURED}: the lab's own burden was not measured for this "
+                                 f"object (judge deadline); donated unranked -- the ten gates "
+                                 f"measure it from the spec")
+                obj.interpretation = B.interpret(obj, view)
+                judged.append(obj)
                 continue
             try:
                 B.judge(obj, view, distinct_forms=distinct,
@@ -1059,6 +1097,9 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
                         permutations=permutations)
             except Exception as exc:
                 obj.notes.append(f"{UNMEASURED}: burden.judge raised {type(exc).__name__}")
+                with contextlib.suppress(Exception):
+                    obj.interpretation = B.interpret(obj, view)
+                judged.append(obj)
                 continue
             passed += int(obj.passed)
             judged.append(obj)
@@ -1105,11 +1146,30 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
         seat_named = 0
         del _exc
 
-    survivors = [o for o in admitted if o.passed]
-    survivors.sort(key=lambda o: -(o.value or -9e9))
+    # THE SAME CHANGE ON THE DONATION SIDE. `[o for o in admitted if o.passed]` was the second
+    # half of the lab's second judge: an object the internal screen disliked could never be
+    # donated, however cheap it would have been for the one gauntlet to reject it. The screen now
+    # ORDERS the queue -- passed first, then by value -- so the best-regarded objects still go
+    # first under MAX_DONATIONS, and a disliked one goes when there is room instead of never.
+    survivors = sorted(admitted, key=lambda o: (0 if o.passed else 1, -(o.value or -9e9)))
 
     already = set((_read_json(DONATED) or {}).get("object_ids") or [])
-    rows, refused = donation_rows(survivors[:MAX_DONATIONS], already)
+    # THE BATCH BUDGET IS GONE (MAX_DONATIONS = -1). It was 40 against 132 admitted objects, and
+    # a budget that binds every pass on a producer whose screen may not gate is the screen wearing
+    # a different hat. The `sa.take` call stays so the stage keeps writing its ledger line --
+    # considered == kept now, which is the measurement saying the budget bound nothing.
+    rows, refused = donation_rows(
+        sa.take(survivors, MAX_DONATIONS, organ="math_lab", stage="donations",
+                ordering="internal screen first (passed), then -value"), already)
+    # AN OBJECT THAT CANNOT BE WRITTEN AS A CELL IS A NAMED REFUSAL, NOT A SILENT DROP.
+    # `G.tradeable` refuses an expression the `formula` executor cannot evaluate; that is a real
+    # reason and it is now counted in the desk's own refusal ledger rather than only in this
+    # organ's report, where nothing downstream reads it.
+    if refused:
+        sa.note("math_lab", "untradeable_expression", kept=len(rows),
+                considered=len(rows) + len(refused),
+                ordering="G.tradeable(expression) is not None -- the formula executor must be "
+                         "able to evaluate the tree")
     donation: dict[str, Any] = {"donated": 0, "path": None, "refused_untradeable": len(refused),
                                 "refusals": refused[:20],
                                 "already_donated_in_a_previous_pass":
@@ -1152,8 +1212,10 @@ def run(*, budget_s: float = 3000.0, dry_run: bool = False,
     report = _report(started, chosen, unknown, panel_status, memory, plan, roi_detail,
                      per_tradition, admitted, dedup_status, donation, representations, registry,
                      dry_run,
-                     ([f"budget: {unjudged} proposed objects were not judged this pass (judge "
-                       f"deadline {0.80 * budget_s:.0f}s of a {budget_s:.0f}s budget)"]
+                     ([f"budget: {unjudged} proposed objects carry no internal burden score this "
+                       f"pass (judge deadline {0.80 * budget_s:.0f}s of a {budget_s:.0f}s "
+                       f"budget) -- they are admitted, registered QUEUED and donated unranked "
+                       f"anyway; the ten gates measure them from the spec"]
                       if unjudged else []) +
                      ([] if seat_named else
                       ["proposer_seat: no candidate mechanism name proposed this pass (no panel "

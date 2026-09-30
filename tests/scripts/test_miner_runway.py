@@ -43,6 +43,12 @@ def tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
     monkeypatch.setattr(mod, "_CRED_HOME", tmp_path / "no-home-creds.json")
     monkeypatch.setattr(mod, "_SEATS", {
         "seat": ("ops/seat_prompt.txt", "ops/run_seat.sh", "seat_*.log", 36.0)})
+    # The synthetic seat must also be in the table the runway JOINS against (max_audit.ORGANS,
+    # read into _MIN_BYTES / _ORGAN_BY_GLOB); since the organ-table drift check landed, a seat
+    # absent from it is a blocker in its own right, which is a different finding from the ones
+    # these tests pin. No organ name: no artifact escape, so the log is the only evidence.
+    monkeypatch.setattr(mod, "_MIN_BYTES", {"seat_*.log": 1000})
+    monkeypatch.setattr(mod, "_ORGAN_BY_GLOB", {})
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("CLAUDE_CODE_OAUTH_TOKEN", raising=False)
     return mod

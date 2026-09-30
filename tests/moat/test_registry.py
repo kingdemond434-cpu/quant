@@ -267,8 +267,11 @@ def test_sync_from_desk_pours_the_record_in_and_is_idempotent(reg, tmp_path):
     lessons.write_text(json.dumps({"id": "L0001", "lesson": "measure first", "cost": "blind",
                                    "evidence": "x"}) + "\n", encoding="utf-8")
     out = R.sync_from_desk(d, lessons=lessons)
-    assert out == {"candidates": 2, "trials": 1, "runs": 1, "cards": 2, "events": 2,
-                   "memories": 1, "workers": 1}
+    counted = {k: out[k] for k in ("candidates", "trials", "runs", "cards", "events", "memories",
+                                   "workers")}
+    assert counted == {"candidates": 2, "trials": 1, "runs": 1, "cards": 2, "events": 2,
+                       "memories": 1, "workers": 1}
+    assert out["cursor_keys_missing"] == [], "every stream leaves a receipt"
     cands = {c["id"]: c for c in R.candidates()}
     assert cands["cell_a"]["origin"] == "EXTERNAL" and cands["cell_a"]["status"] == "donated"
     assert cands["cell_b"]["origin"] == "MOAT" and cands["cell_b"]["status"] == "judged"
@@ -279,8 +282,8 @@ def test_sync_from_desk_pours_the_record_in_and_is_idempotent(reg, tmp_path):
     assert R.workers_alive(stale_s=10 ** 9)[0]["worker_id"] == "dept:intel"
     assert R.memories(kind="lesson")[0]["memory_key"] == "lesson:L0001"
     again = R.sync_from_desk(d, lessons=lessons)
-    assert again == {"candidates": 0, "trials": 0, "runs": 0, "cards": 2, "events": 0,
-                     "memories": 0, "workers": 1}
+    assert {k: again[k] for k in counted} == {"candidates": 0, "trials": 0, "runs": 0, "cards": 2,
+                                              "events": 0, "memories": 0, "workers": 1}
     ok, n = R.verify_trial_chain()
     assert ok and n == 1
     # a status change on a sleeve is one more immutable event
@@ -341,6 +344,76 @@ def test_a_verdict_joins_its_graph_candidate_by_graph_id(reg, tmp_path):
     assert {c["id"]: c for c in R.candidates()}[legacy_id]["status"] == "survived"
     assert R.graph_id_map(d)[legacy_cell] == legacy_id
     assert R.graph_id_map(tmp_path / "no-such-desk") == {}, "absent reads as empty, never raises"
+
+
+def test_every_stream_leaves_a_cursor_receipt_and_a_missing_one_is_loud(reg, tmp_path):
+    """A STREAM WITH NO RECEIPT IS A STREAM NOBODY IS READING (measured 2026-09-23).
+
+    The registry was restored from backup on 2026-09-17, which wiped `sync_cursor`. `_cursor_get`
+    reads an absent key as 0 -- indistinguishable from a stream at its start -- so nothing said
+    that the gate verdicts had stopped crossing, and 3,368 of them sat on disk for six days while
+    `cells_judged` read 0 for every source, pack and region. Absence is now measured: every stream
+    the sync knows about must hold a key, and a missing one fails here and in the law gate.
+    """
+    d = _desk(tmp_path)
+    lessons = tmp_path / "lessons.jsonl"
+    lessons.write_text("", encoding="utf-8")
+    conn = R.connect()
+    try:
+        assert sorted(R.missing_cursor_keys(conn)) == sorted(k for k, _ in R.SYNC_STREAMS), \
+            "a virgin registry has no receipts at all, and says so"
+        R.sync_from_desk(d, lessons=lessons, conn=conn)
+        assert R.missing_cursor_keys(conn) == [], \
+            "after one sync every known stream holds a receipt"
+        for key, rel in R.SYNC_STREAMS:                      # every stream resolves to a real path
+            assert R.stream_path(key, desk=d, lessons=lessons) is not None, rel
+        assert R.stream_path("not_a_stream", desk=d) is None
+        # the loud half: drop one receipt and the measurement names it, rather than syncing nothing
+        conn.execute("DELETE FROM sync_cursor WHERE key='gate_verdicts'")
+        conn.commit()
+        assert R.missing_cursor_keys(conn) == ["gate_verdicts"]
+        assert R.verdict_backlog(d, conn=conn)["status"] == "BREACH"
+    finally:
+        conn.close()
+
+
+def test_a_verdict_with_no_graph_id_joins_its_candidate_by_canonical_identity(reg, tmp_path):
+    """WHERE `graph_id` IS ABSENT, THE JOIN IS THE DESK'S ONE IDENTITY, NOT A NAME.
+
+    Measured 2026-09-23: 4 of 3,368 verdict rows carried a `graph_id`, there was no backfill map,
+    and the fallback was the cell's own name (`EURAUD.overnight_gap_decay.p=<sha>`) -- which
+    matches no `cand_<hex>` row, so every verdict landed as a trial hanging off nothing. The desk
+    settled the identity the same day (certificate_truth: symbol|family|selector, lowercased), so
+    that is the join; a verdict whose third token is a params hash joins on symbol|family with the
+    selector unstated, and a row that matches nothing keeps its name and is COUNTED as unjoined.
+    """
+    d = _desk(tmp_path)
+    lessons = tmp_path / "lessons.jsonl"
+    lessons.write_text("", encoding="utf-8")
+    cid = "cand_00ff00ff00ff00ff"
+    R.enqueue_candidate(family="carry", symbol="AUDNZD", params={"k": 1}, origin="DESK",
+                        candidate_id=cid, session="asia")
+    verdicts = d / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+    with verdicts.open("a", encoding="utf-8") as fh:
+        for cell, sym in (("AUDNZD.carry.p=44136fa355b3678a", "AUDNZD"),
+                          ("NOSUCH.carry.p=44136fa355b3678a", "NOSUCH")):
+            fh.write(json.dumps({"cell": cell, "sym": sym, "family": "carry", "passed": False,
+                                 "terminal_gate": "pbo", "graph_id": None,
+                                 "at": "2026-09-22T00:00:00+00:00"}) + "\n")
+    out = R.sync_from_desk(d, lessons=lessons)
+    joins = out["verdict_joins"]
+    assert joins.get("identity_pair") == 1, joins
+    assert joins.get("cell_name_unjoined") == 1, "a row that matches nothing is counted, not faked"
+    cands = {c["id"]: c for c in R.candidates()}
+    assert cands[cid]["status"] == "judged" and cands[cid]["terminal_gate"] == "pbo"
+    assert "AUDNZD.carry.p=44136fa355b3678a" not in cands, "joined, never minted a second row"
+    # the exact identity wins over the selector-unstated one when the verdict names a selector
+    conn = R.connect()
+    try:
+        idx = R.candidate_identity_index(conn)
+    finally:
+        conn.close()
+    assert idx["exact"] and idx["pair"], idx
 
 
 def test_origin_classifier():

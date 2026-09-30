@@ -223,6 +223,35 @@ def test_exit_accounts_reads_both_ledger_dialects():
     assert live["side"] == -1 and live["exit_time"] == _stamp(5) and live["reason"] == "other"
 
 
+def test_exit_accounts_uses_opening_side_not_opposite_close_deal():
+    row = ea._trade({"entry_time": _stamp(1), "exit_time": _stamp(5),
+                     "entry_price": 2000, "r_multiple": -1,
+                     "side": 0, "entry_side": 1}, "gold_asia", "live")
+    assert row["side"] == -1
+
+
+def test_live_excursions_require_matching_account_position_and_deal():
+    trade = {"basis": "live", "sleeve": "gold_asia", "entry_time": _stamp(1),
+             "account": 123, "server": "Fusion-Live", "position_id": 20,
+             "deal": 30, "r_multiple": -1}
+    path = {**trade, "mfe_r": 0.5, "mae_r": 1.1, "bars": 3}
+    assert ea.join_excursions([trade], [path])[0]["joined"]
+    for key, value in (("basis", "shadow"), ("account", 999), ("position_id", 21),
+                       ("deal", 31), ("server", "Fusion-Demo")):
+        assert not ea.join_excursions([trade], [{**path, key: value}])[0]["joined"]
+    legacy = {k: v for k, v in path.items() if k not in ("basis", "account", "server", "position_id", "deal")}
+    assert not ea.join_excursions([trade], [legacy])[0]["joined"]
+    assert not ea.join_excursions([{**trade, "account": None}], [path])[0]["joined"]
+
+
+def test_conflicting_or_nonfinite_excursions_cannot_support_exit_verdict():
+    trade = {"basis": "shadow", "sleeve": "s", "entry_time": _stamp(1), "r_multiple": 1}
+    path = {**trade, "mfe_r": 2, "mae_r": 1, "bars": 3}
+    assert not ea.join_excursions([trade], [path, {**path, "mfe_r": 9}])[0]["joined"]
+    assert ea.join_excursions([trade], [path, path])[0]["joined"]
+    assert not ea.join_excursions([trade], [{**path, "mfe_r": float("nan")}])[0]["joined"]
+
+
 # --------------------------------------------------------------------------- counterfactuals
 def _trend_bars(n: int = 400, drift: float = 0.05, seed: int = 0) -> pd.DataFrame:
     rng = np.random.default_rng(seed)

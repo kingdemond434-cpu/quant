@@ -23,6 +23,19 @@ def test_invalid_risk_geometry_is_refused() -> None:
         scalp.risk_sized_units(100.0, 99.0, 1.25)
 
 
+@pytest.mark.parametrize("values", [None, [float("nan")], [-1], [float("inf")], ["bad"]])
+def test_missing_or_invalid_spreads_are_never_free(values):
+    frame = pd.DataFrame({"close": [100]})
+    if values is not None:
+        frame["spread"] = values
+    with pytest.raises(ValueError):
+        scalp.measured_spreads(frame)
+
+
+def test_measured_zero_spread_is_distinct_from_missing():
+    assert scalp.measured_spreads(pd.DataFrame({"spread": [0, 20]})).tolist() == [0, 0.2]
+
+
 def test_same_bar_stop_and_target_is_scored_stop_first(monkeypatch: pytest.MonkeyPatch) -> None:
     idx = pd.date_range("2026-01-01", periods=70, freq="min", tz="UTC")
     df = pd.DataFrame({
@@ -41,6 +54,46 @@ def test_same_bar_stop_and_target_is_scored_stop_first(monkeypatch: pytest.Monke
     cfg = scalp.Config("sweep_reclaim", 20, 1.5, 1.0, 1.0, 5, "single")
     returns = scalp.simulate(df, cfg, cost="frictionless")
     assert returns[0] == pytest.approx(-1.0)
+
+
+def test_executable_replay_holds_the_bracket_from_the_fill_bar(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """The fill bar runs through the stop and then recovers to the target. The study arm never
+    looks at the fill bar and books a win; the executor's bracket is resting, so it is a loss."""
+    idx = pd.date_range("2026-01-01", periods=70, freq="min", tz="UTC")
+    df = pd.DataFrame({
+        "open": np.full(70, 100.0), "high": np.full(70, 100.2),
+        "low": np.full(70, 99.8), "close": np.full(70, 100.0),
+        "spread": np.zeros(70),
+    }, index=idx)
+    signals = np.zeros(70, dtype=np.int8)
+    signals[45] = 1
+    df.iloc[45, df.columns.get_loc("low")] = 98.5      # fill bar pierces the 1.0 stop
+    df.iloc[46, df.columns.get_loc("high")] = 102.0    # next bar reaches the target
+    monkeypatch.setattr(scalp, "_signals", lambda *_: signals)
+    monkeypatch.setattr(scalp, "_atr", lambda *_: np.ones(70))
+    cfg = scalp.Config("sweep_reclaim", 20, 1.5, 1.0, 1.0, 5, "single")
+    assert scalp.simulate(df, cfg, cost="frictionless")[0] == pytest.approx(1.0)
+    assert scalp.simulate(df, cfg, cost="frictionless", executable=True)[0] == pytest.approx(-1.0)
+
+
+def test_executable_replay_sizes_the_stop_from_the_last_closed_bar(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    idx = pd.date_range("2026-01-01", periods=70, freq="min", tz="UTC")
+    df = pd.DataFrame({"open": 100.0, "high": 100.1, "low": 99.9, "close": 100.0,
+                       "spread": 0.0}, index=idx)
+    signals = np.zeros(70, dtype=np.int8)
+    signals[45] = 1
+    atr = np.ones(70)
+    atr[45] = 5.0                                      # bar 45's own range: unknowable at its open
+    df.iloc[47, df.columns.get_loc("low")] = 98.5
+    monkeypatch.setattr(scalp, "_signals", lambda *_: signals)
+    monkeypatch.setattr(scalp, "_atr", lambda *_: atr)
+    cfg = scalp.Config("sweep_reclaim", 20, 1.5, 1.0, 1.0, 5, "single")
+    study = scalp.simulate(df, cfg, cost="frictionless", detailed=True)
+    live = scalp.simulate(df, cfg, cost="frictionless", detailed=True, executable=True)
+    assert study[0]["r"] > -1.0                        # a 5.0 stop survives the dip
+    assert live[0]["r"] == pytest.approx(-1.0)         # the 1.0 stop the executor placed does not
 
 
 def test_no_intraday_bars_is_unmeasured(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -42,6 +42,12 @@ MIN_CYCLE_S = int(os.environ.get("DEPT_MIN_CYCLE_S", "600"))              # neve
 PAUSE_S = int(os.environ.get("DEPT_PAUSE_S", "30"))
 MIN_FREE_MB = float(os.environ.get("DEPT_MIN_FREE_MB", "4096"))
 RECYCLE_PASSES = int(os.environ.get("DEPT_RECYCLE_PASSES", "48"))
+# A department child still has a hard timeout.  Plan strictly inside it so every admitted
+# oldest-first tranche can checkpoint and publish instead of losing the same tail every pass.
+PASS_BUDGET_FILL = min(
+    0.95,
+    max(0.50, float(os.environ.get("DEPT_PASS_BUDGET_FILL", "0.82"))),
+)
 BELOW_NORMAL_PRIORITY_CLASS = 0x00004000
 
 
@@ -123,6 +129,16 @@ def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
     """One department pass as a child under HOURLY_PLAN=dept:<name>, BELOW_NORMAL priority."""
     env = dict(os.environ)
     env["HOURLY_PLAN"] = f"dept:{dept}"
+    # leg_rotation otherwise treats departments as unbounded, which is false: this child is
+    # killed at timeout_s. Deferred work leads the immediately following resident pass.
+    safe_budget = max(1, int(timeout_s * PASS_BUDGET_FILL))
+    try:
+        inherited_budget = float(env.get("HOURLY_BUDGET_S", "0") or 0)
+    except ValueError:
+        inherited_budget = 0.0
+    # Preserve a stricter caller budget, but never inherit one that reaches past our kill clock.
+    env["HOURLY_BUDGET_S"] = str(int(min(inherited_budget, safe_budget))
+                                 if inherited_budget > 0 else safe_budget)
     kwargs: dict = {}
     if sys.platform == "win32":
         kwargs["creationflags"] = BELOW_NORMAL_PRIORITY_CLASS
@@ -137,6 +153,59 @@ def run_pass(dept: str, timeout_s: int = PASS_TIMEOUT_S) -> dict:
     except OSError as exc:
         return {"rc": None, "seconds": round(time.monotonic() - t0, 1),
                 "status": f"failed_to_start: {type(exc).__name__}"}
+
+
+#: Cores kept for the live terminal, the gateway and the core hourly pass before a resident is
+#: allowed to start its next pass early. The same three the sealed gauntlet reserves in session.
+IDLE_RESERVE_CORES = int(os.environ.get("DEPT_RESERVE_CORES", "3"))
+
+
+def spare_cores() -> float | None:
+    """Cores this box measurably is NOT using, or None where it cannot be measured.
+
+    psutil, never CIM: CIM on this box is slow enough to be its own defect. An unreadable counter
+    is UNMEASURED, and UNMEASURED keeps the conservative floor -- it never licenses a faster loop.
+    """
+    try:
+        import psutil
+    except ImportError:
+        return None
+    try:
+        busy = float(psutil.cpu_percent(interval=1.0))
+        return (psutil.cpu_count() or 1) * (100.0 - busy) / 100.0
+    except Exception:
+        return None
+
+
+def cycle_floor_s() -> tuple[float, str]:
+    """The seconds between the START of one pass and the start of the next. ONE WAY: it is only
+    ever LOWERED below MIN_CYCLE_S, and only while the box measurably has room to spare.
+
+    WHAT THE FLAT 600 s WAS COSTING, measured on the trading box 2026-09-23/24. Thirteen forest
+    departments finish a pass in a median of 130-270 seconds and then sat out the rest of the ten
+    minutes: `europe` worked 183 s of every 600 and `japan` 22 s. That is a duty cycle of 3% to
+    45% imposed by a constant, on a box whose desk processes were measured holding 401% of an
+    1800% CPU -- four cores of eighteen, with fourteen idle. The floor's own stated purpose is
+    that "an empty department does not spin", and `PAUSE_S` already does that: a department whose
+    pass returns immediately still waits thirty seconds. The extra 570 was a cadence cap sized
+    from nothing, and it is exactly the gap this desk's duty-cycle work exists to close.
+
+    THE LIVE TERMINAL STILL WINS. The cap is lifted only while free physical memory clears the
+    same guard a pass already waits on AND at least `IDLE_RESERVE_CORES` cores measure idle. An
+    unmeasurable counter keeps the old floor, which is the behaviour this file has always had.
+    """
+    free = free_phys_mb()
+    if free is not None and free < MIN_FREE_MB:
+        return float(MIN_CYCLE_S), (f"free memory {free:.0f}MB is under the {MIN_FREE_MB:.0f}MB "
+                                    f"guard: the conservative floor stands")
+    spare = spare_cores()
+    if spare is None:
+        return float(MIN_CYCLE_S), "spare cores UNMEASURED: the conservative floor stands"
+    if spare < IDLE_RESERVE_CORES:
+        return float(MIN_CYCLE_S), (f"{spare:.1f} spare cores is under the terminal's reserve of "
+                                    f"{IDLE_RESERVE_CORES}: the conservative floor stands")
+    return float(PAUSE_S), (f"{spare:.1f} cores measure idle and free memory clears the guard, so "
+                            f"the next pass starts after {PAUSE_S}s instead of {MIN_CYCLE_S}s")
 
 
 def wait_for_memory(dept: str, min_free_mb: float = MIN_FREE_MB, max_wait_s: int = 1800) -> None:
@@ -206,7 +275,12 @@ def main(argv: list[str] | None = None) -> int:
                 log(dept, "recycling: the keep-alive trigger restarts a fresh resident")
                 return 0
             elapsed = time.monotonic() - started
-            time.sleep(max(PAUSE_S, MIN_CYCLE_S - elapsed))
+            floor, why = cycle_floor_s()
+            nap = max(PAUSE_S, floor - elapsed)
+            if floor < MIN_CYCLE_S:
+                log(dept, f"next pass in {nap:.0f}s (floor {floor:.0f}s, not {MIN_CYCLE_S}s): "
+                          f"{why}")
+            time.sleep(nap)
     finally:
         heartbeat(dept, passes, status="stopped")
         with contextlib.suppress(OSError):

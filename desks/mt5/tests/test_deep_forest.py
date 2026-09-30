@@ -31,10 +31,9 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK / "side_channels"), str
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from libs.research import mechanism_claims as mc  # noqa: E402
 from research import deep_forest_miner as dfm  # noqa: E402
 from research import proposer_common as pc  # noqa: E402
-
-from libs.research import mechanism_claims as mc  # noqa: E402
 
 _STORY = ("我做沪金日内交易七年。夜盘开盘后前30分钟如果放量突破日内高点，顺势做多持有到收盘前平仓，"
           "胜率62%，年化收益率85%，最大回撤18%。螺纹钢在换月前一周基差收敛，做空近月效果明显，"
@@ -481,6 +480,21 @@ def test_the_grounds_file_is_a_world_with_a_regions_index_and_every_ground_is_ro
     assert not thin, f"regions without both story and dataset/macro ground: {thin}"
 
 
+def test_high_value_source_ecologies_are_first_class_not_hidden_in_practitioner() -> None:
+    kinds = {str(g.get("kind")) for g in _SRC["grounds"]}
+    required = {
+        "platform_native_strategy", "verified_leaderboard", "repo_archaeology",
+        "external_failure", "broker_execution_rules", "exchange_rulebook",
+        "options_volatility", "futures_term_structure", "benchmark_flows", "patent",
+        "job_posting", "fund_disclosure", "regulatory_filing", "enforcement_court",
+        "vendor_product", "physical_commodity", "shipping_supply_chain",
+        "weather_geospatial", "digital_activity", "incident_postmortem", "dead_web",
+        "negative_knowledge", "genealogy", "local_market_mechanics", "crowding_decay",
+        "distant_domain", "synthetic_market", "research_process",
+    }
+    assert required <= kinds, sorted(required - kinds)
+
+
 def test_every_ground_in_the_world_file_resolves_offline_and_no_region_is_credited_for_labels(
         monkeypatch, tmp_path) -> None:
     """NO REGION GETS CREDIT FOR COVERAGE, ONLY FOR CONVERSION: run the WHOLE real grounds file
@@ -514,6 +528,25 @@ def test_scheduling_rotates_across_clusters_and_resumes_from_the_cursor() -> Non
     assert next(g["name"] for g in dfm.schedule(grounds, 2)) == "br0"   # cursor rotates the start
     assert [g["name"] for g in dfm.schedule(grounds, 0, region="jp")] == ["jp0", "jp1"]
     assert [g["name"] for g in dfm.schedule(grounds, 0, only={"latam"})] == ["br0"]
+
+
+def test_scheduler_attacks_named_and_retry_due_frontier_before_picked_over() -> None:
+    from libs.research import hunt_frontier as hf
+
+    grounds = [{"name": "covered", "region": "jp", "weight": 99},
+               {"name": "unhunted", "region": "br", "weight": 1},
+               {"name": "blocked", "region": "gb", "weight": 1}]
+    state = hf.VectorState(vectors={
+        "covered": hf.Vector("covered", outcome="YIELDED",
+                             first_seen="2026-09-27T00:00:00+00:00",
+                             last_attempt="2026-09-27T00:00:00+00:00",
+                             attempts=1, findings=2),
+        "unhunted": hf.Vector("unhunted", outcome="NAMED_ONLY"),
+        "blocked": hf.Vector("blocked", outcome="BLOCKED", blocker="temporary network"),
+    })
+    order = [g["name"] for g in dfm.schedule(grounds, frontier_state=state)]
+    assert order[:2] == ["unhunted", "blocked"]
+    assert order[-1] == "covered"
 
 
 def test_search_runs_in_the_ground_s_locale_and_a_snippets_only_label_still_fetches_the_site(

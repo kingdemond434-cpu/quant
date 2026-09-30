@@ -14,6 +14,12 @@ pair is sent as two resting stop orders with their stop and target attached. One
 the other leg (OCO); an unfilled pair is cancelled after BRACKET_TTL_HOURS; positions are closed
 at CLOSE_HOUR and any resting leg cancelled at CANCEL_HOUR -- the gold book's own end of day.
 
+WINDOWS RUN IN PARALLEL, AND ONLY THE OPPOSING LEG STANDS DOWN. While an XAU position is open,
+the due window still places the leg that AGREES with it and skips only the one that would trade
+against it (`book_direction` / `OPPOSING_LEG`); an unreadable position side defers the whole
+bracket, as does an unreadable position book. The measurement behind that rule, and the cost of
+deferring both legs instead, is recorded at the placement block in `run`.
+
 SIZED FOR THIS ACCOUNT, NOT COPIED FROM THE OTHER. E8 risks RISK_FRAC of equity per trade
 (`docs/PROP_FIRM_E8.md`: 0.50%) against the leg's own stop distance, through the E8 executor's
 `lot_for_risk`, which reads the venue's own contract size.
@@ -40,18 +46,19 @@ for _p in (str(DESK), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk.decision_core import (  # noqa: E402
     ATR_N,
     BRACKET_TTL_HOURS,
     CANCEL_HOUR,
     CLOSE_HOUR,
     GOLD_WINDOWS,
-    MIN_RATCHET_IMPROVEMENT_R,
+    OPPOSING_LEG,
     atr_last,
+    book_direction,
     bracket_from_bars,
     h1_frame,
 )
-from mt5desk import position_manager as _pm  # noqa: E402
 
 SYMBOL = "XAUUSD"
 #: Per-trade risk on the prop account, as a fraction of equity (docs/PROP_FIRM_E8.md).
@@ -63,6 +70,8 @@ ARMED_MARKER = DESK / "data" / "E8_GOLD_ARMED"
 GUARD = DESK / "data" / "e8_guard_state.json"
 LOG = DESK / "logs" / "e8_gold.log"
 TAG = "E8gold"
+#: XAUUSD's price grid, used only when the terminal cannot state `trade_tick_size`.
+STOP_STEP = 0.01
 
 
 def log(msg: str) -> None:
@@ -160,7 +169,99 @@ def _window_for_position(state: dict, position_id: int) -> tuple[str, dict] | No
     return None
 
 
-def trail_decision(position: dict, window: dict, bars: Any, current_stop: float
+def rollover_state(state: dict, today: str) -> dict:
+    """The state a new server day starts from: no windows, every still-open position carried.
+
+    THE ROLLOVER LOST POSITIONS (2026-09-29). It carried only yesterday's WINDOWS that had a
+    recorded `position_id`, so (1) a position carried INTO yesterday was dropped at the next
+    rollover, and (2) a leg that filled after the last pass of the day -- its `position_id` not
+    yet recorded -- was dropped outright. Either way the ratchet, the break-even floor and the
+    close hour stopped managing a live position. (1) is fixed here: every open carried row rides
+    forward. (2) is fixed by `readopt_positions`, which re-derives ownership from the venue.
+    """
+    if state.get("date") == today:
+        return state
+    old_date = str(state.get("date") or "")
+    carried = {n: w for n, w in (state.get("carried") or {}).items()
+               if w.get("position_id") is not None and not w.get("closed")}
+    for n, w in (state.get("windows") or {}).items():
+        if n.startswith("carried:") or w.get("closed") or w.get("position_id") is None:
+            continue
+        carried[f"{old_date}/{n}" if n in carried else n] = w
+    return {"date": today, "windows": {}, "carried": carried}
+
+
+def own_entry_orders(journal: list[dict], state: dict) -> dict[int, dict]:
+    """Every entry order THIS lane sent, by venue order id -> its leg (window, side, levels).
+
+    TradeLocker has no magic number and this adapter sends no comment, so the desk's own mark
+    on the venue is the order id it was handed at the send. Read from the intents journal (which
+    survives the rollover and a lost state file) and from the state's own legs.
+    """
+    own: dict[int, dict] = {}
+    for row in journal:
+        if row.get("status") == "SENT" and row.get("order_id") is not None:
+            own[int(row["order_id"])] = {k: row.get(k) for k in
+                                         ("window", "side", "price", "sl", "tp", "lot")}
+    for bucket in ("carried", "windows"):
+        for name, w in (state.get(bucket) or {}).items():
+            for side, leg in (w.get("orders") or {}).items():
+                if leg.get("id") is not None:
+                    own.setdefault(int(leg["id"]), {"window": name, "side": side,
+                                                    **{k: leg.get(k) for k in
+                                                       ("price", "sl", "tp", "lot")}})
+    return own
+
+
+def _today_leg_ids(state: dict) -> set[int]:
+    return {int(leg["id"]) for n, w in (state.get("windows") or {}).items()
+            if not n.startswith("carried:")
+            for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
+
+
+def readopt_positions(state: dict, filled: dict[int, int], position_ids: set[int],
+                      own: dict[int, dict]) -> list[dict]:
+    """Adopt into `state["carried"]` every open XAU position one of OUR entry orders opened
+    that no window maps. Mutates `state`; returns one `readopt` action per adoption.
+
+    Today's own legs are excluded: a fill this pass is recorded on its window by
+    `manage_actions`, and adopting it twice would schedule two closes for one position.
+    """
+    today = _today_leg_ids(state)
+    by_pos: dict[int, int] = {}
+    for oid, pid in filled.items():
+        if oid in own and oid not in today:
+            by_pos.setdefault(int(pid), int(oid))
+    acts: list[dict] = []
+    for pid in sorted(position_ids):
+        if _window_for_position(state, pid) is not None or pid not in by_pos:
+            continue
+        oid = by_pos[pid]
+        leg = own[oid]
+        key = f"readopted:{pid}"
+        state.setdefault("carried", {})[key] = {
+            "window": leg.get("window"), "readopted": True, "position_id": pid,
+            "orders": {str(leg.get("side")): {"id": oid, **{k: leg.get(k) for k in
+                                                            ("price", "sl", "tp", "lot")}}}}
+        acts.append({"act": "readopt", "window": key, "position_id": pid, "order_id": oid})
+    return acts
+
+
+def stale_entry_orders(state: dict, open_ids: set[int], own: dict[int, dict]) -> list[int]:
+    """Our own entry orders still resting at the venue that no window of TODAY owns.
+
+    GTC LEGS OUTLIVED THE DAY (2026-09-29). Cancellation (OCO, TTL, end of day) walks today's
+    windows only, and the rollover empties them -- so a GTC leg left resting across midnight was
+    never cancelled again and could fill a day later, outside any window, unmanaged. Only ids
+    this lane itself sent qualify: the venue's protective stop/target orders and anything a
+    human placed are never touched.
+    """
+    today = _today_leg_ids(state)
+    return sorted(oid for oid in open_ids if oid in own and oid not in today)
+
+
+def trail_decision(position: dict, window: dict, bars: Any, current_stop: float,
+                   *, cost_per_unit: float = 0.0, spread: float = 0.0
                    ) -> _pm.RatchetDecision | None:
     """The same H1 stop ratchet the Fusion gold gateway runs, pure for tests.
 
@@ -189,7 +290,8 @@ def trail_decision(position: dict, window: dict, bars: Any, current_stop: float
         highs=[float(x) for x in since["high"]],
         lows=[float(x) for x in since["low"]], side=side)
     return _pm.ratchet(entry=entry, current_stop=float(current_stop), stop_distance=dist,
-                       extreme=extreme, atr=atr, side=side, bars_since_extreme=stalled)
+                       extreme=extreme, atr=atr, side=side, bars_since_extreme=stalled,
+                       cost_per_unit=float(cost_per_unit), spread=max(0.0, float(spread)))
 
 
 # ------------------------------------------------------------------ the pass
@@ -199,6 +301,23 @@ def _read_json(p: Path, default: Any) -> Any:
         return json.loads(p.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError):
         return default
+
+
+def _journal_rows(limit: int = 5000) -> list[dict]:
+    """The last `limit` rows of the intents journal; unreadable -> none (no adoption, no cancel)."""
+    try:
+        lines = INTENTS.read_text(encoding="utf-8").splitlines()[-limit:]
+    except OSError:
+        return []
+    rows: list[dict] = []
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
 
 
 def _record(row: dict[str, Any]) -> None:
@@ -213,7 +332,7 @@ def _record(row: dict[str, Any]) -> None:
 def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     """One pass. `venue` is a connected TradeLockerVenue; `mt5` the MetaTrader5 module (bars
     and the server clock, read exactly as the gateway reads them)."""
-    from prop.e8_executor import _quantise, lot_for_risk
+    from prop.e8_executor import E8_ROUND_TRIP_PER_PRICE_UNIT, _quantise, lot_for_risk
 
     now = datetime.now(tz=UTC)
     doc: dict[str, Any] = {"at": now.isoformat(timespec="seconds"), "armed": bool(armed),
@@ -231,11 +350,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     today = str(tnow.date())
     doc.update({"server_time": tnow.isoformat(), "hour": round(hour, 3)})
 
-    state = _read_json(STATE, {})
-    if state.get("date") != today:
-        carried = {n: w for n, w in (state.get("windows") or {}).items()
-                   if w.get("position_id") is not None and not w.get("closed")}
-        state = {"date": today, "windows": {}, "carried": carried}
+    state = rollover_state(_read_json(STATE, {}), today)
     acct = venue.account()
     equity = float(acct.get("equity") or acct.get("balance") or 0.0)
     risk_usd = equity * RISK_FRAC
@@ -261,13 +376,34 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         log("position book unreadable; no new E8 gold placement this pass")
     # -------------------------------------------------------------- placements
     due_now = [] if stood_down else plan(df, hour, state)
-    if xau_positions and due_now:
-        # TradeLocker can hold opposite XAU positions.  A second two-sided bracket while one
-        # window is live can therefore fill against it, paying two spreads/margin legs for a
-        # book whose net exposure is smaller or zero.  Defer, do not mark the window placed: if
-        # the earlier trade exits while this window remains valid, the next pass may still act.
+    # THE SELF-HEDGE RULE IS PER LEG, NOT PER BRACKET (principal, 2026-09-24).
+    #
+    # TradeLocker can hold opposite XAU positions, so a second two-sided bracket placed while one
+    # window is live can fill AGAINST it: two spreads and two margin legs for a book whose net
+    # exposure is smaller or zero.  That cost is real and the opposing leg still carries it.  What
+    # was wrong was throwing away the harmless half with it -- the same-direction leg only adds to
+    # a position the desk already wants, and deferring the whole bracket SERIALISES three windows
+    # that are only +0.180 correlated, which is most of a month of pass time on a prop clock.
+    #
+    # MEASURED on this account's own record before the change, off the box's XAUUSD bars, over
+    # 2026-09-17..24 (six trading days, the three windows, the live ratchet, E8's spread):
+    #   * 4 recorded deferrals (09-22 afternoon, 09-23 london_am, 09-23 afternoon, 09-24
+    #     london_am).  3 of the 4 would have filled; ALL THREE were SAME-DIRECTION, none opposing.
+    #     +257.13 USD against the -16.20 the deferred-and-replaced versions actually made.
+    #   * over the three days the deferral actually bound, +703 -> +976 USD, which is 43 -> 31 days
+    #     to the 10,000 target -- the principal's modelled 45 -> 34, reproduced.
+    #   * the only OPPOSING fill anywhere in the sample (09-21 london_am buy into an open short)
+    #     lost the full -1.000R, -480.74 USD: the single worst trade of the run, and the whole
+    #     difference between skipping the opposing leg and removing the check outright.
+    # So the opposing leg is skipped and the agreeing leg is placed.  Per-trade risk is unchanged.
+    direction = book_direction(xau_positions)
+    blocked = OPPOSING_LEG.get(direction) if direction is not None else None
+    if direction is None and due_now:
+        # A side this code could not read is NOT a flat book.  Defer wholesale, and do not mark
+        # the window placed: if the earlier trade exits while this window remains valid, the next
+        # pass may still act.
         for due in due_now:
-            why = (f"earlier XAU position(s) still open: "
+            why = (f"open XAU position(s) with an unreadable side: "
                    f"{', '.join(str(p.get('id')) for p in xau_positions)}; deferred to prevent "
                    f"self-hedging")
             doc["skipped"].append({"window": due["window"], "why": why})
@@ -277,6 +413,13 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         name, spec = due["window"], due["spec"]
         legs: dict[str, dict] = {}
         for side in ("buy_stop", "sell_stop"):
+            if side == blocked:
+                why = (f"open XAU position(s) {', '.join(str(p.get('id')) for p in xau_positions)}"
+                       f" already lean {'long' if direction == 1 else 'short'}; this leg would "
+                       f"trade against them, so it is skipped and the agreeing leg is placed")
+                doc["skipped"].append({"window": name, "side": side, "why": why})
+                log(f"[{name}] {side} skipped: {why}")
+                continue
             s = spec[side]
             dist = abs(float(s["price"]) - float(s["sl"]))
             legal, why = leg_is_legal(side, float(s["price"]), float(bid), float(ask))
@@ -336,14 +479,39 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                 filled[int(o["id"])] = int(o["positionId"])
     except Exception as exc:
         doc["history_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+    positions_ok = True
     try:
         venue_positions = venue.positions()
         xau_positions = gold_positions(venue_positions, iid)
         position_ids = {int(p["id"]) for p in xau_positions}
     except Exception as exc:
+        positions_ok = False
         xau_positions = []
         position_ids = set()
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+
+    # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
+    # lost state file) can neither orphan a position from management nor leave a GTC leg resting.
+    own = own_entry_orders(_journal_rows(), state)
+    if positions_ok and iid:
+        for act in readopt_positions(state, filled, position_ids, own):
+            log(f"[{act['window']}] RE-ADOPTED position {act['position_id']} "
+                f"(opened by our order {act['order_id']})")
+            act["ok"] = True
+            doc["actions"].append(act)
+        state["carried"] = {n: w for n, w in (state.get("carried") or {}).items()
+                            if int(w.get("position_id") or 0) in position_ids}
+    for oid in stale_entry_orders(state, open_ids, own):
+        act = {"act": "stale_cancel", "window": str(own[oid].get("window")), "order_id": oid}
+        try:
+            act["ok"] = bool(venue.cancel(int(oid)))
+            log(f"[{act['window']}] stale_cancel: our GTC entry order {oid} outlived its day; "
+                f"cancelled")
+        except Exception as exc:
+            act["ok"] = False
+            act["why"] = f"{type(exc).__name__}: {exc}"[:160]
+            log(f"[{act['window']}] stale_cancel FAILED: {act['why']}")
+        doc["actions"].append(act)
 
     # The Fusion gold book and this E8 port are the same bracket strategy.  Both therefore use
     # the same measured stop ratchet.  Until this block existed E8 left every winner at its
@@ -351,6 +519,8 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     # in Fusion.  Broker stop orders are re-read on every pass; local state advances only after
     # the venue acknowledges the PATCH.
     order_by_id = {int(o["id"]): o for o in open_orders if o.get("id") is not None}
+    _info = getattr(mt5, "symbol_info", lambda _s: None)(SYMBOL)
+    stop_step = float(getattr(_info, "trade_tick_size", 0.0) or 0.0) or STOP_STEP
     for p in xau_positions:
         mapped = _window_for_position(state, int(p["id"]))
         stop_order = order_by_id.get(int(p.get("stopLossId") or 0))
@@ -358,13 +528,41 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         if mapped is None or not (current_stop > 0):
             continue
         name, w = mapped
-        decision = trail_decision(p, w, df, current_stop)
-        if decision is None or not decision.moves \
-                or decision.improvement_r < MIN_RATCHET_IMPROVEMENT_R:
+        decision = trail_decision(
+            p, w, df, current_stop,
+            cost_per_unit=E8_ROUND_TRIP_PER_PRICE_UNIT,
+            spread=max(0.0, float(ask) - float(bid)))
+        # ANY TIGHTENING THE VENUE CAN REPRESENT IS SENT (2026-09-29), trail or break-even; the
+        # 0.05R floor skipped real protection to save a request that costs no spread.
+        if decision is None or not decision.moves or not _pm.tightens_by_min_step(
+                side=1 if str(p.get("side") or "").lower() == "buy" else -1,
+                new_stop=float(decision.new_stop), current_stop=current_stop, step=stop_step):
             continue
         action = {"act": "ratchet_stop", "window": name, "position_id": int(p["id"]),
                   "before": current_stop, "after": float(decision.new_stop),
                   "improvement_r": round(decision.improvement_r, 6), "ok": False}
+        # THE LEVEL MUST STILL BE A STOP WHEN IT ARRIVES, and on this venue that is not free.
+        # Measured here on 2026-09-24: the first ratchet this lane ever sent moved position
+        # 360287970193246861's stop from 4303.25 to 4259.78 while the market was at 4283.5.  The
+        # venue took the modification, the buy stop was already through its trigger, and it
+        # filled at market -- 4283.91, 24.13 points and 386.08 USD worse than the level the desk
+        # had just proven protected more.  `ratchet` cannot see that: it compares the candidate
+        # to the current stop, never to the market.  MetaTrader rejects such a request; this
+        # venue executes it, so the check has to happen before the send.
+        #
+        # `bid`/`ask` are this pass's quote, read seconds earlier at the top of `run`.  Re-quoting
+        # per position would be a second venue call per pass on an API that has already returned
+        # 429 to this lane today, and a quote a few seconds stale can only make this refuse a
+        # borderline level -- which leaves the account's existing stop in place, the safe error.
+        _side = 1 if str(p.get("side") or "").lower() == "buy" else -1
+        _rests, _why_rest = _pm.stop_rests_at_venue(
+            stop=float(decision.new_stop), side=_side, bid=float(bid), ask=float(ask))
+        if not _rests:
+            action["act"] = "ratchet_refused"
+            action["why"] = _why_rest
+            log(f"[{name}] stop ratchet REFUSED: {_why_rest}")
+            doc["actions"].append(action)
+            continue
         try:
             if armed or not w.get("shadow", False):
                 action["ok"] = bool(venue.modify_stop(int(p["id"]), float(decision.new_stop)))
@@ -429,24 +627,44 @@ def main(argv: list[str] | None = None) -> int:
     armed = bool(args.armed or ARMED_MARKER.exists())
     try:
         import MetaTrader5 as mt5
-        if not mt5.initialize():
+        from mt5desk.config import terminal_path
+        from research.mt5_session import attach_or_initialize
+        if not attach_or_initialize(mt5, path=terminal_path(), timeout=15000):
             log(f"MT5 initialize failed: {mt5.last_error()}")
+            _failed_pass("MT5_UNAVAILABLE", armed=armed)
             return 1
     except Exception as exc:
         log(f"MetaTrader5 unavailable ({type(exc).__name__}: {exc})")
+        _failed_pass("MT5_UNAVAILABLE", armed=armed)
         return 1
     try:
         from prop.tradelocker_venue import TradeLockerVenue, load_credentials
         venue = TradeLockerVenue(creds=load_credentials()).connect()
     except Exception as exc:
         log(f"venue unavailable ({type(exc).__name__}: {exc})")
+        _failed_pass("VENUE_UNAVAILABLE", armed=armed)
+        mt5.shutdown()
         return 1
-    doc = run(venue, mt5, armed=armed)
+    try:
+        doc = run(venue, mt5, armed=armed)
+    finally:
+        mt5.shutdown()
     log(f"e8 gold: {'ARMED' if armed else 'SHADOW'} hour={doc.get('hour')} "
         f"equity={doc.get('equity')} placed={len(doc.get('placed') or [])} "
         f"actions={len(doc.get('actions') or [])} skipped={len(doc.get('skipped') or [])} "
         f"status={doc.get('status')}")
     return 0
+
+
+def _failed_pass(status: str, *, armed: bool) -> None:
+    """Publish connection failure without altering durable window/order state."""
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    temporary = OUT.with_suffix(".tmp")
+    temporary.write_text(json.dumps({"at": datetime.now(UTC).isoformat(),
+                                     "status": status, "armed": armed,
+                                     "placed": [], "actions": [], "skipped": [],
+                                     "why": "connection failed; no placement evaluated"}), "utf-8")
+    temporary.replace(OUT)
 
 
 if __name__ == "__main__":

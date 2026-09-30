@@ -274,6 +274,13 @@ _LIFECYCLE_WRITERS: dict[str, str] = {
     "libs/research/memory.py":
         "writes UNIVERSAL_SURVIVORS.canon.json, the CANON snapshot, not the live registry -- a "
         "different path that shares a prefix, which is why the token match alone is not a verdict",
+    "desks/mt5/research/canon_publication.py":
+        "seals the ONE minter's own report into data/UNIVERSAL_SURVIVORS.canon.json and mints "
+        "nothing: a key enters only if external_gauntlet.py already published it AND "
+        "gate_policy.all_ten_pass holds on the row's own gates record, so every row it writes was "
+        "granted by the declared minter. It carries no threshold, never shrinks the seal, and "
+        "never overturns a retirement. Read 2026-09-24: the seal it publishes into had carried "
+        "swept_at 2026-09-03 for twenty-one days because nothing on any clock did this step",
 }
 
 #: Writers that cannot run HERE, with the evidence. Kept classified rather than excluded, because

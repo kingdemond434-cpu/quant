@@ -62,7 +62,9 @@ def test_the_manifest_declares_the_drill_with_its_cadence() -> None:
     assert len(rows) == 1, rows
     (row,) = rows
     assert 'trigger="daily' in row and 'runs="ops/reboot_drill.ps1"' in row
-    assert 'installer="desks/mt5/scripts/Install-QuantWindows.ps1"' in row
+    # The complete installer declares it, while the idempotent absent-task registrar is the
+    # canonical repair owner recorded in the manifest.
+    assert 'installer="desks/mt5/scripts/register_absent_box_tasks.ps1"' in row
 
 
 def test_the_drill_records_its_verdict_where_the_board_reads() -> None:
@@ -77,6 +79,23 @@ def test_the_drill_records_its_verdict_where_the_board_reads() -> None:
     # Still read-only apart from the re-enable: no schtasks /Change, /Create, /Delete or /Run.
     assert not re.search(r"schtasks\s+/(Change|Create|Delete|Run)", src, re.I)
     assert "Enable-ScheduledTask" in src
+
+
+def test_the_drill_handles_multiple_mt5_terminals_without_array_subtraction() -> None:
+    """Fusion and E8 run separate terminal64 processes; the drill must select one uptime."""
+    src = DRILL.read_text("utf-8")
+    assert "$terms = @(Get-Process terminal64" in src
+    assert "$term = $terms | Sort-Object StartTime | Select-Object -First 1" in src
+    assert "terminal_count = $terms.Count" in src
+    assert "(Get-Date) - $terms.StartTime" not in src
+
+
+def test_weekend_market_closure_is_not_misreported_as_a_dead_account_feed() -> None:
+    src = DRILL.read_text("utf-8")
+    assert "$marketClosed" in src
+    assert "[DayOfWeek]::Saturday" in src and "[DayOfWeek]::Sunday" in src
+    assert "$age -gt 900 -and -not $marketClosed" in src
+    assert "freshness fence paused" in src
 
 
 def test_the_board_grades_a_missing_or_stale_drill_record_stalled(tmp_path: Path) -> None:

@@ -64,6 +64,7 @@ for _p in (str(DESK), str(DESK / "research"), str(REPO)):
 
 from libs.moat import registry as reg  # noqa: E402
 from libs.research import dedup_chain as dc  # noqa: E402
+from libs.research import durable_query_queue as DQ  # noqa: E402
 from libs.research import forests as F  # noqa: E402
 
 REPORTS = DESK / "reports"
@@ -72,6 +73,7 @@ AXES = DATA / "axes"
 RUNS_JSONL = DATA / "forest_runs.jsonl"
 GROUNDS_JSON = DATA / "deep_forest_sources.json"
 CLAIMS_JSONL = DATA / "deep_forest_claims.jsonl"
+GLOBAL_QUERY_QUEUE = DATA / "global_native_query_queue.json"
 UNIVERSE_JSON = DATA / "universe" / "universe.json"
 COUNTRIES = DESK / "research" / "countries"
 
@@ -446,7 +448,18 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
     conn = run.conn()
     try:
         seeds: list[dict[str, Any]] = []
+        leased: list[dict[str, Any]] = []
         used: list[str] = []
+        if not run.dry_run and GLOBAL_QUERY_QUEUE.exists():
+            # This is the declared consumer of global country-pack query work. The lease makes a
+            # crash retryable; acknowledgement happens only after the seed is recorded below.
+            with contextlib.suppress(Exception):
+                leased = DQ.lease(GLOBAL_QUERY_QUEUE, owner=f"forest_runner:{run.forest}",
+                                  countries=run.spec.packs, limit=MAX_PER_ROLE,
+                                  lease_s=max(300, int(budget_s * 2)))
+                seeds.extend(dict(item.get("payload") or {}) for item in leased)
+                if leased:
+                    used.append(f"durable_global_queue:{len(leased)}")
         try:
             from libs.research import country_lab as cl
             for code in run.spec.packs:
@@ -542,6 +555,7 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
         by_layer: dict[str, list[str]] = {}
         for s in seeds:
             by_layer.setdefault(str(s.get("layer") or "all"), []).append(str(s.get("query") or ""))
+        emitted_layers: set[str] = set()
         for layer, queries in list(by_layer.items())[:MAX_PER_ROLE]:
             if time.monotonic() > deadline:
                 res.note("layers", f"budget {budget_s:.0f}s: layers after {layer!r} are owed")
@@ -556,6 +570,15 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
                             "languages": list(run.spec.languages), "seeded_by": used[:8]},
                    why="a source layer nobody has mapped is UNMAPPED, which is a third state and "
                        "never a quiet zero")
+            emitted_layers.add(layer)
+        ack_ids = [str(item.get("query_id") or "") for item in leased
+                   if str((item.get("payload") or {}).get("layer") or "all") in emitted_layers]
+        acknowledged = 0
+        if ack_ids and not run.dry_run:
+            acknowledged = DQ.acknowledge(
+                GLOBAL_QUERY_QUEUE, ack_ids, owner=f"forest_runner:{run.forest}",
+                outcome="TRANSFERRED_TO_SOURCE_SCOUT",
+                evidence=f"forest={run.forest}; layers={','.join(sorted(emitted_layers))}")
         if "country_lab" in " ".join(used):
             record_technique(run, res, name="native_query_seeding_from_pack_terminology",
                              source_class="country pack terminology x source layer",
@@ -563,6 +586,8 @@ def role_source_scouts(run: Run, res: RoleResult, budget_s: float) -> None:
                                        "terms, site-scoped, translated only AFTER retrieval",
                              representation="query list per (country, layer, language)", conn=conn)
         res.detail.update({"n_seeds": len(seeds), "n_layers": len(by_layer),
+                           "durable_queries_leased": len(leased),
+                           "durable_queries_acknowledged": acknowledged,
                            "sources_registered": registered, "seeded_by": sorted(set(used))[:12]})
         res.why = (f"{len(seeds)} native seed(s) over {len(by_layer)} layer(s); "
                    f"{registered} ground(s) registered")

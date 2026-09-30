@@ -321,6 +321,52 @@ def _degenerate(field: str, value: Any) -> bool:
     return False
 
 
+#: THE PRODUCERS OF `median_spread_pts`, RANKED, BECAUSE THE FIELD STILL HAS MORE THAN ONE.
+#:
+#: The module header above has named this collapse since it was written -- three producers, three
+#: meanings, one key -- and naming it did not stop the next writer. MEASURED 2026-09-24 on the
+#: trading box: all 245 stamped rows read `download_all_symbols`, i.e. `symbol_info.spread` taken
+#: at ONE instant (2026-09-21T22:25:20Z = server hour 01, 85 minutes after the rollover, the
+#: widest window of the day), while `MT5-Universe` re-wrote the same field hourly from an H1 bar
+#: median and left that stamp in place -- so the provenance was not merely missing, it was FALSE.
+#:
+#: The ranking is by what the number MEANS, not by who ran last:
+#:   realized_fills        the desk's own executions. An execution beats an inference.
+#:   fusion_zero_m1_tape   the broker's own per-minute quote over ~100k ticked bars, session
+#:                         filtered, with its dispersion published.
+#:   h1_spread_median      the non-zero H1 median -- on this broker it reads a PRE-2021
+#:                         FIXED-SPREAD ERA (AUDUSD exactly 50.0, AUDCHF exactly 160.0 on every
+#:                         bar to 2020-12-11), because after that date this account quotes 0
+#:                         points on 80-96% of FX bars and "non-zero only" deletes the modern era.
+#:   download_all_symbols  a point-in-time `symbol_info.spread` snapshot. Not a median at all.
+#: A writer not listed here ranks below every writer that is: an unnamed producer cannot claim
+#: to beat a named one.
+MEDIAN_SPREAD_PRODUCERS: tuple[str, ...] = (
+    "realized_fills", "fusion_zero_m1_tape", "h1_spread_median", "download_all_symbols")
+
+
+def may_write_median_spread(prev: dict[str, Any], writer: str) -> tuple[bool, str]:
+    """May `writer` overwrite this row's `median_spread_pts`? (yes/no, and why).
+
+    An ABSENT or unstamped value is writable by anyone -- something is better than nothing. A
+    value stamped by a STRICTLY BETTER producer is not, and the refusal is returned with its
+    reason so the caller can count it rather than discover it later in a P&L.
+    """
+    value = prev.get("median_spread_pts")
+    if not isinstance(value, (int, float)):
+        return True, "the row carries no median_spread_pts"
+    held = ((prev.get("_provenance") or {}).get("median_spread_pts") or {}).get("source")
+    if held not in MEDIAN_SPREAD_PRODUCERS:
+        return True, f"the held value is stamped {held!r}, which no ranking recognises"
+    rank = MEDIAN_SPREAD_PRODUCERS.index
+    mine = rank(writer) if writer in MEDIAN_SPREAD_PRODUCERS else len(MEDIAN_SPREAD_PRODUCERS)
+    if mine <= rank(held):
+        return True, f"{writer!r} ranks at or above the held {held!r}"
+    return False, (f"{held!r} owns this field and ranks above {writer!r}; overwriting it would "
+                   "replace a measurement with a weaker one and leave the stamp lying about "
+                   "which is which")
+
+
 def merge(base: dict[str, Any], incoming: dict[str, Any], *, source: str,
           now: str | None = None) -> dict[str, Any]:
     """Union `incoming` into `base` without letting a partial producer delete anything.

@@ -25,13 +25,16 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 from collections import Counter
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "docs" / "research" / "tier5_audit.json"
 RENDERED = ROOT / "docs" / "research" / "TIER5_AUDIT.md"
+RUNTIME = ROOT / "desks" / "mt5" / "reports" / "TIER5_ACCEPTANCE.json"
 
 STATUSES = ("EXISTS+WIRED+LIVE", "DORMANT", "PARTIAL", "MISSING", "DUPLICATIVE",
             "REFUSED_CONSERVATIVE")
@@ -184,12 +187,57 @@ def render(ledger: dict[str, Any], census: dict[str, Any]) -> str:
     return "\n".join(out)
 
 
+def runtime_snapshot(ledger: dict[str, Any], root: Path, *, now: datetime | None = None
+                     ) -> dict[str, Any]:
+    """Measure the LIVE claims on this host; absence/staleness is never inferred as success."""
+    now = now or datetime.now(tz=UTC)
+    rows: list[dict[str, Any]] = []
+    for item in ledger.get("sections") or []:
+        if item.get("status") != "EXISTS+WIRED+LIVE":
+            continue
+        rel = str(item.get("artifact") or "")
+        path = root / rel
+        exists = path.is_file()
+        age_h = None
+        size = None
+        if exists:
+            try:
+                stat = path.stat()
+                age_h = round((now.timestamp() - stat.st_mtime) / 3600.0, 3)
+                size = stat.st_size
+            except OSError:
+                exists = False
+        clock = str(item.get("clock") or "")
+        limit_h = 50.0 if "daily" in clock else 6.0
+        state = "CURRENT" if exists and age_h is not None and age_h <= limit_h else (
+            "STALE" if exists else "MISSING")
+        rows.append({"source": item.get("source"), "id": item.get("id"),
+                     "title": item.get("title"), "clock": clock, "artifact": rel,
+                     "state": state, "age_h": age_h, "max_age_h": limit_h, "bytes": size})
+    counts = Counter(str(row["state"]) for row in rows)
+    try:
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root, capture_output=True,
+                              text=True, timeout=10, check=False).stdout.strip() or "UNMEASURED"
+        branch = subprocess.run(["git", "branch", "--show-current"], cwd=root,
+                                capture_output=True, text=True, timeout=10,
+                                check=False).stdout.strip() or "UNMEASURED"
+    except (OSError, subprocess.SubprocessError):
+        head = branch = "UNMEASURED"
+    return {"at": now.isoformat(timespec="seconds"), "host_root": str(root),
+            "git": {"head": head, "branch": branch}, "live_claims": len(rows),
+            "counts": dict(counts), "status": "OK" if counts.get("MISSING", 0) == 0
+            and counts.get("STALE", 0) == 0 else "DEGRADED", "rows": rows,
+            "rule": "every LIVE doctrine row must have a current artifact on the host it claims"}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--ledger", type=Path, default=LEDGER)
     ap.add_argument("--root", type=Path, default=ROOT)
     ap.add_argument("--render", action="store_true")
     ap.add_argument("--out", type=Path, default=RENDERED)
+    ap.add_argument("--runtime-out", type=Path, default=None,
+                    help="write host runtime proof for every LIVE doctrine row")
     args = ap.parse_args(argv)
     try:
         ledger = json.loads(args.ledger.read_text("utf-8"))
@@ -206,6 +254,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.render:
         args.out.write_text(render(ledger, census), "utf-8")
         print(f"rendered {args.out}")
+    if args.runtime_out is not None:
+        snap = runtime_snapshot(ledger, args.root)
+        args.runtime_out.parent.mkdir(parents=True, exist_ok=True)
+        args.runtime_out.write_text(json.dumps(snap, indent=1, default=str) + "\n", "utf-8")
+        print(f"runtime acceptance: {snap['status']} -> {args.runtime_out}")
     return 1 if problems else 0
 
 

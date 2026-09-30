@@ -675,6 +675,41 @@ def _blocked(reason: str, attempts: list[dict] | None = None) -> None:
     print(f"  BLOCKED -> {OUT}\n    {reason}")
 
 
+def _holding(reason: str, *, reopens_at: str | None = None) -> None:
+    """Record a DELIBERATE DECLINE the same way `_blocked` records an impossibility.
+
+    THE DEFECT THIS CLOSES, measured on the trading box 2026-09-23. The frontier gate below
+    returns without touching OUT, so an organ firing HOURLY under MT5-AuditLane (Last Result 0,
+    hourly, SYSTEM) left `data/kimi_hunt.json` untouched for 258.7 hours -- and to every reader
+    an artifact that does not move is an organ that has stopped. check_exploration called the
+    family DARK and run_organ_er admitted the patient as UNKNOWN ("dark with no log -- re-fire
+    once"), prescribing a re-fire for an organ that had already run eleven times that day and
+    would decline eleven more. A ward that keeps re-firing a healthy organ is the most expensive
+    possible response, which run_organ_er's own triage says in exactly those words.
+
+    `_blocked`'s docstring already states the rule and this is the same rule one case over: an
+    absent artifact cannot be told apart from an organ nobody scheduled. DECLINING is a MEASURED
+    RESULT -- the frontier is picked over, a reasoning pass would rediscover what the desk already
+    holds -- and a measured result belongs in the artifact, not only in a log line the fences do
+    not read. It is deliberately NOT called a hunt that found nothing: `findings` stays empty and
+    `status` says HOLDING, so nothing downstream can read a decline as evidence about the world.
+    """
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps({
+        "updated": datetime.now(tz=UTC).isoformat(),
+        "status": "HOLDING",
+        "gate": reason,
+        "reopens_at": reopens_at,
+        "model_chain": list(ROUTINE_MODEL_CHAIN),
+        "waves": {}, "findings": [], "dropped": [],
+        "note": ("the hunt RAN and declined to spend a reasoning pass: no frontier is open. This "
+                 "is not a hunt that found nothing -- no model was asked -- and it is not an "
+                 "outage. It is recorded so that an organ on a clock, declining by policy, is "
+                 "distinguishable from one that has stopped."),
+    }, indent=1), "utf-8")
+    print(f"  HOLDING -> {OUT}\n    {reason}")
+
+
 def main() -> None:
     attempts: list[dict] = []
     models_used: list[str] = []
@@ -712,6 +747,9 @@ def main() -> None:
         print("  SKIPPING the reasoning pass -- no frontier open. Not a failure and not an "
               "outage: the organ is declining to re-mine picked-over ground.")
         hf.save(state, _COVERAGE)
+        # AND THE DECLINE IS STAMPED, because the exit path that wrote nothing is how an organ
+        # running hourly read as 258.7 hours dark to every fence on the desk.
+        _holding(gate_why)
         return
     _seen_before: set[str] = set(state.vectors)
     _wave_vectors: dict[int, set[str]] = {}

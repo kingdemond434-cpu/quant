@@ -20,6 +20,13 @@ rem ============================================================================
 
 set "PYTHONPATH=C:\opt\quant\desks\mt5;C:\opt\quant"
 set "LOG=C:\opt\quant\desks\mt5\logs\MT5-Universe.log"
+set "PYARGS="
+rem The trading box's production interpreter is first. The repository venv can be a launcher
+rem into a retired Python during migrations; measured 2026-09-28 it left cmd.exe alive with no
+rem Python child and no log output while the direct 3.14 interpreter connected to Fusion.
+set "PYTHON=C:\Program Files\Python314\python.exe"
+if not exist "%PYTHON%" set "PYTHON=C:\opt\quant\.venv\Scripts\python.exe"
+if not exist "%PYTHON%" set "PYTHON=py"& set "PYARGS=-3"
 
 echo(>>"%LOG%"
 echo ==== run_universe %DATE% %TIME% ====>>"%LOG%"
@@ -28,14 +35,21 @@ rem download_all_symbols is missing-series incremental: after the first fill it 
 rem new symbols/timeframes. expand_universe re-downloaded every existing series before reaching
 rem H4, so an hourly execution limit could leave H4 permanently at zero while repeatedly paying
 rem for M1..H1. Existing files are refreshed by refresh_tail in the hourly research cycle.
-py -3 -W ignore "C:\opt\quant\desks\mt5\scripts\download_all_symbols.py" >>"%LOG%" 2>&1
+rem Unbuffered output is operational evidence: a four-hour recovery must expose its current cell
+rem while it runs, not publish thousands of verdict lines only after the process exits.
+"%PYTHON%" %PYARGS% -u -W ignore "C:\opt\quant\desks\mt5\scripts\download_all_symbols.py" >>"%LOG%" 2>&1
 set RC1=%ERRORLEVEL%
 echo download_all_symbols rc=%RC1%>>"%LOG%"
+
+rem USDX IS BUILT, NOT DOWNLOADED: Fusion does not quote the dollar index the miners and packs
+rem name as a factor. synthetic_usdx writes it from the six ICE legs once all six are on disk;
+rem its exit code never fails the pass (a missing leg is reported, not an error).
+"%PYTHON%" %PYARGS% -u -W ignore "C:\opt\quant\desks\mt5\research\synthetic_usdx.py" >>"%LOG%" 2>&1
 
 rem THE REGISTRY REPAIR RUNS WHETHER OR NOT THE EXPANDER SUCCEEDED. It is the step that
 rem reconciles the registry with what is actually on disk, so a partial expansion is exactly
 rem when it is most worth running; chaining it behind `&&` meant it had never run at all.
-py -3 "C:\opt\quant\scripts\repair_universe_registry.py" >>"%LOG%" 2>&1
+"%PYTHON%" %PYARGS% "C:\opt\quant\scripts\repair_universe_registry.py" >>"%LOG%" 2>&1
 set RC2=%ERRORLEVEL%
 echo repair_universe_registry rc=%RC2%>>"%LOG%"
 

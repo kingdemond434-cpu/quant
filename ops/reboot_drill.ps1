@@ -10,8 +10,13 @@
 #                                           removed by the next PASS (the board's alarm contract)
 $root = Split-Path -Parent $PSScriptRoot
 $fail = @()
-$term = Get-Process terminal64 -ErrorAction SilentlyContinue
-if ($term) { "TERMINAL: running (pid " + $term.Id + ", up " + [math]::Round(((Get-Date) - $term.StartTime).TotalMinutes) + "m)" }
+$terms = @(Get-Process terminal64 -ErrorAction SilentlyContinue)
+# Multiple MT5 terminals are intentional on the trading box (Fusion plus E8).  PowerShell
+# projects `.StartTime` to an array when more than one process exists, so subtracting it from a
+# scalar date aborts the drill before it can write its verdict.  Use the oldest process for the
+# uptime witness and retain the total count in the durable record.
+$term = $terms | Sort-Object StartTime | Select-Object -First 1
+if ($term) { "TERMINAL: running (" + $terms.Count + " process(es); oldest pid " + $term.Id + ", up " + [math]::Round(((Get-Date) - $term.StartTime).TotalMinutes) + "m)" }
 else { $fail += "terminal64 NOT running"; "TERMINAL: NOT RUNNING" }
 
 $required = @('MT5-TerminalBoot','MT5-Gateway','MT5-Gauntlet','MT5-Shadow','MT5-Hourly',
@@ -33,8 +38,17 @@ foreach ($r in $required) {
 try {
   $d = Get-Content C:\opt\quant\web\desk_state.json -Raw | ConvertFrom-Json
   $age = [double]$d.account.source_age_seconds
-  if ($age -gt 900) { $fail += "account source $([math]::Round($age))s stale -- terminal is up but not feeding" }
-  "ACCOUNT SOURCE: $([math]::Round($age))s old (venue " + $d.account.venue + ", equity " + $d.account.equity + ")"
+  $utc = (Get-Date).ToUniversalTime()
+  # A quote-derived account snapshot cannot advance while Fusion's FX/metals market is closed.
+  # Treat the weekend as CLOSED, not STALE; the freshness fence resumes before the Sunday open.
+  $marketClosed = (($utc.DayOfWeek -eq [DayOfWeek]::Friday -and $utc.Hour -ge 22) -or
+                   $utc.DayOfWeek -eq [DayOfWeek]::Saturday -or
+                   ($utc.DayOfWeek -eq [DayOfWeek]::Sunday -and $utc.Hour -lt 21))
+  if ($age -gt 900 -and -not $marketClosed) {
+    $fail += "account source $([math]::Round($age))s stale -- terminal is up but not feeding"
+  }
+  $freshness = if ($marketClosed) { "market closed; freshness fence paused" } else { "market open" }
+  "ACCOUNT SOURCE: $([math]::Round($age))s old ($freshness; venue " + $d.account.venue + ", equity " + $d.account.equity + ")"
 } catch { $fail += "desk_state account unreadable"; "ACCOUNT SOURCE: unreadable" }
 
 if ($fail.Count -eq 0) { "`nREBOOT DRILL: PASS -- terminal, tasks and account read all recovered" }
@@ -48,7 +62,7 @@ $alarm = Join-Path $root "data\REBOOT_DRILL_ALARM.txt"
 try {
   New-Item -ItemType Directory -Force -Path (Split-Path -Parent $drillJson) | Out-Null
   @{ checked_at = $stamp; verdict = $verdict; failures = @($fail); required = @($required)
-     terminal_running = [bool]$term } | ConvertTo-Json -Depth 4 | Set-Content -Path $drillJson -Encoding UTF8
+     terminal_running = [bool]$term; terminal_count = $terms.Count } | ConvertTo-Json -Depth 4 | Set-Content -Path $drillJson -Encoding UTF8
   if ($fail.Count -eq 0) {
     Remove-Item -Path $alarm -ErrorAction SilentlyContinue
   } else {

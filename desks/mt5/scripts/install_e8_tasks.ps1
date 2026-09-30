@@ -3,14 +3,11 @@
     Register the E8 prop lane's clocks on the trading box. Idempotent; touches only E8-* tasks.
 
 .DESCRIPTION
-    THREE CLOCKS, AND THEY ARE SEPARATE ON PURPOSE.
+    THREE ACTIVE CLOCKS, AND THEY ARE SEPARATE ON PURPOSE.
 
-        E8-Executor   hourly at :02   signal -> size -> send for the 20-sleeve certified book.
-                                      Two minutes past the hour because the families read the
-                                      LAST CLOSED bar and a pass at :00 races the close.
-        E8-Book       daily at 23:40  re-selects the book against the venue's live catalogue, so
-                                      an instrument E8 delists stops being traded the next day
-                                      rather than becoming a rejected order every hour.
+        E8-Executor   every 5 min     guard, flatten and manage positions inherited from the
+                                      retired certificate-selected FX book; opens no new FX.
+        E8-Gold       every 5 min     the same three gold windows as the Fusion book.
         E8-Spreads    at boot         the cost sampler. It is the only measurement of what this
                                       venue actually charges during the hours the book trades,
                                       and every pass-probability number depends on it.
@@ -31,7 +28,8 @@
 [CmdletBinding()]
 param(
     [string] $RepoRoot = "C:\opt\quant",
-    [string] $Python   = "C:\Program Files\Python314\python.exe"
+    [string] $Python   = "C:\Program Files\Python314\python.exe",
+    [string] $InteractiveUser = "Administrator"
 )
 $ErrorActionPreference = "Stop"
 
@@ -39,11 +37,20 @@ $prop = Join-Path $RepoRoot "desks\mt5\prop"
 $desk = Join-Path $RepoRoot "desks\mt5"
 
 function Set-E8Task {
-    param([string] $Name, [string] $Script, [string] $ScheduleArgs, [string] $Why)
-    $action  = New-ScheduledTaskAction -Execute $Python -Argument "`"$Script`"" -WorkingDirectory $desk
-    # RunLevel Highest so the task can write under C:\opt\quant regardless of the ACL the
-    # adoption left; S4U so it runs whether or not anyone is logged in over RDP.
-    $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    param([string] $Name, [string] $Script, [string] $ScheduleArgs, [string] $Why,
+          [string] $ExtraArgs = "", [switch] $RequiresDesktop)
+    $arguments = "`"$Script`""
+    if ($ExtraArgs) { $arguments += " $ExtraArgs" }
+    $action  = New-ScheduledTaskAction -Execute $Python -Argument $arguments -WorkingDirectory $desk
+    # MetaTrader IPC exists only in the interactive desktop session.  E8-Gold reads the same
+    # Fusion bars as the canonical gold book, and E8-Spreads samples that terminal; under SYSTEM
+    # both failed every pass with -10004 No IPC connection while still looking scheduled.  The
+    # management-only TradeLocker executor needs no terminal and remains a durable SYSTEM task.
+    $principal = if ($RequiresDesktop) {
+        New-ScheduledTaskPrincipal -UserId $InteractiveUser -LogonType Interactive -RunLevel Highest
+    } else {
+        New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+    }
     # AN EXECUTION LIMIT SHORTER THAN THE WORK IS NOT A SAFETY RAIL, IT IS A GUARANTEED KILL.
     # Measured 2026-09-13 on MT5-Daily, registered the same day with a 3-hour cap: daily_cycle's
     # own leg budgets sum past that before the network miners are counted, so the run was
@@ -68,21 +75,33 @@ function Set-E8Task {
 
 Write-Host "E8 PROP LANE"
 Set-E8Task -Name "E8-Executor" -Script (Join-Path $prop "e8_executor.py") `
-    -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(2) -RepetitionInterval (New-TimeSpan -Hours 1)" `
-    -Why "signal -> size -> send for the certified E8 book (sends only while data\E8_ARMED exists)"
+    -ExtraArgs "--manage-only" `
+    -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 5)" `
+    -Why "manage/flatten inherited E8 positions; legacy FX entry is retired"
 
-Set-E8Task -Name "E8-Book" -Script (Join-Path $prop "e8_book.py") `
-    -ScheduleArgs "New-ScheduledTaskTrigger -Daily -At 23:40" `
-    -Why "re-select the book against the venue's live catalogue"
+Set-E8Task -Name "E8-Gold" -Script (Join-Path $prop "e8_gold.py") `
+    -RequiresDesktop `
+    -ScheduleArgs "New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)" `
+    -Why "mirror the three Fusion gold windows (sends only while data\E8_GOLD_ARMED exists)"
+
+# Historical task retained as an auditable object, but disabled: regenerating a retired FX book
+# is activity with no consumer and previously caused unintended FX exposure.
+if (Get-ScheduledTask -TaskName "E8-Book" -ErrorAction SilentlyContinue) {
+    Disable-ScheduledTask -TaskName "E8-Book" | Out-Null
+    Write-Host "  disabled E8-Book        retired certificate-selected FX lane"
+}
 
 Set-E8Task -Name "E8-Spreads" -Script (Join-Path $prop "e8_spread_sampler.py") `
+    -RequiresDesktop `
     -ScheduleArgs "New-ScheduledTaskTrigger -AtStartup" `
     -Why "measure what this venue actually charges in the hours the book trades"
 
 $armed = Join-Path $desk "data\E8_ARMED"
+$goldArmed = Join-Path $desk "data\E8_GOLD_ARMED"
 Write-Host ""
 Write-Host ("  arming marker: {0}" -f $armed)
 Write-Host ("  state now:     {0}" -f $(if (Test-Path $armed) { "ARMED -- the executor will SEND" } else { "SHADOW -- no orders" }))
+Write-Host ("  gold state:    {0}" -f $(if (Test-Path $goldArmed) { "ARMED -- E8-Gold will SEND" } else { "SHADOW -- no gold orders" }))
 Write-Host ""
 Write-Host "  arm:    New-Item '$armed' -ItemType File"
 Write-Host "  disarm: Remove-Item '$armed'"

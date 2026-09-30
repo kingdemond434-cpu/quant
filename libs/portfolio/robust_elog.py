@@ -41,6 +41,7 @@ it is given.
 from __future__ import annotations
 
 import math
+import re
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -138,6 +139,23 @@ class SleeveEvidence:
     #: Residual (idiosyncratic) variance left by the factors, in (R/day)^2; the denominator that
     #: turns a factor covariance into a factor correlation.
     factor_resid_var: float = 0.0
+    #: THE THREE DIMENSIONS OF SAMENESS THE RETURNS CANNOT SHOW (Tier-1 B13). Covariance, factor
+    #: and tail breadth are measured; two sleeves can still be the same bet for reasons no return
+    #: series carries. Each is EMPTY by default, and empty means the pair is scored exactly as it
+    #: was before these fields existed -- a caller that cannot say is never charged for saying so.
+    #:
+    #: `inputs`   the data the sleeve reads, as opaque keys ("bars:XAUUSD:H1", "tape:XAUUSD").
+    #:            Two sleeves reading one file cannot be two independent draws on the world.
+    #: `trade_hours` the UTC hours its trades were actually ENTERED in, measured from its own
+    #:            fills. This one is TWO-SIDED and that is the point: it raises the floor for
+    #:            pairs that trade together and LOWERS the same-instrument prior for pairs whose
+    #:            hours are disjoint, because two sleeves that never trade at the same time
+    #:            cannot be taking the same trade whatever their family says.
+    #: `mechanism` the causal story, as declared. Same mechanism on two instruments is one bet
+    #:            on that mechanism being true.
+    inputs: tuple[str, ...] = ()
+    trade_hours: tuple[int, ...] = ()
+    mechanism: str = ""
 
     def __post_init__(self) -> None:
         if self.daily_r.ndim != 1:
@@ -875,10 +893,57 @@ CORR_BLEND_K = 60.0
 #: returns, and both were being scored as independent.
 SAME_SYMBOL_FAMILY_CORR = 0.80
 SAME_SYMBOL_CORR = 0.35
+#: THE THREE DIMENSIONS THE RETURNS CANNOT SHOW (Tier-1 B13), each a FLOOR at full similarity and
+#: proportional below it -- the same shape as the same-instrument prior above, for the same
+#: reason: a fortnight of returns cannot measure any of them, and scoring them as zero scores two
+#: copies of one bet as two bets.
+#: Shared input DATA: identical inputs is a stronger statement than the same instrument, because
+#: it includes the same file, the same vintage and the same revision error.
+SHARED_INPUT_CORR = 0.50
+#: Same declared causal MECHANISM across instruments: one bet on the mechanism being true.
+SAME_MECHANISM_CORR = 0.45
+#: Trade-time overlap between two sleeves on ONE instrument, as a share of entry hours.
+TRADE_TIME_CORR = 0.40
+#: THE RELAXATION FLOOR, and the reason this change is two-sided. The same-instrument prior
+#: assumes two sleeves take the same trades; disjoint entry hours are evidence that they do not.
+#: The prior is scaled by the measured hour overlap but never below this, because two sleeves on
+#: one instrument still share its path, its gaps and its regime even when they never trade
+#: together. Raising breadth on measured evidence is what lets the same heat hold MORE
+#: independent bets (the principal's standing order: never a smaller book).
+TIME_DISJOINT_FLOOR = 0.25
+#: Both sleeves must have this many measured entry hours before the relaxation is allowed to act;
+#: below it the pair keeps the unrelaxed prior, because "no hours recorded" is not "no overlap".
+MIN_HOURS_FOR_RELAX = 3
+
+
+def _jaccard(a: Sequence[str] | Sequence[int], b: Sequence[str] | Sequence[int]) -> float:
+    sa, sb = set(a), set(b)
+    if not sa or not sb:
+        return 0.0
+    return float(len(sa & sb)) / float(len(sa | sb))
+
+
+def _mechanism_sim(a: str, b: str) -> float:
+    """Token Jaccard over the declared mechanism. Exact equality is 1.0; unrelated stories 0.0.
+    Declared prose, tokenised -- never an embedding, because a similarity nobody can read cannot
+    be argued with when it charges a sleeve."""
+    ta = {t for t in re.split(r"[^a-z0-9]+", a.lower()) if len(t) > 3}
+    tb = {t for t in re.split(r"[^a-z0-9]+", b.lower()) if len(t) > 3}
+    if not ta or not tb:
+        return 0.0
+    return float(len(ta & tb)) / float(len(ta | tb))
 
 
 def _structured_corr(ev: Sequence[SleeveEvidence]) -> tuple[np.ndarray, dict[str, int]]:
-    """|corr| from the loadings, floored by the structural prior; zeros where nothing is known."""
+    """|corr| from the loadings, floored by the structural prior; zeros where nothing is known.
+
+    B13 -- EFFECTIVE BREADTH, NOT RAW COUNT. Three dimensions of sameness join the factor model
+    and the same-instrument prior: shared INPUT DATA, TRADE-TIME overlap and declared MECHANISM.
+    Each raises the floor for pairs that are one bet wearing two names. The trade-time channel
+    also RELAXES the same-instrument prior for pairs whose entry hours are disjoint -- measured
+    evidence that they are not taking the same trade -- so this file can now both charge and
+    credit independence, which is what a two-sided modifier means (GROWTH_GOVERNANCE Rule 1).
+    """
     n = len(ev)
     t = np.zeros((n, n))
     loads = [np.asarray(getattr(e, "factor_load", ()), dtype=float) for e in ev]
@@ -898,20 +963,74 @@ def _structured_corr(ev: Sequence[SleeveEvidence]) -> tuple[np.ndarray, dict[str
         t[np.ix_(ok, ok)] = np.minimum(1.0, f)
         n_factor = len(ok)
     n_struct = 0
+    n_input = n_mech = n_time = n_relaxed = 0
     syms = [str(e.symbol or "") for e in ev]
     fams = [str(e.family or "") for e in ev]
+    ins = [tuple(getattr(e, "inputs", ()) or ()) for e in ev]
+    hrs = [tuple(getattr(e, "trade_hours", ()) or ()) for e in ev]
+    mechs = [str(getattr(e, "mechanism", "") or "") for e in ev]
     for i in range(n):
-        if not syms[i]:
-            continue
         for j in range(i + 1, n):
-            if syms[i] != syms[j]:
-                continue
-            s = SAME_SYMBOL_FAMILY_CORR if fams[i] == fams[j] else SAME_SYMBOL_CORR
-            if s > t[i, j]:
-                t[i, j] = t[j, i] = s
+            floors: list[float] = []
+            # SAME INSTRUMENT -- the prior that already existed, now scaled by measured overlap.
+            if syms[i] and syms[i] == syms[j]:
+                s = SAME_SYMBOL_FAMILY_CORR if fams[i] == fams[j] else SAME_SYMBOL_CORR
+                overlap = _jaccard(hrs[i], hrs[j])
+                if (len(hrs[i]) >= MIN_HOURS_FOR_RELAX and len(hrs[j]) >= MIN_HOURS_FOR_RELAX
+                        and overlap < 1.0):
+                    relaxed = max(TIME_DISJOINT_FLOOR, s * overlap)
+                    if relaxed < s:
+                        n_relaxed += 1
+                    s = relaxed
+                floors.append(s)
                 n_struct += 1
+            # SHARED INPUT DATA -- across instruments too: two sleeves reading one file are not
+            # two independent draws on the world, whatever they trade.
+            ji = _jaccard(ins[i], ins[j])
+            if ji > 0.0:
+                floors.append(SHARED_INPUT_CORR * ji)
+                n_input += 1
+            # SAME DECLARED MECHANISM -- one bet on that story being true.
+            jm = _mechanism_sim(mechs[i], mechs[j])
+            if jm > 0.0:
+                floors.append(SAME_MECHANISM_CORR * jm)
+                n_mech += 1
+            # TRADE-TIME OVERLAP across instruments: same hour, same liquidity regime, same
+            # news, and the same chance of being stopped by one move.
+            if syms[i] != syms[j] and hrs[i] and hrs[j]:
+                jh = _jaccard(hrs[i], hrs[j])
+                if jh > 0.0:
+                    floors.append(TRADE_TIME_CORR * jh)
+                    n_time += 1
+            if floors:
+                s = max(floors)
+                if s > t[i, j]:
+                    t[i, j] = t[j, i] = s
     np.fill_diagonal(t, 1.0)
-    return t, {"n_with_loadings": n_factor, "n_structural_pairs": n_struct}
+    return t, {"n_with_loadings": n_factor, "n_structural_pairs": n_struct,
+               "n_shared_input_pairs": n_input, "n_same_mechanism_pairs": n_mech,
+               "n_trade_time_pairs": n_time, "n_time_relaxed_pairs": n_relaxed}
+
+
+def breadth_channels(ev: Sequence[SleeveEvidence]) -> dict[str, Any]:
+    """The B13 census: which sameness channel each pair was scored on, and what the trade-time
+    evidence CREDITED. Pure, report-only -- `_structured_corr` does the arithmetic; this names it
+    so the allocation report can show the channels instead of one blended number."""
+    _t, meta = _structured_corr(ev)
+    declared = {"inputs": sum(1 for e in ev if getattr(e, "inputs", ())),
+                "trade_hours": sum(1 for e in ev if getattr(e, "trade_hours", ())),
+                "mechanism": sum(1 for e in ev if str(getattr(e, "mechanism", "") or ""))}
+    n_pairs = len(ev) * (len(ev) - 1) // 2
+    return {
+        "n_sleeves": len(ev), "n_pairs": n_pairs, "declared": declared, **meta,
+        "rule": ("shared input data, declared mechanism and trade-time overlap each FLOOR a "
+                 "pair's |corr| in proportion to their Jaccard similarity; disjoint entry hours "
+                 "RELAX the same-instrument prior toward TIME_DISJOINT_FLOOR, which raises "
+                 "effective breadth and therefore the number of independent bets the same heat "
+                 "can hold"),
+        "unmeasured": ("a sleeve declaring none of the three is scored exactly as it was before "
+                       "these channels existed -- absence is never charged as sameness"),
+    }
 
 
 def _corr_abs(ev: Sequence[SleeveEvidence]) -> np.ndarray:

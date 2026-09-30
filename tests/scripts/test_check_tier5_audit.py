@@ -3,15 +3,22 @@ existing file, a known clock and an artifact; a refusal needs its sentence; a du
 its canonical; the section counts must match the blueprints."""
 from __future__ import annotations
 
+import importlib.util
 import json
+import os
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from scripts import check_tier5_audit as ck  # noqa: E402
+_SPEC = importlib.util.spec_from_file_location(
+    "repo_check_tier5_audit", ROOT / "scripts" / "check_tier5_audit.py")
+assert _SPEC is not None and _SPEC.loader is not None
+ck = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(ck)
 
 
 def _repo(tmp_path: Path) -> Path:
@@ -100,6 +107,21 @@ def test_the_real_ledger_tells_no_lie() -> None:
     ledger = json.loads(ck.LEDGER.read_text("utf-8"))
     problems, census = ck.check(ledger, ck.ROOT)
     assert problems == [], problems[:10]
-    assert census["by_source"]["blueprint"] and census["by_source"]["mandate"]
-    assert sum(census["by_source"]["blueprint"].values()) == 102
-    assert sum(census["by_source"]["mandate"].values()) == 170
+    assert census["by_source"]["BLUEPRINT I-CII"]
+    assert census["by_source"]["FINAL MAXIMUM-AGGRESSIVE 1-170"]
+    assert sum(census["by_source"]["BLUEPRINT I-CII"].values()) == 102
+    assert sum(census["by_source"]["FINAL MAXIMUM-AGGRESSIVE 1-170"].values()) == 170
+
+
+def test_runtime_snapshot_never_turns_missing_or_stale_into_current(tmp_path: Path) -> None:
+    root = _repo(tmp_path)
+    artifact = root / "desks/mt5/reports/X.json"
+    artifact.parent.mkdir(parents=True, exist_ok=True)
+    artifact.write_text("{}", "utf-8")
+    old = datetime.now(tz=UTC) - timedelta(hours=12)
+    os.utime(artifact, (old.timestamp(), old.timestamp()))
+    snap = ck.runtime_snapshot(_ledger(), root)
+    assert snap["status"] == "DEGRADED"
+    assert snap["rows"][0]["state"] == "STALE"
+    artifact.unlink()
+    assert ck.runtime_snapshot(_ledger(), root)["rows"][0]["state"] == "MISSING"

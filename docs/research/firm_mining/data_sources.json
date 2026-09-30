@@ -1,0 +1,306 @@
+[
+ {
+  "name": "LBMA Gold/Silver/PGM benchmark prices (JSON)",
+  "url": "https://prices.lbma.org.uk/json/gold_pm.json",
+  "cost": "free, no key",
+  "history": "gold PM from 1968-04-01, silver from 1968-01-02 (USD/GBP/EUR columns)",
+  "frequency": "daily (auction results)",
+  "point_in_time": "PIT-safe: auction price known at 15:00 London; no revisions",
+  "enables": [
+   "fx_fixing_reversal on XAUUSD/XAGUSD at auction times",
+   "gold AM-PM spread features",
+   "benchmark-vs-spot basis"
+  ],
+  "already_ingested": false,
+  "desk_status": "no code reference to prices.lbma.org.uk found; data_registry lists only LBMA vaults as DISCOVERED",
+  "verified_this_pass": "HTTP 200, JSON parsed"
+ },
+ {
+  "name": "TreasuryDirect auction results API",
+  "url": "https://www.treasurydirect.gov/TA_WS/securities/auctioned?format=json&type=Note",
+  "cost": "free, no key",
+  "history": "decades of auctions (announcement, auction, issue dates, results)",
+  "frequency": "per auction",
+  "point_in_time": "PIT-safe: announcement/auction dates known in advance; results stamped at auction",
+  "enables": [
+   "forced_flow treasury_auction on UST10Y/UST05Y",
+   "auction tail/bid-to-cover event_reaction"
+  ],
+  "already_ingested": false,
+  "desk_status": "referenced in macro_region/intelligence.py and countries/us/pack.py; no auction-cycle family input found",
+  "verified_this_pass": "HTTP 200, JSON"
+ },
+ {
+  "name": "CFTC Traders in Financial Futures (TFF) + Disaggregated, full contract set",
+  "url": "https://publicreporting.cftc.gov/resource/gpe5-46if.json",
+  "cost": "free (Socrata)",
+  "history": "TFF 2006-, disaggregated 2006-, legacy 1986-",
+  "frequency": "weekly (Tue positions, Fri 15:30 ET release)",
+  "point_in_time": "PIT: use Friday release time not Tuesday as-of date",
+  "enables": [
+   "cot families for JPY, NZD, MXN, indices, UST, VIX (TFF leveraged funds / asset managers)",
+   "crude, natgas, grains, softs managed money (disaggregated)"
+  ],
+  "already_ingested": true,
+  "desk_status": "PARTIAL: data/cot_tff has aud/cad/chf/eur/gbp only; cot_disagg has gold/silver only; legacy covers 22 symbols",
+  "verified_this_pass": "HTTP 200 on gpe5-46if, 72hh-3qpy, FinFutWk.txt"
+ },
+ {
+  "name": "ICE Futures Europe Commitments of Traders",
+  "url": "https://www.ice.com/report/122",
+  "cost": "free",
+  "history": "ICE Brent/gasoil COT since 2011; London softs",
+  "frequency": "weekly",
+  "point_in_time": "PIT: release-time stamp needed",
+  "enables": [
+   "cot_positioning on XBRUSD, UKCOCOA, COFROB, SUGAR (white)"
+  ],
+  "already_ingested": false,
+  "desk_status": "ICE referenced only in country packs (uk, west_africa); no COT ingest",
+  "verified_this_pass": "page HTTP 200 (JS app)"
+ },
+ {
+  "name": "LME Commitments of Traders Report",
+  "url": "https://www.lme.com/en/market-data/reports-and-data/commitments-of-traders",
+  "cost": "free (registration may be required)",
+  "history": "2018-",
+  "frequency": "weekly",
+  "point_in_time": "PIT: release-time stamp needed",
+  "enables": [
+   "cot families on XCUUSD, XALUSD, XZNUSD, XNIUSD, XPBUSD"
+  ],
+  "already_ingested": false,
+  "desk_status": "lme.com referenced in intelligence.py/world_crawler, no COT ingest",
+  "verified_this_pass": "HTTP 403 Cloudflare from this container - fetch from box"
+ },
+ {
+  "name": "SNB sight deposits (weekly) and monetary aggregates",
+  "url": "https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en",
+  "cost": "free, CSV API",
+  "history": "2009-01 weekly",
+  "frequency": "weekly (Monday)",
+  "point_in_time": "PIT: PublishingDate field in file",
+  "enables": [
+   "exogenous_conditioner EURCHF/USDCHF intervention proxy"
+  ],
+  "already_ingested": false,
+  "desk_status": "data.snb.ch referenced in countries/ch/pack.py; cube snbgwdchfsgw not seen in artifacts",
+  "verified_this_pass": "HTTP 200, CSV parsed"
+ },
+ {
+  "name": "Japan MOF foreign exchange intervention operations",
+  "url": "https://www.mof.go.jp/english/policy/international_policy/reference/feio/index.html",
+  "cost": "free",
+  "history": "daily intervention amounts since 1991 (historical data page)",
+  "frequency": "monthly and quarterly releases",
+  "point_in_time": "PIT: disclosure lags (monthly totals at month-end, daily detail quarterly) - stamp by release date",
+  "enables": [
+   "exogenous_conditioner on JPY crosses",
+   "regime labels for USDJPY"
+  ],
+  "already_ingested": false,
+  "desk_status": "mof.go.jp referenced in macro_region/intelligence.py",
+  "verified_this_pass": "HTTP 200 (latest monthly release Aug 28 2026)"
+ },
+ {
+  "name": "JPX Trading by Type of Investors (weekly)",
+  "url": "https://www.jpx.co.jp/english/markets/statistics-equities/investor-type/index.html",
+  "cost": "free",
+  "history": "multi-year weekly",
+  "frequency": "weekly (Thursday)",
+  "point_in_time": "PIT: release date stamp",
+  "enables": [
+   "foreign-investor flow conditioner for JPN225",
+   "USDJPY equity-hedge flow proxy"
+  ],
+  "already_ingested": false,
+  "desk_status": "only crawler/constitution references",
+  "verified_this_pass": "HTTP 200 (weekly update Sep 17 2026)"
+ },
+ {
+  "name": "CFETS CNY central parity (chinamoney)",
+  "url": "https://www.chinamoney.com.cn/english/bmkcpr/",
+  "cost": "free",
+  "history": "years of daily fixings",
+  "frequency": "daily 09:15 Beijing",
+  "point_in_time": "PIT-safe (published fix)",
+  "enables": [
+   "USDCNH fix-vs-model gap (counter-cyclical factor) conditioner",
+   "CHINAH/HK50/AUDUSD risk proxy"
+  ],
+  "already_ingested": false,
+  "desk_status": "chinamoney referenced in countries/cn/pack.py; china intelligence dir holds discoveries, fixing series not confirmed",
+  "verified_this_pass": "HTTP 200"
+ },
+ {
+  "name": "ECB euro foreign exchange reference rates (14:15 CET)",
+  "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?format=csvdata",
+  "cost": "free SDMX",
+  "history": "1999-",
+  "frequency": "daily",
+  "point_in_time": "PIT-safe (fix rate)",
+  "enables": [
+   "ECB-fix reversal studies (fix level vs spot)"
+  ],
+  "already_ingested": true,
+  "desk_status": "axes/ecb.json holds eur_usd_ref from 2011",
+  "verified_this_pass": "HTTP 200"
+ },
+ {
+  "name": "Dukascopy SWFX Sentiment Index",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/sentiment/",
+  "cost": "free (web widget)",
+  "history": "limited history on site - must be recorded forward",
+  "frequency": "intraday",
+  "point_in_time": "PIT only if recorded by the desk with retrieval timestamp",
+  "enables": [
+   "retail/ECN positioning conditioner for FX and XAUUSD (contrarian test)"
+  ],
+  "already_ingested": false,
+  "desk_status": "no swfx code reference in desk sources",
+  "verified_this_pass": "HTTP 200 (JS widget)"
+ },
+ {
+  "name": "Dukascopy tick history (bi5)",
+  "url": "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/00/02/10h_ticks.bi5",
+  "cost": "free",
+  "history": "FX majors ~2003-, metals/indices/CFDs shorter",
+  "frequency": "tick",
+  "point_in_time": "PIT-safe (historical ticks with bid/ask)",
+  "enables": [
+   "real-spread cost model around fix windows",
+   "M1 reconstruction for sub-hour fix studies"
+  ],
+  "already_ingested": false,
+  "desk_status": "research/fetch_dukascopy.py exists; no dukascopy dataset in data_registry",
+  "verified_this_pass": "HTTP 503 from this container (fetch from box)"
+ },
+ {
+  "name": "HistData.com free M1 and tick",
+  "url": "https://www.histdata.com/download-free-forex-data/",
+  "cost": "free",
+  "history": "FX M1 ~2000-, tick ~2010-",
+  "frequency": "monthly files",
+  "point_in_time": "PIT-safe; timestamps EST without DST (convert carefully)",
+  "enables": [
+   "gotobi / fix replications at 1-minute resolution (as forexdetox did)"
+  ],
+  "already_ingested": false,
+  "desk_status": "world_crawler reference only",
+  "verified_this_pass": "HTTP 200"
+ },
+ {
+  "name": "TrueFX historical ticks",
+  "url": "https://www.truefx.com/truefx-historical-downloads/",
+  "cost": "free with registration",
+  "history": "2009-",
+  "frequency": "tick (bid/ask)",
+  "point_in_time": "PIT-safe",
+  "enables": [
+   "independent spread benchmark vs Fusion"
+  ],
+  "already_ingested": false,
+  "desk_status": "world_crawler reference only",
+  "verified_this_pass": "HTTP 301 (login flow)"
+ },
+ {
+  "name": "ForexFactory weekly calendar JSON (with forecast)",
+  "url": "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+  "cost": "free",
+  "history": "current week only - vintage must be snapshotted",
+  "frequency": "live",
+  "point_in_time": "PIT only via desk snapshots (ff_calendar_vintage exists)",
+  "enables": [
+   "consensus surprise for event_reaction (EIA, NFP, CPI, PMIs)"
+  ],
+  "already_ingested": true,
+  "desk_status": "intelligence/ff_calendar_vintage + forexfactory dirs",
+  "verified_this_pass": "HTTP 200, forecast field present"
+ },
+ {
+  "name": "EIA Weekly Petroleum Status Report tables + natural gas storage",
+  "url": "https://www.eia.gov/petroleum/supply/weekly/schedule.php",
+  "cost": "free (API key for api.eia.gov)",
+  "history": "1982-",
+  "frequency": "weekly (Wed 10:30 ET; gas Thu 10:30 ET)",
+  "point_in_time": "PIT: schedule page gives holiday shifts; store release instant",
+  "enables": [
+   "event_reaction XTIUSD/XBRUSD/XNGUSD",
+   "inventory-level carry conditioner"
+  ],
+  "already_ingested": false,
+  "desk_status": "eia endpoints referenced in data_axis_miner.py/countries/us/pack.py; no EIA dataset in registry",
+  "verified_this_pass": "schedule page HTTP 200"
+ },
+ {
+  "name": "NY Fed primary dealer statistics API",
+  "url": "https://markets.newyorkfed.org/api/pd/latest/SBN2022.json",
+  "cost": "free JSON",
+  "history": "2001- (series breaks)",
+  "frequency": "weekly",
+  "point_in_time": "PIT: released Thursday for prior Wednesday",
+  "enables": [
+   "dealer UST positioning conditioner for UST10Y/UST05Y auction-cycle strength"
+  ],
+  "already_ingested": false,
+  "desk_status": "ingest_axes.py pulls NY Fed RRP and SOMA only",
+  "verified_this_pass": "HTTP 200"
+ },
+ {
+  "name": "Deribit public options book summary",
+  "url": "https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=BTC&kind=option",
+  "cost": "free",
+  "history": "live snapshot (history must be recorded)",
+  "frequency": "real-time",
+  "point_in_time": "PIT only if recorded forward",
+  "enables": [
+   "expiry-pin liquidity_gamma_reversal on BTCUSD/ETHUSD CFDs (crypto data informing MT5 CFDs only)"
+  ],
+  "already_ingested": false,
+  "desk_status": "referenced in shadow_institutional.py; purity checker aware; no OI series artifact seen",
+  "verified_this_pass": "HTTP 200"
+ },
+ {
+  "name": "Wikipedia pageviews REST API",
+  "url": "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/Gold/daily/20250101/20250105",
+  "cost": "free (rate-limited; set User-Agent)",
+  "history": "2015-07- (legacy stats earlier)",
+  "frequency": "daily",
+  "point_in_time": "PIT-safe (daily counts, not revised materially)",
+  "enables": [
+   "attention conditioner (exogenous_conditioner) for indices, gold, oil"
+  ],
+  "already_ingested": false,
+  "desk_status": "code in scripts/ingest_axes.py; no pageview artifact in data/axes",
+  "verified_this_pass": "HTTP 429 from shared IP (needs UA + throttle)"
+ },
+ {
+  "name": "GDELT 2.0 DOC/GKG",
+  "url": "https://api.gdeltproject.org/api/v2/doc/doc?query=%22gold%20price%22&mode=timelinetone&format=json",
+  "cost": "free (1 request / 5 s)",
+  "history": "2015- (15-minute updates)",
+  "frequency": "15 minutes",
+  "point_in_time": "PIT-safe if timestamped at ingest",
+  "enables": [
+   "news-tone conditioner for XAUUSD, XTIUSD, USDJPY; geopolitical risk regime"
+  ],
+  "already_ingested": false,
+  "desk_status": "data_registry: DISCOVERED, not yet fetched",
+  "verified_this_pass": "HTTP 429 rate limit (reachable)"
+ },
+ {
+  "name": "USDA NASS QuickStats (crop progress/condition)",
+  "url": "https://quickstats.nass.usda.gov/api",
+  "cost": "free API key",
+  "history": "decades",
+  "frequency": "weekly (Mon 16:00 ET in season)",
+  "point_in_time": "PIT: release instant must be stored",
+  "enables": [
+   "event_reaction CORN/WHEAT/SOYBEAN/COTTON",
+   "crop-condition conditioner"
+  ],
+  "already_ingested": false,
+  "desk_status": "no quickstats reference; WASDE referenced elsewhere",
+  "verified_this_pass": "HTTP 200"
+ }
+]

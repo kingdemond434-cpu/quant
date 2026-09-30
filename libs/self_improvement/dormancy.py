@@ -30,7 +30,6 @@ from __future__ import annotations
 
 import ast
 import re
-import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -81,14 +80,65 @@ class DormancyReport:
         return out
 
 
+#: Files under each searched root, read once PER ROOT SET. `_grep` is called once per dormant
+#: module, so the old shell-out re-walked the whole tree on every call -- hundreds of full-tree
+#: scans in one pass.
+#:
+#: KEYED ON THE ROOTS, and that is not decoration. The first version of this cache ignored its
+#: `paths` argument entirely, so whichever call ran first decided the corpus for every later one:
+#: `_scheduled` searches `ops` for shell runners and unit files, and would have been handed the
+#: python corpus from `scripts`/`libs` instead and silently found nothing. A cache that answers
+#: the wrong question quickly is worse than the slow call it replaced.
+_CORPUS: dict[tuple[str, ...], list[tuple[str, str]]] = {}
+
+#: `ops` holds shell runners, systemd units and the crontab manifest, none of them `.py`. A
+#: scheduler that names a script in a `.sh` is scheduling it just as surely as an import.
+_SUFFIXES = (".py", ".sh", ".ps1", ".cmd", ".service", ".timer", ".manifest", ".yaml", ".yml")
+
+
+def _load_corpus(paths: tuple[str, ...]) -> list[tuple[str, str]]:
+    cached = _CORPUS.get(paths)
+    if cached is not None:
+        return cached
+    out: list[tuple[str, str]] = []
+    for root in paths:
+        base = _ROOT / root
+        if not base.is_dir():
+            continue
+        for f in base.rglob("*"):
+            if not f.is_file() or f.suffix not in _SUFFIXES:
+                continue
+            if "__pycache__" in f.parts or ".git" in f.parts:
+                continue
+            try:
+                text = f.read_text("utf-8", errors="replace")
+            except OSError:
+                continue
+            out.append((f.relative_to(_ROOT).as_posix(), text))
+    _CORPUS[paths] = out
+    return out
+
+
 def _grep(pattern: str, *paths: str) -> list[str]:
-    """rg-free grep -rl; returns matching file paths (empty on no match)."""
+    """Which files match `pattern`. Pure Python: THIS HUNG THE WHOLE TEST SUITE (2026-09-24).
+
+    It used to shell out to `grep -rl -E`, which is a POSIX tool on a Windows-only desk. It
+    carried a 60-second timeout and hung anyway -- the traceback ends in
+    `communicate -> _communicate -> stdout_thread.join(timeout)`, because on Windows that timeout
+    governs the wait and not the pipe-draining threads behind it, so a child that never closes its
+    handles is waited on forever. The suite had therefore NEVER completed a run: not one failure
+    was reported, because collection finished and then the process simply stopped here.
+
+    Two things fixed at once. The shell-out is gone, so there is no child process to hang on and
+    no dependency on a tool this platform does not ship. And the corpus is read ONCE and held,
+    because this is called per dormant module and each call re-walked the entire tree.
+    """
+    corpus = _load_corpus(paths or ("scripts", "libs", "app", "api", "tests"))
     try:
-        p = subprocess.run(["grep", "-rl", "-E", pattern, *paths],
-                           cwd=_ROOT, capture_output=True, text=True, timeout=60, check=False)
-    except (subprocess.TimeoutExpired, OSError):
+        rx = re.compile(pattern)
+    except re.error:
         return []
-    return [ln for ln in (p.stdout or "").splitlines() if ln.strip()]
+    return [rel for rel, text in corpus if rx.search(text)]
 
 
 def _external_importers(rel: str) -> list[str]:

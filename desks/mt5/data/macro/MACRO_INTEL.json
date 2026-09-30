@@ -1,29 +1,30 @@
 {
- "at": "2026-09-12T12:20:29.339121+00:00",
+ "at": "2026-09-24T15:19:47.450736+00:00",
  "attribution": {
-  "at": "2026-09-12T12:20:33.963974+00:00",
+  "at": "2026-09-24T15:20:30.635364+00:00",
   "categories_seen": [
    "UNCLASSIFIED",
    "central_bank_policy"
   ],
   "ledger": {
-   "at": "2026-09-12T12:20:33.971407+00:00",
+   "at": "2026-09-24T15:20:30.652108+00:00",
    "categories": 2,
    "categories_with_sample": [],
    "min_category_n": 30,
    "path": "C:\\opt\\quant\\desks\\mt5\\data\\macro\\event_ledger.jsonl",
-   "rows": 113,
+   "rows": 151,
    "rows_with_capital_authority": 0,
    "rows_with_measured_reaction": 0,
    "sources": [
     "BOE",
     "EIA",
     "FED",
+    "ONS",
     "SEC"
    ]
   },
   "median_overreaction_ratio": null,
-  "n_attributions": 72,
+  "n_attributions": 113,
   "note": "Verification here is move-confirmation, not fact-checking. Named as a limitation rather than presented as truth.",
   "overreaction_reading": "UNMEASURED",
   "priced_calibration": {
@@ -45,15 +46,31 @@
     "contradicted": 0,
     "median_arrival_lag_s": null,
     "median_lead_to_move_s": null,
-    "n": 21,
+    "n": 15,
+    "source": "EIA"
+   },
+   {
+    "confirmed": 0,
+    "contradicted": 0,
+    "median_arrival_lag_s": null,
+    "median_lead_to_move_s": null,
+    "n": 22,
     "source": "FED"
+   },
+   {
+    "confirmed": 0,
+    "contradicted": 0,
+    "median_arrival_lag_s": null,
+    "median_lead_to_move_s": null,
+    "n": 25,
+    "source": "SEC"
    }
   ]
  },
  "categories_minted": [],
  "category_loadings": {},
  "coverage": {
-  "at": "2026-09-12T12:20:29.356628+00:00",
+  "at": "2026-09-24T15:19:47.520102+00:00",
   "coverage_fraction": 0.926,
   "domains_blind": [
    "rates_futures_repricing",
@@ -382,7 +399,7 @@
   ]
  },
  "credibility": {
-  "at": "2026-09-12T12:20:29.356578+00:00",
+  "at": "2026-09-24T15:19:47.520043+00:00",
   "min_source_n": 12,
   "min_tier_sources": 4,
   "note": "Tier priors are a starting ordering; both levels re-fit from measured verification outcomes written by attribution.py. Speed is reported SEPARATELY from reliability -- a reliable source that arrives after the move has an unpriced fraction of zero and is worth nothing to trade on.",
@@ -404,7 +421,29 @@
     "n_speed": 0,
     "n_verified": 0,
     "p_true": 0.9756,
+    "source": "EIA",
+    "status": "UNMEASURED",
+    "tier": "OFFICIAL",
+    "verdict": "speed UNMEASURED"
+   },
+   {
+    "lead_s": null,
+    "n_falsified": 0,
+    "n_speed": 0,
+    "n_verified": 0,
+    "p_true": 0.9756,
     "source": "FED",
+    "status": "UNMEASURED",
+    "tier": "OFFICIAL",
+    "verdict": "speed UNMEASURED"
+   },
+   {
+    "lead_s": null,
+    "n_falsified": 0,
+    "n_speed": 0,
+    "n_verified": 0,
+    "p_true": 0.9756,
+    "source": "SEC",
     "status": "UNMEASURED",
     "tier": "OFFICIAL",
     "verdict": "speed UNMEASURED"
@@ -446,20 +485,21 @@
   "status": "UNMEASURED"
  },
  "interrupt": null,
- "items_seen": 90,
+ "items_seen": 123,
  "ledger": {
-  "at": "2026-09-12T12:20:29.347605+00:00",
+  "at": "2026-09-24T15:19:47.501358+00:00",
   "categories": 2,
   "categories_with_sample": [],
   "min_category_n": 30,
   "path": "C:\\opt\\quant\\desks\\mt5\\data\\macro\\event_ledger.jsonl",
-  "rows": 113,
+  "rows": 151,
   "rows_with_capital_authority": 0,
   "rows_with_measured_reaction": 0,
   "sources": [
    "BOE",
    "EIA",
    "FED",
+   "ONS",
    "SEC"
   ]
  },
@@ -784,7 +824,7 @@
   "why": "the layer has never sized a position -- no category has passed replay clearance -- so there is no with-minus-without to measure. Ledger rows and replay clearance are the leading indicators until there is."
  },
  "replay": {
-  "at": "2026-09-12T12:20:33.963209+00:00",
+  "at": "2026-09-24T15:20:30.632905+00:00",
   "categories_cleared_for_capital": [
    "UNCLASSIFIED"
   ],
@@ -803,17 +843,17 @@
    "The pre-arrival window's own microstructure. With H1 as the fastest series for most instruments, a sub-hour pre-move is UNMEASURABLE rather than estimated."
   ],
   "gate": "assess.py refuses capital authority to any category not in categories_cleared_for_capital. With an empty ledger that is every category, which is why nothing in this package can size a position today.",
-  "ledger_rows": 113,
+  "ledger_rows": 151,
   "replayed": {
-   "at": "2026-09-12T12:20:33.963279+00:00",
+   "at": "2026-09-24T15:20:30.633686+00:00",
    "clean": true,
    "errors": [],
-   "n_events": 113,
-   "n_scored": 113,
+   "n_events": 151,
+   "n_scored": 151,
    "n_violations": 0,
    "per_category": {
-    "UNCLASSIFIED": 111,
-    "central_bank_policy": 2
+    "UNCLASSIFIED": 148,
+    "central_bank_policy": 3
    },
    "violations": []
   }
@@ -827,7 +867,7 @@
  "rows_written": 0,
  "source_failures": [],
  "taxonomy": {
-  "at": "2026-09-12T12:20:29.356521+00:00",
+  "at": "2026-09-24T15:19:47.519957+00:00",
   "emergent": [],
   "n_categories": 16,
   "seed_areas_never_observed": [
@@ -848,7 +888,7 @@
    "volatility_repricing"
   ],
   "with_instances": {
-   "central_bank_policy": 2
+   "central_bank_policy": 3
   }
  }
 }

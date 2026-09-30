@@ -30,6 +30,41 @@ def _bars(hours: int = 120) -> pd.DataFrame:
     return df
 
 
+def test_failed_connection_replaces_stale_ok_report_but_keeps_window_state(tmp_path, monkeypatch):
+    import json
+
+    out = tmp_path / "E8_GOLD.json"
+    state = tmp_path / "state.json"
+    out.write_text('{"status":"OK"}', "utf-8")
+    state.write_text('{"windows":{"asia":{"position_id":123}}}', "utf-8")
+    before = state.read_bytes()
+    monkeypatch.setattr(g, "OUT", out)
+    monkeypatch.setattr(g, "STATE", state)
+    g._failed_pass("MT5_UNAVAILABLE", armed=True)
+    assert json.loads(out.read_text("utf-8"))["status"] == "MT5_UNAVAILABLE"
+    assert state.read_bytes() == before
+
+
+def test_main_uses_configured_terminal_and_never_runs_on_failed_attach(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from mt5desk import config
+
+    from research import mt5_session
+
+    calls = []
+    fake = SimpleNamespace(last_error=lambda: (-10005, "timeout"))
+    monkeypatch.setitem(sys.modules, "MetaTrader5", fake)
+    monkeypatch.setattr(config, "terminal_path", lambda: "canonical/terminal64.exe")
+    monkeypatch.setattr(mt5_session, "attach_or_initialize",
+                        lambda api, **kw: calls.append((api, kw)) or False)
+    monkeypatch.setattr(g, "OUT", tmp_path / "report.json")
+    monkeypatch.setattr(g, "LOG", tmp_path / "log")
+    monkeypatch.setattr(g, "ARMED_MARKER", tmp_path / "unarmed")
+    assert g.main([]) == 1
+    assert calls == [(fake, {"path": "canonical/terminal64.exe", "timeout": 15000})]
+
+
 def test_a_window_is_planned_once_at_or_after_its_signal_hour_before_the_cancel_hour() -> None:
     df = _bars()
     # 07:30 server: the Asia window (signal hour 7, range 00-07) is due; london_am (13) is not.
@@ -107,3 +142,31 @@ def test_e8_uses_the_same_profit_ratchet_as_the_fusion_gold_book() -> None:
     decision = g.trail_decision(pos, window, bars, current_stop=90.0)
     assert decision is not None and decision.moves
     assert decision.new_stop > 90.0 and decision.protected_r_after > decision.protected_r_before
+
+
+def test_e8_gold_ratchet_accounts_for_its_own_round_trip_cost() -> None:
+    idx = pd.date_range("2026-09-16", periods=100, freq="h", tz="UTC")
+    close = np.full(len(idx), 100.0)
+    bars = pd.DataFrame({"open": close, "high": close + 5.0, "low": close - 5.0,
+                         "close": close}, index=idx)
+    bars.loc[idx[-4]:, "high"] = [107.0, 108.0, 109.0, 109.0]
+    pos = {"id": 9, "side": "buy", "avgPrice": 100.0,
+           "openDate": int(idx[-4].timestamp() * 1000)}
+    window = {"orders": {"buy_stop": {"price": 100.0, "sl": 90.0}}}
+    free = g.trail_decision(pos, window, bars, current_stop=90.0)
+    costed = g.trail_decision(
+        pos, window, bars, current_stop=90.0, cost_per_unit=0.5, spread=0.2)
+    assert free is not None and costed is not None
+    assert costed.new_stop > free.new_stop
+    assert costed.breakeven_floor
+
+
+def test_terminal_dependent_e8_tasks_run_in_the_interactive_desktop() -> None:
+    installer = (_DESK / "scripts" / "install_e8_tasks.ps1").read_text("utf-8")
+    assert '[switch] $RequiresDesktop' in installer
+    assert 'New-ScheduledTaskPrincipal -UserId $InteractiveUser -LogonType Interactive' in installer
+    gold = installer[installer.index('Set-E8Task -Name "E8-Gold"'):]
+    gold = gold[:gold.index('Set-E8Task -Name "E8-Spreads"')]
+    assert "-RequiresDesktop" in gold
+    spreads = installer[installer.index('Set-E8Task -Name "E8-Spreads"'):]
+    assert "-RequiresDesktop" in spreads

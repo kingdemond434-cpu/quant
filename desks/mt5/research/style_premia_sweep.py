@@ -85,7 +85,10 @@ def run(symbols: list[str] | None = None, budget_s: float = 1200.0) -> dict:
                                                                 else "trend", name)
             for entry in ENTRIES:
                 for hold in HOLDS:
-                    params = {"style": style, "combo": combo, "entry": entry, "hold_bars": hold}
+                    asset_class = str((meta.get(sym) or {}).get("asset_class") or "")
+                    params = {"style": style, "combo": combo, "entry": entry,
+                              "hold_bars": hold, "asset_class": asset_class,
+                              "speeds": [21, 63, 252]}
                     sig = family_style_premia(d, swap_diff=swap, risk=risk, **params)
                     sc = pc.screen(d, sig, cost, unf)
                     if sc is None:

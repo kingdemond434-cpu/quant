@@ -38,7 +38,7 @@ import glob
 import json
 import os
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -50,6 +50,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
         sys.path.insert(0, _p)
 
 OUT = DESK / "reports" / "ROW_CONVERSION.json"
+COMPILER_REPORT = DESK / "data" / "hypotheses" / "miner_candidates.json"
 
 #: Dispositions that END the row's life legitimately. A row here is DONE: either it produced
 #: cells or the desk has stated, in its own vocabulary, why it must not.
@@ -60,6 +61,32 @@ TERMINAL_CELL = ("EXACT_RECIPE", "STRUCTURED_COT", "STRUCTURED_EVENT", "STRUCTUR
 TERMINAL_REFUSAL = ("OPERATIONAL_ROW", "EMPTY_CAPTURE")
 #: NOT terminal. Work, waiting to be done, and the number that must ratchet DOWN.
 BACKLOG = ("NEEDS_SYMBOL_EXTRACTION", "NEEDS_EXACT_RULE_EXTRACTION")
+
+# A candidate is not yield merely because a compiler returned a dictionary.  These are the
+# fields the downstream gauntlet needs to reproduce and judge a real strategy cell.  An empty
+# params mapping is valid: it means the registered family's defaults were the complete tested
+# parameterisation.  Missing params is not valid and must never be silently treated the same.
+REQUIRED_CELL_FIELDS = ("symbol", "family", "params", "mechanism_status", "mechanism_note")
+
+
+def _valid_cell(row: Any) -> tuple[bool, str]:
+    """Return whether *row* is a real, reproducible AlphaCell and the exact defect if not."""
+    if not isinstance(row, dict):
+        return False, "candidate is not an object"
+    missing = [key for key in REQUIRED_CELL_FIELDS if key not in row]
+    if missing:
+        return False, "missing " + ",".join(missing)
+    if not str(row.get("symbol") or "").strip():
+        return False, "blank symbol"
+    if not str(row.get("family") or "").strip():
+        return False, "blank family"
+    if not isinstance(row.get("params"), dict):
+        return False, "params is not a mapping"
+    if str(row.get("mechanism_status") or "").upper() != "NAMED":
+        return False, "mechanism is not NAMED"
+    if len(str(row.get("mechanism_note") or "").strip()) < 12:
+        return False, "mechanism note is absent or too thin to falsify"
+    return True, ""
 
 
 def _rows_of(path: str) -> list[dict[str, Any]]:
@@ -86,7 +113,114 @@ def _rows_of(path: str) -> list[dict[str, Any]]:
     return out
 
 
+def _from_compiler_report(path: Path) -> dict[str, Any] | None:
+    """Build the gate from the canonical compiler pass instead of recompiling the corpus.
+
+    The compiler already opened, deduplicated and classified every row in its bounded intake.
+    Repeating that work here made the hourly fence take longer than the pipeline it audited and,
+    on 42k files, terminate without an artifact.  The compiler now publishes the exact row-level
+    contract; this fence verifies it and fails closed when an older compiler omitted it.
+    """
+    try:
+        source = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(source, dict):
+        return None
+    contract = source.get("conversion_contract")
+    per = source.get("per_source")
+    if not isinstance(contract, dict) or not isinstance(per, dict):
+        return {
+            "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+            "source": str(path), "n_files": None, "n_rows": source.get("rows_accounted"),
+            "n_candidates": source.get("executable_candidates"), "n_valid_candidates": None,
+            "n_invalid_candidates": None, "invalid_candidate_reasons": {}, "census": {},
+            "summary": {"terminal_cells": None, "terminal_refusals": None,
+                        "backlog": None, "unclassified_disposition": None,
+                        "terminal_share": None, "backlog_share": None,
+                        "convertible_rows": None, "converted_rows": None,
+                        "convertible_conversion_rate": None, "silent_loss": None},
+            "failures": ["canonical compiler report predates the row-conversion contract; "
+                         "run miner_candidate_compiler before this fence"],
+            "per_producer": [], "worklist": [],
+        }
+    producer_rows: list[dict[str, Any]] = []
+    for producer, raw in sorted(per.items()):
+        if not isinstance(raw, dict):
+            continue
+        convertible = int(raw.get("convertible_rows") or 0)
+        converted = int(raw.get("converted_rows") or 0)
+        producer_rows.append({
+            "producer": producer, "rows": int(raw.get("rows") or 0),
+            "convertible_rows": convertible, "converted_rows": converted,
+            "candidates": int(raw.get("candidates") or 0),
+            "valid_cells": int(raw.get("candidates") or 0),
+            "invalid_cells": int(raw.get("invalid_cells") or 0),
+            "valid_refusals": int(raw.get("valid_refusals") or 0),
+            "backlog": int(raw.get("unresolved_rows") or 0),
+            "convertible_conversion_rate": round(converted / convertible, 6)
+            if convertible else 1.0,
+            "owes_convertible_rows": convertible - converted,
+        })
+    failures: list[str] = []
+    silent = int(contract.get("silent_loss") or 0)
+    unresolved = int(contract.get("unresolved_rows") or 0)
+    invalid = int(contract.get("invalid_cells") or 0)
+    intake = source.get("intake") if isinstance(source.get("intake"), dict) else {}
+    if silent:
+        failures.append(f"{silent} convertible row(s) emitted no valid docket AlphaCell")
+    if invalid:
+        failures.append(f"{invalid} malformed candidate(s) were refused as fake yield")
+    if unresolved:
+        failures.append(f"{unresolved} source row(s) still need a terminal deepening decision")
+    if intake.get("bound_hit"):
+        failures.append(f"compiler intake bound left {int(intake.get('deferred_files') or 0)} "
+                        "source file(s) unread this pass")
+    if not bool(contract.get("complete")) and not failures:
+        failures.append("compiler marked the conversion contract incomplete")
+    rows = int(source.get("rows_accounted") or 0)
+    candidates = int(source.get("executable_candidates") or 0)
+    refusals = sum(r["valid_refusals"] for r in producer_rows)
+    return {
+        "generated_utc": datetime.now(UTC).isoformat(timespec="seconds"),
+        "compiler_at": source.get("compiled_at"), "source": str(path),
+        "n_files": int(intake.get("files_seen") or 0), "n_rows": rows,
+        "n_candidates": candidates, "n_valid_candidates": candidates,
+        "n_invalid_candidates": invalid, "invalid_candidate_reasons": {}, "census": {},
+        "summary": {
+            "terminal_cells": int(contract.get("converted_rows") or 0),
+            "terminal_refusals": refusals,
+            "backlog": unresolved, "unclassified_disposition": invalid,
+            "terminal_share": round((int(contract.get("converted_rows") or 0) + refusals)
+                                    / max(rows, 1), 6),
+            "backlog_share": round(unresolved / max(rows, 1), 6),
+            "convertible_rows": int(contract.get("convertible_rows") or 0),
+            "converted_rows": int(contract.get("converted_rows") or 0),
+            "convertible_conversion_rate": contract.get("convertible_conversion_rate"),
+            "silent_loss": silent, "conversion_debt": silent,
+            "disposition_debt": unresolved,
+        },
+        "failures": failures, "per_producer": producer_rows,
+        "what_the_refusals_are": {
+            "EMPTY_CAPTURE": "collector captured no research evidence",
+            "OPERATIONAL_ROW": "fetch/status bookkeeping, not a hypothesis",
+            "BANNED_FAMILY": "governance refusal; never forged into another family",
+        },
+        "worklist": [
+            {"producer": r["producer"], "rows": r["backlog"],
+             "remedy": ("deepening must recover an executable rule or record a specific "
+                        "terminal refusal/blocker")}
+            for r in sorted(producer_rows, key=lambda x: -x["backlog"])
+            if r["backlog"]
+        ][:25],
+    }
+
+
 def audit(limit: int | None = None) -> dict[str, Any]:
+    if limit is None and COMPILER_REPORT.exists():
+        compiled = _from_compiler_report(COMPILER_REPORT)
+        if compiled is not None:
+            return compiled
     from research.miner_candidate_compiler import compile_row
 
     universe = set(json.loads((DESK / "data" / "universe" / "universe.json")
@@ -102,24 +236,81 @@ def audit(limit: int | None = None) -> dict[str, Any]:
     disp: Counter = Counter()
     shapes: Counter = Counter()
     cells = 0
+    valid_cells = 0
+    invalid_cells = 0
+    invalid_reasons: Counter = Counter()
     rows = 0
+    per_producer: dict[str, Counter[str]] = defaultdict(Counter)
     for f in files:
         seat = os.path.basename(os.path.dirname(f))
         for r in _rows_of(f):
             rows += 1
+            producer = str(r.get("producer") or r.get("generator") or seat).strip() or seat
+            p = per_producer[producer]
+            p["rows"] += 1
             try:
                 c, d = compile_row(seat, r, universe)
             except Exception as exc:                       # a crash is a disposition too
                 c, d = [], f"ERROR:{type(exc).__name__}"
             disp[d] += 1
             cells += len(c)
+            good = 0
+            for candidate in c:
+                ok, why = _valid_cell(candidate)
+                if ok:
+                    good += 1
+                else:
+                    invalid_cells += 1
+                    invalid_reasons[why] += 1
+            valid_cells += good
+            p["candidates"] += len(c)
+            p["valid_cells"] += good
+            p["invalid_cells"] += len(c) - good
+            if d in TERMINAL_REFUSAL or d == "BANNED_FAMILY":
+                p["valid_refusals"] += 1
+            else:
+                # Every evidence-bearing row is convertible.  It is converted only when at
+                # least one fully specified AlphaCell exists; a disposition label alone cannot
+                # manufacture yield.
+                p["convertible_rows"] += 1
+                if good:
+                    p["converted_rows"] += 1
             if d in BACKLOG:
+                p["backlog"] += 1
                 shapes[(seat, str(r.get("kind") or r.get("type") or ""), d)] += 1
 
     n_cell = sum(v for k, v in disp.items() if k in TERMINAL_CELL)
-    n_ref = sum(v for k, v in disp.items() if k in TERMINAL_REFUSAL)
+    n_ref = sum(v for k, v in disp.items() if k in TERMINAL_REFUSAL or k == "BANNED_FAMILY")
     n_back = sum(v for k, v in disp.items() if k in BACKLOG)
     n_other = rows - n_cell - n_ref - n_back
+
+    producer_rows: list[dict[str, Any]] = []
+    for producer, counts in sorted(per_producer.items()):
+        convertible = int(counts["convertible_rows"])
+        converted = int(counts["converted_rows"])
+        producer_rows.append({
+            "producer": producer,
+            **{key: int(counts[key]) for key in (
+                "rows", "convertible_rows", "converted_rows", "candidates", "valid_cells",
+                "invalid_cells", "valid_refusals", "backlog")},
+            "convertible_conversion_rate": round(converted / convertible, 6)
+            if convertible else 1.0,
+            "owes_convertible_rows": convertible - converted,
+        })
+
+    convertible_rows = sum(r["convertible_rows"] for r in producer_rows)
+    converted_rows = sum(r["converted_rows"] for r in producer_rows)
+    failures: list[str] = []
+    if n_back:
+        failures.append(f"{n_back} convertible row(s) remain in extraction backlog")
+    if n_other:
+        failures.append(f"{n_other} row(s) have an unknown/crashed disposition")
+    if invalid_cells:
+        failures.append(f"{invalid_cells} emitted candidate(s) are not valid AlphaCells")
+    if converted_rows != convertible_rows:
+        failures.append(
+            f"only {converted_rows}/{convertible_rows} convertible row(s) emitted at least one "
+            "valid AlphaCell")
 
     worklist = [{"seat": s, "kind": k, "disposition": d, "rows": n,
                  "remedy": ("write a structured converter for this (seat, kind): the rows carry "
@@ -137,6 +328,9 @@ def audit(limit: int | None = None) -> dict[str, Any]:
         "n_files": len(files),
         "n_rows": rows,
         "n_candidates": cells,
+        "n_valid_candidates": valid_cells,
+        "n_invalid_candidates": invalid_cells,
+        "invalid_candidate_reasons": dict(invalid_reasons.most_common()),
         "census": dict(disp.most_common()),
         "summary": {
             "terminal_cells": n_cell,
@@ -145,7 +339,16 @@ def audit(limit: int | None = None) -> dict[str, Any]:
             "unclassified_disposition": n_other,
             "terminal_share": round((n_cell + n_ref) / max(rows, 1), 4),
             "backlog_share": round(n_back / max(rows, 1), 4),
+            "convertible_rows": convertible_rows,
+            "converted_rows": converted_rows,
+            "convertible_conversion_rate": round(
+                converted_rows / max(convertible_rows, 1), 6),
+            "silent_loss": convertible_rows - converted_rows,
+            "conversion_debt": convertible_rows - converted_rows,
+            "disposition_debt": n_back,
         },
+        "failures": failures,
+        "per_producer": producer_rows,
         "what_the_refusals_are": {
             "EMPTY_CAPTURE": ("no text, no instrument, no structure: the crawler captured a LINK "
                               "and not a page. A COLLECTOR defect, and no extraction can ever "
@@ -173,11 +376,18 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  terminal refusals  {s['terminal_refusals']:8}   (named, and correct to refuse)")
     print(f"  BACKLOG            {s['backlog']:8}   {s['backlog_share']:.1%} -- must ratchet DOWN")
     print(f"  terminal share     {s['terminal_share']:.1%}")
+    print(f"  CONVERSION DEBT    {s.get('conversion_debt', s['silent_loss']):8}"
+          "   (must always be zero)")
     print("\n  WORKLIST -- the (seat, kind) shapes that would convert next, largest first:")
     for w in doc["worklist"][:12]:
-        print(f"    {w['rows']:7}  {w['seat']:22} {str(w['kind'])[:16]:16} {w['disposition']}")
+        producer = str(w.get("seat") or w.get("producer") or "?")
+        print(f"    {int(w.get('rows') or 0):7}  {producer[:22]:22} "
+              f"{str(w.get('kind') or '')[:16]:16} "
+              f"{w.get('disposition') or 'OWES_TERMINAL_DISPOSITION'}")
     print(f"  -> {OUT}")
-    return 0
+    for failure in doc["failures"]:
+        print(f"  FAIL  {failure}")
+    return 1 if doc["failures"] else 0
 
 
 if __name__ == "__main__":

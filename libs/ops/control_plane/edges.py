@@ -121,7 +121,7 @@ REQUIRED_EDGES: tuple[Edge, ...] = (
     Edge("leg:promoter", "leg:pf_allocator",
          "desks/mt5/data/sleeves.json", "promoter->allocator",
          "a promoted sleeve the allocator does not see gets no fraction"),
-    Edge("leg:pf_allocator", "task:MT5-Gateway",
+    Edge("leg:pf_allocator", "task:MT5-GatewayResident",
          "desks/mt5/reports/pf_allocation.json", "allocator->gateway",
          "the gateway deploys the allocator's fractions un-re-shrunk, or the book is not the "
          "book the evidence bought (growth governance)"),

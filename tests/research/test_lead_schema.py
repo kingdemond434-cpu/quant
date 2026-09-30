@@ -347,6 +347,17 @@ def test_to_row_and_from_row_round_trip_through_json() -> None:
         assert again == lead
 
 
+def test_every_serialized_lead_carries_the_global_shared_contract() -> None:
+    lead = _one(LITERATURE, seat="literature", run="v7")
+    row = ls.to_row(lead)
+    assert set(ls.SHARED_OUTPUT_FIELDS).issubset(row)
+    assert set(ls.TIMING_FIELDS) == set(row["availability_metadata"])
+    assert row["target_lane"] in ls.EVALUATION_LANES
+    assert row["canonical_source_id"] == lead.source_id
+    assert row["input_version_id"] and row["content_hash"]
+    assert row["consumer_acknowledgement"] is None
+
+
 # --------------------------------------------------------------- text utilities
 
 def test_direction_is_a_majority_and_a_tie_is_no_direction() -> None:

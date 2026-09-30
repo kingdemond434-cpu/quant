@@ -176,21 +176,45 @@ def _trade(r: object, sleeve: str, basis: str) -> dict | None:
     if not et or not np.isfinite(rm) or not np.isfinite(entry) or entry <= 0:
         return None
     return {"sleeve": sleeve, "basis": basis, "entry_time": str(et), "exit_time": str(xt or ""),
-            "side": _side(r.get("side", 1), basis), "entry": entry, "r_multiple": rm,
+            **{key: r.get(key) for key in ("account", "server", "position_id", "deal")},
+            "side": _side(_first(r, "entry_side", "side"), basis),
+            "entry": entry, "r_multiple": rm,
             "reason": _reason_bucket(r.get("reason")), "reason_raw": r.get("reason")}
 
 
+def _path_key(row: dict) -> tuple | None:
+    """Legacy excursions are shadow-only; live evidence needs broker identity."""
+    basis = row.get("basis") or "shadow"
+    base = (basis, row.get("sleeve"), row.get("entry_time"))
+    if basis == "live":
+        identity = tuple(row.get(k) for k in ("account", "server", "position_id", "deal"))
+        if any(value is None or value == "" for value in identity):
+            return None
+        return (*base, *(str(value) for value in identity))
+    return base
+
+
 def join_excursions(trades: list[dict], excursions: list[dict]) -> list[dict]:
-    """Attach mfe_r / mae_r by (sleeve, entry_time); a trade without a path row stays unjoined."""
-    path = {f"{e.get('sleeve')}|{e.get('entry_time')}": e for e in excursions
-            if isinstance(e, dict)}
+    """Never substitute a shadow path or another account's fill for live evidence."""
+    path: dict[tuple, dict] = {}
+    ambiguous: set[tuple] = set()
+    for e in excursions:
+        if not isinstance(e, dict) or (key := _path_key(e)) is None:
+            continue
+        if key in path and path[key] != e:
+            ambiguous.add(key)
+        else:
+            path[key] = e
     out = []
     for t in trades:
-        e = path.get(f"{t['sleeve']}|{t['entry_time']}")
+        key = _path_key(t)
+        e = path.get(key) if key is not None and key not in ambiguous else None
         row = dict(t)
         if e is not None and e.get("mfe_r") is not None and e.get("mae_r") is not None:
             try:
                 row["mfe_r"], row["mae_r"] = float(e["mfe_r"]), float(e["mae_r"])
+                if not np.isfinite(row["mfe_r"]) or not np.isfinite(row["mae_r"]):
+                    raise ValueError("nonfinite excursion is not evidence")
                 row["bars"] = int(e.get("bars") or 0)
                 row.update(decompose(row))
                 row["joined"] = True

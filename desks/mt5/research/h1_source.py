@@ -317,6 +317,15 @@ def from_mt5(sym: str, start: datetime, timeframe: str = "H1") -> Bars | None:
                     continue
             account = mt5.account_info()
             server = str(getattr(account, "server", "unknown"))
+            # `copy_rates_range` returns None for perfectly valid Fusion instruments that are
+            # not currently selected in Market Watch.  That is a terminal subscription state,
+            # not missing history.  Select the named instrument explicitly before reading bars;
+            # this grants no order authority and mirrors the universe collector's contract.
+            info = mt5.symbol_info(sym)
+            if info is None:
+                continue
+            if not bool(getattr(info, "visible", False)) and not mt5.symbol_select(sym, True):
+                continue
             rates = mt5.copy_rates_range(sym, tf_code, start,
                                          datetime.now(UTC))
             if rates is None or len(rates) < 100:
@@ -507,6 +516,7 @@ def _accepts_timeframe(fn) -> bool:
 def fetch_h1(sym: str, start: datetime,
              prefer: str | None = None,
              prefer_promotion_authority: bool = False,
+             require_coverage: bool = False,
              timeframe: str = "H1") -> Bars | None:
     """First source that returns usable bars, in quality order.
 
@@ -546,6 +556,13 @@ def fetch_h1(sym: str, start: datetime,
         except Exception:
             continue
         if b is not None and b.n > 0:
+            # A non-empty source can still be unusable for a forward clock. Previously the first
+            # stale MT5 reply stopped the chain, the caller rejected it for incomplete coverage,
+            # and a fresher Fusion cache was never tried. One terminal incident consequently
+            # marked the entire 821-clock book BLOCKED_NO_BARS in the same second. Historical
+            # callers keep the old first-nonempty behavior; forward/certification callers opt in.
+            if require_coverage and not b.covers(start)[0]:
+                continue
             if not prefer_promotion_authority or b.promotion_authority:
                 return b
             if best_proxy is None:

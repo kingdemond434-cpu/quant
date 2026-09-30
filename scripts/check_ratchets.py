@@ -250,6 +250,18 @@ def _disk_headroom(d: Any) -> float | None:
     return min(1.0, max(0.0, float(days) / _disk_mod.WARN_DAYS))
 
 
+def _prereg_coverage(d: Any) -> float | None:
+    """Share of donated rows carrying a pre-registration hash. UNMEASURED, never 0, when the
+    census has not run -- an absent artifact is a real answer and not a clean verdict."""
+    if not isinstance(d, dict):
+        return None
+    don = d.get("donations")
+    if not isinstance(don, dict):
+        return None
+    cov = don.get("coverage")
+    return float(cov) if isinstance(cov, (int, float)) else None
+
+
 def _alert_delivery(path: Path) -> float | None:
     try:
         lines = path.read_text("utf-8").splitlines()[-500:]
@@ -313,6 +325,16 @@ _METRICS: dict[str, tuple[str, Callable[[Any], float | None], float | None, str]
     # fill rate on ~2026-08-05 went unnoticed for a week and the row's own 25.1-day runway was
     # still being quoted when the true figure was 3.0 days. 6h = many passes of the continuously
     # running miner, so a dead miner reads STALE rather than green on a frozen runway.
+    # R0784: the share of donated rows whose hypothesis card was hashed BEFORE the verdict. It
+    # was 0.54% when first measured on 2026-09-23 -- `register` raised on a missing `horizon`,
+    # the whole loop sat in one try, and a bare except swallowed it, so 535,025 of 537,933 rows
+    # reached the gauntlet with nothing fixing their specification ahead of their evidence. The
+    # floor is CUMULATIVE on purpose: the historical denominator never shrinks, so the only way
+    # this number rises is by pre-registering new donations, and it can never be improved by
+    # donating fewer cells. 3h = three passes of the hourly census, so a dead fence reads STALE.
+    "prereg_coverage": (
+        "desks/mt5/reports/PREREG_COVERAGE.json", _prereg_coverage, 3.0,
+        "python scripts/check_preregistration.py"),
     "disk_headroom_ratio": (
         "data/moat_mine.json", _disk_headroom, 6.0,
         "python -c \"import json;print(json.load(open('data/moat_mine.json'))['closure']['disk'])\""),

@@ -28,8 +28,13 @@ def _fn_source(name: str) -> str:
 
 
 # ----------------------------------------------------------------- the pool is sized off the box
-def _worker_count_with(cores: int, budget_mb: float, per_worker_mb: float, env: dict) -> int:
-    """Run the real `_worker_count` against a stubbed box."""
+def _worker_count_with(cores: int, budget_mb: float, per_worker_mb: float, env: dict,
+                       closed: bool = False, reserved: int = 3) -> int:
+    """Run the real `_worker_count` against a stubbed box and a stubbed market clock.
+
+    Since the WEEKEND MAX / SESSION MINIMUM change (2026-09-16, in `_worker_count` itself) the
+    function also reads `market_closed()` and `SESSION_RESERVED_CORES` (default 3), so the
+    harness injects both; without them every call raised NameError."""
     class _OS:
         environ = env
 
@@ -37,13 +42,18 @@ def _worker_count_with(cores: int, budget_mb: float, per_worker_mb: float, env: 
         def cpu_count():
             return cores
 
-    ns: dict = {"os": _OS, "MEMORY_BUDGET_MB": budget_mb, "PER_WORKER_MB": per_worker_mb}
+    ns: dict = {"os": _OS, "MEMORY_BUDGET_MB": budget_mb, "PER_WORKER_MB": per_worker_mb,
+                "market_closed": lambda: closed, "SESSION_RESERVED_CORES": reserved}
     exec(textwrap.dedent(_fn_source("_worker_count")), ns)
     return ns["_worker_count"]()
 
 
 def test_workers_are_bounded_by_cores_minus_one() -> None:
-    assert _worker_count_with(cores=16, budget_mb=100_000, per_worker_mb=768, env={}) == 15
+    """In session the terminal, gateway and hourly cycle keep SESSION_RESERVED_CORES (3, was 1
+    before 2026-09-16); at the weekend close every core goes to the judge."""
+    assert _worker_count_with(cores=16, budget_mb=100_000, per_worker_mb=768, env={}) == 13
+    assert _worker_count_with(cores=16, budget_mb=100_000, per_worker_mb=768, env={},
+                              closed=True) == 16
 
 
 def test_workers_are_bounded_by_the_memory_budget() -> None:

@@ -18,13 +18,28 @@ running forward clock:
                     state features, scored WALK-FORWARD against the unrouted mean
     p_alpha_now     P(alpha > 0 | the state the desk is in this minute)
 
-THE STATE, five axes, each measured from the desk's own bars and clock -- none is a claim.
+THE STATE, six axes, each measured from the desk's own bars and clock -- none is a claim.
 `vol`: the symbol's trailing 24-bar realised vol, cut into terciles on the distribution BEFORE
 the sleeve's first trade, a causal cut so no trade helps define its own bucket (the z-score the
 gate sees is standardised on that same pre-window). `session`: `mt5desk.family_call.SESSIONS`
 server hours. `usd`: the basket's sign against its own 120-bar mean (USDX, else a signed
 major). `dow`: day of week, as sin/cos so Friday sits next to Monday. `risk`: the cross-asset
-sign, US500's 20-day trend, where the box carries US500 bars.
+sign, US500's 20-day trend, where the box carries US500 bars. `hmm`: the LATENT one, below.
+
+WHY THIS ORGAN WAS DARK, AND WHAT THE HMM AXIS FIXES (2026-09-24). Measured on the box: 258
+sleeves, 208 with no trade at all, 50 published, and ZERO SCORED -- 34 under the 24-trade fold
+minimum and 16 with no state feature that varied over their trades. The largest sleeve in the
+whole book had 23 trades, so the walk-forward path could not score ONE, and "no router beats its
+unrouted model" was a negative result for a test that had never run. The cause was architectural:
+the organ was fitting a regime model per sleeve, out of that sleeve's own trades, and most
+sleeves will never trade enough for that. A hidden Markov model describes the MARKET, not the
+sleeve. `hmm` is fitted by Baum-Welch on the symbol's OWN H1 BARS (`libs.regime.bar_states`),
+labels every hour causally, and so needs no sleeve to have traded even once. Its state count is
+chosen by held-out predictive log-density, not by taste. Alongside it, `pooled_router` scores the
+sleeves the fold minimum refuses, by PREQUENTIAL partial pooling (`libs.regime.pooling`): a thin
+sleeve borrows its family's state effect instead of being refused an answer, because small n is a
+WIDE answer, not an absent one. The bar did not move -- the same proper score and the same tax
+judge both paths, and a sleeve with nothing to predict from is still published UNMEASURED.
 
 ACTIVATION IS MEASURED AND TWO-SIDED, which is the whole point (GROWTH_GOVERNANCE 1 and 2). The
 router is ACTIVE for a sleeve only where its out-of-sample log-score beats the unrouted mean
@@ -43,9 +58,11 @@ adaptation at drift time, not on a calendar. What it adapts is the SYMBOLIC stat
 the learned lane that competes with it lives in `representation_discovery.py` and reaches the
 book the way everything else does -- through a hypothesis and the gauntlet's ten gates.
 
-NOT WIRED TO A CLOCK YET (III.16, stated rather than hidden): this ships with its test and no
-scheduler leg. `python desks/mt5/research/regime_router.py` writes the artifact; `--dry-run`
-prints the table and writes nothing. numpy only (pandas optionally, to read parquet).
+WIRED: `hourly_cycle.py` runs this as the heavy leg `regime_router` in the `forward` department.
+(This docstring claimed "NOT WIRED TO A CLOCK YET" until 2026-09-24, long after the leg landed --
+a status line that rots is worse than none, because III.16 is judged on it.)
+`python desks/mt5/research/regime_router.py` writes the artifact; `--dry-run` prints the table and
+writes nothing. numpy only (pandas optionally, to read parquet).
 """
 
 from __future__ import annotations
@@ -56,7 +73,7 @@ import json
 import math
 import os
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -74,10 +91,21 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 # than re-derived: two organs that price the same fills must not drift on what a fill is.
 from libs.models.router import SoftMoE  # noqa: E402
 from libs.models.zoo import TAX  # noqa: E402
+from libs.regime import pooling  # noqa: E402
+from libs.regime.bar_states import (  # noqa: E402
+    BarStates,
+    choose_k,
+    fit_states,
+    run_length_path,
+)
+from libs.regime.features import regime_features  # noqa: E402
+from libs.regime.transitions import forecast as transition_forecast  # noqa: E402
 from research.posterior_alpha import (  # noqa: E402
     DEFAULT_SIGMA,
     PRIOR_N0,
     UNMEASURED,
+    _family_of_key,
+    _family_of_name,
     _num,
     _read_json,
     _read_jsonl,
@@ -96,6 +124,15 @@ SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_STATE = SHADOW_DIR / "shadow_state.json"
 UNI = BASE / "data" / "universe"
 OUT = BASE / "reports" / "REGIME_ROUTER.json"
+#: THE STATE'S OWN HISTORY, and it did not exist until 2026-09-24. This organ published the
+#: CURRENT state every pass and kept nothing, so the desk that trades regime switches could not
+#: say when the regime last switched -- the one question a switch-trader asks. The sidecar is
+#: append-only and holds a row per OBSERVED CHANGE, never one per pass: a file that grows by
+#: 24 identical rows a day is a log, and the transition time is what a reader actually needs.
+HISTORY = BASE / "data" / "regime_state_history.jsonl"
+#: Rows kept. At one row per change and a handful of changes a day, this is months of history
+#: and a file small enough to read whole on every pass.
+HISTORY_KEEP = 4000
 
 #: Bars per symbol per timeframe. 6,000 H1 is ~8 months: the whole live/forward trade span with
 #: months of pre-trade tape left over for the causal tercile cut.
@@ -108,8 +145,34 @@ STALE_DAYS = {"H1": 14, "H4": 21, "D1": 45}
 USD_PROXIES: tuple[tuple[str, int], ...] = (("USDX", 1), ("EURUSD", -1), ("USDJPY", 1))
 RISK_SOURCES: tuple[tuple[str, str], ...] = (("US500", "D1"), ("US500", "H4"), ("US500", "H1"))
 BARS_PER_DAY = {"D1": 1, "H4": 6, "H1": 24}
-AXES = ("vol", "session", "usd", "dow", "risk")
+AXES = ("vol", "session", "usd", "dow", "risk", "hmm")
 PRIMARY_AXIS = "vol"        # the axis `current_bucket` names: per-symbol, and monotone
+#: THE HMM AXIS, added 2026-09-24. The five axes above are OBSERVABLE labels -- a clock reading,
+#: a sign, a tercile. `hmm` is the first LATENT one: the argmax of a forward filter over a
+#: Baum-Welch state model fitted on the symbol's own H1 bars (`libs.regime.bar_states`). It is
+#: the axis that does not need the sleeve to have traded, because it is a property of the tape.
+#: Its parameters are fitted strictly before the first trade in the book, so every label it
+#: assigns over the trade window is out of sample, and it is read from `filter_posterior` and
+#: never from Viterbi (L0307).
+HMM_AXIS = "hmm"
+#: Sleeves the walk-forward refuses (n < MIN_ROUTER_TRADES) are scored by the PREQUENTIAL pooled
+#: path instead. This is the floor for that path: below it there is not enough to predict from
+#: even once, and the sleeve is published UNMEASURED with its n.
+MIN_POOLED_TRADES = 2
+#: The HMM's EM seed. Declared so a state path is reproducible pass to pass: a regime label that
+#: changes because EM restarted differently is not a regime change.
+HMM_SEED = 20260924
+#: H1 bars the HMM is FITTED on. `GaussianHMM._forward_backward` is a Python loop over bars, so
+#: this is the leg's cost knob and it is stated here rather than buried. 1,500 H1 bars is ~62
+#: trading days, which identifies a handful of volatility states many times over. MEASURED on the
+#: box 2026-09-24: 25 symbols at k=4 cost 730s wall on a machine already at 100% CPU.
+HMM_MAX_BARS = 1500
+#: HOW MANY STATES: asked ONCE PER PASS, on the most-traded symbols, and then used for the whole
+#: book. The state count is a book-level question -- asking it per symbol costs len(K_GRID) fits
+#: for every symbol instead of one, which is a 4x bill on an hourly leg for the same answer, and
+#: it would also give two symbols different label vocabularies that cannot be pooled.
+HMM_K_GRID = (2, 3, 4)
+HMM_K_SAMPLE = 4
 FEATURES = ("vol_z", "sess_asia", "sess_london", "sess_ny", "usd_trend", "dow_sin", "dow_cos",
             "risk_sign")
 #: Pseudo-trades a bucket is shrunk toward the UNCONDITIONAL posterior by -- the same 30 the
@@ -245,10 +308,22 @@ class States:
     gate with a note. It is never quietly imputed to zero, which would be a state nobody traded.
     """
 
-    def __init__(self, notes: list[str]) -> None:
+    def __init__(self, notes: list[str], hmm_train_end_ns: int | None = None) -> None:
         self._cuts: dict[tuple[str, int], tuple[float, float, float, float] | None] = {}
         self._usd: tuple[np.ndarray, np.ndarray] | None = None
         self._risk: tuple[np.ndarray, np.ndarray] | None = None
+        #: Per-symbol latent state model, fitted lazily and cached for the pass. `None` records a
+        #: symbol whose tape cannot support a fit, so the axis reads UNMEASURED there rather than
+        #: being retried on every trade.
+        self._hmm: dict[str, BarStates | None] = {}
+        self._hmm_notes = notes
+        #: Every HMM parameter is fitted on bars strictly BEFORE this instant, so the labels over
+        #: the trade window are out of sample. `None` means "fit on everything", which is honest
+        #: only for describing history and is never used by the scoring path.
+        self.hmm_train_end_ns = hmm_train_end_ns
+        #: The book's state count, fixed once per pass by `choose_state_count`.
+        #: `None` means it has not been asked, and each symbol then picks its own.
+        self.hmm_k: int | None = None
         self.usd_symbol, self.risk_symbol, self._risk_tf = UNMEASURED, UNMEASURED, "D1"
         for symbol, sign in USD_PROXIES:
             found = _trend(symbol, "H1", USD_LOOKBACK)
@@ -282,6 +357,87 @@ class States:
                     self._cuts[key] = (lo, hi, float(pre.mean()), float(pre.std()))
         return self._cuts[key]
 
+    def _observations(self, symbol: str) -> np.ndarray | None:
+        """The canonical 3-column regime observation matrix for a symbol's H1 tape.
+
+        `libs.regime.features` owns those three columns; a second implementation of them is the
+        drift this desk keeps paying for, so it is imported rather than re-derived.
+        """
+        tape = bars(symbol, "H1")
+        if tape is None:
+            return None
+        try:
+            import pandas as pd
+
+            feats, _ = regime_features(pd.Series(tape[1].astype("float64")))
+        except (ValueError, ImportError) as exc:
+            self._hmm_notes.append(f"hmm axis UNMEASURED for {symbol}: "
+                                   f"{type(exc).__name__}: {exc}")
+            return None
+        return np.asarray(feats, dtype="float64")
+
+    def choose_state_count(self, symbols: list[str]) -> dict[str, Any]:
+        """Ask the EVIDENCE how many states, ONCE, on a sample -- then use it for the book.
+
+        The score is the held-out one-step-ahead predictive log-density of the chain on bars the
+        fit never saw; a k that merely fits better in sample cannot win it. Fitting the whole grid
+        per symbol would cost four times as much for the same book-level answer AND would hand two
+        symbols different label vocabularies, which cannot then be pooled across sleeves.
+        """
+        agg: dict[int, list[float]] = defaultdict(list)
+        for symbol in symbols[:HMM_K_SAMPLE]:
+            x = self._observations(symbol)
+            if x is None:
+                continue
+            x = x[np.isfinite(x).all(axis=1)]
+            tape = bars(symbol, "H1")
+            if tape is None:
+                continue
+            cut = (x.shape[0] if self.hmm_train_end_ns is None
+                   else int(np.searchsorted(tape[0][-x.shape[0]:], self.hmm_train_end_ns)))
+            xtr = x[max(0, cut - HMM_MAX_BARS):cut]
+            if xtr.shape[0] < 400:
+                continue
+            try:
+                _k, scores = choose_k(xtr, grid=HMM_K_GRID, seed=HMM_SEED)
+            except (ValueError, np.linalg.LinAlgError):
+                continue
+            for kk, vv in scores.items():
+                agg[kk].append(vv)
+        if not agg:
+            self.hmm_k = None
+            return {"status": UNMEASURED, "sample": symbols[:HMM_K_SAMPLE],
+                    "why": "no sampled symbol carried enough pre-trade tape to score a state count"}
+        means = {k: float(np.mean(v)) for k, v in agg.items() if v}
+        self.hmm_k = int(max(means, key=lambda k: means[k]))
+        return {"status": "MEASURED", "k": self.hmm_k,
+                "scores": {str(k): round(v, 5) for k, v in sorted(means.items())},
+                "sample": symbols[:HMM_K_SAMPLE], "grid": list(HMM_K_GRID),
+                "score": "held-out one-step-ahead predictive log-density on bars, nats/bar",
+                "why": "the state count is a book-level question, asked once on the sample above"}
+
+    def hmm(self, symbol: str) -> BarStates | None:
+        """The symbol's latent state model, fitted once per pass on its H1 tape.
+
+        UNMEASURED is a real answer here: a symbol whose tape is too short returns None, the
+        axis reads UNMEASURED for every one of its trades, and `_gate_matrix` drops it. Nothing
+        is imputed -- an imputed regime is a state nobody was ever in.
+        """
+        if symbol not in self._hmm:
+            self._hmm[symbol] = None
+            tape = bars(symbol, "H1")
+            x = self._observations(symbol) if tape is not None else None
+            if tape is not None and x is not None:
+                try:
+                    self._hmm[symbol] = fit_states(
+                        tape[0], x, symbol=symbol, timeframe="H1",
+                        train_end_ns=self.hmm_train_end_ns, k=self.hmm_k, seed=HMM_SEED,
+                        grid=HMM_K_GRID, max_train_bars=HMM_MAX_BARS)
+                except (ValueError, np.linalg.LinAlgError) as exc:
+                    self._hmm_notes.append(f"hmm axis UNMEASURED for {symbol}: "
+                                           f"{type(exc).__name__}: {exc}")
+        return self._hmm[symbol]
+
     @staticmethod
     def session(when: datetime) -> str:
         hits = [name for name, win in _SESSION_WINDOWS.items()
@@ -307,8 +463,10 @@ class States:
         session = self.session(when)
         usd_label, usd = self._sign(_at(self._usd, ns, "H1"), ("up", "down", "flat"))
         risk_label, risk = self._sign(_at(self._risk, ns, self._risk_tf), ("on", "off", "flat"))
+        bs = self.hmm(symbol) if symbol else None
+        hmm_label = (bs.label_at(ns) or UNMEASURED) if bs is not None else UNMEASURED
         labels = {"vol": vol_label, "session": session, "usd": usd_label, "dow": DAYS[dow],
-                  "risk": risk_label}
+                  "risk": risk_label, HMM_AXIS: hmm_label}
         row = np.array([vol_z if vol_z is not None else np.nan,
                         float(session == "asia"), float(session in ("london", "overlap")),
                         float(session in ("ny", "overlap")),
@@ -633,35 +791,254 @@ def _sleeve_row(sleeve: Sleeve, states: States, when: datetime,
             "p_alpha_positive_now": p_now, "p_alpha_positive_basis": basis}
 
 
+# ------------------------------------------------------- the pooled router (the small-n path)
+def _family_of(sleeve: Sleeve) -> str:
+    """The pooling group. `posterior_alpha` owns this parsing; it is imported, never re-derived."""
+    name = sleeve.name
+    for row in (_read_json(SLEEVES) or {}).get("sleeves") or []:
+        if isinstance(row, dict) and row.get("name") == name and row.get("family"):
+            return str(row["family"])
+    fam = _family_of_key(name) if "." in name else _family_of_name(name)
+    return fam or "unclassified"
+
+
+def _pooled_observations(sleeves: list[Sleeve], states: States) -> list[pooling.Obs]:
+    """Every trade in the book, stamped with the latent state that was in force when it ran."""
+    obs: list[pooling.Obs] = []
+    for sleeve in sleeves:
+        if not sleeve.r:
+            continue
+        bs = states.hmm(sleeve.symbol)
+        if bs is None:
+            continue
+        family = _family_of(sleeve)
+        for when, value in zip(sleeve.times, sleeve.r, strict=False):
+            ns = _ns(when)
+            label = bs.label_at(ns)
+            if label is None:
+                continue
+            obs.append(pooling.Obs(sleeve=sleeve.name, family=family, state=label,
+                                   r=float(value), ns=ns))
+    return obs
+
+
+def _pooled_router(obs: list[pooling.Obs]) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    """THE ANSWER FOR SLEEVES THE FOLD MINIMUM REFUSES, and the book-level verdict.
+
+    The walk-forward path needs 24 trades to cut four folds. Measured on the box 2026-09-24 the
+    LARGEST sleeve in the book had 23, so that path could not score a single one and the router
+    published DARK. This path asks the same question with an estimator that works at small n:
+    every trade is predicted from the trades STRICTLY BEFORE it, the state-conditional mean is
+    borrowed from the sleeve's family where the sleeve itself is thin, and the routed and the
+    unrouted model are scored on an IDENTICAL trade set with the identical proper score and the
+    identical tax. Nothing about the bar was lowered -- the estimator was changed.
+    """
+    tax = float(TAX["soft_moe"])
+    if len(obs) < 8:
+        return ({"status": UNMEASURED, "n_observations": len(obs), "tax": tax,
+                 "why": (f"{len(obs)} state-labelled trade(s) in the whole book: the pooled "
+                         f"router is UNMEASURED, which is a verdict and not a zero")}, {})
+    y_u, mu_u, _ = pooling.prequential(obs, use_state=False)
+    _y_r, mu_r, detail = pooling.prequential(obs, use_state=True)
+    y = np.asarray(y_u, dtype=float)
+    pu, pr = np.asarray(mu_u, dtype=float), np.asarray(mu_r, dtype=float)
+    if y.size < 4:
+        return ({"status": UNMEASURED, "n_observations": len(obs), "n_scored": int(y.size),
+                 "tax": tax, "why": f"only {y.size} prequential prediction(s) were possible"}, {})
+    sd_book = max(float(np.std([o.r for o in obs], ddof=1)), 1e-6)
+    sd_u = max(float(np.std(y - pu, ddof=1)), SD_FLOOR_FRAC * sd_book, 1e-6)
+    sd_r = max(float(np.std(y - pr, ddof=1)), SD_FLOOR_FRAC * sd_book, 1e-6)
+    ls_u, ls_r = _logscore(y, pu, sd_u), _logscore(y, pr, sd_r)
+    gain = ls_r - ls_u
+    diff = (-(y - pr) ** 2) - (-(y - pu) ** 2)
+    se = float(np.std(diff, ddof=1) / np.sqrt(diff.size)) if diff.size > 1 else float("inf")
+    t_gain = float(np.mean(diff) / se) if se > 0 else 0.0
+    earns = bool(gain - tax > 0 and t_gain >= MIN_T_GAIN)
+    book = {
+        "status": "MEASURED", "n_observations": len(obs), "n_scored": int(y.size),
+        "oos_logscore_routed": round(ls_r, 6), "oos_logscore_unrouted": round(ls_u, 6),
+        "gain": round(gain, 6), "tax": tax, "net": round(gain - tax, 6),
+        "t_gain": round(t_gain, 3), "active": earns,
+        "state_effect_basis": dict(Counter(p.basis for p in detail)),
+        "verdict": "EARNS_ITS_PLACE" if earns else "TAXED_OUT",
+        "why": (f"the latent state moved the book's OOS log-score by {gain:+.4f} nats/trade "
+                f"before tax {tax} (paired t {t_gain:+.2f}); "
+                + ("routing earns its place" if earns else
+                   "the unrouted model explains it")
+                + " AT THIS CONFIGURATION -- see `robustness`, which is the verdict's own caveat"),
+        "score": "mean OOS Gaussian predictive log-density, nats per trade -- the SAME score and "
+                 "tax the walk-forward path uses, so the two answers are comparable",
+        # THE VERDICT IS CONDITIONAL AND THE MEASUREMENT SAYS SO. Run on the box 2026-09-24 over
+        # a grid of state counts at an IDENTICAL fit window, the sign of `net` flipped:
+        #   k=3, 1500 bars -> net +0.0059, t +1.33   (earns)
+        #   k=4, 1500 bars -> net -0.0011, t +0.16   (does not)
+        #   per-symbol k (mostly 5), ~5691 bars -> net +0.0040, t +1.09   (earns)
+        # Every |t| is at or below 1.4 on 288 trades spanning SEVENTEEN DAYS. A number that
+        # changes sign with a nuisance choice is not a result, and publishing whichever cell ran
+        # this hour as "the" verdict would repeat the exact fault this organ was just fixed for:
+        # printing a confident answer for a question the evidence cannot yet settle.
+        "robustness": {
+            "status": UNMEASURED,
+            "conditional_on": ["hmm.state_count.k", "hmm.fit_bars",
+                               "the trade window, which is 17 days long"],
+            "why": ("the sign of `net` flips with the state count at an identical fit window "
+                    "(k=3 -> +0.0059 t+1.33; k=4 -> -0.0011 t+0.16), and no cell reaches |t| 1.4 "
+                    "on 288 trades over 17 days: this verdict is UNDERPOWERED and must not be "
+                    "read as a measured zero OR as an earned positive"),
+            "what_would_settle_it": ("more forward trades. The estimator is not the binding "
+                                     "constraint any more -- the trade record is."),
+        },
+    }
+    ordered = sorted(obs, key=lambda o: (o.ns, o.sleeve))
+    offset = len(ordered) - y.size
+    by_sleeve: dict[str, list[int]] = defaultdict(list)
+    for i, o in enumerate(ordered):
+        if i >= offset:
+            by_sleeve[o.sleeve].append(i - offset)
+    rows: dict[str, dict[str, Any]] = {}
+    for name, ix in by_sleeve.items():
+        a = np.asarray(ix, dtype=int)
+        if a.size < MIN_POOLED_TRADES:
+            rows[name] = {"scored": False, "n": int(a.size),
+                          "why": f"{a.size} prequential prediction(s) < {MIN_POOLED_TRADES}"}
+            continue
+        lu, lr = _logscore(y[a], pu[a], sd_u), _logscore(y[a], pr[a], sd_r)
+        rows[name] = {"scored": True, "n": int(a.size),
+                      "oos_logscore_routed": round(lr, 6),
+                      "oos_logscore_unrouted": round(lu, 6),
+                      "net": round(lr - lu - tax, 6), "tax": tax,
+                      "active": bool(lr - lu - tax > 0),
+                      "basis": "prequential_partial_pooling"}
+    return book, rows
+
+
+def _hmm_block(states: States, published: list[dict[str, Any]],
+               pooled_book: dict[str, Any],
+               k_choice: dict[str, Any] | None = None) -> dict[str, Any]:
+    """THE STATE, ITS PROBABILITIES AND ITS TRANSITIONS -- published, per symbol.
+
+    A regime call with no probability attached cannot be acted on proportionately, so every row
+    carries the full forward-filtered posterior, the transition matrix the chain was fitted with,
+    the expected dwell time of the state it is in, and the horizon distribution from
+    `libs.regime.transitions` (which is the desk's existing semi-Markov forecaster, reused rather
+    than duplicated). `k_scores` carries the held-out evidence that chose the state count, so the
+    choice can be checked rather than believed.
+    """
+    rows: dict[str, Any] = {}
+    gaps: dict[str, str] = {}
+    for symbol in sorted({str(r["symbol"]) for r in published}):
+        bs = states.hmm(symbol)
+        if bs is None:
+            gaps[symbol] = "tape too short to fit a state model: UNMEASURED, not a state"
+            continue
+        i = int(bs.labels.size) - 1
+        post = np.asarray(bs.posterior[i], dtype=float)
+        dwell = [round(float(1.0 / max(1e-9, 1.0 - bs.transmat[j, j])), 2) for j in range(bs.k)]
+        row: dict[str, Any] = {
+            "k": bs.k, "k_chosen_by": "held-out one-step predictive log-density, nats/bar",
+            "k_scores": {str(a): round(b, 5) for a, b in sorted(bs.k_scores.items())},
+            "heldout_logdens": (round(bs.heldout_logdens, 5)
+                                if np.isfinite(bs.heldout_logdens) else UNMEASURED),
+            "state_now": bs.names[int(bs.labels[i])],
+            "p_state_now": {bs.names[j]: round(float(post[j]), 4) for j in range(bs.k)},
+            "transmat": [[round(float(v), 4) for v in r] for r in bs.transmat],
+            "expected_dwell_bars": dict(zip(bs.names, dwell, strict=True)),
+            "fitted_on_bars": bs.n_train, "labelled_bars": int(bs.labels.size),
+            "transitions_recent": run_length_path(bs)[-12:],
+        }
+        try:
+            fc = transition_forecast(bs.transmat, post, dict(enumerate(bs.names)),
+                                     bs.labels.astype(int))
+            row["p_ahead"] = {str(h): {k: round(v, 4) for k, v in fc.p_ahead[h].items()}
+                              for h in fc.horizons}
+            row["p_leave"] = {str(h): round(float(v), 4) for h, v in fc.p_leave.items()}
+        except (ValueError, np.linalg.LinAlgError) as exc:
+            row["p_ahead"] = f"{UNMEASURED}: {type(exc).__name__}: {exc}"
+        rows[symbol] = row
+    return {
+        "rule": ("the regime is a property of the MARKET, fitted on bars, so it needs no sleeve "
+                 "to have traded; the labels are causal (forward filter, never Viterbi -- L0307) "
+                 "and their parameters are fitted strictly before the first trade in the book"),
+        "model": "libs.regime.bar_states.fit_states (libs.regime.hmm.GaussianHMM, Baum-Welch)",
+        "timeframe": "H1", "seed": HMM_SEED, "fit_bars": HMM_MAX_BARS,
+        "state_count": k_choice or {"status": UNMEASURED,
+                                    "why": "the state count was not asked on this pass"},
+        "n_symbols": len(rows), "symbols": rows, "gaps": gaps,
+        "pooled_router": pooled_book,
+        "pooling": {"model": "libs.regime.pooling (sleeve -> family -> book, and the state "
+                             "effect at the family level shrunk toward the book's)",
+                    "k_level": pooling.K_LEVEL, "k_state": pooling.K_STATE,
+                    "k_global": pooling.K_GLOBAL},
+    }
+
+
 def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
     """Every live sleeve and running forward clock, routed by state, written atomically."""
     reset_caches()
     notes: list[str] = []
     counts: dict[str, Any] = defaultdict(int)
     when = now or datetime.now(UTC)
-    states = States(notes)
+    sleeves = collect(notes, counts)
+    # THE HMM'S TRAINING CUTOFF is the first trade anywhere in the book, so every state label the
+    # scoring path reads was produced by parameters that had never seen a trade. Without this the
+    # comparison below would be fitted on the window it judges, which is not a comparison.
+    trade_ns = [_ns(t) for s in sleeves for t in s.times]
+    states = States(notes, hmm_train_end_ns=min(trade_ns) if trade_ns else None)
+    # HOW MANY STATES, asked once, on the symbols the book actually trades most -- so the answer
+    # is paid for once and every symbol shares one label vocabulary.
+    traded = sorted({s.symbol for s in sleeves if s.r},
+                    key=lambda sy: -sum(len(s.r) for s in sleeves if s.symbol == sy))
+    k_choice = states.choose_state_count(traded)
     published: list[dict[str, Any]] = []
-    for sleeve in collect(notes, counts):
+    for sleeve in sleeves:
         if not sleeve.r:
             counts["sleeves_without_trades"] += 1
             continue
         counts["trades"] += len(sleeve.r)
         published.append(_sleeve_row(sleeve, states, when, counts))
+    pooled_book, pooled_rows = _pooled_router(_pooled_observations(sleeves, states))
+    for row in published:
+        row["pooled_router"] = pooled_rows.get(
+            str(row["name"]), {"scored": False, "n": 0,
+                               "why": "no trade of this sleeve carried a latent state label"})
+    counts["pooled_scored"] = sum(1 for r in pooled_rows.values() if r.get("scored"))
+    counts["pooled_active"] = sum(1 for r in pooled_rows.values() if r.get("active"))
     published.sort(key=lambda r: (not r["router"]["active"], -float(r["p_alpha_positive_now"]),
                                   str(r["name"])))
+    # WHAT THIS NOTE USED TO SAY WHEN NOTHING HAD BEEN JUDGED, AND WHY IT HAD TO CHANGE.
+    # "no sleeve's router beats its unrouted model out of sample after tax" fired on `active`
+    # alone -- so it fired identically whether forty-eight routers were scored and lost, or
+    # ZERO were scored because every sleeve was under the fold minimum. MEASURED on the box
+    # 2026-09-24: 48 published, 0 scored, 34 short of trades and 14 with no varying state
+    # feature. The desk was publishing a negative OOS RESULT for a test that had never run,
+    # which is the exact shape of a claim the desk cannot cash (L1.49).
+    n_scored = sum(1 for r in published if isinstance(r.get("router"), dict)
+                   and r["router"].get("net") is not None)
     if not published:
         notes.append("no live sleeve and no running forward clock has a measured trade: the "
                      "router is UNMEASURED, which is a verdict and not a zero")
+    elif not n_scored:
+        notes.append(f"no router was SCORED on this host: {len(published)} sleeve(s) reached the "
+                     f"router and none produced a walk-forward net, so `router_active: 0` is a "
+                     f"DARK ROUTER and not a judgement -- see router_census.not_scored_reasons")
     elif not any(r["router"]["active"] for r in published):
-        notes.append("no sleeve's router beats its unrouted model out of sample after tax")
+        notes.append(f"none of the {n_scored} SCORED router(s) beats its unrouted model out of "
+                     f"sample after tax; this is a measured zero")
+    current = {k: v for k, v in states.read("", when, None)[0].items() if k != "vol"}
+    transition = _record_state(current, when, write=write)
     payload = {
         "at": when.isoformat(),
         "rule": RULE,
         "n_sleeves": len(published),
-        "current_state": {k: v for k, v in states.read("", when, None)[0].items() if k != "vol"},
+        "current_state": current,
+        "last_transition": transition,
+        "router_census": _router_census(published, counts),
         "state_sources": {"vol": f"trailing {VOL_LOOKBACK}-bar H1 realised vol, terciles cut on "
                                  "pre-trade tape", "usd": states.usd_symbol,
-                          "risk": states.risk_symbol, "session": "mt5desk.family_call.SESSIONS"},
+                          "risk": states.risk_symbol, "session": "mt5desk.family_call.SESSIONS",
+                          HMM_AXIS: "Baum-Welch Gaussian HMM on the symbol's own H1 bars; label "
+                                    "is the argmax of the causal forward filter, never Viterbi"},
+        "hmm": _hmm_block(states, published, pooled_book, k_choice),
         "router_spec": {"model": "libs.models.router.SoftMoE", "k_grid": list(K_GRID),
                         "folds": ROUTER_FOLDS, "tax": float(TAX["soft_moe"]),
                         "min_trades": MIN_ROUTER_TRADES,
@@ -677,6 +1054,150 @@ def run(write: bool = True, now: datetime | None = None) -> dict[str, Any]:
     if write:
         _write_atomic(OUT, payload)
     return payload
+
+
+def _history_rows() -> list[dict[str, Any]]:
+    """The observed state changes, oldest first. An unreadable or absent sidecar is empty, and
+    that emptiness is reported as "never observed", never as "never changed"."""
+    out: list[dict[str, Any]] = []
+    try:
+        text = HISTORY.read_text("utf-8-sig", errors="replace")
+    except OSError:
+        return out
+    for line in text.splitlines()[-HISTORY_KEEP:]:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("at"):
+            out.append(row)
+    return out
+
+
+def _record_state(current: dict[str, Any], when: datetime, *, write: bool) -> dict[str, Any]:
+    """Append this pass's state IF IT CHANGED, and report when the last change was.
+
+    THE DISTINCTION THIS FUNCTION EXISTS TO DRAW. "The regime has not changed" and "nobody was
+    watching" are different facts and used to render the same -- UNMEASURED. They are separated
+    here by the OBSERVATION WINDOW: the sidecar's first row is when this desk started watching,
+    so a state that has held since then is MEASURED-and-unchanged with its watch start beside it,
+    and only a desk that has never watched at all reads UNMEASURED.
+
+    A state with an UNMEASURED axis is still recorded. Dropping it would make the history lie by
+    omission -- the axis going dark IS a change in what the desk can see, and a later reader
+    comparing two rows across the gap would measure a transition that never happened.
+    """
+    rows = _history_rows()
+    previous = rows[-1] if rows else None
+    prev_state = previous.get("state") if isinstance(previous, dict) else None
+    changed = prev_state != current
+    if changed and write:
+        try:
+            HISTORY.parent.mkdir(parents=True, exist_ok=True)
+            with HISTORY.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps({"at": when.isoformat(), "state": current,
+                                         "from": prev_state}) + "\n")
+        except OSError:                          # pragma: no cover - a read-only sidecar
+            changed = False
+        else:
+            rows.append({"at": when.isoformat(), "state": current, "from": prev_state})
+    if not rows:
+        return {"status": UNMEASURED, "at": None, "age_s": None, "from": None, "to": current,
+                "n_transitions": 0, "observed_since": None,
+                "why": ("no state has ever been recorded on this host, so the time of the last "
+                        "regime change is genuinely unknown rather than long ago")}
+    last = rows[-1]
+    first = rows[0]
+    last_at, first_at = _as_utc(str(last.get("at"))), _as_utc(str(first.get("at")))
+    age = (when - last_at).total_seconds() if last_at is not None else None
+    watched = (when - first_at).total_seconds() if first_at is not None else None
+    # ONE ROW AND NO `from` IS THE FIRST OBSERVATION, NOT A TRANSITION. Counting it as one would
+    # date the desk's last regime change to the day it started looking.
+    n_trans = sum(1 for r in rows if r.get("from"))
+    return {
+        "status": "MEASURED",
+        "at": last.get("at"),
+        "age_s": round(age, 1) if age is not None else None,
+        "from": last.get("from"),
+        "to": last.get("state"),
+        "n_transitions": n_trans,
+        "observed_since": first.get("at"),
+        "observed_s": round(watched, 1) if watched is not None else None,
+        "changed_this_pass": bool(changed),
+        "source": str(HISTORY),
+        "why": ("" if n_trans else
+                f"the state has not changed since this desk began watching it at "
+                f"{first.get('at')}: a MEASURED steady state over that window, which is a "
+                f"different fact from an unmeasured one"),
+    }
+
+
+def _as_utc(stamp: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+
+
+def _router_census(published: list[dict[str, Any]], counts: dict[str, Any]) -> dict[str, Any]:
+    """WHY `router_active` IS ZERO -- judged and rejected, or never judged at all.
+
+    A dashboard reading `router_active: 0` cannot tell a router that ran on every sleeve and
+    found none worth its tax from a router that never scored anything, and those are opposite
+    facts: the first is a measurement the desk should trust, the second is a dark organ. The
+    difference is already in each sleeve's own `router` block -- a SCORED row carries `net`, an
+    unscored one carries only its `why` -- so this counts it rather than inventing anything.
+    """
+    scored = [r for r in published if isinstance(r.get("router"), dict)
+              and r["router"].get("net") is not None]
+    unscored = [r for r in published if isinstance(r.get("router"), dict)
+                and r["router"].get("net") is None]
+    reasons: dict[str, int] = {}
+    for row in unscored:
+        why = str(row["router"].get("why") or UNMEASURED)
+        # The trade-count reason names the count, so a thousand sleeves would make a thousand
+        # keys; the shape of the reason is what a reader needs, not each sleeve's n.
+        key = ("fewer trades than the router's fold minimum"
+               if "trades <" in why else
+               "no state feature varies over this sleeve's trades"
+               if "no state feature" in why else why[:90])
+        reasons[key] = reasons.get(key, 0) + 1
+    nets = [float(r["router"]["net"]) for r in scored]
+    active = sum(1 for r in scored if r["router"].get("active"))
+    if not published:
+        verdict, why = UNMEASURED, ("no sleeve reached the router at all: the zero is an absence "
+                                    "of subjects, not a judgement about routing")
+    elif not scored:
+        verdict, why = UNMEASURED, (f"{len(published)} sleeve(s) published and NONE was scored: "
+                                    f"the router is dark on this host and its zero carries no "
+                                    f"judgement. Reasons: {reasons}")
+    elif active:
+        verdict, why = "MEASURED", f"{active} of {len(scored)} scored router(s) earn their tax"
+    else:
+        verdict, why = "MEASURED", (
+            f"a MEASURED ZERO: all {len(scored)} scored router(s) were judged out of sample and "
+            f"none beat its unrouted model after tax (best net {max(nets):+.4f} nats/trade "
+            f"against a tax of {float(TAX['soft_moe']):.4f}). This is the router working, not "
+            f"the router missing")
+    return {
+        "status": verdict, "why": why,
+        "n_sleeves_in_registry": int(counts.get("sleeves_without_trades", 0)) + len(published),
+        "n_without_trades": int(counts.get("sleeves_without_trades", 0)),
+        "n_published": len(published),
+        "n_scored": len(scored),
+        "n_not_scored": len(unscored),
+        "not_scored_reasons": reasons,
+        "n_active": active,
+        "best_net": round(max(nets), 6) if nets else None,
+        "median_net": round(float(np.median(nets)), 6) if nets else None,
+        "tax": float(TAX["soft_moe"]),
+        "min_trades": int(MIN_ROUTER_TRADES),
+        "basis": ("a sleeve is SCORED when walk-forward produced a net OOS log-score; it is "
+                  "ACTIVE when that net beats the tax with fold t >= the spec's minimum"),
+    }
 
 
 def _write_atomic(path: Path, payload: dict[str, Any]) -> None:

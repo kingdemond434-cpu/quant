@@ -50,12 +50,23 @@ def _write(root: Path, rel: str, rows: list[dict]) -> Path:
 def roots(tmp_path, monkeypatch):
     """Two intelligence roots the compiler will read, isolated from the real ones."""
     a, b = tmp_path / "desk_intel", tmp_path / "repo_intel"
-    a.mkdir(); b.mkdir()
+    a.mkdir()
+    b.mkdir()
     monkeypatch.setattr(mc, "INTEL_ROOTS", (a, b))
     return a, b
 
 
 class TestEveryArtifactIsRead:
+    def test_jsonl_evidence_is_streamed_not_silently_excluded(self, roots) -> None:
+        a, _ = roots
+        p = a / "stream" / "discoveries.jsonl"
+        p.parent.mkdir(parents=True)
+        p.write_text('{"title":"first","symbol":"EURUSD"}\n'
+                     '{"title":"second","symbol":"XAUUSD"}\n', encoding="utf-8")
+        titles = {str(r.get("title")) for _, r in
+                  mc.recent_rows(mc.datetime.now(tz=mc.UTC))}
+        assert titles == {"first", "second"}
+
     def test_a_miner_that_does_not_say_discoveries_in_its_filename_is_read(self, roots) -> None:
         """THE SECOND LOSS, directly. `signals_*`, `articles_*`, `forum_*`, `codebase_*` and
         `anomalies_*` were 1,403 artifacts the compiler never opened -- not rejected, unread."""
@@ -205,13 +216,16 @@ class TestNothingIsDroppedSilently:
         monkeypatch.setitem(sys.modules, "libs.research.hypothesis_graph", None)
         monkeypatch.setattr(mc, "OUT", tmp_path / "candidates.json")
         monkeypatch.setattr(mc, "DEEPEN", tmp_path / "deepening.json")
+        monkeypatch.setattr(mc, "CURSOR", tmp_path / "cursor.json")
         monkeypatch.setattr(mc, "known_symbols", lambda: {"EURUSD"})
         monkeypatch.setattr(mc, "structurally_untestable_families", lambda: {})
         monkeypatch.setattr(mc, "recent_rows", lambda now: [
             ("a", {"recipe": True}), ("a", {"recipe": True}),
             ("b", {"recipe": True}), ("a", {}), ("a", {})])
         monkeypatch.setattr(mc, "compile_row", lambda src, row, uni: (
-            ([{"symbol": "EURUSD", "family": "test", "params": {}}]
+            ([{"symbol": "EURUSD", "family": "test", "params": {"timeframe": "H1"},
+               "mechanism_status": "NAMED",
+               "mechanism_note": "a falsifiable forced-flow mechanism for the test"}]
              if row.get("recipe") else []), "NEEDS_RULE"))
         mc.main()
         doc = json.loads(mc.OUT.read_text())
@@ -222,6 +236,13 @@ class TestNothingIsDroppedSilently:
         assert doc["per_source"]["a"]["candidates"] == 1
         assert doc["per_source"]["b"]["candidates"] == 1
         assert doc["per_source"]["a"]["deepening"] == 1
+        assert doc["conversion_contract"]["convertible_rows"] == 3
+        assert doc["conversion_contract"]["converted_rows"] == 3
+        assert doc["conversion_contract"]["silent_loss"] == 0
+        assert doc["conversion_contract"]["conversion_debt"] == 0
+        assert doc["conversion_contract"]["unresolved_rows"] == 2
+        assert doc["conversion_contract"]["disposition_debt"] == 2
+        assert doc["conversion_contract"]["complete"] is False
 
     def test_every_row_is_either_a_candidate_or_a_deepening_task(self, roots) -> None:
         """The compiler's own contract: no row silently dies. A row that produces no candidate

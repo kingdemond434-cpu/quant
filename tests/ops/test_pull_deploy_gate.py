@@ -333,8 +333,11 @@ class TestTheMoneyPathIsHeldWhileTheCockpitIsSterile:
 
         from libs.ops.deploy_plan import _OWNED
         dead = sorted(e for e in _OWNED if not _P(e).exists())
-        assert dead == ["scripts/liquidation_listener.py",
-                        "scripts/run_cashcarry_executor.py"], (
+        # TIGHTENED 2026-09-29, as this docstring asked: the two retired crypto entries were
+        # dropped from `_OWNED` (resyncing it with scripts/watchdog._UNITS), so no entry may now
+        # point at a script that is not on disk. The MT5 gateway runs on the Windows box under
+        # its scheduled tasks, not a VPS systemd unit, so it has no `_OWNED` row to add here.
+        assert dead == [], (
             f"libs/ops/deploy_plan._OWNED points at entry points that are not on disk: {dead}. "
             "A unit map naming a deleted script cannot hold the unit it claims to hold, and a "
             "money path with no unit in the map is restarted freely inside a closed window. "

@@ -1,0 +1,7 @@
+{
+ "occupied_cells_best": 2230,
+ "occupancy_best": 0.038935,
+ "updated_utc": "2026-09-23T19:02:19+00:00",
+ "law": "GRID OCCUPANCY RISES ONLY. This ratchet is a floor and never a cap.",
+ "regression_reason": null
+}

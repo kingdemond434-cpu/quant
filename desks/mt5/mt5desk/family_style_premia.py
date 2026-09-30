@@ -7,7 +7,7 @@
                 equity/risk factor is in its own low percentile, short when high (BAB)
     volatility  realised-vol mean reversion: fade a vol spike, follow a vol expansion from
                 a compression
-    momentum    12-1 style: past 252-bar return excluding the last 21 bars, vol-scaled
+    momentum    12-1 style: past 252-DAY return excluding the last 21 trading days, vol-scaled
 
 and their public COMBINATIONS as a second axis: carry x momentum, carry conditioned on calm
 vol, trend x defensive. Everything is scaled by the instrument's own history so the desk never
@@ -33,20 +33,29 @@ def _z(s: pd.Series, w: int) -> pd.Series:
     return (s - r.mean()) / r.std()
 
 
+def _bars_per_day(d: pd.DataFrame) -> int:
+    counts = pd.Series(1, index=d.index).groupby(d.index.normalize()).sum()
+    return max(1, int(round(float(counts.median())))) if not counts.empty else 24
+
+
 def _score(d: pd.DataFrame, style: str, *, swap_diff: float | None, risk: pd.DataFrame | None,
-           speeds: tuple[int, ...]) -> pd.Series | None:
+           speeds: tuple[int, ...], asset_class: str | None = None) -> pd.Series | None:
     c = d["close"].astype(float)
     lr = np.log(c)
     ret = lr.diff()
-    vol = ret.rolling(48, min_periods=24).std()
+    bpd = _bars_per_day(d)
+    vol = ret.rolling(60 * bpd, min_periods=20 * bpd).std()
     if style == "trend":
-        parts = [((lr - lr.shift(h)) / (vol * np.sqrt(h))).clip(-3, 3) for h in speeds]
+        horizons = [max(2, int(days) * bpd) for days in speeds]
+        parts = [((lr - lr.shift(h)) / (vol * np.sqrt(h))).clip(-3, 3) for h in horizons]
         return sum(parts) / len(parts)
     if style == "momentum":
-        return ((lr.shift(21) - lr.shift(252)) / (vol * np.sqrt(231))).clip(-3, 3)
+        skip, look = 21 * bpd, 252 * bpd
+        return ((lr.shift(skip) - lr.shift(look)) / (vol * np.sqrt(look - skip))).clip(-3, 3)
     if style == "value":
-        slow = lr.rolling(1000, min_periods=500).mean()
-        return -_z(lr - slow, 500)                             # cheap vs its own history: long
+        five_years = 5 * 252 * bpd
+        slow = lr.rolling(five_years, min_periods=3 * 252 * bpd).mean()
+        return -_z(lr - slow, 252 * bpd)                       # true long-horizon value
     if style == "volatility":
         vz = _z(vol, 240)
         return -vz.where(vz > 0, 0.0) * np.sign(ret.rolling(6).sum())   # fade the move on spike
@@ -56,6 +65,10 @@ def _score(d: pd.DataFrame, style: str, *, swap_diff: float | None, risk: pd.Dat
         sign = float(np.sign(swap_diff))
         return pd.Series(sign * min(abs(float(swap_diff)) / 10.0, 3.0), index=d.index)
     if style == "defensive":
+        # Betting-against-beta is an equity/index cross-sectional premium. Applying the label to
+        # FX or commodities manufactures a different hypothesis under AQR's name.
+        if str(asset_class or "") != "Indices":
+            return None
         if risk is None or "close" not in risk.columns:
             return None
         rc = risk["close"].astype(float)
@@ -77,7 +90,8 @@ def family_style_premia(
     combo: str | None = None,
     swap_diff: float | None = None,
     risk: pd.DataFrame | None = None,
-    speeds: tuple[int, ...] = (24, 120, 480),
+    speeds: tuple[int, ...] = (21, 63, 252),
+    asset_class: str | None = None,
     entry: float = 1.0,
     hold_bars: int = 24,
     atr_n: int = 20,
@@ -89,24 +103,30 @@ def family_style_premia(
     d = _h1(df)
     if len(d) < 1500:
         return []
-    s = _score(d, style, swap_diff=swap_diff, risk=risk, speeds=speeds)
+    s = _score(d, style, swap_diff=swap_diff, risk=risk, speeds=speeds,
+               asset_class=asset_class)
     if s is None:
         return []
     if combo == "carry_x_momentum":
-        m = _score(d, "momentum", swap_diff=None, risk=None, speeds=speeds)
-        cs = _score(d, "carry", swap_diff=swap_diff, risk=None, speeds=speeds)
+        m = _score(d, "momentum", swap_diff=None, risk=None, speeds=speeds,
+                   asset_class=asset_class)
+        cs = _score(d, "carry", swap_diff=swap_diff, risk=None, speeds=speeds,
+                    asset_class=asset_class)
         if m is None or cs is None:
             return []
         s = 0.5 * (cs + m)
     elif combo == "carry_calm_vol":
-        cs = _score(d, "carry", swap_diff=swap_diff, risk=None, speeds=speeds)
+        cs = _score(d, "carry", swap_diff=swap_diff, risk=None, speeds=speeds,
+                    asset_class=asset_class)
         if cs is None:
             return []
         vz = _z(np.log(d["close"].astype(float)).diff().rolling(48, min_periods=24).std(), 240)
         s = cs.where(vz < 0.5, 0.0)
     elif combo == "trend_x_defensive":
-        t = _score(d, "trend", swap_diff=None, risk=None, speeds=speeds)
-        de = _score(d, "defensive", swap_diff=None, risk=risk, speeds=speeds)
+        t = _score(d, "trend", swap_diff=None, risk=None, speeds=speeds,
+                   asset_class=asset_class)
+        de = _score(d, "defensive", swap_diff=None, risk=risk, speeds=speeds,
+                    asset_class=asset_class)
         if t is None or de is None:
             return []
         s = 0.5 * (t + de)

@@ -288,8 +288,20 @@ def test_end_to_end_pass_on_synthetic_bars_writes_the_artifact_and_queues_with_p
     assert camp["SCREENED"] == doc["cheap_layer"]["passed"]
     assert camp["QUEUED"] == doc["registry"]["queued"] + doc["registry"]["queued_existing"]
     assert camp["QUEUED"] >= 1, doc["cells"]
-    assert camp["QUEUED"] == doc["cells"]["survivors"]
-    rows = R.candidates(origin=None, limit=500)
+    # THERE IS ONE JUDGE (LAWS 7). This used to read `== doc["cells"]["survivors"]`, which pinned
+    # the OLD behaviour: only cells the factory's own tier1/tier2 liked ever reached the
+    # registry. The factory now queues the cells its screens disliked too -- ordered by the tier
+    # statistic, never gated on it -- so QUEUED covers survivors PLUS the deferred rows whose
+    # executor exists. A deferred cell with no executor is recorded BLOCKED, which is a fact
+    # about this desk's executors, not a verdict on the edge.
+    assert doc["cells"]["deferred_to_judge"] > 0, "the factory's screens disliked nothing at all?"
+    assert camp["QUEUED"] > doc["cells"]["survivors"], doc["cells"]
+    assert camp["QUEUED"] + doc["registry"]["blocked"] == (
+        doc["cells"]["survivors"] + doc["cells"]["deferred_to_judge"]
+        + doc["cells"]["blocked_survivors"])
+    # The read must cover every queued row: since the factory queues deferred cells too (LAWS 7
+    # above) a pass queues several hundred, and a fixed limit=500 truncated the read below QUEUED.
+    rows = R.candidates(origin=None, limit=max(500, 2 * int(camp["QUEUED"]) + 100))
     mine = [r for r in rows if r.get("generator") == XF.SOURCE]
     assert len(mine) == camp["QUEUED"]
     for r in mine:
@@ -297,11 +309,19 @@ def test_end_to_end_pass_on_synthetic_bars_writes_the_artifact_and_queues_with_p
         assert lineage["parent_genome"] and "mutation_chain" in lineage
         assert lineage["mutation_chain"][-1] in {*XF.MOVES, "transfer", "transfer_state",
                                                  "qd_state", "invent"}
-        assert lineage["operator_credits"] and lineage["trial_family"]
+        # Every operator in the cell's expression carries its credit. A bare terminal (crossover
+        # can yield e.g. `close`) has no operator to credit, so its map is empty by construction;
+        # that case was hidden while the read above was truncated at 500 rows.
+        expr = str(json.loads(r.get("params_json") or "{}").get("expr") or "")
+        assert lineage["operator_credits"] or "(" not in expr, (expr, lineage)
+        assert all(op in expr for op in lineage["operator_credits"]), (expr, lineage)
+        assert lineage["trial_family"]
         assert r["family"] == "formula" and r["status"] == "queued"
         assert r["department"] == "mathlab" and r["trial_family"]
         assert json.loads(r["params_json"])["expr"]
-    assert doc["registry"]["cells"] == doc["cells"]["survivors"] + doc["cells"]["blocked_survivors"]
+    assert doc["registry"]["cells"] == (doc["cells"]["survivors"]
+                                        + doc["cells"]["deferred_to_judge"]
+                                        + doc["cells"]["blocked_survivors"])
     klass = META["AAA"]["asset_class"].lower()          # the lake lower-cases the registry's class
     assert doc["qd_archive"]["cells_filled"] > 0 and doc["population"]["islands"][klass] > 0
     assert doc["migration"]["island"] == klass

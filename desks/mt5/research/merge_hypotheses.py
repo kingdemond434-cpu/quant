@@ -33,6 +33,12 @@ TARGET = HYP / "external_survivors.json"
 #: judge, because a cell that cannot reach the book cannot repay a gate-second however it scores.
 STUDY_BANK = HYP / "study_bank.json"
 
+#: THE EVENT LANE'S OWN DOCKET. The principal's two-lane order of 2026-09-06: single-name equities
+#: are traded on news, financial reports and earnings reaction, and are NEVER hunted for
+#: statistical hypotheses. Rows whose instrument is not in the hypothesis lane are routed HERE --
+#: kept, counted and named, exactly as the study bank keeps a live-banned family's rows.
+EVENT_LANE = HYP / "event_lane_docket.json"
+
 #: The gate ledger, read ONLY to count how much of the judge each family has already consumed.
 GATE_LEDGER = HYP / "gate_verdict_ledger.jsonl"
 GATE_LEDGER_TAIL = 200_000
@@ -74,6 +80,99 @@ def judged_by_family(path: Path | None = None, tail: int = GATE_LEDGER_TAIL) -> 
     return out
 
 
+#: The RL agent's own artifact. Read, never written, here.
+ALPHA_RL = BASE / "reports" / "ALPHA_RL.json"
+
+
+def alpha_rl_family_values(path: Path | None = None) -> tuple[dict[str, float], str]:
+    """Per-FAMILY learned value from `reports/ALPHA_RL.json`, and the basis of that reading. G4.
+
+    THE AGENT HAD NO CONSUMER, WHICH IS THE ONLY THING WRONG WITH IT. `libs/research/alpha_rl.py`
+    learns Q(prefix, next decision) over the construction MDP whose first layer is `family`, the
+    runner publishes the ranked table hourly, and its ledger row said in as many words that
+    nothing read it -- "EXISTS-DARK code inside a PARTIAL row". A ranking nobody sorts on is a
+    ranking of nothing.
+
+    WHAT IS READ. Only rows whose prefix is EMPTY -- i.e. the first decision of an episode, whose
+    `decision` is a family name -- because those are the only values that are about a family
+    rather than about a family CONDITIONED on a symbol chosen later. `status` other than MEASURED
+    returns nothing at all: an UNMEASURED table means no episode ran, and ordering the desk's
+    judging docket by an unrun agent's opinions is worse than not ordering it.
+    """
+    p = ALPHA_RL if path is None else path
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}, f"{p.name} absent or unreadable"
+    if not isinstance(doc, dict):
+        return {}, f"{p.name} is not an object"
+    if str(doc.get("status") or "") != "MEASURED":
+        return {}, (f"{p.name} status={doc.get('status')!r}: "
+                    f"{str(doc.get('reward_why') or doc.get('why') or 'no episode ran')[:120]}")
+    out: dict[str, float] = {}
+    for row in doc.get("top") or []:
+        # A non-empty prefix is a CONDITIONAL value, not a statement about the family alone.
+        if not isinstance(row, dict) or row.get("prefix"):
+            continue
+        fam, val = str(row.get("decision") or ""), row.get("value")
+        if fam and isinstance(val, (int, float)) and (fam not in out or val > out[fam]):
+            out[fam] = float(val)
+    if not out:
+        return {}, f"{p.name} MEASURED but carries no first-layer (family) decision"
+    best = max(out.items(), key=lambda kv: kv[1])[0]
+    return out, f"{p.name}: {len(out)} family value(s), best {best}"
+
+
+#: C9's artifact. Read, never written, here.
+RESIDUAL_GATE = BASE / "reports" / "RESIDUAL_GATE.json"
+
+
+def residual_family_values(path: Path | None = None) -> tuple[dict[str, float], str]:
+    """Per-FAMILY best residual t from `reports/RESIDUAL_GATE.json`, and the basis. C9.
+
+    THE STATISTIC IS INCREMENTAL ALPHA AFTER NEUTRALISATION: `residual_gate_mount` regresses each
+    candidate the desk records a daily series for on the funded book's latent factors and on its
+    survivor series, and publishes the t of the intercept -- the alpha the book cannot explain.
+    C9's `next_step` asked for that as a stage inside `external_gauntlet`; that file is sealed, so
+    the statistic is mounted beside it and READ HERE, which is what makes it an admission
+    statistic rather than a report.
+
+    IT ORDERS, IT NEVER REMOVES. The value is a TIE-BREAK inside `breadth_order` between families
+    that have been judged equally often per docket row; no row is dropped, delayed or shrunk by
+    it. A family the mount has not measured is absent from the mapping and sorts at 0.0, the
+    neutral point of a signed t -- an unmeasured family loses nothing to a measured negative one.
+    `status` other than MEASURED returns nothing: ordering the docket by an unrun measurement is
+    worse than not ordering it.
+    """
+    p = RESIDUAL_GATE if path is None else path
+    try:
+        doc = json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}, f"{p.name} absent or unreadable"
+    if not isinstance(doc, dict) or str(doc.get("status") or "") != "MEASURED":
+        return {}, (f"{p.name} status="
+                    f"{(doc.get('status') if isinstance(doc, dict) else None)!r}: "
+                    "no measured residual cell")
+    out: dict[str, float] = {}
+    for fam, row in (doc.get("by_family") or {}).items():
+        t = row.get("best_residual_t") if isinstance(row, dict) else None
+        if fam and isinstance(t, (int, float)):
+            out[str(fam)] = float(t)
+    if not out:
+        return {}, f"{p.name} MEASURED but no candidate mapped to a registered family"
+    best = max(out.items(), key=lambda kv: kv[1])[0]
+    return out, f"{p.name}: {len(out)} family residual t(s), best {best}"
+
+
+def _family_counts(rows: list[dict]) -> dict[str, int]:
+    """{family: rows}, in ONE pass over the docket and sorted by name for a stable report."""
+    out: dict[str, int] = {}
+    for r in rows:
+        f = str(r.get("family"))
+        out[f] = out.get(f, 0) + 1
+    return dict(sorted(out.items()))
+
+
 def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
     """ORDER THE DOCKET SO UNTESTED FAMILIES REACH THE GATES.
 
@@ -95,7 +194,22 @@ def breadth_order(rows: list[dict], judged: dict[str, int]) -> list[dict]:
     def spend(fam: str) -> float:
         return judged.get(fam, 0) / max(docket.get(fam, 1), 1)
 
-    order = {fam: i for i, fam in enumerate(sorted(docket, key=lambda f: (spend(f), f)))}
+    # G4's CONSUMER. Breadth still decides the TIER -- an unjudged family outranks a re-judged
+    # one, and that ratchet is untouched -- but families that have been spent on equally are no
+    # longer separated by their own spelling. The RL agent's learned value for the family
+    # decision breaks that tie, which is exactly the budget it was built to redirect. A family
+    # the agent has never valued sorts at 0.0, which is the NEUTRAL point of a signed dE[log W]
+    # value, so an unvalued family loses nothing to one the agent dislikes.
+    rl, _rl_why = alpha_rl_family_values()
+    # C9's CONSUMER, one rung below G4's. When breadth and the RL value both tie, the family
+    # whose candidate the CURRENT BOOK cannot explain is judged first -- incremental alpha after
+    # neutralisation, which is exactly what C9 asks an admission statistic to be. It still only
+    # re-orders: no family is removed from the docket by a residual t, and an unmeasured one
+    # sorts at the neutral 0.0.
+    res, _res_why = residual_family_values()
+    order = {fam: i for i, fam in
+             enumerate(sorted(docket, key=lambda f: (spend(f), -rl.get(f, 0.0),
+                                                     -res.get(f, 0.0), f)))}
     return sorted(rows, key=lambda r: order.get(str(r.get("family") or ""), len(order)))
 
 #: Every producer, and how to reach the rows inside it. Adding a producer means adding a line
@@ -206,6 +320,122 @@ def tradeable_universe() -> dict[str, str]:
     return out
 
 
+def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
+    """`(refusal(symbol) -> verdict or "", why)`: the two-lane door, PROVED before it is used.
+
+    `refusal` returns the EMPTY STRING for an instrument the statistical judge may hunt and the
+    lane's own verdict (`event`, `unclassified`) for one it may not. The hypothesis token is never
+    re-spelled here: it is read from `universe_policy` itself, because a second spelling of a rule
+    is how four pens came to have four different ones on this desk before. `None` is returned when
+    the router cannot be trusted, and the caller then routes NOTHING.
+
+    THE STANDING ORDER THIS ENFORCES AT THE DOOR (principal, 2026-09-06). Single-name equities are
+    traded on news, financial reports and earnings reaction and are NEVER hunted for statistical
+    hypotheses; forex, metals, energy, softs, indices, bonds and Fusion's crypto CFDs are the
+    hypothesis-discovery universe. `research/universe_policy.lane` decides by MetaTrader's own
+    ASSET CLASS, never by a symbol list, so a share CFD listed tomorrow is routed the day it
+    appears and no edit here is required.
+
+    WHY THE DOOR IS HERE AND NOT ONLY IN THE PRODUCERS (measured 2026-09-24). `route_by_lane` in
+    `side_channels/run_external_backtest.py` keeps equities out of NEW dockets, and `fast_admission`
+    counts the ones that got in -- but this merge is the one funnel every producer flows through,
+    and its own bank loop RE-ADMITS every row ever minted on every hourly run. So the residue
+    banked before the two-lane order was re-minted into the judge's docket hour after hour: 932
+    rows across 103 single names on this tree, 1,020 on the trading box. A screen that names a
+    population whose writer never removes it is a queue with extra steps.
+
+    THIS IS NOT A REDUCTION AND MUST NEVER BE READ AS ONE. The equities stay in the desk's
+    universe, stay tradable, keep their bars and ticks, and their edge is sought in the event lane;
+    what stops is spending the statistical judge on them. Trial count is a SHARED cost -- the
+    deflated-Sharpe charge and the program-level SPA/PBO tests divide one family-wise error budget
+    across every cell tested -- so each equity cell raised the bar every FX and metals cell had to
+    clear. Routing them out RAISES the power of the classes best suited to the method inside the
+    same budget; it caps, shrinks and vetoes nothing.
+
+    THE ROUTER IS PROVED, NEVER ASSUMED. `lane()` answers UNCLASSIFIED for a symbol MetaTrader's
+    registry does not carry, so a registry THIS process cannot read would call the entire docket
+    UNCLASSIFIED and route every row away from the judge -- the identical failure mode
+    `tradeable_universe` already guards by filtering nothing when it comes back empty (L1.28a).
+    The router therefore has to place at least one symbol of the universe in a real lane before it
+    is trusted to place any row, and an unproved router filters NOTHING and says so.
+    """
+    if not tradeable:
+        return None, ("universe registry unreadable: the lane router cannot be proved, so NOTHING "
+                      "was routed by lane this run (UNMEASURED, not clean)")
+    try:
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane
+    except Exception as exc:
+        return None, (f"universe_policy unavailable ({type(exc).__name__}: {exc}): NOTHING was "
+                      f"routed by lane this run (UNMEASURED, not clean)")
+    placed = sum(1 for canon in tradeable.values() if lane(canon) != UNCLASSIFIED)
+    if not placed:
+        return None, (f"the lane router placed 0 of {len(tradeable)} tradeable symbol(s) in a "
+                      f"lane -- it cannot see the registry from here, so NOTHING was routed by "
+                      f"lane this run (UNMEASURED, not clean)")
+
+    def refusal(symbol: str) -> str:
+        verdict = lane(symbol)
+        return "" if verdict == HYPOTHESIS else verdict
+
+    return refusal, (f"universe_policy.lane, proved on {placed} of {len(tradeable)} tradeable "
+                     f"symbol(s); only lane={HYPOTHESIS!r} reaches the judge")
+
+
+def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
+                  ) -> tuple[list[dict[str, Any]], list[dict[str, Any]],
+                             dict[str, int], dict[str, int]]:
+    """`(judged, event_lane, by_lane, by_instrument)` -- the two-lane door applied to a docket.
+
+    KEPT, NEVER DELETED. A refused row is not dropped: it is stamped with the lane's own verdict
+    and the reason, and returned so the caller can bank it beside the docket. The event lane can
+    then pick its population up by name instead of re-deriving it, and nothing the desk has ever
+    mined leaves the tree.
+
+    `refusal is None` means the router could not be proved, and then NOTHING is routed -- every
+    row is returned as judged, which is the same fail-open the tradeability filter takes when the
+    registry is unreadable. Losing a registry must never be able to empty the judge's docket.
+    """
+    judged: list[dict[str, Any]] = []
+    off_lane: list[dict[str, Any]] = []
+    by_lane: dict[str, int] = {}
+    by_symbol: dict[str, int] = {}
+    if refusal is None:
+        return list(rows), off_lane, by_lane, by_symbol
+    for row in rows:
+        symbol = str(row.get("symbol") or row.get("sym") or "")
+        # ABSENCE IS NOT A VERDICT (L1.28a), and this is the SAME rule the donation door keeps
+        # (`proposer_common._lane_filtered`): a row that names no instrument has not been shown to
+        # be in the wrong lane, and refusing it would turn a missing field into a policy breach.
+        # A row that DOES name one and whose class the desk has never seen is a different thing --
+        # that is UNCLASSIFIED, and absence of a rule about a real instrument is not a permission.
+        verdict = refusal(symbol) if symbol else ""
+        if not verdict:
+            judged.append(row)
+            continue
+        # UNCLASSIFIED LANDS HERE TOO. A class the desk has never seen is hunted by nothing until
+        # somebody decides where it belongs: absence of a rule is not a permission, and defaulting
+        # an unknown vocabulary into the discovery lane is how 3,839 cells from another broker's
+        # tickers came to spend this desk's trial budget.
+        row["lane"] = verdict
+        row["judging_status"] = "EVENT_LANE"
+        row["judging_reason"] = (
+            f"universe_policy.lane({symbol!r}) = {verdict!r}, not the hypothesis lane. The "
+            "principal's two-lane order of 2026-09-06: single-name equities are traded on news, "
+            "financial reports and earnings reaction and are never hunted for statistical "
+            "hypotheses. The instrument stays tradable, its bars and ticks are still collected "
+            "and its edge is sought in the event lane; only the statistical judge's SHARED trial "
+            "budget is withheld, which raises the power of every cell that remains")
+        row["routed_to_event_lane_at"] = stamp
+        off_lane.append(row)
+        by_lane[verdict] = by_lane.get(verdict, 0) + 1
+        if symbol:
+            by_symbol[symbol] = by_symbol.get(symbol, 0) + 1
+    return judged, off_lane, by_lane, by_symbol
+
+
 def _ack(path: Path) -> None:
     """LINEAGE IS ACKNOWLEDGED, NEVER INFERRED (LAWS 7): the merge names every source docket it
     read by that docket's producer run id, so `compile_candidates -> merge_docket` is an observed
@@ -312,6 +542,49 @@ def main() -> int:
         per_source[name] = kept
         source_state[name] = "FRESH"
 
+    # ------------------------------------------------------------------ THE CANONICAL REGISTRY
+    # THE EIGHTH SOURCE, AND THE ONE THAT HAD NO DOOR (measured on the trading box 2026-09-24).
+    # The seven above are JSON files. `data/alpha_registry.sqlite` -- the desk's one canonical
+    # research registry, 356,087 candidates -- was not among them, and the sealed gauntlet does
+    # not open it either: its `main()` reads this file and nothing else. So every cell minted
+    # into the registry reached a judge only through `moat_candidate_compiler`'s 276-row hourly
+    # lease, which is 54 days per pass over the population. Read here, IN PROCESS, because this
+    # merge is the one funnel the judge's input flows through and an out-of-process producer
+    # would need a leg ahead of this one in the hourly cycle to be anything but stale.
+    #
+    # It is a source like the others: deduped by executable identity, filtered to tradeable
+    # symbols by the same rule, point-in-time stamped through the desk's one door, and judged by
+    # the sealed gauntlet's own constants. Nothing here is capped -- the gate's trial count is a
+    # pinned constant (`policy/gate_spec.yaml`), so there is no multiplicity reason to feed less.
+    registry_census: dict = {"status": "UNMEASURED"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.moat.docket_feed import feed as _registry_feed
+        _reg_rows, registry_census = _registry_feed(tradeable=tradeable or None,
+                                                    banned=live_banned_families())
+        kept = 0
+        for row in _reg_rows:
+            ident = _identity(row)
+            if ident in merged:
+                continue
+            merged[ident] = {**row, "producer": "alpha_registry"}
+            kept += 1
+        registry_census["merged_new"] = kept
+        per_source["alpha_registry.sqlite"] = kept
+        source_state["alpha_registry.sqlite"] = str(registry_census.get("status") or "UNMEASURED")
+        print(f"   registry feed: {registry_census.get('candidates', 0)} unjudged candidate(s), "
+              f"{registry_census.get('fed', 0)} stamped, {kept} new to the docket "
+              f"({registry_census.get('refused_unstamped', 0)} refused unstamped)")
+    except Exception as exc:                       # a feed that fails is named, never silent
+        registry_census = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        per_source["alpha_registry.sqlite"] = -1
+        source_state["alpha_registry.sqlite"] = registry_census["status"]
+        print(f"   registry feed UNAVAILABLE ({type(exc).__name__}: {exc}); the seven JSON "
+              f"sources above are unaffected")
+
     # NOTHING ABOUT SEARCH WIDTH TRAVELS WITH A ROW. An earlier revision copied the search's
     # trial count onto every hypothesis so `deflated_sharpe` would deflate against it -- making
     # the ten gates harsher than their sealed definition. That is an unsanctioned bar, merely
@@ -412,8 +685,24 @@ def main() -> int:
     study: list[dict[str, Any]] = []
     for row in merged.values():
         (study if str(row.get("family") or "") in banned_families else rows_out).append(row)
+
+    # THE TWO-LANE DOOR (principal 2026-09-06). Proved before it is used; an unproved router
+    # routes nothing, so losing the registry can never empty the judge's docket.
+    lane_refusal, lane_why = lane_router(tradeable)
+    stamp = now.isoformat(timespec="seconds")
+    rows_out, off_lane, off_lane_counts, off_lane_syms = split_by_lane(
+        rows_out, lane_refusal, stamp)
+    print(f"   lane router: {lane_why}")
+    if off_lane:
+        EVENT_LANE.parent.mkdir(parents=True, exist_ok=True)
+        EVENT_LANE.write_text(json.dumps(off_lane, indent=1, default=str), "utf-8")
+        top = sorted(off_lane_syms.items(), key=lambda kv: -kv[1])[:8]
+        print(f"   event lane: {len(off_lane)} row(s) across {len(off_lane_syms)} instrument(s) "
+              f"routed OUT of the judging docket {off_lane_counts} (kept, never deleted) -> "
+              f"{EVENT_LANE.name}: {dict(top)}")
+    elif lane_refusal is not None:
+        print("   event lane: 0 row(s) -- every docket instrument is in the hypothesis lane")
     if study:
-        stamp = now.isoformat(timespec="seconds")
         for row in study:
             row["judging_status"] = "STUDY_ONLY"
             row["judging_reason"] = (
@@ -440,8 +729,15 @@ def main() -> int:
     # with backlog. Nothing is dropped; `breadth_order` remains the fallback, and a failure in
     # the allocator can only cost the ORDER, never a row.
     judged = judged_by_family()
+    _rl_fam, _rl_why = alpha_rl_family_values()
+    print(f"   alpha_rl family values: {_rl_why}")
     coverage: dict[str, Any] = {}
     try:
+        # Run as `python research/merge_hypotheses.py`, sys.path[0] is the research directory
+        # itself, so the desk root has to be on the path before a sibling package import works.
+        import sys as _sys
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
         from research.judge_coverage import order_docket
         rows_out, coverage = order_docket(rows_out)
     except Exception as exc:
@@ -468,8 +764,37 @@ def main() -> int:
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
-        "families": {f: sum(1 for r in rows_out if r.get("family") == f)
-                     for f in sorted({str(r.get("family")) for r in rows_out})},
+        # THE REGISTRY'S OWN LANE, MEASURED (libs/moat/docket_feed.py). Until 2026-09-24 the
+        # sealed gauntlet had no path to `data/alpha_registry.sqlite` at all and the registry's
+        # cells reached it only through a 276-row hourly lease; this census is how many of them
+        # the docket actually carries, so the claim is checkable rather than asserted.
+        "alpha_registry": registry_census,
+        # ONE PASS, NOT ONE PASS PER FAMILY. This was a comprehension nested over the whole
+        # docket for every distinct family -- invisible at 20,000 rows and 77 families, and
+        # 34.5 MILLION comparisons once the registry's own cells reach the docket (448,391 rows
+        # measured on the box 2026-09-24). A report line must not cost more than the merge it
+        # reports on; the counts are identical.
+        "families": _family_counts(rows_out),
+        # G4: what the RL agent's table said about families THIS hour, read whichever ordering
+        # path won, so "the agent's opinion was consulted" is a checkable claim and not a code
+        # path nobody can see from the outside.
+        "alpha_rl": {"values": {k: round(v, 6) for k, v in _rl_fam.items()}, "basis": _rl_why,
+                     "used_by": "breadth_order tie-break within a spend tier"},
+        # THE TWO-LANE DOOR, MEASURED. `routed` is 0 AND `router` names the reason when the
+        # router could not be proved, so "nothing was equity-routed this hour" never reads the
+        # same as "the registry was unreadable" (L1.28a).
+        "event_lane": {"rows": len(off_lane), "by_lane": off_lane_counts,
+                       "instruments": len(off_lane_syms),
+                       "router": lane_why, "proved": lane_refusal is not None,
+                       "path": str(EVENT_LANE),
+                       "why": ("the principal's two-lane order of 2026-09-06: single-name "
+                               "equities are traded on news, financial reports and earnings "
+                               "reaction and are never hunted for statistical hypotheses. Routing "
+                               "is by MetaTrader's own asset class, never a symbol list; an "
+                               "unclassified class is hunted by nothing until it is classified. "
+                               "The instruments stay tradable and keep their bars and ticks -- "
+                               "only the judge's SHARED trial budget is withheld, which raises "
+                               "the power of every cell that remains")},
         "study_bank": {"rows": len(study), "families": sorted(banned_families),
                        "path": str(STUDY_BANK),
                        "why": "banned from live capital, so a gate-second spent here buys an "

@@ -60,13 +60,16 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 __all__ = [
+    "EVALUATION_LANES",
     "KINDS",
     "MAX_CLAIMS_PER_DOC",
     "MAX_CLAIM_CHARS",
     "PIT_STATUSES",
     "PRIORITY_LOW",
     "PRIORITY_NORMAL",
+    "SHARED_OUTPUT_FIELDS",
     "SPEC_FIELDS",
+    "TIMING_FIELDS",
     "Lead",
     "blank_spec",
     "cell_seed_key",
@@ -80,6 +83,7 @@ __all__ = [
     "lead_id_of",
     "leads_from_intelligence_row",
     "row_cell_key",
+    "shared_contract",
     "structured_complete",
     "title_key",
     "to_row",
@@ -108,6 +112,22 @@ PIT_STATUSES: tuple[str, ...] = ("PIT_CLEAN", "LAGGED", "UNKNOWN", "NOT_PIT")
 
 PRIORITY_LOW = "low"
 PRIORITY_NORMAL = "normal"
+
+EVALUATION_LANES: tuple[str, ...] = (
+    "MARKET_ALPHA", "DATA_REPRESENTATION", "EXECUTION", "PORTFOLIO_ALLOCATION",
+    "RESEARCH_PROCESS", "RELIABILITY",
+)
+SHARED_OUTPUT_FIELDS: tuple[str, ...] = (
+    "input_version_id", "canonical_source_id", "source_uri", "content_hash",
+    "source_version", "original_language", "evidence_grade", "availability_metadata",
+    "mechanism", "source_rule_or_reconstruction", "uncertainties", "target_lane",
+    "required_data", "executable_mapping", "cost_assumptions", "falsifier", "lineage",
+    "owner", "next_action", "consumer_acknowledgement",
+)
+TIMING_FIELDS: tuple[str, ...] = (
+    "observation_period", "published_at", "acquired_at", "available_for_decision_at",
+    "revision_valid_from", "revision_valid_to",
+)
 
 #: A claim is a sentence, not a corpus. 2,000 characters holds the longest real claim measured on
 #: this tree (a 七禾网 story with its numbers) and refuses a scraped page body pretending to be one.
@@ -804,11 +824,63 @@ def validate(lead: Lead) -> list[str]:
     return problems
 
 
+def shared_contract(lead: Lead) -> dict[str, Any]:
+    """GLOBAL_RESEARCH_MAXIMUM_V1 transport fields derived from the canonical Lead.
+
+    Unknowns stay explicit; they are never replaced by optimistic timestamps or invented costs.
+    The Lead remains the single canonical object and older stored rows remain readable.
+    """
+    spec = lead.structured or {}
+    content_hash = hashlib.sha256(lead.claim_text.encode("utf-8")).hexdigest()
+    source_version = str(lead.provenance.get("run") or lead.doc_id or "")
+    input_version_id = hashlib.sha256(
+        f"{lead.source_id}\x00{source_version}\x00{content_hash}".encode()
+    ).hexdigest()[:24]
+    if lead.quality.get("verbatim") and lead.url_or_ref:
+        grade = "PRIMARY_OR_VERBATIM_UNVERIFIED"
+    elif lead.quality.get("verbatim"):
+        grade = "VERBATIM_SOURCE_UNRESOLVED"
+    else:
+        grade = "LABEL_OR_RECONSTRUCTION"
+    published = lead.knowable_at
+    timing = {
+        "observation_period": "",
+        "published_at": published,
+        "acquired_at": lead.seen_at,
+        "available_for_decision_at": published if "T" in published else "",
+        "revision_valid_from": "",
+        "revision_valid_to": "",
+    }
+    return {
+        "input_version_id": input_version_id,
+        "canonical_source_id": lead.source_id,
+        "source_uri": lead.url_or_ref,
+        "content_hash": content_hash,
+        "source_version": source_version,
+        "original_language": lead.language,
+        "evidence_grade": grade,
+        "availability_metadata": timing,
+        "mechanism": list(lead.mechanism_ids),
+        "source_rule_or_reconstruction": ("DIRECT_SOURCE_WORDS" if lead.quality.get("verbatim")
+                                           else "RECONSTRUCTION_REQUIRED"),
+        "uncertainties": lead.spec_gaps(),
+        "target_lane": "MARKET_ALPHA" if lead.testable else "RESEARCH_PROCESS",
+        "required_data": spec.get("required_data"),
+        "executable_mapping": dict(lead.executable or {}),
+        "cost_assumptions": spec.get("expected_cost"),
+        "falsifier": spec.get("falsifier"),
+        "lineage": dict(lead.provenance),
+        "owner": str(lead.provenance.get("seat") or lead.provenance.get("miner") or ""),
+        "next_action": "COMPILE" if lead.testable else "DEEPEN",
+        "consumer_acknowledgement": lead.provenance.get("consumer_acknowledgement") or None,
+    }
+
+
 # --------------------------------------------------------------------------- serialisation
 
 def to_row(lead: Lead) -> dict[str, Any]:
     """JSON-safe dict. Round-trips through `from_row` unchanged."""
-    return asdict(lead)
+    return {**asdict(lead), **shared_contract(lead)}
 
 
 def from_row(row: Mapping[str, Any]) -> Lead:

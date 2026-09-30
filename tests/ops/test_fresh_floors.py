@@ -151,46 +151,47 @@ def test_declared_floors_join_the_contract_line(froot):
 
 # ------------------------------- executor opt-ins (R0159) -------------------------------------
 
+# THE EXECUTOR THESE THREE PINNED IS RETIRED. `scripts/run_cashcarry_executor.py` carried four
+# R0159 opt-ins (_rt_bps, _structurally_bleeding, _refresh_guard, _venue_equity) and was deleted
+# with the Binance executors on 2026-09-05 under the MT5 universe mandate (ops/crontab.manifest
+# "RETIRED 2026-09-05"). The tests now pin (a) that it stays gone, so a revival must re-earn its
+# floors here, (b) that a SURVIVING opted-in read site keeps its floor, and (c) the two
+# end-to-end contracts the executor relied on, driven through `read_fresh` itself.
+
 def test_executor_optin_wiring_present_in_source():
-    """Fails if an R0159 floor is deleted from an opted-in executor read site (the L1.41
+    """Fails if an R0159 floor is deleted from an opted-in read site (the L1.41
     remove-the-wiring-and-go-red standard, same as the fence's _WIRED check)."""
-    src = (_REPO / "scripts/run_cashcarry_executor.py").read_text("utf-8")
-    assert src.count("min_rows=1") >= 4, "executor R0159 floor opt-ins reduced below 4"
-    # _venue_equity (GAP #54 / R0096) is the newest opt-in: a truncated venue_equity.json has a
-    # young mtime and carries no venue information, so without the floor it would pass the age
-    # gate and the venue cap would silently fall back to its unmeasured path wearing a fresh
-    # timestamp. Removing the wiring must go red here, not surface as a quiet degrade.
-    for caller in ("_rt_bps", "_structurally_bleeding", "_refresh_guard", "_venue_equity"):
-        assert f"run_cashcarry_executor.{caller}" in src
+    assert not (_REPO / "scripts/run_cashcarry_executor.py").exists(), (
+        "the executor is back -- restore its four min_rows=1 opt-ins and pin them here")
+    src = (_REPO / "libs/research/lending_haircut.py").read_text("utf-8")
+    assert 'caller="lending_haircut.derive_haircut", min_rows=1' in src, (
+        "lending_haircut lost its R0159 content floor")
 
 
 def test_executor_rt_bps_empty_model_refused_and_recorded(froot):
-    """End-to-end through the opted-in call site: a fresh-but-empty cost model must not pass
-    silently. The returned cost is the pessimistic default exactly as before (KeyError branch
-    unchanged -- no gate weakened), and the read now leaves a stale_read record."""
-    import scripts.run_cashcarry_executor as ex
+    """A fresh-but-empty cost model must not pass silently: under the floor it reads NOT fresh
+    (so a caller falls back to its pessimistic default) and leaves a stale_read record; a healthy
+    model passes the same floor."""
     _write(froot, "data/cost_model.json", {})                      # truncated write, young mtime
-    assert ex._rt_bps("CHEAP") == ex._DEFAULT_RT_BPS
-    evs = _registry_events(froot)
-    assert any(e["event"] == "stale_read"
-               and e["caller"] == "run_cashcarry_executor._rt_bps" for e in evs)
+    fr = read_fresh("data/cost_model.json", 24.0, caller="t.rt_bps", min_rows=1, root=froot)
+    assert not fr.fresh
+    assert any(e["event"] == "stale_read" and e["caller"] == "t.rt_bps"
+               for e in _registry_events(froot))
     model = {"symbols": {"CHEAP": {"pair": {"500": {"pair_roundtrip_bps": 5.0}}}}}
     _write(froot, "data/cost_model.json", model)                   # healthy model, floor met
-    assert ex._rt_bps("CHEAP") == 5.0
+    fr = read_fresh("data/cost_model.json", 24.0, caller="t.rt_bps", min_rows=1, root=froot)
+    assert fr.fresh and fr.data == model
 
 
 def test_executor_empty_guard_stays_neutral_and_is_recorded(froot):
-    """A truncated live_guard.json ({}) used to steer the tick at full size silently. The
-    decision is unchanged (neutral: full size, takers allowed -- the documented fail-open
-    direction), but the empty read is now loud."""
-    import scripts.run_cashcarry_executor as ex
+    """A truncated guard file ({}) used to steer the tick silently. Under the floor the empty
+    read is LOUD (not fresh, recorded), and a healthy one is still consumed."""
     _write(froot, "data/live_guard.json", {})
-    ex._refresh_guard()
-    assert ex._GUARD == {"size_frac": 1.0, "limit_only": False}
-    assert any(e["event"] == "stale_read"
-               and e["caller"] == "run_cashcarry_executor._refresh_guard"
+    fr = read_fresh("data/live_guard.json", 1.0, caller="t.guard", min_rows=1, root=froot)
+    assert not fr.fresh
+    assert any(e["event"] == "stale_read" and e["caller"] == "t.guard"
                for e in _registry_events(froot))
-    _write(froot, "data/live_guard.json",
-           {"effective_size_fraction": 0.5, "canary": {"mode": "limit_only"}})
-    ex._refresh_guard()                                            # healthy guard still consumed
-    assert ex._GUARD == {"size_frac": 0.5, "limit_only": True}
+    good = {"effective_size_fraction": 0.5, "canary": {"mode": "limit_only"}}
+    _write(froot, "data/live_guard.json", good)
+    fr = read_fresh("data/live_guard.json", 1.0, caller="t.guard", min_rows=1, root=froot)
+    assert fr.fresh and fr.data == good

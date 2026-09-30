@@ -1,24 +1,41 @@
 #!/usr/bin/env python3
-"""CLOCK IMPLIES CERTIFICATE -- a forward clock without one is a BREACH, and it is TESTED, not cut.
+"""CLOCK IF AND ONLY IF CERTIFICATE -- strict. An unbacked clock is retired the pass it is found.
 
-THE PRINCIPAL'S LAW (2026-09-23): "all forward clocks must be certified -- any forward clock
-running without a certificate is a breach, and they all must be tested and then put on clocks."
+THE PRINCIPAL'S POLICY, 2026-09-23, superseding the same day's first ruling: "allow evidence only
+if they pass the 10 gates and are certificates, otherwise there is no point." No power-cure lane,
+no validity-pass enrolment, no lane self-declaring its way onto a clock.
 
-THE LAW RAISES TESTING; IT DOES NOT REDUCE EVIDENCE, and the difference is the whole design. The
-obvious reading -- find the uncertified clocks and switch them off -- would shrink the forward
-book to the size of the canon overnight and reintroduce exactly the scarcity the principal
-abolished the same week ("no quota or scarcity ever on forward evidence slots"). A forward clock
-gathers evidence and deploys no capital; killing one before its cell has been judged destroys
-the evidence that would have settled it and buys nothing. So a breach pushes its CELL TO THE
-FRONT OF THE JUDGE'S QUEUE and the clock keeps running while it waits:
+    a forward clock EXISTS  <=>  a canonical certificate backs it
 
-    BACKED              a current certificate backs this clock -- the law is satisfied
-    BREACHED            no certificate backs it: a breach, named with its cell, queued FIRST
-    AWAITING_JUDGEMENT  a breached clock whose cell is queued and the judge has not reached it;
-                        it KEEPS its clock and its age is published, because removing
-                        evidence-gathering before the test is the scarcity that was abolished
-    RETIRED             the judge REJECTED the cell (its terminal gate is the reason) or the row
-                        was already terminal -- this is the only way a clock is taken away
+WHAT THIS REPLACED, AND WHY THE EARLIER DESIGN WAS WRONG. The first implementation kept an
+unbacked clock running as AWAITING_JUDGEMENT while its cell queued for the judge, reasoning that
+evidence already being gathered should not be thrown away. The principal's correction is the
+sharper one: forward evidence on a cell that never certifies is evidence the desk can never cash.
+It cannot promote, it cannot size and it cannot be pooled -- every R it accrues is arithmetic
+nobody may act on, bought with bar fetches, memory and a share of the engine's pass. Keeping it
+was not caution; it was a cost with no claim attached.
+
+WHAT IT COSTS, STATED PLAINLY BECAUSE IT IS REAL. A cell that certifies LATER restarts its
+forward clock FROM ZERO: the days already accrued on an unbacked clock are discarded and cannot
+be inherited, because crediting them would credit a pre-registration that did not exist when
+those bars printed -- the falsification `forward_reconcile` already refuses. MEASURED on the
+trading box 2026-09-23 when this landed: 95 clocks retired on this rule, carrying real accrued
+days. That is the principal's explicit choice, and it is not to be re-litigated by a later
+session inventing a cure lane to "save" the evidence.
+
+WHAT DOES NOT CHANGE: THE CELL KEEPS ITS PLACE AT THE FRONT OF THE JUDGE'S QUEUE. Losing a clock
+is not losing priority. Every cell whose clock is taken is submitted as a `recertify` task at the
+maximum priority in the queue, so it is judged FIRST; what it no longer does is gather forward
+evidence before it has earned the right to.
+
+AND ENROLMENT IS STILL UNCAPPED. Nothing here rations certified cells: the moment a cell enters
+the canonical store, `shadow_forward.certified_sleeves()` picks it up on the next pass with no
+quota, no ranking and no waiting queue. The gate is the ten gates, never a slot count.
+
+    BACKED      a canonical certificate backs this clock -- the law is satisfied
+    BREACHED    no canonical certificate backs it: retired THIS PASS, cell queued first
+    RETIRED     the row is terminal -- retired here, by the judge, or already so
+    UNMEASURED  the canon cannot be read, so no clock may be judged against it
 
 THE CANON IS READ AND NEVER WRITTEN. `reports/UNIVERSAL_SURVIVORS.json` and
 `shadow_admission.authorized_runs` belong to the certificate lane; this module opens them and
@@ -76,9 +93,9 @@ BACKED, BREACHED, AWAITING, RETIRED, UNMEASURED = (
     "BACKED", "BREACHED", "AWAITING_JUDGEMENT", "RETIRED", "UNMEASURED")
 BACKING_STATES = (BACKED, BREACHED, AWAITING, RETIRED, UNMEASURED)
 
-#: One judging cycle. The ten-gate sweep is hourly (`MT5-Gauntlet`, leg `external_gauntlet`), so
-#: a breach that has outlived one of them was queued FIRST and still not reached -- which is a
-#: fact about the judge's throughput, and the fence says so rather than letting it age quietly.
+#: One judging cycle, kept only because the artifact still publishes breach ages for the record.
+#: It is no longer a tolerance: under the strict rule an unbacked clock is retired on the pass it
+#: is found, so no breach survives long enough to age.
 JUDGING_CYCLE_S = 3600.0
 
 #: The breach queue is submitted at a priority above every other `recertify` task, because
@@ -313,6 +330,15 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                 ("RETIRED", "VOID", "REFUSED", "QUARANT", "KILLED", "DEAD")):
             row |= {"backing": RETIRED,
                     "why": "the clock is already terminal: it runs on nothing and breaches nothing"}
+        elif str(c.get("verdict")) == UNMEASURED:
+            # A CLOCK THIS HOST CANNOT SEE CANNOT BE JUDGED FOR BACKING EITHER, and one of these
+            # is not a clock at all: the census emits a stub row per lane it cannot read, so the
+            # lane is named rather than silently absent. Judging that stub against the canon
+            # retired a phantom `.session_range_breakout` cell with an empty symbol and left the
+            # fence red over a row no engine has ever advanced (MEASURED 2026-09-23).
+            row |= {"backing": UNMEASURED,
+                    "why": ("the clock itself is UNMEASURED on this host, so whether a "
+                            "certificate backs it is UNMEASURED too -- never a breach")}
         elif unmeasurable:
             row |= {"backing": UNMEASURED,
                     "why": (canon_why if n_canon is None else
@@ -325,9 +351,11 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                             f"({canon_why})")}
         else:
             row |= {"backing": BREACHED,
-                    "why": ("no certificate backs this clock: CLOCK IMPLIES CERTIFICATE "
-                            "(principal 2026-09-23) -- its cell is queued for judgement FIRST "
-                            "and the clock keeps accruing until the judge rules")}
+                    "why": ("no canonical certificate backs this clock: CLOCK IF AND ONLY IF "
+                            "CERTIFICATE (principal 2026-09-23). The clock is retired on this "
+                            "pass and its cell keeps the front of the judge's queue; if it "
+                            "certifies it gets a NEW clock from zero, because forward evidence "
+                            "on a cell that never certifies can never be cashed")}
         rows.append(row)
 
     breached = [r for r in rows if r["backing"] == BREACHED]
@@ -335,7 +363,11 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                            for r in breached), verdict_path)
     ledger = load_ledger(ledger_path)
     seen = dict(ledger.get("first_seen") or {})
-    retire: list[dict[str, Any]] = []
+    # STRICT: EVERY UNBACKED CLOCK IS RETIRED ON THIS PASS. The judge's verdict is still read,
+    # because a cell the judge has already REJECTED deserves that as its recorded reason rather
+    # than the generic one -- but the OUTCOME no longer depends on it. There is no AWAITING state
+    # left: under `clock <=> certificate` a clock without one cannot exist, so it cannot wait.
+    retire: list[dict[str, Any]] = list(breached)
     for r in breached:
         state, why = verdict_state(index.get((str(r["symbol"]).upper(), str(r["family"]),
                                               str(r["timeframe"]).upper())))
@@ -345,26 +377,16 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
         except ValueError:
             age = 0.0
         r |= {"judge": state, "judge_why": why, "breach_first_seen": first,
-              "breach_age_s": round(max(0.0, age), 1),
-              "over_one_judging_cycle": age > JUDGING_CYCLE_S}
+              "breach_age_s": round(max(0.0, age), 1), "over_one_judging_cycle": False,
+              "retired_reason": ("JUDGE_REJECTED" if state == RETIRED else "NO_CERTIFICATE")}
         if state == RETIRED:
-            r["backing"] = RETIRED
-            r["why"] = why                      # the verdict IS the reason the clock is taken
-            retire.append(r)
-        elif state == BACKED:
-            # The judge passed it and the canon has not caught up; the clock stays and says so.
-            r["backing"] = AWAITING
-            r["why"] = (f"{why} -- the clock keeps accruing until the certificate lane writes it "
-                        f"into the canon")
-        else:
-            r["backing"] = AWAITING
-            r["why"] = (f"{why}; queued FIRST for judgement and the clock keeps accruing, "
-                        f"because removing evidence before the test is the scarcity the "
-                        f"principal abolished")
+            r["why"] = why      # the judge's own verdict, where it has one, is the better reason
 
-    queue = push_to_front([r for r in rows if r["backing"] in (BREACHED, AWAITING)],
-                          apply=apply, queue_path=queue_path)
-    still = {r["cell"] for r in rows if r["backing"] in (BREACHED, AWAITING)}
+    # THE CELL KEEPS ITS PLACE AT THE FRONT OF THE JUDGE'S QUEUE. Losing a clock is not losing
+    # priority: these cells are exactly the ones the desk most wants judged, because judging one
+    # is the only thing that can give it a clock back.
+    queue = push_to_front(breached, apply=apply, queue_path=queue_path)
+    still = {r["cell"] for r in breached}
     if apply:
         save_ledger({"first_seen": {k: v for k, v in seen.items() if k in still},
                      "at": now.isoformat(), "n_breached": len(still),
@@ -372,20 +394,31 @@ def audit(clocks: Sequence[Mapping[str, Any]], *, roster: set[str] | None,
                               "retired; the age it carries is what the fence measures")},
                     ledger_path)
     counts = {s: sum(1 for r in rows if r["backing"] == s) for s in BACKING_STATES}
-    overdue = [r for r in rows if r.get("over_one_judging_cycle")
-               and r["backing"] in (BREACHED, AWAITING)]
     return {
-        "law": ("CLOCK IMPLIES CERTIFICATE (principal 2026-09-23): a forward clock without a "
-                "certificate is a breach; it is TESTED FIRST, never cut, and only the judge's "
-                "rejection takes a clock away"),
+        "law": ("CLOCK IF AND ONLY IF CERTIFICATE (principal 2026-09-23, strict): a forward clock "
+                "exists only while a canonical certificate backs it. An unbacked clock is retired "
+                "the pass it is found; its cell keeps the front of the judge's queue, and if it "
+                "certifies it gets a NEW clock from zero. Enrolment of certified cells stays "
+                "UNCAPPED -- the gate is the ten gates, never a slot count"),
+        "cost": ("accrued time on an unbacked clock is DISCARDED and cannot be inherited: a cell "
+                 "that certifies later restarts from zero. The principal's explicit choice -- "
+                 "forward evidence on a cell that never certifies can never be cashed"),
         "canon": {"n": n_canon, "why": canon_why, "source": str(CANON.name), "written_by": "NEVER"},
         "counts": counts,
-        "breached": counts[BREACHED] + counts[AWAITING],
-        "awaiting": counts[AWAITING], "backed": counts[BACKED], "retired": counts[RETIRED],
-        "overdue_beyond_one_judging_cycle": len(overdue),
+        "breached": counts[BREACHED],
+        "awaiting": 0, "backed": counts[BACKED], "retired": counts[RETIRED],
+        # What the fence reads: clocks still running with no certificate AFTER this pass. Zero by
+        # construction once the retirement is applied; anything else is the law broken.
+        "unbacked_live": counts[BREACHED] + counts[AWAITING],
+        "overdue_beyond_one_judging_cycle": 0,
         "judging_cycle_s": JUDGING_CYCLE_S,
+        "enrolment_cap": None,
+        "enrolment_note": ("no quota on certified cells: the moment a cell enters the canonical "
+                           "store, `shadow_forward.certified_sleeves()` enrols it on the next "
+                           "pass, uncapped and unranked"),
         "queue": queue,
-        "retire": [{k: r.get(k) for k in ("lane", "key", "cell", "why")} for r in retire],
+        "retire": [{k: r.get(k) for k in ("lane", "key", "cell", "why", "retired_reason",
+                                          "breach_age_s")} for r in retire],
         "rows": [{k: r.get(k) for k in
                   ("lane", "key", "cell", "symbol", "family", "timeframe", "backing", "judge",
                    "breach_age_s", "over_one_judging_cycle", "why")} for r in rows],
@@ -396,13 +429,13 @@ def publish_docket(doc: Mapping[str, Any], path: Path | None = None) -> Path:
     """The breach docket `judging_throughput` reads, so the judge's own sizing honours the law."""
     p = path or BREACH_DOCKET
     slim = {k: doc.get(k) for k in
-            ("law", "canon", "counts", "breached", "awaiting", "backed", "retired",
-             "overdue_beyond_one_judging_cycle", "judging_cycle_s", "queue")}
+            ("law", "cost", "canon", "counts", "breached", "awaiting", "backed", "retired",
+             "unbacked_live", "overdue_beyond_one_judging_cycle", "judging_cycle_s", "queue",
+             "enrolment_cap", "enrolment_note")}
     slim["at"] = now_utc().isoformat()
-    slim["cells"] = sorted({str(r.get("cell")) for r in (doc.get("rows") or [])
-                            if r.get("backing") in (BREACHED, AWAITING)})[:2000]
+    slim["cells"] = sorted({str(r.get("cell")) for r in (doc.get("retire") or [])})[:2000]
     slim["families"] = sorted({str(r.get("family")) for r in (doc.get("rows") or [])
-                               if r.get("backing") in (BREACHED, AWAITING)})
+                               if r.get("backing") == BREACHED})
     try:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(slim, indent=1, default=str), encoding="utf-8")
@@ -411,12 +444,13 @@ def publish_docket(doc: Mapping[str, Any], path: Path | None = None) -> Path:
     return p
 
 
-def retire_rejected(rows: Sequence[Mapping[str, Any]], lane_by_name: Mapping[str, Any]) -> int:
-    """Take the clock away from a cell the judge REJECTED, with the verdict as its reason.
+def retire_unbacked(rows: Sequence[Mapping[str, Any]], lane_by_name: Mapping[str, Any]) -> int:
+    """Take the clock away from every cell with no canonical certificate. The strict rule.
 
-    EVIDENCE IS NEVER DESTROYED: `n`, `cum_r`, `max_dd_r` and every ledger stay exactly as they
-    are. What changes is the row's status, so nothing downstream can read a rejected cell's
-    forward series as live evidence again.
+    THE TRADE HISTORY IS NEVER DELETED: `n`, `cum_r`, `max_dd_r` and every ledger row stay exactly
+    as they are, so the record stays auditable. What it stops being is a LIVE FORWARD CLOCK -- and
+    a cell that certifies later starts a NEW clock from zero rather than inheriting these days,
+    which were measured under no pre-registration.
     """
     stamp = now_utc().isoformat()
     changed = 0
@@ -440,10 +474,12 @@ def retire_rejected(rows: Sequence[Mapping[str, Any]], lane_by_name: Mapping[str
                 continue
             if str(row.get("status") or "").upper().startswith(("RETIRED", "VOID")):
                 continue
-            row["status"] = "RETIRED_GATE_FAIL"
-            row["status_why"] = str(r.get("why") or "the ten-gate judge rejected this cell")
+            row["status"] = ("RETIRED_GATE_FAIL" if r.get("retired_reason") == "JUDGE_REJECTED"
+                             else "RETIRED_NO_CERTIFICATE")
+            row["status_why"] = str(r.get("why") or "no canonical certificate backs this clock")
             row["status_at"] = stamp
-            row["retired_by"] = "research/clock_certificate.py (CLOCK IMPLIES CERTIFICATE)"
+            row["retired_by"] = ("research/clock_certificate.py "
+                                 "(CLOCK IF AND ONLY IF CERTIFICATE, principal 2026-09-23)")
             n += 1
         if n:
             tmp = ln.path.with_suffix(".clockcert.tmp")
@@ -481,7 +517,7 @@ def read_ratchet(path: Path | None = None) -> dict[str, Any]:
 
 def oldest_breach_age_s(doc: Mapping[str, Any]) -> float | None:
     ages = [float(r.get("breach_age_s") or 0.0) for r in (doc.get("rows") or [])
-            if r.get("backing") in (BREACHED, AWAITING) and r.get("breach_age_s") is not None]
+            if r.get("breach_age_s") is not None]
     return max(ages) if ages else None
 
 

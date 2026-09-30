@@ -38,7 +38,8 @@ VERDICTS, BY RULE, IN THIS ORDER (the first rule that fires wins, and the row sa
 
     RETIRE_CANDIDATE   zero measured downstream research over 30 days AND on a clock AND not
                        EXEMPT. On a clock matters: an unwired organ costs nothing and is
-                       wiring_ceo's problem, not rent's.
+                       wiring_ceo's problem, not rent's. EXEMPT means an exemption whose
+                       falsifier has NOT arrived -- see below; an expired one shields nothing.
     MERGE              paired by > 60% overlapping artifact keys, or by >= 3 shared imports with
                        near-identical outputs. The pair is NAMED.
     REDUCE             ROI below the census median WITH compute above it -- the expensive half of
@@ -47,6 +48,21 @@ VERDICTS, BY RULE, IN THIS ORDER (the first rule that fires wins, and the row sa
 
 NOTHING IS DISABLED HERE. Reducing a cadence, merging two organs or retiring one is a later
 decision made against the number, and the number is what this file exists to produce.
+
+EVERY EXEMPTION CARRIES ITS OWN FALSIFIER (2026-09-24). The first draft of `EXEMPT_TOKENS` was a
+token -> reason map and nothing more, which made it the one structure on this desk that could
+never be wrong: a governance/publication/health organ was excused from the cells yardstick
+FOREVER, on a sentence, with no condition under which the sentence stops being true. The desk
+already knew better -- `docs/research/productivity_blockers.json` says it in its own note, "an
+EXEMPTION here is PERMANENT only while it stays true: every row carries `retire_if`, the
+condition that deletes it, so a declaration cannot outlive the fact it was declared on" -- and
+the rent ledger, whose entire purpose is that no module exists for free, was the place the rule
+was missing. So the schema is now `Exemption(why, retire_if, checks, declared_utc)`, the
+constructor REFUSES a row without a falsifier, and `checks` names MEASURED predicates
+(`RETIRE_CHECKS`) evaluated per covered module on every pass. A fired falsifier stops shielding
+in the same pass it fires, and the row says which check fired and on what evidence. UNMEASURED
+never deletes anything (L1.28a) and never quietly passes either: a half-measured condition reads
+UNMEASURED, the exemption keeps shielding, and the census says so by name.
 """
 from __future__ import annotations
 
@@ -59,6 +75,7 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -77,6 +94,11 @@ GRAPH = DESK / "data" / "hypothesis_graph.jsonl"
 COMPUTE = DESK / "data" / "compute_ledger.jsonl"
 LOGS = DESK / "logs"
 STALL = DESK / "data" / "stall_watch.json"
+#: `scripts/check_dead_architecture.py`'s census: per organ, the artifacts it writes, who reads
+#: them, and a verdict in {LIVE, BURNING, NO_CLOCK, UNREACHED}. BURNING ("on a clock and no
+#: reader found") is the falsifier half of every governance/publication/health exemption, and it
+#: is READ here, never recomputed -- the census owns the definition.
+DEAD = DESK / "reports" / "dead_architecture.json"
 
 #: The census areas, borrowed from wiring_ceo so the two organs count the same population.
 ORGAN_AREAS: tuple[str, ...] = ("desks/mt5/research", "desks/mt5/scripts",
@@ -113,33 +135,197 @@ PRODUCER_MARKS: tuple[str, ...] = (
     "suggestion_ledger", "donate", "candidate", "hypothes",
 )
 
-#: EXEMPT from RETIRE_CANDIDATE, each with the reason (an entry without one is not one). A
+# ------------------------------------------------------------ exemptions, and their falsifiers
+#
+# AN EXEMPTION WITHOUT A FALSIFIER IS A PERMANENT EXCUSE. The three predicates below are the only
+# conditions an exemption may declare, and each one was chosen because it is MEASURED TODAY on an
+# artifact this desk already writes -- not because it sounded like a condition:
+#
+#   mints_cells            the hypothesis graph / registry generator_yield, through this organ's
+#                          own per-module row. It REFUTES the premise: "its product is a verdict,
+#                          not a candidate" is false about a module that minted candidates.
+#   output_reaches_nobody  desks/mt5/reports/dead_architecture.json, verdict BURNING ("on a clock
+#                          and no reader found"). It refutes the OTHER half: an organ excused
+#                          because it makes a verdict/page/alarm instead of a cell must actually
+#                          be making one that something reads. BURNING means it makes neither.
+#   gains_a_clock          this organ's own clock index. It is the falsifier of a "no schedule by
+#                          design" claim and of nothing else, so only the inherited wiring_ceo
+#                          rows declare it.
+#
+# A FOURTH CANDIDATE WAS MEASURED AND REFUSED, and the measurement is why. "The organ names no
+# artifact of its own" reads well and would have been a platitude: dead_architecture's artifact
+# list is non-empty for all 671 organs it judges (its heuristic over-reports on purpose -- it may
+# make an organ look more alive, never mark a live one dead), so the predicate could never fire.
+# A condition that cannot fire is the permanent excuse wearing a falsifier's clothes.
+
+#: The named, MEASURED predicates an exemption may declare -> what each one reads. A check
+#: answers True (the falsifier arrived: this exemption stops shielding this module), False (it
+#: holds) or None (UNMEASURED on this host, which never deletes and never passes -- L1.28a).
+RETIRE_CHECKS: dict[str, str] = {
+    "mints_cells": "this module's own rent row records candidates, admissions or survivors in "
+                   "the last 30 days (hypothesis_graph source tokens + registry generator_yield)",
+    "output_reaches_nobody": "desks/mt5/reports/dead_architecture.json judges this module "
+                             "BURNING -- on a clock with no reader found for anything it writes",
+    "gains_a_clock": "this organ's clock index names the module (a clock file references its "
+                     "path, or a clocked organ imports it)",
+}
+#: A falsifier has to be a CONDITION, not a mood. Same bar `check_build_standard` puts on a
+#: schedule exemption's reason, for the same reason: a sentence shorter than this cannot say what
+#: would have to be observed.
+MIN_RETIRE_IF_CHARS = 40
+#: 20+ chars, the bar `docs/research/productivity_blockers.json` already sets for a `why`.
+MIN_WHY_CHARS = 20
+
+
+@dataclass(frozen=True)
+class Exemption:
+    """One declared excuse from RETIRE_CANDIDATE, and the MEASURED condition that deletes it.
+
+    The constructor is the fence: an exemption that cannot say what would prove it wrong cannot
+    be constructed, so there is no code path on this desk that writes one. `checks` must name
+    predicates in `RETIRE_CHECKS`, which are evaluated per covered module on every pass --
+    `retire_if` is the prose a person reads and `checks` is what the machine measures, and the
+    two are kept in one object so neither can drift away from the other.
+    """
+
+    #: What this organ produces INSTEAD of cells -- the claim being made.
+    why: str
+    #: The condition under which this row is DELETED, in the vocabulary
+    #: `docs/research/productivity_blockers.json` already uses.
+    retire_if: str
+    #: The `RETIRE_CHECKS` names that measure `retire_if`. ANY of them firing retires the row.
+    checks: tuple[str, ...]
+    #: When the claim was declared, so a reader can see how long it has stood unfalsified.
+    declared_utc: str
+    #: Where the declaration lives, for a reader who has to go and delete it.
+    source: str = "desks/mt5/research/module_rent.py EXEMPTIONS"
+    #: What about this claim CANNOT be measured yet, said out loud rather than given a
+    #: fake-green condition. Empty means every part of `retire_if` has a predicate behind it.
+    unmeasured: str = ""
+
+    def __post_init__(self) -> None:
+        if len(self.why.strip()) < MIN_WHY_CHARS:
+            raise ValueError(f"exemption {self.why!r}: a reason under {MIN_WHY_CHARS} chars is "
+                             "not a decision")
+        if len(self.retire_if.strip()) < MIN_RETIRE_IF_CHARS:
+            raise ValueError(
+                f"exemption {self.why!r}: retire_if is missing or under {MIN_RETIRE_IF_CHARS} "
+                "chars. An exemption with no falsifier is a permanent excuse, which is the one "
+                "thing this ledger exists to refuse -- name the condition that DELETES this row")
+        if not self.checks:
+            raise ValueError(f"exemption {self.why!r}: retire_if names no measured check; prose "
+                             "nothing evaluates is not a falsifier (pick from "
+                             f"{sorted(RETIRE_CHECKS)})")
+        unknown = [c for c in self.checks if c not in RETIRE_CHECKS]
+        if unknown:
+            raise ValueError(f"exemption {self.why!r}: unknown check(s) {unknown}; a check must "
+                             f"be measured by this module ({sorted(RETIRE_CHECKS)})")
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", self.declared_utc.strip()):
+            raise ValueError(f"exemption {self.why!r}: declared_utc {self.declared_utc!r} is not "
+                             "a YYYY-MM-DD date; an undated claim cannot be aged")
+
+
+#: The three falsifiers the governance / publication / health classes share, written once so the
+#: 21 rows below differ by their CLAIM rather than by an accident of phrasing.
+_GOVERNANCE_RETIRE = (
+    "the covered organ's name reaches the hypothesis graph or generator_yield as a source of "
+    "candidates, admissions or survivors within 30 days -- then it mints cells after all and is "
+    "judged on them like every other producer -- OR dead_architecture.json judges it BURNING (on "
+    "a clock, no reader found), which means it produces neither a cell nor a verdict anybody "
+    "reads and the excuse has nothing left to protect. Either way the row is DELETED, not amended.")
+_PUBLICATION_RETIRE = (
+    "the covered organ starts minting cells within 30 days (then it is a producer and is judged "
+    "as one), OR dead_architecture.json judges it BURNING -- on a clock with no reader for the "
+    "page or report it renders. A rendering leg is excused because somebody reads the rendering; "
+    "when nobody does, the excuse is gone and this row is DELETED, not amended.")
+_HEALTH_RETIRE = (
+    "the covered organ starts minting cells within 30 days (then it is a producer and is judged "
+    "as one), OR dead_architecture.json judges it BURNING -- on a clock with no reader for the "
+    "alarm or census it raises. A health organ is excused because its alarm reaches somebody; an "
+    "alarm nobody reads is not a different product, it is no product. DELETED, not amended.")
+_GOVERNANCE_CHECKS = ("mints_cells", "output_reaches_nobody")
+
+_DECLARED = "2026-09-24"
+
+
+def _gov(why: str) -> Exemption:
+    return Exemption(why, _GOVERNANCE_RETIRE, _GOVERNANCE_CHECKS, _DECLARED)
+
+
+def _pub(why: str) -> Exemption:
+    return Exemption(why, _PUBLICATION_RETIRE, _GOVERNANCE_CHECKS, _DECLARED)
+
+
+def _hlth(why: str) -> Exemption:
+    return Exemption(why, _HEALTH_RETIRE, _GOVERNANCE_CHECKS, _DECLARED)
+
+
+#: EXEMPT from RETIRE_CANDIDATE, each with the reason AND the falsifier that deletes it. A
 #: governance, publication or health organ produces a verdict, a page or an alarm -- never a
 #: candidate -- so judging it by downstream research is judging it by a yardstick it was never
-#: built to move. wiring_ceo.EXEMPT and wiring_ceo.NEVER_PROBATION are folded in at runtime.
-EXEMPT_TOKENS: dict[str, str] = {
-    "check_": "governance: a law gate; its product is a verdict, not a candidate",
-    "attest": "governance: the closed-loop attestation",
-    "audit": "governance: an audit names defects, it does not mint hypotheses",
-    "verify": "governance: a verifier",
-    "guard": "governance: a fence",
-    "fence": "governance: a fence",
-    "law": "governance: the law compendium's own machinery",
-    "constitution": "governance: the sealed core's checker",
-    "publish": "publication: it renders what other organs measured",
-    "dashboard": "publication: the desk's page",
-    "report": "publication: a rendering leg",
-    "render": "publication: a rendering leg",
-    "scorecard": "publication: a rendering leg",
-    "health": "health: it measures the machine, not the market",
-    "stall": "health: the stall watch",
-    "smoke": "health: a release smoke test",
-    "burn_in": "health: the burn-in",
-    "heartbeat": "health: liveness",
-    "issue_board": "health: the defect board",
-    "wiring": "health: the wiring census is how idleness is found at all",
-    "probation": "health: probation is how an unwired organ earns a clock",
+#: built to move. That claim is now falsifiable in both directions (see `_GOVERNANCE_RETIRE`).
+#: wiring_ceo.EXEMPT and wiring_ceo.NEVER_PROBATION are folded in at runtime through `INHERITED`.
+EXEMPTIONS: dict[str, Exemption] = {
+    "check_": _gov("governance: a law gate; its product is a verdict, not a candidate"),
+    "attest": _gov("governance: the closed-loop attestation"),
+    "audit": _gov("governance: an audit names defects, it does not mint hypotheses"),
+    "verify": _gov("governance: a verifier"),
+    "guard": _gov("governance: a fence -- it refuses, it does not propose"),
+    "fence": _gov("governance: a fence -- it refuses, it does not propose"),
+    "law": _gov("governance: the law compendium's own machinery"),
+    "constitution": _gov("governance: the sealed core's checker"),
+    "publish": _pub("publication: it renders what other organs measured"),
+    "dashboard": _pub("publication: the desk's page"),
+    "report": _pub("publication: a rendering leg"),
+    "render": _pub("publication: a rendering leg"),
+    "scorecard": _pub("publication: a rendering leg"),
+    "health": _hlth("health: it measures the machine, not the market"),
+    "stall": _hlth("health: the stall watch"),
+    "smoke": _hlth("health: a release smoke test"),
+    "burn_in": _hlth("health: the burn-in exercises a release, it does not mint a hypothesis"),
+    "heartbeat": _hlth("health: liveness -- it proves the machine is up, not that price moved"),
+    "issue_board": _hlth("health: the defect board"),
+    "wiring": _hlth("health: the wiring census is how idleness is found at all"),
+    "probation": _hlth("health: probation is how an unwired organ earns a clock"),
 }
+
+#: THE TWO BORROWED REGISTRIES, and the falsifier this organ declares for the borrowed USE.
+#: `wiring_ceo` keeps both lists for its own question (who owes a cron line, who is never
+#: exercised blind); this file is the one that turns them into a shield against a RETIRE verdict,
+#: so this file owes the condition under which that shield lapses. Declaring it here rather than
+#: editing wiring_ceo keeps one owner per decision: wiring_ceo decides who gets probation, rent
+#: decides who gets excused from rent.
+INHERITED: dict[str, Exemption] = {
+    "wiring_ceo.EXEMPT": Exemption(
+        why="unscheduled on purpose (wiring_ceo.EXEMPT)",
+        retire_if="a clock names the organ -- a clock file references its path, or a clocked "
+                  "organ imports it. The whole claim is 'a person runs this by hand'; the moment "
+                  "the machine runs it, the claim is false and the row is DELETED from "
+                  "wiring_ceo.EXEMPT. It also lapses if the organ starts minting cells.",
+        checks=("gains_a_clock", "mints_cells"),
+        declared_utc=_DECLARED,
+        source="desks/mt5/research/wiring_ceo.py EXEMPT (falsifier declared in module_rent)"),
+    "wiring_ceo.NEVER_PROBATION": Exemption(
+        why="never exercised blind (wiring_ceo.NEVER_PROBATION)",
+        retire_if="the organ's name reaches the hypothesis graph or generator_yield as a source "
+                  "of candidates, admissions or survivors within 30 days -- a money-path organ "
+                  "that mints cells is a producer and is judged as one, and this token stops "
+                  "excusing it here (the wiring_ceo list itself is untouched: it governs "
+                  "probation, not rent).",
+        checks=("mints_cells",),
+        declared_utc=_DECLARED,
+        source="desks/mt5/research/wiring_ceo.py NEVER_PROBATION "
+               "(falsifier declared in module_rent)",
+        unmeasured="the consumer half cannot be measured for a money path and is NOT declared: "
+                   "a gateway's reader is the broker, not a repo artifact, so "
+                   "`output_reaches_nobody` would read UNMEASURED forever and declaring it would "
+                   "be a fake-green condition. This exemption therefore has ONE live falsifier "
+                   "and the desk should know that rather than be told otherwise."),
+}
+
+#: Token -> reason, DERIVED so a plain-string exemption cannot be smuggled back in. Kept because
+#: it is the shape older readers expect; `EXEMPTIONS` is the source of truth.
+EXEMPT_TOKENS: dict[str, str] = {tok: ex.why for tok, ex in EXEMPTIONS.items()}
 
 
 # --------------------------------------------------------------------------- small readers
@@ -148,11 +334,12 @@ def paths_for(rt: Path) -> dict[str, Path]:
     hands it nothing and gets the module constants, so a monkeypatched constant still binds."""
     if Path(rt) == ROOT:
         return {"compute": COMPUTE, "graph": GRAPH, "logs": LOGS, "stall": STALL,
-                "out": OUT, "ledger": LEDGER}
+                "dead": DEAD, "out": OUT, "ledger": LEDGER}
     d = Path(rt) / "desks" / "mt5"
     return {"compute": d / "data" / "compute_ledger.jsonl",
             "graph": d / "data" / "hypothesis_graph.jsonl",
             "logs": d / "logs", "stall": d / "data" / "stall_watch.json",
+            "dead": d / "reports" / "dead_architecture.json",
             "out": d / "reports" / "MODULE_RENT_RESEARCH.json",
             "ledger": d / "data" / "module_rent_research.jsonl"}
 
@@ -615,17 +802,223 @@ def merge_pairs(rows: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def exempt_reason(rel: str, extra: dict[str, str], never: tuple[str, ...]) -> str | None:
+def exemption_for(rel: str, extra: dict[str, str],
+                  never: tuple[str, ...]) -> tuple[str, Exemption] | None:
+    """(key, exemption) covering `rel`, in the same precedence `exempt_reason` always used.
+
+    The two borrowed registries arrive as bare strings, so the inherited declaration supplies the
+    falsifier and `replace` carries the borrowed reason into it -- there is no path by which a
+    module reaches the retire decision behind an excuse with no condition on it.
+    """
     if rel in extra:
-        return extra[rel]
+        # THE BORROWED REASON IS STAMPED WITH ITS REGISTRY, and not only for the reader:
+        # `replace` re-runs the constructor, so a wiring_ceo entry whose reason is under the
+        # `why` bar ("a CLI a person runs", 19 chars) would RAISE and take the whole rent build
+        # down. A bar this file sets for its own declarations must never be enforced against a
+        # string another organ owns -- the suffix makes the row informative and the crash
+        # impossible in the same move.
+        return rel, replace(INHERITED["wiring_ceo.EXEMPT"],
+                            why=f"{extra[rel]} (wiring_ceo.EXEMPT)")
     low = rel.lower()
-    for tok, why in EXEMPT_TOKENS.items():
+    for tok, ex in EXEMPTIONS.items():
         if tok in low:
-            return why
+            return tok, ex
     for tok in never:
         if tok in low:
-            return f"never exercised blind (wiring_ceo.NEVER_PROBATION token {tok!r})"
+            return tok, replace(
+                INHERITED["wiring_ceo.NEVER_PROBATION"],
+                why=f"never exercised blind (wiring_ceo.NEVER_PROBATION token {tok!r})")
     return None
+
+
+def exempt_reason(rel: str, extra: dict[str, str], never: tuple[str, ...]) -> str | None:
+    """The reason only, for callers that ask "is this excused at all" (simplifier.dead)."""
+    hit = exemption_for(rel, extra, never)
+    return None if hit is None else hit[1].why
+
+
+def _check_mints_cells(row: dict[str, Any], dead: dict[str, Any] | None) -> tuple[bool | None,
+                                                                                 str]:
+    """The premise-refuter. UNMEASURED when this host has no channel that could credit it."""
+    c = row.get("candidates_30d")
+    if c is None:
+        return None, ("no measured downstream channel on this host (attribution "
+                      f"{row.get('attribution')!r}): absence is not a zero")
+    n_c, n_a = int(c), int(row.get("admissions_30d") or 0)
+    n_s = int(row.get("survivors_30d") or 0)
+    if n_c + n_a + n_s > 0:
+        return True, (f"minted {n_c} candidate(s), {n_a} admission(s), {n_s} survivor(s) in 30 "
+                      "days: it moves the cells yardstick after all")
+    return False, "measured zero candidates, admissions and survivors in 30 days"
+
+
+def _check_output_reaches_nobody(row: dict[str, Any],
+                                 dead: dict[str, Any] | None) -> tuple[bool | None, str]:
+    """dead_architecture's own verdict, never recomputed. UNREACHED is explicitly NOT death."""
+    if not dead:
+        return None, f"{DEAD.name} judges no row for this module"
+    v = str(dead.get("verdict") or "")
+    if v == "BURNING":
+        arts = ", ".join(str(a) for a in (dead.get("artifacts") or [])[:3])
+        return True, (f"dead_architecture: BURNING -- on a clock, no reader found for "
+                      f"{arts or 'anything it writes'}")
+    if v in ("LIVE", "NO_CLOCK"):
+        return False, f"dead_architecture: {v} ({dead.get('n_consumers')} consumer(s))"
+    return None, (f"dead_architecture: {v or 'no verdict'} -- not a verdict of death by that "
+                  "census's own rule, so it cannot delete an exemption")
+
+
+def _check_gains_a_clock(row: dict[str, Any],
+                         dead: dict[str, Any] | None) -> tuple[bool | None, str]:
+    """Always measurable: the clock index is a wiring fact, not a market one."""
+    clock = str(row.get("clock") or "none")
+    if clock != "none":
+        return True, f"a clock names it ({clock}): 'a person runs this by hand' is false"
+    return False, "on no clock: the claim still holds"
+
+
+_RETIRE_FN: dict[str, Any] = {
+    "mints_cells": _check_mints_cells,
+    "output_reaches_nobody": _check_output_reaches_nobody,
+    "gains_a_clock": _check_gains_a_clock,
+}
+
+
+def retire_if_fires(ex: Exemption, row: dict[str, Any],
+                    dead: dict[str, Any] | None) -> tuple[bool | None, str]:
+    """Has this exemption's falsifier arrived for THIS module? True / False / None=UNMEASURED.
+
+    ANY declared check firing retires the row. A check that cannot be measured leaves the answer
+    UNMEASURED even when a sibling check reads False: "half of the condition could not be looked
+    at" is not "the condition does not hold" (L1.28a). UNMEASURED keeps the shield -- absence
+    never deletes -- and is published so the gap has a name instead of a green tick.
+    """
+    unmeasured: list[str] = []
+    for name in ex.checks:
+        fired, why = _RETIRE_FN[name](row, dead)
+        if fired is True:
+            return True, f"{name}: {why}"
+        if fired is None:
+            unmeasured.append(f"{name}: {why}")
+    if unmeasured:
+        return None, "UNMEASURED -- " + "; ".join(unmeasured)
+    return False, "every declared falsifier measured; none fired"
+
+
+def exemption_status(rel: str, row: dict[str, Any], dead: dict[str, Any] | None,
+                     extra: dict[str, str], never: tuple[str, ...]) -> dict[str, Any] | None:
+    """The whole exemption verdict for one module, or None when nothing excuses it."""
+    hit = exemption_for(rel, extra, never)
+    if hit is None:
+        return None
+    key, ex = hit
+    fired, why = retire_if_fires(ex, row, dead)
+    return {"key": key, "source": ex.source, "why": ex.why, "retire_if": ex.retire_if,
+            "checks": list(ex.checks), "declared_utc": ex.declared_utc,
+            "unmeasured_note": ex.unmeasured or None,
+            "fired": fired, "fired_why": why}
+
+
+def validate_exemptions() -> list[str]:
+    """Every declaration re-checked as data, so a fence can REPORT what the constructor RAISES.
+
+    The constructor already refuses a falsifier-less row, which means a malformed one cannot
+    exist at runtime -- so this walks the live registry and returns problems rather than relying
+    on an exception nobody sees. A fence that can only crash is a fence that gets commented out.
+    """
+    problems: list[str] = []
+    for key, ex in [*EXEMPTIONS.items(), *INHERITED.items()]:
+        if not ex.retire_if.strip():
+            problems.append(f"{key}: no retire_if -- a permanent excuse")
+        elif len(ex.retire_if.strip()) < MIN_RETIRE_IF_CHARS:
+            problems.append(f"{key}: retire_if is {len(ex.retire_if.strip())} chars, "
+                            f"under the {MIN_RETIRE_IF_CHARS}-char bar for a condition")
+        if not ex.checks:
+            problems.append(f"{key}: retire_if names no measured check")
+        for c in ex.checks:
+            if c not in RETIRE_CHECKS:
+                problems.append(f"{key}: check {c!r} is not measured by this module")
+            elif c not in _RETIRE_FN:
+                problems.append(f"{key}: check {c!r} is declared but has no implementation")
+        if len(ex.why.strip()) < MIN_WHY_CHARS:
+            problems.append(f"{key}: reason too thin to be a decision")
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", ex.declared_utc.strip()):
+            problems.append(f"{key}: declared_utc {ex.declared_utc!r} is not a date")
+    return problems
+
+
+def exemption_census(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Per DECLARATION: who it covers, whose falsifier arrived, and what a person should do.
+
+        RETIRE          the falsifier fired for every module it still covers -- delete the row
+        PARTIAL         it fired for some; those modules are no longer shielded and are named
+        COVERS_NOTHING  it shields no module in today's census: inert, and a reader should know
+        UNMEASURED      nothing it covers could be measured on this host (never a pass)
+        HOLDS           measured, and the claim survived
+    """
+    per: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        key = r.get("exempt_key")
+        if not key:
+            continue
+        d = per.setdefault(str(key), {
+            "key": str(key), "source": r.get("exempt_source"), "why": r.get("exempt_why_declared"),
+            "retire_if": r.get("exempt_retire_if"), "checks": r.get("exempt_checks"),
+            "declared_utc": r.get("exempt_declared_utc"),
+            "unmeasured_note": r.get("exempt_unmeasured_note"),
+            "n_covered": 0, "n_fired": 0, "n_unmeasured": 0, "fired_modules": []})
+        d["n_covered"] += 1
+        if r.get("exempt_fired") is True:
+            d["n_fired"] += 1
+            if len(d["fired_modules"]) < 40:
+                d["fired_modules"].append({"module": r["module"], "why": r.get("exempt_fired_why")})
+        elif r.get("exempt_fired") is None:
+            d["n_unmeasured"] += 1
+    out: list[dict[str, Any]] = []
+    # THE 21 OWNED DECLARATIONS ARE SEEDED so one that covers nothing is still SAID; the two
+    # INHERITED entries are TEMPLATES, not declarations -- they carry the falsifier for a
+    # borrowed row and the row itself is keyed by its own path or token, so they appear here
+    # only through the modules they actually covered.
+    for key, ex in EXEMPTIONS.items():
+        d = per.pop(key, {"key": key, "n_covered": 0, "n_fired": 0, "n_unmeasured": 0,
+                          "fired_modules": []})
+        # THE DECLARATION IS READ FROM THE REGISTRY, NEVER FROM THE ROWS. A census that took
+        # `retire_if` from whatever the last row happened to carry would print an empty condition
+        # the moment a row was written by an older build -- and an exemption whose falsifier is
+        # missing FROM THE REPORT reads exactly like one that never had a falsifier.
+        d.update({"source": ex.source, "why": ex.why, "retire_if": ex.retire_if,
+                  "checks": list(ex.checks), "declared_utc": ex.declared_utc,
+                  "unmeasured_note": ex.unmeasured or None, "kind": "declared"})
+        out.append(d)
+    for d in sorted(per.values(), key=lambda d: str(d["key"])):
+        d["kind"] = "inherited"
+        out.append(d)
+    for d in out:
+        n_cov, n_fire, n_un = d["n_covered"], d["n_fired"], d["n_unmeasured"]
+        n_meas = n_cov - n_un
+        d["n_measured"] = n_meas
+        if n_cov == 0:
+            d["verdict"] = "COVERS_NOTHING"
+            d["why_verdict"] = ("shields no module in today's census: inert, and an inert "
+                                "declaration is a claim the desk cannot cash (L1.49)")
+        elif n_fire == n_cov:
+            d["verdict"] = "RETIRE"
+            d["why_verdict"] = ("the falsifier arrived for every module this row still covers: "
+                                "delete the declaration, do not amend it")
+        elif n_fire:
+            d["verdict"] = "PARTIAL"
+            d["why_verdict"] = (f"{n_fire} of {n_cov} covered module(s) are no longer shielded; "
+                                f"the declaration still covers the rest ({n_un} UNMEASURED)")
+        elif n_un == n_cov:
+            d["verdict"] = "UNMEASURED"
+            d["why_verdict"] = ("nothing it covers could be measured on this host: the claim is "
+                                "untested, which is not the same as surviving a test (L1.28a)")
+        else:
+            d["verdict"] = "HOLDS"
+            d["why_verdict"] = (f"the claim survived on all {n_meas} module(s) it could be "
+                                f"measured on; {n_un} of {n_cov} read UNMEASURED")
+    out.sort(key=lambda d: (d["verdict"] != "RETIRE", d["verdict"] != "PARTIAL", str(d["key"])))
+    return out
 
 
 def _wiring_exempt() -> tuple[dict[str, str], tuple[str, ...]]:
@@ -634,6 +1027,14 @@ def _wiring_exempt() -> tuple[dict[str, str], tuple[str, ...]]:
         return dict(wiring_ceo.EXEMPT), tuple(wiring_ceo.NEVER_PROBATION)
     except (ImportError, AttributeError):
         return {}, ()
+
+
+def _dead_rows(p: Path) -> dict[str, dict[str, Any]]:
+    """module -> dead_architecture's row. Absent file is UNMEASURED for every module, not LIVE."""
+    org = _read_json(p).get("organs")
+    if not isinstance(org, dict):
+        return {}
+    return {str(k): v for k, v in org.items() if isinstance(v, dict)}
 
 
 # --------------------------------------------------------------------------- the build
@@ -664,6 +1065,15 @@ def build(root: Path | None = None, *, budget_s: float = 240.0,
     if maint_why:
         unmeasured.append(f"maintenance: {maint_why}; commit counts read UNMEASURED")
     extra_exempt, never = _wiring_exempt()
+    dead_rows = _dead_rows(pp["dead"])
+    if not dead_rows:
+        unmeasured.append(
+            f"dead_architecture: {pp['dead']} absent or empty; the `output_reaches_nobody` half "
+            "of every governance/publication/health exemption reads UNMEASURED, so those "
+            "exemptions keep shielding on one measured check instead of two")
+    schema_problems = validate_exemptions()
+    if schema_problems:
+        unmeasured.append("exemption schema: " + "; ".join(schema_problems))
 
     # per-module raw
     rows: dict[str, dict[str, Any]] = {}
@@ -712,7 +1122,7 @@ def build(root: Path | None = None, *, budget_s: float = 240.0,
                 "maintenance": float(maint.get(rel, 0)),
                 "complexity": complexity}
         value = roi(useful, cost) if measured_num else None
-        out_rows.append({
+        out_row: dict[str, Any] = {
             "module": rel, "clock": r["clock"], "attribution": r["attribution"],
             "compute_h_7d": None if leg_h7 is None else round(leg_h7, 4),
             "compute_h_30d": None if leg_h30 is None else round(leg_h30, 4),
@@ -726,9 +1136,27 @@ def build(root: Path | None = None, *, budget_s: float = 240.0,
             "maintenance_commits_30d": None if maint_why else int(maint.get(rel, 0)),
             "loc": r["loc"], "fan": fan, "complexity": round(complexity, 1),
             "roi": None if value is None else round(value, 4),
-            "exempt_why": exempt_reason(rel, extra_exempt, never),
             "merge_with": in_pair.get(rel),
-        })
+        }
+        # THE EXEMPTION IS EVALUATED, NOT ASSERTED, and it is evaluated AFTER the row exists
+        # because its falsifiers read the row's own measurements. A fired falsifier clears
+        # `exempt_why` in the same pass it fires -- an excuse that has been shown false must stop
+        # shielding immediately, or the condition is decoration -- while the declaration itself
+        # is only ever NAMED here. Deleting the source line is a person's act, made against
+        # `exemptions` in this report, exactly as retiring a module is.
+        st = exemption_status(rel, out_row, dead_rows.get(rel), extra_exempt, never)
+        if st is None:
+            out_row.update({"exempt_why": None, "exempt_key": None, "exempt_retire_if": None,
+                            "exempt_fired": None, "exempt_fired_why": None})
+        else:
+            out_row.update({
+                "exempt_why": None if st["fired"] else st["why"],
+                "exempt_key": st["key"], "exempt_source": st["source"],
+                "exempt_why_declared": st["why"], "exempt_retire_if": st["retire_if"],
+                "exempt_checks": st["checks"], "exempt_declared_utc": st["declared_utc"],
+                "exempt_unmeasured_note": st["unmeasured_note"],
+                "exempt_fired": st["fired"], "exempt_fired_why": st["fired_why"]})
+        out_rows.append(out_row)
 
     measured_roi = np.array([r["roi"] for r in out_rows if r["roi"] is not None], dtype=float)
     measured_h = np.array([r["compute_h_30d"] for r in out_rows
@@ -751,6 +1179,7 @@ def build(root: Path | None = None, *, budget_s: float = 240.0,
     by_verdict: dict[str, int] = defaultdict(int)
     for r in out_rows:
         by_verdict[r["verdict"]] += 1
+    exemptions = exemption_census(out_rows)
     out_rows.sort(key=lambda d: (-(d["roi"] if d["roi"] is not None else -1.0), d["module"]))
     doc = {
         "at": at.isoformat(timespec="seconds"),
@@ -762,6 +1191,21 @@ def build(root: Path | None = None, *, budget_s: float = 240.0,
         "rows": out_rows,
         "by_verdict": dict(sorted(by_verdict.items())),
         "merge_pairs": pairs[:60],
+        "exemptions": exemptions,
+        "exemption_schema_problems": schema_problems,
+        "exemptions_summary": {
+            "n_rows": len(exemptions),
+            "n_declared_here": len(EXEMPTIONS),
+            "n_inherited_keys": sum(1 for e in exemptions if e.get("kind") == "inherited"),
+            "n_retire": sum(1 for e in exemptions if e["verdict"] == "RETIRE"),
+            "n_partial": sum(1 for e in exemptions if e["verdict"] == "PARTIAL"),
+            "n_covers_nothing": sum(1 for e in exemptions if e["verdict"] == "COVERS_NOTHING"),
+            "n_unmeasured": sum(1 for e in exemptions if e["verdict"] == "UNMEASURED"),
+            "n_modules_unshielded": sum(1 for r in out_rows if r.get("exempt_fired") is True),
+            "rule": ("every exemption carries `retire_if` and the MEASURED checks behind it; a "
+                     "fired falsifier stops shielding in the same pass, and RETIRE/PARTIAL rows "
+                     "name a declaration a person should delete from the source"),
+        },
         "unmeasured": unmeasured,
         "formula": ("ROI = (survivors x 10 + admissions + novel x 3 + candidates x 0.1) / "
                     "(compute hours + maintenance commits + complexity / 1000)"),
@@ -826,7 +1270,11 @@ def append_history(doc: dict[str, Any], ledger: Path | None = None) -> int:
                                  "clock": r["clock"], "roi": r["roi"], "verdict": r["verdict"],
                                  "compute_h_7d": r["compute_h_7d"],
                                  "candidates_30d": r["candidates_30d"],
-                                 "survivors_30d": r["survivors_30d"], "loc": r["loc"]},
+                                 "survivors_30d": r["survivors_30d"], "loc": r["loc"],
+                                 # An excuse that lapsed needs a DATE, or "it was already like
+                                 # that" is unanswerable the next time someone reads the row.
+                                 "exempt_key": r.get("exempt_key"),
+                                 "exempt_fired": r.get("exempt_fired")},
                                 default=str) + "\n")
             n += 1
     return n
@@ -844,6 +1292,16 @@ def main(argv: list[str] | None = None) -> int:
           f"{doc['median_roi']}; " + ", ".join(f"{k}={v}" for k, v in doc["by_verdict"].items()))
     for r in doc["rows"][:a.top]:
         print(f"  {r['module']:<58} roi={r['roi']!s:>8} {r['verdict']:<17} {r['why'][:60]}")
+    es = doc["exemptions_summary"]
+    print(f"  exemptions: {es['n_declared_here']} declared + {es['n_inherited_keys']} inherited "
+          f"key(s); {es['n_retire']} RETIRE, "
+          f"{es['n_partial']} PARTIAL, {es['n_covers_nothing']} COVERS_NOTHING, "
+          f"{es['n_unmeasured']} UNMEASURED; {es['n_modules_unshielded']} module(s) unshielded")
+    for e in doc["exemptions"]:
+        if e["verdict"] in ("RETIRE", "PARTIAL", "COVERS_NOTHING"):
+            print(f"    {e['verdict']:<15} {e['key']:<46} {e['why_verdict'][:52]}")
+    for p in doc["exemption_schema_problems"]:
+        print(f"  EXEMPTION SCHEMA BREACH: {p}")
     for u in doc["unmeasured"]:
         print(f"  UNMEASURED: {u}")
     if a.dry_run:

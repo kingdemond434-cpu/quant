@@ -69,7 +69,10 @@ def _rows(mod: ModuleType) -> list[dict[str, object]]:
 
 
 def test_failing_row_records_its_exit_code(dispatch: ModuleType) -> None:
-    _fire(dispatch, '.venv/bin/python -c "import sys; sys.exit(2)"',
+    # The running interpreter, not `.venv/bin/python`: the repo venv exists only on the VPS and
+    # the box, and in any other checkout the row died with sh's 127 before reaching the exit(2)
+    # under test. What is pinned is the rc's survival, not which python the row names.
+    _fire(dispatch, f'"{sys.executable}" -c "import sys; sys.exit(2)"',
           "scripts/red.py", "2026-08-29T05:00:00+00:00")
     rows = _rows(dispatch)
     assert len(rows) == 1, "a fired row must leave exactly one outcome"

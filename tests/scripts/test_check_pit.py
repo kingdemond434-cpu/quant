@@ -29,8 +29,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import pytest
-import scripts.check_pit as P
 
+import scripts.check_pit as P
 from libs.data import pit_certificate as pcert
 from libs.data.pit import stamp
 

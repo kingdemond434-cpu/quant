@@ -90,7 +90,14 @@ def test_the_routine_chain_ends_in_a_verified_answering_tail() -> None:
 def test_the_routine_run_actually_uses_the_routine_chain() -> None:
     """The flag was dead once; the chain must be SELECTED by it, not just declared."""
     assert 'deep = "--deep" in sys.argv' in HUNTER
-    assert "chain = MODEL_CHAIN if deep else ROUTINE_MODEL_CHAIN" in HUNTER
+    # The selection moved into `_providers(deep=...)`, and the POLICY changed deliberately
+    # (scripts/kimi_hunter.py "THE ACTIVE CHAIN"): every run, deep included, now walks the free
+    # chain and MODEL_CHAIN is kept as an alias of it. So the flag must still reach the selector,
+    # and the chain the selector walks must be the routine one.
+    assert "chain = _providers(deep=deep)" in HUNTER
+    assert "chain = _served_first(ROUTINE_MODEL_CHAIN)" in HUNTER
+    import scripts.kimi_hunter as K
+    assert K.MODEL_CHAIN == K.ROUTINE_MODEL_CHAIN
 
 
 def test_the_deep_run_is_not_hourly() -> None:

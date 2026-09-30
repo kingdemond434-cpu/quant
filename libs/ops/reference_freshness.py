@@ -667,17 +667,26 @@ class DestructivePath:
 #: note, so the history of what once removed on an absence stays readable.
 DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
     DestructivePath(
+        path_id="forward_cure_route.accumulate",
+        module="desks/mt5/research/forward_cure_route.py",
+        function="accumulate",
+        removes="queued forward-cure rows popped from the route's own accumulator",
+        reference="the gauntlet verdict on the same key in this pass",
+        status="positive",
+        note="POSITIVE EVIDENCE ONLY: a row leaves on a later verdict that certifies it or fails "
+             "its validity; an unjudged row stays ('silence retires nothing').",
+    ),
+    DestructivePath(
         path_id="certificate_truth.apply",
         module="desks/mt5/research/certificate_truth.py",
         function="apply",
         removes="rows in every derived certificate store (survivor ledger, sleeve registry, "
                 "shadow/lane states, sleeves.json, forward_reconcile)",
         reference="desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
-        status="unguarded",
-        note="THE PROVING INSTANCE: 837 rows retired against an empty 46.7h-stale canon. Owned "
-             "by another builder this session (restoring the rows); the guard call lands there, "
-             "not here. Guard usage: require_live_reference(canon, actor='certificate_truth."
-             "apply', action='retire unbacked rows', min_rows=1, strict=False).",
+        status="guarded",
+        note="THE PROVING INSTANCE: 837 rows retired against an empty 46.7h-stale canon. Guarded "
+             "2026-09-29: require_live_reference(seal) at the top of apply() folds `live` into "
+             "lane_settled, so a stale or empty canon retires no unbacked row.",
     ),
     DestructivePath(
         path_id="certificate_truth.ledger_claims",
@@ -685,11 +694,11 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         function="apply",
         removes="SURVIVORS_LEDGER.json claims flipped to status=RETIRED (CLAIM_NOT_IN_CANON)",
         reference="desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json",
-        status="unguarded",
-        note="The ledger branch is NOT behind the `lane_settled` gate that protects the clock "
-             "rows two blocks below, so an unsettled or empty canon still retires ledger claims. "
-             "Same file and same owner as certificate_truth.apply above; one guard at the top of "
-             "apply() closes both. Reported, not edited, to avoid racing that builder.",
+        status="guarded",
+        guard_site="apply",
+        note="Was outside the `lane_settled` gate, so an unsettled or empty canon still retired "
+             "ledger claims. Guarded 2026-09-29: non-banned claims now retire only when the lane "
+             "is settled AND the canon is live (the require_live_reference call in apply()).",
     ),
     DestructivePath(
         path_id="certificate_truth.clock_rows",
@@ -932,6 +941,28 @@ DESTRUCTIVE_PATHS: tuple[DestructivePath, ...] = (
         status="positive",
         note="A size cap, not a judgement: it evicts oldest-first only when the store is OVER "
              "capacity, so an empty or unreadable anything evicts nothing.",
+    ),
+    DestructivePath(
+        path_id="retired_clocks.evacuate",
+        module="desks/mt5/research/retired_clocks.py",
+        function="evacuate",
+        removes="rows POPped out of the five shadow clock stores after being appended, whole, to "
+                "the append-only ledger data/retired_clocks.jsonl and tombstoned in place",
+        reference="each row's OWN status field, matched against RETIREMENT_PREFIXES "
+                  "('RETIRED', 'VOID') -- no external store is consulted",
+        status="positive",
+        note="IT RETIRES NOTHING, EVER; it MOVES rows another organ already retired, and the "
+             "module's own docstring says so. Three independent reasons an absence removes "
+             "nothing here: a missing store is skipped (`if not p.exists(): continue`), an "
+             "UNREADABLE store is recorded in `unreadable` and skipped rather than treated as "
+             "empty, and the pop is reached only for a key whose own value positively declares "
+             "`is_retired(status)`. Append-before-remove means a crash duplicates a history row "
+             "rather than losing one, and the TOMBSTONE left behind keeps a retired key "
+             "distinguishable from a key that never existed. Declared (not guarded) because "
+             "there is no reference whose freshness a guard could judge -- the evidence is the "
+             "row itself. Found by the tree scan on 2026-09-23 as the seventh undeclared "
+             "candidate (`pop()` + the RETIRED state token); this row is the decision, which is "
+             "what the scan asks for, and UNDECLARED_CEILING is untouched.",
     ),
     DestructivePath(
         path_id="campaign_queue.cleanup",

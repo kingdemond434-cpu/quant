@@ -46,12 +46,27 @@ $trigger.Repetition = (New-ScheduledTaskTrigger -Once -At ((Get-Date).Date.AddMi
     -RepetitionDuration (New-TimeSpan -Days 1)).Repetition
 
 # StartWhenAvailable so an hour missed to a reboot is caught up rather than silently skipped;
-# IgnoreNew so a slow adoption is never stacked on itself; twenty minutes because an adoption
-# that takes longer is a box that needs the log read, not a second adoption.
+# IgnoreNew so a slow adoption is never stacked on itself.
+#
+# TWO HOURS, NOT TWENTY MINUTES, AND THE INSTALLER IS WHERE IT HAS TO SAY SO (2026-09-24).
+# This line read `-Minutes 20` while both live boxes carried a limit the installer never wrote:
+# the trading box PT2H (raised by hand when the adoption was repaired tonight) and the build box
+# vmi3500897 PT50M. An installer that disagrees with every box it installed is not a declaration,
+# it is a REGRESSION waiting for the next re-register -- re-running this file would have cut the
+# repaired trading box from two hours back to twenty minutes and restored the exact outage:
+#
+#     ExecutionTimeLimit kills the run  -> LastTaskResult 267014 (0x41306, TASK_TERMINATED)
+#     MultipleInstances IgnoreNew       -> the next hour is REFUSED, 0x800710E0, event 322
+#
+# Measured on vmi3500897 today: last run 2026-09-16 11:12, result 267014, 193 missed runs, 322
+# commits behind origin. A cold adoption re-scans a ~24,000-path worktree per pathspec and waits
+# on the git-writer mutex before it starts; it does not fit in twenty minutes and never did.
+# The limit is a WATCHDOG, not a budget: it exists so a wedged run is eventually killed, and it
+# has to sit above the slowest honest adoption or it only ever kills honest ones.
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
     -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 2) `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -MultipleInstances IgnoreNew
+    -ExecutionTimeLimit (New-TimeSpan -Hours 2) -MultipleInstances IgnoreNew
 
 # The same principal shape as MT5-ShadowSync, the task whose commits this one follows: the
 # logged-on user, interactive, limited. Adoption writes files and runs git; it needs nothing
@@ -59,6 +74,30 @@ $settings = New-ScheduledTaskSettingsSet `
 # SYSTEM, ServiceAccount: the box's tasks run as SYSTEM (an Interactive principal only fires while
 # that user holds a desktop session, and the adoption then dies with it).
 $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+
+# RUNNING AS SYSTEM IS NOT ENOUGH; GIT HAS TO AGREE IT MAY READ THE REPOSITORY (2026-09-24).
+# Measured on the build box vmi3500897 the first time this task ran as SYSTEM: every git call
+# died instantly with
+#
+#     fatal: detected dubious ownership in repository at 'C:/opt/quant'
+#     'C:/opt/quant' is owned by: VMI3500897/Administrator  but the current user is: NT AUTHORITY/SYSTEM
+#
+# and the run spent its whole window retrying `fetch` with backoff. Nothing in the task, the
+# script or the branch was wrong -- git's ownership check was. The trading box never hit it
+# because its repository is owned by BUILTIN\Administrators, of which SYSTEM is a member; the
+# build box's is owned by the Administrator USER, of which SYSTEM is not.
+#
+# THE SYSTEM CONFIG, NOT --global. SYSTEM's HOME is C:\Windows\system32\config\systemprofile, so a
+# `--global` exception written from an interactive session lands in the wrong file and the task
+# still fails -- with the same message, which is what makes this worth the lines. `--system`
+# covers every principal on the box, which is what "any scheduled task may adopt" actually means.
+# Idempotent: the value is added only when it is not already there.
+$repoForGit = (Resolve-Path (Join-Path $DeskRoot '..\..')).Path -replace '\\', '/'
+$already = @(git config --system --get-all safe.directory 2>$null)
+if ($already -notcontains $repoForGit) {
+    git config --system --add safe.directory $repoForGit 2>&1 | Out-Null
+    "safe.directory: added {0} to the SYSTEM git config" -f $repoForGit
+}
 
 if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
