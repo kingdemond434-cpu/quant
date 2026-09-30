@@ -136,6 +136,8 @@ UNMEASURED = "UNMEASURED"
 #: lower bound (~48%; t=4 ranks top-decile ~93%), which reads the WF region for ORDER only.
 #: Switching is the principal's call; STAGE1_WINDOW in the environment selects it.
 WINDOW = os.environ.get("STAGE1_WINDOW", "pre_wf")
+#: Sealed-judged cells the rollover trigger collects per run while a change is active.
+RR_POPULATION_CAP = 200_000
 #: How many head-of-order cells the published priority file lists (the record holds all).
 PRIORITY_TOP = 5000
 #: THE WRONG-SPACE BUCKET (2026-09-30). `judge_coverage._cell_id` names a docket row with the chart
@@ -902,7 +904,8 @@ def coverage_space_id(G: Any, h: dict[str, Any]) -> str | None:
 
 def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
                    docket: Path, seen: set[int], bank: set[int] | None = None,
-                   dead: tuple[dict[int, str], dict[int, str]] | None = None
+                   dead: tuple[dict[int, str], dict[int, str]] | None = None,
+                   collect_judged: int = 0
                    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """One streaming pass over the docket. Returns (the `cap` highest-priority cells to rule this
     run, the backlog census). Priority: never stage-1-ruled first, then due re-screens; oldest
@@ -915,6 +918,7 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
                               "dead_session_variants": 0}
     bank = bank or set()
     dead_gid, dead_ident = dead or ({}, {})
+    judged_specs: list[dict[str, Any]] = []
     cut24 = (now - timedelta(hours=24)).isoformat(timespec="seconds")
     cut7d = (now - timedelta(days=7)).isoformat(timespec="seconds")
     from libs.data.pit import is_stamped
@@ -989,6 +993,11 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
                 census["created_24h"] += 1
         if hh in seen:
             census["sealed_judged"] += 1
+            if collect_judged and len(judged_specs) < collect_judged:
+                # the rollover re-judge trigger's population (only while a change is active)
+                judged_specs.append({"cid": cid, "sym": sym, "family": str(fam),
+                                     "params": params,
+                                     "tf": G.timeframe_of(params, str(fam))})
             continue
         census["backlog"] += 1
         # WRONG SPACE: banked in the judge's key space, missed by coverage's key. Counted, kept
@@ -1019,6 +1028,7 @@ def select_backlog(G: Any, meta: dict, con, *, cap: int, now: datetime,
             _flush()
     _flush()
     census["oldest_first_seen"] = oldest[0]
+    census["judged_specs"] = judged_specs
     # THE POINT-IN-TIME RATCHET, as the sealed docket applies it: once any row is stamped, an
     # unstamped row is not on the judge's docket at all, so it is not stage-1 work either.
     stamped_only = bool(census["stamped"] and census["unstamped"])
@@ -1226,7 +1236,8 @@ def throughput_fence(doc: dict[str, Any]) -> dict[str, Any]:
         return {"status": "PASS", "why": "backlog is empty"}
     fails = []
     if proj < target:
-        fails.append(f"stage 1 projects {int(proj):,}/day against a {int(target):,}/day target")
+        fails.append(f"stage 1 projects {int(proj):,} TESTED/day against a "
+                     f"{int(target):,}/day target")
     if net >= 0:
         fails.append(f"the backlog does not shrink: net {int(net):+,}/day")
     return {"status": "FAIL" if fails else "PASS", "projected_per_day": int(proj),
@@ -1277,8 +1288,15 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     t_sel = time.monotonic()
     bank, bank_status = load_bank_hashes(bank_path)
     d_gid, d_ident, dead_status = load_dead_sidecar(dead_path)
+    from research import rollover_rejudge as RR
+    from research import zero_spread_rejudge as ZR
+    try:
+        rr_active = bool(RR.detect_change(con, RR.fingerprint(), write=False).get("active"))
+    except Exception:
+        rr_active = False
     chosen, census = select_backlog(G, meta, con, cap=cap, now=now, docket=docket, seen=seen,
-                                    bank=bank, dead=(d_gid, d_ident))
+                                    bank=bank, dead=(d_gid, d_ident),
+                                    collect_judged=RR_POPULATION_CAP if rr_active else 0)
     census["bank_status"] = bank_status
     census["dead_sidecar_status"] = dead_status
     select_s = time.monotonic() - t_sel
@@ -1286,6 +1304,23 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     earliest = universe_earliest(G.UNI) or date(2000, 1, 1)
     TRAIN_FRAC = None  # the full training window: no calendar cap
     cut_lb = lockbox_cut_lb(earliest, now.date())
+
+    # ---- re-judge queues that go ahead of stage 1 (named priority, after v4 re-mint) ---------
+    requeue: dict[str, Any] = {}
+    try:
+        requeue["zero_spread_stress"] = ZR.run(
+            con, G, meta, dry_run=dry_run,
+            list_path=(out_dir / ZR.LIST.name) if out_dir else None)
+    except Exception as exc:
+        requeue["zero_spread_stress"] = {"status": f"{UNMEASURED}: {type(exc).__name__}: {exc}"}
+    try:
+        requeue["engine_rollover"] = RR.run(
+            con, list(census.get("judged_specs") or []), workers=w,
+            budget_s=RR.BUDGET_SHARE * budget_s if rr_active else 0.0, dry_run=dry_run,
+            queue_path=(out_dir / RR.QUEUE.name) if out_dir else None)
+    except Exception as exc:
+        requeue["engine_rollover"] = {"status": f"{UNMEASURED}: {type(exc).__name__}: {exc}"}
+    census["judged_specs"] = []
 
     # ---- preflight (no build) --------------------------------------------------------------
     results: list[dict[str, Any]] = []
@@ -1462,6 +1497,9 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
     n_ruled = len(ruled)
     built = [r for r in ruled if float(r.get("cost_s") or 0) > 0]
     cps_core = (len(built) / worker_s) if worker_s > 0 else 0.0
+    # TESTED != RULED (audit 2026-09-30): only a cell with a training-window statistic was
+    # tested; the rest were ruled untestable or unbuildable, mostly at no build cost.
+    n_tested = sum(1 for r in ruled if score_of(r) is not None)
     by_fam_rate = {f: {"cells": a["cells_ruled"], "core_s": round(a["cost_s"], 3),
                        "cells_per_core_sec": (round(a["cells_ruled"] / a["cost_s"], 2)
                                               if a["cost_s"] > 0 else None),
@@ -1479,6 +1517,9 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
                "wall_s": round(wall, 2), "worker_s": round(worker_s, 2), "workers": w,
                "select_s": round(select_s, 2), "seen_s": round(seen_s, 2),
                "cells_per_core_sec": round(cps_core, 3),
+               "tested": n_tested,
+               "tested_per_core_sec": round(n_tested / worker_s, 4) if worker_s > 0 else 0.0,
+               "ruled_per_core_sec": round(n_ruled / worker_s, 4) if worker_s > 0 else 0.0,
                "cells_per_wall_sec": round(n_ruled / wall, 3) if wall > 0 else 0.0,
                "worker_peak_mb": round(peak_mb, 1),
                "stage2_build_s_per_cell": (round(float(np.median(s2_costs)), 4)
@@ -1488,6 +1529,7 @@ def run(*, budget_s: float = 600.0, workers: int | None = None, cap: int | None 
         _append(runs_p, [run_row])
     doc = build_report(run_row, census, fdr, by_fam_rate, results, winfo, [*prev_runs, run_row],
                        first_run, seen_status, cut_lb, earliest, con, seen_hit, dry_run)
+    doc["requeue"] = requeue
     con.close()
     _write_json(report, doc)
     return doc
@@ -1514,12 +1556,22 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
                       for r in day_runs))
     rates = [float(r.get("cells_per_core_sec") or 0) for r in runs if r.get("cells_per_core_sec")]
     rate = float(np.median(rates)) if rates else 0.0
+    t_rates = [float(r["tested_per_core_sec"]) for r in runs if r.get("tested_per_core_sec")]
+    r_rates = [float(r["ruled_per_core_sec"]) for r in runs if r.get("ruled_per_core_sec")]
+    rate_t = float(np.median(t_rates)) if t_rates else 0.0
+    rate_r = float(np.median(r_rates)) if r_rates else 0.0
     cores = int(winfo.get("cores") or 0)
-    proj18 = int(rate * 18 * DUTY * 86400) if rate else UNMEASURED
-    proj_here = int(rate * cores * DUTY * 86400) if rate and cores else UNMEASURED
-    # the SCHEDULED pace: what one hourly leg rules per run, x24
+    # PROJECTIONS, labelled as such: TESTED cells per day from the measured tested rate (the
+    # headline), and RULED cells per day (what shrinks the backlog) from the ruled rate.
+    proj18 = int(rate_t * 18 * DUTY * 86400) if rate_t else UNMEASURED
+    proj_here = int(rate_t * cores * DUTY * 86400) if rate_t and cores else UNMEASURED
+    proj18_ruled = int(rate_r * 18 * DUTY * 86400) if rate_r else UNMEASURED
+    # the SCHEDULED pace: what one hourly leg rules (and tests) per run, x24
     per_run = [int(r.get("ruled") or 0) for r in runs[-6:] if not r.get("dry_run")]
     scheduled = int(np.median(per_run) * 24) if per_run else UNMEASURED
+    per_run_t = [int(r["tested"]) for r in runs[-6:] if not r.get("dry_run") and "tested" in r]
+    scheduled_t = int(np.median(per_run_t) * 24) if per_run_t else UNMEASURED
+    tested_24h = int(sum(int(r.get("tested") or 0) for r in day_runs))
     target = target_for(first_run, now)
     backlog_total = int(census.get("backlog") or 0)
     wrong_space = int(census.get("wrong_space") or 0)
@@ -1593,7 +1645,8 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
         return round(b / -n, 2) if n < 0 else "GROWING"
 
     net = {"measured_trailing_24h": _net(measured_per_day), "scheduled_pace": _net(scheduled),
-           "projected_18c_50pct": _net(proj18)}
+           "projected_18c_50pct": _net(proj18_ruled),
+           "basis": "creation minus RULED cells per day (a ruled cell leaves the unruled backlog)"}
     ucls: dict[str, int] = {}
     for r in results:
         k = unknown_class(r)
@@ -1618,8 +1671,16 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
                 "a reject is re-screenable and never deleted; stage 1 has no promotion authority"),
         "run": run_row,
         "stage1_per_day": measured_per_day,
+        "stage1_tested_per_day": tested_24h if day_runs else UNMEASURED,
+        "stage1_tested_share_of_ruled": (round(tested_24h / ruled_24h, 4)
+                                         if day_runs and ruled_24h else UNMEASURED),
         "stage1_per_day_projected_18c_50pct": proj18,
+        "stage1_per_day_projected_basis": ("PROJECTION from the measured TESTED rate (cells with "
+                                           "a training-window statistic per core-second) x 18 "
+                                           f"cores x {DUTY} duty x 86,400 s; not a measurement"),
+        "stage1_ruled_per_day_projected_18c_50pct": proj18_ruled,
         "stage1_per_day_scheduled": scheduled,
+        "stage1_tested_per_day_scheduled": scheduled_t,
         "stage2_per_day": s2.get("judged_24h", UNMEASURED) if isinstance(s2, dict) else UNMEASURED,
         "creation_per_day": creation,
         "creation": {"created_24h": c24, "created_7d": c7, "basis": (
@@ -1639,9 +1700,9 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
                      "sealed pass 2 lands the stripped judge_coverage docket_cell_id hunk")},
         "days_to_clear": {"measured_trailing_24h": _clear(measured_per_day),
                           "scheduled_pace": _clear(scheduled),
-                          "projected_18c_50pct": _clear(proj18),
+                          "projected_18c_50pct": _clear(proj18_ruled),
                           "projected_18c_50pct_including_wrong_space":
-                              _clear(proj18, backlog_total),
+                              _clear(proj18_ruled, backlog_total),
                           "rule": "backlog_excluding_wrong_space / (stage-1 per day - creation "
                                   "per day); GROWING when creation is not outrun"},
         "unknown_causes": {
@@ -1661,6 +1722,8 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
             "measured_per_day_trailing_24h": measured_per_day,
             "scheduled_pace_per_day": scheduled,
             "cells_per_core_sec_median": round(rate, 3) if rate else UNMEASURED,
+            "tested_per_core_sec_median": round(rate_t, 4) if rate_t else UNMEASURED,
+            "ruled_per_core_sec_median": round(rate_r, 4) if rate_r else UNMEASURED,
             "projected_per_day_18c_50pct": proj18,
             "projected_per_day_this_host_50pct": proj_here,
             "target_per_day": target,
@@ -1696,8 +1759,9 @@ def build_report(run_row, census, fdr, by_fam_rate, results, winfo, runs, first_
                                  if day_runs and ruled_24h else UNMEASURED),
             "at_scheduled_pace": (round(backlog / scheduled, 2)
                                   if isinstance(scheduled, int) and scheduled else UNMEASURED),
-            "at_projected_18c_50pct": (round(backlog / proj18, 2)
-                                       if isinstance(proj18, int) and proj18 else UNMEASURED)},
+            "at_projected_18c_50pct": (round(backlog / proj18_ruled, 2)
+                                       if isinstance(proj18_ruled, int) and proj18_ruled
+                                       else UNMEASURED)},
         "boundary": {"lockbox_cut_lower_bound": cut_lb.isoformat(),
                      "universe_earliest_bar": earliest.isoformat(),
                      "min_days_full": MIN_DAYS_FULL, "min_train_days": MIN_TRAIN_DAYS,
