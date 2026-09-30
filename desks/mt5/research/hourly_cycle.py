@@ -1009,7 +1009,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth",
                      # the five EliteQuant-map families, screened on cost and seeded
-                     "elitequant_breadth"),
+                     "elitequant_breadth",
+                     # TradingAgents' four analysts + bull/bear debate, proposing cells on the seat
+                     "analyst_panel"),
                     "discovery"),
     # validate: the adversarial evidence lab
     **dict.fromkeys(("external_gauntlet", "backtest", "falsifier_run", "adversaries",
@@ -1766,6 +1768,8 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
     "elitequant_breadth": 700,
+    # analyst_panel stops itself at --budget-s 420 and at 10 seat calls; the cap sits above.
+    "analyst_panel": 540,
     "event_surprise": 400,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
@@ -3635,6 +3639,12 @@ def main() -> None:
     # writes reports/ELITEQUANT_BREADTH.json. Additive: no other miner is touched.
     eqb = _costed("elitequant_breadth", lambda: _producer(
         "elitequant_breadth", "research/elitequant_breadth.py", "--once", "--budget-s", "600"))
+    # THE ANALYST PANEL (TradingAgents, 2026-09-30): four analyst lenses propose cells in the
+    # registered price-only grammar on the proposer seat, the bear attacks each one, the payers
+    # are screened and donated through the one proposer door; writes reports/ANALYST_PANEL.json.
+    # Never a trade decision and never a size. UNMEASURED and inert when no seat resolves.
+    anp = _costed("analyst_panel", lambda: _producer(
+        "analyst_panel", "research/analyst_panel.py", "--once", "--budget-s", "420"))
     # ACTUAL AGAINST CONSENSUS (W21): the standardized surprise per calendar event and the
     # measured reaction of every instrument to it, by horizon and regime. The collector is
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
@@ -5247,7 +5257,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
-                    "elitequant_breadth": eqb,
+                    "elitequant_breadth": eqb, "analyst_panel": anp,
                     "event_surprise": esur,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,

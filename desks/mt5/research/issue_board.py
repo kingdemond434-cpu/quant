@@ -134,6 +134,8 @@ CADENCE: tuple[tuple[str, str, int, str], ...] = (
      "research/cross_sectional_breadth.py"),
     ("elitequant_breadth", "desks/mt5/reports/ELITEQUANT_BREADTH.json", 3600,
      "research/elitequant_breadth.py"),
+    ("analyst_panel", "desks/mt5/reports/ANALYST_PANEL.json", 3600,
+     "research/analyst_panel.py"),
     ("attribution_census", "desks/mt5/reports/ATTRIBUTION_COVERAGE.json", 3600,
      "research/attribution_census.py"),
     ("coverage_tensor", "desks/mt5/reports/COVERAGE_TENSOR.json", 3600,
