@@ -162,7 +162,7 @@ def test_crowding_miner_reads_the_attention_substitute_not_reddit(
         assert "wikimedia.org" in url
         start = datetime(2026, 8, 1)
         items = [{"timestamp": (start + timedelta(days=i)).strftime("%Y%m%d00"),
-                  "views": 1000 + (400 if i >= 53 else 0)} for i in range(60)]
+                  "views": 1000 + (i % 5) * 20 + (400 if i >= 53 else 0)} for i in range(60)]
         return json.dumps({"items": items}).encode()
 
     monkeypatch.setattr(fd, "_get", fake_get)
