@@ -617,11 +617,12 @@ class Pipeline:
         }
 
     def _latency_hours(self, now: datetime) -> float | None:
+        """Median hours from acquisition to verdict, over cells evaluated in the last 30 days."""
+        done = {e["cell_id"]: e["at"] for e in self.cells.events_since(now - ACTIVE_WINDOW)
+                if e["to_status"] == "EVALUATED"}
         vals = []
         for c in self.cells.by_status("EVALUATED", limit=100_000):
-            ev = [e for e in self.cells.events_since(now - ACTIVE_WINDOW)
-                  if e["cell_id"] == c.cell_id and e["to_status"] == "EVALUATED"]
-            a, b = parse_time(c.acquisition_time), parse_time(ev[-1]["at"]) if ev else None
+            a, b = parse_time(c.acquisition_time), parse_time(done.get(c.cell_id))
             if a and b:
                 vals.append((b - a).total_seconds() / 3600)
         return round(statistics.median(vals), 2) if vals else None

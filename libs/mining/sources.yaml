@@ -559,4 +559,4 @@ sources:
     config:
       root: desks/mt5/data
       paths: [deep_forest_claims.jsonl]
-      fields: {uri: url, body: claim, title: ground, time: published_time, language: lang}
+      fields: {uri: url, fragment: claim_hash, body: claim, title: ground, time: published_time, language: lang}

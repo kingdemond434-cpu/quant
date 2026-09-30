@@ -652,6 +652,9 @@ def fetch_external_feed(src: Source, cursor: dict[str, Any], ctx: FetchContext
                 row = rows[i]
                 offsets[fp] = i + 1
                 uri = str(_dig(row, str(fields.get("uri") or "url")) or "")
+                frag = _dig(row, str(fields["fragment"])) if fields.get("fragment") else None
+                if uri and frag:
+                    uri = f"{uri}#{frag}"          # one page, many rows: not revisions of it
                 body = str(_dig(row, str(fields.get("body") or "claim")) or "")
                 if not uri or not body:
                     yield Item(uri="", body="", cursor_update={"offsets": dict(offsets)})
