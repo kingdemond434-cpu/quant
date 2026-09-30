@@ -134,7 +134,7 @@ REQUIRED_EDGES: tuple[Edge, ...] = (
     Edge("leg:research_roi", "leg:japan_department",
          "desks/mt5/data/research_allocation.json", "allocation->departments",
          "compute/information/capital reallocation is observed at the department that spends it"),
-    Edge("leg:control_plane", "task:MT5-ClockFixer",
+    Edge("leg:control_plane", "component:control_plane",
          "desks/mt5/reports/CONTROL_PLANE.json", "reconciler->actuators",
          "the fifteen-minute apply pass acts on the observe pass's plan, not on its own guesses"),
     # THE COST WIRE, declared after it was found broken (2026-09-23). `net_edge_spine` read

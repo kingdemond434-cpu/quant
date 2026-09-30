@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 722,
+  "NEVER": 723,
   "UNMEASURED": 34
  },
  "scope": {
-  "attested": 939,
+  "attested": 940,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -80,6 +80,16 @@
     "organs": [
      "leg:box_state_freshness",
      "leg:desk_health"
+    ]
+   },
+   {
+    "at": "2026-09-30T20:52:48+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "library:desks/mt5/ops/components.py"
     ]
    }
   ]
@@ -23889,6 +23899,34 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-09-30T20:46:33+00:00"
+  },
+  {
+   "organ": "library:desks/mt5/ops/components.py",
+   "kind": "library",
+   "code": [
+    "desks/mt5/ops/components.py"
+   ],
+   "clock": "import:desks/mt5/research/runtime_attestation.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/data/LIVE_SYSTEM_STATE.json",
+   "artifact_declared": "desks/mt5/data/LIVE_SYSTEM_STATE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-09-30T20:52:48+00:00"
   }
  ],
  "ratchet": {
