@@ -115,6 +115,8 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # (> 6h) verdict, so a deferred `tier_s` pass withholds every new LIVE row: it is on the
     # money path now, and it runs every hour.
     "tier_s",
+    # ... and the writer of the door's fourth input, reports/REPLICATION.json (heavy plan).
+    "replication_civilization",
 })
 
 
