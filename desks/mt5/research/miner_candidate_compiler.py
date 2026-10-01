@@ -761,6 +761,19 @@ def _invariance(symbol: str, family: str) -> dict | None:
         return None
 
 
+def _session_slots(family: str, base: dict, symbol: str) -> list[tuple[str, dict, dict | None]]:
+    """(session, params, remap note) for every slot of `SESSION_AXIS` -- the oracle's door
+    (`libs/research/family_firing.session_cells`), or the plain axis when it is unreachable."""
+    try:
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from libs.research import family_firing
+        return family_firing.session_cells(family, base, SESSION_AXIS, symbol=symbol)
+    except Exception:
+        return [(s, {**base, **({"session": s} if s != "all" else {})}, None)
+                for s in SESSION_AXIS]
+
+
 def expand_axes(cands: list[dict]) -> list[dict]:
     """Every candidate on every intraday chart with bars, in every session; H1 kept, ranked
     last (`priority` 1 against 0). A candidate whose params already name a chart or a session
@@ -789,18 +802,23 @@ def expand_axes(cands: list[dict]) -> list[dict]:
         except Exception:
             pass
         for tf in [*_charts, "H1"]:
-            for sess in SESSION_AXIS:
-                p = dict(base)
-                if tf != "H1":
-                    p["timeframe"] = tf
-                if sess != "all":
-                    p["session"] = sess
+            chart_base = dict(base)
+            if tf != "H1":
+                chart_base["timeframe"] = tf
+            # A DEAD SESSION IS NEVER MINTED AS ITSELF (2026-09-30): the firing-hours oracle
+            # names the windows this family's signals can land in, and a slot whose window holds
+            # none is minted as the cell that CAN fire there (hour params re-anchored to the
+            # session's open) or at the hours it does fire (re-homed). One cell per slot, so the
+            # count never falls; UNMEASURED leaves the slot exactly as it was.
+            for sess, p, remap in _session_slots(fam, chart_base, sym):
                 v = dict(c)
                 v["params"] = p
                 gid = _genome_id(sym, fam, p)
                 if gid:
                     v["genome_id"] = gid
                 v["axis"] = {"chart": tf, "session": sess}
+                if remap:
+                    v["session_remap"] = remap
                 v["priority"] = (1 if tf == "H1" else 0) + demote
                 if inv:
                     v["causal_invariance"] = {"verdict": inv.get("verdict"),

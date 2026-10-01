@@ -1009,7 +1009,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "session_structure"),
                     "intel"),
     # discovery: the candidate pipeline, in order, plus the evolutionary generators
-    **dict.fromkeys(("search", "sweep", "breadth_sweep", "compile_candidates", "merge_docket",
+    **dict.fromkeys(("search", "sweep", "breadth_sweep", "session_variant_remap",
+                     "compile_candidates", "merge_docket",
                      "deepen", "alpha_evolution", "alpha_rl", "ml_layer", "ensemble_optimizer",
                      "requeue_unrunnable", "queue_cycle", "queue_compact", "miner_conversion",
                      "recertify_canon", "session_chart_expansion", "experiment_design",
@@ -1806,6 +1807,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # Rank recovery stops itself at --budget-s 240: one registry scan, one donor census and a
     # plan walked inside 60% of that. The cap sits above it and must never bind.
     "rank_recovery": 300,
+    # The dead-session-variant remap stops itself at --budget-s 240: one streaming docket read,
+    # oracle measurements for keys never measured, one sidecar write and a bounded donation
+    # through the registry door. The cap sits above it and must never bind.
+    "session_variant_remap": 300,
     # The attribution census stops itself at --budget-s 240: two registry scans and one
     # bounded backfill that commits per chunk and resumes. The cap sits above it.
     "attribution_census": 300,
@@ -3518,6 +3523,14 @@ def main() -> None:
     m = _costed("mine", mine)
     se = _costed("search", search)
     bs = _costed("breadth_sweep", breadth_sweep)
+    # DEAD SESSION VARIANTS (Tier S, 2026-09-30): 21% of the judge's UNKNOWNs were asia/london/ny
+    # variants of families that only fire at one hour. The producers now ask the firing-hours
+    # oracle before minting; this leg finds the ones already in the docket (box state, never
+    # rewritten), marks them in data/hypotheses/DEAD_SESSION_VARIANTS.jsonl, donates each one's
+    # live stand-in through the registry door and publishes reports/SESSION_VARIANT_REMAP.json.
+    svr = _costed("session_variant_remap", lambda: _producer(
+        "session_variant_remap", "research/session_variant_remap.py", "--once",
+        "--budget-s", "240"))
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
     pil = _costed("placement_interlock", placement_interlock)
@@ -5311,7 +5324,8 @@ def main() -> None:
                     "health": h, "tape": t, "state_vector": s, "daily": d,
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
-                    "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
+                    "search": se, "breadth_sweep": bs, "session_variant_remap": svr,
+                    "candidate_conservation": ccv,
                     "pit_canaries": pcn, "placement_interlock": pil,
                     "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,

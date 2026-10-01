@@ -706,11 +706,23 @@ def _proposal(region: dict[str, str], mode: str, why: str, families: frozenset[s
         params["timeframe"] = region["chart"]
     if region["session"] != "all":
         params["session"] = region["session"]
-    return {"kind": "hypothesis", "family": fam, "symbols": symbols, "params": params,
-            "timeframe": region["chart"], "session": region["session"],
-            "source": "axis_registry", "why": why,
-            "axis_cell": axis_cell(symbols[0], fam, params, region["chart"], region["session"]),
-            "selector_mode": mode, "rank_score": round(float(rank_score), 5)}
+    # A WINDOW THIS FAMILY NEVER FIRES IN IS PROPOSED AS THE CELL THAT CAN (2026-09-30):
+    # `family_firing.live_session` re-anchors an hour parameter to the session's open, or re-homes
+    # a fixed-hour family to where it fires. One row either way; UNMEASURED changes nothing.
+    sess, remap = region["session"], None
+    try:
+        from libs.research.family_firing import live_session
+        params, sess, remap = live_session(fam, params, sess, symbols[0] if symbols else None)
+    except ImportError:
+        pass
+    row = {"kind": "hypothesis", "family": fam, "symbols": symbols, "params": params,
+           "timeframe": region["chart"], "session": sess,
+           "source": "axis_registry", "why": why,
+           "axis_cell": axis_cell(symbols[0], fam, params, region["chart"], sess),
+           "selector_mode": mode, "rank_score": round(float(rank_score), 5)}
+    if remap:
+        row["session_remap"] = remap
+    return row
 
 
 def select(cells: dict[str, dict[str, Any]], model: dict[str, Any], regions: list[dict[str, Any]],
