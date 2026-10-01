@@ -103,6 +103,13 @@
     Adopt the FETCH_HEAD already on disk instead of fetching first. For a
     rerun, or a box whose network is the thing that is broken.
 
+.PARAMETER Target
+    Adopt exactly this commit instead of FETCH_HEAD. Adopt-And-Seal passes the
+    commit the release gate chose (`scripts/release_promotion.py gate`: the
+    branch tip when it is a green release plus box state, else the newest
+    release itself), together with -NoFetch because the gate has already
+    fetched it. The commit must already be in this clone.
+
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File desks\mt5\scripts\Adopt-Release.ps1
 #>
@@ -110,7 +117,8 @@
 param(
     [string] $RepoRoot,
     [string] $Branch,
-    [switch] $NoFetch
+    [switch] $NoFetch,
+    [string] $Target
 )
 
 $ErrorActionPreference = "Stop"
@@ -636,7 +644,15 @@ if (-not $NoFetch) {
                "common cause on this box -- see docs/BOX_PERMISSIONS.md")
     }
 }
-$target = (Invoke-Git @("rev-parse", "FETCH_HEAD")).Trim()
+# A TARGET PINNED BY THE RELEASE GATE WINS OVER FETCH_HEAD (2026-09-30). The gate fetched the
+# tip and the production pointer into refs/quant/release-gate/* and chose which one this box may
+# run; FETCH_HEAD would name the raw tip, which is exactly what the gate exists to hold back.
+if ($Target) {
+    $target = (Invoke-Git @("rev-parse", "--verify", "$Target^{commit}")).Trim()
+    Write-Host "  target pinned by the release gate"
+} else {
+    $target = (Invoke-Git @("rev-parse", "FETCH_HEAD")).Trim()
+}
 $head   = (Invoke-Git @("rev-parse", "HEAD")).Trim()
 Write-Host ("  head   {0}" -f $head.Substring(0, 12))
 Write-Host ("  target {0}" -f $target.Substring(0, 12))
@@ -685,6 +701,41 @@ if ($ancestorRc -eq 0) {
 }
 if ($ancestorRc -ne 1) {
     Write-Host "  WARNING: could not measure whether origin is behind HEAD; adopting as before"
+}
+
+# ---- 0b. THE TARGET'S JUDGE MUST BE SEALED BEFORE ANY OF IT LANDS (2026-09-30) ----
+# Origin carried a broken seal for about two minutes (4678fe4f at 515d665e, until fc6c34e5
+# re-signed it), and this script checked neither CI nor the seal: an adoption at :12 inside that
+# window would have landed an unsigned judge on the box that trades. `check_target_seal.py`
+# hashes the fetched COMMIT's frozen judge files against the manifest that commit carries, using
+# the union of this checkout's and the target's frozen lists. Anything but SEALED refuses here,
+# before a byte is written: the running release, its seal and the gateway stay exactly as they
+# are, and the next hourly pass adopts once origin is re-signed. Exit 7 so Adopt-And-Seal can say
+# what happened instead of reporting a partial adoption.
+$sealCheck = Join-Path $RepoRoot "scripts\check_target_seal.py"
+if (Test-Path $sealCheck) {
+    $sealPy = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $sealPyArgs = @()
+    if (-not (Test-Path $sealPy)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $sealPy = "py"; $sealPyArgs = @("-3") }
+        else { $sealPy = "python" }
+    }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $sealOut = @(& $sealPy @sealPyArgs $sealCheck $target 2>&1 | ForEach-Object { "$_" })
+        $sealRc = $LASTEXITCODE
+    } catch {
+        $sealOut = @("check_target_seal.py could not run: " + $_.Exception.Message)
+        $sealRc = 2
+    } finally { $ErrorActionPreference = $prevEap }
+    $sealOut | ForEach-Object { Write-Host ("  " + $_) }
+    if ($sealRc -ne 0) {
+        Write-Host ("  REFUSING target {0}: its judge is not sealed (rc {1}); keeping the current release" -f
+                    $target.Substring(0, 12), $sealRc)
+        exit 7
+    }
+} else {
+    Write-Host "  check_target_seal.py absent in this checkout (pre-gate release); adopting without the seal check this once"
 }
 
 # ---- 1. THE BOX'S OWN UNCOMMITTED STATE, COMMITTED AS ITSELF -----------------

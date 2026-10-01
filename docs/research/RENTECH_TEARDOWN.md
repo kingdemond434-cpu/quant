@@ -754,7 +754,7 @@ eight days stale, and it is far more damning than anything the 11.2/36.6 figure 
 Renaissance's execution obsession (B.2) is the mechanism with the clearest transfer to a one-account
 desk, so this section is the most consequential.
 
-**Scale, for honesty.** Account 495044 (Fusion Markets, EUR). Whole realised record from
+**Scale, for honesty.** The live Fusion account (Fusion Markets, EUR). Whole realised record from
 `desks/mt5/data/cost_truth_quotes.json` (snapshot `2026-09-23T05:13:05Z`): **433 deals; 430 traded;
 212 distinct round trips; 12 distinct trading days; every one of them between 2026-09-01 and
 2026-09-22.** Per symbol: XAUUSD 172, EURCHF 100, CHFNOK 38, AUDUSD 38, AUDCAD 22, USDCHF 16,

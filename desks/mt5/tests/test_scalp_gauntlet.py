@@ -266,7 +266,7 @@ def test_a_ten_gate_pass_becomes_a_certificate_with_the_whole_recipe(desk) -> No
 
 def test_the_real_ten_gates_judge_scalp_cells(desk, monkeypatch) -> None:
     """The one validator, run for real on 100 days of bars: every verdict carries exactly the
-    canonical stage list, and the charge is the sealed fixed campaign count."""
+    canonical stage list, and the charge is at least the sealed campaign count."""
     desk.bars("M15", 96 * 100)
     monkeypatch.setattr(sg, "CANDIDATES", {"xau_m15_anti_breakout": ("M15", M15_BREAKOUT),
                                             "xau_m15_anti_momentum": ("M15", M15_MOMENTUM)})
@@ -276,7 +276,11 @@ def test_the_real_ten_gates_judge_scalp_cells(desk, monkeypatch) -> None:
         assert all(gate in v["stages"] for gate in GATES) and v["days"] >= 60
         assert set(v["stages"]) - set(GATES) == {"swap_cost"}
         assert v["stages"]["economic_prior"]["passed"] is True
-        assert v["stages"]["deflated_sharpe"]["n_trials"] == report["gauntlet"]["n_trials"]
+        # The cell is charged the lifetime UNION, never below the campaign count; with no
+        # readable experiment ledger the charge is unknown and the gate fails closed.
+        ds = v["stages"]["deflated_sharpe"]
+        assert (ds["n_trials"] is None and ds["passed"] is False) or (
+            ds["n_trials"] >= report["gauntlet"]["n_trials"])
     expected, basis = charged_trial_count(2, None, None)
     assert report["multiplicity"]["charged_n_trials"] == expected
     assert report["multiplicity"]["charged_basis"] == basis
