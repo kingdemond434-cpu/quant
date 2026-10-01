@@ -1016,7 +1016,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
-                     "conversion_maximiser", "trend_core",
+                     "conversion_maximiser", "conversion_funnel", "trend_core",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth"),
@@ -1825,6 +1825,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
     "conversion_maximiser": 1_000,
+    # The conversion funnel stops itself at --budget-s 240 (a streamed read of the verdict
+    # ledger plus five small artifacts) and checkpoints CONVERSION_FUNNEL.json before the stream.
+    "conversion_funnel": 330,
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
@@ -3901,6 +3904,13 @@ def main() -> None:
     cvm = _costed("conversion_maximiser", lambda: _producer(
         "conversion_maximiser", "research/conversion_maximiser.py", "--once",
         "--budget-s", "900", "--max-rows", "5000"))
+    # THE CONVERSION FUNNEL (the 25 Sep lane "maximise conversion to certificates", rebuilt
+    # 2026-09-30): mined -> cell -> judged -> verdict class -> PASS -> certificate -> forward
+    # clock, with the count lost at each step by NAMED reason and owner -- the drop-finder the
+    # noon CRO could not read ("build/data failures UNMEASURED"). It runs after the maximiser so
+    # this hour's conversions are in the registry stage. Measurement only; no gate moves.
+    cfn = _costed("conversion_funnel", lambda: _producer(
+        "conversion_funnel", "research/conversion_funnel.py", "--once", "--budget-s", "240"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
@@ -5310,7 +5320,8 @@ def main() -> None:
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp,
-                    "conversion_maximiser": cvm, "research_debt": rdb,
+                    "conversion_maximiser": cvm, "conversion_funnel": cfn,
+                    "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
