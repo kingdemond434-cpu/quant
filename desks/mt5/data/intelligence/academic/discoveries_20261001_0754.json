@@ -1,0 +1,15 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Phase-Field Modeling of Liquid Phases with Ordering",
+    "summary": "A strong negative enthalpy of mixing can lead to ordering in liquid solutions. To describe ordering in liquids, different thermodynamic descriptions of liquid phases have been developed in the CALPHAD",
+    "url": "https://arxiv.org/abs/2609.40308v1",
+    "published": "2026-09-30T17:52:29Z",
+    "trading_terms": [
+      "alpha"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
