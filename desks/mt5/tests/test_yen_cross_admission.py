@@ -285,3 +285,14 @@ def test_an_unmeasured_concentration_is_published_not_acted_on() -> None:
            if len(s["symbol"]) == 6 and s["symbol"][3:] == "CHF"]
     if len(chf) > 1:
         assert any("CHF" in b for b in doc["unmeasured_blocks"])
+
+
+def test_the_clock_key_the_promoter_writes_is_admitted() -> None:
+    """The promoter names a LIVE row by its forward clock's key; rr=2.5/wb=12 on asia is
+    `USDJPY.asia#rr=2.5` (wait_bars 12 is the window default). Admitting only an alias no
+    writer produces would keep the approved sleeve off the live account forever."""
+    pol = lp.policy(DESK / "data" / "live_sleeve_policy.json")
+    row = {"name": "USDJPY.asia#rr=2.5", "symbol": "USDJPY", "family": "session_range_breakout"}
+    assert lp.refuse(row, pol) is None
+    other = {**row, "name": "USDJPY.asia#rr=1.5"}
+    assert lp.refuse(other, pol), "a different rr on the same instrument stays refused"

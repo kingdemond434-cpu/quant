@@ -1,5 +1,5 @@
 {
- "signed_utc": "2026-10-01T01:25:47.133545+00:00",
+ "signed_utc": "2026-10-01T03:25:09.464274+00:00",
  "signed_by": "zuck",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "74be05bbb50b3663",
@@ -8,7 +8,7 @@
   "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
   "desks/mt5/policy/gate_spec.yaml": "cd7e57ea9c3d9182",
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
-  "desks/mt5/research/promoter.py": "052a06227db241e7",
+  "desks/mt5/research/promoter.py": "86abbd9aba365860",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
   "libs/portfolio/allocator_proof.py": "09f8f0b9dff5239a",
   "libs/portfolio/rails.py": "7a678df5ceb7a4b4",

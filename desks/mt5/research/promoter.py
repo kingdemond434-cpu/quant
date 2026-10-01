@@ -2132,7 +2132,11 @@ def main() -> None:
         # everything else; the identity map resolves both, and the parse below is only the
         # fallback for a key the enrolment no longer lists.
         ident = identities.get(key)
-        parts = key.split(".")
+        # THE PARAMETER TAIL IS NOT A KEY FIELD. `sleeve_key` appends `#rr=2.5...`, and splitting
+        # the whole key on "." cut that decimal in two, so `USDJPY.asia#rr=2.5` parsed as window
+        # `asia#rr=2` with a breakout STATE of "5": a condition no certificate carries, so the
+        # clock's gate spec never matched and the approved rr=2.5 sleeve could not be promoted.
+        parts = key.split("#", 1)[0].split(".")
         if ident:
             sym, win, family = ident["symbol"], ident["selector"], ident["family"]
             side_txt = ident.get("side", "LONG")
