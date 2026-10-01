@@ -270,6 +270,11 @@ from mt5desk.decision_core import (
 from mt5desk.decision_core import (
     implementable_lot as implementable_lot,
 )
+# Re-exported for callers that read it off the gateway (test_decision_core's reachability rule).
+# An import alias, not a Name: no gateway path consults the old 0.05R threshold (935ffe891).
+from mt5desk.decision_core import (
+    MIN_RATCHET_IMPROVEMENT_R as MIN_RATCHET_IMPROVEMENT_R,
+)
 from mt5desk.decision_core import (
     heat_budget as heat_budget,
 )

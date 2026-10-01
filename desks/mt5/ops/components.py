@@ -682,6 +682,24 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        # THE BREADTH LEDGER'S CLOCK, DECLARED BECAUSE THE REACH WALK NAMED THE WRONG ONE
+        # (2026-09-30). The walk credits a script to whichever file that names it pops first, and
+        # for this one that was a docstring citation in docket_keff (alpha_breadth cites it too),
+        # neither of which can run a script. What runs it is the VPS daily cycle's step table
+        # (step `breadth_ledger`), on the 02:00 crontab line and `quant-cro.timer` at 08:01.
+        # `test_component_registry_clocks` pins both halves against their sources.
+        ComponentSpec(
+            component_id="executable:scripts/report_breadth.py",
+            kind="executable", host="vps",
+            code_paths=("scripts/report_breadth.py",),
+            outputs=("web/breadth_ledger.json",),
+            cadence_s=86_400, timeout_s=120,
+            progress_metric=UNMEASURED,
+            owner="daily_research_cycle", restart_action=UNMEASURED,
+            criticality="optional", resource_budget={"budget_s": 120},
+            schedule=f"invoked:{VPS_DAILY}", artifact_class="daily",
+            notes=("step breadth_ledger of the VPS daily cycle (ops/crontab.manifest 02:00 and "
+                   "quant-cro.timer 08:01), run with cwd at the repo root")),
         ComponentSpec(
             component_id="resident:gateway",
             kind="task", host="box",
@@ -699,6 +717,17 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
             notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
     ]
+
+
+#: The VPS's daily research cycle: a step table of scripts it runs by subprocess.
+VPS_DAILY = "scripts/daily_research_cycle.py"
+
+
+def vps_daily_step(rel: str, root: Path | None = None) -> str | None:
+    """The step name under which the VPS daily cycle runs `rel`, read from its own step table."""
+    text = _read_text((root or ROOT) / VPS_DAILY)
+    m = re.search(r'\(\s*"([a-z0-9_]+)"\s*,\s*"' + re.escape(rel) + r'[\s"]', text)
+    return m.group(1) if m else None
 
 
 # ------------------------------------------------------------------- everything else, named

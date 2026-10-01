@@ -103,6 +103,46 @@ def test_run_gauntlet_result_carries_independence_and_the_trial_ledger(monkeypat
         assert ds["n_trials"] is None and ds["passed"] is False
 
 
+def test_run_gauntlet_lockbox_fails_closed_when_the_calendar_cannot_reserve_it(
+        monkeypatch) -> None:
+    # TRUE LOCKBOX (#52, policy v3/v4): gate 9 reads a reserved calendar tail carved BEFORE the
+    # program matrix, so it can no longer restate walk-forward's OOS Sharpe. 120 days cannot
+    # reserve the 40-day held-out floor, so gate 9 FAILS CLOSED with no Sharpe -- and an absent
+    # lockbox Sharpe is never counted as a restatement.
+    daily = pd.Series(np.sin(np.arange(120) / 7.0) * 0.1 + 0.01,
+                      index=pd.date_range("2025-01-01", periods=120, freq="D"))
+    monkeypatch.setattr(eg, "daily_series", lambda *_a, **_kw: daily)
+    cell = {"sym": "XAUUSD", "family": "cot_positioning", "params": {},
+            "mechanism_status": "NAMED", "df": None, "sigs": [], "costs": None}
+    result = eg.run_gauntlet([cell], "single-cell", {})
+    assert result["gate_independence"]["lockbox_restates_walk_forward"] == {"n": 0, "of": 1}
+    lb = result["verdicts"][0]["stages"]["lockbox"]
+    assert lb["passed"] is False and lb["lockbox_sharpe"] is None and lb["n_days"] == 0
+    assert "no lockbox evidence exists" in lb["why"]
+
+
+def test_run_gauntlet_lockbox_reads_only_the_reserved_tail(monkeypatch) -> None:
+    # With a long enough campaign the final LOCKBOX_FRAC of the calendar is carved off before
+    # every other gate: gate 9 reads exactly those rows, and is measured apart from walk-forward.
+    from research.gate_policy import LOCKBOX_FRAC
+    n = 400
+    rng = np.random.default_rng(7)
+    daily = pd.Series(rng.normal(0.02, 0.1, n),
+                      index=pd.date_range("2024-01-01", periods=n, freq="D"))
+    monkeypatch.setattr(eg, "daily_series", lambda *_a, **_kw: daily)
+    cell = {"sym": "XAUUSD", "family": "cot_positioning", "params": {},
+            "mechanism_status": "NAMED", "df": None, "sigs": [], "costs": None}
+    result = eg.run_gauntlet([cell], "single-cell", {})
+    st = result["verdicts"][0]["stages"]
+    held = daily.iloc[int(n * (1.0 - LOCKBOX_FRAC)):]
+    assert st["lockbox"]["n_days"] == len(held) == 80
+    assert st["lockbox"]["lockbox_sharpe"] == round(
+        float(eg.sharpe_ratio(held.to_numpy(float))), 4)
+    assert st["lockbox"]["lockbox_sharpe"] != st["walk_forward"]["oos_sharpe"]
+    assert "reserved_final_calendar_fraction" in st["lockbox"]["basis"]
+    assert result["gate_independence"]["lockbox_restates_walk_forward"] == {"n": 0, "of": 1}
+
+
 def test_lifetime_trial_report_reads_the_ledger_and_never_invents_zero(monkeypatch,
                                                                        tmp_path) -> None:
     from libs.research import experiment_ledger as el

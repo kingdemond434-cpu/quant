@@ -83,18 +83,41 @@ def _bars(days: int = 300, seed: int = 3) -> pd.DataFrame:
                          "low": np.minimum(o, c) - spread, "close": c}, index=idx)
 
 
+def _regime_bars(days: int = 400, seed: int = 3, block: int = 150) -> pd.DataFrame:
+    """Bars whose realised volatility alternates between a quiet and a loud regime.
+
+    `vol_transition` fires only on the CROSSING of fast over slow realised vol, and a constant-vol
+    random walk (`_bars`) almost never makes one -- which is why this case used to skip and so
+    never ran its costed comparison. Each quiet-to-loud boundary (x6 the step size) is a crossing
+    the family must see, so the fixture guarantees the signals the check needs.
+    """
+    rng = np.random.default_rng(seed)
+    n = days * 24
+    idx = pd.date_range("2024-01-01", periods=n, freq="h", tz="UTC")
+    scale = np.where((np.arange(n) // block) % 2 == 0, 0.0005, 0.003)
+    c = np.exp(np.cumsum(rng.normal(size=n) * scale)) * 1800
+    o = np.concatenate([[c[0]], c[:-1]])
+    wick = np.abs(rng.normal(size=n)) * scale * c
+    return pd.DataFrame({"open": o, "high": np.maximum(o, c) + wick,
+                         "low": np.minimum(o, c) - wick, "close": c}, index=idx)
+
+
 def test_the_second_replay_agrees_with_the_engine_on_a_real_family():
     from mt5desk.engine import Costs, run_backtest
     from mt5desk.families_orthogonal import ORTHOGONAL_FAMILIES
-    d = _bars(days=400)
+    d = _regime_bars(days=400)
     sig = ORTHOGONAL_FAMILIES["vol_transition"](d)
-    if len(sig) < 10:
-        pytest.skip("family produced too few signals on synthetic bars")
-    # Frictionless on purpose (the two replays are compared, not priced); the zero spread is
-    # DERIVED through `stressed`, never a literal (test_no_literal_spread_per_lot).
-    costs = Costs(commission_per_lot=0.0, contract_oz=100.0).stressed(0.0)
+    # NO SKIP: the fixture is built so the family fires; too few signals is a fixture defect.
+    assert len(sig) >= 10, f"vol_transition fired {len(sig)} times on the regime fixture"
+    # Through the engine's own constructor (the no-literal-spread ratchet), from gold-shaped
+    # registry metadata; the replay is charged the same round trip in price units.
+    costs = Costs.from_symbol({"contract_size": 100.0, "tick_size": 0.01, "tick_value": 1.0,
+                               "median_spread_pts": 20.0})
+    # A zero round trip would make "agree at cost" the uncosted comparison under another name.
+    assert float(costs.per_oz_roundtrip()) > 0, costs
     bt = run_backtest(d, sig, costs)
-    r2 = replay2.replay(d, sig, cost_price_units=0.0)
+    r2 = replay2.replay(d, sig, cost_price_units=float(costs.per_oz_roundtrip())
+                        / float(costs.contract_oz))
     cmp = replay2.compare([t.r_multiple for t in bt.trades], [t.r for t in r2])
     assert cmp["ok"], cmp
 
