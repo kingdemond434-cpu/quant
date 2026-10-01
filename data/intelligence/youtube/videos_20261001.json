@@ -105,5 +105,43 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UC7NJLsf6IonOy8QI8gt5BeA",
+  "channel": "Trading with DaviddTech",
+  "video_id": "KCvSmtKngyQ",
+  "published": "2026-10-01T13:00:39Z",
+  "title": "I Built an INSANE AI Trading Bot to Trade My $1,000 (Full Guide)",
+  "description": "\ud83d\udc49\ud83c\udffb Learn AI trading bots and algorithmic trading with us:\nhttps://www.skool.com/daviddtech/about\n\nIf I had to start again with $1,000, this is the AI trading bot setup I would build.\n\nI lost money trading manually. I lost money running somebody else's bot. After more than five years of building and backtesting strategies, this is the process I would follow from the beginning.\n\nIn this full guide, I use Claude Code to build a Claude AI trading bot workflow: research an idea, create a strategy, backtest it, track its performance and prepare it for automated execution through TradingView.\n\nIf you're interested in building a ChatGPT trading bot, I also discuss ChatGPT and OpenAI Codex as alternative tools. Claude Code is the tool demonstrated in this walkthrough.\n\nBut an impressive equity curve is only the beginning.\n\nI'll show you why I test strategies on new data before putting money behind them, why I currently trade only seven strategies after testing thousands, and what I monitor when a bot starts losing its edge.\n\nYou'll see the research process, the strategy-building prompt, my Mission Control dashboard, the broker connection and five lessons from my own automated trading experience. You don't need to write the code yourself to follow the workflow.\n\nIN THIS VIDEO, YOU'LL DISCOVER:\n\n\u2705 How I choose between Claude and ChatGPT for AI trading projects\n\u2705 How to connect Claude Code to TradingKit's backtesting tools\n\u2705 Where I find trading ideas, research papers and open-source indicators\n\u2705 How my NNFX-style strategy framework fits together\n\u2705 How I use trend, confirmation and volatility indicators\n\u2705 Where position sizing fits into a $1,000 account setup\n\u2705 How to run a continuous strategy research and optimization loop\n\u2705 How to organize equity curves and results in Mission Control\n\u2705 Why I separate historical backtests from an incubation period\n\u2705 How to move a Pine Script strategy into TradingView\n\u2705 How broker API keys, Trigger.trade and webhook alerts connect\n\u2705 How I monit",
+  "links": [
+   "https://www.skool.com/daviddtech/about",
+   "https://tradingkit.com/",
+   "https://www.tradingview.com/",
+   "https://trigger.trade/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "P6Y2Mxk-UzA",
+  "published": "2026-10-01T13:00:33Z",
+  "title": "NEW YORK SESSION! | IQ Capital TV | With Alina | THURSDAY 01/10/26",
+  "description": "Welcome to IQ Capital TV!\nReal markets with real setups, real risk management, real results!\n\n\ud83d\ude80 Get funded with the #1 Prop Firm - start with just $9 for Crypto & Futures \ud83d\udc49 https://www.iqcapital.io/?aff=STREAM\n\n\ud83d\udc49 Join Our Official Discord Community:    / discord  \n\nVisit and follow us on our social media accounts:\n\nX (Twitter): https://x.com/IQCapital_io\nInstagram:    / iqcapitalofficial\n\nSocials Alina;\n\nhttps://www.youtube.com/channel/UC96Q0MRlUEroZPgcs4TEU_g\nhttps://www.instagram.com/lithuanian_trader\n\n\ud83d\udccc Risk Disclaimer:\nIQ Capital provides educational and informational content only and does not offer financial, investment, or trading advice. IQ Capital operates as a proprietary trading firm; traders do not invest their own capital. Trading occurs in simulated evaluation environments or proprietary funded accounts under defined rules and risk limits. Trading leveraged instruments involves substantial risk and may result in the loss of all allocated capital. No strategy, rule set, or evaluation guarantees profitability. Past performance, payouts, and testimonials are not indicative of future results. Examples may reflect hypothetical or simulated performance. Traders act at their own discretion and are solely responsible for trading decisions, risk management, and legal, tax, and regulatory compliance. IQ Capital assumes no liability for losses arising from the use of its content or services.\nTranscript",
+  "links": [
+   "https://www.iqcapital.io/?aff=STREAM",
+   "https://x.com/IQCapital_io",
+   "https://www.youtube.com/channel/UC96Q0MRlUEroZPgcs4TEU_g",
+   "https://www.instagram.com/lithuanian_trader"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
