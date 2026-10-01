@@ -161,7 +161,13 @@ def test_every_decision_that_moved_is_still_reachable_through_the_gateway() -> N
     # `load_retired_gold` and `ACCEPTED_RETCODES` were never on the gateway's surface: the
     # gateway binds the reader as the private `_load_retired_gold` (it supplies the path) and
     # has always spelled the accepted retcodes inline at its one call site.
-    exempt = {"load_retired_gold", "ACCEPTED_RETCODES"}
+    # `MIN_RATCHET_IMPROVEMENT_R` was taken off the gateway ON PURPOSE by 935ffe891 ("Gold exit
+    # fixes", item d): trail and break-even moves under 0.05R were being skipped, so both money
+    # paths now send any move that tightens by one venue stop step
+    # (`position_manager.tightens_by_min_step`). `test_gold_exit_fixes.py::
+    # test_d_neither_money_path_consults_the_r_threshold` pins that the gateway no longer consults
+    # it; no caller reads it off `mt5desk.gateway` (it lives on in decision_core for reference).
+    exempt = {"load_retired_gold", "ACCEPTED_RETCODES", "MIN_RATCHET_IMPROVEMENT_R"}
     assert (wanted - exempt) <= bound, f"lost from the gateway: {sorted(wanted - exempt - bound)}"
     assert "_load_retired_gold" in bound
 

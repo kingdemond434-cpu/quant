@@ -334,17 +334,22 @@ def _unknowns() -> dict[str, Any]:
     AN EMPTY LEDGER IS NOT A CLEAN BILL. A desk with no recorded assumptions has unrecorded ones,
     so the report says that in those words rather than reporting zero.
     """
+    # RETIRED AS AN INPUT READ (2026-09-30, docs/research/retirements.jsonl). The ledger file this
+    # read had no writer anywhere in the repository (the R0228 phantom class), and none is
+    # derivable: an Item in a belief state REQUIRES a falsifier, and no artifact on this desk
+    # records beliefs with falsifiers (docs/desk_lessons.jsonl: 0 of 388 lessons carry one).
+    # Minting falsifiers to fill the file would manufacture the evidence the ledger exists to
+    # demand. So the capability reports UNMEASURED by name, every cycle, instead of reading a
+    # path nothing writes and calling the empty default a finding.
     try:
-        from libs.research.unknowns import summarise  # noqa: F401
+        from libs.research.unknowns import summarise
     except ImportError as e:
         return _cap("unknowns_ledger", "ERROR", f"import failed: {e}")
-    # NO PRODUCER (R0228, 2026-09-30): nothing in scripts/ or libs/ writes the ledger this
-    # organ used to read, so the read could only ever return the empty default and report
-    # a verdict built on nothing. The module still has to import; the input is NAMED as
-    # missing rather than read, until an organ produces it.
+    rep = summarise([])
     return _cap("unknowns_ledger", "NO-INPUT",
-                "UNMEASURED: no organ produces data/unknowns.json -- no ledger of desk beliefs "
-                "with falsifiers exists, and an empty one is not a clean bill")
+                "UNMEASURED -- capability retired as an input read 2026-09-30: no organ records "
+                "desk beliefs with falsifiers, so no unknowns ledger can be derived. "
+                f"{rep['headline']}", report=rep, retired="docs/research/retirements.jsonl")
 
 
 def _source_roi() -> dict[str, Any]:
@@ -395,17 +400,29 @@ def _cadence_roi() -> dict[str, Any]:
     and nothing records the difference.
     """
     try:
-        from libs.research.cadence_roi import summarise  # noqa: F401
+        from libs.research.cadence_roi import CadenceRecord, summarise
     except ImportError as e:
         return _cap("cadence_roi", "ERROR", f"import failed: {e}")
-    # NO PRODUCER (R0228, 2026-09-30): nothing in scripts/ or libs/ writes the ledger this
-    # organ used to read, so the read could only ever return the empty default and report
-    # a verdict built on nothing. The module still has to import; the input is NAMED as
-    # missing rather than read, until an organ produces it.
-    return _cap("cadence_roi", "NO-INPUT",
-                "UNMEASURED: no organ produces data/cadence_production.json -- every schedule on "
-                "this desk was chosen rather than measured, and THAT is the finding; no cadence "
-                "may be slowed on an unmeasured yield")
+    raw = _read("data/cadence_production.json") or {}
+    rows = raw.get("jobs") if isinstance(raw, dict) else None
+    recs = []
+    for r in rows or []:
+        if not isinstance(r, dict) or not r.get("job"):
+            continue
+        recs.append(CadenceRecord(
+            job=str(r["job"]), interval_minutes=float(r.get("interval_minutes", 0) or 0),
+            fires=int(r.get("fires", 0) or 0),
+            productive_fires=int(r.get("productive_fires", 0) or 0),
+            findings=int(r.get("findings", 0) or 0),
+            cost_per_fire=float(r.get("cost_per_fire", 0.0) or 0.0),
+            hard_floor_reason=str(r.get("hard_floor_reason", ""))))
+    if not recs:
+        return _cap("cadence_roi", "NO-INPUT",
+                    "no data/cadence_production.json -- every schedule on this desk was chosen "
+                    "rather than measured, and THAT is the finding. No cadence may be slowed on an "
+                    "unmeasured yield; tightening also needs the number")
+    rep = summarise(recs)
+    return _cap("cadence_roi", "ACTIVE", str(rep["headline"]), report=rep)
 
 
 def _cadence_alignment() -> dict[str, Any]:
@@ -417,16 +434,29 @@ def _cadence_alignment() -> dict[str, Any]:
     in no metric the desk keeps, since every metric is computed over what WAS observed.
     """
     try:
-        from libs.research.cadence_alignment import summarise  # noqa: F401
+        from libs.research.cadence_alignment import StrategyCadence, summarise
     except ImportError as e:
         return _cap("cadence_alignment", "ERROR", f"import failed: {e}")
-    # NO PRODUCER (R0228, 2026-09-30): nothing in scripts/ or libs/ writes the ledger this
-    # organ used to read, so the read could only ever return the empty default and report
-    # a verdict built on nothing. The module still has to import; the input is NAMED as
-    # missing rather than read, until an organ produces it.
-    return _cap("cadence_alignment", "NO-INPUT",
-                "UNMEASURED: no organ produces data/strategy_horizons.json -- no strategy "
-                "declares its alpha half-life, so no schedule can be justified OR refused")
+    raw = _read("data/strategy_horizons.json") or {}
+    rows = raw.get("strategies") if isinstance(raw, dict) else None
+    recs = []
+    for r in rows or []:
+        if not isinstance(r, dict) or not r.get("strategy"):
+            continue
+        recs.append(StrategyCadence(
+            strategy=str(r["strategy"]),
+            half_life_minutes=float(r.get("half_life_minutes", 0) or 0),
+            interval_minutes=float(r.get("interval_minutes", 0) or 0),
+            edge_bps=float(r.get("edge_bps", 0.0) or 0.0),
+            opportunities_per_day=float(r.get("opportunities_per_day", 0.0) or 0.0),
+            hard_floor_reason=str(r.get("hard_floor_reason", ""))))
+    if not recs:
+        return _cap("cadence_alignment", "NO-INPUT",
+                    "no data/strategy_horizons.json -- no strategy declares its alpha half-life, "
+                    "so no schedule on this desk can be justified OR refused. Every interval is a "
+                    "number somebody picked once")
+    rep = summarise(recs)
+    return _cap("cadence_alignment", "ACTIVE", str(rep["headline"]), report=rep)
 
 
 def _capability_regression() -> dict[str, Any]:
@@ -438,20 +468,55 @@ def _capability_regression() -> dict[str, Any]:
     reporting a clean board would be the exact substitution the module exists to prevent.
     """
     try:
-        from libs.self_improvement.capability_regression import summarise  # noqa: F401
+        from libs.self_improvement.capability_regression import CapabilitySnapshot, summarise
     except ImportError as e:
         return _cap("capability_regression", "ERROR", f"import failed: {e}")
-    # NO PRODUCER (R0228, 2026-09-30): nothing in scripts/ or libs/ writes the ledger this
-    # organ used to read, so the read could only ever return the empty default and report
-    # a verdict built on nothing. The module still has to import; the input is NAMED as
-    # missing rather than read, until an organ produces it.
-    return _cap("capability_regression", "NO-INPUT",
-                "UNMEASURED: no organ produces data/capability_snapshots.json -- every change on "
-                "this desk is an unverified upgrade claim and a regression would be invisible")
+    raw = _read("data/capability_snapshots.json")
+    pairs = []
+    if isinstance(raw, dict):
+        for row in raw.get("comparisons", []):
+            try:
+                b, a = row["before"], row["after"]
+                pairs.append((
+                    CapabilitySnapshot(subsystem=str(b.get("subsystem", "?")),
+                                       at=str(b.get("at", "")),
+                                       metrics={str(k): float(v)
+                                                for k, v in (b.get("metrics") or {}).items()},
+                                       tests_passing=tuple(b.get("tests_passing") or ())),
+                    CapabilitySnapshot(subsystem=str(a.get("subsystem", "?")),
+                                       at=str(a.get("at", "")),
+                                       metrics={str(k): float(v)
+                                                for k, v in (a.get("metrics") or {}).items()},
+                                       tests_passing=tuple(a.get("tests_passing") or ()))))
+            except (KeyError, ValueError, TypeError):
+                continue
+    if not pairs:
+        return _cap("capability_regression", "NO-INPUT",
+                    "data/capability_snapshots.json absent -- every change on this desk is "
+                    "currently an unverified upgrade claim, and a regression would be invisible")
+    rep = summarise(pairs)
+    return _cap("capability_regression",
+                "ACTIVE" if not rep["regressions"] else "NO-INPUT",
+                str(rep["headline"]), report=rep)
+
+
+def _derive_inputs() -> dict[str, Any]:
+    """Write the three inputs below from the artifacts they are derived from, on this organ's own
+    clock, so the capabilities that read them are never reading a path nothing writes (R0228).
+    A failure is recorded as ERROR and the readers then say NO-INPUT -- never a silent skip."""
+    try:
+        from libs.ops.intelligence_inputs import write_all
+        counts = write_all()
+    except Exception as e:  # one derivation must not take the cycle with it
+        return _cap("input_derivation", "ERROR", f"{type(e).__name__}: {e}")
+    return _cap("input_derivation", "ACTIVE",
+                "derived cadence production, capability snapshots and strategy horizons from "
+                "the compute ledger and the decay monitor", counts=counts)
 
 
 def main() -> int:
     caps = [
+        _derive_inputs(),
         _dormancy(),
         _orphan_chain(),
         _unknowns(),

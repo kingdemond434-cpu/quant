@@ -540,6 +540,8 @@ def test_partial_adoption_target_matches_do_not_become_permanent_false_conflicts
     assert "foreach ($rel in $normalisedDirty)" in block
     assert '@("ls-tree", $target, "--", $rel)' in block
     assert '@("hash-object", "--path=$rel", "--", $rel)' in block
+    assert "$worktreeBlob -eq $targetBlob" in block
+    assert "if (-not $targetExists)" in block                  # target deletions are covered
     assert "$stillDirty.Add($rel)" in block
     assert "$dirty = @($stillDirty)" in block
     assert "already equal the fetched target" in block
