@@ -1,0 +1,80 @@
+# Data sources of github.com/yutiansut/QUANTAXIS (MIT), mined 2026-10-01 for the CN culture lane, deduped against
+# AkShare (akshare_interfaces.yaml), TuShare and BaoStock (cn_pipelines.yaml, tradingagents_cn_vibe.yaml) and pytdx
+# (thuquant.yaml). Crypto fetchers (QAbinance, QAhuobi, QAOKEx, QABitmex, QABitfinex) are fenced. Its own servers
+# (data.yutiansut.com, QAClickhouse, QAWEB) are the author's mirrors with no terms, so they are not rostered.
+# Duplicates, NOT re-rostered: TDX hq / ext-market quotes (QATdx, QATdx_adv) = thu_pytdx; JQData = thuquant's
+# joinquant row; TuShare and BaoStock = their rows; Eastmoney F10, capital-flow (nufm.dfcfw, ff.eastmoney) and
+# SSE/SZSE margin sheets (QACrawler) = ak_stock_fund_flow_* and ak_stock_margin_*; Hexun CHIBOR = ak_rate_interbank
+# (a second route, below, because Hexun prints the tenor curve on its own host); TqSdk openmd = thuquant shinnytech.
+# The factor library went to the search, not here: libs/research/alpha_grammar.CANON_TDX. Shapers: Breadth.
+sources:
+- id: qa_tdx_financial_gpcw
+  name: TongDaXin quarterly financial-statement archive (down.tdx.com.cn tdxfin gpcw*.zip, ~580 fields per A-share)
+  priority: 2
+  kind: fundamentals
+  uses: [indirect_cells, allocation_intel]
+  fetcher: zip_binary
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: TDX public download; terms unread from here (this container's network policy refuses the host)
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://down.tdx.com.cn:8001/tdxfin/gpcw.txt
+  note: 'NEW. The whole A-share statement panel, one zip per report date, with a hash list (gpcw.txt) so a pass
+    fetches only changed files. Aggregated by SW industry it is the earnings-revision breadth behind CHINAH/HK50 and
+    the CN demand read for copper and AUD. The file date is the availability stamp; the binary layout is parsed in
+    QAfinancial.py (MIT, rewrite allowed).'
+  mt5_assets: [CHINAH, HK50, XCUUSD, AUDUSD]
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, policy_driven
+  owner: breadth
+  origin: github.com/yutiansut/QUANTAXIS QAFetch/QAfinancial.py (MIT)
+- id: qa_ths_limit_up_reason
+  name: Tonghuashun (同花顺) limit-up reason and concept tags per stock (basic.10jqka / q.10jqka concept boards)
+  priority: 2
+  kind: sentiment
+  uses: [conditioners, indirect_cells]
+  fetcher: html
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: THS public pages; terms unread from here
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://q.10jqka.com.cn/gn/
+  note: 'NEW as a series: the daily count of limit-up names and which concepts they cluster in is the A-share retail
+    heat gauge (情绪周期, the same cycle the daily_stock_analysis rules trade). Conditioner for CHINAH/HK50 and
+    USDCNH risk appetite. AkShare covers the concept boards (ak_stock_board_concept_*_ths); this row is the per-day
+    reason tally they do not publish.'
+  mt5_assets: [CHINAH, HK50, USDCNH]
+  culture:
+    source_culture: cn_mainland
+    participant_structure: retail_heavy, momentum_chasing
+  owner: breadth
+  origin: github.com/yutiansut/QUANTAXIS QAFetch/QAThs.py (MIT)
+- id: qa_hexun_chibor_curve
+  name: Hexun interbank offered-rate curve (CHIBOR overnight to 12 months)
+  priority: 3
+  kind: rates
+  uses: [conditioners]
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: cn
+  language: zh
+  licence: Hexun public data page; terms unread from here
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://data.bank.hexun.com/dataprovider/BankOfferedrateFlash.ashx?r=<tenor_mask>&t=31&ts=<ms>
+  note: 'DUPLICATE ROUTE of ak_rate_interbank (Eastmoney). Kept as a fallback host for the CNY funding curve that
+    conditions USDCNH and CHINAH, because a second host is what survives one host''s terms or outage.'
+  mt5_assets: [USDCNH, CHINAH]
+  culture:
+    source_culture: cn_mainland
+    participant_structure: policy_driven
+  owner: breadth
+  origin: github.com/yutiansut/QUANTAXIS QAFetch/QAHexun.py (MIT)
