@@ -63,6 +63,15 @@ KINDS = (
     # verdict and the why, so a refusal is a transition with a time on it rather than a quiet
     # no-op -- which is the only way an operator learns that a writer upstream has gone silent.
     "REFERENCE_STAND_DOWN",
+    # A RAIL THAT HALTS ALL TRADING MUST NOT BE ABLE TO DO SO QUIETLY (recovered box commit
+    # fe09b89b, 2026-09-24). `scripts/check_placement_interlock.py` writes PLACEMENT_HALTED when a
+    # sleeve has been refused in a run with no placement in between, or the release identity
+    # refuses new risk, and PLACEMENT_CLEAR on a clean pass -- so seventeen days of
+    # `release_identity_refused` rows can never again sit in the decision ledger unread.
+    "PLACEMENT_HALTED", "PLACEMENT_CLEAR",
+    # ...and when the fence can no longer tell (no live placement evidence ON the trading box,
+    # identified by machine id): a verdict of its own, never folded into CLEAR or dropped.
+    "PLACEMENT_UNMEASURED",
     # The box's state is fresh on the box and stale on origin: delivery is broken, the desk is not
     # idle (libs/ops/state_publication.py). Written by publish_state; read by stall_watch.
     "STATE_FLOW_STALLED",

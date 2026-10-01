@@ -346,6 +346,9 @@ def _proposers() -> None:
                  "fund_playbook", "microstructure_miner", "alpha_evolution",
                  "style_premia_sweep", "cross_asset_graph", "anomaly_factory",
                  "tail_alpha_search", "survivor_distiller", "factor_model_coevolution",
+                 # Learned GNN/attention miners (numpy): cells, forecast axes and allocation
+                 # intel. Daily, on their own budget, so no hourly organ's share shrinks.
+                 "learned_miners",
                  # THE NEGATIVE HALF OF EXPERIENCE (Tier-1 Q17). `survivor_distiller` was
                  # already here and `negative_knowledge` -- the model of what KILLS a cell --
                  # ran on no clock at all, which is the classic defect: the organ existed and
