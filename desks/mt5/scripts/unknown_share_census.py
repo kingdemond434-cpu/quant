@@ -35,6 +35,15 @@ pre-fix versions (`git show <rev>:<path>`) without touching the checkout.
 BOUNDED: the sample is sized from measured free memory (psutil) unless `--n` is given, the build
 stops at `--budget-s` or at an RSS cap derived from free memory, and the frames go through the
 judge's own row-bounded LRU. Nothing is written unless `--out` is given.
+
+A KILLED RUN STILL PUBLISHES (2026-09-30). On the box a 6,000-cell run took 1,955 s, and as a
+daily-cycle step under a 900 s budget inside the cycle's own 900 s timeout it could never finish,
+so nothing was ever written. With `--out`, the document is now CHECKPOINTED before every step
+that can outrun a clock -- after sampling, after the siblings are minted, every
+`--checkpoint-every` cells of the build, and before the cause pass -- marked `"complete": false`
+with the `stage` it reached; the last write is the same document with `"complete": true`. A
+partial document's verdicts are carved at the cut of the cells built SO FAR and carry no finer
+causes (those need the cause pass); its `utc_day` is what the hourly leg's once-a-day gate reads.
 """
 from __future__ import annotations
 
@@ -44,16 +53,25 @@ import heapq
 import importlib.util
 import json
 import math
+import os
 import sys
 import time
 from collections import Counter
+from collections.abc import Callable
+from contextlib import suppress
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 DESK = Path(__file__).resolve().parents[1]
 BASE = DESK.parents[1]
-#: What the daily step `unknown_census` publishes (CRO D3 reads it).
+#: What the hourly leg `unknown_census` publishes once per UTC day (CRO D3 reads it).
 OUT = DESK / "reports" / "UNKNOWN_SHARE_CENSUS.json"
+#: The leg's fixed sample: ~+/-3 points of Wilson half-width at the shares measured so far. A
+#: memory-sized sample reached ~17k cells on the box, which no clock could finish.
+LEG_SAMPLE_N = 6000
+#: Built cells between partial writes of the document.
+CHECKPOINT_EVERY = 250
 for _p in (str(BASE), str(DESK), str(DESK / "scripts")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
@@ -257,11 +275,14 @@ def _input_absent(eg: Any, fam: str, sym: str, frame: Any, tf: str) -> str | Non
 
 
 def measure(cells: list[dict[str, Any]], *, meta: dict[str, Any], eg: Any, budget_s: float,
-            rss_cap_mb: float, lockbox_cut_override: str | None = None) -> dict[str, Any]:
-    """Run each spec down the judge's path; return per-cell records and the sweep's lockbox cut."""
-    import pandas as pd
+            rss_cap_mb: float, lockbox_cut_override: str | None = None,
+            checkpoint: Callable[[str, dict[str, Any]], None] | None = None,
+            every: int = CHECKPOINT_EVERY) -> dict[str, Any]:
+    """Run each spec down the judge's path; return per-cell records and the sweep's lockbox cut.
+
+    `checkpoint(stage, partial)` is called every `every` built cells and once before the cause
+    pass, with the records so far carved at the cut of the cells built so far (no causes)."""
     import psutil
-    from research.gate_policy import LOCKBOX_FRAC, carve_lockbox, lockbox_cut
     proc = psutil.Process()
     records: list[dict[str, Any]] = []
     specs = [{"sym": c["sym"], "family": c["family"], "params": dict(c["params"]),
@@ -325,6 +346,34 @@ def measure(cells: list[dict[str, Any]], *, meta: dict[str, Any], eg: Any, budge
         series.append(ds)
         built.append(rec)
         records.append(rec)
+        if checkpoint is not None and every > 0 and len(built) % every == 0:
+            checkpoint("building", {"records": records,
+                                    **_carve(built, series, eg=eg, meta=meta,
+                                             override=lockbox_cut_override, causes=False)})
+
+    if checkpoint is not None:
+        checkpoint("carving", {"records": records,
+                               **_carve(built, series, eg=eg, meta=meta,
+                                        override=lockbox_cut_override, causes=False)})
+    out = _carve(built, series, eg=eg, meta=meta, override=lockbox_cut_override, causes=True)
+    for rec in built:
+        rec.pop("_spec", None)
+    return {"records": records, **out}
+
+
+def _carve(built: list[dict[str, Any]], series: list[Any], *, eg: Any, meta: dict[str, Any],
+           override: str | None, causes: bool) -> dict[str, Any]:
+    """Set each built record's verdict at the campaign (and per-cell) carve of `series`.
+
+    Re-entrant: every field it sets is reset first, so a partial carve over the cells built so
+    far is overwritten by the final one. `causes=False` skips the cause pass, which rebuilds
+    session-conditioned cells and is the one part of the carve that can take real time."""
+    import pandas as pd
+    from research.gate_policy import LOCKBOX_FRAC, carve_lockbox, lockbox_cut
+    lockbox_cut_override = override
+    for rec in built:
+        for k in ("cut_basis", "dev_days", "verdict", "unknown_reason", "cause"):
+            rec.pop(k, None)
 
     # THE CAMPAIGN CARVE, as `run_gauntlet` takes it: one calendar cut from the union of every
     # built cell's days, at the constitution's lockbox fraction when the sealed judge has one.
@@ -364,10 +413,9 @@ def measure(cells: list[dict[str, Any]], *, meta: dict[str, Any], eg: Any, budge
         rec["unknown_reason"] = (judge_classify(*args, errored=rec["errored"])
                                  if judge_classify is not None
                                  else classify(*args, errored=rec["errored"]))
-        rec["cause"] = _cause(rec, eg=eg, meta=meta, cut=cut)
-    for rec in built:
-        rec.pop("_spec", None)
-    return {"records": records, "lockbox_cut": None if cut is None else str(cut),
+        if causes:
+            rec["cause"] = _cause(rec, eg=eg, meta=meta, cut=cut)
+    return {"lockbox_cut": None if cut is None else str(cut),
             "lockbox_frac": frac, "cells_carved_at_own_tail": carved_own}
 
 
@@ -474,7 +522,9 @@ def summarise(records: list[dict[str, Any]], *, siblings_too: bool) -> dict[str,
         "wilson95": wilson(len(unk), len(built)),
         "unknown_by_reason": dict(Counter(str(r.get("unknown_reason")) for r in unk)
                                   .most_common()),
-        "unknown_by_cause": dict(Counter(str(r.get("cause")) for r in unk).most_common()),
+        # A partial document carries no causes (the cause pass has not run): absent, never "None".
+        "unknown_by_cause": dict(Counter(str(r["cause"]) for r in unk if r.get("cause") is not None)
+                                 .most_common()),
         "unknown_by_family": dict(Counter(str(r.get("family")) for r in unk).most_common(15)),
         "unknown_by_chart": dict(Counter(str(r.get("tf")) for r in unk).most_common()),
         "judged_by_chart": dict(Counter(str(r.get("tf")) for r in built).most_common()),
@@ -489,12 +539,29 @@ def sized_sample(avail_mb: float, requested: int | None) -> tuple[int, float]:
     return n, cap
 
 
+def write_atomic(path: Path, text: str) -> None:
+    """Write `text` to `path` via a sibling temp file, so a reader never sees half a document."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        tmp.write_text(text, "utf-8")
+        os.replace(tmp, path)
+    except OSError:
+        # os.replace onto a read-only or locked destination raises on Windows; the plain write
+        # is the fallback, never silence.
+        path.write_text(text, "utf-8")
+        with suppress(OSError):
+            tmp.unlink(missing_ok=True)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--n", type=int, default=None, help="cells to sample (default: sized)")
     ap.add_argument("--seed", type=int, default=20260930)
     ap.add_argument("--docket", type=Path, default=None)
     ap.add_argument("--budget-s", type=float, default=1800.0)
+    ap.add_argument("--checkpoint-every", type=int, default=CHECKPOINT_EVERY,
+                    help="built cells between partial writes of --out (0: only stage writes)")
     ap.add_argument("--complete-inputs", action="store_true",
                     help="mint and judge complete_inputs siblings of sampled peerless rows")
     ap.add_argument("--coarse-proxy", action="store_true",
@@ -509,6 +576,7 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
 
     import psutil
+    started = datetime.now(UTC)
     overlaid = load_overlay(a.overlay) if a.overlay else []
     import external_gauntlet as eg
     if a.coarse_proxy:
@@ -520,35 +588,55 @@ def main(argv: list[str] | None = None) -> int:
     t0 = time.monotonic()
     cells, unique = docket_sample(docket, n, a.seed, eg.iter_json_array, eg.timeframe_of)
     sib_report: dict[str, Any] = {"status": "NOT_REQUESTED"}
+
+    def document(stage: str, out: dict[str, Any], *, complete: bool) -> dict[str, Any]:
+        recs = out.get("records") or []
+        doc: dict[str, Any] = {
+            "label": a.label, "seed": a.seed, "docket": str(docket),
+            "docket_unique_cells": unique, "sample": n, "overlay": overlaid,
+            # THE PARTIAL CONTRACT: a reader takes `complete` before any share, and the hourly
+            # leg's once-a-day gate reads `utc_day` (a started run stamps its day at once).
+            "complete": complete, "stage": stage,
+            "utc_day": started.date().isoformat(),
+            "started_at": started.isoformat(timespec="seconds"),
+            "written_at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "cells_planned": len(cells), "cells_visited": len(recs),
+            "judge": {"named_unknowns": hasattr(eg, "classify_unknown"),
+                      "cell_lockbox_cut": hasattr(eg, "cell_lockbox_cut"),
+                      "cell_dev_cut": hasattr(eg, "cell_dev_cut"),
+                      "constitution": hasattr(eg, "constitution_thresholds")},
+            "coarse_proxy": bool(a.coarse_proxy),
+            "memory": {"available_mb": round(avail_mb), "rss_cap_mb": round(rss_cap),
+                       "peak_rss_mb": round(psutil.Process().memory_info().rss / 2**20)},
+            "lockbox_cut": out.get("lockbox_cut"), "lockbox_frac": out.get("lockbox_frac"),
+            "cells_carved_at_own_tail": out.get("cells_carved_at_own_tail"),
+            "elapsed_s": round(time.monotonic() - t0, 1),
+            "siblings": sib_report,
+            "sampled_cells": summarise(recs, siblings_too=False),
+        }
+        if a.complete_inputs:
+            doc["sampled_plus_siblings"] = summarise(recs, siblings_too=True)
+            sib = [r for r in recs if r.get("sibling")]
+            doc["siblings_only"] = summarise(sib, siblings_too=True)
+        return doc
+
+    def checkpoint(stage: str, out: dict[str, Any]) -> None:
+        if a.out:
+            write_atomic(a.out, json.dumps(document(stage, out, complete=False), indent=2,
+                                           default=str))
+
+    checkpoint("sampled", {})
     if a.complete_inputs:
         sibs, sib_report = siblings(cells)
         cells = cells + sibs
+        checkpoint("siblings_minted", {})
     out = measure(cells, meta=meta, eg=eg, budget_s=a.budget_s, rss_cap_mb=rss_cap,
-                  lockbox_cut_override=a.lockbox_cut)
+                  lockbox_cut_override=a.lockbox_cut, checkpoint=checkpoint,
+                  every=a.checkpoint_every)
     recs = out["records"]
-    doc = {
-        "label": a.label, "seed": a.seed, "docket": str(docket), "docket_unique_cells": unique,
-        "sample": n, "overlay": overlaid,
-        "judge": {"named_unknowns": hasattr(eg, "classify_unknown"),
-                  "cell_lockbox_cut": hasattr(eg, "cell_lockbox_cut"),
-                  "cell_dev_cut": hasattr(eg, "cell_dev_cut"),
-                  "constitution": hasattr(eg, "constitution_thresholds")},
-        "coarse_proxy": bool(a.coarse_proxy),
-        "memory": {"available_mb": round(avail_mb), "rss_cap_mb": round(rss_cap),
-                   "peak_rss_mb": round(psutil.Process().memory_info().rss / 2**20)},
-        "lockbox_cut": out["lockbox_cut"], "lockbox_frac": out["lockbox_frac"],
-        "cells_carved_at_own_tail": out["cells_carved_at_own_tail"],
-        "elapsed_s": round(time.monotonic() - t0, 1),
-        "siblings": sib_report,
-        "sampled_cells": summarise(recs, siblings_too=False),
-    }
-    if a.complete_inputs:
-        doc["sampled_plus_siblings"] = summarise(recs, siblings_too=True)
-        sib = [r for r in recs if r.get("sibling")]
-        doc["siblings_only"] = summarise(sib, siblings_too=True)
-    text = json.dumps(doc, indent=2, default=str)
+    text = json.dumps(document("complete", out, complete=True), indent=2, default=str)
     if a.out:
-        a.out.write_text(text, "utf-8")
+        write_atomic(a.out, text)
     if a.records:
         with a.records.open("w", encoding="utf-8") as fh:
             for r in recs:

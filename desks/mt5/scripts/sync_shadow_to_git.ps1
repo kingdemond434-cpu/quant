@@ -501,7 +501,7 @@ $relPaths = @(
     "desks/mt5/reports/NULL_LAB.json",
     "desks/mt5/reports/KNOWN_BY_DATE.json",
     "desks/mt5/reports/PIT_LAG_CENSUS.json",
-    # UNKNOWN_SHARE_CENSUS (daily step unknown_census): the judged-denominator UNKNOWN share
+    # UNKNOWN_SHARE_CENSUS (hourly leg unknown_census, once per UTC day): the judged-denominator UNKNOWN share
     "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
     # DSR_INPUTS (hourly leg dsr_inputs): measured DSR variance + effective trials, with provenance
     "desks/mt5/reports/DSR_INPUTS.json",
