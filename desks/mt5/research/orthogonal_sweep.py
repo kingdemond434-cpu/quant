@@ -552,6 +552,14 @@ NOT_SOURCED_HERE = {
                              "clock; a sweep enumerating them over bars would be inventing which "
                              "pack series conditions which instrument. Called blind it has no "
                              "source and returns [] on every symbol",
+    # The free-stack alt families (mt5desk/family_alt_series.py). Their series and column are
+    # named by research/free_stack_proposer from what the hunter published and the instruments it
+    # mapped, and that proposer charges its own grid through `tests_run`.
+    **dict.fromkeys(("alt_series_momentum", "alt_conditioned"),
+                    "the series, column and mapped instrument are named by "
+                    "research/free_stack_proposer from the hunter's published columns, and it "
+                    "charges its own grid; called blind here it has no source and returns [] on "
+                    "every symbol"),
     # The within-class rank legs (mt5desk/families_cross_sectional.py). Each loads its own class
     # panel from `symbol`, so nothing is unsuppliable -- but the grid is (class member x family x
     # params) and research/cross_sectional_breadth enumerates it, measures every cell's firing

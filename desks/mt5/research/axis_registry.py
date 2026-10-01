@@ -210,15 +210,19 @@ _FAMILY_GROUPS: dict[str, str] = {
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
     f"{UNKNOWN} price_only market": "discovered",
-    f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated",
+    f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
+                                       " alt_conditioned",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any
     # base family's entries, so its mechanism and style are its base's and no single row names
     # them. `exogenous_conditioner` bets on a data pack's own published series (a market-order
     # entry, `trigger=None`); each cell names its series, not a payer, so the mechanism is UNKNOWN
     # and counted rather than guessed.
+    # `alt_series_momentum` (2026-09-30, free-stack) bets on the CHANGE of a named alt series
+    # (app rank, forum tone, search attention, patents) -- the series is named, the payer is not.
+    # `alt_conditioned` is an operator over a base family's entries, like `exit_operated`.
     # `world_macro_state` (2026-09-30) conditions on one hunted world series named on the recipe,
     # the same shape as `exogenous_conditioner`: the series is named, the payer is not.
-    f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state",
+    f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state alt_series_momentum",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():

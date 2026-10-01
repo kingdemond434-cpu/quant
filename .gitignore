@@ -389,6 +389,9 @@ desks/mt5/logs/
 # them made both hosts unpullable while the desk was running, which is always.
 desks/mt5/data/.job_locks/
 desks/mt5/data/free_data_cache/
+# free_stack_hunter store: PIT observations, raw archive, cursors, column map, catalogue finds and
+# the bulk-file inbox are box-local; reports/FREE_STACK_YIELD.json is the record of what it holds.
+desks/mt5/data/free_stack/
 # world_dataset_hunter store: parquet observations, per-dataset meta, catalog, exposure and
 # key index are box-local and regenerated; data_registry.json + reports/DATASET_HUNT.json
 # are the tracked record of what it holds.

@@ -569,6 +569,8 @@ LEG_LAYER: dict[str, str] = {
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
     # what it produces, the same rule as the rest of this table.
     "acquire_datasets": "information", "dukascopy_backfill": "information",
+    "free_stack_hunt": "information", "free_stack_proposer": "prediction",
+    "factory_throughput": "prediction",
     "source_experiment_census": "information", "world_dataset_hunt": "information",
     "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
