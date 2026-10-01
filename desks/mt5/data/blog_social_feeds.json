@@ -1,0 +1,5 @@
+{
+ "_about": "Per-blog feed ids for the single-author blog sources in libs/data/blog_social_sources.py. ameblo_user_rss -> https://rssblog.ameba.jp/{id}/rss20.xml, livedoor_user_rss -> https://blog.livedoor.jp/{id}/index.rdf. Lists ship EMPTY on purpose: no id was verified live from the authoring container (its proxy refuses both hosts), so both sources report UNCONFIGURED until the box operator adds ids verified on the box. Only keys that are source ids are read.",
+ "ameblo_user_rss": [],
+ "livedoor_user_rss": []
+}

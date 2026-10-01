@@ -1,0 +1,39 @@
+{
+ "Header": {
+  "Name": "Indicadores Económicos de Coyuntura",
+  "Email": "atencion.usuarios@inegi.org.mx"
+ },
+ "Series": [
+  {
+   "INDICADOR": "000000",
+   "FREQ": "8",
+   "TOPIC": "",
+   "UNIT": "",
+   "UNIT_MULT": "",
+   "NOTE": "",
+   "SOURCE": "",
+   "LASTUPDATE": "20/08/2026 06:00:00 a. m.",
+   "STATUS": null,
+   "OBSERVATIONS": [
+    {
+     "TIME_PERIOD": "2026/06",
+     "OBS_VALUE": "118.4",
+     "OBS_EXCEPTION": null,
+     "OBS_STATUS": "3",
+     "OBS_SOURCE": "",
+     "OBS_NOTE": "",
+     "COBER_GEO": "0700"
+    },
+    {
+     "TIME_PERIOD": "2025/06",
+     "OBS_VALUE": "115.2",
+     "OBS_EXCEPTION": null,
+     "OBS_STATUS": "3",
+     "OBS_SOURCE": "",
+     "OBS_NOTE": "",
+     "COBER_GEO": "0700"
+    }
+   ]
+  }
+ ]
+}
