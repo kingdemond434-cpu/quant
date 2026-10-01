@@ -968,11 +968,12 @@ def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_pat
         return acq.Source(id=sid, fetcher=kw.pop("fetcher", "owned"), kind="text",
                           uses=["direct_cells"], url_key=key, **kw)
     owned = [src("rbnz_series", "rbnz.govt.nz/statistics", seats=["miner:asia:rbnz_series"]),
-             src("smart_lab_blog", "smart-lab.ru/blog"),
+             src("smart_lab_blog", "smart-lab.ru/blog", owner="scout:world_crawler"),
              src("smart_lab_home", "smart-lab.ru"),
              src("twin_a", "x.org/p", region="pe"),
              src("twin_b", "x.org/p", region="bo"),
-             src("dup_a", "y.org/q", region="cn"),
+             src("dup_a", "y.org/q", region="cn",
+                 consumer="desks/mt5/research/orthogonal_sweep.py"),
              src("dup_b", "y.org/q"),
              src("boj_listing", "boj.or.jp/en/statistics", fetcher="html_listing")]
     pipe = _pipe(tmp_path, sources=owned)
@@ -1021,6 +1022,9 @@ def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_pat
     assert att["unattributed_top_producers"] == {"miner:world_crawler": 1,
                                                  "miner:discovery_compiler": 1,
                                                  "miner:smart_lab_blog": 1}
+    # credited, but by an organ the row does not register: another organ citing the page is
+    # not this source's fetcher running
+    assert st["smart_lab_home"]["fetch_evidence"] == ""
     pipe.store.log_run("boj_listing", "ok", 3, 3, "", now=T0 - timedelta(days=1))
     assert pipe.source_status(T0)["boj_listing"]["status"] == "ACTIVE"
     assert pipe.source_status(T0 + timedelta(days=40))["rbnz_series"]["status"] == "COLD"
@@ -1043,9 +1047,10 @@ def test_the_producer_map_names_real_organs_and_fails_loudly(monkeypatch: Any) -
     """Every internal producer seat names a file that exists and stamps that seat; a map that
     will not load is an error in the attribution basis, never an all-`unmapped` silence."""
     doc = json.loads(MS.PRODUCER_ORGANS.read_text("utf-8"))
-    for seat, path in {**doc["seats"], **doc["prefixes"]}.items():
+    for seat, path in {**doc["seats"], **doc["prefixes"], **doc["retired"]}.items():
         text = (ROOT / path).read_text("utf-8")
         assert f'"{seat}' in text or f"'{seat}" in text, (seat, path)
+    assert MS.producer_of("mql5_prospector", MS._scout_seats()) == "retired:mql5_prospector"
     organ_of = MS._scout_seats()
     assert MS.producer_of("miner:broker_swaps", organ_of) == "seed_miners"
     assert MS.producer_of("miner:world_crawler", organ_of) == "world_crawler"
@@ -1125,3 +1130,46 @@ def test_a_lane_that_describes_its_uses_by_key_keeps_them() -> None:
                                                   "allocation": {"organ": "o"}}},
                             origin="t", defaults={"fetcher": "owned", "kind": "text"})
     assert row is not None and row.uses == ["direct_cells", "allocation_intel"]
+
+
+def test_audit_round_two_attribution_rules(tmp_path: Path) -> None:
+    """Two seat-declaring rows on one page tie; a registered organ is needed for owned evidence;
+    a derived row inherits its parent's seat+site credit; every YouTube spelling is one key; a
+    producer map that will not load is named in the COLD reason."""
+    for u in ("https://www.youtube-nocookie.com/embed/AbC?rel=0", "https://youtube.com/live/AbC",
+              "https://youtube.com/v/AbC", "https://m.youtube.com/embed/AbC"):
+        assert acq.canonical_url(u) == "youtube.com/watch?v=AbC", u
+    srcs = [acq.Source(id="cn_rail", fetcher="owned", kind="text", uses=["direct_cells"],
+                       url_key="stats.gov.cn/sj", seats=["miner:rail"]),
+            acq.Source(id="cn_power", fetcher="owned", kind="text", uses=["direct_cells"],
+                       url_key="stats.gov.cn/sj", seats=["miner:power"]),
+            acq.Source(id="boj", fetcher="owned", kind="text", uses=["direct_cells"],
+                       url_key="boj.or.jp/en/statistics")]
+    pipe = _pipe(tmp_path, sources=srcs)
+    idx, seats = pipe._url_index(), pipe._seat_index()
+    assert pipe.attribute_url("https://stats.gov.cn/sj/x", idx) == ""          # two seats: tie
+    assert pipe.url_collisions()["cross_region_ties"] == 1
+    row = {"source": "miner:discovery_compiler", "origin_seat": "boj",
+           "source_url": "https://www.boj.or.jp/en/x"}
+    assert pipe.attribute_source(row, idx, seats) == ("boj", "lineage")
+    assert MS.fetch_evidence({}, {"world_crawler": 2}, T0, "owned", 0, {"asia_collector"}) == ""
+    assert MS.fetch_evidence({}, {"asia_collector": 2}, T0, "owned", 0,
+                             {"asia_collector"}) == "producer:asia_collector"
+    assert MS.fetch_evidence({}, {"retired:x": 2}, T0, "owned", 0, None) == ""
+    pipe.docket.write_text(json.dumps([{"symbol": "USDJPY", "family": "carry", "params": {},
+                                        "source": "miner:x", "source_url":
+                                        "https://boj.or.jp/en/statistics/a"}]), "utf-8")
+    pipe.gate_ledger.write_text(json.dumps(
+        {"cell": pipe.hooks.gauntlet_cell({"symbol": "USDJPY", "family": "carry",
+                                           "params": {}}),
+         "passed": False, "terminal_gate": "pbo", "at": iso(T0)}) + "\n", "utf-8")
+    pipe.index_judged(now=T0)
+    orig = MS.PRODUCER_ORGANS
+    try:
+        MS.PRODUCER_ORGANS = ROOT / "no" / "such.json"
+        st = pipe.source_status(T0)
+    finally:
+        MS.PRODUCER_ORGANS = orig
+    assert st["boj"]["evaluated_cells_30d"] == 1
+    assert st["boj"]["cold_reason"].startswith("no fetcher of it ran in 30 days (PRODUCER MAP")
+    assert pipe._attribution["producer_map_error"].startswith("PRODUCER MAP FAILED")

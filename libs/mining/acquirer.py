@@ -95,16 +95,19 @@ def canonical_url(url: Any) -> str:
     if not host or "." not in host:
         return ""
     path, query = parts.path, parts.query
-    # ONE VIDEO, ONE KEY: m.youtube.com, youtu.be/<id> and /shorts/<id> are youtube.com/watch?v=
-    # spelled three more ways. The id is case-sensitive, so it keeps its case; only v= survives.
+    # ONE VIDEO, ONE KEY: m.youtube.com, youtube-nocookie.com, youtu.be/<id> and /shorts/, /embed/,
+    # /live/, /v/<id> are youtube.com/watch?v= spelled other ways. The id is case-sensitive, so it
+    # keeps its case; only v= survives.
     if host in _YOUTUBE_HOSTS:
         vid = ""
         if host == "youtu.be":
             vid = path.strip("/").split("/", 1)[0]
         elif path.rstrip("/").lower() == "/watch":
             vid = dict(urllib.parse.parse_qsl(query)).get("v", "")
-        elif path.lower().startswith("/shorts/"):
-            vid = path[len("/shorts/"):].strip("/").split("/", 1)[0]
+        else:
+            segs = path.strip("/").split("/")
+            if len(segs) >= 2 and segs[0].lower() in _YOUTUBE_VIDEO_PATHS:
+                vid = segs[1]
         if vid:
             return f"youtube.com/watch?v={vid}"
         host = "youtube.com"
@@ -112,7 +115,10 @@ def canonical_url(url: Any) -> str:
     return host + path.rstrip("/").lower() + (f"?{q}" if q else "")
 
 
-_YOUTUBE_HOSTS = frozenset({"youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be"})
+_YOUTUBE_HOSTS = frozenset({"youtube.com", "m.youtube.com", "music.youtube.com", "youtu.be",
+                            "youtube-nocookie.com"})
+#: Path forms that carry the video id as their second segment.
+_YOUTUBE_VIDEO_PATHS = frozenset({"shorts", "embed", "live", "v"})
 
 
 def _row_urls(row: Mapping[str, Any]) -> list[str]:
