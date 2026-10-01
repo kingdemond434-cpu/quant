@@ -1,0 +1,461 @@
+{
+ "baseline": {
+  "proposal": {
+   "immune_score": 0.9404761904761905,
+   "power": 0.75
+  },
+  "confirmation": {
+   "immune_score": 0.8928571428571429,
+   "power": 0.75
+  }
+ },
+ "n_tried": 28,
+ "n_promising": 4,
+ "candidate_gates": [
+  {
+   "check": [
+    "turnover",
+    ">",
+    0.987333
+   ],
+   "d_immune": 0.0238,
+   "d_power": 0.0,
+   "confirm_d_immune": 0.0476,
+   "confirm_d_power": 0.0,
+   "status": "CANDIDATE_GATE"
+  },
+  {
+   "check": [
+    "turnover",
+    ">",
+    1.011333
+   ],
+   "d_immune": 0.0238,
+   "d_power": 0.0,
+   "confirm_d_immune": 0.0357,
+   "confirm_d_power": 0.0,
+   "status": "CANDIDATE_GATE"
+  }
+ ],
+ "adoption": "candidate gates become constitutional only by principal ratification",
+ "from_production": {
+  "fooling_cases": 0
+ },
+ "registry_size": 2,
+ "real_suite": {
+  "n_labelled": 17,
+  "n_unlabelled": 41,
+  "forward_holds": 17,
+  "forward_fails": 0,
+  "precision": 1.0,
+  "status": "UNMEASURED",
+  "why": "fewer than 3 of a label in proposal: 9 holds / 0 fails; confirmation: 8 holds / 0 fails",
+  "n_tried": 0,
+  "candidate_gates": [],
+  "halves": {
+   "proposal": [
+    9,
+    0
+   ],
+   "confirmation": [
+    8,
+    0
+   ]
+  }
+ },
+ "redundancy": {
+  "status": "MEASURED",
+  "gates": [
+   "cpcv",
+   "deflated_sharpe",
+   "economic_prior",
+   "expected_value",
+   "in_sample_screen",
+   "lockbox",
+   "pbo",
+   "reality_check_spa",
+   "stress_costs",
+   "swap_cost",
+   "walk_forward"
+  ],
+  "n_traps": 1508,
+  "n_genuine": 604,
+  "n_truncated": 1119,
+  "kills": {
+   "cpcv": 786,
+   "deflated_sharpe": 1508,
+   "economic_prior": 0,
+   "expected_value": 1,
+   "in_sample_screen": 783,
+   "lockbox": 77,
+   "pbo": 0,
+   "reality_check_spa": 0,
+   "stress_costs": 117,
+   "swap_cost": 0,
+   "walk_forward": 166
+  },
+  "unique_kills": {
+   "cpcv": 0,
+   "deflated_sharpe": 519,
+   "economic_prior": 0,
+   "expected_value": 0,
+   "in_sample_screen": 0,
+   "lockbox": 0,
+   "pbo": 0,
+   "reality_check_spa": 0,
+   "stress_costs": 0,
+   "swap_cost": 0,
+   "walk_forward": 0
+  },
+  "p_cofail": {
+   "cpcv": {
+    "deflated_sharpe": 1.0,
+    "economic_prior": 0.0,
+    "expected_value": 0.0013,
+    "in_sample_screen": 0.9924,
+    "lockbox": 0.0013,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.0064,
+    "swap_cost": 0.0,
+    "walk_forward": 0.0038
+   },
+   "deflated_sharpe": {
+    "cpcv": 0.5212,
+    "economic_prior": 0.0,
+    "expected_value": 0.0007,
+    "in_sample_screen": 0.5192,
+    "lockbox": 0.0511,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.0776,
+    "swap_cost": 0.0,
+    "walk_forward": 0.1101
+   },
+   "economic_prior": {
+    "cpcv": null,
+    "deflated_sharpe": null,
+    "expected_value": null,
+    "in_sample_screen": null,
+    "lockbox": null,
+    "pbo": null,
+    "reality_check_spa": null,
+    "stress_costs": null,
+    "swap_cost": null,
+    "walk_forward": null
+   },
+   "expected_value": {
+    "cpcv": 1.0,
+    "deflated_sharpe": 1.0,
+    "economic_prior": 0.0,
+    "in_sample_screen": 1.0,
+    "lockbox": 1.0,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 1.0,
+    "swap_cost": 0.0,
+    "walk_forward": 1.0
+   },
+   "in_sample_screen": {
+    "cpcv": 0.9962,
+    "deflated_sharpe": 1.0,
+    "economic_prior": 0.0,
+    "expected_value": 0.0013,
+    "lockbox": 0.0013,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.0026,
+    "swap_cost": 0.0,
+    "walk_forward": 0.0038
+   },
+   "lockbox": {
+    "cpcv": 0.013,
+    "deflated_sharpe": 1.0,
+    "economic_prior": 0.0,
+    "expected_value": 0.013,
+    "in_sample_screen": 0.013,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.013,
+    "swap_cost": 0.0,
+    "walk_forward": 1.0
+   },
+   "pbo": {
+    "cpcv": null,
+    "deflated_sharpe": null,
+    "economic_prior": null,
+    "expected_value": null,
+    "in_sample_screen": null,
+    "lockbox": null,
+    "reality_check_spa": null,
+    "stress_costs": null,
+    "swap_cost": null,
+    "walk_forward": null
+   },
+   "reality_check_spa": {
+    "cpcv": null,
+    "deflated_sharpe": null,
+    "economic_prior": null,
+    "expected_value": null,
+    "in_sample_screen": null,
+    "lockbox": null,
+    "pbo": null,
+    "stress_costs": null,
+    "swap_cost": null,
+    "walk_forward": null
+   },
+   "stress_costs": {
+    "cpcv": 0.0427,
+    "deflated_sharpe": 1.0,
+    "economic_prior": 0.0,
+    "expected_value": 0.0085,
+    "in_sample_screen": 0.0171,
+    "lockbox": 0.0085,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "swap_cost": 0.0,
+    "walk_forward": 0.6239
+   },
+   "swap_cost": {
+    "cpcv": null,
+    "deflated_sharpe": null,
+    "economic_prior": null,
+    "expected_value": null,
+    "in_sample_screen": null,
+    "lockbox": null,
+    "pbo": null,
+    "reality_check_spa": null,
+    "stress_costs": null,
+    "walk_forward": null
+   },
+   "walk_forward": {
+    "cpcv": 0.0181,
+    "deflated_sharpe": 1.0,
+    "economic_prior": 0.0,
+    "expected_value": 0.006,
+    "in_sample_screen": 0.0181,
+    "lockbox": 0.4639,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.4398,
+    "swap_cost": 0.0
+   }
+  },
+  "jaccard": {
+   "cpcv": {
+    "deflated_sharpe": 0.5212,
+    "economic_prior": 0.0,
+    "expected_value": 0.0013,
+    "in_sample_screen": 0.9886,
+    "lockbox": 0.0012,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.0056,
+    "swap_cost": 0.0,
+    "walk_forward": 0.0032
+   },
+   "deflated_sharpe": {
+    "cpcv": 0.5212,
+    "economic_prior": 0.0,
+    "expected_value": 0.0007,
+    "in_sample_screen": 0.5192,
+    "lockbox": 0.0511,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.0776,
+    "swap_cost": 0.0,
+    "walk_forward": 0.1101
+   },
+   "economic_prior": {
+    "cpcv": 0.0,
+    "deflated_sharpe": 0.0,
+    "expected_value": 0.0,
+    "in_sample_screen": 0.0,
+    "lockbox": 0.0,
+    "pbo": null,
+    "reality_check_spa": null,
+    "stress_costs": 0.0,
+    "swap_cost": null,
+    "walk_forward": 0.0
+   },
+   "expected_value": {
+    "cpcv": 0.0013,
+    "deflated_sharpe": 0.0007,
+    "economic_prior": 0.0,
+    "in_sample_screen": 0.0013,
+    "lockbox": 0.013,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.0085,
+    "swap_cost": 0.0,
+    "walk_forward": 0.006
+   },
+   "in_sample_screen": {
+    "cpcv": 0.9886,
+    "deflated_sharpe": 0.5192,
+    "economic_prior": 0.0,
+    "expected_value": 0.0013,
+    "lockbox": 0.0012,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.0022,
+    "swap_cost": 0.0,
+    "walk_forward": 0.0032
+   },
+   "lockbox": {
+    "cpcv": 0.0012,
+    "deflated_sharpe": 0.0511,
+    "economic_prior": 0.0,
+    "expected_value": 0.013,
+    "in_sample_screen": 0.0012,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.0052,
+    "swap_cost": 0.0,
+    "walk_forward": 0.4639
+   },
+   "pbo": {
+    "cpcv": 0.0,
+    "deflated_sharpe": 0.0,
+    "economic_prior": null,
+    "expected_value": 0.0,
+    "in_sample_screen": 0.0,
+    "lockbox": 0.0,
+    "reality_check_spa": null,
+    "stress_costs": 0.0,
+    "swap_cost": null,
+    "walk_forward": 0.0
+   },
+   "reality_check_spa": {
+    "cpcv": 0.0,
+    "deflated_sharpe": 0.0,
+    "economic_prior": null,
+    "expected_value": 0.0,
+    "in_sample_screen": 0.0,
+    "lockbox": 0.0,
+    "pbo": null,
+    "stress_costs": 0.0,
+    "swap_cost": null,
+    "walk_forward": 0.0
+   },
+   "stress_costs": {
+    "cpcv": 0.0056,
+    "deflated_sharpe": 0.0776,
+    "economic_prior": 0.0,
+    "expected_value": 0.0085,
+    "in_sample_screen": 0.0022,
+    "lockbox": 0.0052,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "swap_cost": 0.0,
+    "walk_forward": 0.3476
+   },
+   "swap_cost": {
+    "cpcv": 0.0,
+    "deflated_sharpe": 0.0,
+    "economic_prior": null,
+    "expected_value": 0.0,
+    "in_sample_screen": 0.0,
+    "lockbox": 0.0,
+    "pbo": null,
+    "reality_check_spa": null,
+    "stress_costs": 0.0,
+    "walk_forward": 0.0
+   },
+   "walk_forward": {
+    "cpcv": 0.0032,
+    "deflated_sharpe": 0.1101,
+    "economic_prior": 0.0,
+    "expected_value": 0.006,
+    "in_sample_screen": 0.0032,
+    "lockbox": 0.4639,
+    "pbo": 0.0,
+    "reality_check_spa": 0.0,
+    "stress_costs": 0.3476,
+    "swap_cost": 0.0
+   }
+  },
+  "subsumed": [
+   {
+    "gate": "cpcv",
+    "by": "deflated_sharpe",
+    "p_by_fails_given_gate_fails": 1.0,
+    "kills": 786
+   },
+   {
+    "gate": "cpcv",
+    "by": "in_sample_screen",
+    "p_by_fails_given_gate_fails": 0.9924,
+    "kills": 786
+   },
+   {
+    "gate": "in_sample_screen",
+    "by": "cpcv",
+    "p_by_fails_given_gate_fails": 0.9962,
+    "kills": 783
+   },
+   {
+    "gate": "in_sample_screen",
+    "by": "deflated_sharpe",
+    "p_by_fails_given_gate_fails": 1.0,
+    "kills": 783
+   },
+   {
+    "gate": "lockbox",
+    "by": "deflated_sharpe",
+    "p_by_fails_given_gate_fails": 1.0,
+    "kills": 77
+   },
+   {
+    "gate": "lockbox",
+    "by": "walk_forward",
+    "p_by_fails_given_gate_fails": 1.0,
+    "kills": 77
+   },
+   {
+    "gate": "stress_costs",
+    "by": "deflated_sharpe",
+    "p_by_fails_given_gate_fails": 1.0,
+    "kills": 117
+   },
+   {
+    "gate": "walk_forward",
+    "by": "deflated_sharpe",
+    "p_by_fails_given_gate_fails": 1.0,
+    "kills": 166
+   }
+  ],
+  "no_unique_kill": [
+   "cpcv",
+   "expected_value",
+   "in_sample_screen",
+   "lockbox",
+   "stress_costs",
+   "walk_forward"
+  ],
+  "false_rejects": {
+   "cpcv": 134,
+   "deflated_sharpe": 604,
+   "economic_prior": 0,
+   "expected_value": 2,
+   "in_sample_screen": 135,
+   "lockbox": 16,
+   "pbo": 0,
+   "reality_check_spa": 0,
+   "stress_costs": 102,
+   "swap_cost": 0,
+   "walk_forward": 55
+  },
+  "use": "a report: a redundant gate is a candidate for ratified removal, never removed by an agent"
+ },
+ "metric": {
+  "candidate_gates": 2,
+  "registry": 2,
+  "production_fooling_cases": 0,
+  "real_suite_labelled": 17,
+  "certificate_precision": 1.0,
+  "redundant_gates": 8
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 34.568
+}

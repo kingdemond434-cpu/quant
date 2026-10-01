@@ -54,8 +54,10 @@ SEALED = ("desks/mt5/scripts/external_gauntlet.py", "desks/mt5/research/promoter
 
 
 def _sha(path: Path) -> str | None:
+    # LINE-ENDING NORMALISED: a Windows checkout (autocrlf) and a Linux one hold the same file
+    # with different bytes, and the pin read REGRESSED on whichever host it was not written on.
     try:
-        return hashlib.sha256(path.read_bytes()).hexdigest()
+        return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
     except OSError:
         return None
 

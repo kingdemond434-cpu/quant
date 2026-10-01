@@ -175,7 +175,8 @@ def charge(census_dict: dict[str, Any], *, nominal: int = NOMINAL_CAMPAIGN_TRIAL
     fams = {row["family"]: FamilyCharge(
         str(row["family"]), int(row["n_nominal"]), float(row["n_effective"]),
         int(row.get("n_grid_cells") or 0), int(row.get("n_identities") or 0),
-        float(row.get("ratio") or 1.0), str(row.get("basis") or ""))
+        float(row.get("ratio") or 1.0), str(row.get("basis") or ""),
+        int(row.get("selection_trials") or 0))
         for row in census_dict.get("by_family") or []}
     census = ChargeCensus(int(census_dict.get("n_nominal") or 0),
                           float(census_dict.get("n_effective") or 0.0),
@@ -305,8 +306,12 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
     t0 = time.time()
     rows = read_docket(docket)
     census = measure(rows)
+    # THE SPEC'S VARIANCE OR NOTHING. This fell back to 0.014863, the constant lockbox v4
+    # retired, so an unreadable spec quietly measured the charge against a bar no gate uses.
     variance = spec_variance_of_sharpes(spec)
-    variance = 0.014863 if variance is None else variance
+    if variance is None:
+        raise ValueError(f"{spec or SPEC_PATH} carries no deflated_sharpe "
+                         "fixed_variance_of_sharpes; refusing to measure against a guess")
     standing = spec_fixed_trial_count(spec)
     nominal = NOMINAL_CAMPAIGN_TRIALS if standing is None else standing
     charged, basis = charge(census, nominal=NOMINAL_CAMPAIGN_TRIALS)

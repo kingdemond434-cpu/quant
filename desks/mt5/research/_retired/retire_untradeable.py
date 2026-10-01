@@ -47,6 +47,9 @@ for _p in (str(ROOT), str(BASE), str(BASE / "scripts")):
 from libs.ops.reference_freshness import require_live_reference  # noqa: E402
 
 SURVIVORS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+#: This organ's artifact is the record it appends to: `retired_certificates` and `revoked_at` in
+#: the survivor file. Bound by name so the component registry reads it (`own_artifact`).
+ARTIFACT = SURVIVORS
 UNIVERSE = BASE / "data" / "universe" / "universe.json"
 
 #: STUMP FLOOR, the same number `scripts/purge_untradeable_certs.py` carries.

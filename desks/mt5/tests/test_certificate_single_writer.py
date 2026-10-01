@@ -28,9 +28,23 @@ def test_external_gauntlet_is_the_only_pipeline_certificate_writer() -> None:
 
 
 def test_external_gauntlet_recovers_only_exact_gate_archive_rows() -> None:
+    # The judge restores only retired rows that still pass all ten gates.
     source = _text("scripts/external_gauntlet.py")
-    assert 'DATA / "UNIVERSAL_SURVIVORS.canon.json"' in source
     assert "all_ten_pass(row.get(\"gates\"))" in source
+    # Canon recovery is NOT the judge's: `external_gauntlet.py` never held a
+    # `DATA / "UNIVERSAL_SURVIVORS.canon.json"` path in any reachable history (`git log --all -S`
+    # finds only this test's own import in bcbec41f0). The one pen on the canonical seal is
+    # research/canon_publication.py (0c1cceef8): it recovers stranded verdicts from the gate
+    # output under the same all-ten predicate and merges them through publish()'s refusals.
+    owner = _text("research/canon_publication.py")
+    assert 'SEAL = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"' in owner
+    assert "def recover_from_gate_output(" in owner
+    recover = owner.split("def recover_from_gate_output(", 1)[1].split("\ndef ", 1)[0]
+    assert "if not all_ten_pass(stages):" in recover
+    assert "superseded = not is_admissible_trial_count_basis(gate_basis)" in recover
+    publish = owner.split("\ndef publish(", 1)[1].split("\ndef ", 1)[0]
+    assert 'if not all_ten_pass(row.get("gates")):' in publish
+    assert "recovered=recovery.get(\"rows\")" in owner
 
 
 def test_universe_job_fills_missing_ladder_instead_of_rewalking_it() -> None:

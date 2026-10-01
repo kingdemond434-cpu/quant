@@ -102,6 +102,11 @@ class Node:
     #: The gate the JUDGE said stopped this cell, passed through from the verdict rather than
     #: re-derived from `gates` -- which holds `canonical_report` and nothing else on most rows.
     terminal_gate: str = ""
+    #: EVERY FURTHER PARENT (2026-09-30). A crossover child, a composition or a candidate that
+    #: names several `parent_ids` has more than one ancestor; `parent` keeps the first (every
+    #: chain walker reads it), and the rest land here and as `mutated_from` edges with role
+    #: `co_parent`. Resolved ids only, like `parent`; unresolved claims stay on the edges.
+    co_parents: list[str] = field(default_factory=list)
 
     @property
     def id(self) -> str:
@@ -123,6 +128,8 @@ class Node:
                "seed_key": self.seed_key or self.parent}
         if self.operator:
             row["operator"] = self.operator
+        if self.co_parents:
+            row["co_parents"] = list(self.co_parents)
         if self.terminal_gate:
             row["terminal_gate"] = self.terminal_gate
         profile = death_profile(self.gates, self.fate)
@@ -201,7 +208,7 @@ def death_profile(gates: dict[str, Any], fate: str) -> dict[str, Any]:
 
 
 def edges_for(symbol: str, params: dict[str, Any], *, parent: str = "", operator: str = "",
-              source_url: str = "") -> list[dict[str, Any]]:
+              source_url: str = "", co_parents: Iterable[str] = ()) -> list[dict[str, Any]]:
     """The typed edges a candidate's own fields imply. Deterministic, deduplicated, ordered.
 
     Nothing here is inferred: every edge names a field the caller already carried. A candidate
@@ -229,6 +236,8 @@ def edges_for(symbol: str, params: dict[str, Any], *, parent: str = "", operator
         if operator:
             e["operator"] = str(operator)
         out.append(e)
+    for cp in dict.fromkeys(str(x) for x in co_parents if x and str(x) != str(parent)):
+        out.append({"type": MUTATED_FROM, "to": cp, "role": "co_parent"})
     if source_url:
         out.append({"type": SOURCED_FROM, "to": f"url:{str(source_url).strip()}"})
     return out
@@ -383,6 +392,20 @@ class Graph:
             n = cur.get(str(n.get("parent") or ""))
         return out
 
+    def ancestors(self, node_id_: str) -> dict[str, int]:
+        """Every ancestor through `parent` AND `co_parents`, with its generation (1 = a
+        parent). `lineage` walks the first-parent chain; this is the whole DAG above a node."""
+        cur = self.current()
+        out: dict[str, int] = {}
+        frontier = [(p, 1) for p in parents_of(cur.get(node_id_) or {})]
+        while frontier:
+            p, g = frontier.pop()
+            if p in out and out[p] <= g:
+                continue
+            out[p] = g
+            frontier.extend((q, g + 1) for q in parents_of(cur.get(p) or {}))
+        return out
+
     def census(self) -> dict[str, Any]:
         cur = self.current()
         by_fate: dict[str, int] = {}
@@ -460,6 +483,17 @@ def _as_parent_id(value: Any) -> str:
     if isinstance(value, Mapping):
         return node_id_for_spec(value) if (value.get("symbol") or value.get("sym")) else ""
     return str(value or "").strip()
+
+
+def parents_of(row: Mapping[str, Any]) -> list[str]:
+    """Every parent a graph ROW records: `parent`, `co_parents`, and `mutated_from` edges."""
+    out: list[str] = []
+    for p in [row.get("parent"), *(row.get("co_parents") or [])] + [
+            e.get("to") for e in row.get("edges") or []
+            if isinstance(e, Mapping) and e.get("type") == MUTATED_FROM]:
+        if p and str(p) not in out and str(p) != str(row.get("id") or ""):
+            out.append(str(p))
+    return out
 
 
 def parent_claims(c: Mapping[str, Any]) -> list[str]:
@@ -570,6 +604,7 @@ def record_candidates(cands: Iterable[dict[str, Any]], source: str,
         # claim, the scalar `parent` is not. The resolved id wins when there is one, so the edge
         # and the field never name two different ancestors.
         mut_parent = resolved or (claims[0] if claims else "")
+        others = [p for p in claims if p != mut_parent]
         node = Node(symbol=sym, family=family,
                     params=params,
                     # THE CANDIDATE'S OWN SOURCE WINS. The compiler registers every candidate it
@@ -579,8 +614,10 @@ def record_candidates(cands: Iterable[dict[str, Any]], source: str,
                     source=str(c.get("source") or source),
                     parent=resolved or seed, seed_key=seed, operator=op,
                     fate=BORN, why=str(c.get("mechanism_note") or "")[:200],
+                    co_parents=[p for p in others if p in known],
                     edges=edges_for(sym, params, parent=mut_parent, operator=op,
-                                    source_url=str(c.get("source_url") or "")))
+                                    source_url=str(c.get("source_url") or ""),
+                                    co_parents=others))
         g.append(node)
         known.add(node.id)
         n += 1

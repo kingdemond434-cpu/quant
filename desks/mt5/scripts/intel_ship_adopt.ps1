@@ -45,7 +45,10 @@ if (-not (Test-Path (Join-Path $RepoRoot ".git"))) { Log "no .git under $RepoRoo
 # --no-write-fetch-head prevents this fetch from overwriting FETCH_HEAD while Adopt-Release uses
 # it as its immutable target.
 $shipRef = "refs/remotes/intel-ship/send"
-& git fetch --no-write-fetch-head origin "+refs/heads/intel-ship/send:$shipRef" 2>&1 | Out-Null
+# Do not let transport spawn detached maintenance after this pre-lock phase.  Such a child no
+# longer participates in the named writer mutex and can collide with either this checkout or the
+# canonical adopter's later commit.
+& git -c maintenance.auto=false -c gc.auto=0 fetch --no-write-fetch-head origin "+refs/heads/intel-ship/send:$shipRef" 2>&1 | Out-Null
 if ($LASTEXITCODE -ne 0) { Log "git fetch failed (rc=$LASTEXITCODE)"; exit 3 }
 
 # 2. wait for MT5-ShadowSync the way Adopt-And-Seal does (sync limit is 10 min; give it 9)

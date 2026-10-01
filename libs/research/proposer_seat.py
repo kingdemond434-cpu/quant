@@ -125,6 +125,13 @@ ORGANS: dict[str, str] = {
     "data_acquisition_scientist": "which dataset to seek next, by NAME, for the registry to vet",
     "meta_controller": "an ORDER over the curriculum the controller already holds",
     "standing_questions": "candidate phrasings of the questions the desk has not answered",
+    # THE TWO ADVERSARIAL COMMITTEES (desks/mt5/research/committees.py). Each role argues one
+    # EXPLANATION with a failure class; the deterministic judge, never the model, picks the
+    # experiments that separate them.
+    "scientific_committee": "competing explanations for a bank hypothesis, one failure class "
+                            "each, for the judge to separate by experiment",
+    "forensic_committee": "competing mechanisms (registered SARES branches) for an extreme "
+                          "record, each donated as a candidate",
 }
 
 #: What an `ask` may ask for. Four kinds, and the difference between them is what the organ is

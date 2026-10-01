@@ -1046,6 +1046,20 @@ CONSTRUCTION_CLASS: dict[str, str] = {
     "walcl_reserve_impulse": "macro_liquidity_transmission",
     "defi_utilisation": "network_usage_demand",
     "stablecoin_supply_momentum": "primary_market_creation_flow",
+    # THE CLASS-BOOK LEGS (desks/mt5/mt5desk/families_cross_sectional.py, 2026-09-30), declared by
+    # construction so their names cannot be re-filed by keyword luck. Momentum, value and
+    # low-vol are priced characteristics ranked in a cross-section: that is this taxonomy's
+    # cross_sectional_risk_premium, whose low declared orthogonality is kept rather than argued
+    # away. Reversal pays for immediacy. The catch-up leg is a lead-lag residual, which the census
+    # files under relative_value_convergence ("leadlag", "lead lag"). The crisis leg's payer is
+    # the levered holder liquidated on somebody else's schedule -- positioning_crowding_unwind's
+    # payer -- measured from the class's own stress state rather than from a positioning print.
+    "cross_sectional_class_momentum": "cross_sectional_risk_premium",
+    "cross_sectional_class_value": "cross_sectional_risk_premium",
+    "cross_sectional_class_low_vol": "cross_sectional_risk_premium",
+    "cross_sectional_class_reversal": "liquidity_provision_immediacy",
+    "lead_lag_class_catchup": "relative_value_convergence",
+    "crisis_only_class_defensive": "positioning_crowding_unwind",
 }
 
 

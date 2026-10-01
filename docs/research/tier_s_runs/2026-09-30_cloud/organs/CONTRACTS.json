@@ -1,0 +1,76 @@
+{
+ "layers": {},
+ "legs": {
+  "leg:tier_s": {
+   "verdict": "UNMEASURED",
+   "why": "2 < 6 readings and no significant move yet",
+   "n": 2,
+   "baseline": 4.0,
+   "delta_vs_baseline": 0.0,
+   "gain": "PRODUCTIVITY",
+   "metric": "report:TIER_S.json.contracts.ADMITTED",
+   "latest": 4.0
+  },
+  "leg:adversary_evolution": {
+   "verdict": "UNMEASURED",
+   "why": "0 reading(s)",
+   "n": 0,
+   "baseline": null,
+   "delta_vs_baseline": null,
+   "gain": "FALSIFICATION",
+   "metric": "report:ADVERSARY_EVOLUTION.json.n_breach",
+   "latest": null
+  },
+  "leg:execution_science": {
+   "verdict": "UNMEASURED",
+   "why": "2 < 6 readings and no significant move yet",
+   "n": 2,
+   "baseline": 6.742e-05,
+   "delta_vs_baseline": -0.0,
+   "gain": "EXECUTION_CAPTURE",
+   "metric": "report:EXECUTION_SCIENCE.json.attribution.median_execution_drag",
+   "latest": 6.742e-05
+  },
+  "leg:frontier_map": {
+   "verdict": "UNMEASURED",
+   "why": "0 reading(s)",
+   "n": 0,
+   "baseline": null,
+   "delta_vs_baseline": null,
+   "gain": "ALPHA_DISCOVERY",
+   "metric": "report:FRONTIER_MAP.json.coverage.n_certificates",
+   "latest": null
+  },
+  "leg:market_ecology": {
+   "verdict": "UNMEASURED",
+   "why": "0 reading(s)",
+   "n": 0,
+   "baseline": null,
+   "delta_vs_baseline": null,
+   "gain": "ALPHA_DISCOVERY",
+   "metric": "report:MARKET_ECOLOGY.json.n_detected",
+   "latest": null
+  },
+  "leg:research_diversity_archive": {
+   "verdict": "UNMEASURED",
+   "why": "2 < 6 readings and no significant move yet",
+   "n": 2,
+   "baseline": 1.0,
+   "delta_vs_baseline": 0.0,
+   "gain": "PRODUCTIVITY",
+   "metric": "report:RESEARCH_DIVERSITY_ARCHIVE.json.counts.occupied_niches",
+   "latest": 1.0
+  }
+ },
+ "counts": {
+  "ADMITTED": 4,
+  "UNMEASURED": 42
+ },
+ "leg_counts": {
+  "UNMEASURED": 6
+ },
+ "suspended": [],
+ "authority_rule": "an organ whose every contracted layer is REJECTED loses its steering authority until one reads ADMITTED or UNMEASURED; its hypothesis emissions are never stopped",
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 0.007
+}

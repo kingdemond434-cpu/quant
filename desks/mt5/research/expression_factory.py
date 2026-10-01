@@ -81,6 +81,17 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 from libs.research import alpha_dsl as dsl  # noqa: E402
 from libs.research import alpha_grammar as ag  # noqa: E402
+
+
+def _bias() -> dict:
+    """The learned grammar (Tier S layers 22/44): operator weights and recurring primitives from
+    judged formulas, or {} (the uniform draw) when absent or stale."""
+    try:
+        from libs.tiers.grammar_bias import bias
+        return bias()
+    except Exception:
+        return {}
+from libs.regime import session_clock  # noqa: E402
 from libs.research import trial_ledger as tl  # noqa: E402
 
 try:
@@ -386,6 +397,9 @@ class World:
     asset_class: str = ""
     cost_status: str = "MEASURED"
     lockbox: dict[str, Any] = field(default_factory=dict)
+    #: The TRUE UTC hour of each bar. `hours` is the broker's EET stamp hour, which the cost
+    #: surface is keyed on; the SESSIONS table is in UTC and must be compared with this one.
+    utc_hours: np.ndarray | None = None
 
     @property
     def n(self) -> int:
@@ -534,12 +548,32 @@ class Lake:
             pass
         return out
 
+    def _pinned(self, sym: str) -> dict[str, str]:
+        """terminal -> field name the world model's queued expressions for `sym` are pinned to.
+
+        A macro-world edge (`libs/tiers/world_macro.py`) is a claim about ONE field; its queued
+        expression says so in `bind`, and the world binds that field first so the claim is
+        tested as stated rather than against whichever field the rotation reached."""
+        try:
+            rows = json.loads((self.paths.desk / "data" / "tier_s" / "xsci_expressions.json"
+                               ).read_text("utf-8"))
+        except (OSError, ValueError):
+            return {}
+        out: dict[str, str] = {}
+        for r in rows if isinstance(rows, list) else []:
+            if isinstance(r, dict) and r.get("symbol") == sym and isinstance(r.get("bind"), dict):
+                for term, name in r["bind"].items():
+                    out.setdefault(str(term), str(name))
+        return out
+
     def _bind_externals(self, sym: str, idx: pd.Index) -> tuple[dict[str, pd.Series],
                                                                   dict[str, dsl.Field]]:
-        """One causal field per external terminal, the macro one rotating between passes."""
+        """One causal field per external terminal, the macro one rotating between passes; a
+        field the world model's queued expressions are pinned to is bound first."""
         extra: dict[str, pd.Series] = {}
         bound: dict[str, dsl.Field] = {}
         fields = [f for f in self.catalogue.external(sym) if f.causal()]
+        pinned = self._pinned(sym) if sym not in self.injected else {}
         for term in ("positioning", "fundamental", "macro", "event"):
             cands = [f for f in fields if f.terminal == term]
             if not cands:
@@ -547,6 +581,8 @@ class Lake:
             if term == "macro":
                 k = self.macro_index % len(cands)
                 cands = cands[k:] + cands[:k]
+            if term in pinned:
+                cands = sorted(cands, key=lambda f: f.name != pinned[term])
             for f in cands:
                 s = self.catalogue.series(f, idx)
                 if s is not None and bool(s.notna().sum() >= 100):
@@ -581,7 +617,7 @@ class Lake:
         world = World(sym, frames, np.log(close.to_numpy(dtype=float)),
                       idx.hour.to_numpy(dtype=np.int16), _regimes(frames["vol"]),
                       self._cost(sym, close), mult, bound, self.asset_class(sym), status,
-                      lockbox)
+                      lockbox, utc_hours=session_clock.utc_hours(idx))
         self.worlds[sym] = world
         return world
 
@@ -601,10 +637,16 @@ class Cell:
     generator: str = ""
     asset_class: str = ""
     chain: list[str] = field(default_factory=list)   #: the mutation chain from the parent
+    #: the SECOND parent of a crossover child (its partner's pid); lineage is multi-parent
+    co_parents: list[str] = field(default_factory=list)
 
     @property
     def key(self) -> str:
-        return f"{self.symbol}|{self.hold}|{self.state}|{dsl.canonical_key(self.expr)}"
+        # A session state is versioned: before 2026-09-30 it was judged on the broker's stamp
+        # hour, not UTC, so a "session:london" cell in `seen` tested different hours and must not
+        # mark the corrected cell as already tested.
+        state = f"{self.state}@utc1" if self.state.startswith("session:") else self.state
+        return f"{self.symbol}|{self.hold}|{state}|{dsl.canonical_key(self.expr)}"
 
     def mechanism(self) -> str:
         """The tree's shape as the grammar describes it, with the state kind it is conditioned
@@ -626,10 +668,24 @@ class Cell:
     def as_dict(self) -> dict[str, Any]:
         return {"expr": self.expr, "rendered": ag.to_str(self.expr), "symbol": self.symbol,
                 "hold": self.hold, "state": self.state, "origin": self.origin,
-                "parent": self.parent, "generator": self.generator,
+                "parent": self.parent, "co_parents": list(self.co_parents),
+                "generator": self.generator,
                 "asset_class": self.asset_class, "chain": list(self.chain), "key": self.key,
                 "family": dsl.family_key(self.expr), "mechanism": self.mechanism(),
                 "representation": self.representation(), "descriptor": self.descriptor()}
+
+
+#: When session states moved to true UTC. A registry row last written before it was judged on the
+#: broker stamp clock; `retract_wrong_clock` re-parks it.
+CLOCK_FIX_AT = "2026-10-01T00:00:00+00:00"
+WRONG_CLOCK_REASON = ("WRONG_CLOCK: session state judged on the broker's stamp hour, not UTC "
+                      "(fixed 2026-09-30); the corrected cell is re-tested under its @utc1 key")
+
+
+def _wrong_clock_cell(cell: dict[str, Any]) -> bool:
+    """A session-state cell recorded before its key carried the UTC clock version."""
+    return str(cell.get("state") or "").startswith("session:") \
+        and "@utc1" not in str(cell.get("key") or "")
 
 
 def executable_by_formula_family(expr: Expr, state: str) -> str | None:
@@ -651,7 +707,10 @@ def _state_mask(world: World, state: str) -> np.ndarray | None:
     kind, _, name = state.partition(":")
     if kind == "session" and name in SESSIONS:
         lo, hi = SESSIONS[name]
-        return np.asarray((world.hours >= lo) & (world.hours < hi))
+        # SESSIONS are UTC hours; `world.hours` is the broker's stamp hour, 2-3 h ahead of UTC,
+        # so a "london" state compared with it was the Frankfurt pre-open (Tier S 2026-09-30).
+        hrs = world.utc_hours if world.utc_hours is not None else world.hours
+        return np.asarray((hrs >= lo) & (hrs < hi))
     if kind == "regime" and name in REGIMES:
         return np.asarray(world.vol_regime == REGIMES.index(name))
     return None
@@ -942,7 +1001,8 @@ def tier2(cell: Cell, world: World, t1: Tier1, evaluate: Any, rng: np.random.Gen
     out.stability = (held / len(neigh)) if neigh else None
     # 2. session and regime splits of the OOS trades
     oos_entries = t1.entries[t1.n_is:]
-    hours = world.hours[oos_entries]
+    # SESSIONS is a UTC table: split on the true UTC hour, never the broker stamp (2-3 h ahead).
+    hours = (world.utc_hours if world.utc_hours is not None else world.hours)[oos_entries]
     regs = world.vol_regime[oos_entries]
     splits: dict[str, float] = {}
     for name, (lo, hi) in SESSIONS.items():
@@ -1150,6 +1210,7 @@ class Campaign:
             return row
         row = {"state": "PROPOSED", "at": now_iso(), "symbol": cell.symbol, "hold": cell.hold,
                "state_filter": cell.state, "origin": cell.origin, "parent": cell.parent,
+               "co_parents": list(cell.co_parents),
                "generator": cell.generator, "chain": list(cell.chain),
                "rendered": ag.to_str(cell.expr), "family": dsl.family_key(cell.expr),
                "asset_class": cell.asset_class, "candidate_id": "", "history": ["PROPOSED"]}
@@ -1289,6 +1350,9 @@ class Factory:
         #: say what share of the population a model prior supplied -- zero is the normal reading
         #: on a box with no panel, and it is a measurement rather than an absence.
         self.seat_cells = 0
+        #: cross-science cells drained this pass, per `cross_science:<lab>` generator
+        self.xsci_cells: dict[str, int] = {}
+        self._partner_pid = ""          #: the crossover partner of the move being applied
 
     # ---- bookkeeping
     def say(self, msg: str) -> None:
@@ -1351,6 +1415,57 @@ class Factory:
         for name, e in ag.CANON.items():
             self._parent(f"canon:{name}", e, "canon")
         return census
+
+    def retract_wrong_clock(self) -> dict[str, Any]:
+        """Withdraw what was found on a session state under the broker's stamp clock.
+
+        Before 2026-09-30 a `session:*` state was judged on the stamp hour, so its QD-archive
+        niche and its registry discovery describe hours nobody proposed. The archive entry is
+        dropped (the corrected cell must win its niche on the right clock, not inherit a score),
+        and the registry row is re-parked BLOCKED with the reason named. Idempotent: only rows
+        last written before CLOCK_FIX_AT are touched, so a corrected cell re-recorded onto the
+        same discovery keeps its own disposition.
+        """
+        out: dict[str, Any] = {"archive": 0, "registry": 0}
+        for desc in [d for d, e in self.archive.items()
+                     if _wrong_clock_cell((e or {}).get("cell") or {})]:
+            del self.archive[desc]
+            out["archive"] += 1
+        if self.dry_run:
+            return out
+        try:
+            from libs.moat import registry as reg
+            conn = self.registry.connect() if self.registry is not None else reg.connect()
+        except Exception as exc:
+            out["error"] = f"registry unavailable: {type(exc).__name__}"
+            return out
+        try:
+            rows = conn.execute(
+                "SELECT discovery_id, payload_json FROM discoveries WHERE generator=? "
+                "AND source_type='expression_cell' AND sessions_json LIKE '%session:%' "
+                "AND updated_at < ? AND COALESCE(blocked_reason, '') NOT LIKE 'WRONG_CLOCK%'",
+                (SOURCE, CLOCK_FIX_AT)).fetchall()
+            for did, payload in rows:
+                try:
+                    cell = (json.loads(payload or "{}") or {}).get("cell") or {}
+                except ValueError:
+                    cell = {}
+                if not _wrong_clock_cell(cell):
+                    continue
+                conn.execute("UPDATE discoveries SET state='BLOCKED', blocked_reason=?, "
+                             "updated_at=? WHERE discovery_id=?",
+                             (WRONG_CLOCK_REASON, now_iso(), did))
+                out["registry"] += 1
+            conn.commit()
+        except Exception as exc:
+            out["error"] = f"registry retraction: {type(exc).__name__}: {exc}"[:200]
+        finally:
+            if self.registry is None:
+                conn.close()
+        if out["archive"] or out["registry"]:
+            self.say(f"clock retraction: {out['archive']} archive niche(s), {out['registry']} "
+                     "registry discovery(ies) found on the broker stamp clock withdrawn")
+        return out
 
     def harvest(self) -> dict[str, Any]:
         """The graveyard and the parked candidates FIRST: dead and waiting formula cells."""
@@ -1614,6 +1729,7 @@ class Factory:
         else:
             # THE MOVE IS DRAWN BY MEASURED CREDIT: what screened and survived earns the draws.
             gen = str(rng.choice(MOVES, p=self.credits.move_weights(MOVES)))
+            self._partner_pid = ""
             child = self._apply_move(base, gen, terms, parent)
             for fallback in ("constant", "point", "subtree"):
                 if child is not None:
@@ -1625,8 +1741,9 @@ class Factory:
             expr = base if child is None else child
             if gen == "horizon":
                 hold = HORIZONS[(HORIZONS.index(hold) + 1) % len(HORIZONS)]
+        partner = self._partner_pid if gen == "crossover" else ""
         return Cell(expr, sym, hold, state, "mutation", parent.pid, gen, world.asset_class,
-                    [*parent.chain, gen])
+                    [*parent.chain, gen], [partner] if partner else [])
 
     def _apply_move(self, base: Expr, move: str, terms: Sequence[str],
                     parent: Parent) -> Expr | None:
@@ -1636,7 +1753,9 @@ class Factory:
             if move == "crossover":
                 others = [p for p in self.parents.values()
                           if p.transferred and p.pid != parent.pid]
-                partner = others[int(self.rng.integers(len(others)))].expr if others else None
+                mate = others[int(self.rng.integers(len(others)))] if others else None
+                partner = mate.expr if mate is not None else None
+                self._partner_pid = mate.pid if mate is not None else ""
             return dsl.mutate(base, move, self.rng, terminals=terms, partner=partner)
         if move == "basket_swap":
             out = self._swap_rank(base)
@@ -1669,7 +1788,7 @@ class Factory:
         """Replace one bar terminal with a bound external of a compatible kind, if any."""
         ext = [t for t in terms if t in ag.EXTERNAL_TERMINALS]
         if not ext:
-            return ag.mutate(expr, self.rng, terminals=terms)
+            return ag.mutate(expr, self.rng, terminals=terms, **_bias())
         leaves = [p for p in ag._paths(expr) if isinstance(ag._get(expr, p), str)]
         self.rng.shuffle(leaves)
         for p in leaves:
@@ -1680,6 +1799,14 @@ class Factory:
         return expr
 
     def invent(self) -> Cell:
+        # CROSS-SCIENCE FIRST (Tier S, 2026-09-30). A lab hit the Tier S organ could not state as
+        # a registered family is parked as a grammar expression on its own symbol; it is drained
+        # here as an ordinary invention cell -- same screens, nulls, ladder and trial charge --
+        # under the generator `cross_science:<lab>`, so each lab's conversion is measured apart
+        # from the random draw. An empty queue falls through to exactly the old path.
+        xs = self._xsci_cell()
+        if xs is not None:
+            return xs
         syms = list(self.lake.worlds)
         sym = syms[int(self.rng.integers(len(syms)))]
         terms = ag.available_terminals(self.lake.worlds[sym].frames)
@@ -1693,9 +1820,49 @@ class Factory:
         if seeded is not None:
             return Cell(seeded, sym, int(self.rng.choice(HORIZONS)), "none", "invention", "",
                         "proposer_seat", self.lake.worlds[sym].asset_class, ["invent"])
-        expr = ag.random_expr(self.rng, max_depth=3, terminals=terms)
+        expr = ag.random_expr(self.rng, max_depth=3, terminals=terms, **_bias())
         return Cell(expr, sym, int(self.rng.choice(HORIZONS)), "none", "invention", "",
                     "random", self.lake.worlds[sym].asset_class, ["invent"])
+
+    def _xsci_cell(self) -> Cell | None:
+        """One parked cross-science expression whose symbol this lake holds, drained, or None."""
+        path = self.paths.desk / "data" / "tier_s" / "xsci_expressions.json"
+        try:
+            have = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            return None
+        if not isinstance(have, list) or not have:
+            return None
+        for i, row in enumerate(have):
+            if not isinstance(row, dict) or row.get("symbol") not in self.lake.worlds:
+                continue
+            world = self.lake.worlds[row["symbol"]]
+            raw_bind = row.get("bind")
+            bind: dict[str, Any] = raw_bind if isinstance(raw_bind, dict) else {}
+            if any(getattr(world.bindings.get(t), "name", None) != n for t, n in bind.items()):
+                continue        # pinned to a field this world did not bind: tested as stated
+
+            try:
+                expr = ag.from_str(str(row.get("expr")))
+                ok = ag.is_valid(expr, terminals=list(ag.available_terminals(world.frames)))
+            except Exception:
+                ok = False
+            if not ok:
+                continue
+            if not self.dry_run:
+                rest = have[:i] + have[i + 1:]
+                try:
+                    tmp = path.with_suffix(".json.tmp")
+                    tmp.write_text(json.dumps(rest, indent=1), "utf-8")
+                    os.replace(tmp, path)
+                except OSError:
+                    pass
+            self.xsci_cells[str(row.get("generator") or "cross_science")] = \
+                self.xsci_cells.get(str(row.get("generator") or "cross_science"), 0) + 1
+            return Cell(expr, row["symbol"], int(self.rng.choice(HORIZONS)), "none", "invention",
+                        "", str(row.get("generator") or "cross_science"), world.asset_class,
+                        ["invent"])
+        return None
 
     def _seat_skeleton(self, terms: Sequence[str]) -> Expr | None:
         """One parked seat proposal, re-validated against THIS world's terminals, or None.
@@ -1837,6 +2004,7 @@ class Factory:
         report["fields"] = self.lake.catalogue.census()
         report["parents_census"] = self.load_parents()
         report["harvest"] = self.harvest()
+        report["clock_retraction"] = self.retract_wrong_clock()
         loaded = self.load_worlds(symbols, max_symbols)
         report["worlds"] = {"symbols": loaded, "basket": self.state.get("basket", ""),
                             "bindings": {s: {t: f.name for t, f in w.bindings.items()}
@@ -1890,6 +2058,7 @@ class Factory:
                                                      if p.transferred]),
                             "mutations": n_mut, "inventions": n_inv,
                             "seat_seeded_inventions": self.seat_cells,
+                            "cross_science_inventions": dict(self.xsci_cells),
                             "order": "HARVEST -> TRANSFER -> LIGHT MUTATION -> NEW INVENTION"}
         report["status"] = "RAN"
         return self.finish(report)
@@ -2026,6 +2195,8 @@ class Factory:
                                        "entry": f"|z_{NORM}| >= {ENTRY_Z}", "hold_bars": c["hold"],
                                        "side": side},
                         "parent_alpha": c["parent"], "origin": c["origin"],
+                        "parent_ids": [p for p in [c["parent"], *(c.get("co_parents") or [])]
+                                       if p],
                         "generator": c["generator"], "trial_family": c["family"],
                         "evidence": {**row["t1"], **{f"t2_{k}": v for k, v in row["t2"].items()},
                                      "orthogonality": row["orthogonality"],

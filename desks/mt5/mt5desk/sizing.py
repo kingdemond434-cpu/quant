@@ -107,7 +107,12 @@ def risk_lot(equity: float, sl_dist_price: float, tick_value: float, tick_size: 
     lots = int(raw / volume_step) * volume_step          # round DOWN: never oversize
     lots = round(lots, 8)
     if lots < volume_min:
-        # THE BROKER MINIMUM WINS. The 2x refusal that stood here is removed by the principal's
+        # ALLOCATOR SOVEREIGNTY (2026-09-29): below the venue minimum is unimplementable at this
+        # equity and sends nothing, unless data/ALLOCATOR_SOVEREIGN.json turns it off.
+        from mt5desk.decision_core import allocator_sovereign
+        if allocator_sovereign():
+            return 0.0
+        # THE BROKER MINIMUM WINS (legacy, 2026-09-12). The 2x refusal that stood here is removed by the principal's
         # order of 2026-09-12; `volume_max` still caps it, because a floor that exceeded the
         # venue's own MAXIMUM would be an order the broker also refuses -- the same failure at
         # the other end.

@@ -108,7 +108,7 @@ CANARIES: tuple[Canary, ...] = (
 )
 
 
-def _series(kind: str, n: int = 400) -> tuple[list[float], list[float]]:
+def _series(kind: str, n: int = 500) -> tuple[list[float], list[float]]:
     """(signal, forward_return) for one canary. Deterministic given CANARY_SEED."""
     # A STABLE HASH, NOT `hash()`. Python randomises str hashing per process (PYTHONHASHSEED),
     # so `hash(kind)` gives a different seed on every run -- which would have quietly defeated
@@ -343,8 +343,11 @@ GAUNTLET_GATE_SOURCE = "injected: external_gauntlet.run_gauntlet"
 #: it into the same cost model the certifier charges real cells.
 CANARY_SYMBOL = "CANARY"
 CANARY_META: dict[str, dict[str, float]] = {
+    # A synthetic instrument's financing is MEASURED zero, not unknown: policy v3 fails an
+    # unpriced swap closed, and a canary refused for that would say nothing about gates 2-10.
     CANARY_SYMBOL: {"contract_size": 1e5, "tick_size": 1e-5,
-                    "median_spread_pts": 10.0, "tick_value": 1.0},
+                    "median_spread_pts": 10.0, "tick_value": 1.0,
+                    "swap_long": 0.0, "swap_short": 0.0},
 }
 
 #: EVERY DOCKET TRADE HOLDS EXACTLY ONE BAR. The stop and target sit 5% either side of the
@@ -386,8 +389,9 @@ def docket_cell(name: str, sig: list[float], fwd: list[float], *, stamp_offset: 
     signal for draw i is stamped on bar 2i + `stamp_offset`, and `mt5desk.engine.run_backtest`
     fills it at the open of the NEXT bar and exits at the open of the bar after that -- so with
     the default stamp (bar 2i) the trade captures exactly `fwd[i]`, which is what `sig[i]` was
-    constructed to predict. Every draw becomes one trade on its own day, so a 400-draw canary is
-    400 daily observations, and the gates that need 60 have them.
+    constructed to predict. Every draw becomes one trade on its own day, so a 500-draw canary is
+    500 daily observations: 400 in the development window the gates read, 100 in the reserved
+    lockbox policy v3 carves off the end.
 
     THE LOOKAHEAD CANARY IS STAMPED ONE BAR LATER (`stamp_offset=1`), on the very bar whose return
     it "is". That is the honest timestamp of the information it carries -- `sig[i] == fwd[i]`
