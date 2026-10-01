@@ -25,6 +25,8 @@ from pathlib import Path
 from typing import Any
 
 from libs.core.coerce import integer
+from libs.research.grounding import PROMPT_CLAUSE as GROUNDING_CLAUSE
+from libs.research.grounding import capped_tier, ground
 
 _UA = "Mozilla/5.0 (compatible; QuantResearchPublicSourceMonitor/1.0)"
 _CTX = ssl.create_default_context()
@@ -455,6 +457,8 @@ name the missing implementation or data in measurable_gap. Code under AGPL or an
 licence may be studied as public evidence, but must not be copied into this repository; specify an
 independent clean-room replication instead.
 
+{GROUNDING_CLAUSE}
+
 RETRIEVED CONTENT:
 {content[:50000]}
 """
@@ -574,6 +578,9 @@ def run(
                     }
                 )
                 continue
+            # quant-mind's citation rule: a field the content cannot quote back is the model's
+            # claim, not the source's, and an unquoted evidence class cannot raise the tier.
+            grounding = ground(extracted, content[:50000])
             processed.append(
                 {
                     **item,
@@ -583,7 +590,9 @@ def run(
                     "mission": mission_set[0],
                     "status": "EXTRACTED",
                     "authority": "EXTERNAL_PRIOR_ONLY",
-                    "evidence_tier": evidence_tier(extracted.get("evidence_class")),
+                    "grounding": grounding,
+                    "evidence_tier": capped_tier(evidence_tier(extracted.get("evidence_class")),
+                                                 grounding),
                     "canonical_item_id": dedupe_key,
                 }
             )
