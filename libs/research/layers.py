@@ -298,6 +298,7 @@ LEG_LAYER: dict[str, str] = {
     # other guarantees every certificate gets a forward clock the moment it is minted. They are
     # the machine that runs the machine -- throughput and evidence plumbing, not edge.
     "judging_throughput": "meta", "forward_enrolment": "meta", "judging_burndown": "meta",
+    "rejection_throughput": "meta",
     # META for the same reason, and it is the one that measures whether the other two are even
     # being reached: what fraction of the day the desk actually mints and judges, against the best
     # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
