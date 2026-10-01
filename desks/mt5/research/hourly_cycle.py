@@ -5419,7 +5419,7 @@ def main() -> None:
                     "data_scout": dsc2, "japan_department": jpd, "global_research_os": gro,
                     "acquire_datasets": acq, "free_stack_hunt": fsh,
                     "free_stack_proposer": fsp, "factory_throughput": fxt,
-                    "acquire_datasets": acq, "world_dataset_hunt": wdh,
+                    "world_dataset_hunt": wdh,
                     "world_macro_proposer": wmp,
                     "source_experiment_census": sxc,
                     "feature_compiler": fcp, "data_acquisition_scientist": daq,
