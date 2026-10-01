@@ -1,0 +1,52 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "ECB",
+    "currency": "EUR",
+    "feed": "https://www.ecb.europa.eu/rss/press.html",
+    "published_utc": "2026-10-01T15:30:00+00:00",
+    "title": "Isabel Schnabel: Central banks on-chain",
+    "link": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp261001_1~a0be67193b.en.pdf",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "EURJPY",
+      "EURGBP",
+      "EURAUD",
+      "EURCHF"
+    ]
+  },
+  {
+    "source": "central_bank",
+    "bank": "ECB",
+    "currency": "EUR",
+    "feed": "https://www.ecb.europa.eu/rss/press.html",
+    "published_utc": "2026-10-01T13:30:00+00:00",
+    "title": "Christine Lagarde: Where AI risks meet",
+    "link": "https://www.ecb.europa.eu//press/key/date/2026/html/ecb.sp261001~cf3c630379.en.html",
+    "policy_signals": [],
+    "instruments": [
+      "EURUSD",
+      "EURJPY",
+      "EURGBP",
+      "EURAUD",
+      "EURCHF"
+    ]
+  },
+  {
+    "source": "central_bank",
+    "bank": "BoE",
+    "currency": "GBP",
+    "feed": "https://www.bankofengland.co.uk/rss/news",
+    "published_utc": "2026-10-01T13:00:00+00:00",
+    "title": "Minutes of the Meeting of the Court of Directors held on 16 July 2026",
+    "link": "https://www.bankofengland.co.uk/minutes/2026/july/court-minutes-16-july-2026",
+    "policy_signals": [],
+    "instruments": [
+      "GBPUSD",
+      "GBPJPY",
+      "EURGBP",
+      "GBPAUD"
+    ]
+  }
+]
