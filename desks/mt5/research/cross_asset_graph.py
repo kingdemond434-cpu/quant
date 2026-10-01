@@ -81,13 +81,16 @@ def _read_json(path: Path) -> dict:
 
 def _pairs(symbols: list[str], meta: dict, have: set[str]) -> list[tuple[str, str, str | None]]:
     pairs: list[tuple[str, str, str | None]] = []
+    seen_causal: set[tuple[str, str, str | None]] = set()
     try:
         from mt5desk.economic_drivers import ROLES, driver_sets
         for t in symbols:
             for ds in driver_sets(t, meta, have):
                 for d in ds.drivers:
                     role = next((r for r, c in ROLES.items() if d in c), None)
-                    pairs.append((d, t, role))
+                    if (d, t, role) not in seen_causal:  # one driver can sit in two driver sets
+                        seen_causal.add((d, t, role))
+                        pairs.append((d, t, role))
     except Exception:
         pass
     seen = {(p[0], p[1]) for p in pairs}       # a set: the list scan was O(n^4) at universe width
