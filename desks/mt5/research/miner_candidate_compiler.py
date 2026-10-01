@@ -669,10 +669,33 @@ def _genome_id(symbol: str, family: str, params: dict) -> str | None:
         return None
 
 
+def _claim_lineage(row: dict, mechanism: str, source: str) -> dict:
+    """The claim family a searched claim's cells share (libs.research.claim_selection).
+
+    A row whose words say its result was the best of N searched variations -- or a producer that
+    declares `claim_selection_trials` itself -- stamps every candidate minted from it with ONE
+    `claim_family`, `breadth_unit` and N. {} for every other row."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research import claim_selection as cs
+    probe = {k: row.get(k) for k in cs.TEXT_FIELDS if isinstance(row.get(k), str)}
+    probe["mechanism_note"] = mechanism
+    probe["source"] = f"miner:{source}"
+    for k in ("claim_family", "claim_selection_trials"):
+        if row.get(k):
+            probe[k] = row[k]
+    if not cs.stamp(probe):
+        return {}
+    return {k: probe[k] for k in ("claim_family", "breadth_unit", "claim_selection_trials")}
+
+
 def _candidate(symbol: str, family: str, params: dict, source: str, row: dict,
                mechanism: str) -> dict:
     gid = _genome_id(symbol, family, params)
     return {
+        # ONE SEARCHED CLAIM IS ONE BREADTH UNIT, CHARGED ITS SOURCE'S SELECTION ONCE (2026-09-30:
+        # 25,520 bank cells from one video's "best of ~200 variations" counted as 25,520).
+        **_claim_lineage(row, mechanism, source),
         **({"genome_id": gid} if gid else {}),
         # THE FEATURE GENOME RIDES ONTO THE CANDIDATE (LAWS 5m), guarded: a donated row built on
         # a forged representation carries its chain, and the candidate keeps it as lineage_json
@@ -1164,6 +1187,15 @@ def compile_from_text(source: str, row: dict, universe: set[str]) -> tuple[list[
     return (out, "TEXT_EXTRACTED") if out else ([], "NEEDS_EXACT_RULE_EXTRACTION")
 
 
+def _metric_fence(row: dict) -> list[str]:
+    """The shared bounds fence's reasons for this row. The box runs this file by path, so the
+    repository root is put on the path first rather than letting an ImportError pass rows."""
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research.metric_fence import fence_row
+    return fence_row(row)
+
+
 def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict], str]:
     """Return executable candidates and the exact disposition for one evidence row."""
     symbols = resolve_symbols(row, universe)
@@ -1178,6 +1210,13 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
         from research.family_policy import family_banned
     if family_banned(row.get("family")):
         return [], "BANNED_FAMILY"
+
+    # AN IMPOSSIBLE NUMBER NEVER BECOMES A CELL (libs/research/metric_fence.py, 2026-09-30). A
+    # 2,296% "win rate" was an MQL5 win COUNT parsed into the percent field, and 2,985 of 3,154
+    # committed mql5_survivors rows carried one. The fence runs before any family is read, for
+    # every seat, and the refusal is counted by reason in `impossible_metrics` -- never silent.
+    if _metric_fence(row):
+        return [], "IMPOSSIBLE_METRIC"
 
     # Direct recipes from any present or future miner are admitted only when the family and
     # executable parameters are explicit. The gauntlet remains the arbiter of profitability.
@@ -1466,6 +1505,10 @@ def main() -> int:
     source_candidates: dict[str, set[str]] = {}
     factory_receipts: list[dict[str, object]] = []
     terminal_deepening, recovered_deepening = _deepening_state()
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from libs.research.metric_fence import FenceTally
+    fence_tally = FenceTally()
     untestable = structurally_untestable_families()
     if untestable:
         print("families routed to DEEPENING (measured untestable at current parameters): "
@@ -1498,7 +1541,7 @@ def main() -> int:
         task_identity = _deepening_task_id(source, row)
         produced, disposition = compile_row(source, row, universe)
         recovered_for_row = recovered_deepening.get(task_identity, [])
-        if not produced and recovered_for_row:
+        if not produced and recovered_for_row and disposition != "IMPOSSIBLE_METRIC":
             produced = [dict(candidate) for candidate in recovered_for_row]
             disposition = "RECOVERED_BY_DEEPENING"
         produced = expand_axes(produced)
@@ -1511,7 +1554,11 @@ def main() -> int:
         deepening_disposition = terminal_deepening.get(task_identity, "")
         terminal_refusal = (not produced and bool(deepening_disposition)
                             and not deepening_disposition.startswith("ERROR:"))
-        refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY"}
+        impossible = disposition == "IMPOSSIBLE_METRIC"
+        fence_tally.add(source, _metric_fence(row) if impossible else [],
+                        str(row.get("url") or row.get("title") or ""))
+        refusal = (disposition in {"OPERATIONAL_ROW", "EMPTY_CAPTURE", "BANNED_FAMILY",
+                                   "IMPOSSIBLE_METRIC"}
                    or terminal_refusal)
         if refusal:
             stats["valid_refusals"] = int(stats["valid_refusals"]) + 1
@@ -1561,7 +1608,9 @@ def main() -> int:
                 stats["candidates"] = int(stats["candidates"]) + 1
         if produced and row_reached_docket:
             stats["converted_rows"] = int(stats["converted_rows"]) + 1
-        if not produced and not terminal_refusal:
+        # An impossible-metric row is REFUSED, not deepened: deepening would re-extract a cell
+        # from the very row the fence refused. It is counted in `impossible_metrics`.
+        if not produced and not terminal_refusal and not impossible:
             compact = {
                 "source": source,
                 "disposition": disposition,
@@ -1803,6 +1852,7 @@ def main() -> int:
         | {"seats_with_outcomes": {s: d for s, d in (blinding_note.get("seats") or {}).items()
                                    if d.get("rows_with_outcomes")}},
         "graph": graph_note,
+        "impossible_metrics": fence_tally.to_dict(),
         "rows_accounted": rows_total,
         "executable_candidates": len(candidates),
         "deepening_tasks": len(deepening),

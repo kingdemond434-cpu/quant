@@ -35,6 +35,9 @@ IMMUTABLE: tuple[str, ...] = (
     "desks/mt5/research/universal_gate.py",
     "desks/mt5/research/multiplicity.py",
     "desks/mt5/research/gate_policy.py",
+    # THE BAR ITSELF (2026-10-01): the DSR variance, the trial charge and the lockbox reads live
+    # here, and gate_policy only reads them, so sealing the reader alone let the bar move unsigned.
+    "desks/mt5/policy/gate_spec.yaml",
     "desks/mt5/research/heat_policy.py",
     "desks/mt5/research/promoter.py",
     "desks/mt5/mt5desk/gateway_config_fallback.py",

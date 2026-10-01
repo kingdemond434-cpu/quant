@@ -102,4 +102,19 @@ def test_the_bar_does_not_move_with_sweep_size() -> None:
         t2, _ = charged_trial_count(cells, float(cells) * 0.9,
                                     "null_calibrated_participation_ratio")
         assert expected_max_sharpe(t2, float(FIXED_VARIANCE_OF_SHARPES)) == bar
-    assert round(bar, 4) == 0.3786
+    # The bar is the one the SPEC's two constants give -- read from gate_spec.yaml, never retyped.
+    # It used to be pinned as the literal 0.3786, which was only ever the value at the historic
+    # (597 trials, 0.014863) pair: `research/effective_trials.py` rewrites the trial count into
+    # the spec, and fa51bc5a3 (2026-09-30) set the measured variance, so a literal here went red
+    # on a deliberate policy change while proving nothing about sweep-size invariance.
+    assert trials == _basis_trials(_basis)
+    assert bar == expected_max_sharpe(trials, float(FIXED_VARIANCE_OF_SHARPES))
+    # The formula itself is still pinned at the historic pair, so a changed hurdle function
+    # cannot hide behind a changed spec.
+    assert round(expected_max_sharpe(597, 0.014863), 4) == 0.3786
+
+
+def _basis_trials(basis: str) -> int:
+    """The trial count a `fixed_campaign_trials(N)` basis string names."""
+    assert basis.startswith("fixed_campaign_trials("), basis
+    return int(basis[len("fixed_campaign_trials("):].rstrip(")"))
