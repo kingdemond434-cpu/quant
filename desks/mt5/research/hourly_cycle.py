@@ -868,6 +868,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # A SILENT HALT COSTS A WINDOW AN HOUR (PR #130 audit): the placement-interlock fence ran only
+    # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
+    # It reads three small files and writes one, so it runs on BOTH plans, every hour.
+    "placement_interlock",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -930,6 +934,11 @@ CORE_LEGS: frozenset[str] = frozenset({
     "kelly_survival",
     # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
     "decay_monitor", "fill_markout",
+    # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
+    # and the plain-English desk health check, each seconds, each writing a report that the
+    # `publish_state` leg right after them carries to origin. Before this the fence rode only the
+    # 48h law-gate rotation and the health check ran on no clock at all.
+    "box_state_freshness", "desk_health",
 })
 
 
@@ -2633,6 +2642,15 @@ def compile_candidates() -> dict:
                      "--budget-s", "600")
 
 
+def placement_interlock() -> dict:
+    """`placement_interlock`: has any sleeve been refused in a run with no placement since, or
+    has the release identity stopped allowing new risk? `scripts/check_placement_interlock.py`
+    writes `data/placement_interlock.json`, an alert-ledger entry and a PLACEMENT_* event; on the
+    trading box (by machine id, libs/ops/host_identity) an UNMEASURED verdict fails and is written
+    too. Hourly here, and still in the law gate's rotation (`_STATE_FENCES`)."""
+    return _producer("placement_interlock", "scripts/check_placement_interlock.py")
+
+
 def pit_canaries() -> dict:
     """`pit_canaries`: planted past/now/future rows read point-in-time every hour; green only
     when the future row is invisible at now (closed-loop `truth.pit_canaries_green`)."""
@@ -3479,6 +3497,7 @@ def main() -> None:
     bs = _costed("breadth_sweep", breadth_sweep)
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
+    pil = _costed("placement_interlock", placement_interlock)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
     # to the scientist that proposed each cell, live when the live ledger is thick enough,
@@ -5218,6 +5237,15 @@ def main() -> None:
     rdh = _costed("research_dashboard", lambda: _producer("research_dashboard",
                                                           "research/research_dashboard.py",
                                                           "--once", "--budget-s", "300"))
+    # THE BOX'S STATE FRESHNESS AND THE DESK'S HEALTH, IMMEDIATELY BEFORE PUBLICATION (2026-09-30).
+    # Both write a published report (BOX_STATE_FRESHNESS.json carries CRO D17's
+    # box_state_age_hours and the NOT-ARMED line; DESK_HEALTH.json every PROBLEM/UNKNOWN finding),
+    # so the push below delivers THIS hour's verdicts. The fence exits 1 on STALE/UNMEASURED and
+    # the leg reads FAILED then -- loud, and it gates nothing: `publish_state` runs regardless.
+    bsf = _costed("box_state_freshness", lambda: _producer(
+        "box_state_freshness", "scripts/check_box_state_freshness.py"))
+    dhl = _costed("desk_health", lambda: _producer(
+        "desk_health", "scripts/check_desk_health.py", "--out"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -5227,7 +5255,8 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
+                    "pit_canaries": pcn, "placement_interlock": pil,
+                    "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
                     "research_tree": rtr, "representation_discovery": rpd,
@@ -5381,6 +5410,7 @@ def main() -> None:
                     "dead_architecture": dac, "producer_census": prdc,
                     "productivity_census": prodc, "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
+                    "box_state_freshness": bsf, "desk_health": dhl,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
