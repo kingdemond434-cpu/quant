@@ -7273,3 +7273,5914 @@ sources:
     participant_structure: declared
     failure_mode_hypothesis: declared
     crowding_prior: declared
+- id: institutional.th.tfex.trading_by_investor_type
+  name: TFEX trading statistics by investor type (foreign, local institution, retail) in futures and options
+  jurisdiction: th
+  publisher: tfex
+  dataset: trading_by_investor_type
+  source_class: futures_positioning
+  role: derivatives_reports
+  url: https://www.tfex.co.th/en/market-data/historical-data/trading-by-investor-types
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - leveraged_funds_ctas
+  - asset_managers
+  - retail_offexchange
+  - dealers_intermediaries
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: positioning extremes resolve by continuation when OI is still rising; the crowding read fails without
+    an unwind trigger.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.tfex.co.th/en/market-data/historical-data/trading-by-investor-types
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.tfex.co.th/en/market-data/historical-data/trading-by-investor-types
+- id: institutional.th.tfex.series_quotation_oi
+  name: 'TFEX trading quotation by series: volume and open interest per contract series incl. SET50 options'
+  jurisdiction: th
+  publisher: tfex
+  dataset: series_quotation_oi
+  source_class: options_positioning
+  role: exchange
+  url: https://www.tfex.co.th/en/market-data/daily-market-quotation/trading-quotation-by-series
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - option_market_makers
+  - retail_offexchange
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: dealer side is unknown; unsigned OI mis-signs the gamma regime.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.tfex.co.th/en/market-data/daily-market-quotation/trading-quotation-by-series
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.tfex.co.th/en/market-data/daily-market-quotation/trading-quotation-by-series
+- id: institutional.th.sec_th.mutual_fund_overview
+  name: 'SEC Thailand Thai Mutual Fund Overview: NAV and net flows by fund type'
+  jurisdiction: th
+  publisher: sec_th
+  dataset: mutual_fund_overview
+  source_class: fund_flows
+  role: fund_filings
+  url: https://dividend.sec.or.th/stat-report/TH_MF_Overview.pdf
+  frequency: quarterly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - retail_offexchange
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: flows chase price; information is already in the tape.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://dividend.sec.or.th/stat-report/TH_MF_Overview.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://dividend.sec.or.th/stat-report/TH_MF_Overview.pdf
+- id: institutional.th.bot.commercial_bank_assets_liabilities
+  name: 'BOT EC_MB_030: main assets and liabilities of commercial banks'
+  jurisdiction: th
+  publisher: bot
+  dataset: commercial_bank_assets_liabilities
+  source_class: dealer_bank_balance_sheet
+  role: central_bank
+  url: https://app.bot.or.th/BTWS_STAT/statistics/BOTWEBSTAT.aspx?reportID=272&language=eng
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://app.bot.or.th/BTWS_STAT/statistics/BOTWEBSTAT.aspx?reportID=272&language=eng
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://app.bot.or.th/BTWS_STAT/statistics/BOTWEBSTAT.aspx?reportID=272&language=eng
+- id: institutional.th.bot.financial_market_statistics_repo
+  name: 'BOT financial market statistics: repo, money-market and bond-market transactions'
+  jurisdiction: th
+  publisher: bot
+  dataset: financial_market_statistics_repo
+  source_class: repo_collateral
+  role: custodian_settlement
+  url: https://www.bot.or.th/en/statistics/financial-market-statistics.html
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - dealers_intermediaries
+  - money_funds
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: month-end and tax-date spikes are calendar noise, not stress.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bot.or.th/en/statistics.html
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bot.or.th/en/statistics/financial-market-statistics.html
+- id: institutional.th.bot.bibor_thor
+  name: BOT BIBOR fixings (THOR alongside) - interbank unsecured funding
+  jurisdiction: th
+  publisher: bot
+  dataset: bibor_thor
+  source_class: money_market_plumbing
+  role: central_bank
+  url: https://app.bot.or.th/bibor/publish/PublishRate.aspx?Lang=ENG
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: policy-rate changes dominate the series.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.bot.or.th/en/statistics.html
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://app.bot.or.th/bibor/publish/PublishRate.aspx?Lang=ENG
+- id: institutional.th.set.short_sales_outstanding
+  name: 'SET short sales: total short sales and outstanding short positions by security'
+  jurisdiction: th
+  publisher: set
+  dataset: short_sales_outstanding
+  source_class: securities_lending_short
+  role: short_position
+  url: https://www.set.or.th/en/market/statistics/short-sales/outstanding-short-positions
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - leveraged_funds_ctas
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: short volume includes market-maker hedging; not directional.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.set.or.th/en/market/statistics/short-sales/total-short-sales
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.set.or.th/en/market/statistics/short-sales/outstanding-short-positions
+- id: institutional.th.sec_th.form_246_2_acquisitions
+  name: 'SEC Thailand Form 246-2 filings: acquisition/disposition crossing 5% thresholds'
+  jurisdiction: th
+  publisher: sec_th
+  dataset: form_246_2_acquisitions
+  source_class: beneficial_ownership
+  role: regulator
+  url: https://web-r246-api.sec.or.th/api/forms/pdf/publish/61b973285e065d1be09e4221
+  frequency: event
+  publication_lag_days: 3
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - corporate_insiders
+  - foreign_official
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: filing lag after the accumulation already moved price.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://web-r246-api.sec.or.th/api/forms/pdf/publish/61b973285e065d1be09e4221
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://web-r246-api.sec.or.th/api/forms/pdf/publish/61b973285e065d1be09e4221
+- id: institutional.th.sec_th.form59_executive_holdings
+  name: 'SEC Thailand Form 59: executives'' changes in securities holdings (insider trades)'
+  jurisdiction: th
+  publisher: sec_th
+  dataset: form59_executive_holdings
+  source_class: corporate_flow
+  role: regulator
+  url: https://market.sec.or.th/public/idisc/en/CapitalMarketReport/PP32
+  frequency: event
+  publication_lag_days: 3
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - corporate_insiders
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: mixed
+  failure_mode_hypothesis: announced programmes are executed slowly and opportunistically.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: market.sec.or.th idisc portal confirmed; Form 59 page path not confirmed
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://market.sec.or.th/public/idisc/en/CapitalMarketReport/PP32
+- id: institutional.th.thaibma.foreign_bond_trading
+  name: 'ThaiBMA foreign portal: non-resident net buy/sell and holdings of Thai bonds'
+  jurisdiction: th
+  publisher: thaibma
+  dataset: foreign_bond_trading
+  source_class: cross_border_capital
+  role: treasury
+  url: https://www.thaibma.or.th/EN/Foreign/ForeignPortal.aspx
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - asset_managers
+  - leveraged_funds_ctas
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: custody-based attribution misassigns the true owner.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.thaibma.or.th/EN/Foreign/ForeignPortal.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.thaibma.or.th/EN/Foreign/ForeignPortal.aspx
+- id: institutional.th.bot.intl_reserves_weekly
+  name: BOT EC_XT_031 international reserves (weekly) incl. net forward position
+  jurisdiction: th
+  publisher: bot
+  dataset: intl_reserves_weekly
+  source_class: official_reserves
+  role: central_bank
+  url: https://www.bot.or.th/App/BTWS_STAT/statistics/ReportPage.aspx?reportID=94&language=eng
+  frequency: weekly
+  publication_lag_days: 7
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets:
+  - USDTHB
+  - XAUUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: policy_driven
+  failure_mode_hypothesis: valuation effects dominate reserve changes.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.bot.or.th/App/BTWS_STAT/statistics/ReportPage.aspx?reportID=94&language=eng
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bot.or.th/App/BTWS_STAT/statistics/ReportPage.aspx?reportID=94&language=eng
+- id: institutional.th.bot.bilateral_repo_operations
+  name: 'BOT bilateral repurchase operations: daily auction results'
+  jurisdiction: th
+  publisher: bot
+  dataset: bilateral_repo_operations
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://app.bot.or.th/finmarket/en/BilateralRepurchasePage/BilateralRepurchaseTransaction
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://app.bot.or.th/finmarket/en/BilateralRepurchasePage/BilateralRepurchaseTransaction
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://app.bot.or.th/finmarket/en/BilateralRepurchasePage/BilateralRepurchaseTransaction
+- id: institutional.th.usda_fas.gain_sugar_annual_thailand
+  name: USDA FAS GAIN Sugar Annual, Thailand (OCSB cane crush and sugar output relayed; OCSB's own page path unconfirmed)
+  jurisdiction: th
+  publisher: usda_fas
+  dataset: gain_sugar_annual_thailand
+  source_class: physical_inventory
+  role: physical_market
+  url: https://apps.fas.usda.gov/newgainapi/api/Report/DownloadReportByFileName?fileName=Sugar+Annual_Bangkok_Thailand_TH2026-0011.pdf
+  frequency: annual
+  publication_lag_days: 7
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - physical_consumers_producers
+  features: []
+  targets:
+  - SUGAR
+  - SUGARRAW
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: physical_flow
+  failure_mode_hypothesis: stocks move between warehouses without leaving the system.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: web search 2026-10-01
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://apps.fas.usda.gov/newgainapi/api/Report/DownloadReportByFileName?fileName=Sugar+Annual_Bangkok_Thailand_TH2026-0011.pdf
+  pack_source_ids:
+  - pack_sahel_coast_sc_agro_physical
+  - pack_us_us_eia_usda_noaa
+- id: institutional.th.set.investor_type_trading
+  name: SET trading value by investor type (foreign, local institution, proprietary, individual); NVDR and program-trading
+    pages alongside
+  jurisdiction: th
+  publisher: set
+  dataset: investor_type_trading
+  source_class: participant_type_flow
+  role: exchange
+  url: https://www.set.or.th/en/market/statistics/investor-type
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - asset_managers
+  - dealers_intermediaries
+  - retail_offexchange
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: mixed
+  failure_mode_hypothesis: foreign flow proxies include hedged and arbitrage books.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.set.or.th/en/market/statistics/investor-type
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.set.or.th/en/market/statistics/investor-type
+- id: institutional.th.set.index_ground_rules_reviews
+  name: SET Index Series ground rules and semi-annual SET50/SET100 constituent reviews
+  jurisdiction: th
+  publisher: set
+  dataset: index_ground_rules_reviews
+  source_class: index_mechanical
+  role: exchange
+  url: https://media.set.or.th/set/Documents/2023/May/SET_IndexMethodology_2023_EN.pdf
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - passive_etf
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: pre-positioning arbitrages the event before the effective date.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://media.set.or.th/set/Documents/2025/Feb/SET50_100_H1_2025_revise.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://media.set.or.th/set/Documents/2023/May/SET_IndexMethodology_2023_EN.pdf
+- id: institutional.th.sec_th.administrative_sanctions
+  name: SEC Thailand statistics of administrative and civil sanctions (market manipulation, insider trading)
+  jurisdiction: th
+  publisher: sec_th
+  dataset: administrative_sanctions
+  source_class: enforcement_archaeology
+  role: regulator
+  url: https://www.sec.or.th/EN/Documents/MarketDataEnforcement/enforce-statistic-admin-EN.pdf
+  frequency: annual
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - retail_offexchange
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: mixed
+  failure_mode_hypothesis: documented cases are the caught minority.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.sec.or.th/EN/Documents/MarketDataEnforcement/enforce-statistic-admin-EN.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sec.or.th/EN/Documents/MarketDataEnforcement/enforce-statistic-admin-EN.pdf
+- id: institutional.th.bot.exchange_rates_reference
+  name: BOT daily reference and weighted-average interbank USD/THB rates
+  jurisdiction: th
+  publisher: bot
+  dataset: exchange_rates_reference
+  source_class: fx_settlement_fixing
+  role: central_bank
+  url: https://www.bot.or.th/en/statistics/exchange-rate.html
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fixing flow is netted internally before it reaches the market.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bot.or.th/en/statistics.html
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bot.or.th/en/statistics/exchange-rate.html
+- id: institutional.th.sec_th.retirement_funds
+  name: 'SEC Thailand capital market report: SSF/RMF/provident and retirement fund statistics'
+  jurisdiction: th
+  publisher: sec_th
+  dataset: retirement_funds
+  source_class: pension_insurance
+  role: fund_filings
+  url: https://market.sec.or.th/public/idisc/en/CapitalMarketReport/PP28
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - pensions_insurers
+  features: []
+  targets:
+  - USDTHB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: th
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: th
+  source_culture: TH/th
+  participant_structure: institutional
+  failure_mode_hypothesis: annual data; rebalancing bands are private.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://market.sec.or.th/public/idisc/en/CapitalMarketReport/PP28
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://market.sec.or.th/public/idisc/en/CapitalMarketReport/PP28
+- id: institutional.idn.ojk.weekly_capital_market_stats
+  name: 'OJK weekly capital market statistics: mutual fund NAV, units and issuance'
+  jurisdiction: idn
+  publisher: ojk
+  dataset: weekly_capital_market_stats
+  source_class: fund_flows
+  role: fund_filings
+  url: https://www.ojk.go.id/id/kanal/pasar-modal/data-dan-statistik/statistik-pasar-modal/Documents/5.%20STATISTIK%20MINGGU%20KE-5%20JULI%202025.pdf
+  frequency: weekly
+  publication_lag_days: 7
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - retail_offexchange
+  features: []
+  targets:
+  - USDIDR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: institutional
+  failure_mode_hypothesis: flows chase price; information is already in the tape.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.ojk.go.id/id/kanal/pasar-modal/data-dan-statistik/statistik-pasar-modal/Documents/5.%20STATISTIK%20MINGGU%20KE-5%20JULI%202025.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.ojk.go.id/id/kanal/pasar-modal/data-dan-statistik/statistik-pasar-modal/Documents/5.%20STATISTIK%20MINGGU%20KE-5%20JULI%202025.pdf
+- id: institutional.idn.ksei.ownership_by_investor_type
+  name: 'KSEI monthly capital market statistics: securities ownership by investor type (foreign/local, funds, pensions, insurers)'
+  jurisdiction: idn
+  publisher: ksei
+  dataset: ownership_by_investor_type
+  source_class: fund_holdings
+  role: custodian_settlement
+  url: https://web.ksei.co.id/files/Statistik_Publik_Desember_2025.pdf
+  frequency: monthly
+  publication_lag_days: 15
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - pensions_insurers
+  - foreign_official
+  - retail_offexchange
+  features: []
+  targets:
+  - USDIDR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: institutional
+  failure_mode_hypothesis: 45-90 day lag makes holdings stale at publication.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://web.ksei.co.id/files/Statistik_Publik_Agustus_2025.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://web.ksei.co.id/files/Statistik_Publik_Desember_2025.pdf
+- id: institutional.idn.bi.seki_bank_balance_sheet
+  name: 'BI SEKI table I.3: analytical balance sheet of commercial and rural banks'
+  jurisdiction: idn
+  publisher: bi
+  dataset: seki_bank_balance_sheet
+  source_class: dealer_bank_balance_sheet
+  role: central_bank
+  url: https://www.bi.go.id/en/statistik/ekonomi-keuangan/seki/default.aspx
+  frequency: monthly
+  publication_lag_days: 45
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets:
+  - USDIDR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bi.go.id/en/statistik/ekonomi-keuangan/seki/default.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bi.go.id/en/statistik/ekonomi-keuangan/seki/default.aspx
+- id: institutional.idn.bi.seki_money_market
+  name: 'BI SEKI III.1: position of monetary operations and money-market (PUAB) transactions'
+  jurisdiction: idn
+  publisher: bi
+  dataset: seki_money_market
+  source_class: money_market_plumbing
+  role: central_bank
+  url: https://www.bi.go.id/en/statistik/ekonomi-keuangan/seki/default.aspx
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - money_funds
+  features: []
+  targets:
+  - USDIDR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: institutional
+  failure_mode_hypothesis: policy-rate changes dominate the series.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bi.go.id/en/statistik/ekonomi-keuangan/seki/default.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bi.go.id/en/statistik/ekonomi-keuangan/seki/default.aspx
+- id: institutional.idn.bi.weekly_foreign_flows
+  name: 'BI weekly "Perkembangan Indikator Stabilitas Nilai Rupiah": non-resident net buy/sell in SBN, equities and SRBI'
+  jurisdiction: idn
+  publisher: bi
+  dataset: weekly_foreign_flows
+  source_class: cross_border_capital
+  role: central_bank
+  url: https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730025.aspx
+  frequency: weekly
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - asset_managers
+  - leveraged_funds_ctas
+  features: []
+  targets:
+  - USDIDR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: institutional
+  failure_mode_hypothesis: custody-based attribution misassigns the true owner.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730025.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2730025.aspx
+- id: institutional.idn.djppr.tradable_sbn_ownership
+  name: 'Ministry of Finance DJPPR: ownership of IDR tradable government securities by holder (foreign, BI, banks)'
+  jurisdiction: idn
+  publisher: djppr
+  dataset: tradable_sbn_ownership
+  source_class: cross_border_capital
+  role: treasury
+  url: https://api-djppr.kemenkeu.go.id/web/api/v1/media/6A55C798-CF61-44E4-AD6E-E522DCA553BB
+  frequency: weekly
+  publication_lag_days: 3
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - banks
+  - asset_managers
+  features: []
+  targets:
+  - USDIDR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: institutional
+  failure_mode_hypothesis: custody-based attribution misassigns the true owner.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://api-djppr.kemenkeu.go.id/web/api/v1/media/6A55C798-CF61-44E4-AD6E-E522DCA553BB
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://api-djppr.kemenkeu.go.id/web/api/v1/media/6A55C798-CF61-44E4-AD6E-E522DCA553BB
+- id: institutional.idn.bi.official_reserves_release
+  name: BI monthly official reserve assets release (SEKI V.9)
+  jurisdiction: idn
+  publisher: bi
+  dataset: official_reserves_release
+  source_class: official_reserves
+  role: central_bank
+  url: https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2813126.aspx
+  frequency: monthly
+  publication_lag_days: 7
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets:
+  - USDIDR
+  - XAUUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: policy_driven
+  failure_mode_hypothesis: valuation effects dominate reserve changes.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2813126.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bi.go.id/id/publikasi/ruang-media/news-release/Pages/sp_2813126.aspx
+- id: institutional.idn.bi.srbi_auction_results
+  name: BI monetary operations auction results (SRBI and related instruments)
+  jurisdiction: idn
+  publisher: bi
+  dataset: srbi_auction_results
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://www.bi.go.id/id/publikasi/lelang/operasi-moneter/Pages/Hasil-Lelang-SRBI-17-Juni-2026.aspx
+  frequency: weekly
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - foreign_official
+  features: []
+  targets:
+  - USDIDR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bi.go.id/id/publikasi/lelang/operasi-moneter/Pages/Hasil-Lelang-SRBI-17-Juni-2026.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bi.go.id/id/publikasi/lelang/operasi-moneter/Pages/Hasil-Lelang-SRBI-17-Juni-2026.aspx
+- id: institutional.idn.gapki.palm_oil_supply_demand
+  name: GAPKI monthly palm oil production, exports, consumption and ending stocks
+  jurisdiction: idn
+  publisher: gapki
+  dataset: palm_oil_supply_demand
+  source_class: physical_inventory
+  role: physical_market
+  url: https://gapki.id/en/news/2026/04/22/palm-oil-performance-in-february-2026-rises-production-consumption-exports-up-stock-declines/
+  frequency: monthly
+  publication_lag_days: 60
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - physical_consumers_producers
+  features: []
+  targets:
+  - SOYBEAN
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: physical_flow
+  failure_mode_hypothesis: stocks move between warehouses without leaving the system.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://gapki.id/en/news/2026/04/22/palm-oil-performance-in-february-2026-rises-production-consumption-exports-up-stock-declines/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://gapki.id/en/news/2026/04/22/palm-oil-performance-in-february-2026-rises-production-consumption-exports-up-stock-declines/
+- id: institutional.idn.ojk.market_manipulation_sanctions
+  name: OJK press releases on capital-market sanctions (price manipulation, pump-and-dump)
+  jurisdiction: idn
+  publisher: ojk
+  dataset: market_manipulation_sanctions
+  source_class: enforcement_archaeology
+  role: regulator
+  url: https://ojk.go.id/id/berita-dan-kegiatan/siaran-pers/Pages/OJK-Beri-Sanksi-Pegiat-Media-Sosial-dan-Pelaku-Manipulasi-Harga-di-Pasar-Modal.aspx
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - retail_offexchange
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: mixed
+  failure_mode_hypothesis: documented cases are the caught minority.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://ojk.go.id/id/berita-dan-kegiatan/siaran-pers/Pages/OJK-Beri-Sanksi-Pegiat-Media-Sosial-dan-Pelaku-Manipulasi-Harga-di-Pasar-Modal.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://ojk.go.id/id/berita-dan-kegiatan/siaran-pers/Pages/OJK-Beri-Sanksi-Pegiat-Media-Sosial-dan-Pelaku-Manipulasi-Harga-di-Pasar-Modal.aspx
+- id: institutional.idn.bi.jisdor
+  name: BI JISDOR USD/IDR reference rate (daily fixing)
+  jurisdiction: idn
+  publisher: bi
+  dataset: jisdor
+  source_class: fx_settlement_fixing
+  role: central_bank
+  url: https://www.bi.go.id/id/statistik/informasi-kurs/jisdor/default.aspx
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - commercial_hedgers
+  features: []
+  targets:
+  - USDIDR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fixing flow is netted internally before it reaches the market.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.bi.go.id/id/statistik/informasi-kurs/jisdor/default.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bi.go.id/id/statistik/informasi-kurs/jisdor/default.aspx
+- id: institutional.idn.djppr.sbn_holdings_insurers_pensions
+  name: 'DJPPR tradable SBN ownership by sector: insurance companies and pension funds'
+  jurisdiction: idn
+  publisher: djppr
+  dataset: sbn_holdings_insurers_pensions
+  source_class: pension_insurance
+  role: treasury
+  url: https://api-djppr.kemenkeu.go.id/web/api/v1/media/2A7B3E39-678F-4553-B96E-8E2AA16963B9
+  frequency: monthly
+  publication_lag_days: 7
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - pensions_insurers
+  features: []
+  targets:
+  - USDIDR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: idn
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: id
+  source_culture: ID/id
+  participant_structure: institutional
+  failure_mode_hypothesis: annual data; rebalancing bands are private.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://api-djppr.kemenkeu.go.id/web/api/v1/media/2A7B3E39-678F-4553-B96E-8E2AA16963B9
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://api-djppr.kemenkeu.go.id/web/api/v1/media/2A7B3E39-678F-4553-B96E-8E2AA16963B9
+- id: institutional.ind.nse.fo_options_oi
+  name: 'NSE F&O bhavcopy and derivatives reports: option volume and OI by strike/expiry'
+  jurisdiction: ind
+  publisher: nse
+  dataset: fo_options_oi
+  source_class: options_positioning
+  role: exchange
+  url: https://www.nseindia.com/all-reports-derivatives
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - option_market_makers
+  - retail_offexchange
+  - leveraged_funds_ctas
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: dealer side is unknown; unsigned OI mis-signs the gamma regime.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nseindia.com/all-reports-derivatives
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nseindia.com/all-reports-derivatives
+- id: institutional.ind.ccil.otc_derivatives_quarterly
+  name: 'CCIL trade-repository derivatives quarterly report: IRS/OIS (MIBOR) and FX forwards/swaps'
+  jurisdiction: ind
+  publisher: ccil
+  dataset: otc_derivatives_quarterly
+  source_class: otc_swaps
+  role: derivatives_reports
+  url: https://www.ccilindia.com/documents/d/ccil/Derivatives%20Quarterly_Report_Q1_FY25-pdf
+  frequency: quarterly
+  publication_lag_days: 45
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - dealers_intermediaries
+  - commercial_hedgers
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: anonymised, capped notionals under-state the largest trades.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.ccilindia.com/documents/d/ccil/Derivatives%20Quarterly_Report_Q1_FY25-pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.ccilindia.com/documents/d/ccil/Derivatives%20Quarterly_Report_Q1_FY25-pdf
+- id: institutional.ind.amfi.monthly_fund_flows
+  name: 'AMFI monthly data/note: mutual fund net inflows by category, SIP flows, AUM'
+  jurisdiction: ind
+  publisher: amfi
+  dataset: monthly_fund_flows
+  source_class: fund_flows
+  role: fund_filings
+  url: https://www.amfiindia.com/uploads/AMFI_Monthly_Note_Mar_2026_1f0a1f5c48.pdf
+  frequency: monthly
+  publication_lag_days: 10
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - retail_offexchange
+  - passive_etf
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: flows chase price; information is already in the tape.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.amfiindia.com/uploads/AMFI_Monthly_Note_Mar_2026_1f0a1f5c48.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.amfiindia.com/uploads/AMFI_Monthly_Note_Mar_2026_1f0a1f5c48.pdf
+- id: institutional.ind.nse.shareholding_patterns
+  name: 'NSE corporate filings: quarterly shareholding patterns (FPI, MF, insurer, promoter holdings)'
+  jurisdiction: ind
+  publisher: nse
+  dataset: shareholding_patterns
+  source_class: fund_holdings
+  role: fund_filings
+  url: https://www.nseindia.com/companies-listing/corporate-filings-shareholding-pattern
+  frequency: quarterly
+  publication_lag_days: 21
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - foreign_official
+  - pensions_insurers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: 45-90 day lag makes holdings stale at publication.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nseindia.com/companies-listing/corporate-filings-shareholding-pattern
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nseindia.com/companies-listing/corporate-filings-shareholding-pattern
+- id: institutional.ind.sebi.aif_statistics
+  name: 'SEBI AIF statistics: commitments, funds raised and investments by category incl. Category III (hedge-fund-like)'
+  jurisdiction: ind
+  publisher: sebi
+  dataset: aif_statistics
+  source_class: hedge_fund_leverage
+  role: regulator
+  url: https://www.sebi.gov.in/statistics/1392982252002.html
+  frequency: quarterly
+  publication_lag_days: 45
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - leveraged_funds_ctas
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: quarterly lag; leverage peaks are only visible after the unwind.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.sebi.gov.in/statistics/1392982252002.html
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sebi.gov.in/statistics/1392982252002.html
+- id: institutional.ind.rbi.scb_statements
+  name: 'RBI data releases: scheduled commercial banks fortnightly statements, bank investments and credit'
+  jurisdiction: ind
+  publisher: rbi
+  dataset: scb_statements
+  source_class: dealer_bank_balance_sheet
+  role: central_bank
+  url: https://rbi.org.in/Scripts/Statistics.aspx
+  frequency: weekly
+  publication_lag_days: 7
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://rbi.org.in/Scripts/Statistics.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://rbi.org.in/Scripts/Statistics.aspx
+  pack_source_ids:
+  - pack_np_np_india_mirror
+- id: institutional.ind.ccil.repo_summary
+  name: 'CCIL repo market summary: market repo and TREPS volumes and rates'
+  jurisdiction: ind
+  publisher: ccil
+  dataset: repo_summary
+  source_class: repo_collateral
+  role: custodian_settlement
+  url: https://beta.ccilindia.com/web/ccil/repo-summary
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - money_funds
+  - dealers_intermediaries
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: month-end and tax-date spikes are calendar noise, not stress.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://beta.ccilindia.com/web/ccil/repo-summary
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://beta.ccilindia.com/web/ccil/repo-summary
+- id: institutional.ind.nse.slb_short_selling
+  name: NSE securities lending and borrowing (SLB) reports and short-selling disclosures
+  jurisdiction: ind
+  publisher: nse
+  dataset: slb_short_selling
+  source_class: securities_lending_short
+  role: short_position
+  url: https://www.nseindia.com/all-reports
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - leveraged_funds_ctas
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: short volume includes market-maker hedging; not directional.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.nseindia.com/all-reports
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nseindia.com/all-reports
+- id: institutional.ind.nse_clearing.settlement_statistics_shortages
+  name: NSE monthly settlement statistics and NSE Clearing shortage/auction handling
+  jurisdiction: ind
+  publisher: nse_clearing
+  dataset: settlement_statistics_shortages
+  source_class: settlement_fails
+  role: clearing_house
+  url: https://www.nseindia.com/report-detail/monthly-settlement-statistics
+  frequency: monthly
+  publication_lag_days: 15
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fails cluster on operational events unrelated to demand.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nseindia.com/report-detail/monthly-settlement-statistics
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nseindia.com/report-detail/monthly-settlement-statistics
+- id: institutional.ind.nse.sast_regulation_29
+  name: 'NSE corporate filings: SEBI SAST Regulation 29 substantial acquisition disclosures'
+  jurisdiction: ind
+  publisher: nse
+  dataset: sast_regulation_29
+  source_class: beneficial_ownership
+  role: fund_filings
+  url: https://www.nseindia.com/companies-listing/corporate-filings-regulation-29
+  frequency: event
+  publication_lag_days: 2
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - corporate_insiders
+  - foreign_official
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: filing lag after the accumulation already moved price.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nseindia.com/companies-listing/corporate-filings-regulation-29
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nseindia.com/companies-listing/corporate-filings-regulation-29
+- id: institutional.ind.nse.insider_trading_pit
+  name: 'NSE corporate filings: SEBI PIT insider trading disclosures'
+  jurisdiction: ind
+  publisher: nse
+  dataset: insider_trading_pit
+  source_class: corporate_flow
+  role: regulator
+  url: https://www.nseindia.com/companies-listing/corporate-filings-insider-trading
+  frequency: event
+  publication_lag_days: 2
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - corporate_insiders
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: mixed
+  failure_mode_hypothesis: announced programmes are executed slowly and opportunistically.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nseindia.com/companies-listing/corporate-filings-insider-trading
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nseindia.com/companies-listing/corporate-filings-insider-trading
+- id: institutional.ind.rbi.money_market_operations
+  name: 'RBI daily money market operations: LAF repo/VRRR, SDF/MSF usage'
+  jurisdiction: ind
+  publisher: rbi
+  dataset: money_market_operations
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://www.rbi.org.in/Scripts/BS_ViewMMO.aspx
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.rbi.org.in/Scripts/BS_ViewMMO.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.rbi.org.in/Scripts/BS_ViewMMO.aspx
+  pack_source_ids:
+  - pack_np_np_india_mirror
+- id: institutional.ind.nse.fii_dii_activity
+  name: NSE FII/FPI and DII trading activity (NSE, BSE, MSEI)
+  jurisdiction: ind
+  publisher: nse
+  dataset: fii_dii_activity
+  source_class: participant_type_flow
+  role: exchange
+  url: https://www.nseindia.com/reports/fii-dii
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - asset_managers
+  - pensions_insurers
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: mixed
+  failure_mode_hypothesis: foreign flow proxies include hedged and arbitrage books.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nseindia.com/reports/fii-dii
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nseindia.com/reports/fii-dii
+- id: institutional.ind.nse_indices.nifty_methodology_rebalance
+  name: NSE Indices equity index methodology and semi-annual Nifty rebalance press releases
+  jurisdiction: ind
+  publisher: nse_indices
+  dataset: nifty_methodology_rebalance
+  source_class: index_mechanical
+  role: exchange
+  url: https://nsearchives.nseindia.com/content/indices/Method_NIFTY_Equity_Indices.pdf
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - passive_etf
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: pre-positioning arbitrages the event before the effective date.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.niftyindices.com/Press_Release/ind_prs01122025.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://nsearchives.nseindia.com/content/indices/Method_NIFTY_Equity_Indices.pdf
+- id: institutional.ind.sebi.enforcement_orders
+  name: SEBI enforcement orders (front-running, manipulation, insider trading)
+  jurisdiction: ind
+  publisher: sebi
+  dataset: enforcement_orders
+  source_class: enforcement_archaeology
+  role: regulator
+  url: https://www.sebi.gov.in/enforcement/orders.html
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - dealers_intermediaries
+  - corporate_insiders
+  - retail_offexchange
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: mixed
+  failure_mode_hypothesis: documented cases are the caught minority.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.sebi.gov.in/enforcement/orders.html
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sebi.gov.in/enforcement/orders.html
+- id: institutional.ind.fbil.usdinr_reference_rate
+  name: FBIL USD/INR reference rate and forward premia benchmarks
+  jurisdiction: ind
+  publisher: fbil
+  dataset: usdinr_reference_rate
+  source_class: fx_settlement_fixing
+  role: regulator
+  url: https://fbil.org.in/modules/SecuritiesApproval/SecuritiesApproval.aspx?mq=o&op=referencerate
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - commercial_hedgers
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fixing flow is netted internally before it reaches the market.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://fbil.org.in/modules/SecuritiesApproval/SecuritiesApproval.aspx?mq=o&op=referencerate
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://fbil.org.in/modules/SecuritiesApproval/SecuritiesApproval.aspx?mq=o&op=referencerate
+- id: institutional.ind.pfrda.nps_statistical_data
+  name: 'PFRDA statistical data: NPS/APY subscribers, AUM and asset allocation'
+  jurisdiction: ind
+  publisher: pfrda
+  dataset: nps_statistical_data
+  source_class: pension_insurance
+  role: fund_filings
+  url: https://www.pfrda.org.in/web/pfrda/research-publications/statistics/statistical-data
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - pensions_insurers
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: annual data; rebalancing bands are private.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.pfrda.org.in/web/pfrda/research-publications/statistics/statistical-data
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.pfrda.org.in/web/pfrda/research-publications/statistics/statistical-data
+- id: institutional.ind.sebi.intermediary_statistics
+  name: 'SEBI statistics: registered intermediaries, PMS and AIF assets managed'
+  jurisdiction: ind
+  publisher: sebi
+  dataset: intermediary_statistics
+  source_class: adviser_topology
+  role: regulator
+  url: https://www.sebi.gov.in/statistics/statistics.html
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - leveraged_funds_ctas
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: ind
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: IN/en
+  participant_structure: institutional
+  failure_mode_hypothesis: structure only; no trade timing.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sebi.gov.in/statistics/statistics.html
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sebi.gov.in/statistics/statistics.html
+- id: institutional.sg.mas.asset_mgmt_survey_flows
+  name: 'MAS Singapore Asset Management Survey: AUM and net inflows by strategy (incl. hedge funds, CIS)'
+  jurisdiction: sg
+  publisher: mas
+  dataset: asset_mgmt_survey_flows
+  source_class: fund_flows
+  role: fund_filings
+  url: https://www.mas.gov.sg/-/media/mas/news-and-publications/surveys/asset-management/singapore-asset-management-survey-2023.pdf
+  frequency: annual
+  publication_lag_days: 210
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - leveraged_funds_ctas
+  features: []
+  targets:
+  - USDSGD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: institutional
+  failure_mode_hypothesis: flows chase price; information is already in the tape.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.mas.gov.sg/-/media/mas/news-and-publications/surveys/asset-management/singapore-asset-management-survey-2023.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mas.gov.sg/-/media/mas/news-and-publications/surveys/asset-management/singapore-asset-management-survey-2023.pdf
+- id: institutional.sg.mas.bank_balance_sheets
+  name: 'MAS monthly statistical bulletin: domestic banking unit and ACU assets/liabilities'
+  jurisdiction: sg
+  publisher: mas
+  dataset: bank_balance_sheets
+  source_class: dealer_bank_balance_sheet
+  role: central_bank
+  url: https://www.mas.gov.sg/statistics
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets:
+  - USDSGD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.mas.gov.sg/statistics
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mas.gov.sg/statistics
+- id: institutional.sg.sgx.short_sell_reports
+  name: SGX daily and weekly short sell reports (short-sale volume; weekly aggregated short positions under MAS SPRS)
+  jurisdiction: sg
+  publisher: sgx
+  dataset: short_sell_reports
+  source_class: securities_lending_short
+  role: short_position
+  url: https://www.sgx.com/securities/data-reports
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - leveraged_funds_ctas
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: institutional
+  failure_mode_hypothesis: short volume includes market-maker hedging; not directional.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://rulebook.sgx.com/rulebook/8a5-publication-report-short-sell-orders
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sgx.com/securities/data-reports
+- id: institutional.sg.sgx.substantial_shareholder_notices
+  name: 'SGXNet company announcements: substantial shareholder and director interest notices (SFA Part VII)'
+  jurisdiction: sg
+  publisher: sgx
+  dataset: substantial_shareholder_notices
+  source_class: beneficial_ownership
+  role: exchange
+  url: https://www.sgx.com/securities/company-announcements
+  frequency: event
+  publication_lag_days: 2
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - corporate_insiders
+  - foreign_official
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: institutional
+  failure_mode_hypothesis: filing lag after the accumulation already moved price.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: well-known; MAS Part VII FAQ https://www.mas.gov.sg/-/media/mas/regulations-and-financial-stability/regulations-guidance-and-licensing/securities-futures-and-fund-management/regulations-guidance-and-licensing/faqs/faq-on-disclosure-of-interests-003.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sgx.com/securities/company-announcements
+- id: institutional.sg.sgx.buyback_insider_notices
+  name: 'SGXNet company announcements: daily share buy-back notices and director dealings'
+  jurisdiction: sg
+  publisher: sgx
+  dataset: buyback_insider_notices
+  source_class: corporate_flow
+  role: exchange
+  url: https://www.sgx.com/securities/company-announcements
+  frequency: event
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - corporate_insiders
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: mixed
+  failure_mode_hypothesis: announced programmes are executed slowly and opportunistically.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: well-known; SGX rulebook ch.7 https://rulebook.sgx.com/rulebook/chapter-7-continuing-obligations-0
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sgx.com/securities/company-announcements
+- id: institutional.sg.singstat.international_investment_position
+  name: SingStat international investment position incl. portfolio investment assets by destination
+  jurisdiction: sg
+  publisher: singstat
+  dataset: international_investment_position
+  source_class: cross_border_capital
+  role: treasury
+  url: https://www.singstat.gov.sg/find-data/search-by-theme/economy/international-investment-position
+  frequency: quarterly
+  publication_lag_days: 80
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - foreign_official
+  - banks
+  features: []
+  targets:
+  - USDSGD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: institutional
+  failure_mode_hypothesis: custody-based attribution misassigns the true owner.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.singstat.gov.sg/find-data/search-by-theme/economy/international-investment-position
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.singstat.gov.sg/find-data/search-by-theme/economy/international-investment-position
+- id: institutional.sg.mas.total_foreign_reserves
+  name: MAS official foreign reserves (monthly) and IRFCL template
+  jurisdiction: sg
+  publisher: mas
+  dataset: total_foreign_reserves
+  source_class: official_reserves
+  role: central_bank
+  url: https://www.mas.gov.sg/statistics/reserve-statistics/international-reserves-and-foreign-currency-liquidity/2025/international-reserves-and-foreign-currency-liquidity-september-2025
+  frequency: monthly
+  publication_lag_days: 7
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets:
+  - USDSGD
+  - XAUUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: policy_driven
+  failure_mode_hypothesis: valuation effects dominate reserve changes.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://data.gov.sg/datasets/d_7762c172b186ae213d02089bc1e247ee/view
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mas.gov.sg/statistics/reserve-statistics/international-reserves-and-foreign-currency-liquidity/2025/international-reserves-and-foreign-currency-liquidity-september-2025
+- id: institutional.sg.mas.sgs_auction_results
+  name: MAS SGS bond and T-bill auction results (issued for the Government)
+  jurisdiction: sg
+  publisher: mas
+  dataset: sgs_auction_results
+  source_class: official_reserves
+  role: treasury
+  url: https://eservices.mas.gov.sg/statistics/fdanet/BondTreasuryBillsCMTBsAuctions.aspx
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - asset_managers
+  - pensions_insurers
+  features: []
+  targets:
+  - USDSGD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: policy_driven
+  failure_mode_hypothesis: valuation effects dominate reserve changes.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://eservices.mas.gov.sg/statistics/fdanet/BondTreasuryBillsCMTBsAuctions.aspx
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://eservices.mas.gov.sg/statistics/fdanet/BondTreasuryBillsCMTBsAuctions.aspx
+- id: institutional.sg.mas.fx_operations
+  name: MAS foreign exchange operations (FX intervention disclosure)
+  jurisdiction: sg
+  publisher: mas
+  dataset: fx_operations
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://www.mas.gov.sg/statistics/reserve-statistics/foreign-exchange-operations
+  frequency: quarterly
+  publication_lag_days: 90
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets:
+  - USDSGD
+  - SGDJPY
+  - EURSGD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.mas.gov.sg/statistics/reserve-statistics/foreign-exchange-operations
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mas.gov.sg/statistics/reserve-statistics/foreign-exchange-operations
+- id: institutional.sg.enterprisesg.weekly_onshore_oil_stocks
+  name: Enterprise Singapore weekly onshore oil product stocks (light, middle, heavy distillates) and trade data
+  jurisdiction: sg
+  publisher: enterprisesg
+  dataset: weekly_onshore_oil_stocks
+  source_class: physical_inventory
+  role: physical_market
+  url: https://statlink.enterprisesg.gov.sg/pages/Misc/Aboutus.aspx
+  frequency: weekly
+  publication_lag_days: 2
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - physical_consumers_producers
+  - commercial_hedgers
+  features: []
+  targets:
+  - XBRUSD
+  - XTIUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: physical_flow
+  failure_mode_hypothesis: stocks move between warehouses without leaving the system.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: 'https://www.ceicdata.com/en/singapore/weekly-oil-inventory (source: Enterprise Singapore); exact free weekly-stocks
+    page not confirmed'
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://statlink.enterprisesg.gov.sg/pages/Misc/Aboutus.aspx
+- id: institutional.sg.sgx.weekly_institutional_retail_flows
+  name: 'SGX weekly market updates: institutional and retail net buy/sell by stock and sector'
+  jurisdiction: sg
+  publisher: sgx
+  dataset: weekly_institutional_retail_flows
+  source_class: participant_type_flow
+  role: exchange
+  url: https://www.sgx.com/research-education/market-updates/20250310-institutional-investors-book-highest-net-weekly-inflows
+  frequency: weekly
+  publication_lag_days: 3
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - retail_offexchange
+  features: []
+  targets:
+  - USDSGD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: mixed
+  failure_mode_hypothesis: foreign flow proxies include hedged and arbitrage books.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sgx.com/research-education/market-updates/20250310-institutional-investors-book-highest-net-weekly-inflows
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sgx.com/research-education/market-updates/20250310-institutional-investors-book-highest-net-weekly-inflows
+- id: institutional.sg.mas.enforcement_actions
+  name: 'MAS enforcement actions: civil penalties for false trading, market rigging, insider trading'
+  jurisdiction: sg
+  publisher: mas
+  dataset: enforcement_actions
+  source_class: enforcement_archaeology
+  role: regulator
+  url: https://www.mas.gov.sg/regulation/enforcement/enforcement-actions
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - retail_offexchange
+  - dealers_intermediaries
+  - corporate_insiders
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: mixed
+  failure_mode_hypothesis: documented cases are the caught minority.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.mas.gov.sg/regulation/enforcement/enforcement-actions/2022/mas-imposes-civil-penalty-on-mdm-tan-su-lan-for-false-trading
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mas.gov.sg/regulation/enforcement/enforcement-actions
+- id: institutional.sg.mas.insurance_statistics
+  name: 'MAS insurance statistics: insurer returns, investments and asset allocation'
+  jurisdiction: sg
+  publisher: mas
+  dataset: insurance_statistics
+  source_class: pension_insurance
+  role: regulator
+  url: https://www.mas.gov.sg/statistics/insurance-statistics/annual-statistics/insurance-statistics-2019
+  frequency: annual
+  publication_lag_days: 180
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - pensions_insurers
+  features: []
+  targets:
+  - USDSGD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: institutional
+  failure_mode_hypothesis: annual data; rebalancing bands are private.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.mas.gov.sg/statistics/insurance-statistics/annual-statistics/insurance-statistics-2019
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mas.gov.sg/statistics/insurance-statistics/annual-statistics/insurance-statistics-2019
+- id: institutional.sg.mas.asset_mgmt_survey_actor_map
+  name: 'MAS Asset Management Survey: licensed/registered fund managers, VCCs, AUM by strategy and source of funds'
+  jurisdiction: sg
+  publisher: mas
+  dataset: asset_mgmt_survey_actor_map
+  source_class: adviser_topology
+  role: regulator
+  url: https://www.mas.gov.sg/-/media/mas/news-and-publications/surveys/asset-management/singapore-asset-management-survey-2023.pdf
+  frequency: annual
+  publication_lag_days: 210
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - leveraged_funds_ctas
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: sg
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: SG/en
+  participant_structure: institutional
+  failure_mode_hypothesis: structure only; no trade timing.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.mas.gov.sg/-/media/mas/news-and-publications/surveys/asset-management/singapore-asset-management-survey-2023.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mas.gov.sg/-/media/mas/news-and-publications/surveys/asset-management/singapore-asset-management-survey-2023.pdf
+- id: institutional.my.sc_my.unit_trust_statistics
+  name: SC Malaysia unit trust fund statistics (NAV, units, sales/repurchases)
+  jurisdiction: my
+  publisher: sc_my
+  dataset: unit_trust_statistics
+  source_class: fund_flows
+  role: fund_filings
+  url: https://www.data.gov.my/data/en_US/dataset/malaysia-unit-trust-fund-statistics
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - retail_offexchange
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: institutional
+  failure_mode_hypothesis: flows chase price; information is already in the tape.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.sc.com.my/api/documentms/download.ashx?id=4ee325c4-41b0-4085-bc94-8a068c648a8a
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.data.gov.my/data/en_US/dataset/malaysia-unit-trust-fund-statistics
+- id: institutional.my.bnm.monthly_highlights_banking
+  name: 'BNM Monthly Highlights and Statistics: banking system balance sheet, credit, deposits'
+  jurisdiction: my
+  publisher: bnm
+  dataset: monthly_highlights_banking
+  source_class: dealer_bank_balance_sheet
+  role: central_bank
+  url: https://www.bnm.gov.my/publications/mhs
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bnm.gov.my/publications/mhs
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bnm.gov.my/publications/mhs
+- id: institutional.my.bnm.myor
+  name: 'BNM FMIP: MYOR overnight rate and KLIBOR data download'
+  jurisdiction: my
+  publisher: bnm
+  dataset: myor
+  source_class: money_market_plumbing
+  role: central_bank
+  url: https://financialmarkets.bnm.gov.my/data-download-myor
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - money_funds
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: institutional
+  failure_mode_hypothesis: policy-rate changes dominate the series.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://financialmarkets.bnm.gov.my/data-download-myor
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://financialmarkets.bnm.gov.my/data-download-myor
+- id: institutional.my.bursa.short_selling_reports
+  name: Bursa Malaysia regulated short selling (RSS/IDSS/PDT) daily reports and net short positions
+  jurisdiction: my
+  publisher: bursa
+  dataset: short_selling_reports
+  source_class: securities_lending_short
+  role: short_position
+  url: https://www.bursamalaysia.com/sites/5d809dcf39fba22790cad230/assets/647ebb325b711a60731d1c4a/Final_Updated_FAQs_on_Short_Selling_23May23.pdf
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - leveraged_funds_ctas
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: institutional
+  failure_mode_hypothesis: short volume includes market-maker hedging; not directional.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bursamalaysia.com/sites/5d809dcf39fba22790cad230/assets/647ebb325b711a60731d1c4a/Final_Updated_FAQs_on_Short_Selling_23May23.pdf
+    (FAQ; data page path not confirmed)
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bursamalaysia.com/sites/5d809dcf39fba22790cad230/assets/647ebb325b711a60731d1c4a/Final_Updated_FAQs_on_Short_Selling_23May23.pdf
+- id: institutional.my.bursa.substantial_shareholder_notices
+  name: 'Bursa company announcements: changes in substantial shareholders'' interests'
+  jurisdiction: my
+  publisher: bursa
+  dataset: substantial_shareholder_notices
+  source_class: beneficial_ownership
+  role: exchange
+  url: https://www.bursamalaysia.com/market_information/announcements/company_announcement
+  frequency: event
+  publication_lag_days: 3
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - pensions_insurers
+  - foreign_official
+  - corporate_insiders
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: institutional
+  failure_mode_hypothesis: filing lag after the accumulation already moved price.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: well-known Bursa announcements page (path not re-fetched)
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bursamalaysia.com/market_information/announcements/company_announcement
+- id: institutional.my.bursa.buyback_director_dealings
+  name: 'Bursa company announcements: share buy-backs and directors'' dealings'
+  jurisdiction: my
+  publisher: bursa
+  dataset: buyback_director_dealings
+  source_class: corporate_flow
+  role: exchange
+  url: https://www.bursamalaysia.com/market_information/announcements/company_announcement
+  frequency: event
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - corporate_insiders
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: mixed
+  failure_mode_hypothesis: announced programmes are executed slowly and opportunistically.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: well-known Bursa announcements page (path not re-fetched)
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bursamalaysia.com/market_information/announcements/company_announcement
+- id: institutional.my.bnm.nonresident_holdings
+  name: 'BNM MHS: non-resident holdings of MGS/GII and ringgit debt securities, BoP portfolio flows'
+  jurisdiction: my
+  publisher: bnm
+  dataset: nonresident_holdings
+  source_class: cross_border_capital
+  role: central_bank
+  url: https://www.bnm.gov.my/publications/mhs
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: institutional
+  failure_mode_hypothesis: custody-based attribution misassigns the true owner.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bnm.gov.my/publications/mhs
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bnm.gov.my/publications/mhs
+- id: institutional.my.bnm.money_market_operations
+  name: 'BNM FMIP money market operations: daily liquidity operations'
+  jurisdiction: my
+  publisher: bnm
+  dataset: money_market_operations
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://financialmarkets.bnm.gov.my/data-download-bnm-money-market-operations
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://financialmarkets.bnm.gov.my/data-download-bnm-money-market-operations
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://financialmarkets.bnm.gov.my/data-download-bnm-money-market-operations
+- id: institutional.my.bursa.trading_participation_local_foreign
+  name: 'Bursa Malaysia trade statistics: local vs foreign, institutional vs retail participation'
+  jurisdiction: my
+  publisher: bursa
+  dataset: trading_participation_local_foreign
+  source_class: participant_type_flow
+  role: exchange
+  url: https://www.bursamalaysia.com/misc/missftp/securities/securities_equities_trading_participation_investor_20260618.pdf
+  frequency: monthly
+  publication_lag_days: 15
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - asset_managers
+  - retail_offexchange
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: mixed
+  failure_mode_hypothesis: foreign flow proxies include hedged and arbitrage books.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bursamalaysia.com/misc/missftp/securities/securities_equities_trading_participation_investor_20260618.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bursamalaysia.com/misc/missftp/securities/securities_equities_trading_participation_investor_20260618.pdf
+- id: institutional.my.bursa.fbm_klci_review
+  name: FTSE Bursa Malaysia KLCI semi-annual review media releases
+  jurisdiction: my
+  publisher: bursa
+  dataset: fbm_klci_review
+  source_class: index_mechanical
+  role: exchange
+  url: https://www.bursamalaysia.com/sites/5bb54be15f36ca0af339077a/content_entry5c11a9db758f8d31544574c6/6568752d39fba215ef87bb1f/files/30Nov_2023_FTSE_Bursa_Malaysia_KLCI_Semi-annual_Review_.pdf
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - passive_etf
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: institutional
+  failure_mode_hypothesis: pre-positioning arbitrages the event before the effective date.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bursamalaysia.com/sites/5bb54be15f36ca0af339077a/content_entry5c11a9db758f8d31544574c6/6568752d39fba215ef87bb1f/files/30Nov_2023_FTSE_Bursa_Malaysia_KLCI_Semi-annual_Review_.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bursamalaysia.com/sites/5bb54be15f36ca0af339077a/content_entry5c11a9db758f8d31544574c6/6568752d39fba215ef87bb1f/files/30Nov_2023_FTSE_Bursa_Malaysia_KLCI_Semi-annual_Review_.pdf
+- id: institutional.my.sc_my.administrative_actions
+  name: SC Malaysia administrative actions (market manipulation, insider trading), by year
+  jurisdiction: my
+  publisher: sc_my
+  dataset: administrative_actions
+  source_class: enforcement_archaeology
+  role: regulator
+  url: https://www.sc.com.my/regulation/enforcement/actions/administrative-actions/administrative-actions-in-2012
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - dealers_intermediaries
+  - corporate_insiders
+  - retail_offexchange
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: mixed
+  failure_mode_hypothesis: documented cases are the caught minority.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sc.com.my/regulation/enforcement/actions/administrative-actions/administrative-actions-in-2012
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sc.com.my/regulation/enforcement/actions/administrative-actions/administrative-actions-in-2012
+- id: institutional.my.bnm.kl_usdmyr_reference_rate
+  name: BNM Kuala Lumpur USD/MYR reference rate (daily fixing)
+  jurisdiction: my
+  publisher: bnm
+  dataset: kl_usdmyr_reference_rate
+  source_class: fx_settlement_fixing
+  role: central_bank
+  url: https://financialmarkets.bnm.gov.my/data-download-kl-usd-myr-reference-rate
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - commercial_hedgers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fixing flow is netted internally before it reaches the market.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://financialmarkets.bnm.gov.my/data-download-kl-usd-myr-reference-rate
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://financialmarkets.bnm.gov.my/data-download-kl-usd-myr-reference-rate
+- id: institutional.my.sc_my.fund_management_prs
+  name: 'SC Malaysia analytics: fund management and products incl. private retirement schemes'
+  jurisdiction: my
+  publisher: sc_my
+  dataset: fund_management_prs
+  source_class: pension_insurance
+  role: regulator
+  url: https://www.sc.com.my/analytics/fund-management-products
+  frequency: quarterly
+  publication_lag_days: 45
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - pensions_insurers
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: my
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ms
+  source_culture: MY/ms
+  participant_structure: institutional
+  failure_mode_hypothesis: annual data; rebalancing bands are private.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sc.com.my/analytics/fund-management-products
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sc.com.my/analytics/fund-management-products
+- id: institutional.pk.psx.futures_contracts
+  name: 'PSX deliverable and cash-settled futures: volume and open interest per contract (no trader categories)'
+  jurisdiction: pk
+  publisher: psx
+  dataset: futures_contracts
+  source_class: futures_positioning
+  role: derivatives_reports
+  url: https://www.psx.com.pk/market-summary/future-contracts
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - leveraged_funds_ctas
+  - retail_offexchange
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: institutional
+  failure_mode_hypothesis: positioning extremes resolve by continuation when OI is still rising; the crowding read fails without
+    an unwind trigger.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.psx.com.pk/market-summary/future-contracts
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.psx.com.pk/market-summary/future-contracts
+  pack_source_ids:
+  - pack_pk_pk_secp_psx_nccpl
+- id: institutional.pk.mufap.monthly_net_sales
+  name: MUFAP monthly sales, redemptions and net sales by fund category
+  jurisdiction: pk
+  publisher: mufap
+  dataset: monthly_net_sales
+  source_class: fund_flows
+  role: fund_filings
+  url: https://www.mufap.com.pk/Industry/WebMonthlyNetSales
+  frequency: monthly
+  publication_lag_days: 15
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - retail_offexchange
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: institutional
+  failure_mode_hypothesis: flows chase price; information is already in the tape.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.mufap.com.pk/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mufap.com.pk/Industry/WebMonthlyNetSales
+  pack_source_ids:
+  - pack_pk_pk_mufap_ecap_aptma
+- id: institutional.pk.sbp.scheduled_banks_gop_holdings
+  name: 'SBP economic data: scheduled banks advances/deposits/investments; banks and non-banks holdings of GoP securities'
+  jurisdiction: pk
+  publisher: sbp
+  dataset: scheduled_banks_gop_holdings
+  source_class: dealer_bank_balance_sheet
+  role: central_bank
+  url: https://www.sbp.org.pk/ecodata/index2.asp
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sbp.org.pk/ecodata/index2.asp
+  pack_source_ids:
+  - pack_pk_pk_academic
+  - pack_pk_pk_archive
+  - pack_pk_pk_fintech_apps
+  - pack_pk_pk_sbp
+  - pack_pk_pk_source_graph
+- id: institutional.pk.sbp.repo_market
+  name: 'SBP economic data: repo secondary-market volume, overnight repo rates, access to SBP repo facilities'
+  jurisdiction: pk
+  publisher: sbp
+  dataset: repo_market
+  source_class: repo_collateral
+  role: central_bank
+  url: https://www.sbp.org.pk/ecodata/index2.asp
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: month-end and tax-date spikes are calendar noise, not stress.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sbp.org.pk/ecodata/index2.asp
+  pack_source_ids:
+  - pack_pk_pk_academic
+  - pack_pk_pk_archive
+  - pack_pk_pk_fintech_apps
+  - pack_pk_pk_sbp
+  - pack_pk_pk_source_graph
+- id: institutional.pk.sbp.kibor
+  name: SBP KIBOR daily rates
+  jurisdiction: pk
+  publisher: sbp
+  dataset: kibor
+  source_class: money_market_plumbing
+  role: central_bank
+  url: https://www.sbp.org.pk/ecodata/index2.asp
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: institutional
+  failure_mode_hypothesis: policy-rate changes dominate the series.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sbp.org.pk/ecodata/index2.asp
+  pack_source_ids:
+  - pack_pk_pk_academic
+  - pack_pk_pk_archive
+  - pack_pk_pk_fintech_apps
+  - pack_pk_pk_sbp
+  - pack_pk_pk_source_graph
+- id: institutional.pk.psx.company_announcements_holdings
+  name: 'PSX company announcements: substantial shareholding and director/major-holder disclosures'
+  jurisdiction: pk
+  publisher: psx
+  dataset: company_announcements_holdings
+  source_class: beneficial_ownership
+  role: exchange
+  url: https://dps.psx.com.pk/announcements/companies
+  frequency: event
+  publication_lag_days: 2
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - corporate_insiders
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: institutional
+  failure_mode_hypothesis: filing lag after the accumulation already moved price.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.psx.com.pk/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://dps.psx.com.pk/announcements/companies
+- id: institutional.pk.psx.company_announcements_buybacks
+  name: 'PSX company announcements: buy-backs, insider transactions, issuance'
+  jurisdiction: pk
+  publisher: psx
+  dataset: company_announcements_buybacks
+  source_class: corporate_flow
+  role: exchange
+  url: https://dps.psx.com.pk/announcements/companies
+  frequency: event
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - corporate_insiders
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: mixed
+  failure_mode_hypothesis: announced programmes are executed slowly and opportunistically.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.psx.com.pk/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://dps.psx.com.pk/announcements/companies
+- id: institutional.pk.sbp.balance_of_payments
+  name: SBP balance of payments (BPM6, monthly) incl. portfolio investment
+  jurisdiction: pk
+  publisher: sbp
+  dataset: balance_of_payments
+  source_class: cross_border_capital
+  role: central_bank
+  url: https://www.sbp.org.pk/ecodata/index2.asp
+  frequency: monthly
+  publication_lag_days: 17
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: institutional
+  failure_mode_hypothesis: custody-based attribution misassigns the true owner.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sbp.org.pk/ecodata/index2.asp
+  pack_source_ids:
+  - pack_pk_pk_academic
+  - pack_pk_pk_archive
+  - pack_pk_pk_fintech_apps
+  - pack_pk_pk_sbp
+  - pack_pk_pk_source_graph
+- id: institutional.pk.sbp.fx_reserves_weekly
+  name: SBP weekly liquid foreign exchange reserves (SBP and banks)
+  jurisdiction: pk
+  publisher: sbp
+  dataset: fx_reserves_weekly
+  source_class: official_reserves
+  role: central_bank
+  url: https://www.sbp.org.pk/ecodata/index2.asp
+  frequency: weekly
+  publication_lag_days: 2
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets:
+  - XAUUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: policy_driven
+  failure_mode_hypothesis: valuation effects dominate reserve changes.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sbp.org.pk/ecodata/index2.asp
+  pack_source_ids:
+  - pack_pk_pk_academic
+  - pack_pk_pk_archive
+  - pack_pk_pk_fintech_apps
+  - pack_pk_pk_sbp
+  - pack_pk_pk_source_graph
+- id: institutional.pk.sbp.omo_results
+  name: SBP open market operation results (injection/mop-up)
+  jurisdiction: pk
+  publisher: sbp
+  dataset: omo_results
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://www.sbp.org.pk/ecodata/index2.asp
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sbp.org.pk/ecodata/index2.asp
+  pack_source_ids:
+  - pack_pk_pk_academic
+  - pack_pk_pk_archive
+  - pack_pk_pk_fintech_apps
+  - pack_pk_pk_sbp
+  - pack_pk_pk_source_graph
+- id: institutional.pk.pcga.cotton_arrivals
+  name: Pakistan Cotton Ginners Association fortnightly cotton arrivals at ginneries (every 15 days)
+  jurisdiction: pk
+  publisher: pcga
+  dataset: cotton_arrivals
+  source_class: physical_inventory
+  role: physical_market
+  url: https://www.pcga.org/arrival-reports/
+  frequency: weekly
+  publication_lag_days: 3
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - physical_consumers_producers
+  features: []
+  targets:
+  - COTTON
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: physical_flow
+  failure_mode_hypothesis: stocks move between warehouses without leaving the system.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.pcga.org/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.pcga.org/arrival-reports/
+  pack_source_ids:
+  - pack_pk_pk_mufap_ecap_aptma
+  - pack_pk_pk_physical
+- id: institutional.pk.psx.indices_recomposition
+  name: 'PSX indices page: KSE-100/KMI index rules and semi-annual recompositions'
+  jurisdiction: pk
+  publisher: psx
+  dataset: indices_recomposition
+  source_class: index_mechanical
+  role: exchange
+  url: https://www.psx.com.pk/psx/product-and-services/indices
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - passive_etf
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: institutional
+  failure_mode_hypothesis: pre-positioning arbitrages the event before the effective date.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.psx.com.pk/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.psx.com.pk/psx/product-and-services/indices
+  pack_source_ids:
+  - pack_pk_pk_secp_psx_nccpl
+- id: institutional.pk.secp.enforcement_orders
+  name: SECP enforcement orders (market abuse, insider trading, broker misconduct)
+  jurisdiction: pk
+  publisher: secp
+  dataset: enforcement_orders
+  source_class: enforcement_archaeology
+  role: regulator
+  url: https://www.secp.gov.pk/enforcement/orders/
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - dealers_intermediaries
+  - corporate_insiders
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: mixed
+  failure_mode_hypothesis: documented cases are the caught minority.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.secp.gov.pk/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.secp.gov.pk/enforcement/orders/
+  pack_source_ids:
+  - pack_pk_pk_secp_psx_nccpl
+- id: institutional.pk.sbp.interbank_exchange_rates
+  name: 'SBP economic data: interbank weighted-average and M2M exchange rates'
+  jurisdiction: pk
+  publisher: sbp
+  dataset: interbank_exchange_rates
+  source_class: fx_settlement_fixing
+  role: central_bank
+  url: https://www.sbp.org.pk/ecodata/index2.asp
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - commercial_hedgers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fixing flow is netted internally before it reaches the market.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sbp.org.pk/ecodata/index2.asp
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sbp.org.pk/ecodata/index2.asp
+  pack_source_ids:
+  - pack_pk_pk_academic
+  - pack_pk_pk_archive
+  - pack_pk_pk_fintech_apps
+  - pack_pk_pk_sbp
+  - pack_pk_pk_source_graph
+- id: institutional.pk.mufap.vps_breakup
+  name: MUFAP voluntary pension scheme (VPS) AUM by sub-fund
+  jurisdiction: pk
+  publisher: mufap
+  dataset: vps_breakup
+  source_class: pension_insurance
+  role: fund_filings
+  url: https://www.mufap.com.pk/VoluntarilyPensionSch/WebVPSBreakUp
+  frequency: monthly
+  publication_lag_days: 15
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - pensions_insurers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: institutional
+  failure_mode_hypothesis: annual data; rebalancing bands are private.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.mufap.com.pk/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mufap.com.pk/VoluntarilyPensionSch/WebVPSBreakUp
+  pack_source_ids:
+  - pack_pk_pk_mufap_ecap_aptma
+- id: institutional.pk.mufap.fund_directory
+  name: 'MUFAP fund directory: funds and asset management companies'
+  jurisdiction: pk
+  publisher: mufap
+  dataset: fund_directory
+  source_class: adviser_topology
+  role: fund_filings
+  url: https://www.mufap.com.pk/FundProfile/FundDirectory
+  frequency: monthly
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: pk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ur
+  source_culture: PK/ur
+  participant_structure: institutional
+  failure_mode_hypothesis: structure only; no trade timing.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.mufap.com.pk/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.mufap.com.pk/FundProfile/FundDirectory
+  pack_source_ids:
+  - pack_pk_pk_mufap_ecap_aptma
+- id: institutional.lk.cbsl.financial_sector_unit_trusts
+  name: 'CBSL financial sector statistical tables: unit trusts and other financial institutions'
+  jurisdiction: lk
+  publisher: cbsl
+  dataset: financial_sector_unit_trusts
+  source_class: fund_flows
+  role: fund_filings
+  url: https://www.cbsl.gov.lk/en/statistic/statistical-tables/financial-sector
+  frequency: quarterly
+  publication_lag_days: 60
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: institutional
+  failure_mode_hypothesis: flows chase price; information is already in the tape.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.cbsl.gov.lk/en/statistics
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.cbsl.gov.lk/en/statistic/statistical-tables/financial-sector
+  pack_source_ids:
+  - pack_lk_lk_academic
+  - pack_lk_lk_archive
+  - pack_lk_lk_cbsl
+  - pack_lk_lk_fintech_apps
+  - pack_lk_lk_source_graph
+- id: institutional.lk.cbsl.monetary_sector_banks
+  name: 'CBSL monetary sector statistical tables: commercial bank assets and liabilities'
+  jurisdiction: lk
+  publisher: cbsl
+  dataset: monetary_sector_banks
+  source_class: dealer_bank_balance_sheet
+  role: central_bank
+  url: https://www.cbsl.gov.lk/en/statistic/statistical-tables/monetary-sector
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.cbsl.gov.lk/en/statistics
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.cbsl.gov.lk/en/statistic/statistical-tables/monetary-sector
+  pack_source_ids:
+  - pack_lk_lk_academic
+  - pack_lk_lk_archive
+  - pack_lk_lk_cbsl
+  - pack_lk_lk_fintech_apps
+  - pack_lk_lk_source_graph
+- id: institutional.lk.cbsl.daily_indicators_money_market
+  name: 'CBSL daily economic indicators: call money rates, SLFR/overnight liquidity, T-bill yields'
+  jurisdiction: lk
+  publisher: cbsl
+  dataset: daily_indicators_money_market
+  source_class: money_market_plumbing
+  role: central_bank
+  url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/daily-indicators
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: institutional
+  failure_mode_hypothesis: policy-rate changes dominate the series.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.cbsl.gov.lk/en/statistics
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.cbsl.gov.lk/en/statistics/economic-indicators/daily-indicators
+  pack_source_ids:
+  - pack_lk_lk_academic
+  - pack_lk_lk_archive
+  - pack_lk_lk_cbsl
+  - pack_lk_lk_fintech_apps
+  - pack_lk_lk_source_graph
+- id: institutional.lk.cbsl.weekly_indicators_foreign_flows
+  name: 'CBSL weekly economic indicators: foreign holdings of T-bills/bonds, reserves, CSE foreign purchases/sales (CBSL also
+    runs public-debt auctions)'
+  jurisdiction: lk
+  publisher: cbsl
+  dataset: weekly_indicators_foreign_flows
+  source_class: cross_border_capital
+  role: treasury
+  url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/weekly-indicators
+  frequency: weekly
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: institutional
+  failure_mode_hypothesis: custody-based attribution misassigns the true owner.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.cbsl.gov.lk/en/statistics/economic-indicators/weekly-indicators
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.cbsl.gov.lk/en/statistics/economic-indicators/weekly-indicators
+  pack_source_ids:
+  - pack_lk_lk_academic
+  - pack_lk_lk_archive
+  - pack_lk_lk_cbsl
+  - pack_lk_lk_fintech_apps
+  - pack_lk_lk_source_graph
+- id: institutional.lk.cbsl.external_sector_reserves
+  name: 'CBSL external sector tables: official reserve assets and IRFCL'
+  jurisdiction: lk
+  publisher: cbsl
+  dataset: external_sector_reserves
+  source_class: official_reserves
+  role: central_bank
+  url: https://www.cbsl.gov.lk/en/statistics/statistical-tables/External-Sector
+  frequency: monthly
+  publication_lag_days: 7
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets:
+  - XAUUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: policy_driven
+  failure_mode_hypothesis: valuation effects dominate reserve changes.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.cbsl.gov.lk/en/statistics
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.cbsl.gov.lk/en/statistics/statistical-tables/External-Sector
+  pack_source_ids:
+  - pack_lk_lk_academic
+  - pack_lk_lk_archive
+  - pack_lk_lk_cbsl
+  - pack_lk_lk_fintech_apps
+  - pack_lk_lk_source_graph
+- id: institutional.lk.cbsl.daily_indicators_omo
+  name: 'CBSL daily indicators: open market operations and net liquidity'
+  jurisdiction: lk
+  publisher: cbsl
+  dataset: daily_indicators_omo
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/daily-indicators
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.cbsl.gov.lk/en/statistics
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.cbsl.gov.lk/en/statistics/economic-indicators/daily-indicators
+  pack_source_ids:
+  - pack_lk_lk_academic
+  - pack_lk_lk_archive
+  - pack_lk_lk_cbsl
+  - pack_lk_lk_fintech_apps
+  - pack_lk_lk_source_graph
+- id: institutional.lk.cbsl.weekly_indicators_cse_flows
+  name: 'CBSL weekly economic indicators: CSE foreign purchases, sales and net flows'
+  jurisdiction: lk
+  publisher: cbsl
+  dataset: weekly_indicators_cse_flows
+  source_class: participant_type_flow
+  role: central_bank
+  url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/weekly-indicators
+  frequency: weekly
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: mixed
+  failure_mode_hypothesis: foreign flow proxies include hedged and arbitrage books.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.cbsl.gov.lk/en/statistics/economic-indicators/weekly-indicators
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.cbsl.gov.lk/en/statistics/economic-indicators/weekly-indicators
+  pack_source_ids:
+  - pack_lk_lk_academic
+  - pack_lk_lk_archive
+  - pack_lk_lk_cbsl
+  - pack_lk_lk_fintech_apps
+  - pack_lk_lk_source_graph
+- id: institutional.lk.sec_lk.enforcement_actions
+  name: SEC Sri Lanka enforcement actions and market surveillance outcomes
+  jurisdiction: lk
+  publisher: sec_lk
+  dataset: enforcement_actions
+  source_class: enforcement_archaeology
+  role: regulator
+  url: https://www.sec.gov.lk/investigations-enforcement-introduction/
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - retail_offexchange
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: mixed
+  failure_mode_hypothesis: documented cases are the caught minority.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.sec.gov.lk/investigations-enforcement-introduction/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sec.gov.lk/investigations-enforcement-introduction/
+  pack_source_ids:
+  - pack_lk_lk_cse_sec
+- id: institutional.lk.cbsl.daily_indicators_fx
+  name: 'CBSL daily indicators: USD/LKR spot and weighted-average interbank rates'
+  jurisdiction: lk
+  publisher: cbsl
+  dataset: daily_indicators_fx
+  source_class: fx_settlement_fixing
+  role: central_bank
+  url: https://www.cbsl.gov.lk/en/statistics/economic-indicators/daily-indicators
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fixing flow is netted internally before it reaches the market.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.cbsl.gov.lk/en/statistics
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.cbsl.gov.lk/en/statistics/economic-indicators/daily-indicators
+  pack_source_ids:
+  - pack_lk_lk_academic
+  - pack_lk_lk_archive
+  - pack_lk_lk_cbsl
+  - pack_lk_lk_fintech_apps
+  - pack_lk_lk_source_graph
+- id: institutional.lk.cbsl.financial_sector_epf_insurance
+  name: 'CBSL financial sector tables: EPF/ETF and insurance sector assets'
+  jurisdiction: lk
+  publisher: cbsl
+  dataset: financial_sector_epf_insurance
+  source_class: pension_insurance
+  role: central_bank
+  url: https://www.cbsl.gov.lk/en/statistic/statistical-tables/financial-sector
+  frequency: quarterly
+  publication_lag_days: 60
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - pensions_insurers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: lk
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: si
+  source_culture: LK/si
+  participant_structure: institutional
+  failure_mode_hypothesis: annual data; rebalancing bands are private.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.cbsl.gov.lk/en/statistics
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.cbsl.gov.lk/en/statistic/statistical-tables/financial-sector
+  pack_source_ids:
+  - pack_lk_lk_academic
+  - pack_lk_lk_archive
+  - pack_lk_lk_cbsl
+  - pack_lk_lk_fintech_apps
+  - pack_lk_lk_source_graph
+- id: institutional.bd.bb.scheduled_banks_statistics
+  name: Bangladesh Bank scheduled banks statistics (quarterly publications)
+  jurisdiction: bd
+  publisher: bb
+  dataset: scheduled_banks_statistics
+  source_class: dealer_bank_balance_sheet
+  role: central_bank
+  url: https://www.bb.org.bd/en/index.php/publication/publictn/2/7
+  frequency: quarterly
+  publication_lag_days: 90
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: bd
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: bn
+  source_culture: BD/bn
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bb.org.bd/en/index.php/econdata/index
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bb.org.bd/en/index.php/publication/publictn/2/7
+  pack_source_ids:
+  - pack_bd_bd_academic
+  - pack_bd_bd_archive
+  - pack_bd_bd_bb
+  - pack_bd_bd_source_graph
+- id: institutional.bd.bb.money_market_ref_rate
+  name: Bangladesh Bank money market reference rates (call money, repo)
+  jurisdiction: bd
+  publisher: bb
+  dataset: money_market_ref_rate
+  source_class: money_market_plumbing
+  role: central_bank
+  url: https://www.bb.org.bd/en/index.php/monetaryactivity/money_market_ref_rate
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: bd
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: bn
+  source_culture: BD/bn
+  participant_structure: institutional
+  failure_mode_hypothesis: policy-rate changes dominate the series.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.bb.org.bd/en/index.php/econdata/index
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bb.org.bd/en/index.php/monetaryactivity/money_market_ref_rate
+  pack_source_ids:
+  - pack_bd_bd_academic
+  - pack_bd_bd_archive
+  - pack_bd_bd_bb
+  - pack_bd_bd_source_graph
+- id: institutional.bd.bb.balance_of_payments
+  name: Bangladesh Bank balance of payments incl. portfolio investment
+  jurisdiction: bd
+  publisher: bb
+  dataset: balance_of_payments
+  source_class: cross_border_capital
+  role: central_bank
+  url: https://www.bb.org.bd/en/index.php/econdata/bopindex
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: bd
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: bn
+  source_culture: BD/bn
+  participant_structure: institutional
+  failure_mode_hypothesis: custody-based attribution misassigns the true owner.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.bb.org.bd/en/index.php/econdata/index
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bb.org.bd/en/index.php/econdata/bopindex
+  pack_source_ids:
+  - pack_bd_bd_academic
+  - pack_bd_bd_archive
+  - pack_bd_bd_bb
+  - pack_bd_bd_source_graph
+- id: institutional.bd.bb.fx_reserves
+  name: Bangladesh Bank gross foreign exchange reserves
+  jurisdiction: bd
+  publisher: bb
+  dataset: fx_reserves
+  source_class: official_reserves
+  role: central_bank
+  url: https://www.bb.org.bd/en/index.php/econdata/intreserve
+  frequency: weekly
+  publication_lag_days: 3
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets:
+  - XAUUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: bd
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: bn
+  source_culture: BD/bn
+  participant_structure: policy_driven
+  failure_mode_hypothesis: valuation effects dominate reserve changes.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.bb.org.bd/en/index.php/econdata/index
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bb.org.bd/en/index.php/econdata/intreserve
+  pack_source_ids:
+  - pack_bd_bd_academic
+  - pack_bd_bd_archive
+  - pack_bd_bd_bb
+  - pack_bd_bd_source_graph
+- id: institutional.bd.bb.nsdp_monetary
+  name: 'Bangladesh Bank NSDP: central bank analytical accounts and monetary data'
+  jurisdiction: bd
+  publisher: bb
+  dataset: nsdp_monetary
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://www.bb.org.bd/econdata/nsdp/nsdp_bb.php
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: bd
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: bn
+  source_culture: BD/bn
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bb.org.bd/en/index.php/econdata/index
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bb.org.bd/econdata/nsdp/nsdp_bb.php
+  pack_source_ids:
+  - pack_bd_bd_academic
+  - pack_bd_bd_archive
+  - pack_bd_bd_bb
+  - pack_bd_bd_source_graph
+- id: institutional.bd.bsec.enforcement_actions
+  name: BSEC enforcement actions (manipulation, insider trading)
+  jurisdiction: bd
+  publisher: bsec
+  dataset: enforcement_actions
+  source_class: enforcement_archaeology
+  role: regulator
+  url: https://www.sec.gov.bd/enforcement-actions
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - retail_offexchange
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: bd
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: bn
+  source_culture: BD/bn
+  participant_structure: mixed
+  failure_mode_hypothesis: documented cases are the caught minority.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://sec.gov.bd/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sec.gov.bd/enforcement-actions
+  pack_source_ids:
+  - pack_bd_bd_dse_bsec
+- id: institutional.bd.bb.fx_reference_rate
+  name: Bangladesh Bank FX reference rate (USD/BDT)
+  jurisdiction: bd
+  publisher: bb
+  dataset: fx_reference_rate
+  source_class: fx_settlement_fixing
+  role: central_bank
+  url: https://www.bb.org.bd/en/index.php/econdata/rfrexrate
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: bd
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: bn
+  source_culture: BD/bn
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fixing flow is netted internally before it reaches the market.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bb.org.bd/en/index.php/econdata/index
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bb.org.bd/en/index.php/econdata/rfrexrate
+  pack_source_ids:
+  - pack_bd_bd_academic
+  - pack_bd_bd_archive
+  - pack_bd_bd_bb
+  - pack_bd_bd_source_graph
+- id: institutional.bd.bsec.asset_managers_register
+  name: BSEC register of asset managers and fund managers
+  jurisdiction: bd
+  publisher: bsec
+  dataset: asset_managers_register
+  source_class: adviser_topology
+  role: fund_filings
+  url: https://www.sec.gov.bd/asset-managers
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: bd
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: bn
+  source_culture: BD/bn
+  participant_structure: institutional
+  failure_mode_hypothesis: structure only; no trade timing.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://sec.gov.bd/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sec.gov.bd/asset-managers
+  pack_source_ids:
+  - pack_bd_bd_dse_bsec
+- id: institutional.np.nrb.monthly_bfi_statistics
+  name: NRB monthly banking and financial institution statistics
+  jurisdiction: np
+  publisher: nrb
+  dataset: monthly_bfi_statistics
+  source_class: dealer_bank_balance_sheet
+  role: central_bank
+  url: https://www.nrb.org.np/category/monthly-statistics/?department=bfr
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: np
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ne
+  source_culture: NP/ne
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nrb.org.np/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nrb.org.np/category/monthly-statistics/?department=bfr
+  pack_source_ids:
+  - pack_np_np_archive_official
+  - pack_np_np_nrb
+  - pack_np_np_source_graph
+  - pack_np_np_universities
+- id: institutional.np.nrb.short_term_rates
+  name: NRB short-term interbank and T-bill rates
+  jurisdiction: np
+  publisher: nrb
+  dataset: short_term_rates
+  source_class: money_market_plumbing
+  role: central_bank
+  url: https://www.nrb.org.np/cmfm_rates/short_term_rates
+  frequency: daily
+  publication_lag_days: 1
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: np
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ne
+  source_culture: NP/ne
+  participant_structure: institutional
+  failure_mode_hypothesis: policy-rate changes dominate the series.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nrb.org.np/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nrb.org.np/cmfm_rates/short_term_rates
+  pack_source_ids:
+  - pack_np_np_archive_official
+  - pack_np_np_nrb
+  - pack_np_np_source_graph
+  - pack_np_np_universities
+- id: institutional.np.nrb.macro_situation_bop
+  name: 'NRB current macroeconomic and financial situation: BoP, remittances, capital flows'
+  jurisdiction: np
+  publisher: nrb
+  dataset: macro_situation_bop
+  source_class: cross_border_capital
+  role: central_bank
+  url: https://www.nrb.org.np/category/current-macroeconomic-situation/?department=red
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: np
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ne
+  source_culture: NP/ne
+  participant_structure: institutional
+  failure_mode_hypothesis: custody-based attribution misassigns the true owner.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nrb.org.np/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nrb.org.np/category/current-macroeconomic-situation/?department=red
+  pack_source_ids:
+  - pack_np_np_archive_official
+  - pack_np_np_nrb
+  - pack_np_np_source_graph
+  - pack_np_np_universities
+- id: institutional.np.nrb.macro_situation_reserves
+  name: 'NRB current macroeconomic situation: gross foreign exchange reserves'
+  jurisdiction: np
+  publisher: nrb
+  dataset: macro_situation_reserves
+  source_class: official_reserves
+  role: central_bank
+  url: https://www.nrb.org.np/category/current-macroeconomic-situation/?department=red
+  frequency: monthly
+  publication_lag_days: 30
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets:
+  - XAUUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 1440
+  region: np
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ne
+  source_culture: NP/ne
+  participant_structure: policy_driven
+  failure_mode_hypothesis: valuation effects dominate reserve changes.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nrb.org.np/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nrb.org.np/category/current-macroeconomic-situation/?department=red
+  pack_source_ids:
+  - pack_np_np_archive_official
+  - pack_np_np_nrb
+  - pack_np_np_source_graph
+  - pack_np_np_universities
+- id: institutional.np.nrb.monetary_operations
+  name: NRB monetary operations (repo, reverse repo, deposit collection, SLF)
+  jurisdiction: np
+  publisher: nrb
+  dataset: monetary_operations
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://www.nrb.org.np/category/monetary-operations/
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: np
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ne
+  source_culture: NP/ne
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nrb.org.np/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nrb.org.np/category/monetary-operations/
+  pack_source_ids:
+  - pack_np_np_archive_official
+  - pack_np_np_nrb
+  - pack_np_np_source_graph
+  - pack_np_np_universities
+- id: institutional.np.sebon.securities_trading_supervision
+  name: 'SEBON enforcement actions: securities trading supervision'
+  jurisdiction: np
+  publisher: sebon
+  dataset: securities_trading_supervision
+  source_class: enforcement_archaeology
+  role: regulator
+  url: https://www.sebon.gov.np/enforcements/securities-trading-supervision
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - retail_offexchange
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: np
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ne
+  source_culture: NP/ne
+  participant_structure: mixed
+  failure_mode_hypothesis: documented cases are the caught minority.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.sebon.gov.np/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sebon.gov.np/enforcements/securities-trading-supervision
+  pack_source_ids:
+  - pack_np_np_nepse_sebon
+- id: institutional.np.nrb.forex_rates
+  name: NRB daily foreign exchange rates (NPR pegged to INR)
+  jurisdiction: np
+  publisher: nrb
+  dataset: forex_rates
+  source_class: fx_settlement_fixing
+  role: central_bank
+  url: https://www.nrb.org.np/forex/
+  frequency: daily
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  features: []
+  targets:
+  - USDINR
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: np
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ne
+  source_culture: NP/ne
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fixing flow is netted internally before it reaches the market.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.nrb.org.np/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.nrb.org.np/forex/
+  pack_source_ids:
+  - pack_np_np_archive_official
+  - pack_np_np_nrb
+  - pack_np_np_source_graph
+  - pack_np_np_universities
+- id: institutional.np.sebon.fund_managers_directory
+  name: SEBON directory of licensed fund managers and mutual fund schemes
+  jurisdiction: np
+  publisher: sebon
+  dataset: fund_managers_directory
+  source_class: adviser_topology
+  role: fund_filings
+  url: https://www.sebon.gov.np/intermediaries/fund-managers
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: np
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: ne
+  source_culture: NP/ne
+  participant_structure: institutional
+  failure_mode_hypothesis: structure only; no trade timing.
+  crowding_prior: low
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.sebon.gov.np/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.sebon.gov.np/intermediaries/fund-managers
+  pack_source_ids:
+  - pack_np_np_nepse_sebon
+- id: institutional.global.lme.market_open_interest_options
+  name: LME market/exchange open interest by contract, prompt, and for options/TAPOs by strike and call/put (daily, T+2)
+  jurisdiction: global
+  publisher: lme
+  dataset: market_open_interest_options
+  source_class: options_positioning
+  role: exchange
+  url: https://www.lme.com/market-data/reports-and-data/open-interest/market-open-interest
+  frequency: daily
+  publication_lag_days: 2
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - option_market_makers
+  - commercial_hedgers
+  - leveraged_funds_ctas
+  features: []
+  targets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  - XPBUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 360
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: institutional
+  failure_mode_hypothesis: dealer side is unknown; unsigned OI mis-signs the gamma regime.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.lme.com/market-data/reports-and-data/open-interest
+  access: free_registration
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.lme.com/market-data/reports-and-data/open-interest/market-open-interest
+- id: institutional.global.imf.portfolio_investment_positions_cpis
+  name: 'IMF Portfolio Investment Positions by Counterpart Economy (formerly CPIS): cross-border equity and debt holdings
+    by holder/issuer country (semi-annual; nearest '
+  jurisdiction: global
+  publisher: imf
+  dataset: portfolio_investment_positions_cpis
+  source_class: fund_holdings
+  role: treasury
+  url: https://data.imf.org/en/datasets/IMF.STA:PIP
+  frequency: quarterly
+  publication_lag_days: 270
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - pensions_insurers
+  - banks
+  - foreign_official
+  features: []
+  targets:
+  - EURUSD
+  - USDJPY
+  - GBPUSD
+  - UST10Y
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: institutional
+  failure_mode_hypothesis: 45-90 day lag makes holdings stale at publication.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://data.imf.org/en/datasets/IMF.STA:PIP
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://data.imf.org/en/datasets/IMF.STA:PIP
+- id: institutional.global.iosco.investment_funds_statistics
+  name: IOSCO Investment Funds Statistics Report (hedge fund gross/net leverage, liquidity, counterparty aggregates across
+    member jurisdictions)
+  jurisdiction: global
+  publisher: iosco
+  dataset: investment_funds_statistics
+  source_class: hedge_fund_leverage
+  role: regulator
+  url: https://www.iosco.org/library/pubdocs/pdf/IOSCOPD761.pdf
+  frequency: annual
+  publication_lag_days: 365
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - leveraged_funds_ctas
+  - asset_managers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: institutional
+  failure_mode_hypothesis: quarterly lag; leverage peaks are only visible after the unwind.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.iosco.org/library/pubdocs/pdf/IOSCOPD761.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.iosco.org/library/pubdocs/pdf/IOSCOPD761.pdf
+- id: institutional.global.bcbs.gsib_assessment_indicators
+  name: 'Basel Committee G-SIB assessment: sample banks'' indicator values (OTC derivatives notional, trading securities,
+    cross-jurisdictional claims) and FSB G-SIB list'
+  jurisdiction: global
+  publisher: bcbs
+  dataset: gsib_assessment_indicators
+  source_class: dealer_bank_balance_sheet
+  role: regulator
+  url: https://www.bis.org/bcbs/gsib/
+  frequency: annual
+  publication_lag_days: 330
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - dealers_intermediaries
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: institutional
+  failure_mode_hypothesis: regulatory window-dressing at quarter end distorts the level.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.bis.org/press/p191122.htm
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.bis.org/bcbs/gsib/
+- id: institutional.global.icma.european_repo_market_survey
+  name: 'ICMA European Repo Market Survey: outstanding repo by counterparty, collateral, currency, tenor, tri-party/CCP share
+    (semi-annual)'
+  jurisdiction: global
+  publisher: icma
+  dataset: european_repo_market_survey
+  source_class: repo_collateral
+  role: custodian_settlement
+  url: https://www.icmagroup.org/market-practice-and-regulatory-policy/repo-and-collateral-markets/market-data/icma-european-repo-market-survey/
+  frequency: quarterly
+  publication_lag_days: 120
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - banks
+  - dealers_intermediaries
+  - money_funds
+  features: []
+  targets:
+  - EURUSD
+  - UKGILT
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: month-end and tax-date spikes are calendar noise, not stress.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.icmagroup.org/market-practice-and-regulatory-policy/repo-and-collateral-markets/market-data/icma-european-repo-market-survey/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.icmagroup.org/market-practice-and-regulatory-policy/repo-and-collateral-markets/market-data/icma-european-repo-market-survey/
+- id: institutional.global.isla.securities_lending_market_report
+  name: 'ISLA Securities Lending Market Report: global on-loan balances, lendable, utilisation and collateral mix by asset
+    class and region (semi-annual)'
+  jurisdiction: global
+  publisher: isla
+  dataset: securities_lending_market_report
+  source_class: securities_lending_short
+  role: short_position
+  url: https://www.islaemea.org/securities-lending-market-data/
+  frequency: quarterly
+  publication_lag_days: 90
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - pensions_insurers
+  - leveraged_funds_ctas
+  features: []
+  targets:
+  - EUSTX50
+  - GER40
+  - UK100
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: institutional
+  failure_mode_hypothesis: short volume includes market-maker hedging; not directional.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.islaemea.org/securities-lending-market-data/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.islaemea.org/securities-lending-market-data/
+- id: institutional.global.lme_clear.cpmi_iosco_quantitative_disclosure
+  name: 'LME Clear CPMI-IOSCO public quantitative disclosures: initial margin, default fund, stress-test coverage, variation
+    margin flows (quarterly)'
+  jurisdiction: global
+  publisher: lme_clear
+  dataset: cpmi_iosco_quantitative_disclosure
+  source_class: settlement_fails
+  role: clearing_house
+  url: https://www.lme.com/en/market-data/reports-and-data/lme-clear-reports/cpmi-iosco-disclosure
+  frequency: quarterly
+  publication_lag_days: 60
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - dealers_intermediaries
+  - commercial_hedgers
+  features: []
+  targets:
+  - XCUUSD
+  - XALUSD
+  - XZNUSD
+  - XNIUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fails cluster on operational events unrelated to demand.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.lme.com/en/market-data/reports-and-data/lme-clear-reports/cpmi-iosco-disclosure
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.lme.com/en/market-data/reports-and-data/lme-clear-reports/cpmi-iosco-disclosure
+- id: institutional.global.ice_clear_europe.quarterly_clearing_disclosures
+  name: 'ICE Clear Europe quarterly CPMI-IOSCO clearing disclosures: margin held, default resources, stress coverage (Brent,
+    gasoil, softs)'
+  jurisdiction: global
+  publisher: ice_clear_europe
+  dataset: quarterly_clearing_disclosures
+  source_class: settlement_fails
+  role: clearing_house
+  url: https://www.ice.com/clearing/quarterly-clearing-disclosures
+  frequency: quarterly
+  publication_lag_days: 60
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - dealers_intermediaries
+  - commercial_hedgers
+  - leveraged_funds_ctas
+  features: []
+  targets:
+  - XBRUSD
+  - UKCOCOA
+  - SUGAR
+  - COFROB
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: settlement_constrained
+  failure_mode_hypothesis: fails cluster on operational events unrelated to demand.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.ice.com/clearing/quarterly-clearing-disclosures
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.ice.com/clearing/quarterly-clearing-disclosures
+  pack_source_ids:
+  - pack_us_us_cme_ice_cboe
+- id: institutional.global.bis.debt_securities_statistics
+  name: 'BIS debt securities statistics: international and domestic issuance by sector, currency and nationality of issuer'
+  jurisdiction: global
+  publisher: bis
+  dataset: debt_securities_statistics
+  source_class: corporate_flow
+  role: central_bank
+  url: https://data.bis.org/topics/DSS
+  frequency: quarterly
+  publication_lag_days: 75
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - corporate_insiders
+  - banks
+  - asset_managers
+  features: []
+  targets:
+  - EURUSD
+  - USDJPY
+  - USDX
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: mixed
+  failure_mode_hypothesis: announced programmes are executed slowly and opportunistically.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://data.bis.org/topics/DSS
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://data.bis.org/topics/DSS
+- id: institutional.global.bis.central_bank_total_assets
+  name: BIS central bank total assets (balance-sheet size by central bank, long series)
+  jurisdiction: global
+  publisher: bis
+  dataset: central_bank_total_assets
+  source_class: central_bank_operations
+  role: central_bank
+  url: https://data.bis.org/topics/CBTA
+  frequency: quarterly
+  publication_lag_days: 90
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - foreign_official
+  features: []
+  targets:
+  - USDX
+  - EURUSD
+  - USDJPY
+  - XAUUSD
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: policy_driven
+  failure_mode_hypothesis: operations are reactive to price, not leading.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://data.bis.org/topics/CBTA
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://data.bis.org/topics/CBTA
+- id: institutional.global.msci.quarterly_index_review
+  name: MSCI quarterly/semi-annual index review announcements (adds/deletes, effective dates; free press releases and dates
+    CSV) - public proxy for licensed constituent
+  jurisdiction: global
+  publisher: msci
+  dataset: quarterly_index_review
+  source_class: index_mechanical
+  role: exchange
+  url: https://app2.msci.com/eqb/pressreleases/archive/ir_dates.csv
+  frequency: event
+  publication_lag_days: 0
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - passive_etf
+  - asset_managers
+  features: []
+  targets:
+  - US500
+  - NAS100
+  - HK50
+  - CHINAH
+  - JPN225
+  - EUSTX50
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: institutional
+  failure_mode_hypothesis: pre-positioning arbitrages the event before the effective date.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.msci.com/downloads/documents/press-releases/media-room/MSCI_Feb26_QIRPR.pdf
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://app2.msci.com/eqb/pressreleases/archive/ir_dates.csv
+- id: institutional.global.oecd.pension_markets_in_focus
+  name: 'OECD Pension Markets in Focus / Global Pension Statistics: pension assets and asset allocation by country (annual,
+    preliminary June)'
+  jurisdiction: global
+  publisher: oecd
+  dataset: pension_markets_in_focus
+  source_class: pension_insurance
+  role: regulator
+  url: https://www.oecd.org/en/publications/pension-markets-in-focus-2025_b095d0a0-en.html
+  frequency: annual
+  publication_lag_days: 180
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - pensions_insurers
+  features: []
+  targets:
+  - UST10Y
+  - UKGILT
+  - US500
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: institutional
+  failure_mode_hypothesis: annual data; rebalancing bands are private.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.oecd.org/en/publications/pension-markets-in-focus-2025_b095d0a0-en.html
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.oecd.org/en/publications/pension-markets-in-focus-2025_b095d0a0-en.html
+- id: institutional.global.iais.global_insurance_market_report
+  name: 'IAIS Global Insurance Market Report (GIMAR): insurer asset allocation, private credit, liquidity aggregates'
+  jurisdiction: global
+  publisher: iais
+  dataset: global_insurance_market_report
+  source_class: pension_insurance
+  role: regulator
+  url: https://www.iais.org/activities-topics/financial-stability/gimar/
+  frequency: annual
+  publication_lag_days: 180
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - pensions_insurers
+  features: []
+  targets:
+  - UST10Y
+  - UKGILT
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: institutional
+  failure_mode_hypothesis: annual data; rebalancing bands are private.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: landing
+  evidence: https://www.iais.org/activities-topics/financial-stability/gimar/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.iais.org/activities-topics/financial-stability/gimar/
+- id: institutional.global.fsb.nbfi_global_monitoring_report
+  name: 'FSB Global Monitoring Report on Nonbank Financial Intermediation: actor map of funds, hedge funds, MMFs, insurers,
+    pensions by jurisdiction and bank interconnec'
+  jurisdiction: global
+  publisher: fsb
+  dataset: nbfi_global_monitoring_report
+  source_class: adviser_topology
+  role: regulator
+  url: https://www.fsb.org/2025/12/global-monitoring-report-on-nonbank-financial-intermediation-2025/
+  frequency: annual
+  publication_lag_days: 365
+  declared_status: DISCOVERED_NOT_INGESTED
+  actors:
+  - asset_managers
+  - leveraged_funds_ctas
+  - money_funds
+  - pensions_insurers
+  features: []
+  targets: []
+  fetcher: page_snapshot
+  owner: institutional_footprint
+  consumer: desks/mt5/research/institutional_footprint.py
+  kind: mechanics
+  uses:
+  - allocation_intel
+  cadence_minutes: 2880
+  region: global
+  auth: none
+  licence: public free publication; unconfirmed terms fail closed
+  language: en
+  source_culture: GLOBAL
+  participant_structure: institutional
+  failure_mode_hypothesis: structure only; no trade timing.
+  crowding_prior: medium
+  culture_derivation:
+    source_culture: declared
+    participant_structure: declared
+    failure_mode_hypothesis: declared
+    crowding_prior: declared
+  url_confidence: dataset
+  evidence: https://www.fsb.org/2025/12/global-monitoring-report-on-nonbank-financial-intermediation-2025/
+  access: free_public
+  found_by: coverage_sweep_2026-09-30
+  config:
+    pages:
+    - https://www.fsb.org/2025/12/global-monitoring-report-on-nonbank-financial-intermediation-2025/
