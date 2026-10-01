@@ -86,22 +86,90 @@ COND_MIN_OBS = max(60, int(_FAMILY_MIN_OBS))
 #: into cost facts and prop-rule limits (extractor.COST_FACTS / RULE_FACTS). Never minted as cells.
 #: An archive capture: web.archive.org/web/<timestamp>[flags]/<original url>.
 _WAYBACK = re.compile(r"^(?:https?://)?(?:www\.)?web\.archive\.org/web/\d+[a-z_]*/(.+)$", re.I)
+PRODUCER_ORGANS = _ROOT / "libs" / "mining" / "producer_organs.json"
+
+
 def _scout_seats() -> dict[str, str]:
-    """seat -> producing scout, from research/scout_roster.py `seats=` (the one declared map)."""
-    try:
-        from research.scout_roster import SCOUTS
-    except Exception:
-        return {}
-    return {str(seat): str(sc["name"]) for sc in SCOUTS for seat in sc.get("seats") or ()}
+    """seat -> producing organ: research/scout_roster.py `seats=` (the scouts), then the internal
+    producers declared in libs/mining/producer_organs.json (organ = the file's stem), then its
+    `prefixes` under the key `<prefix>*`.
+
+    LOUD, NEVER EMPTY: either map failing to load raises. The old `except: return {}` turned an
+    import error into every judged row reading `unmapped:` with the digest still green (audit
+    2026-09-30); `attributed_evaluations` now reports the error in its basis instead."""
+    from research.scout_roster import SCOUTS
+    out = {str(seat): str(sc["name"]) for sc in SCOUTS for seat in sc.get("seats") or ()}
+    doc = json.loads(PRODUCER_ORGANS.read_text("utf-8"))
+    for seat, path in (doc.get("seats") or {}).items():
+        out.setdefault(str(seat), Path(str(path)).stem)
+    for pre, path in (doc.get("prefixes") or {}).items():
+        out.setdefault(f"{pre}*", Path(str(path)).stem)
+    for seat in doc.get("retired") or {}:
+        out.setdefault(str(seat), f"retired:{seat}")
+    if not out:
+        raise RuntimeError("producer map is empty: scout_roster SCOUTS and producer_organs.json "
+                           "declare no seat")
+    return out
 
 
 def producer_of(source: Any, organ_of: Mapping[str, str]) -> str:
     """The organ that produced a docket row: its seat (`miner:<seat>[:<id>]`, or the row's own
-    producer prefix) through the scout map, else `unmapped:<seat>` -- named, never guessed."""
+    producer prefix) through the declared map, a declared seat prefix (`ext_*`), else
+    `unmapped:<seat>` -- named, never guessed."""
     raw = str(source or "")
     seat = raw.removeprefix("miner:").split(":", 1)[0] if raw.startswith("miner:") else \
         raw.split(":", 1)[0]
-    return organ_of.get(seat, f"unmapped:{seat or '?'}")
+    if seat in organ_of:
+        return organ_of[seat]
+    for k, organ in organ_of.items():
+        if k.endswith("*") and seat.startswith(k[:-1]):
+            return organ
+    return f"unmapped:{seat or '?'}"
+
+
+#: A pipeline fetch that RAN: it reached the source and came back (with items, or none).
+RAN_OUTCOMES = frozenset({"ok", "empty"})
+#: Fetchers that are another organ's: the pipeline registers such a source but never fetches it.
+OTHER_ORGAN_FETCHERS = frozenset({"owned"})
+
+
+def registered_organs(src: acq.Source, organ_of: Mapping[str, str]) -> set[str]:
+    """The organs a registry row names as its fetcher: a `scout:<name>` owner, its consumer
+    file's stem, and the producer of every seat it declares."""
+    out = {Path(src.consumer).stem} if src.consumer else set()
+    if src.owner.startswith("scout:"):
+        out.add(src.owner.removeprefix("scout:"))
+    out |= {producer_of(seat, organ_of) for seat in src.seats}
+    return {o for o in out if o and not o.startswith("unmapped:")}
+
+
+def fetch_evidence(run: Mapping[str, Any], producers: Mapping[str, int], now: datetime,
+                   fetcher: str = "owned", recent_records: int = 0,
+                   registered: set[str] | None = None) -> str:
+    """Why this source's fetcher is known to have RUN within ACTIVE_WINDOW, or '' when nothing
+    shows it did. ACTIVE needs this as well as a judged cell (audit 2026-09-30: 37 of 98 credits
+    were to sources no fetcher had run for).
+
+    The proof is the REGISTERED fetcher's own. A source the pipeline fetches needs the
+    pipeline's fetch log (`ok`/`empty` in the window) or records it acquired in the window. A
+    source another organ fetches (`owned`,
+    or a fallback row the pipeline last DEFERRED_TO_OWNER) needs a judged docket row credited to
+    it whose producer is a DECLARED organ (scout roster or producer_organs.json) AND one the row
+    itself registers (`registered`: its scout owner, consumer or seats' organ) -- another organ
+    citing the page proves that organ ran, not this source's fetcher. `unmapped:` is no proof,
+    and a docket credit never stands in for a pipeline fetch."""
+    at = parse_time(run.get("at")) if run.get("at") else None
+    if str(run.get("outcome") or "") in RAN_OUTCOMES and at is not None \
+            and at >= now - ACTIVE_WINDOW:
+        return f"pipeline:{run.get('outcome')}@{run.get('at')}"
+    if recent_records > 0:
+        return f"pipeline:{recent_records} records acquired in 30 days"
+    if fetcher not in OTHER_ORGAN_FETCHERS and run.get("outcome") != "DEFERRED_TO_OWNER":
+        return ""
+    organs = sorted(o for o, k in producers.items()
+                    if k and not o.startswith(("unmapped:", "retired:"))
+                    and (registered is None or o in registered))
+    return f"producer:{','.join(organs)}" if organs else ""
 
 
 _INDEX_PAGE = re.compile(r"/(?:index|default)\.(?:html?|php|aspx?)$", re.I)
@@ -794,11 +862,56 @@ class Pipeline:
         return off
 
     def _url_index(self) -> dict[str, list[tuple[str, str]]]:
-        idx: dict[str, list[tuple[str, str]]] = {}
+        """host -> [(url_key, source)], ONE source per url_key wherever that is knowable.
+
+        Several rosters name one page (133 keys, 310 rows on 2026-09-30), and a tie credits
+        nobody, so every such page's judged rows went uncredited. Within ONE jurisdiction (equal
+        regions, or one side the `global` default) the page is one source for attribution, owned
+        by the ONE row that declares a seat, else the FIRST definition -- the registry's
+        precedence. The tie stands (credit nobody) across jurisdictions (two countries' packs
+        naming one vendor page) and wherever two or more rows declare seats on the page: those
+        are distinct producers' sources (stats.gov.cn/sj, unipass ets), and picking one would be
+        a guess. Every collision is published per source (`registry.url_collisions`)."""
+        keyed: dict[str, list[acq.Source]] = {}
         for s in self.roster:
-            for k in s.url_keys or ([s.url_key] if s.url_key else []):
-                idx.setdefault(k.partition("/")[0], []).append((k, s.id))
+            for k in dict.fromkeys(s.url_keys or ([s.url_key] if s.url_key else [])):
+                keyed.setdefault(k, []).append(s)
+        idx: dict[str, list[tuple[str, str]]] = {}
+        col: dict[str, dict[str, Any]] = {}
+        for k, srcs in keyed.items():
+            # the row a producer DECLARES a seat on is the page's operative registration (its
+            # rows arrive under that seat); otherwise the first definition, as everywhere
+            seated = [x for x in srcs if x.seats]
+            owner = seated[0] if seated else srcs[0]
+            regions = {x.region for x in srcs} - {"global"}
+            keep = [owner] if len(regions) <= 1 and len(seated) <= 1 else srcs
+            srcs = [owner, *[x for x in srcs if x is not owner]]
+            if len(srcs) > 1:
+                col[k] = {"owner": owner.id if len(keep) == 1 else "",
+                          "kind": "same_region" if len(keep) == 1 else "cross_region_tie",
+                          "sources": [x.id for x in srcs]}
+            for x in keep:
+                idx.setdefault(k.partition("/")[0], []).append((k, x.id))
+        self._url_collisions = col
         return idx
+
+    def url_collisions(self) -> dict[str, Any]:
+        """The published collision report: counts, and per source the ids it shares a page with
+        and who owns that page for attribution ('' = a cross-jurisdiction tie, credits nobody)."""
+        col: dict[str, dict[str, Any]] = getattr(self, "_url_collisions", None) or {}
+        if not col and self.roster:
+            self._url_index()
+            col = getattr(self, "_url_collisions", {})
+        by: dict[str, list[dict[str, str]]] = {}
+        for k, c in sorted(col.items()):
+            for sid in c["sources"]:
+                by.setdefault(sid, []).append({"url_key": k, "owner": c["owner"],
+                                               "with": ",".join(x for x in c["sources"]
+                                                                if x != sid)})
+        return {"keys": len(col), "rows": sum(len(c["sources"]) for c in col.values()),
+                "same_region_owned": sum(1 for c in col.values() if c["owner"]),
+                "cross_region_ties": sum(1 for c in col.values() if not c["owner"]),
+                "by_source": dict(sorted(by.items()))}
 
     def _seat_index(self) -> dict[str, str]:
         """DECLARED seats only: a docket `source` string a registry row says it answers for.
@@ -833,7 +946,13 @@ class Pipeline:
             rp = _INDEX_PAGE.sub("", rk.split("?", 1)[0])
             if rk == key:
                 hit = len(rk) + 1                         # exact beats any prefix
-            elif "/" in rp and (page == rp or page.startswith(rp + "/")):
+            elif "/" in rp and (page.startswith(rp + "/") or (
+                    page == rp and "?" not in rk and rp != rk.split("?", 1)[0])):
+                # a proper path prefix scopes its subtree; the page itself is taken only when the
+                # registry named its INDEX file (`/x/index.htm` is `/x`). A bare endpoint
+                # (`youtube.com/watch`, `dataview.html`) is not a scope: every `?v=` is a
+                # different page, so it matches only itself (audit 2026-09-30: the watch
+                # catch-all).
                 hit = len(rp)
             elif "/" not in rk and len(rows) == 1:        # the host's only row, site-level
                 hit = 0
@@ -847,8 +966,9 @@ class Pipeline:
 
     def attribute_source(self, row: Mapping[str, Any], idx: Mapping[str, list[tuple[str, str]]],
                          seats: Mapping[str, str]) -> tuple[str, str]:
-        """(source id, how): the declared seat, then the row's own URL, then -- only with BOTH
-        signals -- a seat named exactly as a registry id whose URL is on the same site."""
+        """(source id, how): the declared seat, then the row's own URL, then its parent's declared
+        seat (`origin_seat`, a derived row's lineage), then -- only with BOTH signals -- a seat
+        named exactly as a registry id whose URL is on the same site."""
         seat = str(row.get("source") or "")
         sid = seats.get(seat, "")
         if sid:
@@ -857,11 +977,26 @@ class Pipeline:
         sid = self.attribute_url(url, idx)
         if sid:
             return sid, "url"
-        named = self.by_id.get(seat.removeprefix("miner:"))
+        # a DERIVED row (discovery_compiler) names its parent's seat: credited only when that
+        # seat is DECLARED by a registry row, exactly as the row's own seat would be
+        origin = str(row.get("origin_seat") or "")
+        sid = seats.get(f"miner:{origin}", "") if origin else ""
+        if sid:
+            return sid, "lineage"
+        sid = self._seat_on_site(seat.removeprefix("miner:"), url)
+        if sid:
+            return sid, "seat+site"
+        # ...and the parent's seat+site credit is the derived row's too (its url is the parent's)
+        sid = self._seat_on_site(origin, url) if origin else ""
+        return (sid, "lineage") if sid else ("", "")
+
+    def _seat_on_site(self, name: str, url: Any) -> str:
+        """A seat named exactly as a registry id, credited only when the URL is on its site."""
+        named = self.by_id.get(name)
         if named is not None and _site(url) and _site(url) in {
                 _site(k) for k in named.url_keys or [named.url_key]}:
-            return named.id, "seat+site"
-        return "", ""
+            return named.id
+        return ""
 
     def attributed_evaluations(self, now: datetime | None = None) -> dict[str, Any]:
         """Per registry source: docket cells EVALUATED within ACTIVE_WINDOW.
@@ -871,6 +1006,9 @@ class Pipeline:
         key by construction. A row is credited through a DECLARED seat or its URL, never a guess;
         what stays unattributed is counted by producer so the gap is visible."""
         t = now or utcnow()
+        self._producers: dict[str, dict[str, int]] = {}   # never a previous pass's credits
+        self._organ_of: dict[str, str] = {}
+        self._map_error = ""
         try:
             rows = json.loads(self.docket.read_text("utf-8"))
         except (OSError, ValueError):
@@ -879,7 +1017,11 @@ class Pipeline:
             rows = rows.get("rows") or rows.get("items") or []
         judged = self.cells.judged_since(t - ACTIVE_WINDOW)
         idx, seats = self._url_index(), self._seat_index()
-        organ_of = _scout_seats()
+        try:
+            organ_of, map_error = _scout_seats(), ""
+        except Exception as exc:                          # loud: named in the basis, not zero
+            organ_of, map_error = {}, f"PRODUCER MAP FAILED {type(exc).__name__}: {exc}"[:200]
+        self._organ_of, self._map_error = organ_of, map_error
         by: dict[str, set[str]] = {}
         producers: dict[str, dict[str, int]] = {}
         funnel: dict[str, dict[str, int]] = {}
@@ -917,7 +1059,9 @@ class Pipeline:
                 "by_producer": dict(sorted(funnel.items())),
                 "unattributed_judged_rows": sum(unattributed.values()),
                 "unattributed_top_producers": top,
-                "basis": f"{self.docket.name} x judged_cells ({len(judged)} judged in window)"}
+                "producer_map_error": map_error,
+                "basis": (f"{self.docket.name} x judged_cells ({len(judged)} judged in window)"
+                          + (f"; {map_error}" if map_error else ""))}
 
     def register_cursors(self, now: datetime | None = None) -> int:
         """A durable cursor per canonical source, carrying its registration; fetch state kept."""
@@ -1023,6 +1167,10 @@ class Pipeline:
         via = docket["by_source"]
         runs = self.store.last_runs()
         recs = self.store.records_by_source()
+        recent = self.store.records_by_source(since=t - ACTIVE_WINDOW)
+        prods: dict[str, dict[str, int]] = getattr(self, "_producers", {})
+        self._organ_of = getattr(self, "_organ_of", {})
+        self._map_error = getattr(self, "_map_error", "")
         out = {}
         for s in self.roster:
             if not s.enabled:
@@ -1033,15 +1181,23 @@ class Pipeline:
             # Every use mints cells now: allocation_intel's facts become exogenous_conditioner
             # cells (see `conditioners`), so each use can carry a receipt.
             cell_use = bool(set(compiler.USES) & set(s.uses))
-            out[s.id] = {"status": "ACTIVE" if n >= 1 and cell_use else "COLD",
+            fetched = fetch_evidence(r, prods.get(s.id) or {}, t, s.fetcher,
+                                     int(recent.get(s.id, 0)),
+                                     registered_organs(s, self._organ_of))
+            active = n >= 1 and cell_use and bool(fetched)
+            no_fetch = "no fetcher of it ran in 30 days" + (
+                f" ({self._map_error})" if self._map_error else "")
+            out[s.id] = {"status": "ACTIVE" if active else "COLD",
                          "uses": list(s.uses),
-                         "cold_reason": ("" if n >= 1 and cell_use else
+                         "cold_reason": ("" if active else
                                          "serves no use" if not cell_use else
-                                         "no cell EVALUATED in 30 days"),
+                                         "no cell EVALUATED in 30 days" if n < 1 else
+                                         no_fetch),
+                         "fetch_evidence": fetched,
                          "consumer": s.consumer,
                          "evaluated_cells_30d": n, "priority": s.priority,
                          "evaluated_via": {"mining": n_mine, "docket": n_docket},
-                         "producers": dict(getattr(self, "_producers", {}).get(s.id, {})),
+                         "producers": dict(prods.get(s.id, {})),
                          "origin": s.origin, "url_key": s.url_key, "aliases": list(s.aliases),
                          "shares_page": list(s.shares_page),
                          "last_outcome": r.get("outcome") or "NEVER_RUN",
@@ -1302,6 +1458,7 @@ class Pipeline:
                 "aliases": sum(len(v.get("aliases") or []) for v in srcs.values()),
                 "sharing_a_page": sum(1 for v in srcs.values() if v.get("shares_page")),
                 "attribution": getattr(self, "_attribution", {}),
+                "url_collisions": self.url_collisions(),
                 "roster_files": acq.roster_files(root=self.root),
                 "by_owner": dict(sorted(by_owner.items())),
                 # EVERY COLD source by id, under its reason: committed, so a lane can see which

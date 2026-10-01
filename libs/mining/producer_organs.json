@@ -1,0 +1,33 @@
+{
+ "schema": "producer_organs/1",
+ "what": "The docket seats of the desk's INTERNAL producers (organs that are not scouts), each named to the file that stamps it. Read after research/scout_roster.py SCOUTS seats= by mining_supervisor.producer_of, so a judged docket row names the organ that made it. Every path must exist and contain its seat as a literal (tests/test_mining_pipeline.py). A seat in neither map reads unmapped:<seat>, named, never guessed. `retired` names seats whose organ no longer exists (each has a row in the retirements file); their rows read retired:<seat>, named, never unmapped.",
+ "seats": {
+  "discovery_compiler": "desks/mt5/research/discovery_compiler.py",
+  "video_anchor_exit": "desks/mt5/research/htf_anchor_proposer.py",
+  "orthogonal_sweep": "desks/mt5/research/orthogonal_sweep.py",
+  "search_paradigm_census": "desks/mt5/research/search_paradigm_census.py",
+  "moat_factory": "desks/mt5/research/moat_candidate_compiler.py",
+  "anomalies": "desks/mt5/research/compile_anomalies.py",
+  "session_chart_equivalent": "desks/mt5/research/session_chart_equivalents.py",
+  "standing_questions": "desks/mt5/research/standing_questions.py",
+  "axis_registry": "desks/mt5/research/axis_registry.py",
+  "factor_residual": "desks/mt5/research/factor_residual_engine.py",
+  "fund_playbook": "desks/mt5/research/fund_playbook.py",
+  "forexfactory": "desks/mt5/side_channels/forexfactory_miner.py",
+  "trend_core": "desks/mt5/research/trend_core.py",
+  "plumbing": "desks/mt5/research/plumbing_miner.py",
+  "macro_state_engine": "desks/mt5/research/macro_state_engine.py",
+  "world_lab": "desks/mt5/research/world_lab.py",
+  "alpha_evolution": "desks/mt5/research/alpha_evolution.py",
+  "event_response_atlas": "desks/mt5/research/event_response_atlas.py",
+  "net_edge": "desks/mt5/research/net_edge_spine.py"
+ },
+ "prefixes": {
+  "ext_": "desks/mt5/scripts/_retired/convert_to_hypotheses_v4.py"
+ },
+ "retired": {
+  "mql5_prospector": "docs/research/retirements.jsonl",
+  "mql5_catalog": "docs/research/retirements.jsonl",
+  "fxmerge": "docs/research/retirements.jsonl"
+ }
+}

@@ -911,23 +911,71 @@ def test_two_countries_naming_one_vendor_page_stay_two_sources(tmp_path: Path) -
 
 
 def test_the_live_roster_names_no_missing_file() -> None:
-    bad = [r for r in acq.roster_files(root=ROOT) if r["state"] == "MISSING"]
+    bad = [r for r in acq.roster_files(root=ROOT) if r["state"] in ("MISSING", "BROKEN")]
     assert not bad, bad
+
+
+def test_a_country_pack_that_will_not_load_is_loud(tmp_path: Path, monkeypatch: Any) -> None:
+    """A pack that raises is an error on the roster entry (BROKEN), never a silent zero; a
+    pack_cells-shape pack (no PACK export) is simply not a source table."""
+    from libs.research import country_lab
+    for cc, body in (("zz", "PACK = None\n"), ("yy", "KNOWN_GROUNDS = ()\n")):
+        (tmp_path / "c" / cc).mkdir(parents=True)
+        (tmp_path / "c" / cc / "pack.py").write_text(body, "utf-8")
+    monkeypatch.setattr(country_lab, "resolve_pack",
+                        lambda cc: (_ for _ in ()).throw(ImportError(f"no {cc}")))
+    errs: list[dict[str, str]] = []
+    assert acq.pack_rows(tmp_path / "c", errs) == []
+    assert errs == [{"pack": "zz", "error": "ImportError: no zz"}]
+    doc = {"external_rosters": [{"packs": "c"}]}
+    (tmp_path / "r.yaml").write_text(json.dumps(doc), "utf-8")
+    got = acq.roster_files(tmp_path / "r.yaml", root=tmp_path)
+    assert got[0]["state"] == "BROKEN" and got[0]["failed"] == 1
+
+
+def test_one_video_is_one_url_key_and_an_endpoint_is_no_scope() -> None:
+    for u in ("https://m.youtube.com/watch?v=AbC&t=3", "https://youtu.be/AbC?t=1",
+              "https://www.youtube.com/shorts/AbC", "youtube.com/watch?v=AbC"):
+        assert acq.canonical_url(u) == "youtube.com/watch?v=AbC", u
+    idx = {"youtube.com": [("youtube.com/watch", "corpus")],
+           "boj.or.jp": [("boj.or.jp/x/index.htm", "boj")]}
+    assert MS.Pipeline.attribute_url("https://youtu.be/AbC", idx) == ""   # not a catch-all
+    assert MS.Pipeline.attribute_url("https://boj.or.jp/x", idx) == "boj"  # the index's dir
+
+
+def test_a_pinned_family_row_names_the_judges_chart() -> None:
+    """`lvc_asia_london` is judged on M5 whatever its row says; its docket row must name the same
+    cell (the 13 rows that never joined, audit 2026-09-30)."""
+    fi = importlib.import_module("research.frontier_identity")
+    src = (ROOT / "desks" / "mt5" / "scripts" / "external_gauntlet.py").read_text("utf-8")
+    import ast
+    pinned = next(ast.literal_eval(n.value) for n in ast.parse(src).body
+                  if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "")
+                  == "_PINNED_TIMEFRAME")
+    assert pinned == fi.PINNED_TIMEFRAME
+    row = {"symbol": "GBPJPY", "family": "lvc_asia_london", "params": {}}
+    assert fi.docket_cell_id(row).startswith("GBPJPY@M5.lvc_asia_london.p=")
+    judge = {"sym": "GBPJPY", "family": "lvc_asia_london", "params": {}, "timeframe": "M5"}
+    assert fi.docket_cell_id(row) == fi.cell_id(judge)
 
 
 def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_path: Path) -> None:
     """Credit comes from a DECLARED seat or the longest proper URL prefix; a host-only registry
-    URL never captures other pages, a tie credits nobody, and an undeclared seat is nobody's."""
-    owned = [acq.Source(id="rbnz_series", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="rbnz.govt.nz/statistics", seats=["miner:asia:rbnz_series"]),
-             acq.Source(id="smart_lab_blog", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="smart-lab.ru/blog"),
-             acq.Source(id="smart_lab_home", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="smart-lab.ru"),
-             acq.Source(id="twin_a", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="x.org/p"),
-             acq.Source(id="twin_b", fetcher="owned", kind="text", uses=["direct_cells"],
-                        url_key="x.org/p")]
+    URL never captures other pages, a cross-jurisdiction tie credits nobody, one page within one
+    jurisdiction is its first definer's, an undeclared seat is nobody's -- and ACTIVE also needs
+    the source's own fetcher to have run."""
+    def src(sid: str, key: str, **kw: Any) -> acq.Source:
+        return acq.Source(id=sid, fetcher=kw.pop("fetcher", "owned"), kind="text",
+                          uses=["direct_cells"], url_key=key, **kw)
+    owned = [src("rbnz_series", "rbnz.govt.nz/statistics", seats=["miner:asia:rbnz_series"]),
+             src("smart_lab_blog", "smart-lab.ru/blog", owner="scout:world_crawler"),
+             src("smart_lab_home", "smart-lab.ru"),
+             src("twin_a", "x.org/p", region="pe"),
+             src("twin_b", "x.org/p", region="bo"),
+             src("dup_a", "y.org/q", region="cn",
+                 consumer="desks/mt5/research/orthogonal_sweep.py"),
+             src("dup_b", "y.org/q"),
+             src("boj_listing", "boj.or.jp/en/statistics", fetcher="html_listing")]
     pipe = _pipe(tmp_path, sources=owned)
     rows = [
         {"symbol": "NZDUSD", "family": "carry", "params": {"k": 1},
@@ -939,7 +987,11 @@ def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_pat
         {"symbol": "EURUSD", "family": "carry", "params": {"k": 4},
          "source": "miner:discovery_compiler", "source_url": "https://x.org/p/1"},
         {"symbol": "EURUSD", "family": "carry", "params": {"k": 5},
-         "source": "miner:smart_lab_blog", "source_url": ""}]
+         "source": "miner:smart_lab_blog", "source_url": ""},
+        {"symbol": "EURUSD", "family": "carry", "params": {"k": 6},
+         "source": "orthogonal_sweep:carry", "source_url": "https://y.org/q/7"},
+        {"symbol": "USDJPY", "family": "carry", "params": {"k": 7},
+         "source": "miner:world_crawler", "source_url": "https://www.boj.or.jp/en/statistics/a"}]
     pipe.docket.write_text(json.dumps(rows), "utf-8")
     assert pipe.source_status(T0)["rbnz_series"]["status"] == "COLD"   # nothing judged yet
     pipe.gate_ledger.write_text("".join(json.dumps(
@@ -949,25 +1001,65 @@ def test_a_lane_owned_source_is_active_only_through_a_judged_docket_cell(tmp_pat
     st = pipe.source_status(T0)
     assert st["rbnz_series"]["evaluated_via"] == {"mining": 0, "docket": 1}   # by its seat
     assert st["smart_lab_blog"]["evaluated_cells_30d"] == 1   # the URL; not the undeclared seat
+    assert st["smart_lab_blog"]["fetch_evidence"] == "producer:world_crawler"
     assert st["smart_lab_home"]["status"] == "COLD"           # host-only is not a wildcard
     assert st["twin_a"]["status"] == st["twin_b"]["status"] == "COLD"      # a tie credits nobody
+    assert st["dup_a"]["status"] == "ACTIVE" and st["dup_b"]["evaluated_cells_30d"] == 0
+    # judged and credited, but its registered fetcher (the pipeline) never ran it
+    assert st["boj_listing"]["evaluated_cells_30d"] == 1
+    assert st["boj_listing"]["cold_reason"] == "no fetcher of it ran in 30 days"
     att = pipe._attribution
-    assert att["credited_by"] == {"seat": 1, "url": 1}
+    assert att["credited_by"] == {"seat": 1, "url": 3}
+    assert att["producer_map_error"] == ""
     asia = MS.producer_of("miner:asia:rbnz_series", MS._scout_seats())
     assert att["by_producer"][asia] == {"judged": 1, "credited": 1}
+    assert att["by_producer"]["orthogonal_sweep"] == {"judged": 1, "credited": 1}
     assert st["rbnz_series"]["producers"] == {asia: 1}
     assert MS.producer_of("miner:world:x", {"world": "world_crawler"}) == "world_crawler"
+    assert MS.producer_of("ext_forexfactory_GBPUSD_srb", MS._scout_seats()) == \
+        "convert_to_hypotheses_v4"
     assert att["unattributed_judged_rows"] == 3
     assert att["unattributed_top_producers"] == {"miner:world_crawler": 1,
                                                  "miner:discovery_compiler": 1,
                                                  "miner:smart_lab_blog": 1}
+    # credited, but by an organ the row does not register: another organ citing the page is
+    # not this source's fetcher running
+    assert st["smart_lab_home"]["fetch_evidence"] == ""
+    pipe.store.log_run("boj_listing", "ok", 3, 3, "", now=T0 - timedelta(days=1))
+    assert pipe.source_status(T0)["boj_listing"]["status"] == "ACTIVE"
     assert pipe.source_status(T0 + timedelta(days=40))["rbnz_series"]["status"] == "COLD"
-    assert pipe.register_cursors(now=T0) == 5 and pipe.register_cursors(now=T0) == 0
+    assert pipe.register_cursors(now=T0) == 8 and pipe.register_cursors(now=T0) == 0
     assert pipe.cursors.get("twin_a")["registered"]["canonical_id"] == "twin_a"
+    st = pipe.source_status(T0)
     summary = pipe.registry_summary(st)
-    assert summary["active"] == 2 and summary["schema"].endswith("source_registry.schema.json")
+    assert summary["active"] == 4 and summary["schema"].endswith("source_registry.schema.json")
     assert summary["cold_by_reason"]["no cell EVALUATED in 30 days"] == [
-        "smart_lab_home", "twin_a", "twin_b"]
+        "dup_b", "smart_lab_home", "twin_a", "twin_b"]
+    col = summary["url_collisions"]
+    assert (col["keys"], col["rows"], col["same_region_owned"], col["cross_region_ties"]) == (
+        2, 4, 1, 1)
+    assert col["by_source"]["dup_b"] == [{"url_key": "y.org/q", "owner": "dup_a",
+                                          "with": "dup_a"}]
+    assert col["by_source"]["twin_a"][0]["owner"] == ""
+
+
+def test_the_producer_map_names_real_organs_and_fails_loudly(monkeypatch: Any) -> None:
+    """Every internal producer seat names a file that exists and stamps that seat; a map that
+    will not load is an error in the attribution basis, never an all-`unmapped` silence."""
+    doc = json.loads(MS.PRODUCER_ORGANS.read_text("utf-8"))
+    for seat, path in {**doc["seats"], **doc["prefixes"], **doc["retired"]}.items():
+        text = (ROOT / path).read_text("utf-8")
+        assert f'"{seat}' in text or f"'{seat}" in text, (seat, path)
+    assert MS.producer_of("mql5_prospector", MS._scout_seats()) == "retired:mql5_prospector"
+    organ_of = MS._scout_seats()
+    assert MS.producer_of("miner:broker_swaps", organ_of) == "seed_miners"
+    assert MS.producer_of("miner:world_crawler", organ_of) == "world_crawler"
+    assert MS.producer_of("miner:central_bank", organ_of) == "central_bank_miner"
+    assert MS.producer_of("session_chart_equivalent:ny_mid@H1", organ_of) == \
+        "session_chart_equivalents"
+    monkeypatch.setattr(MS, "PRODUCER_ORGANS", ROOT / "no" / "such.json")
+    with pytest.raises(OSError):
+        MS._scout_seats()
 
 
 def test_the_live_roster_is_one_registry() -> None:
@@ -1008,6 +1100,29 @@ def test_archive_captures_config_urls_and_named_seats_on_the_same_site(tmp_path:
                                   "https://youtube.com/watch?v=1"}, idx, seats) == ("", "")
 
 
+def test_a_derived_docket_row_traces_to_its_parents_declared_seat(tmp_path: Path) -> None:
+    """discovery_compiler's donation carries its parent's URL and seat; the candidate compiler
+    keeps them; the registry credits the parent's DECLARED seat, never an undeclared one."""
+    dc = importlib.import_module("research.discovery_compiler")
+    mcc = importlib.import_module("research.miner_candidate_compiler")
+    parent = {"discovery_id": "d1", "symbol": "NZDUSD", "source_url": "https://rbnz.govt.nz/a",
+              "lineage_intake": "intel:asia_rbnz:x.json", "lineage_generator": "seat:asia_rbnz"}
+    child = {"family": "carry", "symbol": "NZDUSD", "chart": "H1", "content_hash": "h"}
+    don = dc._donation_row(child, parent)
+    assert (don["url"], don["origin_seat"], don["origin_intake"]) == (
+        "https://rbnz.govt.nz/a", "asia_rbnz", "intel:asia_rbnz:x.json")
+    cand = mcc._candidate("NZDUSD", "carry", {}, "discovery_compiler", don, "carry")
+    assert cand["source_url"] == "https://rbnz.govt.nz/a" and cand["origin_seat"] == "asia_rbnz"
+    pipe = _pipe(tmp_path, sources=[acq.Source(
+        id="rbnz", fetcher="owned", kind="text", uses=["direct_cells"],
+        seats=["miner:asia_rbnz"])])
+    row = {"source": "miner:discovery_compiler", "source_url": "", "origin_seat": "asia_rbnz"}
+    seats = pipe._seat_index()
+    assert pipe.attribute_source(row, pipe._url_index(), seats) == ("rbnz", "lineage")
+    assert pipe.attribute_source({**row, "origin_seat": "nobody"}, pipe._url_index(),
+                                 seats) == ("", "")
+
+
 def test_a_lane_that_describes_its_uses_by_key_keeps_them() -> None:
     """The free stack writes `uses: {direct: {...}, indirect: {...}, allocation: {...}}`; read
     as a list it filtered to nothing and every free-stack source served no use."""
@@ -1015,3 +1130,46 @@ def test_a_lane_that_describes_its_uses_by_key_keeps_them() -> None:
                                                   "allocation": {"organ": "o"}}},
                             origin="t", defaults={"fetcher": "owned", "kind": "text"})
     assert row is not None and row.uses == ["direct_cells", "allocation_intel"]
+
+
+def test_audit_round_two_attribution_rules(tmp_path: Path) -> None:
+    """Two seat-declaring rows on one page tie; a registered organ is needed for owned evidence;
+    a derived row inherits its parent's seat+site credit; every YouTube spelling is one key; a
+    producer map that will not load is named in the COLD reason."""
+    for u in ("https://www.youtube-nocookie.com/embed/AbC?rel=0", "https://youtube.com/live/AbC",
+              "https://youtube.com/v/AbC", "https://m.youtube.com/embed/AbC"):
+        assert acq.canonical_url(u) == "youtube.com/watch?v=AbC", u
+    srcs = [acq.Source(id="cn_rail", fetcher="owned", kind="text", uses=["direct_cells"],
+                       url_key="stats.gov.cn/sj", seats=["miner:rail"]),
+            acq.Source(id="cn_power", fetcher="owned", kind="text", uses=["direct_cells"],
+                       url_key="stats.gov.cn/sj", seats=["miner:power"]),
+            acq.Source(id="boj", fetcher="owned", kind="text", uses=["direct_cells"],
+                       url_key="boj.or.jp/en/statistics")]
+    pipe = _pipe(tmp_path, sources=srcs)
+    idx, seats = pipe._url_index(), pipe._seat_index()
+    assert pipe.attribute_url("https://stats.gov.cn/sj/x", idx) == ""          # two seats: tie
+    assert pipe.url_collisions()["cross_region_ties"] == 1
+    row = {"source": "miner:discovery_compiler", "origin_seat": "boj",
+           "source_url": "https://www.boj.or.jp/en/x"}
+    assert pipe.attribute_source(row, idx, seats) == ("boj", "lineage")
+    assert MS.fetch_evidence({}, {"world_crawler": 2}, T0, "owned", 0, {"asia_collector"}) == ""
+    assert MS.fetch_evidence({}, {"asia_collector": 2}, T0, "owned", 0,
+                             {"asia_collector"}) == "producer:asia_collector"
+    assert MS.fetch_evidence({}, {"retired:x": 2}, T0, "owned", 0, None) == ""
+    pipe.docket.write_text(json.dumps([{"symbol": "USDJPY", "family": "carry", "params": {},
+                                        "source": "miner:x", "source_url":
+                                        "https://boj.or.jp/en/statistics/a"}]), "utf-8")
+    pipe.gate_ledger.write_text(json.dumps(
+        {"cell": pipe.hooks.gauntlet_cell({"symbol": "USDJPY", "family": "carry",
+                                           "params": {}}),
+         "passed": False, "terminal_gate": "pbo", "at": iso(T0)}) + "\n", "utf-8")
+    pipe.index_judged(now=T0)
+    orig = MS.PRODUCER_ORGANS
+    try:
+        MS.PRODUCER_ORGANS = ROOT / "no" / "such.json"
+        st = pipe.source_status(T0)
+    finally:
+        MS.PRODUCER_ORGANS = orig
+    assert st["boj"]["evaluated_cells_30d"] == 1
+    assert st["boj"]["cold_reason"].startswith("no fetcher of it ran in 30 days (PRODUCER MAP")
+    assert pipe._attribution["producer_map_error"].startswith("PRODUCER MAP FAILED")
