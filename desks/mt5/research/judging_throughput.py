@@ -50,7 +50,8 @@ Clock: leg `judging_throughput` in `research/hourly_cycle.py` (department valida
 `--once --budget-s 300`). Artifacts: `desks/mt5/reports/JUDGING_THROUGHPUT.json` and (2026-09-30)
 `desks/mt5/reports/JUDGING_RATE.json` -- verdicts/hour from the judge's own ledger, the backlog,
 the registry's creation rate and the ETA to drain (GROWING when creation outruns judging). Free
-cores are MEASURED with psutil (`measure_cpu`) and may only ever raise the worker count. Consumers: the
+cores are MEASURED with psutil (`measure_cpu`) and may only ever raise the worker count.
+Consumers: the
 env file above (read by the launcher and by the hourly cycle) and `GAUNTLET_BACKPRESSURE.json`'s
 next `capacity.measured.workers`, which is how the raise is verified rather than asserted.
 """
@@ -367,7 +368,8 @@ def measure_queue() -> dict[str, Any]:
     doc = _read_json(BACKPRESSURE, {}) or {}
     out: dict[str, Any] = {"status": UNMEASURED, "depth": UNMEASURED,
                            "gates_per_hour": UNMEASURED, "workers_last_sweep": UNMEASURED,
-                           "source": str(BACKPRESSURE), **_breach_backlog()}
+                           "source": str(BACKPRESSURE), **_breach_backlog(),
+                           **_burndown()}
     if not isinstance(doc, dict) or not doc:
         out["why"] = f"{BACKPRESSURE.name} absent or unreadable: queue depth is UNMEASURED"
         return out
@@ -419,6 +421,25 @@ def _value_at_risk() -> dict[str, Any]:
             "hours_to_drain": tot.get("hours_to_drain", UNMEASURED),
             "capacity_short": tot.get("capacity_short", UNMEASURED),
             "value_source": str(JUDGE_COVERAGE)}
+
+
+#: The backlog's burn-down (`research/judging_burndown.py`, leg `judging_burndown`): first rulings
+#: per day against new cells per day. Read here, never written here.
+BURNDOWN = BASE / "reports" / "JUDGING_BURNDOWN.json"
+
+
+def _burndown() -> dict[str, Any]:
+    """Whether the backlog is DRAINING or GROWING, from its own organ. Absent is UNMEASURED."""
+    doc = _read_json(BURNDOWN, None)
+    bd = doc.get("burn_down") if isinstance(doc, dict) else None
+    if not isinstance(bd, dict):
+        return {"burndown_status": UNMEASURED,
+                "burndown_why": f"{BURNDOWN.name} absent: the burn-down is UNMEASURED"}
+    return {"burndown_status": bd.get("status", UNMEASURED),
+            "burndown_net_per_day": bd.get("net_per_day", UNMEASURED),
+            "burndown_needed_first_rulings_per_hour":
+                bd.get("needed_first_rulings_per_hour", UNMEASURED),
+            "burndown_source": BURNDOWN.name}
 
 
 def _breach_backlog() -> dict[str, Any]:
@@ -542,11 +563,15 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
     elif value_short:
         deep = True
         limiting = "judge_value_at_risk"
+    elif queue.get("burndown_status") == "GROWING":
+        # THE BACKLOG IS OUTGROWING THE JUDGE (`JUDGING_BURNDOWN.json`: first rulings/day below
+        # new cells/day). Demand, exactly as a deep queue is -- one-way, it can lower nothing.
+        deep = True
+        limiting = "backlog_growing"
     elif isinstance(depth, int) and not deep and not stood_down:
         limiting = "queue"
 
     budget_mb = max(float(base["memory_budget_mb"]), float(workers) * per)
-    warm = 1 if stood_down or by_cores <= workers else max(1, min(4, by_cores - workers))
     cadence = CADENCE_FAST_MIN if deep and not stood_down else CADENCE_BASE_MIN
 
     before = queue.get("gates_per_hour")
@@ -564,7 +589,12 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
         "per_worker_mb": per,
         "memory_budget_mb": round(budget_mb, 1),
         "headroom_cap_mb": round(budget_mb, 1),
-        "warm_workers": int(warm),
+        # THE WARMER SIZES ITSELF (2026-09-30). This used to be `min(4, by_cores - workers)`,
+        # published machine-wide as WARM_WORKERS -- ONE whenever the judge held its cores, which
+        # pinned the cache warmer to one worker through every single-threaded gate phase.
+        # `scripts/warm_gauntlet_cache.py` now measures idle cores and free memory with psutil
+        # every few seconds and runs its workers at IDLE priority; nothing is published for it.
+        "warm_workers": "SELF_SIZED",
         "cadence_minutes": int(cadence),
         "shards": 1,
         "shards_why": ("the sealed file exposes no partition key -- `--only` is a filter, not a "
@@ -588,8 +618,34 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
     }
 
 
+#: EVERY SUBPROCESS THIS ORGAN RUNS IS BOUNDED, and so is their sum (CRO 2026-09-30: the leg ran
+#: 290-400 s against a 300 s budget on every pass, because `schtasks` calls carried 60 s timeouts
+#: and sat AHEAD of the artifact writes, so JUDGING_RATE.json went 4.4 h stale). One call may take
+#: `SUBPROCESS_TIMEOUT_S`; all of them together `APPLY_BUDGET_S`, counted from the moment the
+#: artifacts are already on disk.
+SUBPROCESS_TIMEOUT_S = 20.0
+APPLY_BUDGET_S = 90.0
+_APPLY_DEADLINE: list[float] = []
+_MACHINE_ENV_KEY = r"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
+
+
+def _sub_timeout() -> float:
+    """Seconds the next subprocess may take: its own cap, never past the apply deadline."""
+    import time as _time
+    if not _APPLY_DEADLINE:
+        return SUBPROCESS_TIMEOUT_S
+    left = _APPLY_DEADLINE[0] - _time.monotonic()
+    if left <= 1.0:
+        raise TimeoutError("apply budget spent; the call was skipped and is recorded as such")
+    return min(SUBPROCESS_TIMEOUT_S, left)
+
+
 ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_MEMORY_BUDGET_MB", "GAUNTLET_HEADROOM_CAP_MB",
-            "GAUNTLET_PER_WORKER_MB", "GAUNTLET_FRESH_BUDGET_SEC", "WARM_WORKERS")
+            "GAUNTLET_PER_WORKER_MB", "GAUNTLET_FRESH_BUDGET_SEC")
+
+#: Machine-scope variables this organ once published and now RETIRES. `apply_machine_env` deletes
+#: them so a stale value stops reaching the scheduled tasks (`WARM_WORKERS=1` pinned the warmer).
+RETIRED_MACHINE_KEYS = ("WARM_WORKERS",)
 
 #: The sealed file's own default for the FIRST-TIME build, and the share of the judge's real wall
 #: clock the build may have. `_prewarm_cache` is given the SAME deadline as the build loop
@@ -616,7 +672,8 @@ def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
         return None
     try:
         proc = subprocess.run(["schtasks", "/query", "/tn", task, "/xml"],
-                              capture_output=True, text=True, timeout=60, check=False)
+                              capture_output=True, text=True, timeout=_sub_timeout(),
+                              check=False)
     except Exception:
         return None
     import re
@@ -651,7 +708,6 @@ def env_for(decision: dict[str, Any]) -> dict[str, str]:
         "GAUNTLET_MEMORY_BUDGET_MB": str(int(decision["memory_budget_mb"])),
         "GAUNTLET_HEADROOM_CAP_MB": str(int(decision["headroom_cap_mb"])),
         "GAUNTLET_PER_WORKER_MB": str(int(decision["per_worker_mb"])),
-        "WARM_WORKERS": str(int(decision["warm_workers"])),
     }
     fresh = decision.get("fresh_budget_s")
     if isinstance(fresh, (int, float)) and float(fresh) > SEALED_FRESH_BUDGET_SEC:
@@ -745,14 +801,34 @@ def apply_machine_env(decision: dict[str, Any], box: dict[str, Any]) -> dict[str
         return {"status": "NOT_APPLIED", "why": "machine-scope env is a Windows mechanism"}
     done: dict[str, str] = {}
     failed: dict[str, str] = {}
+    unchanged: dict[str, str] = {}
+    # A VALUE ALREADY IN MACHINE SCOPE IS NOT RE-WRITTEN. Each `setx /M` is a registry write plus
+    # a WM_SETTINGCHANGE broadcast that can block for its whole timeout; six of them every hour
+    # were part of why this leg ran past its budget. `os.environ` of this process is what the
+    # scheduler handed it from machine scope, so equality there means there is nothing to do.
     for k, v in env_for(decision).items():
+        if os.environ.get(k) == v:
+            unchanged[k] = v
+            continue
         try:
-            subprocess.run(["setx", "/M", k, v], check=True, capture_output=True, timeout=30)
+            subprocess.run(["setx", "/M", k, v], check=True, capture_output=True,
+                           timeout=_sub_timeout())
             done[k] = v
         except Exception as exc:
             failed[k] = f"{type(exc).__name__}: {exc}"
-    status = "APPLIED" if done and not failed else ("PARTIAL" if done else "FAILED")
-    return {"status": status, "set": done, "failed": failed}
+    retired: dict[str, str] = {}
+    for k in RETIRED_MACHINE_KEYS:
+        try:
+            r = subprocess.run(["reg", "delete", _MACHINE_ENV_KEY, "/v", k, "/f"],
+                               capture_output=True, text=True, timeout=_sub_timeout(),
+                               check=False)
+            retired[k] = "DELETED" if r.returncode == 0 else "ABSENT"
+        except Exception as exc:
+            retired[k] = f"FAILED: {type(exc).__name__}: {exc}"
+    status = ("FAILED" if failed and not done and not unchanged
+              else "PARTIAL" if failed else "APPLIED")
+    return {"status": status, "set": done, "unchanged": unchanged, "failed": failed,
+            "retired": retired}
 
 
 def _next_run(task: str) -> str:
@@ -764,7 +840,8 @@ def _next_run(task: str) -> str:
     """
     try:
         proc = subprocess.run(["schtasks", "/query", "/tn", task, "/fo", "csv", "/v"],
-                              capture_output=True, text=True, timeout=60, check=False)
+                              capture_output=True, text=True, timeout=_sub_timeout(),
+                              check=False)
     except Exception:
         return ""
     import csv
@@ -808,7 +885,7 @@ def apply_cadence(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
     try:
         subprocess.run(["schtasks", "/Change", "/TN", GAUNTLET_TASK, "/RI", str(int(minutes)),
                         "/DU", CADENCE_DURATION],
-                       check=True, capture_output=True, timeout=60)
+                       check=True, capture_output=True, timeout=_sub_timeout())
     except Exception as exc:
         return {"status": "FAILED", "minutes": int(minutes), "task": GAUNTLET_TASK,
                 "next_run_before": before, "why": f"{type(exc).__name__}: {exc}"}
@@ -822,8 +899,25 @@ def apply_cadence(minutes: int, box: dict[str, Any]) -> dict[str, Any]:
                     "is not a repetition this organ can re-arm, and the judge is idle")}
 
 
+def _write_atomic(path: Path, doc: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> dict[str, Any]:
-    """Measure the box, size the judge, publish the decision and apply it where it is read."""
+    """Measure the box, size the judge, PUBLISH, and only then apply where it is read.
+
+    ORDER IS THE FIX (CRO 2026-09-30). Every artifact -- the env file, JUDGING_RATE.json and
+    JUDGING_THROUGHPUT.json -- is written BEFORE any `setx`/`schtasks` call, so a slow or hung
+    apply can no longer cost the hour its measurement (it cost 4.4 h of JUDGING_RATE staleness).
+    The apply is best-effort inside `APPLY_BUDGET_S`, each call inside `SUBPROCESS_TIMEOUT_S`,
+    and its outcome is written into JUDGING_THROUGHPUT.json by a second, equally atomic write.
+    """
+    import time as _time
+
+    t0 = _time.monotonic()
     box = measure_box(now)
     costs = declared_costs()
     queue = measure_queue()
@@ -831,21 +925,21 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     # THE BUILD BUDGET, FROM THE TASK'S OWN LIMIT. Measured 2026-09-24: the pre-warm shares the
     # build deadline and spent 2,874 s of a 2,700 s budget on a 250,992-cell docket, leaving
     # 67,910 cells never built. This gives the judge the wall clock its own scheduled task already
-    # allows and floors it at the sealed default, so it can only ever add time.
+    # allows and floors it at the sealed default, so it can only ever add time. A query that times
+    # out reuses the last limit this organ read on this box, and says so.
     _limit = task_time_limit_s() if box.get("is_judging_box") else None
+    _limit_basis = "schtasks" if _limit is not None else UNMEASURED
+    if _limit is None and box.get("is_judging_box"):
+        prev = ((_read_json(OUT, {}) or {}).get("decision") or {}).get("task_time_limit_s")
+        if isinstance(prev, (int, float)) and prev > 0:
+            _limit, _limit_basis = float(prev), "previous_pass (schtasks query unanswered)"
     _fresh, _fresh_why = fresh_budget_s(_limit)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
     decision["task_time_limit_s"] = _limit if _limit is not None else UNMEASURED
-    applied: dict[str, Any] = {"env_file": UNMEASURED, "machine_env": UNMEASURED,
-                               "cadence": UNMEASURED, "process_env": {}}
-    if write:
-        write_env(decision, box=box)
-        applied["env_file"] = str(ENV_FILE)
-        applied["process_env"] = apply_env()
-    if apply:
-        applied["machine_env"] = apply_machine_env(decision, box)
-        applied["cadence"] = apply_cadence(int(decision["cadence_minutes"]), box)
+    decision["task_time_limit_basis"] = _limit_basis
+    applied: dict[str, Any] = {"env_file": UNMEASURED, "machine_env": "PENDING",
+                               "cadence": "PENDING", "process_env": {}}
     payload: dict[str, Any] = {
         "at": _now(now).isoformat(timespec="seconds"),
         "status": "MEASURED" if box.get("source") != UNMEASURED else UNMEASURED,
@@ -865,14 +959,30 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
     except Exception as exc:     # a broken rate read must never cost the sizing decision
         payload["rate"] = {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     if write:
-        RATE_OUT.parent.mkdir(parents=True, exist_ok=True)
-        rtmp = RATE_OUT.with_suffix(".json.tmp")
-        rtmp.write_text(json.dumps(payload["rate"], indent=1, default=str), encoding="utf-8")
-        os.replace(rtmp, RATE_OUT)
-        OUT.parent.mkdir(parents=True, exist_ok=True)
-        tmp = OUT.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
-        os.replace(tmp, OUT)
+        write_env(decision, box=box)
+        applied["env_file"] = str(ENV_FILE)
+        applied["process_env"] = apply_env()
+        _write_atomic(RATE_OUT, payload["rate"])
+        payload["measure_seconds"] = round(_time.monotonic() - t0, 1)
+        _write_atomic(OUT, payload)
+    if apply:
+        _APPLY_DEADLINE[:] = [_time.monotonic() + APPLY_BUDGET_S]
+        try:
+            steps: tuple[tuple[str, Any], ...] = (
+                ("machine_env", lambda: apply_machine_env(decision, box)),
+                ("cadence", lambda: apply_cadence(int(decision["cadence_minutes"]), box)))
+            for name, fn in steps:
+                try:
+                    applied[name] = fn()
+                except Exception as exc:   # best effort: the measurement is already published
+                    applied[name] = {"status": "FAILED", "why": f"{type(exc).__name__}: {exc}"}
+        finally:
+            _APPLY_DEADLINE[:] = []
+    else:
+        applied["machine_env"] = applied["cadence"] = "NOT_ATTEMPTED (dry run)"
+    payload["seconds"] = round(_time.monotonic() - t0, 1)
+    if write:
+        _write_atomic(OUT, payload)
         try:
             from libs.ops.events import leg_events
             leg_events("judging_throughput", "OK", workers=int(decision["workers"]),

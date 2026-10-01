@@ -468,6 +468,79 @@ def measure_causal_invariance(r: Any, _alloc: dict[str, Any],
                     f"yet. No candidate was refused: the rail can only cost queue position.")}
 
 
+def measure_tier_s_block(r: Any, alloc: dict[str, Any],
+                         _fv: dict[str, Any]) -> dict[str, Any]:
+    """What the Tier S promotion door withheld, priced by the forward expectancy it carried.
+
+    Each withheld row's clock had a forward mean R (`exp_r`) when it was refused. A door whose
+    refusals carry POSITIVE forward R on average is costing growth (those were paying clocks);
+    one whose refusals carry NEGATIVE R is earning its place. Per refusal, log-wealth forgone is
+    mean R x the heat one sleeve carries in the current book -- the same unit `measure_veto`
+    uses. Fewer than ten priced refusals is UNMEASURED, said with the count."""
+    rows: list[dict[str, Any]] = []
+    try:
+        for line in (BASE / "data" / "tier_s" / "promotion_blocks.jsonl").read_text(
+                "utf-8").splitlines():
+            if line.strip():
+                rows.append(json.loads(line))
+    except (OSError, ValueError):
+        rows = []
+    if not rows:
+        return {"verdict": NOT_BINDING, "n": 0, "value_logw_per_day": 0.0,
+                "why": "the Tier S door has withheld no promotion on this host"}
+    by: dict[str, int] = {}
+    for x in rows:
+        by[str(x.get("reason"))] = by.get(str(x.get("reason")), 0) + 1
+    rs = [float(x["exp_r"]) for x in rows if isinstance(x.get("exp_r"), (int, float))]
+    if len(rs) < 10:
+        return {"verdict": UNMEASURED, "n": len(rows), "by_reason": by,
+                "why": f"{len(rs)} withheld row(s) carry a forward R; ten are needed to price"}
+    q = float(np.mean(list((alloc.get("book") or {}).values()) or [0.0]))
+    m = float(np.mean(rs))
+    return {"verdict": COSTS if m > 0 else EARNS, "n": len(rows), "by_reason": by,
+            "mean_withheld_r": round(m, 5), "value_logw_per_veto": round(-m * q, 6)}
+
+
+#: E8 gold's intents journal: the duplicate guard journals each block as RAIL_BLOCKED there.
+E8_INTENTS = BASE / "data" / "e8_gold_intents.jsonl"
+
+
+def measure_e8_unowned_block(r: Any, _alloc: dict[str, Any],
+                             _fv: dict[str, Any]) -> dict[str, Any]:
+    """What E8 gold's duplicate guard stood aside from, read from the lane's own journal.
+
+    Each RAIL_BLOCKED row is a dropped bracket leg NOT re-sent because an unowned same-side
+    position opened after the failed send may have been that send. If it was, the block saved a
+    doubled position; if not, it forwent the leg's certified risk (`missed_growth_risk_usd`).
+    Which one it was is not observable from the journal, so the verdict stays UNMEASURED with
+    the count and the undeployed risk published. That figure is the risk the blocked legs would
+    have carried, NOT a bound on the growth forgone: a leg that ran to target earns its R:R
+    multiple of that risk, so the forgone profit can exceed it several times over."""
+    rows: list[dict[str, Any]] = []
+    try:
+        for line in E8_INTENTS.read_text("utf-8").splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if isinstance(row, dict) and row.get("status") == "RAIL_BLOCKED" \
+                    and row.get("rail") == r.name:
+                rows.append(row)
+    except (OSError, ValueError):
+        return {"verdict": UNMEASURED, "why": "the E8 intents journal is missing or unreadable"}
+    if not rows:
+        return {"verdict": NOT_BINDING, "n": 0,
+                "why": "the guard has not blocked a re-send on this host"}
+    risk = [float(x["missed_growth_risk_usd"]) for x in rows
+            if isinstance(x.get("missed_growth_risk_usd"), (int, float))]
+    return {"verdict": UNMEASURED, "n": len(rows),
+            "undeployed_risk_usd": round(sum(risk), 2),
+            "last_at": rows[-1].get("at"),
+            "why": ("each block leaves the leg's certified risk undeployed only if the blocking "
+                    "position was not the lost send; the journal cannot tell which. The figure "
+                    "is risk, not forgone profit, which can be R:R times larger; it is "
+                    "published rather than priced as zero")}
+
+
 MEASURES = {name: fn for name, fn in globals().items() if name.startswith("measure_")}
 
 

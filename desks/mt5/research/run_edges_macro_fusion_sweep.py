@@ -44,13 +44,15 @@ import warnings
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 warnings.filterwarnings("ignore", category=UserWarning)
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
-
 from mt5desk import families, macro_regime  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
+
+from libs.tiers.bitemporal import BitemporalStore, Datum  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
@@ -107,7 +109,7 @@ COST_REGIMES = {"WIDE": 2.0, "RAW": 0.2, "ZERO": 0.0}
 
 
 #: MEASURED, not published: 2.00 in ACCOUNT CURRENCY per lot per side, over all 433
-#: deals account 495044 has ever done (reports/COST_TRUTH.json, 2026-09-23, p10=p50=p90).
+#: deals the live Fusion account has ever done (reports/COST_TRUTH.json, 2026-09-23, p10=p50=p90).
 #: Mirrors `libs.portfolio.fusion_cost.COMMISSION_PER_LOT_PER_SIDE`. The 2.25 this
 #: replaced was the brochure's USD figure fed to a field `Costs.from_symbol` converts as
 #: ACCOUNT currency -- a 1.125x overcharge on the term that is ~98% of this book's cost.
@@ -147,6 +149,43 @@ def _favourable(hist: pd.DataFrame, col: str, lookback: int):
     return (s - s.shift(lookback)) < 0
 
 
+#: WHEN A DAILY MACRO PRINT BECOMES KNOWABLE ON THE BAR CLOCK. The frame is indexed by the day a
+#: value REFERS TO; FRED posts a market close the following day, and the H1 index is BROKER time
+#: under a UTC tzinfo (+2 winter / +3 summer, `libs/research/bar_clock`). One day plus the largest
+#: broker offset is the earliest bar that could have read the print, under either clock.
+#: `orthogonal_sweep.MACRO_PUBLICATION_LAG_D` is the same one-day rule on the research side.
+MACRO_KNOWABLE_AFTER = pd.Timedelta(days=1, hours=3)
+
+
+def favourable_store(fav: pd.Series, col: str) -> BitemporalStore:
+    """The favourable-state series as BITEMPORAL rows: valid time = the day the state describes,
+    knowledge time = when that day's print could first be read on the bar clock.
+
+    THE LOOK-AHEAD THIS CLOSES. The sweep used to condition a signal on the state of its OWN
+    calendar date (`s.time.date() in fav_dates`), and that state is computed from the day's
+    CLOSE -- so a 03:00 breakout was filtered on a yield change that printed about eighteen hours
+    later. Every conditioned t-statistic in the report carried it. Reading through the store,
+    each signal sees only the latest state KNOWN at its own time."""
+    store = BitemporalStore()
+    for day, val in fav.items():
+        if pd.isna(val):
+            continue
+        t = pd.Timestamp(day)
+        t = t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+        store.add(Datum(entity=col, attribute="favourable", value=bool(val),
+                        valid_time=t.isoformat(),
+                        knowledge_time=(t + MACRO_KNOWABLE_AFTER).isoformat(),
+                        source="mt5desk.macro_regime.load_history",
+                        latency_s=MACRO_KNOWABLE_AFTER.total_seconds()))
+    return store
+
+
+def pit_conditioned(sigs: list, store: BitemporalStore, col: str) -> list:
+    """The signals whose macro state, AS KNOWN AT THE SIGNAL'S OWN TIME, was favourable."""
+    known = store.latest_known(col, "favourable", [s.time for s in sigs])
+    return [s for s, d in zip(sigs, known, strict=True) if d is not None and d.value]
+
+
 def main() -> int:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     hist = macro_regime.load_history()
@@ -163,23 +202,34 @@ def main() -> int:
           f"Cheaper costs rank more candidates; they do not create edge.\n")
 
     rows = []
+    pit: dict[str, dict] = {}
     for sym, (col, lookback, _why) in CONDITION.items():
         p = UNI / f"{sym}_H1.parquet"
         if not p.exists() or sym not in meta:
             continue
         h1 = pd.read_parquet(p)
         fav = _favourable(hist, col, lookback)
+        store = favourable_store(fav, col) if fav is not None else BitemporalStore()
+        # the old same-date join, kept ONLY to count what it admitted that nobody could know
         fav_dates = set(fav[fav].index.date) if fav is not None else set()
+        pit_sym = pit.setdefault(sym, {"driver": col, "store_rows": len(store.rows),
+                                       "signals": 0, "pit_admitted": 0,
+                                       "date_join_admitted": 0, "lookahead_refused": 0})
 
         for ename, fn in EDGES.items():
             try:
                 sigs = fn(h1)
-            except Exception as e:                        # noqa: BLE001
+            except Exception as e:
                 print(f"  SKIP {sym}/{ename}: {e}")
                 continue
             if not sigs:
                 continue
-            cond = [s for s in sigs if s.time.date() in fav_dates]
+            cond = pit_conditioned(sigs, store, col)
+            same_day = {id(s) for s in sigs if s.time.date() in fav_dates}
+            pit_sym["signals"] += len(sigs)
+            pit_sym["pit_admitted"] += len(cond)
+            pit_sym["date_join_admitted"] += len(same_day)
+            pit_sym["lookahead_refused"] += len(same_day - {id(s) for s in cond})
 
             for rname, mult in COST_REGIMES.items():
                 costs = _costs(meta[sym], mult)
@@ -237,6 +287,14 @@ def main() -> int:
         "families_missing": MISSING_EDGES,
         "n_families_tested": len(EDGES), "n_families_declared": len(EDGE_NAMES),
         "rows": rows,
+        # THE CONDITIONING READ, POINT-IN-TIME (Tier S S02): every macro-conditioned arm reads
+        # its state through `libs/tiers/bitemporal.BitemporalStore.latest_known`, and the counts
+        # say what the old same-date join admitted that was not yet knowable.
+        "pit": {"store": "libs.tiers.bitemporal.BitemporalStore.latest_known",
+                "knowable_after_h": MACRO_KNOWABLE_AFTER.total_seconds() / 3600.0,
+                "per_symbol": pit,
+                "lookahead_refused": sum(v["lookahead_refused"] for v in pit.values()),
+                "pit_admitted": sum(v["pit_admitted"] for v in pit.values())},
     }, indent=2, default=str), encoding="utf-8")
     print(f"\n-> {out}")
     return 0

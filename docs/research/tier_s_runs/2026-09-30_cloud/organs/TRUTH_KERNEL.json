@@ -1,0 +1,45 @@
+{
+ "verify": {
+  "ok": true,
+  "n": 679,
+  "tail": "956a8b8d89b6f333d487e08f9f61e67a8fe2a4044bb8e46feee43b60f8cdb699"
+ },
+ "coverage": {
+  "fills": 108,
+  "fully_reconstructible": 3,
+  "share": 0.027777777777777776,
+  "depth_histogram": {
+   "7": 105,
+   "8": 3
+  },
+  "nodes": 679
+ },
+ "nodes_by_kind": {
+  "raw_data": 28,
+  "transformation": 30,
+  "hypothesis": 58,
+  "experiment": 58,
+  "certificate": 58,
+  "allocation": 300,
+  "order": 39,
+  "fill": 108
+ },
+ "new_nodes": 0,
+ "constitution": {
+  "status": "SEALED",
+  "hash": "ce7fc520f6aff2540f5b6cd62f15328d60931fa49486c5824dd7a924349d28aa",
+  "ratifications_rejected": []
+ },
+ "evidence_seal": {
+  "n_ledgers": 6,
+  "violations": []
+ },
+ "metric": {
+  "fill_reconstructible_share": 0.027777777777777776,
+  "journal_ok": 1.0,
+  "rewrites": 0,
+  "constitution_violation": 0.0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 0.143
+}

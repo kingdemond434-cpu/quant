@@ -40,11 +40,9 @@ def run(seed: int = 0) -> dict:
     return d
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=0)
-    a = ap.parse_args()
-    d = run(seed=a.seed)
+def publish(d: dict) -> None:
+    """Stamp authority onto the run and publish it to both paths its readers use. The daily
+    chain and the hourly leg both call this: a run that is not published reaches no leg."""
     # AUTHORITY IS CLAIMED BY THE ORGAN THAT OBEYED (2026-09-16): `research_budget` records which
     # legs spent by these shares; this only reads that record back onto its own report.
     try:
@@ -110,6 +108,14 @@ def main() -> int:
         print(f"  published: {rep}")
     except Exception as exc:
         print(f"  authoritative: unmeasured ({type(exc).__name__}: {exc})")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--seed", type=int, default=0)
+    a = ap.parse_args()
+    d = run(seed=a.seed)
+    publish(d)
     print(f"RESEARCH BANDIT  {d['graph_rows']} graph rows, pooled certify rate "
           f"{d['arms'].get('_pooled_rate')}")
     for arm, s in sorted(d["shares"].items(), key=lambda kv: -kv[1]):

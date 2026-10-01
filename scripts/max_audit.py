@@ -3947,6 +3947,13 @@ _TERMINAL_ARTIFACTS = {
         "its own: staleness here is staleness of the source, which is governed where the source "
         "is. Claimed as a directory class because the vault takes a new file for every lesson "
         "the desk ever records.",
+    # THE LOCKBOX v4 EVIDENCE (2026-10-01): the measured basis the sealed gate_spec cites for
+    # fixed_variance_of_sharpes 0.0002 and the three lockbox reads. A dated record of one
+    # measurement, terminal once written; a new measurement is a new dated section, not an edit.
+    "docs/research/LOCKBOX_BAR.md":
+        "TERMINAL EVIDENCE: the sealed-suite measurement (cloud grid 2026-09-30, real-judge "
+        "confirmation 15/130 real, 0/318 traps) that desks/mt5/policy/gate_spec.yaml cites for "
+        "its DSR variance and lockbox reads. Governed by the seal on gate_spec, which names it.",
     # AUDIT COMPLETION LEDGERS (2026-09-29). One per external audit: which item landed where,
     # and what is blocked on whom. Claimed as a directory class because each audit adds one.
     "docs/audit/":
@@ -4358,6 +4365,10 @@ _TERMINAL_ARTIFACTS = {
         "DERIVED RENDERING, rewritten whole by desks/mt5/research/self_repair_registry.py (hourly leg self_repair). Nothing in it is authored; its "
         "staleness is its producer's, which the component registry and runtime attestation "
         "govern.",
+    "docs/research/TIER_S_PROGRAM.md":
+        "DERIVED RENDERING, rewritten whole by scripts/check_tier_s_program.py --render from "
+        "docs/research/tier_s_program.json (the 46-layer Tier S ledger that fence verifies at "
+        "every law-gate run). Nothing in it is authored; live verdicts are the tier_s organ's.",
     "docs/research/TIER5_AUDIT.md":
         "DERIVED RENDERING, rewritten whole by scripts/check_tier5_audit.py from docs/research/tier5_audit.json. Nothing in it is authored; its "
         "staleness is its producer's, which the component registry and runtime attestation "

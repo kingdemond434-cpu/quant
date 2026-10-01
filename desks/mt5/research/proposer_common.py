@@ -138,7 +138,8 @@ def artifact_hours(d: pd.DataFrame) -> dict[int, float]:
 
 
 def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
-           unfillable: dict[int, float] | None = None) -> dict[str, Any] | None:
+           unfillable: dict[int, float] | None = None, *,
+           detail: bool = False) -> dict[str, Any] | None:
     """Forward return of each signal at its own TTL, net of cost, on non-overlapping trades.
 
     Entry is the OPEN of the bar after the signal, as the engine fills it. A signal inside a live
@@ -146,6 +147,10 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
     signal whose fill bar opens at an artifact hour (see `artifact_hours`) is skipped too, and
     the count of such refusals is reported: a cell that only pays when filled at a marked price
     is not a cell.
+
+    `detail=True` adds the per-trade log returns and their entry bar positions (`pnl`,
+    `entry_pos`), so a caller can fold them in time -- a purged walk-forward -- on exactly the
+    trades this screen took, rather than re-implementing the fill rules above.
     """
     if not signals:
         return None
@@ -168,6 +173,7 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
               if t is None or not math.isfinite(float(t))}
     pos = {ts: i for i, ts in enumerate(idx)}
     pnl: list[float] = []
+    entries: list[int] = []
     last_exit = -1
     refused = 0
     delayed = 0
@@ -236,6 +242,7 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
         if not math.isfinite(r):
             continue
         pnl.append(r)
+        entries.append(entry)
         last_exit = exit_
     if len(pnl) < MIN_TRADES:
         return None
@@ -248,7 +255,8 @@ def screen(d: pd.DataFrame, signals: Sequence[Any], cost: float,
             "net_per_trade": round(gross - cost, 8), "cost_frac": round(cost, 8),
             "t_gross": round(gross / (sd / math.sqrt(arr.size)), 3),
             "clears_cost": bool(gross > cost), "refused_unfillable": int(refused),
-            "delayed_fills": int(delayed)}
+            "delayed_fills": int(delayed),
+            **({"pnl": [float(x) for x in pnl], "entry_pos": entries} if detail else {})}
 
 
 def deflate(rows: list[dict]) -> list[dict]:
@@ -459,6 +467,28 @@ def _preregister(source: str, candidates: list[dict]) -> dict[str, Any]:
     return out
 
 
+def _blinded(source: str, candidates: list[dict]) -> tuple[list[dict], dict[str, Any]]:
+    """TIER S LAYER 4 AT THE WRITE DOOR. A proposer's output that carries the desk's held-out,
+    lockbox, forward or gate OUTCOMES is evidence the proposer read them: the fields are stripped
+    before the row is stamped (so the payload hash covers the blind row), and the pass is counted
+    in data/tier_s/blinding_runtime.jsonl, where organ_market withholds the seat's passes from
+    the independent-discovery count. A row is never refused for it -- mining is not reduced."""
+    try:
+        import sys
+        root = str(_DESK.parents[1])
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.tiers.blinding import RuntimeCounter
+    except Exception as exc:
+        return candidates, {"status": f"UNMEASURED: {type(exc).__name__}"}
+    counter = RuntimeCounter("output")
+    clean = [counter.filter(source, c) if isinstance(c, dict) else c for c in candidates]
+    rep = counter.report()
+    if rep["violations"]:
+        counter.publish(INTEL.parent, "tier_s/blinding_runtime.jsonl")
+    return clean, {k: rep[k] for k in ("rows", "violations", "fields_stripped")}
+
+
 def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
     """Write the discovery contract. A control run must NEVER call this.
 
@@ -473,6 +503,8 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                      "refused_wrong_lane": 0, "refusals": [], "lane_refusals": []}
     if not candidates:
         return None
+    candidates, blinded = _blinded(source, candidates)
+    LAST_DONATION["blinded"] = blinded
     candidates, lane_refused = _lane_filtered(candidates)
     LAST_DONATION["refused_wrong_lane"] = len(lane_refused)
     LAST_DONATION["lane_refusals"] = lane_refused[:20]
@@ -501,6 +533,7 @@ def donate(source: str, candidates: list[dict], tests_run: int) -> Path | None:
                                 "counts": {"donated": len(candidates),
                                            "refused_unstamped": len(refused),
                                            "refused_wrong_lane": len(lane_refused),
+                                           "blinded_rows": int(blinded.get("violations") or 0),
                                            "preregistered": prereg["preregistered"],
                                            "prereg_failed": prereg["failed"]},
                                 "prereg": prereg,

@@ -9,7 +9,7 @@ would never have paid". `desks/mt5/research/cost_truth.py` measures the three re
 the model CHARGES, what the broker QUOTES on this account, what the desk has actually PAID --
 and this fence is what stops that measurement from becoming a report nobody reads.
 
-WHAT IT FOUND ON THE FIRST RUN (2026-09-23, account 495044, 433 deals, 31 days of M1):
+WHAT IT FOUND ON THE FIRST RUN (2026-09-23, the live Fusion account, 433 deals, 31 days of M1):
 GBPCHF is charged 165.0 points against a book whose own tape quotes a median 0.0 and a p90 of
 1.0; CADCHF 98.0 against 0.0/1.0; AUDCHF 110.5 against 0.0/3.0; XAUUSD 14.5 against 5.0 at the
 desk's own fill minutes. Commission -- a median 98% of the charged cost on this account -- is

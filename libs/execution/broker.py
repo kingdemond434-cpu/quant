@@ -7,8 +7,10 @@ fake. Orders carry a client-side ``idempotency_key`` so a retry never places a d
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from pathlib import Path
+from typing import Any, Protocol, runtime_checkable
 
 from libs.execution.errors import BrokerError
 
@@ -58,15 +60,34 @@ class BrokerGateway(Protocol):
     def get_order(self, client_order_id: str) -> BrokerOrderResult | None: ...
 
 
+#: The desk root that holds `mt5desk` (the one door for money lives there).
+_MT5_DESK = Path(__file__).resolve().parents[2] / "desks" / "mt5"
+
+
+def _order_door() -> Any:
+    """`mt5desk.order_door`, importable from `libs` without the caller arranging sys.path."""
+    if str(_MT5_DESK) not in sys.path:
+        sys.path.insert(0, str(_MT5_DESK))
+    from mt5desk import order_door
+    return order_door
+
+
 class MT5Broker:  # pragma: no cover - requires a live Windows MT5 terminal
-    """Real broker gateway backed by the ``MetaTrader5`` package."""
+    """Real broker gateway backed by the ``MetaTrader5`` package.
+
+    ONE DOOR FOR MONEY (2026-09-30): the module is bound through `mt5desk.order_door.guard`, so
+    `place_order` and `cancel_order` reach the venue only through `order_door.send` -- broker
+    `order_check` first, one ledger row per attempt, the answer validated, an in-doubt send never
+    repeated blind. A door refusal comes back shaped like a venue result (retcode, order, deal,
+    volume, price) and is reported as `rejected`, the same as a broker refusal.
+    """
 
     def __init__(self) -> None:
         try:
             import MetaTrader5 as mt5
         except ImportError as exc:
             raise BrokerError("the MetaTrader5 package is not installed") from exc
-        self._mt5 = mt5
+        self._mt5 = _order_door().guard(mt5, caller="libs.execution.broker")
         if not mt5.initialize():
             raise BrokerError(f"MT5 initialize() failed: {mt5.last_error()}")
 
@@ -90,11 +111,11 @@ class MT5Broker:  # pragma: no cover - requires a live Windows MT5 terminal
         filled = result.retcode == mt5.TRADE_RETCODE_DONE
         return BrokerOrderResult(
             client_order_id=request.idempotency_key,
-            broker_order_id=int(result.order),
+            broker_order_id=int(result.order or 0),
             status="filled" if filled else "rejected",
-            filled_qty=float(result.volume),
-            fill_price=float(result.price),
-            deal_id=int(result.deal),
+            filled_qty=float(result.volume or 0.0),
+            fill_price=float(result.price or 0.0),
+            deal_id=int(result.deal or 0),
             message=str(result.comment),
         )
 

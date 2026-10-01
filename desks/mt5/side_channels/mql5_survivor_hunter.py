@@ -36,7 +36,18 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 LIST_PAGES = [("mt5", 1), ("mt5", 2), ("mt5", 3), ("mt4", 1)]
 DEEP_FETCH_CAP = 18
 CARD_RE = re.compile(r'href="(/en/signals/(\d+)[^"]*)"[^>]*>([^<]{3,90})<')
-NUM = r"[-+]?\d[\d\s,]*\.?\d*"
+#: A number as MQL5 prints it: thousands grouped by a space, a no-break space or a comma
+#: ("2 281", "20,585.63"), or plain. The old `\d[\d\s,]*` let whitespace -- newlines included --
+#: glue two separate numbers into one.
+NUM = r"[-+]?(?:\d{1,3}(?:[ \u00a0,]\d{3})+|\d+)(?:\.\d+)?"
+#: The page line is `Profit Trades: 2 281 (76.90%)` -- a COUNT, then the percent in parentheses.
+#: Until 2026-09-30 `field` read the count into `win_pct`: 2,985 of 3,154 committed rows carried
+#: a "win rate" above 100 (a 2,296% one reached the PR #160 committee), and all 3,042 rows with
+#: both fields held a win count <= trades, i.e. every one was a count.
+_MARKUP = r"\s*:?\s*(?:</[^>]+>\s*<[^>]+>\s*)*"
+WIN_LABEL = r"Profit(?:able)?\s+Trades"
+#: Total trades, never the `Profit Trades` / `Loss Trades` lines that also end in "Trades".
+TRADES_LABEL = r"(?<!Profit )(?<!Profitable )(?<!Loss )(?<!Losing )\bTrades"
 
 
 def fetch(url: str) -> str:
@@ -61,15 +72,56 @@ def field(html: str, label: str) -> float | None:
     return None
 
 
+def _pct(s: str) -> float | None:
+    """A percent as printed: "76.90", or with a decimal comma "76,90" (a non-English locale)."""
+    s = s.strip().replace("\u00a0", "").replace(" ", "")
+    if re.fullmatch(r"\d+,\d{1,2}", s):
+        s = s.replace(",", ".")
+    try:
+        return float(s.replace(",", ""))
+    except ValueError:
+        return None
+
+
+def win_rate(html: str, trades: float | None) -> tuple[float | None, str]:
+    """(win rate in percent, how it was read) -- never the win COUNT.
+
+    1. the percent MQL5 prints in parentheses after the count;
+    2. else the count over total trades, when both were read and count <= trades;
+    3. else a bare percent (a value followed by `%`) inside [0, 100];
+    4. else UNMEASURED (None). A number that cannot be a rate is never written as one."""
+    m = re.search(WIN_LABEL + _MARKUP + "(" + NUM + r")\s*\(\s*([\d.,\s]+?)\s*%\s*\)", html,
+                  re.IGNORECASE)
+    if m:
+        p = _pct(m.group(2))
+        if p is not None and 0.0 <= p <= 100.0:
+            return p, "percent_in_parentheses"
+    m = re.search(WIN_LABEL + _MARKUP + "(" + NUM + r")(\s*%)?", html, re.IGNORECASE)
+    if m:
+        try:
+            v = float(re.sub(r"[ \u00a0,]", "", m.group(1)))
+        except ValueError:
+            return None, "unparsed"
+        if m.group(2):
+            return (v, "bare_percent") if 0.0 <= v <= 100.0 else (None, "percent_out_of_bounds")
+        if trades and trades > 0 and 0.0 <= v <= trades:
+            return round(100.0 * v / trades, 2), "count_over_trades"
+        return None, "count_without_trades"
+    return None, "absent"
+
+
 def deep_stats(sid: str) -> dict:
     html = fetch(f"https://www.mql5.com/en/signals/{sid}")
+    trades = field(html, TRADES_LABEL)
+    win, win_basis = win_rate(html, trades)
     stats = {
         "growth_pct": field(html, "Growth"),
         "weeks": field(html, "Weeks"),
         "pf": field(html, "Profit Factor"),
         "max_dd_pct": field(html, r"Maximal?\s+drawdown"),
-        "trades": field(html, "Trades"),
-        "win_pct": field(html, r"Profit(?:able)?\s+Trades"),
+        "trades": trades,
+        "win_pct": win,
+        "win_pct_basis": win_basis,
         "algo_pct": field(html, r"Algo\s*trading"),
         "subscribers": field(html, "Subscribers"),
     }
@@ -172,25 +224,46 @@ def run_and_save() -> list[dict]:
                      "found_at": now.isoformat(timespec="seconds"),
                      "platform": c["platform"], "phenotypes": tags, "ev_score": ev,
                      **{k: v for k, v in s.items() if k != "symbols_seen"}})
+    # THE SHARED METRIC FENCE, AT THE SCRAPER TOO (libs/research/metric_fence.py). The compiler
+    # refuses these rows before any cell exists; here they are marked and kept off the ranked
+    # shortlist, so an impossible record is never what "judgment" reads first.
+    refused = 0
+    fence = None
+    try:
+        import sys
+        root = str(BASE.parent.parent)
+        if root not in sys.path:
+            sys.path.insert(0, root)
+        from libs.research.metric_fence import fence_row
+        fence = fence_row
+        for r in rows:
+            bad = fence_row(r)
+            if bad:
+                r["metric_refused"] = bad
+                refused += 1
+    except ImportError as exc:
+        print(f"  metric fence unavailable here ({exc}); the compiler still applies it")
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / f"discoveries_{now:%Y%m%d_%H%M}.json").write_text(
         json.dumps(rows, indent=1, default=str), "utf-8")
     # ranked shortlist: the ONLY thing judgment needs to read
-    short = sorted((r for r in rows if r["ev_score"] > 0 and r["phenotypes"]),
+    short = sorted((r for r in rows if r["ev_score"] > 0 and r["phenotypes"]
+                    and not r.get("metric_refused")),
                    key=lambda r: -r["ev_score"])[:25]
     try:
         prev = json.loads(SHORTLIST.read_text("utf-8")).get("shortlist", [])
     except (OSError, ValueError):
         prev = []
     seen = {r["url"] for r in short}
-    merged = short + [p for p in prev if p.get("url") not in seen]
+    merged = short + [p for p in prev if p.get("url") not in seen
+                      and not (fence is not None and fence(p))]
     SHORTLIST.write_text(json.dumps(
         {"updated_at": now.isoformat(timespec="seconds"),
          "ranking_law": "growth x sqrt(weeks/52) / dd, trades>=100; EV per hunting capacity",
          "shortlist": merged[:50]}, indent=1), "utf-8")
     tagged = sum(1 for r in rows if r["phenotypes"])
     print(f"mql5 survivor hunter: {len(rows)} deep-fetched, {tagged} phenotype-tagged, "
-          f"shortlist {len(merged[:50])}")
+          f"shortlist {len(merged[:50])}, impossible-metric rows refused {refused}")
     return rows
 
 
