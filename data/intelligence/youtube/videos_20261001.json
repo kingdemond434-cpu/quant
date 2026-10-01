@@ -91,5 +91,19 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "PhgCCQyJwjs",
+  "published": "2026-10-01T12:02:55Z",
+  "title": "I Closed My Trade and Missed the Whole Move!",
+  "description": "He closed a winning long to retake it live with chat, and the market never came back. \ud83e\udd26\u200d\u2642\ufe0f",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
