@@ -1,0 +1,890 @@
+{
+ "note": "THE FREE-STACK ROSTER (2026-09-30). One row per source; read by research/free_stack_hunter.py every hour. Fields every row must carry: id, kind, cadence, auth, licence, machine_use_allowed, cursor, region, language, uses{direct,indirect,allocation} with the consuming organ, and the culture provenance source_culture / participant_structure / failure_mode_hypothesis. machine_use_allowed is a PROVENANCE label (LAWS 5e), re-derived each pass by libs/research/access_classifier. Add a source by adding a row; nothing is hard-coded in the hunter.",
+ "boundary": "No crypto-exchange universe: coinpaprika is fetched only for bases the broker lists as Crypto CFDs; catalogue links to exchange hosts are refused and counted.",
+ "sources": [
+  {
+   "id": "app_rank_apple",
+   "kind": "app_rank_apple",
+   "name": "Apple App Store top charts (marketing RSS), 10 countries x free/paid",
+   "url": "https://rss.applemarketingtools.com/api/v2/us/apps/top-free/100/apps.json",
+   "cadence": "daily",
+   "auth": "none",
+   "licence": "Apple Marketing Tools public feed; terms permit linking/promotion, redistribution of the feed NOT granted",
+   "machine_use_allowed": true,
+   "cursor": "none needed: each daily snapshot is a new point-in-time vintage (never backfilled)",
+   "region": "global",
+   "language": "multi",
+   "lag_hours": 1,
+   "countries": [
+    "us",
+    "cn",
+    "jp",
+    "kr",
+    "gb",
+    "de",
+    "hk",
+    "tw",
+    "fr",
+    "au"
+   ],
+   "charts": [
+    "top-free",
+    "top-paid"
+   ],
+   "mechanism": "consumer engagement leads reported revenue: a publisher's chart presence moves before its quarter is printed (MoonFox/QuestMobile method)",
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "app-chart attention in CN/JP/KR stores is driven by local holidays, gacha launches and platform rules that do not coincide with US consumer cycles, so the signal should fail on a different calendar than US web-traffic proxies",
+   "targets": {
+    "hypothesis": [
+     "US500",
+     "NAS100",
+     "CHINAH",
+     "HK50",
+     "JPN225",
+     "USDJPY",
+     "USDCNH"
+    ],
+    "event": "every mapped publisher's share CFD"
+   },
+   "blocker_prior": "not reachable from the build sandbox (its proxy refuses the host); first live reading is the box's",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "app_rank_apple columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "app_rank_apple regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "app_rank_apple latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "cn_weibo",
+   "kind": "cn_forum",
+   "name": "Weibo public search (mobile JSON)",
+   "url": "https://m.weibo.cn/",
+   "cadence": "4h",
+   "auth": "none",
+   "licence": "public posts; Weibo terms restrict redistribution; aggregates only, authors hashed",
+   "machine_use_allowed": true,
+   "cursor": "seen post ids (last 20,000)",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 1,
+   "mechanism": "CN retail attention and tone on ADRs, HK indices and CNH lead the Asia session's flow",
+   "source_culture": "CN",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "Weibo tone is shaped by censorship waves and state-media campaigns that switch retail mood on policy dates, not on the earnings/price shocks that drive US social sentiment",
+   "blocker_prior": "m.weibo.cn search has answered ok:-100 (login wall) to unauthenticated clients in 2025-26; recorded per pass, never solved by a credential",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cn_weibo columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cn_weibo regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cn_weibo latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "cn_xueqiu",
+   "kind": "cn_forum",
+   "name": "Xueqiu (Snowball) status search",
+   "url": "https://xueqiu.com/",
+   "cadence": "4h",
+   "auth": "none",
+   "licence": "public posts; aggregates only, authors hashed",
+   "machine_use_allowed": true,
+   "cursor": "seen post ids (last 20,000)",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 1,
+   "mechanism": "Xueqiu is CN's investor-grade forum: its bullishness on ADRs/HK is a retail positioning read",
+   "source_culture": "CN",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "Xueqiu users trade A-shares/HK under T+1, price limits and northbound quotas, so their crowding unwinds on settlement and policy calendars rather than on US options expiry",
+   "blocker_prior": "libs/data/cn_sources.py: API behind an acw_sc__v2 WAF challenge a cookie handshake does not clear. The one public handshake is attempted each pass and the answer recorded; no challenge is solved",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cn_xueqiu columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cn_xueqiu regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cn_xueqiu latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "cn_zhihu",
+   "kind": "cn_forum",
+   "name": "Zhihu via Sogou's public Zhihu index",
+   "url": "https://zhihu.sogou.com/",
+   "cadence": "daily",
+   "auth": "none",
+   "licence": "public search index; titles and snippets only",
+   "machine_use_allowed": true,
+   "cursor": "seen result ids",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 1,
+   "mechanism": "long-form CN investor discussion; its tone drift on HK/CNH/gold is a slower sentiment read",
+   "source_culture": "CN",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "Zhihu discussion is slower, more educated and more policy-reading than Weibo, so its tone should turn around policy communication, not price",
+   "blocker_prior": "libs/data/cn_sources.py: zhihu.com API returns HTTP 403 unauthenticated. Lawful route tried: Sogou's public Zhihu index; the direct API is probed each pass and its refusal recorded",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cn_zhihu columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cn_zhihu regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cn_zhihu latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "cn_guba",
+   "kind": "cn_forum",
+   "name": "Eastmoney Guba boards (US-listed CN ADRs, gold, oil, FX)",
+   "url": "https://guba.eastmoney.com/",
+   "cadence": "4h",
+   "auth": "none",
+   "licence": "public board listings; titles only, aggregates only",
+   "machine_use_allowed": true,
+   "cursor": "seen post ids",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 1,
+   "mechanism": "Guba is the most-studied CN retail board (post volume and bullishness predict next-day A-share returns in the literature)",
+   "source_culture": "CN",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "Guba posters are A-share retail under price limits; their tone on ADRs should lead the HK open, not the US close",
+   "blocker_prior": "not reachable from the build sandbox (its proxy refuses the host); first live reading is the box's",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cn_guba columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "cn_guba regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "cn_guba latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "jp_ir_transcripts",
+   "kind": "jp_ir",
+   "name": "JP investor-relations call transcripts and Q&A (declared IR pages)",
+   "url": "https://www.nintendo.co.jp/ir/en/",
+   "cadence": "daily",
+   "auth": "none",
+   "licence": "company IR disclosures, public; derived statistics only, no text redistributed",
+   "machine_use_allowed": true,
+   "cursor": "seen document URLs; last tone per company",
+   "region": "jp",
+   "language": "ja/en",
+   "lag_hours": 24,
+   "docs_per_company": 4,
+   "companies": [
+    {
+     "name": "Toyota",
+     "cfd": "Toyota",
+     "ir_url": "https://global.toyota/en/ir/library/presentation/"
+    },
+    {
+     "name": "Sony",
+     "cfd": null,
+     "ir_url": "https://www.sony.com/en/SonyInfo/IR/library/presen/er/"
+    },
+    {
+     "name": "Nintendo",
+     "cfd": null,
+     "ir_url": "https://www.nintendo.co.jp/ir/en/library/events/index.html"
+    },
+    {
+     "name": "SoftBankGroup",
+     "cfd": null,
+     "ir_url": "https://group.softbank/en/ir/presentations"
+    },
+    {
+     "name": "FastRetailing",
+     "cfd": null,
+     "ir_url": "https://www.fastretailing.com/eng/ir/library/presentation.html"
+    },
+    {
+     "name": "TokyoElectron",
+     "cfd": null,
+     "ir_url": "https://www.tel.com/ir/library/presentation/"
+    },
+    {
+     "name": "Honda",
+     "cfd": null,
+     "ir_url": "https://global.honda/en/investors/library/presentation.html"
+    }
+   ],
+   "mechanism": "management tone CHANGE between consecutive calls carries information analysts under-react to (transcript sentiment delta)",
+   "source_culture": "JP",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "Japanese management tone is conventionally conservative and guidance is revised on fiscal-year (March) calendars, so tone deltas should cluster at JP fiscal events rather than US earnings season",
+   "blocker_prior": "IR page URLs declared from public knowledge, unverified from this sandbox; PDF transcripts need a PDF reader that is not in the requirements files and are recorded unreadable",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jp_ir_transcripts columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jp_ir_transcripts regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "jp_ir_transcripts latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "jp_patents",
+   "kind": "jp_patents",
+   "name": "JP patent publications (JPO / IIP bulk extracts) -> IPC cluster momentum",
+   "url": "https://www.jpo.go.jp/",
+   "cadence": "weekly",
+   "auth": "bulk_file",
+   "licence": "JPO bulk data (application required) / IIP patent database (research licence); the box holds the file",
+   "machine_use_allowed": true,
+   "cursor": "bulk files already ingested",
+   "region": "jp",
+   "language": "ja",
+   "lag_hours": 24,
+   "probe_urls": [
+    "https://www.j-platpat.inpit.go.jp/",
+    "https://ip-data.jpo.go.jp/"
+   ],
+   "mechanism": "a company's patent publication momentum by IPC cluster leads its product cycle and the Nikkei's tech weight",
+   "source_culture": "JP",
+   "participant_structure": "institutional",
+   "failure_mode_hypothesis": "JP filing behaviour follows the JPO fiscal year and keiretsu co-filing, so momentum turns on different dates than USPTO-based patent signals",
+   "blocker_prior": "J-PlatPat has no API (web search only); JPO's ip-data API is per-application lookup with registration, not a search; bulk data needs an application. PatentsView/EPO belong to claude/global-media-factory",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jp_patents columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jp_patents regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "jp_patents latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "gtrends",
+   "kind": "gtrends",
+   "name": "Google Trends interest over time (public widget API, the route pytrends wraps)",
+   "url": "https://trends.google.com/",
+   "cadence": "daily",
+   "auth": "none",
+   "licence": "Google Trends public web data; derived statistics only",
+   "machine_use_allowed": true,
+   "cursor": "none: each daily response is a vintage",
+   "region": "global",
+   "language": "en",
+   "lag_hours": 24,
+   "terms": [
+    [
+     "gold price",
+     [
+      "XAUUSD"
+     ]
+    ],
+    [
+     "recession",
+     [
+      "US500",
+      "USDJPY",
+      "XAUUSD"
+     ]
+    ],
+    [
+     "inflation",
+     [
+      "XAUUSD",
+      "UST10Y"
+     ]
+    ],
+    [
+     "bitcoin",
+     [
+      "BTCUSD"
+     ]
+    ],
+    [
+     "oil price",
+     [
+      "XTIUSD",
+      "XBRUSD"
+     ]
+    ],
+    [
+     "unemployment",
+     [
+      "US500",
+      "EURUSD"
+     ]
+    ],
+    [
+     "stock market crash",
+     [
+      "US500",
+      "NAS100"
+     ]
+    ],
+    [
+     "yen",
+     [
+      "USDJPY"
+     ]
+    ],
+    [
+     "mortgage rates",
+     [
+      "UST10Y",
+      "US500"
+     ]
+    ],
+    [
+     "layoffs",
+     [
+      "US500",
+      "NAS100"
+     ]
+    ]
+   ],
+   "mechanism": "search attention measures retail and household concern before it is a flow (Da, Engelberg & Gao 2011)",
+   "source_culture": "US",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "US search attention peaks on US news cycles and holidays; it should fail when the move is driven by Asian official flows that US searchers do not see",
+   "blocker_prior": "not reachable from the build sandbox (its proxy refuses the host); first live reading is the box's; Google rate-limits unauthenticated widget calls (429)",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "gtrends columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "gtrends regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "gtrends latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "congress_trades",
+   "kind": "congress",
+   "name": "US congressional periodic transaction reports (House Clerk index) + community transaction mirror",
+   "url": "https://disclosures-clerk.house.gov/",
+   "cadence": "daily",
+   "auth": "none",
+   "licence": "US public-record disclosures (STOCK Act); mirror data community-published",
+   "machine_use_allowed": true,
+   "cursor": "none: re-read yearly index; values keyed by disclosure date",
+   "region": "us",
+   "language": "en",
+   "lag_hours": 24,
+   "mirror_url": "https://house-stock-watcher-data.s3-us-west-2.amazonaws.com/data/all_transactions.json",
+   "mechanism": "legislators' disclosed net buying is informed-flow evidence, dated by DISCLOSURE (up to 45 days after the trade)",
+   "source_culture": "US",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "congressional trading is tied to the legislative calendar and committee access, so it should fail in recess and succeed around hearings -- unlike market-wide retail flow",
+   "blocker_prior": "the mirror bucket answered HTTP 403 from the sandbox; the Clerk index is not reachable from the build sandbox (its proxy refuses the host); first live reading is the box's",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "congress_trades columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "congress_trades regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "congress_trades latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "coinpaprika",
+   "kind": "coinpaprika",
+   "name": "CoinPaprika keyless market data, Fusion crypto CFDs only",
+   "url": "https://api.coinpaprika.com/",
+   "cadence": "hourly",
+   "auth": "none",
+   "licence": "CoinPaprika free API terms; attribution, no redistribution",
+   "machine_use_allowed": true,
+   "cursor": "none: hourly snapshot",
+   "region": "global",
+   "language": "en",
+   "lag_hours": 1,
+   "mechanism": "aggregate on-market volume and dominance of the CFD's underlying, never an exchange universe",
+   "source_culture": "GLOBAL",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "crypto flow is 24/7 and Asia-session dominated, so its volume regime should turn at weekends and Asian hours when FX-derived risk proxies are closed",
+   "blocker_prior": "not reachable from the build sandbox (its proxy refuses the host); first live reading is the box's",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "coinpaprika columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "coinpaprika regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "coinpaprika latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "reddit",
+   "kind": "reddit",
+   "name": "Reddit public subreddit listings (US retail) as a dataset",
+   "url": "https://www.reddit.com/",
+   "cadence": "4h",
+   "auth": "none",
+   "licence": "Reddit public JSON; Data API terms restrict commercial redistribution; aggregates only",
+   "machine_use_allowed": true,
+   "cursor": "seen post fullnames (last 50,000)",
+   "region": "us",
+   "language": "en",
+   "lag_hours": 1,
+   "subreddits": [
+    "wallstreetbets",
+    "stocks",
+    "investing",
+    "Forex",
+    "Gold",
+    "Silverbugs",
+    "oil",
+    "Bitcoin",
+    "Economics",
+    "options"
+   ],
+   "mechanism": "US retail mention intensity and tone on indices, metals, FX and crypto CFDs",
+   "source_culture": "US",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "US retail enthusiasm is options-expiry and stimulus-cycle driven; it should fail when institutional or Asian flows dominate",
+   "blocker_prior": "not reachable from the build sandbox (its proxy refuses the host); first live reading is the box's; unauthenticated listing is rate-limited to ~10 req/min",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "reddit columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "reddit regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "reddit latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "telegram",
+   "kind": "telegram",
+   "name": "Telegram public channel web previews (RU markets + EN macro)",
+   "url": "https://t.me/s/",
+   "cadence": "4h",
+   "auth": "none",
+   "licence": "public channel previews; aggregates only",
+   "machine_use_allowed": true,
+   "cursor": "seen post ids (last 50,000)",
+   "region": "ru",
+   "language": "ru/en",
+   "lag_hours": 1,
+   "channels": [
+    "markettwits",
+    "rbc_news",
+    "bitkogan",
+    "banksta"
+   ],
+   "mechanism": "RU retail/trader channels' attention and tone on gold, oil, dollar and crypto",
+   "source_culture": "RU",
+   "participant_structure": "retail_heavy",
+   "failure_mode_hypothesis": "RU traders are sanction-constrained and rouble-denominated, so their gold/oil/crypto tone should turn on sanctions and capital-control news rather than Fed news",
+   "blocker_prior": "not reachable from the build sandbox (its proxy refuses the host); first live reading is the box's; channel names are seeds to verify on the box",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "telegram columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "telegram regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "telegram latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "akshare",
+   "kind": "akshare",
+   "name": "AKShare (package when importable; else its public upstreams: Eastmoney index klines, Sina futures klines)",
+   "url": "https://push2his.eastmoney.com/",
+   "cadence": "daily",
+   "auth": "none",
+   "licence": "AKShare MIT; upstream sites' terms restrict redistribution; derived returns only",
+   "machine_use_allowed": true,
+   "cursor": "none: full daily history re-read, first vintage kept",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 16,
+   "mechanism": "CN onshore index and SHFE/INE futures returns lead or lag their MT5 analogues across the Shanghai/London clock gap",
+   "source_culture": "CN",
+   "participant_structure": "settlement_constrained",
+   "failure_mode_hypothesis": "onshore CN prices are set under daily limits, T+1 and capital controls, so their lead over CHINAH/XAUUSD should break when those constraints bind (limit days, golden week)",
+   "blocker_prior": "akshare is an import probe in libs/research/adapters/akshare.py and is NOT in the requirements files; the direct upstream route is not reachable from the build sandbox (its proxy refuses the host); first live reading is the box's",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "akshare columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "akshare regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "akshare latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "tushare",
+   "kind": "tushare",
+   "name": "TuShare Pro HTTP API (index_daily, shibor)",
+   "url": "http://api.tushare.pro",
+   "cadence": "daily",
+   "auth": "key_env:TUSHARE_TOKEN",
+   "key_env": "TUSHARE_TOKEN",
+   "licence": "TuShare Pro account terms (points-based); personal research use",
+   "machine_use_allowed": true,
+   "cursor": "none: full history re-read, first vintage kept",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 16,
+   "mechanism": "onshore CSI300 and SHIBOR as CN liquidity/risk state for CNH, HK and AUD",
+   "source_culture": "CN",
+   "participant_structure": "policy_driven",
+   "failure_mode_hypothesis": "SHIBOR is administered by PBoC operations; it should move on policy dates, not on the market-clearing shocks that move LIBOR/SOFR",
+   "blocker_prior": "needs TUSHARE_TOKEN on the box; the API host answered HTTP 403 through the sandbox proxy",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "tushare columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "tushare regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "tushare latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "baostock",
+   "kind": "package",
+   "package": "baostock",
+   "name": "BaoStock (own TCP protocol; package route only)",
+   "url": "http://baostock.com/",
+   "cadence": "daily",
+   "auth": "package:baostock",
+   "licence": "BaoStock free terms",
+   "machine_use_allowed": true,
+   "cursor": "none",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 16,
+   "mechanism": "free onshore CN index history (CSI300) as a CNH/HK state input",
+   "source_culture": "CN",
+   "participant_structure": "settlement_constrained",
+   "failure_mode_hypothesis": "as akshare: onshore limit/T+1 constraints break the lead on limit days",
+   "blocker_prior": "baostock speaks a TCP socket protocol through its own package, which is not in the requirements files; no install attempted",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "baostock columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "baostock regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "baostock latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "jqdatasdk",
+   "kind": "package",
+   "package": "jqdatasdk",
+   "name": "JoinQuant jqdatasdk (authenticated package route only)",
+   "url": "https://www.joinquant.com/",
+   "cadence": "daily",
+   "auth": "package:jqdatasdk+JQ_USER/JQ_PASS",
+   "licence": "JoinQuant account terms",
+   "machine_use_allowed": true,
+   "cursor": "none",
+   "region": "cn",
+   "language": "zh",
+   "lag_hours": 16,
+   "mechanism": "onshore CSI300 history as a CNH/HK state input",
+   "source_culture": "CN",
+   "participant_structure": "settlement_constrained",
+   "failure_mode_hypothesis": "as akshare: onshore limit/T+1 constraints break the lead on limit days",
+   "blocker_prior": "needs the jqdatasdk package (not in requirements) and JQ_USER/JQ_PASS",
+   "uses": {
+    "direct": {
+     "families": [
+      "exogenous_conditioner",
+      "alt_series_momentum"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jqdatasdk columns as their own direct cells: level/delta extremes (exogenous_conditioner) and attention/tone momentum (alt_series_momentum)"
+    },
+    "indirect": {
+     "families": [
+      "alt_conditioned"
+     ],
+     "organ": "research/free_stack_proposer.py",
+     "note": "jqdatasdk regime (lagged z high/low) gating price-only base families on the same instrument (alt_conditioned)"
+    },
+    "allocation": {
+     "artifact": "reports/ALT_REGIME_STATE.json",
+     "organ": "research/free_stack_hunter.py",
+     "note": "jqdatasdk latest point-in-time z and regime per mapped instrument"
+    }
+   }
+  },
+  {
+   "id": "dataset_catalogues",
+   "kind": "catalogue",
+   "name": "Open dataset catalogues: awesome-* lists, AltData.wiki, Brickroad public index",
+   "url": "https://github.com/awesomedata/awesome-public-datasets",
+   "cadence": "weekly",
+   "auth": "none",
+   "licence": "catalogue pages are public; each discovered dataset carries its own licence, UNVERIFIED until read",
+   "machine_use_allowed": true,
+   "cursor": "dataset URLs already known (last 100,000)",
+   "region": "global",
+   "language": "en",
+   "lag_hours": 0,
+   "catalogues": [
+    {
+     "name": "awesome-public-datasets",
+     "url": "https://raw.githubusercontent.com/awesomedata/awesome-public-datasets/master/README.rst"
+    },
+    {
+     "name": "awesome-quant",
+     "url": "https://raw.githubusercontent.com/wilsonfreitas/awesome-quant/master/README.md"
+    },
+    {
+     "name": "awesome-alternative-data",
+     "url": "https://raw.githubusercontent.com/happyendpointhq/awesome-alternative-data/main/README.md"
+    },
+    {
+     "name": "awesome-systematic-trading",
+     "url": "https://raw.githubusercontent.com/paperswithbacktest/awesome-systematic-trading/main/README.md"
+    },
+    {
+     "name": "awesome-quant-ml-trading",
+     "url": "https://raw.githubusercontent.com/grananqvist/Awesome-Quant-Machine-Learning-Trading/master/README.md"
+    },
+    {
+     "name": "AltData.wiki",
+     "url": "https://altdata.wiki/"
+    },
+    {
+     "name": "Brickroad public index",
+     "url": "https://www.brickroad.io/"
+    }
+   ],
+   "mechanism": "the datasets the desk does not know it lacks: every catalogued dataset is a candidate for the world dataset hunter, data_scout and data_prospector",
+   "source_culture": "GLOBAL",
+   "participant_structure": "mixed",
+   "failure_mode_hypothesis": "catalogues over-represent English, US and crypto data; non-Western national sources must be added by the country packs, not expected from these lists",
+   "blocker_prior": "the five GitHub raw lists answered HTTP 200 from the build sandbox on 2026-09-30 (measured); AltData.wiki and Brickroad are not reachable from the sandbox (its proxy refuses the host) -- first live reading is the box's; the Brickroad URL is declared unverified",
+   "uses": {
+    "direct": {
+     "families": [],
+     "organ": "research/world_dataset_hunter.py (queue) -> free_stack_proposer once a dataset is ingested",
+     "note": "a catalogue yields DATASETS, not series; each queued dataset row carries its own uses"
+    },
+    "indirect": {
+     "families": [],
+     "organ": "research/data_scout.py + research/data_prospector.py",
+     "note": "discovered datasets ranked against the desk's named data needs"
+    },
+    "allocation": {
+     "artifact": "data/free_stack/discovered_catalogue.json",
+     "organ": "research/data_prospector.py",
+     "note": "acquisition ranking, the allocation of research compute to data"
+    }
+   }
+  }
+ ]
+}

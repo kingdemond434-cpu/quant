@@ -52,7 +52,26 @@ PUBLISHED: dict[str, str] = {
     "research_budget": "desks/mt5/data/research_budget.json",
     "door_verdicts": "desks/mt5/data/tier_s/door_verdicts.json",
     "CONTRACTS": "desks/mt5/reports/tier_s/CONTRACTS.json",
+    # the rest of what `promotion_authority` reads to withhold a promotion (2026-09-30)
+    "live_door": "desks/mt5/data/tier_s/live_door.json",
+    "PROMOTION_FREEZE": "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "RELEASE_STOP": "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "REPLICATION": "desks/mt5/reports/REPLICATION.json",
 }
+#: THE TIER S EVIDENCE THE BOX'S SYNC CARRIES WHOLE (2026-09-30): this attestation and the six
+#: files the promotion door reads. Each must be in `sync_shadow_to_git.ps1`'s $relPaths, in BOTH
+#: seal lists' NON_CODE and not gitignored -- tests/ops/test_tier_s_evidence_publication.py
+#: fails on any one missing, because a file absent from any of the three never reaches git and
+#: the attestation above is then the only word off the box.
+SYNCED: tuple[str, ...] = (
+    "desks/mt5/data/tier_s/box_evidence.json",
+    "desks/mt5/data/tier_s/live_door.json",
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+)
 #: whole documents small enough, and consequential enough, to carry verbatim
 VERBATIM = frozenset({"allocator_tilts"})
 

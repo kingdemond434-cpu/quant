@@ -233,6 +233,12 @@ ORGANS: tuple[Entry, ...] = (
     _e("desks/mt5/research/hour_surface.py", "WHEN the book earns, measured by UTC hour"),
     _e("desks/mt5/research/hour_prior.py", "that surface as the allocation prior the desk reads"),
     _e("desks/mt5/research/axis_ingest_all.py", "ingest every data axis, every pass"),
+    # TEXT AS PIT DAILY SERIES (2026-09-30): event/policy factors tagged from the collected news
+    # and Japanese/Korean/Chinese retail blog attention and mood, published to the axis door, the
+    # lake (for exogenous_conditioner) and an allocation-intel report. The daily test-and-donate
+    # half of the same file is on daily_cycle's proposer list.
+    _e("desks/mt5/research/nlp_social_cells.py", "text -> event/policy factors and Asian retail "
+       "attention/mood deltas, fetched and published", "--ingest"),
     _e("desks/mt5/research/empty_cluster_forcer.py", "force cells into every EMPTY alpha cluster"),
     _e("desks/mt5/research/institutional_cards.py", "mechanism cards for never-certified axes"),
     _e("desks/mt5/research/local_converter.py", "mined rows -> candidates, no seat, no network"),
