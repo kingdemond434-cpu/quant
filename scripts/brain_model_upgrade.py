@@ -335,7 +335,7 @@ def available_models() -> tuple[list[str], str]:
 def probe_argv() -> list[str]:
     """The probe's CLI call, scoped to exactly what it needs: NO tools, one turn.
 
-    It used to pass --dangerously-skip-permissions, which granted every tool to a call whose
+    It used to pass the blanket permission-bypass flag, which granted every tool to a call whose
     whole job is to print one word. stream-json makes a refused call visible; each refusal is
     logged to data/model_upgrade_log.jsonl as UNMEASURED / counts_as MISSED.
     """

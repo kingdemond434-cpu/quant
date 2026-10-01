@@ -150,7 +150,7 @@ def ping_argv(model: str) -> list[str]:
     """The probe's CLI call, scoped to exactly what it needs: NO tools.
 
     The probe is one prompt answered with one line of text, so the allowlist is empty and the
-    run is one turn. It used to pass --dangerously-skip-permissions, which granted every tool to
+    run is one turn. It used to pass the permission-bypass flag, which granted every tool to
     a call that needs none. stream-json is how a refused call becomes visible (see
     libs/ops/agent_denials.py); each refusal is logged to data/model_upgrade_log.jsonl.
     """
