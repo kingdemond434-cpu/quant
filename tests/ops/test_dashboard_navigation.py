@@ -29,11 +29,41 @@ def test_the_canonical_dashboard_exists() -> None:
     assert len(page.read_text("utf-8")) > 5_000, "desk.html is a stub, not a dashboard"
 
 
+#: The pages that are REDIRECTS to the canonical dashboard, pinned by name. A glob of "everything
+#: else" was the old form, and it went red the day two full dashboards were deliberately served
+#: beside desk.html -- the test then asserted a rule the desk had already decided against.
+REDIRECTS: tuple[str, ...] = ("index.html", "research.html")
+
+#: Full dashboards that are SERVED ON PURPOSE and are therefore not redirects. Each carries its
+#: reason; a page earns a place here by naming who serves it, never by being inconvenient to the
+#: glob below. Kept as full pages by the coordinator's decision of 2026-09-30 (live's behaviour).
+SERVED_FULL_PAGES: dict[str, str] = {
+    "dashboard.html": ("the box's own page: MT5-DeskDashboard serves it on the trading box "
+                       "(install_desk_dashboard_task.ps1 binds web\\dashboard.html) and "
+                       "hourly_cycle:desk_dashboard_state feeds it DESK_DASHBOARD_STATE.json"),
+    "desk_pro.html": ("the live desk view reading the same desk_state.json as desk.html; landed "
+                      "as a full page in bcbec41f0 and kept as one"),
+}
+
+
 def test_every_other_page_redirects_to_it() -> None:
-    """THE ONE THAT MATTERS. No page may present a second, disagreeing view of the desk."""
-    others = [p for p in WEB.glob("*.html") if p.name != CANONICAL]
-    assert others, "nothing to check -- the glob is wrong and this test proves nothing"
-    for p in others:
+    """THE ONE THAT MATTERS. No page may present a second, disagreeing view of the desk -- except
+    the served full dashboards named above, each with its reason.
+
+    Every html page under web/ must be exactly one of: the canonical page, a pinned redirect, or
+    a named served full page. A NEW page that is neither fails here, so the exception list cannot
+    grow by accident."""
+    pages = {p.name for p in WEB.glob("*.html")}
+    assert pages, "nothing to check -- the glob is wrong and this test proves nothing"
+    unclassified = pages - {CANONICAL} - set(REDIRECTS) - set(SERVED_FULL_PAGES)
+    assert not unclassified, (
+        f"{sorted(unclassified)} is neither a redirect to {CANONICAL} nor a named served "
+        "dashboard; make it a redirect, or add it to SERVED_FULL_PAGES with who serves it")
+    assert all(SERVED_FULL_PAGES.values()), "every served full page must carry its reason"
+    assert not set(REDIRECTS) & set(SERVED_FULL_PAGES), "a page cannot be both"
+    for name in REDIRECTS:
+        p = WEB / name
+        assert p.is_file(), f"{name} is gone: a live URL that redirected is now a 404"
         src = p.read_text("utf-8")
         assert CANONICAL in src, f"{p.name} does not point at {CANONICAL}"
         assert 'http-equiv="refresh"' in src and "location.replace" in src, (
@@ -43,6 +73,13 @@ def test_every_other_page_redirects_to_it() -> None:
         assert len(src) < 4_000, (
             f"{p.name} is {len(src)} bytes; a redirect is a redirect, and anything this large "
             "is a dashboard wearing one as a hat")
+    for name in SERVED_FULL_PAGES:
+        p = WEB / name
+        assert p.is_file(), f"{name} is named as a served dashboard but does not exist"
+        src = p.read_text("utf-8")
+        assert "location.replace" not in src and 'http-equiv="refresh"' not in src, (
+            f"{name} now redirects; move it from SERVED_FULL_PAGES to REDIRECTS")
+        assert len(src) > 5_000, f"{name} is a stub, not the full dashboard it is listed as"
 
 
 def test_the_canonical_page_reads_the_published_state() -> None:
