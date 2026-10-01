@@ -61,8 +61,11 @@ def test_main_uses_configured_terminal_and_never_runs_on_failed_attach(tmp_path,
     monkeypatch.setattr(g, "OUT", tmp_path / "report.json")
     monkeypatch.setattr(g, "LOG", tmp_path / "log")
     monkeypatch.setattr(g, "ARMED_MARKER", tmp_path / "unarmed")
+    monkeypatch.setattr(g.time, "sleep", lambda _s: None)
     assert g.main([]) == 1
-    assert calls == [(fake, {"path": "canonical/terminal64.exe", "timeout": 15000})]
+    # Every reconnect attempt uses the configured terminal; none of them reaches `run`.
+    assert calls == [(fake, {"path": "canonical/terminal64.exe", "timeout": 15000})] * len(
+        g.MT5_RETRY_WAITS_S)
 
 
 def test_a_window_is_planned_once_at_or_after_its_signal_hour_before_the_cancel_hour() -> None:
