@@ -1116,3 +1116,12 @@ def test_a_derived_docket_row_traces_to_its_parents_declared_seat(tmp_path: Path
     assert pipe.attribute_source(row, pipe._url_index(), seats) == ("rbnz", "lineage")
     assert pipe.attribute_source({**row, "origin_seat": "nobody"}, pipe._url_index(),
                                  seats) == ("", "")
+
+
+def test_a_lane_that_describes_its_uses_by_key_keeps_them() -> None:
+    """The free stack writes `uses: {direct: {...}, indirect: {...}, allocation: {...}}`; read
+    as a list it filtered to nothing and every free-stack source served no use."""
+    row = acq.normalise_row({"id": "x", "uses": {"direct": {"families": ["a"]}, "indirect": {},
+                                                  "allocation": {"organ": "o"}}},
+                            origin="t", defaults={"fetcher": "owned", "kind": "text"})
+    assert row is not None and row.uses == ["direct_cells", "allocation_intel"]

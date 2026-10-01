@@ -1,0 +1,30 @@
+[
+{
+"disclosure_date": "09/21/2026",
+"transaction_date": "2026-08-30",
+"ticker": "NVDA",
+"type": "purchase",
+"amount": "$1,001 - $15,000"
+},
+{
+"disclosure_date": "09/21/2026",
+"transaction_date": "2026-08-29",
+"ticker": "AAPL",
+"type": "sale_full",
+"amount": "$15,001 - $50,000"
+},
+{
+"disclosure_date": "09/22/2026",
+"transaction_date": "2026-09-01",
+"ticker": "NVDA",
+"type": "purchase",
+"amount": "$1,001 - $15,000"
+},
+{
+"disclosure_date": "09/22/2026",
+"transaction_date": "2026-09-01",
+"ticker": "ZZZZ",
+"type": "purchase",
+"amount": "$1,001 - $15,000"
+}
+]

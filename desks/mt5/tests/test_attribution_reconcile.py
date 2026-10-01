@@ -28,7 +28,7 @@ ROSTER = ["chfnok_carry_asia_p_98d776f0a1b2", "audusd_discovered_asia_p_8e11", "
 def _deal(label: str, symbol: str = "XAUUSD", *, tp: float | None = None,
           sl: float | None = None, deal: int = 1) -> dict[str, Any]:
     return {"time": "2026-09-07T17:04:15+00:00", "sleeve": label, "symbol": symbol,
-            "account": 495044, "deal": deal, "tp": tp, "sl": sl, "volume": 0.01}
+            "account": 5551234, "deal": deal, "tp": tp, "sl": sl, "volume": 0.01}
 
 
 def test_a_truncated_label_is_recovered_only_when_it_can_be_one_roster_name() -> None:

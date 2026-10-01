@@ -74,6 +74,26 @@ OPERATIONAL_REASONS: tuple[str, ...] = ("release_identity", "venue", "VENUE_UNAV
 CREDIT_RULE = ("credit only for later unseen evidence: forward observations and fills stamped "
                "after frozen_at; retrospective backtest recovery of the episode earns nothing")
 
+#: THE NON-FIRED SETUPS, AS A DATASET (2026-09-30). Every decision the desk qualified and did not
+#: trade -- gated out, vetoed, broker-rejected, or refused by the venue/wiring -- one row each,
+#: append-only. The episode walk above digs up only the ones whose outcome was extreme; this is
+#: the whole population, which is what a cell can be built from.
+NON_FIRED = DATA / "non_fired_setups.jsonl"
+#: The intake seat. Rows land in data/intelligence/<seat>/ through proposer_common.donate, the
+#: PIT-stamping door every proposer shares, and compile as STRUCTURED_HYPOTHESIS.
+SEAT = "missed_trade_archaeologist"
+#: A (family, symbol, session) group needs this many non-fired setups before it is donated: one
+#: refused bracket is an anecdote, three are a population the gauntlet can be asked about.
+NF_MIN_ROWS = 3
+#: Sessions as the compiler's text reader names them, so the donated cell carries its window.
+SESSION_PHRASE: dict[str, str] = {"asia": "asian session", "london_am": "london open",
+                                  "afternoon": "afternoon session", "ny_open": "new york open"}
+SLEEVES = DATA / "sleeves.json"
+NF_RULE = ("known_at is the decision's own timestamp; every feature is computed from bars whose "
+           "period had CLOSED by known_at (features.as_of <= known_at - 1 bar); the label is the "
+           "move over the next HORIZON_BARS completed bars and is written only once "
+           "label_known_at has passed -- a pending label is recorded as PENDING, never guessed")
+
 
 # --------------------------------------------------------------------------------- utilities
 def _now() -> datetime:
@@ -499,6 +519,230 @@ def _register(h: dict[str, Any]) -> tuple[str | None, str]:
         return None, f"registry unavailable: {type(exc).__name__}: {exc}"
 
 
+# --------------------------------------------------------------------------- non-fired setups
+def _side_i(side: Any) -> int | None:
+    """0 long / 1 short from the decision's own word (a pending stop is directional too)."""
+    if side in (0, 1):
+        return int(side)
+    s = str(side or "").lower()
+    if s.startswith("buy"):
+        return 0
+    if s.startswith("sell"):
+        return 1
+    return None
+
+
+def setup_class(d: dict[str, Any]) -> str:
+    """Why the setup did not fire, in three classes a reader can filter on."""
+    reason = d.get("veto_reason") or d.get("reason") or d.get("outcome")
+    if _operational(reason):
+        return "operational"
+    if str(reason or "").lower() in ("broker_rejected", "rejected"):
+        return "broker_rejected"
+    return "gated"
+
+
+def _setup_id(d: dict[str, Any], t: datetime) -> str:
+    src = f"{d.get('decision_id') or ''}|{d.get('sleeve') or ''}|{d.get('symbol') or ''}|" \
+          f"{d.get('side') or ''}|{_iso(t)}"
+    return "nf_" + hashlib.sha256(src.encode("utf-8")).hexdigest()[:16]
+
+
+def non_fired_row(d: dict[str, Any], bars: Any, now: datetime) -> dict[str, Any] | None:
+    """One point-in-time row for a qualified setup that did not trade, or None if the row names
+    no decision time or no instrument.
+
+    FEATURES ARE `reconstruct`'S: completed bars only, so `features.as_of` is at least one bar
+    before `known_at` and a spike planted after the decision cannot move them. THE LABEL IS
+    THE FUTURE and is kept apart: stamped with `label_known_at` (the close of the horizon's last
+    bar), computed only once that instant has passed, and PENDING until then.
+    """
+    t = _at(d.get("decided_at") or d.get("time"))
+    sym = _sym(d.get("symbol"))
+    if t is None or not sym:
+        return None
+    side = _side_i(d.get("side"))
+    features = (reconstruct(bars, t) if bars is not None else
+                {"status": UNMEASURED, "why": f"no H1 bars for {sym}", "as_of": None})
+    label_known = t + timedelta(hours=HORIZON_BARS + 1)
+    if bars is None:
+        label: dict[str, Any] = {"status": UNMEASURED, "why": f"no H1 bars for {sym}"}
+        label_status = UNMEASURED
+    elif label_known > now:
+        label, label_status = {"status": "PENDING"}, "PENDING"
+    else:
+        label = outcome_after(bars, t, side)
+        label_status = "MATURED" if label.get("status") == "MEASURED" else UNMEASURED
+    reason = d.get("veto_reason") or d.get("reason") or d.get("outcome")
+    return {
+        "setup_id": _setup_id(d, t), "known_at": _iso(t), "recorded_at": _iso(now),
+        "symbol": sym, "sleeve": str(d.get("sleeve") or d.get("strategy_id") or ""),
+        "strategy_id": str(d.get("strategy_id") or d.get("sleeve") or ""),
+        "decision_id": str(d.get("decision_id") or ""),
+        "side": side, "side_word": str(d.get("side") or ""),
+        "price": d.get("price"), "sl": d.get("sl"), "tp": d.get("tp"), "lot": d.get("lot"),
+        "reason": str(reason or ""), "class": setup_class(d),
+        "features": features, "features_as_of": features.get("as_of"),
+        "label": label, "label_status": label_status, "label_known_at": _iso(label_known),
+        "pit_rule": NF_RULE,
+    }
+
+
+def read_non_fired(path: Path = NON_FIRED) -> dict[str, dict[str, Any]]:
+    """The dataset's LATEST row per setup_id (the file is append-only; later rows win)."""
+    rows, _why = _jsonl(path)
+    out: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        sid = r.get("setup_id")
+        if isinstance(sid, str) and sid:
+            out[sid] = r
+    return out
+
+
+def append_non_fired(decisions: list[dict[str, Any]], bars_for: Any, now: datetime,
+                     path: Path = NON_FIRED, *, dry_run: bool = False,
+                     deadline: float | None = None) -> dict[str, Any]:
+    """Append every not-yet-recorded non-fired setup, and re-append one whose label matured.
+
+    NEVER DROPS A ROW. The file is opened for append only; a setup already recorded with a
+    MATURED (or UNMEASURED) label is skipped without being re-read, so the pass costs the new
+    decisions and the pending labels and nothing else.
+    """
+    have = read_non_fired(path)
+    fresh: list[dict[str, Any]] = []
+    stopped = False
+    for d in decisions:
+        if d.get("taken"):
+            continue
+        if deadline is not None and time.monotonic() > deadline:
+            stopped = True
+            break
+        t = _at(d.get("decided_at") or d.get("time"))
+        if t is None or not _sym(d.get("symbol")):
+            continue
+        prior = have.get(_setup_id(d, t))
+        if prior is not None and prior.get("label_status") != "PENDING":
+            continue
+        row = non_fired_row(d, bars_for(_sym(d.get("symbol"))), now)
+        if row is None:
+            continue
+        if prior is not None and prior.get("label_status") == row["label_status"]:
+            continue
+        fresh.append(row)
+        have[row["setup_id"]] = row
+    if fresh and not dry_run:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as fh:
+            for r in fresh:
+                fh.write(json.dumps(r, default=str, separators=(",", ":")) + "\n")
+    by_class: dict[str, int] = defaultdict(int)
+    by_label: dict[str, int] = defaultdict(int)
+    for r in have.values():
+        by_class[str(r.get("class"))] += 1
+        by_label[str(r.get("label_status"))] += 1
+    return {"path": str(path), "appended": 0 if dry_run else len(fresh),
+            "would_append": len(fresh), "setups": len(have), "by_class": dict(by_class),
+            "by_label": dict(by_label), "stopped_at_deadline": stopped, "rule": NF_RULE}
+
+
+def _sleeve_map(path: Path = SLEEVES) -> dict[str, dict[str, Any]]:
+    doc = _read(path)
+    rows = doc if isinstance(doc, list) else (doc.get("sleeves") if isinstance(doc, dict)
+                                               else None)
+    out: dict[str, dict[str, Any]] = {}
+    for r in rows or []:
+        if isinstance(r, dict) and r.get("name"):
+            out[str(r["name"])] = r
+    return out
+
+
+def sleeve_cell(sleeve: str, sleeves: dict[str, dict[str, Any]]) -> tuple[str | None, str | None]:
+    """(family, session) the sleeve trades, from the registry the gateway reads.
+
+    The three legacy gold windows (gold_asia, gold_london_am, gold_afternoon and their _vN
+    variants) are the session-range-breakout gateway windows and carry no `family` on the
+    registry row; they are named here from their own window, never guessed for anything else.
+    A sleeve the registry cannot place returns (None, None) and is counted, not donated.
+    """
+    row = sleeves.get(sleeve) or {}
+    fam = row.get("family")
+    sess = row.get("session")
+    if isinstance(fam, str) and fam:
+        return fam, (str(sess) if sess else None)
+    import re
+    m = re.match(r"^gold_(asia|london_am|afternoon)(?:_v\d+)?$", sleeve)
+    if m:
+        return "session_range_breakout", m.group(1)
+    return None, None
+
+
+def non_fired_cells(rows: dict[str, dict[str, Any]], sleeves: dict[str, dict[str, Any]],
+                    min_rows: int = NF_MIN_ROWS) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Group the dataset into (family, symbol, session) cells and write each as the structured
+    hypothesis row the compiler already admits:
+    `{"kind": "hypothesis", "family": <registered>, "symbols": [...]}`.
+
+    `available_time` is the latest instant any number in the row became known -- the newest
+    setup's `known_at`, or a matured label's `label_known_at` if later -- so the PIT door can
+    refuse the row for any decision taken before its evidence existed.
+    """
+    groups: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    unplaced: dict[str, int] = defaultdict(int)
+    for r in rows.values():
+        fam, sess = sleeve_cell(str(r.get("sleeve") or ""), sleeves)
+        if not fam:
+            unplaced[str(r.get("sleeve") or "")] += 1
+            continue
+        groups[(fam, str(r.get("symbol") or ""), sess or "")].append(r)
+    out: list[dict[str, Any]] = []
+    for (fam, sym, sess), rs in sorted(groups.items()):
+        if len(rs) < min_rows or not sym:
+            continue
+        matured = [r for r in rs if r.get("label_status") == "MATURED"]
+        times = [str(r.get("known_at") or "") for r in rs]
+        times += [str(r.get("label_known_at") or "") for r in matured]
+        avail = max(t for t in times if t) if any(times) else None
+        fav = [float(r["label"]["favourable_atr"]) for r in matured
+               if isinstance(r.get("label"), dict) and "favourable_atr" in r["label"]]
+        adv = [float(r["label"]["adverse_atr"]) for r in matured
+               if isinstance(r.get("label"), dict) and "adverse_atr" in r["label"]]
+        classes: dict[str, int] = defaultdict(int)
+        for r in rs:
+            classes[str(r.get("class"))] += 1
+        phrase = SESSION_PHRASE.get(sess, "")
+        out.append({
+            "source": SEAT, "kind": "hypothesis", "family": fam, "symbol": sym,
+            # NO `params` KEY: an empty one compiles as EXACT_RECIPE on the family's defaults and
+            # drops the window; without it the compiler reads the session from the mechanism.
+            "symbols": [sym], "url": "",
+            "title": f"non-fired {fam} setups on {sym} {sess}".strip()[:120],
+            "mechanism": (f"{len(rs)} {fam} setup(s) on {sym}"
+                          + (f" in the {phrase}" if phrase else "")
+                          + " qualified at the desk's own decision and did not trade "
+                          f"({dict(classes)}). The population the desk turned away is a "
+                          "sample of the mechanism the gates never saw fire; the cell asks "
+                          "whether it carries edge on this instrument and window.")[:400],
+            "available_time": avail,
+            "evidence": {"n_setups": len(rs), "n_matured_labels": len(matured),
+                         "by_class": dict(classes), "session": sess or None,
+                         "mean_favourable_atr": (round(sum(fav) / len(fav), 4) if fav
+                                                 else None),
+                         "mean_adverse_atr": round(sum(adv) / len(adv), 4) if adv else None,
+                         "first_known_at": min(t for t in times if t) if any(times) else None,
+                         "setup_ids": sorted(str(r["setup_id"]) for r in rs)[:50],
+                         "dataset": "desks/mt5/data/non_fired_setups.jsonl",
+                         "pit_rule": NF_RULE},
+        })
+    return out, {"groups": len(groups), "cells": len(out), "unplaced": dict(unplaced)}
+
+
+def _donate(candidates: list[dict[str, Any]], tests_run: int) -> Any:
+    """The seam: the intake door every proposer shares (PIT stamp, lane filter, preregistration).
+    One import, one call, so a test can watch what leaves without a live intake."""
+    from research.proposer_common import donate
+    return donate(SEAT, candidates, tests_run)
+
+
 # --------------------------------------------------------------------------------- the pass
 def load_shadow(shadow_dir: Path = SHADOW_DIR) -> tuple[dict[str, list[dict[str, Any]]],
                                                         str | None]:
@@ -586,6 +830,36 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         hypotheses.extend(frozen)
         processed[eid] = {"at": _iso(now), "kind": ep["kind"],
                           "hypotheses": [h["hypothesis_id"] for h in frozen]}
+    # THE NON-FIRED POPULATION, AS A DATASET, AND ITS CELLS THROUGH THE SHARED INTAKE. Its own
+    # floor of time (30 s) so a slow episode walk never starves it into never running.
+    nf_deadline = max(t0 + budget_s, time.monotonic() + 30.0)
+    nf = append_non_fired(decisions, bars_for, now, NON_FIRED, dry_run=dry_run,
+                          deadline=nf_deadline)
+    cells, census = non_fired_cells(read_non_fired(NON_FIRED) if not dry_run else {},
+                                    _sleeve_map(SLEEVES))
+    _dc = state_doc.get("donated_cells")
+    donated_before: dict[str, Any] = dict(_dc) if isinstance(_dc, dict) else {}
+
+    def _cell_key(c: dict[str, Any]) -> str:
+        return f"{c['family']}|{c['symbol']}|{c['evidence'].get('session') or ''}"
+
+    new_cells = [c for c in cells if _cell_key(c) not in donated_before]
+    donated_path = None
+    if new_cells and not dry_run:
+        try:
+            donated_path = _donate(new_cells, len(new_cells))
+        except Exception as exc:                                        # pragma: no cover - env
+            unmeasured.append({"what": "non-fired donation",
+                               "why": f"{type(exc).__name__}: {exc}"})
+        if donated_path is not None:
+            for c in new_cells:
+                donated_before[_cell_key(c)] = _iso(now)
+    nf["cells"] = {**census, "new": len(new_cells),
+                   "donated": 0 if donated_path is None else len(new_cells),
+                   "path": None if donated_path is None else str(donated_path),
+                   "donated_total": len(donated_before),
+                   "intake": ("data/intelligence/missed_trade_archaeologist/ -> "
+                              "research/miner_candidate_compiler.py (STRUCTURED_HYPOTHESIS)")}
     doc = {
         "at": _iso(now), "budget_s": budget_s, "elapsed_s": round(time.monotonic() - t0, 2),
         "dry_run": dry_run,
@@ -600,11 +874,15 @@ def run(*, budget_s: float = BUDGET_S, dry_run: bool = False,
         "credit_rule": CREDIT_RULE,
         "consumers": ["libs/moat/registry.py discoveries (source_type dataset_request / "
                       "prospective_hypothesis) -> discovery_compiler",
-                      "desks/mt5/research/meta_controller.py (acquire_dataset actions)"],
+                      "desks/mt5/research/meta_controller.py (acquire_dataset actions)",
+                      "data/non_fired_setups.jsonl -> non-fired cells donated through "
+                      "proposer_common.donate to data/intelligence/missed_trade_archaeologist/"],
+        "non_fired": nf,
         "unmeasured": unmeasured,
     }
     if not dry_run:
-        _atomic_write(STATE, {"at": _iso(now), "processed": processed})
+        _atomic_write(STATE, {"at": _iso(now), "processed": processed,
+                              "donated_cells": donated_before})
         _atomic_write(OUT, doc)
     return doc
 
@@ -622,6 +900,10 @@ def main(argv: list[str] | None = None) -> int:
           f"{e['dug_this_pass']}, {len(doc['hypotheses'])} frozen hypothesis/request(s), "
           f"{doc['n_operational']} operational"
           + ("; DRY RUN, nothing written" if a.dry_run else f" -> {OUT}"))
+    nf = doc["non_fired"]
+    print(f"  non-fired setups: {nf['setups']} in the dataset (+{nf['would_append']} this pass) "
+          f"{nf['by_class']}, labels {nf['by_label']}; cells {nf['cells']['cells']}, "
+          f"{nf['cells']['donated']} donated this pass -> {nf['path']}")
     for u in doc["unmeasured"][:8]:
         print(f"  UNMEASURED {u['what']}: {u['why']}")
     return 0

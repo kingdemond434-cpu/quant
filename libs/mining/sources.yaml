@@ -69,7 +69,6 @@ external_rosters:
                uses: [indirect_cells, allocation_intel]}
   - path: desks/mt5/data/free_stack_sources.json                # breadth free stack (#129)
     rows: sources
-    pending: "free stack (#129) not merged"
     defaults: {fetcher: owned, owner: breadth/free_stack, kind: text,
                consumer: desks/mt5/research/free_stack_hunter.py,
                uses: [indirect_cells, allocation_intel]}

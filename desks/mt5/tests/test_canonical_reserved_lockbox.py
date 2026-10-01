@@ -96,7 +96,8 @@ _META = {s: {"median_spread_pts": 10.0, "tick_size": 1e-5, "tick_value": 0.9,
          for s in ("EURUSD", "GBPUSD", "USDJPY")}
 
 
-def test_the_authority_lockbox_is_not_walk_forward(eg, monkeypatch) -> None:
+def test_the_authority_lockbox_is_not_walk_forward(eg, monkeypatch,
+                                                  measured_dsr_inputs) -> None:
     monkeypatch.setattr("research.cost_to_edge.verdict",
                         lambda *a, **k: (False, "", {"measured": False, "why": "no terminal"}))
     cells = [_cell("EURUSD", "carry", _daily(700, 0.15, -0.6, 7), 1),
@@ -150,18 +151,22 @@ def test_no_lane_restates_walk_forward_as_the_lockbox(path: str) -> None:
 
 # ------------------------------------------------------------------ 6. lifetime multiplicity
 
-def test_the_lifetime_family_count_raises_the_charge_and_never_lowers_it(eg) -> None:
-    led = {"status": "MEASURED", "family_trials": {"carry": 40_000, "tiny": 3}}
-    assert eg.charged_lifetime_trials(109, "carry", led, 10) == (40_000,
-                                                                 "lifetime family trials 40000")
-    assert eg.charged_lifetime_trials(109, "tiny", led, 10)[0] == 109
-    assert eg.charged_lifetime_trials(109, "new", led, 10)[0] == 109
+def test_the_lifetime_union_sets_the_charge_and_never_lowers_it(eg) -> None:
+    led = {"status": "MEASURED", "lifetime_trials": 50_000,
+           "family_trials": {"carry": 40_000, "tiny": 3}}
+    n, why = eg.charged_lifetime_trials(109, "carry", led, 10)
+    assert n == 50_000 and "union" in why, "a family is charged the whole union, not its slice"
+    assert eg.charged_lifetime_trials(109, "tiny", led, 10)[0] == 50_000
+    assert eg.charged_lifetime_trials(109, "new", led, 10)[0] == 50_000
+    small = {"status": "MEASURED", "lifetime_trials": 20, "family_trials": {}}
+    assert eg.charged_lifetime_trials(109, "new", small, 10)[0] == 109, "never below campaign"
 
 
-def test_an_unreadable_ledger_fails_closed_to_the_raw_burden(eg) -> None:
+def test_an_unreadable_ledger_fails_the_charge_closed(eg) -> None:
     n, why = eg.charged_lifetime_trials(109, "carry", {"status": "UNMEASURED"}, 1000)
-    assert n == 7000 and "UNMEASURED" in why
-    assert eg.charged_lifetime_trials(109, "carry", {"status": "UNMEASURED"}, 3)[0] == 109
+    assert n is None and "UNMEASURED" in why
+    n, _ = eg.charged_lifetime_trials(109, "carry", {"status": "MEASURED", "family_trials": {}}, 3)
+    assert n is None, "a ledger without a union count is not a measurement"
 
 
 def test_the_attestation_names_the_lifetime_floor() -> None:

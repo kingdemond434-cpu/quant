@@ -1665,6 +1665,17 @@ ORTHOGONAL_FAMILIES["lead_lag"] = family_lead_lag
 FAMILY_INPUTS["lead_lag"] = ("the driver instrument's bars (driver_symbol on the recipe)",
                              "data/universe/*_H1.parquet")
 
+# THE WORLD'S OFFICIAL STATISTICS (2026-09-30): a condition on one point-in-time world series
+# (policy rates, prices, money, trade, commodity balances -- DBnomics, BIS, CFTC, Treasury, FRED)
+# being in a z-score band against its own history. The series is named on the recipe by
+# `series_key` and loaded by the family itself from the world dataset hunter's store, so every
+# caller rebuilds the same cell from the same identity without an input resolver.
+from mt5desk.family_world_macro import family_world_macro_state  # noqa: E402
+
+ORTHOGONAL_FAMILIES["world_macro_state"] = family_world_macro_state
+FAMILY_INPUTS["world_macro_state"] = ("one world series, named on the recipe (series_key)",
+                                      "data/world_datasets (world_dataset_hunter)")
+
 # AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
 # rollover), value, defensive (BAB against the risk driver), volatility, momentum.
 from mt5desk.family_style_premia import family_style_premia  # noqa: E402
@@ -1672,6 +1683,26 @@ from mt5desk.family_style_premia import family_style_premia  # noqa: E402
 ORTHOGONAL_FAMILIES["style_premia"] = family_style_premia
 FAMILY_INPUTS["style_premia"] = ("swap_diff (broker_swaps) for carry; risk-driver bars for "
                                  "defensive", "data/intelligence/broker_swaps + universe")
+
+# LEARNED FORECASTS OVER THE CROSS-ASSET PANEL (2026-09-30): a numpy graph-propagation model
+# (lead-lag or co-movement adjacency, 1-2 hops, ridge readout) and a numpy attention model over
+# each instrument's recent path, both refitted walk-forward on the daily broker-date panel of the
+# instruments named in `peer_symbols`. The family resolves that panel itself (the sealed gauntlet
+# rebuilds peers only for the families it names) and refuses the cell if any peer is missing.
+# research/learned_miners.py is the only proposer and charges every configuration it tried.
+from mt5desk.family_learned_propagation import (  # noqa: E402
+    family_attention_ts,
+    family_gnn_propagation,
+)
+
+ORTHOGONAL_FAMILIES["gnn_propagation"] = family_gnn_propagation
+ORTHOGONAL_FAMILIES["attention_ts"] = family_attention_ts
+FAMILY_INPUTS["gnn_propagation"] = ("the peer panel's bars (peer_symbols on the recipe), "
+                                    "resolved by the family itself",
+                                    "data/universe/*_H1.parquet")
+FAMILY_INPUTS["attention_ts"] = ("the peer panel's bars (peer_symbols on the recipe; the "
+                                 "attention weights are shared across it), resolved by the "
+                                 "family itself", "data/universe/*_H1.parquet")
 
 
 # ==============================================================================================
@@ -1965,6 +1996,11 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "at sub-hourly sampling that matrix is dominated by asynchronous quoting, and a "
         "Marchenko-Pastur cut on a noise structure that is not sampling noise keeps the wrong "
         "eigenvalues"),
+    "world_macro_state": (
+        ("H1", "H4", "D1"),
+        "the conditioning variable is an official statistic printed daily at best and usually "
+        "monthly; a decision on every sub-hourly bar asserts hundreds of independent decisions "
+        "from a number that moves once, which multiplies cells without adding information"),
     "lead_lag": (
         ("H1", "H4", "D1"),
         "trades the laggard against a DRIVER instrument bar for bar at a measured lag; a lag "
@@ -1978,6 +2014,19 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "carries no hour at all, so the family would return [] on every symbol there and be "
         "filed as a data gap rather than as an inexpressible claim"),
 }
+
+# ---- bounded BELOW: both learned families forecast the NEXT BROKER DAY from daily closes and
+# act once a day at `signal_hour`. On a chart finer than the hour every one of them would build
+# the identical daily panel and emit the identical daily signal, so each extra chart is an extra
+# trial charged for no new information.
+FAMILY_TIMEFRAMES["gnn_propagation"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from the daily cross-asset panel, acted on once a day; a finer chart "
+    "re-emits the same daily signal and only multiplies the trial count")
+FAMILY_TIMEFRAMES["attention_ts"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
+    "daily signal and only multiplies the trial count")
 
 #: Parameters whose bar count expresses a WALL-CLOCK duration the mechanism's cause is dated by.
 #: Everything not listed is bar-relative and is left exactly as written. See the essay above.
@@ -2322,6 +2371,37 @@ FAMILY_INPUTS["exogenous_conditioner"] = (
     "a data pack's own published series, on its own available_time clock",
     "data/lake/series/<pack_id>.parquet")
 
+# THE MASS SCREEN'S GRAMMARS (2026-09-30). `research/mass_screen.py` generates and cheaply screens
+# rule cells in bulk and forwards only the FDR-controlled, cluster-deduplicated survivors through
+# the registry door; this is the constructor the sealed gauntlet rebuilds each one with. The five
+# names are grammars of one executable rule (`mt5desk.mass_screen_rules`), kept distinct so the
+# multiplicity ledger charges each grammar its own screened width. Price-only (the lead grammar
+# also reads its leader's parquet); every argument that defines the rule is required, so a
+# default-parameter sweep sets these aside instead of minting an unscreened rule.
+from mt5desk.mass_screen_rules import MASS_SCREEN_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(MASS_SCREEN_FAMILIES)
+for _ms_name in MASS_SCREEN_FAMILIES:
+    FAMILY_INPUTS[_ms_name] = ("price only (lead: the named leader's bars too)",
+                               "data/universe/*_H1.parquet")
+# THE FREE-STACK FAMILIES (2026-09-30): the DIRECT (series momentum) and INDIRECT (a price-only
+# base family gated by the series' regime) uses of every alt series `free_stack_hunter` publishes
+# under data/lake/series/fs_<id>.parquet. Both load their own series from `source`/`signal` on
+# the recipe, so the sealed gauntlet's `fn(h1, **params)` call rebuilds them unchanged.
+from mt5desk.family_alt_series import (  # noqa: E402
+    family_alt_conditioned,
+    family_alt_series_momentum,
+)
+
+ORTHOGONAL_FAMILIES["alt_series_momentum"] = family_alt_series_momentum
+FAMILY_INPUTS["alt_series_momentum"] = (
+    "an alt series' own change, on its own available_time clock",
+    "data/lake/series/fs_<source>.parquet")
+ORTHOGONAL_FAMILIES["alt_conditioned"] = family_alt_conditioned
+FAMILY_INPUTS["alt_conditioned"] = (
+    "a price-only base family's bars plus an alt series' regime on its available_time clock",
+    "data/universe/*_H1.parquet + data/lake/series/fs_<source>.parquet")
+
 # CROSS-SECTIONAL CLASS BOOKS, ONE LEG PER CELL (2026-09-30). The desk read k_eff 2.53 on 453
 # nominal sleeves with 6 of 15 alpha clusters empty, and `cross_sectional_fx` had never held a
 # certificate: `family_cross_sectional` takes its peers as an argument and the sealed gauntlet's
@@ -2343,3 +2423,26 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# ANALYST REVISION DRIFT AND THE CROSS-MARKET ANALYST LEAD (2026-09-30, the Alpha Capture
+# substitute). Public broker, company-guidance and forecast-revision views, stored point-in-time
+# by `research/alpha_capture.py` and replayed here from that store -- the family loads its own
+# first-seen events, so the gauntlet builds it through its ordinary `fn(h1, **params)` call with
+# `symbol` and `source` carried in the cell's params. Both take those as REQUIRED keyword
+# arguments, so the sweep names them unsuppliable instead of calling the family blind.
+from mt5desk.family_analyst_revision import (  # noqa: E402
+    family_analyst_cross_market_lead,
+    family_analyst_revision_drift,
+)
+
+ORTHOGONAL_FAMILIES["analyst_revision_drift"] = family_analyst_revision_drift
+ORTHOGONAL_FAMILIES["analyst_cross_market_lead"] = family_analyst_cross_market_lead
+for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
+    FAMILY_INPUTS[_av_name] = ("point-in-time analyst/broker/guidance views, placed at "
+                               "first_seen_at (research/alpha_capture.py)",
+                               "desks/mt5/data/alpha_capture/analyst_views.jsonl")
+    FAMILY_TIMEFRAMES[_av_name] = (
+        ("H1",),
+        "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
+        "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
+del _av_name

@@ -186,6 +186,11 @@ def _as_int(v: Any, default: int) -> int:
         return default
 
 
+#: A lane's own spelling of a use -> the registry's.
+_USE_ALIASES = {"direct": "direct_cells", "indirect": "indirect_cells",
+                "allocation": "allocation_intel", "allocator": "allocation_intel"}
+
+
 def normalise_row(row: Mapping[str, Any], *, origin: str,
                   defaults: Mapping[str, Any] | None = None) -> Source | None:
     """A roster row from this file OR from another lane's source table, as it is.
@@ -236,6 +241,10 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
     if kind not in DEFAULT_USES:
         kind = str(defaults.get("kind") or "text")
     uses_raw = row.get("uses") if row.get("uses") is not None else defaults.get("uses")
+    if isinstance(uses_raw, Mapping):
+        # a lane that describes each use (free stack: {direct: {...}, indirect: {...},
+        # allocation: {...}}) names the uses by its keys; an empty description is no use
+        uses_raw = [_USE_ALIASES.get(str(k), str(k)) for k, v in uses_raw.items() if v]
     uses = [str(u) for u in (uses_raw if isinstance(uses_raw, list) else
                              [uses_raw] if uses_raw else DEFAULT_USES[kind]) if str(u) in USES]
     return Source(

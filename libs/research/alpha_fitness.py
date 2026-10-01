@@ -580,12 +580,25 @@ def multiplicity_term(n_trials: int, *, sharpes: Sequence[float] | None = None,
     `external_gauntlet`'s `deflated_sharpe` stage raises its benchmark to, so a candidate that
     the search prefers because it came out of a wider haystack is charged HERE for the width of
     that haystack, in the same units and by the same function that will charge it later. The
-    variance of Sharpes is the desk's declared constant when `gate_policy` is readable and the
-    measured batch dispersion otherwise -- the gauntlet's own order of preference.
+    variance of Sharpes is the measured one in a verified `reports/DSR_INPUTS.json` when there is
+    one, the spec's constant while a spec still declares one, and the measured batch dispersion
+    otherwise.
     """
     n = max(1, int(n_trials))
     var = variance_of_sharpes
     basis = "given variance_of_sharpes"
+    if var is None:
+        # THE MEASURED VARIANCE FIRST (principal 2026-09-30): the verified DSR_INPUTS pooled
+        # variance the judge now charges. The spec constant below is read only while a spec still
+        # carries one (before the sealed judge's patch lands); the batch dispersion after that.
+        try:
+            from libs.research.dsr_inputs import load_verified
+            _doc, _ = load_verified()
+            if _doc is not None:
+                var = float(_doc["variance"]["pooled"]["variance"])
+                basis = f"measured DSR_INPUTS pooled variance ({str(_doc['content_sha256'])[:12]})"
+        except Exception:
+            var = None
     if var is None:
         try:
             from research.gate_policy import (  # type: ignore[import-not-found]
