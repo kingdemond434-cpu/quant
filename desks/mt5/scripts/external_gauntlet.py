@@ -18,6 +18,7 @@ import time
 from collections import OrderedDict
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -46,7 +47,10 @@ from research.survivor_publication import (  # noqa: E402
 )
 
 from libs.data.pit import is_stamped  # noqa: E402
-from libs.research.hypothesis_graph import node_id_for_spec  # noqa: E402
+from libs.research.hypothesis_graph import (  # noqa: E402
+    node_id_for_spec,
+    record_gauntlet_verdicts,
+)
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
@@ -60,6 +64,31 @@ SPA_ALPHA = 0.05
 WF_SPLITS = 4
 WF_MIN_STABILITY = 0.5
 COST_SCENARIO = 3.0
+#: THE GAUNTLET'S OWN CONSTANT FOR THE NUMBER OF GATES A CERTIFICATE MUST PASS. With the DSR bar
+#: above and the lockbox fraction (research.gate_policy.LOCKBOX_FRAC) it is one of the three rules
+#: the Tier S constitution owns (S01); all three stand when the constitution cannot be read.
+GATES_REQUIRED = 10
+
+
+def constitution_thresholds(lockbox_frac: float) -> dict[str, Any]:
+    """The thresholds this sweep applies, from the Tier S constitution IN FORCE (S01).
+
+    `libs/tiers/truth_kernel.gauntlet_thresholds` reads docs/research/tier_s_constitution.json
+    and tier_s_ratifications.jsonl: the sealed default, or a live file that is SEALED, TIGHTENED
+    or principal-RATIFIED. A rule can only TIGHTEN the constant here (a higher DSR bar, more gates,
+    a larger held-out share) unless the principal ratified the rule set that loosens it, and an
+    unreadable constitution -- or an unimportable kernel -- leaves exactly the current constants:
+    DSR_THRESHOLD, GATES_REQUIRED and the gate policy's lockbox fraction `lockbox_frac`."""
+    try:
+        from libs.tiers.truth_kernel import gauntlet_thresholds
+        return gauntlet_thresholds(BASE, dsr_threshold=DSR_THRESHOLD,
+                                   gates_required=float(GATES_REQUIRED),
+                                   lockbox_min_fraction=float(lockbox_frac))
+    except Exception as exc:
+        return {"status": "UNREADABLE", "hash": None, "dsr_threshold": DSR_THRESHOLD,
+                "gates_required": float(GATES_REQUIRED),
+                "lockbox_min_fraction": float(lockbox_frac),
+                "why": {"all": f"constants ({type(exc).__name__}: {exc})"}}
 
 #: SECONDS THIS SWEEP MAY SPEND BUILDING *FRESH* CELLS. Cached cells are free and are ALWAYS all
 #: loaded; only first-time computation is bounded.
@@ -1620,20 +1649,22 @@ UNKNOWN_REASONS = ("series_exception", "no_series", "lockbox_consumed_history",
                    "too_rare", "observations_under_60_days", "no_terminal_gate_recorded")
 
 
-def cell_lockbox_cut(series, need: int = 60):
+def cell_lockbox_cut(series, need: int = 60, frac: float | None = None):
     """A cell's OWN lockbox cut: its last `LOCKBOX_FRAC` of days, never fewer than the lockbox
     floor, or None when that would leave under `need` development days. Used only for a cell the
     campaign-wide cut leaves unjudgeable because its chart's history begins after it."""
     from research.gate_policy import LOCKBOX_FRAC, LOCKBOX_MIN_DAYS
     cal = sorted(set(series.index))
     n = len(cal)
-    tail = max(int(LOCKBOX_MIN_DAYS), math.ceil(n * float(LOCKBOX_FRAC)))
+    # `frac` is the held-out share of the law in force (S01); the policy's own when none is given.
+    tail = max(int(LOCKBOX_MIN_DAYS),
+               math.ceil(n * float(LOCKBOX_FRAC if frac is None else frac)))
     if n - tail < need:
         return None
     return cal[n - tail]
 
 
-def cell_dev_cut(full, campaign_cut, need: int = 60):
+def cell_dev_cut(full, campaign_cut, need: int = 60, frac: float | None = None):
     """The cut that ends ONE cell's development window: the campaign cut, unless that leaves the
     cell under `need` development days AND the cell's own tail cut (`cell_lockbox_cut`) lies later
     -- then the cell's own. One function, so the unsharded sweep and a shard's `rule` phase carve
@@ -1642,7 +1673,7 @@ def cell_dev_cut(full, campaign_cut, need: int = 60):
         return campaign_cut
     if int((full.index < campaign_cut).sum()) >= need:
         return campaign_cut
-    own = cell_lockbox_cut(full, need)
+    own = cell_lockbox_cut(full, need, frac=frac)
     return campaign_cut if own is None or own <= campaign_cut else own
 
 
@@ -1722,6 +1753,12 @@ def _append_gate_ledger(verdicts: list, specs: list | None = None) -> dict:
             # gate stays UNKNOWN -- every reader treats it as unmeasured, never as a rejection --
             # and the reason rides beside it, never empty.
             row.update(unknown_row_reason(v))
+        # THE PRE-REGISTRATION JOIN, carried from the verdict when this sweep stamped it
+        # (`record_gauntlet_verdicts`). Omitted, not defaulted, on a verdict nobody stamped: the
+        # docket writer's fallback reads the absence as "record this one" (one graph writer).
+        if v.get("prereg_status"):
+            row["prereg_hash"] = v.get("prereg_hash")
+            row["prereg_status"] = v.get("prereg_status")
         rows.append(row)
     if not rows:
         return {"appended": 0, "known": len(idx)}
@@ -2890,8 +2927,17 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     # development window only, and the held-out tail is read by the lockbox gate alone. One
     # calendar cut for the whole sweep (gate_policy.lockbox_cut), so every column holds out the
     # same period. The FULL series stays in the cache: the carve is re-derived every sweep.
-    from research.gate_policy import carve_lockbox, lockbox_cut, lockbox_stage
-    _lock_cut = lockbox_cut(daily)
+    from research.gate_policy import LOCKBOX_FRAC, carve_lockbox, lockbox_cut, lockbox_stage
+    # THE LAW THIS SWEEP IS JUDGED UNDER, resolved once and published with the verdicts (S01):
+    # the DSR bar, the gate count and the held-out share, each never looser than the constant
+    # above unless the principal ratified the rule set that loosens it.
+    law = constitution_thresholds(LOCKBOX_FRAC)
+    dsr_bar = float(law["dsr_threshold"])
+    gates_required = math.ceil(float(law["gates_required"]))
+    lockbox_frac = float(law["lockbox_min_fraction"])
+    print(f"  constitution {law.get('status')}: dsr>={dsr_bar} gates>={gates_required} "
+          f"lockbox>={lockbox_frac:.0%}")
+    _lock_cut = lockbox_cut(daily, frac=lockbox_frac)
     # The history each cell HAD before the carve, so an UNKNOWN can say whether the cell fired
     # too rarely or fired plenty and lost its development window to the campaign-wide cut.
     _pre_carve_days = [None if d is None else len(d) for d in daily]
@@ -2909,7 +2955,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     # calendar position differs, and the verdict records which basis it was judged on. A cell
     # the campaign cut already leaves judgeable is never touched, so no existing verdict moves.
     # `cell_dev_cut` is the ONE rule, shared with a shard's `rule` phase (`_shard_rule`).
-    _cell_cut = [cell_dev_cut(_s, _lock_cut) for _s in _full_daily]
+    _cell_cut = [cell_dev_cut(_s, _lock_cut, frac=lockbox_frac) for _s in _full_daily]
     for _k, _s in enumerate(_full_daily):
         if _s is not None and _cell_cut[_k] != _lock_cut:
             daily[_k], lock_daily[_k] = (_s[_s.index < _cell_cut[_k]],
@@ -3063,7 +3109,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         _n_cell, _n_basis = charged_lifetime_trials(n_trials, str(c.get("family") or ""),
                                                     _lifetime, matrix.shape[1])
         dsr = deflated_sharpe_ratio(arr, n_trials=_n_cell if _n_cell is not None else n_trials,
-                                    variance_of_sharpes=sh_var, threshold=DSR_THRESHOLD)
+                                    variance_of_sharpes=sh_var, threshold=dsr_bar)
         _dsr_sr0 = float(dsr.sr0_threshold) if _n_cell is not None else float("inf")
         stages["deflated_sharpe"] = {
             "passed": bool(dsr.passed) and _n_cell is not None, "dsr": round(float(dsr.dsr), 4),
@@ -3095,6 +3141,10 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
             stages[_k] = _local[_k]
 
         passed = all(s["passed"] for s in stages.values())
+        # AND AT LEAST AS MANY GATES AS THE LAW IN FORCE REQUIRES (S01): a gate count the
+        # constitution raises above what this sweep ran refuses rather than passes.
+        if passed and sum(1 for s in stages.values() if s["passed"]) < gates_required:
+            passed = False
         # WHICH GATE ACTUALLY STOPPED IT, AND WITHOUT THIS THE FUNNEL IS INVISIBLE.
         #
         # `stages` has carried every gate's verdict all along and the row never said which one
@@ -3118,7 +3168,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         verdicts.append({
             "cell": cid, "sym": c["sym"], "family": c["family"],
             "days": len(arr), "passed": passed, "stages": stages,
-            "terminal_gate": ("PASSED" if passed else _failed[0]),
+            "terminal_gate": ("PASSED" if passed
+                              else _failed[0] if _failed else "constitution.gates_required"),
             "failed_gates": _failed,
             "n_failed_gates": len(_failed),
             # THE CURE LANE'S ELIGIBILITY, computed where the evidence is rather than re-derived
@@ -3199,6 +3250,9 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     return {
         "hunt": hunt_name,
         "n_cells": len(cells),
+        # THE TIER S CONSTITUTION THIS SWEEP WAS JUDGED UNDER (S01): status, hash, and the three
+        # thresholds it bound, each with the reason it is the value it is.
+        "constitution": law,
         "n_trials": n_trials,
         "trial_count_basis": _trial_basis,
         "trial_census": _census,
@@ -3297,11 +3351,38 @@ def iter_json_array(path: Path, chunk_chars: int = 1 << 20):
             yield value
 
 
+def judge_refusal(verb: str, target: Path | str) -> str | None:
+    """THE JUDGE'S RUNTIME FIREWALL (Tier S layer 12, `libs/tiers/firewall.judge_refusal`): None
+    when this gauntlet may `verb` `target`, else why it refuses. The judge reads the compiled
+    docket and the bars, never a raw hypothesis or a sealed lockbox store. FAIL CLOSED: a
+    firewall that cannot be imported or cannot run is a refusal, never a pass."""
+    try:
+        from libs.tiers.firewall import judge_refusal as _judge_refusal
+    except Exception as exc:
+        return f"FIREWALL_UNAVAILABLE: {type(exc).__name__}: {exc}"
+    try:
+        rel = Path(target).resolve().relative_to(BASE).as_posix()
+    except (ValueError, OSError):
+        rel = str(target)
+    return _judge_refusal(verb, rel)
+
+
 def main():
+    # THE FIREWALL BEFORE THE FIRST READ: every input the sweep judges from and the authority
+    # file it writes. A refusal halts the sweep with the certificates untouched -- the gate
+    # refuses, it never passes on an input it was not allowed to see.
+    surv_file = HYP / "external_survivors.json"
+    for _verb, _target in (("read", UNI / "universe.json"), ("read", surv_file),
+                           ("write", REPORTS / "UNIVERSAL_SURVIVORS.json"),
+                           ("write", REPORTS / "universal_gates_external.json")):
+        _refused = judge_refusal(_verb, _target)
+        if _refused:
+            print(f"HALT: the judge's firewall refused to {_verb} {_target}: {_refused}. "
+                  f"No sweep, no certificate written.")
+            return
     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
 
     # Load external backtest survivors
-    surv_file = HYP / "external_survivors.json"
     if not surv_file.exists():
         print("No external survivors found")
         return
@@ -3792,6 +3873,21 @@ def main():
     #
     # Stamping AFTER means the worst case is a cell judged twice, which costs one rotation slot.
     # Stamping BEFORE meant the worst case was a cell lost forever. Those are not symmetric.
+    # EVERY VERDICT IS STAMPED AND REACHES THE GRAPH, BEFORE IT IS MADE DURABLE (2026-09-30).
+    # `record_verdicts` had no production caller, so the hypothesis graph's last fate was a
+    # hand-run backfill on 2026-09-03 and 0 of 108,189 rows named a pre-registration card.
+    # Each verdict -- gate-0 rejects, the ten-gate verdicts, and the deferred / blocked rows
+    # (stamped, never given a fate) -- is stamped PREREGISTERED with the card that fixed its
+    # exact spec before the cell was first judged, or `prereg_hash: null` + POST_HOC. The
+    # stamps land on the SAME dicts the report and the gate ledger are written from. Inside
+    # `_safe` ENTIRELY, naming included: bookkeeping may cost its own record, never the sweep.
+    _prereg_result = _safe(lambda: record_gauntlet_verdicts(
+        [*prior_rejections, *deferred_verdicts, *blocked_verdicts,
+         *(result.get("verdicts") or [])],
+        {cell_id(s): s for s in [*cells.values(), *cell_objs] if isinstance(s, dict)},
+        first_judged=_seen),
+        "prereg_graph")
+    result["preregistration"] = _prereg_result
     _gate_ledger_result = _safe(lambda: _append_gate_ledger(result.get("verdicts") or [],
                                                             cell_objs),
                                 "gate_ledger")
@@ -4497,7 +4593,7 @@ def _shard_rule(shard_dir: Path, plan: dict, k: int, meta: dict, t0: float) -> d
         full, x3 = c.get("_shard_ds"), c.pop("_shard_x3_full", None)
         # The union's cut, or the cell's own tail when the union leaves it no development window:
         # `cell_dev_cut`, the same rule `run_gauntlet` applies, so the merge's check holds.
-        cell_cut = cell_dev_cut(full, cut)
+        cell_cut = cell_dev_cut(full, cut, frac=plan.get("lockbox_frac"))
         dev = full if (full is None or cell_cut is None) else full[full.index < cell_cut]
         if x3 is not None and cell_cut is not None:
             x3 = x3[x3.index < cell_cut]
@@ -4607,8 +4703,14 @@ def _run_shards(eligible_specs: list, meta: dict, build_t0: float) -> dict:
         f.unlink(missing_ok=True)
     token = hashlib.sha256(f"{os.getpid()}:{time.time_ns()}:{len(eligible_specs)}".encode()
                            ).hexdigest()[:16]
+    # THE HELD-OUT SHARE OF THE LAW IN FORCE (S01), resolved once for the plan: the union cut
+    # here and every shard's per-cell cut use it, and `run_gauntlet` resolves the same law in the
+    # merge -- a law that changed in between moves its cut, and the merge refuses the sweep.
+    from research.gate_policy import LOCKBOX_FRAC
+    _lock_frac = float(constitution_thresholds(LOCKBOX_FRAC)["lockbox_min_fraction"])
     plan = {"protocol": SHARD_PROTOCOL, "n": n, "token": token, "build_t0": float(build_t0),
-            "owner_pid": os.getpid(), "meta": meta, "specs": list(eligible_specs)}
+            "owner_pid": os.getpid(), "meta": meta, "specs": list(eligible_specs),
+            "lockbox_frac": _lock_frac}
     _pickle_atomic(shard_dir / "plan.pkl", plan)
     print(f"SHARDED SWEEP: {len(eligible_specs)} planned cell(s) across {n} shard(s)")
     t0 = time.time()
@@ -4624,7 +4726,7 @@ def _run_shards(eligible_specs: list, meta: dict, build_t0: float) -> dict:
         def __init__(self, index: list) -> None:
             self.index = index
 
-    plan["cut"] = lockbox_cut([_Dates(list(built["dates"]))])
+    plan["cut"] = lockbox_cut([_Dates(list(built["dates"]))], frac=_lock_frac)
     _pickle_atomic(shard_dir / "cut.pkl", {"token": token, "cut": plan["cut"]})
     dispatch(shard_dir, n, "rule")  # type: ignore[operator]
     got = _shard_collect(shard_dir, plan, phase="rule")

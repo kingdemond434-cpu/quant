@@ -413,7 +413,32 @@ def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
     }
 
 
+def judge_refusal(verb: str, target: Path | str) -> str | None:
+    """THE JUDGE'S RUNTIME FIREWALL (Tier S layer 12, `libs/tiers/firewall.judge_refusal`): None
+    when this gate may `verb` `target`, else why it refuses. The judge reads hunt reports and
+    bars, never a raw hypothesis or a sealed lockbox store. FAIL CLOSED: a firewall that cannot
+    be imported or cannot run is a refusal, never a pass."""
+    try:
+        from libs.tiers.firewall import judge_refusal as _judge_refusal
+    except Exception as exc:
+        return f"FIREWALL_UNAVAILABLE: {type(exc).__name__}: {exc}"
+    try:
+        rel = Path(target).resolve().relative_to(QP.resolve()).as_posix()
+    except (ValueError, OSError):
+        rel = str(target)
+    return _judge_refusal(verb, rel)
+
+
 def main() -> int:
+    # THE FIREWALL BEFORE THE FIRST READ (S12): the universe and the candidates file this gate
+    # writes. A refusal ends the run with nothing written -- the gate refuses, it never passes.
+    for _verb, _target in (("read", UNI / "universe.json"),
+                           ("write", REPORTS / "UNIVERSAL_GATE_CANDIDATES.json")):
+        _refused = judge_refusal(_verb, _target)
+        if _refused:
+            print(f"HALT: the judge's firewall refused to {_verb} {_target}: {_refused}",
+                  flush=True)
+            return 1
     done_flag = REPORTS / DONE_MARKER
     held_flag = BASE / "data" / "HOLD_qquant_gates"
     if not done_flag.exists() and not held_flag.exists():
@@ -432,6 +457,12 @@ def main() -> int:
         modname, report_name = GATE_MODULES[hunt]
         if not (REPORTS / report_name).exists():
             print(f"{hunt}: report missing, skipping", flush=True)
+            continue
+        _refused = (judge_refusal("read", REPORTS / report_name)
+                    or judge_refusal("write", REPORTS / f"universal_gates_{hunt}.json"))
+        if _refused:
+            print(f"{hunt}: REFUSED by the judge's firewall ({_refused}); no verdicts, no "
+                  f"survivors from it", flush=True)
             continue
         print(f"gauntlet: {hunt} ...", flush=True)
         cells = iter_hunt_cells(modname, meta)
@@ -460,6 +491,12 @@ def main() -> int:
     for rp in sorted(REPORTS.glob("hunt18_*.json")):
         marker = REPORTS / f"DONE_universal_{rp.stem}"
         if marker.exists():
+            continue
+        _refused = (judge_refusal("read", rp)
+                    or judge_refusal("write", REPORTS / f"universal_gates_{rp.stem}.json"))
+        if _refused:
+            print(f"{rp.stem}: REFUSED by the judge's firewall ({_refused}); no verdicts, no "
+                  f"survivors from it", flush=True)
             continue
         report = json.loads(rp.read_text("utf-8"))
         fam = report.get("family")
