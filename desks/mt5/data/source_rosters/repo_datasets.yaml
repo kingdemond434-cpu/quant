@@ -1,6 +1,7 @@
 # Every dataset and price source the repos mined on 2026-09-30 use or cite, that no roster held
 # (TradingAgents, Vibe-Trading, TradingAgents-CN, StockSharp, quant-trading,
-# awesome-systematic-trading, tradingeconomics, Deep-Trading, intelligent-trading-bot).
+# awesome-systematic-trading, tradingeconomics, Deep-Trading, intelligent-trading-bot) and, 2026-10-01,
+# machine-learning-for-trading (the last five rows).
 # The first three rows are FED HOURLY by desks/mt5/research/acquire_datasets.py through
 # libs/data/repo_mined_feeds.py; the rest wait on the roster acquirer (#133) or a Breadth shaper.
 # Not rostered, with the reason, in /mnt/project-files/mining/repo_datasets_census.json:
@@ -308,3 +309,105 @@ sources:
   note: 'Mechanism source, not data: each strategy page becomes a hypothesis for the pwb conversion path'
   owner: elitequant_thread
   origin: github.com/je-suis-tm/quant-trading; github.com/paperswithbacktest/awesome-systematic-trading
+- id: rm_kalshi_econ_series
+  name: 'Kalshi economic event contracts: KXFED, KXINFL, KXUNEMPLOY, KXGDP, KXSPX daily candles'
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: us
+  language: en
+  licence: CFTC-regulated exchange, keyless public market-data API; terms at kalshi.com/developers/terms
+    confirmed by the owner before fetch
+  config:
+    url: https://api.elections.kalshi.com/trade-api/v2/series/KXFED/markets
+  note: 'Market-implied probability of the next FOMC outcome and the CPI print, a traded consensus the
+    desk lacks: conditions USD crosses, gold and US indices around FOMC/CPI. Needs a shaper that picks
+    the nearest-expiry market per day; route to Breadth (alt-data). No political series.'
+  owner: breadth
+  origin: github.com/stefan-jansen/machine-learning-for-trading
+- id: rm_aqr_datasets
+  name: 'AQR data sets: time-series momentum, BAB, QMJ, value and momentum everywhere, century of factor
+    premia (monthly/daily xlsx)'
+  priority: 1
+  kind: mechanics
+  uses:
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: free for research with citation (AQR data sets page)
+  config:
+    url: https://www.aqr.com/Insights/Datasets
+  note: 'Published factor returns on FX, commodities, bonds and index futures: a crowding and factor-exposure
+    reference for the desk''s own sleeves (is a sleeve just TSMOM or carry?), and a per-asset-class premium
+    prior. Monthly data, so a conditioner and allocator input, never an intraday cell.'
+  owner: breadth
+  origin: github.com/stefan-jansen/machine-learning-for-trading
+- id: rm_fnspid_news
+  name: FNSPID financial news + prices, 15.7M headlines 1999-2023 (Hugging Face Zihan1004/FNSPID)
+  priority: 2
+  kind: text
+  uses:
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 10080
+  region: us
+  language: en
+  licence: CC BY-NC 4.0 dataset card; research use only, never redistributed
+  config:
+    url: https://huggingface.co/datasets/Zihan1004/FNSPID
+  note: 'Historical headline corpus for the share-CFD news/earnings lane: trains and backtests the event
+    lane''s headline scorer with timestamps. Static history, so it feeds the lane''s backtest, not a live
+    clock.'
+  owner: breadth
+  origin: github.com/stefan-jansen/machine-learning-for-trading
+- id: rm_sec_form4_insider
+  name: SEC EDGAR Form 4 insider transactions (full-index quarterly + daily index)
+  priority: 2
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 60
+  region: us
+  language: en
+  licence: US government public data; SEC fair-access policy (declared User-Agent, 10 req/s)
+  config:
+    url: https://www.sec.gov/Archives/edgar/daily-index/
+  note: 'Insider buying clusters per US share CFD: an event-lane trigger and a cross-sectional class-book
+    factor (both permitted for share CFDs since 2026-09-30). Filing time is the availability stamp.'
+  owner: breadth
+  origin: github.com/stefan-jansen/machine-learning-for-trading
+- id: rm_alfred_vintages
+  name: ALFRED real-time vintages of FRED series (first print per release)
+  priority: 1
+  kind: mechanics
+  uses:
+  - direct_cells
+  - indirect_cells
+  - allocation_intel
+  fetcher: json_api
+  auth: key
+  cadence_minutes: 60
+  region: us
+  language: en
+  licence: free FRED API key (registered by the desk); FRED terms
+  config:
+    url: https://api.stlouisfed.org/fred/series/observations?realtime_start=1776-07-04
+  note: 'The point-in-time macro the certificate''s revision check asks for: every FRED conditioner read
+    at its first print instead of today''s revised value. Key goes in KEYS_TO_REGISTER.md if not already
+    held.'
+  owner: breadth
+  origin: github.com/stefan-jansen/machine-learning-for-trading
