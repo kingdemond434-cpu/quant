@@ -349,6 +349,11 @@ def _proposers() -> None:
                  # Reflective factor timing (IBK 2026 design): publishes its own admission
                  # contract, desks/mt5/reports/REFLECTIVE_TIMING.json. Sizes nothing.
                  "reflective_timing_contract",
+                 # Text-derived indices (event/policy factors from collected news, JP/KR/CN
+                 # retail blog attention and mood): the gain test against a shuffled-date
+                 # placebo, then the pre-declared exogenous_conditioner cells through the donor
+                 # door. Writes desks/mt5/reports/NLP_SOCIAL_CELLS.json.
+                 "nlp_social_cells",
                  # Learned GNN/attention miners (numpy): cells, forecast axes and allocation
                  # intel. Daily, on their own budget, so no hourly organ's share shrinks.
                  "learned_miners",

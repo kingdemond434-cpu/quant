@@ -2376,3 +2376,26 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# ANALYST REVISION DRIFT AND THE CROSS-MARKET ANALYST LEAD (2026-09-30, the Alpha Capture
+# substitute). Public broker, company-guidance and forecast-revision views, stored point-in-time
+# by `research/alpha_capture.py` and replayed here from that store -- the family loads its own
+# first-seen events, so the gauntlet builds it through its ordinary `fn(h1, **params)` call with
+# `symbol` and `source` carried in the cell's params. Both take those as REQUIRED keyword
+# arguments, so the sweep names them unsuppliable instead of calling the family blind.
+from mt5desk.family_analyst_revision import (  # noqa: E402
+    family_analyst_cross_market_lead,
+    family_analyst_revision_drift,
+)
+
+ORTHOGONAL_FAMILIES["analyst_revision_drift"] = family_analyst_revision_drift
+ORTHOGONAL_FAMILIES["analyst_cross_market_lead"] = family_analyst_cross_market_lead
+for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
+    FAMILY_INPUTS[_av_name] = ("point-in-time analyst/broker/guidance views, placed at "
+                               "first_seen_at (research/alpha_capture.py)",
+                               "desks/mt5/data/alpha_capture/analyst_views.jsonl")
+    FAMILY_TIMEFRAMES[_av_name] = (
+        ("H1",),
+        "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
+        "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
+del _av_name
