@@ -34,9 +34,11 @@ when it says so; management of what is already open never stands down.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
-from datetime import UTC, datetime
+import time
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -80,6 +82,29 @@ LOG = DESK / "logs" / "e8_gold.log"
 TAG = "E8gold"
 #: XAUUSD's price grid, used only when the terminal cannot state `trade_tick_size`.
 STOP_STEP = 0.01
+# A LEG THE VENUE DROPPED IS RETRIED, NOT FORGOTTEN (2026-09-30). TradeLocker answered a send with
+# an HTML page on 2026-09-17, 09-22 and 09-28; the pass recorded REJECTED, wrote the window as
+# placed, and `plan` never looked at it again, so each of those days traded half a bracket. A
+# failed leg now rides in its window's `failed` block and is re-sent on each 5-minute pass while
+# its session is open, its twin has not filled and the level is still ahead of the price.
+MAX_LEG_RETRIES = 12
+# How close a resting venue order must sit to a failed leg's level to be that leg: the send that
+# "failed" may have reached the venue before the reply broke, and sending again would double it.
+LEG_MATCH_TOL = 0.05
+#: How far BEFORE the failed send an order's own timestamp may sit and still be that send. The
+#: venue stamps orders on the broker clock (UTC+2/+3), so a real UTC send time sits up to three
+#: hours earlier than the stamp of the order it created; anything older is some other order.
+LEG_MATCH_WINDOW_MS = 10 * 60 * 1000
+XAU_OZ_PER_LOT = 100.0  # fallback for a leg journalled before risk_usd was kept on it
+#: With no own order to measure the venue clock against, the send-time bound widens to this: a
+#: box clock that runs fast must not hide a send that landed. The other fields (instrument, qty,
+#: side, level, not a journal id) still have to agree, and a fill older than this still cannot.
+UNMEASURED_SKEW_MS = 24 * 3600 * 1000
+#: The growth-governance rail the unowned-position block is billed under (libs/portfolio/rails).
+UNOWNED_BLOCK_RAIL = "e8_unowned_position_block"
+# Terminal reconnection (2026-09-30: ~70 min of "No IPC connection" in one day). Each attempt
+# drops the dead IPC handle and re-attaches; the waits are seconds inside a 5-minute pass.
+MT5_RETRY_WAITS_S = (0.0, 2.0, 5.0, 15.0, 30.0)
 
 
 def log(msg: str) -> None:
@@ -140,6 +165,159 @@ def leg_is_legal(side: str, price: float, bid: float, ask: float) -> tuple[bool,
     if side == "sell_stop" and price >= bid:
         return False, f"sell stop {price:.2f} is at or above the bid {bid:.2f}"
     return True, ""
+
+
+def retry_decisions(state: dict, hour: float, bid: float, ask: float, filled: dict[int, int],
+                    blocked: str | None = None) -> list[dict]:
+    """What to do with each leg the venue failed to take: {"act": "retry"|"abandon"|"hold"}.
+
+    A leg is re-sent only while the certified trade still exists: its window's session is open
+    (the same `window_session_ended` rule placement uses), the day is before the cancel hour, the
+    other leg of the bracket has not filled (the OCO would cancel it at once), and the level is
+    still AHEAD of the price -- a buy stop at or below the ask means the breakout already went
+    without us, and sending it now would be a market fill, a different trade. A leg that would
+    trade against an open position is held, never abandoned: the book may be flat next pass.
+    Pure, so the rules are testable without a venue.
+    """
+    out: list[dict] = []
+    for name, w in (state.get("windows") or {}).items():
+        failed = w.get("failed") or {}
+        if not failed or name.startswith("carried:"):
+            continue
+        twin_filled = w.get("position_id") is not None or any(
+            leg.get("id") is not None and int(leg["id"]) in filled
+            for leg in (w.get("orders") or {}).values())
+        for side, leg in failed.items():
+            base = {"window": name, "side": side, "leg": leg}
+            if twin_filled:
+                out.append({**base, "act": "abandon", "why": "the other leg filled"})
+            elif hour >= CANCEL_HOUR or window_session_ended(name, hour):
+                out.append({**base, "act": "abandon", "why": "the window's session is over"})
+            elif int(leg.get("attempts") or 0) >= MAX_LEG_RETRIES:
+                out.append({**base, "act": "abandon",
+                            "why": f"{MAX_LEG_RETRIES} sends failed"})
+            elif side == blocked:
+                out.append({**base, "act": "hold",
+                            "why": "would trade against an open XAU position"})
+            else:
+                legal, why = leg_is_legal(side, float(leg["price"]), float(bid), float(ask))
+                out.append({**base, "act": "retry"} if legal else
+                           {**base, "act": "abandon", "why": f"price already through: {why}"})
+    return out
+
+
+def _order_ms(o: dict) -> int | None:
+    for k in ("createdDate", "created", "lastModified", "openDate", "time"):
+        v = o.get(k)
+        try:
+            if v is not None and int(v) > 0:
+                return int(v)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _iso_ms(at: Any) -> int:
+    """Milliseconds since the epoch of an ISO stamp; an unreadable stamp reads as NOW-FAR-FUTURE
+    so nothing older can match it (fail closed: no adoption without a known send time)."""
+    try:
+        return int(datetime.fromisoformat(str(at)).timestamp() * 1000)
+    except (TypeError, ValueError):
+        return 2**62
+
+
+def last_rollover_ms(at_ms: int) -> int:
+    """The venue's last daily rollover (17:00 New York) at or before `at_ms`, in UTC ms. The
+    widened send-time bound never reaches past it: yesterday's legs are not today's sends."""
+    from zoneinfo import ZoneInfo
+    ny = datetime.fromtimestamp(at_ms / 1000, tz=ZoneInfo("America/New_York"))
+    roll = ny.replace(hour=17, minute=0, second=0, microsecond=0)
+    if roll > ny:
+        roll -= timedelta(days=1)
+    return int(roll.timestamp() * 1000)
+
+
+def venue_clock_skew_ms(journal: list[dict], rows: list[dict]) -> int | None:
+    """How far the venue's order stamps run ahead of this box's clock, in ms, measured on the
+    lane's OWN sends: each SENT journal row's box time against the venue's stamp on that order.
+    The median, so one late-acknowledged send cannot move it. None when no own order is visible.
+
+    WHY (audit 2026-09-30): the send-time bound compared the box clock with the venue's stamp,
+    so a box running 15 minutes fast refused a send that had landed and sent it again. Measured
+    this way the offset carries the box's skew AND whatever epoch the venue stamps in.
+    """
+    stamp = {int(o["id"]): ms for o in rows if o.get("id") is not None
+             and (ms := _order_ms(o)) is not None}
+    diffs = sorted(stamp[int(r["order_id"])] - _iso_ms(r.get("at")) for r in journal
+                   if r.get("status") == "SENT" and r.get("order_id") is not None
+                   and int(r["order_id"]) in stamp and _iso_ms(r.get("at")) < 2**62)
+    return diffs[len(diffs) // 2] if diffs else None
+
+
+def matching_resting_order(orders: list[dict], side: str, price: float, known_ids: set[int],
+                           *, lot: float, instrument_id: int, since_ms: int) -> int | None:
+    """The id of a venue order that IS this leg, if the failed send landed anyway.
+
+    EVERY FIELD MUST AGREE, because a wrong match is worse than none (audit 2026-09-30: matching
+    on side and level alone adopted a 40-hour-old 7-lot fill on ANOTHER instrument as this leg,
+    and management then cancelled the live twin). So an order matches only when it is on this
+    instrument, on this side, at this trigger level within LEG_MATCH_TOL, for this quantity, was
+    created no earlier than LEG_MATCH_WINDOW_MS before the failed send, and is not an id the lane
+    already owns -- today's legs AND every id in the intents journal, so yesterday's own leg
+    cannot come back as today's after the rollover empties the windows. A row missing any of
+    those fields does not match.
+    """
+    want = "buy" if side == "buy_stop" else "sell"
+    for o in orders:
+        oid = o.get("id")
+        if oid is None or int(oid) in known_ids:
+            continue
+        if str(o.get("side") or "").lower() != want:
+            continue
+        try:
+            if int(o.get("tradableInstrumentId") or 0) != int(instrument_id) or not instrument_id:
+                continue
+            qty = o.get("qty", o.get("quantity"))
+            if qty is None or abs(float(qty) - float(lot)) > max(0.005, 0.01 * float(lot)):
+                continue
+            level = o.get("stopPrice") or o.get("price")
+            if level is None or abs(float(level) - float(price)) > LEG_MATCH_TOL:
+                continue
+        except (TypeError, ValueError):
+            continue
+        made = _order_ms(o)
+        if made is None or made < since_ms - LEG_MATCH_WINDOW_MS:
+            continue
+        return int(oid)
+    return None
+
+
+def position_since_failure(positions: list[dict], side: str, first_at: Any, state: dict,
+                           filled: dict[int, int]) -> int | None:
+    """The id of an open XAU position on this leg's side, opened at or after the failed send, that
+    no window or carried row owns and no order of ours opened, or None. Such a position may be
+    the "failed" send itself, filled; sending again would double it. Unknown open time counts."""
+    want = "buy" if side == "buy_stop" else "sell"
+    rows = [w for bucket in ("windows", "carried") for w in (state.get(bucket) or {}).values()]
+    owned = {int(w["position_id"]) for w in rows if w.get("position_id") is not None}
+    # Positions opened by orders this lane KNOWS it sent; any other fill may be the lost send.
+    known = {int(leg["id"]) for w in rows for leg in (w.get("orders") or {}).values()
+             if leg.get("id") is not None}
+    ours = {int(pid) for oid, pid in filled.items() if int(oid) in known}
+    try:
+        since_ms = int(datetime.fromisoformat(str(first_at)).timestamp() * 1000)
+    except (TypeError, ValueError):
+        since_ms = 0
+    for p in positions:
+        if str(p.get("side") or "").lower() != want:
+            continue
+        pid = int(p.get("id") or 0)
+        if pid in owned or pid in ours:
+            continue
+        opened = int(p.get("openDate") or 0)
+        if opened == 0 or opened >= since_ms:
+            return pid
+    return None
 
 
 def manage_actions(state: dict, hour: float, open_ids: set[int],
@@ -336,10 +514,19 @@ def _read_json(p: Path, default: Any) -> Any:
 
 def _journal_rows(limit: int = 5000) -> list[dict]:
     """The last `limit` rows of the intents journal; unreadable -> none (no adoption, no cancel)."""
+    return _journal_read(limit) or []
+
+
+def _journal_read(limit: int = 5000) -> list[dict] | None:
+    """The journal's rows, or None when it is missing or unreadable (non-UTF-8 included).
+
+    None is not "no rows": the retry path needs the journal's order ids to refuse yesterday's own
+    legs, so it treats None as blind and skips the pass (audit 2026-09-30).
+    """
     try:
         lines = INTENTS.read_text(encoding="utf-8").splitlines()[-limit:]
-    except OSError:
-        return []
+    except (OSError, UnicodeDecodeError):
+        return None
     rows: list[dict] = []
     for line in lines:
         try:
@@ -469,6 +656,7 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
             continue
         risk_usd = equity * frac
         legs: dict[str, dict] = {}
+        failed: dict[str, dict] = {}
         for side in ("buy_stop", "sell_stop"):
             if side == blocked:
                 why = (f"open XAU position(s) {', '.join(str(p.get('id')) for p in xau_positions)}"
@@ -513,13 +701,18 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
                     f"tp {s['tp']:.2f} -> order {oid}")
             except Exception as exc:
                 row.update({"status": "REJECTED", "why": f"{type(exc).__name__}: {exc}"[:200]})
-                log(f"[{name}] REJECTED {side}: {row['why']}")
+                log(f"[{name}] REJECTED {side}: {row['why']} (will retry while the window holds)")
+                failed[side] = {**{k: row[k] for k in ("price", "sl", "tp", "lot", "risk_usd")},
+                                "attempts": 1, "why": row["why"],
+                                "first_at": row["at"]}
             if not _record(row):
                 doc.setdefault("journal_write_failed", []).append(
                     {"window": name, "side": side, "order_id": row.get("order_id")})
         state["windows"][name] = {"placed_at": now.isoformat(timespec="seconds"),
                                   "placed_hour": hour, "hi": due["hi"], "lo": due["lo"],
                                   "orders": legs, "position_id": None, "shadow": not armed}
+        if failed:
+            state["windows"][name]["failed"] = failed
         doc["placed"].append({"window": name, "legs": legs})
 
     # -------------------------------------------------------------- management
@@ -531,10 +724,11 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         open_ids = set()
         doc["orders_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
     filled: dict[int, int] = {}
+    hist_rows: list[dict] = []
     try:
         hist = venue._api.get_all_orders(history=True, lookback_period="2D")
-        rows = hist.to_dict("records") if hasattr(hist, "to_dict") else list(hist)
-        for o in rows:
+        hist_rows = hist.to_dict("records") if hasattr(hist, "to_dict") else list(hist)
+        for o in hist_rows:
             if str(o.get("status") or "").lower() == "filled" and o.get("positionId"):
                 filled[int(o["id"])] = int(o["positionId"])
     except Exception as exc:
@@ -549,6 +743,15 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
         xau_positions = []
         position_ids = set()
         doc["positions_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+
+    # -------------------------------------------------------------- dropped legs
+    if any(w.get("failed") for w in (state.get("windows") or {}).values()):
+        _retry_failed_legs(venue, state, doc, hour=hour, now=now, open_orders=open_orders,
+                           orders_ok="orders_unreadable" not in doc, filled=filled,
+                           xau_positions=xau_positions, positions_ok=positions_ok,
+                           stood_down=stood_down, armed=armed, hist_rows=hist_rows,
+                           history_ok="history_unreadable" not in doc, instrument_id=iid)
+        open_ids = {int(o.get("id")) for o in open_orders if o.get("id") is not None}
 
     # OUR OWN ORDERS AND POSITIONS, RE-DERIVED FROM THE VENUE EVERY PASS -- so a rollover (or a
     # lost state file) can neither orphan a position from management nor leave a GTC leg resting.
@@ -687,6 +890,182 @@ def run(venue: Any, mt5: Any, *, armed: bool = False) -> dict[str, Any]:
     return doc
 
 
+def _retry_failed_legs(venue: Any, state: dict, doc: dict, *, hour: float, now: datetime,
+                       open_orders: list[dict], orders_ok: bool, filled: dict[int, int],
+                       xau_positions: list[dict], positions_ok: bool, stood_down: bool,
+                       armed: bool, hist_rows: list[dict], history_ok: bool,
+                       instrument_id: int) -> None:
+    """Re-send the legs `retry_decisions` says still belong to a live window. Mutates `state`,
+    appends to `doc["actions"]` and to `open_orders` (so the rest of the pass sees the new leg).
+
+    Fails CLOSED: nothing is re-sent on a disarmed pass, with the order book, the order history
+    or the position book unreadable (a duplicate or a self-hedge is worse than a missing leg), or
+    while the guard stands down. A send that errored may still have LANDED -- resting, or already
+    filled and closed back to the level -- so before any re-send the leg is looked for as a
+    resting order, then as a filled order in the history, then as a position on its side opened
+    since the failed send.
+    """
+    blind = [why for why, bad in (("the pass is disarmed", not armed),
+                                  ("the guard stands down", stood_down),
+                                  ("the order book is unreadable", not orders_ok),
+                                  ("the position book is unreadable", not positions_ok),
+                                  ("the order history is unreadable", not history_ok),
+                                  ("the gold instrument id is unknown", not instrument_id))
+             if bad]
+    journal = _journal_read()
+    if journal is None:
+        blind.append("the intents journal is missing or unreadable, so this lane's own order "
+                      "ids cannot be told apart from the lost send")
+    if blind:
+        waiting = [f"{n}/{side}" for n, w in (state.get("windows") or {}).items()
+                   for side in (w.get("failed") or {})]
+        doc["retry_skipped"] = {"why": blind, "legs": waiting}
+        log(f"dropped legs {waiting} not re-sent this pass: {'; '.join(blind)}")
+        return
+    try:
+        bid, ask = venue.quote(SYMBOL)
+    except Exception as exc:
+        doc["retry_quote_unreadable"] = f"{type(exc).__name__}: {exc}"[:160]
+        return
+    direction = book_direction(xau_positions)
+    if direction is None:
+        return
+    blocked = OPPOSING_LEG.get(direction)
+    known = {int(leg["id"]) for bucket in ("windows", "carried")
+             for w in (state.get(bucket) or {}).values()
+             for leg in (w.get("orders") or {}).values() if leg.get("id") is not None}
+    # Every id the intents journal says this lane sent -- yesterday's legs included, which have
+    # left the state at the rollover but still sit in the venue's two-day history.
+    jrows = journal or []
+    known |= set(own_entry_orders(jrows, state))
+    # A position a block already stood aside for, and the order that opened it, are known too.
+    known |= {int(r["order_id"]) for r in jrows
+              if r.get("status") == "RAIL_BLOCKED" and r.get("order_id") is not None}
+    skew = venue_clock_skew_ms(jrows, [*open_orders, *hist_rows])
+    try:
+        venue_min = float(venue.min_lot(SYMBOL))
+    except Exception:
+        venue_min = 0.0
+    for dec in retry_decisions(state, hour, float(bid), float(ask), filled, blocked):
+        name, side, leg = dec["window"], dec["side"], dec["leg"]
+        w = state["windows"][name]
+        act = {"act": f"leg_{dec['act']}", "window": name, "side": side,
+               "attempts": int(leg.get("attempts") or 0)}
+        if dec["act"] == "hold":
+            continue
+        if dec["act"] == "abandon":
+            w["failed"].pop(side, None)
+            w.setdefault("abandoned", {})[side] = {**leg, "why": dec["why"]}
+            act["why"] = dec["why"]
+            log(f"[{name}] {side} dropped leg abandoned: {dec['why']}")
+            doc["actions"].append(act)
+            continue
+        levels = {k: leg[k] for k in ("price", "sl", "tp", "lot")}
+        done = [o for o in hist_rows if str(o.get("status") or "").lower() == "filled"]
+        # The send time on the VENUE's clock, and the size the venue actually sends (the adapter
+        # floors every lot at the venue minimum), so neither a skewed box nor a small lot can
+        # hide a send that landed.
+        sent_at = _iso_ms(leg.get("first_at"))
+        since = (sent_at + skew if skew is not None
+                 # the matcher allows LEG_MATCH_WINDOW_MS of slack below `since`; none of it
+                 # may reach back past the rollover
+                 else max(sent_at - UNMEASURED_SKEW_MS,
+                          last_rollover_ms(sent_at) + LEG_MATCH_WINDOW_MS))
+        oid = None
+        for book in (open_orders, done):
+            oid = oid or matching_resting_order(book, side, float(leg["price"]), known,
+                                                lot=max(float(leg["lot"]), venue_min),
+                                                instrument_id=int(instrument_id),
+                                                since_ms=since)
+        pos_id = None if oid is not None else position_since_failure(
+            xau_positions, side, leg.get("first_at"), state, filled)
+        if pos_id is not None:
+            why = ("a position on this side opened after the failed send and no window owns it: "
+                   "it may be that send, so the leg is not sent again")
+            # MISSED GROWTH (GROWTH_GOVERNANCE Rule 1): if that position is NOT our send, this
+            # veto forgoes the leg's whole certified risk. Record what it costs every time.
+            missed = leg.get("risk_usd")
+            if missed is None:
+                stop = abs(float(leg["price"]) - float(leg["sl"]))
+                missed = float(leg["lot"]) * stop * XAU_OZ_PER_LOT
+            w["failed"].pop(side, None)
+            w.setdefault("abandoned", {})[side] = {**leg, "why": why}
+            doc["actions"].append({**act, "act": "leg_abandon", "why": why,
+                                   "rail": UNOWNED_BLOCK_RAIL,
+                                   "missed_growth_risk_usd": round(float(missed), 2)})
+            _record({"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+                     **levels, "status": "RAIL_BLOCKED", "rail": UNOWNED_BLOCK_RAIL,
+                     "missed_growth_risk_usd": round(float(missed), 2),
+                     "position_id": int(pos_id),
+                     "order_id": next((int(o) for o, p in filled.items() if int(p) == pos_id),
+                                      None),
+                     "retry_of": leg.get("first_at")})
+            log(f"[{name}] {side} dropped leg abandoned: {why}; MISSED GROWTH "
+                f"({UNOWNED_BLOCK_RAIL}): the leg's {float(missed):.0f} USD of certified risk "
+                "is not deployed")
+            continue
+        row = {"at": now.isoformat(timespec="seconds"), "window": name, "side": side,
+               **levels, "armed": True, "retry_of": leg.get("first_at")}
+        if oid is not None:
+            row.update({"status": "SENT", "order_id": oid, "adopted": True})
+            log(f"[{name}] {side} the failed send had landed: adopted order {oid}")
+        else:
+            try:
+                oid = venue.place_stop(SYMBOL, "buy" if side == "buy_stop" else "sell",
+                                       float(leg["lot"]), price=float(leg["price"]),
+                                       stop=float(leg["sl"]), take_profit=float(leg["tp"]))
+                row.update({"status": "SENT", "order_id": oid})
+                log(f"[{name}] RE-PLACED {side} {leg['lot']} {SYMBOL} @ {leg['price']:.2f} "
+                    f"-> order {oid} (attempt {int(leg.get('attempts') or 0) + 1})")
+            except Exception as exc:
+                leg["attempts"] = int(leg.get("attempts") or 0) + 1
+                leg["why"] = f"{type(exc).__name__}: {exc}"[:200]
+                row.update({"status": "REJECTED", "why": leg["why"]})
+                act.update({"ok": False, "why": leg["why"]})
+                log(f"[{name}] {side} retry REJECTED: {leg['why']}")
+                _record(row)
+                doc["actions"].append(act)
+                continue
+        _record(row)
+        w.setdefault("orders", {})[side] = {"id": int(oid), **levels}
+        w["failed"].pop(side, None)
+        known.add(int(oid))
+        open_orders.append({"id": int(oid), "side": "buy" if side == "buy_stop" else "sell",
+                            "stopPrice": float(leg["price"])})
+        act.update({"ok": True, "order_id": int(oid), "adopted": bool(row.get("adopted"))})
+        doc["actions"].append(act)
+    for w in (state.get("windows") or {}).values():
+        if "failed" in w and not w["failed"]:
+            del w["failed"]
+
+
+def connect_terminal(mt5: Any, attach: Any, path: str, *,
+                     waits: tuple[float, ...] = MT5_RETRY_WAITS_S,
+                     sleep: Any = None) -> tuple[bool, int]:
+    """Attach to the terminal, re-initialising it on failure, until it answers a gold tick.
+
+    NO IPC CONNECTION COST ~70 MINUTES ON 2026-09-30. The pass tried `attach_or_initialize`
+    once and, on a dead IPC handle, gave up for five minutes -- then did the same again, so a
+    terminal that had merely dropped its pipe stayed "unavailable" until something else reset
+    it. `terminal_info()` can also answer on a handle whose data calls fail, so success here
+    means a real XAUUSD tick, not a handshake. Between attempts the stale handle is shut down so
+    `initialize` builds a fresh one. Returns (connected, attempts used).
+    """
+    pause = sleep or time.sleep
+    for n, wait in enumerate(waits, start=1):
+        if wait > 0:
+            pause(wait)
+        try:
+            if attach(mt5, path=path, timeout=15000) and mt5.symbol_info_tick(SYMBOL) is not None:
+                return True, n
+        except Exception as exc:
+            log(f"MT5 attach attempt {n} raised {type(exc).__name__}: {exc}")
+        log(f"MT5 attach attempt {n}/{len(waits)} failed: {mt5.last_error()}")
+        with contextlib.suppress(Exception):
+            mt5.shutdown()
+    return False, len(waits)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--armed", action="store_true", help="arm this pass regardless of the marker")
@@ -696,8 +1075,9 @@ def main(argv: list[str] | None = None) -> int:
         import MetaTrader5 as mt5
         from mt5desk.config import terminal_path
         from research.mt5_session import attach_or_initialize
-        if not attach_or_initialize(mt5, path=terminal_path(), timeout=15000):
-            log(f"MT5 initialize failed: {mt5.last_error()}")
+        ok, _tries = connect_terminal(mt5, attach_or_initialize, terminal_path())
+        if not ok:
+            log(f"MT5 unavailable after {_tries} attempts: {mt5.last_error()}")
             _failed_pass("MT5_UNAVAILABLE", armed=armed)
             return 1
     except Exception as exc:
@@ -714,6 +1094,13 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     try:
         doc = run(venue, mt5, armed=armed)
+        if doc.get("status") == "NO_BARS":
+            # The pipe can die between the attach and the first data call. NO_BARS returns
+            # before any state is touched, so one reconnect and a second pass are safe.
+            ok, _tries = connect_terminal(mt5, attach_or_initialize, terminal_path(),
+                                          waits=MT5_RETRY_WAITS_S[1:])
+            if ok:
+                doc = run(venue, mt5, armed=armed)
     finally:
         mt5.shutdown()
     log(f"e8 gold: {'ARMED' if armed else 'SHADOW'} hour={doc.get('hour')} "

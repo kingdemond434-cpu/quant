@@ -134,6 +134,38 @@ def due(now: datetime | None = None) -> list[dict[str, Any]]:
     return out
 
 
+#: THE BOARD ITSELF, LAST (2026-09-30). `issue_board` is the table's reader, not one of its rows,
+#: so it had no clock but the long cycle -- the defect this task exists to end, left standing on
+#: the organ that detects it. The #104 re-score read `leg:issue_board` as silent since 09-12.
+#: It runs AFTER the producers so it measures what this pass just refreshed rather than the
+#: previous cycle's ages, and it runs WITHOUT --apply: repairs stay the cycle's, this is the
+#: board's measurement clock.
+BOARD_NAME = "issue_board"
+BOARD_PRODUCER = "research/issue_board.py"
+BOARD_CADENCE_S = 3600
+
+
+def board_due(results: list[dict[str, Any]], now: datetime | None = None,
+              report: Path | None = None) -> dict[str, Any]:
+    """The board's own verdict: due when its artifact is absent or past half its cadence, or
+    when any producer was refreshed on this pass (its reading of them is then out of date)."""
+    stamp = (now or datetime.now(tz=UTC)).timestamp()
+    path = report or issue_board.REPORT
+    row: dict[str, Any] = {"name": BOARD_NAME, "cadence_s": BOARD_CADENCE_S,
+                           "producer": BOARD_PRODUCER}
+    ran = [r["name"] for r in results if r.get("status") == "RAN"]
+    if not path.exists():
+        return {**row, "due": True, "age_s": None, "why": "artifact has never been written"}
+    age = stamp - path.stat().st_mtime
+    if ran:
+        return {**row, "due": True, "age_s": round(age),
+                "why": f"{len(ran)} producer(s) refreshed this pass -- re-read them"}
+    is_due = age > BOARD_CADENCE_S * REFRESH_AT
+    return {**row, "due": is_due, "age_s": round(age),
+            "why": (f"{round(age)}s old, past {REFRESH_AT:g} x {BOARD_CADENCE_S}s" if is_due
+                    else f"{round(age)}s old, within {REFRESH_AT:g} x {BOARD_CADENCE_S}s")}
+
+
 def refresh(row: dict[str, Any]) -> dict[str, Any]:
     """Run one producer under its lock. A failure is reported, never raised.
 
@@ -180,6 +212,12 @@ def main(argv: list[str] | None = None) -> int:
              enumerate(job_lock.admission_order([r["name"] for r in pending]))}
     pending.sort(key=lambda r: order.get(r["name"], len(order)))
     results = [] if args.report else [refresh(r) for r in pending]
+    board = board_due(results)
+    rows.append(board)
+    if board["due"]:
+        pending.append(board)
+        if not args.report:
+            results.append(refresh(board))
 
     payload = {
         "generated_utc": datetime.now(tz=UTC).isoformat(timespec="seconds"),

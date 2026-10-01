@@ -36,6 +36,7 @@
     "desks/mt5/research/_retired/reenrol_universe_refused.py",
     "desks/mt5/research/_retired/residual_alpha.py",
     "desks/mt5/research/_retired/residual_sleeve.py",
+    "desks/mt5/research/_retired/retire_untradeable.py",
     "desks/mt5/research/_retired/run_hunt13.py",
     "desks/mt5/research/_retired/run_hunt15.py",
     "desks/mt5/research/_retired/run_hunt2.py",
@@ -249,7 +250,7 @@
     "scripts/track_findings.py",
     "scripts/unobserved.py"
    ],
-   "count": 243,
+   "count": 244,
    "names_dropped": 0,
    "obligation": "a clock, an artifact, a named consumer and a row in the runtime attestation",
    "verdict": "measured"

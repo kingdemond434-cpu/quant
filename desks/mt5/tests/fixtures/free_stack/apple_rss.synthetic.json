@@ -1,0 +1,43 @@
+{
+"feed": {
+"title": "Top Free Apps",
+"country": "us",
+"results": [
+{
+"artistName": "Temu",
+"id": "1641486558",
+"name": "Temu: Shop Like a Billionaire"
+},
+{
+"artistName": "Google LLC",
+"id": "284815942",
+"name": "Google"
+},
+{
+"artistName": "Instagram, Inc.",
+"id": "389801252",
+"name": "Instagram"
+},
+{
+"artistName": "Uber Technologies, Inc.",
+"id": "368677368",
+"name": "Uber"
+},
+{
+"artistName": "Some Indie Dev",
+"id": "1",
+"name": "Flashlight"
+},
+{
+"artistName": "Nintendo Co., Ltd.",
+"id": "2",
+"name": "Mario Kart Tour"
+},
+{
+"artistName": "Alibaba.com Hong Kong Limited",
+"id": "3",
+"name": "Taobao"
+}
+]
+}
+}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
@@ -29,6 +30,12 @@ def _point(monkeypatch, tmp_path: Path) -> None:
     # the same isolation the two lines above already give the other inputs. Every assertion
     # below is unchanged; without this line the box's live auction leaked into the arithmetic.
     monkeypatch.setattr(rb, "AUCTION", tmp_path / "RESEARCH_AUCTION.json")
+    # THE BUDGET IS GOVERNED (2026-09-30): the uplift above the floor needs measured surplus and a
+    # treated hour. These assertions are about the PRICE, so the clock has room, the hour is not
+    # held out and the trial ledger is empty (contract UNMEASURED: the uplift runs as the trial).
+    monkeypatch.setattr(rb, "TRIALS", tmp_path / "research_budget_trials.jsonl")
+    monkeypatch.setattr(rb, "_surplus_s", lambda leg: (10_000.0, "test clock"))
+    monkeypatch.setattr(rb, "_in_control", lambda leg, now: False)
 
 
 def test_budget_is_base_when_bandit_unreadable(monkeypatch, tmp_path):
@@ -63,8 +70,18 @@ def test_budget_scales_by_share_and_clips(monkeypatch, tmp_path):
     s, rec = rb.budget_s("alpha_evolution", 240)
     assert rec["factor"] == rb.CEIL and s == 480
     rb.record(rec)
+    # OBEYED IS NOT AUTHORITATIVE: with no measured gain the uplift is the trial, not a decision
     ok, why = rb.authority()
-    assert ok is True and "alpha_evolution=480s" in why
+    assert ok is False and "trial" in why and "UNMEASURED" in why
+    # once the held-out arm measures the gain, the same spend IS the budget deciding
+    rows = ([{"leg": "alpha_evolution", "arm": "treated", "outcome": x} for x in (9, 10, 11, 10)]
+            + [{"leg": "alpha_evolution", "arm": "control", "outcome": x} for x in (4, 5, 4, 5)])
+    now = datetime.now(tz=UTC).isoformat()
+    rb.TRIALS.write_text("".join(json.dumps({**r, "at": now}) + "\n" for r in rows), "utf-8")
+    s, rec = rb.budget_s("alpha_evolution", 240)
+    rb.record(rec)
+    ok, why = rb.authority()
+    assert s == 480 and ok is True and "alpha_evolution=480s" in why and "ADMITTED" in why
 
 
 def test_the_budget_records_whether_the_department_factor_decided(monkeypatch, tmp_path):
