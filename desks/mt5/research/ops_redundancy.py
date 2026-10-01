@@ -442,6 +442,23 @@ def duplicate_guard(data: Path = DATA) -> dict[str, Any]:
             "rule": "accepted intents, same sleeve + side + minute + intended price, counted"}
 
 
+def _offsite_backup_row() -> dict[str, Any]:
+    """The box-only data (ticks, tape, terminal profile) off site, encrypted: read from
+    `scripts/offsite_backup.py`'s report, so the row is a measurement, not a standing sentence."""
+    import importlib.util
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "offsite_backup", DESK / "scripts" / "offsite_backup.py")
+        assert spec is not None and spec.loader is not None
+        ob = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ob)
+        doc = ob._load(ob.OUT)
+        status, why = ob.verdict(doc)
+    except Exception as exc:        # an unreadable organ is UNMEASURED, never a pass
+        status, why = "UNMEASURED", f"offsite_backup unreadable: {type(exc).__name__}"
+    return {"item": "encrypted_offbox_backup", "status": status, "why": why}
+
+
 def build(network: bool = True) -> dict[str, Any]:
     t0 = time.time()
     journal = journal_replay()
@@ -463,9 +480,7 @@ def build(network: bool = True) -> dict[str, Any]:
             {"item": "warm_standby", "status": "NOT_PROVISIONED",
              "why": "a second terminal on a second machine is a provisioning decision "
                     "(NEEDS-PRINCIPAL); the failover pair above is same-box only"},
-            {"item": "encrypted_offbox_backup", "status": "NOT_ENCRYPTED",
-             "why": "the off-box replica is a private git remote; desk-side encryption needs a "
-                    "key escrowed off the box to stay restorable (key custody: NEEDS-PRINCIPAL)"},
+            _offsite_backup_row(),
         ],
         "elapsed_s": round(time.time() - t0, 2),
     }

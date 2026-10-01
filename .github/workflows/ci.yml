@@ -12,7 +12,10 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # ONE GROUP PER PUSHED COMMIT. GitHub keeps one pending run per group and cancels the older
+  # pending one whatever cancel-in-progress says, so with a per-branch group every live push
+  # still cancelled the last (20 runs cancelled on 2026-09-30) and live never finished a run.
+  group: ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'pr' }}
   # A push run on a shared branch always finishes: every live run 11:42-12:54Z on 2026-09-30
   # was cancelled by the next push, so live never produced a base set. PR runs still supersede.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}

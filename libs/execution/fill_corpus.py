@@ -851,7 +851,14 @@ def _one(c: Any, dec: Mapping[str, Mapping[str, Any]], dset: Mapping[str, Mappin
                         _f(ex_row.get("r_multiple")))
     pred_mean = _first(_f(d_row.get("predicted_r_mean")), _f(d_row.get("posterior_edge_r")),
                        _f(_d(d_row.get("chosen_action")).get("edge_r")))
-    fill_price = _f((deal_row or {}).get("fill_price"))
+    # THE ENTRY FILL IS THE LEDGER'S `entry_price`, NOT ITS `fill_price` (2026-09-30). A live
+    # ledger row is written from the CLOSING deal, so its `fill_price` is the exit -- the EURGBP
+    # stop-outs of 2026-09-16 carry fill_price == sl -- while `entry_price` is the position's
+    # opening deal. `mt5desk.markout._entry_fill` already reads it this way; this record read
+    # the exit as the fill and priced slippage against the wrong side of the trade.
+    _entry = _f((deal_row or {}).get("entry_price"))
+    fill_price = (_entry if _entry is not None and _entry > 0
+                  else _f((deal_row or {}).get("fill_price")))
     if fill_price is None and price_ref is not None and slip_frac is not None:
         fill_price = price_ref * (1.0 + slip_frac * (direction or 1))
 
