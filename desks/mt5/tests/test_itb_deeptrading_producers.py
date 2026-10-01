@@ -55,3 +55,13 @@ def test_model_search_judges_the_new_rows_as_charged_trials(monkeypatch, tmp_pat
     assert doc["cells_tested"] == 14 and doc["trials"]["n_raw"] == 14
     # the session-volatility planted in the bars is what dt_window@vol_up should find
     assert doc["representation_verdicts"]["dt_window@vol_up"]["verdict"] == "ALIVE"
+
+
+def test_calendar_representation_reads_the_symbols_legs():
+    d = _bars(n=24 * 30)
+    d.attrs["symbol"] = "GBPUSD"
+    rep = MS.representation(d, "calendar")
+    assert {"hol_home", "hol_second", "hol_next", "hol_prev", "hour", "to_month_end"} <= set(rep)
+    d.attrs["symbol"] = "EURSEK"                     # SEK has no calendar: the column leaves
+    assert "hol_second" not in MS.representation(d, "calendar")
+    assert "calendar" in MS.EXTRA_TARGETS["vol_up"]
