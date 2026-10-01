@@ -68,6 +68,13 @@ SOURCE_SELECTION_TRIALS = 200
 #: compiler's 16-way (chart x session) fan-out, which is deliberate: this conversion declares its
 #: own breadth and does not want it silently multiplied by sixteen on top.
 CHARTS: tuple[str, ...] = ("H1", "H4", "D1")
+#: THE FINE CHARTS, minted wherever the instrument's own bars exist (principal 2026-09-30: every
+#: timeframe the family supports). `htf_anchor_trend` declares no chart bound in
+#: `families_orthogonal.FAMILY_TIMEFRAMES`, and its anchor is a MULTIPLE of the entry chart, so
+#: M15 at anchor_mult=4 is the hourly anchor gating a fifteen-minute entry -- the same claim one
+#: rung finer, not a different one. Minted only where `<SYM>_<chart>.parquet` exists: a fine
+#: chart the desk does not hold is a cell the judge cannot replay off this checkout.
+FINE_CHARTS: tuple[str, ...] = ("M15", "M30")
 
 #: Arm A. The mechanism's own degrees of freedom. `(0.0, False)` is the CONTROL ARM -- the anchor
 #: gate and ATR stop with the desk's ordinary stop/target/time exit -- without which the two exit
@@ -266,18 +273,38 @@ MINT_ROWS_PER_PASS = 1200
 CURSOR = HYP / "htf_anchor_cursor.json"
 
 
+def charts_for(sym: str) -> list[str]:
+    """The fixed ladder plus every fine chart this instrument's bars exist for."""
+    uni = BASE / "data" / "universe"
+    return list(CHARTS) + [c for c in FINE_CHARTS if (uni / f"{sym}_{c}.parquet").exists()]
+
+
 def build_candidates(census: dict[str, Any], symbols: list[str]) -> list[dict[str, Any]]:
-    """Arm A across the whole legal universe; arm B only where the operator was measured to bind."""
+    """Arm A across the whole legal universe; arm B only where the operator was measured to bind.
+
+    The instruments are walked LEAST-JUDGED FIRST (`breadth_rotation.orthogonal_ring` over the
+    judge's own seen-cells file, for this family), so the rotating mint slice below reaches the
+    ground the desk has tested least before it returns to the ground it has tested most. An
+    unreadable coverage file leaves the name order. The judge's counts move between passes, so an
+    instrument can shift across the cursor: a repeat is deduplicated by the merge on the
+    executable spec, and one that shifts behind the cursor is by construction among the least
+    judged, so it sits near the front of the ring the cursor wraps back to."""
+    try:
+        from breadth_rotation import orthogonal_ring
+        symbols = orthogonal_ring(symbols, "htf_anchor_trend")
+    except Exception:
+        symbols = list(symbols)
     out: list[dict[str, Any]] = []
-    for sym, chart in product(symbols, CHARTS):
-        for amult, (xmult, flip) in product(ANCHOR_MULTS, EXIT_ARMS):
-            arm = ("control" if (xmult <= 0 and not flip)
-                   else "flip" if xmult <= 0
-                   else f"vol{xmult}" + ("+flip" if flip else ""))
-            out.append(_row(sym, "htf_anchor_trend", {
-                "timeframe": chart, "anchor_mult": amult,
-                "expansion_mult": xmult, "exit_on_anchor_flip": flip,
-            }, f"arm={arm}; anchor is {amult}x the entry chart"))
+    for sym in symbols:
+        for chart in charts_for(sym):
+            for amult, (xmult, flip) in product(ANCHOR_MULTS, EXIT_ARMS):
+                arm = ("control" if (xmult <= 0 and not flip)
+                       else "flip" if xmult <= 0
+                       else f"vol{xmult}" + ("+flip" if flip else ""))
+                out.append(_row(sym, "htf_anchor_trend", {
+                    "timeframe": chart, "anchor_mult": amult,
+                    "expansion_mult": xmult, "exit_on_anchor_flip": flip,
+                }, f"arm={arm}; anchor is {amult}x the entry chart"))
     for b in census.get("binding", []):
         fam, chart, mult = b["family"], b["chart"], b["expansion_mult"]
         for sym in symbols:
