@@ -643,6 +643,85 @@ Write-Host ("  target {0}" -f $target.Substring(0, 12))
 
 if ($head -eq $target) { Write-Host "  already at target -- nothing to adopt"; exit 0 }
 
+# ORIGIN BEHIND THE BOX IS NOT A RELEASE, AND ADOPTING IT IS A MASS REVERT (2026-09-24).
+#
+# The line above is the only short-circuit this script had, and it fires on EXACT EQUALITY only.
+# So when `$target` is an ANCESTOR of HEAD -- origin strictly behind, carrying not one commit the
+# box lacks -- the full adoption still ran and wrote origin's OLDER blobs over the box's newer
+# code (step 3 writes `Get-WorktreeBytes -Rev $target` for every differing CODE path; only STATE
+# paths are kept as the box's). There is nothing to deliver in that direction. The only thing
+# such a pass can do is undo.
+#
+# MEASURED THE DAY THIS WAS WRITTEN. `git push` of the box's backlog had been failing with
+# `RPC failed; HTTP 408` -- 506 commits of large parquet blobs will not go through one request --
+# so origin sat 500+ commits behind for weeks while this script "adopted" it every hour. At
+# 17:12Z it reverted a seal fix that had been committed at 17:13Z, and the 17:20Z seal then died
+# on `AttributeError: module 'libs.ops.release' has no attribute 'seal_blocking_paths'` -- the
+# function had been in HEAD seven minutes earlier and the adoption had written it back out.
+#
+# That is also why the release identity could never settle. Every hour this pass reverted the
+# box's newer code and committed the revert, so HEAD moved again, so HEAD stopped matching the
+# seal, so `release_identity` refused new risk -- 1,200 `release_identity_refused` rows since
+# 2026-09-07 and 19 gold sleeve-days with no placement. The churn was manufactured here.
+#
+# UNMEASURED ANCESTRY CHANGES NOTHING. If the check itself cannot be run, the pass proceeds
+# exactly as it did before rather than refusing: a code-delivery path that stops on its own
+# diagnostics is the failure this file already exists to prevent.
+$ancestorRc = 2
+try {
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & git -C $RepoRoot merge-base --is-ancestor $target $head 2>$null | Out-Null
+    $ancestorRc = $LASTEXITCODE
+    $ErrorActionPreference = $prevEap
+} catch { $ancestorRc = 2 }
+if ($ancestorRc -eq 0) {
+    $aheadBy = "?"
+    try { $aheadBy = (& git -C $RepoRoot rev-list --count "$target..$head" 2>$null | Out-String).Trim() } catch { }
+    Write-Host ("  target {0} is an ANCESTOR of HEAD -- origin carries no commit this box lacks" -f $target.Substring(0, 12))
+    Write-Host ("  the box is {0} commit(s) AHEAD. Adopting would write origin's OLDER blobs over" -f $aheadBy)
+    Write-Host   "  newer code, which is a revert, not a release. Nothing to adopt."
+    exit 0
+}
+if ($ancestorRc -ne 1) {
+    Write-Host "  WARNING: could not measure whether origin is behind HEAD; adopting as before"
+}
+
+# ---- 0b. THE TARGET'S JUDGE MUST BE SEALED BEFORE ANY OF IT LANDS (2026-09-30) ----
+# Origin carried a broken seal for about two minutes (4678fe4f at 515d665e, until fc6c34e5
+# re-signed it), and this script checked neither CI nor the seal: an adoption at :12 inside that
+# window would have landed an unsigned judge on the box that trades. `check_target_seal.py`
+# hashes the fetched COMMIT's frozen judge files against the manifest that commit carries, using
+# the union of this checkout's and the target's frozen lists. Anything but SEALED refuses here,
+# before a byte is written: the running release, its seal and the gateway stay exactly as they
+# are, and the next hourly pass adopts once origin is re-signed. Exit 7 so Adopt-And-Seal can say
+# what happened instead of reporting a partial adoption.
+$sealCheck = Join-Path $RepoRoot "scripts\check_target_seal.py"
+if (Test-Path $sealCheck) {
+    $sealPy = Join-Path $RepoRoot ".venv\Scripts\python.exe"; $sealPyArgs = @()
+    if (-not (Test-Path $sealPy)) {
+        if (Get-Command py -ErrorAction SilentlyContinue) { $sealPy = "py"; $sealPyArgs = @("-3") }
+        else { $sealPy = "python" }
+    }
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $sealOut = @(& $sealPy @sealPyArgs $sealCheck $target 2>&1 | ForEach-Object { "$_" })
+        $sealRc = $LASTEXITCODE
+    } catch {
+        $sealOut = @("check_target_seal.py could not run: " + $_.Exception.Message)
+        $sealRc = 2
+    } finally { $ErrorActionPreference = $prevEap }
+    $sealOut | ForEach-Object { Write-Host ("  " + $_) }
+    if ($sealRc -ne 0) {
+        Write-Host ("  REFUSING target {0}: its judge is not sealed (rc {1}); keeping the current release" -f
+                    $target.Substring(0, 12), $sealRc)
+        exit 7
+    }
+} else {
+    Write-Host "  check_target_seal.py absent in this checkout (pre-gate release); adopting without the seal check this once"
+}
+
 # ---- 1. THE BOX'S OWN UNCOMMITTED STATE, COMMITTED AS ITSELF -----------------
 # The sync commits state every fifteen minutes, so a dirty tree here means a pass
 # was interrupted -- which is exactly the situation this script is run in. Those

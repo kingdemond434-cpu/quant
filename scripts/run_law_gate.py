@@ -317,6 +317,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
 #: wolf on every PR, and a gate that cries wolf gets disabled -- which is how enforcement dies.
 #: They run in the hourly box gate, where their verdict is real.
 _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    # 87% OF THE DOCKET SAT UNJUDGED AND NOTHING SAID SO (2026-09-24). The evidence
+    # was in JUDGE_COVERAGE.json the whole time and no organ read it. This reads the
+    # STALL rather than its cause: a backlog is not a breach, a backlog that stops
+    # moving is. It caps nothing and rations nothing -- judging more is free in
+    # multiplicity terms. LIVE coverage state, so it belongs here, not in _LAW_FENCES.
+    ("check_judging_coverage.py", ()),
     ("check_conversion.py", ()),               # L1.28b -- FLATLINE fails
     # EVERY SOURCE COLLECTED AND CONVERTED (principal 2026-09-23, "make sure they are always
     # collected, 100% exploited and converted"). Two ratchets that may only fall -- sources never
@@ -332,6 +338,14 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # first census measured 63,110 rows waiting and a 654 h oldest row, and a fence tuned to pass
     # on today's backlog would pin that backlog in place (L1.43).
     ("check_no_queues.py", ()),
+    # THE BOX'S STATE REACHES GIT, OR THIS IS RED (2026-09-30). The last box state sync landed
+    # 2026-09-12 and the stamps inside every box file on the live branch stop 2026-09-16; for two
+    # weeks every reader off the box measured a frozen copy and no fence said so. Six hours,
+    # stated in the fence. STATE, never --laws-only: a red here must not wedge the push that heals it.
+    ("check_box_state_freshness.py", ()),
+    # A LEG TAKEN OFF EVERY PLAN RUNS ONLY IF ITS OWN TASK EXISTS AND IS ARMED. `OWN_CLOCK_LEGS`
+    # in hourly_cycle.py names them; this asks the Task Scheduler, so it is state and box-only.
+    ("check_own_clock_legs.py", ()),
     ("check_universe_integrity.py", ()),       # bars: corrupt is quarantined, stale named
     ("check_external_federation.py", ("--require-state",)),   # LAWS 5h -- the live half
     # LAWS 5h / L1.32 -- the SANDBOX half: no runnable federated system goes a rotation window
@@ -548,6 +562,18 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # clone and the VPS stay green (L1.43) -- but on the box, no evidence is UNMEASURED and
     # UNMEASURED fails, because no evidence is exactly what the outage looked like (L1.28a).
     ("check_adoption_freshness.py", ()),
+    # THE HALT ITSELF, NOT ITS CAUSE (recovered box commit fe09b89b, 2026-09-24). The fence above
+    # asks whether the box adopted; this one asks whether the box is still PLACING. They are not
+    # the same question: adoption succeeded or failed by turns for seventeen days while
+    # `release_identity` refused every order, and the gateway recorded 1,200
+    # `release_identity_refused` rows -- one a minute, 583 in a single day -- that reached no
+    # alert, no dashboard and no human; the principal found it by eye. It reads the decision
+    # ledger for a run of one reason repeating for one sleeve with no placement in between, so it
+    # is not keyed to today's `reason` string, and publishes an artifact, an alert-ledger entry
+    # and a PLACEMENT_HALTED event. It caps nothing and gates no capital; it can only make the
+    # book trade MORE, by ending halts in minutes rather than days. A host with no gateway state
+    # and no ledger is NOT_APPLICABLE and passes saying so (L1.43).
+    ("check_placement_interlock.py", ()),
     # on a schedule and whose artifact no production file reads is BURNING -- an orphan the desk
     # pays compute for every hour -- and the BURNING count ratchets DOWN only. The clock half is
     # exact (the four scheduler planes), so BURNING is the one population this census may fence

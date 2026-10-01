@@ -335,6 +335,15 @@ REQUIRED_TASKS: frozenset[str] = frozenset(
 )
 
 
+#: ONE ORGAN, ONE ID (2026-09-30). A manifest task that an explicit spec already models under a
+#: canonical organ id is that organ, not a second one: `task:MT5-GatewayResident` and
+#: `resident:gateway` both ran desks/mt5/research/gateway_resident.py on the same task, so the
+#: census counted the gateway resident twice and the attestation carried two rows for one clock.
+#: The canonical id keeps the task as its `schedule` and its restart action; the manifest row is
+#: skipped here instead of being registered beside it.
+TASK_CANONICAL: dict[str, str] = {"MT5-GatewayResident": "resident:gateway"}
+
+
 def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
     """One spec per manifest task. Several manifest lines can share a name (MT5-CostState runs
     three scripts); they collapse to one component owning three code paths, which is what the
@@ -352,6 +361,8 @@ def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
             cur["runs"].append(runs)
     out: list[ComponentSpec] = []
     for name, row in sorted(by_name.items()):
+        if name in TASK_CANONICAL:
+            continue   # modelled once, under its canonical organ id
         cadence = cadence_from_trigger(row["trigger"])
         required = name in REQUIRED_TASKS or row["lane"] in REQUIRED_LANES
         out.append(ComponentSpec(
@@ -671,6 +682,22 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        ComponentSpec(
+            component_id="resident:gateway",
+            kind="task", host="box",
+            code_paths=("desks/mt5/research/gateway_resident.py",),
+            inputs=("desks/mt5/data/sleeves.json",),
+            # The resident's work is the gateway pass it drives; every pass that reaches the
+            # venue publishes the desk-staleness verdict, so that file's age IS the resident's
+            # heartbeat (and the one MT5-BoxHeartbeat watches from outside).
+            outputs=("desks/mt5/reports/DESK_STALE.json",),
+            consumers=("desks/mt5/scripts/box_heartbeat.py",),
+            cadence_s=600, timeout_s=None, progress_metric="gateway_passes",
+            expected_artifact_schema="desks/mt5/reports/DESK_STALE.json",
+            owner="lane:ops", restart_action="restart:task:MT5-GatewayResident",
+            criticality="required", resource_budget={},
+            schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
+            notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
     ]
 
 
@@ -1136,6 +1163,14 @@ def dynamic_reach_roots(root: Path | None = None) -> dict[str, str]:
     return out
 
 
+#: EVERY reacher of a reached file, in walk order -- not only the first, which names its schedule.
+#: The walk is a stack, so WHICH reacher arrives first moves whenever a leg is added anywhere; an
+#: organ whose first reacher binds no artifact then lost the artifact another reacher would have
+#: lent it, and dropped out of the runtime attestation with no change of its own (measured
+#: 2026-09-30: retire_untradeable.py, reached by formal_invariants.py and reference_freshness.py).
+_REACHERS: dict[str, list[str]] = {}
+
+
 def reach_specs(reg: Registry, root: Path | None = None,
                 extra_roots: dict[str, str] | None = None) -> list[ComponentSpec]:
     """A spec for every executable a CLOCKED organ reaches -- by import (kind `library`,
@@ -1152,6 +1187,7 @@ def reach_specs(reg: Registry, root: Path | None = None,
         by_stem.setdefault(p.stem, []).append(rel)
     claimed = reg.claimed_paths()
     reached: dict[str, tuple[str, str]] = {}
+    _REACHERS.clear()
     # DEDUPED, and re-reading is refused below: a thousand scheduled specs name a few hundred
     # distinct files (every daily step names daily_cycle.py, every forest names forest_runner.py),
     # and parsing the same large file thirty times is where a 216 s registry build came from.
@@ -1174,13 +1210,17 @@ def reach_specs(reg: Registry, root: Path | None = None,
         if rel.endswith(".py"):
             for stem in _import_stems(text):
                 for target in by_stem.get(stem, ()):
-                    if target != rel and target not in claimed and target not in reached:
-                        reached[target] = ("library", rel)
-                        frontier.append(target)
+                    if target != rel and target not in claimed:
+                        _REACHERS.setdefault(target, []).append(rel)
+                        if target not in reached:
+                            reached[target] = ("library", rel)
+                            frontier.append(target)
         for target in scripts_named_in(text, base):
-            if target != rel and target not in claimed and target not in reached:
-                reached[target] = ("executable", rel)
-                frontier.append(target)
+            if target != rel and target not in claimed:
+                _REACHERS.setdefault(target, []).append(rel)
+                if target not in reached:
+                    reached[target] = ("executable", rel)
+                    frontier.append(target)
     out: list[ComponentSpec] = []
     for rel, (kind, via) in sorted(reached.items()):
         if rel not in exes:
@@ -1228,6 +1268,10 @@ def _path_expr(node: ast.AST, here: Path, env: dict[str, Path]) -> Path | None:
             return here
         if isinstance(f, ast.Attribute) and f.attr in ("resolve", "absolute") and not node.args:
             return _path_expr(f.value, here, env)
+        # `mt5desk.config.desk_root()` -- the desk's single path authority -- is `desks/mt5`.
+        if isinstance(f, ast.Name) and f.id == "desk_root" and not node.args:
+            return next((p for p in here.parents
+                         if p.name == "mt5" and p.parent.name == "desks"), None)
         return None
     if isinstance(node, ast.Attribute) and node.attr == "parent":
         base = _path_expr(node.value, here, env)
@@ -1323,10 +1367,16 @@ def _declare_own_artifacts(reg: Registry, root: Path | None = None) -> None:
             if s.outputs or s.kind not in ("library", "executable"):
                 continue
             prefix, _, via = s.schedule.partition(":")
-            if prefix not in ("import", "invoked") or via not in by_code:
+            if prefix not in ("import", "invoked"):
                 continue
-            reg.add(replace(s, outputs=by_code[via],
-                            notes=f"{s.notes}; artifact inherited from its reacher {via}"),
+            # The scheduling reacher first; any other reacher that binds an artifact otherwise,
+            # so the proof does not depend on which reacher the walk happened to pop first.
+            alts = [v for c in s.code_paths for v in _REACHERS.get(c, ()) if v != via]
+            lender = next((v for v in (via, *alts) if v in by_code), None)
+            if lender is None:
+                continue
+            reg.add(replace(s, outputs=by_code[lender],
+                            notes=f"{s.notes}; artifact inherited from its reacher {lender}"),
                     replace=True)
             changed = True
         if not changed:
