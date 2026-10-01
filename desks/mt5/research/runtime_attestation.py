@@ -848,8 +848,11 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         if res["added"]:
             try:
+                # ensure_ascii=False: the committed file carries raw '→'/'—', and escaping them
+                # rewrote every LIVE row that held one -- a merge tool must leave them byte-equal.
                 _atomic(paths.out_json,
-                        json.dumps(res["doc"], indent=1, default=str, sort_keys=False))
+                        json.dumps(res["doc"], indent=1, default=str, sort_keys=False,
+                                   ensure_ascii=False))
                 _atomic(paths.out_md, render(res["doc"]))
             except OSError as exc:
                 print(f"runtime_attestation --only-missing: NOT written "
