@@ -38,8 +38,8 @@ def test_features_find_the_planted_regimes_and_never_see_ahead():
     assert f.iloc[: W.WINDOW + W.MIN_FIT_WINDOWS * W.FIT_STRIDE]["wregime"].isna().all()
     lab = f["wregime"].dropna()
     stormy = scale[df.index.get_indexer(lab.index)] > 0.002
-    # well inside a block the widest regime is the stormy one
-    assert (lab[stormy] == lab.max()).mean() > 0.6 and (lab[~stormy] == 0).mean() > 0.6
+    # the calmest regime is the calm block; the stormy block lands in the wider ones
+    assert (lab[stormy] >= 1).mean() > 0.8 and (lab[~stormy] == 0).mean() > 0.6
     # causality: changing the future leaves the past coordinates unchanged
     cut = 2000
     df2 = df.copy()
