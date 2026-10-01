@@ -190,6 +190,9 @@ LEG_LAYER: dict[str, str] = {
     "candidate_conservation": "meta",
     # Planted point-in-time canaries measure whether the desk can read the future: meta.
     "pit_canaries": "meta",
+    # Whether the desk has stopped placing without saying so is a measurement of its own
+    # execution wiring, not an act on the book: meta.
+    "placement_interlock": "meta",
     # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
     # Whether the running code may create new exposure, which scientist earned what, which
     # structures have started surviving again, and one EVIG price over every research resource
@@ -218,13 +221,15 @@ LEG_LAYER: dict[str, str] = {
     "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "forward_evidence_tracker": "meta",
+    # The box-state freshness fence and the desk health report, hourly before publication.
+    "box_state_freshness": "meta", "desk_health": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
     "axis_registry": "information", "forced_flow_calendar": "information",
     "standing_questions": "information",
     "novelty_gate": "prediction",
     "posterior_alpha": "sizing", "exposure_decomposition": "portfolio",
     "hazard_engine": "exit",
-    "breadth_ladder": "meta", "tier1_scorecard": "meta", "wiring_ceo": "meta",
+    "breadth_ladder": "meta", "tier1_scorecard": "meta", "tier1_gap": "meta", "wiring_ceo": "meta",
     # The queue census measures the machine's own backlog, not any strategy's: meta by
     # construction (principal 2026-09-23, "nothing should be queued").
     "queue_census": "meta",
@@ -242,6 +247,10 @@ LEG_LAYER: dict[str, str] = {
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
     "event_surprise": "information",
+    # public analyst views collected and stamped at first sighting: information
+    "alpha_capture": "information",
+    # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
+    "alt_proxies": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",
@@ -303,6 +312,10 @@ LEG_LAYER: dict[str, str] = {
     # snapshot. That is the prediction layer's own work, done on the backlog instead of on
     # arrivals, so it sits beside the compiler that does it on arrivals.
     "conversion_maximiser": "prediction",
+    # THE CONVERSION FUNNEL measures the desk's own pipeline -- mined -> cell -> verdict ->
+    # certificate -> clock, every loss named -- and changes nothing in it: the machine reading
+    # itself, the same layer as `judging_burndown` and `forward_enrolment`.
+    "conversion_funnel": "meta",
     # WHICH SOURCES THE DESK MAY LAWFULLY CONSUME is a property of its INPUTS, decided before any
     # signal is derived from them -- the same reading that puts `source_routes` and `data_scout`
     # in information. The ROI reallocator is the machine spending on itself: meta.

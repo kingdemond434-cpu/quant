@@ -335,6 +335,15 @@ REQUIRED_TASKS: frozenset[str] = frozenset(
 )
 
 
+#: ONE ORGAN, ONE ID (2026-09-30). A manifest task that an explicit spec already models under a
+#: canonical organ id is that organ, not a second one: `task:MT5-GatewayResident` and
+#: `resident:gateway` both ran desks/mt5/research/gateway_resident.py on the same task, so the
+#: census counted the gateway resident twice and the attestation carried two rows for one clock.
+#: The canonical id keeps the task as its `schedule` and its restart action; the manifest row is
+#: skipped here instead of being registered beside it.
+TASK_CANONICAL: dict[str, str] = {"MT5-GatewayResident": "resident:gateway"}
+
+
 def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
     """One spec per manifest task. Several manifest lines can share a name (MT5-CostState runs
     three scripts); they collapse to one component owning three code paths, which is what the
@@ -352,6 +361,8 @@ def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
             cur["runs"].append(runs)
     out: list[ComponentSpec] = []
     for name, row in sorted(by_name.items()):
+        if name in TASK_CANONICAL:
+            continue   # modelled once, under its canonical organ id
         cadence = cadence_from_trigger(row["trigger"])
         required = name in REQUIRED_TASKS or row["lane"] in REQUIRED_LANES
         out.append(ComponentSpec(

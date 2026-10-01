@@ -1,5 +1,6 @@
 """The large intelligence transfer must not monopolise the worktree/index writer lock."""
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -13,7 +14,12 @@ def _code() -> str:
 
 def test_network_fetch_precedes_the_writer_mutex() -> None:
     code = _code()
-    fetch = code.index("git fetch --no-write-fetch-head")
+    # The fetch carries `-c maintenance.auto=false -c gc.auto=0` since 8dc29efac (so no detached
+    # maintenance outlives it), which sits between `git` and `fetch`; match the invocation, not
+    # the exact spelling of its config flags.
+    found = re.search(r"&\s*git\b[^\n]*?\bfetch --no-write-fetch-head", code)
+    assert found, "the intelligence transport fetch is gone"
+    fetch = found.start()
     lock = code.index("Open-GitWriterMutex")
     wait = code.index("WaitOne(540000)")
     checkout = code.index("git checkout $shipRef")

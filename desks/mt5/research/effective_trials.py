@@ -306,8 +306,12 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
     t0 = time.time()
     rows = read_docket(docket)
     census = measure(rows)
+    # THE SPEC'S VARIANCE OR NOTHING. This fell back to 0.014863, the constant lockbox v4
+    # retired, so an unreadable spec quietly measured the charge against a bar no gate uses.
     variance = spec_variance_of_sharpes(spec)
-    variance = 0.014863 if variance is None else variance
+    if variance is None:
+        raise ValueError(f"{spec or SPEC_PATH} carries no deflated_sharpe "
+                         "fixed_variance_of_sharpes; refusing to measure against a guess")
     standing = spec_fixed_trial_count(spec)
     nominal = NOMINAL_CAMPAIGN_TRIALS if standing is None else standing
     charged, basis = charge(census, nominal=NOMINAL_CAMPAIGN_TRIALS)

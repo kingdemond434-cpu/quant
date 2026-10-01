@@ -1673,6 +1673,26 @@ ORTHOGONAL_FAMILIES["style_premia"] = family_style_premia
 FAMILY_INPUTS["style_premia"] = ("swap_diff (broker_swaps) for carry; risk-driver bars for "
                                  "defensive", "data/intelligence/broker_swaps + universe")
 
+# LEARNED FORECASTS OVER THE CROSS-ASSET PANEL (2026-09-30): a numpy graph-propagation model
+# (lead-lag or co-movement adjacency, 1-2 hops, ridge readout) and a numpy attention model over
+# each instrument's recent path, both refitted walk-forward on the daily broker-date panel of the
+# instruments named in `peer_symbols`. The family resolves that panel itself (the sealed gauntlet
+# rebuilds peers only for the families it names) and refuses the cell if any peer is missing.
+# research/learned_miners.py is the only proposer and charges every configuration it tried.
+from mt5desk.family_learned_propagation import (  # noqa: E402
+    family_attention_ts,
+    family_gnn_propagation,
+)
+
+ORTHOGONAL_FAMILIES["gnn_propagation"] = family_gnn_propagation
+ORTHOGONAL_FAMILIES["attention_ts"] = family_attention_ts
+FAMILY_INPUTS["gnn_propagation"] = ("the peer panel's bars (peer_symbols on the recipe), "
+                                    "resolved by the family itself",
+                                    "data/universe/*_H1.parquet")
+FAMILY_INPUTS["attention_ts"] = ("the peer panel's bars (peer_symbols on the recipe; the "
+                                 "attention weights are shared across it), resolved by the "
+                                 "family itself", "data/universe/*_H1.parquet")
+
 
 # ==============================================================================================
 # TWO MECHANISM CLASSES THE ZOO COULD NOT EVEN TRY (2026-09-08): the opening range and the jump.
@@ -1978,6 +1998,19 @@ FAMILY_TIMEFRAMES: dict[str, tuple[tuple[str, ...], str]] = {
         "carries no hour at all, so the family would return [] on every symbol there and be "
         "filed as a data gap rather than as an inexpressible claim"),
 }
+
+# ---- bounded BELOW: both learned families forecast the NEXT BROKER DAY from daily closes and
+# act once a day at `signal_hour`. On a chart finer than the hour every one of them would build
+# the identical daily panel and emit the identical daily signal, so each extra chart is an extra
+# trial charged for no new information.
+FAMILY_TIMEFRAMES["gnn_propagation"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from the daily cross-asset panel, acted on once a day; a finer chart "
+    "re-emits the same daily signal and only multiplies the trial count")
+FAMILY_TIMEFRAMES["attention_ts"] = (
+    ("H1", "H4", "D1"),
+    "a next-day forecast from daily tokens, acted on once a day; a finer chart re-emits the same "
+    "daily signal and only multiplies the trial count")
 
 #: Parameters whose bar count expresses a WALL-CLOCK duration the mechanism's cause is dated by.
 #: Everything not listed is bar-relative and is left exactly as written. See the essay above.
@@ -2343,3 +2376,26 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# ANALYST REVISION DRIFT AND THE CROSS-MARKET ANALYST LEAD (2026-09-30, the Alpha Capture
+# substitute). Public broker, company-guidance and forecast-revision views, stored point-in-time
+# by `research/alpha_capture.py` and replayed here from that store -- the family loads its own
+# first-seen events, so the gauntlet builds it through its ordinary `fn(h1, **params)` call with
+# `symbol` and `source` carried in the cell's params. Both take those as REQUIRED keyword
+# arguments, so the sweep names them unsuppliable instead of calling the family blind.
+from mt5desk.family_analyst_revision import (  # noqa: E402
+    family_analyst_cross_market_lead,
+    family_analyst_revision_drift,
+)
+
+ORTHOGONAL_FAMILIES["analyst_revision_drift"] = family_analyst_revision_drift
+ORTHOGONAL_FAMILIES["analyst_cross_market_lead"] = family_analyst_cross_market_lead
+for _av_name in ("analyst_revision_drift", "analyst_cross_market_lead"):
+    FAMILY_INPUTS[_av_name] = ("point-in-time analyst/broker/guidance views, placed at "
+                               "first_seen_at (research/alpha_capture.py)",
+                               "desks/mt5/data/alpha_capture/analyst_views.jsonl")
+    FAMILY_TIMEFRAMES[_av_name] = (
+        ("H1",),
+        "a view is a daily-cadence event measured at +1/+5/+21 trading days; its hold is counted "
+        "in H1 bars per trading day, and the tracker that set the measured side read H1 closes")
+del _av_name

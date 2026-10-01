@@ -1,0 +1,6 @@
+{"total_count": 4, "condition_desc": "最新の開示情報", "items": [
+  {"Tdnet": {"id": "1188001", "pubdate": "2024-09-26 15:00:00", "company_code": "72030", "company_name": "トヨタ自動車", "title": "業績予想の上方修正に関するお知らせ", "document_url": "https://webapi.yanoshin.jp/rd.php?https://www.release.tdnet.info/inbs/140120240926500001.pdf", "url_xbrl": null, "markets_string": "東名", "to_db": "https://webapi.yanoshin.jp/tdnet/view/1188001"}},
+  {"Tdnet": {"id": "1188002", "pubdate": "2024-09-26 15:30:00", "company_code": "67580", "company_name": "ソニーグループ", "title": "通期業績予想の下方修正について", "document_url": "https://example.invalid/b.pdf", "markets_string": "東"}},
+  {"Tdnet": {"id": "1188003", "pubdate": "2024-09-26 16:00:00", "company_code": "99840", "company_name": "ソフトバンクグループ", "title": "自己株式の取得状況に関するお知らせ", "document_url": "https://example.invalid/c.pdf"}},
+  {"Tdnet": {"id": "1188004", "pubdate": "2024-09-26 16:30:00", "company_code": "80580", "company_name": "三菱商事", "title": "業績予想の修正に関するお知らせ", "document_url": "https://example.invalid/d.pdf"}}
+]}

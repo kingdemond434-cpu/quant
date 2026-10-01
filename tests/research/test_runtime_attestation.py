@@ -264,3 +264,191 @@ def test_a_leg_with_a_producer_is_repaired_by_running_the_leg(tmp_path: Path) ->
     assert a is not None and a.name.startswith("run_once:leg:")
     assert a.argv[0] and a.argv[-1]
     assert a.postconditions == (rec.act.PRODUCTION_RESUMED,)
+
+
+# ---------------------------------------------------------------- --only-missing (merge resolution)
+def _row(organ: str, state: str = "NEVER") -> dict:
+    return {"organ": organ, "kind": "leg", "code": [f"desks/mt5/research/{organ}.py"],
+            "clock": f"hourly_cycle:{organ}", "state": state, "why": "fixture",
+            "artifact": "x.json", "artifact_sha256": ra.UNMEASURED, "summary": {},
+            "last_run_at": ra.UNMEASURED, "last_run_outcome": ra.UNMEASURED,
+            "artifact_age_s": None, "artifact_bytes": 0}
+
+
+def _as_host(monkeypatch, name: str = "vmi3571445", mid: str = "box-machine-id") -> None:
+    monkeypatch.setattr(ra.socket, "gethostname", lambda: name)
+    monkeypatch.setattr(ra, "_machine_id", lambda: mid)
+
+
+def _committed(tmp_path: Path, machine_id: str | None = None) -> Path:
+    here = socket.gethostname()
+    census = dict.fromkeys(ra.STATES, 0)
+    census.update({"LIVE": 1, "STALE": 1})
+    doc = _doc(host={"hostname": here, "role": "box", "role_evidence": "measured",
+                     "measured_at": "2026-09-30T00:00:00+00:00", "platform": "x",
+                     "git_sha": "a" * 40, "git_branch": "live",
+                     "release_seal": {"ok": True, "running_sha": "b" * 40,
+                                      "release_sha": "b" * 40}},
+               census=census, cadence_s=ra.CADENCE_S, max_silence_s=ra.MAX_SILENCE_S,
+               states=dict.fromkeys(ra.STATES, "m"),
+               scope={"attested": 2, "excluded": 0, "excluded_reason": "r",
+                      "registry_components": 2, "hash_skipped_over_budget": 0, "wall_s": 0.1},
+               organs=[_row("old_a", "LIVE"), _row("old_b", "STALE")])
+    if machine_id is not None:
+        doc["host"]["machine_id"] = machine_id
+    p = ra.Paths.at(tmp_path)
+    p.out_json.parent.mkdir(parents=True, exist_ok=True)
+    p.out_json.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    return p.out_json
+
+
+def test_only_missing_appends_new_organs_and_leaves_existing_rows_byte_identical(
+        tmp_path: Path, monkeypatch) -> None:
+    _as_host(monkeypatch)
+    path = _committed(tmp_path, machine_id="box-machine-id")
+    before = json.loads(path.read_text(encoding="utf-8"))
+    raw_before = [json.dumps(r, indent=1) for r in before["organs"]]
+    # the live pass would FLIP both existing rows; --only-missing must not let it
+    fresh = [_row("old_a", "NEVER"), _row("old_b", "MISSING"), _row("new_c", "NEVER"),
+             _row("new_d", "LIVE")]
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    after = json.loads(path.read_text(encoding="utf-8"))
+    assert [json.dumps(r, indent=1) for r in after["organs"][:2]] == raw_before
+    assert [r["organ"] for r in after["organs"][2:]] == ["new_c", "new_d"]
+    assert after["census"]["LIVE"] == 2 and after["census"]["NEVER"] == 1
+    assert after["census"]["STALE"] == 1 and after["census"]["MISSING"] == 0
+    assert after["scope"]["attested"] == 4
+    for k in ("generated_at", "attests_to_host", "host"):
+        assert after[k] == before[k]
+    assert not ra.Paths.at(tmp_path).ratchet.exists()          # the ratchet is not touched
+    md = ra.Paths.at(tmp_path).out_md.read_text(encoding="utf-8")
+    assert "new_c" in md and "new_d" in md
+    # each existing row's serialized text is still in the file, unchanged
+    text_after = path.read_text(encoding="utf-8")
+    for r in before["organs"]:
+        block = json.dumps(r, indent=1, default=str).replace("\n", "\n  ")
+        assert block in text_after
+
+def test_only_missing_is_idempotent(tmp_path: Path, monkeypatch) -> None:
+    path = _committed(tmp_path)
+    fresh = [_row("old_a"), _row("new_c")]
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    once = path.read_bytes()
+    md_once = ra.Paths.at(tmp_path).out_md.read_bytes()
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    assert path.read_bytes() == once
+    assert ra.Paths.at(tmp_path).out_md.read_bytes() == md_once
+
+
+def test_only_missing_refuses_without_a_committed_attestation(tmp_path: Path) -> None:
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 1
+    assert not ra.Paths.at(tmp_path).out_json.exists()
+
+
+def test_only_missing_stamps_rows_and_off_host_never_trusts_local_mtimes(
+        tmp_path: Path, monkeypatch) -> None:
+    path = _committed(tmp_path)
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    doc["host"]["hostname"] = doc["attests_to_host"] = "the-box"
+    path.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    fresh = [_row("new_live", "LIVE"), _row("new_stale", "STALE"),
+             _row("new_missing", "MISSING"), _row("new_never", "NEVER")]
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    after = json.loads(path.read_text(encoding="utf-8"))
+    new = {r["organ"]: r for r in after["organs"][2:]}
+    assert {k: r["state"] for k, r in new.items()} == {
+        "new_live": ra.UNMEASURED, "new_stale": ra.UNMEASURED,
+        "new_missing": ra.UNMEASURED, "new_never": "NEVER"}
+    assert all(r["measured_on"] == socket.gethostname() and r["measured_at"]
+               for r in new.values())
+    assert after["census"][ra.UNMEASURED] == 3 and after["census"]["NEVER"] == 1
+    assert after["census"]["LIVE"] == 1 and after["census"]["STALE"] == 1  # untouched
+    assert after["scope"]["only_missing_appended"][-1]["on_attesting_host"] is False
+    # the fence still reads it as a report about the box, with no host drift
+    assert not any("host drift" in f for f in fence.measure(tmp_path)["failures"])
+
+
+def test_only_missing_on_the_attesting_host_keeps_its_measured_state(
+        tmp_path: Path, monkeypatch) -> None:
+    _as_host(monkeypatch)                                   # the box, by name AND machine id
+    path = _committed(tmp_path, machine_id="box-machine-id")
+    monkeypatch.setattr(ra, "organ_rows",
+                        lambda paths, budget_s: ([_row("new_live", "LIVE")], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    row = json.loads(path.read_text(encoding="utf-8"))["organs"][-1]
+    assert row["state"] == "LIVE" and row["measured_on"] == socket.gethostname()
+
+
+def test_only_missing_trims_only_the_appended_rows(tmp_path: Path, monkeypatch) -> None:
+    _as_host(monkeypatch)
+    path = _committed(tmp_path, machine_id="box-machine-id")
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    for r in doc["organs"]:
+        r["summary"] = {"status": "keep-me"}
+    doc["scope"]["summaries_trimmed"] = 2
+    path.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
+    raw_before = [json.dumps(r, indent=1) for r in doc["organs"]]
+    base = len(json.dumps(doc, default=str))
+    monkeypatch.setattr(ra, "MAX_JSON_BYTES", base + 600)
+    fresh = []
+    for i in range(6):
+        r = _row(f"new_{i}", "LIVE")
+        r["summary"] = {"status": "x" * 40, "rows": 10 ** 9 + i, "verdict": "y" * 40}
+        fresh.append(r)
+    monkeypatch.setattr(ra, "organ_rows", lambda paths, budget_s: ([dict(r) for r in fresh], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    after = json.loads(path.read_text(encoding="utf-8"))
+    assert [json.dumps(r, indent=1) for r in after["organs"][:2]] == raw_before
+    trimmed = [r for r in after["organs"][2:] if "trimmed" in str(r["summary"].get("_", ""))]
+    assert trimmed and after["scope"]["summaries_trimmed"] == 2 + len(trimmed)
+
+
+def test_a_cloud_vm_is_off_host_even_when_name_and_machine_id_match(
+        tmp_path: Path, monkeypatch) -> None:
+    # cloud containers are all "vm" and may share an image-baked machine id: neither makes one
+    # the desk's attesting host, because "vm" is not a declared desk host
+    _as_host(monkeypatch, name="vm", mid="image-baked-id")
+    path = _committed(tmp_path, machine_id="image-baked-id")
+    ok, why = ra.attesting_identity(json.loads(path.read_text(encoding="utf-8")))
+    assert not ok and "not a declared desk host" in why
+    monkeypatch.setattr(ra, "organ_rows",
+                        lambda paths, budget_s: ([_row("new_live", "LIVE")], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    row = json.loads(path.read_text(encoding="utf-8"))["organs"][-1]
+    assert row["state"] == ra.UNMEASURED and row["measured_on"] == "vm"
+
+
+def test_the_box_is_on_host_and_another_machine_id_is_not(tmp_path: Path, monkeypatch) -> None:
+    _as_host(monkeypatch)
+    doc = json.loads(_committed(tmp_path, machine_id="box-machine-id").read_text(
+        encoding="utf-8"))
+    assert ra.attesting_identity(doc)[0] is True
+    _as_host(monkeypatch, mid="someone-elses-id")         # same name, different machine
+    ok, why = ra.attesting_identity(doc)
+    assert not ok and why.startswith("off-host")
+
+
+def test_an_old_format_stamp_is_unverifiable_not_breakage(tmp_path: Path, monkeypatch) -> None:
+    _as_host(monkeypatch, name="vm", mid="whatever")
+    path = _committed(tmp_path)                             # no machine_id: LIVE's current file
+    before = json.loads(path.read_text(encoding="utf-8"))
+    ok, why = ra.attesting_identity(before)
+    assert not ok and why.startswith("UNVERIFIABLE")
+    monkeypatch.setattr(ra, "organ_rows",
+                        lambda paths, budget_s: ([_row("new_never", "NEVER")], {}))
+    assert ra.main(["--root", str(tmp_path), "--only-missing"]) == 0
+    after = json.loads(path.read_text(encoding="utf-8"))
+    assert after["organs"][:2] == before["organs"] and after["host"] == before["host"]
+    assert after["organs"][-1]["state"] == "NEVER"
+    assert not any("host drift" in f or "role" in f for f in fence.measure(tmp_path)["failures"])
+
+
+def test_the_host_stamp_records_the_machine_identity(tmp_path: Path, monkeypatch) -> None:
+    _as_host(monkeypatch)
+    (tmp_path / "desks" / "mt5" / "data").mkdir(parents=True)
+    h = ra.host_identity(ra.Paths.at(tmp_path))
+    assert h["hostname"] == "vmi3571445" and h["machine_id"] == "box-machine-id"
+    assert h["desk_host"] is True
