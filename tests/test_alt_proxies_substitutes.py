@@ -233,7 +233,7 @@ def test_dated_requests_carry_the_key_only_in_the_live_url_and_backfill_commits_
 
 def test_keyed_substitutes_block_without_their_key(monkeypatch: pytest.MonkeyPatch) -> None:
     for env in ("ECOS_API_KEY", "KOBIS_API_KEY", "SEOUL_API_KEY", "ESTAT_APP_ID", "INEGI_TOKEN",
-                "DATA_GO_KR_KEY"):
+                "DATA_GO_KR_KEY", "DATA_GOV_IN_KEY"):
         monkeypatch.delenv(env, raising=False)
     got = {s.id: A.status_of(s) for s in A.SUBSTITUTE_SOURCES if s.key_env}
     assert got == {"kr_bok_card_spend": "BLOCKED_ON_KEY:ECOS_API_KEY",
@@ -241,7 +241,8 @@ def test_keyed_substitutes_block_without_their_key(monkeypatch: pytest.MonkeyPat
                    "kr_seoul_subway": "BLOCKED_ON_KEY:SEOUL_API_KEY",
                    "jp_estat_immigration": "BLOCKED_ON_KEY:ESTAT_APP_ID",
                    "mx_inegi_emec": "BLOCKED_ON_KEY:INEGI_TOKEN",
-                   "kr_mof_container_teu": "BLOCKED_ON_KEY:DATA_GO_KR_KEY"}
+                   "kr_mof_container_teu": "BLOCKED_ON_KEY:DATA_GO_KR_KEY",
+                   "in_dgi_iip_consumer": "BLOCKED_ON_KEY:DATA_GOV_IN_KEY"}
     assert A.status_of(A.BY_ID["us_oi_card_spend"]) == "DEAD:2024-06"
     assert A.status_of(A.BY_ID["us_oi_google_mobility"]) == "DEAD:2022-10"
 
@@ -350,7 +351,22 @@ def test_reviewed_terms_carry_evidence() -> None:
         assert ev["terms_url"].startswith("https://") and ev["terms_quote"], sid
         assert ev["robots"] and ev["checked_at"] == "2026-09-30", sid
     reviewed = {sid for sid in A.TERMS_EVIDENCE if A.TERMS[sid][0] == "confirmed"}
-    assert reviewed == {"cn_nbs_retail", *NEW_SUBSTITUTES}
+    confirmed = {s.id for s in A.SOURCES if s.terms == "confirmed"}
+    assert reviewed == confirmed >= {"cn_nbs_retail", *NEW_SUBSTITUTES}   # every confirmed one
+    for sid in confirmed:
+        assert not A.TERMS_EVIDENCE[sid]["terms_quote"].startswith("(not"), sid
+
+
+def test_estat_rows_carry_the_api_terms_and_the_credit_line() -> None:
+    for sid in ("jp_estat_immigration", "jp_tokyo_cpi"):
+        ev = A.TERMS_EVIDENCE[sid]
+        assert ev["api_terms_url"] == "https://www.e-stat.go.jp/api/agreement", sid
+        assert "第７条" in ev["api_terms_quote"] and "e-Stat" in ev["credit"], sid
+        assert A.credit_of(sid) == ev["credit"]
+    rows = {r["id"]: r for r in A.roster_rows()}
+    assert rows["jp_estat_immigration"]["credit"] == A.credit_of("jp_estat_immigration")
+    assert rows["mx_inegi_emec"]["vintage"] == "current"
+    assert "serie original" in A.BY_ID["mx_inegi_emec"].note       # NSA, never the SA series
 
 
 def test_a_to_confirm_source_is_never_fetched(tmp_path: Path) -> None:
@@ -526,7 +542,8 @@ def test_repo_roster_file_matches_the_code_and_parses() -> None:
 
 # ============================================================================ blocked -> substitute
 NEW_SUBSTITUTES = ("jp_estat_immigration", "hk_immd_passenger", "br_bcb_payments",
-                   "mx_inegi_emec", "tr_tuik_retail", "kr_mof_container_teu")
+                   "mx_inegi_emec", "tr_tuik_retail", "kr_mof_container_teu",
+                   "in_dgi_iip_consumer", "za_statssa_retail")
 BLOCKED = ("jp_jnto_arrivals", "cn_holiday_spend", "tr_bkm_card", "br_cielo_icva", "mx_antad_sss",
            "cn_maoyan_box_office", "in_npci_upi", "cn_sge_premium", "cn_baidu_migration",
            "za_beti", "kr_busan_port", "cn_mot_port_weekly")
@@ -553,17 +570,24 @@ def test_a_substituted_source_is_still_never_fetched(tmp_path: Path) -> None:
         raise AssertionError(f"fetched {url}")
 
     paths = A.Paths(tmp_path / "desk")
-    rec = A.collect(paths, A.BY_ID["tr_bkm_card"], {}, NOW, fetch=True, fixtures=None,
-                    deadline=1e18, getter=boom)
-    assert rec == {**rec, "status": "BLOCKED+SUBSTITUTE:tr_tuik_retail", "requests": 0}
+    for sid, sub in (("tr_bkm_card", "tr_tuik_retail"), ("in_npci_upi", "in_dgi_iip_consumer"),
+                     ("za_beti", "za_statssa_retail")):
+        rec = A.collect(paths, A.BY_ID[sid], {}, NOW, fetch=True, fixtures=None,
+                        deadline=1e18, getter=boom)
+        assert rec == {**rec, "status": f"BLOCKED+SUBSTITUTE:{sub}", "requests": 0}, sid
     rep = A.run(paths, fixtures=FIX, donate=False, now=NOW)
     assert rep["blocked_substituted"]["kr_busan_port"] == ["kr_mof_container_teu",
                                                            "imf_portwatch_ports"]
-    assert set(rep["blocked_unsubstituted"]) == {"in_npci_upi", "za_beti"}
+    assert set(rep["blocked_unsubstituted"]) == set() and A.NO_SUBSTITUTE == {}
+    assert rep["blocked_substituted"]["in_npci_upi"] == ["in_dgi_iip_consumer"]
+    assert rep["blocked_substituted"]["za_beti"] == ["za_statssa_retail"]
     assert rep["sources"]["tr_bkm_card"]["status"].startswith("BLOCKED+SUBSTITUTE:")
     rows = {r["id"]: r for r in A.roster_rows()}
     assert rows["jp_jnto_arrivals"]["substituted_by"] == ["jp_estat_immigration"]
-    assert "substituted_by" not in rows["in_npci_upi"]
+    assert rows["in_npci_upi"]["substituted_by"] == ["in_dgi_iip_consumer"]
+    assert rows["za_beti"]["substituted_by"] == ["za_statssa_retail"]
+    for sid in ("in_npci_upi", "za_beti"):                      # how each gap was closed
+        assert any(why.startswith("TAKEN") for _, _, why in A.SUBSTITUTE_SEARCH[sid]), sid
 
 
 def test_new_substitute_rows_carry_schema_terms_and_evidence() -> None:
@@ -616,14 +640,48 @@ def test_new_substitute_parsers_read_their_fixtures() -> None:
     assert A.parse_kr_mof_container(xml, ctx)[0].value == 15
 
 
+def test_india_and_south_africa_substitutes_read_their_fixtures() -> None:
+    iip = _parse("in_dgi_iip_consumer")
+    assert iip[("consumer_durables_index", date(2024, 7, 31))].value == pytest.approx(118.2)
+    # January of fiscal 2024-25 is January 2025; March of 2025-26 is March 2026
+    assert iip[("consumer_nondurables_index", date(2025, 1, 31))].value == pytest.approx(150.3)
+    assert iip[("consumer_durables_index", date(2026, 3, 31))].value == pytest.approx(130.1)
+    assert ("consumer_durables_index", date(2026, 4, 30)) not in iip            # "NA" is nothing
+    assert iip[("consumer_nondurables_index", date(2026, 4, 30))].value == pytest.approx(149.4)
+    assert all(o.value != 8.2 for o in iip.values())                 # a growth column is not read
+    assert len(iip) == 7                                             # the period-less row skipped
+    za = _parse("za_statssa_retail")
+    assert za[("retail_sales_yoy", date(2026, 6, 30))].value == pytest.approx(1.6)   # "1,6%"
+    assert za[("retail_sales_yoy", date(2026, 5, 31))].value == pytest.approx(-0.4)  # decreased
+    assert len(za) == 2                                    # the month-on-month line is not YoY
+    assert A.parse_dgi_iip_consumer(b"not json", A.Ctx()) == []
+
+
+def test_release_rules_are_never_before_the_recorded_release_instants() -> None:
+    cal = json.loads((FIX / "release_calendar.json").read_text("utf-8"))
+    ids = {k for k in cal if k != "note"}
+    assert ids == {"in_dgi_iip_consumer", "za_statssa_retail", "jp_estat_immigration",
+                   "mx_inegi_emec", "kr_mof_container_teu"}
+    for sid in ids:
+        for r in cal[sid]:
+            got = A.BY_ID[sid].rule(date.fromisoformat(r["period"]))
+            assert got >= datetime.fromisoformat(r["released"]), (sid, r["period"], got)
+    kr = A.rule_kr_mof_port
+    assert kr(date(2026, 6, 30)) == datetime(2026, 8, 14, tzinfo=UTC)       # no holiday: +45
+    assert kr(date(2026, 8, 31)) == datetime(2026, 10, 22, tzinfo=UTC)      # Chuseok 09-24: +52
+    assert kr(date(2026, 1, 31)) == datetime(2026, 3, 24, tzinfo=UTC)       # Seollal 02-16: +52
+    assert A.rule_estat_immig(date(2026, 1, 31)) == datetime(2026, 4, 1, tzinfo=UTC)   # +60
+
+
 def test_configured_substitutes_never_request_on_a_placeholder(
         monkeypatch: pytest.MonkeyPatch) -> None:
     for env in ("ALT_ESTAT_IMMIG_STATS_ID", "ALT_ESTAT_IMMIG_CAT01", "ALT_INEGI_EMEC_ID",
-                "ALT_TUIK_RETAIL_URL"):
+                "ALT_TUIK_RETAIL_URL", "ALT_DGI_IIP_RESOURCE", "ALT_STATSSA_RETAIL_URL"):
         monkeypatch.delenv(env, raising=False)
-    monkeypatch.setenv("ESTAT_APP_ID", "k")
-    monkeypatch.setenv("INEGI_TOKEN", "k")
-    for sid in ("jp_estat_immigration", "mx_inegi_emec", "tr_tuik_retail"):
+    for env in ("ESTAT_APP_ID", "INEGI_TOKEN", "DATA_GOV_IN_KEY"):
+        monkeypatch.setenv(env, "k")
+    for sid in ("jp_estat_immigration", "mx_inegi_emec", "tr_tuik_retail", "in_dgi_iip_consumer",
+                "za_statssa_retail"):
         src = A.BY_ID[sid]
         assert A.status_of(src).startswith("UNCONFIGURED:"), sid
         assert A.requests_for(src, NOW, {}) == [], sid
