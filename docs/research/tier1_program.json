@@ -9037,6 +9037,31 @@
    "landed": [
     "mass screen 2026-09-30"
    ]
+  },
+  {
+   "id": "ALT1",
+   "item": "The public alternative-data proxies (alt_proxies leg): every keyless or free-key source behind a fail-closed terms gate, each terms-blocked source carried by a confirmed lawful substitute (BLOCKED+SUBSTITUTE) or a named reason, and the pass's report declared as the leg's artifact.",
+   "domain": "U",
+   "phase": "U",
+   "status": "LANDED",
+   "gate": "none",
+   "scheduled_by": "hourly_cycle:alt_proxies",
+   "artifact": "desks/mt5/reports/ALT_PROXIES.json",
+   "evidence": [
+    "desks/mt5/research/hourly_cycle.py:5127 -- the leg (the alt_proxies producer, --once --budget-s 300)",
+    "desks/mt5/research/alt_proxies.py:4136 -- run(): one pass over every source; a to_confirm or refused source is never fetched",
+    "desks/mt5/research/alt_proxies.py:4219 -- the report written to desks/mt5/reports/ALT_PROXIES.json (Paths.report)",
+    "desks/mt5/research/alt_proxies.py:2978 -- status_of(): DEAD, BLOCKED+SUBSTITUTE, BLOCKED_ON_TERMS, BLOCKED_ON_KEY, UNCONFIGURED or UNMEASURED_LIVE_YIELD, one named state per source",
+    "desks/mt5/research/alt_proxies.py:2922 -- SUBSTITUTED_BY: all twelve terms-blocked sources substituted (NO_SUBSTITUTE empty since 2026-10-01: India use-based IIP on data.gov.in (GODL) for NPCI UPI, Stats SA retail trade sales for BETI)",
+    "desks/mt5/research/alt_proxies.py:2623 -- TERMS_EVIDENCE: a verbatim terms quote and URL for every confirmed source, credit lines carried into the axis files and roster rows",
+    "libs/research/layers.py:266 -- layer: information",
+    "LIVE YIELD UNMEASURED: the fetchers were built against fixtures because the authoring container cannot reach the hosts; the report says so in live_yield until the box runs the leg with its keys"
+   ],
+   "consumer": "desks/mt5/data/digests/asia_alt_data_digest.json (written by libs/research/asia_alt_digest.py, section alt_proxies, on every non-dry pass) and the reviewer; the same pass writes the axis files, lake series and ALT_PROXIES_ALLOCATION_INTEL.json beside it",
+   "tests": [
+    "tests/test_alt_proxies.py",
+    "tests/test_alt_proxies_substitutes.py"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
