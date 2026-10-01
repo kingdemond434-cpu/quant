@@ -1,0 +1,6359 @@
+{
+ "generated_at": "2026-09-30T20:27:26.043481+00:00",
+ "data": {
+  "bars": "desks/mt5/universe/*_H1.parquet (in git)",
+  "resample": "broker-date daily closes, Monday-Friday grid",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADJPY",
+   "CHFJPY",
+   "ETHUSD",
+   "EURAUD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPAUD",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDCAD",
+   "NZDJPY",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "n_symbols": 24,
+  "first_date": "2018-01-02",
+  "last_date": "2026-08-17",
+  "n_days": 2244
+ },
+ "protocol": {
+  "walk_forward": {
+   "min_train_days": 500,
+   "refit_every_days": 21,
+   "rolling_train_window_days": 1000
+  },
+  "target": "next broker-day log return, volatility-scaled for fitting",
+  "ic": "daily cross-sectional Pearson of forecast vs realised next-day return, mean and t over days",
+  "portfolio": "dollar-neutral, demeaned forecast ranks / sigma_t, gross 1, daily rebalance; cost = |dw| x (half the day's median H1 spread from the bars' spread column / price + 0.25bp commission) per side",
+  "no_tuning": "every constant and both grids were fixed before the first run; every configuration is reported and charged"
+ },
+ "miners": {
+  "gnn": {
+   "family": "gnn_propagation",
+   "primary_config (declared before any result)": "gnn:adjacency=lead_lag,layers=1",
+   "primary": {
+    "ic_mean": 0.00014,
+    "ic_t": 0.019,
+    "rank_ic_mean": -0.00015,
+    "rank_ic_t": -0.019,
+    "hit_rate": 0.5056,
+    "ls_sharpe_gross": -0.054,
+    "ls_sharpe_net": -1.067
+   },
+   "baseline": "ridge_own_lags",
+   "baseline_metrics": {
+    "ic_mean": -0.00643,
+    "ic_t": -0.819,
+    "rank_ic_mean": -0.01195,
+    "rank_ic_t": -1.322,
+    "hit_rate": 0.5031,
+    "ls_sharpe_gross": -0.451,
+    "ls_sharpe_net": -1.147
+   },
+   "primary_minus_baseline": {
+    "ic_mean": 0.00657,
+    "rank_ic_mean": 0.0118,
+    "hit_rate": 0.0025,
+    "ls_sharpe_net": 0.08
+   },
+   "best_of_grid_by_ic_t": "gnn:adjacency=lead_lag,layers=2",
+   "best_of_grid_ic_t": 0.174,
+   "best_of_grid_ic_t_deflated": -0.633,
+   "configs_tried_trials_charged": 4,
+   "verdict": "NO_GAIN: IC t 0.019 < 2; net Sharpe -1.067 not > 0 and above baseline (directionally above baseline on ic_mean, ls_sharpe_net, not significant)"
+  },
+  "attention": {
+   "family": "attention_ts",
+   "primary_config (declared before any result)": "attention:heads=1,lookback=20",
+   "primary": {
+    "ic_mean": 2e-05,
+    "ic_t": 0.002,
+    "rank_ic_mean": -0.00342,
+    "rank_ic_t": -0.418,
+    "hit_rate": 0.505,
+    "ls_sharpe_gross": 0.087,
+    "ls_sharpe_net": -0.709
+   },
+   "baseline": "ridge_lags_L20",
+   "baseline_metrics": {
+    "ic_mean": -0.00044,
+    "ic_t": -0.06,
+    "rank_ic_mean": -0.00569,
+    "rank_ic_t": -0.698,
+    "hit_rate": 0.502,
+    "ls_sharpe_gross": -0.227,
+    "ls_sharpe_net": -1.243
+   },
+   "primary_minus_baseline": {
+    "ic_mean": 0.00046,
+    "rank_ic_mean": 0.00227,
+    "hit_rate": 0.003,
+    "ls_sharpe_net": 0.534
+   },
+   "best_of_grid_by_ic_t": "attention:heads=2,lookback=20",
+   "best_of_grid_ic_t": 0.012,
+   "best_of_grid_ic_t_deflated": -0.795,
+   "configs_tried_trials_charged": 4,
+   "verdict": "NO_GAIN: IC t 0.002 < 2; net Sharpe -0.709 not > 0 and above baseline (directionally above baseline on ic_mean, ls_sharpe_net, not significant)"
+  }
+ },
+ "falsification_control": {
+  "what": "gnn primary on a panel with each instrument's returns permuted in time",
+  "ic_mean": -0.00558,
+  "ic_t": -1.126,
+  "rank_ic_t": -0.418,
+  "hit_rate": 0.5013,
+  "ls_sharpe_net": -1.888
+ },
+ "all_models": {
+  "zero": {
+   "model": "zero",
+   "config": {},
+   "oos_days": 1738,
+   "ic_mean": null,
+   "ic_t": null,
+   "rank_ic_mean": null,
+   "rank_ic_t": null,
+   "hit_rate": null,
+   "n_predictions_scored": 0,
+   "ls_sharpe_gross": null,
+   "ls_sharpe_net": null,
+   "ls_sharpe_net_first_half": null,
+   "ls_sharpe_net_second_half": null,
+   "ls_mean_daily_net_bp": 0.0,
+   "ls_mean_daily_turnover": 0.0,
+   "ls_annual_cost_bp": 0.0
+  },
+  "naive_last": {
+   "model": "naive_last",
+   "config": {},
+   "oos_days": 1733,
+   "ic_mean": 0.00034,
+   "ic_t": 0.043,
+   "rank_ic_mean": -0.01364,
+   "rank_ic_t": -1.488,
+   "hit_rate": 0.4916,
+   "n_predictions_scored": 41431,
+   "ls_sharpe_gross": -0.196,
+   "ls_sharpe_net": -1.101,
+   "ls_sharpe_net_first_half": -0.705,
+   "ls_sharpe_net_second_half": -1.587,
+   "ls_mean_daily_net_bp": -1.673,
+   "ls_mean_daily_turnover": 1.3268,
+   "ls_annual_cost_bp": 346.4
+  },
+  "ridge_own_lags": {
+   "model": "ridge",
+   "config": {},
+   "oos_days": 1738,
+   "ic_mean": -0.00643,
+   "ic_t": -0.819,
+   "rank_ic_mean": -0.01195,
+   "rank_ic_t": -1.322,
+   "hit_rate": 0.5031,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.451,
+   "ls_sharpe_net": -1.147,
+   "ls_sharpe_net_first_half": -1.162,
+   "ls_sharpe_net_second_half": -1.144,
+   "ls_mean_daily_net_bp": -1.761,
+   "ls_mean_daily_turnover": 1.0341,
+   "ls_annual_cost_bp": 269.5
+  },
+  "ridge_lags_L20": {
+   "model": "ridge_lags",
+   "config": {
+    "lookback": 20
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00044,
+   "ic_t": -0.06,
+   "rank_ic_mean": -0.00569,
+   "rank_ic_t": -0.698,
+   "hit_rate": 0.502,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.227,
+   "ls_sharpe_net": -1.243,
+   "ls_sharpe_net_first_half": -1.142,
+   "ls_sharpe_net_second_half": -1.365,
+   "ls_mean_daily_net_bp": -1.686,
+   "ls_mean_daily_turnover": 1.3158,
+   "ls_annual_cost_bp": 347.4
+  },
+  "ridge_lags_L10": {
+   "model": "ridge_lags",
+   "config": {
+    "lookback": 10
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.0077,
+   "ic_t": -1.055,
+   "rank_ic_mean": -0.00863,
+   "rank_ic_t": -1.059,
+   "hit_rate": 0.5011,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.272,
+   "ls_sharpe_net": -1.278,
+   "ls_sharpe_net_first_half": -1.181,
+   "ls_sharpe_net_second_half": -1.42,
+   "ls_mean_daily_net_bp": -1.762,
+   "ls_mean_daily_turnover": 1.3333,
+   "ls_annual_cost_bp": 349.5
+  },
+  "gnn:adjacency=lead_lag,layers=1": {
+   "model": "gnn",
+   "config": {
+    "adjacency": "lead_lag",
+    "layers": 1
+   },
+   "oos_days": 1738,
+   "ic_mean": 0.00014,
+   "ic_t": 0.019,
+   "rank_ic_mean": -0.00015,
+   "rank_ic_t": -0.019,
+   "hit_rate": 0.5056,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.054,
+   "ls_sharpe_net": -1.067,
+   "ls_sharpe_net_first_half": -1.521,
+   "ls_sharpe_net_second_half": -0.576,
+   "ls_mean_daily_net_bp": -1.405,
+   "ls_mean_daily_turnover": 1.258,
+   "ls_annual_cost_bp": 336.0
+  },
+  "gnn:adjacency=lead_lag,layers=2": {
+   "model": "gnn",
+   "config": {
+    "adjacency": "lead_lag",
+    "layers": 2
+   },
+   "oos_days": 1738,
+   "ic_mean": 0.00129,
+   "ic_t": 0.174,
+   "rank_ic_mean": 0.00106,
+   "rank_ic_t": 0.133,
+   "hit_rate": 0.5041,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.045,
+   "ls_sharpe_net": -1.056,
+   "ls_sharpe_net_first_half": -1.396,
+   "ls_sharpe_net_second_half": -0.682,
+   "ls_mean_daily_net_bp": -1.401,
+   "ls_mean_daily_turnover": 1.2664,
+   "ls_annual_cost_bp": 337.9
+  },
+  "gnn:adjacency=corr,layers=1": {
+   "model": "gnn",
+   "config": {
+    "adjacency": "corr",
+    "layers": 1
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00927,
+   "ic_t": -1.152,
+   "rank_ic_mean": -0.01331,
+   "rank_ic_t": -1.415,
+   "hit_rate": 0.4999,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.43,
+   "ls_sharpe_net": -1.124,
+   "ls_sharpe_net_first_half": -1.057,
+   "ls_sharpe_net_second_half": -1.208,
+   "ls_mean_daily_net_bp": -1.79,
+   "ls_mean_daily_turnover": 1.0641,
+   "ls_annual_cost_bp": 278.6
+  },
+  "gnn:adjacency=corr,layers=2": {
+   "model": "gnn",
+   "config": {
+    "adjacency": "corr",
+    "layers": 2
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00749,
+   "ic_t": -0.923,
+   "rank_ic_mean": -0.01221,
+   "rank_ic_t": -1.278,
+   "hit_rate": 0.4973,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.362,
+   "ls_sharpe_net": -1.068,
+   "ls_sharpe_net_first_half": -0.922,
+   "ls_sharpe_net_second_half": -1.241,
+   "ls_mean_daily_net_bp": -1.716,
+   "ls_mean_daily_turnover": 1.0907,
+   "ls_annual_cost_bp": 285.8
+  },
+  "attention:heads=1,lookback=20": {
+   "model": "attention",
+   "config": {
+    "heads": 1,
+    "lookback": 20
+   },
+   "oos_days": 1738,
+   "ic_mean": 2e-05,
+   "ic_t": 0.002,
+   "rank_ic_mean": -0.00342,
+   "rank_ic_t": -0.418,
+   "hit_rate": 0.505,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": 0.087,
+   "ls_sharpe_net": -0.709,
+   "ls_sharpe_net_first_half": -0.755,
+   "ls_sharpe_net_second_half": -0.673,
+   "ls_mean_daily_net_bp": -0.972,
+   "ls_mean_daily_turnover": 1.0659,
+   "ls_annual_cost_bp": 274.9
+  },
+  "attention:heads=2,lookback=20": {
+   "model": "attention",
+   "config": {
+    "heads": 2,
+    "lookback": 20
+   },
+   "oos_days": 1738,
+   "ic_mean": 9e-05,
+   "ic_t": 0.012,
+   "rank_ic_mean": -0.00372,
+   "rank_ic_t": -0.455,
+   "hit_rate": 0.5048,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": 0.04,
+   "ls_sharpe_net": -0.724,
+   "ls_sharpe_net_first_half": -0.759,
+   "ls_sharpe_net_second_half": -0.705,
+   "ls_mean_daily_net_bp": -0.991,
+   "ls_mean_daily_turnover": 1.0237,
+   "ls_annual_cost_bp": 263.6
+  },
+  "attention:heads=1,lookback=10": {
+   "model": "attention",
+   "config": {
+    "heads": 1,
+    "lookback": 10
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00612,
+   "ic_t": -0.82,
+   "rank_ic_mean": -0.00573,
+   "rank_ic_t": -0.714,
+   "hit_rate": 0.5046,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.052,
+   "ls_sharpe_net": -0.859,
+   "ls_sharpe_net_first_half": -0.965,
+   "ls_sharpe_net_second_half": -0.749,
+   "ls_mean_daily_net_bp": -1.181,
+   "ls_mean_daily_turnover": 1.0733,
+   "ls_annual_cost_bp": 279.5
+  },
+  "attention:heads=2,lookback=10": {
+   "model": "attention",
+   "config": {
+    "heads": 2,
+    "lookback": 10
+   },
+   "oos_days": 1738,
+   "ic_mean": -0.00682,
+   "ic_t": -0.911,
+   "rank_ic_mean": -0.0057,
+   "rank_ic_t": -0.713,
+   "hit_rate": 0.5039,
+   "n_predictions_scored": 41631,
+   "ls_sharpe_gross": -0.055,
+   "ls_sharpe_net": -0.83,
+   "ls_sharpe_net_first_half": -0.904,
+   "ls_sharpe_net_second_half": -0.769,
+   "ls_mean_daily_net_bp": -1.138,
+   "ls_mean_daily_turnover": 1.0267,
+   "ls_annual_cost_bp": 267.7
+  }
+ },
+ "cell_screen": {
+  "gnn": {
+   "tests_attempted": 192,
+   "tests_screened": 184,
+   "not_screened": 8,
+   "effective_trials": 2.361,
+   "best": {
+    "cell": "GBPUSD.gnn_propagation",
+    "config": {
+     "adjacency": "lead_lag",
+     "layers": 2
+    },
+    "symbol": "GBPUSD",
+    "entry_z": 1.0,
+    "t_gross": 3.022,
+    "t_deflated_sweep": 0.425,
+    "t_deflated_lifetime": 0.44,
+    "n_independent": 461,
+    "net_per_trade": 0.00062736,
+    "clears_cost": true,
+    "proposed": false
+   },
+   "best_t_deflated_by_attempted": 0.425,
+   "proposed": 0,
+   "rows": [
+    {
+     "cell": "GBPUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.0,
+     "t_gross": 3.022,
+     "t_deflated_sweep": 0.425,
+     "t_deflated_lifetime": 0.44,
+     "n_independent": 461,
+     "net_per_trade": 0.00062736,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.0,
+     "t_gross": 2.618,
+     "t_deflated_sweep": 0.021,
+     "t_deflated_lifetime": 0.036,
+     "n_independent": 465,
+     "net_per_trade": 0.00050089,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.5,
+     "t_gross": -2.299,
+     "t_deflated_sweep": -4.896,
+     "t_deflated_lifetime": -4.881,
+     "n_independent": 197,
+     "net_per_trade": -0.00088078,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.5,
+     "t_gross": 2.284,
+     "t_deflated_sweep": -0.313,
+     "t_deflated_lifetime": -0.298,
+     "n_independent": 179,
+     "net_per_trade": 0.00089679,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.0,
+     "t_gross": -2.265,
+     "t_deflated_sweep": -4.862,
+     "t_deflated_lifetime": -4.847,
+     "n_independent": 472,
+     "net_per_trade": -0.00067037,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.5,
+     "t_gross": 2.213,
+     "t_deflated_sweep": -0.384,
+     "t_deflated_lifetime": -0.369,
+     "n_independent": 198,
+     "net_per_trade": 0.00057544,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.5,
+     "t_gross": 2.197,
+     "t_deflated_sweep": -0.4,
+     "t_deflated_lifetime": -0.385,
+     "n_independent": 200,
+     "net_per_trade": 0.00059258,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.0,
+     "t_gross": 2.175,
+     "t_deflated_sweep": -0.422,
+     "t_deflated_lifetime": -0.407,
+     "n_independent": 452,
+     "net_per_trade": 0.00024606,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.0,
+     "t_gross": 2.144,
+     "t_deflated_sweep": -0.453,
+     "t_deflated_lifetime": -0.438,
+     "n_independent": 447,
+     "net_per_trade": 0.00024202,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.5,
+     "t_gross": 2.047,
+     "t_deflated_sweep": -0.55,
+     "t_deflated_lifetime": -0.535,
+     "n_independent": 199,
+     "net_per_trade": 0.00016096,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.0,
+     "t_gross": 2.01,
+     "t_deflated_sweep": -0.587,
+     "t_deflated_lifetime": -0.572,
+     "n_independent": 434,
+     "net_per_trade": 5.634e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.5,
+     "t_gross": -1.927,
+     "t_deflated_sweep": -4.524,
+     "t_deflated_lifetime": -4.509,
+     "n_independent": 190,
+     "net_per_trade": -0.00076017,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.5,
+     "t_gross": 1.889,
+     "t_deflated_sweep": -0.708,
+     "t_deflated_lifetime": -0.693,
+     "n_independent": 200,
+     "net_per_trade": 0.00020338,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.5,
+     "t_gross": -1.856,
+     "t_deflated_sweep": -4.453,
+     "t_deflated_lifetime": -4.438,
+     "n_independent": 198,
+     "net_per_trade": -0.00073874,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.831,
+     "t_deflated_sweep": -0.766,
+     "t_deflated_lifetime": -0.751,
+     "n_independent": 491,
+     "net_per_trade": 0.00038246,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.777,
+     "t_deflated_sweep": -0.82,
+     "t_deflated_lifetime": -0.805,
+     "n_independent": 457,
+     "net_per_trade": 0.00036358,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.727,
+     "t_deflated_sweep": -0.87,
+     "t_deflated_lifetime": -0.855,
+     "n_independent": 209,
+     "net_per_trade": 0.00048832,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.7,
+     "t_deflated_sweep": -4.297,
+     "t_deflated_lifetime": -4.282,
+     "n_independent": 533,
+     "net_per_trade": -0.00106329,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.5,
+     "t_gross": -1.697,
+     "t_deflated_sweep": -4.294,
+     "t_deflated_lifetime": -4.279,
+     "n_independent": 206,
+     "net_per_trade": -0.00069287,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.5,
+     "t_gross": -1.675,
+     "t_deflated_sweep": -4.272,
+     "t_deflated_lifetime": -4.257,
+     "n_independent": 213,
+     "net_per_trade": -0.0006812,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.5,
+     "t_gross": -1.674,
+     "t_deflated_sweep": -4.271,
+     "t_deflated_lifetime": -4.256,
+     "n_independent": 192,
+     "net_per_trade": -0.00068034,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.5,
+     "t_gross": 1.673,
+     "t_deflated_sweep": -0.924,
+     "t_deflated_lifetime": -0.909,
+     "n_independent": 199,
+     "net_per_trade": 0.00023275,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.5,
+     "t_gross": 1.618,
+     "t_deflated_sweep": -0.979,
+     "t_deflated_lifetime": -0.964,
+     "n_independent": 190,
+     "net_per_trade": 0.00057409,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.61,
+     "t_deflated_sweep": -4.207,
+     "t_deflated_lifetime": -4.192,
+     "n_independent": 199,
+     "net_per_trade": -0.00975393,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.5,
+     "t_gross": 1.607,
+     "t_deflated_sweep": -0.99,
+     "t_deflated_lifetime": -0.975,
+     "n_independent": 193,
+     "net_per_trade": 7.388e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.594,
+     "t_deflated_sweep": -1.003,
+     "t_deflated_lifetime": -0.988,
+     "n_independent": 467,
+     "net_per_trade": 0.00031891,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.0,
+     "t_gross": -1.564,
+     "t_deflated_sweep": -4.161,
+     "t_deflated_lifetime": -4.146,
+     "n_independent": 487,
+     "net_per_trade": -0.0005758,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.535,
+     "t_deflated_sweep": -4.132,
+     "t_deflated_lifetime": -4.117,
+     "n_independent": 498,
+     "net_per_trade": -0.00846399,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.51,
+     "t_deflated_sweep": -1.087,
+     "t_deflated_lifetime": -1.072,
+     "n_independent": 203,
+     "net_per_trade": 0.00026808,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.469,
+     "t_deflated_sweep": -4.066,
+     "t_deflated_lifetime": -4.051,
+     "n_independent": 222,
+     "net_per_trade": -0.00120646,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.455,
+     "t_deflated_sweep": -4.052,
+     "t_deflated_lifetime": -4.037,
+     "n_independent": 515,
+     "net_per_trade": -0.00812098,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.0,
+     "t_gross": -1.446,
+     "t_deflated_sweep": -4.043,
+     "t_deflated_lifetime": -4.028,
+     "n_independent": 527,
+     "net_per_trade": -0.00049397,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.5,
+     "t_gross": -1.392,
+     "t_deflated_sweep": -3.989,
+     "t_deflated_lifetime": -3.974,
+     "n_independent": 192,
+     "net_per_trade": -0.00066829,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.383,
+     "t_deflated_sweep": -1.214,
+     "t_deflated_lifetime": -1.199,
+     "n_independent": 476,
+     "net_per_trade": 0.00015618,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.0,
+     "t_gross": -1.38,
+     "t_deflated_sweep": -3.977,
+     "t_deflated_lifetime": -3.962,
+     "n_independent": 484,
+     "net_per_trade": -0.00048812,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.379,
+     "t_deflated_sweep": -1.218,
+     "t_deflated_lifetime": -1.203,
+     "n_independent": 217,
+     "net_per_trade": 0.00030976,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.373,
+     "t_deflated_sweep": -1.224,
+     "t_deflated_lifetime": -1.209,
+     "n_independent": 485,
+     "net_per_trade": 8.076e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.0,
+     "t_gross": 1.326,
+     "t_deflated_sweep": -1.271,
+     "t_deflated_lifetime": -1.256,
+     "n_independent": 434,
+     "net_per_trade": -9.073e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.324,
+     "t_deflated_sweep": -1.273,
+     "t_deflated_lifetime": -1.258,
+     "n_independent": 469,
+     "net_per_trade": 0.00022411,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.5,
+     "t_gross": -1.253,
+     "t_deflated_sweep": -3.85,
+     "t_deflated_lifetime": -3.835,
+     "n_independent": 222,
+     "net_per_trade": -0.00081126,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.5,
+     "t_gross": -1.243,
+     "t_deflated_sweep": -3.84,
+     "t_deflated_lifetime": -3.825,
+     "n_independent": 213,
+     "net_per_trade": -0.000713,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.239,
+     "t_deflated_sweep": -1.358,
+     "t_deflated_lifetime": -1.343,
+     "n_independent": 208,
+     "net_per_trade": 0.00032496,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.229,
+     "t_deflated_sweep": -3.826,
+     "t_deflated_lifetime": -3.811,
+     "n_independent": 216,
+     "net_per_trade": -0.00110107,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.0,
+     "t_gross": 1.214,
+     "t_deflated_sweep": -1.383,
+     "t_deflated_lifetime": -1.368,
+     "n_independent": 465,
+     "net_per_trade": -0.0001452,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.0,
+     "t_gross": -1.152,
+     "t_deflated_sweep": -3.749,
+     "t_deflated_lifetime": -3.734,
+     "n_independent": 461,
+     "net_per_trade": -0.00056218,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.5,
+     "t_gross": -1.146,
+     "t_deflated_sweep": -3.743,
+     "t_deflated_lifetime": -3.728,
+     "n_independent": 212,
+     "net_per_trade": -0.00053431,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.143,
+     "t_deflated_sweep": -3.74,
+     "t_deflated_lifetime": -3.725,
+     "n_independent": 471,
+     "net_per_trade": -0.00196427,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.109,
+     "t_deflated_sweep": -1.488,
+     "t_deflated_lifetime": -1.473,
+     "n_independent": 198,
+     "net_per_trade": 0.00022872,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.091,
+     "t_deflated_sweep": -3.688,
+     "t_deflated_lifetime": -3.673,
+     "n_independent": 514,
+     "net_per_trade": -0.0004823,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.5,
+     "t_gross": -1.081,
+     "t_deflated_sweep": -3.678,
+     "t_deflated_lifetime": -3.663,
+     "n_independent": 226,
+     "net_per_trade": -0.00053135,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.5,
+     "t_gross": -1.062,
+     "t_deflated_sweep": -3.659,
+     "t_deflated_lifetime": -3.644,
+     "n_independent": 207,
+     "net_per_trade": -0.00075609,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.047,
+     "t_deflated_sweep": -1.55,
+     "t_deflated_lifetime": -1.535,
+     "n_independent": 204,
+     "net_per_trade": 0.00021821,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.032,
+     "t_deflated_sweep": -3.629,
+     "t_deflated_lifetime": -3.614,
+     "n_independent": 467,
+     "net_per_trade": -0.00176597,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.0,
+     "t_gross": 1.012,
+     "t_deflated_sweep": -1.585,
+     "t_deflated_lifetime": -1.57,
+     "n_independent": 472,
+     "net_per_trade": -0.00017533,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.0,
+     "t_gross": -0.998,
+     "t_deflated_sweep": -3.595,
+     "t_deflated_lifetime": -3.58,
+     "n_independent": 545,
+     "net_per_trade": -0.00049575,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.0,
+     "t_gross": 0.996,
+     "t_deflated_sweep": -1.601,
+     "t_deflated_lifetime": -1.586,
+     "n_independent": 459,
+     "net_per_trade": -0.00012169,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.989,
+     "t_deflated_sweep": -1.608,
+     "t_deflated_lifetime": -1.593,
+     "n_independent": 209,
+     "net_per_trade": 0.01693504,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.0,
+     "t_gross": -0.972,
+     "t_deflated_sweep": -3.569,
+     "t_deflated_lifetime": -3.554,
+     "n_independent": 469,
+     "net_per_trade": -0.00048217,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.965,
+     "t_deflated_sweep": -3.562,
+     "t_deflated_lifetime": -3.547,
+     "n_independent": 189,
+     "net_per_trade": -0.00080493,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.963,
+     "t_deflated_sweep": -1.634,
+     "t_deflated_lifetime": -1.619,
+     "n_independent": 226,
+     "net_per_trade": 0.00013486,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.954,
+     "t_deflated_sweep": -1.643,
+     "t_deflated_lifetime": -1.628,
+     "n_independent": 475,
+     "net_per_trade": 0.00690774,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.954,
+     "t_deflated_sweep": -3.551,
+     "t_deflated_lifetime": -3.536,
+     "n_independent": 213,
+     "net_per_trade": -0.00889418,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.953,
+     "t_deflated_sweep": -3.55,
+     "t_deflated_lifetime": -3.535,
+     "n_independent": 194,
+     "net_per_trade": -0.00041262,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.951,
+     "t_deflated_sweep": -1.646,
+     "t_deflated_lifetime": -1.631,
+     "n_independent": 198,
+     "net_per_trade": 0.01720206,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.927,
+     "t_deflated_sweep": -1.67,
+     "t_deflated_lifetime": -1.655,
+     "n_independent": 484,
+     "net_per_trade": 0.00655977,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.0,
+     "t_gross": 0.918,
+     "t_deflated_sweep": -1.679,
+     "t_deflated_lifetime": -1.664,
+     "n_independent": 453,
+     "net_per_trade": -0.00013736,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.909,
+     "t_deflated_sweep": -3.506,
+     "t_deflated_lifetime": -3.491,
+     "n_independent": 494,
+     "net_per_trade": -0.00208114,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.886,
+     "t_deflated_sweep": -3.483,
+     "t_deflated_lifetime": -3.468,
+     "n_independent": 187,
+     "net_per_trade": -0.0007573,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.885,
+     "t_deflated_sweep": -1.712,
+     "t_deflated_lifetime": -1.697,
+     "n_independent": 198,
+     "net_per_trade": 8.031e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.872,
+     "t_deflated_sweep": -1.725,
+     "t_deflated_lifetime": -1.71,
+     "n_independent": 216,
+     "net_per_trade": 0.00024915,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.0,
+     "t_gross": 0.87,
+     "t_deflated_sweep": -1.727,
+     "t_deflated_lifetime": -1.712,
+     "n_independent": 487,
+     "net_per_trade": -0.0002972,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.868,
+     "t_deflated_sweep": -1.729,
+     "t_deflated_lifetime": -1.714,
+     "n_independent": 196,
+     "net_per_trade": 0.00010805,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.864,
+     "t_deflated_sweep": -3.461,
+     "t_deflated_lifetime": -3.446,
+     "n_independent": 216,
+     "net_per_trade": -0.00076658,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.0,
+     "t_gross": 0.842,
+     "t_deflated_sweep": -1.755,
+     "t_deflated_lifetime": -1.74,
+     "n_independent": 496,
+     "net_per_trade": -7.509e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.829,
+     "t_deflated_sweep": -1.768,
+     "t_deflated_lifetime": -1.753,
+     "n_independent": 203,
+     "net_per_trade": 5.293e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.0,
+     "t_gross": -0.826,
+     "t_deflated_sweep": -3.423,
+     "t_deflated_lifetime": -3.408,
+     "n_independent": 517,
+     "net_per_trade": -0.00039644,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.811,
+     "t_deflated_sweep": -1.786,
+     "t_deflated_lifetime": -1.771,
+     "n_independent": 457,
+     "net_per_trade": -3.347e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.811,
+     "t_deflated_sweep": -3.408,
+     "t_deflated_lifetime": -3.393,
+     "n_independent": 504,
+     "net_per_trade": -0.00172435,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.806,
+     "t_deflated_sweep": -1.791,
+     "t_deflated_lifetime": -1.776,
+     "n_independent": 462,
+     "net_per_trade": 1.639e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.794,
+     "t_deflated_sweep": -3.391,
+     "t_deflated_lifetime": -3.376,
+     "n_independent": 531,
+     "net_per_trade": -0.00079856,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.79,
+     "t_deflated_sweep": -3.387,
+     "t_deflated_lifetime": -3.372,
+     "n_independent": 210,
+     "net_per_trade": -0.00036382,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.788,
+     "t_deflated_sweep": -3.385,
+     "t_deflated_lifetime": -3.37,
+     "n_independent": 217,
+     "net_per_trade": -0.00076605,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.78,
+     "t_deflated_sweep": -1.817,
+     "t_deflated_lifetime": -1.802,
+     "n_independent": 199,
+     "net_per_trade": -0.00018102,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.777,
+     "t_deflated_sweep": -1.82,
+     "t_deflated_lifetime": -1.805,
+     "n_independent": 468,
+     "net_per_trade": 1.282e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.773,
+     "t_deflated_sweep": -3.37,
+     "t_deflated_lifetime": -3.355,
+     "n_independent": 463,
+     "net_per_trade": -0.00046769,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.756,
+     "t_deflated_sweep": -3.353,
+     "t_deflated_lifetime": -3.338,
+     "n_independent": 216,
+     "net_per_trade": -0.00034663,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.732,
+     "t_deflated_sweep": -1.865,
+     "t_deflated_lifetime": -1.85,
+     "n_independent": 465,
+     "net_per_trade": -5.419e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.727,
+     "t_deflated_sweep": -3.324,
+     "t_deflated_lifetime": -3.309,
+     "n_independent": 529,
+     "net_per_trade": -0.00176799,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.726,
+     "t_deflated_sweep": -1.871,
+     "t_deflated_lifetime": -1.856,
+     "n_independent": 203,
+     "net_per_trade": 5.456e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.0,
+     "t_gross": -0.722,
+     "t_deflated_sweep": -3.319,
+     "t_deflated_lifetime": -3.304,
+     "n_independent": 509,
+     "net_per_trade": -0.00064852,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.0,
+     "t_gross": -0.684,
+     "t_deflated_sweep": -3.281,
+     "t_deflated_lifetime": -3.266,
+     "n_independent": 522,
+     "net_per_trade": -0.00033627,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.0,
+     "t_gross": -0.682,
+     "t_deflated_sweep": -3.279,
+     "t_deflated_lifetime": -3.264,
+     "n_independent": 481,
+     "net_per_trade": -0.00036126,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.0,
+     "t_gross": 0.681,
+     "t_deflated_sweep": -1.916,
+     "t_deflated_lifetime": -1.901,
+     "n_independent": 543,
+     "net_per_trade": -0.00022836,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.68,
+     "t_deflated_sweep": -3.277,
+     "t_deflated_lifetime": -3.262,
+     "n_independent": 218,
+     "net_per_trade": -0.00045688,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.661,
+     "t_deflated_sweep": -3.258,
+     "t_deflated_lifetime": -3.243,
+     "n_independent": 200,
+     "net_per_trade": -0.00175802,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.0,
+     "t_gross": -0.659,
+     "t_deflated_sweep": -3.256,
+     "t_deflated_lifetime": -3.241,
+     "n_independent": 519,
+     "net_per_trade": -0.00022026,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.5,
+     "t_gross": 0.658,
+     "t_deflated_sweep": -1.939,
+     "t_deflated_lifetime": -1.924,
+     "n_independent": 215,
+     "net_per_trade": 5.566e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.5,
+     "t_gross": 0.653,
+     "t_deflated_sweep": -1.944,
+     "t_deflated_lifetime": -1.929,
+     "n_independent": 184,
+     "net_per_trade": -6.869e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.5,
+     "t_gross": 0.632,
+     "t_deflated_sweep": -1.965,
+     "t_deflated_lifetime": -1.95,
+     "n_independent": 191,
+     "net_per_trade": -0.00027468,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.5,
+     "t_gross": 0.602,
+     "t_deflated_sweep": -1.995,
+     "t_deflated_lifetime": -1.98,
+     "n_independent": 187,
+     "net_per_trade": -9.677e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.601,
+     "t_deflated_sweep": -1.996,
+     "t_deflated_lifetime": -1.981,
+     "n_independent": 529,
+     "net_per_trade": -7.204e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.592,
+     "t_deflated_sweep": -2.005,
+     "t_deflated_lifetime": -1.99,
+     "n_independent": 206,
+     "net_per_trade": 4.945e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.586,
+     "t_deflated_sweep": -3.183,
+     "t_deflated_lifetime": -3.168,
+     "n_independent": 454,
+     "net_per_trade": -0.00636904,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.582,
+     "t_deflated_sweep": -2.015,
+     "t_deflated_lifetime": -2.0,
+     "n_independent": 207,
+     "net_per_trade": 5.551e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.0,
+     "t_gross": -0.58,
+     "t_deflated_sweep": -3.177,
+     "t_deflated_lifetime": -3.162,
+     "n_independent": 496,
+     "net_per_trade": -0.0002163,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.5,
+     "t_gross": 0.578,
+     "t_deflated_sweep": -2.019,
+     "t_deflated_lifetime": -2.004,
+     "n_independent": 202,
+     "net_per_trade": -0.00029476,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.577,
+     "t_deflated_sweep": -3.174,
+     "t_deflated_lifetime": -3.159,
+     "n_independent": 214,
+     "net_per_trade": -0.00048594,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.0,
+     "t_gross": 0.548,
+     "t_deflated_sweep": -2.049,
+     "t_deflated_lifetime": -2.034,
+     "n_independent": 471,
+     "net_per_trade": -6.82e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.54,
+     "t_deflated_sweep": -3.137,
+     "t_deflated_lifetime": -3.122,
+     "n_independent": 215,
+     "net_per_trade": -0.00036518,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.538,
+     "t_deflated_sweep": -2.059,
+     "t_deflated_lifetime": -2.044,
+     "n_independent": 213,
+     "net_per_trade": 9.655e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.0,
+     "t_gross": 0.528,
+     "t_deflated_sweep": -2.069,
+     "t_deflated_lifetime": -2.054,
+     "n_independent": 487,
+     "net_per_trade": -0.00037718,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.516,
+     "t_deflated_sweep": -3.113,
+     "t_deflated_lifetime": -3.098,
+     "n_independent": 200,
+     "net_per_trade": -0.00687858,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.513,
+     "t_deflated_sweep": -2.084,
+     "t_deflated_lifetime": -2.069,
+     "n_independent": 216,
+     "net_per_trade": -8.756e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.5,
+     "t_gross": 0.495,
+     "t_deflated_sweep": -2.102,
+     "t_deflated_lifetime": -2.087,
+     "n_independent": 201,
+     "net_per_trade": -0.00020964,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.5,
+     "t_gross": -0.489,
+     "t_deflated_sweep": -3.086,
+     "t_deflated_lifetime": -3.071,
+     "n_independent": 220,
+     "net_per_trade": -0.00053766,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.477,
+     "t_deflated_sweep": -3.074,
+     "t_deflated_lifetime": -3.059,
+     "n_independent": 193,
+     "net_per_trade": -0.00145339,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.474,
+     "t_deflated_sweep": -3.071,
+     "t_deflated_lifetime": -3.056,
+     "n_independent": 210,
+     "net_per_trade": -0.00040804,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.0,
+     "t_gross": 0.448,
+     "t_deflated_sweep": -2.149,
+     "t_deflated_lifetime": -2.134,
+     "n_independent": 514,
+     "net_per_trade": -0.00014938,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.438,
+     "t_deflated_sweep": -3.035,
+     "t_deflated_lifetime": -3.02,
+     "n_independent": 225,
+     "net_per_trade": -0.00186039,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.0,
+     "t_gross": -0.436,
+     "t_deflated_sweep": -3.033,
+     "t_deflated_lifetime": -3.018,
+     "n_independent": 531,
+     "net_per_trade": -0.00030158,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.435,
+     "t_deflated_sweep": -2.162,
+     "t_deflated_lifetime": -2.147,
+     "n_independent": 212,
+     "net_per_trade": -6.539e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.5,
+     "t_gross": 0.42,
+     "t_deflated_sweep": -2.177,
+     "t_deflated_lifetime": -2.162,
+     "n_independent": 213,
+     "net_per_trade": -3.188e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.41,
+     "t_deflated_sweep": -3.007,
+     "t_deflated_lifetime": -2.992,
+     "n_independent": 195,
+     "net_per_trade": -0.00036187,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.0,
+     "t_gross": -0.406,
+     "t_deflated_sweep": -3.003,
+     "t_deflated_lifetime": -2.988,
+     "n_independent": 522,
+     "net_per_trade": -0.00017094,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.0,
+     "t_gross": -0.398,
+     "t_deflated_sweep": -2.995,
+     "t_deflated_lifetime": -2.98,
+     "n_independent": 496,
+     "net_per_trade": -0.00029761,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.398,
+     "t_deflated_sweep": -2.199,
+     "t_deflated_lifetime": -2.184,
+     "n_independent": 456,
+     "net_per_trade": -0.00012967,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.38,
+     "t_deflated_sweep": -2.217,
+     "t_deflated_lifetime": -2.202,
+     "n_independent": 218,
+     "net_per_trade": 0.00029708,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.37,
+     "t_deflated_sweep": -2.227,
+     "t_deflated_lifetime": -2.212,
+     "n_independent": 489,
+     "net_per_trade": -0.00044761,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.37,
+     "t_deflated_sweep": -2.227,
+     "t_deflated_lifetime": -2.212,
+     "n_independent": 192,
+     "net_per_trade": 2.266e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.358,
+     "t_deflated_sweep": -2.239,
+     "t_deflated_lifetime": -2.224,
+     "n_independent": 469,
+     "net_per_trade": -0.00022035,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.34,
+     "t_deflated_sweep": -2.937,
+     "t_deflated_lifetime": -2.922,
+     "n_independent": 507,
+     "net_per_trade": -0.00028032,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.336,
+     "t_deflated_sweep": -2.261,
+     "t_deflated_lifetime": -2.246,
+     "n_independent": 214,
+     "net_per_trade": -0.00024387,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.331,
+     "t_deflated_sweep": -2.266,
+     "t_deflated_lifetime": -2.251,
+     "n_independent": 479,
+     "net_per_trade": -0.00011675,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.33,
+     "t_deflated_sweep": -2.927,
+     "t_deflated_lifetime": -2.912,
+     "n_independent": 499,
+     "net_per_trade": -0.00045868,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.325,
+     "t_deflated_sweep": -2.922,
+     "t_deflated_lifetime": -2.907,
+     "n_independent": 209,
+     "net_per_trade": -0.00030329,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.324,
+     "t_deflated_sweep": -2.921,
+     "t_deflated_lifetime": -2.906,
+     "n_independent": 523,
+     "net_per_trade": -0.00031831,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.316,
+     "t_deflated_sweep": -2.913,
+     "t_deflated_lifetime": -2.898,
+     "n_independent": 479,
+     "net_per_trade": -0.00030371,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.305,
+     "t_deflated_sweep": -2.902,
+     "t_deflated_lifetime": -2.887,
+     "n_independent": 226,
+     "net_per_trade": -0.00058924,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.0,
+     "t_gross": -0.302,
+     "t_deflated_sweep": -2.899,
+     "t_deflated_lifetime": -2.884,
+     "n_independent": 520,
+     "net_per_trade": -0.00043235,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.301,
+     "t_deflated_sweep": -2.898,
+     "t_deflated_lifetime": -2.883,
+     "n_independent": 492,
+     "net_per_trade": -0.0004915,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.301,
+     "t_deflated_sweep": -2.296,
+     "t_deflated_lifetime": -2.281,
+     "n_independent": 485,
+     "net_per_trade": -0.00046789,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.283,
+     "t_deflated_sweep": -2.314,
+     "t_deflated_lifetime": -2.299,
+     "n_independent": 209,
+     "net_per_trade": -0.0001204,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.267,
+     "t_deflated_sweep": -2.33,
+     "t_deflated_lifetime": -2.315,
+     "n_independent": 529,
+     "net_per_trade": -0.00015889,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.261,
+     "t_deflated_sweep": -2.336,
+     "t_deflated_lifetime": -2.321,
+     "n_independent": 186,
+     "net_per_trade": -3.703e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.26,
+     "t_deflated_sweep": -2.857,
+     "t_deflated_lifetime": -2.842,
+     "n_independent": 497,
+     "net_per_trade": -0.00043278,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.0,
+     "t_gross": 0.253,
+     "t_deflated_sweep": -2.344,
+     "t_deflated_lifetime": -2.329,
+     "n_independent": 489,
+     "net_per_trade": -2.958e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.247,
+     "t_deflated_sweep": -2.844,
+     "t_deflated_lifetime": -2.829,
+     "n_independent": 217,
+     "net_per_trade": -0.00030584,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.5,
+     "t_gross": 0.233,
+     "t_deflated_sweep": -2.364,
+     "t_deflated_lifetime": -2.349,
+     "n_independent": 200,
+     "net_per_trade": -0.00010501,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.0,
+     "t_gross": -0.233,
+     "t_deflated_sweep": -2.83,
+     "t_deflated_lifetime": -2.815,
+     "n_independent": 514,
+     "net_per_trade": -0.00041689,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.232,
+     "t_deflated_sweep": -2.829,
+     "t_deflated_lifetime": -2.814,
+     "n_independent": 477,
+     "net_per_trade": -0.00039867,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.215,
+     "t_deflated_sweep": -2.382,
+     "t_deflated_lifetime": -2.367,
+     "n_independent": 476,
+     "net_per_trade": -0.0001282,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.0,
+     "t_gross": -0.209,
+     "t_deflated_sweep": -2.806,
+     "t_deflated_lifetime": -2.791,
+     "n_independent": 473,
+     "net_per_trade": -0.00037,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.208,
+     "t_deflated_sweep": -2.805,
+     "t_deflated_lifetime": -2.79,
+     "n_independent": 490,
+     "net_per_trade": -0.00046199,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.2,
+     "t_deflated_sweep": -2.397,
+     "t_deflated_lifetime": -2.382,
+     "n_independent": 486,
+     "net_per_trade": -0.00015412,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.194,
+     "t_deflated_sweep": -2.403,
+     "t_deflated_lifetime": -2.388,
+     "n_independent": 215,
+     "net_per_trade": -0.00013574,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.0,
+     "t_gross": 0.184,
+     "t_deflated_sweep": -2.413,
+     "t_deflated_lifetime": -2.398,
+     "n_independent": 503,
+     "net_per_trade": -0.00015504,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.182,
+     "t_deflated_sweep": -2.415,
+     "t_deflated_lifetime": -2.4,
+     "n_independent": 218,
+     "net_per_trade": -0.00018317,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.181,
+     "t_deflated_sweep": -2.778,
+     "t_deflated_lifetime": -2.763,
+     "n_independent": 211,
+     "net_per_trade": -0.00117095,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.178,
+     "t_deflated_sweep": -2.775,
+     "t_deflated_lifetime": -2.76,
+     "n_independent": 506,
+     "net_per_trade": -0.00045328,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.176,
+     "t_deflated_sweep": -2.421,
+     "t_deflated_lifetime": -2.406,
+     "n_independent": 489,
+     "net_per_trade": -0.00027393,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.5,
+     "t_gross": 0.174,
+     "t_deflated_sweep": -2.423,
+     "t_deflated_lifetime": -2.408,
+     "n_independent": 203,
+     "net_per_trade": -0.00029367,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.166,
+     "t_deflated_sweep": -2.763,
+     "t_deflated_lifetime": -2.748,
+     "n_independent": 226,
+     "net_per_trade": -0.00575416,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.157,
+     "t_deflated_sweep": -2.44,
+     "t_deflated_lifetime": -2.425,
+     "n_independent": 203,
+     "net_per_trade": -0.00013822,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.152,
+     "t_deflated_sweep": -2.445,
+     "t_deflated_lifetime": -2.43,
+     "n_independent": 486,
+     "net_per_trade": -0.00029694,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.0,
+     "t_gross": -0.149,
+     "t_deflated_sweep": -2.746,
+     "t_deflated_lifetime": -2.731,
+     "n_independent": 534,
+     "net_per_trade": -0.00052401,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.143,
+     "t_deflated_sweep": -2.74,
+     "t_deflated_lifetime": -2.725,
+     "n_independent": 497,
+     "net_per_trade": -0.00016475,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.141,
+     "t_deflated_sweep": -2.738,
+     "t_deflated_lifetime": -2.723,
+     "n_independent": 463,
+     "net_per_trade": -0.00037081,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.0,
+     "t_gross": 0.13,
+     "t_deflated_sweep": -2.467,
+     "t_deflated_lifetime": -2.452,
+     "n_independent": 461,
+     "net_per_trade": -0.00016212,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.126,
+     "t_deflated_sweep": -2.723,
+     "t_deflated_lifetime": -2.708,
+     "n_independent": 206,
+     "net_per_trade": -0.00039048,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.123,
+     "t_deflated_sweep": -2.72,
+     "t_deflated_lifetime": -2.705,
+     "n_independent": 210,
+     "net_per_trade": -0.0009678,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.0,
+     "t_gross": -0.123,
+     "t_deflated_sweep": -2.72,
+     "t_deflated_lifetime": -2.705,
+     "n_independent": 554,
+     "net_per_trade": -0.00036276,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.112,
+     "t_deflated_sweep": -2.485,
+     "t_deflated_lifetime": -2.47,
+     "n_independent": 461,
+     "net_per_trade": -0.0049083,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.11,
+     "t_deflated_sweep": -2.707,
+     "t_deflated_lifetime": -2.692,
+     "n_independent": 219,
+     "net_per_trade": -0.00019246,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.5,
+     "t_gross": 0.108,
+     "t_deflated_sweep": -2.489,
+     "t_deflated_lifetime": -2.474,
+     "n_independent": 215,
+     "net_per_trade": -0.00031432,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.5,
+     "t_gross": 0.105,
+     "t_deflated_sweep": -2.492,
+     "t_deflated_lifetime": -2.477,
+     "n_independent": 211,
+     "net_per_trade": -0.00020439,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.5,
+     "t_gross": 0.103,
+     "t_deflated_sweep": -2.494,
+     "t_deflated_lifetime": -2.479,
+     "n_independent": 205,
+     "net_per_trade": -0.00015395,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.066,
+     "t_deflated_sweep": -2.531,
+     "t_deflated_lifetime": -2.516,
+     "n_independent": 204,
+     "net_per_trade": -0.00015473,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.0,
+     "t_gross": -0.064,
+     "t_deflated_sweep": -2.661,
+     "t_deflated_lifetime": -2.646,
+     "n_independent": 538,
+     "net_per_trade": -0.0003226,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 1
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.049,
+     "t_deflated_sweep": -2.646,
+     "t_deflated_lifetime": -2.631,
+     "n_independent": 485,
+     "net_per_trade": -0.00036449,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.042,
+     "t_deflated_sweep": -2.639,
+     "t_deflated_lifetime": -2.624,
+     "n_independent": 493,
+     "net_per_trade": -0.00040963,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 2
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.031,
+     "t_deflated_sweep": -2.566,
+     "t_deflated_lifetime": -2.551,
+     "n_independent": 218,
+     "net_per_trade": -0.00057806,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.024,
+     "t_deflated_sweep": -2.621,
+     "t_deflated_lifetime": -2.606,
+     "n_independent": 506,
+     "net_per_trade": -0.00068498,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.gnn_propagation",
+     "config": {
+      "adjacency": "lead_lag",
+      "layers": 2
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.016,
+     "t_deflated_sweep": -2.581,
+     "t_deflated_lifetime": -2.566,
+     "n_independent": 458,
+     "net_per_trade": -7.481e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.gnn_propagation",
+     "config": {
+      "adjacency": "corr",
+      "layers": 1
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.007,
+     "t_deflated_sweep": -2.604,
+     "t_deflated_lifetime": -2.589,
+     "n_independent": 219,
+     "net_per_trade": -0.00021242,
+     "clears_cost": false,
+     "proposed": false
+    }
+   ]
+  },
+  "attention": {
+   "tests_attempted": 192,
+   "tests_screened": 184,
+   "not_screened": 8,
+   "effective_trials": 2.424,
+   "best": {
+    "cell": "GBPJPY.attention_ts",
+    "config": {
+     "heads": 2,
+     "lookback": 20
+    },
+    "symbol": "GBPJPY",
+    "entry_z": 1.0,
+    "t_gross": 2.53,
+    "t_deflated_sweep": -0.067,
+    "t_deflated_lifetime": -0.052,
+    "n_independent": 558,
+    "net_per_trade": 0.00053719,
+    "clears_cost": true,
+    "proposed": false
+   },
+   "best_t_deflated_by_attempted": -0.067,
+   "proposed": 0,
+   "rows": [
+    {
+     "cell": "GBPJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.0,
+     "t_gross": 2.53,
+     "t_deflated_sweep": -0.067,
+     "t_deflated_lifetime": -0.052,
+     "n_independent": 558,
+     "net_per_trade": 0.00053719,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.0,
+     "t_gross": 2.381,
+     "t_deflated_sweep": -0.216,
+     "t_deflated_lifetime": -0.201,
+     "n_independent": 559,
+     "net_per_trade": 0.0004825,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.921,
+     "t_deflated_sweep": -0.676,
+     "t_deflated_lifetime": -0.661,
+     "n_independent": 192,
+     "net_per_trade": 0.00072418,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.0,
+     "t_gross": -1.916,
+     "t_deflated_sweep": -4.513,
+     "t_deflated_lifetime": -4.498,
+     "n_independent": 557,
+     "net_per_trade": -0.00088902,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.867,
+     "t_deflated_sweep": -0.73,
+     "t_deflated_lifetime": -0.715,
+     "n_independent": 567,
+     "net_per_trade": 0.00023769,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.819,
+     "t_deflated_sweep": -0.778,
+     "t_deflated_lifetime": -0.763,
+     "n_independent": 198,
+     "net_per_trade": 0.00066473,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.815,
+     "t_deflated_sweep": -4.412,
+     "t_deflated_lifetime": -4.397,
+     "n_independent": 217,
+     "net_per_trade": -0.01005815,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.792,
+     "t_deflated_sweep": -0.805,
+     "t_deflated_lifetime": -0.79,
+     "n_independent": 564,
+     "net_per_trade": 0.00022558,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.765,
+     "t_deflated_sweep": -4.362,
+     "t_deflated_lifetime": -4.347,
+     "n_independent": 593,
+     "net_per_trade": -0.00790936,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.731,
+     "t_deflated_sweep": -0.866,
+     "t_deflated_lifetime": -0.851,
+     "n_independent": 564,
+     "net_per_trade": 7.539e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.726,
+     "t_deflated_sweep": -4.323,
+     "t_deflated_lifetime": -4.308,
+     "n_independent": 581,
+     "net_per_trade": -0.00788471,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.723,
+     "t_deflated_sweep": -4.32,
+     "t_deflated_lifetime": -4.305,
+     "n_independent": 208,
+     "net_per_trade": -0.01004105,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.663,
+     "t_deflated_sweep": -0.934,
+     "t_deflated_lifetime": -0.919,
+     "n_independent": 556,
+     "net_per_trade": 6.535e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.628,
+     "t_deflated_sweep": -0.969,
+     "t_deflated_lifetime": -0.954,
+     "n_independent": 560,
+     "net_per_trade": 0.00011517,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.0,
+     "t_gross": 1.621,
+     "t_deflated_sweep": -0.976,
+     "t_deflated_lifetime": -0.961,
+     "n_independent": 577,
+     "net_per_trade": -2.762e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.5,
+     "t_gross": -1.597,
+     "t_deflated_sweep": -4.194,
+     "t_deflated_lifetime": -4.179,
+     "n_independent": 213,
+     "net_per_trade": -0.00075974,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.576,
+     "t_deflated_sweep": -4.173,
+     "t_deflated_lifetime": -4.158,
+     "n_independent": 212,
+     "net_per_trade": -0.01009661,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.0,
+     "t_gross": 1.564,
+     "t_deflated_sweep": -1.033,
+     "t_deflated_lifetime": -1.018,
+     "n_independent": 557,
+     "net_per_trade": -3.662e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.0,
+     "t_gross": -1.54,
+     "t_deflated_sweep": -4.137,
+     "t_deflated_lifetime": -4.122,
+     "n_independent": 550,
+     "net_per_trade": -0.00081512,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.524,
+     "t_deflated_sweep": -1.073,
+     "t_deflated_lifetime": -1.058,
+     "n_independent": 557,
+     "net_per_trade": 0.00017548,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.483,
+     "t_deflated_sweep": -1.114,
+     "t_deflated_lifetime": -1.099,
+     "n_independent": 556,
+     "net_per_trade": 0.00016235,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.465,
+     "t_deflated_sweep": -4.062,
+     "t_deflated_lifetime": -4.047,
+     "n_independent": 590,
+     "net_per_trade": -0.0024126,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.451,
+     "t_deflated_sweep": -1.146,
+     "t_deflated_lifetime": -1.131,
+     "n_independent": 585,
+     "net_per_trade": 0.00013909,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.445,
+     "t_deflated_sweep": -1.152,
+     "t_deflated_lifetime": -1.137,
+     "n_independent": 202,
+     "net_per_trade": 0.00048125,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.0,
+     "t_gross": -1.444,
+     "t_deflated_sweep": -4.041,
+     "t_deflated_lifetime": -4.026,
+     "n_independent": 587,
+     "net_per_trade": -0.00077486,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.437,
+     "t_deflated_sweep": -1.16,
+     "t_deflated_lifetime": -1.145,
+     "n_independent": 545,
+     "net_per_trade": 6.845e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.5,
+     "t_gross": -1.428,
+     "t_deflated_sweep": -4.025,
+     "t_deflated_lifetime": -4.01,
+     "n_independent": 211,
+     "net_per_trade": -0.00070059,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.404,
+     "t_deflated_sweep": -1.193,
+     "t_deflated_lifetime": -1.178,
+     "n_independent": 542,
+     "net_per_trade": 0.00014486,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.403,
+     "t_deflated_sweep": -4.0,
+     "t_deflated_lifetime": -3.985,
+     "n_independent": 228,
+     "net_per_trade": -0.00935441,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.5,
+     "t_gross": 1.371,
+     "t_deflated_sweep": -1.226,
+     "t_deflated_lifetime": -1.211,
+     "n_independent": 208,
+     "net_per_trade": 0.00043183,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.0,
+     "t_gross": -1.347,
+     "t_deflated_sweep": -3.944,
+     "t_deflated_lifetime": -3.929,
+     "n_independent": 580,
+     "net_per_trade": -0.00075895,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.33,
+     "t_deflated_sweep": -3.927,
+     "t_deflated_lifetime": -3.912,
+     "n_independent": 594,
+     "net_per_trade": -0.00897791,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.327,
+     "t_deflated_sweep": -1.27,
+     "t_deflated_lifetime": -1.255,
+     "n_independent": 533,
+     "net_per_trade": 6.777e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.0,
+     "t_gross": -1.32,
+     "t_deflated_sweep": -3.917,
+     "t_deflated_lifetime": -3.902,
+     "n_independent": 565,
+     "net_per_trade": -0.00036751,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.306,
+     "t_deflated_sweep": -1.291,
+     "t_deflated_lifetime": -1.276,
+     "n_independent": 578,
+     "net_per_trade": 0.00011876,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.276,
+     "t_deflated_sweep": -3.873,
+     "t_deflated_lifetime": -3.858,
+     "n_independent": 598,
+     "net_per_trade": -0.00049434,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.0,
+     "t_gross": 1.271,
+     "t_deflated_sweep": -1.326,
+     "t_deflated_lifetime": -1.311,
+     "n_independent": 567,
+     "net_per_trade": 0.00050166,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.5,
+     "t_gross": 1.267,
+     "t_deflated_sweep": -1.33,
+     "t_deflated_lifetime": -1.315,
+     "n_independent": 202,
+     "net_per_trade": 0.00110531,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.0,
+     "t_gross": 1.221,
+     "t_deflated_sweep": -1.376,
+     "t_deflated_lifetime": -1.361,
+     "n_independent": 606,
+     "net_per_trade": 5.38e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.5,
+     "t_gross": 1.21,
+     "t_deflated_sweep": -1.387,
+     "t_deflated_lifetime": -1.372,
+     "n_independent": 182,
+     "net_per_trade": 0.00093589,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.199,
+     "t_deflated_sweep": -3.796,
+     "t_deflated_lifetime": -3.781,
+     "n_independent": 566,
+     "net_per_trade": -0.00850811,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.5,
+     "t_gross": -1.197,
+     "t_deflated_sweep": -3.794,
+     "t_deflated_lifetime": -3.779,
+     "n_independent": 211,
+     "net_per_trade": -0.00054904,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.172,
+     "t_deflated_sweep": -3.769,
+     "t_deflated_lifetime": -3.754,
+     "n_independent": 196,
+     "net_per_trade": -0.00083704,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.17,
+     "t_deflated_sweep": -1.427,
+     "t_deflated_lifetime": -1.412,
+     "n_independent": 514,
+     "net_per_trade": 2.695e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.0,
+     "t_gross": 1.163,
+     "t_deflated_sweep": -1.434,
+     "t_deflated_lifetime": -1.419,
+     "n_independent": 616,
+     "net_per_trade": 3.106e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.5,
+     "t_gross": 1.162,
+     "t_deflated_sweep": -1.435,
+     "t_deflated_lifetime": -1.42,
+     "n_independent": 186,
+     "net_per_trade": 0.00011753,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.156,
+     "t_deflated_sweep": -3.753,
+     "t_deflated_lifetime": -3.738,
+     "n_independent": 216,
+     "net_per_trade": -0.00310635,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.135,
+     "t_deflated_sweep": -1.462,
+     "t_deflated_lifetime": -1.447,
+     "n_independent": 547,
+     "net_per_trade": 1.585e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.0,
+     "t_gross": -1.128,
+     "t_deflated_sweep": -3.725,
+     "t_deflated_lifetime": -3.71,
+     "n_independent": 574,
+     "net_per_trade": -0.00793702,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.5,
+     "t_gross": -1.115,
+     "t_deflated_sweep": -3.712,
+     "t_deflated_lifetime": -3.697,
+     "n_independent": 212,
+     "net_per_trade": -0.00063529,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.0,
+     "t_gross": 1.109,
+     "t_deflated_sweep": -1.488,
+     "t_deflated_lifetime": -1.473,
+     "n_independent": 613,
+     "net_per_trade": -5.586e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.0,
+     "t_gross": -1.108,
+     "t_deflated_sweep": -3.705,
+     "t_deflated_lifetime": -3.69,
+     "n_independent": 604,
+     "net_per_trade": -0.00048125,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.0,
+     "t_gross": -1.105,
+     "t_deflated_sweep": -3.702,
+     "t_deflated_lifetime": -3.687,
+     "n_independent": 552,
+     "net_per_trade": -0.00032419,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.0,
+     "t_gross": -1.094,
+     "t_deflated_sweep": -3.691,
+     "t_deflated_lifetime": -3.676,
+     "n_independent": 565,
+     "net_per_trade": -0.00042759,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "USDJPY",
+     "entry_z": 1.0,
+     "t_gross": 1.094,
+     "t_deflated_sweep": -1.503,
+     "t_deflated_lifetime": -1.488,
+     "n_independent": 556,
+     "net_per_trade": 7.455e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.0,
+     "t_gross": 1.042,
+     "t_deflated_sweep": -1.555,
+     "t_deflated_lifetime": -1.54,
+     "n_independent": 593,
+     "net_per_trade": -6.209e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.0,
+     "t_gross": -1.04,
+     "t_deflated_sweep": -3.637,
+     "t_deflated_lifetime": -3.622,
+     "n_independent": 594,
+     "net_per_trade": -0.00028754,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.0,
+     "t_gross": 1.005,
+     "t_deflated_sweep": -1.592,
+     "t_deflated_lifetime": -1.577,
+     "n_independent": 574,
+     "net_per_trade": 0.00037618,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.5,
+     "t_gross": -1.001,
+     "t_deflated_sweep": -3.598,
+     "t_deflated_lifetime": -3.583,
+     "n_independent": 203,
+     "net_per_trade": -0.00050779,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.959,
+     "t_deflated_sweep": -3.556,
+     "t_deflated_lifetime": -3.541,
+     "n_independent": 191,
+     "net_per_trade": -0.00058796,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.957,
+     "t_deflated_sweep": -1.64,
+     "t_deflated_lifetime": -1.625,
+     "n_independent": 192,
+     "net_per_trade": 0.00072254,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.0,
+     "t_gross": -0.953,
+     "t_deflated_sweep": -3.55,
+     "t_deflated_lifetime": -3.535,
+     "n_independent": 587,
+     "net_per_trade": -0.00027214,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.941,
+     "t_deflated_sweep": -1.656,
+     "t_deflated_lifetime": -1.641,
+     "n_independent": 215,
+     "net_per_trade": -0.00013801,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.0,
+     "t_gross": -0.94,
+     "t_deflated_sweep": -3.537,
+     "t_deflated_lifetime": -3.522,
+     "n_independent": 563,
+     "net_per_trade": -0.00040088,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.929,
+     "t_deflated_sweep": -3.526,
+     "t_deflated_lifetime": -3.511,
+     "n_independent": 225,
+     "net_per_trade": -0.00252827,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.5,
+     "t_gross": 0.926,
+     "t_deflated_sweep": -1.671,
+     "t_deflated_lifetime": -1.656,
+     "n_independent": 200,
+     "net_per_trade": 7.56e-06,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.914,
+     "t_deflated_sweep": -1.683,
+     "t_deflated_lifetime": -1.668,
+     "n_independent": 561,
+     "net_per_trade": -3.492e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.9,
+     "t_deflated_sweep": -1.697,
+     "t_deflated_lifetime": -1.682,
+     "n_independent": 205,
+     "net_per_trade": 0.00077596,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.898,
+     "t_deflated_sweep": -1.699,
+     "t_deflated_lifetime": -1.684,
+     "n_independent": 203,
+     "net_per_trade": 0.00096499,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.893,
+     "t_deflated_sweep": -3.49,
+     "t_deflated_lifetime": -3.475,
+     "n_independent": 562,
+     "net_per_trade": -0.00665004,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.88,
+     "t_deflated_sweep": -3.477,
+     "t_deflated_lifetime": -3.462,
+     "n_independent": 561,
+     "net_per_trade": -0.00056797,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.0,
+     "t_gross": 0.857,
+     "t_deflated_sweep": -1.74,
+     "t_deflated_lifetime": -1.725,
+     "n_independent": 637,
+     "net_per_trade": -0.00022514,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.843,
+     "t_deflated_sweep": -3.44,
+     "t_deflated_lifetime": -3.425,
+     "n_independent": 583,
+     "net_per_trade": -0.00041201,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "ETHUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "ETHUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.827,
+     "t_deflated_sweep": -3.424,
+     "t_deflated_lifetime": -3.409,
+     "n_independent": 571,
+     "net_per_trade": -0.00652077,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.816,
+     "t_deflated_sweep": -1.781,
+     "t_deflated_lifetime": -1.766,
+     "n_independent": 202,
+     "net_per_trade": 0.00071604,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.804,
+     "t_deflated_sweep": -1.793,
+     "t_deflated_lifetime": -1.778,
+     "n_independent": 208,
+     "net_per_trade": 9.248e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.0,
+     "t_gross": -0.79,
+     "t_deflated_sweep": -3.387,
+     "t_deflated_lifetime": -3.372,
+     "n_independent": 596,
+     "net_per_trade": -0.0004717,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.769,
+     "t_deflated_sweep": -3.366,
+     "t_deflated_lifetime": -3.351,
+     "n_independent": 201,
+     "net_per_trade": -0.00062897,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.737,
+     "t_deflated_sweep": -3.334,
+     "t_deflated_lifetime": -3.319,
+     "n_independent": 184,
+     "net_per_trade": -0.00051316,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.734,
+     "t_deflated_sweep": -1.863,
+     "t_deflated_lifetime": -1.848,
+     "n_independent": 558,
+     "net_per_trade": -6.685e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.712,
+     "t_deflated_sweep": -3.309,
+     "t_deflated_lifetime": -3.294,
+     "n_independent": 554,
+     "net_per_trade": -0.00058043,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.705,
+     "t_deflated_sweep": -1.892,
+     "t_deflated_lifetime": -1.877,
+     "n_independent": 204,
+     "net_per_trade": 0.00053445,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.704,
+     "t_deflated_sweep": -3.301,
+     "t_deflated_lifetime": -3.286,
+     "n_independent": 200,
+     "net_per_trade": -0.00049549,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.673,
+     "t_deflated_sweep": -1.924,
+     "t_deflated_lifetime": -1.909,
+     "n_independent": 215,
+     "net_per_trade": -0.00026013,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.668,
+     "t_deflated_sweep": -1.929,
+     "t_deflated_lifetime": -1.914,
+     "n_independent": 547,
+     "net_per_trade": -7.15e-06,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.667,
+     "t_deflated_sweep": -3.264,
+     "t_deflated_lifetime": -3.249,
+     "n_independent": 180,
+     "net_per_trade": -0.00042608,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.664,
+     "t_deflated_sweep": -3.261,
+     "t_deflated_lifetime": -3.246,
+     "n_independent": 211,
+     "net_per_trade": -0.00048097,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.657,
+     "t_deflated_sweep": -1.94,
+     "t_deflated_lifetime": -1.925,
+     "n_independent": 206,
+     "net_per_trade": -5.118e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.64,
+     "t_deflated_sweep": -1.957,
+     "t_deflated_lifetime": -1.942,
+     "n_independent": 192,
+     "net_per_trade": -4.704e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.631,
+     "t_deflated_sweep": -3.228,
+     "t_deflated_lifetime": -3.213,
+     "n_independent": 184,
+     "net_per_trade": -0.00041055,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.614,
+     "t_deflated_sweep": -1.983,
+     "t_deflated_lifetime": -1.968,
+     "n_independent": 555,
+     "net_per_trade": -0.0003901,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.611,
+     "t_deflated_sweep": -3.208,
+     "t_deflated_lifetime": -3.193,
+     "n_independent": 210,
+     "net_per_trade": -0.00069794,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.0,
+     "t_gross": -0.6,
+     "t_deflated_sweep": -3.197,
+     "t_deflated_lifetime": -3.182,
+     "n_independent": 549,
+     "net_per_trade": -0.0003852,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.569,
+     "t_deflated_sweep": -2.028,
+     "t_deflated_lifetime": -2.013,
+     "n_independent": 184,
+     "net_per_trade": 0.00040299,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.558,
+     "t_deflated_sweep": -2.039,
+     "t_deflated_lifetime": -2.024,
+     "n_independent": 599,
+     "net_per_trade": -8.899e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.557,
+     "t_deflated_sweep": -3.154,
+     "t_deflated_lifetime": -3.139,
+     "n_independent": 207,
+     "net_per_trade": -0.0006711,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.546,
+     "t_deflated_sweep": -2.051,
+     "t_deflated_lifetime": -2.036,
+     "n_independent": 562,
+     "net_per_trade": -0.00012224,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.0,
+     "t_gross": -0.527,
+     "t_deflated_sweep": -3.124,
+     "t_deflated_lifetime": -3.109,
+     "n_independent": 579,
+     "net_per_trade": -0.0004303,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.525,
+     "t_deflated_sweep": -2.072,
+     "t_deflated_lifetime": -2.057,
+     "n_independent": 191,
+     "net_per_trade": -1.692e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.0,
+     "t_gross": -0.508,
+     "t_deflated_sweep": -3.105,
+     "t_deflated_lifetime": -3.09,
+     "n_independent": 563,
+     "net_per_trade": -0.00037437,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.507,
+     "t_deflated_sweep": -2.09,
+     "t_deflated_lifetime": -2.075,
+     "n_independent": 573,
+     "net_per_trade": -0.00016889,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.496,
+     "t_deflated_sweep": -2.101,
+     "t_deflated_lifetime": -2.086,
+     "n_independent": 564,
+     "net_per_trade": -0.00011638,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.5,
+     "t_gross": -0.49,
+     "t_deflated_sweep": -3.087,
+     "t_deflated_lifetime": -3.072,
+     "n_independent": 220,
+     "net_per_trade": -0.00045359,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.0,
+     "t_gross": -0.489,
+     "t_deflated_sweep": -3.086,
+     "t_deflated_lifetime": -3.071,
+     "n_independent": 564,
+     "net_per_trade": -0.00031661,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.5,
+     "t_gross": -0.486,
+     "t_deflated_sweep": -3.083,
+     "t_deflated_lifetime": -3.068,
+     "n_independent": 236,
+     "net_per_trade": -0.00041155,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.5,
+     "t_gross": 0.466,
+     "t_deflated_sweep": -2.131,
+     "t_deflated_lifetime": -2.116,
+     "n_independent": 239,
+     "net_per_trade": -0.00023788,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.0,
+     "t_gross": 0.457,
+     "t_deflated_sweep": -2.14,
+     "t_deflated_lifetime": -2.125,
+     "n_independent": 617,
+     "net_per_trade": -0.00010652,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.5,
+     "t_gross": 0.456,
+     "t_deflated_sweep": -2.141,
+     "t_deflated_lifetime": -2.126,
+     "n_independent": 220,
+     "net_per_trade": -0.00018352,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.437,
+     "t_deflated_sweep": -3.034,
+     "t_deflated_lifetime": -3.019,
+     "n_independent": 199,
+     "net_per_trade": -0.00036413,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.433,
+     "t_deflated_sweep": -3.03,
+     "t_deflated_lifetime": -3.015,
+     "n_independent": 217,
+     "net_per_trade": -0.00033836,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.0,
+     "t_gross": 0.424,
+     "t_deflated_sweep": -2.173,
+     "t_deflated_lifetime": -2.158,
+     "n_independent": 578,
+     "net_per_trade": -0.00027663,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.0,
+     "t_gross": -0.42,
+     "t_deflated_sweep": -3.017,
+     "t_deflated_lifetime": -3.002,
+     "n_independent": 563,
+     "net_per_trade": -0.00036307,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.0,
+     "t_gross": -0.418,
+     "t_deflated_sweep": -3.015,
+     "t_deflated_lifetime": -3.0,
+     "n_independent": 593,
+     "net_per_trade": -0.00039184,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.416,
+     "t_deflated_sweep": -3.013,
+     "t_deflated_lifetime": -2.998,
+     "n_independent": 225,
+     "net_per_trade": -0.00063852,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.412,
+     "t_deflated_sweep": -3.009,
+     "t_deflated_lifetime": -2.994,
+     "n_independent": 210,
+     "net_per_trade": -0.00034358,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.406,
+     "t_deflated_sweep": -2.191,
+     "t_deflated_lifetime": -2.176,
+     "n_independent": 194,
+     "net_per_trade": -0.00017222,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.402,
+     "t_deflated_sweep": -2.999,
+     "t_deflated_lifetime": -2.984,
+     "n_independent": 567,
+     "net_per_trade": -0.00047883,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAGUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "XAGUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.377,
+     "t_deflated_sweep": -2.22,
+     "t_deflated_lifetime": -2.205,
+     "n_independent": 539,
+     "net_per_trade": -0.00028698,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.376,
+     "t_deflated_sweep": -2.221,
+     "t_deflated_lifetime": -2.206,
+     "n_independent": 580,
+     "net_per_trade": -5.35e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.5,
+     "t_gross": -0.367,
+     "t_deflated_sweep": -2.964,
+     "t_deflated_lifetime": -2.949,
+     "n_independent": 218,
+     "net_per_trade": -0.00039144,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.5,
+     "t_gross": 0.355,
+     "t_deflated_sweep": -2.242,
+     "t_deflated_lifetime": -2.227,
+     "n_independent": 226,
+     "net_per_trade": 5.517e-05,
+     "clears_cost": true,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.355,
+     "t_deflated_sweep": -2.242,
+     "t_deflated_lifetime": -2.227,
+     "n_independent": 593,
+     "net_per_trade": -0.00013895,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.345,
+     "t_deflated_sweep": -2.942,
+     "t_deflated_lifetime": -2.927,
+     "n_independent": 556,
+     "net_per_trade": -0.00049622,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.0,
+     "t_gross": -0.339,
+     "t_deflated_sweep": -2.936,
+     "t_deflated_lifetime": -2.921,
+     "n_independent": 572,
+     "net_per_trade": -0.00028138,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.0,
+     "t_gross": 0.336,
+     "t_deflated_sweep": -2.261,
+     "t_deflated_lifetime": -2.246,
+     "n_independent": 563,
+     "net_per_trade": -6.243e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.323,
+     "t_deflated_sweep": -2.92,
+     "t_deflated_lifetime": -2.905,
+     "n_independent": 195,
+     "net_per_trade": -0.00032333,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.316,
+     "t_deflated_sweep": -2.281,
+     "t_deflated_lifetime": -2.266,
+     "n_independent": 600,
+     "net_per_trade": -0.00014939,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.316,
+     "t_deflated_sweep": -2.913,
+     "t_deflated_lifetime": -2.898,
+     "n_independent": 204,
+     "net_per_trade": -0.00070107,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.313,
+     "t_deflated_sweep": -2.284,
+     "t_deflated_lifetime": -2.269,
+     "n_independent": 195,
+     "net_per_trade": -0.000148,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.302,
+     "t_deflated_sweep": -2.295,
+     "t_deflated_lifetime": -2.28,
+     "n_independent": 206,
+     "net_per_trade": -5.059e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.5,
+     "t_gross": 0.299,
+     "t_deflated_sweep": -2.298,
+     "t_deflated_lifetime": -2.283,
+     "n_independent": 227,
+     "net_per_trade": -0.00025496,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.295,
+     "t_deflated_sweep": -2.302,
+     "t_deflated_lifetime": -2.287,
+     "n_independent": 199,
+     "net_per_trade": -0.00042642,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.5,
+     "t_gross": 0.294,
+     "t_deflated_sweep": -2.303,
+     "t_deflated_lifetime": -2.288,
+     "n_independent": 211,
+     "net_per_trade": -0.00024465,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.0,
+     "t_gross": 0.294,
+     "t_deflated_sweep": -2.303,
+     "t_deflated_lifetime": -2.288,
+     "n_independent": 643,
+     "net_per_trade": -0.00030292,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.0,
+     "t_gross": -0.291,
+     "t_deflated_sweep": -2.888,
+     "t_deflated_lifetime": -2.873,
+     "n_independent": 542,
+     "net_per_trade": -0.00037907,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.289,
+     "t_deflated_sweep": -2.886,
+     "t_deflated_lifetime": -2.871,
+     "n_independent": 219,
+     "net_per_trade": -0.00028923,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.5,
+     "t_gross": 0.281,
+     "t_deflated_sweep": -2.316,
+     "t_deflated_lifetime": -2.301,
+     "n_independent": 210,
+     "net_per_trade": -7.238e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.5,
+     "t_gross": -0.269,
+     "t_deflated_sweep": -2.866,
+     "t_deflated_lifetime": -2.851,
+     "n_independent": 216,
+     "net_per_trade": -0.00040048,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.265,
+     "t_deflated_sweep": -2.862,
+     "t_deflated_lifetime": -2.847,
+     "n_independent": 205,
+     "net_per_trade": -0.00028674,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.259,
+     "t_deflated_sweep": -2.856,
+     "t_deflated_lifetime": -2.841,
+     "n_independent": 228,
+     "net_per_trade": -0.00033883,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.5,
+     "t_gross": 0.253,
+     "t_deflated_sweep": -2.344,
+     "t_deflated_lifetime": -2.329,
+     "n_independent": 232,
+     "net_per_trade": -0.00026926,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDNZD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "AUDNZD",
+     "entry_z": 1.0,
+     "t_gross": -0.252,
+     "t_deflated_sweep": -2.849,
+     "t_deflated_lifetime": -2.834,
+     "n_independent": 579,
+     "net_per_trade": -0.00034414,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.241,
+     "t_deflated_sweep": -2.838,
+     "t_deflated_lifetime": -2.823,
+     "n_independent": 572,
+     "net_per_trade": -0.00029436,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.231,
+     "t_deflated_sweep": -2.366,
+     "t_deflated_lifetime": -2.351,
+     "n_independent": 559,
+     "net_per_trade": -0.00049354,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.22,
+     "t_deflated_sweep": -2.817,
+     "t_deflated_lifetime": -2.802,
+     "n_independent": 555,
+     "net_per_trade": -0.00046011,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.5,
+     "t_gross": -0.219,
+     "t_deflated_sweep": -2.816,
+     "t_deflated_lifetime": -2.801,
+     "n_independent": 224,
+     "net_per_trade": -0.00038546,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCHF.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "USDCHF",
+     "entry_z": 1.0,
+     "t_gross": 0.218,
+     "t_deflated_sweep": -2.379,
+     "t_deflated_lifetime": -2.364,
+     "n_independent": 554,
+     "net_per_trade": -0.00031933,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.211,
+     "t_deflated_sweep": -2.808,
+     "t_deflated_lifetime": -2.793,
+     "n_independent": 211,
+     "net_per_trade": -0.00056483,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.199,
+     "t_deflated_sweep": -2.398,
+     "t_deflated_lifetime": -2.383,
+     "n_independent": 205,
+     "net_per_trade": -0.00022731,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.191,
+     "t_deflated_sweep": -2.788,
+     "t_deflated_lifetime": -2.773,
+     "n_independent": 554,
+     "net_per_trade": -0.00028521,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.187,
+     "t_deflated_sweep": -2.784,
+     "t_deflated_lifetime": -2.769,
+     "n_independent": 199,
+     "net_per_trade": -0.00024391,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "NZDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.18,
+     "t_deflated_sweep": -2.777,
+     "t_deflated_lifetime": -2.762,
+     "n_independent": 219,
+     "net_per_trade": -0.0005553,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "AUDJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.179,
+     "t_deflated_sweep": -2.776,
+     "t_deflated_lifetime": -2.761,
+     "n_independent": 205,
+     "net_per_trade": -0.00045807,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.173,
+     "t_deflated_sweep": -2.77,
+     "t_deflated_lifetime": -2.755,
+     "n_independent": 226,
+     "net_per_trade": -0.00028264,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.0,
+     "t_gross": 0.168,
+     "t_deflated_sweep": -2.429,
+     "t_deflated_lifetime": -2.414,
+     "n_independent": 627,
+     "net_per_trade": -0.00016487,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "USDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "USDCAD",
+     "entry_z": 1.5,
+     "t_gross": -0.147,
+     "t_deflated_sweep": -2.744,
+     "t_deflated_lifetime": -2.729,
+     "n_independent": 207,
+     "net_per_trade": -0.00027684,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.146,
+     "t_deflated_sweep": -2.743,
+     "t_deflated_lifetime": -2.728,
+     "n_independent": 215,
+     "net_per_trade": -0.00040206,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.0,
+     "t_gross": -0.143,
+     "t_deflated_sweep": -2.74,
+     "t_deflated_lifetime": -2.725,
+     "n_independent": 570,
+     "net_per_trade": -0.00036401,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURGBP.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURGBP",
+     "entry_z": 1.5,
+     "t_gross": 0.138,
+     "t_deflated_sweep": -2.459,
+     "t_deflated_lifetime": -2.444,
+     "n_independent": 226,
+     "net_per_trade": -0.00031285,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.5,
+     "t_gross": 0.135,
+     "t_deflated_sweep": -2.462,
+     "t_deflated_lifetime": -2.447,
+     "n_independent": 211,
+     "net_per_trade": -0.00016498,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.132,
+     "t_deflated_sweep": -2.729,
+     "t_deflated_lifetime": -2.714,
+     "n_independent": 193,
+     "net_per_trade": -0.00025432,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.128,
+     "t_deflated_sweep": -2.725,
+     "t_deflated_lifetime": -2.71,
+     "n_independent": 197,
+     "net_per_trade": -0.00021786,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CHFJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "CHFJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.127,
+     "t_deflated_sweep": -2.47,
+     "t_deflated_lifetime": -2.455,
+     "n_independent": 224,
+     "net_per_trade": -0.00017443,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.121,
+     "t_deflated_sweep": -2.476,
+     "t_deflated_lifetime": -2.461,
+     "n_independent": 526,
+     "net_per_trade": -2.025e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.116,
+     "t_deflated_sweep": -2.713,
+     "t_deflated_lifetime": -2.698,
+     "n_independent": 195,
+     "net_per_trade": -0.00027789,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "GBPJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.113,
+     "t_deflated_sweep": -2.484,
+     "t_deflated_lifetime": -2.469,
+     "n_independent": 198,
+     "net_per_trade": -0.00010152,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURAUD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURAUD",
+     "entry_z": 1.5,
+     "t_gross": -0.101,
+     "t_deflated_sweep": -2.698,
+     "t_deflated_lifetime": -2.683,
+     "n_independent": 212,
+     "net_per_trade": -0.0002452,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.5,
+     "t_gross": 0.101,
+     "t_deflated_sweep": -2.496,
+     "t_deflated_lifetime": -2.481,
+     "n_independent": 197,
+     "net_per_trade": -4.739e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.5,
+     "t_gross": 0.084,
+     "t_deflated_sweep": -2.513,
+     "t_deflated_lifetime": -2.498,
+     "n_independent": 237,
+     "net_per_trade": -0.00032031,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "EURUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.081,
+     "t_deflated_sweep": -2.678,
+     "t_deflated_lifetime": -2.663,
+     "n_independent": 222,
+     "net_per_trade": -0.00027668,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.0,
+     "t_gross": 0.078,
+     "t_deflated_sweep": -2.519,
+     "t_deflated_lifetime": -2.504,
+     "n_independent": 605,
+     "net_per_trade": -0.00017675,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.075,
+     "t_deflated_sweep": -2.672,
+     "t_deflated_lifetime": -2.657,
+     "n_independent": 203,
+     "net_per_trade": -0.00077277,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.059,
+     "t_deflated_sweep": -2.656,
+     "t_deflated_lifetime": -2.641,
+     "n_independent": 572,
+     "net_per_trade": -0.00056883,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.053,
+     "t_deflated_sweep": -2.544,
+     "t_deflated_lifetime": -2.529,
+     "n_independent": 207,
+     "net_per_trade": -0.00015803,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "EURCHF.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "EURCHF",
+     "entry_z": 1.0,
+     "t_gross": 0.052,
+     "t_deflated_sweep": -2.545,
+     "t_deflated_lifetime": -2.53,
+     "n_independent": 524,
+     "net_per_trade": -0.00033083,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "GBPUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.049,
+     "t_deflated_sweep": -2.646,
+     "t_deflated_lifetime": -2.631,
+     "n_independent": 590,
+     "net_per_trade": -0.00023853,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "NZDUSD",
+     "entry_z": 1.0,
+     "t_gross": -0.042,
+     "t_deflated_sweep": -2.639,
+     "t_deflated_lifetime": -2.624,
+     "n_independent": 582,
+     "net_per_trade": -0.00056423,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.5,
+     "t_gross": 0.039,
+     "t_deflated_sweep": -2.558,
+     "t_deflated_lifetime": -2.543,
+     "n_independent": 199,
+     "net_per_trade": -7.043e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "BTCUSD.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 10
+     },
+     "symbol": "BTCUSD",
+     "entry_z": 1.5,
+     "t_gross": -0.039,
+     "t_deflated_sweep": -2.636,
+     "t_deflated_lifetime": -2.621,
+     "n_independent": 217,
+     "net_per_trade": -0.00068376,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "AUDCAD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "AUDCAD",
+     "entry_z": 1.5,
+     "t_gross": 0.026,
+     "t_deflated_sweep": -2.571,
+     "t_deflated_lifetime": -2.556,
+     "n_independent": 221,
+     "net_per_trade": -7.529e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "GBPAUD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 10
+     },
+     "symbol": "GBPAUD",
+     "entry_z": 1.0,
+     "t_gross": -0.02,
+     "t_deflated_sweep": -2.617,
+     "t_deflated_lifetime": -2.602,
+     "n_independent": 609,
+     "net_per_trade": -0.00019539,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "CADJPY.attention_ts",
+     "config": {
+      "heads": 2,
+      "lookback": 20
+     },
+     "symbol": "CADJPY",
+     "entry_z": 1.5,
+     "t_gross": -0.007,
+     "t_deflated_sweep": -2.604,
+     "t_deflated_lifetime": -2.589,
+     "n_independent": 208,
+     "net_per_trade": -0.00032879,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "XAUUSD.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "XAUUSD",
+     "entry_z": 1.0,
+     "t_gross": 0.006,
+     "t_deflated_sweep": -2.591,
+     "t_deflated_lifetime": -2.576,
+     "n_independent": 543,
+     "net_per_trade": -7.989e-05,
+     "clears_cost": false,
+     "proposed": false
+    },
+    {
+     "cell": "NZDJPY.attention_ts",
+     "config": {
+      "heads": 1,
+      "lookback": 20
+     },
+     "symbol": "NZDJPY",
+     "entry_z": 1.5,
+     "t_gross": 0.003,
+     "t_deflated_sweep": -2.594,
+     "t_deflated_lifetime": -2.579,
+     "n_independent": 200,
+     "net_per_trade": -0.00039564,
+     "clears_cost": false,
+     "proposed": false
+    }
+   ]
+  }
+ },
+ "fit_seconds": {
+  "zero": 0.0,
+  "naive_last": 0.0,
+  "ridge_own_lags": 0.24,
+  "ridge_lags_L20": 2.05,
+  "ridge_lags_L10": 0.97,
+  "gnn:adjacency=lead_lag,layers=1": 1.78,
+  "gnn:adjacency=lead_lag,layers=2": 2.42,
+  "gnn:adjacency=corr,layers=1": 1.89,
+  "gnn:adjacency=corr,layers=2": 2.49,
+  "attention:heads=1,lookback=20": 16.43,
+  "attention:heads=2,lookback=20": 51.64,
+  "attention:heads=1,lookback=10": 10.95,
+  "attention:heads=2,lookback=10": 26.88
+ },
+ "trials_charged": {
+  "gnn_configs": 4,
+  "attention_configs": 4,
+  "baselines_not_charged": [
+   "zero",
+   "naive_last",
+   "ridge_own_lags",
+   "ridge_lags_L20",
+   "ridge_lags_L10"
+  ],
+  "cell_level": "the miner charges configs x symbols x 2 entry thresholds per model = 192 per miner run"
+ }
+}

@@ -405,6 +405,11 @@ desks/mt5/data/mining/
 # committed summary of the gitignored gate_verdict_ledger.jsonl and universal_gates_external.json.
 !desks/mt5/reports/GATE_VERDICT_DIGEST.json
 !desks/mt5/reports/BOX_STATE_FLOW.json
+# THE FRESHNESS FENCE'S REPORT AND THE DESK HEALTH REPORT (2026-09-30), published by the same
+# $relPaths: CRO D17 reads box_state_age_hours off the branch, and the plain-English desk health
+# check had no reader off the box at all.
+!desks/mt5/reports/BOX_STATE_FRESHNESS.json
+!desks/mt5/reports/DESK_HEALTH.json
 # THE RESEARCH MEASUREMENTS THE BOX PUBLISHES (2026-09-30). `sync_shadow_to_git.ps1` lists these
 # in $reportPaths; each is a small JSON summary the CRO cycle, the audits and the breadth review
 # read from the branch, and none had ever crossed the wire -- `**/reports/*` above ignored them,
