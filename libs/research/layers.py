@@ -79,6 +79,7 @@ LEG_LAYER: dict[str, str] = {
     # places an order, neither sizes one, and both exist only so the prediction layer's verdict
     # is fed the right population and published the moment it exists.
     "fast_admission": "prediction", "canon_publication": "prediction",
+    "lockbox_recert": "prediction",
     "miner_conversion": "prediction", "opportunity_gap": "prediction",
     "research_org": "prediction", "queue_compact": "prediction",
     "requeue_unrunnable": "prediction", "falsifier_run": "prediction",
@@ -359,8 +360,14 @@ LEG_LAYER: dict[str, str] = {
     # compute. It buys INFORMATION about the producers themselves -- which of them opens ground
     # nothing else covers, and which of them converts the judge's hour into a certificate.
     "orthogonality_yield": "information",
+    # Where in strategy space the desk has looked and what it found per cell, which empty cells
+    # sit next to proven ground, and each candidate's expected correlation to the book. It buys
+    # INFORMATION about the search itself; its two consumers reorder or add, never remove.
+    "occupancy_map": "information",
     # What the multiplicity budget is charged in: nominal rows vs effective independent tests.
     "effective_trials": "information",
+    # The deflated-Sharpe hurdle's two inputs, measured from judged trials with provenance.
+    "dsr_inputs": "information",
     "gauntlet_backpressure": "meta", "miner_specialisation": "meta",
     # THE TIER-5 RESIDUALS (mandate 90, 110, 131/132, 133, 134, 136, 97/98, 162). The bounty
     # board and the drawdown-alpha miner are PORTFOLIO: both ask what the BOOK lacks -- a payoff
@@ -554,6 +561,13 @@ LEG_LAYER: dict[str, str] = {
     # The identity chain grades the joins between the desk's own records and the placebo audit
     # grades its own gates against planted defects: the machine measuring the machine.
     "identity_chain": "meta", "placebo_audit": "meta",
+    # The null lab grades each family's own gates on data with no edge in it, and the
+    # research-live identity join grades whether the live book trades what research certified:
+    # the machine measuring the machine. The macro-conditioned sweep is a claim about returns.
+    "null_lab": "meta", "research_live_identity": "meta",
+    "macro_conditioned_sweep": "prediction",
+    # The UNKNOWN-share census grades the judge's own coverage: the machine measuring the machine.
+    "unknown_census": "meta",
     "meta_rnd": "meta",
     "wiring_audit": "meta", "queue_cycle": "meta", "time_joins": "meta", "brain_ab": "meta",
     # THE CONTROL PLANE is meta by construction: it measures whether the machine that runs the

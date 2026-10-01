@@ -262,6 +262,20 @@ def _prereg_coverage(d: Any) -> float | None:
     return float(cov) if isinstance(cov, (int, float)) else None
 
 
+def _prereg_join_rate(d: Any) -> float | None:
+    """Share of JUDGED CELLS whose verdict names a card registered before the cell was first
+    judged (`check_preregistration.join_census`). Per cell, at its earliest judgement, so
+    re-judging an old cell never moves it: it rises only when a new cell is carded first, and
+    falls only when a new cell is judged with no card. UNMEASURED, never 0, when absent."""
+    if not isinstance(d, dict):
+        return None
+    join = d.get("join")
+    if not isinstance(join, dict):
+        return None
+    rate = join.get("join_rate")
+    return float(rate) if isinstance(rate, (int, float)) else None
+
+
 def _alert_delivery(path: Path) -> float | None:
     try:
         lines = path.read_text("utf-8").splitlines()[-500:]
@@ -334,6 +348,11 @@ _METRICS: dict[str, tuple[str, Callable[[Any], float | None], float | None, str]
     # donating fewer cells. 3h = three passes of the hourly census, so a dead fence reads STALE.
     "prereg_coverage": (
         "desks/mt5/reports/PREREG_COVERAGE.json", _prereg_coverage, 3.0,
+        "python scripts/check_preregistration.py"),
+    # The JOIN, 2026-09-30: 0 of 108,189 graph rows carried a card's hash, because the graph had
+    # no verdict writer and no card named its cell. Same artifact, same clock as the coverage.
+    "prereg_join_rate": (
+        "desks/mt5/reports/PREREG_COVERAGE.json", _prereg_join_rate, 3.0,
         "python scripts/check_preregistration.py"),
     "disk_headroom_ratio": (
         "data/moat_mine.json", _disk_headroom, 6.0,

@@ -35,6 +35,11 @@ def family_lead_lag(
     stop_atr: float = 2.0,
     rr: float = 1.5,
 ) -> list[Signal]:
+    if driver is None and driver_symbol:
+        # NAMED BUT NOT HANDED OVER: the judge's build passes `driver_symbol` and no frame, so the
+        # driver is read here on this frame's own chart (`family_inputs.bars_named`).
+        from mt5desk.family_inputs import bars_named
+        driver = bars_named(driver_symbol, df)
     if driver is None or direction not in DIRECTIONS or "close" not in driver.columns:
         return []
     d = _h1(df)

@@ -96,7 +96,8 @@ _META = {s: {"median_spread_pts": 10.0, "tick_size": 1e-5, "tick_value": 0.9,
          for s in ("EURUSD", "GBPUSD", "USDJPY")}
 
 
-def test_the_authority_lockbox_is_not_walk_forward(eg, monkeypatch) -> None:
+def test_the_authority_lockbox_is_not_walk_forward(eg, monkeypatch,
+                                                  measured_dsr_inputs) -> None:
     monkeypatch.setattr("research.cost_to_edge.verdict",
                         lambda *a, **k: (False, "", {"measured": False, "why": "no terminal"}))
     cells = [_cell("EURUSD", "carry", _daily(700, 0.15, -0.6, 7), 1),
