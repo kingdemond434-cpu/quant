@@ -48,7 +48,7 @@ matured cell that has the trades and does not clear is retired as FAILED_FORWARD
 carries `proposed_at`, `clean_from`, `hindsight_prior: true` and the bear's `red_team`, and the
 compiler carries all four onto the candidate. (The gauntlet itself still judges the whole series;
 cutting its development window at `clean_from` is a sealed-judge change queued for the desktop
-pass, `patches/gauntlet_clean_from_cut.patch`.)
+pass, `patches/elitequant_absorption/gauntlet_clean_from_cut.patch`.)
 
 TRIALS. Every idea a seat returned is a trial whether it was accepted, discarded by the grammar or
 unexpressed, and so is every forward look at a matured cell. Each pass appends one row to
