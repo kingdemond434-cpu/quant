@@ -111,7 +111,8 @@ ATTESTATION = {
     "lockbox_oos_sharpe_min": 0.0,
     "lockbox_basis": ("reserved_final_calendar_fraction_carved_before_program_matrix; held, recent-tail "
                       "and half-split reads all clear the cell's deflated hurdle sr0 (v4)"),
-    "lifetime_trial_floor": "max(campaign charge, per-family lifetime trials in EXPERIMENT_LEDGER)",
+    "lifetime_trial_floor": ("max(campaign charge, lifetime UNION trials, per-family lifetime "
+                             "trials) from EXPERIMENT_LEDGER; unmeasured fails DSR closed"),
     "expected_value_min_exclusive": 0.0,
 }
 

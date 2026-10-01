@@ -8,16 +8,28 @@ Two failures, and only two, because this fence guards the evidence rather than t
   * STALE. The attestation is older than its own cadence (`runtime_attestation.MAX_SILENCE_S`).
     A committed file that says what ran is worse than no file at all once it is quietly out of
     date: it reads like current runtime state and is a photograph of a machine's past. Judged
-    ONLY on the host the document names -- a checkout elsewhere is holding a report ABOUT that
-    host, and its age there is the box's business, not the reader's.
+    ONLY on the TRADING BOX, and only when the document is the box's own: this machine is the
+    host the document names AND that host's measured role (`host.role`, derived by
+    `runtime_attestation.host_identity` from the gateway's heartbeat) is `trading_host`. Anywhere
+    else -- a checkout holding a report ABOUT the box, or a cloud container (hostname `vm`) that
+    attested itself as `non_trading_host` -- the age is printed as UNMEASURED with the age and the
+    host, never as a clean verdict. Measured 2026-09-30: judging it on any attesting host made
+    every PR's law gate red ~2h after the last cloud re-attestation, because every cloud
+    container is named `vm` and so "was" the attesting host.
+    STRUCTURALLY, since #151 stamps `host.desk_host` on every full pass: an attestation stamped
+    `desk_host: false` is NOT A DESK ATTESTATION. It was measured on a machine that is not a
+    declared desk host, so its age says nothing about the box's hourly leg: its staleness is
+    UNMEASURED everywhere (even under `--require-state`) and it neither sets nor is judged
+    against a ratchet floor. `desk_host: true` is judged exactly as above; a legacy stamp with no
+    `desk_host` key keeps the hostname-and-role rule.
   * HOST DRIFT. The document claims one host and describes another: `attests_to_host` disagreeing
     with `host.hostname`, or the file having been written on a machine other than the one it
     names. That is the specific lie this whole organ exists to make impossible, so it fails
     EVERYWHERE -- in CI, in a fresh clone, on either box -- because it is a fact about the
     document's own internals and needs no desk state to judge.
 
-STATE FENCE. On any machine that is not the attesting host the freshness half reads UNMEASURED
-and passes (L1.28a): the reader cannot re-measure a box they are not on. `--require-state` (the
+STATE FENCE. On any machine that is not the attesting trading box the freshness half reads
+UNMEASURED and passes (L1.28a): the reader cannot re-measure a box they are not on. `--require-state` (the
 box's hourly law gate passes it) makes an absent or stale attestation a failure there, which is
 where an absent one IS a defect.
 
@@ -60,6 +72,10 @@ def measure(root: Path | None = None) -> dict[str, Any]:
         "age_s": None,
         "max_silence_s": ra.MAX_SILENCE_S,
         "on_attesting_host": False,
+        "age_judged": False,
+        "desk_host": ra.UNMEASURED,
+        "desk_attestation": None,
+        "staleness": ra.UNMEASURED,
         "failures": [],
         "census": {},
     }
@@ -75,6 +91,13 @@ def measure(root: Path | None = None) -> dict[str, Any]:
     out["generated_at"] = str(doc.get("generated_at") or ra.UNMEASURED)
     out["census"] = doc.get("census") if isinstance(doc.get("census"), dict) else {}
     out["organs"] = len(doc.get("organs") or [])
+    stamp = ra.desk_stamp(doc)
+    out["desk_host"] = "legacy (no desk_host stamp)" if stamp is None else stamp
+    if stamp is not None and not isinstance(stamp, bool):
+        out["failures"].append(f"host.desk_host is {stamp!r}: the stamp must be true or false")
+    # None = legacy (the pre-#151 rule applies), False = measured off every declared desk host.
+    out["desk_attestation"] = None if stamp is None else stamp is True
+    non_desk = stamp is False
 
     if claimed == ra.UNMEASURED or measured == ra.UNMEASURED:
         out["failures"].append("the attestation names no host: it must say which machine it "
@@ -94,7 +117,28 @@ def measure(root: Path | None = None) -> dict[str, Any]:
     except ValueError:
         out["failures"].append(f"generated_at {out['generated_at']!r} is not a timestamp")
         age = None
-    if age is not None and age > ra.MAX_SILENCE_S and out["on_attesting_host"]:
+    # THE AGE IS JUDGED ON THE BOX ONLY. Structural checks above and the ratchet below fail
+    # everywhere; wall-clock staleness is a fact about the box's hourly leg, so it is judged only
+    # where that leg is supposed to run: on the host the document names, when that host measured
+    # itself as the trading box. Elsewhere it is UNMEASURED (L1.28a), printed with age and host.
+    out["age_judged"] = bool(not non_desk and out["on_attesting_host"]
+                             and out["role"] == "trading_host")
+    if age is None:
+        out["staleness"] = f"{ra.UNMEASURED}: no readable generated_at"
+    elif non_desk:
+        out["staleness"] = (
+            f"{ra.UNMEASURED}: not a desk attestation -- stamped desk_host: false on host "
+            f"{measured}, attested {age / 3600:.1f}h ago; its age is not judged anywhere")
+    elif not out["age_judged"]:
+        out["staleness"] = (
+            f"{ra.UNMEASURED}: attested {age / 3600:.1f}h ago on host {measured} "
+            f"(role {out['role']}); this machine is {here} -- wall-clock staleness is judged "
+            f"only on the trading box that owns the organs")
+    elif age > ra.MAX_SILENCE_S:
+        out["staleness"] = f"STALE: {age / 3600:.1f}h > {ra.MAX_SILENCE_S / 3600:.1f}h"
+    else:
+        out["staleness"] = f"fresh: {age / 3600:.1f}h <= {ra.MAX_SILENCE_S / 3600:.1f}h"
+    if age is not None and age > ra.MAX_SILENCE_S and out["age_judged"]:
         out["failures"].append(
             f"stale on its own host: attested {age / 3600:.1f}h ago, past its "
             f"{ra.MAX_SILENCE_S / 3600:.1f}h max silence -- the hourly leg "
@@ -113,7 +157,11 @@ def measure(root: Path | None = None) -> dict[str, Any]:
     floor: dict[str, Any] | None = _floor if isinstance(_floor, dict) else None
     out["ratchet_floor"] = floor or ra.UNMEASURED
     out["ratchet_regressions"] = []
-    if floor is None:
+    if non_desk:
+        out["ratchet_floor"] = ra.UNMEASURED
+        out["ratchet"] = (f"{ra.UNMEASURED}: not a desk attestation (desk_host: false on "
+                          f"{claimed}) -- it sets no floor and is judged against none")
+    elif floor is None:
         out["ratchet"] = (f"{ra.UNMEASURED}: no floor recorded for {claimed} -- the next "
                           f"attestation pass on that host sets one")
     else:
@@ -161,8 +209,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"runtime attestation: host {v['attests_to_host']} ({v.get('role')}), "
           f"{v.get('organs', 0)} organ(s) LIVE {c.get('LIVE', '?')} / STALE {c.get('STALE', '?')} "
           f"/ MISSING {c.get('MISSING', '?')} / NEVER {c.get('NEVER', '?')}, attested {age_h} ago"
-          + ("" if v["on_attesting_host"] else
+          + ("" if v["age_judged"] else
+             " -- not a desk attestation (desk_host: false), so its freshness is UNMEASURED"
+             if v.get("desk_host") is False else
              f" -- this machine is {v['this_host']}, so its freshness is UNMEASURED here"))
+    print(f"   staleness: {v['staleness']}")
     print("   ratchet: " + str(v.get("ratchet")
                                or "; ".join(v.get("ratchet_regressions") or [])
                                or "UNMEASURED (the document carries no census to ratchet)"))
@@ -171,6 +222,7 @@ def main(argv: list[str] | None = None) -> int:
         failures.append(f"--require-state on {v['this_host']} but the attestation describes "
                         f"{v['attests_to_host']}: this host publishes no attestation of its own")
     if a.require_state and v["age_s"] is not None and v["age_s"] > v["max_silence_s"] \
+            and v.get("desk_host") is not False \
             and not any("stale on its own host" in f for f in failures):
         failures.append(f"stale: attested {v['age_s'] / 3600:.1f}h ago, past "
                         f"{v['max_silence_s'] / 3600:.1f}h")

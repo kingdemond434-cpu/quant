@@ -306,6 +306,55 @@ foreach ($rt in $requiredTasks) {
   }
 }
 
+# THE BOX'S STATE MUST REACH ORIGIN, AND "THE SYNC TASK RAN" IS NOT THAT (2026-09-30). The last
+# box state sync reached git on 2026-09-12 while MT5-ShadowSync kept running and the desk kept
+# computing: two weeks in which every reader off this box measured a frozen copy, and nothing here
+# said a word. The hourly publish_state leg now measures delivery ON ORIGIN and writes
+# reports\BOX_STATE_FLOW.json (libs/ops/state_publication.py). Read-only here: a STALLED verdict
+# is named every ten minutes with its evidence, and an unreadable or old meter is named too --
+# a meter that stopped is the same silence one level up.
+$flowFile = Join-Path $base 'reports\BOX_STATE_FLOW.json'
+$stateFlow = $null
+try {
+  if (Test-Path $flowFile) {
+    $stateFlow = Get-Content $flowFile -Raw | ConvertFrom-Json
+    $flowAgeH = ((Get-Date) - (Get-Item $flowFile).LastWriteTime).TotalHours
+    if ($stateFlow.verdict -eq 'STALLED') {
+      $actions += ("STATE FLOW STALLED: " + $stateFlow.why + " | unpushed local commits: " +
+                   $stateFlow.local_commits_not_on_origin + " | hooksPath: " + $stateFlow.hooks_path +
+                   " | last sync refusal: " + $stateFlow.sync_log.last_refusal_line)
+    } elseif ($flowAgeH -gt 3) {
+      $actions += ("STATE FLOW METER SILENT: reports\BOX_STATE_FLOW.json is " +
+                   [math]::Round($flowAgeH, 1) + "h old -- the publish_state leg is not running")
+    }
+  } else {
+    $actions += "STATE FLOW UNMEASURED: reports\BOX_STATE_FLOW.json absent -- publish_state has not run the meter yet"
+  }
+} catch { $actions += "STATE FLOW UNMEASURED: meter unreadable ($_)" }
+
+# THE PAGER ON ITS OWN CLOCK (2026-09-30). The hourly publish_state leg pages STALLED /
+# SOURCE_STALE, so when that leg or the hourly cycle dies nothing pages at all. This task runs
+# every ten minutes on a clock of its own, and hands the judgement to ONE Python entry point
+# (libs/ops/state_publication.watch) rather than restating it here: meter age and verdict, origin
+# measured from this clone's refs, paged through alert_channels.send_all with the SAME dedup
+# file as the leg (logs\state_flow_alert.json), METER_SILENT when BOX_STATE_FLOW.json is >2h old.
+# It also reports whether any alert channel is armed; NOT ARMED is carried loud in actions and
+# in stall_watch.json, because a page to no one is the same silence.
+$flowWatch = $null
+Push-Location 'C:\opt\quant'
+try {
+  $raw = & py -3 -m libs.ops.state_publication --watch 2>$null
+  $flowWatch = ($raw | Select-Object -Last 1) | ConvertFrom-Json
+  if ($flowWatch.page.sent) {
+    $actions += ("STATE FLOW PAGED: " + $flowWatch.page.title + " (" + $flowWatch.page.reason +
+                 "; delivered " + $flowWatch.page.delivered + " of " + $flowWatch.page.armed + " armed)")
+  }
+  if ($flowWatch.verdict -eq 'METER_SILENT') { $actions += ("STATE FLOW METER SILENT: " + $flowWatch.why) }
+  if ($flowWatch.alerts_line) { $actions += $flowWatch.alerts_line }
+} catch {
+  $actions += "STATE FLOW WATCH UNRUNNABLE: py -3 -m libs.ops.state_publication --watch failed ($_) -- nothing pages a stall"
+} finally { Pop-Location }
+
 # PER-SYMBOL FEED LAG (gap 2). A single symbol's bars can fall hours behind while the terminal
 # looks healthy overall -- USDZAR sat 21h stale and only a log line knew. Any traded symbol
 # whose newest H1 bar is >6h old during the trading week is named; the fixer is re-selecting it
@@ -447,7 +496,7 @@ if ($free -lt $DiskFloorGB) {
   }
 }
 
-@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes; memory = $memCensus } |
+@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes; memory = $memCensus; state_flow = $(if ($stateFlow) { $stateFlow.verdict } else { 'UNMEASURED' }); state_flow_watch = $(if ($flowWatch) { $flowWatch.verdict } else { 'UNMEASURED' }); alerts_armed = $(if ($flowWatch -and $flowWatch.alerts) { $flowWatch.alerts.armed } else { $null }); alerts_line = $(if ($flowWatch) { $flowWatch.alerts_line } else { 'ALERTS UNMEASURED: the state flow watcher did not run' }) } |
   ConvertTo-Json -Depth 4 | Set-Content $stateFile
 
 if ($actions) { $actions | ForEach-Object { "$($now.ToUniversalTime().ToString('u')) $_" } }
