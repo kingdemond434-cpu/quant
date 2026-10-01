@@ -216,7 +216,9 @@ _FAMILY_GROUPS: dict[str, str] = {
     # them. `exogenous_conditioner` bets on a data pack's own published series (a market-order
     # entry, `trigger=None`); each cell names its series, not a payer, so the mechanism is UNKNOWN
     # and counted rather than guessed.
-    f"{UNKNOWN} macro market": "exogenous_conditioner",
+    # `world_macro_state` (2026-09-30) conditions on one hunted world series named on the recipe,
+    # the same shape as `exogenous_conditioner`: the series is named, the payer is not.
+    f"{UNKNOWN} macro market": "exogenous_conditioner world_macro_state",
 }
 FAMILY_TABLE: dict[str, tuple[str, str, str]] = {}
 for _key, _fams in _FAMILY_GROUPS.items():

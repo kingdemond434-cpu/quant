@@ -510,6 +510,10 @@ NOT_SOURCED_HERE = {
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
+    "world_macro_state": "the world series is named on the recipe by world_macro_proposer, which "
+                         "reads the world dataset hunter's per-symbol exposure and charges its own "
+                         "band x direction x hold grid; a sweep that paired every symbol with "
+                         "every ingested series would be an uncharged search over thousands",
     "gnn_propagation": "the peer panel and the model configuration are named by "
                        "research/learned_miners, which walk-forwards every configuration once "
                        "per panel and charges configurations x symbols x thresholds as trials; "
