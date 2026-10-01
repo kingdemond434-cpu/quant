@@ -164,6 +164,18 @@ def sleeve_trades(name: str) -> list[dict]:
             continue
         if not isinstance(r.get("r_multiple"), (int, float)):
             continue                                       # unreconstructible R: not a zero
+        # THE GATEWAY WRITES AN UNMEASURED R AS THE NUMBER 0.0 (2026-09-30). Without an entry
+        # and a stop, `decision_core.closed_trade_r` returns (0.0, 0.0) and `record_trades` stamps
+        # the row `r_unreconstructible` -- so the isinstance check above let every such row in as
+        # a real scratch trade. Rows written before the 2026-09-16 side fix carry the same
+        # signature with no flag: `risk_quote` 0 beside `r_multiple` 0.0. Either way the trade's
+        # R was never measured, and a run of them is the "constant +0.000" series that got
+        # gold_asia's retirement voided as a computation defect. Unmeasured is skipped, not zero.
+        if r.get("r_unreconstructible") is True:
+            continue
+        _rq = r.get("risk_quote")
+        if isinstance(_rq, (int, float)) and _rq <= 0:
+            continue
         try:
             ts = datetime.fromisoformat(str(r.get("time", "")).replace("Z", "+00:00"))
         except ValueError:

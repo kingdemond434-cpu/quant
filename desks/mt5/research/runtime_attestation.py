@@ -40,8 +40,8 @@ is never rendered as a pass, a zero or an empty cell.
 IT ATTESTS TO ONE HOST AND REFUSES TO DESCRIBE ANOTHER. The document stamps the hostname,
 platform and git SHA it was measured on, and every row carries that same host. A checkout on
 another machine reads the file as a report ABOUT the box, never as a claim about itself, and
-`scripts/check_runtime_attestation.py` fails on a document that mixes hosts or that goes stale on
-the host it names. The role is measured too, not assumed: a host with no fresh gateway state says
+`scripts/check_runtime_attestation.py` fails on a document that mixes hosts everywhere, and on one
+that goes stale only on the trading box it names (off the box its age reads UNMEASURED). The role is measured too, not assumed: a host with no fresh gateway state says
 so in its first line, so a build box attesting to itself can never read as the trading box.
 
 Clock: `hourly_cycle:runtime_attestation` (department `meta`, layer `meta`).
@@ -199,6 +199,61 @@ def _read_json(path: Path, max_bytes: int = MAX_PARSE_BYTES) -> dict[str, Any] |
     return doc if isinstance(doc, dict) else None
 
 
+#: THE HOSTS THAT MAY ATTEST THE DESK'S RUNTIME, by name. A hostname alone is not an identity:
+#: every cloud container is called "vm", and LIVE's committed attestation was written by one, so a
+#: bare hostname match let any cloud session read as the attesting host (audit of #151,
+#: 2026-09-30). `--only-missing` treats a row's locally measured state as the box's ONLY when the
+#: stamp's machine id matches this machine's AND this machine's name is declared here.
+DESK_HOSTS: tuple[str, ...] = ("vmi3571445",)
+
+#: How a stamp with no machine id reads: written before identities were recorded, so nothing can
+#: confirm or refute that this machine wrote it. Not a defect in the document -- just unverifiable.
+UNVERIFIABLE = "UNVERIFIABLE (old-format host stamp: no machine_id)"
+
+
+def _machine_id() -> str:
+    """This machine's persistent id: /etc/machine-id on Linux, MachineGuid on Windows."""
+    for f in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
+        with contextlib.suppress(OSError):
+            v = Path(f).read_text(encoding="utf-8").strip()
+            if v:
+                return v
+    if sys.platform == "win32":                             # pragma: no cover - the box only
+        with contextlib.suppress(Exception):
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                                r"SOFTWARE\Microsoft\Cryptography") as k:
+                return str(winreg.QueryValueEx(k, "MachineGuid")[0])
+    return UNMEASURED
+
+
+def host_identity_key() -> dict[str, Any]:
+    """The identity recorded in every host stamp: name, machine id, and whether the name is one
+    of the declared desk hosts."""
+    name = socket.gethostname()
+    return {"hostname": name, "machine_id": _machine_id(), "desk_host": name in DESK_HOSTS}
+
+
+def attesting_identity(doc: dict[str, Any]) -> tuple[bool, str]:
+    """(is this machine the one that attested `doc`?, why). True ONLY when the stamp carries a
+    machine id equal to this machine's, the hostname matches, and the name is a declared desk
+    host. An old-format stamp (no machine id) is UNVERIFIABLE -- never on-host, never breakage."""
+    _h = doc.get("host")
+    h: dict[str, Any] = _h if isinstance(_h, dict) else {}
+    name = str(h.get("hostname") or doc.get("attests_to_host") or UNMEASURED)
+    me = host_identity_key()
+    mid = h.get("machine_id")
+    if not isinstance(mid, str) or not mid or mid == UNMEASURED:
+        return False, f"{UNVERIFIABLE}; stamp names {name}"
+    if me["machine_id"] == UNMEASURED or mid != me["machine_id"] or name != me["hostname"]:
+        return False, f"off-host: stamp is {name}/{mid[:12]}, this is " \
+                      f"{me['hostname']}/{str(me['machine_id'])[:12]}"
+    if not me["desk_host"]:
+        return False, (f"off-host: {me['hostname']} is not a declared desk host "
+                       f"{list(DESK_HOSTS)}, so it cannot attest the desk's runtime")
+    return True, f"on the attesting desk host {name}"
+
+
 def host_identity(paths: Paths) -> dict[str, Any]:
     """WHICH MACHINE THIS DESCRIBES, measured here and now, never assumed from a config.
 
@@ -233,8 +288,11 @@ def host_identity(paths: Paths) -> dict[str, Any]:
         role, why = ("non_trading_host",
                      f"gateway_state.json is {gw_age / 3600:.1f}h old -- no live trading loop "
                      f"is attested by this document")
+    ident = host_identity_key()
     return {
-        "hostname": socket.gethostname(),
+        "hostname": ident["hostname"],
+        "machine_id": ident["machine_id"],
+        "desk_host": ident["desk_host"],
         "platform": f"{platform.system()} {platform.release()}",
         "python": platform.python_version(),
         "role": role,
@@ -267,12 +325,30 @@ def _tail_lines(path: Path, max_bytes: int) -> list[str]:
     return raw.decode("utf-8", errors="replace").splitlines()
 
 
-def run_index(paths: Paths) -> dict[str, dict[str, Any]]:
+def run_index(paths: Paths, *, hostname: str | None = None,
+              trust_unstamped: bool = True) -> dict[str, dict[str, Any]]:
     """leg -> {at, outcome, source}: the LAST recorded run of each organ, from the two logs the
     desk already keeps. `events.jsonl` carries LEG_DONE/LEG_FAILED with the organ's own scalars;
     `compute_ledger.jsonl` carries the cycle's own accounting. An organ in neither has no run
-    record on this host, which is what makes NEVER distinguishable from MISSING."""
+    record on this host, which is what makes NEVER distinguishable from MISSING.
+
+    A RUN ON ANOTHER HOST IS NOT A RUN ON THIS ONE (2026-09-30). `events.jsonl` is TRACKED, and
+    the trading box's copy was committed on 2026-09-12 and 2026-09-24. Every other host that
+    checked the branch out then read the box's LEG_DONE rows as "this host recorded a run", found
+    the box's gitignored reports absent, and declared 48 legs MISSING -- `leg:issue_board`
+    among them, "missing since 09-12", while the leg ran clean and wrote its artifact wherever it
+    was actually invoked. So a row stamped with a `host` counts only when the stamp is this
+    host's, and an UNSTAMPED row (everything written before `events.emit` stamped one) counts
+    only when `trust_unstamped` -- which the caller sets from the MEASURED role: the unstamped
+    history was written by the trading loop, so only a host running one may claim it.
+    """
     out: dict[str, dict[str, Any]] = {}
+
+    def mine(d: dict[str, Any]) -> bool:
+        stamp = d.get("host")
+        if stamp is None or stamp == "":
+            return trust_unstamped
+        return hostname is None or str(stamp) == hostname
 
     def put(name: str, at: str, outcome: str, source: str, extra: dict[str, Any]) -> None:
         if not name or not at:
@@ -287,7 +363,7 @@ def run_index(paths: Paths) -> dict[str, dict[str, Any]]:
             d = json.loads(line)
         except ValueError:
             continue
-        if not isinstance(d, dict):
+        if not isinstance(d, dict) or not mine(d):
             continue
         name = str(d.get("leg") or d.get("organ") or "")
         kind = str(d.get("kind") or "")
@@ -301,7 +377,7 @@ def run_index(paths: Paths) -> dict[str, dict[str, Any]]:
             d = json.loads(line)
         except ValueError:
             continue
-        if not isinstance(d, dict):
+        if not isinstance(d, dict) or not mine(d):
             continue
         put(str(d.get("run") or ""), str(d.get("at") or ""), str(d.get("outcome") or ""),
             "compute_ledger.jsonl", {})
@@ -418,7 +494,9 @@ def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dic
     from desks.mt5.ops.components import registry  # local: heavy import, one pass only
 
     reg = registry(paths.root)
-    runs = run_index(paths)
+    host = host_identity(paths)
+    runs = run_index(paths, hostname=str(host["hostname"]),
+                     trust_unstamped=host["role"] == "trading_host")
     started = time.monotonic()
     rows: list[dict[str, Any]] = []
     excluded = 0
@@ -494,7 +572,7 @@ def organ_rows(paths: Paths, budget_s: float) -> tuple[list[dict[str, Any]], dic
     return rows, scope
 
 
-def _trim(doc: dict[str, Any]) -> dict[str, Any]:
+def _trim(doc: dict[str, Any], only: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Hold the file under MAX_JSON_BYTES BY CONSTRUCTION, and say so when it bites.
 
     Summaries are the only variable-width field here, so they are what goes -- from the LIVE tail
@@ -508,15 +586,27 @@ def _trim(doc: dict[str, Any]) -> dict[str, Any]:
     # non-empty dict, so `r.get("summary")` kept selecting the row it had just trimmed: whenever
     # the document could not be brought under the cap, this loop never ended. It surfaced the day
     # the registry began declaring each organ's own artifact and the attested set doubled.
+    # `only` (--only-missing): the rows this pass appended are the ONLY ones it may touch, so the
+    # victims are drawn from them -- LIVE first, as in a full pass, then any other appended row --
+    # and the published count is ADDED to the committed one rather than replacing it.
+    pool = doc["organs"] if only is None else only
+    ids = {id(r) for r in pool}
+    order = [r for r in reversed(doc["organs"]) if id(r) in ids]
+    if only is not None:
+        order = ([r for r in order if r["state"] == "LIVE"]
+                 + [r for r in order if r["state"] != "LIVE"])
     while len(json.dumps(doc, default=str)) > MAX_JSON_BYTES:
-        victim = next((r for r in reversed(doc["organs"])
-                       if r["state"] == "LIVE" and r.get("summary")
+        victim = next((r for r in order
+                       if (only is not None or r["state"] == "LIVE") and r.get("summary")
                        and r["summary"] != mark), None)
         if victim is None:
             break
         victim["summary"] = dict(mark)
         trimmed += 1
-    doc["scope"]["summaries_trimmed"] = trimmed
+    if only is None:
+        doc["scope"]["summaries_trimmed"] = trimmed
+    else:
+        doc["scope"]["summaries_trimmed"] = int(doc["scope"].get("summaries_trimmed", 0)) + trimmed
     return doc
 
 
@@ -607,7 +697,9 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     Guarantees, pinned by tests: every existing row is left byte-identical (never rewritten,
     re-attested or flipped); rows are only appended; census and `scope.attested` move by the
     added rows alone; the host stamp, `generated_at` and the ratchet are left as the attesting
-    host wrote them; a second run adds nothing. Run it on a FULL tree -- on a sparse one the
+    host wrote them; a second run adds nothing; appended rows carry `measured_on`/`measured_at`
+    and, off the attesting host, read NEVER or UNMEASURED rather than this machine's mtimes; the
+    size trim runs over the appended rows only. Run it on a FULL tree -- on a sparse one the
     registry cannot see every organ's source, and absence there would be read as NEVER.
     """
     _doc = _read_json(paths.out_json, max_bytes=MAX_JSON_BYTES * 8)
@@ -620,6 +712,27 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     added = [r for r in rows if str(r["organ"]) not in have]
     if not added:
         return {"doc": doc, "added": []}
+    # A ROW'S STATE IS A FACT ABOUT THE HOST THAT MEASURED IT. LIVE/STALE/MISSING are read off
+    # file mtimes and run records on whatever machine runs this pass, so the same organ could
+    # read LIVE here and STALE on the box. Every appended row is stamped with where and when it
+    # was measured, and OFF the attesting host (the one the document's `host` stamp names) its
+    # state is not taken from this machine at all: NEVER when nothing of it exists here either,
+    # UNMEASURED otherwise -- this host cannot say whether the box ran it or how fresh it is.
+    here = socket.gethostname()
+    on_host, ident_why = attesting_identity(doc)
+    at = _iso(_now())
+    for r in added:
+        r["measured_on"] = here
+        r["measured_on_machine_id"] = _machine_id()
+        r["measured_at"] = at
+        if not on_host:
+            local = r["state"]
+            r["state"] = "NEVER" if local == "NEVER" else UNMEASURED
+            r["why"] = (f"appended by --only-missing on {here} ({ident_why}): its state on the "
+                        f"attesting host is unmeasured (read {local} here)"
+                        if r["state"] == UNMEASURED else
+                        f"appended by --only-missing on {here} ({ident_why}): no artifact and "
+                        f"no run record here, and the attesting host has never attested it")
     doc["organs"].extend(added)
     _c = doc.get("census")
     census: dict[str, Any] = _c if isinstance(_c, dict) else {}
@@ -631,10 +744,12 @@ def attest_only_missing(paths: Paths, budget_s: float = 180.0) -> dict[str, Any]
     scope["attested"] = int(scope.get("attested", 0)) + len(added)
     log = scope.get("only_missing_appended")
     log = list(log) if isinstance(log, list) else []
-    log.append({"at": _iso(_now()), "host": socket.gethostname(),
+    log.append({"at": at, "host": here, "machine_id": _machine_id(),
+                "on_attesting_host": on_host, "identity": ident_why,
                 "organs": [str(r["organ"]) for r in added]})
     scope["only_missing_appended"] = log
     doc["scope"] = scope
+    _trim(doc, only=added)
     return {"doc": doc, "added": added}
 
 

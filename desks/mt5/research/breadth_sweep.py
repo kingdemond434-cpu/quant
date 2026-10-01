@@ -207,6 +207,27 @@ def _sessions_for(tf: str) -> tuple[str, ...]:
     return ("all",) if tf == "D1" else SESSION_AXIS
 
 
+def _session_slots(family: str, base: dict, tf: str,
+                   symbol: str) -> list[tuple[dict, dict | None]]:
+    """(params, remap note) per session slot on chart `tf`. A slot whose window the family can
+    never fire in is minted as the firing-hours oracle's stand-in (re-anchored hour params, or
+    re-homed to where it fires) -- one cell per slot, so the sweep mints exactly as many cells as
+    before; an UNMEASURED family keeps the plain axis (`libs/research/family_firing.py`)."""
+    axis = _sessions_for(tf)
+    try:
+        from libs.research import family_firing
+        return [(p, remap) for _s, p, remap in
+                family_firing.session_cells(family, base, axis, symbol=symbol)]
+    except Exception:
+        return [({**base, **({"session": s} if s != "all" else {})}, None) for s in axis]
+
+
+def _remapped(cell: dict, remap: dict | None) -> dict:
+    if remap:
+        cell["session_remap"] = remap
+    return cell
+
+
 def _banned(family: str) -> bool:
     try:
         from research.family_policy import family_banned
@@ -298,14 +319,12 @@ def cells(only: str | None = None) -> list[dict]:
         for sym, extra in _targets(fam, spec, syms):
             for params in spec["grid"]:
                 for tf in _charts_for(sym) or ["H1"]:
-                    for sess in _sessions_for(tf):
-                        p = dict(params)
-                        p.update(extra)
-                        if tf != "H1":
-                            p["timeframe"] = tf
-                        if sess != "all":
-                            p["session"] = sess
-                        out.append(_cell(sym, fam, p, spec, now))
+                    base = dict(params)
+                    base.update(extra)
+                    if tf != "H1":
+                        base["timeframe"] = tf
+                    for p, remap in _session_slots(fam, base, tf, sym):
+                        out.append(_remapped(_cell(sym, fam, p, spec, now), remap))
     sweepable, _blocked = default_families()
     for fam, why in sweepable.items():
         if only and fam != only:
@@ -313,13 +332,9 @@ def cells(only: str | None = None) -> list[dict]:
         spec = {"why": f"every family, {why}"}
         for sym in syms:
             for tf in _charts_for(sym) or ["H1"]:
-                for sess in _sessions_for(tf):
-                    p: dict = {}
-                    if tf != "H1":
-                        p["timeframe"] = tf
-                    if sess != "all":
-                        p["session"] = sess
-                    out.append(_cell(sym, fam, p, spec, now))
+                base: dict = {} if tf == "H1" else {"timeframe": tf}
+                for p, remap in _session_slots(fam, base, tf, sym):
+                    out.append(_remapped(_cell(sym, fam, p, spec, now), remap))
     # Most intraday first, so a capped merge reaches the charts the principal ranked highest.
     out.sort(key=lambda r: (_tf_rank(str((r.get("params") or {}).get("timeframe") or "H1")),
                             r["symbol"], r["family"]))
