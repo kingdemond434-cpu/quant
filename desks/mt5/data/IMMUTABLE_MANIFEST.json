@@ -1,13 +1,14 @@
 {
- "signed_utc": "2026-09-30T13:06:09.480979+00:00",
+ "signed_utc": "2026-10-01T01:01:02.821837+00:00",
  "signed_by": "zuck",
  "files": {
-  "desks/mt5/scripts/external_gauntlet.py": "47c59fd29d04f9d1",
-  "desks/mt5/research/universal_gate.py": "1d71abe1ef8692e1",
+  "desks/mt5/scripts/external_gauntlet.py": "74be05bbb50b3663",
+  "desks/mt5/research/universal_gate.py": "fbbf0110fb5886b4",
   "desks/mt5/research/multiplicity.py": "fc91833570cd8ded",
-  "desks/mt5/research/gate_policy.py": "d4c9c5e8de2c8e58",
+  "desks/mt5/research/gate_policy.py": "a01bf170b1b214ec",
+  "desks/mt5/policy/gate_spec.yaml": "cd7e57ea9c3d9182",
   "desks/mt5/research/heat_policy.py": "b31c396980f9971e",
-  "desks/mt5/research/promoter.py": "76259dfb43fbfa9c",
+  "desks/mt5/research/promoter.py": "052a06227db241e7",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
   "libs/portfolio/allocator_proof.py": "09f8f0b9dff5239a",
   "libs/portfolio/rails.py": "e01e60272c800632",
@@ -18,7 +19,7 @@
   "libs/regime/state_admission.py": "1fc3e4878041db7a",
   "scripts/check_growth_governance.py": "0ea2336e08cd14a9",
   "scripts/check_heat_floor_wiring.py": "e5b3ff5a58848e00",
-  "scripts/check_immutable_evaluator.py": "55ac9a893a5f262c",
+  "scripts/check_immutable_evaluator.py": "a9458dee2a70c3d2",
   "scripts/run_deadman_switch.py": "799db26dadc9c8e3"
  },
  "rule": "these files judge hypotheses; a change must arrive with a re-signed manifest -- research organs may change the hypothesis, never the judge",

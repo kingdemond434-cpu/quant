@@ -75,6 +75,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
 
 from libs.data import feature_store as fs  # noqa: E402
 from libs.models.zoo import TAX  # noqa: E402
+from libs.regime import session_clock  # noqa: E402
 from libs.research import coevolution_lab as CL  # noqa: E402
 from libs.research import model_families as MF  # noqa: E402
 from libs.research import trial_ledger as TL  # noqa: E402
@@ -359,7 +360,8 @@ def _tercile(values: np.ndarray, names: tuple[str, str, str]) -> list[str]:
 def _labels(df: Any, rows: np.ndarray, sym: str, horizon: int) -> dict[str, list[str]]:
     """One label per residual row on each of the residual study's seven axes."""
     idx = df.index[rows]
-    hour = np.asarray(idx.hour, dtype=int)
+    # The session cut points below are UTC; the bars carry the broker's EET stamp, 2-3 h ahead.
+    utc_hour = np.asarray(session_clock.utc_hours(idx), dtype=int)
     close = df["close"].to_numpy(dtype=float)
     with np.errstate(all="ignore"):
         ret = np.abs(np.diff(np.log(close), prepend=np.log(close[0])))
@@ -367,7 +369,7 @@ def _labels(df: Any, rows: np.ndarray, sym: str, horizon: int) -> dict[str, list
     tv = (df["tick_volume"].to_numpy(dtype=float)[rows] if "tick_volume" in df.columns
           else np.full(rows.size, np.nan))
     session = ["asia" if h < 7 else ("london" if h < 12 else ("ny" if h < 17 else "off_hours"))
-               for h in hour]
+               for h in utc_hour]
     out: dict[str, list[str]] = {
         "session": session,
         "state": _tercile(vol, ("low_vol", "mid_vol", "high_vol")),

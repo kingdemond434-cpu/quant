@@ -277,6 +277,15 @@ if ($adoptConsole) {
         -RepoRoot $RepoRoot -Branch $Branch 2>&1 | ForEach-Object { "$_" })
 }
 $adoptExit = $LASTEXITCODE
+# EXIT 7 IS A REFUSAL, NOT A PARTIAL ADOPTION: Adopt-Release found the fetched target's judge
+# unsealed and wrote nothing. The running release and its gateway stay as they are.
+if ($adoptExit -eq 7) {
+    foreach ($line in @($adoptOut | Where-Object { $_ -match 'target seal|REFUSING target|changed since signing|not in the signed|unreadable' } | Select-Object -First 16)) {
+        Log ("    " + $line.Trim())
+    }
+    Log "target judge is not sealed; nothing adopted, current release kept"
+    Done 7 "target-unsealed"
+}
 if ($adoptExit -ne 0) {
     Log "Adopt-Release exited $adoptExit -- partial adoption; NOT sealing a tree that only half-matches the branch"
     # THE PATHS, IN THIS LOG, NOW. `desks/mt5/reports/ADOPTION_STATE.json` carries the full list
