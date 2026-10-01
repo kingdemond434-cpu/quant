@@ -564,6 +564,18 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # clone and the VPS stay green (L1.43) -- but on the box, no evidence is UNMEASURED and
     # UNMEASURED fails, because no evidence is exactly what the outage looked like (L1.28a).
     ("check_adoption_freshness.py", ()),
+    # THE HALT ITSELF, NOT ITS CAUSE (recovered box commit fe09b89b, 2026-09-24). The fence above
+    # asks whether the box adopted; this one asks whether the box is still PLACING. They are not
+    # the same question: adoption succeeded or failed by turns for seventeen days while
+    # `release_identity` refused every order, and the gateway recorded 1,200
+    # `release_identity_refused` rows -- one a minute, 583 in a single day -- that reached no
+    # alert, no dashboard and no human; the principal found it by eye. It reads the decision
+    # ledger for a run of one reason repeating for one sleeve with no placement in between, so it
+    # is not keyed to today's `reason` string, and publishes an artifact, an alert-ledger entry
+    # and a PLACEMENT_HALTED event. It caps nothing and gates no capital; it can only make the
+    # book trade MORE, by ending halts in minutes rather than days. A host with no gateway state
+    # and no ledger is NOT_APPLICABLE and passes saying so (L1.43).
+    ("check_placement_interlock.py", ()),
     # on a schedule and whose artifact no production file reads is BURNING -- an orphan the desk
     # pays compute for every hour -- and the BURNING count ratchets DOWN only. The clock half is
     # exact (the four scheduler planes), so BURNING is the one population this census may fence

@@ -178,6 +178,8 @@ Every pass, without exception, asks and answers two questions from LIVE box data
 
 Benchmark against Western tier-1 firms (Renaissance, D.E. Shaw, Two Sigma, Citadel/Jane Street class) AND Asian ones (the Chinese quant majors such as High-Flyer, Ubiquant, Minghong, Lingjun; Japanese and Korean systematic/prop shops). Public figures are estimates and are labelled as estimates.
 
+**Start from `desks/mt5/reports/TIER1_GAP.json`** (hourly leg `tier1_gap`, `desks/mt5/research/tier1_gap.py`): it re-measures most rows below from the box's own artifacts every hour and ranks them by orders of magnitude short of tier-1. Check its `sources` mtimes for staleness; fill in the rows it reads as UNMEASURED by hand.
+
 Measure at least, with day-over-day change:
 
 - instruments and datasets ingested; alt-platform yield (platforms yielding / platforms wired);
@@ -232,7 +234,7 @@ Baseline (2026-09-30, `/mnt/project-files/reports/tier1_breadth_gap_2026-09-30.m
 | D13 | **Every item fully completed this pass** | `items_noticed`, `items_completed`, `items_blocked` (each with its exact reason), `items_partial` | `items_partial` = 0 and `items_noticed` = `items_completed` + `items_blocked` + `items_optimal` | Keep working in the same pass until every noticed item is completed and fully wired, or is BLOCKED with its exact reason. Never end the pass holding a partial, and never defer to the next cycle. |
 | D14 | **Every producer maximally broad, unknown-unknowns mined** | per-producer symbol, timeframe and family coverage from `PRODUCER_BREADTH.json`; `producers_total`, `producers_active`, `producers_idle`, `producers_narrow`; `testable_cell_share` (cells the gauntlet can judge / cells emitted); `cluster_occupancy` (risk clusters fed / 15); `unknown_unknown_cells_per_day` | every producer (thousands of them) active and emitting across the full hypothesis-lane universe, symbols x timeframes x families; `testable_cell_share` near 100%; every risk cluster fed; unknown-unknown mining running and emitting daily | Fix every idle, narrow or untestable-emitting producer that same pass, fully wired: widen its symbol, timeframe and family coverage, repair its cell schema so the gauntlet can judge what it emits, restart unknown-unknown mining if it did not emit today. Never narrow or cut a producer. |
 
-**Reality and flow duties (principal, 2026-09-30).** These use the same record, statuses and D11 wiring rule as D1-D14. Each one names the artifact it reads. When that artifact is absent or stale, the duty is UNMEASURED, which counts as MISSED (L1.28a). Where the artifact's producer is still an open PR, the PR is named: the duty stays UNMEASURED until that PR is merged and its artifact is fresh on the box.
+**Reality and flow duties (principal, 2026-09-30).** These use the same record, statuses and D11 wiring rule as D1-D14. Each one names the artifact it reads. When that artifact is absent or stale, the duty is UNMEASURED, which counts as MISSED (L1.28a). A step the lane's CLI refused (a tool outside its allowlist) is the same UNMEASURED: `scripts/record_agent_denials.py` writes one `permission_denied` row per refusal to `cro_cycle_ledger.jsonl` and marks the duty that step served MISSED in `TIER1_BREADTH_REVIEW.json`, whatever the pass claimed. Where the artifact's producer is still an open PR, the PR is named: the duty stays UNMEASURED until that PR is merged and its artifact is fresh on the box.
 
 | # | Duty | Named metric (artifact) | Target | Action on a miss |
 |---|---|---|---|---|

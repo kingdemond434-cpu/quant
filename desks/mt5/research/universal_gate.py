@@ -270,15 +270,13 @@ def _ug_verdict(args) -> dict:
     # only; `arr_lock` is the reserved tail, carved in run_hunt before the program matrix was
     # built. Fails closed when the campaign was too short to reserve anything -- a certificate
     # claiming ten gates must have paid for ten.
-    lock = np.asarray(arr_lock, dtype=float)
-    if len(lock) < LOCKBOX_MIN_DAYS:
-        stages["lockbox"] = {"passed": False, "lockbox_sharpe": None, "n_days": int(len(lock)),
-                             "why": f"held-out window is {len(lock)} days, under the "
-                                    f"{LOCKBOX_MIN_DAYS}-day floor; no lockbox evidence exists"}
-    else:
-        lock_sr = float(sharpe_ratio(lock))
-        stages["lockbox"] = {"passed": bool(lock_sr >= 0.0),
-                             "lockbox_sharpe": round(lock_sr, 4), "n_days": int(len(lock))}
+    # ONE LOCKBOX BAR (v4), THE SAME FUNCTION THE CERTIFICATE AUTHORITY CALLS. This lane judged
+    # `held Sharpe >= 0` while gate_policy's attestation stamped the v4 basis, so a verdict here
+    # could attest to a bar it was never held to. The held-out, recent-tail and half-split reads
+    # all clear this cell's own deflated hurdle, and the too-short floor still fails closed.
+    from gate_policy import lockbox_stage
+    stages["lockbox"] = lockbox_stage(np.asarray(arr_lock, dtype=float), sharpe_ratio,
+                                      dev=arr, sr0=float(dsr.sr0_threshold))
     ev = float(arr.mean())
     stages["expected_value"] = {"passed": bool(ev > 0.0), "ev": round(ev, 4)}
     return {"cell": cid, "sym": sym, "days": len(arr),
