@@ -362,6 +362,41 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
     def _refuse(why: str) -> None:
         refusals[why] = refusals.get(why, 0) + 1
 
+    # FEEDS THE MINED REPOS USE, which need a shape and a first-print vintage the generic parser
+    # cannot supply (`libs/data/repo_mined_feeds.py`). Same registry, same certificate, same
+    # `ext_<name>` vocabulary; a feed that fails is refused by name like any endpoint.
+    try:
+        from libs.data import repo_mined_feeds as _rmf
+        mined = _rmf.absorb(reg, STORE, fetch=_fetch, parse=_parse, certify=certify,
+                            write_certificate=write_certificate)
+        tried += mined["tried"]
+        kept += mined["kept"]
+        new_series.extend(mined["new_series"])
+        for why, n in mined["refusals"].items():
+            refusals[why] = refusals.get(why, 0) + n
+    except Exception as exc:                                                # noqa: BLE001
+        _refuse(f"repo-mined feeds failed: {type(exc).__name__}")
+    # The DTCC public FX option tape (via OpenBB's cftc provider): a few daily slices a pass.
+    try:
+        from libs.data import repo_mined_feeds as _rmf
+        tape = _rmf.absorb_dtcc(reg, STORE, fetch=_fetch, certify=certify,
+                                write_certificate=write_certificate)
+        tried += 1
+        kept += int(bool(tape["new_series"]))
+        new_series.extend(tape["new_series"])
+    except Exception as exc:                                                # noqa: BLE001
+        _refuse(f"DTCC FX option tape failed: {type(exc).__name__}")
+    # Crop-belt weather for the soft and grain CFDs (NASA POWER; regions from AgriQuant-AI).
+    try:
+        from libs.data import repo_mined_feeds as _rmf
+        wx = _rmf.absorb_crop_weather(reg, STORE, fetch=_fetch, certify=certify,
+                                      write_certificate=write_certificate)
+        tried += 1
+        kept += int(bool(wx["new_series"]))
+        new_series.extend(wx["new_series"])
+    except Exception as exc:                                                # noqa: BLE001
+        _refuse(f"crop-belt weather failed: {type(exc).__name__}")
+
     for url, host in _endpoints(limit):
         tried += 1
         attempt_at = datetime.now(UTC).isoformat(timespec="seconds")

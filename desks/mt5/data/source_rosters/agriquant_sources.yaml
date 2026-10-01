@@ -1,0 +1,213 @@
+# Data sources of github.com/AgriQuantAI/AgriQuant-AI (crop, weather and supply models for coffee, cocoa, sugar,
+# corn and wheat), mined 2026-10-01 as conditioners for the broker's soft and grain CFDs (COFARA, COFROB, USCOCOA,
+# UKCOCOA, SUGAR, SUGARRAW, CORN, WHEAT, SOYBEAN, COTTON, OJ). The repo has no LICENSE file (an MIT badge only),
+# so only facts are taken: its growing-region coordinates, production shares (unverified) and damage thresholds
+# live in libs/data/crop_weather.py, which reads NASA POWER and runs hourly in acquire_datasets.
+# Deduped against the desk: USDA PSD/WASDE (firm_mining sources), Drought Monitor and NHC (countries/us/pack.py,
+# side_channels/weather_miner.py), CONAB/ICO/ICCO (asia_sources.json, deep_forest_sources.json), CHIRPS
+# (countries/gh, ke packs) and IRI/CPC ENSO are already held and are NOT re-rostered. Open-Meteo, AgriQuant's main
+# weather feed, is skipped: its free tier is non-commercial. Shapers: Breadth.
+sources:
+- id: nasa_power_crop_belts
+  name: NASA POWER daily point API (T2M_MIN, T2M_MAX, PRECTOTCORR) at 38 crop-belt centroids
+  priority: 1
+  kind: weather
+  uses: [conditioners, direct_cells, allocation_intel]
+  fetcher: libs/data/crop_weather.py via repo_mined_feeds.absorb_crop_weather (hourly acquire_datasets leg)
+  auth: none
+  cadence_minutes: 60
+  region: global
+  language: en
+  licence: US government (NASA LaRC) public data, no key; terms confirmed by the owner thread on the box (this
+    container's network policy refuses the host)
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MIN,T2M_MAX,PRECTOTCORR&community=AG
+  note: 'NEW and WIRED. Per crop: tmin, tmax, prcp, prcp30, prcp30_z (vs prior-year same season), frost7, heat7.
+    First-print ledger; revised=True, settle 60 days. Frost lines: coffee/sugar 2 C, OJ 0 C; heat lines corn/soy 35,
+    wheat 34, cotton 38.'
+  mt5_assets: [COFARA, COFROB, USCOCOA, UKCOCOA, SUGAR, SUGARRAW, CORN, WHEAT, SOYBEAN, COTTON, OJ]
+  culture:
+    source_culture: us_government_science
+    participant_structure: producer_weather_risk, commercial_hedgers
+  owner: breadth
+  origin: github.com/AgriQuantAI/AgriQuant-AI (no licence file; region facts only)
+- id: inmet_station_daily
+  name: INMET (Instituto Nacional de Meteorologia) automatic-station daily series, coffee-belt stations A519, A524,
+    A537, A612, A706
+  priority: 1
+  kind: weather
+  uses: [conditioners, direct_cells]
+  fetcher: json_api
+  auth: key
+  cadence_minutes: 1440
+  region: br
+  language: pt
+  licence: Brazilian public data; apitempo requires a free registered token (the user sets keys on the box)
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://apitempo.inmet.gov.br/estacao/diaria/<start>/<end>/<station>
+  note: 'NEW. Station truth for the Sul de Minas / Cerrado / Matas / Espirito Santo / Mogiana frost nights, which a
+    0.5-degree reanalysis smooths. The 1994, 2000, 2011, 2013 and 2021 frost record in AgriQuant is the falsifier
+    set: frost7 must lead COFARA on those dates or the conditioner is wrong.'
+  mt5_assets: [COFARA, COFROB, SUGAR, SUGARRAW, OJ]
+  culture:
+    source_culture: br_producer
+    participant_structure: cooperative_growers, exporters
+  owner: breadth
+  origin: github.com/AgriQuantAI/AgriQuant-AI
+- id: cptec_inpe_forecast
+  name: CPTEC/INPE city and agro forecasts (Brazil's national forecast centre)
+  priority: 2
+  kind: weather_forecast
+  uses: [conditioners]
+  fetcher: xml_api
+  auth: none
+  cadence_minutes: 360
+  region: br
+  language: pt
+  licence: Brazilian public service; terms unread from here
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: http://servicos.cptec.inpe.br/XML/
+  note: 'NEW. Forecast cold-air outbreaks reach Brazilian traders before the frost; a forecast frost share is the
+    ex-ante twin of frost7. Store first prints only (forecasts are overwritten).'
+  mt5_assets: [COFARA, SUGAR, SUGARRAW, OJ]
+  culture:
+    source_culture: br_producer
+    participant_structure: cooperative_growers
+  owner: breadth
+  origin: github.com/AgriQuantAI/AgriQuant-AI
+- id: nws_gridpoint_forecast
+  name: US National Weather Service api.weather.gov gridpoint forecasts for the Corn Belt, Plains and Florida
+  priority: 2
+  kind: weather_forecast
+  uses: [conditioners]
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 360
+  region: us
+  language: en
+  licence: US government public domain; the API asks for a contact User-Agent
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://api.weather.gov/points/<lat>,<lon>
+  note: 'NEW. 7-day max-temperature forecasts over the crop_weather centroids give an ex-ante heat7 for CORN and
+    SOYBEAN in July pollination and a freeze forecast for OJ. First prints kept.'
+  mt5_assets: [CORN, SOYBEAN, WHEAT, COTTON, OJ]
+  culture:
+    source_culture: us_government_science
+    participant_structure: commercial_hedgers, managed_money
+  owner: breadth
+  origin: github.com/AgriQuantAI/AgriQuant-AI
+- id: imd_pune_gridded
+  name: IMD Pune gridded daily rainfall (0.25 deg) and monsoon progress
+  priority: 2
+  kind: weather
+  uses: [conditioners]
+  fetcher: binary_grid
+  auth: none
+  cadence_minutes: 1440
+  region: in
+  language: en
+  licence: Government of India; terms unread from here
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://www.imdpune.gov.in/cmpg/Griddata/Rainfall_25_Bin.html
+  note: 'NEW. Monsoon rainfall over Maharashtra / UP cane and Gujarat cotton; India is the swing sugar exporter
+    (export quotas follow the monsoon). Cross-check for crop_weather prcp30_z on in_* regions.'
+  mt5_assets: [SUGAR, SUGARRAW, COTTON]
+  culture:
+    source_culture: in_policy
+    participant_structure: state_export_quota, mill_cooperatives
+  owner: breadth
+  origin: github.com/AgriQuantAI/AgriQuant-AI
+- id: modis_ornl_ndvi
+  name: MODIS NDVI/EVI via the ORNL DAAC global subset web service (MOD13Q1, 16-day, 250 m)
+  priority: 2
+  kind: satellite
+  uses: [conditioners, direct_cells]
+  fetcher: json_api
+  auth: none
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: NASA EOSDIS open data; terms unread from here
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset?latitude=<lat>&longitude=<lon>&band=250m_16_days_NDVI
+  note: 'NEW. Free crop-vigour satellite series at the same centroids: NDVI anomaly vs prior years is the yield
+    proxy the paid satellite vendors sell (Asia owns satellite; this is the free replica). Composite date + 16 d
+    + processing lag is the availability stamp.'
+  mt5_assets: [CORN, SOYBEAN, WHEAT, COTTON, SUGAR, COFARA, USCOCOA]
+  culture:
+    source_culture: us_government_science
+    participant_structure: commercial_hedgers
+  owner: asia
+  origin: github.com/AgriQuantAI/AgriQuant-AI
+- id: nsidc_smap_soil_moisture
+  name: SMAP L3/L4 soil moisture (NSIDC DAAC)
+  priority: 3
+  kind: satellite
+  uses: [conditioners]
+  fetcher: earthdata
+  auth: key
+  cadence_minutes: 1440
+  region: global
+  language: en
+  licence: NASA open data behind a free Earthdata login (user-set key on the box)
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://n5eil01u.ecs.nsidc.org/SMAP/
+  note: 'NEW. Root-zone moisture leads drought stress by weeks; a free Earthdata login is the only gate. Add to
+    KEYS_TO_REGISTER.'
+  mt5_assets: [CORN, SOYBEAN, WHEAT, COTTON]
+  culture:
+    source_culture: us_government_science
+    participant_structure: commercial_hedgers
+  owner: asia
+  origin: github.com/AgriQuantAI/AgriQuant-AI
+- id: usda_nass_quickstats
+  name: USDA NASS QuickStats (crop progress and condition, yields, acreage)
+  priority: 1
+  kind: supply
+  uses: [conditioners, direct_cells, allocation_intel]
+  fetcher: json_api
+  auth: key
+  cadence_minutes: 1440
+  region: us
+  language: en
+  licence: US government public domain; free API key (user-set on the box)
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://quickstats.nass.usda.gov/api/api_GET/?key=<key>&source_desc=SURVEY&statisticcat_desc=CONDITION
+  note: 'ALREADY NAMED in docs/research/firm_mining/data_sources.json as a capability gap, never wired. Weekly
+    good/excellent ratings (Mondays 16:00 ET) are the market''s own crop scorecard: the change in G/E vs the
+    trade guess is a scheduled event cell for CORN/SOYBEAN/WHEAT/COTTON.'
+  mt5_assets: [CORN, SOYBEAN, WHEAT, COTTON]
+  culture:
+    source_culture: us_government_statistics
+    participant_structure: managed_money, commercial_hedgers
+  owner: breadth
+  origin: github.com/AgriQuantAI/AgriQuant-AI
+- id: sentinel_hub
+  name: Sentinel Hub (Sentinel-2 imagery statistics)
+  priority: 3
+  kind: satellite
+  uses: [conditioners]
+  fetcher: none
+  auth: paid
+  cadence_minutes: 0
+  region: global
+  language: en
+  licence: commercial (Sinergise); paid tier
+  terms_status: BLOCKED_ON_TERMS
+  config:
+    url: https://services.sentinel-hub.com/
+  note: 'PAID: not wired. Free replica is modis_ornl_ndvi above (and Copernicus Data Space for raw Sentinel-2).'
+  mt5_assets: [CORN, SOYBEAN, WHEAT]
+  culture:
+    source_culture: eu_commercial
+    participant_structure: commercial_hedgers
+  owner: asia
+  origin: github.com/AgriQuantAI/AgriQuant-AI

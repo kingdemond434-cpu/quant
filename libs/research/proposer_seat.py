@@ -130,6 +130,10 @@ ORGANS: dict[str, str] = {
     # experiments that separate them.
     "scientific_committee": "competing explanations for a bank hypothesis, one failure class "
                             "each, for the judge to separate by experiment",
+    # TradingAgents' analysts as cell generators (desks/mt5/research/analyst_panel.py): a cell in
+    # the registered price-only grammar with a falsifier, and the bear's attack on each one.
+    "analyst_panel": "cells (registered family + params + falsifier) from four analyst lenses, "
+                     "and the bear's failure-class attack on each; screened and donated",
     "forensic_committee": "competing mechanisms (registered SARES branches) for an extreme "
                           "record, each donated as a candidate",
 }

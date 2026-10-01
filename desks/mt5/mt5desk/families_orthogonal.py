@@ -2376,3 +2376,57 @@ for _xs_name in CROSS_SECTIONAL_FAMILIES:
         "or daily chart the decision hour does not exist, and below the hour the class panel "
         "(read at H1) would be joined to a finer clock than it carries")
 del _xs_name
+
+# FIVE MECHANISMS ABSORBED FROM THE ELITEQUANT MAP (2026-09-30): fractionally differentiated
+# level reversion, the Corwin-Schultz high-low spread shock, backward sup-ADF bubbles, Carver's
+# accel and skew rules. Each was absent from the desk (no family, no feature); each is price only
+# and fails on its own days (the reasons are in `families_elitequant.CULTURE`). Seeded per
+# hypothesis-lane symbol by `research/elitequant_breadth.py` through the one proposer door.
+from mt5desk.families_elitequant import ELITEQUANT_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(ELITEQUANT_FAMILIES)
+for _eq_name in ELITEQUANT_FAMILIES:
+    FAMILY_INPUTS[_eq_name] = ("price only", "data/universe/*_H1.parquet")
+del _eq_name
+
+# THE CHINESE FUTURES CTA CANON (2026-09-30): Dual Thrust, R-Breaker, Sky Garden (空中花园) and
+# King Keltner, absorbed from thuquant/awesome-quant and the CN strategy collections it links.
+# The cell emitter reads these systems in vn.py's code and had no family to map them onto. Price
+# only; seeded (CN analogues first: USDCNH, XAUUSD, China50/HK50, copper, oil) by
+# `research/elitequant_breadth.py`.
+from mt5desk.families_cn_cta import CN_CTA_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(CN_CTA_FAMILIES)
+for _cn_name in CN_CTA_FAMILIES:
+    FAMILY_INPUTS[_cn_name] = ("price only", "data/universe/*_H1.parquet")
+del _cn_name
+
+# SIX MECHANISMS FROM je-suis-tm/quant-trading (2026-09-30): Heikin-Ashi exhaustion, the Awesome
+# Oscillator saucer, the parabolic SAR flip, the Bollinger W/M retest, head-and-shoulders on the
+# RSI, and "Oil Money" -- a commodity currency's residual on the commodity it exports, traded only
+# while the fit is valid. The last loads its commodity leg itself, keyed by the cell's `symbol`.
+# Seeded by `research/elitequant_breadth.py`.
+from mt5desk.families_quanttrading import QUANTTRADING_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(QUANTTRADING_FAMILIES)
+for _qt_name in QUANTTRADING_FAMILIES:
+    FAMILY_INPUTS[_qt_name] = ("price only", "data/universe/*_H1.parquet")
+FAMILY_INPUTS["commodity_fx_residual"] = (
+    "price only", "the cell's H1 bars plus its export commodity's (economic_drivers.ROLES), "
+    "read as of the cell's own daily decision bar from data/universe/*_H1.parquet")
+del _qt_name
+
+# THE ALPHA ZOO AS CLASS BOOKS (2026-09-30): 317 published alphas (GTJA 191, Qlib 158, Alpha101,
+# academic) vendored from HKUDS/Vibe-Trading (MIT) under mt5desk/alpha_zoo/, each ranked within
+# the cell's peer class on each date. Loads its own class panel keyed by the cell's `symbol`, like
+# the cross-sectional families. Judged book-first by `research/zoo_breadth.py`.
+from mt5desk.family_zoo_alpha import ZOO_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(ZOO_FAMILIES)
+FAMILY_INPUTS["zoo_alpha_class"] = (
+    "the symbol's peer class (research.universe_policy.peer_class) as a daily OHLCV panel, "
+    "each date built from bars stamped that UTC date", "data/universe/*_H1.parquet")
+FAMILY_TIMEFRAMES["zoo_alpha_class"] = (
+    ("H1",), "decides once a day on the class's completed daily panel, entering at the cell's "
+             "first bar of the next date")
+
