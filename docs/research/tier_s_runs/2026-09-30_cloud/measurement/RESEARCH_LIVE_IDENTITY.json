@@ -1,0 +1,1354 @@
+{
+ "generated_utc": "2026-09-30T16:16:41+00:00",
+ "status": "MEASURED",
+ "inputs": {
+  "sleeves": "desks/mt5/data/sleeves.json",
+  "survivors": "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
+  "survivor_rows": 58,
+  "registry_rows": 319,
+  "docket_cells": 57538
+ },
+ "fields": [
+  "family",
+  "symbol",
+  "selector",
+  "params",
+  "code"
+ ],
+ "n_live": 40,
+ "counts": {
+  "MATCH": 0,
+  "MISMATCH": 7,
+  "UNMEASURED": 33
+ },
+ "mismatched": [
+  "cadchf_overnight_gap_decay_asia_p_44136fa355b3678a",
+  "chfnok_carry_asia_p_98d776f3e210d3e2",
+  "eurnok_overnight_gap_decay_asia_p_44136fa355b3678a",
+  "gbpmxn_overnight_gap_decay_asia_p_44136fa355b3678a",
+  "gbpnok_overnight_gap_decay_asia_p_44136fa355b3678a",
+  "gbpsek_overnight_gap_decay_asia_p_44136fa355b3678a",
+  "gbpzar_overnight_gap_decay_asia_p_44136fa355b3678a"
+ ],
+ "unmeasured": [
+  "xau_m5_anti_breakout_overlap",
+  "gold_london_am_v2",
+  "gold_london_am_v3",
+  "gold_london_am_v4",
+  "gold_afternoon_v2",
+  "gold_afternoon_v3",
+  "gold_afternoon_v4",
+  "audcad_discovered_asia_p_7c996ac8456c8919",
+  "audcad_discovered_asia_p_8030fb339510dceb",
+  "audcad_discovered_asia_p_a7324e7affe1f80a",
+  "audnzd_discovered_asia_p_c76b860ff91ee920",
+  "audusd_discovered_asia_p_8e61ea22743f15b7",
+  "audusd_discovered_asia_p_a5bbf78b5c8595c0",
+  "audusd_discovered_asia_p_cf0368e026d6b477",
+  "audusd_discovered_asia_p_de80ad4f2ef91116",
+  "eurchf_discovered_asia_p_16bd35526c7f3515",
+  "eurchf_discovered_asia_p_4cba1afa572a99cd",
+  "eurchf_discovered_asia_p_6c7943b997558157",
+  "eurchf_discovered_asia_p_9bc1f7c40f200e78",
+  "eurchf_discovered_asia_p_a5bbf78b5c8595c0",
+  "eurchf_discovered_asia_p_c14e361e680e6d0b",
+  "eurchf_discovered_asia_p_c7d53510458ba32c",
+  "eurchf_discovered_asia_p_e266baf78567bef3",
+  "eurgbp_discovered_asia_p_8e61ea22743f15b7",
+  "eurgbp_discovered_asia_p_f31f02aa2b9d79b1",
+  "eurusd_discovered_asia_p_6d034b421914e1a2",
+  "eurusd_discovered_asia_p_f8bd412f38e33d20",
+  "nzdcad_discovered_asia_p_0ffb1e19a04f260e",
+  "usdcad_discovered_asia_p_193aadf2caba3698",
+  "usdcad_discovered_asia_p_56aadf0a3018c790",
+  "usdchf_discovered_asia_p_19dd11ec392fa005",
+  "audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte",
+  "CHFNOK.carry.asia#input_symbol=CHFNOK"
+ ],
+ "defects": [
+  {
+   "name": "cadchf_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "defect": "IDENTITY_MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "chfnok_carry_asia_p_98d776f3e210d3e2",
+   "defect": "IDENTITY_MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "eurnok_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "defect": "IDENTITY_MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "gbpmxn_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "defect": "IDENTITY_MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "gbpnok_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "defect": "IDENTITY_MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "gbpsek_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "defect": "IDENTITY_MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "gbpzar_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "defect": "IDENTITY_MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  }
+ ],
+ "rows": [
+  {
+   "name": "xau_m5_anti_breakout_overlap",
+   "exec": "scalp_market",
+   "certificate_cell": null,
+   "verdict": "UNMEASURED",
+   "why": "certificate 'forward_clock' names a lane, not a cell"
+  },
+  {
+   "name": "gold_london_am_v2",
+   "exec": null,
+   "verdict": "UNMEASURED",
+   "why": "the row names no family (a gold-window lane row); its certificate is the window's forward clock, not a UNIVERSAL_SURVIVORS spec"
+  },
+  {
+   "name": "gold_london_am_v3",
+   "exec": null,
+   "verdict": "UNMEASURED",
+   "why": "the row names no family (a gold-window lane row); its certificate is the window's forward clock, not a UNIVERSAL_SURVIVORS spec"
+  },
+  {
+   "name": "gold_london_am_v4",
+   "exec": null,
+   "verdict": "UNMEASURED",
+   "why": "the row names no family (a gold-window lane row); its certificate is the window's forward clock, not a UNIVERSAL_SURVIVORS spec"
+  },
+  {
+   "name": "gold_afternoon_v2",
+   "exec": null,
+   "verdict": "UNMEASURED",
+   "why": "the row names no family (a gold-window lane row); its certificate is the window's forward clock, not a UNIVERSAL_SURVIVORS spec"
+  },
+  {
+   "name": "gold_afternoon_v3",
+   "exec": null,
+   "verdict": "UNMEASURED",
+   "why": "the row names no family (a gold-window lane row); its certificate is the window's forward clock, not a UNIVERSAL_SURVIVORS spec"
+  },
+  {
+   "name": "gold_afternoon_v4",
+   "exec": null,
+   "verdict": "UNMEASURED",
+   "why": "the row names no family (a gold-window lane row); its certificate is the window's forward clock, not a UNIVERSAL_SURVIVORS spec"
+  },
+  {
+   "name": "audcad_discovered_asia_p_7c996ac8456c8919",
+   "exec": "family_market",
+   "certificate_cell": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+   "survivor": "external.AUDCAD.discovered.p=7c996ac8456c8919",
+   "params_basis": "certified cell 'AUDCAD.discovered.p=7c996ac8456c8919' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "AUDCAD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "AUDCAD",
+    "selector": "asia",
+    "params": {
+     "feature": "ext_resid_EURGBP_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'AUDCAD.discovered.p=7c996ac8456c8919' is not in the docket on this host"
+  },
+  {
+   "name": "audcad_discovered_asia_p_8030fb339510dceb",
+   "exec": "family_market",
+   "certificate_cell": "external.AUDCAD.discovered.p=8030fb339510dceb",
+   "survivor": "external.AUDCAD.discovered.p=8030fb339510dceb",
+   "params_basis": "certified cell 'AUDCAD.discovered.p=8030fb339510dceb' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "AUDCAD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "AUDCAD",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_24",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 3,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'AUDCAD.discovered.p=8030fb339510dceb' is not in the docket on this host"
+  },
+  {
+   "name": "audcad_discovered_asia_p_a7324e7affe1f80a",
+   "exec": "family_market",
+   "certificate_cell": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+   "survivor": "external.AUDCAD.discovered.p=a7324e7affe1f80a",
+   "params_basis": "certified cell 'AUDCAD.discovered.p=a7324e7affe1f80a' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURDKK_z_horizon=1_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "AUDCAD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "AUDCAD",
+    "selector": "asia",
+    "params": {
+     "feature": "ext_resid_EURDKK_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'AUDCAD.discovered.p=a7324e7affe1f80a' is not in the docket on this host"
+  },
+  {
+   "name": "audnzd_discovered_asia_p_c76b860ff91ee920",
+   "exec": "family_market",
+   "certificate_cell": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+   "survivor": "external.AUDNZD.discovered.p=c76b860ff91ee920",
+   "params_basis": "certified cell 'AUDNZD.discovered.p=c76b860ff91ee920' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=6_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "AUDNZD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "AUDNZD",
+    "selector": "asia",
+    "params": {
+     "feature": "hour",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 6,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'AUDNZD.discovered.p=c76b860ff91ee920' is not in the docket on this host"
+  },
+  {
+   "name": "audusd_discovered_asia_p_8e61ea22743f15b7",
+   "exec": "family_market",
+   "certificate_cell": "external.AUDUSD.discovered.p=8e61ea22743f15b7",
+   "survivor": "external.AUDUSD.discovered.p=8e61ea22743f15b7",
+   "params_basis": "certified cell 'AUDUSD.discovered.p=8e61ea22743f15b7' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_12",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 3,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'AUDUSD.discovered.p=8e61ea22743f15b7' is not in the docket on this host"
+  },
+  {
+   "name": "audusd_discovered_asia_p_a5bbf78b5c8595c0",
+   "exec": "family_market",
+   "certificate_cell": "external.AUDUSD.discovered.p=a5bbf78b5c8595c0",
+   "survivor": "external.AUDUSD.discovered.p=a5bbf78b5c8595c0",
+   "params_basis": "certified cell 'AUDUSD.discovered.p=a5bbf78b5c8595c0' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_24",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'AUDUSD.discovered.p=a5bbf78b5c8595c0' is not in the docket on this host"
+  },
+  {
+   "name": "audusd_discovered_asia_p_cf0368e026d6b477",
+   "exec": "family_market",
+   "certificate_cell": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+   "survivor": "external.AUDUSD.discovered.p=cf0368e026d6b477",
+   "params_basis": "certified cell 'AUDUSD.discovered.p=cf0368e026d6b477' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=6_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_240",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 6,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'AUDUSD.discovered.p=cf0368e026d6b477' is not in the docket on this host"
+  },
+  {
+   "name": "audusd_discovered_asia_p_de80ad4f2ef91116",
+   "exec": "family_market",
+   "certificate_cell": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+   "survivor": "external.AUDUSD.discovered.p=de80ad4f2ef91116",
+   "params_basis": "certified cell 'AUDUSD.discovered.p=de80ad4f2ef91116' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_240",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'AUDUSD.discovered.p=de80ad4f2ef91116' is not in the docket on this host"
+  },
+  {
+   "name": "cadchf_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "exec": "family_market",
+   "certificate_cell": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "survivor": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "dee21b8288689a59",
+    "live_behaviour": "07651d4dfb67d762",
+    "clock": "CADCHF.overnight_gap_decay.asia",
+    "frozen": "8ccadda6ee747cb6",
+    "frozen_behaviour": "b7a29ec9aa7887e2"
+   },
+   "traded": {
+    "family": "overnight_gap_decay",
+    "symbol": "CADCHF",
+    "selector": "asia",
+    "params": {}
+   },
+   "certified": {
+    "family": "overnight_gap_decay",
+    "symbol": "CADCHF",
+    "selector": "asia",
+    "params": {}
+   },
+   "verdict": "MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "diff": {
+    "code": {
+     "traded": "dee21b8288689a59",
+     "certified": "8ccadda6ee747cb6",
+     "traded_behaviour": "07651d4dfb67d762",
+     "certified_behaviour": "b7a29ec9aa7887e2"
+    }
+   },
+   "unmeasured": [],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "chfnok_carry_asia_p_98d776f3e210d3e2",
+   "exec": "family_market",
+   "certificate_cell": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+   "survivor": "external.CHFNOK.carry.p=98d776f3e210d3e2",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "999f1c076c2d90e7",
+    "live_behaviour": "7b7f5374640f0a64",
+    "clock": "CHFNOK.carry.asia#input_symbol=CHFNOK",
+    "frozen": "a2439d7cd8a24a44",
+    "frozen_behaviour": "6fb38dc73d3163fc"
+   },
+   "traded": {
+    "family": "carry",
+    "symbol": "CHFNOK",
+    "selector": "asia",
+    "params": {
+     "input_symbol": "CHFNOK"
+    }
+   },
+   "certified": {
+    "family": "carry",
+    "symbol": "CHFNOK",
+    "selector": "asia",
+    "params": {
+     "input_symbol": "CHFNOK"
+    }
+   },
+   "verdict": "MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "diff": {
+    "code": {
+     "traded": "999f1c076c2d90e7",
+     "certified": "a2439d7cd8a24a44",
+     "traded_behaviour": "7b7f5374640f0a64",
+     "certified_behaviour": "6fb38dc73d3163fc"
+    }
+   },
+   "unmeasured": [],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "eurchf_discovered_asia_p_16bd35526c7f3515",
+   "exec": "family_market",
+   "certificate_cell": "external.EURCHF.discovered.p=16bd35526c7f3515",
+   "survivor": "external.EURCHF.discovered.p=16bd35526c7f3515",
+   "params_basis": "certified cell 'EURCHF.discovered.p=16bd35526c7f3515' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_24",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 6,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURCHF.discovered.p=16bd35526c7f3515' is not in the docket on this host"
+  },
+  {
+   "name": "eurchf_discovered_asia_p_4cba1afa572a99cd",
+   "exec": "family_market",
+   "certificate_cell": "external.EURCHF.discovered.p=4cba1afa572a99cd",
+   "survivor": "external.EURCHF.discovered.p=4cba1afa572a99cd",
+   "params_basis": "certified cell 'EURCHF.discovered.p=4cba1afa572a99cd' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=hour_horizon=3_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": {
+     "feature": "hour",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURCHF.discovered.p=4cba1afa572a99cd' is not in the docket on this host"
+  },
+  {
+   "name": "eurchf_discovered_asia_p_6c7943b997558157",
+   "exec": "family_market",
+   "certificate_cell": "external.EURCHF.discovered.p=6c7943b997558157",
+   "survivor": "external.EURCHF.discovered.p=6c7943b997558157",
+   "params_basis": "certified cell 'EURCHF.discovered.p=6c7943b997558157' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_12",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURCHF.discovered.p=6c7943b997558157' is not in the docket on this host"
+  },
+  {
+   "name": "eurchf_discovered_asia_p_9bc1f7c40f200e78",
+   "exec": "family_market",
+   "certificate_cell": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
+   "survivor": "external.EURCHF.discovered.p=9bc1f7c40f200e78",
+   "params_basis": "certified cell 'EURCHF.discovered.p=9bc1f7c40f200e78' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": {
+     "feature": "hour",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 3,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURCHF.discovered.p=9bc1f7c40f200e78' is not in the docket on this host"
+  },
+  {
+   "name": "eurchf_discovered_asia_p_a5bbf78b5c8595c0",
+   "exec": "family_market",
+   "certificate_cell": "external.EURCHF.discovered.p=a5bbf78b5c8595c0",
+   "survivor": "external.EURCHF.discovered.p=a5bbf78b5c8595c0",
+   "params_basis": "certified cell 'EURCHF.discovered.p=a5bbf78b5c8595c0' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_24",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURCHF.discovered.p=a5bbf78b5c8595c0' is not in the docket on this host"
+  },
+  {
+   "name": "eurchf_discovered_asia_p_c14e361e680e6d0b",
+   "exec": "family_market",
+   "certificate_cell": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+   "survivor": "external.EURCHF.discovered.p=c14e361e680e6d0b",
+   "params_basis": "certified cell 'EURCHF.discovered.p=c14e361e680e6d0b' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": {
+     "feature": "hour",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 6,
+     "side": 1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURCHF.discovered.p=c14e361e680e6d0b' is not in the docket on this host"
+  },
+  {
+   "name": "eurchf_discovered_asia_p_c7d53510458ba32c",
+   "exec": "family_market",
+   "certificate_cell": "external.EURCHF.discovered.p=c7d53510458ba32c",
+   "survivor": "external.EURCHF.discovered.p=c7d53510458ba32c",
+   "params_basis": "certified cell 'EURCHF.discovered.p=c7d53510458ba32c' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24_horizon=1_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": {
+     "feature": "ru_24",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURCHF.discovered.p=c7d53510458ba32c' is not in the docket on this host"
+  },
+  {
+   "name": "eurchf_discovered_asia_p_e266baf78567bef3",
+   "exec": "family_market",
+   "certificate_cell": "external.EURCHF.discovered.p=e266baf78567bef3",
+   "survivor": "external.EURCHF.discovered.p=e266baf78567bef3",
+   "params_basis": "certified cell 'EURCHF.discovered.p=e266baf78567bef3' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_12",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 6,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURCHF.discovered.p=e266baf78567bef3' is not in the docket on this host"
+  },
+  {
+   "name": "eurgbp_discovered_asia_p_8e61ea22743f15b7",
+   "exec": "family_market",
+   "certificate_cell": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+   "survivor": "external.EURGBP.discovered.p=8e61ea22743f15b7",
+   "params_basis": "certified cell 'EURGBP.discovered.p=8e61ea22743f15b7' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURGBP",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURGBP",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_12",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 3,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURGBP.discovered.p=8e61ea22743f15b7' is not in the docket on this host"
+  },
+  {
+   "name": "eurgbp_discovered_asia_p_f31f02aa2b9d79b1",
+   "exec": "family_market",
+   "certificate_cell": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+   "survivor": "external.EURGBP.discovered.p=f31f02aa2b9d79b1",
+   "params_basis": "certified cell 'EURGBP.discovered.p=f31f02aa2b9d79b1' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURGBP.discovered.asia#band=[0.1, 0.25]_feature=ru_24_horizon=3_side=1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURGBP",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURGBP",
+    "selector": "asia",
+    "params": {
+     "feature": "ru_24",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 3,
+     "side": 1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURGBP.discovered.p=f31f02aa2b9d79b1' is not in the docket on this host"
+  },
+  {
+   "name": "eurnok_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "exec": "family_market",
+   "certificate_cell": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "survivor": "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "dee21b8288689a59",
+    "live_behaviour": "07651d4dfb67d762",
+    "clock": "EURNOK.overnight_gap_decay.asia",
+    "frozen": "8ccadda6ee747cb6",
+    "frozen_behaviour": "b7a29ec9aa7887e2"
+   },
+   "traded": {
+    "family": "overnight_gap_decay",
+    "symbol": "EURNOK",
+    "selector": "asia",
+    "params": {}
+   },
+   "certified": {
+    "family": "overnight_gap_decay",
+    "symbol": "EURNOK",
+    "selector": "asia",
+    "params": {}
+   },
+   "verdict": "MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "diff": {
+    "code": {
+     "traded": "dee21b8288689a59",
+     "certified": "8ccadda6ee747cb6",
+     "traded_behaviour": "07651d4dfb67d762",
+     "certified_behaviour": "b7a29ec9aa7887e2"
+    }
+   },
+   "unmeasured": [],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "eurusd_discovered_asia_p_6d034b421914e1a2",
+   "exec": "family_market",
+   "certificate_cell": "external.EURUSD.discovered.p=6d034b421914e1a2",
+   "survivor": "external.EURUSD.discovered.p=6d034b421914e1a2",
+   "params_basis": "certified cell 'EURUSD.discovered.p=6d034b421914e1a2' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_48_horizon=12_side=1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURUSD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURUSD",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_48",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 12,
+     "side": 1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURUSD.discovered.p=6d034b421914e1a2' is not in the docket on this host"
+  },
+  {
+   "name": "eurusd_discovered_asia_p_f8bd412f38e33d20",
+   "exec": "family_market",
+   "certificate_cell": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+   "survivor": "external.EURUSD.discovered.p=f8bd412f38e33d20",
+   "params_basis": "certified cell 'EURUSD.discovered.p=f8bd412f38e33d20' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_96_horizon=6_side=1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "EURUSD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "EURUSD",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_96",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 6,
+     "side": 1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'EURUSD.discovered.p=f8bd412f38e33d20' is not in the docket on this host"
+  },
+  {
+   "name": "gbpmxn_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "exec": "family_market",
+   "certificate_cell": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "survivor": "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "dee21b8288689a59",
+    "live_behaviour": "07651d4dfb67d762",
+    "clock": "GBPMXN.overnight_gap_decay.asia",
+    "frozen": "8ccadda6ee747cb6",
+    "frozen_behaviour": "b7a29ec9aa7887e2"
+   },
+   "traded": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPMXN",
+    "selector": "asia",
+    "params": {}
+   },
+   "certified": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPMXN",
+    "selector": "asia",
+    "params": {}
+   },
+   "verdict": "MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "diff": {
+    "code": {
+     "traded": "dee21b8288689a59",
+     "certified": "8ccadda6ee747cb6",
+     "traded_behaviour": "07651d4dfb67d762",
+     "certified_behaviour": "b7a29ec9aa7887e2"
+    }
+   },
+   "unmeasured": [],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "gbpnok_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "exec": "family_market",
+   "certificate_cell": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "survivor": "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "dee21b8288689a59",
+    "live_behaviour": "07651d4dfb67d762",
+    "clock": "GBPNOK.overnight_gap_decay.asia",
+    "frozen": "8ccadda6ee747cb6",
+    "frozen_behaviour": "b7a29ec9aa7887e2"
+   },
+   "traded": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPNOK",
+    "selector": "asia",
+    "params": {}
+   },
+   "certified": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPNOK",
+    "selector": "asia",
+    "params": {}
+   },
+   "verdict": "MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "diff": {
+    "code": {
+     "traded": "dee21b8288689a59",
+     "certified": "8ccadda6ee747cb6",
+     "traded_behaviour": "07651d4dfb67d762",
+     "certified_behaviour": "b7a29ec9aa7887e2"
+    }
+   },
+   "unmeasured": [],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "gbpsek_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "exec": "family_market",
+   "certificate_cell": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+   "survivor": "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "dee21b8288689a59",
+    "live_behaviour": "07651d4dfb67d762",
+    "clock": "GBPSEK.overnight_gap_decay.asia",
+    "frozen": "8ccadda6ee747cb6",
+    "frozen_behaviour": "b7a29ec9aa7887e2"
+   },
+   "traded": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPSEK",
+    "selector": "asia",
+    "params": {}
+   },
+   "certified": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPSEK",
+    "selector": "asia",
+    "params": {}
+   },
+   "verdict": "MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "diff": {
+    "code": {
+     "traded": "dee21b8288689a59",
+     "certified": "8ccadda6ee747cb6",
+     "traded_behaviour": "07651d4dfb67d762",
+     "certified_behaviour": "b7a29ec9aa7887e2"
+    }
+   },
+   "unmeasured": [],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "gbpzar_overnight_gap_decay_asia_p_44136fa355b3678a",
+   "exec": "family_market",
+   "certificate_cell": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "survivor": "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+   "params_basis": "docket_digest",
+   "code": {
+    "live": "dee21b8288689a59",
+    "live_behaviour": "07651d4dfb67d762",
+    "clock": "GBPZAR.overnight_gap_decay.asia",
+    "frozen": "8ccadda6ee747cb6",
+    "frozen_behaviour": "b7a29ec9aa7887e2"
+   },
+   "traded": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPZAR",
+    "selector": "asia",
+    "params": {}
+   },
+   "certified": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPZAR",
+    "selector": "asia",
+    "params": {}
+   },
+   "verdict": "MISMATCH",
+   "fields": [
+    "code"
+   ],
+   "diff": {
+    "code": {
+     "traded": "dee21b8288689a59",
+     "certified": "8ccadda6ee747cb6",
+     "traded_behaviour": "07651d4dfb67d762",
+     "certified_behaviour": "b7a29ec9aa7887e2"
+    }
+   },
+   "unmeasured": [],
+   "why": "IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)"
+  },
+  {
+   "name": "nzdcad_discovered_asia_p_0ffb1e19a04f260e",
+   "exec": "family_market",
+   "certificate_cell": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+   "survivor": "external.NZDCAD.discovered.p=0ffb1e19a04f260e",
+   "params_basis": "certified cell 'NZDCAD.discovered.p=0ffb1e19a04f260e' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "NZDCAD.discovered.asia#band=[0.9, 1.0]_feature=dd_48_horizon=3_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "NZDCAD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "NZDCAD",
+    "selector": "asia",
+    "params": {
+     "feature": "dd_48",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'NZDCAD.discovered.p=0ffb1e19a04f260e' is not in the docket on this host"
+  },
+  {
+   "name": "usdcad_discovered_asia_p_193aadf2caba3698",
+   "exec": "family_market",
+   "certificate_cell": "external.USDCAD.discovered.p=193aadf2caba3698",
+   "survivor": "external.USDCAD.discovered.p=193aadf2caba3698",
+   "params_basis": "certified cell 'USDCAD.discovered.p=193aadf2caba3698' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_240_horizon=6_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "USDCAD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "USDCAD",
+    "selector": "asia",
+    "params": {
+     "feature": "ru_240",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 6,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'USDCAD.discovered.p=193aadf2caba3698' is not in the docket on this host"
+  },
+  {
+   "name": "usdcad_discovered_asia_p_56aadf0a3018c790",
+   "exec": "family_market",
+   "certificate_cell": "external.USDCAD.discovered.p=56aadf0a3018c790",
+   "survivor": "external.USDCAD.discovered.p=56aadf0a3018c790",
+   "params_basis": "certified cell 'USDCAD.discovered.p=56aadf0a3018c790' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_96_horizon=6_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "USDCAD",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "USDCAD",
+    "selector": "asia",
+    "params": {
+     "feature": "ru_96",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 6,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'USDCAD.discovered.p=56aadf0a3018c790' is not in the docket on this host"
+  },
+  {
+   "name": "usdchf_discovered_asia_p_19dd11ec392fa005",
+   "exec": "family_market",
+   "certificate_cell": "external.USDCHF.discovered.p=19dd11ec392fa005",
+   "survivor": "external.USDCHF.discovered.p=19dd11ec392fa005",
+   "params_basis": "certified cell 'USDCHF.discovered.p=19dd11ec392fa005' is not in the docket on this host",
+   "code": {
+    "live": "65540d303116bb80",
+    "live_behaviour": "b713f8e3c0162b06",
+    "clock": "USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ext_residz_AUDCAD_horizon=3_side=-1",
+    "frozen": "65540d303116bb80",
+    "frozen_behaviour": "bcfaac90a663fdad"
+   },
+   "traded": {
+    "family": "discovered",
+    "symbol": "USDCHF",
+    "selector": "asia",
+    "params": null
+   },
+   "certified": {
+    "family": "discovered",
+    "symbol": "USDCHF",
+    "selector": "asia",
+    "params": {
+     "feature": "ext_residz_AUDCAD",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": -1
+    }
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: certified cell 'USDCHF.discovered.p=19dd11ec392fa005' is not in the docket on this host"
+  },
+  {
+   "name": "audnzd_dav_range_filter_adx_afternoon_audnzd_dav_range_filte",
+   "exec": "family_market",
+   "certificate_cell": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+   "survivor": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+   "params_basis": "qquant_side_word",
+   "code": {
+    "live": "05f2c3ad708e0cd0",
+    "live_behaviour": "88953b724cf02823"
+   },
+   "traded": {
+    "family": "dav_range_filter_adx",
+    "symbol": "AUDNZD",
+    "selector": "afternoon",
+    "params": {
+     "side": -1
+    }
+   },
+   "certified": {
+    "family": "dav_range_filter_adx",
+    "symbol": "AUDNZD",
+    "selector": "afternoon",
+    "params": null
+   },
+   "verdict": "UNMEASURED",
+   "why": "params: the certificate's shadow_spec carries none; code: no forward clock in sleeve_registry froze this spec"
+  },
+  {
+   "name": "CHFNOK.carry.asia#input_symbol=CHFNOK",
+   "exec": "family_market",
+   "certificate_cell": "CHFNOK.carry.asia#input_symbol=CHFNOK",
+   "verdict": "UNMEASURED",
+   "why": "certificate 'CHFNOK.carry.asia#input_symbol=CHFNOK' is not a UNIVERSAL_SURVIVORS cell on this host"
+  }
+ ],
+ "consumer": "libs/tiers/promotion_authority.review_live -> data/tier_s/live_door.json (the promoter's automatic retirement reads it)"
+}

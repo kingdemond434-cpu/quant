@@ -34,7 +34,7 @@ import json
 import sys
 import time
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -296,7 +296,8 @@ def apply_plan(rows: Sequence[Mapping[str, Any]], registry: Registry, *, budget_
         spec = registry.get(str(row.get("component_id")))
         if spec is None:
             continue
-        if tick() - t0 >= budget_s:
+        remaining = budget_s - (tick() - t0)
+        if remaining < 5:
             out.append({"component_id": spec.component_id, "result": "SKIPPED",
                         "repaired": False, "why": "reconciliation budget exhausted"})
             continue
@@ -312,6 +313,11 @@ def apply_plan(rows: Sequence[Mapping[str, Any]], registry: Registry, *, budget_
             ctx["locks"] = locks
         if watermark_root is not None:
             ctx["watermark_root"] = watermark_root
+        # Enforce the pass budget at the actuator boundary too.  Previously an action begun one
+        # second before the deadline could still consume its full 90-second proof window, which
+        # starved the actual identity/enrolment healers in the clock fixer's second half.
+        a = replace(a, window_s=max(1, min(a.window_s, int(remaining))),
+                    timeout_s=max(1, min(a.timeout_s, int(remaining))))
         rec = act.run_actuator(a, ctx, apply=True, runner=runner, sleeper=sleeper, clock=clock)
         rec["component_id"] = spec.component_id
         rec["criticality"] = spec.criticality

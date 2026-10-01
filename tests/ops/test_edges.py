@@ -29,9 +29,10 @@ def test_the_mandatory_path_is_declared_as_data():
                    "allocation->departments"):
         assert needed in stages
     assert all(e.criticality == "required" for e in edges.REQUIRED_EDGES)
-    # The consumer is the RESIDENT gateway task since 7401f769 (box_tasks.manifest declares
-    # MT5-GatewayResident running desks/mt5/research/gateway_resident.py every 10 minutes).
-    assert edges.edges_for(consumer="task:MT5-GatewayResident")[0].producer == "leg:pf_allocator"
+    # The consumer is the RESIDENT gateway since 7401f769 (box_tasks.manifest declares
+    # MT5-GatewayResident running desks/mt5/research/gateway_resident.py every 10 minutes), named
+    # by its one canonical organ id since 2026-09-30 (components.TASK_CANONICAL).
+    assert edges.edges_for(consumer="resident:gateway")[0].producer == "leg:pf_allocator"
 
 
 def test_edge_states_in_order_of_proof(tmp_path: Path):

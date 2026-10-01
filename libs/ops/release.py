@@ -130,6 +130,45 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # The markout the same leg writes beside the chain (2026-09-30): the VPS's desk state reads
+    # `matched_fills` from it, and without publication it read a 2026-09-08 stub forever.
+    "desks/mt5/reports/markout.json",
+    # The Tier S box attestation the same sync publishes (2026-09-30). Listed in $relPaths
+    # without being declared here, which test_release_seal names as refusing new risk.
+    # The Tier S measurement reports the same sync publishes (2026-09-30): null lab, the lag
+    # lane's two reports, the occupancy map and its culture pairs, the research/live identity.
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+    "desks/mt5/reports/DSR_INPUTS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # The rest of the Tier S promotion door's evidence, on the same sync (2026-09-30).
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+    # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
+    "desks/mt5/reports/LOCKBOX_RECERT.json",
+    "desks/mt5/reports/REMINT_STATUS.json",
+    # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
+    # by the same sync so a halt is readable off the box. An output, never an input.
+    "desks/mt5/data/placement_interlock.json",
+    # The gate verdict digest and the state-flow meter (2026-09-30), written by the hourly
+    # publish_state leg and published on the same wire. Reports about the code, never inputs to it.
+    "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
+    "desks/mt5/reports/BOX_STATE_FLOW.json",
+    # The freshness fence's report and the desk health report (2026-09-30), written by the hourly
+    # `box_state_freshness` and `desk_health` legs and published on the same wire.
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
+    # The Tier S box attestation and live door, published since 2026-09-30 and never declared
+    # here (test_every_path_the_box_publishes_is_declared_non_code was red on the live branch).
+    "desks/mt5/data/tier_s/box_evidence.json",
+    "desks/mt5/data/tier_s/live_door.json",
 })
 
 SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --name-only "
@@ -402,7 +441,7 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
     head = git_head(r)
     if head == "unknown":
         raise RuntimeError("cannot seal: git HEAD is unknown here (no git, or not a repository)")
-    dirty_code = dirty_paths(r, code_only=True)
+    dirty_code = seal_blocking_paths(r)
     if dirty_code and not allow_dirty:
         raise RuntimeError(f"cannot seal a dirty tree ({len(dirty_code)} tracked code path(s) "
                            f"differ from HEAD: {dirty_code[:5]}); commit them or pass allow_dirty")
@@ -615,6 +654,47 @@ def is_state_path(rel: str) -> bool:
     return p in STATE_FILES or any(p.startswith(prefix) for prefix in STATE_PREFIXES)
 
 
+#: REGENERATED BUILD OUTPUT -- neither code to protect nor state to carry, a third category.
+#:
+#: IT WAS FIXED ONCE, IN THE WRONG FILE (measured on the box 2026-09-24, recovered box commit
+#: fe09b89b, ported 2026-09-30). `dist/` was added to a PRIVATE list inside
+#: `Adopt-And-Seal.ps1` and not here, so the script's pre-check passed and `seal()` refused on
+#: the next line: the same halt one stage later, `seal-failed` instead of `dirty-code-path`.
+#: The seal's own dirty check has since been scoped to RELEASE_CODE_PATHS (which `dist/` is not
+#: under), so this list no longer changes what `seal()` refuses; it exists so that the ONE
+#: classification below, `accepts()` and the gateway's mirror in `mt5desk/release_identity.py`
+#: give the same answer for a build artifact -- a mirror that can drift is not a mirror.
+BUILD_PREFIXES: tuple[str, ...] = ("dist/",)
+
+
+def is_build_artifact(rel: str) -> bool:
+    """Regenerated build output: not code to protect, not state to carry."""
+    p = str(rel).replace("\\", "/").lstrip("./")
+    return any(p.startswith(prefix) for prefix in BUILD_PREFIXES)
+
+
+def seal_blocking_paths(root: Path | None = None, *,
+                        dirty: list[str] | None = None) -> list[str]:
+    """THE ONE ANSWER TO "what stops a seal": tracked paths under the release code roots that
+    differ from HEAD and are neither desk state nor regenerated build output.
+
+    WHY ONE FUNCTION (measured on the trading box 2026-09-24). Three copies of this
+    classification were live at once -- `STATE_PREFIXES`/`STATE_FILES` here, a private list
+    inside `Adopt-And-Seal.ps1`, and a third in `mt5desk/release_identity.py` -- and a seal
+    needed all three to agree. They did not, every disagreeing path was rewritten by an organ on
+    a clock, so every disagreement was PERMANENT: the box refused every seal for the rest of that
+    day and the gateway's release interlock refused every placement from 10:00Z on.
+
+    THIS DOES NOT WIDEN WHAT THE SEAL PROTECTS. It starts from today's scoped reading
+    (`dirty_paths(code_only=True)`, a diff of RELEASE_CODE_PATHS only) and sets aside nothing
+    but paths an organ regenerates; a real code edit blocks the seal exactly as before. `dirty`
+    lets a caller that already paid for the reading reuse it, so the rule cannot drift between
+    two readings taken in one pass.
+    """
+    paths = dirty_paths(root, code_only=True) if dirty is None else dirty
+    return [p for p in paths if not is_state_path(p) and not is_build_artifact(p)]
+
+
 def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None = None
             ) -> tuple[bool, str, list[str]]:
     """Is `running_sha` the sealed code? (ok, why, the code paths that say otherwise).
@@ -636,7 +716,8 @@ def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None =
                        f"(git unavailable, or the sealed commit is not in this clone)"), []
     changed = sorted({ln.strip() for ln in out.splitlines() if ln.strip()})
     allow = set(rec.get("non_code") or NON_CODE)
-    code = [p for p in changed if p not in allow and not is_state_path(p)]
+    code = [p for p in changed
+            if p not in allow and not is_state_path(p) and not is_build_artifact(p)]
     if not code:
         n_state = len(changed)
         return True, (f"running {running_sha[:12]} differs from sealed {code_sha[:12]} only by "

@@ -236,6 +236,34 @@ SOURCES = (
     # (scripts/requeue_named_mechanisms.py). Merged when freshly rebuilt; hourly runs skip it
     # as stale once consumed -- a map extension re-opens gate 1, never any later gate.
     ("requeue_named.json", "hypotheses"),
+    # THE NOVEL-MECHANISM LANE, WHICH TERMINATED ONE CONNECTOR SHORT OF THIS TUPLE (2026-09-24).
+    #
+    # A mechanism with no registered family function cannot reach the judge through any other
+    # door. The compiler's deterministic vocabulary refuses it by name -- NEEDS_EXACT_RULE_
+    # EXTRACTION -- and `deepening_worker` then spends a model call recovering the rule from the
+    # row's own text, re-running the recovery through `compile_row` so no guard is bypassed. That
+    # is the ONLY path by which the Chinese, Japanese, Korean and Russian forests, the
+    # championship records, the world crawler and the arXiv feed can contribute a mechanism the
+    # desk did not already know.
+    #
+    # ITS OUTPUT WAS READ BY NOBODY. `deepened_candidates.json` was written every pass, consumed
+    # only by `portfolio_gap` for gap ANALYSIS and counted by `convert_swarm` for a log line.
+    # `libs/ops/capability_graph.py` asserted the edge in as many words -- "deepened_candidates
+    # -> external_gauntlet via compiler merge", and a comment calling it "a real path" -- but no
+    # merge implemented it, and this tuple is the merge. Measured on the trading box the day it
+    # was found: 83 mechanisms recovered in the worker's lifetime, 30 of them in the preceding
+    # 24 hours, every one of them bought with the scarcest budget the desk owns (one account,
+    # 1,000 model requests a day, exhausted by 01:42 UTC) -- and not one had ever reached the
+    # docket, so not one had ever been judged. Work earned and dropped one line short.
+    #
+    # NOTHING IS RELAXED BY ADMITTING THEM. These rows come out of `compile_row`, the same
+    # function that produces `miner_candidates.json`'s hypotheses, so they are contract-identical
+    # by construction; they face the identical ten gates, the same family routing, the same
+    # untradeable-symbol filter and the same family-less drop as every other row here. The
+    # `producer` stamp finally makes the lane attributable, so `certificate_provenance` can say
+    # whether a recovered mechanism has ever earned a certificate -- a question that could not
+    # previously be ASKED, because no certificate could descend from a row that never arrived.
+    ("deepened_candidates.json", "candidates"),
 )
 
 
@@ -396,7 +424,7 @@ def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
         import sys as _sys
         if str(BASE) not in _sys.path:
             _sys.path.insert(0, str(BASE))
-        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane
+        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane, may_hypothesise
     except Exception as exc:
         return None, (f"universe_policy unavailable ({type(exc).__name__}: {exc}): NOTHING was "
                       f"routed by lane this run (UNMEASURED, not clean)")
@@ -406,12 +434,24 @@ def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
                       f"lane -- it cannot see the registry from here, so NOTHING was routed by "
                       f"lane this run (UNMEASURED, not clean)")
 
-    def refusal(symbol: str) -> str:
+    def refusal(symbol: str, family: object = None) -> str:
+        # A share CFD in a cross-sectional class book reaches the judge (principal 2026-09-30);
+        # every other family on a share CFD stays in the event lane.
+        if may_hypothesise(symbol, family):
+            return ""
         verdict = lane(symbol)
         return "" if verdict == HYPOTHESIS else verdict
 
     return refusal, (f"universe_policy.lane, proved on {placed} of {len(tradeable)} tradeable "
                      f"symbol(s); only lane={HYPOTHESIS!r} reaches the judge")
+
+
+def _refuse(refusal: Any, symbol: str, family: object) -> str:
+    """Ask the door with the row's family when it takes one; a one-argument door still works."""
+    try:
+        return str(refusal(symbol, family) or "")
+    except TypeError:
+        return str(refusal(symbol) or "")
 
 
 def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
@@ -441,7 +481,7 @@ def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
         # be in the wrong lane, and refusing it would turn a missing field into a policy breach.
         # A row that DOES name one and whose class the desk has never seen is a different thing --
         # that is UNCLASSIFIED, and absence of a rule about a real instrument is not a permission.
-        verdict = refusal(symbol) if symbol else ""
+        verdict = _refuse(refusal, symbol, row.get("family")) if symbol else ""
         if not verdict:
             judged.append(row)
             continue
@@ -703,6 +743,32 @@ def main() -> int:
         print(f"   docket bank: {readmitted} previously-known candidate(s) re-admitted "
               f"(idempotent re-judging; freshness still governs provenance)")
 
+    # THE TRIANGLE LEGS, BACKFILLED ONTO EVERY ROW, FRESH OR BANKED (2026-09-30). All 1,796
+    # triangle rows in the docket were legless, so `family_triangle` returned [] and every one
+    # was UNKNOWN; the compiler now names legs for rows it mints, but the bank is re-admitted
+    # verbatim above, so the old rows would never have been reached. Filled HERE because this is
+    # the docket's only writer: same rule as the compiler, in place, nothing deleted, each row
+    # recording what was filled or why not. A fault costs the fill, never a row.
+    triangle_legs: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        for _p in (str(BASE), str(BASE.parents[1])):
+            if _p not in _sys.path:
+                _sys.path.insert(0, _p)
+        from research import triangle_leg_backfill as _tlb
+        _rows = list(merged.values())
+        triangle_legs = _tlb.backfill(_rows, identity=_identity, now=now)
+        if triangle_legs.get("filled"):
+            merged = {_identity(r): r for r in _rows}
+        _tlb.publish(triangle_legs, HYP / _tlb.OUT.name)
+        if triangle_legs.get("legless_before"):
+            print(f"   triangle legs: {triangle_legs['filled']} of "
+                  f"{triangle_legs['legless_before']} legless row(s) filled, "
+                  f"{triangle_legs['unfilled']} unfilled {triangle_legs['unfilled_by_reason']}")
+    except Exception as exc:
+        triangle_legs = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   triangle legs unavailable ({type(exc).__name__}: {exc}); rows unchanged")
+
     if unrouted:
         print(f"   {unrouted} row(s) dropped as UNROUTABLE (no family named) -- never "
               f"relabelled as the dominant family")
@@ -787,6 +853,63 @@ def main() -> int:
               f"least-judged-family order")
         if judged:
             rows_out = breadth_order(rows_out, judged)
+    # TIER S PRE-JUDGE SCREEN (layers 9 and 21): a row the adopted Red Queen defenders or the
+    # machine-ratified invented tests FLAGGED (run_external_backtest tags it) moves behind the
+    # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
+    # allocator just built is unchanged, no row leaves the docket, and nothing is billed because
+    # nothing is withheld. A screen fault costs the demotion, never a row.
+    prejudge: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.tiers import prejudge_screen as _pj
+        rows_out, prejudge = _pj.demote_flagged(
+            rows_out, _pj.load_verdicts(HYP / _pj.VERDICTS.name))
+        prejudge["status"] = "APPLIED"
+        if prejudge["flagged"]:
+            print(f"   prejudge screen: {prejudge['flagged']} flagged row(s) demoted within "
+                  f"their family ({prejudge['moved']} position(s) changed, 0 removed)")
+    except Exception as exc:
+        prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
+    # ONE SEARCHED CLAIM IS ONE BREADTH UNIT (libs/research/claim_selection.py, 2026-09-30).
+    # Every docket row -- fresh, carried over or already judged -- whose own words say its result
+    # was the best of N searched variations is stamped with its claim family, so the 25,520 cells
+    # one video's "best of ~200" was swept into count as ONE unit of breadth and the family is
+    # charged its 200 trials ONCE in the lifetime ledger. No row is removed, reordered or
+    # re-judged, and `family`/`params`/verdicts are untouched. A fault here costs the stamp and
+    # says so in the report; it never costs a row.
+    claim_selection: dict[str, Any] = {"status": "UNMEASURED"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.research import claim_selection as _cs
+        before = _cs.breadth(rows_out)
+        stamped = _cs.stamp_all(rows_out)
+        after = _cs.breadth(rows_out)
+        ledger = _cs.update_ledger(after)
+        claim_selection = {
+            "status": "MEASURED", "rows_stamped": stamped,
+            "cells": after["cells"],
+            "breadth_units_before": before["breadth_units"],
+            "breadth_units_after": after["breadth_units"],
+            "distinct_mechanisms_before": before["distinct_mechanisms"],
+            "distinct_mechanisms_after": after["distinct_mechanisms"],
+            "claim_families": {k: {kk: vv for kk, vv in v.items() if kk != "genome_ids"}
+                               for k, v in after["claim_families"].items()},
+            "lifetime_selection_trials": ledger.get("lifetime_selection_trials"),
+            "ledger": str(_cs.LEDGER)}
+        if stamped:
+            print(f"   claim selection: {after['cells_in_claim_families']} row(s) in "
+                  f"{len(after['claim_families'])} claim famil(ies); breadth units "
+                  f"{before['breadth_units']} -> {after['breadth_units']}")
+    except Exception as exc:
+        claim_selection = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   claim selection stamp unavailable ({type(exc).__name__}: {exc})")
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -800,6 +923,45 @@ def main() -> int:
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
                   f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
             return 0
+    # PRE-REGISTRATION, BOTH HALVES, HERE (2026-09-30). This merge runs on the hour BEFORE the
+    # judge reads the docket, so it is the last point where a card can honestly precede a
+    # verdict. First the last sweep's verdicts are stamped and put on the hypothesis graph (the
+    # writer it never had -- its last fate was 2026-09-03), so the judged set is current; then
+    # every docket row is stamped with the card that fixes its exact spec, and every never-judged
+    # cell without one goes into this hour's batch card. A fault here costs the stamps, never a
+    # row: the docket is written either way.
+    prereg: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from libs.research import prereg_join as _pj_join
+        from libs.research.hypothesis_graph import Graph as _Graph
+        from research.frontier_identity import cell_id as _cell_id
+        # EVERY PATH HANGS OFF `HYP`, so a caller that points this merge at another directory
+        # (every test does) moves the card ledger and the graph with it and never writes the
+        # desk's own. The defaults resolve to exactly the desk's paths.
+        _data = HYP.parent
+        _g = _Graph(_data / "hypothesis_graph.jsonl")
+        _paths: dict[str, Any] = {"gate_ledger": HYP / "gate_verdict_ledger.jsonl",
+                                  "seen_cells": HYP / "gauntlet_seen_cells.json",
+                                  "prereg_path": _data / "preregistrations.jsonl"}
+        prereg = {"verdicts": _pj_join.record_gate_ledger(
+                      graph=_g, specs=rows_out, cursor=HYP / "prereg_join_cursor.json",
+                      **_paths),
+                  "docket": _pj_join.preregister_docket(rows_out, graph=_g, cell_id=_cell_id,
+                                                        **_paths),
+                  "status": "APPLIED"}
+        _d = prereg["docket"]
+        print(f"   preregistration: {_d['already']} carded, {_d['new_specs']} new spec(s) in "
+              f"batch {_d['batch_hash']}, {_d['retrospective']} judged before any card; "
+              f"verdicts -> graph: {prereg['verdicts'].get('recorded', 0)} recorded")
+    except Exception as exc:
+        prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     TARGET.write_text(json.dumps(rows_out, indent=1, default=str), "utf-8")
     _lease(TARGET)
     (HYP / "merge_report.json").write_text(json.dumps({
@@ -853,6 +1015,12 @@ def main() -> int:
                                       "families_starved", "unjudged_total",
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
+        "prejudge": prejudge,
+        "preregistration": prereg,
+        "triangle_legs": {k: triangle_legs.get(k) for k in
+                          ("status", "legless_before", "filled", "unfilled",
+                           "unfilled_by_reason", "legless_after")},
+        "claim_selection": claim_selection,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "

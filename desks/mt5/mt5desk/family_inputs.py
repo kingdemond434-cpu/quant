@@ -85,6 +85,39 @@ def _runtime_bars(inputs: Any, symbol: str, timeframe: str, primary: Any) -> Any
         return None
 
 
+def bars_named(symbol: str, like: Any) -> Any:
+    """`symbol`'s bars on the chart `like` IS, or None -- for a family handed a NAME, not a frame.
+
+    WHY A FAMILY NEEDS THIS (measured 2026-09-30). `resolve` above rebuilds a lead_lag driver and
+    a triangle's legs for the forward engine, but the judge's `external_gauntlet.build_cell` has
+    no branch for either family: it passes `driver_symbol` / `leg_b_symbol` through as strings
+    and never loads the frames. `family_lead_lag` and `family_triangle` then returned [] on every
+    cell, which the judge filed as UNKNOWN / "never fires" -- 0 of the census's lead_lag and
+    triangle cells were judgeable, on any symbol. A family that is told WHICH instrument and not
+    given its bars now reads them itself, through the same parquet reader `build_cell` uses for
+    peers (`orthogonal_sweep._bars`), on the chart measured from its own frame (never H1 by
+    default: an H1 leg under an M15 cell would silently coarsen the join). A frame the caller
+    supplies always wins; a symbol with no bars on that chart stays None and the family refuses,
+    exactly as before.
+    """
+    if not symbol or like is None:
+        return None
+    try:
+        from mt5desk.families import bar_minutes
+        from mt5desk.universe_registry import TIMEFRAME_MINUTES
+        minutes = bar_minutes(like)
+        tf = next((k for k, v in TIMEFRAME_MINUTES.items() if v == minutes), None)
+        if tf is None:
+            return None
+        try:
+            from research import orthogonal_sweep as inputs
+        except ImportError:
+            import orthogonal_sweep as inputs  # type: ignore[no-redef]
+        return inputs._bars(str(symbol), tf)
+    except Exception:
+        return None
+
+
 def timeframe_of(params: dict[str, Any] | None) -> str:
     """The chart this cell was hunted on. Absent means H1 -- see `frontier_identity`."""
     return str((params or {}).get("timeframe") or "H1").upper()

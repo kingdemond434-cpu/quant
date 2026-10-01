@@ -23,7 +23,15 @@ rem load-bearing -- which is exactly how this box came to be serving a live dash
 rem place.
 rem ===================================================================================
 setlocal
-set "SRC=administrator@62.171.172.249"
+rem THE HOST IS NOT COMMITTED (same rule as ops/dashboard_relay.cmd). A tracked file naming the
+rem box that carries live risk is a targeting detail; tests/ops/test_live_infrastructure_is_not_
+rem published.py fences it. Set QUANT_BOX_HOST in the machine environment of the box running
+rem this task. Absent, the mirror REFUSES and says so in its log rather than guessing an address.
+if not defined QUANT_BOX_HOST (
+    echo %DATE% %TIME% QUANT_BOX_HOST is not set; refusing to guess the trading box address>>"C:\opt\quant\desks\mt5\logs\dash_mirror.log"
+    exit /b 2
+)
+set "SRC=administrator@%QUANT_BOX_HOST%"
 set "KEY=%USERPROFILE%\.ssh\id_ed25519"
 set "SCP=C:\Windows\System32\OpenSSH\scp.exe"
 if not exist "%SCP%" set "SCP=scp"

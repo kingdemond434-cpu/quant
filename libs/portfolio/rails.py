@@ -152,6 +152,21 @@ RAILS: tuple[Rail, ...] = (
     Rail("causal_invariance", "gate",
          "miner_candidate_compiler.expand_axes <- causal_invariance.verdict_for",
          "measure_causal_invariance"),
+    # THE TIER S VERIFIERS AT THE PROMOTION DOOR (2026-09-30, principal: every blueprint wired
+    # live, no approvals). Replication MISMATCH, an online-FDR over-budget certificate, or a
+    # production-judged immune DROP withhold a NEW live row -- nothing held is touched. Billed
+    # from the ledger of every row it withheld and the forward expectancy that row carried.
+    Rail("tier_s_evidence_block", "veto",
+         "promoter.tier_s_block <- libs.tiers.promotion_authority.block",
+         "measure_tier_s_block"),
+    # E8 GOLD'S DUPLICATE GUARD (2026-09-30). A dropped bracket leg is not re-sent while an
+    # unowned position on its side, opened since the failed send, may BE that send. If it is not,
+    # the leg's certified risk goes undeployed: each block is journalled RAIL_BLOCKED with its
+    # missed_growth_risk_usd in data/e8_gold_intents.jsonl, which
+    # missed_growth.measure_e8_unowned_block reads.
+    Rail("e8_unowned_position_block", "integrity",
+         "prop.e8_gold._retry_failed_legs <- position_since_failure",
+         "measure_e8_unowned_block"),
 )
 
 _CACHE: dict[str, Any] = {"mtime": None, "doc": {}}

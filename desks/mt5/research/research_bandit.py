@@ -40,18 +40,21 @@ def run(seed: int = 0) -> dict:
     return d
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--seed", type=int, default=0)
-    a = ap.parse_args()
-    d = run(seed=a.seed)
+def publish(d: dict) -> None:
+    """Stamp authority onto the run and publish it to both paths its readers use. The daily
+    chain and the hourly leg both call this: a run that is not published reaches no leg."""
     # AUTHORITY IS CLAIMED BY THE ORGAN THAT OBEYED (2026-09-16): `research_budget` records which
     # legs spent by these shares; this only reads that record back onto its own report.
     try:
         import json as _json
 
+        from research_budget import CONTRACT as _contract
         from research_budget import authority as _authority
         ok, why = _authority()
+        # THE BUDGET'S OWN VERDICT, KEPT APART FROM THE CONTROLLER'S (2026-09-30). `research_budget`
+        # is authoritative only when its contract's held-out arm ADMITTED the uplift it granted;
+        # the combined flag below may also be carried by cycle_pricing obeying the price stack.
+        budget_ok, budget_why = ok, why
         # AND THE WHOLE CYCLE'S PRICES, NOT JUST THESE TWO LEGS (Tier-1 B27, 2026-09-22).
         # `research_budget` knows the two legs whose arms this bandit prices; `cycle_pricing`
         # applies the price stack to EVERY leg's seconds and to the order they run in, and
@@ -70,6 +73,9 @@ def main() -> int:
         budget_doc = _json.loads(p.read_text(encoding="utf-8"))
         budget_doc["authoritative"] = bool(ok)
         budget_doc["authority_evidence"] = why
+        budget_doc["research_budget_authoritative"] = bool(budget_ok)
+        budget_doc["research_budget_why"] = budget_why
+        budget_doc["research_budget_contract"] = dict(_contract)
         p.write_text(_json.dumps(budget_doc, indent=1, default=str), encoding="utf-8")
         # THE REPORT IS THE FULL RUN, NOT THE TRIMMED BUDGET (Tier-1 B11/B12, 2026-09-23).
         #
@@ -110,6 +116,14 @@ def main() -> int:
         print(f"  published: {rep}")
     except Exception as exc:
         print(f"  authoritative: unmeasured ({type(exc).__name__}: {exc})")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--seed", type=int, default=0)
+    a = ap.parse_args()
+    d = run(seed=a.seed)
+    publish(d)
     print(f"RESEARCH BANDIT  {d['graph_rows']} graph rows, pooled certify rate "
           f"{d['arms'].get('_pooled_rate')}")
     for arm, s in sorted(d["shares"].items(), key=lambda kv: -kv[1]):

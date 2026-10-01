@@ -1,0 +1,331 @@
+{
+ "campaign": {
+  "runs": 1500,
+  "depth": 60,
+  "fault_rate": 0.3,
+  "crashes": 13275,
+  "restarts": 12917,
+  "breaches": {},
+  "examples": {},
+  "clean": true,
+  "protocol": {
+   "persist_before_send": true,
+   "reconcile_on_restart": true,
+   "idempotent_client_id": true,
+   "recheck_alloc_at_send": true,
+   "check_cert_at_send": true,
+   "clamp_data_to_clock": true
+  }
+ },
+ "drills": [
+  {
+   "drill": "sleeves.json -> load_sleeves_verbose",
+   "results": {
+    "truncate": "FAILED_CLOSED",
+    "garbage": "FAILED_CLOSED",
+    "empty": "FAILED_CLOSED",
+    "wrong_type": "FAILED_CLOSED",
+    "missing": "FAILED_CLOSED"
+   },
+   "status": "PASS",
+   "accepted_garbage": []
+  },
+  {
+   "drill": "truth journal -> verify",
+   "results": {
+    "truncate": "RAISED:JSONDecodeError",
+    "garbage": "RAISED:UnicodeDecodeError"
+   },
+   "status": "PASS",
+   "accepted_garbage": []
+  },
+  {
+   "drill": "SIGKILL journal writer -> restart",
+   "orders": 400,
+   "kills_planned": 5,
+   "kills": 5,
+   "restarts": 5,
+   "load_failures": 0,
+   "sandbox": "tempdir",
+   "chain_ok": true,
+   "chain": {
+    "ok": true,
+    "n": 400,
+    "tail": "c0245ba6b803cf95e30461274fa2b0c91989d4730b9f61f2d8558cc00964daf1"
+   },
+   "journalled": 400,
+   "duplicates": 0,
+   "lost": 0,
+   "status": "PASS"
+  }
+ ],
+ "process_kill": {
+  "orders": 400,
+  "kills_planned": 5,
+  "kills": 5,
+  "restarts": 5,
+  "load_failures": 0,
+  "sandbox": "tempdir",
+  "chain_ok": true,
+  "chain": {
+   "ok": true,
+   "n": 400,
+   "tail": "c0245ba6b803cf95e30461274fa2b0c91989d4730b9f61f2d8558cc00964daf1"
+  },
+  "journalled": 400,
+  "duplicates": 0,
+  "lost": 0,
+  "status": "PASS"
+ },
+ "gateway_drill": {
+  "faults": [
+   {
+    "fault": "healthy",
+    "status": "MEASURED",
+    "observed": {
+     "fault": "healthy",
+     "root": "/tmp/gw_drill_p6a9sd9h",
+     "connect": true,
+     "orders": [
+      {
+       "side": "buy_stop",
+       "retcode": 10009,
+       "comment": "sandbox"
+      },
+      {
+       "side": "sell_stop",
+       "retcode": 10009,
+       "comment": "sandbox"
+      }
+     ],
+     "expired": 0,
+     "sends": 2,
+     "initialize_calls": 0,
+     "intents": 2,
+     "decisions": [
+      "placed",
+      "placed"
+     ]
+    },
+    "breaches": []
+   },
+   {
+    "fault": "send_none",
+    "status": "MEASURED",
+    "observed": {
+     "fault": "send_none",
+     "root": "/tmp/gw_drill_1e6qvbsp",
+     "connect": true,
+     "orders": [
+      {
+       "side": "buy_stop",
+       "retcode": null,
+       "comment": null
+      },
+      {
+       "side": "sell_stop",
+       "retcode": null,
+       "comment": null
+      }
+     ],
+     "expired": 0,
+     "sends": 2,
+     "initialize_calls": 0,
+     "intents": 2,
+     "decisions": [
+      "broker_rejected",
+      "broker_rejected"
+     ]
+    },
+    "breaches": []
+   },
+   {
+    "fault": "reject_10015",
+    "status": "MEASURED",
+    "observed": {
+     "fault": "reject_10015",
+     "root": "/tmp/gw_drill_50t6jhz0",
+     "connect": true,
+     "orders": [
+      {
+       "side": "buy_stop",
+       "retcode": 10015,
+       "comment": "sandbox"
+      },
+      {
+       "side": "sell_stop",
+       "retcode": 10015,
+       "comment": "sandbox"
+      }
+     ],
+     "expired": 0,
+     "sends": 2,
+     "initialize_calls": 0,
+     "intents": 2,
+     "decisions": [
+      "broker_rejected",
+      "broker_rejected"
+     ]
+    },
+    "breaches": []
+   },
+   {
+    "fault": "requote_10004",
+    "status": "MEASURED",
+    "observed": {
+     "fault": "requote_10004",
+     "root": "/tmp/gw_drill_e6827fvq",
+     "connect": true,
+     "orders": [
+      {
+       "side": "buy_stop",
+       "retcode": 10004,
+       "comment": "sandbox"
+      },
+      {
+       "side": "sell_stop",
+       "retcode": 10004,
+       "comment": "sandbox"
+      }
+     ],
+     "expired": 0,
+     "sends": 2,
+     "initialize_calls": 0,
+     "intents": 2,
+     "decisions": [
+      "broker_rejected",
+      "broker_rejected"
+     ]
+    },
+    "breaches": []
+   },
+   {
+    "fault": "send_raises",
+    "status": "MEASURED",
+    "observed": {
+     "fault": "send_raises",
+     "root": "/tmp/gw_drill_u3c1cjtj",
+     "connect": true,
+     "place_exc": "RuntimeError: IPC timeout",
+     "expired": 0,
+     "sends": 1,
+     "initialize_calls": 0,
+     "intents": 0,
+     "decisions": []
+    },
+    "breaches": [
+     "NO_CRASH: place raised RuntimeError: IPC timeout"
+    ]
+   },
+   {
+    "fault": "tick_none",
+    "status": "MEASURED",
+    "observed": {
+     "fault": "tick_none",
+     "root": "/tmp/gw_drill_6r5vb2w0",
+     "connect": true,
+     "orders": [
+      {
+       "side": "buy_stop",
+       "retcode": 10009,
+       "comment": "sandbox"
+      },
+      {
+       "side": "sell_stop",
+       "retcode": 10009,
+       "comment": "sandbox"
+      }
+     ],
+     "expired": 0,
+     "sends": 2,
+     "initialize_calls": 0,
+     "intents": 2,
+     "decisions": [
+      "placed",
+      "placed"
+     ]
+    },
+    "breaches": [
+     "NO_SEND_BLIND: 2 order(s) sent with no quote for the symbol"
+    ]
+   },
+   {
+    "fault": "terminal_down",
+    "status": "MEASURED",
+    "observed": {
+     "fault": "terminal_down",
+     "root": "/tmp/gw_drill_grev0827",
+     "connect": false,
+     "orders": [
+      {
+       "side": "buy_stop",
+       "retcode": 10009,
+       "comment": "sandbox"
+      },
+      {
+       "side": "sell_stop",
+       "retcode": 10009,
+       "comment": "sandbox"
+      }
+     ],
+     "expired": 0,
+     "sends": 2,
+     "initialize_calls": 1,
+     "intents": 2,
+     "decisions": [
+      "placed",
+      "placed"
+     ]
+    },
+    "breaches": []
+   },
+   {
+    "fault": "orders_get_raises",
+    "status": "MEASURED",
+    "observed": {
+     "fault": "orders_get_raises",
+     "root": "/tmp/gw_drill_o_c9t2oy",
+     "connect": true,
+     "orders": [
+      {
+       "side": "buy_stop",
+       "retcode": 10009,
+       "comment": "sandbox"
+      },
+      {
+       "side": "sell_stop",
+       "retcode": 10009,
+       "comment": "sandbox"
+      }
+     ],
+     "expired": 0,
+     "sends": 2,
+     "initialize_calls": 0,
+     "intents": 2,
+     "decisions": [
+      "placed",
+      "placed"
+     ]
+    },
+    "breaches": []
+   }
+  ],
+  "n_faults": 8,
+  "n_measured": 8,
+  "breaches": [
+   "send_raises: NO_CRASH: place raised RuntimeError: IPC timeout",
+   "tick_none: NO_SEND_BLIND: 2 order(s) sent with no quote for the symbol"
+  ],
+  "status": "MEASURED",
+  "sandbox": "child process per fault; MetaTrader5 replaced by a double before import; MT5_DESK_ROOT = a temp directory"
+ },
+ "metric": {
+  "breaches": 0,
+  "drills_failing": 0,
+  "processes_killed": 5,
+  "gateway_faults_measured": 8,
+  "gateway_breaches": 2
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 13.642
+}

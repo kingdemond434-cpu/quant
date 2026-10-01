@@ -41,6 +41,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -48,6 +49,10 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from libs.ops import host_identity  # noqa: E402
+
 UNMEASURED = "UNMEASURED"
 FLOORS = ROOT / "docs" / "research" / "birth_obligations.json"
 
@@ -344,24 +349,114 @@ def _attribution(root: Path) -> tuple[set[str], set[str], str]:
                          f"measured by {measured_to} carry their producer stamp")
 
 
+def _certificate_birth(root: Path) -> tuple[set[str], set[str], str]:
+    """THE SEVENTH AXIS: every certificate names the producer that earned it, or says why not.
+
+    THE BOUNDARY THIS GUARDS. The sixth axis stamps the CELL at the registry's two doors. A
+    certificate is minted from a cell by `scripts/external_gauntlet.py`, which is SEALED and knows
+    nothing about producers -- so `UNIVERSAL_SURVIVORS.canon.json` carries `hunt`, `cell`, `sym`,
+    `days`, the ten gate results and `gated_at`, and nothing about who found it. The stamp cannot
+    ride across that boundary by itself, which is exactly the shape of failure this desk keeps
+    repeating: a fact that exists in one place and is silently lost by the next organ.
+
+    `desks/mt5/research/certificate_provenance.py` rebuilds the link by EXACT cell identity on the
+    hourly census leg. This clause fails when a certificate the canon holds has no row there at
+    all. A row reading UNMEASURED with its reason SATISFIES the obligation -- the same discipline
+    the attribution axis uses, and the reason this fence can never be passed by guessing.
+    """
+    canon = root / "desks" / "mt5" / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+    if not canon.exists():
+        canon = root / "desks" / "mt5" / "reports" / "UNIVERSAL_SURVIVORS.json"
+    doc = _json(canon)
+    surv = doc.get("survivors") if isinstance(doc, dict) else None
+    if not isinstance(surv, dict) or not surv:
+        return set(), set(), f"{UNMEASURED}: no certificate store readable at {canon.as_posix()}"
+    rec_doc = _json(root / "desks" / "mt5" / "data" / "certificate_provenance.json")
+    records = rec_doc.get("records") if isinstance(rec_doc, dict) else None
+    if not isinstance(records, dict):
+        return ({f"certificate:{k}" for k in surv}, set(),
+                f"{UNMEASURED}: no birth record at desks/mt5/data/certificate_provenance.json -- "
+                f"{len(surv)} certificate(s) with nothing naming their producer. Run "
+                f"`python desks/mt5/research/certificate_provenance.py --once`, which the hourly "
+                f"leg attribution_census also calls")
+    objects: set[str] = set()
+    ok: set[str] = set()
+    named = 0
+    for key, row in surv.items():
+        row = row if isinstance(row, dict) else {}
+        cell = str(row.get("cell") or "").strip()
+        if not cell:
+            hunt = str(row.get("hunt") or "").strip()
+            cell = (str(key)[len(hunt) + 1:]
+                    if hunt and str(key).startswith(hunt + ".") else str(key))
+        name = f"certificate:{key}"
+        objects.add(name)
+        rec = records.get(cell)
+        if not isinstance(rec, dict) or not str(rec.get("verdict") or "").strip():
+            continue
+        # A RECORD WITHOUT A REASON IS SILENCE WEARING A VERDICT'S CLOTHES. UNMEASURED and
+        # AMBIGUOUS satisfy the obligation only when they say WHY; a named producer speaks for
+        # itself.
+        if not rec.get("producer") and not str(rec.get("why") or "").strip():
+            continue
+        ok.add(name)
+        if rec.get("producer"):
+            named += 1
+    return objects, ok, (f"{len(ok)}/{len(objects)} certificates carry a birth record "
+                         f"({named} name a producer by exact identity, "
+                         f"{len(ok) - named} record why none could be reached)")
+
+
+#: "Is this the host that runs the legs?" is answered by `libs/ops/host_identity`, the one helper
+#: every fence shares (PR #130 audit): the machine id recorded in config/trading_host.json, never
+#: a hostname prefix and never `gateway_state.json`'s mtime -- that file is TRACKED, so its age on
+#: a checkout says when git last wrote it, not which machine this is.
+#: How old an axis's source report may be before it stops describing today. One hour of margin on
+#: the hourly legs that write them.
+_SOURCE_STALE_H = 6.0
+
+
+def _is_trading_host(base: Path) -> bool:
+    """The trading box, by its machine id. A fence spends an UNMEASURED identity on the STRICT
+    side (`may_be_trading`): an unrecorded id with the trading hostname is still judged as the
+    box, so no axis there can go quiet because an id was never written down. `base` is kept for
+    the callers' signature; the answer is about this machine, not a checkout."""
+    del base
+    return host_identity.identify().may_be_trading
+
+
+def _source_age_h(base: Path, rel: str | None) -> float | None:
+    if not rel:
+        return None
+    try:
+        return (time.time() - (base / rel).stat().st_mtime) / 3600.0
+    except OSError:
+        return None
+
+
 @dataclass(frozen=True)
 class Axis:
     name: str
     obligation: str
     derive: Callable[[Path], tuple[set[str], set[str], str]]
     fence: tuple[str, tuple[str, ...]] | None
+    #: The report this axis READS. An axis is only as current as the artifact it is derived from,
+    #: and on a host that regenerates none of them the age of that file is the whole verdict.
+    source: str | None = None
 
 
 AXES: tuple[Axis, ...] = (
     Axis("executable", "a clock, an artifact, a named consumer and a row in the runtime "
-                       "attestation", _executables, ("check_component_registry.py", ())),
+                       "attestation", _executables, ("check_component_registry.py", ()),
+         "docs/research/runtime_state.json"),
     Axis("source", "a collection obligation and a position in the chain from collected through "
                    "ingested, represented, cells emitted, cells judged", _sources,
-         ("check_source_drain.py", ())),
+         ("check_source_drain.py", ()), "desks/mt5/reports/SOURCE_DRAIN.json"),
     Axis("family", "membership of the judge's coverage, derived from the registry rather than "
-                   "typed", _families, ("check_judge_coverage.py", ())),
+                   "typed", _families, ("check_judge_coverage.py", ()),
+         "desks/mt5/reports/JUDGE_COVERAGE.json"),
     Axis("region", "arrival at the CURRENT depth, breadth and ingestion floors, never at zero",
-         _regions, ("check_regional_parity.py", ())),
+         _regions, ("check_regional_parity.py", ()), "desks/mt5/reports/regional_parity.json"),
     Axis("destructive", "a guard against acting on an absence", _destructive,
          ("check_no_retirement_on_absence.py", ())),
     # SIXTH AXIS (2026-09-23): attribution. Measured that day, 3,663 of 3,862 unique cells and 33
@@ -371,7 +466,19 @@ AXES: tuple[Axis, ...] = (
     Axis("attribution", "the producer that made it and, where the producer belongs to one, its "
                         "region -- stamped at birth by libs/research/attribution.attribute() "
                         "through the two registry doors, never by a later sweep",
-         _attribution, ("check_producer_yield.py", ())),
+         _attribution, ("check_producer_yield.py", ()),
+         "desks/mt5/reports/ATTRIBUTION_COVERAGE.json"),
+    # SEVENTH AXIS (2026-09-24): the certificate's own birth record. The sixth axis stamps the
+    # CELL; a certificate is minted from one by a sealed writer that knows nothing about
+    # producers, so the stamp does not ride across that boundary on its own. Measured that day:
+    # 174 certificates, provenance-shaped fields on none of them, and the census publishing
+    # `coverage 1.0` from a symbol|family fallback that several hundred candidates share. A
+    # certificate with no row in the record is the arrival this clause catches.
+    Axis("certificate_birth", "a row in desks/mt5/data/certificate_provenance.json naming the "
+                              "producer that earned it by EXACT cell identity, or UNMEASURED "
+                              "with its reason -- silence is the defect, not the admission",
+         _certificate_birth, ("check_producer_yield.py", ()),
+         "desks/mt5/data/certificate_provenance.json"),
 )
 
 
@@ -381,8 +488,43 @@ def measure(root: Path | None = None, *, floors: Path | None = None) -> dict[str
     known: dict[str, Any] = stored.get("axes", {}) if isinstance(stored, dict) else {}
     axes: dict[str, Any] = {}
     failures: list[str] = []
+    trading = _is_trading_host(base)
     for ax in AXES:
         objects, ok, why = ax.derive(base)
+        # AN AXIS IS ONLY AS CURRENT AS THE REPORT IT READS, AND ONLY SOME HOSTS WRITE THOSE.
+        #
+        # MEASURED 2026-09-24, one checker, one commit, two boxes, twelve minutes apart:
+        #
+        #   vmi3571445 (trading)  JUDGE_COVERAGE.json written 22:46  ->  96 families, 62 reached,
+        #                                                                the family axis PASSES
+        #   vmi3500897 (build)    the same path, written 02:17       -> 168 families, 28 reached,
+        #                                                                "88 arrived without its
+        #                                                                 obligation"
+        #
+        # Nothing arrived. The build box runs ONE enabled MT5 task (`MT5-AdoptRelease`) out of
+        # twenty-seven -- every other clock is disabled there BY DESIGN, because that machine
+        # authors code and does not trade -- so no leg on it will EVER refresh these reports. The
+        # fence was reading a twenty-hour-old file and calling the gap an arrival, which sends an
+        # operator to a judge that is working and leaves a gate nobody on that machine can satisfy
+        # red every hour (L1.43 -- a permanent red trains the desk to stop reading the fence).
+        #
+        # SO IT IS UNMEASURED THERE, AND UNMEASURED IS A VERDICT AND NOT A PASS (L1.28a): the age
+        # and the artifact are named on the row and printed. THE TEETH ARE UNTOUCHED WHERE THEY
+        # BITE: on the trading host `trading` is True and every axis is judged exactly as before,
+        # and the same axes on that box still fail today (executable 125, source 6) -- which is
+        # the point. This clause narrows WHERE a verdict may be given, never WHAT it is.
+        age_h = _source_age_h(base, ax.source)
+        # AN ABSENT REPORT IS NOT THIS CLAUSE'S BUSINESS: each `derive` already returns
+        # UNMEASURED with its own reason when its input is missing, and a fresh tree that simply
+        # has not written a report yet must keep reading exactly as it did. Only a report that
+        # EXISTS and has stopped describing today is a staleness question.
+        if (not trading and ax.source is not None and not why.startswith(UNMEASURED)
+                and age_h is not None and age_h > _SOURCE_STALE_H):
+            why = (f"{UNMEASURED}: this host is not the trading box (host identity: "
+                   f"{host_identity.identify().verdict}) and {ax.source} is {age_h:.1f}h old"
+                   + f", past the {_SOURCE_STALE_H:g}h window -- so an incomplete row here is a "
+                     f"fact about this machine, not an arrival. Judge this axis on the host that "
+                     f"writes the report. Last read: {why}")
         incomplete = sorted(objects - ok)
         _prev = known.get(ax.name)
         prev: dict[str, Any] = _prev if isinstance(_prev, dict) else {}

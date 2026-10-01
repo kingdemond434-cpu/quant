@@ -12,8 +12,13 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # ONE GROUP PER PUSHED COMMIT. GitHub keeps one pending run per group and cancels the older
+  # pending one whatever cancel-in-progress says, so with a per-branch group every live push
+  # still cancelled the last (20 runs cancelled on 2026-09-30) and live never finished a run.
+  group: ci-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || 'pr' }}
+  # A push run on a shared branch always finishes: every live run 11:42-12:54Z on 2026-09-30
+  # was cancelled by the next push, so live never produced a base set. PR runs still supersede.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
@@ -80,7 +85,7 @@ jobs:
       # never once invoked. First measurement, 2026-08-04: 88.1% repo-wide, and the money path at
       # 41.6%, which is backwards from where the care belongs.
       - name: Tests (pytest + branch coverage)
-        run: pytest --cov=libs --cov-branch --cov-report=term:skip-covered --cov-report=json:coverage.json --junitxml=quality-junit.xml
+        run: pytest -n auto --dist loadfile --cov=libs --cov-branch --cov-report=term:skip-covered --cov-report=json:coverage.json --junitxml=quality-junit.xml
 
       # Two floors, not one: a repo-wide average lets ORDER-PATH coverage fall while a wave of
       # research tests keeps the aggregate up, which hides precisely the number worth watching.

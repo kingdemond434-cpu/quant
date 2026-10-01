@@ -35,10 +35,16 @@ TRAIN AND TEST ARE PURGED AND EMBARGOED, and every number reported is from the h
 variants are ranked on train; a variant chosen on test would be an execution policy fitted to the
 window it is measured in.
 
-LIVE FILLS RECALIBRATING THE SIMULATOR is the one clause this cannot yet honour, and it says so:
-the live ledger holds 16 deals across 3 days. The hook is named rather than faked.
+LIVE FILLS RECALIBRATING THE SIMULATOR (wired 2026-09-30, S23): every run joins the fill
+corpus's requested price and entry fill to the live ledger's closing deal (`live_fills`) and
+splits each real fill into signal alpha and execution drag (`split_fills`), book-level and per
+sleeve, into `live_fill_calibration`. Below MIN_CALIBRATION_FILLS it is published UNMEASURED.
 
-    python desks/mt5/research/execution_science.py [--apply]
+    python desks/mt5/research/execution_science.py [--apply] [--dry-run]
+
+THE REPORT IS WRITTEN ON EVERY RUN (`reports/EXECUTION_SCIENCE.json`), an UNMEASURED verdict with
+its reason included: an organ that writes only on success is indistinguishable from one that
+never ran.
 """
 from __future__ import annotations
 
@@ -46,7 +52,9 @@ import argparse
 import contextlib
 import json
 import math
+import os
 import sys
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -137,74 +145,279 @@ def _growth(ds: Any) -> float:
     return float(np.mean(np.log1p(r)))
 
 
-def _live_fill_calibration() -> dict[str, Any]:
-    """The clause this cannot honour yet, stated rather than faked."""
-    n = 0
-    if LEDGER.exists():
-        for ln in LEDGER.read_text(encoding="utf-8", errors="replace").splitlines():
-            if ln.strip():
-                n += 1
+#: the fill corpus the fill recorder appends (requested price vs fill, per order the gateway sent)
+CORPUS = DESK / "data" / "fill_corpus.jsonl"
+#: below this many split fills the split is REPORTED but the simulator is not called recalibrated:
+#: a slippage distribution from a handful of fills is a point estimate wearing a histogram
+MIN_CALIBRATION_FILLS = 30
+
+
+def _jsonl(p: Path) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    try:
+        with p.open(encoding="utf-8", errors="replace") as fh:
+            for ln in fh:
+                if not ln.strip():
+                    continue
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                if isinstance(r, dict):
+                    out.append(r)
+    except OSError:
+        return []
+    return out
+
+
+def _num(x: Any) -> float | None:
+    try:
+        v = float(x)
+    except (TypeError, ValueError):
+        return None
+    return v if math.isfinite(v) else None
+
+
+def live_fills(corpus: Iterable[Mapping[str, Any]], ledger: Iterable[Mapping[str, Any]]
+               ) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """THE REAL FILLS, IN `split_fills`'s SHAPE (S23, wired 2026-09-30: until now only tests
+    called `split_fills`).
+
+    The fill corpus (`fill_recorder`, hourly) carries what the desk ASKED for (`requested_price`,
+    the signal's modelled fill) and what the ENTRY got (`fill_price`); the live ledger's closing
+    deal carries where the trade LEFT (`fill_price` of the close), the stop it was sized against
+    (`entry_price`, `sl`) and the round trip's commission and swap. Joined on the closing deal,
+    else the position, else the entry order == the intent's ticket -- the same bridges the
+    recorder uses. A row that cannot be joined or has no stop distance is counted, never scored
+    as a zero."""
+    by_deal: dict[str, Mapping[str, Any]] = {}
+    by_pos: dict[str, Mapping[str, Any]] = {}
+    by_entry: dict[str, Mapping[str, Any]] = {}
+    for d in ledger:
+        for key, idx in (("deal", by_deal), ("position_id", by_pos), ("entry_order", by_entry)):
+            v = d.get(key)
+            if v not in (None, ""):
+                idx[str(v)] = d
+    out: list[dict[str, Any]] = []
+    counts = {"corpus_filled": 0, "joined": 0, "unjoined": 0, "no_request": 0}
+    for c in corpus:
+        if str(c.get("status") or "").upper() != "FILLED":
+            continue
+        counts["corpus_filled"] += 1
+        asked, entry_fill = _num(c.get("requested_price")), _num(c.get("fill_price"))
+        if asked is None or entry_fill is None:
+            counts["no_request"] += 1
+            continue
+        jk = c.get("join_keys") if isinstance(c.get("join_keys"), Mapping) else {}
+        deal = by_deal.get(str(c["deal"])) if c.get("deal") is not None else None
+        if deal is None and jk.get("position_id"):
+            deal = by_pos.get(str(jk["position_id"]))
+        if deal is None and c.get("ticket") is not None:
+            deal = by_entry.get(str(c["ticket"]))
+        if deal is None:
+            counts["unjoined"] += 1
+            continue
+        exit_px, entry_px, sl = (_num(deal.get("fill_price")), _num(deal.get("entry_price")),
+                                 _num(deal.get("sl")))
+        contract, lots = _num(deal.get("contract_size")), _num(deal.get("volume"))
+        stop_dist = abs(entry_px - sl) if (entry_px is not None and sl is not None) else None
+        fees_quote = (_num(deal.get("commission")) or 0.0) + (_num(deal.get("swap")) or 0.0)
+        cost = (-fees_quote / (contract * lots)) if (contract and lots) else 0.0
+        direction = _num(c.get("direction"))
+        counts["joined"] += 1
+        out.append({"sleeve": str(c.get("sleeve") or deal.get("sleeve") or ""),
+                    "symbol": str(c.get("symbol") or deal.get("symbol") or ""),
+                    "deal": deal.get("deal"),
+                    "side": 1.0 if (direction is None or direction >= 0) else -1.0,
+                    "signal_price": asked, "fill_price": entry_fill, "exit_price": exit_px,
+                    "stop_dist": stop_dist, "cost": cost})
+    return out, counts
+
+
+def _live_fill_calibration(corpus_path: Path | None = None,
+                           ledger_path: Path | None = None) -> dict[str, Any]:
+    """Live fills, split into signal alpha and execution drag by `split_fills`, every hour.
+
+    The book-level split and one per sleeve. Below MIN_CALIBRATION_FILLS the split is published
+    with status UNMEASURED (a thin distribution is not a calibration) -- never withheld."""
+    ledger = _jsonl(ledger_path or LEDGER)
+    corpus = _jsonl(corpus_path or CORPUS)
+    fills, counts = live_fills(corpus, ledger)
+    book = split_fills(fills)
+    by_sleeve: dict[str, list[dict[str, Any]]] = {}
+    for f in fills:
+        by_sleeve.setdefault(f["sleeve"] or "?", []).append(f)
+    n = int(book.get("n") or 0)
+    status = "MEASURED" if n >= MIN_CALIBRATION_FILLS else "UNMEASURED"
     return {
-        "status": "UNMEASURED",
-        "n_live_deals": n,
-        "why": (f"the live ledger holds {n} realised deal(s). Recalibrating a fill simulator "
-                f"needs the distribution of slippage against the modelled fill, and a "
-                f"distribution estimated from {n} observations would be a point estimate wearing "
-                f"a histogram."),
-        "hook": ("when the ledger carries enough deals, the comparison is already available: "
-                 "each deal records entry_price and fill_price, and their difference against the "
-                 "modelled fill IS the recalibration. Nothing further needs building."),
+        "status": status,
+        "n_live_deals": len(ledger),
+        "n_split_fills": n,
+        "join": counts,
+        "split": book,
+        "by_sleeve": {k: split_fills(v) for k, v in sorted(by_sleeve.items())},
+        "why": (f"{n} live fill(s) joined requested price -> entry fill -> exit and split by "
+                f"split_fills" + ("" if status == "MEASURED" else
+                                  f"; {MIN_CALIBRATION_FILLS} are needed before the split is "
+                                  "read as a recalibration of the fill simulator")),
+        "consumer": "execution_science.split_fills <- data/fill_corpus.jsonl x live_ledger.jsonl",
     }
 
 
-def build() -> dict[str, Any]:
+def split_fills(fills: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
+    """Signal alpha and execution drag, split per fill, in R.
+
+    Each fill names the price the SIGNAL decided at (`signal_price`, the modelled fill), the price
+    the order actually got (`fill_price`), where the trade left (`exit_price`), its `side` (+1/-1),
+    its `stop_dist` (the R unit) and any round-trip `cost` in price units. Then, with no model of
+    anything:
+
+        signal_alpha    side * (exit - signal_price) / stop_dist        what the idea earned
+        execution_drag  side * (fill - signal_price) / stop_dist
+                        + cost / stop_dist                              what the round trip took
+        net             signal_alpha - execution_drag                   what the book was paid
+
+    so `net + drag == alpha` holds exactly on every row. A fill with no usable stop distance is
+    counted and skipped, never scored as a zero.
+    """
+    rows: list[dict[str, float]] = []
+    skipped = 0
+    for f in fills:
+        try:
+            side = 1.0 if float(f.get("side", 1)) >= 0 else -1.0
+            sd = float(f["stop_dist"])
+            sig_px, fill_px, exit_px = (float(f["signal_price"]), float(f["fill_price"]),
+                                        float(f["exit_price"]))
+            cost = float(f.get("cost", 0.0) or 0.0)
+        except (KeyError, TypeError, ValueError):
+            skipped += 1
+            continue
+        if not (sd > 0) or not all(math.isfinite(x) for x in (sig_px, fill_px, exit_px, cost)):
+            skipped += 1
+            continue
+        alpha = side * (exit_px - sig_px) / sd
+        drag = side * (fill_px - sig_px) / sd + cost / sd
+        rows.append({"signal_alpha_r": alpha, "execution_drag_r": drag, "net_r": alpha - drag})
+    n = len(rows)
+    if n == 0:
+        return {"status": "UNMEASURED", "n": 0, "skipped": skipped,
+                "why": "no fill carried a signal price, a fill price, an exit and a stop"}
+    mean = {k: sum(r[k] for r in rows) / n
+            for k in ("signal_alpha_r", "execution_drag_r", "net_r")}
+    a = mean["signal_alpha_r"]
+    return {"status": "MEASURED", "n": n, "skipped": skipped,
+            "mean_signal_alpha_r": round(a, 8),
+            "mean_execution_drag_r": round(mean["execution_drag_r"], 8),
+            "mean_net_r": round(mean["net_r"], 8),
+            "drag_share_of_signal": (round(mean["execution_drag_r"] / abs(a), 6)
+                                     if a != 0 else None),
+            "diagnosis": diagnose(a, mean["net_r"])}
+
+
+def diagnose(signal_alpha: float, net: float) -> str:
+    """The decision the split exists for: abandon the mechanism, or trade it differently."""
+    if signal_alpha <= 0:
+        return "NO_SIGNAL: the idea earns nothing before costs -- abandon or rethink the mechanism"
+    if net <= 0:
+        return ("EATEN_BY_EXECUTION: the signal works and the round trip takes all of it -- "
+                "trade it differently, do not abandon it")
+    return "SURVIVES_EXECUTION: the signal works and keeps part of its edge after the round trip"
+
+
+def cell_row(sym: str, fam: str, variant: Mapping[str, Any], n_base: int, n_sigs: int,
+             net_series: Any, gross_series: Any) -> dict[str, Any] | None:
+    """One (symbol, family, variant) cell: the SAME signals scored frictionless and costed."""
+    g_net, g_gross = _growth(net_series), _growth(gross_series)
+    if not (math.isfinite(g_net) and math.isfinite(g_gross)):
+        return None
+    kept = n_sigs / max(n_base, 1)
+    return {
+        "symbol": sym, "family": fam, "variant": variant["name"],
+        "declared_selects": bool(variant.get("selects")),
+        "n_signals": int(n_sigs),
+        "signals_kept_share": round(kept, 4),
+        "like_for_like": bool(kept >= LIKE_FOR_LIKE_KEPT),
+        "signal_alpha_frictionless": round(g_gross, 8),
+        "net_growth": round(g_net, 8),
+        "execution_drag": round(g_gross - g_net, 8),
+        "drag_share_of_signal": (round((g_gross - g_net) / abs(g_gross), 4)
+                                 if g_gross != 0 else None),
+        "diagnosis": diagnose(g_gross, g_net),
+    }
+
+
+def _unmeasured(now: datetime, why: str, **extra: Any) -> dict[str, Any]:
+    """UNMEASURED is a verdict (L1.28a): it is written, with its reason, like any other."""
+    return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED", "why": why,
+            "live_fill_calibration": _live_fill_calibration(), **extra}
+
+
+def build(evaluator: Any = None, families: Any = None, meta: Mapping[str, Any] | None = None,
+          symbols: Sequence[str] | None = None, bars: Callable[[str], Any] | None = None
+          ) -> dict[str, Any]:
+    """The whole attribution. Every dependency is injectable so the split is testable on
+    synthetic fills; by default each is the desk's own (`external_gauntlet`, `mt5desk.families`,
+    the universe registry, the LIVE sleeves' symbols, the H1 parquet)."""
     now = datetime.now(tz=UTC)
     try:
         import pandas as pd
     except ImportError as exc:
-        return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
-                "why": f"pandas unavailable ({exc})"}
-    try:
-        import external_gauntlet as eg  # type: ignore[import-not-found]
-        from mt5desk import families as FAM
-    except ImportError as exc:
-        return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
-                "why": (f"the canonical evaluator is not importable ({exc}). This organ refuses "
-                        f"to score with a second implementation of the fill model -- that is the "
-                        f"one thing it exists to hold constant.")}
-    try:
-        meta = json.loads((UNI / "universe.json").read_text("utf-8"))
-    except (OSError, ValueError) as exc:
-        return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
-                "why": f"universe registry unreadable: {exc}"}
-
-    rows: list[dict[str, Any]] = []
-    for sym in _live_symbols():
-        p = UNI / f"{sym}_H1.parquet"
-        if not p.exists():
-            continue
+        return _unmeasured(now, f"pandas unavailable ({exc})")
+    eg, fam_mod = evaluator, families
+    if eg is None or fam_mod is None:
         try:
-            df = pd.read_parquet(p).tail(BARS)
-        except (OSError, ValueError):
+            import external_gauntlet as _eg  # type: ignore[import-not-found]
+            from mt5desk import families as _fam
+        except ImportError as exc:
+            return _unmeasured(now, (
+                f"the canonical evaluator is not importable ({exc}). This organ refuses to "
+                f"score with a second implementation of the fill model -- that is the one thing "
+                f"it exists to hold constant."))
+        eg = eg if eg is not None else _eg
+        fam_mod = fam_mod if fam_mod is not None else _fam
+    if meta is None:
+        try:
+            meta = json.loads((UNI / "universe.json").read_text("utf-8"))
+        except (OSError, ValueError) as exc:
+            return _unmeasured(now, f"universe registry unreadable: {exc}")
+    syms = list(symbols) if symbols is not None else _live_symbols()
+    if not syms:
+        return _unmeasured(now, "no LIVE sleeve names a symbol in sleeves.json")
+
+    def _load(sym: str) -> Any:
+        p = UNI / f"{sym}_H1.parquet"
+        return pd.read_parquet(p).tail(BARS) if p.exists() else None
+
+    load = bars or _load
+    rows: list[dict[str, Any]] = []
+    skipped: list[dict[str, str]] = []
+    for sym in syms:
+        try:
+            df = load(sym)
+        except (OSError, ValueError) as exc:
+            skipped.append({"symbol": sym, "why": f"bars unreadable: {type(exc).__name__}"})
             continue
-        if len(df) < 2000:
+        if df is None or len(df) < 2000:
+            skipped.append({"symbol": sym, "why": "fewer than 2000 H1 bars"})
             continue
         ntr = int(len(df) * TRAIN_FRAC)
         test = df.iloc[ntr + EMBARGO:]
         if len(test) < 500:
+            skipped.append({"symbol": sym, "why": "held-out slice under 500 bars"})
             continue
         try:
             costed = eg.costs_for(sym, meta, 1.0)
             # THE FRICTIONLESS PATH IS THE SAME COST OBJECT AT ZERO, not a different model. One
             # multiplier is the whole separation between signal alpha and execution drag.
             free = eg.costs_for(sym, meta, 0.0)
-        except Exception:
+        except Exception as exc:
+            skipped.append({"symbol": sym, "why": f"costs_for raised: {type(exc).__name__}"})
             continue
 
         for fam in FAMILIES:
-            entry = FAM.FAMILY_REGISTRY.get(fam)
+            entry = fam_mod.FAMILY_REGISTRY.get(fam)
             fn: Any = (entry.get("func") if isinstance(entry, dict)
-                       else getattr(FAM, f"family_{fam}", None))
+                       else getattr(fam_mod, f"family_{fam}", None))
             if fn is None or not callable(fn):
                 continue
             try:
@@ -214,40 +427,31 @@ def build() -> dict[str, Any]:
                 continue
             if len(base_sigs) < 30:
                 continue
-            h1 = FAM._h1(test)
+            h1 = fam_mod._h1(test)
             for v in VARIANTS:
                 genes = {**NEUTRAL, **v["genes"]}
                 try:
-                    sigs = FAM.apply_layers(list(base_sigs), h1, **genes)
+                    sigs = fam_mod.apply_layers(list(base_sigs), h1, **genes)
                     if len(sigs) < 20:
                         continue
-                    g_net = _growth(eg.daily_series(test, sigs, costed))
-                    g_gross = _growth(eg.daily_series(test, sigs, free))
+                    row = cell_row(sym, fam, v, len(base_sigs), len(sigs),
+                                   eg.daily_series(test, sigs, costed),
+                                   eg.daily_series(test, sigs, free))
                 except Exception:
                     continue
-                if not (math.isfinite(g_net) and math.isfinite(g_gross)):
-                    continue
-                kept = len(sigs) / max(len(base_sigs), 1)
-                rows.append({
-                    "symbol": sym, "family": fam, "variant": v["name"],
-                    "declared_selects": bool(v.get("selects")),
-                    "n_signals": len(sigs),
-                    "signals_kept_share": round(kept, 4),
-                    "like_for_like": bool(kept >= LIKE_FOR_LIKE_KEPT),
-                    "signal_alpha_frictionless": round(g_gross, 8),
-                    "net_growth": round(g_net, 8),
-                    "execution_drag": round(g_gross - g_net, 8),
-                    "drag_share_of_signal": (round((g_gross - g_net) / abs(g_gross), 4)
-                                             if g_gross != 0 else None),
-                })
+                if row is not None:
+                    rows.append(row)
 
     if not rows:
-        return {"at": now.isoformat(timespec="seconds"), "status": "UNMEASURED",
-                "why": ("no (symbol, family) pair produced enough signals on the held-out slice "
-                        "to compare execution variants")}
+        return _unmeasured(now, ("no (symbol, family) pair produced enough signals on the "
+                                 "held-out slice to compare execution variants"),
+                           symbols_tried=syms, skipped=skipped[:40])
+    return {"at": now.isoformat(timespec="seconds"), **summarise(rows), "skipped": skipped[:40]}
 
-    # PER VARIANT, ACROSS EVERYTHING. The question "is a resting entry worth it" is about the
-    # POLICY, and a per-symbol answer is a policy fitted to a symbol.
+
+def summarise(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Per variant, across every cell -- the question "is a resting entry worth it" is about the
+    POLICY, and a per-symbol answer is a policy fitted to a symbol."""
     import numpy as np
     by_variant: dict[str, dict[str, Any]] = {}
     for r in rows:
@@ -285,8 +489,11 @@ def build() -> dict[str, Any]:
     drags = [float(r["execution_drag"]) for r in rows]
     shares = [float(r["drag_share_of_signal"]) for r in rows
               if isinstance(r.get("drag_share_of_signal"), (int, float))]
+    diagnoses: dict[str, int] = {}
+    for r in rows:
+        d = str(r.get("diagnosis") or "").split(":")[0]
+        diagnoses[d] = diagnoses.get(d, 0) + 1
     return {
-        "at": now.isoformat(timespec="seconds"),
         "status": "OK",
         "n_cells": len(rows),
         "protocol": {"families": list(FAMILIES), "bars": BARS, "train_frac": TRAIN_FRAC,
@@ -304,6 +511,7 @@ def build() -> dict[str, Any]:
             "median_execution_drag": round(float(np.median(drags)), 8),
             "median_drag_as_share_of_signal_alpha": (round(float(np.median(shares)), 4)
                                                      if shares else None),
+            "diagnoses": diagnoses,
             "reads": ("signal alpha is the frictionless path; execution drag is what the round "
                       "trip takes. A desk that only ever sees the difference cannot tell a "
                       "mechanism that does not work from one that works and is being eaten, and "
@@ -323,38 +531,48 @@ def build() -> dict[str, Any]:
     }
 
 
+def write(doc: Mapping[str, Any], out: Path | None = None) -> Path:
+    """Atomic write of the report -- OK or UNMEASURED alike, so the artifact always says which."""
+    path = out or OUT
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(dict(doc), indent=1, default=str), encoding="utf-8")
+    os.replace(tmp, path)
+    return path
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--apply", action="store_true",
+                    help="accepted for the hourly leg; the report is written on every run")
+    ap.add_argument("--dry-run", action="store_true", help="measure and print; write nothing")
     a = ap.parse_args(argv)
     doc = build()
     if doc.get("status") != "OK":
         print(f"execution science: {doc.get('status')} -- {doc.get('why')}")
-        return 0
-    at = doc["attribution"]
-    print(f"execution science: OK   {doc['n_cells']} (symbol, family, variant) cell(s)")
-    print(f"  median execution drag {at['median_execution_drag']:+.8f} log-growth/day; "
-          f"that is {at['median_drag_as_share_of_signal_alpha']} of signal alpha")
-    print("  variant                       n   median net     drag        kept   vs market")
-    for v in doc["variants"]:
-        vs = v["vs_market_next_open"]
-        mark = " " if v["like_for_like"] else "*"
-        print(f" {mark}{v['variant']:<28} {v['n_cells']:<3} {v['median_net_growth']:+.7f}  "
-              f"{v['median_execution_drag']:+.7f}  {v['median_signals_kept']:.2f}  "
-              f"{'' if vs is None else f'{vs:+.7f}'}")
-    print("  * = NOT like-for-like: it changes which trades are taken, not only how they fill")
-    bl = doc.get("best_like_for_like_variant")
-    if bl:
-        print(f"  best EXECUTION policy (same trades): {bl['variant']} at "
-              f"{bl['vs_market_next_open']:+.7f} vs market-at-next-open")
+    else:
+        at = doc["attribution"]
+        print(f"execution science: OK   {doc['n_cells']} (symbol, family, variant) cell(s)")
+        print(f"  median execution drag {at['median_execution_drag']:+.8f} log-growth/day; "
+              f"that is {at['median_drag_as_share_of_signal_alpha']} of signal alpha")
+        print("  variant                       n   median net     drag        kept   vs market")
+        for v in doc["variants"]:
+            vs = v["vs_market_next_open"]
+            mark = " " if v["like_for_like"] else "*"
+            print(f" {mark}{v['variant']:<28} {v['n_cells']:<3} {v['median_net_growth']:+.7f}  "
+                  f"{v['median_execution_drag']:+.7f}  {v['median_signals_kept']:.2f}  "
+                  f"{'' if vs is None else f'{vs:+.7f}'}")
+        print("  * = NOT like-for-like: it changes which trades are taken, not only how they fill")
+        bl = doc.get("best_like_for_like_variant")
+        if bl:
+            print(f"  best EXECUTION policy (same trades): {bl['variant']} at "
+                  f"{bl['vs_market_next_open']:+.7f} vs market-at-next-open")
     lf = doc["live_fill_calibration"]
     print(f"  live-fill recalibration: {lf['status']} -- {lf['why'][:120]}")
-    if not a.apply:
-        print("  --apply not given; nothing written")
+    if a.dry_run:
+        print("  --dry-run: nothing written")
         return 0
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(doc, indent=1, default=str), encoding="utf-8")
-    print(f"-> {OUT}")
+    print(f"-> {write(doc)}")
     return 0
 
 

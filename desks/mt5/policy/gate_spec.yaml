@@ -2,7 +2,7 @@
 # Single source of truth for gate definitions, thresholds, and classifications
 # Used to generate: gate_policy.py, documentation, tests, and validation code
 
-version: "mt5-original-universal-10-v2-calibrated-inputs"
+version: "mt5-original-universal-10-v3-reserved-lockbox"
 description: "MT5 universal gate gauntlet — 10 gates, 2 classifications (VALIDITY vs POWER)"
 
 # Gate classifications per promotion protocol:
@@ -67,8 +67,12 @@ gates:
       # bigger sweep. That is the same defect through a second door.
       # 0.014863 is the dispersion that yields sr0 = 0.3786 at 597 trials: the bar this desk
       # actually operated under when its 23 standing certificates were issued.
-      fixed_variance_of_sharpes: 0.014863
-      trial_count_basis: "effective_campaign_trials(109) + fixed_variance_of_sharpes(0.014863): the campaign charge is measured in EFFECTIVE independent tests -- the participation ratio of (grid cell, content) identities within each mechanism -- not in docket rows; both inputs remain constants, so the bar is identical for every cell regardless of how many others share its sweep"
+      # 0.0002 (2026-09-30, lockbox v4) REPLACED it, and was CHOSEN BY GRID SEARCH on the sealed
+      # Tier S suite together with the lockbox reads below -- about 5,000 combinations, so some
+      # selection bias remains (docs/research/LOCKBOX_BAR.md). Re-judged on the real patched judge
+      # (448 cases): 15/130 planted real edges certify, 0/318 traps; 0.014863 certified 0/130.
+      fixed_variance_of_sharpes: 0.0002
+      trial_count_basis: "effective_campaign_trials(109) + fixed_variance_of_sharpes(0.0002): the campaign charge is measured in EFFECTIVE independent tests -- the participation ratio of (grid cell, content) identities within each mechanism -- not in docket rows; both inputs remain constants, so the bar is identical for every cell regardless of how many others share its sweep"
       fail_closed_to: "fixed_campaign_trials(597): the charge when the census cannot be computed is the standing wall, never the measured relief -- an unmeasurable hour earns nothing"
     fail_closed: true
     cure_by_forward: true
@@ -127,34 +131,34 @@ gates:
 
   - name: lockbox
     classification: validity
-    # DESCRIPTION CORRECTED 2026-09-01 to match what the code measures. Both validators compute
-    # this gate as `wf_oos >= 0.0` -- the SAME walk-forward out-of-sample Sharpe that gate 7
-    # (walk_forward) already uses -- and qquant_gates has always said so in its own header:
-    # "9 lockbox - wf OOS Sharpe >= 0 (holdout proxy)". The previous wording claimed a "genuine
-    # untouched holdout", which is a materially stronger thing: a segment no grid search, no
-    # parameter choice and no result inspection has ever seen. This gate is not that, so gate 9
-    # is not independent of gate 7 and the ten gates are nine plus a restatement.
+    # A TRUE RESERVED LOCKBOX (principal, 2026-09-29: "make the true lockbox the only
+    # certification path and re-certify every survivor"). Until v3 both validators computed this
+    # gate as `wf_oos >= 0.0` -- the walk-forward gate's own OOS Sharpe read twice -- and 58/58
+    # authority certificates carried lockbox_sharpe == wf oos_sharpe exactly, so ten gates were
+    # nine plus a restatement.
     #
-    # THE BAR IS NOT MOVED HERE, deliberately: standing principal direction is that the ten
-    # gates stay fixed and never become harsher, and a true lockbox would be strictly harder to
-    # pass. Only the claim is corrected -- a spec that overstates what it verifies makes every
-    # certificate issued under it look stronger than the evidence behind it, which is the
-    # failure this desk calls a claim it cannot cash (L1.49).
+    # v3: the final `holdout_fraction` of the campaign calendar (the UNION of every cell's dates,
+    # one cut for the whole sweep) is carved off BEFORE the program matrix is built. Gates 2-8
+    # and 10 see only the development window; PBO and SPA never see the held-out rows; this gate
+    # reads the held-out rows and nothing else. A cell with fewer than `min_holdout_bars` held-out
+    # observations FAILS -- no held-out evidence is not permission.
     #
-    # `holdout_fraction: 0.20` below is retained as the DESIGN INTENT for a real lockbox, and is
-    # currently unread by either validator. Implementing it is a principal decision, not a
-    # maintenance fix, because it would retroactively raise the bar on the existing book.
-    description: "Walk-forward OOS Sharpe > 0 (holdout PROXY, not an untouched segment; shares
-      its statistic with the walk_forward gate — see the note above)"
-    threshold: "lockbox_sharpe > 0.0"
+    # The version bump above is what re-certifies the book: `gate_policy.is_exact_policy` is an
+    # exact attestation match, so every v2 certificate stops conferring authority and each
+    # survivor must pass this path again to regain it.
+    description: "Sharpe >= 0 on the reserved final 20% of the campaign calendar, carved before
+      the program matrix and read by no other gate"
+    threshold: "held-out Sharpe, last-30% Sharpe >= sr0 and half-split degradation z <= 0.5"
     metric: "holdout_sharpe"
     params:
       holdout_fraction: 0.20
-      min_holdout_bars: 60
-      min_train_bars: 100
+      min_holdout_bars: 40
+      tail_fraction: 0.30
+      max_half_degradation_z: 0.5
+      min_train_bars: 60
     fail_closed: true
     cure_by_forward: false
-    note: "INDEPENDENT from walk_forward — uses chronological holdout, not purged splits"
+    note: "INDEPENDENT from walk_forward — chronological reserved holdout, carved first"
 
   - name: expected_value
     classification: power
@@ -192,7 +196,7 @@ promotion:
 
 # Attestation (must match exactly for certificate validity)
 attestation:
-  version: "mt5-original-universal-10-v2-calibrated-inputs"
+  version: "mt5-original-universal-10-v3-reserved-lockbox"
   gates: ["economic_prior", "in_sample_screen", "deflated_sharpe", "pbo", "reality_check_spa", "cpcv", "walk_forward", "stress_costs", "lockbox", "expected_value"]
   trials_multiplier: 7.0
   dsr_threshold: 0.95

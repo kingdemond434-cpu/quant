@@ -102,6 +102,16 @@ class Node:
     #: The gate the JUDGE said stopped this cell, passed through from the verdict rather than
     #: re-derived from `gates` -- which holds `canonical_report` and nothing else on most rows.
     terminal_gate: str = ""
+    #: EVERY FURTHER PARENT (2026-09-30). A crossover child, a composition or a candidate that
+    #: names several `parent_ids` has more than one ancestor; `parent` keeps the first (every
+    #: chain walker reads it), and the rest land here and as `mutated_from` edges with role
+    #: `co_parent`. Resolved ids only, like `parent`; unresolved claims stay on the edges.
+    co_parents: list[str] = field(default_factory=list)
+    #: THE PRE-REGISTRATION JOIN (2026-09-30), written on every verdict row: the hash of the
+    #: card that fixed this exact spec BEFORE it was first judged, or None with status POST_HOC.
+    #: Empty status = a row written by something that does not judge (BORN, causal readings).
+    prereg_hash: str | None = None
+    prereg_status: str = ""
 
     @property
     def id(self) -> str:
@@ -112,7 +122,7 @@ class Node:
         return region_key(self.symbol, self.family, self.params)
 
     def to_row(self) -> dict[str, Any]:
-        row = {"id": self.id, "region": self.region, "symbol": self.symbol,
+        row: dict[str, Any] = {"id": self.id, "region": self.region, "symbol": self.symbol,
                "family": self.family, "params": self.params, "source": self.source,
                "parent": self.parent, "fate": self.fate, "why": self.why, "gates": self.gates,
                "at": self.at or datetime.now(tz=UTC).isoformat(),
@@ -123,8 +133,16 @@ class Node:
                "seed_key": self.seed_key or self.parent}
         if self.operator:
             row["operator"] = self.operator
+        if self.co_parents:
+            row["co_parents"] = list(self.co_parents)
         if self.terminal_gate:
             row["terminal_gate"] = self.terminal_gate
+        if self.prereg_status:
+            # BOTH KEYS, ALWAYS TOGETHER: a POST_HOC verdict carries `prereg_hash: null` in the
+            # row rather than omitting it, so "judged with no card" never reads the same as "a
+            # row written before the join existed" (L1.28a).
+            row["prereg_hash"] = self.prereg_hash
+            row["prereg_status"] = self.prereg_status
         profile = death_profile(self.gates, self.fate)
         if profile:
             row["death"] = profile
@@ -201,7 +219,7 @@ def death_profile(gates: dict[str, Any], fate: str) -> dict[str, Any]:
 
 
 def edges_for(symbol: str, params: dict[str, Any], *, parent: str = "", operator: str = "",
-              source_url: str = "") -> list[dict[str, Any]]:
+              source_url: str = "", co_parents: Iterable[str] = ()) -> list[dict[str, Any]]:
     """The typed edges a candidate's own fields imply. Deterministic, deduplicated, ordered.
 
     Nothing here is inferred: every edge names a field the caller already carried. A candidate
@@ -229,6 +247,8 @@ def edges_for(symbol: str, params: dict[str, Any], *, parent: str = "", operator
         if operator:
             e["operator"] = str(operator)
         out.append(e)
+    for cp in dict.fromkeys(str(x) for x in co_parents if x and str(x) != str(parent)):
+        out.append({"type": MUTATED_FROM, "to": cp, "role": "co_parent"})
     if source_url:
         out.append({"type": SOURCED_FROM, "to": f"url:{str(source_url).strip()}"})
     return out
@@ -383,6 +403,20 @@ class Graph:
             n = cur.get(str(n.get("parent") or ""))
         return out
 
+    def ancestors(self, node_id_: str) -> dict[str, int]:
+        """Every ancestor through `parent` AND `co_parents`, with its generation (1 = a
+        parent). `lineage` walks the first-parent chain; this is the whole DAG above a node."""
+        cur = self.current()
+        out: dict[str, int] = {}
+        frontier = [(p, 1) for p in parents_of(cur.get(node_id_) or {})]
+        while frontier:
+            p, g = frontier.pop()
+            if p in out and out[p] <= g:
+                continue
+            out[p] = g
+            frontier.extend((q, g + 1) for q in parents_of(cur.get(p) or {}))
+        return out
+
     def census(self) -> dict[str, Any]:
         cur = self.current()
         by_fate: dict[str, int] = {}
@@ -460,6 +494,17 @@ def _as_parent_id(value: Any) -> str:
     if isinstance(value, Mapping):
         return node_id_for_spec(value) if (value.get("symbol") or value.get("sym")) else ""
     return str(value or "").strip()
+
+
+def parents_of(row: Mapping[str, Any]) -> list[str]:
+    """Every parent a graph ROW records: `parent`, `co_parents`, and `mutated_from` edges."""
+    out: list[str] = []
+    for p in [row.get("parent"), *(row.get("co_parents") or [])] + [
+            e.get("to") for e in row.get("edges") or []
+            if isinstance(e, Mapping) and e.get("type") == MUTATED_FROM]:
+        if p and str(p) not in out and str(p) != str(row.get("id") or ""):
+            out.append(str(p))
+    return out
 
 
 def parent_claims(c: Mapping[str, Any]) -> list[str]:
@@ -570,6 +615,7 @@ def record_candidates(cands: Iterable[dict[str, Any]], source: str,
         # claim, the scalar `parent` is not. The resolved id wins when there is one, so the edge
         # and the field never name two different ancestors.
         mut_parent = resolved or (claims[0] if claims else "")
+        others = [p for p in claims if p != mut_parent]
         node = Node(symbol=sym, family=family,
                     params=params,
                     # THE CANDIDATE'S OWN SOURCE WINS. The compiler registers every candidate it
@@ -579,8 +625,10 @@ def record_candidates(cands: Iterable[dict[str, Any]], source: str,
                     source=str(c.get("source") or source),
                     parent=resolved or seed, seed_key=seed, operator=op,
                     fate=BORN, why=str(c.get("mechanism_note") or "")[:200],
+                    co_parents=[p for p in others if p in known],
                     edges=edges_for(sym, params, parent=mut_parent, operator=op,
-                                    source_url=str(c.get("source_url") or "")))
+                                    source_url=str(c.get("source_url") or ""),
+                                    co_parents=others))
         g.append(node)
         known.add(node.id)
         n += 1
@@ -607,9 +655,124 @@ def record_verdicts(verdicts: Iterable[dict[str, Any]], graph: Graph | None = No
                       # `gates` holds `canonical_report` alone, while the judging code had the
                       # answer in hand and dropped it on the way in.
                       terminal_gate=str(v.get("terminal_gate") or ""),
-                      edges=edges_for(sym, params)))
+                      edges=edges_for(sym, params),
+                      # Carried through when the verdict was stamped (`preregistration.
+                      # stamp_verdict`); a verdict nobody stamped stays unstamped here too,
+                      # rather than being dressed as POST_HOC by a writer that never looked.
+                      prereg_hash=(str(v["prereg_hash"]) if v.get("prereg_hash") else None),
+                      prereg_status=str(v.get("prereg_status") or "")))
         n += 1
     return n
+
+
+def _verdict_fate(v: Mapping[str, Any]) -> str | None:
+    """The fate one gauntlet verdict row implies, or None when it is not a judgement at all.
+
+    `passed` True/False is CERTIFIED/FAILED. `passed: None` is two different things and they
+    must not be confused: a cell the judge RAN whose outcome is UNKNOWN (it carries `stages`) is
+    JUDGED; a cell the build budget deferred or the data blocked (`stages` empty -- "work not
+    yet done, never a verdict", in the gauntlet's own words) is not a verdict and gets no fate.
+    """
+    p = v.get("passed")
+    if p is True:
+        return CERTIFIED
+    if p is False:
+        return FAILED
+    stages = v.get("stages") or v.get("gates")
+    return JUDGED if isinstance(stages, Mapping) and stages else None
+
+
+def record_gauntlet_verdicts(verdicts: Iterable[dict[str, Any]],
+                             specs_by_cell: Mapping[str, Mapping[str, Any]] | None = None, *,
+                             first_judged: Mapping[str, str] | None = None,
+                             graph: Graph | None = None,
+                             prereg_path: Path | None = None,
+                             at: str | None = None) -> dict[str, Any]:
+    """Stamp every gauntlet verdict with its pre-registration and record it on the graph.
+
+    THE WRITER THE GRAPH NEVER HAD. `record_verdicts` had no production caller: every FAILED /
+    CERTIFIED fate the graph holds came from a hand-run backfill of `research_queue.json`, which
+    is why the last one is dated 2026-09-03. This is called by the judge on every sweep (and by
+    `prereg_join` from the gate-verdict ledger for a judge that does not yet call it).
+
+    EVERY verdict is stamped in place -- `spec_id`, `prereg_hash`, `prereg_status` -- including
+    the deferred rows that get no fate, so the report and the gate ledger carry the join on every
+    row. A graph row is appended only when the cell's fate, terminal gate or pre-registration
+    status CHANGED: the judge re-reads ~21,000 cells an hour and restating an unchanged verdict
+    is not information (the same rule `_append_gate_ledger` keeps).
+    """
+    from libs.research import preregistration as pr
+
+    g = graph or Graph()
+    idx = pr.spec_index(prereg_path)
+    now = at or datetime.now(tz=UTC).isoformat()
+    first = first_judged or {}
+    specs = specs_by_cell or {}
+    cur = g.current()
+    # THE EARLIEST JUDGEMENT THE GRAPH ALREADY KNOWS, per node. A card written after a cell was
+    # first judged must never make a LATER re-judgement read as pre-registered, and the judge's
+    # own first-seen stamps only begin on 2026-09-12 -- the graph's buried rows go back further.
+    earliest: dict[str, str] = {}
+    for r in g.rows():
+        if r.get("fate") in (FAILED, CERTIFIED, JUDGED) and r.get("at"):
+            rid, rat = str(r.get("id")), str(r["at"])
+            if rid not in earliest or rat < earliest[rid]:
+                earliest[rid] = rat
+    out: dict[str, Any] = {"verdicts": 0, "stamped": 0, "recorded": 0, "unchanged": 0,
+                           "not_a_verdict": 0, "no_spec": 0,
+                           pr.PREREGISTERED: 0, pr.POST_HOC: 0}
+    for v in verdicts:
+        if not isinstance(v, dict):
+            continue
+        out["verdicts"] += 1
+        cell = str(v.get("cell") or "")
+        spec = specs.get(cell)
+        if spec is None and isinstance(v.get("params"), Mapping):
+            spec = v
+        sid = str(v.get("spec_id") or "") or (node_id_for_spec(spec) if spec else "")
+        known = [t for t in (first.get(cell), earliest.get(sid)) if t]
+        # A verdict that carries its own time (a gate-ledger row read back later) is judged at
+        # THAT time: a card written between the judgement and this pass never preceded it.
+        vat = str(v.get("at") or now)
+        if sid:
+            v["spec_id"] = sid
+            pr.stamp_verdict(v, spec, index=idx, first_judged=min(known) if known else None,
+                             at=vat)
+        else:
+            # No params anywhere: the cell cannot be named, so no card can be matched to it.
+            # POST_HOC with a null spec -- never guessed from sym/family alone, which names a
+            # different node -- and counted, never dropped.
+            v["spec_id"] = None
+            v["prereg_hash"] = None
+            v["prereg_status"] = pr.POST_HOC
+        out["stamped"] += 1
+        fate = _verdict_fate(v)
+        if fate is None:
+            out["not_a_verdict"] += 1          # deferred / blocked: stamped, never a fate
+            continue
+        out[str(v["prereg_status"])] += 1       # the join rate counts JUDGEMENTS only
+        if spec is None:
+            out["no_spec"] += 1
+            continue
+        sym, family, params = spec_identity(spec)
+        node = Node(symbol=sym, family=family, params=params,
+                    source=str(v.get("hunt") or "gauntlet"), fate=fate,
+                    why=("passed all gates" if fate == CERTIFIED else
+                         f"{'UNKNOWN' if fate == JUDGED else 'failed'} at "
+                         f"{v.get('terminal_gate') or 'unmeasured'}"),
+                    terminal_gate=str(v.get("terminal_gate") or ""),
+                    edges=edges_for(sym, params), at=vat,
+                    prereg_hash=v.get("prereg_hash"), prereg_status=str(v["prereg_status"]))
+        prev = cur.get(node.id) or {}
+        if (prev.get("fate") == fate and prev.get("prereg_status") == node.prereg_status
+                and str(prev.get("terminal_gate") or "") == node.terminal_gate):
+            out["unchanged"] += 1
+            continue
+        cur[node.id] = g.append(node)
+        out["recorded"] += 1
+    judged = out[pr.PREREGISTERED] + out[pr.POST_HOC]
+    out["join_rate"] = (out[pr.PREREGISTERED] / judged) if judged else None
+    return out
 
 
 CAUSAL_GATE = "causal_adjudication"

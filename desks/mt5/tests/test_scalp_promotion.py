@@ -61,10 +61,11 @@ def _open_live_policy(tmp_path: Path, monkeypatch, *symbols: str, unban_m15: boo
     are ever read. The policy itself is pinned by test_live_policy.py and
     test_plumbing_watchdog.py."""
     from mt5desk import live_policy
-    # `banned_execs: []` because the principal stood the scalp lane down on 2026-09-29
-    # (live_policy.DEFAULT_BANNED_EXECS); this file tests the promotion MECHANICS, and the
-    # stand-down itself is pinned by test_live_policy.py.
-    doc: dict = {"live_symbols": list(symbols), "by": "test fixture", "banned_execs": []}
+    # The scalp lane was stood down 2026-09-29 (`live_policy.DEFAULT_BANNED_EXECS`). These tests
+    # pin the lane's promotion MECHANICS, so the fixture lifts that ban exactly as the principal's
+    # policy file would ("banned_execs": []); the stand-down itself is pinned below and in
+    # test_live_policy.py.
+    doc: dict = {"live_symbols": list(symbols), "banned_execs": [], "by": "test fixture"}
     if unban_m15:
         doc["banned_timeframes"] = {"*": [], **{sym: [] for sym in symbols}}
     pol = tmp_path / "live_sleeve_policy.json"
@@ -141,6 +142,22 @@ def test_a_matured_certified_scalp_candidate_goes_live_immediately_and_idempoten
     assert s["risk_frac"] == promoter.PROMOTED_RISK_FRAC and s["lot"] == "auto_ramp"
     promoter.main()
     assert len(desk.sleeves()) == 1
+
+
+def test_the_stood_down_scalp_lane_retires_a_matured_candidate_under_the_default_policy(
+        desk, tmp_path, monkeypatch):
+    """Principal 2026-09-29: the scalp lane is stood down. With the policy file silent on
+    `banned_execs`, the default ban holds and a matured, certified scalp candidate is RETIRED by
+    the promoter's write door, never written LIVE."""
+    from mt5desk import live_policy
+    pol = tmp_path / "default_policy.json"
+    pol.write_text(json.dumps({"live_symbols": ["XAUUSD"],
+                               "banned_timeframes": {"*": [], "XAUUSD": []}}), encoding="utf-8")
+    monkeypatch.setattr(live_policy, "POLICY_FILE", pol)
+    desk.certify(_NAME)
+    desk.scalp({_NAME: dict(_CAND)})
+    promoter.main()
+    assert all(r.get("status") != "LIVE" for r in desk.sleeves())
 
 
 def test_the_forward_clock_is_the_scalp_lanes_certificate(desk):

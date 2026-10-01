@@ -38,6 +38,11 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+# The Tier S door fails closed on absent verifier inputs; these promoter tests are not about
+# the door, so they run against fresh, clean verifier artifacts (desks/mt5/tests/conftest.py).
+pytestmark = pytest.mark.usefixtures("fresh_tier_s_door")
+
+
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
 for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
@@ -245,6 +250,7 @@ def test_the_promoter_can_only_lower_what_it_used_to_write_never_raise_it() -> N
     assert cap["written_at_promoter_ceiling"] is True
 
 
+@pytest.mark.usefixtures("legacy_floors")
 def test_a_zeroed_sleeve_is_sized_at_zero_instead_of_the_three_percent_floor() -> None:
     """THE HOLE THE PRINCIPAL'S "five minutes later it can be 0%" FELL THROUGH. The allocation
     artifact's book is filtered to heat > 1e-5, so a zeroed sleeve VANISHED from it; the gateway
@@ -347,6 +353,10 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "load_ledger", lambda *a, **k: [])
     monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set())
     _open_live_policy(tmp_path, monkeypatch, "CADJPY", "EURUSD")
+    # THE TIER S DOOR IS GRANTED HERE, as the certificate authority is above. Since 7de6ccca7 it
+    # withholds with DOOR_ERROR whenever REPLICATION.json is absent or stale, which it always is
+    # in a checkout; that fail-closed rule is pinned in test_tier_s_door.py.
+    monkeypatch.setattr(promoter, "tier_s_block", lambda _name: None)
 
     class Desk:
         def shadow(self, blob: dict) -> None:
@@ -678,3 +688,12 @@ def test_the_criterion_carries_its_own_rent_line() -> None:
     assert rent["sum_admitted_delta_elogw_per_day"] == pytest.approx(
         sum(doc["candidates"][n]["delta_elogw_per_day"] for n in doc["admitted"]))
     assert "joint delta" in rent["note"]
+
+
+@pytest.fixture
+def legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pins the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}); see test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")
