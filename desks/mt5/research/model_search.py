@@ -9,13 +9,13 @@ WHAT RUNS HERE
   1. TEN FAMILIES, each with a factor's discipline -- lineage (`parent`), a novelty key so the
      same family is never re-tested under a new name, a declared falsifier (its tax), and a
      verdict that is allowed to be UNMEASURED. `libs/research/model_families.py` owns them.
-  2. NINE REPRESENTATIONS of the SAME underlying information -- raw, z-scored, ranked,
-     volatility-scaled, range/state, path-shape, intelligent-trading-bot's rolling aggregations
-     Deep-Trading's normalised window and ml4t's Wasserstein regimes -- and, on a few of them,
-     FOUR MORE TARGETS than the return's sign (ITB's top and bottom labels, Deep-Trading's
-     volatility rise, ml4t's trend-scanning t-value). Same bars,
-     same target within a row, different coordinates, so a difference in verdict along a
-     target's rows is a statement about the coordinates and nothing else.
+  2. TEN REPRESENTATIONS of the SAME underlying information -- raw, z-scored, ranked,
+     volatility-scaled, range/state, path-shape, intelligent-trading-bot's rolling aggregations,
+     Deep-Trading's normalised window, ml4t's Wasserstein regimes and RustQuant's national
+     settlement calendars -- and, on a few of them, FOUR MORE TARGETS than the return's sign
+     (ITB's top and bottom labels, Deep-Trading's volatility rise, ml4t's trend-scanning
+     t-value). Same bars, same target within a row, different coordinates, so a difference in
+     verdict along a target's rows is a statement about the coordinates and nothing else.
   3. THE WHOLE GRID. Every (R_k, M_j) is scored on the same folds and published as a matrix. A
      representation is declared DEAD only when EVERY learner tried on it failed; with fewer than
      two learners its verdict is UNMEASURED, which is why nothing here can be buried by one
@@ -71,7 +71,8 @@ UNMEASURED = CL.UNMEASURED
 #: of holding them fixed is that a verdict difference across a row of the matrix is a statement
 #: about the coordinates, never about a different dataset.
 REPRESENTATIONS: tuple[str, ...] = ("raw", "zscore", "rank", "vol_scaled", "range_state",
-                                    "path_shape", "itb", "dt_window", "wregime")
+                                    "path_shape", "itb", "dt_window", "wregime",
+                                    "calendar")
 
 #: Targets besides the sign of the h-bar return, and the representations each is judged on.
 #: `top` / `bot` are intelligent-trading-bot's extremum labels (bounded to +-h bars in
@@ -81,7 +82,7 @@ REPRESENTATIONS: tuple[str, ...] = ("raw", "zscore", "rank", "vol_scaled", "rang
 #: CONDITIONING model -- no entry, no stop, no size -- so nothing trades on a model's output alone.
 #: `tscan` is the trend-scanning t-value (machine-learning-for-trading, MIT), bounded to h bars.
 EXTRA_TARGETS: dict[str, tuple[str, ...]] = {"top": ("itb",), "bot": ("itb",),
-                                             "vol_up": ("itb", "dt_window", "raw", "wregime"),
+                                             "vol_up": ("itb", "dt_window", "raw", "wregime", "calendar"),
                                              "tscan": ("raw", "itb", "wregime")}
 TARGETS: tuple[str, ...] = ("sign", *EXTRA_TARGETS)
 
@@ -152,6 +153,20 @@ def representation(df: pd.DataFrame, kind: str) -> pd.DataFrame:
         # expanding past only so no bar's coordinates saw its own future.
         from libs.features import wasserstein_regime
         return wasserstein_regime.features(df)
+    elif kind == "calendar":
+        # RustQuant's national settlement calendars (MIT/Apache-2.0), compiled into
+        # libs/data/market_holidays: is the instrument's home or second market shut today, next
+        # weekday or last weekday, beside the clock that compelled flow keeps. A calendar that
+        # cannot say (past its lunar table, an uncovered currency) is NaN, never "open", so its
+        # rows leave the design rather than reading as trading days.
+        from libs.data import market_holidays
+        hol = market_holidays.features(df.index, str(df.attrs.get("symbol", "")))
+        out = {c: hol[c] for c in hol.columns if hol[c].notna().any()}
+        out["hour"] = pd.Series(df.index.hour.astype(float), index=df.index)
+        out["dow"] = pd.Series(df.index.dayofweek.astype(float), index=df.index)
+        out["dom"] = pd.Series(df.index.day.astype(float), index=df.index)
+        out["to_month_end"] = pd.Series(
+            (df.index.days_in_month - df.index.day).astype(float), index=df.index)
     else:
         raise ValueError(f"unknown representation {kind!r}; known: {REPRESENTATIONS}")
     return pd.DataFrame(out, index=df.index)
@@ -331,6 +346,7 @@ def run(symbols: list[str] | None = None, budget_s: float = BUDGET_S,
             per_symbol[sym] = {"verdict": UNMEASURED, "why": f"under {MIN_BARS} H1 bars"}
             continue
         d = d.tail(n_bars)
+        d.attrs["symbol"] = sym                  # the calendar representation reads its legs
         sym_cells: list[dict[str, Any]] = []
         grid = [(rep, tgt) for rep in reps for tgt in TARGETS
                 if tgt == "sign" or rep in EXTRA_TARGETS[tgt]]

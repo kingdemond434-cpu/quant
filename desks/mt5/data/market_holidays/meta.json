@@ -1,0 +1,19 @@
+{
+ "source": "github.com/avhz/RustQuant crates/RustQuant_time (MIT OR Apache-2.0, Copyright 2023 avhz); every weekday 2000-2030 for which Calendar::is_holiday is true, dumped by compiling the crate (examples/dump_holidays.rs).",
+ "overrides": {
+  "JP": "2018-2026 replaced by the desk's Cabinet Office list (desks/mt5/mt5desk/flowcal.py _JP_HOLIDAYS). Measured against it, RustQuant misses 15 days (Reiwa accession 2019, Heisei Emperor's Birthday substitute 2018-12-24, May 6 substitutes, 2026-09-22 citizens' holiday) and misplaces the 2020/2021 Olympic moves.",
+  "EU": "TARGET2 closing days by ECB rule (New Year, Good Friday, Easter Monday, 1 May, 25-26 Dec), computed here; not from RustQuant."
+ },
+ "generated_through": 2030,
+ "valid_through": {
+  "CN": 2023,
+  "HK": 2020,
+  "ID": 2024,
+  "SG": 2024,
+  "IN": 2029
+ },
+ "partial": {
+  "TR": "civic holidays only: Ramazan and Kurban Bayrami are absent in every year, so a listed day is a holiday and an unlisted day is UNMEASURED"
+ },
+ "why_valid_through": "these calendars carry hand-written lunar/Islamic tables that end; past the last table year only the fixed-date rules remain (CN shows 1 holiday a year from 2024), so a False there is UNMEASURED, never 'trading day'."
+}
