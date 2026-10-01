@@ -91,6 +91,22 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
                 by_fam[str(fam)] = by_fam.get(str(fam), 0) + int(k or 0)
     except (OSError, ValueError, TypeError):
         pass
+    # A MINER RUN THAT PROPOSES NOTHING STILL RAN ITS TESTS. `learned_miners` writes one row per
+    # (config, symbol, threshold) it tried; a run that donated is already counted through its
+    # discovery file's tests_run, so only the runs that donated nothing are charged here -- the
+    # null runs that would otherwise leave no trace in the lifetime count.
+    try:
+        for ln in (DESK / "data" / "learned_miners_trials.jsonl").read_text("utf-8").splitlines():
+            if not ln.strip():
+                continue
+            row = json.loads(ln)
+            if not isinstance(row, dict) or row.get("donated"):
+                continue
+            fam = str(row.get("family") or "?").rsplit(":", 1)[-1]
+            total += 1
+            by_fam[fam] = by_fam.get(fam, 0) + 1
+    except (OSError, ValueError, TypeError):
+        pass
     return total, by_fam
 
 

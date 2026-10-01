@@ -27,7 +27,9 @@ Artifact: desks/mt5/reports/E8_BOOK.json
 from __future__ import annotations
 
 import json
+import math
 import sys
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -170,10 +172,126 @@ def _load_survivors() -> list[dict[str, Any]]:
             "params": {k: v for k, v in spec.items()
                        if k not in ("symbol", "family", "selector", "is_universe", "hunt")},
             "ev": ((val.get("gates") or {}).get("expected_value") or {}).get("ev"),
+            # THE COST-STRESSED EXPECTANCY IS WHAT THE GROWTH SCORE RANKS ON, not `ev`.
+            # `stress_costs.exp_x3` is the same cell replayed at THREE TIMES the modelled cost,
+            # and it is the gate that separates the yen crosses from each other: CADJPY falls
+            # 0.1631 -> 0.0624 (a 62% haircut) where USDJPY falls 0.1586 -> 0.0798 (48%), so on
+            # raw `ev` they are a dead heat and on cost robustness they are not close.
+            "exp_x3": ((val.get("gates") or {}).get("stress_costs") or {}).get("exp_x3"),
+            "lockbox": ((val.get("gates") or {}).get("lockbox") or {}).get("lockbox_sharpe"),
             "days": val.get("days"),
             "n_trials": ((val.get("gates") or {}).get("deflated_sharpe") or {}).get("n_trials"),
         })
     return rows
+
+
+#: Instruments that share a leg move together, so they are one bet wearing several names.
+#: MEASURED (principal, 2026-09-24): EURJPY against GBPJPY is +0.891, and the four yen crosses
+#: together are worth barely two independent bets; XAUUSD against the same block is -0.117, which
+#: is why gold plus ONE yen cross is diversification and gold plus four is not.
+#:
+#: ONLY THE YEN BLOCK IS LISTED, AND THAT IS THE POINT. The book also holds three CHF crosses on
+#: `overnight_gap_decay` (GBPCHF, AUDCHF, CADCHF) which are very likely the same story -- but the
+#: desk has MEASURED the yen correlation and has not measured that one, and a block cut on an
+#: assumed correlation would be exactly the un-evidenced shrink Growth Governance Rule 1 refuses.
+#: It is published in the report as `unmeasured_blocks` instead, so it is visible rather than
+#: quietly acted on. Add a block here when its correlation is measured, never before.
+CORRELATED_BLOCKS: dict[str, str] = {"JPY": "JPY"}
+
+
+def block_of(symbol: str) -> str | None:
+    """The correlation block `symbol` belongs to, or None when it is in no MEASURED block."""
+    sym = symbol.upper()
+    for leg, name in CORRELATED_BLOCKS.items():
+        # The leg must be one of the two sides of a 6-character FX pair, not a substring of a
+        # longer instrument name, or an index whose ticker happens to contain the letters would
+        # be swept into a currency block it has nothing to do with.
+        if len(sym) == 6 and leg in (sym[:3], sym[3:]):
+            return name
+    return None
+
+
+#: Per-cell measured distribution: n, win_rate, exp_r, profit_factor, max_dd_r for every
+#: (symbol, family, params) the external backtest ran. ~2,100 trades per cell.
+BACKTEST = DESK / "data" / "hypotheses" / "external_backtest_results.json"
+
+
+def _measured() -> dict[tuple[str, str, float, float], dict[str, Any]]:
+    """(symbol, family, rr, wait_bars) -> the backtest's measured summary for that cell."""
+    try:
+        doc = json.loads(BACKTEST.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if isinstance(doc, dict):
+        doc = doc.get("results") or doc.get("rows") or list(doc.values())
+    out: dict[tuple[str, str, float, float], dict[str, Any]] = {}
+    for r in doc if isinstance(doc, list) else []:
+        if not isinstance(r, dict):
+            continue
+        prm = r.get("params") or {}
+        rr, wb = prm.get("rr"), prm.get("wait_bars")
+        if rr is None or wb is None:
+            continue
+        try:
+            k = (str(r.get("symbol") or "").upper(), str(r.get("family") or ""),
+                 float(rr), float(wb))
+        except (TypeError, ValueError):
+            continue
+        out[k] = r
+    return out
+
+
+def growth_score(row: Mapping[str, Any], risk_frac: float = 0.0) -> float | None:
+    """E[log W] per trade for this certificate at `risk_frac`, or None if it cannot be derived.
+
+    WHY NOT `ev` (principal, 2026-09-24): "add best MAXIMUM GROWTH yen one". Mean R and log-wealth
+    growth rank differently, because log punishes a drawdown harder than it rewards the same-sized
+    gain -- so a cell can carry the better mean R and compound more slowly.
+
+    THE PAYOFF IS MEASURED, NOT ASSUMED, AND THE FIRST VERSION OF THIS FUNCTION ASSUMED IT WRONG.
+    It modelled a `session_range_breakout` position as resolving at its rr target or its -1R stop
+    and backed the win rate out as (e + 1) / (rr + 1), which put USDJPY rr=2.0 at 36.0%. The
+    shadow ledgers refute that: every row exits on `reason: "ttl"`, at whatever R the clock finds,
+    and the measured win rate is 53.7%. So the distribution is fitted to THREE measured moments
+    from `external_backtest_results.json` -- win_rate, exp_r and profit_factor -- which determines
+    a two-point payoff exactly:
+
+        (1-p) * mean_loss = exp_r / (PF - 1)        p * mean_win = PF * exp_r / (PF - 1)
+
+    then scaled to the cell's 3x-cost-stressed expectancy, because the cost charged against these
+    cells has been corrected repeatedly and the stressed number is the one that survives being
+    wrong again. Growth is  p*ln(1 + f*mean_win) + (1-p)*ln(1 - f*mean_loss).
+
+    Returns None rather than a guess whenever any input is missing: absence is never scored as
+    zero, which would silently rank an unmeasured cell last instead of leaving it unjudged.
+    """
+    f = risk_frac or RISK_FRAC
+    prm = (row.get("params") or {}).get("params") or {}
+    rr, wb = prm.get("rr"), prm.get("wait_bars")
+    e3, ev = row.get("exp_x3"), row.get("ev")
+    if rr is None or wb is None or e3 is None or not ev or not (0.0 < f < 1.0):
+        return None
+    try:
+        m = _measured().get((str(row.get("symbol") or "").upper(), str(row.get("family") or ""),
+                             float(rr), float(wb)))
+    except (TypeError, ValueError):
+        return None
+    if not m:
+        return None
+    p, exp_r, pf = m.get("win_rate"), m.get("exp_r"), m.get("profit_factor")
+    if p is None or exp_r is None or pf is None:
+        return None
+    p, exp_r, pf = float(p), float(exp_r), float(pf)
+    if not (0.0 < p < 1.0) or pf <= 1.0 or exp_r <= 0:
+        return None
+    mean_loss = (exp_r / (pf - 1.0)) / (1.0 - p)
+    mean_win = (pf * exp_r / (pf - 1.0)) / p
+    # Charge the cost stress to the win side: a cost is paid on every trade, so a heavier cost
+    # shows up as a smaller average win against an unchanged stop.
+    mean_win -= (1.0 - float(e3) / float(ev)) * exp_r / p
+    if mean_win <= 0 or f * mean_loss >= 1.0:
+        return None
+    return p * math.log(1.0 + f * mean_win) + (1.0 - p) * math.log(1.0 - f * mean_loss)
 
 
 def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES) -> dict[str, Any]:
@@ -210,9 +328,24 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES) ->
     def _tf(row: dict[str, Any]) -> str:
         return str((row.get("params") or {}).get("timeframe") or "H1").upper()
 
+    # WITHIN A (mechanism, symbol, chart), GROWTH PICKS THE SURVIVOR, not `ev`.
+    #
+    # THIS ORDERING IS LOAD-BEARING AND IT SILENTLY PICKED THE WRONG CELL WHEN IT RANKED ON `ev`.
+    # USDJPY's highest-`ev` certificate is the UNSUFFIXED `external.USDJPY.session_range_breakout`
+    # (0.1641), which records no rr and no wait_bars -- so it cannot be scored for growth at all,
+    # and it is a weaker identity besides (the gateway's own note: "PARAMS ARE PART OF THE
+    # IDENTITY. Without them the spec says only 'XAUUSD asia'"). Taking it here left USDJPY
+    # unscorable, so the correlation rule below could not rank it, and the JPY slot went to
+    # EURJPY -- the third-best cross by growth -- while the best one was discarded as a duplicate.
+    # Ranking on growth makes the parameterised rr=2.5 cell the survivor and the order comes out
+    # right. `ev` remains the tiebreak so a family with no measured distribution is still ordered.
+    def _rank(r: dict[str, Any]) -> tuple[float, float]:
+        g = growth_score(r)
+        return (-9.0 if g is None else g, r["ev"] or -9)
+
     best: dict[tuple[str, str, str], dict[str, Any]] = {}
     dupes = []
-    for r in sorted(live, key=lambda x: -(x["ev"] or -9)):
+    for r in sorted(live, key=lambda x: (-_rank(x)[0], -_rank(x)[1])):
         k = (r["family"], r["symbol"], _tf(r))
         if k in best:
             dupes.append({**r, "why": f"duplicate of {best[k]['key']} "
@@ -220,9 +353,57 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES) ->
             continue
         best[k] = r
 
+    # ONE ROW PER (mechanism, CORRELATION BLOCK), and the survivor is chosen on GROWTH.
+    #
+    # Rule 3 above ("one row per mechanism+symbol") catches two certificates on the same
+    # instrument. It does not catch four DIFFERENT instruments that are the same bet: measured
+    # 2026-09-24, this book held USDJPY, CADJPY, EURJPY and GBPJPY on `session_range_breakout`
+    # at once, and EURJPY against GBPJPY is +0.891. That is four of eight slots spent on about
+    # two independent bets, on an account whose pass probability is driven by how many
+    # INDEPENDENT bets it holds -- the exact failure `orthogonality.py` measures and the reason
+    # the principal's order was "add ONE yen cross, not all four".
+    #
+    # IT DOES SHRINK NOMINAL GROSS, AND THAT IS REPORTED RATHER THAN DRESSED UP. The round-robin
+    # below is CERTIFICATE-limited, not slot-limited -- the book fills 6-8 of its 24 slots because
+    # that is how many distinct certificates the venue lists, so dropping three rows frees three
+    # slots that nothing refills. Measured here: n_selected 8 -> 6 and gross 1.20% -> 0.90%.
+    #
+    # WHAT IS NOT LOST IS THE PART THAT WAS DOING WORK. At the measured rho of 0.891,
+    # `libs/validation/effective_sample.cross_dependence_deflator(4, 0.891) = 0.273`, so the four
+    # yen rows were carrying about 1.09 independent bets between them; one row carries 1.00. The
+    # book gives up 25% of its NOMINAL exposure to give up 8% of its EFFECTIVE breadth.
+    #
+    # THIS IS THE PRINCIPAL'S OWN INSTRUCTION ("add ONE yen cross, not all four", 2026-09-24),
+    # the same class of act as the `discovered` family ban -- not a session lowering risk by fiat,
+    # which the standing order forbids. Redeploying the freed 0.30% is a change to `RISK_FRAC`,
+    # which is the principal's decision recorded in docs/PROP_FIRM_E8.md and is NOT touched here.
+    blocked_by_corr = []
+    per_block: dict[tuple[str, str], dict[str, Any]] = {}
+    survivors: list[dict[str, Any]] = []
+    for r in best.values():
+        blk = block_of(r["symbol"])
+        if blk is None:
+            survivors.append(r)
+            continue
+        k2 = (r["family"], blk)
+        held = per_block.get(k2)
+        if held is None:
+            per_block[k2] = r
+            continue
+        # Growth decides, and a cell that cannot be scored never displaces one that can.
+        g_new, g_held = growth_score(r), growth_score(held)
+        if g_new is not None and (g_held is None or g_new > g_held):
+            per_block[k2] = r
+            blocked_by_corr.append({**held, "why": f"{blk} block already represented on "
+                                                   f"{r['family']} by {r['key']} (higher growth)"})
+        else:
+            blocked_by_corr.append({**r, "why": f"{blk} block already represented on "
+                                                f"{r['family']} by {held['key']} (higher growth)"})
+    survivors.extend(per_block.values())
+
     # round-robin across mechanisms, best-first within each
     by_fam: dict[str, list[dict[str, Any]]] = {}
-    for r in best.values():
+    for r in survivors:
         by_fam.setdefault(r["family"], []).append(r)
     for fam in by_fam:
         by_fam[fam].sort(key=lambda x: -(x["ev"] or -9))
@@ -250,6 +431,18 @@ def select(tradeable: set[str] | None = None, max_sleeves: int = MAX_SLEEVES) ->
         "n_tradeable": len(live),
         "n_blocked_by_venue": len(blocked),
         "n_duplicate_mechanism_symbol": len(dupes),
+        "n_blocked_by_correlation": len(blocked_by_corr),
+        "blocked_by_correlation": blocked_by_corr,
+        #: Concentrations this rule can SEE but has not measured, so has not acted on (L1.28a:
+        #: unmeasured is a verdict, not a zero). Published so the next correlation measurement
+        #: has a named target rather than being rediscovered.
+        "unmeasured_blocks": sorted({
+            f"{fam}:{leg}" for fam, leg in {
+                (r["family"], r["symbol"][3:]) for r in chosen if len(r["symbol"]) == 6}
+            if block_of("XXX" + leg) is None
+            and sum(1 for x in chosen
+                    if x["family"] == fam and len(x["symbol"]) == 6 and x["symbol"][3:] == leg) > 1
+        }),
         "by_chart": {tf: sum(1 for x in chosen if str((x.get("params") or {}).get(
             "timeframe") or "H1").upper() == tf)
             for tf in sorted({str((x.get("params") or {}).get("timeframe") or "H1").upper()
