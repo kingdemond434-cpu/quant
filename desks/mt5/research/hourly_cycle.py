@@ -922,7 +922,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE CLOSED-LOOP ORGANS (Tier-1 B14-B25): all cheap readers of artifacts that already exist,
     # so they belong on the core clock rather than the heavy one. `actor_pressure` and
     # `counterfactual_timeframes` read bars and stop themselves at their own budget.
-    "source_evig", "source_drain", "pack_cells", "ground_depth", "timeframe_fanout",
+    "source_evig", "source_drain", "pack_cells", "institutional_footprint", "ground_depth",
+    "timeframe_fanout",
     "fill_recorder", "cost_surfaces",
     "actor_pressure", "destroyer_pool", "quantbench",
     "evidence_chain", "identity_chain",
@@ -5385,6 +5386,14 @@ def main() -> None:
     # run AFTER source_drain, whose chain state it reads and never edits.
     pkc = _costed("pack_cells", lambda: _producer(
         "pack_cells", "research/pack_cells.py", "--once", "--budget-s", "240"))
+    # THE INSTITUTIONAL FOOTPRINT (principal 2026-09-30 17:47-18:14Z): the public regulatory,
+    # exchange, central-bank and physical-market exhaust of every jurisdiction -> PIT frames ->
+    # latent actor states with intervals and a dealer-gamma scenario posterior -> conditioner
+    # cells through the one registry door, plus the jurisdiction x class coverage grid CRO D37
+    # reads. Information department; after pack_cells so both mint on the same pass.
+    ifp = _costed("institutional_footprint", lambda: _producer(
+        "institutional_footprint", "research/institutional_footprint.py", "--once",
+        "--budget-s", "300"))
     # THE FRONT DOOR IS NOT THE GROUND (2026-09-23). 15 of the 121 document-holding grounds named
     # no instrument for ONE reason `pack_cells.resolve_ground` had already written: the documents
     # held are the landing page. This walks inside those grounds' own doors -- ranked links and
@@ -5722,6 +5731,7 @@ def main() -> None:
                     "preregistration": prg, "organ_census": ogc,
                     "cycle_pricing": cyp, "causal_invariance": civ,
                     "source_evig": sev, "source_drain": sdr, "pack_cells": pkc,
+                    "institutional_footprint": ifp,
                     "ground_depth": gdp,
                     "timeframe_fanout": tff, "fill_recorder": flr, "cost_surfaces": csf,
                     "actor_pressure": apr, "destroyer_pool": dpo,

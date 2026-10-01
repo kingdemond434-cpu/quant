@@ -1,0 +1,961 @@
+{
+ "at": "2026-09-30",
+ "rule": "one ruling per jurisdiction x class cell no atlas row covers, and per role a jurisdiction does not have; statuses are the principal's seven minus ACTIVE and TESTED_NO_INFORMATION, which only measurement assigns",
+ "cells": {
+  "th|otc_swaps": {
+   "status": "NOT_PUBLISHED",
+   "reason": "BOT collects OTC derivatives reports privately; no public SDR or trade-repository aggregate by product/tenor.",
+   "substitute": "BIS Triennial/OTC derivatives statistics (global rows)",
+   "evidence": "BOT statistics catalogue https://www.bot.or.th/en/statistics.html lists no OTC derivatives repository",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "th|fund_holdings": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No 13F/N-PORT-style security-level holdings filing; funds disclose only top holdings in fact sheets.",
+   "substitute": "institutional.th.set.investor_type_trading",
+   "evidence": "well-known (Thai fund disclosure regime)",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "th|hedge_fund_leverage": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form PF/OFR-style aggregate leverage statistics for hedge funds are published.",
+   "substitute": "",
+   "evidence": "BOT/SEC statistics catalogues",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "th|settlement_fails": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public fails-to-deliver or buy-in series from Thailand Clearing House/TSD was located; only annual CPMI-IOSCO quantitative disclosures.",
+   "substitute": "",
+   "evidence": "SET investor-type page links (TSD overview only)",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "th|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Rule 605/606-style order-routing or execution-quality disclosure regime exists in this jurisdiction.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "th|adviser_topology": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form ADV-style adviser filing is published; only licensee registers.",
+   "substitute": "",
+   "evidence": "SEC Thailand important statistics page lists no adviser-level data",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "th|mortgage_convexity": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No agency-MBS market or public MBS duration/refinancing series; mortgages are bank-held and mostly floating-rate.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|futures_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "IDX index futures are negligible and JFX/ICDX commodity futures publish volume only; no trader-category or participant open interest.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|options_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No actively listed equity or index options in Indonesia.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|otc_swaps": {
+   "status": "NOT_PUBLISHED",
+   "reason": "BI does not publish DNDF/swap activity by tenor or counterparty; no public trade repository.",
+   "substitute": "institutional.idn.bi.weekly_foreign_flows",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|hedge_fund_leverage": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form PF/OFR-style aggregate leverage statistics for hedge funds are published.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|repo_collateral": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public interbank repo volume, haircut or collateral-mix series; only BI monetary-operation aggregates.",
+   "substitute": "institutional.idn.bi.seki_money_market",
+   "evidence": "https://www.bi.go.id/en/statistik/ekonomi-keuangan/seki/default.aspx",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|securities_lending_short": {
+   "status": "NOT_PUBLISHED",
+   "reason": "IDX short selling only begins 1 October 2026; no short-interest or short-volume series exists yet. Re-check after launch.",
+   "substitute": "",
+   "evidence": "https://www.cnbcindonesia.com/market/20260929060203-17-771612/short-selling-mulai-1-oktober-bei-ungkap-syarat-penting-buat-investor",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|settlement_fails": {
+   "status": "NOT_PUBLISHED",
+   "reason": "KPEI publishes no public fails or buy-in series.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|beneficial_ownership": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "IDX >5% ownership disclosures are on idx.co.id, which returned HTTP 403 to automated fetch.",
+   "substitute": "institutional.idn.ksei.ownership_by_investor_type",
+   "evidence": "idx.co.id fetch returned 403 on 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|corporate_flow": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "IDX insider/buyback disclosures are on idx.co.id, which returned HTTP 403 to automated fetch.",
+   "substitute": "institutional.idn.ksei.ownership_by_investor_type",
+   "evidence": "idx.co.id fetch returned 403 on 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|participant_type_flow": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "IDX foreign/domestic transaction statistics are published on idx.co.id (statistical highlight), which returned HTTP 403 to automated fetch.",
+   "substitute": "institutional.idn.bi.weekly_foreign_flows",
+   "evidence": "https://idx.co.id/en/market-data/statistical-reports/digital-statistic/monthly/highlights/statistical-highlight (403 on fetch)",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|index_mechanical": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "IDX LQ45/IDX30 review announcements are on idx.co.id, which returned HTTP 403 to automated fetch.",
+   "substitute": "global index-provider rebalance rows (MSCI/FTSE)",
+   "evidence": "idx.co.id fetch returned 403 on 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Rule 605/606-style order-routing or execution-quality disclosure regime exists in this jurisdiction.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|adviser_topology": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form ADV-style adviser filing is published; only licensee registers.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|mortgage_convexity": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No agency-MBS market or public MBS duration/refinancing series; mortgages are bank-held and mostly floating-rate.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "ind|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Rule 605/606-style order-routing or execution-quality disclosure regime exists in this jurisdiction.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "ind|mortgage_convexity": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No agency-MBS market; Indian home loans are overwhelmingly floating-rate and bank-held, and the small RMBS/NHB market publishes no duration or prepayment series.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|options_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "SGX publishes no put/call or participant option positioning; per-contract option volume/OI sits in the existing SGX derivatives statistics row.",
+   "substitute": "institutional.sg.sgx.iron_ore_oi",
+   "evidence": "https://www.sgx.com/research-education/derivatives",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|otc_swaps": {
+   "status": "NOT_PUBLISHED",
+   "reason": "MAS trade-repository reports are not public; only the periodic MAS FX and OTC derivatives turnover survey.",
+   "substitute": "institutional.sg.mas.fx_funding",
+   "evidence": "https://www.mas.gov.sg/statistics",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|fund_holdings": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No 13F/N-PORT-style holdings filing in Singapore.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|hedge_fund_leverage": {
+   "status": "NOT_PUBLISHED",
+   "reason": "MAS publishes hedge-fund AUM only (asset management survey); no leverage, repo-dependence or counterparty aggregates.",
+   "substitute": "institutional.sg.mas.asset_mgmt_survey_flows",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|repo_collateral": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public SGS repo volume, haircut or collateral series; SORA (unsecured) is the published funding benchmark.",
+   "substitute": "institutional.sg.mas.fx_funding",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|settlement_fails": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CDP/SGX-DC publish no fails or buy-in time series; only CPMI-IOSCO quantitative disclosures.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|index_mechanical": {
+   "status": "NOT_RELEVANT",
+   "reason": "The STI and Singapore indices are maintained and reviewed by FTSE Russell; rebalance announcements come from the global index provider, not a Singapore institution.",
+   "substitute": "global index-provider rebalance rows (FTSE Russell)",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Rule 605/606-style order-routing or execution-quality disclosure regime exists in this jurisdiction.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|fx_settlement_fixing": {
+   "status": "PAID_PUBLIC_PROXY",
+   "reason": "SGD benchmark FX fixings (ABS/Refinitiv) are licensed; MAS publishes free daily exchange rates.",
+   "substitute": "institutional.sg.mas.fx_funding",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|mortgage_convexity": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No agency-MBS market or public MBS duration/refinancing series; mortgages are bank-held and mostly floating-rate.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|options_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Bursa FKLI options (OKLI) are illiquid; no put/call or participant option positioning is published.",
+   "substitute": "institutional.my.bursa.fcpo_oi",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|otc_swaps": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public trade-repository aggregates for ringgit swaps/NDF-onshore forwards.",
+   "substitute": "institutional.my.bnm.fx_reserves",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|fund_holdings": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No 13F-style security-level holdings filing; substantial-holder notices (e.g. EPF, KWAP) are the only holder data.",
+   "substitute": "institutional.my.bursa.substantial_shareholder_notices",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|hedge_fund_leverage": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form PF/OFR-style aggregate leverage statistics for hedge funds are published.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|repo_collateral": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public interbank repo volume, haircut or collateral-mix series; MYOR is the published overnight benchmark.",
+   "substitute": "institutional.my.bnm.myor",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|settlement_fails": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Bursa Malaysia Securities Clearing publishes no fails or buy-in series.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Rule 605/606-style order-routing or execution-quality disclosure regime exists in this jurisdiction.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|adviser_topology": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form ADV-style adviser filing is published; only licensee registers.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|mortgage_convexity": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Cagamas RMBS/purchase activity is disclosed only in issuer reports; no public MBS duration or prepayment series.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|options_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "PSX lists no options.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|otc_swaps": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public trade repository or swap statistics.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|fund_holdings": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No 13F-style holdings filing; fund manager reports disclose top holdings only.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|hedge_fund_leverage": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form PF/OFR-style aggregate leverage statistics for hedge funds are published.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|securities_lending_short": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "NCCPL market-information pages (where SLB/short and leveraged-market data sit) returned HTTP 403 to automated fetch.",
+   "substitute": "",
+   "evidence": "https://www.nccpl.com.pk/en/market-information/fipi-lipi/fipi (403 on 2026-09-30)",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|settlement_fails": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "NCCPL (clearing house) market-information pages returned HTTP 403 to automated fetch; no fails series confirmed.",
+   "substitute": "",
+   "evidence": "NCCPL 403 on 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|participant_type_flow": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "NCCPL FIPI/LIPI (foreign/local investor flows) is free but returned HTTP 403 to automated fetch.",
+   "substitute": "institutional.pk.sbp.balance_of_payments",
+   "evidence": "https://www.nccpl.com.pk/en/market-information/fipi-lipi/fipi (403 on 2026-09-30)",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Rule 605/606-style order-routing or execution-quality disclosure regime exists in this jurisdiction.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|mortgage_convexity": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No agency-MBS market or public MBS duration/refinancing series; mortgages are bank-held and mostly floating-rate.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|futures_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Sri Lanka has no listed futures/options market (CSE trades cash equities and debt only).",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|options_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Sri Lanka has no listed futures/options market (CSE trades cash equities and debt only).",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|otc_swaps": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public OTC derivatives/trade-repository statistics.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|fund_holdings": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No 13F-style holdings filing.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|hedge_fund_leverage": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form PF/OFR-style aggregate leverage statistics for hedge funds are published.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|repo_collateral": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public repo volume/haircut/collateral series beyond overnight rates in CBSL daily indicators.",
+   "substitute": "institutional.lk.cbsl.daily_indicators_money_market",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|securities_lending_short": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CSE has no operational short-selling or SLB regime.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|settlement_fails": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CDS/CSE publish no fails or buy-in series.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|beneficial_ownership": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "CSE disclosures sit in cse.lk, a JavaScript-only app that returned an empty shell to automated fetch.",
+   "substitute": "institutional.lk.cbsl.weekly_indicators_foreign_flows",
+   "evidence": "cse.lk fetched 2026-09-30: shell only",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|corporate_flow": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "CSE corporate announcements sit in cse.lk, a JavaScript-only app that returned an empty shell to automated fetch.",
+   "substitute": "",
+   "evidence": "cse.lk fetched 2026-09-30: shell only",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|physical_inventory": {
+   "status": "NOT_RELEVANT",
+   "reason": "Sri Lanka's physical markets (tea, rubber, gems) map to no MT5 instrument.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|index_mechanical": {
+   "status": "NOT_RELEVANT",
+   "reason": "The S&P SL20 is maintained by S&P DJI; no local index-tracking passive flow of consequence and no MT5 target.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Rule 605/606-style order-routing or execution-quality disclosure regime exists in this jurisdiction.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|adviser_topology": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form ADV-style adviser filing is published; only licensee registers.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|mortgage_convexity": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No agency-MBS market or public MBS duration/refinancing series; mortgages are bank-held and mostly floating-rate.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|futures_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Bangladesh has no listed futures/options market (DSE/CSE trade cash equities only).",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|options_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Bangladesh has no listed futures/options market (DSE/CSE trade cash equities only).",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|otc_swaps": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public OTC derivatives statistics.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|fund_flows": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Funds are mostly listed closed-end; no periodic open-end flow statistics are published.",
+   "substitute": "BSEC quarterly reports https://www.sec.gov.bd/quarterly-reports-1",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|fund_holdings": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No 13F-style holdings filing.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|hedge_fund_leverage": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form PF/OFR-style aggregate leverage statistics for hedge funds are published.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|repo_collateral": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public repo volume/haircut/collateral series.",
+   "substitute": "institutional.bd.bb.money_market_ref_rate",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|securities_lending_short": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No operational short-selling or SLB market in Bangladesh.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|settlement_fails": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CDBL/CCBL publish no fails series.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|beneficial_ownership": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "DSE market data sits on dsebd.org, whose robots.txt disallows automated access.",
+   "substitute": "BSEC quarterly reports https://www.sec.gov.bd/quarterly-reports-1",
+   "evidence": "dsebd.org robots.txt disallow (fetch 2026-09-30)",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|corporate_flow": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "DSE market data sits on dsebd.org, whose robots.txt disallows automated access.",
+   "substitute": "BSEC quarterly reports https://www.sec.gov.bd/quarterly-reports-1",
+   "evidence": "dsebd.org robots.txt disallow (fetch 2026-09-30)",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|physical_inventory": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public cotton/jute/grain stock series from Bangladeshi institutions with an MT5 mapping.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|participant_type_flow": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "DSE market data sits on dsebd.org, whose robots.txt disallows automated access. (foreign trade statistics).",
+   "substitute": "BSEC quarterly reports https://www.sec.gov.bd/quarterly-reports-1",
+   "evidence": "dsebd.org robots.txt disallow (fetch 2026-09-30)",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|index_mechanical": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "DSE market data sits on dsebd.org, whose robots.txt disallows automated access. (DSEX/DS30 reconstitutions).",
+   "substitute": "",
+   "evidence": "dsebd.org robots.txt disallow (fetch 2026-09-30)",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Rule 605/606-style order-routing or execution-quality disclosure regime exists in this jurisdiction.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|pension_insurance": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No funded national pension scheme with published allocations; insurer asset data only in annual reports.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|mortgage_convexity": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No agency-MBS market or public MBS duration/refinancing series; mortgages are bank-held and mostly floating-rate.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|futures_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Nepal has no operating futures/options exchange.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|options_positioning": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Nepal has no operating futures/options exchange.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|otc_swaps": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No OTC derivatives statistics.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|fund_flows": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Mutual funds are mostly listed closed-end schemes; no flow statistics.",
+   "substitute": "https://www.sebon.gov.np/mutual-fund-schemes",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|fund_holdings": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No holdings filing regime.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|hedge_fund_leverage": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Form PF/OFR-style aggregate leverage statistics for hedge funds are published.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|repo_collateral": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public repo volume/haircut/collateral series.",
+   "substitute": "institutional.np.nrb.short_term_rates",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|securities_lending_short": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Short selling is not permitted on NEPSE.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|settlement_fails": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CDSC/NEPSE publish no fails series.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|beneficial_ownership": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "nepalstock.com is a JavaScript-only app that returned a \"Loading...\" shell to automated fetch.",
+   "substitute": "SEBON quarterly statistics https://www.sebon.gov.np/quarterly-statistics",
+   "evidence": "nepalstock.com fetched 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|corporate_flow": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "nepalstock.com is a JavaScript-only app that returned a \"Loading...\" shell to automated fetch.",
+   "substitute": "SEBON quarterly statistics https://www.sebon.gov.np/quarterly-statistics",
+   "evidence": "nepalstock.com fetched 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|physical_inventory": {
+   "status": "NOT_RELEVANT",
+   "reason": "No Nepali physical market maps to an MT5 instrument.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|participant_type_flow": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Foreign investors are barred from NEPSE's secondary market; no investor-type trading breakdown is published.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|index_mechanical": {
+   "status": "NOT_PUBLISHED",
+   "reason": "The NEPSE index is an all-share market-cap index with no constituent reviews; no deterministic rebalance flow.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No Rule 605/606-style order-routing or execution-quality disclosure regime exists in this jurisdiction.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|pension_insurance": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No periodic public allocation data from EPF/Citizen Investment Trust/Insurance Authority; annual reports only.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|mortgage_convexity": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No agency-MBS market or public MBS duration/refinancing series; mortgages are bank-held and mostly floating-rate.",
+   "substitute": "",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "global|money_market_plumbing": {
+   "status": "NOT_RELEVANT",
+   "reason": "Unsecured funding rates, MMF holdings and RRP take-up are published nationally (SOFR/RRP in us, MMSR/ESTR in ea, SONIA in uk, TONA in jp); no supranational body publishes an operational money-market series (FSB NBFI report carries only annual MMF aggregates, added as adviser_topology row).",
+   "substitute": "institutional.global.fsb.nbfi_global_monitoring_report",
+   "evidence": "https://www.fsb.org/2025/12/global-monitoring-report-on-nonbank-financial-intermediation-2025/",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "global|beneficial_ownership": {
+   "status": "NOT_RELEVANT",
+   "reason": "Large-holder filings (13D/13G, TR-1, JP 5% rule) are national regimes covered by member-country columns (us, uk, jp, ea); LME positions banding is already an existing global row for commodity concentration.",
+   "substitute": "institutional.global.lme.positions_banding",
+   "evidence": "well-known",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "global|participant_type_flow": {
+   "status": "NOT_RELEVANT",
+   "reason": "Investor-type exchange flow is published by national exchanges (kr, tw, jp, ind, cn columns); supranational venues (LME, ICE Futures Europe) publish participant classes only as COT, already existing rows.",
+   "substitute": "dataset:lme_commitments_of_traders_report",
+   "evidence": "well-known",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "global|public_chain": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No international institution publishes public-chain large-holder transfer data; the class is a desk-side sensor read from the raw public chain itself, not an institutional publication (and no crypto venue may be used).",
+   "substitute": "",
+   "evidence": "well-known",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "global|execution_routing": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Routing/execution-quality disclosure is a national rule (US Rule 605/606 in us column; MiFID RTS 27/28 suspended); no supranational body publishes routing statistics.",
+   "substitute": "",
+   "evidence": "well-known",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "global|mortgage_convexity": {
+   "status": "NOT_RELEVANT",
+   "reason": "Agency-MBS convexity and refinancing is a US market construct covered by the us column (NY Fed agency-MBS operations, GSE data); no supranational MBS series exists.",
+   "substitute": "",
+   "evidence": "well-known",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "global|observed_price_footprint": {
+   "status": "NOT_RELEVANT",
+   "reason": "Global-only class sourced from the desk's own MT5 bars, not from any institutional publisher; nothing external to resolve.",
+   "substitute": "",
+   "evidence": "internal: desk MT5 bar store",
+   "by": "coverage_sweep_2026-09-30"
+  }
+ },
+ "roles": {
+  "th|clearing_house": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Thailand Clearing House publishes no public margin, fails or stress series beyond annual CPMI-IOSCO disclosures.",
+   "evidence": "SET site navigation",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|clearing_house": {
+   "status": "NOT_PUBLISHED",
+   "reason": "KPEI publishes no public margin, fails or stress series.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|derivatives_reports": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No liquid national futures/options market; JFX/ICDX report volume only, no positioning.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|exchange": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "IDX (idx.co.id) returned HTTP 403 to automated fetch; substitute KSEI ownership and BI weekly flow rows.",
+   "evidence": "idx.co.id 403 on 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "idn|short_position": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Short selling on IDX starts 1 Oct 2026; no short data yet.",
+   "evidence": "https://www.cnbcindonesia.com/market/20260929060203-17-771612/short-selling-mulai-1-oktober-bei-ungkap-syarat-penting-buat-investor",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|clearing_house": {
+   "status": "NOT_PUBLISHED",
+   "reason": "SGX-CDP and SGX-DC publish only CPMI-IOSCO quantitative disclosures; no margin or fails time series.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "sg|custodian_settlement": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CDP publishes no custody, settlement or repo statistics; no public SGS repo data.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|clearing_house": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Bursa Malaysia clearing houses publish no margin, fails or stress series.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|custodian_settlement": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Bursa Malaysia Depository publishes no custody/settlement statistics; no public repo data.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "my|treasury": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Ministry of Finance publishes no market-flow data; government securities holdings are published by BNM (institutional.my.bnm.nonresident_holdings).",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|clearing_house": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "NCCPL site returned HTTP 403 to automated fetch.",
+   "evidence": "NCCPL 403 on 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|custodian_settlement": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No public custody/settlement statistics from CDC Pakistan were located; repo data comes from SBP.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|short_position": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "Short/SLB data sits with NCCPL, which returned HTTP 403 to automated fetch.",
+   "evidence": "NCCPL 403 on 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "pk|treasury": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Ministry of Finance publishes no market-flow series; government-securities holdings and auctions are published by SBP (institutional.pk.sbp.scheduled_banks_gop_holdings).",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|clearing_house": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CSE clearing publishes no margin/fails series.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|custodian_settlement": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CDS publishes no custody or repo statistics.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|derivatives_reports": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Sri Lanka has no listed futures/options market (CSE trades cash equities and debt only).",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|exchange": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "cse.lk is a JavaScript-only app returning an empty shell to automated fetch; CSE foreign flows are taken from CBSL weekly indicators.",
+   "evidence": "cse.lk fetched 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|physical_market": {
+   "status": "NOT_RELEVANT",
+   "reason": "No physical market maps to an MT5 instrument.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "lk|short_position": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No operational short-selling regime on the CSE.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|clearing_house": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CCBL publishes no margin/fails series.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|custodian_settlement": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CDBL publishes no custody/settlement statistics.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|derivatives_reports": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Bangladesh has no listed futures/options market (DSE/CSE trade cash equities only).",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|exchange": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "DSE market data sits on dsebd.org, whose robots.txt disallows automated access.",
+   "evidence": "dsebd.org robots.txt disallow",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|physical_market": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No physical-market publisher with an MT5 mapping.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|short_position": {
+   "status": "NOT_PUBLISHED",
+   "reason": "No short-selling market.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "bd|treasury": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Finance Division publishes no market-flow data; government securities auctions and holdings are run and reported by Bangladesh Bank.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|clearing_house": {
+   "status": "NOT_PUBLISHED",
+   "reason": "NEPSE clearing publishes no margin/fails series.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|custodian_settlement": {
+   "status": "NOT_PUBLISHED",
+   "reason": "CDSC publishes no custody/settlement statistics.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|derivatives_reports": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Nepal has no operating futures/options exchange.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|exchange": {
+   "status": "BLOCKED_SUBSTITUTE",
+   "reason": "nepalstock.com is a JavaScript-only app that returned a \"Loading...\" shell to automated fetch.",
+   "evidence": "nepalstock.com fetched 2026-09-30",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|physical_market": {
+   "status": "NOT_RELEVANT",
+   "reason": "No physical market maps to an MT5 instrument.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|short_position": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Short selling not permitted.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  },
+  "np|treasury": {
+   "status": "NOT_PUBLISHED",
+   "reason": "Public Debt Management Office publishes no market-flow data; auctions run by NRB.",
+   "evidence": "",
+   "by": "coverage_sweep_2026-09-30"
+  }
+ }
+}
