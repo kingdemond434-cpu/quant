@@ -460,7 +460,33 @@ def _box_section(stall: Any, sync: Any, now: datetime) -> dict[str, Any]:
                  "age_h": _age_h(marker.get("last_cycle"), now), "legs": len(legs),
                  "ok": codes.get("ok", 0), "failed": codes.get("failed", 0),
                  "unfinished": codes.get("unfinished", 0)}
-    return {"status": _status(bool(watch), bool(marker)), "memory": mem, "cycle": cycle}
+    return {"status": _status(bool(watch), bool(marker)), "memory": mem, "cycle": cycle,
+            "alerts": _alerts_section(watch)}
+
+
+def _alerts_section(watch: dict[str, Any]) -> dict[str, Any]:
+    """stall_watch.json's `alerts_armed` / `alerts_line`: does a STALLED page reach anyone?
+
+    MT5-StallWatch writes both every ten minutes from the independent state-flow watcher, and
+    until 2026-09-30 nothing read them. A file without the keys is UNMEASURED, never "armed".
+    """
+    if not watch:
+        return {"status": UNMEASURED, "why": "no stall_watch.json"}
+    if "alerts_armed" not in watch and "alerts_line" not in watch:
+        return {"status": UNMEASURED,
+                "why": "stall_watch.json carries no alerts_* keys (stall_watch.ps1 not adopted)"}
+    line = watch.get("alerts_line")
+    armed = watch.get("alerts_armed")
+    if isinstance(armed, int) and armed > 0 and not line:
+        status = "ARMED"
+    elif armed == 0:
+        status = "NOT_ARMED"
+    else:   # the watcher did not run, or could not read the channels: its line says which
+        status = UNMEASURED
+    return {"status": status, "armed": armed, "line": line,
+            "state_flow": watch.get("state_flow"),
+            "state_flow_watch": watch.get("state_flow_watch"),
+            "checked_at": watch.get("checked_at")}
 
 
 def _unmeasured(doc: dict[str, Any], inputs: Inputs) -> list[str]:
@@ -622,7 +648,8 @@ def summary(doc: dict[str, Any]) -> list[str]:
                    f"closed_loop true={loop.get('true')} false={loop.get('false')} "
                    f"unmeasured={loop.get('unmeasured')}"),
         ("e8", f"armed={e8.get('armed')} status={e8.get('report_status')} at={e8.get('at')} | "
-               f"box free_mb={_pick(doc['box'], 'memory', 'free_phys_mb')}"),
+               f"box free_mb={_pick(doc['box'], 'memory', 'free_phys_mb')} "
+               f"alerts={_pick(doc['box'], 'alerts', 'status')}"),
         ("sources", f"present={present}/{len(sources)} "
                     f"unmeasured={len(doc.get('unmeasured', []))} "
                     f"config={env['config_hash'][:12]} input={env['input_hash'][:12]}"),

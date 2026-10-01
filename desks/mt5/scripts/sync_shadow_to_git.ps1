@@ -448,6 +448,12 @@ $relPaths = @(
     # meter says whether the box's state is actually reaching origin (STALLED when it is not).
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
+    # THE FRESHNESS VERDICT AND THE DESK'S HEALTH, ON THE SAME WIRE (2026-09-30). Both written
+    # by core-plan hourly legs (`box_state_freshness`, `desk_health`) just before `publish_state`:
+    # CRO D17 reads box_state_age_hours from the first, and the second is check_desk_health.py's
+    # plain-English answer to "is the desk running", which until now only a person at the box saw.
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two
@@ -481,6 +487,11 @@ $relPaths = @(
     # `execution.matched_fills` off the 2026-09-08 stub committed before the ledger carried any
     # entry-order key -- "matched_fills 0" for three weeks while the join on the box had moved.
     "desks/mt5/reports/markout.json",
+    # THE PLACEMENT-INTERLOCK VERDICT (2026-09-30). scripts/check_placement_interlock.py writes it
+    # on the law-gate clock: whether any sleeve has been refused in a run with no placement since.
+    # The halt of 2026-09-07..24 was recorded in the decision ledger 1,200 times and read by no
+    # one; this is its verdict, carried to every reader of the branch. Box-written state.
+    "desks/mt5/data/placement_interlock.json",
     # THE SEAL THE BOX RUNS (2026-09-30). Adopt-And-Seal commits RELEASE.json locally on every
     # seal, but it was never on this list, so origin's copy stayed at 2026-09-15 while the box
     # re-sealed daily: no reader off the box could tell which release the gateway was running.

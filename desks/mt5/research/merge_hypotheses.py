@@ -874,6 +874,42 @@ def main() -> int:
     except Exception as exc:
         prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
+    # ONE SEARCHED CLAIM IS ONE BREADTH UNIT (libs/research/claim_selection.py, 2026-09-30).
+    # Every docket row -- fresh, carried over or already judged -- whose own words say its result
+    # was the best of N searched variations is stamped with its claim family, so the 25,520 cells
+    # one video's "best of ~200" was swept into count as ONE unit of breadth and the family is
+    # charged its 200 trials ONCE in the lifetime ledger. No row is removed, reordered or
+    # re-judged, and `family`/`params`/verdicts are untouched. A fault here costs the stamp and
+    # says so in the report; it never costs a row.
+    claim_selection: dict[str, Any] = {"status": "UNMEASURED"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.research import claim_selection as _cs
+        before = _cs.breadth(rows_out)
+        stamped = _cs.stamp_all(rows_out)
+        after = _cs.breadth(rows_out)
+        ledger = _cs.update_ledger(after)
+        claim_selection = {
+            "status": "MEASURED", "rows_stamped": stamped,
+            "cells": after["cells"],
+            "breadth_units_before": before["breadth_units"],
+            "breadth_units_after": after["breadth_units"],
+            "distinct_mechanisms_before": before["distinct_mechanisms"],
+            "distinct_mechanisms_after": after["distinct_mechanisms"],
+            "claim_families": {k: {kk: vv for kk, vv in v.items() if kk != "genome_ids"}
+                               for k, v in after["claim_families"].items()},
+            "lifetime_selection_trials": ledger.get("lifetime_selection_trials"),
+            "ledger": str(_cs.LEDGER)}
+        if stamped:
+            print(f"   claim selection: {after['cells_in_claim_families']} row(s) in "
+                  f"{len(after['claim_families'])} claim famil(ies); breadth units "
+                  f"{before['breadth_units']} -> {after['breadth_units']}")
+    except Exception as exc:
+        claim_selection = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   claim selection stamp unavailable ({type(exc).__name__}: {exc})")
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -984,6 +1020,7 @@ def main() -> int:
         "triangle_legs": {k: triangle_legs.get(k) for k in
                           ("status", "legless_before", "filled", "unfilled",
                            "unfilled_by_reason", "legless_after")},
+        "claim_selection": claim_selection,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "
