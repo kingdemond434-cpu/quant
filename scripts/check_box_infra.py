@@ -32,6 +32,13 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DESK = ROOT / "desks" / "mt5"
 OUT = DESK / "reports" / "BOX_INFRA.json"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+#: R0237: the exit code is `fence_exit` over a DECLARED pass set. UNMEASURED passes only because
+#: it is emitted solely off the trading box, where the three artifacts cannot exist; on the box
+#: every status but PASS fails, including one added later.
+_PASSING = frozenset({"PASS", "UNMEASURED"})
 
 #: task, artifact, cadence (s), installer
 TASKS: tuple[tuple[str, Path, int, str], ...] = (
@@ -82,10 +89,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     if not on_trading_box():
-        doc = {"verdict": "UNMEASURED",
+        doc: dict[str, Any] = {"verdict": "UNMEASURED",
                "why": "not the trading box: the three task artifacts only exist there"}
         print(json.dumps(doc) if a.json else f"box infra: {doc['verdict']} -- {doc['why']}")
-        return 0
+        return _exit(doc["verdict"])
     doc = measure()
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(doc, indent=1), "utf-8")
@@ -96,7 +103,14 @@ def main(argv: list[str] | None = None) -> int:
         for r in doc["tasks"]:
             print(f"  {r['state']:<10} {r['task']:<20} reported={r['reported']}"
                   + (f"  -> run {r['install']}" if r["state"] == "NEVER" else ""))
-    return 1 if doc["verdict"] == "FAIL" else 0
+    return _exit(doc["verdict"], scanned=len(doc["tasks"]))
+
+
+def _exit(verdict: str, **kw: Any) -> int:
+    from libs.ops.fence_exit import fence_exit
+    if kw:
+        return fence_exit(verdict, _PASSING, scanned=kw["scanned"], of="box infra tasks")
+    return fence_exit(verdict, _PASSING)
 
 
 if __name__ == "__main__":
