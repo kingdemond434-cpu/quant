@@ -362,6 +362,15 @@ class CellRegistry:
                 "AND e.at >= ? GROUP BY c.source_id", (iso(since),)).fetchall()
         return {str(r["s"]): int(r["n"]) for r in rows}
 
+    def last_evaluated_by_source(self) -> dict[str, str]:
+        """The latest time a cell of each source reached EVALUATED (ISO), all time."""
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT c.source_id AS s, MAX(e.at) AS t FROM cell_events e "
+                "JOIN cells c ON c.cell_id=e.cell_id WHERE e.to_status='EVALUATED' "
+                "GROUP BY c.source_id").fetchall()
+        return {str(r["s"]): str(r["t"]) for r in rows if r["t"]}
+
     def created_since(self, since: datetime) -> list[Cell]:
         with self._conn() as c:
             rows = c.execute("SELECT doc FROM cells WHERE created_at >= ?",

@@ -242,6 +242,14 @@ def normalise_row(row: Mapping[str, Any], *, origin: str,
         seats=_seats(row.get("seats")))
 
 
+_PERMISSIVE = frozenset({"MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unlicense",
+                         "CC0-1.0", "0BSD", "Zlib", "BSL-1.0", "MIT-0"})
+
+
+def _permissive(spdx: Any) -> bool:
+    return str(spdx or "") in _PERMISSIVE
+
+
 def _seats(raw: Any) -> list[str]:
     if isinstance(raw, list):
         return [str(x) for x in raw]
@@ -738,7 +746,11 @@ def fetch_github_search(src: Source, cursor: dict[str, Any], ctx: FetchContext
             marks[q] = upd
             body = f"{it.get('description') or ''}\n{' '.join(it.get('topics') or [])}\n" \
                    f"{it.get('body') or ''}"
-            if what == "repositories" and cfg.get("readme", True):
+            lic = (it.get("license") or {}).get("spdx_id") \
+                if isinstance(it.get("license"), dict) else None
+            # a README is the repository's text under its licence: kept only when that licence
+            # is permissive (libs/civilizations/licence.PERMISSIVE); otherwise metadata only
+            if what == "repositories" and cfg.get("readme", True) and _permissive(lic):
                 full = str(it.get("full_name") or "")
                 rr = ctx.fetch(f"https://raw.githubusercontent.com/{full}/HEAD/README.md")
                 if rr.ok:

@@ -1527,8 +1527,39 @@ class Factory:
         self.state["harvest_cursor"] = (cursor + MAX_HARVEST) % max(1, len(keys))
         for k in take:
             self._parent(k, found[k], "harvest")
+        n_civ = self._civilization_parents()
         return {"graveyard_dead": n_dead, "parked": n_parked, "own_proposals": n_own,
+                "civilization_parents": n_civ,
                 "harvested_parents": len(take), "cursor": self.state["harvest_cursor"]}
+
+    def _civilization_parents(self) -> int:
+        """Public formulas the research civilizations transcribed (libs/civilizations, #161)
+        through THIS module's DSL: parents like the 101, evaluated on the basket with their
+        cross-sectional nodes intact. The file is the civilizations' only formula output; they
+        mint no formula cells of their own for a formula this factory can take."""
+        fp = self.paths.desk / "data" / "civilizations" / "formula_parents.jsonl"
+        n = 0
+        try:
+            with fp.open("rb") as fh:
+                fh.seek(0, 2)
+                fh.seek(max(0, fh.tell() - 4_000_000))
+                lines = fh.read().decode("utf-8", "replace").splitlines()[1:]
+        except OSError:
+            return 0
+        for ln in lines:
+            try:
+                row = json.loads(ln)
+            except ValueError:
+                continue
+            tree, pid = row.get("tree"), str(row.get("parent_id") or "")
+            status = str(row.get("status") or "")
+            if not pid or tree is None or status not in ("TESTABLE", "TOO_DEEP"):
+                continue
+            if status == "TESTABLE" and not ag.is_valid(tree) and not dsl.has_panel(tree):
+                continue
+            self._parent(pid, tree, "civilization", status)
+            n += 1
+        return n
 
     # ---- the funnel on one cell
     def run_cell(self, cell: Cell, parent: Parent | None) -> dict[str, Any]:

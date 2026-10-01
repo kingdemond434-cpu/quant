@@ -26,7 +26,7 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 723,
+  "NEVER": 724,
   "UNMEASURED": 35
  },
  "scope": {
@@ -23958,6 +23958,31 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-01T00:33:13+00:00"
+  },
+  {
+   "organ": "task:MT5-CivilizationResident",
+   "kind": "task",
+   "code": [
+    "desks/mt5/research/civilization_resident.py"
+   ],
+   "clock": "MT5-CivilizationResident",
+   "cadence_s": 600,
+   "max_silence_s": 1200,
+   "state": "NEVER",
+   "why": "no artifact and no run record on this host",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/civilizations/CIVILIZATION_METRICS.json",
+   "artifact_declared": "desks/mt5/reports/civilizations/CIVILIZATION_METRICS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "task_runs",
+   "consumer": "UNMEASURED"
   }
  ],
  "ratchet": {
