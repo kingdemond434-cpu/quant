@@ -2,7 +2,7 @@
 
 THE PRINCIPAL'S ORDER (2026-09-17, live message): "the forex sleeves still didn't stop, they keep
 firing, please disable all of them in my current live account, it's critical they're losing me
-money" and "the bad m15 sleeve of gold is too". Measured on account 495044 the same hour, over
+money" and "the bad m15 sleeve of gold is too". Measured on the live account the same hour, over
 the trailing three days: 258 forex deals for **-73.24 EUR** (EURCHF -43.54 across 100 deals,
 CHFNOK -10.38, AUDCAD -5.67, USDCHF -5.30, EURGBP -5.19, and eight more pairs negative; the only
 positive symbol on the account was XAUUSD at +24.94).
@@ -26,7 +26,7 @@ XAUUSD book, it is not left idle. A future session may widen this ONLY on the pr
 principal has accepted -- never because a reviewer thinks the book looks narrow.
 
 SCOPE IS THE LIVE ACCOUNT, NOT THE PROP ACCOUNT. The principal's words were "my current live
-account" (495044). The E8 prop book is deliberately BUILT on forex mechanisms -- session range
+account" (Fusion). The E8 prop book is deliberately BUILT on forex mechanisms -- session range
 breakout, overnight gap decay and carry are three of its four independent mechanisms
 (docs/PROP_FIRM_E8.md) -- so applying this policy there would break the plan he designed, on an
 account whose drawdown is E8's rule rather than his balance. E8 keeps its own family ban
@@ -75,8 +75,8 @@ DEFAULT_BANNED_EXECS: frozenset[str] = frozenset({"scalp_market"})
 EXEC_ORDER = ("principal 2026-09-29: the gold scalp lane is stood down (executable replay "
               "<= 0R per trade after costs on every candidate); E8 carries no scalp lane")
 ORDER = ("principal 2026-09-17: forex sleeves and the XAUUSD M15 sleeve are disabled in the "
-         "live account (measured cause: -73.24 EUR of forex deals in three days on account "
-         "495044 while XAUUSD made +24.94)")
+         "live account (measured cause: -73.24 EUR of forex deals in three days on the live "
+         "Fusion account while XAUUSD made +24.94)")
 
 #: Symbol -> the ONLY sleeve names that may hold capital on it. A symbol ABSENT from this map is
 #: unrestricted, so the default below changes nothing for gold.

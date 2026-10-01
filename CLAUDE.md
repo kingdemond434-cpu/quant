@@ -99,7 +99,7 @@ vocabulary. Do not decide something the desk already decided.
 
 - **(SUPERSEDED, KEPT AS THE CAUTIONARY CASE) Box memory: the TRADING box has 96 GB. The 8 GB
   reading was a different machine.**
-  Re-measured 2026-09-12 on the Contabo trading box (62.171.172.249) from the two sources this
+  Re-measured 2026-09-12 on the Contabo trading box (address in QUANT_BOX_HOST) from the two sources this
   file already names: `stall_watch.json` publishes `memory.total_phys_mb: 98298` with
   `free_phys_mb: 8118`, and `Win32_OperatingSystem` reports **98,298 MB total / 59,364 MB free**.
   So the standing note below was right about its evidence and wrong about which box it described.
