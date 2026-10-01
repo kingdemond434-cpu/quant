@@ -26,7 +26,7 @@ from typing import Any
 
 from libs.core.coerce import integer
 from libs.research.grounding import PROMPT_CLAUSE as GROUNDING_CLAUSE
-from libs.research.grounding import capped_tier, ground
+from libs.research.grounding import capped_tier, ground, tiles
 
 _UA = "Mozilla/5.0 (compatible; QuantResearchPublicSourceMonitor/1.0)"
 _CTX = ssl.create_default_context()
@@ -47,6 +47,10 @@ _ELITE = re.compile(
 TRANSCRIPT_BLOCKED = "BLOCKED"
 TRANSCRIPT_UNREADABLE = "UNREADABLE"
 TRANSCRIPT_UNKNOWN_STATES = frozenset({TRANSCRIPT_BLOCKED, TRANSCRIPT_UNREADABLE})
+
+#: A tile is what one extraction prompt carries; a long source is read in up to MAX_TILES of them.
+TILE_CHARS = 50_000
+MAX_TILES = 4
 
 EVIDENCE_TIERS = {
     "MARKETING_CLAIM": 0,
@@ -555,14 +559,37 @@ def run(
                     continue
                 retry_state.pop(dedupe_key, None)
             seen.add(dedupe_key)
-            prompt = extraction_prompt(item, content, mission_set)
-            try:
-                extracted = parse_extraction(ask(prompt))
-            except Exception as exc:
-                extracted = None
-                failures.append(
-                    {"source": source.name, "url": url, "stage": "EXTRACT", "error": str(exc)}
-                )
+            # quant-mind's map step: a long paper or transcript is cut BY CODE into fixed tiles
+            # and every tile is read, instead of the first 50,000 characters only. The first
+            # tile's answer leads; later tiles fill only the fields it left null.
+            spans = tiles(content, TILE_CHARS) or [(0, 0)]
+            extracted = None
+            for lo, hi in spans[:MAX_TILES]:
+                try:
+                    part = parse_extraction(ask(extraction_prompt(item, content[lo:hi],
+                                                                  mission_set)))
+                except Exception as exc:
+                    part = None
+                    failures.append(
+                        {"source": source.name, "url": url, "stage": "EXTRACT", "error": str(exc)}
+                    )
+                if part is None:
+                    continue
+                if extracted is None:
+                    extracted = part
+                    continue
+                quotes = dict(extracted.get("evidence_quotes") or {})
+                for k, v in part.items():
+                    if k == "evidence_quotes" and isinstance(v, Mapping):
+                        for f, q in v.items():
+                            quotes.setdefault(f, q)
+                    elif extracted.get(k) in (None, "", [], {}):
+                        extracted[k] = v
+                if quotes:
+                    extracted["evidence_quotes"] = quotes
+            if extracted is not None:
+                extracted["content_chars"] = len(content)
+                extracted["content_chars_read"] = sum(hi - lo for lo, hi in spans[:MAX_TILES])
             if extracted is None:
                 # Keep the source item and transcript state. An extraction failure must remain
                 # retryable and cannot become a false clean result.
@@ -580,7 +607,7 @@ def run(
                 continue
             # quant-mind's citation rule: a field the content cannot quote back is the model's
             # claim, not the source's, and an unquoted evidence class cannot raise the tier.
-            grounding = ground(extracted, content[:50000])
+            grounding = ground(extracted, content[:extracted["content_chars_read"]])
             processed.append(
                 {
                     **item,

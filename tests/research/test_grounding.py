@@ -55,3 +55,23 @@ def test_the_hunter_asks_for_quotes_and_caps_an_unquoted_tier():
     assert item["status"] == "EXTRACTED"
     assert item["grounding"]["grounded_fields"] == ["mechanism"]
     assert item["evidence_tier"] == 0                  # BACKTEST, but nothing quoted says so
+
+
+def test_a_long_source_is_read_in_tiles_and_merged():
+    long_page = ("filler text " * 6000) + PAGE + (" more filler" * 6000)
+    source = Source("site", "https://example.test/feed", "site")
+    feed = (b"<rss><channel><item><title>Long</title><link>https://example.test/b</link>"
+            b"<description>" + long_page.encode() + b"</description></item></channel></rss>")
+    seen: list[str] = []
+
+    def ask(prompt: str) -> str:
+        seen.append(prompt)
+        if "Tokyo open" in prompt:
+            return json.dumps({"mechanism": "Tokyo open range", "evidence_quotes":
+                               {"mechanism": "buys XAUUSD at the Tokyo open"}})
+        return json.dumps({"mechanism": None, "horizon": "intraday"})
+
+    item = run([source], {}, ask, getter=lambda url: feed)["items"][0]
+    assert len(seen) >= 2 and item["content_chars_read"] == item["content_chars"]
+    assert item["mechanism"] == "Tokyo open range" and item["horizon"] == "intraday"
+    assert item["grounding"]["grounded_fields"] == ["mechanism"]
