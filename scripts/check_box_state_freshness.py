@@ -31,9 +31,23 @@ twenty-four missed sync slots and six missed hourly publications -- well past a 
 ABSENCE IS NOT FRESHNESS (L1.28a). No ref, no allowlist, no box commit and no parseable stamp is
 UNMEASURED and exits 1: a fence that passed on "found nothing" is the silence it replaces.
 
-A STATE FENCE, NOT A COMMIT GATE. It rides `_STATE_FENCES` in run_law_gate.py, so it runs on a
-clock in the box's hourly MT5-LawGate rotation and never in `--laws-only` pre-push/CI: a red here
-must not wedge the very push that would heal it. Writes desks/mt5/reports/BOX_STATE_FRESHNESS.json.
+A STATE FENCE, NOT A COMMIT GATE. It rides `_STATE_FENCES` in run_law_gate.py (the box's
+MT5-LawGate rotation) and never `--laws-only` pre-push/CI: a red here must not wedge the very push
+that would heal it. The rotation spreads the battery over a 48h window, so it ALSO runs as the
+core-plan hourly leg `box_state_freshness`, just before `publish_state` -- every hour, and the
+report it writes rides that hour's publication.
+
+THE REPORT IS PUBLISHED (2026-09-30). desks/mt5/reports/BOX_STATE_FRESHNESS.json is allowlisted in
+.gitignore, carried by sync_shadow_to_git.ps1's $relPaths and declared NON_CODE, so the CRO cycle
+(D17 reads `box_state_age_hours`) sees it off the box. `box_state_age_hours` is ALWAYS a key: null
+with `box_state_age_reason` when unmeasured, never absent.
+
+WHAT ELSE IT CARRIES, IN BOTH OUTPUT MODES (--json included): the published BOX_STATE_FLOW.json
+meter's verdict and NOT-ARMED line (`box_state_flow`, `alerts_line`), the box's own local meter
+when this runs on the box (`box_state_flow_local`), and stall_watch.json's `alerts_armed` /
+`alerts_line` (`stall_watch_alerts`) -- the watcher's ten-minute reading of whether any page
+reaches anyone, which had no reader before this.
+
 Exit 0 FRESH, 1 STALE or UNMEASURED.
 """
 from __future__ import annotations
@@ -55,7 +69,10 @@ from libs.ops.state_publication import FLOW_REL, published_paths  # noqa: E402
 LIVE_BRANCH = "claude/llm-auto-upgrade-verify-gcjac3"
 THRESHOLD_H = 6.0
 BOX_AUTHOR = "Contabo"
-OUT = ROOT / "desks" / "mt5" / "reports" / "BOX_STATE_FRESHNESS.json"
+OUT_REL = "desks/mt5/reports/BOX_STATE_FRESHNESS.json"
+OUT = ROOT / OUT_REL
+#: stall_watch.ps1's own state file (box-local, written every ten minutes by MT5-StallWatch).
+STALL_WATCH_REL = "desks/mt5/data/stall_watch.json"
 STAMP_KEYS = ("updated_at", "generated_at", "measured_at", "checked_at", "generated_utc",
               "last_cycle")
 
@@ -79,6 +96,44 @@ def _parse(v: Any) -> datetime | None:
     return at if at.tzinfo else at.replace(tzinfo=UTC)
 
 
+def _read_local(path: Path) -> dict[str, Any] | None:
+    try:
+        # utf-8-sig: PowerShell 5's Set-Content writes a BOM on the box.
+        data = json.loads(path.read_text("utf-8-sig"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _flow_view(data: dict[str, Any]) -> dict[str, Any]:
+    raw = data.get("alerts")
+    alerts: dict[str, Any] = raw if isinstance(raw, dict) else {}
+    return {"verdict": data.get("verdict"), "why": data.get("why"),
+            "measured_at": data.get("measured_at"),
+            "published_age_h": data.get("published_age_h"),
+            "alerts_armed": alerts.get("armed"), "alerts_line": alerts.get("line")}
+
+
+def stall_watch_alerts(root: Path = ROOT) -> dict[str, Any]:
+    """THE READER stall_watch.json's alerts_* keys never had (2026-09-30).
+
+    MT5-StallWatch writes `alerts_armed` / `alerts_line` every ten minutes from the independent
+    watcher (libs.ops.state_publication.watch); nothing read them, so NOT-ARMED sat in a box file
+    no one opened. Absent file or absent keys is UNMEASURED, never "armed".
+    """
+    doc = _read_local(root / STALL_WATCH_REL)
+    if doc is None:
+        return {"status": "UNMEASURED", "why": f"{STALL_WATCH_REL} absent or unreadable here",
+                "alerts_armed": None, "alerts_line": None}
+    if "alerts_armed" not in doc and "alerts_line" not in doc:
+        return {"status": "UNMEASURED", "checked_at": doc.get("checked_at"),
+                "why": "stall_watch.json predates the alerts_* keys (stall_watch.ps1 not adopted)",
+                "alerts_armed": None, "alerts_line": None}
+    return {"status": "MEASURED", "checked_at": doc.get("checked_at"),
+            "state_flow": doc.get("state_flow"), "state_flow_watch": doc.get("state_flow_watch"),
+            "alerts_armed": doc.get("alerts_armed"), "alerts_line": doc.get("alerts_line")}
+
+
 def resolve_ref(root: Path, ref: str | None) -> str | None:
     for cand in ([ref] if ref else [f"refs/remotes/origin/{LIVE_BRANCH}", "HEAD"]):
         if _git(root, "rev-parse", "--verify", "-q", f"{cand}^{{commit}}")[0] == 0:
@@ -91,7 +146,24 @@ def measure(root: Path = ROOT, *, ref: str | None = None, threshold_h: float = T
     now = now or datetime.now(UTC)
     doc: dict[str, Any] = {"schema": "box_state_freshness/1",
                            "measured_at": now.isoformat(timespec="seconds"),
-                           "threshold_h": threshold_h, "box_author": box_author}
+                           "threshold_h": threshold_h, "box_author": box_author,
+                           # ALWAYS PRESENT (CRO D17): null + a reason when unmeasured, never absent.
+                           "age_h": None, "box_state_age_hours": None,
+                           "box_state_flow": None, "alerts": None}
+    local = _read_local(root / FLOW_REL)
+    doc["box_state_flow_local"] = _flow_view(local) if local else None
+    doc["stall_watch_alerts"] = stall_watch_alerts(root)
+    try:
+        return _measure(root, doc, ref=ref, threshold_h=threshold_h, box_author=box_author,
+                        now=now)
+    finally:
+        if doc.get("box_state_age_hours") is None:
+            doc["box_state_age_reason"] = f"{doc.get('verdict', 'UNMEASURED')}: {doc.get('why')}"
+        doc["alerts_line"] = alerts_line(doc)
+
+
+def _measure(root: Path, doc: dict[str, Any], *, ref: str | None, threshold_h: float,
+             box_author: str, now: datetime) -> dict[str, Any]:
     use = resolve_ref(root, ref)
     doc["ref"] = use
     paths = published_paths(root, rev=use) if use else []
@@ -126,6 +198,7 @@ def measure(root: Path = ROOT, *, ref: str | None = None, threshold_h: float = T
             # NOT-ARMED, carried off the box: the meter records whether any alert channel is
             # armed, and this fence (CRO D17) is where a reader off the box sees it.
             doc["alerts"] = data.get("alerts") if isinstance(data.get("alerts"), dict) else None
+            doc["box_state_flow"] = _flow_view(data)
         best = max((t for t in (_parse(data.get(k)) for k in STAMP_KEYS) if t), default=None)
         if best:
             stamps[rel] = best.isoformat(timespec="seconds")
@@ -170,22 +243,32 @@ def main(argv: list[str] | None = None) -> int:
         print(f"box state freshness: artifact not written ({exc})", file=sys.stderr)
     print(json.dumps(doc, indent=2) if args.json else
           f"box state freshness: {doc['verdict']} -- {doc['why']}")
-    line = alerts_line(doc)
-    if line and not args.json:
+    line = doc.get("alerts_line")
+    if line:
         # Loud, never a verdict: arming is a human step, and a fence that failed on it would
         # wedge nothing and heal nothing. The line is what a reader of this fence must not miss.
-        print(line)
+        # Under --json it is IN the document (`alerts_line`) and repeated on stderr, so stdout
+        # stays one parseable document and the line is still seen.
+        print(line, file=sys.stderr if args.json else sys.stdout)
     return 0 if doc["verdict"] == "FRESH" else 1
 
 
 def alerts_line(doc: dict[str, Any]) -> str | None:
-    """The loud NOT-ARMED line from the published meter, or None when armed / not published."""
-    alerts = doc.get("alerts")
-    if not isinstance(alerts, dict):
-        return None
-    line = alerts.get("line")
-    return str(line) if line else None
+    """The loud NOT-ARMED line, or None when armed or when nothing recorded arming.
 
+    The FRESHEST reading that recorded arming decides: the box's own meter on disk, then
+    stall_watch.json's ten-minute reading, then the meter as published at the ref (which may be
+    the stale copy this fence exists to catch)."""
+    sources = (doc.get("box_state_flow_local"), doc.get("stall_watch_alerts"), doc.get("alerts"))
+    for src in sources:
+        if not isinstance(src, dict):
+            continue
+        armed = src.get("armed", src.get("alerts_armed"))
+        line = src.get("line", src.get("alerts_line"))
+        if armed is None and not line:
+            continue   # this source recorded nothing about arming; ask the next one
+        return str(line) if line else None
+    return None
 
 if __name__ == "__main__":
     raise SystemExit(main())

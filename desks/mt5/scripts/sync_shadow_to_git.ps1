@@ -448,6 +448,12 @@ $relPaths = @(
     # meter says whether the box's state is actually reaching origin (STALLED when it is not).
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
+    # THE FRESHNESS VERDICT AND THE DESK'S HEALTH, ON THE SAME WIRE (2026-09-30). Both written
+    # by core-plan hourly legs (`box_state_freshness`, `desk_health`) just before `publish_state`:
+    # CRO D17 reads box_state_age_hours from the first, and the second is check_desk_health.py's
+    # plain-English answer to "is the desk running", which until now only a person at the box saw.
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
     # THE LANE STATE FILES. Until 2026-09-06 the only thing that crossed this wire was the
     # 424-byte health SUMMARY, so no reader on the other side could see a single sleeve: not its
     # status, not its forward n, not its expectancy, not its day count. That is why "are the two

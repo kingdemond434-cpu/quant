@@ -137,6 +137,10 @@ NON_CODE: frozenset[str] = frozenset({
     # publish_state leg and published on the same wire. Reports about the code, never inputs to it.
     "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
     "desks/mt5/reports/BOX_STATE_FLOW.json",
+    # The freshness fence's report and the desk health report (2026-09-30), written by the hourly
+    # `box_state_freshness` and `desk_health` legs and published on the same wire.
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
     # The Tier S box attestation and live door, published since 2026-09-30 and never declared
     # here (test_every_path_the_box_publishes_is_declared_non_code was red on the live branch).
     "desks/mt5/data/tier_s/box_evidence.json",
