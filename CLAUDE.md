@@ -12,6 +12,7 @@ context window, so it is an INDEX, never a copy.
 | `docs/LAWS.md` | **Everyone and everything.** Universe (MT5/Fusion ONLY — crypto-exchange ground is never hunted again), objective, the full law compendium, survival rails, Tier-3 never-touch, promotion firewall, operating laws, enforcement wiring |
 | `docs/RESEARCH.md` | **The whole research system** — every miner, hunter, digger, generator, screen, test: hunt space, sources and search discipline, track-record/leaderboard/championship mining, §33 conversion, validation gauntlet, survivor factory, cadence |
 | `docs/cro/` | **The twice-daily CRO cycle.** `CRO_CYCLE.md` is the procedure both lanes execute (MT5-CycleNoon = Claude 12:00 Dublin, MT5-CycleMidnight = Codex 00:00 Dublin, via `desks/mt5/scripts/Run-DeskCycle.ps1`); `QUANT_CONSTITUTION.md` governs it; `QUANT_REFERENCE.md` is read per subsystem on demand. Ledger: `desks/mt5/data/cro_cycle_ledger.jsonl` |
+| `context/` | **Research memory and the delegation protocol (2026-09-30).** `DELEGATION_PROTOCOL.md` says who owns which lane, what goes to the repo versus chat, and how the operator audits; `python scripts/context.py show` prints the last 20 decisions; `context/sleeves/<name>.md` says why each live sleeve exists. A decision that changes what the desk does is journalled with `python scripts/context.py decide ...` before the session ends |
 
 Everything else governance-shaped is a bannered ANNEX (unabridged detail, never standing orders);
 `docs/MANDATE_COVERAGE.md` maps every document's disposition. The sealed immutable core lives in
@@ -305,13 +306,20 @@ gateway deploys the allocator's fractions un-re-shrunk and falls back to the bes
 the floor when the proof is stale.** Research is anti-timid (weak public claims are hypotheses,
 never privileged); capital is evidence-hard (nothing gets authority for sounding institutional).
 - **NEVER REDUCE AGGRESSIVENESS (2026-09-08, principal's standing order, given three times).**
-  No session lowers risk by fiat: the 20% heat floor, the 0.02-lot gold floor, the daily-loss
-  and size parameters and the allocator's fractions stay as they are. Dynamic sizing the
-  allocator DERIVES from evidence is fine; a cap, shrink, veto or "conditional exception" added
-  because a reviewer called the book aggressive is not (Rule 1: prove robust forward E[log W]
-  rises, or leave it). The external review's "drop the 0.02 exception / conditional-on-ruin"
-  item is REFUSED, not deferred. Tier-1 means MORE independent positive-Elog bets inside the
-  same heat, never a smaller book.
+  No session lowers risk by fiat: the 20% heat floor, the daily-loss and size parameters and
+  the allocator's fractions stay as they are. Dynamic sizing the allocator DERIVES from
+  evidence is fine; a cap, shrink, veto or "conditional exception" added because a reviewer
+  called the book aggressive is not (Rule 1: prove robust forward E[log W] rises, or leave it).
+  Tier-1 means MORE independent positive-Elog bets inside the same heat, never a smaller book.
+- **ALLOCATOR SOVEREIGNTY (principal, 2026-09-29; merged #53, b8f53cd03) — what the code does
+  now.** The optimiser is the final capital authority on every lane, gold included: an
+  allocator fraction of 0 sends NO order; a positive target below the symbol's own venue
+  minimum sends no order (snapped down by `decision_core.implementable_lot`, never lifted); a
+  target at or above the minimum is sent at exactly the allocator's fraction. The 0.02-lot gold
+  floor (2026-09-07) and "every live sleeve trades at least the venue minimum" (2026-09-12) are
+  NO LONGER THE DEFAULT; they are the revert path, restored without a push by
+  `desks/mt5/data/ALLOCATOR_SOVEREIGN.json` = `{"enabled": false}`. Changing that default back
+  is the principal's call, not a session's.
 - **DEEP-FOREST MINING (2026-09-04, principal standing order)** — the deep Chinese web is worth
   mining to exhaustion: competition records (期货日报实盘大赛, 蓝海密剑), 七禾网/私募排排网 trader
   interviews, 聚宽/优矿/米筐/BigQuant communities, 知乎/CSDN/雪球, Gitee, Bilibili transcripts,
@@ -378,9 +386,11 @@ and n=7 per sleeve. Read the doc before discussing it -- the numbers there are m
   `scripts/check_dead_architecture.py` (which organs have anything on the other end),
   `libs/research/arena.py` (a recorded verdict per research arm) and `libs/ops/events.py` (the
   event log every leg writes). All are hourly legs and all are reports.
-- **Two items are REFUSED, not missing.** P1 (route the gold book through the allocator's
-  fraction) and P13 (feed the broker margin clause into the survival envelope) would both size
-  the book BELOW what it gets today. The principal's standing order is that the desk never
-  reduces its aggressiveness, only its dynamicness, so both are measured and published and
-  neither is fed. Turning either on needs the principal's explicit yes, and the tests pin the
-  refusal so it cannot be flipped by accident.
+- **P1 and P13 are LANDED, on the principal's 2026-09-29 yes (#53, b8f53cd03).** P1: the gold
+  book (and every other lane) is sized by the allocator's fraction alone -- zero or sub-minimum
+  sends no order (`decision_core.gold_book_lot` / `promoted_lot` / `sizing.risk_lot`); revert
+  with `data/ALLOCATOR_SOVEREIGN.json` `{"enabled": false}`. P13: `pf_allocator` feeds the
+  measured broker margin clause into the survival envelope BY DEFAULT; revert by creating
+  `desks/mt5/data/MARGIN_CLAUSE_DISABLED`. `test_allocator_sovereignty.py` and
+  `test_margin_use_reaches_the_envelope.py` pin the new defaults; the legacy floors are pinned
+  only under the revert switch.

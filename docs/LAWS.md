@@ -133,7 +133,9 @@ unproven edge are the SAME failure; sizing beyond demonstrated edge is not aggre
 ruin. NOTHING IS EVER MAXED. NOTHING IS EVER COMPLETE. "Done", "sufficient" and "complete" are
 unexamined ceilings; no ROI gap is too small to close if genuinely net-positive. Build-deferral
 is a defect: if a build is net-positive it is built AND wired in the same change — bloat is
-unwired capability, not capability. HEALTHILY, always: real validated ROI only (padding destroys
+unwired capability, not capability; and a request repeated is a request already paid for — a
+restatement is evidence of a desk defect, never an invitation to re-argue the merits (CONSTITUTION
+L1.56). HEALTHILY, always: real validated ROI only (padding destroys
 ROI by eating triage budget); within the survival rails, untouchable; sustainable —
 evidence-gated aggression compounds, blind aggression exhausts.
 

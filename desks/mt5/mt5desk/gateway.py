@@ -42,6 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import MetaTrader5 as mt5
 import pandas as pd
 from mt5desk import account_profile as _acct
+from mt5desk import order_door as _door
 from mt5desk import decision_core as _core
 from mt5desk import position_manager as _pm
 from mt5desk import provenance as _prov
@@ -109,6 +110,14 @@ PAUSED = BASE / "data" / "GATEWAY_PAUSED"
 
 TERMINAL = terminal_path()
 MAGIC = 341953
+
+#: ONE DOOR FOR MONEY (2026-09-30). Every `mt5.order_send` in this module -- the bracket, the
+#: family and scalp entries, every close, cancel, CLOSE_BY and stop move -- goes through
+#: `order_door.send`: broker `order_check` first, the answer validated (retcode, volume, price),
+#: one ledger row per attempt, an in-doubt send never repeated blind, and an exception logged
+#: and propagated, never swallowed. Bound here, once, so no call site can bypass it by
+#: accident; `log` is late-bound so the door writes to this gateway's own log.
+mt5 = _door.guard(mt5, caller="gateway", log=lambda m: log(m))
 
 #: The longest order comment THIS terminal accepts. MEASURED, not documented.
 #:
@@ -260,6 +269,11 @@ from mt5desk.decision_core import (
 )
 from mt5desk.decision_core import (
     implementable_lot as implementable_lot,
+)
+# Re-exported for callers that read it off the gateway (test_decision_core's reachability rule).
+# An import alias, not a Name: no gateway path consults the old 0.05R threshold (935ffe891).
+from mt5desk.decision_core import (
+    MIN_RATCHET_IMPROVEMENT_R as MIN_RATCHET_IMPROVEMENT_R,
 )
 from mt5desk.decision_core import (
     heat_budget as heat_budget,
@@ -743,6 +757,16 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
     # UNAVAILABLE IS NOT REJECTED (see `decision_core.placement_verdict`): a bracket the desk
     # declined to send because price sat inside the broker's freeze band is the strategy having
     # nothing to do today, not the venue refusing us.
+    # A DOOR REFUSAL IS NOT A FAILED PLACEMENT (2026-09-30). When the order door holds back a
+    # send on its own account (a duplicate of an in-doubt order that landed, or an in-doubt key
+    # it could not settle), nothing reached the venue and nothing was rejected; counting it
+    # would let two such refusals auto-pause the desk. Logged here, then left out of the streak.
+    # A refusal carrying the broker's own check retcode is not the door's and still counts.
+    for o in orders:
+        if o.get("door_refused"):
+            log(f"ORDER DOOR REFUSED [{sleeve}] {o.get('side')}: {o.get('door_reason')} -- "
+                f"not counted as a failed placement")
+    orders = [o for o in orders if not o.get("door_refused")]
     attempted, ok, diags = placement_verdict(orders)
     hist = st.setdefault("placement_health", {"consecutive_total_rejections": 0,
                                               "last_ok": None, "last_error": None})
@@ -1142,6 +1166,23 @@ def _record_intent(**row) -> str | None:
         return None
 
 
+def _recent_intents(limit: int = 5000) -> list[dict]:
+    """The last `limit` placement intents (for the restart reconcile's stop lookup). Never
+    raises: an unreadable ledger is an empty one, and the reconcile then names the stopless
+    position instead of restoring it."""
+    try:
+        lines = INTENTS.read_text("utf-8").splitlines()[-limit:]
+    except OSError:
+        return []
+    out: list[dict] = []
+    for ln in lines:
+        with contextlib.suppress(ValueError):
+            row = json.loads(ln)
+            if isinstance(row, dict):
+                out.append(row)
+    return out
+
+
 def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
                   sleeve_row: dict | None = None, blocked_side: str | None = None) -> dict:
     """Send the bracket legs that agree with the current book.
@@ -1290,7 +1331,11 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float,
             point=_point, stops_level=_lvl, order_type="pending_stop", latency_ms=_lat_ms,
             **_sleeve_identity(sleeve_row))
         sent.append({"side": side, "retcode": code,
-                     "comment": res.comment if res else None})
+                     "comment": res.comment if res else None,
+                     # the door's OWN refusals only (duplicate / unsettled in-doubt), which
+                     # `note_placement` leaves out of the pause streak; see order_door
+                     "door_refused": getattr(res, "door_own", False) is True,
+                     "door_reason": getattr(res, "door_reason", None)})
         _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
                          price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
                          taken=(not why), reason=("placed" if not why else "broker_rejected"),
@@ -3948,6 +3993,19 @@ def main() -> None:
         save_state(st)
 
     sleeves = sleeve_set()
+
+    # RESTART HOLDING A POSITION (2026-09-30). Every pass is a fresh process, so every pass is a
+    # restart: before management and before anything new is placed, the venue's own book under
+    # MAGIC is read, the order door's in-doubt sends are settled against it (so a send that
+    # timed out last pass and landed is never sent twice), and a position holding with no stop
+    # gets its placement stop back. Never raises; an unreadable venue is recorded UNMEASURED.
+    try:
+        st["restart_reconcile"] = _door.restart_reconcile(
+            mt5, magic=MAGIC, armed=bool(st.get("armed")), intents=_recent_intents(),
+            log=log)
+    except Exception as exc:
+        log(f"RESTART RECONCILE FAILED ({type(exc).__name__}: {exc}); the lanes' own venue "
+            f"checks still stand")
 
     # MANAGE WHAT IS ALREADY OPEN BEFORE CONSIDERING ANYTHING NEW, and run it on EVERY pass --
     # before the regime filter, before the equity floor, before heat. Those gates decide whether

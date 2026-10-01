@@ -67,6 +67,10 @@ gates:
       # bigger sweep. That is the same defect through a second door.
       # 0.014863 is the dispersion that yields sr0 = 0.3786 at 597 trials: the bar this desk
       # actually operated under when its 23 standing certificates were issued.
+      # 0.0002 (2026-09-30, lockbox v4) REPLACED it, and was CHOSEN BY GRID SEARCH on the sealed
+      # Tier S suite together with the lockbox reads below -- about 5,000 combinations, so some
+      # selection bias remains (docs/research/LOCKBOX_BAR.md). Re-judged on the real patched judge
+      # (448 cases): 15/130 planted real edges certify, 0/318 traps; 0.014863 certified 0/130.
       fixed_variance_of_sharpes: 0.0002
       trial_count_basis: "effective_campaign_trials(109) + fixed_variance_of_sharpes(0.0002): the campaign charge is measured in EFFECTIVE independent tests -- the participation ratio of (grid cell, content) identities within each mechanism -- not in docket rows; both inputs remain constants, so the bar is identical for every cell regardless of how many others share its sweep"
       fail_closed_to: "fixed_campaign_trials(597): the charge when the census cannot be computed is the standing wall, never the measured relief -- an unmeasurable hour earns nothing"

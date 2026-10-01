@@ -335,6 +335,15 @@ REQUIRED_TASKS: frozenset[str] = frozenset(
 )
 
 
+#: ONE ORGAN, ONE ID (2026-09-30). A manifest task that an explicit spec already models under a
+#: canonical organ id is that organ, not a second one: `task:MT5-GatewayResident` and
+#: `resident:gateway` both ran desks/mt5/research/gateway_resident.py on the same task, so the
+#: census counted the gateway resident twice and the attestation carried two rows for one clock.
+#: The canonical id keeps the task as its `schedule` and its restart action; the manifest row is
+#: skipped here instead of being registered beside it.
+TASK_CANONICAL: dict[str, str] = {"MT5-GatewayResident": "resident:gateway"}
+
+
 def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
     """One spec per manifest task. Several manifest lines can share a name (MT5-CostState runs
     three scripts); they collapse to one component owning three code paths, which is what the
@@ -352,6 +361,8 @@ def manifest_task_specs(path: Path | None = None) -> list[ComponentSpec]:
             cur["runs"].append(runs)
     out: list[ComponentSpec] = []
     for name, row in sorted(by_name.items()):
+        if name in TASK_CANONICAL:
+            continue   # modelled once, under its canonical organ id
         cadence = cadence_from_trigger(row["trigger"])
         required = name in REQUIRED_TASKS or row["lane"] in REQUIRED_LANES
         out.append(ComponentSpec(
@@ -671,7 +682,52 @@ def explicit_specs() -> list[ComponentSpec]:
             schedule="invoked:clock_liveness", artifact_class="fifteen_minute",
             notes=("not an independent timer: clock_liveness invokes it only for identities "
                    "proved frozen, and proves repair by the clock watermark advancing")),
+        # THE BREADTH LEDGER'S CLOCK, DECLARED BECAUSE THE REACH WALK NAMED THE WRONG ONE
+        # (2026-09-30). The walk credits a script to whichever file that names it pops first, and
+        # for this one that was a docstring citation in docket_keff (alpha_breadth cites it too),
+        # neither of which can run a script. What runs it is the VPS daily cycle's step table
+        # (step `breadth_ledger`), on the 02:00 crontab line and `quant-cro.timer` at 08:01.
+        # `test_component_registry_clocks` pins both halves against their sources.
+        ComponentSpec(
+            component_id="executable:scripts/report_breadth.py",
+            kind="executable", host="vps",
+            code_paths=("scripts/report_breadth.py",),
+            outputs=("web/breadth_ledger.json",),
+            cadence_s=86_400, timeout_s=120,
+            progress_metric=UNMEASURED,
+            owner="daily_research_cycle", restart_action=UNMEASURED,
+            criticality="optional", resource_budget={"budget_s": 120},
+            schedule=f"invoked:{VPS_DAILY}", artifact_class="daily",
+            notes=("step breadth_ledger of the VPS daily cycle (ops/crontab.manifest 02:00 and "
+                   "quant-cro.timer 08:01), run with cwd at the repo root")),
+        ComponentSpec(
+            component_id="resident:gateway",
+            kind="task", host="box",
+            code_paths=("desks/mt5/research/gateway_resident.py",),
+            inputs=("desks/mt5/data/sleeves.json",),
+            # The resident's work is the gateway pass it drives; every pass that reaches the
+            # venue publishes the desk-staleness verdict, so that file's age IS the resident's
+            # heartbeat (and the one MT5-BoxHeartbeat watches from outside).
+            outputs=("desks/mt5/reports/DESK_STALE.json",),
+            consumers=("desks/mt5/scripts/box_heartbeat.py",),
+            cadence_s=600, timeout_s=None, progress_metric="gateway_passes",
+            expected_artifact_schema="desks/mt5/reports/DESK_STALE.json",
+            owner="lane:ops", restart_action="restart:task:MT5-GatewayResident",
+            criticality="required", resource_budget={},
+            schedule="MT5-GatewayResident", artifact_class="fifteen_minute",
+            notes="resident loop; the task is its keep-alive, the pass is run_gateway_loop's"),
     ]
+
+
+#: The VPS's daily research cycle: a step table of scripts it runs by subprocess.
+VPS_DAILY = "scripts/daily_research_cycle.py"
+
+
+def vps_daily_step(rel: str, root: Path | None = None) -> str | None:
+    """The step name under which the VPS daily cycle runs `rel`, read from its own step table."""
+    text = _read_text((root or ROOT) / VPS_DAILY)
+    m = re.search(r'\(\s*"([a-z0-9_]+)"\s*,\s*"' + re.escape(rel) + r'[\s"]', text)
+    return m.group(1) if m else None
 
 
 # ------------------------------------------------------------------- everything else, named
@@ -1241,6 +1297,10 @@ def _path_expr(node: ast.AST, here: Path, env: dict[str, Path]) -> Path | None:
             return here
         if isinstance(f, ast.Attribute) and f.attr in ("resolve", "absolute") and not node.args:
             return _path_expr(f.value, here, env)
+        # `mt5desk.config.desk_root()` -- the desk's single path authority -- is `desks/mt5`.
+        if isinstance(f, ast.Name) and f.id == "desk_root" and not node.args:
+            return next((p for p in here.parents
+                         if p.name == "mt5" and p.parent.name == "desks"), None)
         return None
     if isinstance(node, ast.Attribute) and node.attr == "parent":
         base = _path_expr(node.value, here, env)

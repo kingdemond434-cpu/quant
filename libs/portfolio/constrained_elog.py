@@ -12,8 +12,9 @@
                floor <= sum h <= ceiling                      (the heat law, flat 20% floor)
 
 WHY A SECOND SOLVE AND NOT A SECOND RULE. The allocator already prices ruin and stop-out on its
-posterior paths (`posterior_growth.solve`) and publishes a margin measurement it deliberately does
-not feed (P13, refused: it could only shorten the envelope). What no organ does is solve the book
+posterior paths (`posterior_growth.solve`) and feeds the measured broker margin clause into its
+survival envelope by default (P13, LANDED in #53; `desks/mt5/data/MARGIN_CLAUSE_DISABLED` reverts
+it). What no organ does is solve the book
 with EVERY risk clause as a constraint at once and say which one binds and what it costs in
 E[log W]. That is this module: a pure function of a path tensor and a spec. It sizes nothing.
 
