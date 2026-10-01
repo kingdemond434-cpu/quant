@@ -66,7 +66,8 @@ def test_any_source_claiming_best_of_n_is_charged_n_at_the_family() -> None:
     assert len({c["claim_family"] for c in cands}) == 1
     assert {c["claim_selection_trials"] for c in cands} == {1200}
     plain, _ = mcc.compile_row("reddit", {**row, "text": "gaps fade by the London open"}, UNI)
-    assert plain and all("claim_family" not in c for c in plain)
+    # every candidate carries the key; None records "the source stated no search"
+    assert plain and all(c["claim_family"] is None and "breadth_unit" not in c for c in plain)
 
 
 # ------------------------------------------------------------------ 2. the impossible metric
@@ -78,9 +79,22 @@ def _track(win: object) -> dict:
 
 
 def test_the_compiler_refuses_an_impossible_metric_before_any_cell() -> None:
-    assert mcc.compile_row("mql5_survivors", _track(2281.0), UNI) == ([], "IMPOSSIBLE_METRIC")
+    # a win "rate" no arithmetic on the row can recover (more wins than trades) is refused
+    assert mcc.compile_row("mql5_survivors", _track(3500.0), UNI) == ([], "IMPOSSIBLE_METRIC")
+    no_trades = {k: v for k, v in _track(2281.0).items() if k != "trades"}
+    assert mcc.compile_row("mql5_survivors", no_trades, UNI) == ([], "IMPOSSIBLE_METRIC")
     _, why = mcc.compile_row("mql5_survivors", _track(76.9), UNI)
     assert why != "IMPOSSIBLE_METRIC"
+
+
+def test_the_compiler_repairs_a_derivable_win_rate_instead_of_refusing() -> None:
+    """The MQL5 defect exactly: the COUNT 2,281 in the percent field beside 2,966 trades is a
+    76.9% win rate, derived from the row's own numbers -- repaired, recorded, and compiled."""
+    row = _track(2281.0)
+    _, why = mcc.compile_row("mql5_survivors", row, UNI)
+    assert why != "IMPOSSIBLE_METRIC"
+    assert row["win_pct"] == pytest.approx(100 * 2281 / 2966, abs=1e-3)
+    assert row["metric_repairs"] and row["metric_repairs"][0].startswith("win_rate_derived:")
 
 
 class _GraphStub:
@@ -98,7 +112,8 @@ def test_the_refusal_is_counted_in_the_artifact_and_never_deepened(tmp_path,
     root = tmp_path / "intel"
     (root / "mql5_survivors").mkdir(parents=True)
     (root / "mql5_survivors" / "discoveries_1.json").write_text(json.dumps(
-        [_track(2281.0), _track(2296.0) | {"url": "u2"}, _track(76.9) | {"url": "u3"}]), "utf-8")
+        [_track(3500.0), _track(4100.0) | {"url": "u2"}, _track(76.9) | {"url": "u3"},
+         _track(2281.0) | {"url": "u4"}]), "utf-8")
     for name, val in (("INTEL_ROOTS", (root,)), ("OUT", tmp_path / "out.json"),
                       ("DEEPEN", tmp_path / "deepen.json"),
                       ("DEEPEN_WORKED", tmp_path / "worked.jsonl"),
@@ -114,7 +129,8 @@ def test_the_refusal_is_counted_in_the_artifact_and_never_deepened(tmp_path,
     assert mcc.main() == 0
     out = json.loads((tmp_path / "out.json").read_text("utf-8"))
     fence = out["impossible_metrics"]
-    assert (fence["checked"], fence["refused"]) == (3, 2)
+    assert (fence["checked"], fence["refused"], fence["repaired"]) == (4, 2, 1)
+    assert fence["by_repair"] == {"win_rate_derived": 1}
     assert fence["by_reason"] == {"win_rate_out_of_bounds": 2}
     assert fence["by_source"] == {"mql5_survivors": 2}
     assert out["per_source"]["mql5_survivors"]["valid_refusals"] == 2

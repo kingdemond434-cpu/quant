@@ -330,6 +330,25 @@ def _record(source_id: str, source_type: str, spec: dict[str, Any], *, mechanism
         economic_rationale=str(spec.get("why") or "")[:800], payload=spec, conn=conn)
 
 
+#: The claim-lineage fields a spec and every child donated from it carry (claim_selection).
+CLAIM_KEYS: tuple[str, ...] = ("claim_family", "breadth_unit", "claim_selection_trials")
+
+
+def claim_lineage(row: Mapping[str, Any]) -> dict[str, Any]:
+    """The claim family of an intake row: its stamped/declared one, or one read from its own words
+    ("best of N"). `{"claim_family": None}` when the row states and declares no search -- every
+    spec and every donated child carries the key, so the docket's breadth unit and trial charge
+    never depend on which compiler a cell came through. A fault is the same None, never a raise."""
+    try:
+        from libs.research import claim_selection as cs
+        probe = {k: v for k, v in row.items() if isinstance(k, str)}
+        if cs.stamp(probe):
+            return {k: probe[k] for k in CLAIM_KEYS if k in probe}
+    except Exception:
+        pass
+    return {"claim_family": None}
+
+
 def _spec_from_row(row: Mapping[str, Any]) -> dict[str, Any]:
     """One intake row, whatever seat wrote it, normalised into the miners' parent shape."""
     params = row.get("params") if isinstance(row.get("params"), dict) else {}
@@ -355,7 +374,8 @@ def _spec_from_row(row: Mapping[str, Any]) -> dict[str, Any]:
             "exact_rule": str(row.get("exact_rule") or row.get("cell") or ""),
             "required_data": row.get("required_data"), "novelty": row.get("novelty"),
             "confidence": row.get("confidence"), "falsifier": str(row.get("falsifier") or ""),
-            "why": text.strip(), "declared_mechanism": str(row.get("mechanism") or "")}
+            "why": text.strip(), "declared_mechanism": str(row.get("mechanism") or ""),
+            **claim_lineage(row)}
 
 
 def intake(cursor: dict[str, Any], *, conn: Any = None, limit: int = MAX_DISCOVERIES,
@@ -909,7 +929,19 @@ def _donation_row(child: Mapping[str, Any], parent: Mapping[str, Any]) -> dict[s
             "title": (f"{child.get('transformation')} of {parent.get('symbol') or 'a discovery'}"
                       f" -> {child.get('symbol')} {child.get('chart')} {child.get('session')}"),
             "why": child.get("why"), "parent_discovery_ids": child.get("parent_discovery_ids"),
-            "discovery_id": parent.get("discovery_id")}
+            "discovery_id": parent.get("discovery_id"),
+            # A CHILD IS ITS PARENT'S CLAIM, TRANSFORMED: it inherits the claim family and the
+            # parent's selection charge (the larger of the two when the child carries its own).
+            **_child_claim(child, parent)}
+
+
+def _child_claim(child: Mapping[str, Any], parent: Mapping[str, Any]) -> dict[str, Any]:
+    own = {k: child[k] for k in CLAIM_KEYS if child.get(k)}
+    inherited = {k: parent[k] for k in CLAIM_KEYS if parent.get(k)}
+    if own.get("claim_family") and int(own.get("claim_selection_trials") or 0) >= int(
+            inherited.get("claim_selection_trials") or 0):
+        return own
+    return inherited if inherited.get("claim_family") else {"claim_family": None}
 
 
 # --------------------------------------------------------------------------- the organ

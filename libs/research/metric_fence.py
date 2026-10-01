@@ -28,6 +28,20 @@ claim that fails is REFUSED with a counted reason: the compiler publishes
 `impossible_metrics` in `miner_candidates.json` and the claim extractor returns
 `dropped_impossible_metric` beside its other fences. Nothing is dropped silently.
 
+REPAIR BEFORE REFUSAL (follow-up to #169, 2026-10-01). A metric that is impossible but DERIVABLE
+from the row's own numbers is repaired, never refused: `repair_row` returns a corrected copy and a
+note per repair, and the compiler fences the corrected row. Two derivations only, both arithmetic
+on what the row itself states:
+
+    win rate       = wins / trades x 100   (a `wins`-style count field beside `trades`), or the
+                     out-of-bounds value itself / trades x 100 when it is a whole number no larger
+                     than `trades` -- the MQL5 defect exactly: the COUNT in the percent field
+    profit factor  = gross_profit / |gross_loss|  when a negative PF sits beside both grosses
+
+What no arithmetic on the row can recover (a 140% drawdown, a Sharpe of 40, a negative trade
+count) is still refused with its reason. `fence_row(row) -> list[str]` keeps its signature: it
+judges the row it is given, so a caller that repairs first fences the repaired row.
+
 WHAT IT IS NOT. It is not a quality screen: a 99% win rate, a 0.2 profit factor or a 95%
 drawdown are all POSSIBLE and pass. It refuses only what cannot be true of any record.
 """
@@ -51,6 +65,11 @@ DD_KEYS: tuple[str, ...] = ("max_dd_pct", "drawdown_pct", "max_drawdown_pct", "d
 TRADE_KEYS: tuple[str, ...] = ("trades", "n_trades", "num_trades", "total_trades",
                                "trade_count")
 SHARPE_KEYS: tuple[str, ...] = ("sharpe", "sharpe_ratio", "reported_sharpe")
+#: Count fields a win rate can be derived from (wins / trades).
+WIN_COUNT_KEYS: tuple[str, ...] = ("wins", "n_wins", "num_wins", "winning_trades",
+                                   "profit_trades", "win_trades", "profitable_trades")
+GROSS_PROFIT_KEYS: tuple[str, ...] = ("gross_profit",)
+GROSS_LOSS_KEYS: tuple[str, ...] = ("gross_loss",)
 #: Blocks a scraper nests its numbers in. Only one level deep: a record is a record.
 NESTED_KEYS: tuple[str, ...] = ("claimed_performance", "performance", "metrics", "stats",
                                 "record", "track_record")
@@ -122,6 +141,65 @@ def fence_row(row: Mapping[str, Any]) -> list[str]:
     return bad
 
 
+def _finite(hit: tuple[str, float] | None) -> float | None:
+    return hit[1] if hit is not None and math.isfinite(hit[1]) else None
+
+
+def repair_metrics(block: Mapping[str, Any], *, trades_fallback: float | None = None
+                   ) -> tuple[dict[str, Any], list[str]]:
+    """(a copy of `block` with every DERIVABLE impossible metric recomputed, the repairs made).
+
+    Only an impossible metric is touched, and only from the block's own numbers; a metric in
+    bounds, an absent one, or one nothing on the row can derive is returned exactly as given (the
+    fence then refuses what is still impossible). `trades_fallback` lets a nested block borrow
+    its parent row's trade count."""
+    out = dict(block)
+    notes: list[str] = []
+    hit = _first(block, WIN_KEYS)
+    if hit is not None and not (math.isfinite(hit[1]) and 0.0 <= hit[1] <= 100.0):
+        trades = _finite(_first(block, TRADE_KEYS))
+        if trades is None:
+            trades = trades_fallback
+        wins = _finite(_first(block, WIN_COUNT_KEYS))
+        new: float | None = None
+        how = ""
+        if trades is not None and trades > 0:
+            if wins is not None and 0.0 <= wins <= trades:
+                new, how = 100.0 * wins / trades, "wins/trades"
+            elif (math.isfinite(hit[1]) and hit[1] == int(hit[1])
+                  and 0.0 <= hit[1] <= trades):
+                new, how = 100.0 * hit[1] / trades, "count_in_rate_field/trades"
+        if new is not None:
+            out[hit[0]] = round(new, 4)
+            notes.append(f"win_rate_derived:{hit[0]}={hit[1]:g}->{out[hit[0]]:g} ({how})")
+    hit = _first(block, PF_KEYS)
+    if hit is not None and not (math.isfinite(hit[1]) and hit[1] >= 0.0):
+        gp = _finite(_first(block, GROSS_PROFIT_KEYS))
+        gl = _finite(_first(block, GROSS_LOSS_KEYS))
+        if gp is not None and gl is not None and gp >= 0.0 and gl != 0.0:
+            out[hit[0]] = round(gp / abs(gl), 6)
+            notes.append(f"profit_factor_derived:{hit[0]}={hit[1]:g}->{out[hit[0]]:g} "
+                         "(gross_profit/|gross_loss|)")
+    return out, notes
+
+
+def repair_row(row: Mapping[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """`repair_metrics` over the row and each nested metric block; ({}, []) for a non-mapping.
+    The row is never mutated -- the caller decides whether to adopt the copy."""
+    if not isinstance(row, Mapping):
+        return {}, []
+    out, notes = repair_metrics(row)
+    parent_trades = _finite(_first(row, TRADE_KEYS))
+    for k in NESTED_KEYS:
+        sub = row.get(k)
+        if isinstance(sub, Mapping):
+            fixed, sub_notes = repair_metrics(sub, trades_fallback=parent_trades)
+            if sub_notes:
+                out[k] = fixed
+                notes.extend(f"{k}.{n}" for n in sub_notes)
+    return out, notes
+
+
 def reason_class(reason: str) -> str:
     """`win_rate_out_of_bounds:win_pct=2296` -> `win_rate_out_of_bounds` (the counted class)."""
     return reason.split(":", 1)[0].rsplit(".", 1)[-1]
@@ -137,6 +215,21 @@ class FenceTally:
     by_source: dict[str, int] = field(default_factory=dict)
     examples: list[dict[str, Any]] = field(default_factory=list)
     max_examples: int = 12
+    repaired: int = 0
+    by_repair: dict[str, int] = field(default_factory=dict)
+    repair_examples: list[dict[str, Any]] = field(default_factory=list)
+
+    def repair(self, source: str, notes: list[str], ref: str = "") -> bool:
+        """Record one row whose impossible metric was DERIVED back into bounds; True if any."""
+        if not notes:
+            return False
+        self.repaired += 1
+        for cls in sorted({reason_class(n) for n in notes}):
+            self.by_repair[cls] = self.by_repair.get(cls, 0) + 1
+        if len(self.repair_examples) < self.max_examples:
+            self.repair_examples.append({"source": source, "ref": ref[:200],
+                                         "repairs": notes[:4]})
+        return True
 
     def add(self, source: str, reasons: list[str], ref: str = "") -> bool:
         """Record one checked row; True when it was refused."""
@@ -156,8 +249,13 @@ class FenceTally:
                 "by_reason": dict(sorted(self.by_reason.items(), key=lambda kv: -kv[1])),
                 "by_source": dict(sorted(self.by_source.items(), key=lambda kv: -kv[1])),
                 "examples": self.examples,
+                "repaired": self.repaired,
+                "by_repair": dict(sorted(self.by_repair.items(), key=lambda kv: -kv[1])),
+                "repair_examples": self.repair_examples,
                 "bounds": {"win_rate_pct": [0, 100], "profit_factor_min": 0,
                            "drawdown_pct_abs": [0, 100], "trades_min": 0,
                            "sharpe": [-SHARPE_ABS_MAX, SHARPE_ABS_MAX]},
-                "rule": ("an impossible metric is refused with its reason before it becomes a "
-                         "cell or a claim; an absent metric is UNMEASURED and never checked")}
+                "rule": ("an impossible metric DERIVABLE from the row's own numbers is repaired "
+                         "(win rate = wins / trades, PF = gross profit / |gross loss|) and "
+                         "counted; one that is not is refused with its reason before it becomes "
+                         "a cell or a claim; an absent metric is UNMEASURED and never checked")}

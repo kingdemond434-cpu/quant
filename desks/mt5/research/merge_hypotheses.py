@@ -1017,11 +1017,18 @@ def main() -> int:
         stamped = _cs.stamp_all(rows_out)
         after = _cs.breadth(rows_out)
         ledger = _cs.update_ledger(after)
+        # k_eff FROM THE CLAIM LINEAGE, PUBLISHED (follow-up to #169): one searched claim is one
+        # breadth unit, and reports/CLAIM_BREADTH.json is what alpha_breadth, the coverage tensor
+        # and the Tier-1 scorecard read beside their own numbers. Counting only.
+        published = _cs.publish_breadth(
+            after, lifetime_selection_trials=ledger.get("lifetime_selection_trials"))
         claim_selection = {
             "status": "MEASURED", "rows_stamped": stamped,
             "cells": after["cells"],
             "breadth_units_before": before["breadth_units"],
             "breadth_units_after": after["breadth_units"],
+            "k_eff_before": before.get("k_eff"), "k_eff_after": after.get("k_eff"),
+            "breadth_report": str(_cs.BREADTH_REPORT), "breadth_status": published["status"],
             "distinct_mechanisms_before": before["distinct_mechanisms"],
             "distinct_mechanisms_after": after["distinct_mechanisms"],
             "claim_families": {k: {kk: vv for kk, vv in v.items() if kk != "genome_ids"}
