@@ -28,6 +28,9 @@ FULL=0
 
 PY="python"
 [ -x ".venv/bin/python" ] && PY=".venv/bin/python"
+# The trading box is Windows, where the venv lives at .venv/Scripts/python.exe; without this the
+# box's pushes ran these gates on whatever bare `python` was on PATH (2026-10-01).
+[ "$PY" = "python" ] && [ -x ".venv/Scripts/python.exe" ] && PY=".venv/Scripts/python.exe"
 
 fail=0
 run() {
