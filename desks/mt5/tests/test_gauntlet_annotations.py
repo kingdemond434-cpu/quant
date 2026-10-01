@@ -93,9 +93,14 @@ def test_run_gauntlet_result_carries_independence_and_the_trial_ledger(monkeypat
     tl = result["trial_ledger"]
     assert tl["status"] in ("MEASURED", "UNMEASURED")
     assert "cot_positioning" in tl["family_trials"]
-    assert "never sets the bar" in tl["note"]
-    # The sealed charge is still the only n_trials the gate saw.
-    assert result["n_trials"] == result["verdicts"][0]["stages"]["deflated_sharpe"]["n_trials"]
+    assert "UNION sets" in tl["note"]
+    # The lifetime union is the charge: never below the campaign charge, and an unmeasured
+    # ledger leaves the charge unknown, which fails the deflated-Sharpe gate closed.
+    ds = result["verdicts"][0]["stages"]["deflated_sharpe"]
+    if tl["status"] == "MEASURED" and tl.get("lifetime_trials"):
+        assert ds["n_trials"] >= result["n_trials"]
+    else:
+        assert ds["n_trials"] is None and ds["passed"] is False
 
 
 def test_run_gauntlet_lockbox_fails_closed_when_the_calendar_cannot_reserve_it(
