@@ -1,0 +1,2 @@
+)]}'
+{"widgets": [{"id": "TIMESERIES", "token": "TOK", "request": {"time": "2026-07-01 2026-09-29", "resolution": "DAY", "comparisonItem": [{"geo": {}, "complexKeywordsRestriction": {"keyword": [{"type": "BROAD", "value": "gold price"}]}}]}}]}

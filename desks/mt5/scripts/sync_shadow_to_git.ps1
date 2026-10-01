@@ -482,6 +482,11 @@ $relPaths = @(
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # THE MARKOUT ITSELF (2026-09-30). The daily markout leg writes markout.json beside
+    # attribution_chain.json, but only the chain crossed the wire, so the VPS's desk state read
+    # `execution.matched_fills` off the 2026-09-08 stub committed before the ledger carried any
+    # entry-order key -- "matched_fills 0" for three weeks while the join on the box had moved.
+    "desks/mt5/reports/markout.json",
     # THE PLACEMENT-INTERLOCK VERDICT (2026-09-30). scripts/check_placement_interlock.py writes it
     # on the law-gate clock: whether any sleeve has been refused in a run with no placement since.
     # The halt of 2026-09-07..24 was recorded in the decision ledger 1,200 times and read by no
@@ -497,7 +502,40 @@ $relPaths = @(
     # and CONTRACTS (all gitignored or box-local where written). A Tier S layer is DONE only on
     # this file as committed from the trading box (scripts/check_tier_s_program.py).
     "desks/mt5/data/tier_s/box_evidence.json",
-    "desks/mt5/data/tier_s/live_door.json"
+    "desks/mt5/data/tier_s/live_door.json",
+    # THE TIER S MEASUREMENT REPORTS (2026-09-30). The independent audit found no committed
+    # artifact for the null lab, the lag lane or the occupancy map: `**/reports/*` is ignored, so
+    # every one of them existed only on the host that wrote it. NULL_LAB (hourly leg null_lab),
+    # KNOWN_BY_DATE + PIT_LAG_CENSUS (leg pit_canaries), OCCUPANCY_MAP + CULTURE_ORTHOGONALITY
+    # (leg occupancy_map), RESEARCH_LIVE_IDENTITY (leg research_live_identity). Outputs of the
+    # running code, each negated in .gitignore and declared NON_CODE in both seal lists.
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    # UNKNOWN_SHARE_CENSUS (hourly leg unknown_census, once per UTC day): the judged-denominator UNKNOWN share
+    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+    # DSR_INPUTS (hourly leg dsr_inputs): measured DSR variance + effective trials, with provenance
+    "desks/mt5/reports/DSR_INPUTS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # THE REST OF THE TIER S PROMOTION DOOR'S EVIDENCE (2026-09-30). `promotion_authority` reads
+    # six box-local files to decide whether a candidate may go LIVE: live_door (above), the door
+    # verdicts, the immune system's PROMOTION_FREEZE, the regression stop's RELEASE_STOP, the
+    # online-FDR rows and the replication verdicts. Only live_door and the attestation crossed
+    # the wire, so no reader off the box could say WHY a promotion was withheld. Small JSON, each
+    # declared NON_CODE in both seal lists and (for the two under reports/) negated in
+    # .gitignore; tests/ops/test_tier_s_evidence_publication.py pins all four properties.
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+    # THE LOCKBOX v4 RE-CERTIFICATION (pass-2 P0, 2026-09-30): the per-certificate lockbox Sharpe
+    # before and after (leg lockbox_recert) and the re-mint's own status (leg attestation_remint,
+    # PR #126; absent until it lands, and an absent path is simply not staged).
+    "desks/mt5/reports/LOCKBOX_RECERT.json",
+    "desks/mt5/reports/REMINT_STATUS.json"
 )
 # THE RESEARCH MEASUREMENTS THE DESK IS JUDGED ON (2026-09-30). The CRO cycle, the audits and the
 # breadth review all read these from the branch, and none had ever been committed from the box:

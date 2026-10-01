@@ -12,7 +12,7 @@ from libs.research import sandbox as sb
 
 
 def test_the_environment_a_sandboxed_process_gets_carries_no_secret() -> None:
-    env = sb.scrub_env({"PATH": "p", "MT5_LOGIN": "495044", "OPENAI_API_KEY": "sk-x",
+    env = sb.scrub_env({"PATH": "p", "MT5_LOGIN": "5551234", "OPENAI_API_KEY": "sk-x",
                         "BROKER_PASSWORD": "hunter2", "QUANT_ALLOW_SSH_PY": "1",
                         "FRED_KEY": "k", "SYSTEMROOT": r"C:\Windows", "HOME": "/h"})
     assert env["PATH"] == "p" and env["SYSTEMROOT"] == r"C:\Windows"

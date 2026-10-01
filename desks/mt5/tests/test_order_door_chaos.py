@@ -522,7 +522,10 @@ def test_the_stop_doors_are_nine_and_all_behind_the_door() -> None:
                     and n.func.attr in ("place", "place_stop", "modify_stop") \
                     and isinstance(n.func.value, ast.Name) and n.func.value.id == "venue":
                 prop_stop_writes += 1
-    assert (mt5_stop_sends, prop_stop_writes) == (5, 4)
+    # Fifth prop write (2026-10-01, PR #132): `e8_gold._retry_failed_legs` re-sends a dropped
+    # bracket leg with its stop. It is called from `run` with the venue `run` already wrapped in
+    # `order_door.guard_venue`, so it sits behind the same door as the first send.
+    assert (mt5_stop_sends, prop_stop_writes) == (5, 5)
 
 
 def test_the_in_doubt_memory_expires() -> None:

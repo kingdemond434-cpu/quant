@@ -84,7 +84,17 @@ def _series(selector: str):
 
 
 def test_the_pass_measures_a_planted_edge_donates_seeds_and_dry_run_writes_nothing(
-        tmp_path: Path) -> None:
+        tmp_path: Path, monkeypatch: Any) -> None:
+    # NOTHING HERE MAY REACH A DESK LEDGER. The wet pass used to write its planted TESTFX cells
+    # into the desk's hypothesis graph (10 rows, measured 2026-09-30) and its sleeve verdict
+    # into the research registry; both writes are captured here instead of landing there.
+    from libs.moat import registry as R
+    from libs.research import hypothesis_graph as hg
+    before = hg.LEDGER.stat().st_size if hg.LEDGER.exists() else None
+    reg_calls: list[str] = []
+    monkeypatch.setattr(R, "mark_candidate", lambda *a, **k: reg_calls.append("mark") or True)
+    monkeypatch.setattr(R, "remember", lambda *a, **k: reg_calls.append("remember") or "m")
+    graph_file = tmp_path / "graph_out" / "hypothesis_graph.jsonl"
     frame = _gap_bars()
     universe = {"AUDUSD": "Forex", "XCUUSD": "Commodities", "TESTFX": "Forex"}
     kw: dict[str, Any] = dict(
@@ -96,7 +106,8 @@ def test_the_pass_measures_a_planted_edge_donates_seeds_and_dry_run_writes_nothi
         sleeve_rows=[{"name": "s1", "status": "LIVE", "family": "carry", "symbol": "TESTFX"}],
         bars_loader=_loader(frame), series_loader=_series,
         store=tmp_path / "graph.json", cursor_path=tmp_path / "cursor.json",
-        report=tmp_path / "EVENT_GRAPH.json", intel_dir=tmp_path / "intel")
+        report=tmp_path / "EVENT_GRAPH.json", intel_dir=tmp_path / "intel",
+        graph_path=graph_file)
     dry = lab.build(budget_s=120, dry_run=True, **kw)
     assert not list(tmp_path.iterdir())                       # nothing written anywhere
     assert dry["measured_edges"]["supported"] == 1
@@ -120,6 +131,11 @@ def test_the_pass_measures_a_planted_edge_donates_seeds_and_dry_run_writes_nothi
     assert any(e.src == "asset:xcuusd" and e.dst == "asset:audusd" for e in measured)
     again = lab.build(budget_s=120, dry_run=True, **kw)
     assert again["community_change"]["status"] == "MEASURED"
+    # The causal readings went to the redirected graph, and the desk's graph did not move.
+    written = [json.loads(ln) for ln in graph_file.read_text("utf-8").splitlines()]
+    assert written and {r["symbol"] for r in written} == {"TESTFX"}
+    assert (hg.LEDGER.stat().st_size if hg.LEDGER.exists() else None) == before
+    assert reg_calls                                     # the registry calls were made, captured
 
 
 def test_the_leg_is_wired_into_the_hourly_cycle() -> None:

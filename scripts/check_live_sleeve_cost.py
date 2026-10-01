@@ -9,7 +9,7 @@ costs -- so the row does not read as free, it reads as a clock whose cost basis 
 roughly twice a day. That is precisely the identity churn the frozen basis exists to prevent, and
 it is invisible: no artifact anywhere said "this LIVE row has no cost".
 
-MEASURED ON THE TRADING BOX 2026-09-24 (account 495044, FusionMarkets-Live, 355 LIVE rows):
+MEASURED ON THE TRADING BOX 2026-09-24 (the live Fusion account, FusionMarkets-Live, 355 LIVE rows):
 
     13 LIVE rows carried NO cost_fields at all -- 8 of them XAUUSD, covering the asia,
        london_am and afternoon gold windows, which are essentially the desk's entire realised

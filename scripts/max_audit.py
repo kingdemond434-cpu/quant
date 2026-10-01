@@ -3947,6 +3947,13 @@ _TERMINAL_ARTIFACTS = {
         "its own: staleness here is staleness of the source, which is governed where the source "
         "is. Claimed as a directory class because the vault takes a new file for every lesson "
         "the desk ever records.",
+    # THE LOCKBOX v4 EVIDENCE (2026-10-01): the measured basis the sealed gate_spec cites for
+    # fixed_variance_of_sharpes 0.0002 and the three lockbox reads. A dated record of one
+    # measurement, terminal once written; a new measurement is a new dated section, not an edit.
+    "docs/research/LOCKBOX_BAR.md":
+        "TERMINAL EVIDENCE: the sealed-suite measurement (cloud grid 2026-09-30, real-judge "
+        "confirmation 15/130 real, 0/318 traps) that desks/mt5/policy/gate_spec.yaml cites for "
+        "its DSR variance and lockbox reads. Governed by the seal on gate_spec, which names it.",
     # AUDIT COMPLETION LEDGERS (2026-09-29). One per external audit: which item landed where,
     # and what is blocked on whom. Claimed as a directory class because each audit adds one.
     "docs/audit/":
