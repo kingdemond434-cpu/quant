@@ -9,10 +9,10 @@ WHAT RUNS HERE
   1. TEN FAMILIES, each with a factor's discipline -- lineage (`parent`), a novelty key so the
      same family is never re-tested under a new name, a declared falsifier (its tax), and a
      verdict that is allowed to be UNMEASURED. `libs/research/model_families.py` owns them.
-  2. TEN REPRESENTATIONS of the SAME underlying information -- raw, z-scored, ranked,
+  2. ELEVEN REPRESENTATIONS of the SAME underlying information -- raw, z-scored, ranked,
      volatility-scaled, range/state, path-shape, intelligent-trading-bot's rolling aggregations,
-     Deep-Trading's normalised window, ml4t's Wasserstein regimes and RustQuant's national
-     settlement calendars -- and, on a few of them, FOUR MORE TARGETS than the return's sign
+     Deep-Trading's normalised window, ml4t's Wasserstein regimes, RustQuant's national
+     settlement calendars and quants-lab's Ehlers channels and confirmed levels -- and, on a few of them, FOUR MORE TARGETS than the return's sign
      (ITB's top and bottom labels, Deep-Trading's volatility rise, ml4t's trend-scanning
      t-value). Same bars, same target within a row, different coordinates, so a difference in
      verdict along a target's rows is a statement about the coordinates and nothing else.
@@ -72,7 +72,7 @@ UNMEASURED = CL.UNMEASURED
 #: about the coordinates, never about a different dataset.
 REPRESENTATIONS: tuple[str, ...] = ("raw", "zscore", "rank", "vol_scaled", "range_state",
                                     "path_shape", "itb", "dt_window", "wregime",
-                                    "calendar")
+                                    "calendar", "dsp")
 
 #: Targets besides the sign of the h-bar return, and the representations each is judged on.
 #: `top` / `bot` are intelligent-trading-bot's extremum labels (bounded to +-h bars in
@@ -83,7 +83,7 @@ REPRESENTATIONS: tuple[str, ...] = ("raw", "zscore", "rank", "vol_scaled", "rang
 #: `tscan` is the trend-scanning t-value (machine-learning-for-trading, MIT), bounded to h bars.
 EXTRA_TARGETS: dict[str, tuple[str, ...]] = {"top": ("itb",), "bot": ("itb",),
                                              "vol_up": ("itb", "dt_window", "raw", "wregime", "calendar"),
-                                             "tscan": ("raw", "itb", "wregime")}
+                                             "tscan": ("raw", "itb", "wregime", "dsp")}
 TARGETS: tuple[str, ...] = ("sign", *EXTRA_TARGETS)
 
 
@@ -167,6 +167,12 @@ def representation(df: pd.DataFrame, kind: str) -> pd.DataFrame:
         out["dom"] = pd.Series(df.index.day.astype(float), index=df.index)
         out["to_month_end"] = pd.Series(
             (df.index.days_in_month - df.index.day).astype(float), index=df.index)
+    elif kind == "dsp":
+        # hummingbot/quants-lab's research methods (Apache-2.0), never its venues: Ehlers
+        # SuperSmoother, Butterworth and Gaussian channel positions, and support/resistance
+        # levels from peaks that later bars have already confirmed.
+        from libs.features import dsp_channel
+        return dsp_channel.features(df)
     else:
         raise ValueError(f"unknown representation {kind!r}; known: {REPRESENTATIONS}")
     return pd.DataFrame(out, index=df.index)
