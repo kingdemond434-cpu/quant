@@ -1,0 +1,486 @@
+[
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 均衡多因子 (balanced_alpha)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/balanced_alpha.yaml",
+  "text": "均衡多因子 综合估值、资金、动量、稳定性的通用候选发现策略 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.15\n    liquidity: 0.18\n    momentum: 0.2\n    reversal: 0.05\n    size: 0.03\n    stability: 0.12\n    theme_heat: 0.05\n    value: 0.22\n  hard_filters:\n    amount_min: 100000000\n    change_pct_max: 8.5\n    change_pct_min: -4.0\n    exclude_st: true\n    market_cap_min: 5000000000\n    pb_max: 8.0\n    pb_min: 0\n    pe_ttm_max: 80\n    pe_ttm_min: 0\n    price_max: 220\n    price_min: 3\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      AI算力:\n      - AI算力\n      - 算力\n      - 数据中心\n      - 服务器\n      - 光模块\n      公用事业:\n      - 电力\n      - 燃气\n      - 水务\n      - 环保\n      - 公用事业\n      周期:\n      - 钢铁\n      - 煤炭\n      - 有色\n      - 化工\n      新能源:\n      - 新能源\n      - 光伏\n      - 锂电\n      - 电池\n      - 储能\n      消费:\n      - 白酒\n      - 食品\n      - 家电\n      - 零售\n      - 消费\n      金融:\n      - 券商\n      - 银行\n      - 保险\n    concentration_penalty: 4.0\n    max_same_bucket: 1\n  ranking_hints: '优先关注：\n\n    1. 多个维度都不差的候选，而不是单一指标极端突出\n\n    2. LLM 需要比较候选的风格差异，避免最终名单过度集中在同一逻辑\n\n    3. 对估值、资金、趋势、风险之间的冲突给出清楚解释\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 6.0\n    chase_change_pct: 8.0\n    high_turnover_rate: 15.0\n  scorecard_profile:\n    capital_confirmed_bonus: 1.8\n    hot_money_penalty: 2.2\n    value_quality_bonus: 2.2\n    volume_spike_ratio: 5.5\n  scoring_profile:\n    activity_ideal_turnover_rate: 4.0\n    activity_ideal_volume_ratio: 2.0\n    momentum_chase_penalty_slope: 12.0\n    momentum_chase_start_pct: 5.5\n    stability_hot_chan",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 蓝筹收益质量 (blue_chip_income)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/blue_chip_income.yaml",
+  "text": "蓝筹收益质量 面向高流动性大盘蓝筹的收益质量候选，强调合理估值、稳定成交和防守型持有体验 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.06\n    liquidity: 0.18\n    momentum: 0.05\n    reversal: 0.03\n    size: 0.12\n    stability: 0.26\n    value: 0.3\n  hard_filters:\n    amount_min: 120000000\n    change_pct_max: 4.0\n    change_pct_min: -3.0\n    exclude_st: true\n    market_cap_min: 30000000000\n    pb_max: 3.2\n    pb_min: 0\n    pe_ttm_max: 22\n    pe_ttm_min: 0\n    price_max: 180\n    price_min: 3\n    turnover_rate_min: 0.4\n    volume_ratio_min: 0.6\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      制造龙头:\n      - 工程机械\n      - 汽车\n      - 电气设备\n      - 高端制造\n      消费蓝筹:\n      - 白酒\n      - 食品\n      - 家电\n      - 消费\n      红利资产:\n      - 运营商\n      - 高速\n      - 港口\n      - 公用事业\n      - 煤炭\n      - 电力\n      金融:\n      - 银行\n      - 保险\n      - 券商\n    concentration_penalty: 3.0\n    max_same_bucket: 2\n  ranking_hints: '优先关注：\n\n    1. 大市值、高成交额且估值没有明显透支的蓝筹或红利资产\n\n    2. 成交与换手稳定，不依赖单日脉冲量能或短线题材拉升\n\n    3. 行业地位、现金流、分红稳定性或防守属性能解释持有逻辑\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 3.5\n    chase_change_pct: 4.8\n    high_pb: 4.5\n    high_pb_points: 5.0\n    high_turnover_rate: 8.0\n    invalid_pe_points: 8.0\n    low_llm_confidence: 0.45\n  scorecard_profile:\n    low_llm_confidence: 0.45\n    low_llm_confidence_penalty: 1.0\n    value_quality_bonus: 2.5\n    value_quality_stability_min: 70.0\n    value_quality_value_min: 74.0\n    volume_spike_penalty: 1.5\n    volume_spike_ratio: 3.5\n  scoring_profile:\n    activity_high_turnover_rate: 7.0\n    activity_high_volume_ra",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 资金热度 (capital_heat)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/capital_heat.yaml",
+  "text": "资金热度 资金活跃、量价同步但未极端过热的短线候选 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.28\n    liquidity: 0.16\n    momentum: 0.32\n    reversal: 0.04\n    stability: 0.1\n    theme_heat: 0.1\n  hard_filters:\n    amount_min: 300000000\n    change_pct_max: 9.5\n    change_pct_min: 1.0\n    exclude_st: true\n    price_max: 220\n    price_min: 3\n    turnover_rate_min: 2.0\n    volume_ratio_min: 1.5\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      AI算力:\n      - AI算力\n      - 算力\n      - 数据中心\n      - 服务器\n      - 光模块\n      周期:\n      - 钢铁\n      - 煤炭\n      - 有色\n      - 化工\n      新能源:\n      - 新能源\n      - 光伏\n      - 锂电\n      - 电池\n      - 储能\n      机器人:\n      - 机器人\n      - 减速器\n      - 执行器\n      - 伺服\n      金融:\n      - 券商\n      - 银行\n      - 保险\n    concentration_penalty: 5.0\n    max_same_bucket: 1\n  ranking_hints: '优先关注：\n\n    1. 资金热度和价格表现同步，而不是单纯尾盘异动\n\n    2. 涨幅尚未透支，量比和换手率处在可持续区间\n\n    3. 板块或主题有扩散迹象，避免孤立脉冲\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 8.0\n    chase_change_pct: 9.3\n    high_turnover_rate: 22.0\n    weak_signal_score: 40.0\n  scorecard_profile:\n    capital_confirmed_bonus: 2.4\n    hot_money_activity_min: 95.0\n    hot_money_penalty: 1.5\n    volume_spike_ratio: 8.0\n  scoring_profile:\n    activity_high_turnover_rate: 18.0\n    activity_high_volume_ratio: 7.0\n    activity_ideal_turnover_rate: 6.0\n    activity_ideal_volume_ratio: 2.8\n    momentum_chase_penalty_slope: 12.0\n    momentum_chase_start_pct: 6.5\n    stability_hot_change_pct: 8.5\n    theme_heat_overheat_penalty_slope: 0.35\n    theme_",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 双低选股 (dual_low)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/dual_low.yaml",
+  "text": "双低选股 偏稳健的低估值筛选策略，叠加当日活跃度与形态确认，避免长期只命中静态低估值票 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.1\n    liquidity: 0.14\n    momentum: 0.1\n    reversal: 0.06\n    size: 0.06\n    stability: 0.2\n    value: 0.34\n  hard_filters:\n    amount_min: 50000000\n    change_pct_max: 4.5\n    change_pct_min: -4.5\n    exclude_st: true\n    market_cap_max: 300000000000\n    market_cap_min: 5000000000\n    pb_max: 2.0\n    pb_min: 0\n    pe_ttm_max: 15\n    pe_ttm_min: 0\n    price_max: 80\n    price_min: 3\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      周期:\n      - 钢铁\n      - 煤炭\n      - 有色\n      - 化工\n      地产链:\n      - 地产\n      - 房地产\n      - 建材\n      - 家居\n      - 物业\n      金融:\n      - 券商\n      - 银行\n      - 保险\n    concentration_penalty: 3.0\n    max_same_bucket: 2\n  ranking_hints: '优先考虑：\n\n    1. 低 PE / 低 PB 仍是基础，但不要只因为便宜反复选择同一批银行、地产、周期股\n\n    2. 优先选择当日成交活跃度适中、没有追高或破位风险的低估值修复候选\n\n    3. 行业地位、现金流、分红稳定性和近期催化能解释估值修复逻辑\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 4.0\n    chase_change_pct: 5.0\n    high_turnover_rate: 8.0\n    low_llm_confidence: 0.45\n  scorecard_profile:\n    value_quality_bonus: 3.0\n    value_quality_stability_min: 65.0\n    value_quality_value_min: 72.0\n    volume_spike_ratio: 4.0\n  scoring_profile:\n    activity_high_turnover_rate: 8.0\n    activity_high_volume_ratio: 4.0\n    activity_ideal_turnover_rate: 2.0\n    activity_ideal_volume_ratio: 1.2\n    momentum_chase_penalty_slope: 18.0\n    momentum_chase_start_pct: 2.5\n    momentum_downside_start_pct: -2.5\n    stability_high_turnover_rate: 8.0\n    stab",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 低波质量 (low_volatility_quality)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/low_volatility_quality.yaml",
+  "text": "低波质量 偏防守的质量型候选，优先选择波动较低、回撤浅、估值不过热且数据质量可靠的股票 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.08\n    liquidity: 0.15\n    momentum: 0.12\n    reversal: 0.02\n    size: 0.08\n    stability: 0.3\n    theme_heat: 0.05\n    value: 0.2\n  hard_filters:\n    amount_min: 100000000\n    atr_20_pct_max: 4.5\n    change_60d_max: 35.0\n    change_60d_min: -10.0\n    change_pct_max: 5.0\n    change_pct_min: -3.0\n    exclude_st: true\n    market_cap_min: 12000000000\n    max_drawdown_20d_pct_min: -8.0\n    pb_max: 5.0\n    pb_min: 0\n    pe_ttm_max: 45\n    pe_ttm_min: 0\n    price_max: 180\n    price_min: 4\n    range_20d_pct_max: 28.0\n    signal_score_min: 55\n    volatility_20d_pct_max: 32.0\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      公用事业:\n      - 电力\n      - 燃气\n      - 水务\n      - 环保\n      - 公用事业\n      医药:\n      - 医药\n      - 医疗\n      - 创新药\n      消费:\n      - 白酒\n      - 食品\n      - 家电\n      - 零售\n      - 消费\n      红利资产:\n      - 运营商\n      - 高速\n      - 港口\n      - 煤炭\n      - 电力\n      金融:\n      - 券商\n      - 银行\n      - 保险\n    concentration_penalty: 3.5\n    max_same_bucket: 1\n  ranking_hints: '优先关注：\n\n    1. 20 日波动和 ATR 较低、最大回撤可控，适合防守型观察仓\n\n    2. 估值不过热，日 K 数据质量高，避免 stale/cache 或拉取失败样本\n\n    3. 主题热度可以加分，但不要让短线热度覆盖稳定性和估值约束\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 4.5\n    chase_change_pct: 5.5\n    fetch_failed_daily_points: 7.0\n    high_turnover_rate: 10.0\n    low_daily_quality_points: 2.5\n    low_daily_quality_score: 85.0\n    stale_daily_cache_points: 3.0\n    weak_signal_score: 52.0\n  scorecard_profile:\n    hot_",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 趋势质量 (momentum_quality)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/momentum_quality.yaml",
+  "text": "趋势质量 兼顾趋势确认和基本面质量的中线候选发现 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.15\n    liquidity: 0.18\n    momentum: 0.28\n    reversal: 0.04\n    size: 0.02\n    stability: 0.12\n    theme_heat: 0.06\n    value: 0.15\n  hard_filters:\n    amount_min: 200000000\n    change_pct_max: 7.5\n    change_pct_min: -3.5\n    exclude_st: true\n    market_cap_min: 8000000000\n    pb_max: 8.0\n    pb_min: 0\n    pe_ttm_max: 60\n    pe_ttm_min: 0\n    price_max: 220\n    price_min: 4\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      AI算力:\n      - AI算力\n      - 算力\n      - 数据中心\n      - 服务器\n      - 光模块\n      公用事业:\n      - 电力\n      - 燃气\n      - 水务\n      - 环保\n      - 公用事业\n      周期:\n      - 钢铁\n      - 煤炭\n      - 有色\n      - 化工\n      新能源:\n      - 新能源\n      - 光伏\n      - 锂电\n      - 电池\n      - 储能\n      消费:\n      - 白酒\n      - 食品\n      - 家电\n      - 零售\n      - 消费\n      金融:\n      - 券商\n      - 银行\n      - 保险\n    concentration_penalty: 4.5\n    max_same_bucket: 1\n  ranking_hints: '优先关注：\n\n    1. 已经确认趋势但还没有进入极端追涨阶段的候选\n\n    2. 基本面质量（估值、资金活跃、稳定性）能为趋势提供支撑\n\n    3. 避免单一题材过度集中，兼顾不同风格的趋势机会\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 5.5\n    chase_change_pct: 7.5\n    high_turnover_rate: 14.0\n    low_llm_confidence: 0.5\n  scorecard_profile:\n    capital_confirmed_bonus: 2.4\n    hot_money_penalty: 2.5\n    value_quality_bonus: 1.8\n    volume_spike_ratio: 5.0\n  scoring_profile:\n    activity_ideal_turnover_rate: 4.5\n    activity_ideal_volume_ratio: 2.2\n    momentum_chase_penalty_slope: 14.0\n    momentum_chase_start_pct: 5.0\n",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "hypothesis",
+  "title": "daily_stock_analysis 超跌反转 (oversold_reversal)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/oversold_reversal.yaml",
+  "text": "超跌反转 跌幅可控、流动性仍在、具备修复观察价值的反转候选 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.06\n    liquidity: 0.18\n    reversal: 0.4\n    stability: 0.2\n    value: 0.16\n  hard_filters:\n    amount_min: 80000000\n    change_pct_max: -1.0\n    change_pct_min: -8.0\n    exclude_st: true\n    pb_max: 8.0\n    pb_min: 0\n    pe_ttm_max: 80\n    pe_ttm_min: 0\n    price_max: 180\n    price_min: 3\n    turnover_rate_min: 1.0\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      周期:\n      - 钢铁\n      - 煤炭\n      - 有色\n      - 化工\n      地产链:\n      - 地产\n      - 房地产\n      - 建材\n      - 家居\n      - 物业\n      消费:\n      - 白酒\n      - 食品\n      - 家电\n      - 零售\n      - 消费\n      金融:\n      - 券商\n      - 银行\n      - 保险\n    concentration_penalty: 4.0\n    max_same_bucket: 1\n  ranking_hints: '优先关注：\n\n    1. 下跌幅度可控、不是基本面或退市风险驱动的连续杀跌\n\n    2. 成交额和换手仍能支撑后续修复，避免流动性塌陷\n\n    3. 若存在错杀、事件落地或板块修复线索，可提高优先级\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 5.0\n    breakdown_change_pct: -8.5\n    chase_change_pct: 5.0\n    high_turnover_rate: 12.0\n    weak_signal_score: 35.0\n  scorecard_profile:\n    controlled_reversal_bonus: 2.0\n    controlled_reversal_min: 70.0\n    volume_spike_ratio: 5.5\n  scoring_profile:\n    activity_ideal_turnover_rate: 3.0\n    activity_ideal_volume_ratio: 1.6\n    momentum_downside_start_pct: -4.0\n    reversal_chase_start_pct: 0.0\n    reversal_collapse_penalty_slope: 12.0\n    reversal_collapse_start_pct: -7.0\n    reversal_ideal_change_pct: -3.5\n    rsi_oversold_bonus: 14.0\n  tech_weight: 0.45\nstyle:\n  capital_profile: m",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00",
+  "family": "mean_reversion_rsi"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 稳健价值 (quality_value)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/quality_value.yaml",
+  "text": "稳健价值 估值合理、流动性充足、波动不过热，并要求有温和活跃度确认的稳健候选 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.08\n    liquidity: 0.18\n    momentum: 0.08\n    reversal: 0.04\n    size: 0.06\n    stability: 0.24\n    value: 0.32\n  hard_filters:\n    amount_min: 80000000\n    change_pct_max: 5.0\n    change_pct_min: -3.5\n    exclude_st: true\n    market_cap_max: 800000000000\n    market_cap_min: 10000000000\n    pb_max: 4.0\n    pb_min: 0\n    pe_ttm_max: 25\n    pe_ttm_min: 0\n    price_max: 180\n    price_min: 3\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      公用事业:\n      - 电力\n      - 燃气\n      - 水务\n      - 公用事业\n      消费:\n      - 白酒\n      - 食品\n      - 家电\n      - 零售\n      - 消费\n      金融:\n      - 券商\n      - 银行\n      - 保险\n    concentration_penalty: 4.5\n    max_same_bucket: 1\n  ranking_hints: '优先关注：\n\n    1. 估值合理且不是依赖单日情绪推动的标的\n\n    2. 成交额足够、涨跌幅不过热，适合后续深度分析\n\n    3. 兼顾行业地位、现金流质量、分红或经营稳定性线索\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 4.5\n    chase_change_pct: 5.5\n    high_turnover_rate: 10.0\n    low_llm_confidence: 0.45\n  scorecard_profile:\n    value_quality_bonus: 2.8\n    value_quality_stability_min: 68.0\n    value_quality_value_min: 72.0\n    volume_spike_ratio: 4.0\n  scoring_profile:\n    activity_ideal_turnover_rate: 2.5\n    activity_ideal_volume_ratio: 1.4\n    momentum_chase_penalty_slope: 16.0\n    momentum_chase_start_pct: 3.0\n    stability_high_turnover_rate: 8.0\n    stability_high_volume_ratio: 4.0\n    stability_hot_change_pct: 4.5\n  tech_weight: 0.15\nstyle:\n  capital_profile: medium_liquidity\n  execution_sty",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "hypothesis",
+  "title": "daily_stock_analysis 缩量回踩 (shrink_pullback)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/shrink_pullback.yaml",
+  "text": "缩量回踩 上升趋势中缩量回踩均线支撑，趋势延续的入场机会 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.18\n    liquidity: 0.15\n    momentum: 0.32\n    reversal: 0.05\n    stability: 0.22\n    value: 0.08\n  hard_filters:\n    amount_min: 80000000\n    atr_20_pct_max: 6.5\n    exclude_st: true\n    max_drawdown_20d_pct_min: -12.0\n    pullback_to_ma20_pct_max: 8.0\n    pullback_to_ma20_pct_min: -2.0\n    require_ma_bullish: true\n    require_price_above_ma20: true\n    signal_score_min: 65\n    turnover_rate_min: 1.0\n    volatility_20d_pct_max: 45.0\n    volume_ratio_20d_max: 1.5\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      AI算力:\n      - AI算力\n      - 算力\n      - 数据中心\n      - 服务器\n      - 光模块\n      新能源:\n      - 新能源\n      - 光伏\n      - 锂电\n      - 电池\n      - 储能\n      机器人:\n      - 机器人\n      - 减速器\n      - 执行器\n      - 伺服\n      金融:\n      - 券商\n      - 银行\n      - 保险\n    concentration_penalty: 4.0\n    max_same_bucket: 1\n  ranking_hints: '在满足缩量回踩特征的候选中，优先关注：\n\n    1. 回调幅度适中、趋势结构未破坏\n\n    2. 缩量明显，洗盘而非出货\n\n    3. 近期无重大利空\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 4.5\n    chase_change_pct: 6.5\n    high_turnover_rate: 12.0\n    weak_signal_score: 60.0\n  scorecard_profile:\n    capital_confirmed_bonus: 1.4\n    volume_spike_ratio: 4.5\n  scoring_profile:\n    activity_high_volume_ratio: 4.5\n    activity_ideal_turnover_rate: 2.5\n    activity_ideal_volume_ratio: 1.0\n    momentum_60d_overheat_pct: 35.0\n    momentum_chase_penalty_slope: 14.0\n    momentum_chase_start_pct: 5.0\n    stability_high_atr_pct: 5.5\n    stability_hig",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00",
+  "family": "pullback_entry"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "hypothesis",
+  "title": "daily_stock_analysis 放量突破 (volume_breakout)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/src/services/screening/strategies/volume_breakout.yaml",
+  "text": "放量突破 成交量放大突破关键阻力位，趋势启动信号 screening:\n  enabled: true\n  factor_weights:\n    activity: 0.28\n    liquidity: 0.22\n    momentum: 0.32\n    stability: 0.1\n    theme_heat: 0.08\n  hard_filters:\n    amount_min: 100000000\n    body_pct_min: 0.5\n    breakout_20d_pct_min: -1.0\n    change_pct_max: 9.9\n    change_pct_min: 2.0\n    consolidation_days_20d_min: 8\n    exclude_st: true\n    macd_status_whitelist:\n    - bullish\n    - neutral\n    range_20d_pct_max: 35.0\n    require_price_above_ma20: true\n    signal_score_min: 60\n    turnover_rate_min: 3.0\n    volume_ratio_20d_min: 1.3\n    volume_ratio_min: 2.0\n  market_scope:\n  - cn\n  max_output: 5\n  portfolio_profile:\n    buckets:\n      AI算力:\n      - AI算力\n      - 算力\n      - 数据中心\n      - 服务器\n      - 光模块\n      周期:\n      - 钢铁\n      - 煤炭\n      - 有色\n      - 化工\n      新能源:\n      - 新能源\n      - 光伏\n      - 锂电\n      - 电池\n      - 储能\n      机器人:\n      - 机器人\n      - 减速器\n      - 执行器\n      - 伺服\n      金融:\n      - 券商\n      - 银行\n      - 保险\n    concentration_penalty: 5.0\n    max_same_bucket: 1\n  ranking_hints: '优先关注：\n\n    1. 突破前有明显横盘整理（至少 10 个交易日）\n\n    2. 突破当日量比和换手同步放大，且日 K 信号仍健康\n\n    3. 突破后股价至少站上 MA20，优先考虑均线结构更顺的候选\n\n    4. 板块有联动效应更佳\n\n    '\n  risk_profile:\n    abnormal_volume_ratio: 9.0\n    chase_change_pct: 9.8\n    high_turnover_rate: 24.0\n    weak_signal_score: 45.0\n  scorecard_profile:\n    capital_confirmed_bonus: 2.2\n    hot_money_activity_min: 96.0\n    hot_money_penalty: 1.4\n    volume_spike_ratio: 9.0\n  scoring_profile:\n    activity_high_turnover_rate: 20.0\n    activity_high_volume_ratio: ",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00",
+  "family": "volume_spike"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "hypothesis",
+  "title": "daily_stock_analysis 底部放量 (bottom_volume)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/bottom_volume.yaml",
+  "text": "底部放量 检测长期下跌后底部放量信号，潜在趋势反转信号。 **底部放量（Bottom Volume Surge Strategy）**\n\n反转判定标准：\n\n1. **持续下跌确认**：\n   - 使用 `get_daily_history`（30日）。\n   - 股价从 20 日高点到近期低点跌幅 > 15%。\n   - `analyze_trend` → trend_status 应为 BEAR 或 STRONG_BEAR。\n\n2. **量能异动**：\n   - 当日成交量 > 5 日均量的 3 倍。\n   - 使用 `get_realtime_quote` → volume_ratio > 3.0。\n   - 该异动应出现在前期极度缩量之后。\n\n3. **价格企稳**：\n   - 当日K线收阳（收盘价 > 开盘价）。\n   - 价格守住近期低点。\n   - 最好出现长下影线，显示买方支撑。\n\n4. **确认因素**（关联理念5：风险排查）：\n   - 通过 `search_stock_news` 确认是否有基本面催化。\n   - 筹码分布：平均成本接近现价（成本收敛）。\n\n5. **风险提示**（关联理念2：趋势交易）：\n   - 这是反转信号，风险高于趋势跟踪。\n   - 仓位建议较小（最多 2-3 成）。\n   - 止损必须严格（设在近期低点下方）。\n\n评分调整：\n- 底部放量确认：sentiment_score +8\n- 配合阳线 + 新闻催化：额外 +5\n- 在 `buy_reason` 和 `pattern_analysis` 中注明\"底部放量\"。\n- 止损设在近期低点。",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00",
+  "family": "volume_spike"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "hypothesis",
+  "title": "daily_stock_analysis 箱体震荡 (box_oscillation)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/box_oscillation.yaml",
+  "text": "箱体震荡 识别价格箱体区间，在箱底买入、箱顶减仓，适用于横盘震荡行情。 **箱体震荡战法（Box Range Trading Strategy）**\n\n核心逻辑：箱体内部价格在阻力位与支撑位之间反复震荡，\n\"贴着支撑买、接近阻力卖\"，通过波段操作获取区间收益。\n\n## 分析步骤\n\n### 1. 箱体识别\n使用 `get_daily_history` 获取近 60~120 日数据：\n\n- **箱体顶部（阻力位）**：近期多次触碰但未有效突破的高点连线。\n  通常为 20~60 日内3次以上的高点聚集区域。\n- **箱体底部（支撑位）**：近期多次下探但未有效跌破的低点连线。\n- 箱体有效性：顶部和底部各至少触碰 2~3 次方可确认。\n- 使用 `analyze_trend` 的 support_levels / resistance_levels 辅助定位。\n\n### 2. 当前位置判断\n使用 `get_realtime_quote` 获取现价，与箱体边界对比：\n\n- **箱底区域**（距支撑 ≤5%）：买入/加仓信号，止损设箱底下方 3%。\n- **箱中区域**（箱体中间 1/3）：观望，不主动操作。\n- **箱顶区域**（距阻力 ≤5%）：减仓/止盈信号，无需追高。\n\n### 3. 量能辅助判断\n- **箱底放量企稳**：支撑有效的强信号，可较重仓。\n- **箱顶缩量滞涨**：阻力有效的卖出信号。\n- **箱体突破（放量超过均量2倍以上）**：\n  - 向上有效突破 → 转为多头趋势策略，新目标 = 箱体高度延伸。\n  - 向下有效跌破 → 离场等待，原支撑转阻力。\n\n### 4. 箱体宽度与预期收益\n- 计算箱体宽度：(顶部 - 底部) / 底部 × 100%。\n- 宽度 < 5%：操作空间过小，不建议参与。\n- 宽度 5%~15%：标准箱体，波段操作可行。\n- 宽度 > 15%：大箱体，可做更大波段。\n\n### 5. 假突破识别\n- 单日盘中触及阻力/支撑后快速回撤，收盘回到箱内 → 假突破，维持箱体操作。\n- 连续两日收盘突破箱体边界，且量能放大 → 真突破，修改策略。\n\n### 6. 输出要求\n- 明确给出箱体顶部价位和底部价位。\n- 当前价格所处区间（箱底/箱中/箱顶）。\n- 若价格已突破，说明突破方向及新目标。\n- 建议仓位与止损位。\n\n评分调整建议：\n- 箱底企稳 + 缩量：`sentiment_score +10`\n- 箱底放量攻顶：`sentiment_score +12`\n- 箱体向上有效突破：`sentiment_score +15，转趋势策略`\n- 处于箱顶区域：`sentiment_score -5（不追高）`\n- 箱底有效跌破：`sentiment_score -15，离场`",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00",
+  "family": "range_reversion"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "hypothesis",
+  "title": "daily_stock_analysis 默认多头趋势 (bull_trend)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/bull_trend.yaml",
+  "text": "默认多头趋势 默认个股分析优先策略，识别多头排列、趋势延续与回踩低吸机会。 **默认多头趋势（Default Bull Trend Strategy）**\n\n适用场景：\n- 常规个股分析的默认策略。\n- 优先寻找“趋势向上 + 风险可控 + 不追高”的机会。\n\n分析框架：\n\n1. **趋势确认（优先级最高）**\n   - 使用 `analyze_trend` 判断 MA5/MA10/MA20 排列。\n   - MA5 >= MA10 >= MA20 且 MA20 斜率向上，视为多头结构。\n   - 若价格显著跌破 MA20，则降低看多权重。\n\n2. **位置与节奏**\n   - 优先“回踩不破”而非“高位追涨”。\n   - 当价格距离 MA5/MA10 过远时，提示等待回踩。\n   - 放量突破有效阻力时可提高胜率评级。\n\n3. **量价验证**\n   - 使用 `get_daily_history` 检查突破日/反弹日是否放量。\n   - 缩量上涨需谨慎，放量滞涨需警惕分歧。\n\n4. **交易建议输出**\n   - 输出明确的“买入/观望/减仓”倾向及触发条件。\n   - 必须给出止损参考（如 MA20 下方或结构低点）。\n   - 若无清晰优势，明确写“暂不出手”，避免过度交易。\n\n评分调整建议：\n- 多头排列 + 趋势强度良好：`sentiment_score +12`\n- 回踩关键均线后企稳：`sentiment_score +8`\n- 放量突破关键阻力：`sentiment_score +10`\n- 跌破 MA20 或趋势转弱：`sentiment_score -12`",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00",
+  "family": "trend_ma_cross"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 缠论 (chan_theory)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/chan_theory.yaml",
+  "text": "缠论 基于缠论笔、线段、中枢结构，判断趋势级别、买卖点与背驰信号。 **缠论（Chan Theory / Zen Channel Theory）**\n\n核心框架：分型 → 笔 → 线段 → 中枢 → 趋势\n\n## 分析步骤\n\n### 1. 判断价格结构（中枢识别）\n- 使用 `get_daily_history` 获取近 60 日日线数据。\n- 识别近期价格的高低点序列，判断当前是否在\n  **震荡中枢**（1个以上中枢）还是**趋势段**（脱离中枢向上/向下）。\n- 中枢：连续3段走势重叠区间，价格在此区间反复震荡。\n- 趋势：连续3个同级别中枢均向同一方向移动。\n\n### 2. 背驰判断（最高优先级信号）\n- **顶背驰**：价格创新高但MACD红柱面积缩小 → 卖出/减仓信号。\n- **底背驰**：价格创新低但MACD绿柱面积缩小 → 买入/加仓信号。\n- 使用 `analyze_trend` 获取 MACD 数据，与价格高低点对比。\n\n### 3. 买卖点判定\n- **一买**（最强）：下跌趋势中，最后一个中枢出现底背驰。\n- **二买**：离开下跌中枢后的第一次回调不破中枢高点。\n- **三买**：中枢震荡后向上突破（不回中枢内）。\n- **一卖/二卖/三卖**：对称结构，方向相反。\n- 当前价格所处的买卖点级别决定仓位大小。\n\n### 4. 级别与仓位\n- 日线级别买卖点可用较重仓位 (30-50%)。\n- 周线级别买卖点可用较大仓位 (50-80%)。\n- 多级别共振（日线+周线同方向）时信号最强。\n\n### 5. 输出要求\n- 明确说明当前处于：上涨趋势/下跌趋势/中枢震荡。\n- 指出是否存在背驰信号及背驰级别。\n- 给出当前买卖点类型（一买/二买/三买 等），若无则写\"暂无明确买卖点\"。\n- 止损设于前低（买入时）或前高（卖出时）。\n\n评分调整建议：\n- 底背驰 + 一买信号：`sentiment_score +15`\n- 二买/三买共振：`sentiment_score +10`\n- 中枢震荡无明确方向：`sentiment_score 维持基准`\n- 顶背驰 / 趋势向下：`sentiment_score -15`",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 龙头策略 (dragon_head)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/dragon_head.yaml",
+  "text": "龙头策略 板块轮动中识别龙头股。适用于板块启动或行业催化剂出现时。 **龙头策略（Dragon Head Strategy）**\n\n评估标准：\n\n1. **板块领涨地位**：\n   - 使用 `get_sector_rankings` 检查该股所在板块是否为近期涨幅前列。\n   - 确认该股是否在板块启动周期中率先上涨或涨停。\n\n2. **换手率与动能**（关联理念7：强势趋势股放宽）：\n   - 使用 `get_realtime_quote` 检查换手率。龙头股换手率通常 > 5%。\n   - 量比 > 1.5 说明有活跃的交易兴趣。\n\n3. **相对强度**：\n   - 对比个股涨跌幅与板块平均值。\n   - 真正的龙头在上涨日应跑赢板块 2% 以上。\n\n4. **新闻催化**：\n   - 使用 `search_stock_news` 搜索板块级催化剂（政策、事件、业绩）。\n   - 龙头行情常伴随板块整体催化。\n\n5. **乖离率检查**（关联理念1：严进策略）：\n   - 龙头股可适当放宽乖离率至 7%，但超过 10% 仍需谨慎。\n\n评分调整：\n- 确认为龙头股：sentiment_score +10\n- 板块正处于主动轮动期：额外 +5\n- 在 `buy_reason` 中注明\"龙头策略\"判断结果。",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 情绪周期 (emotion_cycle)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/emotion_cycle.yaml",
+  "text": "情绪周期 基于市场情绪、换手率与量价结构，识别情绪低点（恐慌底）与情绪高点（狂热顶），逆情绪布局。 **情绪周期策略（Sentiment Cycle Strategy）**\n\n核心哲学：市场参与者的情绪在\"恐慌→悲观→怀疑→希望→乐观→兴奋→贪婪→狂热\"\n之间循环。聪明钱在恐慌底部布局，在狂热顶部离场。\n\n## 情绪阶段量化指标\n\n### 第一步：换手率分析（情绪热度核心指标）\n使用 `get_daily_history` 和 `get_realtime_quote`：\n\n- **换手率 < 0.5%/日**：市场冷淡，无人关注，潜在底部区域（贪婪时买入别人的恐慌）。\n- **换手率 0.5%~2%**：正常交投，情绪平稳。\n- **换手率 2%~5%**：活跃，市场开始关注，不宜追高。\n- **换手率 > 5%**：高热度，游资/散户涌入，警惕情绪顶。\n- **换手率 > 10%（日均）**：极度过热，通常为短期顶部。\n\n### 第二步：连续换手率走势\n使用 `get_daily_history` 计算近 20 日换手率走势：\n- 由高向低（持续降温）+ 成交量萎缩 → 情绪退潮，耐心等待。\n- 由低向高（加速升温）+ 成交量陡增 → 情绪启动，可介入。\n- 突然单日暴量（换手率超过前期5倍）→ 往往是主力出货，需警惕。\n\n### 第三步：新闻情绪面分析\n使用 `search_stock_news` 搜索近期新闻，分析情绪倾向：\n- 新闻集中出现\"利好兑现、业绩超预期、涨停板、机构推荐\"等 → 情绪可能过热。\n- 新闻集中出现\"业绩下滑、利空、跌破支撑\" → 悲观情绪可能造就底部。\n- 散户论坛/社交媒体情绪极端负面 → 反向指标，可能接近底部。\n\n### 第四步：均线收缩与波动率\n使用 `analyze_trend`：\n- MA5/MA10/MA20 三线粘合（均线收缩）→ 蓄势，方向待定，情绪冷淡。\n- 波动率降至低位（ATR 萎缩）→ 情绪极度低迷，蓄势爆发前兆。\n\n## 情绪底部特征（买入区）\n满足以下3项以上：\n✅ 近20日換手率处于近一年低位\n✅ 成交量持续萎缩，低于近60日均量50%以上\n✅ 近期新闻以低调、中性或负面为主\n✅ 股价在MA20附近或以下，但未出现恐慌性暴跌\n✅ 机构持仓稳定或小幅增加（如有数据）\n\n## 情绪顶部特征（减仓区）\n满足以下3项以上：\n⚠️ 近5日换手率 > 近20日均值的2倍\n⚠️ 成交量脉冲式放大（单日）\n⚠️ 新闻以利好兑现、机构目标价大幅上调、散户追捧为主\n⚠️ 股价偏离MA5超过8%（高乖离率）\n⚠️ MACD 出现顶背离\n\n## 输出要求\n- 当前情绪阶段判断：冷淡底部 / 平稳 / 升温介入 / 过热警惕 / 狂热顶部。\n- 当前换手率与近一年换手率均值对比。\n- 是否满足情绪底部或顶部特征（列出满足条项）。\n- 给出逆情绪操作建议（大众恐慌我贪婪，大众贪婪我谨慎）。\n\n评分调整建议：\n- 情绪底部特征满足3项以上：`sentiment_score +14`\n- 情绪底部特征满足全部5项：`sentiment_score +20`\n- 情绪顶部特征满足3项以上：`sentiment_score -12`\n- 情绪顶部特征满足全部5项：`sentiment_score -20`\n- 情绪平稳区间：不调整基础分",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 事件驱动 (event_driven)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/event_driven.yaml",
+  "text": "事件驱动 围绕业绩、政策、并购、订单、产品发布等事件，评估催化强度、兑现概率和风险边界。 **事件驱动策略（Event Driven Strategy）**\n\n适用场景：\n- 公司或行业出现明确事件催化，如业绩预告、订单中标、并购重组、政策落地、产品发布、监管处罚、诉讼等。\n- 需要判断事件是短期交易催化、长期基本面改善，还是利好兑现。\n\n分析框架：\n\n1. **事件分类**\n   - 使用 `search_stock_news` 梳理近期关键事件。\n   - 将事件分为：业绩类、政策类、订单/产品类、资本运作类、监管/风险类。\n   - 明确事件发生时间，过期或时间未知的信息不能作为主要依据。\n\n2. **影响路径**\n   - 判断事件影响的是收入、利润率、估值、融资能力、市场份额，还是仅影响情绪。\n   - 对重大订单或政策利好，要说明兑现周期和不确定性。\n   - 对监管、减持、处罚、诉讼等事件，风险优先。\n\n3. **市场反应**\n   - 使用 `get_realtime_quote` 和 `analyze_trend` 判断事件是否已被价格充分反映。\n   - 放量上涨但未过关键阻力，可等待确认。\n   - 高位放量滞涨或利好后冲高回落，应警惕兑现压力。\n\n4. **交易计划**\n   - 事件未兑现前，强调仓位控制和时间窗口。\n   - 事件兑现后，重新评估是否从“预期交易”切换为“业绩验证”。\n   - 对负面事件，先看风险释放是否充分，再考虑反弹。\n\n输出要求：\n- 明确事件性质：利好 / 利空 / 中性 / 不确定。\n- 给出事件可信度、兑现周期、已反映程度。\n- 操作建议必须包含失效条件，如公告不及预期、跌破关键支撑或事件热度消退。\n\n评分调整建议：\n- 高可信正向事件且价格尚未充分反映：`sentiment_score +14`\n- 正向事件已大幅兑现：`sentiment_score -6`\n- 负面事件仍在发酵：`sentiment_score -15`\n- 事件影响不清晰或信息冲突：维持中性并降低置信度",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 预期重估 (expectation_repricing)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/expectation_repricing.yaml",
+  "text": "预期重估 分析业绩预期、政策预期和估值预期的变化，寻找预期差修复或预期过热后的回落风险。 **预期重估策略（Expectation Repricing Strategy）**\n\n适用场景：\n- 市场对公司业绩、政策、行业景气、估值中枢或竞争格局的预期正在变化。\n- 需要判断当前价格反映的是“预期修复”“预期落空”还是“预期过热”。\n\n分析框架：\n\n1. **预期来源**\n   - 使用 `search_stock_news` 识别近期改变市场预期的信息：业绩预告、机构观点、订单、政策、产品进展、行业数据。\n   - 区分硬信息（公告、财报、订单）和软信息（传闻、观点、情绪）。\n\n2. **预期差方向**\n   - 正向预期差：市场原本悲观，新增信息显示业务或业绩好于预期。\n   - 负向预期差：市场原本乐观，新增信息低于预期或验证失败。\n   - 若信息已经被连续大涨充分反映，需要提示预期兑现风险。\n\n3. **估值重估**\n   - 使用 PE/PB、市值、ROE、现金流等字段判断估值重估是否有基本面支撑。\n   - 估值提升需要匹配盈利质量、增长持续性和行业空间。\n   - 估值回落时，观察是否由一次性扰动还是长期逻辑变化导致。\n\n4. **价格确认**\n   - 使用 `analyze_trend` 判断预期变化是否已经转化为趋势。\n   - 放量突破可视为预期被资金确认；缩量反弹则更偏修复观察。\n   - 高位放量滞涨、利好不涨或跌破关键支撑，可能意味着预期转弱。\n\n输出要求：\n- 明确当前是：正向预期差 / 预期兑现 / 负向预期差 / 预期不明。\n- 说明哪些信息改变了市场预期，哪些仍待验证。\n- 给出观察点：下一份财报、订单兑现、政策落地、估值回落或技术确认。\n\n评分调整建议：\n- 正向预期差且价格尚未充分反映：`sentiment_score +15`\n- 正向预期差已被连续大涨兑现：`sentiment_score -5`\n- 负向预期差或核心假设被证伪：`sentiment_score -15`\n- 信息不充分但存在潜在修复：维持中性并降低置信度",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 成长质量 (growth_quality)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/growth_quality.yaml",
+  "text": "成长质量 结合收入利润增长、ROE、现金流和行业空间，识别高质量成长股与成长失速风险。 **成长质量策略（Growth Quality Strategy）**\n\n适用场景：\n- 关注公司中长期成长能力，而不是只看短线技术形态。\n- 适合高景气行业、业绩持续改善或商业模式扩张阶段的公司。\n\n分析框架：\n\n1. **成长性**\n   - 优先查看财报字段中的营业收入、归母净利润、经营现金流和 ROE。\n   - 判断收入增长和利润增长是否同向，是否存在“增收不增利”。\n   - 若只有概念热度但财报尚未验证，应降低成长确定性。\n\n2. **质量**\n   - ROE 越高且稳定，质量越好。\n   - 经营现金流与净利润方向一致，说明盈利质量更可靠。\n   - 现金流显著弱于利润时，要提示回款、存货或应收风险。\n\n3. **估值承受力**\n   - 使用 PE/PB、市值等估值字段判断市场是否已经提前透支成长。\n   - 高成长可承受更高估值，但必须说明增长能否覆盖估值。\n   - 估值高且成长放缓时，应明显下调评分。\n\n4. **趋势确认**\n   - 使用 `analyze_trend` 判断长期成长逻辑是否被市场资金确认。\n   - 基本面向好但技术面未确认时，优先给观察条件而不是直接追买。\n\n输出要求：\n- 明确公司处于：高质量成长 / 成长验证中 / 成长放缓 / 成长证伪。\n- 说明成长来自收入扩张、利润率改善、行业景气，还是一次性因素。\n- 给出适合成长股的买点：业绩验证后突破、回踩长期均线或估值回落。\n\n评分调整建议：\n- 收入、利润、现金流和 ROE 同向改善：`sentiment_score +15`\n- 行业景气与公司新闻互相验证：额外 `+6`\n- 高估值但成长未验证：`sentiment_score -8`\n- 增收不增利或现金流恶化：`sentiment_score -12`",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 热点题材 (hot_theme)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/hot_theme.yaml",
+  "text": "热点题材 跟踪政策、产业和市场热点，判断题材强度、板块扩散和个股相对强弱。 **热点题材策略（Hot Theme Strategy）**\n\n适用场景：\n- 市场出现明确政策、产业、技术路线或资金抱团热点。\n- 需要判断个股是否真正受益于热点，而不是单纯蹭概念。\n\n分析框架：\n\n1. **热点强度**\n   - 使用 `get_sector_rankings` 判断相关板块是否在近期涨幅、成交额或人气上处于前列。\n   - 观察热点是否从少数核心股扩散到板块内多只个股。\n   - 若只有单股异动、板块未共振，降低信号权重。\n\n2. **个股相关性**\n   - 使用 `search_stock_news` 检查公司业务、订单、产能、客户、公告是否与热点直接相关。\n   - 区分“实质受益”“间接受益”“概念关联较弱”。\n   - 概念关联弱但涨幅过大时，应提示题材兑现风险。\n\n3. **相对强弱**\n   - 使用 `get_realtime_quote` 与 `analyze_trend` 判断个股涨幅、量比、换手率是否强于板块平均。\n   - 强势热点股通常表现为放量、换手活跃、回调不破关键均线。\n\n4. **节奏与风险**\n   - 不在连续加速、高乖离率位置追涨。\n   - 若新闻集中在“已经大涨”“资金追捧”“龙虎榜游资博弈”，需要警惕短线情绪顶。\n   - 重大利空、监管问询、澄清公告可一票降低评级。\n\n输出要求：\n- 明确当前热点阶段：启动 / 扩散 / 分化 / 退潮。\n- 说明个股与热点的实质相关性。\n- 给出可执行触发条件：回踩承接、放量突破、板块继续共振或退潮止损。\n\n评分调整建议：\n- 热点处于启动或扩散期，且个股实质受益：`sentiment_score +12`\n- 个股强于板块并有量能确认：额外 `+6`\n- 热点进入分化或退潮：`sentiment_score -8`\n- 仅概念蹭热点且乖离率过高：`sentiment_score -12`",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "hypothesis",
+  "title": "daily_stock_analysis 均线金叉 (ma_golden_cross)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/ma_golden_cross.yaml",
+  "text": "均线金叉 检测均线金叉配合量能确认信号，经典的趋势反转/延续信号。 **均线金叉（MA Golden Cross Strategy）**\n\n信号判定标准：\n\n1. **金叉检测**（关联理念2：趋势交易）：\n   - 使用 `analyze_trend` 检查均线排列和 MACD 状态。\n   - 主信号：MA5 在最近 3 个交易日内上穿 MA10。\n   - 强信号：MA10 上穿 MA20（更慢但更可靠）。\n   - 检查 MACD 状态是否为金叉或零轴上方金叉。\n\n2. **量能确认**（关联理念3：效率优先）：\n   - 金叉日成交量应高于 5 日均量。\n   - 使用 `get_daily_history` 验证。\n   - 金叉日量比 > 1.2 为积极信号。\n\n3. **趋势背景**：\n   - 盘整后金叉：最强信号。\n   - 上升趋势中金叉：延续信号。\n   - 深度下跌中金叉：弱信号，需更多确认。\n\n4. **价格位置**（关联理念1：严进策略）：\n   - 价格应在交叉均线附近或上方。\n   - 乖离率 < 5% — 避免追高延迟入场。\n\n评分调整：\n- MA5 × MA10 金叉配合量能：sentiment_score +10\n- MA10 × MA20 金叉：sentiment_score +8\n- MACD 零轴上方金叉：额外 +5\n- 在 `ma_analysis` 和 `buy_reason` 中注明\"均线金叉\"。\n- 理想买点设在交叉均线水平附近。",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00",
+  "family": "trend_ma_cross"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 一阳夹三阴 (one_yang_three_yin)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/one_yang_three_yin.yaml",
+  "text": "一阳夹三阴 检测一阳夹三阴K线整理形态，趋势延续入场信号。 **一阳夹三阴（One Yang Three Yin Strategy）**\n\n形态定义（最近 5 个交易日）：\n\n1. **第1日**：大阳线（收盘价 > 开盘价，实体 > 股价的 2%）。\n2. **第2-4日**：连续三根阴线或小K线：\n   - 每根K线最低价不跌破第1日开盘价。\n   - 成交量应逐步萎缩（量比 < 0.8）。\n   - 三根K线应收在第1日实体范围内。\n3. **第5日**：又一根阳线，收盘价突破第1日收盘价。\n\n如何使用工具评估：\n\n1. 使用 `get_daily_history` 获取最近 10 日数据。\n2. 检查最后 5 根K线是否符合上述形态。\n3. 使用 `analyze_trend` 确认多头排列（关联理念2：趋势交易，MA5 > MA10 > MA20）。\n\n评分调整：\n- 形态成立 + 趋势看多：sentiment_score +15\n- 形态成立但趋势不明：sentiment_score +5\n- 在 `pattern_analysis` 和 `buy_reason` 中注明\"一阳夹三阴\"。\n- 理想买点设在第5日收盘价附近，止损设在第1日开盘价下方。",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "hypothesis",
+  "title": "daily_stock_analysis 缩量回踩 (shrink_pullback)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/shrink_pullback.yaml",
+  "text": "缩量回踩 检测缩量回踩均线支撑信号，趋势延续的理想入场点。 **缩量回踩（Shrink Volume Pullback Strategy）**\n\n入场判定标准：\n\n1. **前提条件**（关联理念2：趋势交易）：\n   - 股票必须处于上升趋势（MA5 > MA10 > MA20）。\n   - 使用 `analyze_trend` 确认多头排列。\n\n2. **回踩检测**（关联理念4：买点偏好）：\n   - 使用 `get_daily_history` 和 `get_realtime_quote`。\n   - 价格回踩至 MA5 附近（误差 1% 以内）或 MA10 附近（误差 2% 以内）。\n   - 回调期间成交量 < 5 日均量的 70%（缩量特征）。\n   - `analyze_trend` → volume_status 应显示缩量。\n\n3. **反弹信号**（关联理念1：严进策略）：\n   - 当前价格守住均线支撑位。\n   - MA5 乖离率 < 2% — 最佳买入区间。\n\n4. **确认条件**（关联理念5：风险排查）：\n   - `search_stock_news` 无利空消息。\n   - 筹码分布健康（获利比例 50-80%）。\n\n评分调整：\n- 缩量回踩 MA5：sentiment_score +10\n- 缩量回踩 MA10 且量能 < 0.6 倍均量：sentiment_score +8\n- 理想买点设在 MA5 水平，次优买点设在 MA10。\n- 止损设在 MA20 水平。\n- 在 `buy_reason` 中注明\"缩量回踩\"。",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00",
+  "family": "pullback_entry"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "hypothesis",
+  "title": "daily_stock_analysis 放量突破 (volume_breakout)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/volume_breakout.yaml",
+  "text": "放量突破 检测放量突破阻力位信号。适用于股价接近已知阻力位时。 **放量突破（Volume Breakout Strategy）**\n\n突破判定标准：\n\n1. **阻力位识别**：\n   - 使用 `analyze_trend` → resistance_levels 获取阻力位。\n   - 通常为 20 日高点或前期震荡平台顶部。\n\n2. **量能确认**（关联理念3：效率优先）：\n   - 当日成交量 > 5 日均量的 2 倍。\n   - 使用 `get_realtime_quote` → volume_ratio > 2.0 确认。\n   - 使用 `get_daily_history` 计算均量进行交叉验证。\n\n3. **价格确认**（关联理念1：严进策略）：\n   - 收盘价必须站上阻力位。\n   - 收盘应在当日振幅上方 30%（强势收盘）。\n   - 突破后乖离率检查：仍需 < 5%，避免追高。\n\n4. **后续验证**（如有数据）：\n   - 次日开盘应在突破位之上，区分真突破与假突破。\n\n5. **风险过滤**（关联理念5：风险排查）：\n   - 通过 `search_stock_news` 检查无重大利空。\n   - PE 不应过高（避免泡沫型突破）。\n\n评分调整：\n- 放量突破确认：sentiment_score +12\n- 突破伴随板块共振（板块也走强）：额外 +5\n- 理想买点设在突破位附近，止损设在突破位下方 3%。\n- 在 `buy_reason` 和 `volume_analysis` 中注明\"放量突破\"。",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00",
+  "family": "volume_spike"
+ },
+ {
+  "source": "repo_strategies",
+  "kind": "strategy_source",
+  "title": "daily_stock_analysis 波浪理论 (wave_theory)",
+  "url": "https://github.com/ZhuLinsen/daily_stock_analysis/blob/main/strategies/wave_theory.yaml",
+  "text": "波浪理论 基于艾略特波浪理论的推动浪与调整浪结构，判断当前所处浪型与潜在目标价。 **波浪理论（Elliott Wave Theory）**\n\n核心原则：市场按照 5 浪推进 + 3 浪调整的循环结构运行。\n\n## 分析步骤\n\n### 1. 识别当前浪型\n使用 `get_daily_history` 获取近 120 日数据，结合 `analyze_trend` 趋势数据：\n\n**推动浪（1-3-5）识别特征**：\n- 第1浪：趋势反转的第一波，成交量温和放大。\n- 第3浪：最强劲的推动浪，通常放大量，MACD 强势；绝不是最短浪。\n- 第5浪：量能往往弱于第3浪，出现顶背离则走高后即将结束。\n\n**调整浪（A-B-C）识别特征**：\n- A 浪：第一次下跌，成交量较大，多数人以为是回调。\n- B 浪：反弹，力度弱于前期涨幅，成交量萎缩，陷阱风险高。\n- C 浪：第二次下跌，力度往往超过 A 浪，完成调整。\n\n### 2. 黄金位置判断\n- 第2浪回调通常在第1浪的 38.2%~61.8%。\n- 第3浪目标通常是第1浪的 1.618~2.618 倍延伸。\n- 第4浪不得进入第1浪价格区域（违反波浪规则）。\n- C浪目标：A 浪顶端起算，等于或超过 A 浪长度。\n\n### 3. 最优买点\n- **第2浪回调企稳**（黄金坑）：最安全买点，止损第1浪起点。\n- **第4浪回调企稳**：次优，止损第1浪顶部。\n- **第3浪初期突破**：放量突破第1浪高点时。\n- 避免在第5浪末端追高（顶背离风险）。\n\n### 4. 风险提示\n- B浪反弹不宜重仓（陷阱性质）。\n- 波浪计数存在主观性，需结合其他技术指标验证。\n- 若波浪规则被违反（如第4浪侵入第1浪），需重新归数。\n\n### 5. 输出要求\n- 给出当前可能的浪型位置（如：\"处于第3浪中段\"或\"疑似第4浪调整\"）。\n- 给出关键斐波那契支撑/阻力位（0.382/0.618/1.618）。\n- 说明当前是买入时机、等待机会还是规避。\n- 标注波浪计数的置信度（高/中/低）。\n\n评分调整建议：\n- 第2浪底部企稳（黄金坑）：`sentiment_score +15`\n- 第3浪突破确认：`sentiment_score +12`\n- 第5浪末端/顶背离：`sentiment_score -10`\n- C浪下跌中：`sentiment_score -12`",
+  "symbols": [
+   "CHINAH",
+   "HK50"
+  ],
+  "culture": {
+   "source_culture": "cn_mainland",
+   "participant_structure": "retail_heavy",
+   "crowding_prior": "medium (A-share retail practitioner pattern, transferred to Fusion's HK/China index CFDs)"
+  },
+  "transfer": "A-share single-name practitioner rule, tested as a mechanism-class transfer on CHINAH and HK50",
+  "licence": "MIT (daily_stock_analysis); screening YAMLs say derived from AlphaSift, Apache-2.0",
+  "found_at": "2026-10-01T01:30:00+00:00"
+ }
+]
