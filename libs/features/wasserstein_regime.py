@@ -55,15 +55,16 @@ def wasserstein_distance_1d(sorted_a: np.ndarray, sorted_b: np.ndarray, p: float
 
 def distances_to_centroid(sorted_segments: np.ndarray, centroid: np.ndarray,
                           p: float = 1.0) -> np.ndarray:
-    return (np.abs(sorted_segments - centroid[None, :]) ** p).mean(axis=1) ** (1.0 / p)
+    out: np.ndarray = (np.abs(sorted_segments - centroid[None, :]) ** p).mean(axis=1) ** (1.0 / p)
+    return out
 
 
 def barycenter(sorted_members: np.ndarray, p: float = 1.0) -> np.ndarray:
     """Quantile-wise median (p = 1) or mean (p = 2): the closed-form Wasserstein barycenter."""
     if p == 1.0:
-        return np.median(sorted_members, axis=0)
+        return np.asarray(np.median(sorted_members, axis=0), dtype=float)
     if p == 2.0:
-        return sorted_members.mean(axis=0)
+        return np.asarray(sorted_members.mean(axis=0), dtype=float)
     raise ValueError("p must be 1 or 2, the exponents with a closed-form barycenter")
 
 
