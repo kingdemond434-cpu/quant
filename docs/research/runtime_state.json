@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 759,
+  "NEVER": 761,
   "UNMEASURED": 37
  },
  "scope": {
-  "attested": 977,
+  "attested": 979,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -262,6 +262,17 @@
     "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
     "organs": [
      "library:desks/mt5/ops/components.py"
+    ]
+   },
+   {
+    "at": "2026-10-01T12:25:50+00:00",
+    "host": "vm",
+    "machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:desks/mt5/research/dormant_components.py",
+     "library:libs/ops/intelligence_inputs.py"
     ]
    }
   ]
@@ -25162,6 +25173,62 @@
    "measured_on": "vm",
    "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
    "measured_at": "2026-10-01T12:19:05+00:00"
+  },
+  {
+   "organ": "executable:desks/mt5/research/dormant_components.py",
+   "kind": "executable",
+   "code": [
+    "desks/mt5/research/dormant_components.py"
+   ],
+   "clock": "invoked:ops/run_frontier_audit.cmd",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/DORMANT_COMPONENTS.json",
+   "artifact_declared": "desks/mt5/reports/DORMANT_COMPONENTS.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-01T12:25:50+00:00"
+  },
+  {
+   "organ": "library:libs/ops/intelligence_inputs.py",
+   "kind": "library",
+   "code": [
+    "libs/ops/intelligence_inputs.py"
+   ],
+   "clock": "import:scripts/run_intelligence_cycle.py",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on vm (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "web/intelligence_cycle.json",
+   "artifact_declared": "web/intelligence_cycle.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "vm",
+   "measured_on_machine_id": "0d0af05ee8fd4dc29275718f2ce4dff1",
+   "measured_at": "2026-10-01T12:25:50+00:00"
   }
  ],
  "ratchet": {
