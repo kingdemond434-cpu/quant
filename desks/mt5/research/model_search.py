@@ -9,10 +9,11 @@ WHAT RUNS HERE
   1. TEN FAMILIES, each with a factor's discipline -- lineage (`parent`), a novelty key so the
      same family is never re-tested under a new name, a declared falsifier (its tax), and a
      verdict that is allowed to be UNMEASURED. `libs/research/model_families.py` owns them.
-  2. EIGHT REPRESENTATIONS of the SAME underlying information -- raw, z-scored, ranked,
+  2. NINE REPRESENTATIONS of the SAME underlying information -- raw, z-scored, ranked,
      volatility-scaled, range/state, path-shape, intelligent-trading-bot's rolling aggregations
-     and Deep-Trading's normalised window -- and, on a few of them, THREE MORE TARGETS than the
-     return's sign (ITB's top and bottom labels, Deep-Trading's volatility rise). Same bars,
+     Deep-Trading's normalised window and ml4t's Wasserstein regimes -- and, on a few of them,
+     FOUR MORE TARGETS than the return's sign (ITB's top and bottom labels, Deep-Trading's
+     volatility rise, ml4t's trend-scanning t-value). Same bars,
      same target within a row, different coordinates, so a difference in verdict along a
      target's rows is a statement about the coordinates and nothing else.
   3. THE WHOLE GRID. Every (R_k, M_j) is scored on the same folds and published as a matrix. A
@@ -70,7 +71,7 @@ UNMEASURED = CL.UNMEASURED
 #: of holding them fixed is that a verdict difference across a row of the matrix is a statement
 #: about the coordinates, never about a different dataset.
 REPRESENTATIONS: tuple[str, ...] = ("raw", "zscore", "rank", "vol_scaled", "range_state",
-                                    "path_shape", "itb", "dt_window")
+                                    "path_shape", "itb", "dt_window", "wregime")
 
 #: Targets besides the sign of the h-bar return, and the representations each is judged on.
 #: `top` / `bot` are intelligent-trading-bot's extremum labels (bounded to +-h bars in
@@ -78,8 +79,10 @@ REPRESENTATIONS: tuple[str, ...] = ("raw", "zscore", "rank", "vol_scaled", "rang
 #: next h bars move more than the last day did, per bar). Every (representation, target, learner)
 #: is a trial charged through the ledger like any other cell, and a winner leaves only as a
 #: CONDITIONING model -- no entry, no stop, no size -- so nothing trades on a model's output alone.
+#: `tscan` is the trend-scanning t-value (machine-learning-for-trading, MIT), bounded to h bars.
 EXTRA_TARGETS: dict[str, tuple[str, ...]] = {"top": ("itb",), "bot": ("itb",),
-                                             "vol_up": ("itb", "dt_window", "raw")}
+                                             "vol_up": ("itb", "dt_window", "raw", "wregime"),
+                                             "tscan": ("raw", "itb", "wregime")}
 TARGETS: tuple[str, ...] = ("sign", *EXTRA_TARGETS)
 
 
@@ -144,6 +147,11 @@ def representation(df: pd.DataFrame, kind: str) -> pd.DataFrame:
         out = {f"w{k}": ret.shift(k) / sd for k in range(6)}
         out["dow"] = pd.Series(df.index.dayofweek.astype(float), index=df.index)
         out["hour"] = pd.Series(df.index.hour.astype(float), index=df.index)
+    elif kind == "wregime":
+        # machine-learning-for-trading's Wasserstein k-means regimes (MIT), refitted on an
+        # expanding past only so no bar's coordinates saw its own future.
+        from libs.features import wasserstein_regime
+        return wasserstein_regime.features(df)
     else:
         raise ValueError(f"unknown representation {kind!r}; known: {REPRESENTATIONS}")
     return pd.DataFrame(out, index=df.index)
@@ -167,6 +175,9 @@ def _target(df: pd.DataFrame, horizon: int, target: str = "sign") -> np.ndarray:
         with np.errstate(all="ignore"):
             nxt = r2.rolling(horizon, min_periods=horizon).mean().shift(-horizon).to_numpy()
             return np.where(np.isfinite(nxt) & np.isfinite(past), nxt - past, np.nan)
+    if target == "tscan":
+        from libs.features import wasserstein_regime
+        return wasserstein_regime.trend_scan_t(df["close"], horizon=horizon)
     raise ValueError(f"unknown target {target!r}; known: {TARGETS}")
 
 

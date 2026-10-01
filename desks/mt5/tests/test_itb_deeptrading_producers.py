@@ -31,7 +31,7 @@ def _bars(n: int = 4000, seed: int = 7) -> pd.DataFrame:
 
 def test_grid_crosses_extra_targets_only_on_their_representations():
     assert {"itb", "dt_window"} <= set(MS.REPRESENTATIONS)
-    assert set(MS.TARGETS) == {"sign", "top", "bot", "vol_up"}
+    assert set(MS.TARGETS) == {"sign", "top", "bot", "vol_up", "tscan"}
     d = _bars()
     y = MS._target(d, 6, "vol_up")
     assert np.isfinite(y[:-6]).mean() > 0.9 and np.isnan(y[-6:]).all()
@@ -50,7 +50,8 @@ def test_model_search_judges_the_new_rows_as_charged_trials(monkeypatch, tmp_pat
                  allow_heavy=False, write_queue=False, enqueue=False, n_bars=4000,
                  report=tmp_path / "MODEL_SEARCH.json")
     rows = set(doc["compatibility_matrix"]["representations"])
-    assert rows == {"itb", "itb@top", "itb@bot", "itb@vol_up", "dt_window", "dt_window@vol_up"}
-    assert doc["cells_tested"] == 12 and doc["trials"]["n_raw"] == 12
+    assert rows == {"itb", "itb@top", "itb@bot", "itb@vol_up", "itb@tscan", "dt_window",
+                    "dt_window@vol_up"}
+    assert doc["cells_tested"] == 14 and doc["trials"]["n_raw"] == 14
     # the session-volatility planted in the bars is what dt_window@vol_up should find
     assert doc["representation_verdicts"]["dt_window@vol_up"]["verdict"] == "ALIVE"
