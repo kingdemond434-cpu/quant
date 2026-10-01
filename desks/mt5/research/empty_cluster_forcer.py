@@ -128,7 +128,6 @@ def _families_by_cluster() -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     was simply false.
     """
     from libs.research.alpha_clusters import classify_family
-
     from research.miner_candidate_compiler import _FAMILY_VOCAB, _registered_cached
     donatable: dict[str, list[str]] = {}
     registered: dict[str, list[str]] = {}
@@ -146,6 +145,47 @@ def _families_by_cluster() -> tuple[dict[str, list[str]], dict[str, list[str]]]:
     return donatable, registered
 
 
+def _testable(families: list[str]) -> tuple[list[str], dict[str, str]]:
+    """(families the SEALED gauntlet can build, {family: why not} for the rest).
+
+    A registered family is not a testable one. `research/gauntlet_buildability` reads the sealed
+    `build_cell` and measured three families it calls with their data input None -- `lead_lag`
+    (no driver), `event_reaction` (a bare index where it reads event mappings), `execution_state`
+    (no surface) -- so a cluster "owned" by those has cells that are judged as a market "no" the
+    market never gave. An unimportable probe marks every family testable (L1.28a)."""
+    try:
+        from research.gauntlet_buildability import BUILDABLE, family_verdict
+    except Exception:
+        return list(families), {}
+    ok: list[str] = []
+    bad: dict[str, str] = {}
+    for fam in families:
+        verdict, why = family_verdict(fam)
+        if verdict == BUILDABLE:
+            ok.append(fam)
+        else:
+            bad[fam] = f"{verdict}: {why}"
+    return ok, bad
+
+
+def _symbols_for(family: str, universe: dict[str, Any], turn: int) -> list[str]:
+    """Where a forced cell of `family` is minted this hour: a ROTATING window over every
+    hypothesis-lane instrument with bars, least-judged-for-this-family first.
+
+    It was the fixed twelve-name PREFERRED tuple, so a forced cluster was attempted on the same
+    twelve instruments forever and nowhere else. The count per pass is unchanged
+    (CELLS_PER_CLUSTER); the window slides one width per hour, so a lap reaches the whole lane.
+    PREFERRED stays as the fallback when the lane cannot be read here."""
+    try:
+        from research.breadth_rotation import hypothesis_symbols, orthogonal_ring, rotating_window
+        lane = [s for s in hypothesis_symbols() if not universe or s in universe]
+        if lane:
+            return rotating_window(orthogonal_ring(lane, family), CELLS_PER_CLUSTER, turn=turn)
+    except Exception:
+        pass
+    return [s for s in PREFERRED if s in universe]
+
+
 def plan() -> dict[str, Any]:
     breadth = _read(BREADTH, {})
     clusters = breadth.get("clusters") or {}
@@ -153,7 +193,8 @@ def plan() -> dict[str, Any]:
     counts = (_read(MANDATE, {}) or {}).get("cluster_cell_counts") or {}
     by_cluster, registered = _families_by_cluster()
     universe = _read(UNIVERSE, {})
-    symbols = [s for s in PREFERRED if s in universe]
+    turn = int(datetime.now(UTC).timestamp() // 3600)
+    symbols_used: set[str] = set()
 
     rows: list[dict[str, Any]] = []
     cells: list[dict[str, Any]] = []
@@ -161,11 +202,26 @@ def plan() -> dict[str, Any]:
         n = int(counts.get(c, 0))
         fams = by_cluster.get(c) or []
         reg = registered.get(c) or []
+        testable, untestable = _testable(reg)
+        if reg and not testable:
+            # REGISTERED, AND NOT ONE OF THEM TESTABLE BY THE SEALED JUDGE. Every cell any
+            # producer mints here builds with no signals, so more cells buy multiplicity charge
+            # and no information. The remedy is a sealed-gauntlet branch (principal-gated), named.
+            rows.append({"cluster": c, "cells_in_docket": n,
+                         "verdict": "BLOCKED_BY_SEALED_GAUNTLET", "families": reg,
+                         "untestable": untestable,
+                         "why": ("every registered family of this cluster is one the sealed "
+                                 "external_gauntlet.build_cell cannot supply the data input of; "
+                                 "its cells are judged with that input None and return no "
+                                 "signals. Reaching this cluster needs a build_cell branch, "
+                                 "which is a sealed edit and the principal's decision.")})
+            continue
         if not fams and reg:
             # REACHABLE, BUT NOT BY A DONATED CELL. The families exist and need an input a
             # donation cannot carry, so the owner is a proposer and the remedy is to check that
             # the proposer is running -- not to write a family that already exists.
             rows.append({"cluster": c, "cells_in_docket": n, "verdict": "PROPOSER_OWNED",
+                         "untestable": untestable,
                          "families": reg,
                          "owner": CLUSTER_PROPOSER.get(
                              c, "a proposer supplying this family's external input; none named"),
@@ -194,8 +250,9 @@ def plan() -> dict[str, Any]:
             continue
         # REACHABLE, AND NOBODY IS MINTING. The one case this file actually fixes.
         minted = 0
-        for fam in fams:
-            for sym in symbols:
+        for fam in [f for f in fams if f in testable]:
+            for sym in _symbols_for(fam, universe, turn):
+                symbols_used.add(sym)
                 if minted >= CELLS_PER_CLUSTER:
                     break
                 cells.append({
@@ -227,7 +284,9 @@ def plan() -> dict[str, Any]:
         "census": dict(census),
         "cells_per_cluster": CELLS_PER_CLUSTER,
         "n_cells_minted": len(cells),
-        "symbols": symbols,
+        "symbols": sorted(symbols_used),
+        "symbol_rotation": ("a window of CELLS_PER_CLUSTER over every hypothesis-lane "
+                            "instrument, least-judged first, one width further per hour"),
         "clusters": rows,
         "cells": cells,
     }
@@ -254,7 +313,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"empty-cluster forcer: {doc['n_empty']} empty cluster(s) -> {doc['census']}")
     for r in doc["clusters"]:
         mark = {"FORCED": "  FORCED ", "UNREACHABLE": "  NO FAM ",
-                "PROPOSER_OWNED": "  propsr ",
+                "PROPOSER_OWNED": "  propsr ", "BLOCKED_BY_SEALED_GAUNTLET": "  SEALED ",
                 "ALREADY_ATTACKED": "  attackd"}.get(str(r["verdict"]), "  ?      ")
         print(f"{mark} {r['cluster']!s:24} {r['cells_in_docket']:6} in docket  "
               f"{','.join(r['families'])[:34]}")

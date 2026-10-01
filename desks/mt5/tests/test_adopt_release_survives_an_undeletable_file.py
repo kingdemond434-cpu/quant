@@ -529,16 +529,17 @@ def test_partial_adoption_target_matches_do_not_become_permanent_false_conflicts
     fetched target is unknown local work. The comparison must cover every dirty path, including
     target deletions, and the ordinary refusal must remain after it."""
     code = _executable_lines(SCRIPT.read_text("utf-8"))
-    # BATCHED since f82c4727 (2026-09-29): one `git diff --name-only $target -- <100 paths>` per
-    # batch instead of one `git diff --quiet` per path, which took hours on the live index. Every
-    # dirty path is still classified: each batch covers a slice of the whole normalised list.
+    # NO `git diff` HERE AT ALL since 58ba1ce9 (2026-09-30): even a batched diff refreshed the
+    # live index for minutes, so each dirty path's working-tree blob (clean filter applied) is
+    # compared with the target's blob from `ls-tree`. tests/ops/test_adopt_release_batching.py
+    # pins the absence of the batch; this pins that every normalised dirty path is still judged.
     compare = code.index("$normalisedDirty = @($dirty")
     refuse = code.index("local code path(s) are dirty")
     assert compare < refuse
     block = code[compare:refuse]
-    assert "for ($start = 0; $start -lt $normalisedDirty.Count; $start += $batchSize)" in block
-    assert '@("diff", "--name-only", "--no-ext-diff", $target, "--") + $batch' in block
-    assert "foreach ($rel in $batch)" in block
+    assert "foreach ($rel in $normalisedDirty)" in block
+    assert '@("ls-tree", $target, "--", $rel)' in block
+    assert '@("hash-object", "--path=$rel", "--", $rel)' in block
     assert "$stillDirty.Add($rel)" in block
     assert "$dirty = @($stillDirty)" in block
     assert "already equal the fetched target" in block

@@ -1,0 +1,29 @@
+{
+ "@odata.context": "https://olinda.bcb.gov.br/olinda/servico/MPV_DadosAbertos/versao/v1/odata$metadata#_CountMeiosdePagamentosMensalDA",
+ "value": [
+  {
+   "AnoMes": 202507,
+   "valorPix": 2900000.5,
+   "quantidadePix": 6100.0,
+   "valorCartaoCredito": 210000.0,
+   "valorBoleto": 480000.0,
+   "valorTED": 9999999.0
+  },
+  {
+   "AnoMes": 202508,
+   "valorPix": 3050000.0,
+   "quantidadePix": 6300.0,
+   "valorCartaoCredito": 215000.0,
+   "valorBoleto": 470000.0,
+   "valorTED": 9999999.0
+  },
+  {
+   "AnoMes": 202608,
+   "valorPix": 3500000.0,
+   "quantidadePix": 7100.0,
+   "valorCartaoCredito": 230000.0,
+   "valorBoleto": 460000.0,
+   "valorTED": 9999999.0
+  }
+ ]
+}

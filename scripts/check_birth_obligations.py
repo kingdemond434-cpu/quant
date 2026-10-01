@@ -49,6 +49,10 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from libs.ops import host_identity  # noqa: E402
+
 UNMEASURED = "UNMEASURED"
 FLOORS = ROOT / "docs" / "research" / "birth_obligations.json"
 
@@ -403,22 +407,22 @@ def _certificate_birth(root: Path) -> tuple[set[str], set[str], str]:
                          f"{len(ok) - named} record why none could be reached)")
 
 
-#: A gateway pass this recent means the clocks on this machine are actually turning. The SAME
-#: instrument and the SAME window as `check_self_repair` and `check_productivity_census`: three
-#: fences asking "is this the host that runs the legs?" must not answer it three different ways.
-_TRADING_WINDOW_H = 3.0
+#: "Is this the host that runs the legs?" is answered by `libs/ops/host_identity`, the one helper
+#: every fence shares (PR #130 audit): the machine id recorded in config/trading_host.json, never
+#: a hostname prefix and never `gateway_state.json`'s mtime -- that file is TRACKED, so its age on
+#: a checkout says when git last wrote it, not which machine this is.
 #: How old an axis's source report may be before it stops describing today. One hour of margin on
 #: the hourly legs that write them.
 _SOURCE_STALE_H = 6.0
 
 
 def _is_trading_host(base: Path) -> bool:
-    """Measured from the gateway's own heartbeat, never from a hostname that would rot."""
-    try:
-        age = time.time() - (base / "desks" / "mt5" / "data" / "gateway_state.json").stat().st_mtime
-    except OSError:
-        return False
-    return age < _TRADING_WINDOW_H * 3600
+    """The trading box, by its machine id. A fence spends an UNMEASURED identity on the STRICT
+    side (`may_be_trading`): an unrecorded id with the trading hostname is still judged as the
+    box, so no axis there can go quiet because an id was never written down. `base` is kept for
+    the callers' signature; the answer is about this machine, not a checkout."""
+    del base
+    return host_identity.identify().may_be_trading
 
 
 def _source_age_h(base: Path, rel: str | None) -> float | None:
@@ -516,8 +520,8 @@ def measure(root: Path | None = None, *, floors: Path | None = None) -> dict[str
         # EXISTS and has stopped describing today is a staleness question.
         if (not trading and ax.source is not None and not why.startswith(UNMEASURED)
                 and age_h is not None and age_h > _SOURCE_STALE_H):
-            why = (f"{UNMEASURED}: this host runs no clocks (no gateway pass within "
-                   f"{_TRADING_WINDOW_H:g}h) and {ax.source} is {age_h:.1f}h old"
+            why = (f"{UNMEASURED}: this host is not the trading box (host identity: "
+                   f"{host_identity.identify().verdict}) and {ax.source} is {age_h:.1f}h old"
                    + f", past the {_SOURCE_STALE_H:g}h window -- so an incomplete row here is a "
                      f"fact about this machine, not an arrival. Judge this axis on the host that "
                      f"writes the report. Last read: {why}")

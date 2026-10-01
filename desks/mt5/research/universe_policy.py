@@ -210,6 +210,15 @@ CROSS_SECTIONAL_FAMILIES = frozenset({
 })
 
 
+#: THE NEWS LANE'S OWN FAMILIES (2026-09-30, same amendment: "cross sectional and news"). A share
+#: CFD's edge is sought in news, reports and earnings reaction; these families fire ONLY on a dated
+#: public view ABOUT the name (or its cross-market peer) that the desk first saw at a recorded
+#: instant, so they are the event lane's executor, not a statistical hunt over the price path. They
+#: are admitted for share CFDs exactly as the class books are; every other statistical family stays
+#: out. `event_reaction` is NOT here: its events are the macro calendar, not news about the name.
+NEWS_LANE_FAMILIES = frozenset({"analyst_revision_drift", "analyst_cross_market_lead"})
+
+
 def is_equity(symbol: str) -> bool:
     """True for a share CFD: the event lane's own asset class, from the broker's registry."""
     return lane(symbol) == EVENT and asset_class_of(symbol) in EVENT_DRIVEN_CLASSES
@@ -217,10 +226,12 @@ def is_equity(symbol: str) -> bool:
 
 def may_hypothesise(symbol: str, family: object = None) -> bool:
     """True for instruments whose edge is sought statistically -- and, for a share CFD, only when
-    `family` is one of the cross-sectional class books (principal 2026-09-30)."""
+    `family` is one of the cross-sectional class books or the news lane's own families (principal
+    2026-09-30)."""
     if lane(symbol) == HYPOTHESIS:
         return True
-    return (str(family or "") in CROSS_SECTIONAL_FAMILIES) and is_equity(symbol)
+    fam = str(family or "")
+    return (fam in CROSS_SECTIONAL_FAMILIES or fam in NEWS_LANE_FAMILIES) and is_equity(symbol)
 
 
 def split(symbols) -> dict[str, list[str]]:

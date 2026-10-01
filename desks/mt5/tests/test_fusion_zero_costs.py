@@ -5,8 +5,8 @@ from research.validate_fusion import fusion_costs
 
 
 def test_the_measured_commission_is_the_default() -> None:
-    """2.00 per lot per side in ACCOUNT currency, measured over all 433 deals account
-    495044 has done (reports/COST_TRUTH.json 2026-09-23). A caller that passes nothing
+    """2.00 per lot per side in ACCOUNT currency, measured over all 433 deals the
+    live Fusion account has done (reports/COST_TRUTH.json 2026-09-23). A caller that passes nothing
     must get what the account pays, not what the brochure says."""
     costs = Costs.from_symbol({
         "median_spread_pts": 16.0,

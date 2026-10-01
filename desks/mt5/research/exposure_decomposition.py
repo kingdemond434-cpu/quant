@@ -55,6 +55,8 @@ for _entry in (str(DESK), str(DESK / "research"), str(ROOT)):
     if _entry not in sys.path:
         sys.path.insert(0, _entry)
 
+from libs.tiers import data_os  # noqa: E402
+
 SOURCE = "exposure_decomposition"
 LOOKBACK_DAYS = 250           # the tape each factor is built from
 WINDOW = 120                  # the rolling OLS window, in common daily observations
@@ -215,8 +217,17 @@ def _pairs_of(points: Any) -> list[tuple[Any, Any]]:
     return out
 
 
-def _fred_points(names: Sequence[str]) -> tuple[pd.Series | None, str | None]:
-    """A daily FRED state series, first-differenced so a return regression can read it."""
+def _fred_points(names: Sequence[str], as_of: datetime | None = None
+                 ) -> tuple[pd.Series | None, str | None]:
+    """A daily FRED state series, first-differenced so a return regression can read it.
+
+    KNOWN-BY-DATE (2026-09-30). The regression pairs a day's return with the SAME day's factor
+    move on purpose -- an exposure is contemporaneous, so the valid-date join is the right one
+    here, unlike a signal's. What must still hold is that no print enters the fit before it was
+    published: `data_os.known_as_of` keeps only the prints whose knowledge time (valid + the
+    declared `fred_macro` lag, or the series' own cadence entry) is at or before `as_of`, so a
+    replay at a past `as_of` sees the panel the desk could have built then."""
+    as_of = as_of or datetime.now(UTC)
     for path in (_at("data", "fred_macro.json"), _at("data", "axes", "fred.json")):
         series = _json(path).get("series")
         for name in names if isinstance(series, dict) else ():
@@ -228,6 +239,7 @@ def _fred_points(names: Sequence[str]) -> tuple[pd.Series | None, str | None]:
                                                   errors="coerce"))
             vals = pd.to_numeric(pd.Series([q[1] for q in pairs]), errors="coerce")
             ser = pd.Series(vals.to_numpy(), index=idx).dropna().sort_index()
+            ser = data_os.known_as_of(ser, "fred_macro", as_of, series_id=str(name))
             diff = ser.resample("1D").last().dropna().diff().dropna()
             if len(diff) >= MIN_OBS:
                 return diff, f"{path.name}:{name}"

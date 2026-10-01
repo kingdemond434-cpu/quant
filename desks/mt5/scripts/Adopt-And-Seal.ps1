@@ -49,7 +49,11 @@
 #>
 param(
     [string] $RepoRoot,
-    [string] $Branch = "claude/llm-auto-upgrade-verify-gcjac3"
+    [string] $Branch = "claude/llm-auto-upgrade-verify-gcjac3",
+    # Adopt the branch tip even when no green release covers it -- the escape hatch for the day
+    # CI is down and a fix must land. The file desks\mt5\data\ADOPT_UNRELEASED and the variable
+    # QUANT_ADOPT_UNRELEASED=1 do the same for the scheduled task. Each is logged by name.
+    [switch] $AllowUnreleased
 )
 
 # NATIVE STDERR IS NOT AN ERROR. git reports a successful fetch on stderr; under `Stop` that
@@ -146,6 +150,7 @@ function Write-Heartbeat([hashtable] $fields) {
             pid         = $PID
             host        = $env:COMPUTERNAME
         }
+        if ($script:ReleaseGate) { $base["release_gate"] = $script:ReleaseGate }
         foreach ($k in $fields.Keys) { $base[$k] = $fields[$k] }
         ($base | ConvertTo-Json -Depth 4) | Set-Content -Path $script:Heartbeat -Encoding utf8 -ErrorAction Stop
     } catch { }
@@ -242,6 +247,55 @@ if (-not $gotLock) {
 }
 Write-GitWriterWitness -Script "Adopt-And-Seal.ps1" -Name $mutexHandle.Name
 
+# ------------------------------------------------ 0b. THE RELEASE GATE: ONLY GREEN CODE LANDS
+# 2026-09-30. Until today this box adopted the branch TIP, so a commit CI had not finished
+# judging -- or had judged red (7379cbf7 edited the sealed gauntlet and the law gate went red
+# while the tip sat there for the next hourly adoption) -- became live code within the hour.
+# `release_promotion.py gate` fetches the tip and the `production` pointer that ci.yml's promote
+# job fast-forwards after BOTH gates are green, and decides:
+#
+#   ADOPT_TIP      the tip is a green release plus seal/state commits (the usual case: the box's
+#                  own quarter-hourly pushes sit on top of the release) -> adopt the tip
+#   ADOPT_RELEASE  the tip carries code no green run has released -> adopt the release instead
+#   HOLD           ... and this box already runs that release -> nothing to adopt; wait for CI
+#   LEGACY_TIP     no production pointer and no release/* tag exist yet -> today's behaviour
+#   OVERRIDE_TIP   -AllowUnreleased / ADOPT_UNRELEASED / QUANT_ADOPT_UNRELEASED -> the tip
+#
+# NEVER STUCK: a gate that cannot decide (exit 3: fetch failed, git missing) is logged and the
+# adoption falls back to exactly what it did before -- Adopt-Release fetching the branch tip.
+$script:ReleaseGate = $null
+$gateTarget = $null
+$gateScript = Join-Path $RepoRoot "scripts\release_promotion.py"
+if (Test-Path $gateScript) {
+    $gateArgs = @($gateScript, "gate", "--branch", $Branch, "--root", $RepoRoot)
+    if ($AllowUnreleased) { $gateArgs += "--allow-unreleased" }
+    $gateOut = @(& $py @pyArgs @gateArgs 2>&1 | ForEach-Object { "$_" })
+    $gateExit = $LASTEXITCODE
+    $gate = $null
+    $gateJson = @($gateOut | Where-Object { $_ -match '^\s*\{' }) | Select-Object -Last 1
+    if ($gateJson) { try { $gate = $gateJson | ConvertFrom-Json } catch { $gate = $null } }
+    if ($gateExit -eq 0 -and $gate -and $gate.decision) {
+        $script:ReleaseGate = @{ decision = [string]$gate.decision; target = [string]$gate.target
+                                 reason = [string]$gate.reason; tip = [string]$gate.tip
+                                 release_ref = [string]$gate.release_ref }
+        Log ("release gate: {0} -- {1}" -f $gate.decision, $gate.reason)
+        if ($gate.decision -eq "HOLD") {
+            $n = @($gate.unreleased_code).Count
+            Log ("holding: {0} unreleased code path(s) on the tip, first: {1}" -f $n,
+                 ((@($gate.unreleased_code) | Select-Object -First 6) -join ', '))
+            Done 0 "held-awaiting-release"
+        }
+        if ($gate.target) { $gateTarget = [string]$gate.target }
+    } else {
+        $why = if ($gate -and $gate.reason) { [string]$gate.reason } else { ($gateOut | Select-Object -Last 3) -join ' | ' }
+        $script:ReleaseGate = @{ decision = "ERROR"; reason = $why }
+        Log ("release gate could not decide (exit {0}): {1} -- falling back to adopting the branch tip as before the gate" -f $gateExit, $why)
+    }
+} else {
+    $script:ReleaseGate = @{ decision = "ABSENT"; reason = "scripts\release_promotion.py not in this tree" }
+    Log "release gate absent in this tree (scripts\release_promotion.py); falling back to adopting the branch tip"
+}
+
 # ---------------------------------------------------------------- 1. adopt the branch's tree
 # NEXT TO THIS SCRIPT FIRST, then the repository's copy. The two ship together and the mutex
 # helper is already dotted from $PSScriptRoot, so resolving one of the three from $RepoRoot and
@@ -268,15 +322,28 @@ try {
     Set-Content -Path $adoptConsole -Encoding utf8 -ErrorAction Stop `
         -Value ("{0} Adopt-Release start branch={1}" -f (Get-Date).ToUniversalTime().ToString('o'), $Branch)
 } catch { $adoptConsole = $null }
+# The gate's choice is passed as -Target with -NoFetch (the gate already fetched it); with no
+# choice (gate absent or undecided) Adopt-Release fetches and adopts the tip exactly as before.
+$adoptArgs = @("-RepoRoot", $RepoRoot, "-Branch", $Branch)
+if ($gateTarget) { $adoptArgs += @("-Target", $gateTarget, "-NoFetch") }
 if ($adoptConsole) {
     $adoptOut = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $adoptScript `
-        -RepoRoot $RepoRoot -Branch $Branch 2>&1 |
+        @adoptArgs 2>&1 |
         ForEach-Object { "$_" } | Tee-Object -FilePath $adoptConsole -Append)
 } else {
     $adoptOut = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $adoptScript `
-        -RepoRoot $RepoRoot -Branch $Branch 2>&1 | ForEach-Object { "$_" })
+        @adoptArgs 2>&1 | ForEach-Object { "$_" })
 }
 $adoptExit = $LASTEXITCODE
+# EXIT 7 IS A REFUSAL, NOT A PARTIAL ADOPTION: Adopt-Release found the fetched target's judge
+# unsealed and wrote nothing. The running release and its gateway stay as they are.
+if ($adoptExit -eq 7) {
+    foreach ($line in @($adoptOut | Where-Object { $_ -match 'target seal|REFUSING target|changed since signing|not in the signed|unreadable' } | Select-Object -First 16)) {
+        Log ("    " + $line.Trim())
+    }
+    Log "target judge is not sealed; nothing adopted, current release kept"
+    Done 7 "target-unsealed"
+}
 if ($adoptExit -ne 0) {
     Log "Adopt-Release exited $adoptExit -- partial adoption; NOT sealing a tree that only half-matches the branch"
     # THE PATHS, IN THIS LOG, NOW. `desks/mt5/reports/ADOPTION_STATE.json` carries the full list

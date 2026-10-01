@@ -717,6 +717,31 @@ def parse_source_layer(text: str) -> tuple[str, str]:
     return layer, first
 
 
+#: Access labels whose terms restrict what the desk may REDISTRIBUTE (LAWS §5e). Mined in full.
+TERMS_ACCESS_LABELS: frozenset[str] = frozenset({"PUBLIC_WITH_TERMS", "LICENSED"})
+
+
+def registered_terms_ground(sources: Sequence[Mapping[str, Any]]) -> list[str]:
+    """Ids of the paywalled / terms-restricted ground a pack REGISTERED rather than omitted.
+
+    Under LAWS §5e (2026-09-23) a page whose terms forbid machine extraction is labelled
+    PUBLIC_WITH_TERMS or LICENSED and MINED IN FULL; `machine_use_allowed=false` read as
+    "registered, never scraped" is one of the deleted brakes. So "the pack names the ground it
+    cannot redistribute" is answered by the access label. A row still carrying
+    `machine_use_allowed=false` (and not an `absent_<layer>` placeholder) is counted too, so a
+    pack written under the older convention is not reported as having omitted its ground.
+    """
+    out: list[str] = []
+    for s in sources:
+        sid = str(s.get("id") or "")
+        if not sid or sid.startswith("absent_"):
+            continue
+        if (str(s.get("access_label") or "") in TERMS_ACCESS_LABELS
+                or s.get("machine_use_allowed") is False):
+            out.append(sid)
+    return out
+
+
 def source_rows(pack: CountryPack) -> list[SourceRow]:
     """Every source this pack declares, structured, whichever way it declared it."""
     out: list[SourceRow] = [s for s in pack.sources if isinstance(s, SourceRow)]
