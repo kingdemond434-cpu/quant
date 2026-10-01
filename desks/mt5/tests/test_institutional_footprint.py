@@ -50,12 +50,17 @@ def test_atlas_rows_are_canonical_and_lawful() -> None:
         # id with the atlas name kept as `atlas_id` (one canonical id per dataset).
         parts = str(r.get("atlas_id") or r["id"]).split(".")
         assert parts[0] == "institutional" and len(parts) == 4, r["id"]
-        assert parts[1] == r["jurisdiction"] and r["jurisdiction"] in onto.JURISDICTION_CODES
+        assert parts[1] == r["jurisdiction"]
+        assert r["jurisdiction"] in onto.coverage_jurisdictions(), r["id"]
         assert r["id"].startswith("institutional.") or r.get("atlas_id"), r["id"]
         # A bare host would shift the registry's attribution for every row on that host.
         assert "/" in str(r["url"]).split("://", 1)[-1].rstrip("/"), r["id"]
         assert r["source_class"] in onto.CLASS_IDS, r["id"]
-        assert r["fetcher"] == "owned" and r["owner"] == "institutional_footprint"
+        # owned: the engine fetches it. page_snapshot: a swept row with no recipe yet, which the
+        # unified registry snapshots every cadence while the engine probes its URL.
+        assert r["owner"] == "institutional_footprint"
+        assert r["fetcher"] == "owned" or (r["fetcher"] == "page_snapshot"
+                                           and r["config"]["pages"] == [r["url"]]), r["id"]
         assert set(r["targets"]) <= universe, r["id"]
         for f in ("source_culture", "participant_structure", "failure_mode_hypothesis",
                   "crowding_prior"):

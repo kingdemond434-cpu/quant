@@ -183,6 +183,14 @@ def coverage_jurisdictions() -> tuple[str, ...]:
                    and p.parent.name not in JURISDICTION_CODES)
     return JURISDICTION_CODES + tuple(extra)
 
+#: The region commands: packs that span several countries. A region owes the source classes a
+#: regional body publishes, never a national institution set, so it has no role gaps. Every other
+#: pack on disk is a country and owes the ten roles like any listed jurisdiction.
+REGION_PACKS: frozenset[str] = frozenset({
+    "atlantic_energy", "black_sea", "caucasus_central_asia", "cee_balkans", "central_america",
+    "copperbelt", "east_africa", "gulf", "maghreb_energy", "maritime_asia", "mekong",
+    "opec_north", "pacific", "red_sea", "sahel_coast", "southern_africa", "west_africa"})
+
 #: Classes that are, by construction, not a per-jurisdiction publication: the global layer
 #: carries them and a country cell for them reads NOT_RELEVANT unless a row says otherwise.
 GLOBAL_ONLY_CLASSES: frozenset[str] = frozenset({

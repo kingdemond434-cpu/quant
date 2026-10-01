@@ -1325,7 +1325,7 @@ def coverage(rows: list[dict[str, Any]], *, fetch_state: Mapping[str, Any] | Non
                                      "ingest it, else name a public proxy, else rule "
                                      "NOT_PUBLISHED"})
     for j, rr in roles.items():
-        if j == "global" or j not in onto.JURISDICTION_CODES:
+        if j == "global" or j in onto.REGION_PACKS:
             continue          # region packs owe classes, not a national institution set
         for role, ids in rr.items():
             if not ids and not role_rul.get(f"{j}|{role}"):
