@@ -171,7 +171,7 @@ def discover(source: Source, getter: Callable[[str], bytes] = fetch) -> list[dic
             "url": source.url,
             "title": source.name,
             "published_at": None,
-            "description": text[:50000],
+            "description": text[: TILE_CHARS * MAX_TILES],
             "content_hash": digest,
         }
     ]
