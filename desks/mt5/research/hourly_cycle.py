@@ -5501,7 +5501,9 @@ def main() -> None:
     #   live_calibration_posterior  kappa = realised / claimed Sharpe per producer, Bayesian;
     #                               bandit.calibration_credit reads it (research budget, live)
     #   constrained_book            every risk clause as a hard constraint in the E[log W]
-    #                               solve, as a SHADOW (constrained_elog.FEEDS_LIVE = False)
+    #                               solve; decides hourly (CONSTRAINED_BOOK_SWITCH.json):
+    #                               fed to pf_allocator only while its robust E[log W] beats
+    #                               the live book's, re-proven by the allocator at adoption
     #   experimental_budget         the principal's override sleeves in their own ledger/budget
     #   ops_redundancy              journal replay, off-box restore drill, terminal health,
     #                               independent price cross-check, duplicate-position count

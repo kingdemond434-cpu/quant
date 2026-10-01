@@ -877,6 +877,9 @@ def _state_vector_id() -> str:
 
 DECISIONS = BASE / "data" / "decision_ledger.jsonl"
 _PROCESS_INSTANCE_ID = f"{os.getpid()}:{datetime.now(UTC).isoformat(timespec='seconds')}"
+#: In-process cache of sleeve -> strategy-state identity, keyed by sleeves.json's mtime
+#: (47b75ca86, 2026-09-27). The -1.0 is a sentinel derived from the stat() contract -- no real
+#: mtime is negative -- so the first pass always reads the file. It sizes nothing.
 _SLEEVE_ID_CACHE: tuple[float, dict[str, str]] = (-1.0, {})
 
 
@@ -1596,6 +1599,10 @@ def journal_refusal(sleeve: str, symbol: str, side: int, stage: str, why: str,
 #: A stop closer than this many spreads to the entry is inside the quote's own noise. Three:
 #: the entry pays one spread, and a stop two more away is still hit by a normal widening at a
 #: session open without any move in the mid.
+#: Measured 2026-09-16 on the live account (ebd9074cb, `floor_stop_to_spread`): an EURGBP scalp
+#: stop landed 1.8 pips from entry and three stop-outs cost -11.87 EUR, each a slippage loss past
+#: a stop the quote could reach without the mid moving. The floor scales stop AND target by the
+#: same factor, so the certified R:R and risk fraction are unchanged; only the lot moves.
 MIN_STOP_SPREAD_MULT = 3.0
 MIN_STOP_SPREAD_MULT = float(os.environ.get("MIN_STOP_SPREAD_MULT", MIN_STOP_SPREAD_MULT))
 

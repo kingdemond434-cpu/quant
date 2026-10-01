@@ -131,6 +131,44 @@ WINDOWS = {
 #: The list stays empty: enrolment is a CERTIFICATE, never a literal a human typed.
 SLEEVES: list[tuple[str, str]] = []
 
+#: Certificates the research-integrity door held on the LAST `certified_sleeves()` pass, each with
+#: its named reason (`research/admission_integrity.py`). Reset every pass, so it always describes
+#: the run that just happened. Only certificates WITHOUT a clock are ever here.
+HELD_AT_INTEGRITY: list[dict] = []
+
+
+def _integrity_door() -> tuple[object | None, set[str], str]:
+    """(gate, keys that already own a clock, why).
+
+    FAIL CLOSED: an unreadable door holds NEW certificates by name rather than waving them
+    through; running clocks are untouched either way."""
+    try:
+        from admission_integrity import IntegrityGate, lane_clock_keys
+    except ImportError:
+        try:
+            from research.admission_integrity import (  # type: ignore[no-redef,unused-ignore]
+                IntegrityGate,
+                lane_clock_keys,
+            )
+        except Exception as exc:
+            return None, set(), f"admission_integrity unimportable: {type(exc).__name__}: {exc}"
+    try:
+        return IntegrityGate.load(), lane_clock_keys(SHADOW_DIR), ""
+    except Exception as exc:
+        return None, set(), f"integrity door unreadable: {type(exc).__name__}: {exc}"
+
+
+def _held(run: dict, key: str, gate: object | None, clocked: set[str], why: str) -> str | None:
+    """The integrity door, asked only for a certificate whose clock does not exist yet."""
+    if key in clocked:
+        return None
+    if gate is None:
+        return f"HELD_INTEGRITY_UNREADABLE: {why}"
+    return gate.hold(str(run.get("certificate") or ""),  # type: ignore[attr-defined]
+                     symbol=run.get("symbol"), family=run.get("family"),
+                     selector=run.get("selector"), side=run.get("side"),
+                     params=run.get("params"))
+
 
 def certified_sleeves() -> list[tuple[str, str, dict]]:
     """Every runnable certificate as (symbol, window, EXACT certified params).
@@ -145,6 +183,12 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     reported and skipped -- a visible wiring gap for the gap-wirer, never a silent guess.
     """
     rows: list[tuple[str, str, dict, str]] = []
+    HELD_AT_INTEGRITY.clear()
+    # THE RESEARCH-INTEGRITY DOOR (2026-09-30). A certificate with NO clock yet starts one only
+    # when the placebo audit shows the certifier caught every planted trap and an independent
+    # rebuild under the same spec is REPLICATED (`research/admission_integrity.py`). A clock that
+    # already runs is never held. Not a quota: no count, no slot, no ranking.
+    gate, clocked, gate_why = _integrity_door()
     try:
         from shadow_admission import authorized_runs
         for run in sorted(authorized_runs(BASE), key=lambda r: (r["symbol"], r["selector"])):
@@ -161,6 +205,13 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                 side = _runnable_side(run, fam)
                 if side is None:
                     continue                # refused and logged by _runnable_side
+                key = sleeve_key(run["symbol"], run["selector"], params, fam, side)
+                reason = _held(run, key, gate, clocked, gate_why)
+                if reason:
+                    HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"),
+                                              "key": key, "reason": reason})
+                    slog(f"HELD {key}: {reason}")
+                    continue
                 rows.append((run["symbol"], run["selector"], params, fam, side,
                              str(run.get("gate_admission") or ""),
                              tuple(run.get("power_deficiencies") or ()),
@@ -189,6 +240,13 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             side = _runnable_side(run, fam)
             if side is None:
                 continue                    # refused and logged by _runnable_side
+            key = sleeve_key(run["symbol"], run["selector"], dict(run["params"] or {}), fam, side)
+            reason = _held(run, key, gate, clocked, gate_why)
+            if reason:
+                HELD_AT_INTEGRITY.append({"certificate": run.get("certificate"), "key": key,
+                                          "reason": reason})
+                slog(f"HELD {key}: {reason}")
+                continue
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side,
                          str(run.get("gate_admission") or ""),
                          tuple(run.get("power_deficiencies") or ()),
