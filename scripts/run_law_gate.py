@@ -152,6 +152,11 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # would have cut. Portable: it reads only tracked files.
     ("check_tier5_audit.py", ()),
     ("check_tier_s_program.py", ()),          # Tier S admission rule: no layer without a contract
+    # THE EXPERIMENT CONTRACT (2026-09-30): the admission rule's metric half, extended to the
+    # whole experiment -- hypothesis, metric, falsifier, budget, owner -- for every registered
+    # hourly leg. A NEW leg without one fails here; the legs that predate the fence are listed
+    # by name and that list may only shrink. Portable: it reads tracked files only.
+    ("check_experiment_contracts.py", ()),
     # THE PLUMBING-INVARIANT HIERARCHY (Tier-1 B26). Not "are the money-path laws tested" --
     # they always were -- but WHAT EACH TEST SPEAKS FOR: one hand-written state (EXAMPLE), a
     # generator's draws (PROPERTY), or the whole finite domain (PROOF). The fence is that the
