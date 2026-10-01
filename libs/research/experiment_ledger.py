@@ -163,6 +163,33 @@ def _prereg_counts() -> int:
         return 0
 
 
+def _mining_trial_families() -> dict[str, Any]:
+    """TRIAL FAMILIES FROM THE GLOBAL MINING PIPELINE (`mining_supervisor`, committed digest).
+
+    A mined rule, its symbol transfers and its regime children share one `trial_family_id`.
+    Their docket cells are already counted above -- judged in the hypothesis graph, screened in
+    the donation's `tests_run` -- so this block adds NOTHING to `lifetime_trials` or `by_family`.
+    It is the lineage view of the same trials: how many registered-family trials each mined
+    mechanism spent, so a family whose charge came from one source's variants is visible as such.
+    Absent digest is UNMEASURED."""
+    try:
+        doc = json.loads((DESK / "data" / "mining_digest.json").read_text("utf-8"))
+        fams = doc.get("trial_families")
+    except (OSError, ValueError):
+        return {"status": "UNMEASURED: desks/mt5/data/mining_digest.json unreadable"}
+    if not isinstance(fams, dict) or not fams:
+        return {"status": "UNMEASURED: the mining digest carries no trial families yet"}
+    rows = {k: v for k, v in fams.items() if isinstance(v, dict)}
+    top = sorted(rows.items(), key=lambda kv: -int(kv[1].get("docket_judged") or 0))[:200]
+    return {"status": "MEASURED", "generated_utc": doc.get("generated_at"),
+            "trial_families": len(rows),
+            "cells": sum(int(v.get("cells") or 0) for v in rows.values()),
+            "docket_judged": sum(int(v.get("docket_judged") or 0) for v in rows.values()),
+            "docket_passed": sum(int(v.get("docket_passed") or 0) for v in rows.values()),
+            "top_by_docket_judged": dict(top),
+            "rule": "lineage view of trials already counted; never added to the charge"}
+
+
 def lifetime(write: bool = True) -> dict[str, Any]:
     g_total, g_fam = _graph_counts()
     p_total, p_fam = _proposer_counts()
@@ -183,7 +210,8 @@ def lifetime(write: bool = True) -> dict[str, Any]:
            "rule": ("lifetime = judged (hypothesis graph) + screened (every proposer's "
                     "tests_run, plus every mass-screen cell in MASS_SCREEN_TRIALS.jsonl) + "
                     "each claim family's stated source selection, once; "
-                    "consumers may only deflate MORE with it, never less")}
+                    "consumers may only deflate MORE with it, never less"),
+           "mining_trial_families": _mining_trial_families()}
     if write:
         OUT.parent.mkdir(parents=True, exist_ok=True)
         OUT.write_text(json.dumps(doc, indent=1), "utf-8")

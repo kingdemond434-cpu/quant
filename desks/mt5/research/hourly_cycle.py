@@ -1016,7 +1016,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "judge_coverage", "orthogonality_yield", "effective_trials",
                      "occupancy_map", "dsr_inputs"), "data"),
     # intel: the global intelligence agency -- crawlers, forests, frontier scouts
-    **dict.fromkeys(("world_crawler", "deep_forest", "moat_miner", "market_intel", "mine",
+    **dict.fromkeys(("world_crawler", "deep_forest", "global_mining", "moat_miner",
+                     "market_intel", "mine",
                      "moat_candidate_compiler", "algorithm_db",
                      "exogenous_search", "standing_questions", "frontier", "frontier_report",
                      "frontier_implementer", "hunt12", "scout_roster", "analyst_pipeline",
@@ -1993,6 +1994,11 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # sits above its budget, the cap is exported to the child (QUANT_LEG_BUDGET_S) so it
     # self-stops inside whatever the pricer grants, and it checkpoints per ground regardless.
     "deep_forest_miner": 1_020,
+    # MT5_GLOBAL_MINING_V1 (libs/mining): acquires every due source in its roster, then
+    # extracts, dedups, compiles, seals and donates, and joins the gauntlet's verdicts. It stops
+    # itself at --budget-s 900 (fetching gets 60% of it) and writes its cursors per record, so a
+    # kill loses nothing; the cap sits above its budget like deep_forest's.
+    "mining_supervisor": 1_020,
     # A FOREST IS GIVEN THE BUDGET IT IS ASKED FOR. Each leg passes `--budget-s 3000` down to
     # `forest_runner`, which divides it across eleven parallel agents; a 720 s cycle cap would
     # SIGKILL every forest at the same prefix every hour -- the truncated-job failure that cost
@@ -3014,6 +3020,17 @@ def deep_forest() -> dict:
     quiet pass still advances the queue (mandate section 70, never idle).
     """
     return _producer("deep_forest_miner", "research/deep_forest_miner.py", "--budget-s", "900")
+
+
+def global_mining() -> dict:
+    """MT5_GLOBAL_MINING_V1: the roster-driven global mining pipeline, one bounded pass.
+
+    fetch -> PIT store -> extract -> dedup -> compile -> preregister -> gauntlet intake, plus the
+    join of the gauntlet's verdicts back onto every mined cell. Writes
+    reports/mining/MINING_METRICS.json (rejections by reason, sources ACTIVE vs COLD, queue ages,
+    binding constraint) and a dated metrics file per day. This cycle is its only scheduler.
+    """
+    return _producer("mining_supervisor", "research/mining_supervisor.py", "--budget-s", "900")
 
 
 def session_structure() -> dict:
@@ -5170,6 +5187,7 @@ def main() -> None:
         "placebo_audit", "research/placebo_audit.py"))
     fr = _costed("frontier", frontier)
     df = _costed("deep_forest", deep_forest)
+    gm = _costed("global_mining", global_mining)
     ssm_leg = _costed("session_structure", session_structure)
     mm = _costed("maintain_miners", maintain_miners)
     # MEASURE THE CONVERSION WHERE THE DISCOVERIES ARE, AND ON THIS HOUR'S CODE. Nothing on this
@@ -5702,6 +5720,7 @@ def main() -> None:
                     "forward_reconcile": fwr,
                     "model_skill": ms,
                     "frontier": fr, "refresh_bars": rb, "deep_forest": df,
+                    "global_mining": gm,
                     "session_structure": ssm_leg,
                     "maintain_miners": mm, "publish_survivors": ps,
                     "forecast_contract": fcx, "model_league": mz, "adversaries": ad,
