@@ -1,4 +1,4 @@
-"""Verbatim grounding for model-extracted claims: a claim the source cannot quote back is not evidence.
+"""Verbatim grounding for model-extracted claims: what the source cannot quote back is not evidence.
 
 Source of the rule: github.com/LLMQuant/quant-mind (MIT, Copyright (c) 2025 LLMQuant),
 `quantmind/knowledge/paper.py` (`PaperGlobalSummary.from_drafts`, `PaperCitationValidationError`)
@@ -44,8 +44,8 @@ EVIDENCE_FIELDS: tuple[str, ...] = ("evidence_class", "performance_claim")
 #: Characters for a tile of a long document (quant-mind's fixed-group map step).
 TILE_CHARS = 12_000
 
-_FOLD = str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"',
-                       "–": "-", "—": "-", " ": " "})
+_FOLD = str.maketrans({chr(0x2018): "'", chr(0x2019): "'", chr(0x201C): '"', chr(0x201D): '"',
+                       chr(0x2013): "-", chr(0x2014): "-", chr(0x00A0): " "})
 
 
 def normalise(text: str) -> str:
@@ -73,7 +73,9 @@ def ground(extracted: Mapping[str, Any], content: str,
     quotes = quotes if isinstance(quotes, Mapping) else {}
     norm = normalise(content)
     claimed = [f for f in fields if extracted.get(f) not in (None, "", [], {})]
-    grounded, ungrounded, checked, verified = [], [], 0, 0
+    grounded: list[str] = []
+    ungrounded: list[str] = []
+    checked = verified = 0
     for f in claimed:
         ok = False
         for q in _quotes(quotes.get(f)):

@@ -1,6 +1,7 @@
 """quant-mind's citation rule on the hunter: an unquoted claim is the model's, not the source's."""
 from __future__ import annotations
 
+import itertools
 import json
 
 from libs.research import grounding as G
@@ -11,7 +12,7 @@ PAGE = ("Our gold strategy buys XAUUSD at the Tokyo open when the overnight rang
 
 
 def test_quotes_verify_through_whitespace_case_and_typography():
-    assert G.verify(PAGE, "BUYS xauusd at the Tokyo open")
+    assert G.verify(PAGE, "BUYS xauusd at the Tokyo" + chr(0xA0) + "open")
     assert G.verify(PAGE, "returned 18% a year after costs")
     assert not G.verify(PAGE, "audited by a broker statement")
     assert not G.verify(PAGE, "gold")                              # too short to mean anything
@@ -36,7 +37,7 @@ def test_tiles_cover_every_character_once():
     text = ("word " * 9000).strip()
     spans = G.tiles(text, 1000)
     assert spans[0][0] == 0 and spans[-1][1] == len(text)
-    assert all(a[1] == b[0] for a, b in zip(spans, spans[1:], strict=False))
+    assert all(a[1] == b[0] for a, b in itertools.pairwise(spans))
 
 
 def test_the_hunter_asks_for_quotes_and_caps_an_unquoted_tier():
