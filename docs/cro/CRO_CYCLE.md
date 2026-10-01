@@ -178,6 +178,8 @@ Every pass, without exception, asks and answers two questions from LIVE box data
 
 Benchmark against Western tier-1 firms (Renaissance, D.E. Shaw, Two Sigma, Citadel/Jane Street class) AND Asian ones (the Chinese quant majors such as High-Flyer, Ubiquant, Minghong, Lingjun; Japanese and Korean systematic/prop shops). Public figures are estimates and are labelled as estimates.
 
+**Start from `desks/mt5/reports/TIER1_GAP.json`** (hourly leg `tier1_gap`, `desks/mt5/research/tier1_gap.py`): it re-measures most rows below from the box's own artifacts every hour and ranks them by orders of magnitude short of tier-1. Check its `sources` mtimes for staleness; fill in the rows it reads as UNMEASURED by hand.
+
 Measure at least, with day-over-day change:
 
 - instruments and datasets ingested; alt-platform yield (platforms yielding / platforms wired);

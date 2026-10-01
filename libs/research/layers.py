@@ -229,7 +229,7 @@ LEG_LAYER: dict[str, str] = {
     "novelty_gate": "prediction",
     "posterior_alpha": "sizing", "exposure_decomposition": "portfolio",
     "hazard_engine": "exit",
-    "breadth_ladder": "meta", "tier1_scorecard": "meta", "wiring_ceo": "meta",
+    "breadth_ladder": "meta", "tier1_scorecard": "meta", "tier1_gap": "meta", "wiring_ceo": "meta",
     # The queue census measures the machine's own backlog, not any strategy's: meta by
     # construction (principal 2026-09-23, "nothing should be queued").
     "queue_census": "meta",

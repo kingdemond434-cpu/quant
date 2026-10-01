@@ -912,7 +912,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "frontier_unknowns", "frontier_report", "frontier_ontology", "counterfactual_world",
     "strategy_paths", "reclaim_disk", "archive_tape", "queue_cycle",
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
-    "axis_registry", "tier1_scorecard", "novelty_gate", "forced_flow_calendar", "breadth_ladder",
+    "axis_registry", "tier1_scorecard", "tier1_gap", "novelty_gate", "forced_flow_calendar",
+    "breadth_ladder",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
@@ -3559,6 +3560,9 @@ def main() -> None:
                                                           "research/live_system_state.py"))
     t1s = _costed("tier1_scorecard", lambda: _producer("tier1_scorecard",
                                                         "research/tier1_scorecard.py"))
+    # THE TIER-1 GAP (2026-09-30): the desk's breadth, mining, judging and conversion beside
+    # tier-1 references, ranked by orders of magnitude short. The CRO noon pass reads it first.
+    t1g = _costed("tier1_gap", lambda: _producer("tier1_gap", "research/tier1_gap.py", "--once"))
     # NOTHING IS PARKED (principal 2026-09-23): every queue in the desk, its depth, its oldest
     # row's age and its measured drain rate, in one artifact. scripts/check_no_queues.py fences it.
     qcn = _costed("queue_census", lambda: _producer("queue_census", "research/queue_census.py",
@@ -5255,7 +5259,8 @@ def main() -> None:
                     "axis_registry": axr, "breadth_ladder": bld, "forced_flow_calendar": ffc,
                     "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
-                    "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
+                    "live_system_state": lss, "tier1_scorecard": t1s, "tier1_gap": t1g,
+                    "wiring_ceo": wce,
                     "queue_census": qcn,
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
                     "evaluator_lab": evl, "synthetic_regimes": syr, "value_of_data": vod,
