@@ -74,7 +74,9 @@ MAX_ARTIFACT_BYTES = 48 * 1024 * 1024
 #: `status`: WIDENED (this branch lifted an artificial cap), WIRED (was on no clock), LEFT_FULL
 #: (already at the breadth its data allows), LEFT_UNTESTABLE (its family cannot be built by the
 #: sealed gauntlet, so widening would mint more zero-signal cells), LEFT_BANNED (it mints the
-#: permanently banned `discovered`), LEFT_BY_DESIGN (the bound is the mechanism, not a slice).
+#: permanently banned `discovered`), LEFT_BY_DESIGN (the bound is the mechanism, not a slice),
+#: UNBLOCKED (was LEFT_UNTESTABLE; the re-signed gauntlet now builds its family -- its cap is
+#: the next thing to lift, and the row says so until that lands).
 #: `module` is a STEM on purpose: a `research/<x>.py` literal here reads to the component
 #: registry's reach walk as this file INVOKING that organ, and would hand it a false clock.
 INVENTORY: dict[str, dict[str, Any]] = {
@@ -120,31 +122,31 @@ INVENTORY: dict[str, dict[str, Any]] = {
     "cross_asset_graph": {
         "module": "cross_asset_graph", "seats": ["cross_asset_graph"],
         "cap": "book_symbols()[:12] (alphabetical prefix of the live book)",
-        "status": "LEFT_UNTESTABLE",
-        "change": ("NOT widened: it mints lead_lag, and external_gauntlet.build_cell has no "
-                   "lead_lag branch, so `driver` is never loaded and every cell builds with 0 "
-                   "signals (3,670 with the driver handed in). Widening would only add zero-"
-                   "signal cells. Remedy: a sealed-gauntlet lead_lag branch (principal-gated)"),
+        "status": "UNBLOCKED",
+        "change": ("Sealed pass 2 (76895fedc, 2026-10-01) added the build_cell lead_lag branch, "
+                   "so its cells now load their driver (0 -> 3,670 signals on GBPUSD<-EURUSD). "
+                   "The book_symbols()[:12] cap is NOT yet lifted: that is the next build."),
     },
     "asia_transmission": {
         "module": "asia_transmission", "seats": ["asia_transmission"],
         "cap": "on no hourly clock; lead_lag only",
-        "status": "LEFT_UNTESTABLE",
-        "change": ("NOT wired: lead_lag is unbuildable by the sealed gauntlet "
-                   "(see cross_asset_graph)"),
+        "status": "UNBLOCKED",
+        "change": ("lead_lag is buildable since 76895fedc (see cross_asset_graph); wiring it "
+                   "onto an hourly clock is the next build"),
     },
     "event_surprise": {
         "module": "event_surprise", "seats": ["event_surprise"],
         "cap": "MAX_DONATIONS=10, MAX_SOURCES_PER_PASS=16; event_reaction only",
-        "status": "LEFT_UNTESTABLE",
-        "change": ("NOT widened: the sealed gauntlet hands event_reaction a bare DatetimeIndex "
-                   "and no symbol, and the family reads symbol-tagged mappings, so every cell "
-                   "builds with 0 signals. Remedy: the event_reaction branch (principal-gated)"),
+        "status": "UNBLOCKED",
+        "change": ("Sealed pass 2 (76895fedc) made the event_reaction branch pass "
+                   "events_for_symbol(events, sym) with symbol=sym, so its cells carry signals. "
+                   "MAX_DONATIONS=10 is NOT yet lifted: that is the next build."),
     },
     "event_response_atlas": {
         "module": "event_response_atlas", "seats": ["event_response_atlas"],
-        "cap": "event_reaction only", "status": "LEFT_UNTESTABLE",
-        "change": "as event_surprise: the sealed event_reaction branch feeds the wrong shape",
+        "cap": "event_reaction only", "status": "UNBLOCKED",
+        "change": "as event_surprise: the re-signed event_reaction branch (76895fedc) feeds the "
+                  "right shape; widening is the next build",
     },
     "edge_search": {
         "module": "edge_search", "artifact": "edge_search_results.json",

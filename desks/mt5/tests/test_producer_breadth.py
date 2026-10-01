@@ -105,36 +105,21 @@ def test_qd_frontier_reaches_the_whole_class_not_its_first_three(
 def test_the_supplied_set_is_read_from_the_sealed_build_cell() -> None:
     supplied = gb.supplied_families()
     assert {"relative_value", "cross_asset_residual", "cot_positioning", "carry"} <= supplied
-    assert "lead_lag" not in supplied and "execution_state" not in supplied
+    # Sealed pass 2 (76895fedc) re-signed build_cell with these branches; read from its source.
+    assert {"lead_lag", "execution_state", "event_reaction"} <= supplied
 
 
-def test_the_sealed_gauntlet_builds_lead_lag_and_event_reaction_with_no_signals(
-        monkeypatch: pytest.MonkeyPatch) -> None:
-    """PINNED: the day the gauntlet is re-signed with these branches this test fails, and
-    `gauntlet_buildability` must be corrected rather than left stale."""
-    sys.path.insert(0, str(_DESK / "scripts"))
-    import external_gauntlet as eg
-    from mt5desk.family_event_reaction import family_event_reaction
-    from mt5desk.family_lead_lag import family_lead_lag
-
-    from research import orthogonal_sweep as osw
-    tgt, drv = _frame(1), _frame(2)
-    frames = {"GGGHHH": tgt, "DRV": drv}
-    monkeypatch.setattr(eg, "_bars_for", lambda sym, tf="H1": frames.get(sym))
-    ll = {"driver_symbol": "DRV", "lag": 1, "direction": "same", "entry_z": 1.5, "norm": 240,
-          "hold_bars": 4}
-    assert family_lead_lag(tgt, driver=drv, **ll), "the family trades when handed its driver"
-    cell = eg.build_cell("GGGHHH", "lead_lag", dict(ll), {})
-    assert cell is not None and not cell["sigs"]
-    events = [{"symbol": "GGGHHH", "at": str(ts)} for ts in tgt.index[300::50]]
-    assert family_event_reaction(tgt, events=events, symbol="GGGHHH", mode="drift")
-    monkeypatch.setattr(osw, "_event_index",
-                        lambda: pd.DatetimeIndex([pd.Timestamp(e["at"]) for e in events]))
-    cell = eg.build_cell("GGGHHH", "event_reaction", {"mode": "drift", "symbol": "GGGHHH"}, {})
-    assert cell is not None and not cell["sigs"]
-    assert gb.family_verdict("lead_lag")[0] == gb.INPUT_NOT_SUPPLIED
-    assert gb.family_verdict("event_reaction")[0] == gb.SEALED_INPUT_DEFECT
-    assert gb.family_verdict("execution_state")[0] == gb.INPUT_NOT_SUPPLIED
+def test_the_resigned_gauntlet_supplies_lead_lag_execution_state_and_event_reaction() -> None:
+    """PINNED to the re-signed truth (Sealed pass 2, 76895fedc): the three families that once
+    built ZERO signals now have branches that load their inputs, so the verdict is BUILDABLE and
+    no declared defect is left. A gauntlet that loses a branch fails this the way the old pin
+    failed when the branch arrived."""
+    src = (_DESK / "scripts" / "external_gauntlet.py").read_text(encoding="utf-8")
+    assert 'family == "lead_lag"' in src and 'family == "execution_state"' in src
+    assert "events_for_symbol(events, sym)" in src and 'call_params["symbol"] = sym' in src
+    assert gb.SEALED_INPUT_DEFECTS == {}
+    for fam in ("lead_lag", "event_reaction", "execution_state"):
+        assert gb.family_verdict(fam)[0] == gb.BUILDABLE, fam
     assert gb.family_verdict("discovered")[0] == gb.BANNED
 
 
@@ -159,13 +144,12 @@ def test_breadth_sweep_mints_only_testable_cells_and_reports_what_it_set_aside(
         tf = (r["params"] or {}).get("timeframe", "H1")
         assert gb.cell_verdict(r["family"], r["params"], tf)[0] == gb.BUILDABLE, r
     fams = {r["family"] for r in rows}
-    assert not fams & {"lead_lag", "event_reaction", "execution_state", "triangle",
-                       "discovered"}
+    assert "discovered" not in fams
     assert not [r for r in rows if r["family"] == "relative_value"
                 and (r["params"] or {}).get("timeframe") == "M5"]
     doc = bs.write_report(rows, ["EURUSD", "XAUUSD"], None, None)
     assert doc["set_aside_cells"] > 0
-    assert {a["family"] for a in doc["set_aside_untestable"]} >= {"lead_lag", "event_reaction"}
+    assert all(a["verdict"] != gb.SEALED_INPUT_DEFECT for a in doc["set_aside_untestable"])
     assert json.loads((tmp_path / "BREADTH_SWEEP.json").read_text())["cells_built"] == len(rows)
 
 
@@ -198,7 +182,7 @@ def test_htf_anchor_mints_fine_charts_only_where_their_bars_exist(
 
 
 # ------------------------------------------------------------------ empty_cluster_forcer
-def test_the_forcer_names_a_cluster_whose_every_family_the_sealed_judge_cannot_build(
+def test_the_forcer_hands_every_reachable_cluster_to_its_proposer_and_forces_nothing(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from research import empty_cluster_forcer as ecf
     breadth = tmp_path / "EFFECTIVE_BREADTH.json"
@@ -211,9 +195,11 @@ def test_the_forcer_names_a_cluster_whose_every_family_the_sealed_judge_cannot_b
     # `lead_lag_class_catchup` (the class books, 2026-09-30) loads its own leader panel, so the
     # lead-lag cluster now has a family the sealed judge CAN build and is no longer blocked.
     assert gb.family_verdict("lead_lag_class_catchup")[0] == gb.BUILDABLE
-    assert rows["cross_asset_lead_lag"]["verdict"] != "BLOCKED_BY_SEALED_GAUNTLET"
-    assert rows["event_surprise"]["verdict"] == "BLOCKED_BY_SEALED_GAUNTLET"
-    assert rows["news_reaction"]["verdict"] == "UNREACHABLE"
+    # Since the re-signed gauntlet (76895fedc) event_reaction is buildable too, and the news lane
+    # (analyst families, LIVE 2026-09-30) classifies into news_reaction: all three clusters are
+    # reachable through a proposer, none is sealed off and none is family-less.
+    for c in ("cross_asset_lead_lag", "event_surprise", "news_reaction"):
+        assert rows[c]["verdict"] == "PROPOSER_OWNED", (c, rows[c]["verdict"])
     assert doc["n_cells_minted"] == 0, "no zero-signal cell is ever forced"
 
 
@@ -263,12 +249,12 @@ def test_the_leg_measures_each_producer_from_the_registry(tmp_path: Path) -> Non
     assert htf["buildable_share"] == 1.0
     assert htf["scheduled"] and "hourly_cycle:htf_anchor" in htf["clocks"]
     cag = doc["producers"]["cross_asset_graph"]
-    assert cag["cells_7d"] == 1 and cag["buildable_share"] == 0.0
-    assert cag["status"] == "LEFT_UNTESTABLE"
+    assert cag["cells_7d"] == 1 and cag["buildable_share"] == 1.0
+    assert cag["status"] == "UNBLOCKED"
     unfed = {u["cluster"]: u["why"] for u in doc["totals"]["empty_clusters_unfed"]}
-    # cross_asset_graph's plain lead_lag cannot be built, but the cluster holds a buildable
-    # family (`lead_lag_class_catchup`), so the leg names it UNMINTED, not blocked.
-    assert unfed["cross_asset_lead_lag"].startswith("UNMINTED")
+    # cross_asset_graph's lead_lag cell is buildable since 76895fedc, so the registry's fresh
+    # cell FEEDS the lead-lag cluster: it is no longer listed as unfed at all.
+    assert "cross_asset_lead_lag" not in unfed
     assert unfed["options_implied"].startswith("NO_FAMILY")
 
 
@@ -299,7 +285,7 @@ def test_seat_files_are_read_when_the_registry_is_silent(tmp_path: Path,
     doc = pb.build(now=now, db=tmp_path / "absent.sqlite")
     ecf = doc["producers"]["empty_cluster_forcer"]
     assert ecf["cells_24h"] == 2 and ecf["cells_7d"] == 2
-    assert ecf["buildable_share"] == 0.5
+    assert ecf["buildable_share"] == 1.0
     assert ecf["covered"]["sessions"] == {"all": 1, "london": 1}
     assert ecf["scheduled"] and "hourly_cycle:empty_cluster_forcer" in ecf["clocks"]
 
