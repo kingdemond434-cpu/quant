@@ -91,6 +91,13 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
                 by_fam[str(fam)] = by_fam.get(str(fam), 0) + int(k or 0)
     except (OSError, ValueError, TypeError):
         pass
+    # THE ANALYST PANEL'S PASSES (2026-10-01). Every idea a seat returned -- accepted, discarded
+    # or unexpressed -- and every forward look is a trial; a pass that donated charged them on its
+    # discovery file and writes tests_run 0 here, so each pass is counted exactly once.
+    t, side = _side_ledger(DESK / "data" / "analyst_panel_trials.jsonl")
+    total += t
+    for fam, k in side.items():
+        by_fam[fam] = by_fam.get(fam, 0) + k
     # A MINER RUN THAT PROPOSES NOTHING STILL RAN ITS TESTS. `learned_miners` writes one row per
     # (config, symbol, threshold) it tried; a run that donated is already counted through its
     # discovery file's tests_run, so only the runs that donated nothing are charged here -- the
@@ -107,6 +114,32 @@ def _proposer_counts() -> tuple[int, dict[str, int]]:
             by_fam[fam] = by_fam.get(fam, 0) + 1
     except (OSError, ValueError, TypeError):
         pass
+    return total, by_fam
+
+
+def _side_ledger(path: Path) -> tuple[int, dict[str, int]]:
+    """(tests_run, per family) from a `{"tests_run", "by_family"}` JSONL side ledger. A row whose
+    split is absent is charged to "?"; dry runs are skipped; an unreadable line is skipped."""
+    total = 0
+    by_fam: dict[str, int] = {}
+    try:
+        lines = path.read_text("utf-8").splitlines()
+    except OSError:
+        return 0, {}
+    for ln in lines:
+        try:
+            row = json.loads(ln) if ln.strip() else None
+            if not isinstance(row, dict) or row.get("dry_run"):
+                continue
+            n = int(row.get("tests_run") or 0)
+            split = row.get("by_family")
+            per: dict[str, Any] = split if isinstance(split, dict) and split else {"?": n}
+            fams = {str(k): int(v or 0) for k, v in per.items()}
+        except (ValueError, TypeError):
+            continue
+        total += n
+        for fam, k in fams.items():
+            by_fam[fam] = by_fam.get(fam, 0) + k
     return total, by_fam
 
 

@@ -39,9 +39,26 @@ WHAT A PASS DOES:
      analyst, screen t tails against the null, donations, and the unexpressed mechanisms.
 
 HINDSIGHT. The model has read the sample it proposes on, so the in-sample screen of a proposal is
-contaminated in a way a machine-drawn cell's is not. Every row carries `proposed_at` and
-`hindsight_prior: true`: evidence after `proposed_at` is the clean part. Every proposal is also
-charged as a trial by the seat (`proposer_seat.charge_trials`), so the panel pays for its volume.
+contaminated in a way a machine-drawn cell's is not, and no screen of history before `proposed_at`
+is evidence. So a proposal is NEVER donated on the pass that proposes it: it waits in the panel's
+forward clock (`state["pending"]`) and reads UNMEASURED until it has FORWARD_DAYS trading days
+after `proposed_at`. Then it is screened on the signals after `proposed_at` alone (bars before it
+only warm the indicators), and donated only if THAT screen clears cost on >= MIN_TRADES trades; a
+matured cell that has the trades and does not clear is retired as FAILED_FORWARD. The donated row
+carries `proposed_at`, `clean_from`, `hindsight_prior: true` and the bear's `red_team`, and the
+compiler carries all four onto the candidate. (The gauntlet itself still judges the whole series;
+cutting its development window at `clean_from` is a sealed-judge change queued for the desktop
+pass, `patches/gauntlet_clean_from_cut.patch`.)
+
+TRIALS. Every idea a seat returned is a trial whether it was accepted, discarded by the grammar or
+unexpressed, and so is every forward look at a matured cell. Each pass appends one row to
+`data/analyst_panel_trials.jsonl` -- dark, refused and time-capped passes included -- which
+`experiment_ledger` joins into the lifetime union. A pass that donates charges its count on the
+discovery file instead and records 0 here, so nothing is counted twice.
+
+CALLS. The pass runs inside `proposer_seat.seat_policy`: `--calls` caps HTTP REQUESTS (each model
+the free panel rotates through is one), not asks, and the paid seat is refused unless
+`--paid-budget` names how many paid requests the pass may make (default 0).
 
 OPTIONAL BY CONSTRUCTION. The transport is `proposer_seat.ask` (OpenRouter / the free panel). When
 no seat resolves, the pass writes UNMEASURED and returns; nothing else on the desk changes.
@@ -72,7 +89,14 @@ ORGAN = "analyst_panel"
 OUT = BASE / "reports" / "ANALYST_PANEL.json"
 STATE = BASE / "data" / "analyst_panel_state.json"
 UNMEASURED = "UNMEASURED"
+TRIALS = BASE / "data" / "analyst_panel_trials.jsonl"
 MIN_TRADES = 30
+#: Trading days after `proposed_at` before a proposal may be screened at all (the gauntlet's own
+#: development-window floor), and how often a matured cell short of MIN_TRADES is looked at again.
+FORWARD_DAYS = 60
+RELOOK_DAYS = 7
+#: Forward looks per pass, so a long pending queue cannot crowd out proposing.
+MAX_LOOKS = 200
 MIN_BARS = 3_000
 ORIGIN = "github.com/TauricResearch/TradingAgents (Apache-2.0): analyst roles + bull/bear debate"
 
@@ -293,20 +317,25 @@ def _load_state() -> dict[str, Any]:
     doc.setdefault("cursor", 0)
     doc.setdefault("cells", {})
     doc.setdefault("unexpressed", [])
+    doc.setdefault("pending", {})
+    doc.setdefault("retired", {})
     return doc
 
 
 def debate(symbol: str, context: list[str], cat: Mapping[str, Mapping[str, Any]], *,
-           ask: Callable[..., Any], calls_left: int, n: int = 3
+           ask: Callable[..., Any], left: Callable[[], int], n: int = 3
            ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-    """The four analysts propose, the bear attacks. Returns (cells, unexpressed, meter)."""
+    """The four analysts propose, the bear attacks. Returns (cells, unexpressed, meter).
+
+    `left()` is what the pass's call budget has left; no ask starts when it reads 0."""
     meter: dict[str, Any] = {"calls": 0, "trials_charged": 0.0, "by_analyst": {},
-                             "reasons": Counter()}
+                             "ideas": 0, "reasons": Counter()}
     grammar, valid = _grammar(cat), _valid_cell(cat)
     cells: list[dict[str, Any]] = []
     unexpressed: list[dict[str, Any]] = []
     for role, (_, task) in ANALYSTS.items():
-        if meter["calls"] >= calls_left:
+        if left() <= 0:
+            meter.setdefault("why", "call budget spent")
             break
         if role in LENS_ONLY and not LENS_ONLY[role](symbol):
             continue
@@ -315,12 +344,13 @@ def debate(symbol: str, context: list[str], cat: Mapping[str, Mapping[str, Any]]
         meter["calls"] += 1
         meter["trials_charged"] += float(getattr(reply, "trials_charged", 0.0) or 0.0)
         items = [i for i in (getattr(reply, "items", None) or []) if isinstance(i, dict)]
+        discarded = int(getattr(reply, "discarded", 0) or 0)
+        meter["ideas"] += len(items) + discarded
         meter["by_analyst"][role] = {"verdict": getattr(reply, "verdict", UNMEASURED),
-                                     "accepted": len(items),
-                                     "discarded": int(getattr(reply, "discarded", 0) or 0)}
+                                     "accepted": len(items), "discarded": discarded}
         for why in getattr(reply, "reasons", []) or []:
             meter["reasons"][str(why)[:100]] += 1
-        if getattr(reply, "verdict", UNMEASURED) != "RAN" and meter["calls"] == 1:
+        if getattr(reply, "verdict", UNMEASURED) != "RAN" and not meter["ideas"]:
             meter["why"] = str(getattr(reply, "why", "") or "seat dark")[:200]
             break                                            # a dark seat stays dark this pass
         for it in items:
@@ -335,7 +365,7 @@ def debate(symbol: str, context: list[str], cat: Mapping[str, Mapping[str, Any]]
                 if "symbol" in cat[row["family"]]["defaults"]:
                     row["params"]["symbol"] = symbol       # a family keyed by its own cell
                 cells.append(row)
-    if cells and meter["calls"] < calls_left:
+    if cells and left() > 0:
         listing = [f"[{i}] {c['analyst']}: {c['family']} {json.dumps(c['params'])} -- "
                    f"{c['mechanism'][:160]}" for i, c in enumerate(cells)]
         reply = ask(ORGAN, "candidates",
@@ -376,24 +406,69 @@ def _valid_attack(n_cells: int) -> Callable[[Any], str | None]:
     return valid
 
 
+def _post_days(d: Any, since: Any) -> int:
+    """Trading days in `d` strictly after `since`."""
+    after = d.index[d.index > since]
+    return len(set(after.date)) if len(after) else 0
+
+
+def _ts(at: str) -> Any:
+    import pandas as pd
+    t = pd.Timestamp(at)
+    return t.tz_localize("UTC") if t.tzinfo is None else t.tz_convert("UTC")
+
+
+def forward_screen(cell: Mapping[str, Any], d: Any, cost: float, fam_fn: Callable[..., Any],
+                   ) -> dict[str, Any]:
+    """The clean screen: the family's signals AFTER `proposed_at` only, on the same fill rules.
+
+    Bars before `proposed_at` warm the indicators and are never evaluated. Returns
+    {"post_days", "n_independent", "t_gross", "clears_cost", ...} or {"post_days": n} when the
+    cell is still under FORWARD_DAYS."""
+    from research import proposer_common as pc
+    since = _ts(str(cell["proposed_at"]))
+    days = _post_days(d, since)
+    if days < FORWARD_DAYS:
+        return {"post_days": days}
+    sig = [s for s in (fam_fn(d, **cell["params"]) or []) if getattr(s, "time", since) > since]
+    got = pc.screen(d, sig, cost) or {"n_independent": 0}
+    return {**got, "post_days": days, "clean_from": str(cell["proposed_at"])}
+
+
+def _charge(row: dict[str, Any]) -> None:
+    """Append one pass's trial row. Never raises: a full disk must not stop the pass."""
+    try:
+        TRIALS.parent.mkdir(parents=True, exist_ok=True)
+        with TRIALS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(row, sort_keys=True, default=str) + "\n")
+    except OSError:
+        pass
+
+
 def run(*, budget_s: float = 420.0, n_symbols: int = 1, calls: int = 10, dry_run: bool = False,
-        only: Sequence[str] | None = None, ask: Callable[..., Any] | None = None
-        ) -> dict[str, Any]:
+        only: Sequence[str] | None = None, ask: Callable[..., Any] | None = None,
+        paid_budget: int = 0) -> dict[str, Any]:
+    from contextlib import nullcontext
+
     from mt5desk import families_orthogonal as fo
 
     from research import proposer_common as pc
     from research.multiplicity import deflate_t
 
     started = time.monotonic()
+    seat_why = ""
+    policy: Any = nullcontext(None)
     if ask is None:
         try:
             from libs.research import proposer_seat as ps
         except Exception as exc:
-            return {"status": UNMEASURED, "why": f"proposer seat unimportable: {exc!r}"[:200]}
-        if not ps.enabled():
-            return {"status": UNMEASURED,
-                    "why": "no seat resolves on this host; the desk runs as it does without it"}
-        ask = ps.ask
+            seat_why = f"proposer seat unimportable: {exc!r}"[:200]
+        else:
+            if ps.enabled():
+                ask = ps.ask
+                policy = ps.seat_policy(http_budget=calls, paid_budget=paid_budget)
+            else:
+                seat_why = "no seat resolves on this host; the desk runs as it does without it"
     cat = catalogue()
     state = _load_state()
     try:
@@ -407,73 +482,165 @@ def run(*, budget_s: float = 420.0, n_symbols: int = 1, calls: int = 10, dry_run
     all_cells: list[dict[str, Any]] = []
     all_unexpressed: list[dict[str, Any]] = []
     meters: dict[str, Any] = {}
-    calls_left, seen = calls, 0
-    while seen < min(n_symbols, len(pool)) and calls_left > 0 \
-            and time.monotonic() - started < budget_s:
-        sym = pool[int(state["cursor"]) % len(pool)]
-        state["cursor"] = int(state["cursor"]) + 1
-        seen += 1
-        d = pc.bars(sym)
-        if d is None or len(d) < MIN_BARS:
-            meters[sym] = {"why": "bars absent or short"}
-            continue
-        cells, unexpressed, meter = debate(sym, describe(sym, d), cat, ask=ask,
-                                           calls_left=calls_left)
-        calls_left -= int(meter["calls"])
-        meters[sym] = meter
-        cost = pc.cost_frac(sym, meta, d["close"])
-        for c in cells:
-            c["proposed_at"] = at
-            if cost is None:
-                c["screen"] = {"held_back": "no cost model"}
-                continue
-            try:
-                fam_fn: Any = fo.ORTHOGONAL_FAMILIES[c["family"]]
-                sig = fam_fn(d, **c["params"])
-                c["screen"] = pc.screen(d, sig, cost) or {"n_independent": 0}
-            except Exception as exc:
-                c["screen"] = {"error": f"{type(exc).__name__}: {str(exc)[:80]}"}
-        all_cells += cells
-        all_unexpressed += unexpressed
-        if meter.get("why") and not meter["calls"] > 1:
-            break
+    spent = {"asks": 0}
+    ideas = 0
+    with policy as pol:
+        def left() -> int:
+            used = int(pol["http_calls"]) if pol is not None else spent["asks"]
+            return max(0, calls - used)
 
-    donate = [c for c in all_cells
-              if int((c.get("screen") or {}).get("n_independent") or 0) >= MIN_TRADES
-              and (c.get("screen") or {}).get("clears_cost")
-              and identity(c["symbol"], c["family"], c["params"]) not in state["cells"]]
+        def counted(*a: Any, **k: Any) -> Any:
+            spent["asks"] += 1
+            return ask(*a, **k)  # type: ignore[misc]
+
+        seen = 0
+        while ask is not None and seen < min(n_symbols, len(pool)) and left() > 0 \
+                and time.monotonic() - started < budget_s:
+            sym = pool[int(state["cursor"]) % len(pool)]
+            state["cursor"] = int(state["cursor"]) + 1
+            seen += 1
+            d = pc.bars(sym)
+            if d is None or len(d) < MIN_BARS:
+                meters[sym] = {"why": "bars absent or short"}
+                continue
+            cells, unexpressed, meter = debate(sym, describe(sym, d), cat, ask=counted,
+                                               left=left)
+            meters[sym] = meter
+            ideas += int(meter["ideas"])
+            cost = pc.cost_frac(sym, meta, d["close"])
+            for c in cells:
+                c["proposed_at"] = at
+                if cost is None:
+                    c["screen"] = {"held_back": "no cost model"}
+                    continue
+                try:
+                    fam_fn: Any = fo.ORTHOGONAL_FAMILIES[c["family"]]
+                    # HINDSIGHT-CONTAMINATED: reported as the panel's tail, never donated on.
+                    c["screen"] = pc.screen(d, fam_fn(d, **c["params"]), cost) \
+                        or {"n_independent": 0}
+                except Exception as exc:
+                    c["screen"] = {"error": f"{type(exc).__name__}: {str(exc)[:80]}"}
+            all_cells += cells
+            all_unexpressed += unexpressed
+            if meter.get("why") and not meter["ideas"]:
+                break                                      # a dark seat stays dark this pass
+        meter_http = dict(pol) if pol is not None else None
+
+    # ---- the forward clock: queue this pass's cells, screen the matured ones after proposed_at
+    queued = 0
+    for c in all_cells:
+        key = identity(c["symbol"], c["family"], c["params"])
+        if key in state["cells"] or key in state["pending"] or key in state["retired"]:
+            continue
+        state["pending"][key] = {k: c.get(k) for k in (
+            "symbol", "family", "params", "analyst", "mechanism", "falsifier", "proposed_at")}
+        state["pending"][key]["red_team"] = c.get("red_team") or []
+        state["pending"][key]["insample_t_gross"] = (c.get("screen") or {}).get("t_gross")
+        queued += 1
+    looks: Counter[str] = Counter()
+    matured: list[tuple[str, dict[str, Any]]] = []
+    forward: Counter[str] = Counter()
+    frames: dict[str, Any] = {}
+    now_ts = _ts(at)
+    for key, p in sorted(state["pending"].items(), key=lambda kv: str(kv[1].get("proposed_at"))):
+        if sum(looks.values()) >= MAX_LOOKS or time.monotonic() - started >= budget_s:
+            forward["deferred"] += 1
+            continue
+        last = p.get("last_look")
+        if last and (now_ts - _ts(str(last))).days < RELOOK_DAYS:
+            forward["waiting_relook"] += 1
+            continue
+        if (now_ts - _ts(str(p["proposed_at"]))).days < FORWARD_DAYS:
+            forward["under_forward_days"] += 1
+            continue
+        sym = str(p["symbol"])
+        if sym not in frames:
+            frames[sym] = pc.bars(sym)
+        d = frames[sym]
+        cost = None if d is None else pc.cost_frac(sym, meta, d["close"])
+        fam_fn = fo.ORTHOGONAL_FAMILIES.get(str(p["family"]))
+        if d is None or cost is None or fam_fn is None:
+            forward["unreadable"] += 1
+            continue
+        try:
+            fs = forward_screen(p, d, cost, fam_fn)
+        except Exception as exc:
+            p["forward_error"] = f"{type(exc).__name__}: {str(exc)[:80]}"
+            forward["error"] += 1
+            continue
+        if "n_independent" not in fs:
+            forward["under_forward_days"] += 1             # calendar-mature, bars not yet
+            continue
+        looks[str(p["family"])] += 1
+        p["last_look"], p["forward_screen"] = at, fs
+        n_ind = int(fs.get("n_independent") or 0)
+        if n_ind >= MIN_TRADES and fs.get("clears_cost"):
+            matured.append((key, p))
+        elif n_ind >= MIN_TRADES:
+            state["retired"][key] = {**p, "fate": "FAILED_FORWARD", "retired_at": at}
+            forward["failed_forward"] += 1
+        else:
+            forward["short_of_trades"] += 1
+    for key in state["retired"]:
+        state["pending"].pop(key, None)
+
     donation: dict[str, Any] = {"status": "DRY_RUN" if dry_run else "NOTHING_NEW"}
-    if donate and not dry_run:
+    tests_run = ideas + sum(looks.values())
+    path = None
+    if matured and not dry_run:
         rows = []
-        for c in donate:
+        for _, c in matured:
+            fs = c["forward_screen"]
             row = pc.candidate(SOURCE, c["symbol"], c["family"], dict(c["params"]),
                                f"{c['mechanism']} Falsifier: {c['falsifier']}",
                                f"{c['symbol']} {c['family']} ({c['analyst']})",
-                               {"screen_t_gross": c["screen"].get("t_gross"),
-                                "n_independent": c["screen"].get("n_independent"),
+                               {"screen_t_gross": fs.get("t_gross"),
+                                "n_independent": fs.get("n_independent"),
+                                "forward_days": fs.get("post_days"),
+                                "insample_t_gross_contaminated": c.get("insample_t_gross"),
                                 "origin": ORIGIN, "analyst": c["analyst"],
                                 "red_team": c.get("red_team") or [],
-                                "proposed_at": c["proposed_at"], "hindsight_prior": True})
-            culture = {"source_culture": LENS_CULTURE.get(c["analyst"], "GLOBAL/llm"),
-                       "participant_structure": ANALYSTS[c["analyst"]][0],
+                                "proposed_at": c["proposed_at"], "clean_from": c["proposed_at"],
+                                "hindsight_prior": True})
+            culture = {"source_culture": LENS_CULTURE.get(str(c["analyst"]), "GLOBAL/llm"),
+                       "participant_structure": ANALYSTS[str(c["analyst"])][0],
                        "crowding_prior": "high",
-                       "failure_mode_hypothesis": c["falsifier"][:200]}
+                       "failure_mode_hypothesis": str(c["falsifier"])[:200]}
             row.update(culture)
             row["culture_derivation"] = dict.fromkeys(culture, "declared")
             rows.append(row)
-        path = pc.donate(SOURCE, rows, len(all_cells))
+        path = pc.donate(SOURCE, rows, tests_run)
         counts = pc.donation_counts()
         donation = {"status": "DONATED" if path else "REFUSED_AT_DOOR",
                     "path": str(path) if path else None, "n": int(counts.get("donated") or 0),
                     "refused_wrong_lane": counts.get("refused_wrong_lane")}
         if path:
-            for c in donate:
-                state["cells"][identity(c["symbol"], c["family"], c["params"])] = {
+            for key, c in matured:
+                state["cells"][key] = {
                     "donated_at": at, "analyst": c["analyst"], "symbol": c["symbol"],
-                    "family": c["family"], "t_gross": c["screen"].get("t_gross")}
+                    "family": c["family"], "proposed_at": c["proposed_at"],
+                    "t_gross_forward": c["forward_screen"].get("t_gross")}
+                state["pending"].pop(key, None)
+
+    by_family: Counter[str] = Counter(str(c["family"]) for c in all_cells)
+    by_family["analyst_panel/unexpressed"] += len(all_unexpressed)
+    by_family["analyst_panel/discarded"] += max(0, ideas - len(all_cells) - len(all_unexpressed))
+    by_family.update({f"{f}": k for f, k in looks.items()})
+    by_family = Counter({f: k for f, k in by_family.items() if k})
+    trial_row = {"at": at, "source": SOURCE, "ideas_proposed": ideas,
+                 "forward_looks": sum(looks.values()), "cells_screened": len(all_cells),
+                 "asks": spent["asks"],
+                 "http_calls": None if meter_http is None else meter_http["http_calls"],
+                 "paid_calls": None if meter_http is None else meter_http["paid_calls"],
+                 "trials_total": tests_run,
+                 # charged ONCE: on the discovery file when this pass donated, else here
+                 "tests_run": 0 if path else tests_run,
+                 "charged_on": str(path) if path else "this_row",
+                 "by_family": {} if path else dict(by_family), "dry_run": bool(dry_run)}
     if not dry_run:
         state["unexpressed"] = (state["unexpressed"] + all_unexpressed)[-500:]
         _atomic(STATE, state)
+        _charge(trial_row)
 
     ts = [float(c["screen"]["t_gross"]) for c in all_cells
           if isinstance((c.get("screen") or {}).get("t_gross"), (int, float))
@@ -481,27 +648,47 @@ def run(*, budget_s: float = 420.0, n_symbols: int = 1, calls: int = 10, dry_run
     by_analyst: dict[str, Counter[str]] = {a: Counter() for a in ANALYSTS}
     for c in all_cells:
         by_analyst[c["analyst"]]["proposed"] += 1
-        by_analyst[c["analyst"]]["clears_screen"] += int(c in donate)
+    for _, c in matured:
+        by_analyst[str(c["analyst"])]["clears_forward_screen"] += 1
     for u in all_unexpressed:
         by_analyst[u["analyst"]]["unexpressed"] += 1
     best = max(ts, default=None)
+    ran = any(a.get("verdict") == "RAN" for m in meters.values()
+              for a in (m.get("by_analyst") or {}).values())
+    why = seat_why or next((str(m["why"]) for m in meters.values() if m.get("why")), "")
     return {
-        "status": "OK" if any(a.get("verdict") == "RAN" for m in meters.values()
-                              for a in (m.get("by_analyst") or {}).values()) else UNMEASURED,
+        # A DARK SEAT IS NEVER OK: no analyst answered means the pass measured nothing new.
+        "status": "OK" if ran else UNMEASURED,
+        **({"why": why} if not ran and why else {}),
         "dry_run": bool(dry_run), "elapsed_s": round(time.monotonic() - started, 2),
-        "calls": calls - calls_left, "symbols": meters, "families_offered": len(cat),
-        "cells_proposed": len(all_cells), "by_analyst": {k: dict(v) for k, v in by_analyst.items()},
+        "calls": spent["asks"], "http": meter_http and {
+            k: meter_http[k] for k in ("http_calls", "paid_calls", "refused_paid",
+                                       "http_budget", "paid_budget")},
+        "symbols": meters, "families_offered": len(cat),
+        "cells_proposed": len(all_cells), "ideas_proposed": ideas,
+        "by_analyst": {k: dict(v) for k, v in by_analyst.items()},
+        "trials": trial_row,
+        "forward_clock": {"queued_this_pass": queued, "pending": len(state["pending"]),
+                          "pending_unmeasured": len(state["pending"]),
+                          "forward_looks": sum(looks.values()), "matured": len(matured),
+                          "retired_total": len(state["retired"]), **dict(forward),
+                          "rule": (f"no proposal is donated until it has {FORWARD_DAYS} trading "
+                                   "days after proposed_at, screened on its post-proposal "
+                                   "signals only")},
         "screen_tails": {"n": len(ts), "t_gt_2": sum(t > 2 for t in ts),
                          "null_expected": round(0.0228 * len(ts), 2),
-                         "best_t": best,
+                         "best_t": best, "contaminated_by_hindsight": True,
                          "best_t_deflated_by_panel_lifetime": None if best is None else round(
-                             deflate_t(best, max(len(ts), len(state["cells"]) + len(ts))), 3)},
-        "candidates_this_pass": len(donate), "donation": donation,
+                             deflate_t(best, max(len(ts), len(state["cells"])
+                                                 + len(state["pending"])
+                                                 + len(state["retired"]))), 3)},
+        "candidates_this_pass": len(matured) if path else 0, "donation": donation,
         "unexpressed_this_pass": all_unexpressed,
         "unexpressed_total": len(state["unexpressed"]),
         "contract": ("the panel earns its calls by the ten gates' verdicts on its donated cells "
                      "against machine-drawn cells of the same families; its screen tails say only "
-                     "whether it proposes better than a null of its size. Unexpressed mechanisms "
+                     "whether it proposes better than a null of its size, and are contaminated by "
+                     "hindsight. Only post-proposal evidence is donated on. Unexpressed mechanisms "
                      "are family gaps for the builders, never candidates."),
         "refused_from_source": ["trader / portfolio manager per-trade decision (not "
                                 "point-in-time backtestable)", "risk-team sizing debate "
@@ -515,13 +702,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--budget-s", type=float, default=420.0)
     ap.add_argument("--symbols", type=int, default=1, help="symbols per pass, in rotation")
-    ap.add_argument("--calls", type=int, default=10, help="seat calls per pass")
+    ap.add_argument("--calls", type=int, default=10,
+                    help="HTTP requests per pass (each rotated free model is one)")
+    ap.add_argument("--paid-budget", type=int, default=0,
+                    help="paid-seat requests this pass may make (default 0: never)")
     ap.add_argument("--only", nargs="*")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args(argv)
     rep = {"generated_at": _now(), "source": SOURCE,
            **run(budget_s=a.budget_s, n_symbols=a.symbols, calls=a.calls, dry_run=a.dry_run,
-                 only=a.only)}
+                 only=a.only, paid_budget=a.paid_budget)}
     if not a.dry_run:
         _atomic(OUT, rep)
     print(f"analyst_panel: {rep.get('status')} calls={rep.get('calls', 0)} "
