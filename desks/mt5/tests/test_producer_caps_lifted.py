@@ -101,3 +101,18 @@ def test_the_inventory_says_the_caps_are_lifted() -> None:
     for name in ("cross_asset_graph", "event_surprise", "event_response_atlas"):
         assert pb.INVENTORY[name]["status"] == "WIDENED"
     assert pb.INVENTORY["asia_transmission"]["status"] == "WIRED"
+
+
+def test_execution_state_is_swept_in_both_modes_on_surface_symbols_only(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import breadth_sweep as bs
+    spec = bs.READY["execution_state"]
+    assert {g["mode"] for g in spec["grid"]} == {"cheap_deep", "dear_thin"}
+    from research import orthogonal_sweep as inputs
+    surf = tmp_path / "MICROSTRUCTURE_SURFACES.json"
+    surf.write_text(json.dumps({"symbols": {"EURUSD": {"x": 1}, "GBPUSD": {}}}), "utf-8")
+    monkeypatch.setattr(inputs, "MICROSTRUCTURE_SURFACES", surf)
+    assert bs._targets("execution_state", spec, ["EURUSD", "GBPUSD", "USDJPY"]) == [
+        ("EURUSD", {})]
+    monkeypatch.setattr(inputs, "MICROSTRUCTURE_SURFACES", tmp_path / "absent.json")
+    assert len(bs._targets("execution_state", spec, ["EURUSD", "USDJPY"])) == 2
