@@ -126,23 +126,26 @@ def spec_fixed_trial_count(path: Path | None = None) -> int | None:
     return None
 
 
-def spec_variance_of_sharpes(path: Path | None = None) -> float | None:
+def measured_variance_of_sharpes(path: Path | None = None) -> tuple[float | None, str]:
+    """The pooled cross-trial Sharpe variance from a VERIFIED `reports/DSR_INPUTS.json`, or None
+    with the reason. NO CONSTANT FALLBACK (principal 2026-09-30): this used to fall back to
+    0.014863 when the spec could not be read, which reported an sr0 nobody had measured."""
     try:
-        import yaml
-        spec = yaml.safe_load((path or SPEC_PATH).read_text("utf-8"))
-    except Exception:
-        return None
-    if not isinstance(spec, dict):
-        return None
-    for gate in spec.get("gates") or []:
-        if isinstance(gate, dict) and gate.get("name") == "deflated_sharpe":
-            val = (gate.get("params") or {}).get("fixed_variance_of_sharpes")
-            return float(val) if isinstance(val, (int, float)) else None
-    return None
+        from libs.research import dsr_inputs
+        doc, why = dsr_inputs.load_verified(path)
+    except Exception as exc:
+        return None, f"{type(exc).__name__}: {exc}"
+    if doc is None:
+        return None, why
+    return float(doc["variance"]["pooled"]["variance"]), (
+        f"measured pooled variance, DSR_INPUTS {str(doc.get('content_sha256'))[:12]}")
 
 
-def sr0(n_trials: int, variance_of_sharpes: float) -> float:
-    """The deflated-Sharpe hurdle this charge produces, from the desk's own estimator."""
+def sr0(n_trials: int, variance_of_sharpes: float | None) -> float:
+    """The deflated-Sharpe hurdle this charge produces, from the desk's own estimator; NaN when
+    the variance is unmeasured."""
+    if variance_of_sharpes is None:
+        return float("nan")
     try:
         from libs.validation.dsr import expected_max_sharpe
         return float(expected_max_sharpe(int(n_trials), float(variance_of_sharpes)))
@@ -175,8 +178,7 @@ def charge(census_dict: dict[str, Any], *, nominal: int = NOMINAL_CAMPAIGN_TRIAL
     fams = {row["family"]: FamilyCharge(
         str(row["family"]), int(row["n_nominal"]), float(row["n_effective"]),
         int(row.get("n_grid_cells") or 0), int(row.get("n_identities") or 0),
-        float(row.get("ratio") or 1.0), str(row.get("basis") or ""),
-        int(row.get("selection_trials") or 0))
+        float(row.get("ratio") or 1.0), str(row.get("basis") or ""))
         for row in census_dict.get("by_family") or []}
     census = ChargeCensus(int(census_dict.get("n_nominal") or 0),
                           float(census_dict.get("n_effective") or 0.0),
@@ -192,7 +194,7 @@ _BASIS_RE = re.compile(r'^(\s*trial_count_basis:\s*")([^"]*)(".*)$', re.M)
 _FAILCLOSED_RE = re.compile(r'^(\s*fail_closed_to:\s*")([^"]*)(".*)$', re.M)
 
 
-def apply_to_spec(charged: int, *, variance: float, path: Path | None = None,
+def apply_to_spec(charged: int, *, variance: float | None, path: Path | None = None,
                   dry_run: bool = False, authorised: bool = False) -> dict[str, Any]:
     """Write the corrected charge into the judge's existing input, preserving the file's text.
 
@@ -237,11 +239,10 @@ def apply_to_spec(charged: int, *, variance: float, path: Path | None = None,
                 "why": "the bar never moves on its own (principal 2026-09-23); this pass measured "
                        f"{charged} against the standing {standing} and published it, and only a "
                        "deliberate authorised act changes the spec"}
-    basis = (f"effective_campaign_trials({charged}) + fixed_variance_of_sharpes({variance}): "
-             f"the campaign charge is measured in EFFECTIVE independent tests -- the "
-             f"participation ratio of (grid cell, content) identities within each mechanism -- "
-             f"not in docket rows; both inputs remain constants, so the bar is identical for "
-             f"every cell regardless of how many others share its sweep")
+    # The attested basis names WHERE the variance comes from, never an hourly value of it: the
+    # attestation is exact-matched by admission, so a number in it would re-stamp every hour.
+    from libs.research.dsr_inputs import trial_count_basis
+    basis = trial_count_basis(charged)
     new = _COUNT_RE.sub(lambda mm: f"{mm.group(1)}{charged}{mm.group(3)}", text, count=1)
     new = _BASIS_RE.sub(lambda mm: f"{mm.group(1)}{basis}{mm.group(3)}", new, count=1)
     # FAIL-CLOSED MEANS FAIL TOWARDS THE HARDER BAR, AND THIS WROTE THE EASIER ONE.
@@ -295,7 +296,7 @@ def judge_reads(expected: int) -> dict[str, Any]:
 
 def build(*, docket: Path | None = None, spec: Path | None = None,
           apply: bool = True, authorise: bool = False,
-          budget_s: float = 120.0) -> dict[str, Any]:
+          budget_s: float = 120.0, dsr_inputs_path: Path | None = None) -> dict[str, Any]:
     """Measure, publish, feed the judge's input, and measure that the judge reads it.
 
     `authorise` defaults False and the hourly leg never sets it, so the scheduled pass MEASURES
@@ -306,12 +307,7 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
     t0 = time.time()
     rows = read_docket(docket)
     census = measure(rows)
-    # THE SPEC'S VARIANCE OR NOTHING. This fell back to 0.014863, the constant lockbox v4
-    # retired, so an unreadable spec quietly measured the charge against a bar no gate uses.
-    variance = spec_variance_of_sharpes(spec)
-    if variance is None:
-        raise ValueError(f"{spec or SPEC_PATH} carries no deflated_sharpe "
-                         "fixed_variance_of_sharpes; refusing to measure against a guess")
+    variance, variance_basis = measured_variance_of_sharpes(dsr_inputs_path)
     standing = spec_fixed_trial_count(spec)
     nominal = NOMINAL_CAMPAIGN_TRIALS if standing is None else standing
     charged, basis = charge(census, nominal=NOMINAL_CAMPAIGN_TRIALS)
@@ -342,6 +338,7 @@ def build(*, docket: Path | None = None, spec: Path | None = None,
             "standing_spec_trial_count": standing,
             "charged": charged, "charge_basis": basis,
             "variance_of_sharpes": variance,
+            "variance_basis": variance_basis,
             "sr0_before": None if math.isnan(before) else round(before, 6),
             "sr0_after": None if math.isnan(after) else round(after, 6),
             "sr0_relief": (None if (math.isnan(before) or math.isnan(after))

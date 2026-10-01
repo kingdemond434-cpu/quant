@@ -743,6 +743,32 @@ def main() -> int:
         print(f"   docket bank: {readmitted} previously-known candidate(s) re-admitted "
               f"(idempotent re-judging; freshness still governs provenance)")
 
+    # THE TRIANGLE LEGS, BACKFILLED ONTO EVERY ROW, FRESH OR BANKED (2026-09-30). All 1,796
+    # triangle rows in the docket were legless, so `family_triangle` returned [] and every one
+    # was UNKNOWN; the compiler now names legs for rows it mints, but the bank is re-admitted
+    # verbatim above, so the old rows would never have been reached. Filled HERE because this is
+    # the docket's only writer: same rule as the compiler, in place, nothing deleted, each row
+    # recording what was filled or why not. A fault costs the fill, never a row.
+    triangle_legs: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        for _p in (str(BASE), str(BASE.parents[1])):
+            if _p not in _sys.path:
+                _sys.path.insert(0, _p)
+        from research import triangle_leg_backfill as _tlb
+        _rows = list(merged.values())
+        triangle_legs = _tlb.backfill(_rows, identity=_identity, now=now)
+        if triangle_legs.get("filled"):
+            merged = {_identity(r): r for r in _rows}
+        _tlb.publish(triangle_legs, HYP / _tlb.OUT.name)
+        if triangle_legs.get("legless_before"):
+            print(f"   triangle legs: {triangle_legs['filled']} of "
+                  f"{triangle_legs['legless_before']} legless row(s) filled, "
+                  f"{triangle_legs['unfilled']} unfilled {triangle_legs['unfilled_by_reason']}")
+    except Exception as exc:
+        triangle_legs = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   triangle legs unavailable ({type(exc).__name__}: {exc}); rows unchanged")
+
     if unrouted:
         print(f"   {unrouted} row(s) dropped as UNROUTABLE (no family named) -- never "
               f"relabelled as the dominant family")
@@ -897,6 +923,45 @@ def main() -> int:
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
                   f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
             return 0
+    # PRE-REGISTRATION, BOTH HALVES, HERE (2026-09-30). This merge runs on the hour BEFORE the
+    # judge reads the docket, so it is the last point where a card can honestly precede a
+    # verdict. First the last sweep's verdicts are stamped and put on the hypothesis graph (the
+    # writer it never had -- its last fate was 2026-09-03), so the judged set is current; then
+    # every docket row is stamped with the card that fixes its exact spec, and every never-judged
+    # cell without one goes into this hour's batch card. A fault here costs the stamps, never a
+    # row: the docket is written either way.
+    prereg: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from libs.research import prereg_join as _pj_join
+        from libs.research.hypothesis_graph import Graph as _Graph
+        from research.frontier_identity import cell_id as _cell_id
+        # EVERY PATH HANGS OFF `HYP`, so a caller that points this merge at another directory
+        # (every test does) moves the card ledger and the graph with it and never writes the
+        # desk's own. The defaults resolve to exactly the desk's paths.
+        _data = HYP.parent
+        _g = _Graph(_data / "hypothesis_graph.jsonl")
+        _paths: dict[str, Any] = {"gate_ledger": HYP / "gate_verdict_ledger.jsonl",
+                                  "seen_cells": HYP / "gauntlet_seen_cells.json",
+                                  "prereg_path": _data / "preregistrations.jsonl"}
+        prereg = {"verdicts": _pj_join.record_gate_ledger(
+                      graph=_g, specs=rows_out, cursor=HYP / "prereg_join_cursor.json",
+                      **_paths),
+                  "docket": _pj_join.preregister_docket(rows_out, graph=_g, cell_id=_cell_id,
+                                                        **_paths),
+                  "status": "APPLIED"}
+        _d = prereg["docket"]
+        print(f"   preregistration: {_d['already']} carded, {_d['new_specs']} new spec(s) in "
+              f"batch {_d['batch_hash']}, {_d['retrospective']} judged before any card; "
+              f"verdicts -> graph: {prereg['verdicts'].get('recorded', 0)} recorded")
+    except Exception as exc:
+        prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
     TARGET.write_text(json.dumps(rows_out, indent=1, default=str), "utf-8")
     _lease(TARGET)
     (HYP / "merge_report.json").write_text(json.dumps({
@@ -951,6 +1016,10 @@ def main() -> int:
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
+        "preregistration": prereg,
+        "triangle_legs": {k: triangle_legs.get(k) for k in
+                          ("status", "legless_before", "filled", "unfilled",
+                           "unfilled_by_reason", "legless_after")},
         "claim_selection": claim_selection,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "

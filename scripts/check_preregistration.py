@@ -205,11 +205,112 @@ def certificates(cards: list[dict[str, Any]],
             "rows": sorted(rows, key=lambda r: r["certificate"])}
 
 
+#: Where the judge's verdicts live: the graph's judged fates and the gate-verdict ledger.
+_GRAPH = _ROOT / "desks" / "mt5" / "data" / "hypothesis_graph.jsonl"
+_GATE_LEDGER = _ROOT / "desks" / "mt5" / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
+_JUDGED_FATES = frozenset({"FAILED", "CERTIFIED", "JUDGED"})
+
+#: THE JOIN'S CUTOVER: the first full day after the docket writer could pre-register cells on
+#: the trading box. Cells FIRST judged at or after it had every chance to be carded; cells
+#: before it are the retrospective corpus. Like `CUTOVER`, it may only ever move EARLIER.
+JOIN_CUTOVER = "2026-10-02T00:00:00+00:00"
+
+
+def _stream(path: Path):
+    try:
+        fh = path.open("r", encoding="utf-8", errors="replace")
+    except OSError:
+        return
+    with fh:
+        for ln in fh:
+            if ln.strip():
+                try:
+                    r = json.loads(ln)
+                except ValueError:
+                    continue
+                if isinstance(r, dict):
+                    yield r
+
+
+def join_census(*, graph: Path = _GRAPH, gate_ledger: Path = _GATE_LEDGER,
+                ledger: Path = LEDGER) -> dict[str, Any]:
+    """HOW MANY VERDICTS NAME A CARD THAT PRECEDED THEM. Re-derived, never read off a stamp.
+
+    The unit is the JUDGED CELL (graph node id = the card's `spec_id`), and its time is the
+    EARLIEST judgement any source records -- the graph's buried rows or the gate ledger. A cell
+    joins when a card for its exact spec was registered strictly before that. Counting cells
+    rather than rows is what makes the rate a ratchet: re-judging an old cell adds no new
+    denominator, so the number can only move when a NEW cell is judged, and it rises only when
+    that cell was carded first. It can never be improved by judging less.
+
+    The stamps the writers put on rows are checked AGAINST this derivation: a row stamped
+    PREREGISTERED whose cell does not derive as joined is counted as a FALSE stamp.
+    """
+    from libs.research.preregistration import POST_HOC, PREREGISTERED, spec_index
+
+    idx = spec_index(ledger)
+    first: dict[str, str] = {}
+    stamps: dict[str, int] = {}
+    false_stamps: list[str] = []
+    claimed: dict[str, str] = {}
+    sources = {"graph_rows": 0, "gate_ledger_rows": 0}
+
+    def _see(nid: str, at: str) -> None:
+        if nid and at and (nid not in first or at < first[nid]):
+            first[nid] = at
+
+    for r in _stream(graph):
+        if r.get("fate") in _JUDGED_FATES:
+            sources["graph_rows"] += 1
+            nid = str(r.get("id") or "")
+            _see(nid, str(r.get("at") or ""))
+            st = str(r.get("prereg_status") or "UNSTAMPED")
+            stamps[st] = stamps.get(st, 0) + 1
+            if st == PREREGISTERED:
+                claimed[nid] = str(r.get("prereg_hash") or "")
+    for r in _stream(gate_ledger):
+        sources["gate_ledger_rows"] += 1
+        _see(str(r.get("graph_id") or ""), str(r.get("at") or ""))
+    joined = post = post_joined = 0
+    unjoined_post: list[str] = []
+    for nid, at in first.items():
+        hit = idx.get(nid)
+        ok = hit is not None and hit[0] < at
+        joined += ok
+        if at >= JOIN_CUTOVER:
+            post += 1
+            post_joined += ok
+            if not ok and len(unjoined_post) < 20:
+                unjoined_post.append(nid)
+    for nid in claimed:
+        hit = idx.get(nid)
+        if not (hit is not None and nid in first and hit[0] < first[nid]):
+            false_stamps.append(nid)
+    n = len(first)
+    return {"unit": "judged cell (graph node id == card spec_id), at its EARLIEST judgement",
+            "judged_cells": n, "joined": joined, "post_hoc": n - joined,
+            "join_rate": (joined / n) if n else None,
+            "join_cutover": JOIN_CUTOVER,
+            "post_cutover_cells": post, "post_cutover_joined": post_joined,
+            "post_cutover_join_rate": (post_joined / post) if post else None,
+            "post_cutover_unjoined_sample": unjoined_post,
+            "cards_with_spec": len(idx),
+            "row_stamps": dict(sorted(stamps.items())),
+            "false_preregistered_stamps": len(false_stamps),
+            "false_stamp_sample": false_stamps[:20],
+            "sources": sources,
+            "statuses": [PREREGISTERED, POST_HOC],
+            "rule": ("a verdict joins when a card for its exact spec was registered strictly "
+                     "before the cell was first judged; anything else is POST_HOC with "
+                     "prereg_hash null -- recorded, never dropped, never backfilled")}
+
+
 def evaluate() -> dict[str, Any]:
     t0 = time.time()
     cards = read_cards()
     don = scan_donations()
     certs = certificates(cards)
+    join = join_census()
     undeclared = sum(1 for c in cards if c.get("horizon") == UNDECLARED)
     if not don["rows"]:
         status = "UNMEASURED"          # no donation corpus here: a real answer, never a pass
@@ -219,6 +320,10 @@ def evaluate() -> dict[str, Any]:
         status = "BREACH"
     else:
         status = "OK"
+    if join["false_preregistered_stamps"]:
+        # A row that SAYS its card came first when the ledger says otherwise is the forgery
+        # pre-registration exists to prevent: louder than any coverage gap, and never passing.
+        status = "JOIN_BREACH"
     return {
         "checked": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "elapsed_s": round(time.time() - t0, 1),
@@ -235,6 +340,9 @@ def evaluate() -> dict[str, Any]:
                             "pinned a holding period, and it says so on its face rather than "
                             "inventing one")},
         "certificates": certs,
+        # THE JOIN (2026-09-30): cards and verdicts, joined by spec. Ratcheted upward only
+        # through `scripts/check_ratchets.py` metric `prereg_join_rate`.
+        "join": join,
         "retrospective_marker": RETROSPECTIVELY_UNPREREGISTERED,
         "no_backfill": ("rows donated before the cutover are NEVER issued a card. Writing one "
                         "after the evidence was seen would fabricate the exact guarantee "
@@ -279,6 +387,12 @@ def main() -> int:
               f"{don['post_cutover_rows']} covered, {don['post_cutover_uncovered']} uncovered")
         print(f"  retrospectively unpreregistered rows: "
               f"{don['retrospectively_unpreregistered']} (never backfilled)")
+        jn = rep["join"]
+        jr = jn["join_rate"]
+        print(f"  join: {jn['joined']}/{jn['judged_cells']} judged cells name a card that "
+              f"preceded them ({'n/a' if jr is None else f'{jr:.2%}'}); post-cutover "
+              f"{jn['post_cutover_joined']}/{jn['post_cutover_cells']}; "
+              f"{jn['false_preregistered_stamps']} false PREREGISTERED stamp(s)")
         c = rep["certificates"]
         if c.get("measured"):
             print(f"  standing certificates: {c['unpreregistered']}/{c['standing']} rest on "
