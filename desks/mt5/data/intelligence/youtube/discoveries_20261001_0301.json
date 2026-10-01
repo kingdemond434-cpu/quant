@@ -1,0 +1,60 @@
+[
+  {
+    "source": "youtube",
+    "title": "30 Sept | NY Session |  Forex and Crypto Live Market Analysis | #ForexLive #SwappyTrading #ICTMy Tr",
+    "channel": "TK ",
+    "url": "https://youtube.com/watch?v=GX5Jqx2G8JY",
+    "published": "2026-09-30T18:53:24Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "ICT"
+    ],
+    "confidence": 0.55
+  },
+  {
+    "source": "youtube",
+    "title": "shorts live #Gold #XAUUSD #GoldLive #ForexLivehg",
+    "channel": "TK ",
+    "url": "https://youtube.com/watch?v=cawgxDLYC3E",
+    "published": "2026-09-30T07:28:28Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  },
+  {
+    "source": "youtube",
+    "title": "shorts live #Gold #XAUUSD #GoldLive #ForexLivehg",
+    "channel": "TK ",
+    "url": "https://youtube.com/watch?v=UJvIsnaQQ2s",
+    "published": "2026-09-30T05:44:38Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  },
+  {
+    "source": "youtube",
+    "title": "Copy of shorts live #Gold #XAUUSD #GoldLive #ForexLivehg",
+    "channel": "TK ",
+    "url": "https://youtube.com/watch?v=buroq_hbJDA",
+    "published": "2026-09-29T19:29:10Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  }
+]
