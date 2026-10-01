@@ -303,6 +303,14 @@ desks/mt5/data/features/
 desks/mt5/data/memory/
 desks/mt5/data/deep_forest_seen.json
 
+# Raw text stores of the NLP / blog-mood organs (post titles and snippets, the first-seen cursor,
+# the LLM tag cache): box-local working state. Kept OUT of data/intelligence/, which the
+# candidate compiler globs as seat output, and never committed (2026-09-30).
+desks/mt5/data/text_store/
+# The committed Asian/alt-data digest's writer lock and temp file (the digest itself is tracked).
+desks/mt5/data/digests/*.lock
+desks/mt5/data/digests/*.tmp
+
 # THE BOX'S OWN REPORT, ALLOWLISTED LAST SO IT WINS (2026-09-06). `sync_shadow_to_git.ps1` lists
 # every path here in $relPaths and its header warns that an ignored path makes `git add` a SILENT
 # no-op -- success on screen, nothing published. That is exactly what had happened: sleeves.json
@@ -396,3 +404,33 @@ data/alpha_registry.sqlite-shm
 # tree in one parse. Machine-rewritten on every registry build, so it is a cache by this file's
 # own definition above and belongs nowhere near git.
 desks/mt5/data/import_stems_cache.json
+# THE GATE VERDICT DIGEST AND THE STATE-FLOW METER (2026-09-30), published by
+# sync_shadow_to_git.ps1's $relPaths. `**/reports/*` above ignores both; the digest is the small
+# committed summary of the gitignored gate_verdict_ledger.jsonl and universal_gates_external.json.
+!desks/mt5/reports/GATE_VERDICT_DIGEST.json
+!desks/mt5/reports/BOX_STATE_FLOW.json
+# THE FRESHNESS FENCE'S REPORT AND THE DESK HEALTH REPORT (2026-09-30), published by the same
+# $relPaths: CRO D17 reads box_state_age_hours off the branch, and the plain-English desk health
+# check had no reader off the box at all.
+!desks/mt5/reports/BOX_STATE_FRESHNESS.json
+!desks/mt5/reports/DESK_HEALTH.json
+# THE RESEARCH MEASUREMENTS THE BOX PUBLISHES (2026-09-30). `sync_shadow_to_git.ps1` lists these
+# in $reportPaths; each is a small JSON summary the CRO cycle, the audits and the breadth review
+# read from the branch, and none had ever crossed the wire -- `**/reports/*` above ignored them,
+# so every reader off the box saw UNMEASURED or a stale copy. Last match wins, so they sit here.
+!desks/mt5/reports/RESEARCH_BUDGET.json
+!desks/mt5/data/research_budget.json
+!desks/mt5/reports/JUDGING_RATE.json
+!desks/mt5/reports/JUDGING_THROUGHPUT.json
+!desks/mt5/reports/GAUNTLET_BACKPRESSURE.json
+!desks/mt5/reports/JUDGE_COVERAGE.json
+!desks/mt5/reports/EFFECTIVE_BREADTH.json
+!desks/mt5/reports/BREADTH_MANDATE.json
+!desks/mt5/reports/TIER1_SCORECARD.json
+!desks/mt5/reports/ALT_DATA_YIELD.json
+!desks/mt5/reports/PRODUCER_YIELD.json
+!desks/mt5/reports/RESEARCH_PRODUCTIVITY.json
+!desks/mt5/reports/FORWARD_ENROLMENT.json
+!desks/mt5/reports/CERTIFICATE_CLOCK_LAW.json
+!desks/mt5/reports/FORWARD_CLOCK_LEDGER.json
+!desks/mt5/reports/shadow/precert_shadow_state.json

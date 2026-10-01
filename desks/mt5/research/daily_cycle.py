@@ -220,6 +220,52 @@ def _refresh_bars() -> None:
         raise RuntimeError(f"refresh_tail returned {rc}")
 
 
+def _deepen_bars() -> None:
+    """Widen every cached series back toward what the venue serves, PREPEND ONLY.
+
+    `research/deepen_universe.py` was recovered from the trading box with no clock, so the depth
+    of every parquet stayed frozen at whatever its first producer asked for. Its own cursor and
+    `--recheck-hours 20` make a daily pass the natural cadence; it stands down inside a placement
+    window by itself. Off the box `MetaTrader5` is absent and that is recorded, not raised.
+    """
+    try:
+        import deepen_universe
+    except ModuleNotFoundError:
+        dlog("deepen_bars: research/deepen_universe.py not present on this tree")
+        return
+    try:
+        rc = deepen_universe.main(["--budget-s", "1500"])
+    except ModuleNotFoundError as exc:
+        dlog(f"deepen_bars: no terminal on this box ({exc.name}); UNMEASURED")
+        return
+    dlog(f"deepen_bars: rc={rc}")
+
+
+def _capacity_watch() -> None:
+    """Two read-only readings a restart window needs, taken daily so neither goes stale.
+
+    `scripts/restart_for_capacity.py` with no flag only measures its preconditions and the
+    terminal's MaxBars into reports/CAPACITY_RESTART.json -- it never stops or restarts anything
+    without `--stage`, which no clock passes. `scripts/check_after_reboot.py --verify` names any
+    process or task that did not come back since the healthy baseline, into
+    reports/REBOOT_VERIFY.json; rc 1 is that finding and rc 2 is "no baseline", both recorded.
+    """
+    import subprocess
+    for script, args in (("scripts/restart_for_capacity.py", []),
+                         ("scripts/check_after_reboot.py", ["--verify"])):
+        path = BASE / script
+        if not path.exists():
+            dlog(f"capacity_watch: {script} not present on this tree")
+            continue
+        try:
+            r = subprocess.run([sys.executable, str(path), *args], cwd=str(BASE),
+                               capture_output=True, text=True, timeout=600, check=False)
+            dlog(f"capacity_watch: {script} rc={r.returncode} "
+                 f"{(r.stdout or r.stderr).strip().splitlines()[-1:] or ''}")
+        except (OSError, subprocess.SubprocessError) as exc:
+            dlog(f"capacity_watch: {script} failed to run ({type(exc).__name__}: {exc})")
+
+
 def _cost_fields() -> None:
     """Fill `tick_value` for any registry symbol that lacks one, from the live terminal.
 
@@ -300,11 +346,26 @@ def _proposers() -> None:
                  "fund_playbook", "microstructure_miner", "alpha_evolution",
                  "style_premia_sweep", "cross_asset_graph", "anomaly_factory",
                  "tail_alpha_search", "survivor_distiller", "factor_model_coevolution",
+                 # Reflective factor timing (IBK 2026 design): publishes its own admission
+                 # contract, desks/mt5/reports/REFLECTIVE_TIMING.json. Sizes nothing.
+                 "reflective_timing_contract",
+                 # Text-derived indices (event/policy factors from collected news, JP/KR/CN
+                 # retail blog attention and mood): the gain test against a shuffled-date
+                 # placebo, then the pre-declared exogenous_conditioner cells through the donor
+                 # door. Writes desks/mt5/reports/NLP_SOCIAL_CELLS.json.
+                 "nlp_social_cells",
+                 # Learned GNN/attention miners (numpy): cells, forecast axes and allocation
+                 # intel. Daily, on their own budget, so no hourly organ's share shrinks.
+                 "learned_miners",
                  # THE NEGATIVE HALF OF EXPERIENCE (Tier-1 Q17). `survivor_distiller` was
                  # already here and `negative_knowledge` -- the model of what KILLS a cell --
                  # ran on no clock at all, which is the classic defect: the organ existed and
                  # produced nothing. Its report feeds the experience split.
-                 "negative_knowledge"):
+                 "negative_knowledge",
+                 # THE REGIME SPLIT (2026-09-30): every price-only family searched inside one
+                 # control-room regime at a time, purged walk-forward as the kill, survivors
+                 # donated as family `regime_split` to the same gauntlet.
+                 "regime_split_miner"):
         try:
             mod = __import__(name)
             kwargs = {}
@@ -586,13 +647,90 @@ def _zentech() -> None:
     build_zentech_state.main()
 
 
+def _six_event_trace() -> None:
+    """Is the system real? The principal's six-event test (2026-09-30), re-derived from recorded
+    artifacts: a source mined into a cell, a preregistered cell, a logged REJECT, a survivor
+    forward-observed, a reconciled live fill, a decay retirement. Read-only; writes
+    reports/six_event_trace.json for the CRO pass (STEP 4C) to route every non-PROVEN event."""
+    from libs.ops import six_event_trace
+    rc = six_event_trace.main([])
+    if rc != 0:
+        raise RuntimeError(f"six_event_trace returned {rc}")
+
+
 #: ORDER IS LOAD-BEARING. The promoter reads the state shadow has just written, so running it
 #: first would decide today on yesterday's evidence. Markout runs last-but-one and
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
+def _control_room_module(name: str) -> object:
+    """Each control-room organ by an explicit import, so the component registry sees this step
+    as the clock that fires it (a name passed to `__import__` is invisible to it)."""
+    if name == "control_room":
+        import control_room as mod
+    elif name == "regime_allocation_contract":
+        import regime_allocation_contract as mod
+    elif name == "control_room_mechanisms":
+        import control_room_mechanisms as mod
+    elif name == "bench_bridge":
+        import bench_bridge as mod
+    elif name == "practitioner_processes":
+        import practitioner_processes as mod
+    else:
+        raise ModuleNotFoundError(name)
+    return mod
+
+
+def _control_room() -> None:
+    """THE LIVE CONTROL ROOM (2026-09-30): regime now, its admission contract, the bench bridge.
+
+    Five artifacts, each fenced so one failure costs only itself:
+      control_room               reports/CONTROL_ROOM.json -- every traded instrument's
+                                 vol / trend-range / liquidity state and the live sleeves in it
+      regime_allocation_contract reports/REGIME_ALLOCATION_CONTRACT.json -- walk-forward, the live
+                                 solver with and without the per-instrument regime kernel; the
+                                 allocator consumes the kernel only on GAIN. Re-run weekly: 65
+                                 monthly re-solves do not change inside a week.
+      control_room_mechanisms    reports/CONTROL_ROOM_MECHANISMS.json -- the reverse-engineered
+                                 regime-first gap and index/VIX divergence screens
+      bench_bridge               reports/BENCH_BRIDGE.json -- certified -> forward -> live ->
+                                 funded, scored by dE[log W], missed growth listed first
+      practitioner_processes     reports/PRACTITIONER_PROCESSES.json -- each cited practitioner's
+                                 whole loop, stage by stage, and its bottleneck (runs last: it
+                                 reads the three artifacts above)
+      operator digest            reports/OPERATOR_DIGEST.md -- the one page the operator reads
+                                 (scripts/context.py; never writes under context/, which is code)
+    Sizes nothing; publishes.
+    """
+    import runpy
+    import time as _t
+    failed = []
+    contract = BASE / "reports" / "REGIME_ALLOCATION_CONTRACT.json"
+    jobs = [("control_room", []), ("control_room_mechanisms", []), ("bench_bridge", []),
+            ("practitioner_processes", [])]
+    if not contract.exists() or _t.time() - contract.stat().st_mtime > 7 * 86400:
+        jobs.insert(1, ("regime_allocation_contract", ["--worlds", "256", "--rows", "384"]))
+    for name, args in jobs:
+        try:
+            rc = _control_room_module(name).main(args)  # type: ignore[attr-defined]
+            dlog(f"{name}: rc={rc}")
+        except Exception as exc:
+            failed.append(name)
+            dlog(f"{name} FAILED (non-fatal): {type(exc).__name__}: {exc}")
+    try:
+        ctx = runpy.run_path(str(BASE.parent.parent / "scripts" / "context.py"))
+        ctx["digest"](20, BASE / "reports" / "OPERATOR_DIGEST.md")
+        dlog("operator digest written")
+    except Exception as exc:
+        failed.append("operator_digest")
+        dlog(f"operator digest FAILED (non-fatal): {type(exc).__name__}: {exc}")
+    if len(failed) == len(jobs) + 1:
+        raise RuntimeError(f"every control-room artifact failed: {failed}")
+
+
 STEPS = (("research_gap_map", _research_gap_map),
-         ("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
+         ("refresh_bars", _refresh_bars), ("deepen_bars", _deepen_bars),
+         ("cost_fields", _cost_fields),
          ("factor_residual", _factor_residual), ("research_bandit", _research_bandit),
          ("world_miners", _world_miners), ("proposers", _proposers),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
@@ -601,17 +739,31 @@ STEPS = (("research_gap_map", _research_gap_map),
          ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("recertify", _recertify),
          ("promoter", _promote), ("markout", _markout),
-         ("portfolio", _portfolio), ("decay", _decay),
+         ("portfolio", _portfolio), ("control_room", _control_room), ("decay", _decay),
          ("state_research_feedback", _state_research_feedback),
          ("research_memory", _research_memory),
          ("module_rent", _module_rent), ("zentech", _zentech), ("conservation", _conservation),
          ("wiring_ceo", _wiring_ceo), ("probation", _probation),
          ("module_rent_research", _module_rent_research), ("build_allocator", _build_allocator),
-         ("simplifier", _simplifier),
+         ("simplifier", _simplifier), ("capacity_watch", _capacity_watch),
+         ("six_event_trace", _six_event_trace),
          ("export_aurum", _export_aurum), ("daily_research_os", _daily_research_os))
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    # ONE STEP ON ITS OWN CLOCK (2026-09-30). `markout` sits behind research steps this box has
+    # measured at 9,056 s, under a 900 s hourly budget, so `reports/markout.json` stood at
+    # 2026-09-08 with n_matched=0 while the live book kept filling. `--step NAME` runs that one
+    # step now, through the same `run_step`, and leaves the day's stamp alone: the chain still
+    # runs it in order, and an hourly leg can give a live-truth step the cadence it needs.
+    if "--step" in argv:
+        i = argv.index("--step")
+        want = argv[i + 1] if i + 1 < len(argv) else ""
+        fns = dict(STEPS)
+        if want not in fns:
+            dlog(f"--step {want!r}: no such step; known: {', '.join(fns)}")
+            return 2
+        return 0 if run_step(want, fns[want])["ok"] else 1
     force = "--force" in argv
     today = datetime.now(UTC).date().isoformat()
     stamp = _load_stamp()

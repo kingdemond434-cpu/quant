@@ -236,6 +236,34 @@ SOURCES = (
     # (scripts/requeue_named_mechanisms.py). Merged when freshly rebuilt; hourly runs skip it
     # as stale once consumed -- a map extension re-opens gate 1, never any later gate.
     ("requeue_named.json", "hypotheses"),
+    # THE NOVEL-MECHANISM LANE, WHICH TERMINATED ONE CONNECTOR SHORT OF THIS TUPLE (2026-09-24).
+    #
+    # A mechanism with no registered family function cannot reach the judge through any other
+    # door. The compiler's deterministic vocabulary refuses it by name -- NEEDS_EXACT_RULE_
+    # EXTRACTION -- and `deepening_worker` then spends a model call recovering the rule from the
+    # row's own text, re-running the recovery through `compile_row` so no guard is bypassed. That
+    # is the ONLY path by which the Chinese, Japanese, Korean and Russian forests, the
+    # championship records, the world crawler and the arXiv feed can contribute a mechanism the
+    # desk did not already know.
+    #
+    # ITS OUTPUT WAS READ BY NOBODY. `deepened_candidates.json` was written every pass, consumed
+    # only by `portfolio_gap` for gap ANALYSIS and counted by `convert_swarm` for a log line.
+    # `libs/ops/capability_graph.py` asserted the edge in as many words -- "deepened_candidates
+    # -> external_gauntlet via compiler merge", and a comment calling it "a real path" -- but no
+    # merge implemented it, and this tuple is the merge. Measured on the trading box the day it
+    # was found: 83 mechanisms recovered in the worker's lifetime, 30 of them in the preceding
+    # 24 hours, every one of them bought with the scarcest budget the desk owns (one account,
+    # 1,000 model requests a day, exhausted by 01:42 UTC) -- and not one had ever reached the
+    # docket, so not one had ever been judged. Work earned and dropped one line short.
+    #
+    # NOTHING IS RELAXED BY ADMITTING THEM. These rows come out of `compile_row`, the same
+    # function that produces `miner_candidates.json`'s hypotheses, so they are contract-identical
+    # by construction; they face the identical ten gates, the same family routing, the same
+    # untradeable-symbol filter and the same family-less drop as every other row here. The
+    # `producer` stamp finally makes the lane attributable, so `certificate_provenance` can say
+    # whether a recovered mechanism has ever earned a certificate -- a question that could not
+    # previously be ASKED, because no certificate could descend from a row that never arrived.
+    ("deepened_candidates.json", "candidates"),
 )
 
 
@@ -820,6 +848,42 @@ def main() -> int:
     except Exception as exc:
         prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
+    # ONE SEARCHED CLAIM IS ONE BREADTH UNIT (libs/research/claim_selection.py, 2026-09-30).
+    # Every docket row -- fresh, carried over or already judged -- whose own words say its result
+    # was the best of N searched variations is stamped with its claim family, so the 25,520 cells
+    # one video's "best of ~200" was swept into count as ONE unit of breadth and the family is
+    # charged its 200 trials ONCE in the lifetime ledger. No row is removed, reordered or
+    # re-judged, and `family`/`params`/verdicts are untouched. A fault here costs the stamp and
+    # says so in the report; it never costs a row.
+    claim_selection: dict[str, Any] = {"status": "UNMEASURED"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.research import claim_selection as _cs
+        before = _cs.breadth(rows_out)
+        stamped = _cs.stamp_all(rows_out)
+        after = _cs.breadth(rows_out)
+        ledger = _cs.update_ledger(after)
+        claim_selection = {
+            "status": "MEASURED", "rows_stamped": stamped,
+            "cells": after["cells"],
+            "breadth_units_before": before["breadth_units"],
+            "breadth_units_after": after["breadth_units"],
+            "distinct_mechanisms_before": before["distinct_mechanisms"],
+            "distinct_mechanisms_after": after["distinct_mechanisms"],
+            "claim_families": {k: {kk: vv for kk, vv in v.items() if kk != "genome_ids"}
+                               for k, v in after["claim_families"].items()},
+            "lifetime_selection_trials": ledger.get("lifetime_selection_trials"),
+            "ledger": str(_cs.LEDGER)}
+        if stamped:
+            print(f"   claim selection: {after['cells_in_claim_families']} row(s) in "
+                  f"{len(after['claim_families'])} claim famil(ies); breadth units "
+                  f"{before['breadth_units']} -> {after['breadth_units']}")
+    except Exception as exc:
+        claim_selection = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   claim selection stamp unavailable ({type(exc).__name__}: {exc})")
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -887,6 +951,7 @@ def main() -> int:
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
         "prejudge": prejudge,
+        "claim_selection": claim_selection,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "

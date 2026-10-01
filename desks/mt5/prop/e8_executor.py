@@ -709,7 +709,8 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
                 ok = bool(venue.modify_stop(int(pid), level))
                 row |= {"action": "MODIFY" if ok else "REJECTED", "ok": ok}
             except Exception as exc:                # broad: any venue/SDK failure, named below
-                row |= {"action": "ERROR", "why": f"{type(exc).__name__}"}
+                row |= {"action": "ERROR", "ok": False,
+                        "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
         rows.append(row)
 
     # A closed position's basis is dead weight and its id can be reissued; the MT5 side's
@@ -726,8 +727,12 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
 
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         entry_enabled: bool = False) -> dict[str, Any]:
+    from mt5desk import order_door
     from prop import e8_guard
 
+    # ONE DOOR FOR MONEY: every place / modify_stop / close / close_all this pass sends is
+    # logged to the order-door ledger, and a raise or an unacknowledged write is never silent.
+    venue = order_door.guard_venue(venue, caller="e8_executor")
     now = now or datetime.now(UTC)
     acct = venue.account()
     equity = float(acct["equity"])
@@ -852,10 +857,16 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                     continue
                 if armed:
                     try:
-                        venue.close(int(_pid))
-                        closed.append(int(_pid))
+                        # THE ANSWER IS READ. `close` returns the venue's acknowledgement, and
+                        # an unacknowledged close counted as closed was a banned sleeve's
+                        # position left open while the row said it was gone.
+                        if venue.close(int(_pid)):
+                            closed.append(int(_pid))
+                        else:
+                            row["why"] += f"; close of {_pid} NOT acknowledged by the venue"
                     except Exception as exc:
-                        row["why"] += f"; close of {_pid} failed ({type(exc).__name__})"
+                        row["why"] += (f"; close of {_pid} failed "
+                                       f"({type(exc).__name__}: {str(exc)[:120]})")
                 else:
                     row["why"] += f"; SHADOW would close position {_pid}"
             row["closed_positions"] = closed

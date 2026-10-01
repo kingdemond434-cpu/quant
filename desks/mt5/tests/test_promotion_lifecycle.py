@@ -58,6 +58,10 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "SLEEVES_FILE", tmp_path / "data" / "sleeves.json")
     _open_live_policy(tmp_path, monkeypatch, "CADJPY", "USDJPY", "EURJPY", "GBPJPY", "XAUUSD",
                       "AUDNZD", "EURZAR")
+    # THE TIER S DOOR IS GRANTED HERE, as the certificate authority and the allocator are below.
+    # Since 7de6ccca7 it withholds with DOOR_ERROR whenever REPLICATION.json is absent or stale,
+    # which it always is in a checkout; that fail-closed rule is pinned in test_tier_s_door.py.
+    monkeypatch.setattr(promoter, "tier_s_block", lambda _name: None)
     monkeypatch.setattr(promoter, "LEDGER", tmp_path / "data" / "live_ledger.jsonl")
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
     # THE GOLD BOOK'S FILES TOO. The promoter now RE-DERIVES a standing gold retirement against

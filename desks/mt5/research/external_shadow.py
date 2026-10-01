@@ -9,6 +9,7 @@ It never evaluates a signal and never creates a clock.
 from __future__ import annotations
 
 import json
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -73,7 +74,14 @@ def main() -> int:
         ),
     )
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(state, indent=2), "utf-8")
+    # NOT an in-place overwrite: this file is read by the sync, the census and the reconciler,
+    # and on Windows overwriting it while one of them holds it open raised PermissionError 13 --
+    # which failed the whole shadow census (MT5-Shadow exit 1) on 2026-09-16.
+    root = str(Path(__file__).resolve().parents[3])
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from libs.ops.win_write import write_text_resilient
+    write_text_resilient(STATE, json.dumps(state, indent=2))
     print(f"external shadow compatibility: retired {retired} obsolete private clock(s); "
           "canonical shadow_forward remains sole owner")
     return 0

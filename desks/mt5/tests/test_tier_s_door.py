@@ -8,6 +8,16 @@ from typing import Any
 
 from libs.tiers import door_evidence as de
 
+_BOX_ID = "0123456789abcdef0123456789abcdef"
+
+
+def _record_trading_id(monkeypatch: Any, tmp: Path) -> None:
+    from libs.ops import host_identity
+    cfg = tmp / "trading_host.json"
+    cfg.write_text(json.dumps({"hostname": host_identity.DEFAULT_TRADING_HOSTNAME,
+                               "machine_id": _BOX_ID}), "utf-8")
+    monkeypatch.setattr(host_identity, "CONFIG", cfg)
+
 
 def _ch(resolves: str, state: str = "FAILED", sev: str = "HIGH") -> dict[str, Any]:
     return {"reviewer": "r", "kind": "K", "state": state, "severity": sev,
@@ -89,7 +99,7 @@ def test_door_fails_closed_when_a_check_raises(monkeypatch: Any) -> None:
     assert (pa.block("EURUSD.x") or "").startswith("DOOR_ERROR: the freeze check")
 
 
-def test_done_needs_the_trading_boxs_own_attestation(tmp_path: Path) -> None:
+def test_done_needs_the_trading_boxs_own_attestation(tmp_path: Path, monkeypatch: Any) -> None:
     import importlib.util
     import sys as _sys
 
@@ -113,12 +123,22 @@ def test_done_needs_the_trading_boxs_own_attestation(tmp_path: Path) -> None:
     cloud = {"host": "runsc", "layers": {lid: {"ok": True}}}
     problems, _ = chk.check(ledger, root, evidence=cloud)
     assert any(lid in p for p in problems), "a cloud host's word never counts"
+    # The hostname alone is a label, not an identity: with no recorded id it attests nothing.
     box = {"host": be.TRADING_HOST, "layers": {lid: {"ok": True}}}
     problems, _ = chk.check(ledger, root, evidence=box)
+    assert any(lid in p for p in problems), "a hostname is never the identity"
+    # The recorded machine id is.
+    _record_trading_id(monkeypatch, tmp_path)
+    box = {"host": be.TRADING_HOST, "machine_id": _BOX_ID, "layers": {lid: {"ok": True}}}
+    problems, _ = chk.check(ledger, root, evidence=box)
     assert problems == [], problems
+    impostor = {**box, "machine_id": "f" * 32}
+    problems, _ = chk.check(ledger, root, evidence=impostor)
+    assert any(lid in p for p in problems), "another machine's id never counts"
 
 
-def test_attest_reads_freshness_and_the_contract_verdict(tmp_path: Path) -> None:
+def test_attest_reads_freshness_and_the_contract_verdict(tmp_path: Path,
+                                                        monkeypatch: Any) -> None:
     from libs.tiers import box_evidence as be
     now = datetime.now(UTC)
     (tmp_path / "docs" / "research").mkdir(parents=True)
@@ -133,11 +153,19 @@ def test_attest_reads_freshness_and_the_contract_verdict(tmp_path: Path) -> None
     cp = tmp_path / be.CONTRACTS.relative_to(be.ROOT)
     cp.parent.mkdir(parents=True)
     cp.write_text(json.dumps({"layers": {"S03": {"verdict": "REJECTED"}}}), "utf-8")
-    doc = be.attest(root=tmp_path, out=tmp_path / "ev.json", host=be.TRADING_HOST, now=now)
+    _record_trading_id(monkeypatch, tmp_path)
+    doc = be.attest(root=tmp_path, out=tmp_path / "ev.json", host=be.TRADING_HOST,
+                    machine_id=_BOX_ID, now=now)
     ok = {k for k, v in doc["layers"].items() if v["ok"]}
     assert ok == {"S01"}, doc
+    assert doc["counts_toward_done"] is True and doc["machine_id"] == _BOX_ID
     assert be.attested(doc) == {"S01"}
-    assert be.attested({**doc, "host": "runsc"}) == set()
+    # keyed on the machine id, not the hostname: renaming the host changes nothing...
+    assert be.attested({**doc, "host": "runsc"}) == {"S01"}
+    # ...and another machine calling itself the trading box earns nothing
+    other = be.attest(root=tmp_path, out=tmp_path / "ev2.json", host=be.TRADING_HOST,
+                      machine_id="f" * 32, now=now)
+    assert other["counts_toward_done"] is False and be.attested(other) == set()
 
 
 def test_freeze_tilts_heat_toward_out_of_sample_evidence_heat_neutrally() -> None:
@@ -196,6 +224,7 @@ def test_an_unloadable_door_withholds_rather_than_waves_through(monkeypatch: Any
     _research = Path(__file__).resolve().parent.parent / "research"
     monkeypatch.syspath_prepend(str(_research))
     import promoter
+
     import libs.tiers as _tiers
     monkeypatch.setitem(_sys.modules, "libs.tiers.promotion_authority", None)
     monkeypatch.delattr(_tiers, "promotion_authority", raising=False)

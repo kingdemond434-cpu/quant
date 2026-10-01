@@ -305,12 +305,18 @@ def publish_state() -> dict:
     publish; that is reported as a skip, never as a failure, so it cannot become noise that
     trains a reader to ignore this leg.
     """
+    # STEP 1 -- THE GATE VERDICT DIGEST, written just before the publisher runs so the push
+    # carries this hour's reasons (2026-09-30). The ledger and the sweep report it digests are
+    # gitignored; the digest is the small committed answer to "which gate killed what, and why".
+    digest = _gate_verdict_digest()
     script = BASE / "scripts" / "sync_shadow_to_git.ps1"
     if not script.exists():
-        return {"skipped": "sync_shadow_to_git.ps1 is absent on this host"}
+        return {"skipped": "sync_shadow_to_git.ps1 is absent on this host",
+                "gate_verdict_digest": digest}
     powershell = shutil.which("powershell") or shutil.which("pwsh")
     if not powershell:
-        return {"skipped": "no PowerShell on this host -- publishing is the trading box's job"}
+        return {"skipped": "no PowerShell on this host -- publishing is the trading box's job",
+                "gate_verdict_digest": digest}
     try:
         r = subprocess.run([powershell, "-NoProfile", "-NonInteractive",
                             "-ExecutionPolicy", "Bypass", "-File", str(script)],
@@ -318,14 +324,50 @@ def publish_state() -> dict:
                            timeout=600, check=False)
     except Exception as exc:
         print(f"publish_state FAILED to start: {type(exc).__name__}: {exc}", flush=True)
-        return {"error": f"{type(exc).__name__}: {exc}"}
+        return {"error": f"{type(exc).__name__}: {exc}", "gate_verdict_digest": digest,
+                "state_flow": _state_flow()}
     tail = (r.stdout or r.stderr or "").strip().splitlines()[-3:]
     if r.returncode != 0:
         # LOUD, because this is the leg that decides whether anybody can SEE the desk. A silent
         # publisher failure is the one that costs eleven days.
         print(f"publish_state FAILED rc={r.returncode}: {' | '.join(tail)}", flush=True)
+    # STEP 3 -- did the state actually leave the box? Measured on origin, not on the exit code.
     return {"exit_code": r.returncode, "tail": tail,
-            "at": datetime.now(UTC).isoformat(timespec="seconds")}
+            "at": datetime.now(UTC).isoformat(timespec="seconds"),
+            "gate_verdict_digest": digest, "state_flow": _state_flow()}
+
+
+def _gate_verdict_digest() -> dict:
+    """Write desks/mt5/reports/GATE_VERDICT_DIGEST.json; report its shape. Never raises."""
+    try:
+        import gate_verdict_digest
+        doc = gate_verdict_digest.build()
+        gate_verdict_digest.write(doc)
+        return {"status": doc.get("status"),
+                "ledger_rows": (doc.get("ledger") or {}).get("rows"),
+                "sweep_verdicts": (doc.get("latest_sweep") or {}).get("verdicts")}
+    except Exception as exc:
+        print(f"gate verdict digest FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def _state_flow() -> dict:
+    """DID THE STATE ACTUALLY LEAVE THE BOX? (2026-09-30).
+
+    The publisher's exit code is not the answer: the last box state sync reached origin on
+    2026-09-12 and the box went on committing locally and exiting for two weeks. This measures
+    the outcome on origin itself, writes desks/mt5/reports/BOX_STATE_FLOW.json (read by
+    stall_watch every ten minutes) and emits STATE_FLOW_STALLED when local state is fresh and
+    origin's copy is not. Never raises.
+    """
+    try:
+        from libs.ops import state_publication
+        doc = state_publication.publish_flow(REPO)
+        return {k: doc.get(k) for k in ("verdict", "why", "published_age_h",
+                                        "local_commits_not_on_origin")}
+    except Exception as exc:
+        print(f"state flow meter FAILED: {type(exc).__name__}: {exc}", flush=True)
+        return {"error": f"{type(exc).__name__}: {exc}"}
 
 
 def _tape_main() -> int:
@@ -826,6 +868,10 @@ CORE_LEGS: frozenset[str] = frozenset({
     "forward_reconcile", "clock_liveness", "certificate_clock_law",
     "forward_calibration", "desk_self_heal", "tier5_acceptance", "mission_control",
     "closed_loop", "acceptance", "candidate_conservation", "pit_canaries",
+    # A SILENT HALT COSTS A WINDOW AN HOUR (PR #130 audit): the placement-interlock fence ran only
+    # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
+    # It reads three small files and writes one, so it runs on BOTH plans, every hour.
+    "placement_interlock",
     "mutation_yield", "credit_assignment", "publish_survivors", "publish_dashboard",
     # CANON PUBLICATION IS CORE. `MT5-Gauntlet` is the judge's own hourly task, so a sweep can
     # complete on a pass this cycle never ran; if the seal were only refreshed on the heavy plan
@@ -866,7 +912,8 @@ CORE_LEGS: frozenset[str] = frozenset({
     "frontier_unknowns", "frontier_report", "frontier_ontology", "counterfactual_world",
     "strategy_paths", "reclaim_disk", "archive_tape", "queue_cycle",
     # THE 2026-09-16 BLUEPRINT ORGANS (phases C/D of the Tier-1 ledger), all cheap readers.
-    "axis_registry", "tier1_scorecard", "novelty_gate", "forced_flow_calendar", "breadth_ladder",
+    "axis_registry", "tier1_scorecard", "tier1_gap", "novelty_gate", "forced_flow_calendar",
+    "breadth_ladder",
     "wiring_ceo", "live_system_state", "hazard_engine", "posterior_alpha", "semantic_memory",
     "model_role_benchmark", "research_departments", "qd_frontier", "value_of_data",
     "research_api_status", "artifact_chain", "residual_queue", "unseen_frontier",
@@ -886,6 +933,13 @@ CORE_LEGS: frozenset[str] = frozenset({
     # THE GOLD BOOK'S SIZE INSIDE SURVIVAL (principal 2026-09-30): the gateway and the E8 lane
     # read reports/KELLY_SURVIVAL.json with a two-hour expiry, so it has to be refreshed hourly.
     "kelly_survival",
+    # The live-truth pair given their own clocks (2026-09-30): the demotion walk and the fill join.
+    "decay_monitor", "fill_markout",
+    # IS THE BOX'S STATE REACHING GIT, AND IS THE DESK RUNNING (2026-09-30): the freshness fence
+    # and the plain-English desk health check, each seconds, each writing a report that the
+    # `publish_state` leg right after them carries to origin. Before this the fence rode only the
+    # 48h law-gate rotation and the health check ran on no clock at all.
+    "box_state_freshness", "desk_health",
 })
 
 
@@ -924,6 +978,8 @@ LEG_DEPARTMENT: dict[str, str] = {
     **dict.fromkeys(("refresh_bars", "tape_features", "lake_promote", "universe_integrity",
                      "dukascopy_backfill", "synthetic_usdx",
                      "source_routes", "source_fixer", "asia_collector", "asia_parser",
+                     # free public POS/card/location/satellite proxies as PIT series
+                     "alt_proxies",
                      # walking inside a registered ground's own door is collection, like the
                      # collector above it: it fetches documents and files them as claims
                      "ground_depth",
@@ -960,7 +1016,7 @@ LEG_DEPARTMENT: dict[str, str] = {
                      "experiment_cache", "probation", "axis_proposer", "program_alpha_lane",
                      "trajectory_evolution", "descendants", "card_explosion", "alpha_lineage",
                      "alpha_recombination", "graveyard_resurrection", "discovery_compiler",
-                     "conversion_maximiser", "trend_core",
+                     "conversion_maximiser", "conversion_funnel", "trend_core",
                      # the within-class rank books, one leg per cell, aimed at the empty
                      # cross_sectional_fx / crisis_drawdown / cross_asset_lead_lag clusters
                      "cross_sectional_breadth"),
@@ -989,7 +1045,9 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
                      "regime_hierarchy", "representation_discovery",
-                     "event_surprise", "cross_asset_graph", "transmission_engine"), "macro"),
+                     "event_surprise", "cross_asset_graph", "transmission_engine",
+                     # the Alpha Capture substitute: public analyst views -> PIT events
+                     "alpha_capture"), "macro"),
     # execution: the execution research command
     **dict.fromkeys(("execution_twin", "why_not_report", "state_replay_audit",
                      "excursions", "exit_accounts",
@@ -1723,6 +1781,10 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # cell is measured at most once a day), so the cap only has to sit above its own budget.
     "cross_sectional_breadth": 1_000,
     "event_surprise": 400,
+    # Stops itself at --budget-s 300 (60% of it collecting); the cap sits above it.
+    "alpha_capture": 420,
+    # alt_proxies stops itself at --budget-s 300 (fetch share 60%) and writes; cap above it.
+    "alt_proxies": 400,
     "counterexample_agent": 700,
     "search_paradigm_census": 700,
     "replication_civilization": 1_000,
@@ -1766,6 +1828,9 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # plus its ratchet; the cap sits above its own budget for the reason `enrol_clocks` was
     # raised -- a cap below an organ's budget truncates it at the same prefix every hour.
     "conversion_maximiser": 1_000,
+    # The conversion funnel stops itself at --budget-s 240 (a streamed read of the verdict
+    # ledger plus five small artifacts) and checkpoints CONVERSION_FUNNEL.json before the stream.
+    "conversion_funnel": 330,
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
@@ -2588,6 +2653,15 @@ def compile_candidates() -> dict:
     """
     return _producer("miner_candidate_compiler", "research/miner_candidate_compiler.py",
                      "--budget-s", "600")
+
+
+def placement_interlock() -> dict:
+    """`placement_interlock`: has any sleeve been refused in a run with no placement since, or
+    has the release identity stopped allowing new risk? `scripts/check_placement_interlock.py`
+    writes `data/placement_interlock.json`, an alert-ledger entry and a PLACEMENT_* event; on the
+    trading box (by machine id, libs/ops/host_identity) an UNMEASURED verdict fails and is written
+    too. Hourly here, and still in the law gate's rotation (`_STATE_FENCES`)."""
+    return _producer("placement_interlock", "scripts/check_placement_interlock.py")
 
 
 def pit_canaries() -> dict:
@@ -3436,6 +3510,7 @@ def main() -> None:
     bs = _costed("breadth_sweep", breadth_sweep)
     ccv = _costed("candidate_conservation", candidate_conservation)
     pcn = _costed("pit_canaries", pit_canaries)
+    pil = _costed("placement_interlock", placement_interlock)
     myd = _costed("mutation_yield", mutation_yield)
     # DELAYED TRUTH (principal F12, 2026-09-12; wired 2026-09-16): realised R credited back
     # to the scientist that proposed each cell, live when the live ledger is thick enough,
@@ -3499,6 +3574,9 @@ def main() -> None:
                                                           "research/live_system_state.py"))
     t1s = _costed("tier1_scorecard", lambda: _producer("tier1_scorecard",
                                                         "research/tier1_scorecard.py"))
+    # THE TIER-1 GAP (2026-09-30): the desk's breadth, mining, judging and conversion beside
+    # tier-1 references, ranked by orders of magnitude short. The CRO noon pass reads it first.
+    t1g = _costed("tier1_gap", lambda: _producer("tier1_gap", "research/tier1_gap.py", "--once"))
     # NOTHING IS PARKED (principal 2026-09-23): every queue in the desk, its depth, its oldest
     # row's age and its measured drain rate, in one artifact. scripts/check_no_queues.py fences it.
     qcn = _costed("queue_census", lambda: _producer("queue_census", "research/queue_census.py",
@@ -3590,6 +3668,13 @@ def main() -> None:
     # lawful-pages-only and degrades to UNMEASURED rather than inventing a consensus.
     esur = _costed("event_surprise", lambda: _producer(
         "event_surprise", "research/event_surprise.py", "--once", "--budget-s", "300"))
+    # THE ALPHA CAPTURE SUBSTITUTE (2026-09-30): Yahoo upgrades, SEC 8-K guidance, eastmoney,
+    # Naver and TDnet views stored at first_seen_at, tracked at +1/+5/+21 trading days against a
+    # placebo of shifted dates, and emitted as analyst_revision_drift / cross-market lead cells,
+    # the `analyst_views` axis and the allocation-intel report. Each source keeps its own cadence
+    # inside the organ, so an hourly leg fetches only what is due.
+    acap = _costed("alpha_capture", lambda: _producer(
+        "alpha_capture", "research/alpha_capture.py", "--once", "--budget-s", "300"))
     # THE ADVERSARY THAT ATTACKS A HYPOTHESIS BEFORE A TRIAL IS SPENT ON IT (W6): placebo
     # symbol, placebo date, sign flip, neighbouring parameter, excluded window. It records
     # evidence on the registry row and changes no status: the sealed gauntlet and the
@@ -3822,6 +3907,13 @@ def main() -> None:
     cvm = _costed("conversion_maximiser", lambda: _producer(
         "conversion_maximiser", "research/conversion_maximiser.py", "--once",
         "--budget-s", "900", "--max-rows", "5000"))
+    # THE CONVERSION FUNNEL (the 25 Sep lane "maximise conversion to certificates", rebuilt
+    # 2026-09-30): mined -> cell -> judged -> verdict class -> PASS -> certificate -> forward
+    # clock, with the count lost at each step by NAMED reason and owner -- the drop-finder the
+    # noon CRO could not read ("build/data failures UNMEASURED"). It runs after the maximiser so
+    # this hour's conversions are in the registry stage. Measurement only; no gate moves.
+    cfn = _costed("conversion_funnel", lambda: _producer(
+        "conversion_funnel", "research/conversion_funnel.py", "--once", "--budget-s", "240"))
     rdb = _costed("research_debt", lambda: _producer("research_debt",
                                                       "research/research_debt.py"))
     # THE INGESTION-EXPLOITATION CONTRACT (LAWS 5c, principal 2026-09-17). Every ingested unit --
@@ -4685,6 +4777,14 @@ def main() -> None:
     # admission law, no streak, no threshold: it makes the readings hourly, which is the cadence
     # the allocator's own artifact expiry (`decision_core._ALLOC_MAX_AGE_S` = 3600) assumes.
     pr = _costed("promoter", lambda: _producer("promoter", "research/promoter.py"))
+    # THE DEMOTION HALF, ON THE PROMOTION HALF'S CLOCK (2026-09-30). `decay_monitor` had exactly
+    # one clock, `daily_cycle.STEPS`, where it sits behind research steps measured at 9,056 s
+    # under a 900 s hourly budget: `data/decay_live.json` still read 2026-09-04 ("sleeves.json does
+    # not exist") with 40 LIVE rows on the book. It reads the ledger and the roster, applies the
+    # same FADE / RETIRE thresholds it always did, and runs straight after the promoter so the two
+    # writers of `data/sleeves.json` never overlap. No threshold moves; the readings get fresh.
+    dmo = _costed("decay_monitor", lambda: _producer(
+        "decay_monitor", "research/decay_monitor.py"))
     # MOVED BELOW THE GAUNTLET, 2026-09-07. This leg used to sit here at position 8 -- above
     # `merge`, `backtest`, `external_gauntlet` and `recertify_canon`, all of which were added to
     # this roster today. So it enrolled the certificates the canon held at the START of the pass
@@ -4744,6 +4844,13 @@ def main() -> None:
     sge = _costed("sge_premium", sge_premium)
     aco = _costed("asia_collector", asia_collector)
     apr = _costed("asia_parser", asia_parser)
+    # FREE PUBLIC ALT-DATA PROXIES (2026-09-30): Korea early exports, TSA throughput, Census
+    # ex-autos retail, JNTO arrivals, Tokyo CPI, FIRMS industrial heat, PortWatch ports and
+    # chokepoints, India gold imports and the recorded SGE premium, each as a PIT series
+    # through the axis door, the lake (exogenous_conditioner / alt conditioners) and
+    # reports/ALT_PROXIES_ALLOCATION_INTEL.json. After the collector, before the forge.
+    alp = _costed("alt_proxies", lambda: _producer(
+        "alt_proxies", "research/alt_proxies.py", "--once", "--budget-s", "300"))
     # AFTER the collector has recorded its verdicts: every source it could not read gets the
     # webmaster's variants tried and the Wayback copy located (`research/source_fixer.py`).
     sfx = _costed("source_fixer", lambda: _producer("source_fixer", "research/source_fixer.py"))
@@ -4767,6 +4874,12 @@ def main() -> None:
     wse = _costed("weak_signals", weak_signal_ensembles)
     rfx = _costed("residual_factors", residual_factors)
     mko = _costed("markout", markout)
+    # THE FILL JOIN, HOURLY (2026-09-30). `reports/markout.json` -- intents joined to live deals,
+    # n_matched, slippage against the ENTRY -- and `reports/attribution_chain.json` had one
+    # writer, `daily_cycle._markout`, behind the same 900 s-starved chain: n_matched=0 at
+    # 2026-09-08 and never re-measured. `--step markout` runs that one step here, unchanged.
+    fmk = _costed("fill_markout", lambda: _producer(
+        "fill_markout", "research/daily_cycle.py", "--step", "markout"))
     exo = _costed("exogenous_search", exogenous_search)
     srx = _costed("stop_reverse", stop_reverse_census)
     fwr = _costed("forward_reconcile", forward_reconcile_leg)
@@ -5159,6 +5272,15 @@ def main() -> None:
     rdh = _costed("research_dashboard", lambda: _producer("research_dashboard",
                                                           "research/research_dashboard.py",
                                                           "--once", "--budget-s", "300"))
+    # THE BOX'S STATE FRESHNESS AND THE DESK'S HEALTH, IMMEDIATELY BEFORE PUBLICATION (2026-09-30).
+    # Both write a published report (BOX_STATE_FRESHNESS.json carries CRO D17's
+    # box_state_age_hours and the NOT-ARMED line; DESK_HEALTH.json every PROBLEM/UNKNOWN finding),
+    # so the push below delivers THIS hour's verdicts. The fence exits 1 on STALE/UNMEASURED and
+    # the leg reads FAILED then -- loud, and it gates nothing: `publish_state` runs regardless.
+    bsf = _costed("box_state_freshness", lambda: _producer(
+        "box_state_freshness", "scripts/check_box_state_freshness.py"))
+    dhl = _costed("desk_health", lambda: _producer(
+        "desk_health", "scripts/check_desk_health.py", "--out"))
     # LAST, AND DELIBERATELY SO: it publishes what every leg above just wrote. Placing it here
     # means one pass produces the state AND delivers it, instead of delivering the previous hour's.
     pub = _costed("publish_state", publish_state)
@@ -5168,7 +5290,8 @@ def main() -> None:
                     "regime_monitor": rg,
                     "deepening": dp, "heal_clocks": hc, "mine": m,
                     "search": se, "breadth_sweep": bs, "candidate_conservation": ccv,
-                    "pit_canaries": pcn, "mutation_yield": myd, "credit_assignment": cra,
+                    "pit_canaries": pcn, "placement_interlock": pil,
+                    "mutation_yield": myd, "credit_assignment": cra,
                     "release_authority": rla, "regime_hierarchy": rgh, "residual_map": rsm,
                     "failure_prior": fpr, "scientist_standings": sst, "frontier_ceo": fce,
                     "research_tree": rtr, "representation_discovery": rpd,
@@ -5176,7 +5299,8 @@ def main() -> None:
                     "axis_registry": axr, "breadth_ladder": bld, "forced_flow_calendar": ffc,
                     "novelty_gate": ngt, "hazard_engine": hze, "posterior_alpha": pal,
                     "semantic_memory": smm, "model_role_benchmark": mrb,
-                    "live_system_state": lss, "tier1_scorecard": t1s, "wiring_ceo": wce,
+                    "live_system_state": lss, "tier1_scorecard": t1s, "tier1_gap": t1g,
+                    "wiring_ceo": wce,
                     "queue_census": qcn,
                     "research_departments": rdp, "qd_frontier": qdf, "blind_reviewer": bvr,
                     "evaluator_lab": evl, "synthetic_regimes": syr, "value_of_data": vod,
@@ -5188,7 +5312,7 @@ def main() -> None:
                     "engine_registry": engr,
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
-                    "event_surprise": esur,
+                    "event_surprise": esur, "alpha_capture": acap,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
@@ -5204,7 +5328,8 @@ def main() -> None:
                     "alpha_lineage": mal, "graveyard_resurrection": mgr, "shadow_discovery": msd,
                     "forward_exploitation": mfe, "alpha_recombination": mar,
                     "unused_information": mui, "discovery_compiler": dcp,
-                    "conversion_maximiser": cvm, "research_debt": rdb,
+                    "conversion_maximiser": cvm, "conversion_funnel": cfn,
+                    "research_debt": rdb,
                     "ingestion_ledger": igl, "ingestion_exploitation": ige,
                     "macro_intelligence": mci, "market_constitution": mcc,
                     "mining_objective": mob, "research_gap_map": rgm,
@@ -5271,6 +5396,7 @@ def main() -> None:
                     "asia_plane": asp,
                     "sge_premium": sge,
                     "asia_collector": aco,
+                    "alt_proxies": alp,
                     "asia_parser": apr,
                     "source_fixer": sfx,
                     "universe_integrity": uin,
@@ -5314,12 +5440,14 @@ def main() -> None:
                     "edge_reliability": erl, "arena": ar, "session_capital": scap,
                     "live_calibration_posterior": lcp, "constrained_book": cbk,
                     "kelly_survival": kls,
+                    "decay_monitor": dmo, "fill_markout": fmk,
                     "experimental_budget": xbg, "ops_redundancy": opr,
                     "forward_evidence_tracker": fet,
                     "prosecutor": pc, "scaling_laws": slw,
                     "dead_architecture": dac, "producer_census": prdc,
                     "productivity_census": prodc, "input_identity": iid,
                     "alpha_rank": arank, "factory_contracts": fcon,
+                    "box_state_freshness": bsf, "desk_health": dhl,
                     "publish_state": pub,
                     "enrol_clocks": ecl, "requeue_unrunnable": rq, "reclaim_disk": dd,
                     "miner_conversion": mc, "moat_miner": mo, "archive_tape": ta,
