@@ -182,6 +182,9 @@ LEG_LAYER: dict[str, str] = {
     # The breadth sweep mints cells for every unbanned family on every chart the desk holds bars
     # for -- a predictor search, scheduled hourly since the discovery hunt was banned (2026-09-16).
     "breadth_sweep": "prediction",
+    # The mass screen generates and screens rule cells by the million and forwards the FDR
+    # survivors to the judge -- a predictor search at scale: prediction.
+    "mass_screen": "prediction",
     # The dead-session remap turns asia/london/ny variants that can never fire into stand-in
     # cells that can -- a predictor search on the session axis: prediction.
     "session_variant_remap": "prediction",

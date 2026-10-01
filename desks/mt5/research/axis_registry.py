@@ -164,11 +164,12 @@ _FAMILY_GROUPS: dict[str, str] = {
     "macro_release macro market": "macro_conditional macro_gold_yield",
     "macro_release event market": "event_reaction",
     "macro_release cross_asset market": "usd_session_shock",
-    "carry_rollover carry market": "carry",
+    "carry_rollover carry market": "carry mass_screen_carry",
     "positioning_crowding positioning market": "cot_change_fade cot_change_momentum"
                                                " cot_comm_follow cot_net_fade cot_positioning"
                                                " retail_overlap_reversal",
-    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month",
+    "calendar_seasonality seasonality market": "calendar_month dow_effect turn_of_month"
+                                               " mass_screen_clock",
     "relative_value_dislocation cross_asset market": "correlation_regime cross_asset_residual"
                                                      " cross_sectional pca_residual"
                                                      " relative_value style_premia"
@@ -176,7 +177,7 @@ _FAMILY_GROUPS: dict[str, str] = {
                                                      " cross_sectional_class_low_vol",
     "relative_value_dislocation microstructure limit": "triangle",
     "cross_market_lead cross_asset market": "gold_dxy_shock lead_lag lead_lag_class_catchup"
-                                            " gnn_propagation",
+                                            " gnn_propagation mass_screen_lead",
     # The learned attention forecast (2026-09-30, research/learned_miners): whether a move is a
     # concession that reverts or information that continues, read off the recent path.
     "inventory_shock price_only market": "attention_ts",
@@ -209,7 +210,9 @@ _FAMILY_GROUPS: dict[str, str] = {
     # NO MECHANISM NAMED, AND THAT IS THE MEASUREMENT. `discovered` is the desk's own generated
     # family and dominates the docket; `generic`/`formula`/`ensemble`/`joint_genome` are spec
     # constructors. All map to UNKNOWN so the count is visible rather than assumed away.
-    f"{UNKNOWN} price_only market": "discovered",
+    # `mass_screen_thresh` / `_cond` are statistical finds of the mass screen (2026-09-30): a
+    # feature-threshold rule names no payer, so the mechanism is UNKNOWN and counted, not guessed.
+    f"{UNKNOWN} price_only market": "discovered mass_screen_cond mass_screen_thresh",
     f"{UNKNOWN} price_only {UNKNOWN}": "ensemble formula generic joint_genome exit_operated"
                                        " alt_conditioned",
     # Registered 2026-09-23/24 in `families_orthogonal`. `exit_operated` is an OPERATOR over any

@@ -9014,6 +9014,29 @@
     "TESTS: desks/mt5/tests/test_judge_coverage.py, 36 passing -- the realised rate is counted from the ledger, an UNKNOWN verdict counts toward neither, an unjudged family is still explored at 1.0, a measured passer outranks a measured non-passer, and an untaught family is backfilled past the cursor."
    ],
    "consumer": "desks/mt5/research/merge_hypotheses.py calls the same allocator when it writes the docket, so the order this ranking sets is the order the sealed gauntlet judges in; scripts/check_judge_coverage.py ratchets the carried backlog down."
+  },
+  {
+   "id": "MS1",
+   "item": "Mass hypothesis generation + cheap screen: >= 1M rule cells a day screened on the training window only, BH-FDR survivors forwarded to the judge, every screened cell charged as a trial",
+   "domain": "C",
+   "phase": "C",
+   "status": "LANDED",
+   "gate": "none",
+   "evidence": [
+    "desks/mt5/research/mass_screen.py",
+    "desks/mt5/mt5desk/mass_screen_rules.py",
+    "desks/mt5/mt5desk/families_orthogonal.py",
+    "libs/research/experiment_ledger.py",
+    "desks/mt5/tests/test_mass_screen.py"
+   ],
+   "scheduled_by": "hourly_cycle:mass_screen",
+   "artifact": "desks/mt5/reports/MASS_SCREEN.json",
+   "consumer": "libs/moat/registry.py enqueue_candidate -> libs/moat/docket_feed.py -> desks/mt5/research/merge_hypotheses.py -> external_survivors.json -> desks/mt5/scripts/external_gauntlet.py build_cell (ORTHOGONAL_FAMILIES); desks/mt5/data/MASS_SCREEN_TRIALS.jsonl -> libs/research/experiment_ledger.py -> desks/mt5/research/pf_allocator.py search_trials",
+   "gap": "LANDED 2026-09-30: MEASURED on the sandbox's own parquets (32 hypothesis-lane symbols, 4-core box, 2 measured workers): 3,727,920 cells in 150.8 s = 12,911 cells per core-second. The sealed DSR charge (gate_spec fixed_trial_count) does not read the screen's trials; that is a principal policy decision.",
+   "next_step": "Principal decision: whether the sealed deflated-Sharpe charge should take the per-family lifetime trial count (EXPERIMENT_LEDGER.json) for mass_screen_* families; and repair of external_gauntlet.daily_series's last-trade-per-day dict (a look-ahead for any family that trades more than once per entry day).",
+   "landed": [
+    "mass screen 2026-09-30"
+   ]
   }
  ],
  "status_vocabulary_note": "LANDED means the code exists in THIS REPOSITORY, on a named clock, with an artifact and a consumer. It does NOT mean the artifact has ever been produced on the trading box, and it does not mean the behaviour has been observed with money at risk. That distinction is what the five acceptance_properties measure, and they are measured from artifacts rather than asserted: an absent artifact reads UNMEASURED, never MET. Read the census as build coverage and the acceptance properties as operational proof. They are different questions and the second is the one that decides whether the desk works."
