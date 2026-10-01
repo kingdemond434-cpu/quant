@@ -346,6 +346,9 @@ def _proposers() -> None:
                  "fund_playbook", "microstructure_miner", "alpha_evolution",
                  "style_premia_sweep", "cross_asset_graph", "anomaly_factory",
                  "tail_alpha_search", "survivor_distiller", "factor_model_coevolution",
+                 # Reflective factor timing (IBK 2026 design): publishes its own admission
+                 # contract, desks/mt5/reports/REFLECTIVE_TIMING.json. Sizes nothing.
+                 "reflective_timing_contract",
                  # Learned GNN/attention miners (numpy): cells, forecast axes and allocation
                  # intel. Daily, on their own budget, so no hourly organ's share shrinks.
                  "learned_miners",
