@@ -102,7 +102,10 @@ MIN_EVENTS = 12
 MIN_EVENTS_REGIME = 20
 ALPHA = 0.05
 MAX_PUBLISHED = 400
-MAX_DONATIONS = 10
+#: Was 10 (2026-10-01). Every clearing cell already cleared the threshold over ALL `n_cells`
+#: measured and the donation is charged that same `n_cells`, so the cap discarded paid-for
+#: hypotheses at no saving in trials. One cell per (symbol, kind, bucket) still holds below.
+MAX_DONATIONS = MAX_PUBLISHED
 #: Days of history read for the pairs. Macro releases are monthly: 400 days is ~13 prints of a
 #: given release, which is the order of MIN_SURPRISE_N and no more.
 DAYS = 1200

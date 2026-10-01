@@ -56,7 +56,7 @@ decide which reaction is worth trading -- the ten gates do.
 CLI
     python event_response_atlas.py              # measure, write the artifact, donate
     python event_response_atlas.py --dry-run    # measure and print; write nothing, donate nothing
-    python event_response_atlas.py --days 400 --budget-s 240 --max-donations 15
+    python event_response_atlas.py --days 400 --budget-s 240 --max-donations 300
 """
 from __future__ import annotations
 
@@ -100,6 +100,11 @@ ALPHA = 0.05
 #: Cells published in the artifact, ranked by |t|. The FULL count rides on `n_cells` -- the cap is
 #: a file-size bound on the report, never on what was tested or on what the threshold divides.
 MAX_PUBLISHED = 300
+#: Clearing cells donated per pass. Was 15 (2026-10-01): every cell in `clearing` already
+#: cleared the Bonferroni bar over ALL `n_cells` tested, and the donation charges that same
+#: `n_cells` as its trial count, so a 16th clearing cell costs no further family-wise budget --
+#: the cap only threw measured, already-paid-for hypotheses away. Bounded by what is published.
+MAX_DONATIONS = MAX_PUBLISHED
 
 #: The four horizons, in minutes. Converted to BAR COUNTS on whichever chart the symbol has, so a
 #: horizon finer than the chart is UNMEASURED for that symbol rather than silently rounded up.
@@ -765,7 +770,7 @@ def donate_clearing(payload: dict[str, Any], max_donations: int) -> dict[str, An
 # CLI
 # =============================================================================================
 
-def run(days: int = 400, budget_s: float = 240.0, max_donations: int = 15,
+def run(days: int = 400, budget_s: float = 240.0, max_donations: int = MAX_DONATIONS,
         dry_run: bool = False, path: Path | str | None = None) -> dict[str, Any]:
     payload = build(days=days, budget_s=budget_s)
     if dry_run:
@@ -782,7 +787,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="measure and print; write nothing")
     parser.add_argument("--days", type=int, default=400, help="lookback window for events")
     parser.add_argument("--budget-s", type=float, default=240.0, help="wall-clock budget")
-    parser.add_argument("--max-donations", type=int, default=15)
+    parser.add_argument("--max-donations", type=int, default=MAX_DONATIONS)
     parser.add_argument("--path", default=None, help="artifact path")
     args = parser.parse_args(argv)
 

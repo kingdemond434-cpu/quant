@@ -1078,7 +1078,8 @@ LEG_DEPARTMENT: dict[str, str] = {
                      # Tier-1 B3/B4: the per-asset world model and the learned representation
                      # lane are both about what the market IS, before anything predicts it.
                      "regime_hierarchy", "representation_discovery",
-                     "event_surprise", "cross_asset_graph", "transmission_engine",
+                     "event_surprise", "cross_asset_graph", "asia_transmission",
+                     "transmission_engine",
                      # the macro-conditioned dip sweep, read point-in-time through the store
                      "macro_conditioned_sweep",
                      # the Alpha Capture substitute: public analyst views -> PIT events
@@ -1914,6 +1915,7 @@ LEG_BUDGET_SEC: dict[str, int] = {
     # The graph owns a 900 s bounded sweep. The calibration and acceptance organs are artifact
     # readers; their caps are only protection against a damaged file or a wedged task query.
     "cross_asset_graph": 1_000,
+    "asia_transmission": 700,
     "transmission_engine": 1_000,
     "forward_calibration": 180,
     "desk_self_heal": 240,
@@ -4439,6 +4441,12 @@ def main() -> None:
     # every proposal still enters the same compiler and ten-gate authority.
     cag = _costed("cross_asset_graph", lambda: _producer(
         "cross_asset_graph", "research/cross_asset_graph.py", "--budget-s", "900"))
+    # THE ASIAN TRANSMISSION CHAINS (2026-10-01). Declared production-chain lead_lag edges,
+    # measured in Asian hours at the CAUSAL_ROLE bar. lead_lag became buildable in sealed pass 2
+    # (76895fedc) but this organ was on no clock, so its proposals never reached the compiler.
+    # `--budget 300` bounds measure and propose separately, so the cap sits above 2 x 300.
+    atx = _costed("asia_transmission", lambda: _producer(
+        "asia_transmission", "research/asia_transmission.py", "--propose", "--budget", "300"))
     txg = _costed("transmission_engine", lambda: _producer(
         "transmission_engine", "research/transmission_engine.py", "--budget-s", "900"))
     # THE GLOBAL NATIVE-MARKET RESEARCH OS (regions): every country lab at equal priority with
@@ -5596,6 +5604,7 @@ def main() -> None:
                     "counterfactual_attribution": cfat,
                     "trend_core": tcor, "cross_sectional_breadth": xsb,
                     "event_surprise": esur, "alpha_capture": acap,
+                    "asia_transmission": atx,
                     "counterexample_agent": cexa,
                     "search_paradigm_census": spc,
                     "source_registry": srg, "event_response_atlas": era, "world_lab": wlb,
