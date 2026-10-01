@@ -1,5 +1,5 @@
 {
- "signed_utc": "2026-10-01T01:01:02.821837+00:00",
+ "signed_utc": "2026-10-01T01:25:47.133545+00:00",
  "signed_by": "zuck",
  "files": {
   "desks/mt5/scripts/external_gauntlet.py": "74be05bbb50b3663",
@@ -11,7 +11,7 @@
   "desks/mt5/research/promoter.py": "052a06227db241e7",
   "desks/mt5/mt5desk/gateway_config_fallback.py": "0ce1dd51f98b6c23",
   "libs/portfolio/allocator_proof.py": "09f8f0b9dff5239a",
-  "libs/portfolio/rails.py": "e01e60272c800632",
+  "libs/portfolio/rails.py": "7a678df5ceb7a4b4",
   "libs/portfolio/capital_modifiers.py": "f73e125559423ec0",
   "libs/validation/redteam.py": "bf1c019bfeee360e",
   "libs/validation/replay2.py": "81abc1b46a04b694",
