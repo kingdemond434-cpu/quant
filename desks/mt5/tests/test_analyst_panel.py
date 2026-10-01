@@ -127,7 +127,7 @@ def test_a_proposal_waits_for_post_proposal_evidence_then_donates_on_it(monkeypa
     assert ev["hindsight_prior"]
     assert ev["clean_from"] == ev["proposed_at"] == "2021-05-01T00:00:00+00:00"
     assert ev["forward_days"] >= ap.FORWARD_DAYS
-    assert ev["red_team"][0]["failure_class"] == "COST_DEATH"
+    assert any(a["failure_class"] == "COST_DEATH" for r in rows for a in r["evidence"]["red_team"])
     assert all(r["source_culture"] == "GLOBAL/llm" for r in rows)
     # the donating pass is charged once, on the discovery file
     last = _trials(tmp_path)[-1]

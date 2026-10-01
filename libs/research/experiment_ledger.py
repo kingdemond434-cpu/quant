@@ -139,7 +139,8 @@ def _side_ledger(path: Path) -> tuple[int, dict[str, int]]:
             continue
         total += n
         for fam, k in fams.items():
-            by_fam[fam] = by_fam.get(fam, 0) + k
+            if k:
+                by_fam[fam] = by_fam.get(fam, 0) + k
     return total, by_fam
 
 
