@@ -49,6 +49,7 @@ import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
+from typing import Any
 
 from libs.research import event_ontology as onto
 
@@ -61,6 +62,7 @@ __all__ = [
     "Doc",
     "FactorTag",
     "PanelRow",
+    "agreement",
     "build_panel",
     "country_hint_for_currency",
     "orient",
@@ -404,3 +406,57 @@ def panel_asof(rows: Iterable[PanelRow], decision_time: datetime) -> list[PanelR
 def orient(country: str, instrument: str) -> int:
     """The currency-leg sign of a country's factor on an instrument's own axis; 0 = unrelated."""
     return int(COUNTRY_INSTRUMENTS.get(country, {}).get(instrument, 0))
+
+
+# ------------------------------------------------------------------------------------ agreement
+def _rank(xs: list[float]) -> list[float]:
+    order = sorted(range(len(xs)), key=lambda i: xs[i])
+    out = [0.0] * len(xs)
+    i = 0
+    while i < len(order):
+        j = i
+        while j + 1 < len(order) and xs[order[j + 1]] == xs[order[i]]:
+            j += 1
+        for k in range(i, j + 1):
+            out[order[k]] = (i + j) / 2.0
+        i = j + 1
+    return out
+
+
+def _pearson(xs: list[float], ys: list[float]) -> float | None:
+    n = len(xs)
+    if n < 3:
+        return None
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxy = sum((a - mx) * (b - my) for a, b in zip(xs, ys, strict=True))
+    sxx = sum((a - mx) ** 2 for a in xs)
+    syy = sum((b - my) ** 2 for b in ys)
+    return sxy / (sxx * syy) ** 0.5 if sxx > 0 and syy > 0 else None
+
+
+def agreement(ours: Mapping[Any, float], theirs: Mapping[Any, float], *,
+              min_n: int = 20) -> dict[str, object]:
+    """How far two panels over the SAME keys (country-days, days, months) agree.
+
+    Used to measure this tagger against an outside news-analytics panel (GDELT tone / conflict
+    share on the same country-days) and, by the alt-data organ, a free substitute against an
+    overlapping series. Pearson, Spearman and the share of keys on which both sit on the same
+    side of their own mean. Fewer than `min_n` shared keys is UNMEASURED with the count, never a
+    number from a handful of points."""
+    keys = [k for k in ours if k in theirs]
+    xs = [float(ours[k]) for k in keys]
+    ys = [float(theirs[k]) for k in keys]
+    ok = [i for i in range(len(keys)) if xs[i] == xs[i] and ys[i] == ys[i]]
+    xs, ys = [xs[i] for i in ok], [ys[i] for i in ok]
+    n = len(xs)
+    if n < min_n:
+        return {"verdict": "UNMEASURED", "n": n,
+                "why": f"{n} shared keys < {min_n}: no agreement number from so few points"}
+    mx, my = sum(xs) / n, sum(ys) / n
+    same = sum(1 for a, b in zip(xs, ys, strict=True) if (a - mx) * (b - my) > 0)
+    p = _pearson(xs, ys)
+    sp = _pearson(_rank(xs), _rank(ys))
+    return {"verdict": "MEASURED", "n": n,
+            "pearson": None if p is None else round(p, 4),
+            "spearman": None if sp is None else round(sp, 4),
+            "sign_agreement": round(same / n, 4)}
