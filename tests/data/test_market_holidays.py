@@ -39,4 +39,4 @@ def test_features_mark_today_tomorrow_and_yesterday():
     assert f["hol_prev"].tolist() == [0.0, 0.0, 0.0, 1.0]
     sek = M.features(i, "EURSEK")
     assert sek["hol_second"].isna().all() and np.isnan(sek["hol_next"].iloc[0])
-    assert (sek["hol_next"].dropna() == 1.0).all()                     # a known shut leg still says 1
+    assert (sek["hol_next"].dropna() == 1.0).all()           # a known shut leg still says 1

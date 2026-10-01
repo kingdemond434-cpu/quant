@@ -1,4 +1,4 @@
-"""Thirty-one national settlement calendars, so every MT5 instrument knows when its home market is shut.
+"""Thirty-one national settlement calendars: every MT5 instrument knows when its home is shut.
 
 Source: github.com/avhz/RustQuant, crate `RustQuant_time` (MIT OR Apache-2.0, Copyright 2023
 avhz; notice in `desks/mt5/data/market_holidays/LICENSE_RustQuant`). The crate was COMPILED and
