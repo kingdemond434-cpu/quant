@@ -281,6 +281,31 @@ def absorb_dtcc(reg: dict[str, Any], store: Path, *,
     return {**rep, "new_series": names}
 
 
+def absorb_crop_weather(reg: dict[str, Any], store: Path, *,
+                        fetch: Callable[[str], tuple[bytes | None, str]],
+                        certify: Callable[..., Any], write_certificate: Callable[[Any], Any],
+                        now: datetime | None = None) -> dict[str, Any]:
+    """Crop-belt weather from NASA POWER (`libs/data/crop_weather.py`, regions mined from
+    AgriQuant-AI): extend the stalest regions' first-print ledgers, then register every crop
+    feature with enough history as a conditioner for that crop's soft or grain CFDs."""
+    from libs.data import crop_weather as cw
+    now = now or datetime.now(UTC)
+    root = store / "crop_weather"
+    rep = cw.ingest(root, fetch=fetch, now=now)
+    names = [n for name, f in cw.frames(root, now).items()
+             if (n := _register(reg, store, name, f, url=cw.API,
+                                provider="NASA POWER via github.com/AgriQuantAI/AgriQuant-AI",
+                                revised=True, lag_s=int(cw.LAG.total_seconds()),
+                                settle_s=int(cw.SETTLE.total_seconds()),
+                                use="conditioner for " + ", ".join(cw.symbols_for(name)),
+                                certify=certify, write_certificate=write_certificate, now=now))]
+    reg["by_url"][cw.API] = {"host": "repo_mined_feeds", "series": names,
+                             "at": now.isoformat(timespec="seconds"),
+                             "status": "SUCCESS" if names else "PENDING",
+                             "refusal": None if names else rep.get("status")}
+    return {**rep, "new_series": names}
+
+
 def settle_note() -> dict[str, Any]:
     """What the certificate meta means by `settle_backfill_s`, for any reader of the registry."""
     return {f.name: {"settle_days": f.settle_s / DAY_S, "revised": f.revised,

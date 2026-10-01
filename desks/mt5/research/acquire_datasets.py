@@ -386,6 +386,16 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         new_series.extend(tape["new_series"])
     except Exception as exc:                                                # noqa: BLE001
         _refuse(f"DTCC FX option tape failed: {type(exc).__name__}")
+    # Crop-belt weather for the soft and grain CFDs (NASA POWER; regions from AgriQuant-AI).
+    try:
+        from libs.data import repo_mined_feeds as _rmf
+        wx = _rmf.absorb_crop_weather(reg, STORE, fetch=_fetch, certify=certify,
+                                      write_certificate=write_certificate)
+        tried += 1
+        kept += int(bool(wx["new_series"]))
+        new_series.extend(wx["new_series"])
+    except Exception as exc:                                                # noqa: BLE001
+        _refuse(f"crop-belt weather failed: {type(exc).__name__}")
 
     for url, host in _endpoints(limit):
         tried += 1
