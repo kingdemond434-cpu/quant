@@ -185,6 +185,9 @@ LEG_LAYER: dict[str, str] = {
     # The mass screen generates and screens rule cells by the million and forwards the FDR
     # survivors to the judge -- a predictor search at scale: prediction.
     "mass_screen": "prediction",
+    # The dead-session remap turns asia/london/ny variants that can never fire into stand-in
+    # cells that can -- a predictor search on the session axis: prediction.
+    "session_variant_remap": "prediction",
     # Whether the allocator's book reaches the sleeves it funds is a measurement of the desk's
     # own wiring, like `wiring_audit`: meta.
     "allocator_join": "meta",
@@ -193,6 +196,9 @@ LEG_LAYER: dict[str, str] = {
     "candidate_conservation": "meta",
     # Planted point-in-time canaries measure whether the desk can read the future: meta.
     "pit_canaries": "meta",
+    # Whether the desk has stopped placing without saying so is a measurement of its own
+    # execution wiring, not an act on the book: meta.
+    "placement_interlock": "meta",
     # THE TIER-1 CLOSED-LOOP B ROWS (2026-09-23).
     # Whether the running code may create new exposure, which scientist earned what, which
     # structures have started surviving again, and one EVIG price over every research resource
@@ -217,15 +223,19 @@ LEG_LAYER: dict[str, str] = {
     # experimental budget accounts for principal-override heat inside the book: portfolio. The
     # redundancy organ and the forward-evidence series measure the machine itself: meta.
     "live_calibration_posterior": "prediction", "constrained_book": "sizing",
+    "kelly_survival": "sizing",
+    "decay_monitor": "portfolio", "fill_markout": "execution",
     "experimental_budget": "portfolio", "ops_redundancy": "meta",
     "forward_evidence_tracker": "meta",
+    # The box-state freshness fence and the desk health report, hourly before publication.
+    "box_state_freshness": "meta", "desk_health": "meta",
     # THE 2026-09-16 BLUEPRINT ORGANS (Tier-1 phases C/D).
     "axis_registry": "information", "forced_flow_calendar": "information",
     "standing_questions": "information",
     "novelty_gate": "prediction",
     "posterior_alpha": "sizing", "exposure_decomposition": "portfolio",
     "hazard_engine": "exit",
-    "breadth_ladder": "meta", "tier1_scorecard": "meta", "wiring_ceo": "meta",
+    "breadth_ladder": "meta", "tier1_scorecard": "meta", "tier1_gap": "meta", "wiring_ceo": "meta",
     # The queue census measures the machine's own backlog, not any strategy's: meta by
     # construction (principal 2026-09-23, "nothing should be queued").
     "queue_census": "meta",
@@ -243,6 +253,10 @@ LEG_LAYER: dict[str, str] = {
     # the within-class rank legs are claims about relative returns: prediction, like trend_core
     "cross_sectional_breadth": "prediction",
     "event_surprise": "information",
+    # public analyst views collected and stamped at first sighting: information
+    "alpha_capture": "information",
+    # free public alt-data proxies turned into PIT series: what the desk knows before it predicts
+    "alt_proxies": "information",
     "counterexample_agent": "meta",
     "search_paradigm_census": "meta",
     "source_registry": "information", "synthetic_regimes": "meta",
@@ -289,7 +303,8 @@ LEG_LAYER: dict[str, str] = {
     # JUDGE (how many cells reach a verdict an hour, from measured cores/memory/commit) and the
     # other guarantees every certificate gets a forward clock the moment it is minted. They are
     # the machine that runs the machine -- throughput and evidence plumbing, not edge.
-    "judging_throughput": "meta", "forward_enrolment": "meta",
+    "judging_throughput": "meta", "forward_enrolment": "meta", "judging_burndown": "meta",
+    "rejection_throughput": "meta",
     # META for the same reason, and it is the one that measures whether the other two are even
     # being reached: what fraction of the day the desk actually mints and judges, against the best
     # hour this box has ever done. It buys no prediction; it finds the hours nothing was produced.
@@ -304,6 +319,10 @@ LEG_LAYER: dict[str, str] = {
     # snapshot. That is the prediction layer's own work, done on the backlog instead of on
     # arrivals, so it sits beside the compiler that does it on arrivals.
     "conversion_maximiser": "prediction",
+    # THE CONVERSION FUNNEL measures the desk's own pipeline -- mined -> cell -> verdict ->
+    # certificate -> clock, every loss named -- and changes nothing in it: the machine reading
+    # itself, the same layer as `judging_burndown` and `forward_enrolment`.
+    "conversion_funnel": "meta",
     # WHICH SOURCES THE DESK MAY LAWFULLY CONSUME is a property of its INPUTS, decided before any
     # signal is derived from them -- the same reading that puts `source_routes` and `data_scout`
     # in information. The ROI reallocator is the machine spending on itself: meta.
@@ -402,6 +421,9 @@ LEG_LAYER: dict[str, str] = {
     "prediction_markets": "information",
     "archaeology": "information",
     "sares": "information",
+    # THE TWO ADVERSARIAL COMMITTEES argue explanations and run the falsifiers the judge picks:
+    # they decide which experiments a hypothesis meets, so prediction, like falsifier_run.
+    "committees": "prediction",
     # ONE CERTIFICATE TRUTH: the audit of every certificate/clock store against the one lane is a
     # fence over the machine's own bookkeeping -- meta, like every other fence.
     "certificate_truth": "meta",
@@ -501,6 +523,7 @@ LEG_LAYER: dict[str, str] = {
     # CYCLE PRICING is meta for the same reason the control plane is: it decides how much of the
     # hour each of the other layers gets, and predicts, sizes and times nothing itself.
     "cycle_pricing": "meta",
+    "research_bandit": "meta",
     # CAUSAL INVARIANCE asks whether a cell's effect is the same number in a different session,
     # year or volatility regime. That is a property of the PREDICTION -- whether the claim about
     # returns holds outside the environment it was fitted in -- so it is billed there.
@@ -542,10 +565,17 @@ LEG_LAYER: dict[str, str] = {
     # nothing, which is exactly what `meta` covers.
     "desk_dashboard_state": "meta",
     "session_capital": "portfolio",
+    # Tier S institution: the machine judging and improving its own research machinery
+    "tier_s": "meta", "adversary_evolution": "prediction", "frontier_map": "information",
+    "market_ecology": "information", "research_diversity_archive": "information",
+    "execution_science": "execution",
     # FOURTEEN LEGS THAT RAN WITH NO LAYER (measured 2026-09-30, `unassigned()`): each placed by
     # what it produces, the same rule as the rest of this table.
     "acquire_datasets": "information", "dukascopy_backfill": "information",
-    "source_experiment_census": "information",
+    "free_stack_hunt": "information", "free_stack_proposer": "prediction",
+    "factory_throughput": "prediction",
+    "source_experiment_census": "information", "world_dataset_hunt": "information",
+    "world_macro_proposer": "prediction",
     "cross_asset_graph": "information", "transmission_engine": "information",
     "excursions": "exit", "exit_accounts": "exit",
     "state_replay_audit": "execution", "why_not_report": "execution",

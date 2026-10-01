@@ -1,0 +1,1294 @@
+{
+ "protocol": {
+  "desk_all_proven": true,
+  "states": 900,
+  "invariants": {
+   "ZERO_MEANS_NO_ORDER": {
+    "verdict": "PROVEN"
+   },
+   "NO_DUPLICATE_FILL": {
+    "verdict": "PROVEN"
+   },
+   "EXPOSURE_LIMIT": {
+    "verdict": "PROVEN"
+   },
+   "NO_FUTURE_DATA": {
+    "verdict": "PROVEN"
+   },
+   "CERTIFICATE_REQUIRED": {
+    "verdict": "PROVEN"
+   },
+   "LEGAL_TRANSITIONS": {
+    "verdict": "PROVEN"
+   }
+  },
+  "depends_on": {
+   "ZERO_MEANS_NO_ORDER": [
+    "recheck_alloc_at_send"
+   ],
+   "CERTIFICATE_REQUIRED": [
+    "check_cert_at_send"
+   ],
+   "NO_FUTURE_DATA": [
+    "clamp_data_to_clock"
+   ],
+   "NO_DUPLICATE_FILL": [
+    "persist_before_send+reconcile_on_restart",
+    "reconcile_on_restart+idempotent_client_id"
+   ],
+   "EXPOSURE_LIMIT": [
+    "persist_before_send+reconcile_on_restart",
+    "reconcile_on_restart+idempotent_client_id"
+   ]
+  }
+ },
+ "desk_all_proven": true,
+ "conformance": {
+  "method": "ast",
+  "files": {
+   "gateway.py": {
+    "send_sites": 7,
+    "entry_functions_reached": 85,
+    "knobs": {
+     "idempotent_client_id": false,
+     "persist_before_send": false,
+     "recheck_alloc_at_send": true,
+     "check_cert_at_send": true,
+     "reconcile_on_restart": true,
+     "clamp_data_to_clock": true
+    },
+    "failing_sites": {
+     "idempotent_client_id": [
+      "close_positions:1602"
+     ],
+     "persist_before_send": [
+      "place_bracket:1233",
+      "collapse_opposing_gold_positions:1458",
+      "close_positions:1602",
+      "run_family_sleeves:3157",
+      "close_retired_positions:3261",
+      "run_scalp_sleeves:3600"
+     ]
+    },
+    "conformant": 4,
+    "of": 6,
+    "conformant_share": 0.6666666666666666
+   },
+   "scalp_exec.py": {
+    "send_sites": 0,
+    "entry_functions_reached": 0,
+    "knobs": {
+     "idempotent_client_id": null,
+     "persist_before_send": null,
+     "recheck_alloc_at_send": null,
+     "check_cert_at_send": null,
+     "reconcile_on_restart": false,
+     "clamp_data_to_clock": false
+    },
+    "failing_sites": {},
+    "conformant": 0,
+    "of": 6,
+    "conformant_share": 0.0
+   }
+  },
+  "knobs": {
+   "idempotent_client_id": false,
+   "persist_before_send": false,
+   "recheck_alloc_at_send": true,
+   "check_cert_at_send": true,
+   "reconcile_on_restart": false,
+   "clamp_data_to_clock": false
+  },
+  "evidenced": 2,
+  "of": 6,
+  "evidenced_share": 0.3333333333333333,
+  "obligations": [
+   "clamp_data_to_clock",
+   "idempotent_client_id",
+   "persist_before_send",
+   "reconcile_on_restart"
+  ]
+ },
+ "structural_invariants": {
+  "at": "2026-09-30T11:51:58+00:00",
+  "status": "VIOLATED",
+  "n_invariants": 7,
+  "n_files_statically_searched": 2456,
+  "tally": {
+   "PROVEN": 1,
+   "VIOLATED": 1,
+   "ENFORCED": 2,
+   "OBLIGATION": 3
+  },
+  "results": [
+   {
+    "invariant": "no_illegal_alpha_state_transition",
+    "forbids": "an alpha reaching a state by an edge the table does not allow, or reaching ACTIVE without serving PROBATION",
+    "verdict": "PROVEN",
+    "space_searched": 49,
+    "detail": "all 49 ordered state pairs are total; 2 distinct simple paths reach ACTIVE from CANDIDATE and every one passes PROBATION; RETIRED is terminal and reachable from all 6 other states; every promote_target is an allowed edge"
+   },
+   {
+    "invariant": "no_certificate_bypass",
+    "forbids": "a module other than the gauntlet writing the certificate registry",
+    "verdict": "VIOLATED",
+    "detail": "1 module(s) write the certificate registry and are neither the declared minter nor a classified lifecycle writer: ['desks/mt5/research/promoter.py']. AND THREE OF THEM SAY IN THEIR OWN FIRST LINE THAT THEY MINT: universal_gate ('the ONLY survivor gate for every hunt'), full_pipeline and full_pipeline_v2 ('runs all 25 miners ... writes certificates'). full_pipeline is on a VPS timer at 06:00 daily per ops/crontab.manifest, so this is not archaeology. certificate_hygiene's own docstring records what this costs: four publishers disagreed about what a publishable certificate was and 18 rows passed all ten gates while being impossible to enrol. Each of these must be read and either declared a minter or classified as lifecycle -- an unclassified writer of the certificate registry is exactly the condition that produced those 18."
+   },
+   {
+    "invariant": "no_multiple_capital_authorities",
+    "forbids": "a second mechanism with an opinion about capital on the same money path",
+    "verdict": "ENFORCED",
+    "files_searched": 2456,
+    "detail": "exactly one capital authority in this tree: ['desks/mt5/research/pf_allocator.py']"
+   },
+   {
+    "invariant": "no_future_observation_access",
+    "forbids": "a candidate entering the docket without the stamps that say when it became knowable",
+    "verdict": "ENFORCED",
+    "files_searched": 1,
+    "detail": "every row leaving the door carries ['available_time', 'ingested_time', 'source_version', 'payload_hash'], so a joiner can refuse it for any decision earlier than the desk could have known it"
+   },
+   {
+    "invariant": "no_impossible_sizing_state",
+    "forbids": "negative heat, heat above its own ceiling, or per-sleeve fractions that exceed the declared total",
+    "verdict": "OBLIGATION",
+    "detail": "no readable allocation at desks/mt5/reports/pf_allocation.json ([Errno 2] No such file or directory: '/home/claude/quant/desks/mt5/reports/pf_allocation.json')",
+    "would_discharge": "run the allocator; the invariants below are decidable the moment it publishes a heat block"
+   },
+   {
+    "invariant": "no_uncharged_trial_path",
+    "forbids": "a cell judged without a charge against the shared family-wise error budget",
+    "verdict": "OBLIGATION",
+    "detail": "whether every path that JUDGES a cell also charges the family-wise budget is a property of the gauntlet's control flow, and the gauntlet charges a FIXED campaign count (597) rather than incrementing per cell. Under a fixed charge the property is vacuous -- nothing can be uncharged because nothing is charged individually -- which is a different situation from the one the invariant was written for and should not be reported as a pass.",
+    "would_discharge": "make the trial charge a function of cells actually judged, at which point 'every judged cell is charged' becomes a decidable property of one counter and this check becomes an enumeration over the gauntlet's exit paths"
+   },
+   {
+    "invariant": "no_unsigned_deployment",
+    "forbids": "the live release record written by something that never verified a signature",
+    "verdict": "OBLIGATION",
+    "detail": "no module in this tree writes release_identity.json",
+    "would_discharge": "point this check at whatever records the running build"
+   }
+  ],
+  "verdict_meanings": {
+   "PROVEN": "checked over the ENTIRE space the property lives in. The state machine's 49 ordered pairs and every simple path between two states are finite, so enumerating them is a proof and not a sample.",
+   "ENFORCED": "a complete enumeration of the DIRECT writers in this repository: a write whose target is a name bound to the path. Proof about the code that EXISTS, never about code that could be written, and it does not see a write through a helper that takes the path as an argument. That is why it is a separate word from PROVEN.",
+   "OBLIGATION": "not decidable by either method here. The report says what WOULD discharge it rather than substituting a weaker check and calling it the same thing. An obligation is not a failure and is not a pass.",
+   "VIOLATED": "the property does not hold on this tree right now"
+  },
+  "why_no_smt": "the properties decidable here are decidable by exhaustion over spaces of tens of elements; an SMT encoding of a 49-edge graph would add a dependency, a translation layer and a second place for the model to disagree with the code, and would prove the same thing. The ones that are NOT decidable here are statements about future code, and no solver settles those.",
+  "boundary": "this verifies STRUCTURE. It does not and cannot verify that a strategy is profitable, that a cost model is right, or that a certificate deserves its capital -- those are empirical and belong to the gauntlet."
+ },
+ "failure_worlds": {
+  "protocol": {
+   "persist_before_send": true,
+   "reconcile_on_restart": true,
+   "idempotent_client_id": true,
+   "recheck_alloc_at_send": true,
+   "check_cert_at_send": true,
+   "clamp_data_to_clock": true
+  },
+  "faults": [
+   "venue_ignores_client_id",
+   "stale_reconcile",
+   "torn_journal",
+   "network_duplicate",
+   "late_fill_after_reject",
+   "recheck_send_race",
+   "clock_skew",
+   "deep_crash"
+  ],
+  "worlds_searched": 92,
+  "worlds_bounded": 0,
+  "max_size": 3,
+  "minimal_failing_worlds": [
+   {
+    "faults": [
+     "clock_skew"
+    ],
+    "invariant": "NO_FUTURE_DATA",
+    "trace": [
+     "init",
+     "feed_skewed"
+    ],
+    "trace_len": 2,
+    "states": 3060
+   },
+   {
+    "faults": [
+     "recheck_send_race"
+    ],
+    "invariant": "CERTIFICATE_REQUIRED",
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "recheck_ok",
+     "revoke_cert",
+     "transmit"
+    ],
+    "trace_len": 6,
+    "states": 2084
+   },
+   {
+    "faults": [
+     "recheck_send_race"
+    ],
+    "invariant": "ZERO_MEANS_NO_ORDER",
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "recheck_ok",
+     "publish(0)",
+     "transmit"
+    ],
+    "trace_len": 6,
+    "states": 2084
+   },
+   {
+    "faults": [
+     "network_duplicate",
+     "venue_ignores_client_id"
+    ],
+    "invariant": "EXPOSURE_LIMIT",
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "network_duplicate",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "trace_len": 7,
+    "states": 2472
+   },
+   {
+    "faults": [
+     "network_duplicate",
+     "venue_ignores_client_id"
+    ],
+    "invariant": "NO_DUPLICATE_FILL",
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "network_duplicate",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "trace_len": 7,
+    "states": 2472
+   },
+   {
+    "faults": [
+     "stale_reconcile",
+     "venue_ignores_client_id"
+    ],
+    "invariant": "EXPOSURE_LIMIT",
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "crash",
+     "restart_stale_reconcile",
+     "send",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "trace_len": 9,
+    "states": 1680
+   },
+   {
+    "faults": [
+     "stale_reconcile",
+     "venue_ignores_client_id"
+    ],
+    "invariant": "NO_DUPLICATE_FILL",
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "crash",
+     "restart_stale_reconcile",
+     "send",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "trace_len": 9,
+    "states": 1680
+   }
+  ],
+  "n_failing": 7,
+  "invariants_broken": [
+   "CERTIFICATE_REQUIRED",
+   "EXPOSURE_LIMIT",
+   "NO_DUPLICATE_FILL",
+   "NO_FUTURE_DATA",
+   "ZERO_MEANS_NO_ORDER"
+  ],
+  "single_fault": {
+   "venue_ignores_client_id": null,
+   "stale_reconcile": null,
+   "torn_journal": null,
+   "network_duplicate": null,
+   "late_fill_after_reject": null,
+   "recheck_send_race": "CERTIFICATE_REQUIRED",
+   "clock_skew": "NO_FUTURE_DATA",
+   "deep_crash": null
+  },
+  "worlds_holding": 32,
+  "note": "every knob of the desk's protocol is ON in every world; a finding here is a failure the design cannot fix by switching a knob back on"
+ },
+ "decision_core_drive": {
+  "traces_driven": 29,
+  "distinct_traces": 12,
+  "verdicts": {
+   "BLOCKED_BY_CORE": 12,
+   "CORE_ADMITS": 15,
+   "NO_CORE_DECISION": 2
+  },
+  "blocked_share": 0.4444444444444444,
+  "core_gaps": [
+   {
+    "function": "bar_already_traded",
+    "why": "the first order has not filled, so the venue's deal history holds no entry for the tag: a pending order from before the restart is invisible to this witness",
+    "invariants": [
+     "EXPOSURE_LIMIT",
+     "NO_DUPLICATE_FILL"
+    ],
+    "sources": [
+     "ablation:without_persist_before_send+reconcile_on_restart",
+     "ablation:without_reconcile_on_restart+idempotent_client_id",
+     "world:stale_reconcile+venue_ignores_client_id"
+    ]
+   },
+   {
+    "function": "book_from_allocation",
+    "why": "the core was consulted before the allocator published zero; the send used that earlier answer",
+    "invariants": [
+     "ZERO_MEANS_NO_ORDER"
+    ],
+    "sources": [
+     "world:recheck_send_race"
+    ]
+   },
+   {
+    "function": "family_bar_due",
+    "why": "family_bar_due takes no clock argument; excluding a bar stamped after the decision clock is left to the caller",
+    "invariants": [
+     "NO_FUTURE_DATA"
+    ],
+    "sources": [
+     "ablation:without_check_cert_at_send+clamp_data_to_clock",
+     "ablation:without_clamp_data_to_clock",
+     "ablation:without_idempotent_client_id+clamp_data_to_clock",
+     "ablation:without_persist_before_send+clamp_data_to_clock",
+     "ablation:without_recheck_alloc_at_send+clamp_data_to_clock",
+     "ablation:without_reconcile_on_restart+clamp_data_to_clock",
+     "world:clock_skew"
+    ]
+   },
+   {
+    "function": "load_sleeves_verbose",
+    "why": "the roster was read before the revocation; the send used that earlier roster",
+    "invariants": [
+     "CERTIFICATE_REQUIRED"
+    ],
+    "sources": [
+     "world:recheck_send_race"
+    ]
+   }
+  ],
+  "rows": [
+   {
+    "source": "ablation:without_recheck_alloc_at_send",
+    "invariant": "ZERO_MEANS_NO_ORDER",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "book_from_allocation"
+    },
+    "trace": [
+     "init",
+     "decide",
+     "publish(0)",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "book_from_allocation",
+        "blocked": true,
+        "observed": {
+         "fraction": 0.0,
+         "why": "allocator book authoritative (1 sleeve(s), 1 held at zero by this solve); tier_s core_drive probe"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_check_cert_at_send",
+    "invariant": "CERTIFICATE_REQUIRED",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "load_sleeves_verbose"
+    },
+    "trace": [
+     "init",
+     "revoke_cert",
+     "decide",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "load_sleeves_verbose",
+        "blocked": true,
+        "observed": {
+         "control_admitted": true,
+         "revoked_admitted": false
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_clamp_data_to_clock",
+    "invariant": "NO_FUTURE_DATA",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "feed_late"
+    ],
+    "steps": [
+     {
+      "step": 1,
+      "action": "feed_late",
+      "probes": [
+       {
+        "function": "family_bar_due",
+        "blocked": false,
+        "observed": {
+         "decision_clock": "2026-01-05T09:00:00+00:00",
+         "bar_returned": "2026-01-05 10:00:00+00:00"
+        },
+        "why": "family_bar_due takes no clock argument; excluding a bar stamped after the decision clock is left to the caller"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_persist_before_send+reconcile_on_restart",
+    "invariant": "NO_DUPLICATE_FILL",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "send",
+     "crash",
+     "restart",
+     "decide",
+     "send",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "steps": [
+     {
+      "step": 6,
+      "action": "send",
+      "probes": [
+       {
+        "function": "bar_already_traded",
+        "blocked": false,
+        "observed": {
+         "deals_in_history": 0,
+         "hit": null
+        },
+        "why": "the first order has not filled, so the venue's deal history holds no entry for the tag: a pending order from before the restart is invisible to this witness"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_persist_before_send+reconcile_on_restart",
+    "invariant": "EXPOSURE_LIMIT",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "send",
+     "crash",
+     "restart",
+     "decide",
+     "send",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "steps": [
+     {
+      "step": 6,
+      "action": "send",
+      "probes": [
+       {
+        "function": "bar_already_traded",
+        "blocked": false,
+        "observed": {
+         "deals_in_history": 0,
+         "hit": null
+        },
+        "why": "the first order has not filled, so the venue's deal history holds no entry for the tag: a pending order from before the restart is invisible to this witness"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_persist_before_send+recheck_alloc_at_send",
+    "invariant": "ZERO_MEANS_NO_ORDER",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 3,
+     "action": "send",
+     "function": "book_from_allocation"
+    },
+    "trace": [
+     "init",
+     "decide",
+     "publish(0)",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 3,
+      "action": "send",
+      "probes": [
+       {
+        "function": "book_from_allocation",
+        "blocked": true,
+        "observed": {
+         "fraction": 0.0,
+         "why": "allocator book authoritative (1 sleeve(s), 1 held at zero by this solve); tier_s core_drive probe"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_persist_before_send+check_cert_at_send",
+    "invariant": "CERTIFICATE_REQUIRED",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 3,
+     "action": "send",
+     "function": "load_sleeves_verbose"
+    },
+    "trace": [
+     "init",
+     "revoke_cert",
+     "decide",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 3,
+      "action": "send",
+      "probes": [
+       {
+        "function": "load_sleeves_verbose",
+        "blocked": true,
+        "observed": {
+         "control_admitted": true,
+         "revoked_admitted": false
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_persist_before_send+clamp_data_to_clock",
+    "invariant": "NO_FUTURE_DATA",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "feed_late"
+    ],
+    "steps": [
+     {
+      "step": 1,
+      "action": "feed_late",
+      "probes": [
+       {
+        "function": "family_bar_due",
+        "blocked": false,
+        "observed": {
+         "decision_clock": "2026-01-05T09:00:00+00:00",
+         "bar_returned": "2026-01-05 10:00:00+00:00"
+        },
+        "why": "family_bar_due takes no clock argument; excluding a bar stamped after the decision clock is left to the caller"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_reconcile_on_restart+idempotent_client_id",
+    "invariant": "NO_DUPLICATE_FILL",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "crash",
+     "restart",
+     "send",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "steps": [
+     {
+      "step": 6,
+      "action": "send",
+      "probes": [
+       {
+        "function": "bar_already_traded",
+        "blocked": false,
+        "observed": {
+         "deals_in_history": 0,
+         "hit": null
+        },
+        "why": "the first order has not filled, so the venue's deal history holds no entry for the tag: a pending order from before the restart is invisible to this witness"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_reconcile_on_restart+idempotent_client_id",
+    "invariant": "EXPOSURE_LIMIT",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "crash",
+     "restart",
+     "send",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "steps": [
+     {
+      "step": 6,
+      "action": "send",
+      "probes": [
+       {
+        "function": "bar_already_traded",
+        "blocked": false,
+        "observed": {
+         "deals_in_history": 0,
+         "hit": null
+        },
+        "why": "the first order has not filled, so the venue's deal history holds no entry for the tag: a pending order from before the restart is invisible to this witness"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_reconcile_on_restart+recheck_alloc_at_send",
+    "invariant": "ZERO_MEANS_NO_ORDER",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "book_from_allocation"
+    },
+    "trace": [
+     "init",
+     "decide",
+     "publish(0)",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "book_from_allocation",
+        "blocked": true,
+        "observed": {
+         "fraction": 0.0,
+         "why": "allocator book authoritative (1 sleeve(s), 1 held at zero by this solve); tier_s core_drive probe"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_reconcile_on_restart+check_cert_at_send",
+    "invariant": "CERTIFICATE_REQUIRED",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "load_sleeves_verbose"
+    },
+    "trace": [
+     "init",
+     "revoke_cert",
+     "decide",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "load_sleeves_verbose",
+        "blocked": true,
+        "observed": {
+         "control_admitted": true,
+         "revoked_admitted": false
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_reconcile_on_restart+clamp_data_to_clock",
+    "invariant": "NO_FUTURE_DATA",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "feed_late"
+    ],
+    "steps": [
+     {
+      "step": 1,
+      "action": "feed_late",
+      "probes": [
+       {
+        "function": "family_bar_due",
+        "blocked": false,
+        "observed": {
+         "decision_clock": "2026-01-05T09:00:00+00:00",
+         "bar_returned": "2026-01-05 10:00:00+00:00"
+        },
+        "why": "family_bar_due takes no clock argument; excluding a bar stamped after the decision clock is left to the caller"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_idempotent_client_id+recheck_alloc_at_send",
+    "invariant": "ZERO_MEANS_NO_ORDER",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "book_from_allocation"
+    },
+    "trace": [
+     "init",
+     "decide",
+     "publish(0)",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "book_from_allocation",
+        "blocked": true,
+        "observed": {
+         "fraction": 0.0,
+         "why": "allocator book authoritative (1 sleeve(s), 1 held at zero by this solve); tier_s core_drive probe"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_idempotent_client_id+check_cert_at_send",
+    "invariant": "CERTIFICATE_REQUIRED",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "load_sleeves_verbose"
+    },
+    "trace": [
+     "init",
+     "revoke_cert",
+     "decide",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "load_sleeves_verbose",
+        "blocked": true,
+        "observed": {
+         "control_admitted": true,
+         "revoked_admitted": false
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_idempotent_client_id+clamp_data_to_clock",
+    "invariant": "NO_FUTURE_DATA",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "feed_late"
+    ],
+    "steps": [
+     {
+      "step": 1,
+      "action": "feed_late",
+      "probes": [
+       {
+        "function": "family_bar_due",
+        "blocked": false,
+        "observed": {
+         "decision_clock": "2026-01-05T09:00:00+00:00",
+         "bar_returned": "2026-01-05 10:00:00+00:00"
+        },
+        "why": "family_bar_due takes no clock argument; excluding a bar stamped after the decision clock is left to the caller"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_recheck_alloc_at_send+check_cert_at_send",
+    "invariant": "ZERO_MEANS_NO_ORDER",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "book_from_allocation"
+    },
+    "trace": [
+     "init",
+     "decide",
+     "publish(0)",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "book_from_allocation",
+        "blocked": true,
+        "observed": {
+         "fraction": 0.0,
+         "why": "allocator book authoritative (1 sleeve(s), 1 held at zero by this solve); tier_s core_drive probe"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_recheck_alloc_at_send+check_cert_at_send",
+    "invariant": "CERTIFICATE_REQUIRED",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "load_sleeves_verbose"
+    },
+    "trace": [
+     "init",
+     "revoke_cert",
+     "decide",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "load_sleeves_verbose",
+        "blocked": true,
+        "observed": {
+         "control_admitted": true,
+         "revoked_admitted": false
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_recheck_alloc_at_send+clamp_data_to_clock",
+    "invariant": "ZERO_MEANS_NO_ORDER",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "book_from_allocation"
+    },
+    "trace": [
+     "init",
+     "decide",
+     "publish(0)",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "book_from_allocation",
+        "blocked": true,
+        "observed": {
+         "fraction": 0.0,
+         "why": "allocator book authoritative (1 sleeve(s), 1 held at zero by this solve); tier_s core_drive probe"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_recheck_alloc_at_send+clamp_data_to_clock",
+    "invariant": "NO_FUTURE_DATA",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "feed_late"
+    ],
+    "steps": [
+     {
+      "step": 1,
+      "action": "feed_late",
+      "probes": [
+       {
+        "function": "family_bar_due",
+        "blocked": false,
+        "observed": {
+         "decision_clock": "2026-01-05T09:00:00+00:00",
+         "bar_returned": "2026-01-05 10:00:00+00:00"
+        },
+        "why": "family_bar_due takes no clock argument; excluding a bar stamped after the decision clock is left to the caller"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_check_cert_at_send+clamp_data_to_clock",
+    "invariant": "NO_FUTURE_DATA",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "feed_late"
+    ],
+    "steps": [
+     {
+      "step": 1,
+      "action": "feed_late",
+      "probes": [
+       {
+        "function": "family_bar_due",
+        "blocked": false,
+        "observed": {
+         "decision_clock": "2026-01-05T09:00:00+00:00",
+         "bar_returned": "2026-01-05 10:00:00+00:00"
+        },
+        "why": "family_bar_due takes no clock argument; excluding a bar stamped after the decision clock is left to the caller"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "ablation:without_check_cert_at_send+clamp_data_to_clock",
+    "invariant": "CERTIFICATE_REQUIRED",
+    "verdict": "BLOCKED_BY_CORE",
+    "blocked_at": {
+     "step": 4,
+     "action": "send",
+     "function": "load_sleeves_verbose"
+    },
+    "trace": [
+     "init",
+     "revoke_cert",
+     "decide",
+     "persist",
+     "send"
+    ],
+    "steps": [
+     {
+      "step": 4,
+      "action": "send",
+      "probes": [
+       {
+        "function": "load_sleeves_verbose",
+        "blocked": true,
+        "observed": {
+         "control_admitted": true,
+         "revoked_admitted": false
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "world:clock_skew",
+    "invariant": "NO_FUTURE_DATA",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "feed_skewed"
+    ],
+    "steps": [
+     {
+      "step": 1,
+      "action": "feed_skewed",
+      "probes": [
+       {
+        "function": "family_bar_due",
+        "blocked": false,
+        "observed": {
+         "decision_clock": "2026-01-05T09:00:00+00:00",
+         "bar_returned": "2026-01-05 10:00:00+00:00"
+        },
+        "why": "family_bar_due takes no clock argument; excluding a bar stamped after the decision clock is left to the caller"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "world:recheck_send_race",
+    "invariant": "CERTIFICATE_REQUIRED",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "recheck_ok",
+     "revoke_cert",
+     "transmit"
+    ],
+    "steps": [
+     {
+      "step": 5,
+      "action": "transmit",
+      "probes": [
+       {
+        "function": "load_sleeves_verbose",
+        "blocked": false,
+        "why": "the roster was read before the revocation; the send used that earlier roster"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "world:recheck_send_race",
+    "invariant": "ZERO_MEANS_NO_ORDER",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "recheck_ok",
+     "publish(0)",
+     "transmit"
+    ],
+    "steps": [
+     {
+      "step": 5,
+      "action": "transmit",
+      "probes": [
+       {
+        "function": "book_from_allocation",
+        "blocked": false,
+        "why": "the core was consulted before the allocator published zero; the send used that earlier answer"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "world:network_duplicate+venue_ignores_client_id",
+    "invariant": "EXPOSURE_LIMIT",
+    "verdict": "NO_CORE_DECISION",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "network_duplicate",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "steps": []
+   },
+   {
+    "source": "world:network_duplicate+venue_ignores_client_id",
+    "invariant": "NO_DUPLICATE_FILL",
+    "verdict": "NO_CORE_DECISION",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "network_duplicate",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "steps": []
+   },
+   {
+    "source": "world:stale_reconcile+venue_ignores_client_id",
+    "invariant": "EXPOSURE_LIMIT",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "crash",
+     "restart_stale_reconcile",
+     "send",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "steps": [
+     {
+      "step": 6,
+      "action": "send",
+      "probes": [
+       {
+        "function": "bar_already_traded",
+        "blocked": false,
+        "observed": {
+         "deals_in_history": 0,
+         "hit": null
+        },
+        "why": "the first order has not filled, so the venue's deal history holds no entry for the tag: a pending order from before the restart is invisible to this witness"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "source": "world:stale_reconcile+venue_ignores_client_id",
+    "invariant": "NO_DUPLICATE_FILL",
+    "verdict": "CORE_ADMITS",
+    "blocked_at": null,
+    "trace": [
+     "init",
+     "decide",
+     "persist",
+     "send",
+     "crash",
+     "restart_stale_reconcile",
+     "send",
+     "fill",
+     "broker_fills_duplicate"
+    ],
+    "steps": [
+     {
+      "step": 6,
+      "action": "send",
+      "probes": [
+       {
+        "function": "bar_already_traded",
+        "blocked": false,
+        "observed": {
+         "deals_in_history": 0,
+         "hit": null
+        },
+        "why": "the first order has not filled, so the venue's deal history holds no entry for the tag: a pending order from before the restart is invisible to this witness"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "metric": {
+  "protocol_proven": 1.0,
+  "knobs_evidenced": 0.3333333333333333,
+  "worlds_searched": 92,
+  "failure_worlds": 7,
+  "traces_driven": 29,
+  "core_blocked_share": 0.4444444444444444,
+  "core_gaps": 4
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 33.255
+}

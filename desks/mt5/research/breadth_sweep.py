@@ -207,6 +207,27 @@ def _sessions_for(tf: str) -> tuple[str, ...]:
     return ("all",) if tf == "D1" else SESSION_AXIS
 
 
+def _session_slots(family: str, base: dict, tf: str,
+                   symbol: str) -> list[tuple[dict, dict | None]]:
+    """(params, remap note) per session slot on chart `tf`. A slot whose window the family can
+    never fire in is minted as the firing-hours oracle's stand-in (re-anchored hour params, or
+    re-homed to where it fires) -- one cell per slot, so the sweep mints exactly as many cells as
+    before; an UNMEASURED family keeps the plain axis (`libs/research/family_firing.py`)."""
+    axis = _sessions_for(tf)
+    try:
+        from libs.research import family_firing
+        return [(p, remap) for _s, p, remap in
+                family_firing.session_cells(family, base, axis, symbol=symbol)]
+    except Exception:
+        return [({**base, **({"session": s} if s != "all" else {})}, None) for s in axis]
+
+
+def _remapped(cell: dict, remap: dict | None) -> dict:
+    if remap:
+        cell["session_remap"] = remap
+    return cell
+
+
 def _banned(family: str) -> bool:
     try:
         from research.family_policy import family_banned
@@ -298,14 +319,12 @@ def cells(only: str | None = None) -> list[dict]:
         for sym, extra in _targets(fam, spec, syms):
             for params in spec["grid"]:
                 for tf in _charts_for(sym) or ["H1"]:
-                    for sess in _sessions_for(tf):
-                        p = dict(params)
-                        p.update(extra)
-                        if tf != "H1":
-                            p["timeframe"] = tf
-                        if sess != "all":
-                            p["session"] = sess
-                        out.append(_cell(sym, fam, p, spec, now))
+                    base = dict(params)
+                    base.update(extra)
+                    if tf != "H1":
+                        base["timeframe"] = tf
+                    for p, remap in _session_slots(fam, base, tf, sym):
+                        out.append(_remapped(_cell(sym, fam, p, spec, now), remap))
     sweepable, _blocked = default_families()
     for fam, why in sweepable.items():
         if only and fam != only:
@@ -313,17 +332,71 @@ def cells(only: str | None = None) -> list[dict]:
         spec = {"why": f"every family, {why}"}
         for sym in syms:
             for tf in _charts_for(sym) or ["H1"]:
-                for sess in _sessions_for(tf):
-                    p: dict = {}
-                    if tf != "H1":
-                        p["timeframe"] = tf
-                    if sess != "all":
-                        p["session"] = sess
-                    out.append(_cell(sym, fam, p, spec, now))
+                base: dict = {} if tf == "H1" else {"timeframe": tf}
+                for p, remap in _session_slots(fam, base, tf, sym):
+                    out.append(_remapped(_cell(sym, fam, p, spec, now), remap))
     # Most intraday first, so a capped merge reaches the charts the principal ranked highest.
     out.sort(key=lambda r: (_tf_rank(str((r.get("params") or {}).get("timeframe") or "H1")),
                             r["symbol"], r["family"]))
+    # THEN THE FAILURE MEMORY (Tier S S13): inside each chart tier, cells in a neighbourhood the
+    # memory has already mapped as dead go LAST and carry the theorem that maps it.
+    out, stats = order_by_failure_memory(out)
+    FAILURE_MEMORY_STATS.clear()
+    FAILURE_MEMORY_STATS.update(stats)
     return out
+
+
+#: what the last `cells()` call did with the failure memory (printed by `main`)
+FAILURE_MEMORY_STATS: dict = {}
+
+
+def _cell_tf_rank(r: dict) -> int:
+    return _tf_rank(str((r.get("params") or {}).get("timeframe") or "H1"))
+
+
+def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tuple[list[dict],
+                                                                                  dict]:
+    """Consult `libs/tiers/failure_memory` -- the theorems `tier_s.organ_failure_memory` compresses
+    hourly from the gate ledger, the forward clocks and the live fills -- and push the cells it
+    already maps as dead behind the rest of their chart tier, tagged with the theorem.
+
+    REORDER, NEVER FILTER (the standing order: raw cell mining is never reduced). Every cell is
+    still returned and still merged; the only thing that moves is which cells a capped run reaches
+    FIRST, so unexplored ground is judged before re-litigated ground. The neighbourhood key is the
+    one the memory is built on -- (mechanism from `axis_registry`, asset class from
+    `universe_policy`, session) -- the same key `tier_s._explored` orders its own emissions by.
+    A suspended organ (`libs/tiers/authority`) and an absent or stale memory both leave the order
+    exactly as it was."""
+    from libs.tiers import failure_memory as fm
+    try:
+        from libs.tiers import authority
+        if authority.suspended("failure_memory"):
+            return rows, {"consulted": False, "why": "failure_memory organ suspended",
+                          "rows": len(rows), "tagged": 0, "moved": 0}
+    except Exception:
+        pass
+    mem = fm.load() if memory is None else memory
+    mech: dict[str, str] = {}
+    acls: dict[str, str] = {}
+
+    def desc_of(r: dict) -> dict:
+        fam, sym = str(r.get("family") or ""), str(r.get("symbol") or "")
+        if fam not in mech:
+            try:
+                import axis_registry
+                mech[fam] = str(axis_registry.classify_family(fam)[0])
+            except Exception:
+                mech[fam] = fam or "UNKNOWN"
+        if sym not in acls:
+            try:
+                import universe_policy
+                acls[sym] = str(universe_policy.asset_class_of(sym))
+            except Exception:
+                acls[sym] = "UNCLASSIFIED"
+        return {"mechanism": mech[fam], "asset_class": acls[sym],
+                "selector": str((r.get("params") or {}).get("session") or "?")}
+
+    return fm.prioritise(rows, mem, desc_of, rank=_cell_tf_rank)
 
 
 def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
@@ -388,6 +461,14 @@ def main(argv: list[str] | None = None) -> int:
     by_tf = Counter(str((r.get('params') or {}).get('timeframe') or 'H1') for r in new)
     by_sess = Counter(str((r.get('params') or {}).get('session') or 'all') for r in new)
     print(f"  by chart {dict(by_tf)}; by session {dict(by_sess)}")
+    fms = FAILURE_MEMORY_STATS
+    if fms.get("consulted"):
+        print(f"  failure memory: {fms.get('theorems')} theorem(s), {fms.get('rules')} rule(s); "
+              f"{fms.get('tagged')} cell(s) in mapped-dead neighbourhoods tagged and moved to the "
+              f"back of their chart tier ({fms.get('moved')} reordered, none dropped)")
+    else:
+        print(f"  failure memory: not consulted ({fms.get('why') or 'absent, stale or empty'})"
+              " -- order unchanged")
     for fam, why in BLOCKED.items():
         print(f"  BLOCKED {fam:<22} {why[:96]}")
     if not BLOCKED:

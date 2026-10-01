@@ -133,7 +133,9 @@ unproven edge are the SAME failure; sizing beyond demonstrated edge is not aggre
 ruin. NOTHING IS EVER MAXED. NOTHING IS EVER COMPLETE. "Done", "sufficient" and "complete" are
 unexamined ceilings; no ROI gap is too small to close if genuinely net-positive. Build-deferral
 is a defect: if a build is net-positive it is built AND wired in the same change — bloat is
-unwired capability, not capability. HEALTHILY, always: real validated ROI only (padding destroys
+unwired capability, not capability; and a request repeated is a request already paid for — a
+restatement is evidence of a desk defect, never an invitation to re-argue the merits (CONSTITUTION
+L1.56). HEALTHILY, always: real validated ROI only (padding destroys
 ROI by eating triage budget); within the survival rails, untouchable; sustainable —
 evidence-gated aggression compounds, blind aggression exhausts.
 
@@ -723,7 +725,7 @@ and admitted; existing ones are continuously delta-scanned.
 words: "the forex sleeves still didn't stop they keep firing pls disable all of them in my current
 live account its critical they're losing me money", and "the bad m15 sleeve of gold is too".
 
-MEASURED THE SAME HOUR on account 495044 (EUR), trailing three days: 258 forex deals for
+MEASURED THE SAME HOUR on the live Fusion account (EUR), trailing three days: 258 forex deals for
 **-73.24 EUR** — EURCHF -43.54 over 100 deals, CHFNOK -10.38, AUDCAD -5.67, USDCHF -5.30,
 EURGBP -5.19, and eight more pairs negative. The only positive symbol on the account was XAUUSD,
 at +24.94.
@@ -737,7 +739,7 @@ loses that race forever. The policy is therefore an ADMISSION rule at both doors
 refused row even if one is written) and by `promoter.save_sleeves` (the only writer will not write
 one). An absent or unreadable policy file falls back to the ban, never to permission.
 
-SCOPE IS THE LIVE ACCOUNT 495044, NOT THE E8 PROP ACCOUNT. The prop book is deliberately built on
+SCOPE IS THE LIVE FUSION ACCOUNT, NOT THE E8 PROP ACCOUNT. The prop book is deliberately built on
 forex mechanisms -- session range breakout, overnight gap decay and carry are three of its four
 independent mechanisms (docs/PROP_FIRM_E8.md) -- so filtering them there would break the plan the
 principal designed, on an account whose risk is E8's rule rather than his balance. E8 keeps its

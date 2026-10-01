@@ -4358,6 +4358,10 @@ _TERMINAL_ARTIFACTS = {
         "DERIVED RENDERING, rewritten whole by desks/mt5/research/self_repair_registry.py (hourly leg self_repair). Nothing in it is authored; its "
         "staleness is its producer's, which the component registry and runtime attestation "
         "govern.",
+    "docs/research/TIER_S_PROGRAM.md":
+        "DERIVED RENDERING, rewritten whole by scripts/check_tier_s_program.py --render from "
+        "docs/research/tier_s_program.json (the 46-layer Tier S ledger that fence verifies at "
+        "every law-gate run). Nothing in it is authored; live verdicts are the tier_s organ's.",
     "docs/research/TIER5_AUDIT.md":
         "DERIVED RENDERING, rewritten whole by scripts/check_tier5_audit.py from docs/research/tier5_audit.json. Nothing in it is authored; its "
         "staleness is its producer's, which the component registry and runtime attestation "

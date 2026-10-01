@@ -26,7 +26,47 @@ sys.path.insert(0, str(BASE / "research"))
 from mt5desk import families  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
+# TIER S PRE-JUDGE SCREEN (layers 9 and 21). The Red Queen's adopted defenders and the machine-
+# ratified invented tests act here, on every candidate this stage backtests, one step before the
+# sealed judge: each result row is TAGGED with the rules it trips, and merge_hypotheses demotes a
+# flagged row behind its own family's clean rows. A tag and an order -- never a removal.
+if str(BASE.parents[1]) not in sys.path:
+    sys.path.insert(0, str(BASE.parents[1]))
+try:
+    from libs.tiers import prejudge_screen as _prejudge
+except Exception as _prejudge_exc:                        # pragma: no cover - host-dependent
+    _prejudge = None
+    print(f"prejudge screen unavailable ({_prejudge_exc}); candidates carry no Tier S tag")
+
 _h1_cache: dict = {}
+_prejudge_rules_cache: dict = {}
+
+
+def _prejudge_rules() -> list:
+    """The ADOPTED rules, read once per process per rules-file version (workers included)."""
+    if _prejudge is None:
+        return []
+    try:
+        stamp = _prejudge.RULES.stat().st_mtime_ns
+    except OSError:
+        return []
+    if _prejudge_rules_cache.get("stamp") != stamp:
+        _prejudge_rules_cache.update(stamp=stamp,
+                                     rules=_prejudge.active(_prejudge.load_rules()))
+    return list(_prejudge_rules_cache.get("rules") or [])
+
+
+def prejudge_verdict(df: pd.DataFrame, trades: list) -> dict | None:
+    """The screen's verdict on one backtested candidate, or None when no rule is adopted."""
+    rules = _prejudge_rules()
+    if not rules or _prejudge is None or "close" not in df:
+        return None
+    try:
+        pos = _prejudge.positions_from_trades(df.index, trades)
+        feats = _prejudge.candidate_features(df["close"].astype(float).to_numpy(), pos)
+    except Exception as exc:                  # a screen fault tags UNMEASURED, never a pass
+        return {"status": "UNMEASURED", "flags": [], "why": f"{type(exc).__name__}: {exc}"}
+    return _prejudge.screen(feats, rules)
 _uni = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
 
 
@@ -246,7 +286,7 @@ def run_cell(cell: dict) -> dict | None:
         st = result.stats()
         if st["n"] < 20:
             return None
-        return {
+        row = {
             "symbol": sym, "family": family_name, "params": params,
             "n": st["n"], "exp_r": round(st["expectancy_r"], 4),
             "max_dd_r": round(st["max_dd_r"], 2), "t_stat": round(st["t_stat"], 2),
@@ -255,6 +295,10 @@ def run_cell(cell: dict) -> dict | None:
             "source": cell.get("source_hypothesis", ""),
             "url": cell.get("source_url", ""),
         }
+        verdict = prejudge_verdict(df, result.trades)
+        if verdict is not None:
+            row["prejudge"] = verdict
+        return row
     except Exception as e:
         print(f"  ERR {sym}.{family_name}: {e}")
         return None
@@ -694,6 +738,22 @@ def run_all() -> list[dict]:
 
     survivors = [r for r in all_rows if r["exp_r"] > 0.05 and r["max_dd_r"] > -30]
 
+    # THE PRE-JUDGE VERDICTS, INDEXED BY EXECUTABLE IDENTITY for the docket writer. Built from
+    # the MERGED rows, so a cell screened in an earlier slice keeps its tag until re-tested.
+    prejudge_note: dict = {"status": "UNAVAILABLE" if _prejudge is None else "NO_RULES"}
+    if _prejudge is not None:
+        index = _prejudge.verdict_index(all_rows)
+        rules = _prejudge_rules()
+        prejudge_note = {**_prejudge.pass_summary(
+            [r.get("prejudge") for r in results if isinstance(r.get("prejudge"), dict)], rules),
+            "indexed": len(index), "status": "SCREENING" if rules else "NO_RULES"}
+        try:
+            (out.parent / _prejudge.VERDICTS.name).write_text(json.dumps({
+                "built_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "summary": prejudge_note, "verdicts": index}, indent=1, default=str), "utf-8")
+        except OSError as exc:
+            prejudge_note["write_error"] = f"{type(exc).__name__}: {exc}"
+
     # THE COVERAGE GAP IS PUBLISHED, not just printed. A number that exists only in a service
     # log is a number nobody acts on -- which is how a 162-row grid ran unnoticed beside a
     # 23,465-row docket for days. The issue board and the dashboard read this file, so "5,221
@@ -706,6 +766,7 @@ def run_all() -> list[dict]:
                      "cells_never_tested": max(0, len(grid) - len(cursor)),
                      "budget_min": round(budget_s / 60, 1),
                      "survivors": len(survivors),
+                     "prejudge": prejudge_note,
                      "elapsed_s": round(elapsed, 1), "workers": WORKERS,
                      "measured_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())})
     cov_path = BASE / "reports" / "BACKTEST_COVERAGE.json"

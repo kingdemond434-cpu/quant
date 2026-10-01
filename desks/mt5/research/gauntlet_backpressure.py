@@ -232,27 +232,73 @@ def _read_capacity_report(path: Path, note: dict[str, str]) -> Any:
             else _read_json(path, note))
 
 
-def _read_jsonl(path: Path, note: dict[str, str]) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
+#: How far back the append-only logs are DECODED. Two of the longest window (7d this window and
+#: the 7d before it, which `window_measure` compares against); older rows are only scanned.
+HORIZON_DAYS = 14.0
+_AT_RE = re.compile(r'"(?:at|born_at)"\s*:\s*"(\d{4}-\d\d-\d\d)')
+_ID_RE = re.compile(r'"id"\s*:\s*"([^"]+)"')
+
+
+def _read_jsonl(path: Path, note: dict[str, str], *, since: datetime | None = None,
+                births: bool = False) -> list[dict[str, Any]]:
+    """The NEWEST rows of an append-only JSONL log, streamed line by line, never loaded whole.
+
+    THE DEFECT THIS REPLACES (CRO pass 2026-09-30, read-only on the box). The reader stopped at
+    the FIRST `MAX_LINES` rows. `hypothesis_graph.jsonl` had grown to 5.7M lines, so the 500k it
+    read were rows from 2026-09-04, both windows came back empty, and the organ -- which also ran
+    past its 720 s leg budget on every pass -- last published on 2026-09-25: the judge's
+    controllers were reading a week-old backpressure file. An append-only log's OLDEST rows are
+    the ones a trailing-window report needs least.
+
+    Now: every line is scanned with a date regex (no JSON decode), rows dated inside `since` (the
+    report's `HORIZON_DAYS`) are decoded, and when more than `MAX_LINES` qualify the NEWEST are
+    kept (a bounded deque) and the note says so. `births=True` (the graph) adds a second scan:
+    the graph is append-on-change, so an id whose first row is OLDER than the horizon was born
+    before it, and its later fate rows must not read as births -- those ids are dropped.
+    A row with no parseable date is kept only when `since` is None.
+    """
+    from collections import deque
+
+    cut = None if since is None else (since - timedelta(days=1)).date().isoformat()
+    rows: deque[dict[str, Any]] = deque(maxlen=MAX_LINES)
+    total = decoded = 0
     try:
         with path.open(encoding="utf-8-sig", errors="replace") as fh:
-            for i, raw in enumerate(fh):
-                if i >= MAX_LINES:
-                    note[path.name] = f"TRUNCATED({MAX_LINES})"
-                    return rows
+            for raw in fh:
+                total += 1
                 if not raw.strip():
                     continue
+                if cut is not None:
+                    m = _AT_RE.search(raw)
+                    if m is None or m.group(1) < cut:
+                        continue
                 try:
                     row = json.loads(raw)
                 except ValueError:
                     continue
                 if isinstance(row, dict):
+                    decoded += 1
                     rows.append(row)
+        if births and cut is not None and rows:
+            recent = {str(r.get("id") or "") for r in rows} - {""}
+            older: set[str] = set()
+            with path.open(encoding="utf-8-sig", errors="replace") as fh:
+                for raw in fh:
+                    m = _AT_RE.search(raw)
+                    if m is None or m.group(1) >= cut:
+                        continue
+                    mi = _ID_RE.search(raw)
+                    if mi is not None and mi.group(1) in recent:
+                        older.add(mi.group(1))
+            if older:
+                rows = deque((r for r in rows if str(r.get("id") or "") not in older),
+                             maxlen=MAX_LINES)
     except OSError:
         note[path.name] = "ABSENT"
-        return rows
-    note[path.name] = "READ"
-    return rows
+        return []
+    note[path.name] = (f"TRUNCATED_KEPT_NEWEST({MAX_LINES} of {decoded} in horizon, "
+                       f"{total} lines)" if decoded > MAX_LINES else "READ")
+    return list(rows)
 
 
 def _rel(path: Path) -> str:
@@ -737,7 +783,10 @@ def trial_budget(out: Path | None = None) -> dict[str, Any]:
 def build(now: datetime | None = None) -> dict[str, Any]:
     at = now or _now()
     note: dict[str, str] = {}
-    born = born_cells(_read_jsonl(GRAPH, note))
+    horizon = at - timedelta(days=HORIZON_DAYS)
+    born = born_cells(_read_jsonl(GRAPH, note, since=horizon, births=True))
+    # The ledger is streamed whole too, but NOT date-filtered: `priors` are a lifetime pass rate
+    # per bucket. On truncation it keeps the NEWEST rows, where the windows live.
     vers = verdicts(_read_jsonl(GATE_LEDGER, note))
     windows = {name: window_measure(born, vers, at, hours, note) for name, hours in WINDOWS}
     primary = windows[WINDOWS[0][0]]

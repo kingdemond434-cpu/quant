@@ -1,0 +1,282 @@
+{
+ "registered_now": 102,
+ "score": {
+  "n_scored": 0,
+  "crps": null,
+  "coverage90": null,
+  "brier": null,
+  "pit_histogram": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "pit_chi2": null,
+  "overconfidence": null,
+  "per_source_crps": {}
+ },
+ "coverage": {
+  "trades": 108,
+  "unaccounted": 108,
+  "accounted_share": 0.0,
+  "unaccounted_keys": [
+   "AUDCAD.asia",
+   "AUDNZD.asia",
+   "AUDUSD.asia",
+   "CHFNOK.asia",
+   "EURCHF.asia",
+   "EURGBP.asia",
+   "EURUSD.asia",
+   "GBPMXN.*",
+   "GBPSEK.*",
+   "USDCHF.asia",
+   "USDMXN.*",
+   "XAUUSD.*",
+   "XAUUSD.afternoon",
+   "XAUUSD.asia",
+   "XAUUSD.london_am"
+  ]
+ },
+ "honesty": {
+  "factories": {
+   "hunt16.json": {
+    "claims": 1,
+    "evidence_weight": 0.0,
+    "raw_ratio": null,
+    "honesty": 1.0
+   },
+   "external_discoveries": {
+    "claims": 57,
+    "evidence_weight": 293.0,
+    "raw_ratio": 1.1756,
+    "honesty": 1.1593
+   }
+  },
+  "most_exaggerating": [
+   "hunt16.json",
+   "external_discoveries"
+  ]
+ },
+ "quantities": {
+  "registered_now": 0,
+  "registered": {
+   "mae_r": {
+    "registered": 102,
+    "n_scored": 0,
+    "crps": null,
+    "coverage90": null,
+    "brier": null,
+    "pit_histogram": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "pit_chi2": null,
+    "overconfidence": null,
+    "per_source_crps": {}
+   },
+   "mfe_r": {
+    "registered": 102,
+    "n_scored": 0,
+    "crps": null,
+    "coverage90": null,
+    "brier": null,
+    "pit_histogram": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "pit_chi2": null,
+    "overconfidence": null,
+    "per_source_crps": {}
+   },
+   "hold_h": {
+    "registered": 102,
+    "n_scored": 0,
+    "crps": null,
+    "coverage90": null,
+    "brier": null,
+    "pit_histogram": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "pit_chi2": null,
+    "overconfidence": null,
+    "per_source_crps": {}
+   },
+   "slip_r": {
+    "registered": 102,
+    "n_scored": 0,
+    "crps": null,
+    "coverage90": null,
+    "brier": null,
+    "pit_histogram": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "pit_chi2": null,
+    "overconfidence": null,
+    "per_source_crps": {}
+   }
+  },
+  "prequential": {
+   "mae_r": {
+    "status": "MEASURED",
+    "n_scored": 231,
+    "crps": 0.6394214016768793,
+    "coverage90": 0.9696969696969697,
+    "brier": null,
+    "pit_histogram": [
+     3,
+     11,
+     33,
+     63,
+     37,
+     29,
+     25,
+     12,
+     7,
+     11
+    ],
+    "pit_chi2": 129.9090909090909,
+    "overconfidence": 2.3420845585788395,
+    "per_source_crps": {
+     "prequential.mae_r": 0.6394214016768793
+    }
+   },
+   "mfe_r": {
+    "status": "MEASURED",
+    "n_scored": 231,
+    "crps": 1.8659174128187288,
+    "coverage90": 0.9826839826839827,
+    "brier": null,
+    "pit_histogram": [
+     0,
+     0,
+     0,
+     53,
+     127,
+     33,
+     8,
+     5,
+     1,
+     4
+    ],
+    "pit_chi2": 640.5584415584416,
+    "overconfidence": 4.679251062819521,
+    "per_source_crps": {
+     "prequential.mfe_r": 1.8659174128187288
+    }
+   },
+   "hold_h": {
+    "status": "MEASURED",
+    "n_scored": 232,
+    "crps": 0.4792475277769799,
+    "coverage90": 0.9267241379310345,
+    "brier": null,
+    "pit_histogram": [
+     12,
+     10,
+     25,
+     17,
+     8,
+     30,
+     61,
+     45,
+     13,
+     11
+    ],
+    "pit_chi2": 119.63793103448273,
+    "overconfidence": 2.86366502255874,
+    "per_source_crps": {
+     "prequential.hold_h": 0.4792475277769799
+    }
+   },
+   "slip_r": {
+    "status": "MEASURED",
+    "n_scored": 2,
+    "crps": 0.02044892801993306,
+    "coverage90": 0.5,
+    "brier": null,
+    "pit_histogram": [
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    "pit_chi2": 8.000000000000002,
+    "overconfidence": 6.014220035503708,
+    "per_source_crps": {
+     "prequential.slip_r": 0.02044892801993306
+    }
+   }
+  },
+  "outcomes": {
+   "mae_r": 232,
+   "mfe_r": 232,
+   "hold_h": 233,
+   "slip_r": 3
+  },
+  "scale": {
+   "mae_r": "raw",
+   "mfe_r": "raw",
+   "hold_h": "log1p",
+   "slip_r": "raw"
+  }
+ },
+ "metric": {
+  "crps": null,
+  "coverage90": null,
+  "accounted_share": 0.0,
+  "overconfidence": null,
+  "quantities_scored": 4,
+  "mae_r_crps": 0.6394214016768793,
+  "mfe_r_crps": 1.8659174128187288,
+  "hold_h_crps": 0.4792475277769799,
+  "slip_r_crps": 0.02044892801993306
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 2.348
+}

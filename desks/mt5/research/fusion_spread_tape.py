@@ -266,7 +266,10 @@ def live_snapshot(symbols: list[str]) -> dict[str, Any]:  # pragma: no cover - n
         timespec="seconds"), "symbols": {}}
     try:
         acct = mt5.account_info()
-        out["account"] = {"login": getattr(acct, "login", None),
+        # The login is WITHHELD: this snapshot is committed, and a tracked file must never name
+        # the live account (tests/ops/test_live_infrastructure_is_not_published.py). Nothing
+        # reads it from here; the terminal itself answers mt5.account_info().login on the box.
+        out["account"] = {"login_withheld": getattr(acct, "login", None) is not None,
                           "currency": getattr(acct, "currency", None),
                           "company": getattr(acct, "company", None),
                           "server": getattr(acct, "server", None)}
