@@ -26,11 +26,11 @@
   "LIVE": 90,
   "STALE": 46,
   "MISSING": 47,
-  "NEVER": 753,
+  "NEVER": 754,
   "UNMEASURED": 36
  },
  "scope": {
-  "attested": 970,
+  "attested": 971,
   "excluded": 427,
   "excluded_reason": "component declares no output artifact -- nothing to hash; the registry's own completeness is check_component_registry.py",
   "registry_components": 1357,
@@ -228,6 +228,16 @@
      "leg:breadth_sweep",
      "leg:empty_cluster_forcer",
      "leg:producer_breadth"
+    ]
+   },
+   {
+    "at": "2026-10-01T11:52:45+00:00",
+    "host": "DESKTOP-R5I548F",
+    "machine_id": "f3bf6346-a8dc-4861-8ebe-da82844c7fa3",
+    "on_attesting_host": false,
+    "identity": "UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm",
+    "organs": [
+     "executable:scripts/release_promotion.py"
     ]
    }
   ]
@@ -24930,6 +24940,34 @@
    "measured_on": "DESKTOP-R5I548F",
    "measured_on_machine_id": "f3bf6346-a8dc-4861-8ebe-da82844c7fa3",
    "measured_at": "2026-10-01T11:13:10+00:00"
+  },
+  {
+   "organ": "executable:scripts/release_promotion.py",
+   "kind": "executable",
+   "code": [
+    "scripts/release_promotion.py"
+   ],
+   "clock": "invoked:desks/mt5/scripts/Adopt-And-Seal.ps1",
+   "cadence_s": null,
+   "max_silence_s": null,
+   "state": "NEVER",
+   "why": "appended by --only-missing on DESKTOP-R5I548F (UNVERIFIABLE (old-format host stamp: no machine_id); stamp names vm): no artifact and no run record here, and the attesting host has never attested it",
+   "last_run_at": "UNMEASURED",
+   "last_run_outcome": "UNMEASURED",
+   "last_run_source": "UNMEASURED",
+   "artifact": "desks/mt5/reports/RELEASE_GATE.json",
+   "artifact_declared": "desks/mt5/reports/RELEASE_GATE.json",
+   "artifact_resolved_by": "absent",
+   "artifact_declared_n": 1,
+   "artifact_age_s": null,
+   "artifact_bytes": 0,
+   "artifact_sha256": "UNMEASURED",
+   "summary": {},
+   "progress_metric": "UNMEASURED",
+   "consumer": "UNMEASURED",
+   "measured_on": "DESKTOP-R5I548F",
+   "measured_on_machine_id": "f3bf6346-a8dc-4861-8ebe-da82844c7fa3",
+   "measured_at": "2026-10-01T11:52:45+00:00"
   }
  ],
  "ratchet": {

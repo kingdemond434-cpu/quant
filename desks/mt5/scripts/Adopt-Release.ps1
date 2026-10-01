@@ -103,6 +103,13 @@
     Adopt the FETCH_HEAD already on disk instead of fetching first. For a
     rerun, or a box whose network is the thing that is broken.
 
+.PARAMETER Target
+    Adopt exactly this commit instead of FETCH_HEAD. Adopt-And-Seal passes the
+    commit the release gate chose (`scripts/release_promotion.py gate`: the
+    branch tip when it is a green release plus box state, else the newest
+    release itself), together with -NoFetch because the gate has already
+    fetched it. The commit must already be in this clone.
+
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File desks\mt5\scripts\Adopt-Release.ps1
 #>
@@ -110,7 +117,8 @@
 param(
     [string] $RepoRoot,
     [string] $Branch,
-    [switch] $NoFetch
+    [switch] $NoFetch,
+    [string] $Target
 )
 
 $ErrorActionPreference = "Stop"
@@ -636,7 +644,15 @@ if (-not $NoFetch) {
                "common cause on this box -- see docs/BOX_PERMISSIONS.md")
     }
 }
-$target = (Invoke-Git @("rev-parse", "FETCH_HEAD")).Trim()
+# A TARGET PINNED BY THE RELEASE GATE WINS OVER FETCH_HEAD (2026-09-30). The gate fetched the
+# tip and the production pointer into refs/quant/release-gate/* and chose which one this box may
+# run; FETCH_HEAD would name the raw tip, which is exactly what the gate exists to hold back.
+if ($Target) {
+    $target = (Invoke-Git @("rev-parse", "--verify", "$Target^{commit}")).Trim()
+    Write-Host "  target pinned by the release gate"
+} else {
+    $target = (Invoke-Git @("rev-parse", "FETCH_HEAD")).Trim()
+}
 $head   = (Invoke-Git @("rev-parse", "HEAD")).Trim()
 Write-Host ("  head   {0}" -f $head.Substring(0, 12))
 Write-Host ("  target {0}" -f $target.Substring(0, 12))

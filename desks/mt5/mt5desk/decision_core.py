@@ -255,16 +255,10 @@ MAX_TOTAL_REJECTIONS = 2
 #: this restarts from zero; two rejections inside a day still pause, exactly as before.
 REJECTION_STREAK_WINDOW_H = 24.0
 
-#: Minimum improvement, in R, before a stop modification is worth sending. A modify costs a
-#: round trip to the broker and a chance of rejection; nudging a stop by a fraction of a tick
-#: every pass spends both for nothing. Expressed in R rather than price so it means the same
-#: thing on gold and on EURUSD.
-#: Minimum improvement, in R, before a stop modification is worth sending. Derived from the
-#: round trip the modify costs: measured spread plus commission on this book is ~0.02-0.03R, so
-#: 0.05R is about twice the cost of acting -- the point where the move pays for itself even if
-#: the next tick takes it back. Expressed in R rather than price so it means the same thing on
-#: gold and on EURUSD.
-MIN_RATCHET_IMPROVEMENT_R = 0.05
+#: (MIN_RATCHET_IMPROVEMENT_R = 0.05 lived here until 2026-09-29. Both money paths now send any
+#: stop move that tightens by at least one venue stop step -- position_manager.
+#: tightens_by_min_step -- so the R floor had no reader and is gone rather than kept as a
+#: constant the gateway no longer re-exports.)
 
 #: Retcodes the venue answers a placed or done order with. The one success test on this desk.
 ACCEPTED_RETCODES = (10008, 10009)
