@@ -255,16 +255,10 @@ MAX_TOTAL_REJECTIONS = 2
 #: this restarts from zero; two rejections inside a day still pause, exactly as before.
 REJECTION_STREAK_WINDOW_H = 24.0
 
-#: Minimum improvement, in R, before a stop modification is worth sending. A modify costs a
-#: round trip to the broker and a chance of rejection; nudging a stop by a fraction of a tick
-#: every pass spends both for nothing. Expressed in R rather than price so it means the same
-#: thing on gold and on EURUSD.
-#: Minimum improvement, in R, before a stop modification is worth sending. Derived from the
-#: round trip the modify costs: measured spread plus commission on this book is ~0.02-0.03R, so
-#: 0.05R is about twice the cost of acting -- the point where the move pays for itself even if
-#: the next tick takes it back. Expressed in R rather than price so it means the same thing on
-#: gold and on EURUSD.
-MIN_RATCHET_IMPROVEMENT_R = 0.05
+#: (MIN_RATCHET_IMPROVEMENT_R = 0.05 lived here until 2026-09-29. Both money paths now send any
+#: stop move that tightens by at least one venue stop step -- position_manager.
+#: tightens_by_min_step -- so the R floor had no reader and is gone rather than kept as a
+#: constant the gateway no longer re-exports.)
 
 #: Retcodes the venue answers a placed or done order with. The one success test on this desk.
 ACCEPTED_RETCODES = (10008, 10009)
@@ -632,15 +626,14 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
     the order quantity was decided somewhere else, which is exactly the source-to-money break the
     programme exists to remove.
 
-    WHY `max` AND NOT THE ALLOCATOR'S FRACTION ALONE. The principal's standing order, given three
-    times (2026-09-08), is that the desk never reduces its aggressiveness, only its dynamicness.
-    At today's equity the allocator's fraction for a gold window resolves BELOW what `gold_lot`
-    sends, so handing the venue h_i alone would be a size CUT on the desk's only forward-evidenced
-    book, delivered under the banner of better sizing. `max` closes the break in the direction
-    that can only ever help: when the optimiser wants MORE gold than fixed-fractional sizing asks
-    for -- the growth case, and the whole reason h_i exists -- gold gets more, and when it wants
-    less, gold is sized exactly as it is today. Routing gold at h_i ALONE remains refused and
-    remains the principal's to grant.
+    THE ALLOCATOR IS SOVEREIGN BY DEFAULT (P1 LANDED, #53, principal 2026-09-29). The 2026-09-08
+    refusal to route gold at h_i alone was lifted by the principal and merged as #53: with
+    `allocator_sovereign()` true (the default), zero sends no order and a positive fraction is
+    sized at that fraction alone, snapped down and refused -- never lifted -- below the venue
+    minimum. The `max(h_i lot, gold_lot)` path after that branch is the documented REVERT, live
+    only when `ALLOCATOR_SOVEREIGN.json` holds `{"enabled": false}`: there, when the optimiser
+    wants MORE gold than fixed-fractional sizing asks for, gold gets more, and when it wants
+    less, gold is sized by its policy lot.
 
     Returns `(lot, basis)`. The basis names which term won, so the log and the intent row can say
     whether the allocator or the floor set the size -- a lot with no stated basis is the thing

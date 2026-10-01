@@ -38,7 +38,7 @@ class Costs:
     """
     spread_per_lot: float = 16.0
     # MEASURED, not published: 2.00 in ACCOUNT CURRENCY per lot per side, over all 433
-    # deals account 495044 has ever done (reports/COST_TRUTH.json 2026-09-23, with
+    # deals the live Fusion account has ever done (reports/COST_TRUTH.json 2026-09-23, with
     # p10 = p50 = p90 = 2.00 and no exception on any of the twelve traded symbols, gold
     # included). The 2.25 here was the brochure's USD figure sitting in a field this
     # class converts as ACCOUNT currency through `quote_per_account` -- the same unit

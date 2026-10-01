@@ -2,7 +2,7 @@
 
 THE PRINCIPAL'S ORDER (2026-09-17, live message): "the forex sleeves still didn't stop, they keep
 firing, please disable all of them in my current live account, it's critical they're losing me
-money" and "the bad m15 sleeve of gold is too". Measured on account 495044 the same hour, over
+money" and "the bad m15 sleeve of gold is too". Measured on the live account the same hour, over
 the trailing three days: 258 forex deals for **-73.24 EUR** (EURCHF -43.54 across 100 deals,
 CHFNOK -10.38, AUDCAD -5.67, USDCHF -5.30, EURGBP -5.19, and eight more pairs negative; the only
 positive symbol on the account was XAUUSD at +24.94).
@@ -26,7 +26,7 @@ XAUUSD book, it is not left idle. A future session may widen this ONLY on the pr
 principal has accepted -- never because a reviewer thinks the book looks narrow.
 
 SCOPE IS THE LIVE ACCOUNT, NOT THE PROP ACCOUNT. The principal's words were "my current live
-account" (495044). The E8 prop book is deliberately BUILT on forex mechanisms -- session range
+account" (Fusion). The E8 prop book is deliberately BUILT on forex mechanisms -- session range
 breakout, overnight gap decay and carry are three of its four independent mechanisms
 (docs/PROP_FIRM_E8.md) -- so applying this policy there would break the plan he designed, on an
 account whose drawdown is E8's rule rather than his balance. E8 keeps its own family ban
@@ -75,8 +75,17 @@ DEFAULT_BANNED_EXECS: frozenset[str] = frozenset({"scalp_market"})
 EXEC_ORDER = ("principal 2026-09-29: the gold scalp lane is stood down (executable replay "
               "<= 0R per trade after costs on every candidate); E8 carries no scalp lane")
 ORDER = ("principal 2026-09-17: forex sleeves and the XAUUSD M15 sleeve are disabled in the "
-         "live account (measured cause: -73.24 EUR of forex deals in three days on account "
-         "495044 while XAUUSD made +24.94)")
+         "live account (measured cause: -73.24 EUR of forex deals in three days on the live "
+         "Fusion account while XAUUSD made +24.94)")
+
+#: Symbol -> the ONLY sleeve names that may hold capital on it. A symbol ABSENT from this map is
+#: unrestricted, so the default below changes nothing for gold.
+#:
+#: WHY A SYMBOL ALLOWLIST IS NOT ENOUGH ON ITS OWN (recovered box lane, 2026-09-24). Admitting a
+#: SYMBOL admits every certified parameter set on it -- USDJPY holds rr=1.5, rr=2.0 and rr=2.5 --
+#: and three rr variants of one breakout on one instrument are one bet bought three times. The
+#: allowlist is how "one sleeve on this instrument" is said in a way the gateway can enforce.
+DEFAULT_LIVE_SLEEVES: dict[str, frozenset[str]] = {}
 
 
 @dataclass(frozen=True)
@@ -86,6 +95,8 @@ class Policy:
         default_factory=lambda: dict(DEFAULT_BANNED_TIMEFRAMES))
     banned_families: frozenset[str] = DEFAULT_BANNED_FAMILIES
     banned_execs: frozenset[str] = DEFAULT_BANNED_EXECS
+    live_sleeves: Mapping[str, frozenset[str]] = field(
+        default_factory=lambda: dict(DEFAULT_LIVE_SLEEVES))
     source: str = "defaults"
     by: str = ORDER
 
@@ -94,6 +105,7 @@ class Policy:
                 "banned_timeframes": {k: sorted(v) for k, v in self.banned_timeframes.items()},
                 "banned_families": sorted(self.banned_families),
                 "banned_execs": sorted(self.banned_execs),
+                "live_sleeves": {k: sorted(v) for k, v in self.live_sleeves.items()},
                 "source": self.source, "by": self.by}
 
 
@@ -122,7 +134,15 @@ def policy(path: Path | None = None) -> Policy:
         else DEFAULT_BANNED_FAMILIES
     banned_exec = frozenset(str(e).lower() for e in execs) if isinstance(execs, list) \
         else DEFAULT_BANNED_EXECS
-    return Policy(live, banned_tf, banned_fam, banned_exec, source=str(p),
+    live_sl: dict[str, frozenset[str]] = dict(DEFAULT_LIVE_SLEEVES)
+    allow = doc.get("live_sleeves")
+    if isinstance(allow, dict):
+        for sym, names in allow.items():
+            # An EMPTY list is "nothing on this symbol", not "everything": the one reading that
+            # could turn a truncated edit into an unrestricted symbol is the one not taken.
+            if isinstance(names, list):
+                live_sl[str(sym).upper()] = frozenset(str(n) for n in names)
+    return Policy(live, banned_tf, banned_fam, banned_exec, live_sl, source=str(p),
                   by=str(doc.get("by") or ORDER))
 
 
@@ -149,6 +169,12 @@ def refuse(row: Mapping[str, Any], pol: Policy | None = None) -> str | None:
     ex = str(row.get("exec") or "").strip().lower()
     if ex and ex in p.banned_execs:
         return f"exec lane {ex!r} is stood down -- {EXEC_ORDER}"
+    allowed = p.live_sleeves.get(sym)
+    if allowed is not None:
+        name = str(row.get("name") or "").strip()
+        if name not in allowed:
+            return (f"{sym} admits only {sorted(allowed)} for live capital; {name!r} is a "
+                    f"different parameter set on the same instrument -- {p.by}")
     return None
 
 

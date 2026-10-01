@@ -77,18 +77,39 @@ MANDATE_EXCLUDED: dict[str, str] = {
 }
 
 
-def _catalogue() -> list[dict]:
+#: Datasets found in open catalogues by `research/free_stack_hunter.py`; ranked beside the
+#: declared catalogue so the crawler hunts them too. Absent file -> nothing added.
+DISCOVERED = BASE / "data" / "free_stack" / "discovered_catalogue.json"
+
+
+def _discovered(limit: int = 500) -> list[dict]:
     try:
-        from libs.autodiscovery.data_opportunity import _CATALOG
-    except Exception:                                            # noqa: BLE001
+        doc = json.loads(DISCOVERED.read_text("utf-8"))
+    except (OSError, ValueError):
         return []
     out = []
+    for r in (doc.get("rows") or [])[:limit] if isinstance(doc, dict) else []:
+        if not isinstance(r, dict) or not r.get("name"):
+            continue
+        out.append({"name": f"{r['name']} [{r.get('catalogue')}]", "unlocks": [],
+                    "expected_alpha_value": float(r.get("expected_alpha_value") or 0.0),
+                    "url": r.get("url"), "uses": r.get("uses")})
+    return out
+
+
+def _catalogue() -> list[dict]:
+    out = []
+    try:
+        from libs.autodiscovery.data_opportunity import _CATALOG
+    except Exception:
+        _CATALOG = []
     for d in _CATALOG:
         row = d.model_dump() if hasattr(d, "model_dump") else dict(d)
         if str(row.get("name")) in MANDATE_EXCLUDED:
             continue
         row["expected_alpha_value"] = float(getattr(d, "expected_alpha_value", 0.0))
         out.append(row)
+    out.extend(r for r in _discovered() if r["name"] not in MANDATE_EXCLUDED)
     return out
 
 
@@ -130,7 +151,7 @@ def _barren() -> dict[str, float]:
             a, b = r.posterior("certified")
             out[name] = round(a / (a + b), 4) if (a + b) > 0 else 0.0
         return out
-    except Exception:                                            # noqa: BLE001
+    except Exception:
         return {}
 
 

@@ -3,8 +3,13 @@ needed", every blueprint wired live).
 
 `block(name)` is called by `research/promoter.py` beside `blind_review_veto`, with the same
 consequence and the same limits: it WITHHOLDS A NEW LIVE ROW, it sizes nothing and it never
-touches an open position or a row already holding capital. Six verdicts can withhold, and a
-check that raises withholds too (`DOOR_ERROR`, fail closed):
+touches an open position or a row already holding capital. Seven verdicts can withhold, and a
+check that raises withholds too (`DOOR_ERROR`, fail closed; every DOOR_ERROR row is billed to
+the input it names and the window it was absent or stale, `record` -> `missed_growth`):
+
+  RELEASE_REGRESSION_STOP  the running sealed release regressed forward against the previous
+                         one (`libs/tiers/regression_stop.py`, data/tier_s/RELEASE_STOP.json):
+                         nothing new is promoted under it until the running release changes;
 
   CONSTITUTION_VIOLATED  the truth kernel's rule set in force loosens the sealed constitution
                          without a principal ratification of its exact hash;
@@ -43,8 +48,9 @@ READ-ONLY OF CERTIFICATES, BY THE FIREWALL: every file this module opens is chec
 from __future__ import annotations
 
 import json
+import sys
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -215,6 +221,81 @@ def _panel_and_theory(name: str) -> str | None:
     return None
 
 
+RELEASE_STOP_REL = Path("desks") / "mt5" / "data" / "tier_s" / "RELEASE_STOP.json"
+
+
+def _rel(p: Path) -> str:
+    try:
+        return str(p.relative_to(ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(p).replace("\\", "/")
+
+
+def _release_stop() -> str | None:
+    """THE REGRESSION STOP (`libs/tiers/regression_stop.py`, written hourly by the twin organ):
+    while the running release is one the forward-regression check STOPPED, no new LIVE row is
+    promoted under it. Absent is no stop; a damaged stop file raises (fail closed)."""
+    from libs.tiers import regression_stop
+    firewall.may("promoter", "read", str(RELEASE_STOP_REL).replace("\\", "/"))
+    try:
+        return regression_stop.stop_reason(ROOT)
+    except (OSError, ValueError) as exc:
+        raise DoorReadError(f"RELEASE_STOP.json unreadable: {type(exc).__name__}: {exc}"
+                            ) from exc
+
+
+#: the last DOOR_ERROR per certificate name, as `record` bills it: which input, and the window
+#: over which it was absent or stale (gap E, 2026-09-30)
+_LAST_DOOR_ERROR: dict[str, dict[str, Any]] = {}
+#: which REQUIRED input each labelled check reads
+_CHECK_INPUT = {"replication": "replication", "fdr": "online_fdr", "freeze": "immune",
+                "panel_and_theory": "door"}
+#: the module attribute holding each labelled check's input file, and its stamp key -- read at
+#: call time, so the bill names the file the check actually read
+_CHECK_FILE = {"replication": ("REPLICATION", "at"), "fdr": ("FDR_ROWS", "generated_utc"),
+               "freeze": ("FREEZE", "at"), "panel_and_theory": ("DOOR_VERDICTS", "generated_utc"),
+               "constitution": ("CONSTITUTION", "")}
+
+
+def _input_window(label: str, exc: BaseException) -> dict[str, Any]:
+    """The input a DOOR_ERROR names and the window it was missing for: from its last stamp (or
+    'never reported') to now, against the MAX_AGE_H freshness the door requires."""
+    now = datetime.now(UTC)
+    key = _CHECK_INPUT.get(label)
+    out: dict[str, Any] = {"check": label, "input": key or label, "error": str(exc)[:300],
+                           "max_age_h": MAX_AGE_H, "window_end": now.isoformat(timespec="seconds")}
+    attr, stamp = _CHECK_FILE.get(label, ("", ""))
+    path = getattr(sys.modules[__name__], attr) if attr else ROOT / RELEASE_STOP_REL
+    out["input_file"] = _rel(path)
+    if key is None:
+        out.update(state="DAMAGED" if path.exists() else "ABSENT", window_start=None)
+        return out
+    out["writer"] = REQUIRED[key][2]
+    try:
+        doc = json.loads(path.read_text("utf-8"))
+    except FileNotFoundError:
+        out.update(state="ABSENT", window_start=None, age_h=None)
+        return out
+    except (OSError, ValueError):
+        out.update(state="DAMAGED", window_start=None, age_h=None)
+        return out
+    raw = (doc or {}).get(stamp) or (doc or {}).get("at") if isinstance(doc, dict) else None
+    try:
+        at = datetime.fromisoformat(str(raw))
+        if at.tzinfo is None:
+            at = at.replace(tzinfo=UTC)
+    except (TypeError, ValueError):
+        out.update(state="UNDATED", window_start=None, age_h=None)
+        return out
+    age = (now - at).total_seconds() / 3600.0
+    out.update(state="STALE" if age > MAX_AGE_H else "FRESH_BUT_UNREADABLE",
+               last_stamp=at.isoformat(timespec="seconds"), age_h=round(age, 3),
+               # the window the row was withheld over: from the moment the input went stale
+               window_start=((at + timedelta(hours=MAX_AGE_H)).isoformat(timespec="seconds")
+                             if age > MAX_AGE_H else None))
+    return out
+
+
 def block(name: str) -> str | None:
     """The first reason this certificate may not be written LIVE now, or None.
 
@@ -229,10 +310,16 @@ def block(name: str) -> str | None:
     checks: list[tuple[str, Callable[[], str | None]]] = [
         (label, partial(fn, name)) for label, fn in per_cert]
     checks.append(("freeze", _freeze))
+    checks.append(("release_stop", _release_stop))
     for label, check in checks:
         try:
             why = check()
         except Exception as exc:  # any failure must withhold, never pass
+            try:
+                _LAST_DOOR_ERROR[name] = _input_window(label, exc)
+            except Exception as werr:      # the bill never costs the withhold
+                _LAST_DOOR_ERROR[name] = {"check": label, "input": label,
+                                          "error": f"{type(werr).__name__}: {werr}"}
             return (f"DOOR_ERROR: the {label} check raised "
                     f"{type(exc).__name__}: {exc}; withheld until it runs clean")
         if why:
@@ -265,6 +352,26 @@ def door_inputs() -> dict[str, dict[str, Any]]:
 
 
 LIVE_DOOR = DESK / "data" / "tier_s" / "live_door.json"
+#: `desks/mt5/research/research_live_identity.py`, hourly: per LIVE sleeve, whether the spec the
+#: gateway trades is the spec research certified (family, symbol, selector, params, code hash)
+IDENTITY = DESK / "reports" / "RESEARCH_LIVE_IDENTITY.json"
+
+
+def _identity_mismatches() -> dict[str, str]:
+    """{LIVE sleeve: reason} for every row the identity join names MISMATCH.
+
+    ABSENT OR STALE LISTS NOTHING: the join is a live-book check, not one of the door's required
+    verdict files, and a missing report is the absence of a finding. A report that EXISTS but is
+    damaged raises `DoorReadError` from `_read` -- damage is not silence -- and `review_live`
+    turns that into a named row per live sleeve, the door's fail-closed rule."""
+    from libs.tiers import research_live_identity
+    doc = _read(IDENTITY)
+    if doc is None or not _fresh(doc):
+        return {}
+    rows = doc.get("rows")
+    if rows is not None and not isinstance(rows, list):
+        raise DoorReadError(f"{IDENTITY.name} rows are a {type(rows).__name__}")
+    return research_live_identity.mismatch_reasons(doc)
 
 
 def review_live(live_names: list[str]) -> dict[str, str]:
@@ -274,20 +381,47 @@ def review_live(live_names: list[str]) -> dict[str, str]:
     replication failed, whose FDR budget was spent or whose own forward clock turned against it
     after it went live is no better for having gone live first. This is the same `block`, fail
     closed, run over the live book; the `door` organ publishes it as `data/tier_s/live_door.json`
-    for the promoter's automatic retirement to read, billed like every door verdict."""
+    for the promoter's automatic retirement to read, billed like every door verdict.
+
+    PLUS ONE CHECK ONLY A LIVE ROW CAN FAIL: the research-live identity join. A LIVE sleeve whose
+    traded spec differs from the certified one (`IDENTITY_MISMATCH`) is trading a strategy no
+    certificate covers, so it is listed here beside the six door verdicts."""
     out: dict[str, str] = {}
+    try:
+        ident = _identity_mismatches()
+        ident_err = None
+    except Exception as exc:
+        ident, ident_err = {}, (f"DOOR_ERROR: the identity check raised {type(exc).__name__}: "
+                                f"{exc}; withheld until it runs clean")
     for name in live_names:
-        why = block(name)
+        why = block(name) or ident_err or ident.get(name)
         if why:
             out[name] = why
     return out
 
 
+def _door_error_from_why(why: str) -> dict[str, Any]:
+    """The input a DOOR_ERROR names, parsed from its reason when `block` left no detail."""
+    import re
+    m = re.search(r"the (\w+) check raised", why)
+    label = m.group(1) if m else "unknown"
+    return {"check": label, "input": _CHECK_INPUT.get(label, label), "error": why[:300],
+            "max_age_h": MAX_AGE_H, "window_start": None,
+            "window_end": datetime.now(UTC).isoformat(timespec="seconds")}
+
+
 def record(name: str, why: str, *, lane: str, exp_r: Any = None, n: Any = None) -> None:
-    """Append one withheld promotion to the ledger `missed_growth` bills."""
+    """Append one withheld promotion to the ledger `missed_growth` bills.
+
+    A DOOR_ERROR row (an input absent, stale or damaged -- fail closed) also carries `door_error`:
+    WHICH input withheld it and the WINDOW it was missing over, so `missed_growth.
+    measure_tier_s_block` bills the cost of failing closed per input (gap E, 2026-09-30)."""
     firewall.may("promoter", "write", str(LEDGER.relative_to(ROOT)))
-    row = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "name": name, "lane": lane,
-           "why": why, "reason": why.split(":", 1)[0], "exp_r": exp_r, "n": n}
+    row: dict[str, Any] = {"at": datetime.now(UTC).isoformat(timespec="seconds"), "name": name,
+                           "lane": lane, "why": why, "reason": why.split(":", 1)[0],
+                           "exp_r": exp_r, "n": n}
+    if row["reason"] == "DOOR_ERROR":
+        row["door_error"] = _LAST_DOOR_ERROR.pop(name, None) or _door_error_from_why(why)
     try:
         LEDGER.parent.mkdir(parents=True, exist_ok=True)
         with LEDGER.open("a", encoding="utf-8") as fh:
