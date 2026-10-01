@@ -1,4 +1,4 @@
-"""Ehlers smoothing channels and causal support/resistance clusters, ported from hummingbot/quants-lab.
+"""Ehlers smoothing channels and causal support/resistance clusters, from hummingbot/quants-lab.
 
 Source: github.com/hummingbot/quants-lab, `core/features/candles/mean_reversion_channel.py`
 (`supersmoother`, `sak_smoothing`: Ehlers SuperSmoother, Gaussian and Butterworth two-pole
