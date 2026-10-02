@@ -258,7 +258,8 @@ def identity(*, family: str, symbol: str, direction: str = "LONG", timeframe: st
 
 
 def freeze(key: str, ident: dict[str, Any], *, forward_start: str | None = None,
-           cost_fields: dict[str, Any] | None = None) -> dict[str, Any]:
+           cost_fields: dict[str, Any] | None = None,
+           runtime_version: str | None = None) -> dict[str, Any]:
     """Record the identity for `key` if absent; return the FROZEN identity (never the new one).
 
     Idempotent by construction: a second freeze on a live key returns what was already frozen, so
@@ -323,6 +324,8 @@ def freeze(key: str, ident: dict[str, Any], *, forward_start: str | None = None,
         "forward_start": forward_start,
         "status": "LIVE",
     }
+    if runtime_version:
+        born["runtime_version"] = runtime_version
     from certificate_truth import (  # type: ignore[import-not-found]
         IDENTITY_RULE,
         canonical_identity,
@@ -356,6 +359,11 @@ def verify(key: str, ident: dict[str, Any]) -> list[str]:
     drift = [f for f in IDENTITY_FIELDS
              if json.dumps(frozen.get(f), sort_keys=True, default=str)
              != json.dumps(ident.get(f), sort_keys=True, default=str)]
+    # Runtime wrappers can change what a session-labelled family executes while the family
+    # function's own bytecode is unchanged. The shadow pass supplies its active version; a
+    # restored/stale registry may not silently validate a different forward window.
+    if ident.get("runtime_version") and row.get("runtime_version") != ident["runtime_version"]:
+        drift.append("runtime_version")
     # A COMMENT IS NOT A STRATEGY CHANGE. `code_hash` hashes source text, so a docstring or
     # comment edit reads here as a drifted strategy and kills the clock terminally. When BOTH
     # sides recorded a behaviour hash and those AGREE, the bytecode is identical: the function
@@ -571,6 +579,36 @@ def rebase_code(key: str, ident: dict[str, Any]) -> str | None:
     reg["updated_at"] = now
     _write(reg)
     return why
+
+
+def restart_runtime_window(key: str, version: str, start: str,
+                           prior: dict[str, Any]) -> str:
+    """Open a new evidence epoch after the shared signal-call semantics change.
+
+    This is not a cost rebase or a new certificate. The old forward window and its measured
+    summary remain in the canonical registry; only the new epoch may count toward promotion.
+    Repeating after a crash returns the same start rather than moving it again.
+    """
+    reg = _read(REGISTRY)
+    row = (reg.get("sleeves") or {}).get(key)
+    if row is None:
+        return start  # a never-frozen clock will be frozen with this start by its caller
+    if row.get("runtime_version") == version:
+        return str(row.get("forward_start") or start)
+    if str(row.get("status") or "LIVE").upper() not in ("LIVE", "ACTIVE"):
+        raise ValueError(f"{key}: cannot restart terminal registry status {row.get('status')}")
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    old = {"forward_start": row.get("forward_start"),
+           "identity": row.get("identity"), "ended_at": now,
+           "reason": f"runtime semantics changed to {version}; old trades cannot be forward",
+           "summary": prior}
+    row.setdefault("runtime_windows_before", []).append(old)
+    row["runtime_version"] = version
+    row["forward_start"] = start
+    row["runtime_restarted_at"] = now
+    reg["updated_at"] = now
+    _write(reg)
+    return start
 
 
 #: The gateway's own retirement file. Read, never duplicated: `decision_core.roster` skips a gold

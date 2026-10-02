@@ -1151,6 +1151,12 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
             except Exception as exc:
                 slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
                      f"running on live costs this pass")
+            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
+                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
+            from research.session_runtime_window import ensure as _ensure_session_window
+            if _ensure_session_window(key, params, st, ledger=ledger):
+                slog(f"{key}: session filter corrected; prior state archived and a "
+                     f"NEW forward window begins at {st['forward_start']}")
             res = run_backtest(h1, sigs, costs)
             # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
             # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
@@ -1180,8 +1186,6 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 f"{len(all_trades) - len(trades)} earlier observation(s) retained as "
                 f"HISTORICAL and "
                 f"excluded from every threshold (they predate pre-registration)")
-            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
-                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
             # A trade replayed on the broker's own feed and one replayed on cached
             # or free bars are not the same evidence -- OHLC differ at the tick and
             # spreads differ materially -- so an expectancy averaged across them is
@@ -1255,6 +1259,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     # prints these are, so a real venue change still breaks the clock and an outage
                     # does not. See h1_source.Bars.evidence_venue.
                     data_venue=str(bars.evidence_venue))
+                if st.get("runtime_version"):
+                    _ident["runtime_version"] = st["runtime_version"]
                 _drift = _reg.verify(key, _ident)
                 # A COST CORRECTION IS NOT A STRATEGY CHANGE, and treating it as one kills the
                 # clock permanently. Measured 2026-09-02: all twelve IDENTITY_BROKEN rows had
@@ -1326,7 +1332,8 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                     st.pop("identity_drift", None)
                     st.pop("identity_reason", None)
                 _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
-                            cost_fields=vars(costs))
+                            cost_fields=vars(costs),
+                            runtime_version=st.get("runtime_version"))
                 st["sleeve_id"] = _ident["sleeve_id"]
             except Exception as exc:
                 slog(f"{key}: registry unavailable ({type(exc).__name__}: {exc})")
