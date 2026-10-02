@@ -931,6 +931,11 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             # index i and i-1, never i+1. Live, the fill that the backtest's bar i+1 stands for
             # is the market order this pass is about to send.
             signals = func(frame, **params) if params else func(frame)
+            # Keep the certified session selector out of the family's signature, but do not
+            # lose it: E8 must apply the same post-constructor window as the gauntlet and
+            # Fusion. Both flat and {condition, params} certificate envelopes occur here.
+            from mt5desk.family_call import certified_session_filter
+            signals = certified_session_filter(list(signals or []), s)
         except Exception as exc:
             row["status"] = "SIGNAL_ERROR"
             row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"

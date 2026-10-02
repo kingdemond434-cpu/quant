@@ -1029,9 +1029,12 @@ def main(rows: list | None = None, ledger: str = "shadow_state.json") -> None:
                 continue
             # Rebuild whatever this family needs beyond bars, from its own stored params. A
             # family that needs nothing gets an empty dict and is unaffected.
-            from mt5desk.family_inputs import resolve, strip_identity_keys
+            from mt5desk.family_inputs import resolve, runtime_call_params
 
-            call_params = strip_identity_keys(fam, params)
+            call_params = runtime_call_params(fam, params)
+            # family_call.signals, not the family constructor, owns the session filter. The
+            # gauntlet already applies it; dropping this key here made all forward session
+            # variants replay the same unrestricted trades.
             extra, why = resolve(sym, fam, params, h1)
             if extra is None:
                 # SKIP LOUDLY, NEVER RUN SHORT. `family_carry` returns [] without its swap terms,

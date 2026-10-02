@@ -2868,11 +2868,14 @@ def _family_call_params(s: dict, family: str, bars: object) -> tuple[dict | None
         if recovered is not None:
             params = dict(recovered)
     try:
-        from mt5desk.family_inputs import resolve, strip_identity_keys
+        from mt5desk.family_inputs import resolve, runtime_call_params
     except Exception as exc:
         return None, f"family_inputs unavailable ({type(exc).__name__}: {exc})"
     try:
-        call_params = strip_identity_keys(family, params)
+        call_params = runtime_call_params(family, params)
+        # `session` is not a family keyword, but family_call.signals consumes it to apply the
+        # exact session filter used by the gauntlet. Stripping it here made Asia/London/NY
+        # certificates execute the unrestricted signal stream on Fusion.
         extra, why = resolve(str(s["symbol"]), family, params, bars)
     except Exception as exc:
         return None, f"input reconstruction raised ({type(exc).__name__}: {exc})"
