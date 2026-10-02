@@ -581,6 +581,13 @@ def rebase_code(key: str, ident: dict[str, Any]) -> str | None:
     return why
 
 
+def assert_runtime_window_restartable(key: str) -> None:
+    """Refuse a migration before its caller writes a new clock ledger epoch."""
+    row = (_read(REGISTRY).get("sleeves") or {}).get(key)
+    if row is not None and str(row.get("status") or "LIVE").upper() not in ("LIVE", "ACTIVE"):
+        raise ValueError(f"{key}: cannot restart terminal registry status {row.get('status')}")
+
+
 def restart_runtime_window(key: str, version: str, start: str,
                            prior: dict[str, Any]) -> str:
     """Open a new evidence epoch after the shared signal-call semantics change.
@@ -589,14 +596,13 @@ def restart_runtime_window(key: str, version: str, start: str,
     summary remain in the canonical registry; only the new epoch may count toward promotion.
     Repeating after a crash returns the same start rather than moving it again.
     """
+    assert_runtime_window_restartable(key)
     reg = _read(REGISTRY)
     row = (reg.get("sleeves") or {}).get(key)
     if row is None:
         return start  # a never-frozen clock will be frozen with this start by its caller
     if row.get("runtime_version") == version:
         return str(row.get("forward_start") or start)
-    if str(row.get("status") or "LIVE").upper() not in ("LIVE", "ACTIVE"):
-        raise ValueError(f"{key}: cannot restart terminal registry status {row.get('status')}")
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     old = {"forward_start": row.get("forward_start"),
            "identity": row.get("identity"), "ended_at": now,

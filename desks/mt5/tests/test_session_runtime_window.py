@@ -59,3 +59,48 @@ def test_all_session_does_not_discard_valid_forward_history(tmp_path: Path) -> N
     state = {"n": 50, "forward_start": "2026-09-20T00:00:00+00:00"}
     assert not runtime.ensure("x", {"session": "all"}, state, ledger=tmp_path / "x.json")
     assert state["n"] == 50
+
+
+def test_terminal_clock_is_not_reactivated_by_session_migration(tmp_path: Path) -> None:
+    state = {"status": "KILL", "n": 50}
+    import pytest
+    with pytest.raises(ValueError, match="terminal clock"):
+        runtime.ensure("x", {"session": "asia"}, state, ledger=tmp_path / "x.json")
+    assert state == {"status": "KILL", "n": 50}
+
+
+def test_terminal_registry_refuses_before_opening_new_clock(
+        tmp_path: Path, monkeypatch) -> None:
+    key = "EURUSD.cross_asset_residual.asia"
+    register = tmp_path / "sleeve_registry.json"
+    register.write_text(json.dumps({"sleeves": {key: {"status": "RETIRED"}}}), "utf-8")
+    monkeypatch.setattr(sleeve_registry, "REGISTRY", register)
+    clocks = tmp_path / "clocks.json"
+    state = {"status": "ACTIVE", "n": 50}
+    import pytest
+    with pytest.raises(ValueError, match="terminal registry status"):
+        runtime.ensure(key, {"session": "asia"}, state,
+                       ledger=tmp_path / "ledger.json", clock_path=clocks)
+    assert not clocks.exists()
+    assert state == {"status": "ACTIVE", "n": 50}
+
+
+def test_prior_promotion_candidate_loses_authority_in_new_window(
+        tmp_path: Path, monkeypatch) -> None:
+    key = "EURUSD.cross_asset_residual.asia"
+    register = tmp_path / "sleeve_registry.json"
+    register.write_text(json.dumps({"sleeves": {key: {
+        "status": "LIVE", "forward_start": "2026-09-20T00:00:00+00:00",
+        "identity": {"family": "cross_asset_residual"}
+    }}}), "utf-8")
+    monkeypatch.setattr(sleeve_registry, "REGISTRY", register)
+    state = {"status": "PROMOTION CANDIDATE", "n": 50,
+             "promotion_authority": True, "order_authority": True}
+    assert runtime.ensure(key, {"session": "asia"}, state,
+                          ledger=tmp_path / "ledger.json",
+                          clock_path=tmp_path / "clocks.json",
+                          now=datetime(2026, 10, 3, tzinfo=UTC))
+    assert state["status"] == "ACTIVE"
+    assert state["n"] == 0
+    assert state["promotion_authority"] is False
+    assert state["order_authority"] is False

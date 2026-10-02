@@ -39,6 +39,11 @@ def ensure(key: str, params: dict[str, Any], state: dict[str, Any], *, ledger: P
         return False
     if state.get("runtime_version") == VERSION:
         return False
+    if str(state.get("status") or "ACTIVE").upper() in (
+            "KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARANTINED",
+            "IDENTITY_BROKEN"):
+        raise ValueError(f"{key}: terminal clock cannot be revived by runtime migration")
+    sleeve_registry.assert_runtime_window_restartable(key)
     import clock_ledger
 
     proposed = (now or datetime.now(UTC)).astimezone(UTC).isoformat(timespec="seconds")
@@ -65,6 +70,7 @@ def ensure(key: str, params: dict[str, Any], state: dict[str, Any], *, ledger: P
     state["identity"] = VERSION
     state["runtime_version"] = VERSION
     state["forward_start"] = start
+    state["status"] = "ACTIVE"
     state.update({"n": 0, "cum_r": 0.0, "exp_r": 0.0, "max_dd_r": 0.0,
                   "first_entry": None, "last_entry": None, "days_active": 0,
                   "promotion_authority": False, "order_authority": False,
