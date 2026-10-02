@@ -1,0 +1,227 @@
+[
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Shared Models, Selective Trading, and Order Flow",
+  "url": "http://arxiv.org/abs/2610.01897v1",
+  "text": "We study whether model diversity survives selection into trading. In synthetic markets with a fixed mixture of three language-model families, news presentation changes their representation among submitted orders. At the announcement round, Qwen's share of submitted orders shifts by 48 percentage points in the financing event, with little change in net order counts. In the workforce-reduction event, Mistral's share shifts by 40 percentage points while net counts reverse sign. Homogeneous populations remove opposing flow when their active decisions share a direction. An analytical decomposition shows why selection can improve or worsen price accuracy even at unchanged aggregate demand sensitivity. The evidence concerns presentation bundles and submitted flow; cleaner replication and a known-",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Social welfare and price discovery in double auction markets",
+  "url": "http://arxiv.org/abs/2610.01562v1",
+  "text": "The tendency of the double auction mechanism to drive prices to competitive equilibrium has been well documented in laboratory experiments, but the phenomenon has lacked a theoretical explanation. This paper studies dynamic double auctions in a pure exchange economy where agents bid their indifference prices implied by their current holdings and preferences. We show that Walras equilibria coincide with the fixed points of the double auction and that repeated double auctions generate bounded sequences of allocations and prices whose cluster points are Walras equilibria with transfers.",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Verify Claims, Not Scores: Evidence-Based Verification of Modular Agents",
+  "url": "http://arxiv.org/abs/2610.01348v1",
+  "text": "When developers change one component of an agent, such as its controller, a learned model or its verifier, they usually judge the change by an aggregate task score. That score cannot tell whether improvement was attainable, which component lost value, or what the agent's own checks certify. We introduce a claim-specific verification audit for modular agents that plan, act, check and refine. Instead of scoring the agent, the audit scores the evidence: each conclusion is recorded with the evidence behind it, one of four verdicts (supported, unsupported, unresolved or not evaluated) and the boundary within which it holds. Three tools supply that evidence. Oracle policies measure attainable improvement under an explicitly stated action set, so that a low value can be traced to the evaluation r",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "PPO-HRAP: Proximal Policy Optimization with a Hybrid Regime-Aware Policy for Risk-Controlled Trading",
+  "url": "http://arxiv.org/abs/2610.01325v1",
+  "text": "Reinforcement learning for trading often struggles to balance upside participation with drawdown control. Profit-only policies can collapse toward passive long exposure on upward-drifting assets, while aggressively risk-penalized rewards can become too defensive during volatile periods. This paper proposes PPO-HRAP, a hybrid regime-aware policy that combines Proximal Policy Optimization with an interpretable regime prior. The agent observes both market features and portfolio-state variables, receives a reward combining portfolio log return, VIX-conditioned drawdown-increase penalty, target-exposure deviation, and turnover cost, and executes a blended action between the PPO actor output and a regime-derived target exposure. On the held-out 2020-2022 SPY test window, PPO-HRAP achieves 27.62%",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Beyond Supra-Competitive Outcomes: Collusive Behaviour in Deep Reinforcement Learning for Optimal Execution Games",
+  "url": "http://arxiv.org/abs/2610.00619v1",
+  "text": "In this paper, we extend earlier findings of supra-competitive outcomes in optimal-execution games by identifying a learned punitive mechanism that deters deviations and provides behavioural evidence of collusion. We investigate this mechanism in a two-player, finite-horizon Almgren-Chriss liquidation game. Independent proximal policy optimisation agents with access to within-episode price and action histories achieve costs below the Nash benchmark. We identify a profitable deviation by training against the mean learned liquidation schedule, then impose its first trade on one of the original agents. The opponent responds by accelerating liquidation. This response more than offsets the deviator's gain in every run and both player roles, while leaving the punisher's average payoff materially",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Spouse-Protected Tontines: Household Decumulation via Neural-Network Optimization",
+  "url": "http://arxiv.org/abs/2609.39569v1",
+  "text": "We develop a spouse-protected tontine in which a first death changes the household state but generates no pool transfer. The same account remains attached to the household contract until extinction and funds a spouse-only continuation phase if the retiree dies first. We derive contract-level actuarial-fairness conditions and a finite-pool mortality-credit allocation rule with exact ex post budget balance. Under a homogeneous large-pool approximation, we formulate a multidimensional decumulation problem for a representative household, with withdrawal and rebalancing controls while the retiree is alive. The objective balances expected cumulative real household payments against the Conditional Value-at-Risk (CVaR) of terminal shortfalls relative to household reserve targets, without condition",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "QuantCode Model: Specializing Language Models for Executable Algorithmic Trading Code",
+  "url": "http://arxiv.org/abs/2609.39420v1",
+  "text": "Large language models are strong general-purpose code generators, but executable algorithmic trading remains a demanding specialization target: a model must translate a natural-language strategy specification into correct program logic for a specialized trading framework, execute on historical data, produce trades, and remain semantically faithful to the request. We study two complementary mechanisms for specializing language models for this setting: continued pretraining on algorithmic-trading framework code and supervised fine-tuning (SFT) on agent-validated request-to-code pairs. Evaluation is centered on QuantCode-Bench, our 400-task benchmark for Backtrader strategy generation, together with a repository-level SWE-bench-like track. Continued pretraining improves single-turn Judge Pass",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Jacobian Rank Collapse in Decision-Focused Learning",
+  "url": "http://arxiv.org/abs/2609.39261v1",
+  "text": "Decision-focused learning (DFL) trains predictors through downstream objectives, but a different loss need not provide an independent parameter-update direction. We characterize this restriction through the predictor Jacobian, using sparse index tracking to distinguish the covariance entries read by the optimizer from the parameter directions available to learning. Rank-one Jacobians make nonzero per-example gradients collinear; a conditional spectral bound describes near-collinearity. A batch-subspace characterization and counterexamples show why these local statements imply neither common minimizers nor collinear batch updates.\n  Experiments examine when geometry translates into decision quality. Across 38 one-parameter equity configurations, DFL gains over MSE remain below 1.8%; a 385-p",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Multiperiod bond portfolio optimization with transaction costs using a Markov Decision process",
+  "url": "http://arxiv.org/abs/2609.38765v1",
+  "text": "Bank treasury portfolios must balance yield, liquidity, and interest-rate risk across bonds of different maturities. Static allocation rules are ill-suited to this task: portfolios concentrated in long-duration securities with no dynamic adjust- ment mechanism can accumulate large mark-to-market losses and liquidity stress under rising interest rates, as illustrated by the failure of Silicon Valley Bank in 2023. We develop a tractable simulation-based framework for multi-period bond port- folio optimization under interest-rate risk and proportional transaction costs. Yield-curve dynamics are modeled using the Dynamic Nelson-Siegel parameter- ization with Vector Autoregressive factor dynamics, from which we construct a time-inhomogeneous discrete-state Markov chain approximating the joint y",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Say, Echo, Do: Strategic Narratives and Revealed Positioning in Financial Markets",
+  "url": "http://arxiv.org/abs/2609.38545v1",
+  "text": "Machine-learning signals built from financial text treat what institutions say, and what the media repeat, as evidence about value. But whoever shapes a narrative may be trading against it. We study markets with three observable voices: institutional statements (Say), media repetition (Echo) and revealed positioning (Do). We ask when words should be followed and when they should be faded. In a linear-quadratic model of an informed institution that speaks and trades before a partly credulous crowd, talking an asset down while buying it is optimal exactly when $\\varphi^2&lt;2\u03bbk&lt;\\varphi$. A distribution-free identity then shows that when the observable Say-Do covariance is negative, words carry negative predictive content and should be faded. For measurement, we derive (i) an exact factori",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Not All LPs Are Equal: The Active-Passive Gap in Automated Market Maker Liquidity Provision",
+  "url": "http://arxiv.org/abs/2609.37963v1",
+  "text": "Liquidity provision in automated market makers is typically analyzed at the pool level, implicitly assuming LP homogeneity. This aggregate view can hide how liquidity provision outcomes differ between LP strategies, particularly as concentrated liquidity AMM designs operating on high-performance blockchains allow liquidity to be actively repositioned around trades. We develop a markout-based framework to decompose Uniswap LP profitability into active and passive components using two complementary methods: a LIFO subtraction method that matches short-lived mint-burn positions and attributes swap-level markouts by liquidity share; and an infinitesimal LP benchmark that estimates the performance of a fully passive, always-in-range marginal LP directly from the AMM price path.\n  We apply these",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "A Generalized Langevin Model of Latent Liquidity and Concave Price Impact",
+  "url": "http://arxiv.org/abs/2609.37872v1",
+  "text": "We model market impact as the response to submitted order flow net of counterflow from latent traders, activated when price displacements from the level that would prevail without the order exceed individual thresholds. Order flow depletes this pool, and a generalized Langevin equation governs its recovery over several time scales. Its memory kernels are finite sums of exponentials, so its Markovian lift is exact rather than an approximation. For an undepleted pool, aggregation under explicit assumptions on individual trading responses yields an intermediate square-root regime between linear small- and large-order limits, without imposing a square-root impact law. Scaling thresholds and responses with price noise makes impact in this regime proportional to volatility, and thresholds that g",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "When Hedging Changes the Payoff: Option Replication with Price Impact and Execution Costs",
+  "url": "http://arxiv.org/abs/2609.36257v1",
+  "text": "Hedging a derivative by trading the underlying asset changes the payoff that the hedging intended to replicate. We study this phenomenon when trading generates price impact and execution costs. In a binomial model, we characterize replication through a fixed-point equation. In continuous time, we derive a nonlinear pricing PDE whose implicit terminal condition captures the nature of the moving target problem of the hedger. For monotone convex Lipschitz payoffs (such as calls and puts) we establish exact replication under midpoint execution costs. Numerical experiments illustrate: (i) how price impact shifts the effective strike, (ii) the non-linear dependence of the option price on the number of contracts, (iii) how execution costs smooth terminal holdings, (iv) the extent to which the hed",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "From Cointegration to Out-of-Sample Failure: A Pairs-Trading Case Study on PEP-KO",
+  "url": "http://arxiv.org/abs/2609.35359v1",
+  "text": "This paper examines whether a cointegration-based pairs trading strategy between PepsiCo and The Coca-Cola Company is statistically robust and economically exploitable. We first test for cointegration and estimate the spread's mean-reversion dynamics over 2013-2018, then hold these statistical parameters fixed and optimise a threshold-based trading strategy in-sample over 2018-2023. Robustness is assessed through transaction-cost and parameter sensitivity tests, walk-forward validation, and Adjusted and Deflated Sharpe Ratios. The strategy is then evaluated out-of-sample from 2023 to the present, including an analysis of time-varying hedge ratios using rolling OLS and a Kalman filter. The results show that weakening mean-reversion dynamics in the spread undermine the effectiveness of the s",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Retrieval-Augmented Diffusion Modeling for Stochastic Discount Factor Portfolios",
+  "url": "http://arxiv.org/abs/2609.35086v1",
+  "text": "In this work, we study portfolio optimization under the stochastic discount factor (SDF) framework by learning market state representations that capture the underlying risk structures of financial data. This is challenging due to several factors: financial markets exhibit non-stationary dynamics with shifting regimes, multimodal inputs such as price and news data often contain stochastic noise, and existing diffusion-based approaches, while effective for modeling stochastic dynamics, rely on assumptions such as isotropic Gaussian noise that fail to capture the state-dependent nature of financial uncertainty. To address these challenges, we introduce RADAR, a retrieval-augmented diffusion framework that learns market representations by conditioning on similar historical regimes. RADAR lever",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Optimal Liquidation with Support and Resistance Levels under Multi-Skew Brownian Motion",
+  "url": "http://arxiv.org/abs/2609.35063v1",
+  "text": "We solve the perpetual liquidation problem for a geometric multi-skew Brownian motion carrying local-time pushes upward at a support level and downward at a resistance level, a model of technical analysis that is Markov in the price alone. Three geometries arise, separated by a closed-form criterion: the continuation band lies below resistance, straddles it, or pins its upper edge there. Selling into resistance is a conclusion rather than an assumption. Identification is asymmetric: exercise behaviour determines the support parameters exactly, while the strength of resistance is recoverable only on an interval with a closed-form endpoint.",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "From Word Counts to Context: Topic Models for Asset Pricing",
+  "url": "http://arxiv.org/abs/2609.34169v1",
+  "text": "News may reveal systematic risk, but whether its context enhances the construction of systematic risk factors is still unclear. We seek to test whether utilizing a sentence transformer represents an improvement over techniques such as Latent Dirichlet Allocation (LDA) in the coherence of topic term lists generated from unstructured text data. To test this, the same collection of unstructured text data comprising of 394,661 articles and the same downstream financial portfolio construction pipeline were applied with the text layer differing, including the length of article text each model used and how topic terms were ranked: we benchmark LDA against a frozen sentence transformer with k-means clustering. We find that the sentence transformer branch had higher observed scores both in terms of",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Oracle-Parametrized Constant Function Market Makers: From Price Feeds to Pricing Rules",
+  "url": "http://arxiv.org/abs/2609.33799v1",
+  "text": "This paper introduces oracle-parametrized automated market makers (OP-AMMs), i.e., automated market makers whose quoted price depends jointly on the pool reserves and an external oracle price. In doing so, we extend the information-agnostic AMM framework to settings, such as tokenized securities, for which price discovery occurs off-chain. Under a strict oracle-contraction condition, we show that the quoted price of any OP-AMM interpolates between the oracle price and an implicit autarkic price determined by the pool reserves. We then derive a general loss-versus-rebalancing (LVR) decomposition that separates the residual exposure to market lags from the losses induced by oracle errors. This analysis is further extended to stale, discrete-update oracles and to sandwich attacks around oracl",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Taming the Greeks: Option Portfolios with Inductive Biases",
+  "url": "http://arxiv.org/abs/2609.33767v1",
+  "text": "We present an end-to-end deep learning framework for systematic options trading that directly embeds hedging behavior through explicit control of portfolio-level risk exposures. While neural networks trained to optimize risk-adjusted performance have been shown to outperform traditional rules-based strategies, such approaches remain agnostic to the sensitivities of the resulting portfolios with respect to specific underlying risk factors. We propose a general training objective that combines a performance-driven loss with a differentiable risk-sensitivity penalty, enforcing neutrality to selected risk dimensions. Unlike reinforcement learning methods that approximate optimal hedging policies via simulated market dynamics, our framework operates entirely on historical data and jointly optim",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "EverMine: Dissecting the Self-Evolution of Research Capabilities in Long-Horizon Alpha Research",
+  "url": "http://arxiv.org/abs/2609.33524v1",
+  "text": "Self-evolving agents aim to turn research feedback into reusable skills, tools, and research rules. Whether these accumulated capabilities continue to improve later research requires controlled evaluation. Long-horizon alpha discovery provides a state-dependent setting: once a new factor enters the portfolio, the predictive information already covered changes, so the value of the same candidate or experience may change over time. We introduce EverMine, an empirical framework for studying self-evolving research capabilities in long-horizon alpha discovery. EverMine decomposes the research state into history (Hist), the current factor portfolio (Frontier), and reusable capabilities (Cap). Under matched resource limits, we compare complete runs with fixed or evolving Cap, and replace Cap whil",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Evolution of Market Microstructure in the Age of AI",
+  "url": "http://arxiv.org/abs/2609.33058v1",
+  "text": "Market microstructure studies how trading rules turn orders into prices and allocations. Those rules have been rebuilt repeatedly: for floor traders, electronic limit order books and high-frequency trading, batch auctions and dark pools, blockchains run by automated market makers and block builders, and now AI agents that discover, pay for, and compete over resources. This survey traces that evolution through one question: can a market allocate scarce goods efficiently and fairly without participants revealing everything they know and want? Each technological shift moved the binding constraint of market design from trader rationality to speed, to control over transaction ordering, to the dimensionality of what participants can report. Impossibility results persist; only their cost moves. W",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Packets, Transactions and Queues: Design Principles for HFT Systems from a Measurement Study of CME Market Data",
+  "url": "http://arxiv.org/abs/2609.32848v1",
+  "text": "HFT systems are conventionally built as a single-threaded event loop, on the rule that every thread hop adds latency. We test that rule against a measurement study of more than a year of CME market data for the NQ front-month contract, following every packet and matching-engine transaction through the feed's two exchange timestamps, and checking the results against a live production receiver. Packets arrive in near-critical self-exciting clusters that belong to the matching engine's transactions, not to how the exchange packs them. The engine often processes consecutive transactions within a fraction of a microsecond, while the market-data publisher sends at most one packet per publisher period of about 7.5 microseconds, so a burst reaches the receiver as a train of packets one period apar",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Optimal Reinsurance-Dividend Strategy with Fixed Transaction Costs in a Regime-Switching Brownian Risk Model: A Viscosity Solution to the Impulse Control Problem",
+  "url": "http://arxiv.org/abs/2609.32686v1",
+  "text": "We consider a problem of optimal proportional reinsurance-dividend distribution under a Brownian risk model, where both the drift and volatility coefficients are subject to endogenous regime-switching. Dividend payments are subject to fixed transaction costs. The problem is formulated as a two-dimensional stochastic control problem, and we prove that the value function is the unique viscosity solution of the associated Hamilton-Jacobi-Bellman equation with nonlocal operator. For almost all parameter configurations, we explicitly characterize the optimal strategy that maximizes the expected total discounted dividends net of transaction costs until ruin. The optimal dividend policy is a two-barrier impulsive strategy, while the optimal reinsurance proportion is given in feedback form. Numeri",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "How Much Must a Private Mempool Hide? Exact Leakage Thresholds for Sandwich Attacks",
+  "url": "http://arxiv.org/abs/2609.31379v1",
+  "text": "Private and encrypted mempools hide pending transactions to stop sandwich attacks and other forms of maximal extractable value (MEV), but what they hide is rarely everything: a transaction's pair, direction, and a coarse range for its size can still leak. How much leakage makes sandwiching pay? We answer exactly for a fee-free constant-product automated market maker, the pricing rule behind Uniswap v2. Traders observe an interval containing the victim's size and bid in a first-price auction for the right to sandwich it, and the winning front-run must keep the victim's trade executable at every size in the interval. The answer turns on the smallest size consistent with the leak. It alone determines the feasible front-runs, the largest feasible front-run is optimal for pointwise, expected, a",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ },
+ {
+  "source": "arxiv_qfin",
+  "kind": "paper",
+  "title": "Agentic Limit Order Books: Phase Transitions and Market Impact",
+  "url": "http://arxiv.org/abs/2609.31260v1",
+  "text": "We investigate the systemic macroscopic dynamics emerging from Limit Order Books (LOBs) populated exclusively by autonomous reinforcement-learning agentic traders. By formalizing agent interactions within a microscopic order-matching engine, we examine two fundamental quantitative phenomena: equilibrium phase transitions in order flow regime shifts, and the structural dynamics of market impact. We show that agentic LOBs exhibit distinct phase boundaries separating orderly price discovery from hyper-volatile cascade states, governed by critical thresholds in the number of agents and observable market depth. Furthermore, we demonstrate that market impact under agentic liquidity provision deviates from classical square-root dynamics, exhibiting distinct dissipative, balanced, and non-dissipat",
+  "symbols": [],
+  "found_at": "2026-10-02T22:29:56+00:00"
+ }
+]
