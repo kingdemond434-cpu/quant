@@ -29,6 +29,7 @@ import math
 import re
 import sys
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -1614,11 +1615,17 @@ def ledger_rows(path: Path) -> list[dict]:
     return out
 
 
-def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[str]]:
+def roster(retired_gold: dict, promoted: list[dict],
+           kelly: Mapping[str, float] | None = None) -> tuple[list[dict], list[str]]:
     """All active sleeves -- gold book + promoted, with window metadata -- and the log lines.
 
     Returns `(sleeves, notes)`: the roster in emission order, and one note per gold window the
     promoter has retired, for the gateway to log. Pure over the two files' parsed contents.
+
+    `kelly` is `kelly_sizing.load_kelly_survival(..., "fusion")`: lots per gold window from the
+    survival-constrained growth solve. A window at 0 stands aside this pass (logged, with the
+    solve as its reason); any other window carries `kelly_lots`, which `bracket_lane_lot` sends.
+    None leaves every window exactly as it was.
     """
     sleeves: list[dict] = []
     notes: list[str] = []
@@ -1639,9 +1646,16 @@ def roster(retired_gold: dict, promoted: list[dict]) -> tuple[list[dict], list[s
                          f"({retired_gold[name].get('reason', 'no reason recorded')}); "
                          f"not emitted this pass")
             continue
-        sleeves.append({"name": name, "symbol": "XAUUSD",
-                        "window": label, "sig_hour": sig_hour, "rng": rng,
-                        "lot": "auto", "status": "LIVE"})
+        row: dict[str, Any] = {"name": name, "symbol": "XAUUSD",
+                               "window": label, "sig_hour": sig_hour, "rng": rng,
+                               "lot": "auto", "status": "LIVE"}
+        if kelly is not None and label in kelly:
+            if kelly[label] <= 0:
+                notes.append(f"GOLD {name}: stands aside -- the survival-constrained growth "
+                             f"solve (reports/KELLY_SURVIVAL.json) funds it at 0 lots")
+                continue
+            row["kelly_lots"] = float(kelly[label])
+        sleeves.append(row)
     # FORWARD-CLOCK VERSIONS ARE EVIDENCE IDENTITIES, NOT EXTRA LIVE BETS.  The promoter keeps
     # `gold_asia_v2/v3/v4` (and the corresponding London/afternoon rows) separately because each
     # certificate and prospective clock must remain auditable.  Economically, however, every

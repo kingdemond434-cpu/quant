@@ -2180,6 +2180,9 @@ def ledger_rows() -> list[dict]:
 #: Written by research/promoter.py when a gold window trips a retire rule. Read on every pass so
 #: a retirement takes effect within one gateway cycle rather than waiting for a restart.
 GOLD_RETIRED_FILE = BASE / "data" / "GOLD_RETIRED.json"
+#: The survival-constrained growth solve's gold sizes (research/kelly_survival.py). Absent or
+#: stale = the gold book sizes exactly as before (`kelly_sizing.load_kelly_survival`).
+KELLY_SURVIVAL_FILE = BASE / "reports" / "KELLY_SURVIVAL.json"
 
 
 def _load_retired_gold() -> dict:
@@ -2197,7 +2200,9 @@ def sleeve_set() -> list[dict]:
     from ever reaching the venue -- are `decision_core.roster`; this reads the two files it
     decides over and logs what it declined.
     """
-    sleeves, notes = roster(_load_retired_gold(), load_sleeves())
+    from mt5desk.kelly_sizing import load_kelly_survival
+    sleeves, notes = roster(_load_retired_gold(), load_sleeves(),
+                            load_kelly_survival(KELLY_SURVIVAL_FILE, "fusion"))
     for note in notes:
         log(note)
     return sleeves
@@ -3914,6 +3919,16 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     `max(allocator, policy, floor)` and never as a replacement for the policy lot.
     """
     mode = s.get("lot")
+    if mode == "auto" and isinstance(s.get("kelly_lots"), (int, float)) and s["kelly_lots"] > 0:
+        # MAXIMUM AGGRESSION INSIDE SURVIVAL (principal 2026-09-30). The solve sized this window
+        # against the account's equity, the window's measured risk per lot and its live-updated
+        # posterior, and chose the largest-growth book whose P(losing 80% in 60 days) stays
+        # under EPS_STOP. It may sit BELOW the 0.02 policy floor: the principal put survival
+        # above the floor, and the floor is exactly what pushed the three-window book to ~2x
+        # Kelly on a EUR ~560 account. It may equally sit ABOVE it when growth asks for more.
+        k = max(0.01, round(float(s["kelly_lots"]), 2))
+        return k, (f"kelly_survival: {k:.2f} lots, the largest-growth size inside survival "
+                   f"(reports/KELLY_SURVIVAL.json)")
     if mode == "auto":
         return gold_book_lot(
             equity, dist, sym,
