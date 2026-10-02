@@ -799,6 +799,26 @@ def main() -> int:
         triangle_legs = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   triangle legs unavailable ({type(exc).__name__}: {exc}); rows unchanged")
 
+    # Historical peer/factor claims missing a second instrument are not executable. Keep each
+    # original and its verdict, but mint a fresh, point-in-time descendant using the compiler's
+    # existing deterministic input rule. Never rewrite a past claim after seeing its result.
+    input_descendants: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        from research import family_input_descendants as _fid
+        _children, input_descendants = _fid.derive(
+            list(merged.values()), identity=_identity, now=now)
+        for _child in _children:
+            merged[_identity(_child)] = _child
+        input_descendants["status"] = "APPLIED"
+        if input_descendants["targets"]:
+            print(f"   missing peer/factor inputs: {input_descendants['created']} fresh "
+                  f"descendant(s), {input_descendants['already_present']} already present, "
+                  f"{input_descendants['unresolved']} unresolved; originals retained")
+    except Exception as exc:
+        input_descendants = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   peer/factor input completion unavailable ({type(exc).__name__}: {exc}); "
+              "rows unchanged")
+
     if unrouted:
         print(f"   {unrouted} row(s) dropped as UNROUTABLE (no family named) -- never "
               f"relabelled as the dominant family")
@@ -1004,6 +1024,7 @@ def main() -> int:
         # cells reached it only through a 276-row hourly lease; this census is how many of them
         # the docket actually carries, so the claim is checkable rather than asserted.
         "alpha_registry": registry_census,
+        "input_descendants": input_descendants,
         # ONE PASS, NOT ONE PASS PER FAMILY. This was a comprehension nested over the whole
         # docket for every distinct family -- invisible at 20,000 rows and 77 families, and
         # 34.5 MILLION comparisons once the registry's own cells reach the docket (448,391 rows
