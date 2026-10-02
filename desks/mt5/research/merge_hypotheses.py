@@ -40,7 +40,15 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]]) -> None:
     fd, pending = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
-            json.dump(rows, stream, indent=1, default=str)
+            # One serialization and one buffered write per row. ``json.dump(rows)``
+            # also streams, but its indented encoder makes millions of tiny Python
+            # writes; a compact row at a time keeps both peak RAM and wall time bounded.
+            stream.write("[\n")
+            for i, row in enumerate(rows):
+                if i:
+                    stream.write(",\n")
+                stream.write(json.dumps(row, separators=(",", ":"), default=str))
+            stream.write("\n]\n")
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(pending, path)

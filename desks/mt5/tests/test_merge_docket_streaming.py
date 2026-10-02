@@ -19,10 +19,13 @@ def test_streamed_docket_round_trips_without_dumps(tmp_path: Path, monkeypatch) 
     rows = [{"symbol": "USDJPY", "params": {"rr": 1.5}},
             {"symbol": "EURUSD", "params": {"rr": 2.0}}]
 
-    def forbid_dumps(*_args, **_kwargs):
-        raise AssertionError("docket must not be materialized as one JSON string")
+    original_dumps = json.dumps
 
-    monkeypatch.setattr(merge.json, "dumps", forbid_dumps)
+    def one_row_dumps(value, **kwargs):
+        assert isinstance(value, dict), "never serialize the entire docket at once"
+        return original_dumps(value, **kwargs)
+
+    monkeypatch.setattr(merge.json, "dumps", one_row_dumps)
     merge._write_docket_atomically(target, rows)
     assert json.loads(target.read_text("utf-8")) == rows
     assert list(tmp_path.glob("*.tmp")) == []
@@ -35,7 +38,7 @@ def test_failed_stream_keeps_prior_docket(tmp_path: Path, monkeypatch) -> None:
     def interrupted(*_args, **_kwargs):
         raise OSError("simulated disk failure")
 
-    monkeypatch.setattr(merge.json, "dump", interrupted)
+    monkeypatch.setattr(merge.json, "dumps", interrupted)
     with pytest.raises(OSError, match="simulated disk failure"):
         merge._write_docket_atomically(target, [{"symbol": "new"}])
     assert json.loads(target.read_text("utf-8")) == [{"symbol": "old"}]
