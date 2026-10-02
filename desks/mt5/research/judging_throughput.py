@@ -1042,11 +1042,16 @@ def _creation_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
     except sqlite3.Error as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     try:
-        out: dict[str, int] = {}
-        for w, h in (("24h", 24), ("7d", 168)):
-            cut = (now - timedelta(hours=h)).isoformat(timespec="seconds")
-            out[w] = int(c.execute("SELECT COUNT(*) FROM research_candidates "
-                                   "WHERE created_at >= ?", (cut,)).fetchone()[0])
+        cut_24h = (now - timedelta(hours=24)).isoformat(timespec="seconds")
+        cut_7d = (now - timedelta(hours=168)).isoformat(timespec="seconds")
+        # Both windows are in the same indexed range. One bounded scan also keeps
+        # the two rates on one SQLite snapshot while the intake is writing.
+        n_24h, n_7d = c.execute(
+            "SELECT COALESCE(SUM(created_at >= ?), 0), COUNT(*) "
+            "FROM research_candidates WHERE created_at >= ?",
+            (cut_24h, cut_7d),
+        ).fetchone()
+        out = {"24h": int(n_24h), "7d": int(n_7d)}
     except sqlite3.Error as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     finally:
