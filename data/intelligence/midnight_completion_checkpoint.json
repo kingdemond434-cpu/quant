@@ -1,88 +1,18 @@
 {
- "cycle": "2026-10-01",
+ "cycle": "2026-10-02",
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-01T23:17:19.503570+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
-  },
-  "certificate_projection": {
-   "finished_at": "2026-10-01T23:18:36.064131+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "certificate_yield_fence": {
-   "finished_at": "2026-10-01T20:42:40.815157+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "external_queue_projection": {
-   "finished_at": "2026-10-01T23:17:39.574396+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "external_queue_reconciliation": {
-   "finished_at": "2026-10-01T23:18:21.553658+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "forward_clock_fence": {
-   "finished_at": "2026-10-01T20:42:59.082512+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "DONE"
-  },
-  "forward_clock_reconciliation": {
-   "finished_at": "2026-10-01T23:51:33.183158+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
-  },
-  "forward_identity_reconciliation": {
-   "finished_at": "2026-10-01T23:51:09.167979+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "forward_lane_heal": {
-   "finished_at": "2026-10-01T23:52:09.709887+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
-  },
-  "fusion_state_pull": {
-   "finished_at": "2026-10-01T23:50:31.965391+00:00",
-   "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
-  },
-  "mechanism_independence": {
-   "finished_at": "2026-10-01T23:53:35.967529+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
-  },
-  "same_day_fence": {
    "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/check_sameday_pipeline.py"
+    "systemctl",
+    "--user",
+    "start",
+    "quant-external-pipeline.service"
    ],
    "passes_completed": 0,
-   "started_at": "2026-10-01T23:54:48.482755+00:00",
+   "started_at": "2026-10-02T01:12:39.012942+00:00",
    "status": "RUNNING"
-  },
-  "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-01T23:53:01.082586+00:00",
-   "passes_completed": 1,
-   "returncode": 0,
-   "status": "DONE"
   }
  },
- "updated_at": "2026-10-01T23:54:48.482755+00:00"
+ "updated_at": "2026-10-02T01:12:39.012942+00:00"
 }
