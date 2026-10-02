@@ -1,0 +1,3019 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Dhaka Stock Exchange \u2014 Bangladesh&#x27;s Capital Market",
+  "url": "https://www.dsebd.org/?lang=en",
+  "published": "2026-10-02T14:13:33+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "MN",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dsebd.org/api/media/file/Untitled%20design.png?prefix=payloadcms-media%2Fa61ead720e573971",
+   "https://www.dsebd.org/api/media/file/newdesign.webp?prefix=payloadcms-media%2F97bad3176fb333ab",
+   "https://www.dsebd.org/api/media/file/image.webp?prefix=payloadcms-media%2F6532ea7f462a9723",
+   "https://www.dsebd.org/api/media/file/image12.webp?prefix=payloadcms-media%2F25e325f7e9955029",
+   "https://www.dsebd.org/api/media/file/IMG_3324.webp?prefix=payloadcms-media%2F249f91c3bf3cc33f",
+   "https://www.dsebd.org/api/media/file/SME.webp?prefix=payloadcms-media%2Fb2148dea1189f0a2",
+   "https://www.dsebd.org/api/media/file/ATB.webp?prefix=payloadcms-media%2F4db47a1cb02e06ab",
+   "https://www.dsebd.org/api/media/file/Initial%20public%20offering%20(IPO).webp?prefix=payloadcms-media%2Ffd50077d93db3fa5",
+   "https://www.dsebd.org/api/media/file/OTC%20Market.webp?prefix=payloadcms-media%2F16c4fc489b881f09",
+   "https://www.dsebd.org/api/media/file/DSE%20Training%20Academy%20(DTA).webp?prefix=payloadcms-media%2F136436397fde4e67",
+   "https://www.dsebd.org/api/media/file/Sustainability.webp?prefix=payloadcms-media%2F405e9628103f0535",
+   "https://www.dsebd.org/api/media/file/ternary_logo.png?prefix=payloadcms-media%2F39b430b926dcec81",
+   "https://www.dsebd.org/api/media/file/download%20(1).jpg?prefix=payloadcms-media%2Fbc553ce396049d4e",
+   "https://www.dsebd.org/api/media/file/WEB%20BANNER%20of%20AD%20(1)_page-0001%20(1).jpg?prefix=payloadcms-media%2F5d8c0a44add4ab83",
+   "https://www.dsebd.org/api/media/file/dse-card-A-dark.png?prefix=payloadcms-media%2Fa9a9c62ccf028111",
+   "https://www.dsebd.org/api/announcementDocuments/file/updated-panel-of-auditors-listed-securities.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dsebd.org/api/announcementDocuments/file/updated-panel-of-auditors-trec-holders.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dsebd.org/api/announcementDocuments/file/warning-online-fraud.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dsebd.org/api/announcementDocuments/file/dse-tower-tia-942-certificate.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dsebd.org/api/announcementDocuments/file/bb-bsec-mou-bond-market.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dsebd.org/api/announcementDocuments/file/free-educational-programme-women-investors.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dsebd.org/api/announcementDocuments/file/investor-risk-awareness-notice.pdf?prefix=pdf%2Fannouncement-documents%2F",
+   "https://www.dsebd.org/downloads"
+  ],
+  "n_endpoints": 23,
+  "vault_sha": "187fe41c14c7a3694751",
+  "host": "www.dsebd.org",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Meta Platforms Inc stocks CFD (META) | ECN | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/META/",
+  "published": "2026-10-02T14:13:33+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "6ddc10ce1b9552b0dcc4",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex Introduces the Upgraded Copy Trading Service - RoboForex",
+  "url": "https://roboforex.com/about/company/news/show/upgraded-copy-trading-service/",
+  "published": "2026-10-02T14:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b6e39cda0a0043818e72",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading: Traders | RoboForex Help Center",
+  "url": "https://roboforex.com/help/copy-trading-traders/",
+  "published": "2026-10-02T14:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1ddd0650cfd9bd17b7d5",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex: Access Financial Markets &amp; Start Trading Now - RoboForex",
+  "url": "https://roboforex.com",
+  "published": "2026-10-02T14:13:40+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "US500",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "night_session",
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://roboforex.com/forex-trading/terminals/download/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "e6f2bb941258fd265552",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "FAQ Archives | RoboForex Help Center",
+  "url": "https://roboforex.com/help/faq/",
+  "published": "2026-10-02T14:13:41+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9aa8e55fcf65eb669bc5",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What is Copy Trading Service? | RoboForex Help Center",
+  "url": "https://roboforex.com/help/faq/copy-trading-general/what-is-copy-trading-service/",
+  "published": "2026-10-02T14:13:43+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "0b3db06dc2e688da6ebf",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Is Copy Trading Service a social trading system? | RoboForex Help Center",
+  "url": "https://roboforex.com/help/faq/copy-trading-general/is-copy-trading-service-a-social-trading-system/",
+  "published": "2026-10-02T14:13:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6604cd9f4ce9d2463837",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Copy Trading: \u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b | RoboForex Help Center",
+  "url": "https://th.roboforex.com/help/copy-trading-general/",
+  "published": "2026-10-02T14:13:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1743511020"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9dd2461668d623a0d963",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "R Points of Joy - RoboForex",
+  "url": "https://th.roboforex.com/promo/points-of-joy/",
+  "published": "2026-10-02T14:13:48+00:00",
+  "symbols": [
+   "EURUSD",
+   "US500"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fc97090536f7141061b1",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e16\u0e2d\u0e19\u0e40\u0e07\u0e34\u0e19\u0e42\u0e14\u0e22\u0e44\u0e21\u0e48\u0e21\u0e35\u0e04\u0e48\u0e32\u0e04\u0e2d\u0e21\u0e21\u0e34\u0e0a\u0e0a\u0e31\u0e48\u0e19 - RoboForex",
+  "url": "https://th.roboforex.com/clients/funds/free-withdrawal/",
+  "published": "2026-10-02T14:13:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "39f6c92302d6869ddf54",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e2a\u0e39\u0e07\u0e16\u0e36\u0e07 10% \u0e02\u0e2d\u0e07\u0e40\u0e07\u0e34\u0e19\u0e1e\u0e34\u0e40\u0e28\u0e29 \u0e43\u0e19\u0e22\u0e2d\u0e14\u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 - RoboForex",
+  "url": "https://th.roboforex.com/clients/services/up-to-10-percents-on-account-balance/",
+  "published": "2026-10-02T14:13:52+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "dce56153c3abd4b7b2d5",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e42\u0e1b\u0e23\u0e41\u0e01\u0e23\u0e21 Cashback, Rebates - RoboForex",
+  "url": "https://th.roboforex.com/clients/services/rebate/",
+  "published": "2026-10-02T14:13:54+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.95,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b8525567a8d32307e86d",
+  "host": "th.roboforex.com",
+  "claims": [
+   {
+    "claim": "30 US Cents * 10% = 390 US Cents (1 standard \u0e25\u0e47\u0e2d\u0e15 = 100 cent \u0e25\u0e47\u0e2d\u0e15) \u0e27\u0e34\u0e18\u0e35\u0e01\u0e32\u0e23\u0e04\u0e33\u0e19\u0e27\u0e13: \u0e01\u0e32\u0e23\u0e08\u0e48\u0e32\u0e22\u0e40\u0e07\u0e34\u0e19\u0e04\u0e37\u0e19\u0e04\u0e07\u0e17\u0e35\u0e48(Standard account) \u0e1a\u0e31\u0e0d\u0e0a\u0e35\u0e02\u0e2d\u0e07\u0e04\u0e38\u0e13: Pro \u0e1c\u0e25\u0e34\u0e15\u0e20\u0e31\u0e13\u0e11\u0e4c: EURUSD, AUDUSD \u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 EURUSD \u0e43\u0e19\u0e0a\u0e48\u0e27\u0e07\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e40\u0e14\u0e37\u0e2d\u0e19: 500 \u0e25\u0e47\u0e2d\u0e15 \u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 AUDUSD \u0e43\u0e19\u0e0a\u0e48\u0e27\u0e07\u0e2b\u0e19\u0e36\u0e48\u0e07\u0e40\u0e14\u0e37\u0e2d\u0e19: 600 \u0e25\u0e47\u0e2d\u0e15 \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e01\u0e32\u0e23\u0e04\u0e37\u0e19\u0e40\u0e07\u0e34\u0e19: \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e04\u0e07\u0e17\u0e35\u0e48\u0e17\u0e35\u0e48\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e44\u0e27\u0e49\u0e43\u0e19\u0e15\u0e32\u0e23\u0e32\u0e07 \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e04\u0e07\u0e17\u0e35\u0e48\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a 1 \u0e25\u0e47\u0e2d\u0e15\u0e02\u0e2d\u0e07 EURUSD: 0.",
+    "lang": "th",
+    "quantities": [
+     "\u0e1b\u0e23\u0e34\u0e21\u0e32\u0e13\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22"
+    ],
+    "direction": [
+     "\u0e0b\u0e37\u0e49\u0e2d",
+     "\u0e02\u0e32\u0e22"
+    ],
+    "horizon": [
+     "\u0e40\u0e14\u0e37\u0e2d\u0e19"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD",
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "eurusd",
+      "audusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "c278a45bfe7c"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u0e1f\u0e23\u0e35\u0e2a\u0e27\u0e2d\u0e1b\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 - RoboForex",
+  "url": "https://th.roboforex.com/promo/full-swap-free/",
+  "published": "2026-10-02T14:13:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "night_session"
+  ],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "819123ee5cd3fd2b2e94",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "VPS-Server \u0e1f\u0e23\u0e35\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e0b\u0e37\u0e49\u0e2d\u0e02\u0e32\u0e22 - RoboForex",
+  "url": "https://th.roboforex.com/clients/services/forex-vps/",
+  "published": "2026-10-02T14:13:58+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "d124cf34f90d4de04d30",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.fi.html",
+  "published": "2026-10-02T14:13:59+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "baa6861f93f4b481afb2",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Le r\u00f4le des esp\u00e8ces",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.fr.html",
+  "published": "2026-10-02T14:14:01+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a533732a92e8af4b0ba8",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.ga.html",
+  "published": "2026-10-02T14:14:03+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "ga",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.ga.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "4a60f1e80b91f7ef2128",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Uloga gotovine",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.hr.html",
+  "published": "2026-10-02T14:14:04+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "81742038b4bb3d16ff35",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "A k\u00e9szp\u00e9nz szerepe",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.hu.html",
+  "published": "2026-10-02T14:14:07+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "hu",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.hu.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e4d7c5ced70c3ed92471",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Il ruolo del contante",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.it.html",
+  "published": "2026-10-02T14:14:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "it",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.it.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "26e541bb0b4cd4639126",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.lt.html",
+  "published": "2026-10-02T14:14:10+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "lt",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.lt.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "36049f903bdc03fa43e1",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop - Backtesting Tool for Trading",
+  "url": "https://forextester.com/idevaffiliate/idevaffiliate.php?id=446&utm_source=forexspeedup&utm_medium=site&utm_campaign=footer",
+  "published": "2026-10-02T14:14:16+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "b1b533fb0da79e991cc6",
+  "host": "forextester.com",
+  "claims": [
+   {
+    "claim": "Martingale Grid & Hedging Simple short-term strategy Engulfing bars GBP/USD simple breakout system Martingale hedging with exponential lot increase Simple \u201cMake Pips\u201d Strategy The Trader vs.",
+    "lang": "en",
+    "quantities": [
+     "breakout"
+    ],
+    "direction": [
+     "short",
+     "increase"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "gbp/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "116e7c8a0a23"
+   },
+   {
+    "claim": "7-month result: the profit of -1%, the drawdown of -27,5% Conclusion: don\u2019t hurry to trade with an untested trading strategy on a long period.",
+    "lang": "en",
+    "quantities": [
+     "drawdown"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "US2000",
+      "JPN225",
+      "UK100",
+      "FRA40",
+      "EUSTX50",
+      "AUS200",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDCNH",
+      "USDHKD",
+      "USDKRW",
+      "USDINR",
+      "USDTHB",
+      "USDSGD",
+      "USDBRL",
+      "USDMXN",
+      "USDTRY",
+      "USDZAR",
+      "USDILS",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDSEK",
+      "USDNOK",
+      "USDDKK",
+      "USDRUB",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "UKGILT",
+      "AlibabaGroup",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "xptusd",
+      "xpdusd",
+      "copper",
+      "aluminum",
+      "brent",
+      "hk50",
+      "nas100",
+      "s&p 500",
+      "us30",
+      "us2000",
+      "jpn225",
+      "uk100",
+      "fra40",
+      "eustx50",
+      "aus200",
+      "sensex",
+      "ta35",
+      "psx",
+      "eurusd",
+      "gbp/usd",
+      "usd/jpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbp/jpy",
+      "audjpy",
+      "eurgbp",
+      "usdcnh",
+      "usdhkd",
+      "won",
+      "usdinr",
+      "usdthb",
+      "usdsgd",
+      "usdbrl",
+      "usdmxn",
+      "try",
+      "usdzar",
+      "usdils",
+      "usdpln",
+      "eurhuf",
+      "usdczk",
+      "eursek",
+      "eurnok",
+      "usddkk",
+      "usdrub",
+      "soybean",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "ukgilt",
+      "baba",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)",
+      "ta35->indices (TASE)",
+      "psx->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [
+      "rbi: policy: RBI -> INR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7ae2d1ac5322"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Accounts",
+  "url": "https://cysecsupport.axi.com/en-US/axicysec--axicorp-prod/directories/Go9-g065",
+  "published": "2026-10-02T14:14:17+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "539d8c3fdf631b33f932",
+  "host": "cysecsupport.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top 15 Most Successful FOREX Traders in the World :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/top-10-most-successful-forex-traders-in-the-world/",
+  "published": "2026-10-02T14:14:30+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "NZDUSD",
+   "USDTRY",
+   "BTCUSD",
+   "SOYBEAN"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "90b959ff72dc02d58048",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "NZDUSD",
+      "USDTRY",
+      "BTCUSD",
+      "SOYBEAN"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "kiwi",
+      "try",
+      "bitcoin",
+      "soybean"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bank of england: policy: BoE -> GBP",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top Trading Strategies in Forex | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/top-trading-strategies-in-forex/",
+  "published": "2026-10-02T14:14:32+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "EURGBP",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "1f115e91b5ce5140239c",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "0900 Enter a long position with a stop-loss just below the breakout point Set a profit target based on the range's width or previous significant price levels Day Trading: Seizing Opportunities in Real-Time Day trading involves executing multiple trades within a single trading day, with positions typically not held overnight.",
+    "lang": "en",
+    "quantities": [
+     "breakout",
+     "range"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "day",
+     "overnight"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURGBP",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "eur/gbp",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "e4dff1e0959b"
+   },
+   {
+    "claim": "Trade with Swiss precision Open live account Try a Demo ACTUAL ARTICLES Thu, 27 Jul 2023 12:18:41 GMT Demystifying the Relative Strength Index (RSI) Indicator Navigating the complexities of financial markets requires a thorough understanding of various trading tools, and one such tool that has gained significant popularity is the Relative Strength Index (RSI).",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "gained"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "e0d8751c8975"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Demystifying the Relative Strength Index (RSI) Indicator :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/demystifying-the-relative-strength-index-(rsi)-indicator/",
+  "published": "2026-10-02T14:14:34+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "GBPJPY",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "b4a9a0e501b7dc1f9c08",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "For example, if the daily RSI indicates a long-term bullish trend, but the 15-minute RSI shows a short-term oversold condition, it might be an opportune moment to enter a long position.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long",
+     "bullish"
+    ],
+    "horizon": [
+     "daily",
+     "minute"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8ef509af86af"
+   },
+   {
+    "claim": "In this example, when the 5-minute RSI shows oversold conditions while the 1-hour RSI shows overbought conditions, you anticipate a short-term bounce followed by a potential reversal due to the conflicting signals.",
+    "lang": "en",
+    "quantities": [
+     "reversal"
+    ],
+    "direction": [
+     "short",
+     "bounce"
+    ],
+    "horizon": [
+     "minute",
+     "hour"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bd359ccfa7ce"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Stochastic Oscillator Strategy: Trader's Guide :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/stochastic-oscillator-strategy-traders-guide/",
+  "published": "2026-10-02T14:14:36+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "GBPJPY",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "INTRADAY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "5595b92b77a940d72fe0",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "Traders pay close attention to oversold conditions as they may present buying opportunities or signals to close out existing short positions.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "short"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "bcc617190fa0"
+   },
+   {
+    "claim": "For instance, a trader might use the weekly Stochastic to determine the long-term trend's direction and then use a shorter-term Stochastic on the daily or hourly chart to pinpoint entry and exit points within that trend.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "weekly",
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "f8b3afde87d8"
+   },
+   {
+    "claim": "Bearish Divergence Scenario: You're trading crude oil futures on a 4-hour chart, and you observe that the Stochastic Oscillator is forming lower highs while the oil price is making higher highs.",
+    "lang": "en",
+    "quantities": [
+     "futures"
+    ],
+    "direction": [
+     "bearish",
+     "lower"
+    ],
+    "horizon": [
+     "hour"
+    ],
+    "instruments": {
+     "analogues": [
+      "XTIUSD"
+     ],
+     "mentioned": [
+      "crude"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "fe2323e8cc1a"
+   },
+   {
+    "claim": "Action: You check the 50-day and 200-day moving averages and observe that the stock's price is above both averages, indicating a bullish trend.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "bullish"
+    ],
+    "horizon": [
+     "day"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "GBPJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "gbp/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "2cdb85b7c980"
+   }
+  ],
+  "n_claims": 5
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "What is Forex Trading and How Does It Work? - Introduction to Forex Trading | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/what-is-forex-trading/",
+  "published": "2026-10-02T14:14:39+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "EURJPY",
+   "GBPJPY",
+   "EURGBP",
+   "USDTRY",
+   "USDPLN",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "breakout",
+   "carry",
+   "correlation",
+   "flow",
+   "momentum",
+   "night_session",
+   "orderflow",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "969695dac1a0aae7871a",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURJPY",
+      "GBPJPY",
+      "EURGBP",
+      "USDTRY",
+      "USDPLN",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "eur/jpy",
+      "gbp/jpy",
+      "eur/gbp",
+      "try",
+      "eur/pln",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   },
+   {
+    "claim": "It is an order placed with a broker to automatically sell or close a position when the market price reaches a specified level, known as the stop-loss price.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "sell"
+    ],
+    "horizon": [
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "EURJPY",
+      "GBPJPY",
+      "EURGBP",
+      "USDTRY",
+      "USDPLN",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "eur/jpy",
+      "gbp/jpy",
+      "eur/gbp",
+      "try",
+      "eur/pln",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDTHB"
+     ],
+     "channels": [
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "d6825c942092"
+   },
+   {
+    "claim": "Example of Breakout Trading Imagine you're observing the EUR/JPY currency pair on an hourly chart, and you notice that the price has been consolidating within a narrow range between 130.",
+    "lang": "en",
+    "quantities": [
+     "breakout",
+     "range"
+    ],
+    "direction": [
+     "narrow"
+    ],
+    "horizon": [
+     "hourly"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURJPY"
+     ],
+     "mentioned": [
+      "eur/jpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "d151790016cd"
+   }
+  ],
+  "n_claims": 3
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Carry Trade - What is it and How does it Impact the Market?",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/articles/forex-carry-trade/",
+  "published": "2026-10-02T14:14:40+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "AUDUSD",
+   "USDCAD",
+   "AUDJPY",
+   "USDTRY",
+   "BTCUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "night_session",
+   "policy",
+   "positioning",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "04e4c80d27192b750415",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Articles Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "AUDJPY",
+      "USDTRY",
+      "BTCUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "aussie",
+      "usd/cad",
+      "aud/jpy",
+      "try",
+      "bitcoin"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bank of japan: policy: BoJ / MoF intervention -> JPY",
+      "bot : policy: BoT -> THB"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "527617f59160"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Trading Ideas: EUR/USD | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/marketwatch/market-news/Trading-Ideas/EUR-USD/",
+  "published": "2026-10-02T14:14:42+00:00",
+  "symbols": [
+   "XAUUSD",
+   "XAGUSD",
+   "XTIUSD",
+   "US30",
+   "USDX",
+   "EURUSD",
+   "GBPUSD",
+   "USDJPY",
+   "USDCAD",
+   "USDTRY",
+   "BTCUSD",
+   "UST10Y"
+  ],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "arbitrage",
+   "auction",
+   "carry",
+   "correlation",
+   "flow",
+   "gap",
+   "mean_reversion",
+   "momentum",
+   "night_session",
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://www.dukascopy.com/downloads/bank/",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt5/dukascopy5setup.exe",
+   "https://download.terminal.free/cdn/web/dukascopy.bank.sa/mt4/dukascopy4setup.exe",
+   "https://www.dukascopy.com/swiss/english/forex/api/jforex-api/",
+   "https://www.dukascopy.com/swiss/english/forex/api/fix-api/",
+   "https://www.dukascopy.com/downloads/bank/jforex/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt5/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/mt4/?lang=en",
+   "https://www.dukascopy.com/downloads/bank/binary/?lang=en"
+  ],
+  "n_endpoints": 9,
+  "vault_sha": "6ae312df0f57cecc5ee9",
+  "host": "www.dukascopy.com",
+  "claims": [
+   {
+    "claim": "Learn more JP EU Open accounts Trading ideas Data tools for webmasters Online news Online news for webmasters Articles Smart Money Concept ICT Trading Long Position vs.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "dollar index",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB",
+      "treasury auction: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "27c9db926b2e"
+   },
+   {
+    "claim": "Next trading week might see higher implied volatility as GDP, Jobs report numbers will be presented form the United States.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "higher"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "dollar index",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB",
+      "treasury auction: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "ddc371d6d686"
+   },
+   {
+    "claim": "The EUR/USD 1-hour chart shows a strong bullish trend following a recent sharp rally to a peak near 1.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "bullish",
+     "rally"
+    ],
+    "horizon": [
+     "hour"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eur/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "5d78a9d478fe"
+   },
+   {
+    "claim": "In addition, next week's Federal Reserve interest rate decision is likely to increase dollar volatility.",
+    "lang": "en",
+    "quantities": [
+     "rate decision",
+     "volatility"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [],
+     "mentioned": [],
+     "transfer_only": [],
+     "indirect": [
+      "USDX",
+      "US500"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities"
+     ]
+    },
+    "claimed_performance": {},
+    "claim_hash": "7156045e89e0"
+   },
+   {
+    "claim": "The daily charts reveals a bearish trend dictated by a strong descending trendline Thu, 25 Jun 2026 10:42:18 GMT EUR/USD Outlook After rejection of 1.",
+    "lang": "en",
+    "quantities": [
+     "trend"
+    ],
+    "direction": [
+     "bearish"
+    ],
+    "horizon": [
+     "daily"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eur/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "23c68639636c"
+   },
+   {
+    "claim": "Volatility may increase toward the end of the trading week, driven by the upcoming CPI and PPI releases.",
+    "lang": "en",
+    "quantities": [
+     "volatility",
+     "cpi"
+    ],
+    "direction": [
+     "increase"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XTIUSD",
+      "US30",
+      "USDX",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCAD",
+      "USDTRY",
+      "BTCUSD",
+      "UST10Y"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "crude",
+      "dow",
+      "dollar index",
+      "eur/usd",
+      "pound",
+      "usd/jpy",
+      "usd/cad",
+      "try",
+      "bitcoin",
+      "10-year treasury"
+     ],
+     "transfer_only": [],
+     "indirect": [
+      "US500",
+      "USDTHB"
+     ],
+     "channels": [
+      "federal reserve: policy: Fed -> dollar and US equities",
+      "bot : policy: BoT -> THB",
+      "treasury auction: auction: sovereign debt -> rates and dollar"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "debc544a859c"
+   },
+   {
+    "claim": "While market consensus currently favors a \"wait-and-see\" approach and any immediate change Fri, 29 May 2026 10:35:30 GMT EUR/USD Market Outlook: Technical Trends, Sentiment, and Volatility Expectations Lower levels of overall volatility were observed during previous trading week, that has stabilized FX, trading above 1.",
+    "lang": "en",
+    "quantities": [
+     "volatility"
+    ],
+    "direction": [
+     "lower"
+    ],
+    "horizon": [
+     "week"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eur/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "08b5ed08f716"
+   },
+   {
+    "claim": "The hourly price action Wed, 20 May 2026 07:22:14 GMT EUR/USD Outlook: Bearish Momentum Accelerates as Key 1.",
+    "lang": "en",
+    "quantities": [
+     "momentum"
+    ],
+    "direction": [
+     "bearish"
+    ],
+    "horizon": [
+     "hourly"
+    ],
+    "instruments": {
+     "analogues": [
+      "EURUSD"
+     ],
+     "mentioned": [
+      "eur/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "658dede7c8c2"
+   }
+  ],
+  "n_claims": 12
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u6c38\u5eb7\u4e94\u91d1\u4ea4\u6613\u4ef7\u683c\u6307\u6570:\u603b\u6307\u6570 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/hyzs_list_EMI00316914.html",
+  "published": "2026-10-02T14:14:44+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "221e700173719fd83443",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u4ea4\u6613\u666f\u6c14\u6307\u6570:\u5b89\u9632\u4ea7\u54c1 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/hyzs_list_EMI00319930.html",
+  "published": "2026-10-02T14:14:45+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ce3b10702efe2009e9d",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u8bc1\u5238\u5e02\u573a\u4ea4\u6613\u7ed3\u7b97\u8d44\u91d1\u4f59\u989d:\u671f\u672b\u6570 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/hyzs_list_EMI00301953.html",
+  "published": "2026-10-02T14:14:48+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "13f68bb07baea356309c",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u4ea4\u6613\u4ef7\u683c\u6307\u6570:\u7535\u5b50\u7535\u5de5:\u7535\u7ebf\u3001\u7535\u7f06:\u7535\u6c14\u8bbe\u5907\u7528\u7535\u7f06 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://data.eastmoney.com/cjsj/hyzs_list_EMI00319429.html",
+  "published": "2026-10-02T14:14:50+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fc48a0e0cae90958ca54",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5173\u8054\u4ea4\u6613 _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/gljy/",
+  "published": "2026-10-02T14:14:53+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9197f629bda7b316f995",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u8d22\u7ecf\u6570\u636e _ \u4ea4\u6613\u7ed3\u7b97\u8d44\u91d1(\u94f6\u8bc1\u8f6c\u8d26) _ \u6570\u636e\u4e2d\u5fc3 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://data.eastmoney.com/cjsj/bankTransfer.html",
+  "published": "2026-10-02T14:14:54+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "a1ec631db2ece56aa923",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7b56\u7565\u62a5\u544a",
+  "url": "http://data.eastmoney.com/report/strategyreport.jshtml",
+  "published": "2026-10-02T14:14:56+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow",
+   "inventory",
+   "positioning"
+  ],
+  "confidence": 0.55,
+  "lang": "zh_CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f372f7184012a896c766",
+  "host": "data.eastmoney.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex",
+  "url": "https://my.roboforex.com/es",
+  "published": "2026-10-02T14:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ee40ea5d1405edd3043",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a Trading Account - RoboForex Ltd",
+  "url": "https://my.roboforex.com/ph/register/",
+  "published": "2026-10-02T14:14:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "fd8eb4124bb5d3f6297d",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex",
+  "url": "https://my.roboforex.com/ph",
+  "published": "2026-10-02T14:15:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e877e301941bdefe9d8",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a Trading Account - RoboForex Ltd",
+  "url": "https://my.roboforex.com/en/register/mt4",
+  "published": "2026-10-02T14:15:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "10ef33febd54d65ad2bf",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a new demo account - RoboForex Ltd",
+  "url": "https://my.roboforex.com/en/register-demo/",
+  "published": "2026-10-02T14:15:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "483f8d510984d38b4292",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a Trading Account - RoboForex Ltd",
+  "url": "https://my.roboforex.com/en/register/mt5",
+  "published": "2026-10-02T14:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d4fb2d14f4c8075d0247",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "RoboForex",
+  "url": "https://my.roboforex.com/en/operations/deposit-funds/",
+  "published": "2026-10-02T14:15:09+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3e353f185b8362a61579",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop - Backtesting Tool for Trading",
+  "url": "https://desktop.forextester.com/",
+  "published": "2026-10-02T14:15:15+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "1M",
+   "DAILY",
+   "INTRADAY"
+  ],
+  "patterns": [
+   "breakout",
+   "gap",
+   "momentum",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "50f7453e5be3ead52b36",
+  "host": "desktop.forextester.com",
+  "claims": [
+   {
+    "claim": "Martingale Grid & Hedging Simple short-term strategy Engulfing bars GBP/USD simple breakout system Martingale hedging with exponential lot increase Simple \u201cMake Pips\u201d Strategy The Trader vs.",
+    "lang": "en",
+    "quantities": [
+     "breakout"
+    ],
+    "direction": [
+     "short",
+     "increase"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "gbp/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "116e7c8a0a23"
+   },
+   {
+    "claim": "7-month result: the profit of -1%, the drawdown of -27,5% Conclusion: don\u2019t hurry to trade with an untested trading strategy on a long period.",
+    "lang": "en",
+    "quantities": [
+     "drawdown"
+    ],
+    "direction": [
+     "long"
+    ],
+    "horizon": [
+     "month"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XPTUSD",
+      "XPDUSD",
+      "XCUUSD",
+      "XALUSD",
+      "XTIUSD",
+      "HK50",
+      "NAS100",
+      "US500",
+      "US30",
+      "US2000",
+      "JPN225",
+      "UK100",
+      "FRA40",
+      "EUSTX50",
+      "AUS200",
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "AUDUSD",
+      "USDCAD",
+      "USDCHF",
+      "NZDUSD",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "EURGBP",
+      "USDCNH",
+      "USDHKD",
+      "USDKRW",
+      "USDINR",
+      "USDTHB",
+      "USDSGD",
+      "USDBRL",
+      "USDMXN",
+      "USDTRY",
+      "USDZAR",
+      "USDILS",
+      "USDPLN",
+      "USDHUF",
+      "USDCZK",
+      "USDSEK",
+      "USDNOK",
+      "USDDKK",
+      "USDRUB",
+      "SOYBEAN",
+      "CORN",
+      "SUGAR",
+      "COTTON",
+      "COFARA",
+      "WHEAT",
+      "USCOCOA",
+      "UKGILT",
+      "AlibabaGroup",
+      "Tesla",
+      "NVIDIA"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "xptusd",
+      "xpdusd",
+      "copper",
+      "aluminum",
+      "brent",
+      "hk50",
+      "nas100",
+      "s&p 500",
+      "us30",
+      "us2000",
+      "jpn225",
+      "uk100",
+      "fra40",
+      "eustx50",
+      "aus200",
+      "sensex",
+      "ta35",
+      "psx",
+      "eurusd",
+      "gbp/usd",
+      "usd/jpy",
+      "audusd",
+      "usdcad",
+      "usdchf",
+      "nzdusd",
+      "eurjpy",
+      "gbp/jpy",
+      "audjpy",
+      "eurgbp",
+      "usdcnh",
+      "usdhkd",
+      "won",
+      "usdinr",
+      "usdthb",
+      "usdsgd",
+      "usdbrl",
+      "usdmxn",
+      "try",
+      "usdzar",
+      "usdils",
+      "usdpln",
+      "eurhuf",
+      "usdczk",
+      "eursek",
+      "eurnok",
+      "usddkk",
+      "usdrub",
+      "soybean",
+      "corn",
+      "sugar",
+      "cotton",
+      "coffee",
+      "wheat",
+      "cocoa",
+      "ukgilt",
+      "baba",
+      "tsla",
+      "nvda"
+     ],
+     "transfer_only": [
+      "sensex->indices (NSE/BSE)",
+      "ta35->indices (TASE)",
+      "psx->indices (South Asian exchanges)"
+     ],
+     "indirect": [],
+     "channels": [
+      "rbi: policy: RBI -> INR"
+     ],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "7ae2d1ac5322"
+   }
+  ],
+  "n_claims": 2
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Forex Tester Desktop app [Free/Demo & Full Versions Available]",
+  "url": "https://desktop.forextester.com/download?utm_source=Blog_FT_site&utm_medium=referral&utm_campaign=Blog_FooterDownloadEN&gc=Blog_FooterDownloadEN",
+  "published": "2026-10-02T14:15:16+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download",
+   "https://forextester.jp/download",
+   "https://desktop.forextester.com/templates/css/min/download.css",
+   "http://www.forextester.jp/download"
+  ],
+  "n_endpoints": 4,
+  "vault_sha": "e7c97626ec21dbd602c6",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Historical Tick Data for Free - Forex Tester Desktop",
+  "url": "https://desktop.forextester.com/data/datasources",
+  "published": "2026-10-02T14:15:17+00:00",
+  "symbols": [
+   "AUDJPY",
+   "AUDUSD",
+   "CHFJPY",
+   "EURCAD",
+   "EURCHF",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPCHF",
+   "GBPJPY",
+   "GBPUSD",
+   "NZDJPY",
+   "NZDUSD",
+   "USDCAD",
+   "USDCHF",
+   "USDJPY",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY",
+   "M1"
+  ],
+  "patterns": [
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "fa025f134a80b4c89f5f",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to become Forex Affiliate and increase profits easily [Guide]",
+  "url": "https://desktop.forextester.com/affiliates",
+  "published": "2026-10-02T14:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "02640c39d4bb22b948f9",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Get your reward of being a Leading Trader [Forex Partner Program]",
+  "url": "https://desktop.forextester.com/forex-partner-program",
+  "published": "2026-10-02T14:15:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8eb1f6e27e1e795227b8",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Profit of being a Forex Influencer [Forex Resellers Program]",
+  "url": "https://desktop.forextester.com/forex-reseller-program",
+  "published": "2026-10-02T14:15:24+00:00",
+  "symbols": [
+   "USDTRY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "6f49e609fbb5d0c5e214",
+  "host": "desktop.forextester.com",
+  "claims": [
+   {
+    "claim": "We will ask you to pay your Balance once per month, or when its negative value is close to your \u201cCredit\u201d.",
+    "lang": "en",
+    "quantities": [
+     "close"
+    ],
+    "direction": [
+     "negative"
+    ],
+    "horizon": [
+     "month",
+     "close"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDTRY"
+     ],
+     "mentioned": [
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "aa2060ea72ba"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Hire a Forex Programmer - Custom Indicators & Trading Tools",
+  "url": "https://desktop.forextester.com/hire-a-forex-programmer",
+  "published": "2026-10-02T14:15:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "387109b0aca482b52c89",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Science | IBKR Campus",
+  "url": "https://www.interactivebrokers.com/campus/category/ibkr-quant-news/data-science/",
+  "published": "2026-10-02T14:15:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY",
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/campus/traders-academy/api/"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "2bb7aa34047b31ee25fc",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trade with Confidence / Axi EU",
+  "url": "https://www.axi.com/eu/our-edge/trade-with-confidence",
+  "published": "2026-10-02T14:15:29+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "3bb9a67c83ffac246b08",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

@@ -9,7 +9,7 @@
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-02T11:51:52.291372+00:00",
+   "finished_at": "2026-10-02T13:51:40.771423+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -27,7 +27,7 @@
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-02T11:51:38.787212+00:00",
+   "finished_at": "2026-10-02T13:51:26.499287+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -39,47 +39,47 @@
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-02T12:17:19.838945+00:00",
+   "finished_at": "2026-10-02T14:07:17.852895+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-02T12:17:08.148213+00:00",
+   "finished_at": "2026-10-02T14:07:08.506105+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-02T12:17:35.331921+00:00",
+   "finished_at": "2026-10-02T14:07:28.456172+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-02T12:16:23.978445+00:00",
+   "finished_at": "2026-10-02T14:06:54.062947+00:00",
    "passes_completed": 1,
    "returncode": 124,
    "status": "FAILED"
   },
   "mechanism_independence": {
-   "finished_at": "2026-10-02T12:18:05.176627+00:00",
+   "finished_at": "2026-10-02T14:10:09.398118+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "same_day_fence": {
-   "finished_at": "2026-10-02T12:18:12.391235+00:00",
+   "finished_at": "2026-10-02T14:16:03.923981+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "DONE"
   },
   "zero_capital_shadow_forward": {
-   "finished_at": "2026-10-02T12:17:52.726874+00:00",
+   "finished_at": "2026-10-02T14:08:00.888687+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-02T13:50:13.295055+00:00"
+ "updated_at": "2026-10-02T14:16:03.923981+00:00"
 }
