@@ -607,6 +607,27 @@ def gate_data(child: Mapping[str, Any], ctx: TM.Context) -> tuple[bool, str]:
     return True, f"data:ok ({pit})"
 
 
+def gate_executability(child: Mapping[str, Any]) -> tuple[bool, str]:
+    """Refuse variants the shared replay cannot implement before donating them.
+
+    The gauntlet still owns the verdict. This is only its existing modifier contract
+    applied at the compiler door, with the refusal retained in conversion memory.
+    """
+    from mt5desk import cell_modifiers, families, families_orthogonal
+
+    family = str(child.get("family") or "")
+    fn = getattr(families, f"family_{family}", None)
+    if fn is None:
+        fn = families_orthogonal.ORTHOGONAL_FAMILIES.get(family)
+    if fn is None:
+        return False, f"execution:no_implementation ({family})"
+    _call, mods = cell_modifiers.split(fn, dict(child.get("params") or {}))
+    reason = cell_modifiers.refusal(mods)
+    if reason:
+        return False, f"execution:modifier_unavailable ({reason})"
+    return True, "execution:replayable"
+
+
 def pit_status(child: Mapping[str, Any], ctx: TM.Context) -> str:
     """PIT_BAR_CLOSE for a price-only cell (a bar is knowable at its own close); PIT_STAMPED when
     the conditioning axis file carries `knowable_at`; UNKNOWN otherwise, which the data gate
@@ -886,6 +907,7 @@ def _dispose(child: dict[str, Any], ctx: TM.Context, *, coverage: Mapping[str, i
     economics is not also a data gap, and reporting it as both would double-count the debt."""
     for gate in (lambda: gate_economic(child, ctx),
                  lambda: gate_data(child, ctx),
+                 lambda: gate_executability(child),
                  lambda: gate_novelty(child, ctx, coverage=coverage, hashes=hashes,
                                       redundant=redundant, conn=conn)):
         ok, why = gate()
