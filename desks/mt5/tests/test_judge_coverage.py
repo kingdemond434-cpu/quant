@@ -230,6 +230,34 @@ def test_an_unseen_family_ranks_on_the_optimistic_bound() -> None:
     assert ranking[0]["ev_per_judge_second"] > 0
 
 
+def test_certified_concentration_steers_the_remainder_to_an_absent_family(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(jc, "certified_family_shares", lambda: ({"saturated": 0.8,
+                                                                   "other": 0.2}, 100))
+    monkeypatch.setattr(jc, "realised_pass_rates", lambda: {})
+    monkeypatch.setattr(jc, "family_priors", lambda fams, realised: {
+        f: {"p": 0.5, "p_optimistic": 0.8, "n": 0, "status": 0} for f in fams})
+    monkeypatch.setattr(jc, "family_value", lambda: ({}, 1.0))
+    monkeypatch.setattr(jc, "family_breadth", lambda: {})
+    monkeypatch.setattr(jc, "producer_signals", lambda: {})
+    monkeypatch.setattr(jc, "_keff_family_factor", lambda rows: {})
+    backlog = {"saturated": 100, "new_family": 100}
+    ranking = jc.rank_by_value(backlog, [{"family": f, "params": {}} for f in backlog], 100)
+    assert [r["family"] for r in ranking] == ["new_family", "saturated"]
+    assert ranking[0]["certified_breadth_factor"] == pytest.approx(2.0)
+    assert ranking[1]["certified_breadth_factor"] == pytest.approx(1.2)
+    quota = jc.allocate(backlog, 80, ranking=ranking)
+    assert quota["new_family"] > quota["saturated"] > 0
+
+
+def test_unreadable_certificates_leave_the_judge_ranking_neutral(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(jc, "certified_family_shares", lambda: ({}, 0))
+    row = jc.rank_by_value({"carry": 1}, [{"family": "carry", "params": {}}], 100)[0]
+    assert row["certified_breadth_status"] == "UNMEASURED"
+    assert row["certified_breadth_factor"] == 1.0
+
+
 def test_bar_cost_makes_the_denominator_real() -> None:
     """A judge-second is spent in BARS: an M5 cell costs about twelve H1 cells."""
     h1 = jc.rank_by_value({"f": 1}, [{"family": "f", "params": {}}], capacity=100)[0]

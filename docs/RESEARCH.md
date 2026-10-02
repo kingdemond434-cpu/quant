@@ -664,6 +664,17 @@ candidates. Forward capacity is a priced scarce resource: a near-duplicate gener
 saturated forward queue is worth almost nothing; a genuinely orthogonal mechanism still receives
 priority.
 
+**Certified-family saturation is a permanent search-allocation law, never a gate.** As a family's
+share of the certified canon grows, research priority moves toward absent and underrepresented
+families. Another member of the incumbent family earns relief only through a declared, measurable
+structural distinction -- asset class, session, timeframe/horizon, regime, direction or
+representation -- and the nearest same-family certificate decides whether that distinction is
+real. A ticker rename or parameter sweep is not breadth. Exact structural twins pay the full
+family-exposure charge; distinct axes receive proportional research priority pending actual
+return-correlation and forward evidence. No otherwise-valid cell is
+discarded by this law: the universal judge, multiplicity accounting and forward evidence remain
+unchanged, while the search and compute schedulers spend marginal effort on independent bets.
+
 **SARES -- Strategy Archaeology and Reverse-Engineering.** Given everything publicly observable
 about a trader or system, what family of mechanisms could plausibly have produced the observed
 behaviour? Ten agents: Performance Archaeologist, Trade-Path Reverse Engineer, Latent-Mechanism
