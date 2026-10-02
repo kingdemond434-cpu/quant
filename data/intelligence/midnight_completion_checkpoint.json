@@ -3,13 +3,13 @@
  "schema_version": 1,
  "stages": {
   "canonical_external_pipeline": {
-   "finished_at": "2026-10-02T13:49:38.808833+00:00",
+   "finished_at": "2026-10-02T17:23:31.538389+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "certificate_projection": {
-   "finished_at": "2026-10-02T13:51:40.771423+00:00",
+   "finished_at": "2026-10-02T17:26:39.504679+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
@@ -21,25 +21,22 @@
    "status": "DONE"
   },
   "external_queue_projection": {
-   "finished_at": "2026-10-02T13:50:13.295055+00:00",
+   "finished_at": "2026-10-02T17:24:14.409635+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "external_queue_reconciliation": {
-   "finished_at": "2026-10-02T13:51:26.499287+00:00",
+   "finished_at": "2026-10-02T17:25:17.031934+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_clock_fence": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/check_forward_clock_ratchet.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-02T15:45:09.087316+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-02T16:50:56.784212+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "DONE"
   },
   "forward_clock_reconciliation": {
    "finished_at": "2026-10-02T14:07:17.852895+00:00",
@@ -60,10 +57,15 @@
    "status": "FAILED"
   },
   "fusion_state_pull": {
-   "finished_at": "2026-10-02T14:06:54.062947+00:00",
-   "passes_completed": 1,
-   "returncode": 124,
-   "status": "FAILED"
+   "command": [
+    "systemctl",
+    "--user",
+    "start",
+    "quant-desk-pull.service"
+   ],
+   "passes_completed": 0,
+   "started_at": "2026-10-02T17:26:48.671774+00:00",
+   "status": "RUNNING"
   },
   "mechanism_independence": {
    "finished_at": "2026-10-02T14:10:09.398118+00:00",
@@ -84,5 +86,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-02T15:45:09.087316+00:00"
+ "updated_at": "2026-10-02T17:26:48.671774+00:00"
 }
