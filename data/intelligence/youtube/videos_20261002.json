@@ -145,5 +145,19 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "24UDbE1WQZU",
+  "published": "2026-10-02T16:04:07Z",
+  "title": "90% of Trading Is NOT Strategy!",
+  "description": "Your strategy is only as good as your ability to actually execute it when it counts. \ud83e\udde0",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
