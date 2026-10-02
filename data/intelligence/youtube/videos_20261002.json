@@ -233,5 +233,21 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCBc1EqknL4xzwJsUP9w7asg",
+  "channel": "Unbiased Trading",
+  "video_id": "eXSegBYYVc0",
+  "published": "2026-10-02T20:27:59Z",
+  "title": "The Most Dangerous Trap in Trading. A Quant Explains.",
+  "description": "Build your first live trading algorithm \ud83d\udc49https://cryptomomentumgroup.com/\n\nA former quant PM at Tudor and Moore Capital explains the trap that keeps destroying traders. Selling options premium makes money 99 days out of 100, so you size up thinking you've cracked the code, then day 99 hands you a 150% loss. A strategy that wins almost every day can still be a time bomb, and if your equity curve looks too smooth to be true, you probably found tail risk instead of edge.\n\n\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\u25ac\n\nThis channel shares educational content about systematic and algorithmic trading. Nothing here is financial advice, and I am not a registered investment adviser. Trading involves risk of loss. Always do your own research and consult a licensed financial professional before making investment decisions.",
+  "links": [
+   "https://cryptomomentumgroup.com/"
+  ],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
