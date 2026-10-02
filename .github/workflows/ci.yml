@@ -135,6 +135,17 @@ jobs:
           --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch
           --cov-report=term:skip-covered --cov-report=json:mt5cov.json --junitxml=mt5-junit.xml
 
+      - name: Diagnose decision-core uncovered branches
+        run: |
+          python - <<'PY'
+          import json
+          report = json.load(open('mt5cov.json', encoding='utf-8'))
+          for path, detail in report['files'].items():
+              if path.endswith('mt5desk/decision_core.py'):
+                  print('decision_core missing lines:', detail.get('missing_lines', []))
+                  print('decision_core missing branches:', detail.get('missing_branches', []))
+          PY
+
       # The baselines (desks/mt5/data/coverage_high_water.json, pit_high_water.json) are
       # COMMITTED and the floor FAILS without them -- a ratchet with no memory is not a ratchet.
       - name: Money-path coverage floor (ratcheted)
