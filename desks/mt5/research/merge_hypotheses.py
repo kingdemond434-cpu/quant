@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,34 @@ from typing import Any
 BASE = Path(__file__).resolve().parent.parent
 HYP = BASE / "data" / "hypotheses"
 TARGET = HYP / "external_survivors.json"
+
+
+def _write_docket_atomically(path: Path, rows: list[dict[str, Any]]) -> None:
+    """Stream the large docket without a second, multi-gigabyte JSON string.
+
+    The previous ``json.dumps(rows)`` raised MemoryError on the live 1.6M-row
+    docket.  A failed write must also leave the previous judge input intact.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, pending = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            # One serialization and one buffered write per row. ``json.dump(rows)``
+            # also streams, but its indented encoder makes millions of tiny Python
+            # writes; a compact row at a time keeps both peak RAM and wall time bounded.
+            stream.write("[\n")
+            for i, row in enumerate(rows):
+                if i:
+                    stream.write(",\n")
+                stream.write(json.dumps(row, separators=(",", ":"), default=str))
+            stream.write("\n]\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(pending, path)
+    finally:
+        if os.path.exists(pending):
+            os.unlink(pending)
+
 
 #: THE STUDY BANK. Rows of a family that is BANNED FROM LIVE CAPITAL keep existing here -- they
 #: are not deleted and the miners keep producing them -- but they are not put in front of the
@@ -330,7 +359,8 @@ def stamp_fresh_intake(row: dict[str, Any], source: str, now: datetime) -> dict[
     root = str(BASE.parents[1])
     if root not in _sys.path:
         _sys.path.insert(0, root)
-    from libs.data.pit import is_stamped, stamp as pit_stamp
+    from libs.data.pit import is_stamped
+    from libs.data.pit import stamp as pit_stamp
 
     if is_stamped(row):
         return row
@@ -962,7 +992,7 @@ def main() -> int:
     except Exception as exc:
         prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
         print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
-    TARGET.write_text(json.dumps(rows_out, indent=1, default=str), "utf-8")
+    _write_docket_atomically(TARGET, rows_out)
     _lease(TARGET)
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
