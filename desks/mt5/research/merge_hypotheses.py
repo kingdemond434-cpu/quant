@@ -359,7 +359,8 @@ def stamp_fresh_intake(row: dict[str, Any], source: str, now: datetime) -> dict[
     root = str(BASE.parents[1])
     if root not in _sys.path:
         _sys.path.insert(0, root)
-    from libs.data.pit import is_stamped, stamp as pit_stamp
+    from libs.data.pit import is_stamped
+    from libs.data.pit import stamp as pit_stamp
 
     if is_stamped(row):
         return row

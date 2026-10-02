@@ -5,7 +5,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-
 DESK = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DESK))
 from research import frontier_ceo  # noqa: E402

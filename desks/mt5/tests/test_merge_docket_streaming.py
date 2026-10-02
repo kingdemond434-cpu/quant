@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pytest
 
-
 DESK = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DESK))
 from research import merge_hypotheses as merge  # noqa: E402
