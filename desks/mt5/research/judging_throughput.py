@@ -77,7 +77,7 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
 OUT = BASE / "reports" / "JUDGING_THROUGHPUT.json"
 #: The judge's RATE against its BACKLOG, hourly: verdicts/hour, backlog, creation rate, ETA.
 RATE_OUT = BASE / "reports" / "JUDGING_RATE.json"
-#: One row per judged cell, stamped `at` -- the sealed judge's own output. Read, never written.
+#: One row per CHANGED verdict, not every completed test. Read, never written.
 GATE_LEDGER = BASE / "data" / "hypotheses" / "gate_verdict_ledger.jsonl"
 #: The canonical registry; `research_candidates.created_at` is the creation clock. Read-only.
 REGISTRY = ROOT / "data" / "alpha_registry.sqlite"
@@ -1000,12 +1000,16 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
 
     Streams the file and reads only each row's `at` stamp, so a multi-million-row ledger costs
     one pass and constant memory. An absent ledger is UNMEASURED -- never zero verdicts."""
+    from research.judging_burndown import classify
+
     p = GATE_LEDGER if path is None else path
     if not p.exists():
         return {"status": UNMEASURED, "why": f"{p.name} absent: verdicts/hour is UNMEASURED"}
     cuts = {w: (now - timedelta(hours=h)).isoformat(timespec="seconds")
             for w, h in (("1h", 1), ("24h", 24), ("7d", 168))}
     counts = dict.fromkeys(cuts, 0)
+    first_counts = dict.fromkeys(cuts, 0)
+    first_terminal_cells: set[str] = set()
     total, unstamped, last = 0, 0, ""
     try:
         with p.open("r", encoding="utf-8", errors="replace") as fh:
@@ -1017,15 +1021,48 @@ def _verdict_counts(now: datetime, path: Path | None = None) -> dict[str, Any]:
                 if not m:
                     unstamped += 1
                     continue
-                at = m.group(1)
+                try:
+                    stamp = datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
+                    if stamp.tzinfo is None or stamp > now:
+                        unstamped += 1
+                        continue
+                    at = stamp.astimezone(UTC).isoformat(timespec="seconds")
+                except ValueError:
+                    unstamped += 1
+                    continue
                 last = max(last, at)
                 for w, cut in cuts.items():
                     if at >= cut:
                         counts[w] += 1
+                # The writer appends only when a terminal verdict changes. Repeated cells
+                # are retests, not backlog cleared. UNKNOWN/build/data refusals are not
+                # completed evidence judgements either. Preserve the raw event count above.
+                try:
+                    row = json.loads(line)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict):
+                    continue
+                cell = str(row.get("cell", ""))
+                if not cell or classify(row) != "ruled":
+                    continue
+                if cell in first_terminal_cells:
+                    continue
+                first_terminal_cells.add(cell)
+                for w, cut in cuts.items():
+                    if at >= cut:
+                        first_counts[w] += 1
     except OSError as exc:
         return {"status": UNMEASURED, "why": f"{type(exc).__name__}: {exc}"}
     return {"status": "MEASURED", "rows_total": total, "rows_unstamped": unstamped,
             "last_verdict_at": last or None, "counts": counts,
+            "count_basis": "changed verdict events; unchanged retests do not append",
+            "first_terminal_counts": first_counts,
+            "first_terminal_cells": len(first_terminal_cells),
+            "first_terminal_per_hour": {
+                "1h": float(first_counts["1h"]),
+                "24h": round(first_counts["24h"] / 24.0, 3),
+                "7d": round(first_counts["7d"] / 168.0, 3)},
             "per_hour": {"1h": float(counts["1h"]), "24h": round(counts["24h"] / 24.0, 3),
                          "7d": round(counts["7d"] / 168.0, 3)}}
 
@@ -1080,21 +1117,21 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     _cov = _read_json(JUDGE_COVERAGE, {}) or {}
     _unj = ((_cov.get("totals") or {}).get("unjudged_total")
             if isinstance(_cov, dict) else None)
-    # Hourly coverage must be recent before replacing another backlog measurement.
-    # Its content clock is authoritative; touching the file cannot refresh the count.
+    # Require a timezone-aware content timestamp; touching the file is not freshness.
     try:
-        coverage_at = datetime.fromisoformat(str(_cov.get("at") or "").replace("Z", "+00:00"))
-        coverage_age_s = (t - coverage_at).total_seconds()
-        coverage_fresh = 0 <= coverage_age_s <= 2 * 3600
+        cov_at = datetime.fromisoformat(str(_cov.get("at") or "").replace("Z", "+00:00"))
+        coverage_fresh = cov_at.tzinfo is not None and 0 <= (t - cov_at).total_seconds() <= 7200
     except (ValueError, TypeError, AttributeError):
         coverage_fresh = False
     if isinstance(_unj, int) and coverage_fresh:
         backlog, backlog_source = _unj, f"{JUDGE_COVERAGE} totals.unjudged_total"
     vph = ((ver.get("per_hour") or {}).get("24h") if ver.get("status") == "MEASURED" else None)
+    first_vph = ((ver.get("first_terminal_per_hour") or {}).get("24h")
+                 if ver.get("status") == "MEASURED" else None)
     cph = ((cre.get("per_hour") or {}).get("24h") if cre.get("status") == "MEASURED" else None)
     eta: dict[str, Any] = {"status": UNMEASURED}
-    if isinstance(backlog, int) and isinstance(vph, float) and isinstance(cph, float):
-        net = vph - cph
+    if isinstance(backlog, int) and isinstance(first_vph, float) and isinstance(cph, float):
+        net = first_vph - cph
         if backlog == 0:
             eta = {"status": "DRAINED", "hours": 0.0}
         elif net > 0:
@@ -1113,6 +1150,11 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
         "verdicts": ver, "created": cre,
         "verdicts_per_hour": vph if vph is not None else UNMEASURED,
         "verdicts_per_day": round(vph * 24.0, 1) if vph is not None else UNMEASURED,
+        "verdict_rate_basis": "changed verdict events, not total completed tests",
+        "first_judged_per_day": (round(first_vph * 24.0, 1)
+                                 if first_vph is not None else UNMEASURED),
+        "eta_basis": "first terminal cell dispositions, never repeated changed verdicts",
+        "coverage_backlog_fresh": coverage_fresh,
         "created_per_day": round(cph * 24.0, 1) if cph is not None else UNMEASURED,
         "backlog": backlog if backlog is not None else UNMEASURED,
         "backlog_source": backlog_source,

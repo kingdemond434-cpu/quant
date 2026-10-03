@@ -32,8 +32,8 @@ NON_CODE + `is_state_path`: when the diff release..tip touches no CODE path, the
 release and is adopted whole, which keeps the box's pushes fast-forwarding. Only a tip carrying
 code that no green run has judged is held back, and then the box adopts the release itself.
 
-NEVER STUCK. No production pointer and no release tag yet -> today's behaviour, logged. A gate
-that cannot run (fetch failed, git missing) -> today's behaviour, logged. And an explicit
+FAIL CLOSED. No production pointer/tag or an unverifiable diff -> HOLD, not an untested tip.
+An explicit
 override (`ADOPT_UNRELEASED` flag file, `QUANT_ADOPT_UNRELEASED=1`, `--allow-unreleased`) adopts
 the tip regardless -- a deliberate act with a name, for the day CI is down and a fix must land.
 
@@ -388,13 +388,13 @@ def adoption_decision(git: Git, *, tip: str, release_sha: str | None, release_re
         return mk("OVERRIDE_TIP", tip, f"override: {override}; adopting the branch tip whether "
                   "or not CI has released it")
     if release_sha is None:
-        return mk("LEGACY_TIP", tip, "no production pointer and no release/* tag exists yet; "
-                  "adopting the branch tip as before the release gate")
+        return mk("HOLD", None, "no production pointer and no release/* tag exists yet; "
+                  "holding until a tested release is published")
     try:
         unreleased = code_paths(git.changed(release_sha, tip))
     except GitError as exc:
-        return mk("LEGACY_TIP", tip, f"cannot diff release {release_sha[:12]} against tip "
-                  f"{tip[:12]} ({exc}); adopting the tip as before the release gate")
+        return mk("HOLD", None, f"cannot diff release {release_sha[:12]} against tip "
+                  f"{tip[:12]} ({exc}); holding because release equivalence is unverified")
     if not unreleased:
         return mk("ADOPT_TIP", tip, f"tip {tip[:12]} is release {release_sha[:12]} plus "
                   "seal/state paths only")
