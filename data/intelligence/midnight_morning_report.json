@@ -119,84 +119,84 @@
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.00535,
+  "measured_cpu_hours": 0.005389,
   "stage_rows": [
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 6598.877,
+    "duration_seconds": 2204.035,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 4.810776,
-    "duration_seconds": 31.451,
+    "cpu_seconds": 5.082073,
+    "duration_seconds": 31.171,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 10.476726,
-    "duration_seconds": 47.365,
+    "cpu_seconds": 10.96928,
+    "duration_seconds": 47.26,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.092379,
-    "duration_seconds": 10.918,
+    "cpu_seconds": 0.089535,
+    "duration_seconds": 6.745,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
     "cpu_seconds": null,
-    "duration_seconds": 8705.896,
+    "duration_seconds": 3656.287,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.320316,
-    "duration_seconds": 2529.626,
+    "cpu_seconds": 1.149747,
+    "duration_seconds": 17.653,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.124547,
-    "duration_seconds": 11.604,
+    "cpu_seconds": 0.105094,
+    "duration_seconds": 11.671,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.263183,
-    "duration_seconds": 26.81,
+    "cpu_seconds": 1.091972,
+    "duration_seconds": 15.773,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.264983,
-    "duration_seconds": 16.76,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 18.031,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.371887,
-    "duration_seconds": 11.664,
+    "cpu_seconds": 0.408053,
+    "duration_seconds": 8.595,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.14295,
-    "duration_seconds": 11.208,
+    "cpu_seconds": 0.134106,
+    "duration_seconds": 8.762,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.276087,
-    "duration_seconds": 11.99,
+    "cpu_seconds": 0.26131,
+    "duration_seconds": 8.829,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.116242,
-    "duration_seconds": 12.098,
+    "cpu_seconds": 0.107755,
+    "duration_seconds": 13.257,
     "name": "forward_clock_fence"
    }
   ]
@@ -345,7 +345,7 @@
    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
   ]
  },
- "generated_at": "2026-10-03T12:54:08.782829+00:00",
+ "generated_at": "2026-10-03T14:56:52.547816+00:00",
  "headline": {
   "candidates_discovered": 59026,
   "candidates_lost": 56110,
@@ -875,7 +875,7 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 76,
-  "measured_at": "2026-10-03T12:52:43+00:00",
+  "measured_at": "2026-10-03T14:55:36+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
@@ -886,7 +886,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 1894.4,
+  "mem_available_mb": 2676.5,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
