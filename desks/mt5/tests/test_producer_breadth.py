@@ -163,6 +163,25 @@ def test_breadth_sweep_spends_its_cap_on_the_least_judged_pairs_first(
     assert rows[0]["symbol"] == "ZARJPY", "the unjudged instrument leads, not the alphabet"
 
 
+def test_breadth_sweep_prefers_under_certified_mechanisms_without_banning_others(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import breadth_sweep as bs
+    canon = tmp_path / "UNIVERSAL_SURVIVORS.canon.json"
+    canon.write_text(json.dumps({"survivors": {
+        "a": {"shadow_spec": {"family": "carry"}},
+        "b": {"shadow_spec": {"family": "carry"}},
+    }}), "utf-8")
+    monkeypatch.setattr(bs, "CERTIFICATES", canon)
+    _seen(tmp_path, monkeypatch, [])
+    key = bs._orthogonal_key()
+    unseen = {"symbol": "EURUSD", "family": "vol_transition",
+              "params": {"timeframe": "M5"}}
+    saturated = {"symbol": "EURUSD", "family": "carry",
+                 "params": {"timeframe": "M5"}}
+    assert key(unseen) < key(saturated)
+    assert bs._certified_family_counts() == {"carry": 2}
+
+
 # ------------------------------------------------------------------ htf_anchor_proposer
 def test_htf_anchor_mints_fine_charts_only_where_their_bars_exist(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

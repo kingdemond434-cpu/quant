@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import time
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
@@ -37,6 +38,31 @@ def test_capacity_slots_bound_cross_department_passes(monkeypatch, tmp_path):
     assert replacement is not None
     replacement.close()
     second.close()
+
+
+def test_capacity_waiters_are_fifo_and_a_completed_pass_rejoins_at_tail(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    monkeypatch.setattr(dr, "_ticket_alive", lambda _path, _pid: True)
+    first = dr._wait_ticket("discovery")
+    time.sleep(0.001)
+    second = dr._wait_ticket("macro")
+    assert dr._oldest_waiter() == first
+    first.unlink()
+    rejoined = dr._wait_ticket("discovery")
+    assert dr._oldest_waiter() == second
+    second.unlink()
+    assert dr._oldest_waiter() == rejoined
+    rejoined.unlink()
+
+
+def test_crashed_waiter_cannot_starve_a_live_department(monkeypatch, tmp_path):
+    monkeypatch.setattr(dr, "LOCKS", tmp_path / "locks")
+    old = dr._wait_ticket("stale")
+    live = dr._wait_ticket("discovery")
+    monkeypatch.setattr(dr, "_ticket_alive", lambda path, _pid: path != old)
+    assert dr._oldest_waiter() == live
+    assert not old.exists()
+    live.unlink()
 
 
 def test_one_pass_runs_the_cycle_under_the_department_plan(monkeypatch, tmp_path):

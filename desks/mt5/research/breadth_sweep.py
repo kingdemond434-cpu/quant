@@ -44,6 +44,7 @@ for _p in (str(DESK), str(DESK / "research"), str(ROOT)):
 
 DOCKET = DESK / "data" / "hypotheses" / "external_survivors.json"
 UNIVERSE = DESK / "data" / "universe"
+CERTIFICATES = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 
 #: FAMILIES WHOSE INPUTS THE DESK ALREADY HOLDS, with the grid each is swept over.
 #:
@@ -342,21 +343,44 @@ def _testable(fam: str, p: dict) -> bool:
     return False
 
 
+def _certified_family_counts() -> dict[str, int]:
+    """Actual canonical certificates, never miner claims or raw candidate counts."""
+    try:
+        doc = json.loads(CERTIFICATES.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = doc.get("survivors") if isinstance(doc, dict) else None
+    if not isinstance(rows, dict):
+        return {}
+    counts: dict[str, int] = {}
+    for cert in rows.values():
+        if not isinstance(cert, dict):
+            continue
+        fam = str((cert.get("shadow_spec") or {}).get("family") or cert.get("family") or "")
+        if fam:
+            counts[fam] = counts.get(fam, 0) + 1
+    return counts
+
+
 def _orthogonal_key() -> Any:
-    """Sort key: most-intraday chart first (the principal's ranking, unchanged), then the
-    (symbol, family) pairs the sealed gauntlet has judged FEWEST cells on, then name. A capped
-    merge used to take the alphabetically-first symbols on every family; it now takes the least
-    covered ground first. `breadth_rotation.judged_counts` reads the judge's own seen-cells file,
-    and an unreadable one leaves the old name order."""
+    """Spend a capped merge on intraday, under-certified families, then least-judged pairs.
+
+    No family is banned: a genuinely distinct variant may still pass the full unchanged gates.
+    This only prevents a cap from being exhausted by another copy of a saturated mechanism
+    before an uncultivated family reaches the same evaluator.
+    """
     try:
         from research.breadth_rotation import judged_counts
         _by_sym, by_pair = judged_counts()
     except Exception:
         by_pair = {}
+    certified = _certified_family_counts()
 
     def key(r: dict) -> tuple:
         tf = str((r.get("params") or {}).get("timeframe") or "H1")
-        return (_tf_rank(tf), by_pair.get((str(r["symbol"]).upper(), str(r["family"])), 0),
+        fam = str(r["family"])
+        return (_tf_rank(tf), certified.get(fam, 0),
+                by_pair.get((str(r["symbol"]).upper(), fam), 0),
                 r["symbol"], r["family"])
     return key
 
