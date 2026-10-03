@@ -67,9 +67,52 @@ def test_measure_cpu_is_psutil_or_unmeasured() -> None:
 
 # ------------------------------------------------------------------ the rate artifact
 def _ledger(path: Path, stamps: list[datetime]) -> Path:
-    path.write_text("".join(json.dumps({"cell": i, "at": t.isoformat(timespec="seconds")})
+    path.write_text("".join(json.dumps({"cell": i, "terminal_gate": "PASSED",
+                                       "at": t.isoformat(timespec="seconds")})
                             + "\n" for i, t in enumerate(stamps)) + '{"cell": "x"}\n', "utf-8")
     return path
+
+
+def test_retests_and_unknowns_do_not_count_as_backlog_cleared(tmp_path: Path) -> None:
+    path = tmp_path / "ledger.jsonl"
+    rows = [
+        {"cell": "old", "at": (NOW - timedelta(days=10)).isoformat(),
+         "terminal_gate": "in_sample_screen"},
+        {"cell": "old", "at": NOW.isoformat(), "terminal_gate": "stress_costs"},
+        {"cell": "blocked", "at": NOW.isoformat(), "terminal_gate": "UNKNOWN"},
+        {"cell": "new", "at": NOW.isoformat(), "terminal_gate": "PASSED"},
+    ]
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), "utf-8")
+    got = jt.measure_rate({"depth": 100}, {}, NOW, ledger=path,
+                          registry=_registry(tmp_path / "registry.sqlite", []))
+    assert got["verdicts"]["counts"]["24h"] == 3
+    assert got["verdicts"]["first_terminal_counts"]["24h"] == 1
+    assert got["verdicts"]["first_terminal_cells"] == 2
+    assert got["eta_to_drain"]["net_per_hour"] < got["verdicts_per_hour"]
+
+
+def test_stale_coverage_cannot_replace_current_queue_depth(tmp_path: Path, monkeypatch) -> None:
+    path = tmp_path / "coverage.json"
+    path.write_text(json.dumps({"at": (NOW - timedelta(days=3)).isoformat(),
+                                "totals": {"unjudged_total": 999999}}), "utf-8")
+    monkeypatch.setattr(jt, "JUDGE_COVERAGE", path)
+    got = jt.measure_rate({"depth": 8}, {}, NOW, ledger=tmp_path / "absent",
+                          registry=tmp_path / "absent.sqlite")
+    assert got["backlog"] == 8
+    assert got["coverage_backlog_fresh"] is False
+
+
+def test_verdict_windows_normalise_offsets_and_refuse_future_stamps(tmp_path: Path) -> None:
+    path = tmp_path / "ledger.jsonl"
+    rows = [
+        {"cell": "recent", "at": "2026-09-30T13:30:00+02:00", "terminal_gate": "PASSED"},
+        {"cell": "old", "at": "2026-09-30T11:30:00+02:00", "terminal_gate": "PASSED"},
+        {"cell": "future", "at": "2026-09-30T12:30:00Z", "terminal_gate": "PASSED"},
+    ]
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), "utf-8")
+    got = jt._verdict_counts(NOW, path)
+    assert got["counts"] == {"1h": 1, "24h": 2, "7d": 2}
+    assert got["rows_unstamped"] == 1
 
 
 def _registry(path: Path, stamps: list[datetime]) -> Path:
