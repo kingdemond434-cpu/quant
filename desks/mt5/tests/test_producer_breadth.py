@@ -128,8 +128,10 @@ def test_a_cell_is_refused_on_a_chart_its_family_declares_inexpressible() -> Non
     assert gb.cell_verdict("relative_value", {"timeframe": "H4"})[0] == gb.BUILDABLE
     assert gb.cell_verdict("calendar_month", {})[0] == gb.MISSING_PARAMS
     assert gb.cell_verdict("session_range_breakout", {"timeframe": "M15"})[0] == gb.BUILDABLE
-    assert gb.cell_verdict("clock_transition", {"label": "london_fix", "stamp_hour": None})[0] == gb.MISSING_PARAMS
-    assert gb.cell_verdict("clock_transition", {"label": "london_fix", "stamp_hour": 18})[0] == gb.BUILDABLE
+    missing_hour = gb.cell_verdict("clock_transition", {"label": "london_fix", "stamp_hour": None})
+    valid_hour = gb.cell_verdict("clock_transition", {"label": "london_fix", "stamp_hour": 18})
+    assert missing_hour[0] == gb.MISSING_PARAMS
+    assert valid_hour[0] == gb.BUILDABLE
 
 
 # ------------------------------------------------------------------ breadth_sweep
