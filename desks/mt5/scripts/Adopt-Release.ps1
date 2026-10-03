@@ -865,6 +865,50 @@ if ($dirty.Count -gt 0) {
     if ($dirtyCode.Count -gt 0) {
         Write-Host ("  REFUSING: {0} local code path(s) are dirty; a release may not overwrite unknown code" -f $dirtyCode.Count)
         $dirtyCode | ForEach-Object { Write-Host ("    {0}" -f $_) }
+
+        # PUBLISH THE REFUSAL BEFORE EXITING (2026-10-03). This preflight deliberately runs
+        # before any adoption write, but it also used to run before the only
+        # ADOPTION_STATE.json writer near the end of this script. The scheduled adopter then
+        # refused the current 28 dirty code paths every hour while its machine-readable report
+        # remained frozen four days earlier on one unrelated path and an obsolete target.
+        # `plumbing_watchdog.check_adoption_partial` consumes this file, so the early exit made
+        # the real blocker invisible to the canonical issue path even though the console knew it.
+        #
+        # This report grants no recovery permission and changes no path: it records exactly the
+        # ambiguity that is causing the fail-closed exit. The later full report still replaces it
+        # after an adoption reaches the write/verify stages.
+        $preflightState = [ordered]@{
+            measured_at = (Get-Date).ToUniversalTime().ToString("o")
+            branch      = $Branch
+            head        = (Invoke-Git @("rev-parse", "HEAD")).Trim()
+            head_before = $head
+            target      = $target
+            sealed      = $false
+            ok          = $false
+            stage       = "preflight-dirty-code"
+            counts      = [ordered]@{
+                written = 0; added = 0; removed = 0; untracked = 0
+                shipped_elsewhere = 0; kept_state = $dirtyState.Count; repair_passes = 0
+                code_drift = $dirtyCode.Count; state_drift = $dirtyState.Count
+                discovery_drift = 0; unwritable = 0
+            }
+            code_drift  = @($dirtyCode)
+            unwritable  = @()
+            state_drift = @($dirtyState | Select-Object -First 200)
+            shipped_by  = "MT5-IntelShip / desks/mt5/scripts/intel_ship_adopt.ps1 (intel-ship/send)"
+        }
+        $preflightReportDir = Join-Path $RepoRoot "desks\mt5\reports"
+        try {
+            if (-not (Test-Path -LiteralPath $preflightReportDir)) {
+                New-Item -ItemType Directory -Force -Path $preflightReportDir | Out-Null
+            }
+            [System.IO.File]::WriteAllText(
+                (Join-Path $preflightReportDir "ADOPTION_STATE.json"),
+                ($preflightState | ConvertTo-Json -Depth 6),
+                (New-Object System.Text.UTF8Encoding($false)))
+        } catch {
+            Write-Host ("  could not write preflight ADOPTION_STATE.json: {0}" -f $_.Exception.Message)
+        }
         exit 1
     }
 }
