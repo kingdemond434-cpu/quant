@@ -123,6 +123,20 @@ def _child(**over: Any) -> dict[str, Any]:
     return {**base, **over}
 
 
+def test_unexecutable_descendant_is_disposed_before_donation(ctx):
+    cell = _child(params={"conditioner": "carry"})
+    ok, why = dc._dispose(cell, ctx, coverage={}, hashes=set(), redundant=set(), conn=None)
+    assert not ok
+    assert why.startswith("execution:modifier_unavailable")
+    assert "conditioner='carry'" in why
+
+
+def test_executable_descendant_keeps_the_same_door(ctx):
+    cell = _child(params={"regime": "high_vol"})
+    ok, why = dc._dispose(cell, ctx, coverage={}, hashes=set(), redundant=set(), conn=None)
+    assert ok, why
+
+
 # --------------------------------------------------------------------------- intake
 def test_intake_reads_every_live_source_shape(desk, ctx):
     _populate(desk)

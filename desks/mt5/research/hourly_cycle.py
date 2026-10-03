@@ -886,6 +886,9 @@ CORE_LEGS: frozenset[str] = frozenset({
     # measured cross-trial Sharpe variance and lifetime effective trials. One JSON read and a
     # ledger append; it must run every hour, so it is core.
     "dsr_inputs",
+    # Capacity planning and the observed verdict rate must run before every judge pass;
+    # the heavy-plan rotation left its report stale while the gauntlet kept running.
+    "judging_throughput",
     # A SILENT HALT COSTS A WINDOW AN HOUR (PR #130 audit): the placement-interlock fence ran only
     # in the law gate's `--rotate` rotation, which reaches a given state fence every few hours.
     # It reads three small files and writes one, so it runs on BOTH plans, every hour.

@@ -97,6 +97,29 @@ def test_rate_counts_windows_and_drains(tmp_path: Path) -> None:
     assert eta["status"] == "DRAINING" and eta["net_per_hour"] == 1.0 and eta["hours"] == 1000.0
 
 
+def test_recent_births_use_an_indexed_range_not_a_registry_table_scan(tmp_path: Path) -> None:
+    """A multi-GB unindexed created_at count timed out judging-rate production."""
+    from libs.moat import registry
+
+    path = tmp_path / "registry.sqlite"
+    conn = sqlite3.connect(path)
+    registry._evolve(conn)
+    conn.executemany(
+        "INSERT INTO research_candidates(id, created_at) VALUES (?, ?)",
+        [("old", "2026-09-20T00:00:00+00:00"),
+         ("week", "2026-09-28T00:00:00+00:00"),
+         ("day", "2026-09-30T11:00:00+00:00")],
+    )
+    conn.commit()
+    plan = conn.execute(
+        "EXPLAIN QUERY PLAN SELECT COUNT(*) FROM research_candidates WHERE created_at >= ?",
+        ("2026-09-23T00:00:00+00:00",),
+    ).fetchall()
+    assert any("ix_candidates_created_at" in str(row) for row in plan), plan
+    conn.close()
+    assert jt._creation_counts(NOW, path)["counts"] == {"24h": 1, "7d": 2}
+
+
 def test_a_judge_slower_than_creation_is_growing_not_a_big_number(tmp_path: Path) -> None:
     got = jt.measure_rate({"depth": 55_811}, {"workers": 15}, NOW,
                           ledger=_ledger(tmp_path / "l.jsonl", []),

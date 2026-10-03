@@ -508,6 +508,11 @@ def _evolve(conn: sqlite3.Connection) -> dict[str, int]:
                 f'ON "{table}" BEGIN SELECT RAISE(ABORT, "{table} is immutable: the '
                 f'constitution keeps complete trial accounting"); END')
     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_status ON research_candidates(status)")
+    # Judging throughput measures recent births on every pass. Without this index its
+    # two created_at range counts scan the entire multi-GB candidate table and can
+    # outlive the validation leg's deadline, leaving JUDGING_RATE stale.
+    conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_created_at ON research_candidates"
+                 "(created_at)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_hash ON research_candidates"
                  "(content_hash)")
     conn.execute("CREATE INDEX IF NOT EXISTS ix_candidates_disc ON research_candidates"

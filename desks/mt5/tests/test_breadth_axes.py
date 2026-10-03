@@ -14,6 +14,7 @@ for p in (str(_DESK), str(_DESK / "research"), str(_DESK.parent.parent)):
 
 import breadth_sweep as bs  # noqa: E402
 from mt5desk import family_call as fc  # noqa: E402
+from mt5desk.family_inputs import runtime_call_params, strip_identity_keys  # noqa: E402
 
 
 def test_the_session_filter_keeps_only_bars_inside_the_window_and_all_keeps_everything():
@@ -33,6 +34,23 @@ def test_the_session_filter_keeps_only_bars_inside_the_window_and_all_keeps_ever
 
     out = fc.signals(fam, None, side=1, params={"session": "asia", "k": 2})
     assert seen == {"k": 2} and [g.time.hour for g in out] == [1, 7]
+
+
+def test_forward_and_live_preserve_the_session_for_the_shared_filter():
+    sigs = [SimpleNamespace(time=pd.Timestamp(f"2026-09-16 {h:02d}:00", tz="UTC"))
+            for h in (1, 9, 18)]
+
+    def fam(_bars, **_kwargs):
+        return sigs
+
+    raw = {"timeframe": "M5", "session": "asia", "lookback": 24}
+    params = runtime_call_params("trend_ma_cross", raw)
+    assert params == {"session": "asia", "lookback": 24}
+    assert [g.time.hour for g in fc.signals(fam, None, side=1, params=params)] == [1]
+    assert [g.time.hour for g in fc.session_filter(
+        sigs, fc.certified_session({"params": {"params": raw}}))] == [1]
+    assert [g.time.hour for g in fc.certified_session_filter(
+        sigs, {"params": {"params": raw}})] == [1]
 
 
 def test_every_default_family_is_swept_on_every_chart_and_session_except_the_banned(

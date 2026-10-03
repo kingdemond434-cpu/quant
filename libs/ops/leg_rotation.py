@@ -117,6 +117,9 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     "tier_s",
     # ... and the writer of the door's fourth input, reports/REPLICATION.json (heavy plan).
     "replication_civilization",
+    # Without this, the core rotation can leave the judge's worker plan and measured
+    # verdict rate stale while the five-minute gauntlet task continues to fire.
+    "judging_throughput",
 })
 
 
