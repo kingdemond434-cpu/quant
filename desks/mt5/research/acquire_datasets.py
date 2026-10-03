@@ -26,6 +26,7 @@ Nothing here retries forever or downloads something it has not measured first.
 """
 from __future__ import annotations
 
+import functools
 import glob
 import io
 import json
@@ -35,6 +36,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections import defaultdict, deque
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -344,6 +346,25 @@ def _endpoints(limit: int, *, now: datetime | None = None) -> list[tuple[str, st
     return out
 
 
+def _record_url_refusal(why: str, *, reg: dict[str, Any], refuse: Callable[[str], None],
+                        url: str, host: str, attempt_at: str) -> None:
+    refuse(why)
+    reg["by_url"][url] = {"host": host, "series": [], "at": attempt_at,
+                          "status": "REFUSED", "refusal": why}
+
+
+def _url_refuser(reg: dict[str, Any], refuse: Callable[[str], None], *, url: str, host: str,
+                 attempt_at: str) -> Callable[[str], None]:
+    """A refusal recorder for ONE endpoint, its url/host/attempt time bound early (ruff B023).
+
+    It used to be a closure in the endpoint loop reading ``url``, ``host`` and ``attempt_at``
+    from the enclosing scope, so a recorder that outlived its iteration would stamp the refusal
+    on the LAST endpoint tried. ``functools.partial`` freezes them at construction time.
+    """
+    return functools.partial(_record_url_refusal, reg=reg, refuse=refuse, url=url, host=host,
+                             attempt_at=attempt_at)
+
+
 def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
     STORE.mkdir(parents=True, exist_ok=True)
     reg: dict[str, Any] = {"by_url": {}, "series": {}}
@@ -366,10 +387,8 @@ def acquire(limit: int = MAX_PER_RUN) -> dict[str, Any]:
         tried += 1
         attempt_at = datetime.now(UTC).isoformat(timespec="seconds")
 
-        def _refuse_url(why: str) -> None:
-            _refuse(why)
-            reg["by_url"][url] = {"host": host, "series": [], "at": attempt_at,
-                                  "status": "REFUSED", "refusal": why}
+        # B023: this URL's identity is bound now, never read late from the loop.
+        _refuse_url = _url_refuser(reg, _refuse, url=url, host=host, attempt_at=attempt_at)
 
         raw, ctype = _fetch(url)
         if raw is None:
