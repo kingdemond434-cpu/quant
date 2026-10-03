@@ -314,10 +314,10 @@ def _warm_one(spec: dict) -> tuple[str, str]:
         tf = str(spec.get("tf") or "H1")
         frame = G._bars_for(spec["sym"], tf)
         if frame is None or len(frame) == 0:
-            return ckey, "missing"
+            return ckey, f"missing|no {tf} bars for {spec['sym']}"
         obj = G.build_cell(spec["sym"], spec["family"], spec["params"], meta)
         if not obj:
-            return ckey, "failed"
+            return ckey, "failed|" + str(G.LAST_BUILD_FAILURE or "build_cell returned no cell")[:240]
         last_day = frame.index[-1].normalize()
         ds1 = G._series_trim_partial(
             G.daily_series(obj["df"], obj["sigs"], obj["costs"]), last_day)
@@ -325,11 +325,11 @@ def _warm_one(spec: dict) -> tuple[str, str]:
         ds3 = G._series_trim_partial(
             G.daily_series(obj["df"], obj["sigs"], costs3), last_day)
         if ds1 is None or ds3 is None:
-            return ckey, "failed"
+            return ckey, "failed|daily cost series unavailable"
         G.cache_save(ckey, ds1, ds3)
         return ckey, "warmed"
-    except Exception:
-        return ckey, "failed"
+    except Exception as exc:
+        return ckey, f"failed|{type(exc).__name__}: {str(exc)[:200]}"
     finally:
         if obj is not None:
             obj["sigs"] = None
@@ -496,14 +496,19 @@ def split_deferred(specs: list[dict], stamps: dict[str, str],
 
 def publish_deferrals(rows: dict, held: list[dict], now: float, extra: dict) -> dict:
     """Write the deferral ledger and return its census, ages included."""
+    from collections import Counter
+
     ages = sorted(((now - float(r.get("first_failed_at") or now)) / 3600.0)
                   for r in rows.values() if isinstance(r, dict))
+    reasons = Counter(str(r.get("why") or "UNMEASURED") for r in rows.values()
+                      if isinstance(r, dict))
     census = {
         "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
         "n_deferred": len(rows),
         "n_held_this_pass": len(held),
         "oldest_hours": round(ages[-1], 2) if ages else 0.0,
         "median_hours": round(ages[len(ages) // 2], 2) if ages else 0.0,
+        "top_build_failures": dict(reasons.most_common(12)),
         "rule": ("NOTHING IS DROPPED. A cell lands here only when its BUILD failed; it is retried "
                  "the moment its bars change, and in any case after WARM_RETRY_SEC. Retries go "
                  "FIRST in the next round."),
@@ -798,12 +803,13 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
                     except Exception:
                         res = []
                     for ck, outcome in res:
+                        state, _, reason = outcome.partition("|")
                         done_n += 1
-                        counts[outcome] = counts.get(outcome, 0) + 1
+                        counts[state] = counts.get(state, 0) + 1
                         sp = by_key.get(ck) or {}
-                        if outcome in ("warmed", "hit"):
+                        if state in ("warmed", "hit"):
                             rows.pop(ck, None)
-                            if outcome == "warmed" and sp.get("_never_judged"):
+                            if state == "warmed" and sp.get("_never_judged"):
                                 never_warmed += 1
                             if followers.get(ck):
                                 fanned += fan_out(G, ck, followers[ck])
@@ -815,7 +821,7 @@ def run_round(G, meta: dict, priors, deadline: float) -> dict:
                                 "n_failures": int(prev.get("n_failures") or 0) + 1,
                                 "bars": stamps.get(f"{sp.get('sym')}|{sp.get('tf')}", ""),
                                 "sym": sp.get("sym"), "family": sp.get("family"),
-                                "tf": sp.get("tf"), "why": outcome,
+                                "tf": sp.get("tf"), "why": reason or state,
                             }
                         if done_n % REPORT_EVERY == 0:
                             rate = done_n / max(1e-9, time.time() - t0) * 60.0
