@@ -253,6 +253,12 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
     assert "GET PAST TECHNICAL BLOCKS ALONE" in cycle_text
     assert "is NOT a technical error" in cycle_text
     assert "NEVER ASK THE PRINCIPAL" in cycle_text
+    assert "NEVER JUST NOTICE" in cycle_text
+    for needle in ("is MISSED", "measured ceiling", "a fix commit", "an after-metric",
+                   "the previous pass left unclosed FIRST"):
+        assert needle in cycle_text, needle
+    assert "`gaps_named_not_closed` = 0" in step
+    assert "`gaps_named` and `gaps_closed` in the cycle ledger row" in step
     for n, duty in enumerate((
         "Read desktop over git", "Tier verdict", "Judging throughput to maximum",
         "Permanent backlog guard", "Same-day certificate and clock",
@@ -265,13 +271,18 @@ def test_every_pass_runs_the_tier1_breadth_review() -> None:
         "No unfed datasets", "Paid-substitute coverage", "Cross-culture orthogonality",
         "No live code drift", "Decay and markout ran", "Confident kills per day",
         "Credential coverage", "Desktop pass-2 queue age", "Six-event trend",
+        "Committee health per specialist", "Global coverage tensor",
+        "Deep-forest never-attempted = 0", "Stranded ingestion = 0", "Silent organs = 0",
+        "No empty risk clusters", "Source ROI", "Backpressure", "GitHub resident miner",
+        "QuantConnect, WorldQuant and fund civilizations",
+        "Institutional coverage per jurisdiction",
     ), start=1):
         assert f"| D{n} | **{duty}** |" in step, duty
     for row in ("Datasets in use", "Wasted verdicts", "Unjudged backlog", "Effective breadth",
                 "Cert to forward", "Deep-forest vectors", "Judged", "Live"):
         assert f"| {row} |" in step, row
     assert "STEP 4B" in LAUNCHER.read_text("utf-8")
-    assert "D15-D26" in LAUNCHER.read_text("utf-8")
+    assert "D15-D37" in LAUNCHER.read_text("utf-8")
 
 
 # ------------------------------------------------------------------ no silent skips
