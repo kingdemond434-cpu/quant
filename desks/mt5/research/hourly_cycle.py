@@ -3605,6 +3605,7 @@ def refresh_regime() -> dict:
 
 
 def main() -> None:
+    os.environ["QUANT_PIPELINE_STARTED_AT"] = datetime.now(UTC).isoformat()
     _plan_words = {"core": "core legs only", "heavy": "research producers only"}
     if HOURLY_PLAN.startswith("dept:"):
         _plan_words[HOURLY_PLAN] = f"department {HOURLY_PLAN.split(':', 1)[1]} only"

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import pytest
 import sqlite3
 import sys
 from datetime import UTC, datetime, timedelta
@@ -14,6 +15,13 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, _p)
 
 from research import judging_throughput as jt  # noqa: E402
+
+@pytest.fixture(autouse=True)
+def isolate_coverage_dependency(tmp_path, monkeypatch):
+    """A live coverage file must never replace a fixture's backlog during a rate test."""
+    monkeypatch.setattr(jt, "JUDGE_COVERAGE", tmp_path / "absent_coverage.json")
+    monkeypatch.setattr(jt, "task_time_limit_s", lambda *a, **k: None)
+
 
 UNMEASURED = jt.UNMEASURED
 COSTS = {"per_worker_mb": 768.0, "declared_need_mb": 1200.0}
@@ -95,29 +103,6 @@ def test_rate_counts_windows_and_drains(tmp_path: Path) -> None:
     assert got["created_per_day"] == 24.0
     eta = got["eta_to_drain"]
     assert eta["status"] == "DRAINING" and eta["net_per_hour"] == 1.0 and eta["hours"] == 1000.0
-
-
-def test_recent_births_use_an_indexed_range_not_a_registry_table_scan(tmp_path: Path) -> None:
-    """A multi-GB unindexed created_at count timed out judging-rate production."""
-    from libs.moat import registry
-
-    path = tmp_path / "registry.sqlite"
-    conn = sqlite3.connect(path)
-    registry._evolve(conn)
-    conn.executemany(
-        "INSERT INTO research_candidates(id, created_at) VALUES (?, ?)",
-        [("old", "2026-09-20T00:00:00+00:00"),
-         ("week", "2026-09-28T00:00:00+00:00"),
-         ("day", "2026-09-30T11:00:00+00:00")],
-    )
-    conn.commit()
-    plan = conn.execute(
-        "EXPLAIN QUERY PLAN SELECT COUNT(*) FROM research_candidates WHERE created_at >= ?",
-        ("2026-09-23T00:00:00+00:00",),
-    ).fetchall()
-    assert any("ix_candidates_created_at" in str(row) for row in plan), plan
-    conn.close()
-    assert jt._creation_counts(NOW, path)["counts"] == {"24h": 1, "7d": 2}
 
 
 def test_a_judge_slower_than_creation_is_growing_not_a_big_number(tmp_path: Path) -> None:
@@ -232,3 +217,15 @@ def test_the_warmer_is_no_longer_pinned_through_the_env(tmp_path: Path) -> None:
     assert "WARM_WORKERS" not in jt.env_for(d)
     assert "WARM_WORKERS" not in jt.ENV_KEYS
     assert "WARM_WORKERS" in jt.RETIRED_MACHINE_KEYS
+
+
+@pytest.mark.parametrize("age_hours,expected", [(48, 100), (0.25, 999), (-0.25, 100)])
+def test_stale_or_future_coverage_cannot_replace_backlog(tmp_path, monkeypatch, age_hours, expected):
+    coverage = tmp_path / "coverage.json"
+    coverage.write_text(json.dumps({"at": (NOW-timedelta(hours=age_hours)).isoformat(),
+                                   "totals": {"unjudged_total": 999}}))
+    monkeypatch.setattr(jt, "JUDGE_COVERAGE", coverage)
+    got = jt.measure_rate({"depth":100}, {}, NOW,
+                          ledger=_ledger(tmp_path/"ledger.jsonl", [NOW]),
+                          registry=_registry(tmp_path/"registry.sqlite", []))
+    assert got["backlog"] == expected

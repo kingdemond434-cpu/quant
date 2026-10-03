@@ -1080,7 +1080,15 @@ def measure_rate(queue: dict[str, Any], decision: dict[str, Any],
     _cov = _read_json(JUDGE_COVERAGE, {}) or {}
     _unj = ((_cov.get("totals") or {}).get("unjudged_total")
             if isinstance(_cov, dict) else None)
-    if isinstance(_unj, int):
+    # Hourly coverage must be recent before replacing another backlog measurement.
+    # Its content clock is authoritative; touching the file cannot refresh the count.
+    try:
+        coverage_at = datetime.fromisoformat(str(_cov.get("at") or "").replace("Z", "+00:00"))
+        coverage_age_s = (t - coverage_at).total_seconds()
+        coverage_fresh = 0 <= coverage_age_s <= 2 * 3600
+    except (ValueError, TypeError, AttributeError):
+        coverage_fresh = False
+    if isinstance(_unj, int) and coverage_fresh:
         backlog, backlog_source = _unj, f"{JUDGE_COVERAGE} totals.unjudged_total"
     vph = ((ver.get("per_hour") or {}).get("24h") if ver.get("status") == "MEASURED" else None)
     cph = ((cre.get("per_hour") or {}).get("24h") if cre.get("status") == "MEASURED" else None)
