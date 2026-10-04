@@ -59,5 +59,33 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "JyXpDdD_U9o",
+  "published": "2026-10-04T16:04:31Z",
+  "title": "Working Harder Won't Make You Money In Trading!",
+  "description": "Trading is one of the few businesses where working harder can actually make you lose more.",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "oQ2zmZuit5U",
+  "published": "2026-10-04T16:37:31Z",
+  "title": "How I Made $400 During Live Trading - Full Breakdown",
+  "description": "",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
