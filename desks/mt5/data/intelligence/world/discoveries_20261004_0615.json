@@ -1,0 +1,1669 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Solana vs US Dollar (SOLUSD) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/SOLUSD/",
+  "published": "2026-10-04T06:13:48+00:00",
+  "symbols": [
+   "SOLUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "efba2cf6e8702e4b9a4c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cardano vs US Dollar (ADAUSD) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/ADAUSD/",
+  "published": "2026-10-04T06:13:49+00:00",
+  "symbols": [
+   "ADAUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "0cef1b0c32482bfd7f38",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Dogecoin vs US Dollar (DOGEUSD) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/DOGEUSD/",
+  "published": "2026-10-04T06:13:51+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "93dfb44c6820277d651c",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Canadian Dollar (AUDCAD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCAD.p/",
+  "published": "2026-10-04T06:13:54+00:00",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "997766348edca68572c0",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Swiss Franc (AUDCHF.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDCHF.p/",
+  "published": "2026-10-04T06:13:55+00:00",
+  "symbols": [
+   "AUDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "17fd829ab539fbcdf03b",
+  "host": "roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs Japanese Yen (AUDJPY.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDJPY.p/",
+  "published": "2026-10-04T06:13:58+00:00",
+  "symbols": [
+   "AUDJPY",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "932df014b612adab0110",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "USDJPY",
+      "AUDJPY"
+     ],
+     "mentioned": [
+      "yen",
+      "audjpy"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Australian Dollar vs US Dollar (AUDUSD.p) | ProCent | Contract Specifications - spreads, lots and sessions - RoboForex",
+  "url": "https://roboforex.com/forex-trading/trading/specifications/card/pro-cent/AUDUSD.p/",
+  "published": "2026-10-04T06:13:59+00:00",
+  "symbols": [
+   "AUDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/en/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "5ee2fc0f1ef5df672d53",
+  "host": "roboforex.com",
+  "claims": [
+   {
+    "claim": "00 Accounts Markets Trading Platform MetaTrader 4 MetaTrader 5 R StocksTrader Deposits & Withdrawals Contract Specifications Open Trading Account Open Demo Account Privacy Policy Risk Warning Cookie settings Site Map Contact us RoboForex Ltd is a financial brokerage company regulated by the FSC, license No.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "contract"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "AUDUSD"
+     ],
+     "mentioned": [
+      "audusd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "8f7ddbff917b"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs Japanese Yen (NZDJPY) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/NZDJPY/",
+  "published": "2026-10-04T06:14:00+00:00",
+  "symbols": [
+   "NZDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "528f553813e68171385c",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "New Zealand Dollar vs US Dollar (NZDUSD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/NZDUSD/",
+  "published": "2026-10-04T06:14:02+00:00",
+  "symbols": [
+   "NZDUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8496fd813c60762c21e2",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Canadian Dollar (USDCAD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/USDCAD/",
+  "published": "2026-10-04T06:14:04+00:00",
+  "symbols": [
+   "USDCAD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "a38adae896b400d95a91",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Swiss Franc (USDCHF) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/USDCHF/",
+  "published": "2026-10-04T06:14:06+00:00",
+  "symbols": [
+   "USDCHF"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4ea664e75b2d13d53860",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "US Dollar vs Japanese Yen (USDJPY) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/USDJPY/",
+  "published": "2026-10-04T06:14:08+00:00",
+  "symbols": [
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "c4470122ad0912ddf65f",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Silver vs US Dollar (Spot) (XAGUSD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/XAGUSD/",
+  "published": "2026-10-04T06:14:10+00:00",
+  "symbols": [
+   "XAGUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "cd11c03126a6e2f63a6b",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Gold vs US Dollar (Spot) (XAUUSD) | ECN | \u0e02\u0e49\u0e2d\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2a\u0e31\u0e0d\u0e0d\u0e32 - \u0e2a\u0e40\u0e1b\u0e23\u0e14 \u0e25\u0e47\u0e2d\u0e15 \u0e41\u0e25\u0e30\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32 - RoboForex",
+  "url": "https://th.roboforex.com/forex-trading/trading/specifications/card/pro-stan-ecn/XAUUSD/",
+  "published": "2026-10-04T06:14:12+00:00",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "th",
+  "endpoints": [
+   "https://roboforex.com/manifest.json?v=1790853767",
+   "https://my.roboforex.com/th/help/download-center/"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7b3e2b5aae320920cee4",
+  "host": "th.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Navigating the Market - QuantConnect.com",
+  "url": "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+  "published": "2026-10-04T06:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues#04-Report-New-Issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market#02-View-All-Listings"
+  ],
+  "n_endpoints": 36,
+  "vault_sha": "8bc6f3efca08cf122036",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Categories - QuantConnect.com",
+  "url": "http://quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+  "published": "2026-10-04T06:14:15+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/polygon"
+  ],
+  "n_endpoints": 34,
+  "vault_sha": "f7464f89c65a224fdcfa",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data Issues - QuantConnect.com",
+  "url": "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+  "published": "2026-10-04T06:14:17+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [
+   "auction",
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions#05-Data-Normalization",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions#06-Adjusted-Prices",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions#02-Cross-Platform-Discrepancies",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions#03-Timezone-Differences",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions#04-Misaligned-Timestamps",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions#07-Opening-and-Closing-Auctions",
+   "http://quantconnect.com/datasets/issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues#05-Best-Practices",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues#02-Common-Issues"
+  ],
+  "n_endpoints": 43,
+  "vault_sha": "ea09f97066beb946e41c",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Misconceptions - QuantConnect.com",
+  "url": "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+  "published": "2026-10-04T06:14:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "auction"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/polygon"
+  ],
+  "n_endpoints": 34,
+  "vault_sha": "a7ffa7a13a074fe11791",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Licensing - QuantConnect.com",
+  "url": "http://quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+  "published": "2026-10-04T06:14:21+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "basis"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market#02-View-All-Listings",
+   "http://quantconnect.com/docs/v2/local-platform/datasets/downloading-data"
+  ],
+  "n_endpoints": 36,
+  "vault_sha": "f5651daf61bf954cc00a",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Vendors - QuantConnect.com",
+  "url": "http://quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+  "published": "2026-10-04T06:14:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "http://quantconnect.com/docs/v2/lean-engine/contributions/datasets/key-concepts",
+   "http://quantconnect.com/datasets"
+  ],
+  "n_endpoints": 36,
+  "vault_sha": "8a74eecc3d815034978a",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Alpaca - QuantConnect.com",
+  "url": "http://quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+  "published": "2026-10-04T06:14:25+00:00",
+  "symbols": [],
+  "timeframes": [
+   "INTRADAY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://cdn.quantconnect.com/2024-quantconnect-brand-kit.zip",
+   "https://www.quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "https://www.quantconnect.com/datasets/",
+   "http://www.quantconnect.com/datasets/",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/navigating-the-market",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/categories",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/data-issues",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/misconceptions",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/licensing",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/vendors",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equities",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-equity-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/crypto-futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/forex",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/futures",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-indices",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/us-index-options",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/cfd",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/alternative-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/quantconnect/auxiliary-data",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/interactive-brokers",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradestation",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tastytrade",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/alpaca",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/charles-schwab",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/databento",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/tradier",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/bloomberg-bpipe",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/ssc-eze",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/trading-technologies",
+   "http://quantconnect.com/docs/v2/cloud-platform/datasets/polygon",
+   "http://quantconnect.com/datasets/tiingo-news-feed",
+   "http://quantconnect.com/datasets/benzinga-news-feed"
+  ],
+  "n_endpoints": 36,
+  "vault_sha": "ccb9ad4a786a237b55e5",
+  "host": "quantconnect.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.da.html",
+  "published": "2026-10-04T06:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.55,
+  "lang": "da",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.da.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "c5d42343a477ff0d4c11",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Rolle des Bargelds",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.de.html",
+  "published": "2026-10-04T06:14:28+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "de",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.de.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "d50ae140ab4eda6b8f18",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u039f \u03c1\u03cc\u03bb\u03bf\u03c2 \u03c4\u03c9\u03bd \u03bc\u03b5\u03c4\u03c1\u03b7\u03c4\u03ce\u03bd",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.el.html",
+  "published": "2026-10-04T06:14:30+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "el",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.el.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "e0f8e27d43ffec91d5b0",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "El papel del efectivo",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.es.html",
+  "published": "2026-10-04T06:14:32+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "es",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.es.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a8b9d6e53bf0e5928c0b",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Sularaha roll",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.et.html",
+  "published": "2026-10-04T06:14:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "gap",
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "et",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.et.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1e700c29cd83d1cf361f",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The role of cash",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.fi.html",
+  "published": "2026-10-04T06:14:36+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "auction",
+   "inventory",
+   "orderflow",
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "fi",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fi.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bf4a84997fcd907535da",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Le r\u00f4le des esp\u00e8ces",
+  "url": "https://www.ecb.europa.eu/euro/cash_strategy/cash_role/html/index.fr.html",
+  "published": "2026-10-04T06:14:38+00:00",
+  "symbols": [
+   "TARGET"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "gap",
+   "inventory",
+   "orderflow",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "fr",
+  "endpoints": [
+   "https://www.ecb.europa.eu/stats/ecb_statistics/sdmx/html/index.fr.html"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "093e564e18a6b9b1e659",
+  "host": "www.ecb.europa.eu",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a new demo account - RoboForex Ltd",
+  "url": "https://my.roboforex.com/es/register-demo/",
+  "published": "2026-10-04T06:14:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "d10f9fdc8e0ff836fdb0",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Open a new demo account - RoboForex Ltd",
+  "url": "https://my.roboforex.com/ph/register-demo/",
+  "published": "2026-10-04T06:14:40+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "edef3594eee0727ce9d3",
+  "host": "my.roboforex.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "We Know How to Become An Expert Trader",
+  "url": "https://desktop.forextester.com/aboutus",
+  "published": "2026-10-04T06:14:42+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "235fcba2591ad1a35b65",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Confused with Forex historical data? A simple way to manage it [Video]",
+  "url": "https://desktop.forextester.com/datacenter",
+  "published": "2026-10-04T06:14:44+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M30"
+  ],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "f29c45f4001f2f878514",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Read Statistics From Backtesting and Learn Forex Better",
+  "url": "https://desktop.forextester.com/statistics",
+  "published": "2026-10-04T06:14:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9a2c9fc9f9461fa88e02",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop: Buy Historical Tick Data for Backtesting",
+  "url": "https://desktop.forextester.com/HistoryServiceDescription",
+  "published": "2026-10-04T06:14:50+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "policy",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "8919f594be9b9318ff4b",
+  "host": "desktop.forextester.com",
+  "claims": [
+   {
+    "claim": "the Coin Accurate Trading Strategy The Hedging Strategy The Tsunami Method 10 simple manual strategies to start Martingale Grid & Hedging Martingale hedging with exponential lot increase Simple short-term strategy Engulfing bars GBP/USD simple breakout system Simple \u201cMake Pips\u201d Strategy The Trader vs.",
+    "lang": "en",
+    "quantities": [
+     "breakout"
+    ],
+    "direction": [
+     "increase",
+     "short"
+    ],
+    "horizon": [
+     "bars"
+    ],
+    "instruments": {
+     "analogues": [
+      "GBPUSD"
+     ],
+     "mentioned": [
+      "gbp/usd"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": []
+    },
+    "claimed_performance": {},
+    "claim_hash": "b1531455c870"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to import data into trading simulator [Quick and Easy Video Guide]",
+  "url": "https://desktop.forextester.com/import",
+  "published": "2026-10-04T06:14:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "M1",
+   "M30"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "101f5c44b1f0467892ef",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to make the most of being a Forex Partner [special page offered]",
+  "url": "https://desktop.forextester.com/special",
+  "published": "2026-10-04T06:14:54+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "XAUUSD",
+   "XAGUSD",
+   "US500",
+   "US30",
+   "USDKRW",
+   "USDTRY"
+  ],
+  "timeframes": [
+   "D1",
+   "DAILY",
+   "H1",
+   "INTRADAY",
+   "M1",
+   "W1"
+  ],
+  "patterns": [
+   "basis",
+   "flow",
+   "positioning"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "a7ff43d0684f1bd0e099",
+  "host": "desktop.forextester.com",
+  "claims": [
+   {
+    "claim": "Forex Tester uses project files in the following way: You can save your current session, load another one and then continue the first session later.",
+    "lang": "en",
+    "quantities": [
+     "session"
+    ],
+    "direction": [
+     "continue"
+    ],
+    "horizon": [
+     "session"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "US500",
+      "US30",
+      "EURUSD",
+      "GBPUSD",
+      "USDKRW",
+      "USDTRY"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "s&p 500",
+      "dow jones",
+      "eurusd",
+      "gbpusd",
+      "won",
+      "try"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "98b28af9b571"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "An Easy Way to Open Projects in Forex Trading Simulator [Video]",
+  "url": "https://desktop.forextester.com/newproject",
+  "published": "2026-10-04T06:14:56+00:00",
+  "symbols": [],
+  "timeframes": [
+   "H1",
+   "INTRADAY",
+   "M1",
+   "M15",
+   "M30",
+   "M5"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://desktop.forextester.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "9c1ab5c22a16ef2d752b",
+  "host": "desktop.forextester.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "60\u5206\u949fK\u7ebf\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar60m",
+  "published": "2026-10-04T06:14:57+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "76c205520e26dd383357",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "30\u5206\u949fK\u7ebf\uff08\u622a\u9762\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar30m_c",
+  "published": "2026-10-04T06:14:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "79e5b32986f08839fc8e",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "30\u5206\u949fK\u7ebf\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar30m",
+  "published": "2026-10-04T06:15:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "1c7e705bebfdd2a39331",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "15\u5206\u949fK\u7ebf\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar15m",
+  "published": "2026-10-04T06:15:04+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "7074a034f007b477da03",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "60\u5206\u949fK\u7ebf\uff08\u9644\u76d8\u53e3\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar60m_derived",
+  "published": "2026-10-04T06:15:07+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "c73ad1024214484ed4d9",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u590d\u6743\u56e0\u5b50\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_adjust_factor",
+  "published": "2026-10-04T06:15:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.55,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6b805c74e1022bc0ce50",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "15\u5206\u949fK\u7ebf\uff08\u622a\u9762\uff09\u6570\u636e\u83b7\u53d6-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/datasources/cn_stock_bar15m_c",
+  "published": "2026-10-04T06:15:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "726bba90d5215883c928",
+  "host": "bigquant.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Online Trading eBooks - Download Free Forex eBooks",
+  "url": "https://www.axi.com/eu/learn-to-trade/ebooks",
+  "published": "2026-10-04T06:15:11+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "edd15a9a77d51c311b21",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Axi Blog: Online Trading Blog - Articles, Guides, Strategies / Axi EU",
+  "url": "https://www.axi.com/eu/blog",
+  "published": "2026-10-04T06:15:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "flow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "4ed188b9777249013d6e",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trade CFDs Online - Low Spreads, 24/7 Support, Fast Payments / Axi EU",
+  "url": "https://www.axi.com/eu/trade",
+  "published": "2026-10-04T06:15:15+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "f50e74c373f8dd1eb5d9",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MetaTrader 5 (MT5) Download for PC, Mac, Android, iOS",
+  "url": "https://www.axi.com/eu/trading-platforms/metatrader-5",
+  "published": "2026-10-04T06:15:17+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD",
+   "XAUUSD",
+   "XAGUSD",
+   "XCUUSD",
+   "BTCUSD",
+   "ETHUSD"
+  ],
+  "timeframes": [
+   "MN"
+  ],
+  "patterns": [],
+  "confidence": 0.95,
+  "lang": "en",
+  "endpoints": [
+   "https://download.mql5.com/cdn/web/metaquotes.ltd/mt5/MetaTrader5.pkg.zip",
+   "https://download.mql5.com/cdn/web/axicorp.financial.services/mt5/axi5setup.exe"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "7a9eb89dcfcf18d8d9b1",
+  "host": "www.axi.com",
+  "claims": [
+   {
+    "claim": "Open MT5 account More advanced order types MT5 offers six order types (including Buy Stop-Limit and Sell Stop-Limit), whereas MT4 only supports four.",
+    "lang": "en",
+    "quantities": [
+     "open"
+    ],
+    "direction": [
+     "buy",
+     "sell"
+    ],
+    "horizon": [
+     "open"
+    ],
+    "instruments": {
+     "analogues": [
+      "XAUUSD",
+      "XAGUSD",
+      "XCUUSD",
+      "EURUSD",
+      "GBPUSD",
+      "BTCUSD",
+      "ETHUSD"
+     ],
+     "mentioned": [
+      "gold",
+      "silver",
+      "copper",
+      "eurusd",
+      "gbpusd",
+      "bitcoin",
+      "ethereum"
+     ],
+     "transfer_only": [],
+     "indirect": [],
+     "channels": [],
+     "from_context": true
+    },
+    "claimed_performance": {},
+    "claim_hash": "21832c7c8683"
+   }
+  ],
+  "n_claims": 1
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Top 10 Strongest &amp; Most Valuable Currencies in the World / Axi EU",
+  "url": "https://www.axi.com/eu/blog/education/forex/strongest-currencies-in-the-world",
+  "published": "2026-10-04T06:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "9730d28347b9483b99c7",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "index/trade/cfds/etfs / Axi EU",
+  "url": "https://www.axi.com/eu/trading-platforms",
+  "published": "2026-10-04T06:15:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "2cd16f144dc98ea35328",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Set the rules with trading tools / Axi EU",
+  "url": "https://www.axi.com/eu/trading-tools",
+  "published": "2026-10-04T06:15:23+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "policy",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "04638da775ab41304ddc",
+  "host": "www.axi.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Data mining | Math Trading",
+  "url": "https://mathtrading.wordpress.com/tag/data-mining/",
+  "published": "2026-10-04T06:15:36+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "6d5e83d341f2587bdd0c",
+  "host": "mathtrading.wordpress.com",
+  "claims": [],
+  "n_claims": 0
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Trader Workstation (TWS) | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+  "published": "2026-10-04T06:15:37+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "night_session",
+   "policy"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php",
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "5219b6d1bac485f088ba",
+  "host": "www.interactivebrokers.com",
+  "claims": [],
+  "n_claims": 0
+ }
+]

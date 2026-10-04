@@ -1,0 +1,502 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD NY Session Short",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "My Setup on Monday for GOLD!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "NFP trade fundamental analysis + technical execution",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "DXY"
+    ],
+    "patterns": [
+      "support"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "AUDCAD BUY",
+    "url": "",
+    "symbols": [
+      "AUDCAD"
+    ],
+    "patterns": [
+      "order block"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Retired XAUUSD scalper here",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "scalp"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Missing out",
+    "url": "",
+    "symbols": [
+      "USDCAD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD SETUP MONDAY!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "EMA",
+      "momentum"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD SETUP NEW",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "liquidity",
+      "trend",
+      "momentum"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPUSD: What do you think of this setup ?",
+    "url": "",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [
+      "swing",
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Forex to Future? What do I need to know?",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "NAS100"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Does anyone know what are main selling lvls in xauusd ?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD SETUP FRIDAY...",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "CHFJPY: SHORT",
+    "url": "",
+    "symbols": [
+      "CHFJPY",
+      "USDJPY"
+    ],
+    "patterns": [
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Xauusd",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "GBPJPY: Short",
+    "url": "",
+    "symbols": [
+      "GBPJPY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Holding XAUUSD overnight for the first time \u2014 now it\u2019s just testing my patience \ud83d\ude02",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD: Short",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "MACD",
+      "swing",
+      "momentum"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Something different for the sub - natural crystallized gold!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "My First Gold Libertad",
+    "url": "",
+    "symbols": [
+      "XAGUSD",
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Got my first ounce of gold yesterday",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Happy Friday. Here\u2019s my oldest gold: a 2,044 year old gold coin of Emperor Augustus, minted around 18 B.C. in present day Spain (C\u00f3rdoba), then Tarraco/Colonia Patricia.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Sovereign",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Pete Rose Gold",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "It's not much but it adds up... I found 1.7 grams of 10k gold for $34 at an antique ship.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Sharing a piece from my private collection-Official Release 1 Tael & 10g Avalokitesvara Bodhisattva Pure Gold Ingot by Chunghwa Post and Central Mint.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "RSI"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "[Unboxing] Chunghwa Post x Central Mint - \"Fortune and Prosperity\" (Tudi Gong) Pure Gold Ingot.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Bought this watch for $20 on eBay.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Suggestions to sell gold bars",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "What is your story of the one that got away?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Sharing my personal collection: Chunghwa Post x Central Mint - The Large Dragon Stamp Pure Gold Ingot Series.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Does anyone know what the letter \"\u062d\"on this stamp symbolizes?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Doug Casey has been buying gold since 1970 and has never sold an ounce. Asked him if there's any price or policy that would cause him to sell.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Kim Thanh Gold (Vietnamese Gold)",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Gold Coins",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Gas station gold again?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "What\u2019s Your Exit Strategy for Physical Gold?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "ISO Advice: Antique watch chain marked 18ct on each link, testing as gold fill",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Should you own fractional gold for liquidity?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Taiwanese 1-qian (3.75g) Lucky Cat gold bar. Thought you guys might like the local design!",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "If I wanted to buy 1 oz total of gold right now, what would be the best balance of premium, size, and liquidity?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "250 gold dollars from Singapore, 1 oz pure gold, 999,9, proof, from the now distant year 1990.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Gold",
+    "title": "Noobie gold buyer",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  }
+]
