@@ -84,11 +84,16 @@ class Git:
 
     def run(self, *args: str, check: bool = True, env: dict[str, str] | None = None
             ) -> subprocess.CompletedProcess[str]:
-        full_env = None
+        # Scheduled adoption is noninteractive. A timed-out HTTPS fetch must
+        # also stop its remote helper, which otherwise outlives the writer lease.
+        from libs.ops.proctree import run as run_process
+
+        full_env = dict(os.environ)
+        full_env.setdefault("GIT_TERMINAL_PROMPT", "0")
+        full_env.setdefault("GCM_INTERACTIVE", "never")
         if env:
-            full_env = dict(os.environ)
             full_env.update(env)
-        r = subprocess.run([release._git_exe(), "-c", "core.quotepath=off", *args],
+        r = run_process([release._git_exe(), "-c", "core.quotepath=off", *args],
                            cwd=self.root, capture_output=True, text=True,
                            timeout=self.timeout, env=full_env)
         if check and r.returncode != 0:
@@ -236,7 +241,8 @@ class PromotionResult:
 
 def _fetch(git: Git, remote: str, branch: str, ref: str) -> str | None:
     """Fetch `branch` into the private `ref`; None when the remote has no such branch."""
-    r = git.run("fetch", "--no-tags", remote, f"+refs/heads/{branch}:{ref}", check=False)
+    r = git.run("fetch", "--no-auto-maintenance", "--no-tags", remote,
+                f"+refs/heads/{branch}:{ref}", check=False)
     if r.returncode != 0:
         msg = (r.stderr or r.stdout)
         if "couldn't find remote ref" in msg or "could not find remote ref" in msg:
@@ -434,7 +440,8 @@ def gate(root: Path, *, branch: str = LIVE_BRANCH, remote: str = "origin",
     ref: str | None = PRODUCTION_BRANCH if prod else None
     if prod is None:
         if fetch:
-            git.run("fetch", "--no-tags", remote, f"+refs/tags/{TAG_PREFIX}*:refs/tags/"
+            git.run("fetch", "--no-auto-maintenance", "--no-tags", remote,
+                    f"+refs/tags/{TAG_PREFIX}*:refs/tags/"
                     f"{TAG_PREFIX}*", check=False)
         newest = newest_release_tag(git.out("tag", "--list", f"{TAG_PREFIX}*").splitlines())
         if newest:

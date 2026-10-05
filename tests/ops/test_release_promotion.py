@@ -15,6 +15,7 @@ from types import ModuleType
 
 import pytest
 
+from libs.ops import proctree
 from libs.ops import release_promotion as rp
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,6 +57,22 @@ def _commit(repo: Path, files: dict[str, str], msg: str) -> str:
         _g(repo, "add", rel)
     _g(repo, "commit", "-q", "-m", msg)
     return _g(repo, "rev-parse", "HEAD")
+
+
+def test_git_runner_is_noninteractive_and_uses_process_tree_cleanup(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    called = {}
+
+    def fake(argv, **kwargs):
+        called.update(argv=argv, kwargs=kwargs)
+        return subprocess.CompletedProcess(argv, 0, "ok\n", "")
+
+    monkeypatch.setattr(proctree, "run", fake)
+    result = rp.Git(tmp_path).run("status", env={"ONE": "1"})
+    assert result.stdout == "ok\n"
+    assert called["kwargs"]["env"]["GIT_TERMINAL_PROMPT"] == "0"
+    assert called["kwargs"]["env"]["GCM_INTERACTIVE"] == "never"
+    assert called["kwargs"]["env"]["ONE"] == "1"
 
 
 @pytest.fixture
