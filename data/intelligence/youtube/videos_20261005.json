@@ -234,5 +234,19 @@
   "start_verified": false,
   "end_verified": false,
   "unresolved_reason": "ACCESS_LIMIT"
+ },
+ {
+  "channel_id": "UCzk-gkLLlb0s5BnJv9XQKeQ",
+  "channel": "IQ Capital TV ",
+  "video_id": "HbErjP5ovho",
+  "published": "2026-10-05T19:06:13Z",
+  "title": "How I Lost $300 During Live Trading Today",
+  "description": "How I Lost $300 During Live Trading Today",
+  "links": [],
+  "transcript": null,
+  "transcript_status": "UNAVAILABLE",
+  "start_verified": false,
+  "end_verified": false,
+  "unresolved_reason": "ACCESS_LIMIT"
  }
 ]
