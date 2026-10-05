@@ -1,0 +1,40 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-10-05T00:20:00+00:00",
+    "title": "Opening Remarks by Deputy Governor UCHIDA at the ECONDAT 2026 Fall Meeting (AI, Big Data, and Monetary Policy)",
+    "link": "http://www.boj.or.jp/en/about/press/koen_2026/ko261005a.htm",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  },
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-10-05T00:20:00+00:00",
+    "title": "8th Conference on Nontraditional Data, Machine Learning, and Natural Language Processing in Macroeconomics (ECONDAT 2026 Fall Meeting)",
+    "link": "http://www.boj.or.jp/en/research/conf/conf2610a.htm",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  }
+]
