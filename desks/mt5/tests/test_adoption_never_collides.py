@@ -89,6 +89,15 @@ def _write(repo: Path, rel: str, text: str) -> None:
 
 def _run_adopt(repo: Path, extra: list[str] | None = None) -> subprocess.CompletedProcess[str]:
     assert _POWERSHELL is not None
+    # The production adopter now runs both repository guards before recording
+    # its staged tree.  These deliberately tiny fixture repositories exercise
+    # adoption mechanics rather than either guard, so give them explicit
+    # successful guard executables instead of silently weakening the adopter
+    # when a guard is absent.
+    for guard in ("scripts/moneypath_precommit_guard.py",
+                  "scripts/check_protected_records.py"):
+        if not (repo / guard).exists():
+            _write(repo, guard, "raise SystemExit(0)\n")
     return subprocess.run(
         [_POWERSHELL, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
          "-File", str(ADOPT), "-RepoRoot", str(repo), "-Branch", "main", "-NoFetch",
