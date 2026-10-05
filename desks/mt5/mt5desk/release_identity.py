@@ -104,8 +104,6 @@ NON_CODE: frozenset[str] = frozenset({
     # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
     "desks/mt5/reports/LOCKBOX_RECERT.json",
     "desks/mt5/reports/REMINT_STATUS.json",
-    "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
-    "desks/mt5/reports/BOX_STATE_FLOW.json",
 })
 
 #: STATE DIRECTORIES, verbatim from libs/ops/release.STATE_PREFIXES (mirrored, not imported --
@@ -143,6 +141,8 @@ STATE_PREFIXES: tuple[str, ...] = (
 #: as state loses nothing. `test_hash_and_allowlist_mirror_the_seal` now pins EVERY list this
 #: module mirrors, and the classification itself, against libs/ops/release.
 STATE_FILES: frozenset[str] = frozenset({
+    "context/decision_journal.jsonl",
+    "docs/desk_lessons.jsonl",
     "desks/mt5/gateway_state.json", "desks/mt5/regime_state.json",
     "desks/mt5/sync_marker.json", "desks/mt5/portfolio_projection.json",
     "desks/mt5/hunt11.json", "desks/mt5/mech_battery.json", "desks/mt5/mech_split.json",

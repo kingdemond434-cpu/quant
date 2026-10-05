@@ -5,7 +5,7 @@ increase judging -- give it tons of headroom possible for maximum throughput").
 
 `desks/mt5/scripts/external_gauntlet.py` is sealed and may never be edited. Its `_worker_count()`
 already derives workers from measured cores and a per-worker memory budget, and it already honours
-`GAUNTLET_WORKERS` / `GAUNTLET_MEMORY_BUDGET_MB` / `GAUNTLET_PER_WORKER_MB` /
+`GAUNTLET_WORKERS` / `GAUNTLET_SHARDS` / `GAUNTLET_MEMORY_BUDGET_MB` / `GAUNTLET_PER_WORKER_MB` /
 `GAUNTLET_HEADROOM_CAP_MB` from the ENVIRONMENT. So throughput is raised from OUTSIDE the sealed
 file, by measuring the box and writing those variables where the gauntlet's launchers read them.
 
@@ -59,6 +59,7 @@ next `capacity.measured.workers`, which is how the raise is verified rather than
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -596,10 +597,16 @@ def plan(box: dict[str, Any], queue: dict[str, Any], costs: dict[str, float]) ->
         # every few seconds and runs its workers at IDLE priority; nothing is published for it.
         "warm_workers": "SELF_SIZED",
         "cadence_minutes": int(cadence),
-        "shards": 1,
-        "shards_why": ("the sealed file exposes no partition key -- `--only` is a filter, not a "
-                       "shard -- so throughput is raised by WORKERS and CADENCE, never by "
-                       "splitting a docket the judge cannot be told to split"),
+        # The sealed judge now exposes SHARD_PROTOCOL=2: one stable ownership hash per cell,
+        # a union-derived lockbox cut, fail-closed collection and one program-level merge. The
+        # dispatcher therefore uses the same measured core allocation as the build pool. A
+        # stood-down box remains serial so the live terminal keeps the machine.
+        "shards": 1 if stood_down else int(workers),
+        "shards_why": ("serial because live-terminal admission stood the plan down"
+                       if stood_down else
+                       "the judge's fail-closed SHARD_PROTOCOL=2 partitions cell-local work "
+                       "across the measured worker allocation and computes program-level gates "
+                       "once on the union"),
         "limiting_resource": limiting,
         "stood_down": stood_down,
         "why": why_down or (
@@ -640,8 +647,9 @@ def _sub_timeout() -> float:
     return min(SUBPROCESS_TIMEOUT_S, left)
 
 
-ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_MEMORY_BUDGET_MB", "GAUNTLET_HEADROOM_CAP_MB",
-            "GAUNTLET_PER_WORKER_MB", "GAUNTLET_FRESH_BUDGET_SEC")
+ENV_KEYS = ("GAUNTLET_WORKERS", "GAUNTLET_SHARDS", "GAUNTLET_MEMORY_BUDGET_MB",
+            "GAUNTLET_HEADROOM_CAP_MB", "GAUNTLET_PER_WORKER_MB",
+            "GAUNTLET_FRESH_BUDGET_SEC")
 
 #: Machine-scope variables this organ once published and now RETIRES. `apply_machine_env` deletes
 #: them so a stale value stops reaching the scheduled tasks (`WARM_WORKERS=1` pinned the warmer).
@@ -688,7 +696,8 @@ def task_time_limit_s(task: str = GAUNTLET_TASK) -> float | None:
     return total
 
 
-def fresh_budget_s(limit_s: float | None, current_budget_s: float | None = None) -> tuple[float | None, str]:
+def fresh_budget_s(limit_s: float | None,
+                   current_budget_s: float | None = None) -> tuple[float | None, str]:
     """The build seconds to publish, or None to leave the sealed default alone. ONE WAY: the
     figure is floored at the sealed default, so this can only ever give the judge MORE time."""
     if limit_s is None:
@@ -715,6 +724,7 @@ def env_for(decision: dict[str, Any]) -> dict[str, str]:
     """The environment the sealed gauntlet and the cache warmer read, as strings."""
     env = {
         "GAUNTLET_WORKERS": str(int(decision["workers"])),
+        "GAUNTLET_SHARDS": str(int(decision.get("shards", 1))),
         "GAUNTLET_MEMORY_BUDGET_MB": str(int(decision["memory_budget_mb"])),
         "GAUNTLET_HEADROOM_CAP_MB": str(int(decision["headroom_cap_mb"])),
         "GAUNTLET_PER_WORKER_MB": str(int(decision["per_worker_mb"])),
@@ -949,11 +959,9 @@ def run(write: bool = True, now: datetime | None = None, apply: bool = True) -> 
         stamp = previous_env.get("measured_on") or {}
         if (stamp.get("cores") == box.get("cores")
                 and stamp.get("total_phys_mb") == box.get("total_phys_mb")):
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 _current_budget = float((previous_env.get("env") or {}).get(
                     "GAUNTLET_FRESH_BUDGET_SEC"))
-            except (TypeError, ValueError):
-                pass
     _fresh, _fresh_why = fresh_budget_s(_limit, _current_budget)
     decision["fresh_budget_s"] = _fresh
     decision["fresh_budget_why"] = _fresh_why
