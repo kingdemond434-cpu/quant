@@ -130,6 +130,45 @@ NON_CODE: frozenset[str] = frozenset({
     "desks/mt5/data/order_intents.jsonl",
     "desks/mt5/data/live_ledger.jsonl",
     "desks/mt5/reports/attribution_chain.json",
+    # The markout the same leg writes beside the chain (2026-09-30): the VPS's desk state reads
+    # `matched_fills` from it, and without publication it read a 2026-09-08 stub forever.
+    "desks/mt5/reports/markout.json",
+    # The Tier S box attestation the same sync publishes (2026-09-30). Listed in $relPaths
+    # without being declared here, which test_release_seal names as refusing new risk.
+    # The Tier S measurement reports the same sync publishes (2026-09-30): null lab, the lag
+    # lane's two reports, the occupancy map and its culture pairs, the research/live identity.
+    "desks/mt5/reports/NULL_LAB.json",
+    "desks/mt5/reports/KNOWN_BY_DATE.json",
+    "desks/mt5/reports/PIT_LAG_CENSUS.json",
+    "desks/mt5/reports/UNKNOWN_SHARE_CENSUS.json",
+    "desks/mt5/reports/DSR_INPUTS.json",
+    "desks/mt5/reports/OCCUPANCY_MAP.json",
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json",
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json",
+    # The rest of the Tier S promotion door's evidence, on the same sync (2026-09-30).
+    "desks/mt5/data/tier_s/door_verdicts.json",
+    "desks/mt5/data/tier_s/PROMOTION_FREEZE.json",
+    "desks/mt5/data/tier_s/RELEASE_STOP.json",
+    "desks/mt5/reports/tier_s/ONLINE_FDR_ROWS.json",
+    "desks/mt5/reports/REPLICATION.json",
+    # The lockbox v4 re-certification ledger and the re-mint status (2026-09-30).
+    "desks/mt5/reports/LOCKBOX_RECERT.json",
+    "desks/mt5/reports/REMINT_STATUS.json",
+    # The placement-interlock fence's verdict (scripts/check_placement_interlock.py), published
+    # by the same sync so a halt is readable off the box. An output, never an input.
+    "desks/mt5/data/placement_interlock.json",
+    # The gate verdict digest and the state-flow meter (2026-09-30), written by the hourly
+    # publish_state leg and published on the same wire. Reports about the code, never inputs to it.
+    "desks/mt5/reports/GATE_VERDICT_DIGEST.json",
+    "desks/mt5/reports/BOX_STATE_FLOW.json",
+    # The freshness fence's report and the desk health report (2026-09-30), written by the hourly
+    # `box_state_freshness` and `desk_health` legs and published on the same wire.
+    "desks/mt5/reports/BOX_STATE_FRESHNESS.json",
+    "desks/mt5/reports/DESK_HEALTH.json",
+    # The Tier S box attestation and live door, published since 2026-09-30 and never declared
+    # here (test_every_path_the_box_publishes_is_declared_non_code was red on the live branch).
+    "desks/mt5/data/tier_s/box_evidence.json",
+    "desks/mt5/data/tier_s/live_door.json",
 })
 
 SEAL_RULE = ("a running SHA is accepted iff it equals code_sha, or `git diff --name-only "
@@ -349,6 +388,9 @@ def _describe(root: Path, commit: str | None) -> dict[str, Any]:
         "dependency_hash": _dependency_hash(root, commit),
         "seal_rule": SEAL_RULE, "non_code": sorted(NON_CODE),
     }
+    # The signature covers `immutable_hash` by name (release_signing.SIGNED_FIELDS); the record
+    # only ever carried it nested, so every signature would have pinned "" for the judge core.
+    doc["immutable_hash"] = (doc["immutable_manifest"] or {}).get("sha256_16")
     # The stamped id keeps its 2026-09-04 formula so an unchanged tree keeps its release_id.
     doc["release_id"] = hashlib.sha256(json.dumps(
         {k: doc[k] for k in ("live_sha", "config_hash", "survivor_registry_hash",
@@ -399,7 +441,7 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
     head = git_head(r)
     if head == "unknown":
         raise RuntimeError("cannot seal: git HEAD is unknown here (no git, or not a repository)")
-    dirty_code = dirty_paths(r, code_only=True)
+    dirty_code = seal_blocking_paths(r)
     if dirty_code and not allow_dirty:
         raise RuntimeError(f"cannot seal a dirty tree ({len(dirty_code)} tracked code path(s) "
                            f"differ from HEAD: {dirty_code[:5]}); commit them or pass allow_dirty")
@@ -416,9 +458,91 @@ def seal(*, root: Path | None = None, tested: bool = False, by: str | None = Non
                tested_sha=head if tested else None, worktree_dirty=dirty_code,
                worktree_dirty_scope="release_code_paths",
                previous_code_sha=prev_sha, previous_release_id=prev_id)
+    doc = _sign(doc, r)
     if write:
         _write(doc, root)
     return doc
+
+
+# ------------------------------------------------------------------------------------ signing
+def _sign(doc: dict[str, Any], root: Path) -> dict[str, Any]:
+    """Stamp the record with this box's release key, or record plainly why it is unsigned.
+
+    MEASURED 2026-09-30: every RELEASE.json the desk ever wrote was UNSIGNED, because `seal()`
+    never called `release_signing` -- the audit's "unsigned release" flag was true by
+    construction, not by accident. A machine without the key (CI) still seals, unsigned, with
+    the reason written into the record; only a box that was given the key signs."""
+    from libs.ops import release_signing
+    out, why = release_signing.stamp(doc, root)
+    if release_signing.SIG_FIELD not in out:
+        out["signature_note"] = why
+    else:
+        out.pop("signature_note", None)
+    return out
+
+
+def ensure_signed(*, root: Path | None = None) -> dict[str, Any]:
+    """Sign the release already on disk when it is unsigned or its signature does not verify --
+    but only a release this box is demonstrably running. Returns what it did and why.
+
+    WHY THIS EXISTS. `seal()` signs only when it runs, and on the box it runs only when HEAD is
+    NOT already the sealed code. A box whose release was sealed before it held a key -- every box,
+    on 2026-09-30 -- takes the "already sealed" exit forever and its record stays unsigned until
+    the next code change. This closes that gap without re-sealing.
+
+    WHAT IT WILL SIGN, and nothing looser. The signature attests (code_sha, money_path_hash,
+    immutable_hash). Signing a record is only honest when all three are what this box runs:
+      * HEAD is accepted by `accepts()` against the record (the sealed commit, or it plus
+        seal/state commits only),
+      * the money path ON DISK hashes to the record's `money_path_hash`,
+      * the judge manifest ON DISK hashes to the record's `immutable_hash`.
+    Any other case is refused with the reason: a signature over code the box is not running is
+    worse than none, because it is believed.
+
+    NEVER COMMITS, NEVER RAISES, NEVER BLOCKS. It rewrites RELEASE.json in the working tree (a
+    NON_CODE path) and returns; every failure is a reason in the result, not an exception, so a
+    caller on the release path can log it and carry on.
+    """
+    try:
+        from libs.ops import release_signing
+        r = _root(root)
+        rec = load(root)
+        if rec is None:
+            return {"signed": False, "state": "ABSENT", "why": "no RELEASE.json"}
+        ok, why = release_signing.verify(rec, r)
+        if ok:
+            return {"signed": False, "state": "VALID", "why": why}
+        if release_signing.load_key(r) is None:
+            return {"signed": False, "state": "NO_KEY", "why": why}
+        head = git_head(r)
+        ok_sha, why_sha, _code = accepts(head, rec, root=root)
+        if not ok_sha:
+            return {"signed": False, "state": "REFUSED", "why": f"HEAD not accepted: {why_sha}"}
+        money_now = hash_paths(MONEY_PATH, r, None)
+        if rec.get("money_path_hash") != money_now:
+            return {"signed": False, "state": "REFUSED",
+                    "why": (f"money path on disk {money_now} differs from the record "
+                            f"{rec.get('money_path_hash')}")}
+        # Records sealed before 2026-09-30 carry the judge digest only nested; the top-level
+        # field is what the signature covers, so it is filled in from the nested one -- and then
+        # held to the disk exactly like a record that always had it.
+        imm_rec = rec.get("immutable_hash") or (rec.get("immutable_manifest") or {}).get(
+            "sha256_16")
+        imm_now = (_immutable_manifest(r, None) or {}).get("sha256_16")
+        if not imm_rec or imm_rec != imm_now:
+            return {"signed": False, "state": "REFUSED",
+                    "why": f"judge manifest on disk {imm_now} differs from the record {imm_rec}"}
+        doc = dict(rec, immutable_hash=imm_rec)
+        doc = _sign(doc, r)
+        if release_signing.SIG_FIELD not in doc:
+            return {"signed": False, "state": "NO_KEY", "why": doc.get("signature_note")}
+        doc["signed_utc"] = datetime.now(tz=UTC).isoformat()
+        doc["signed_via"] = "ensure_signed"
+        _write(doc, root)
+        return {"signed": True, "state": "SIGNED",
+                "why": f"signed release {doc.get('release_id')} ({why}; {why_sha})"}
+    except Exception as exc:  # never block the release path
+        return {"signed": False, "state": "ERROR", "why": f"{type(exc).__name__}: {exc}"}
 
 
 def load(root: Path | None = None) -> dict[str, Any] | None:
@@ -530,6 +654,47 @@ def is_state_path(rel: str) -> bool:
     return p in STATE_FILES or any(p.startswith(prefix) for prefix in STATE_PREFIXES)
 
 
+#: REGENERATED BUILD OUTPUT -- neither code to protect nor state to carry, a third category.
+#:
+#: IT WAS FIXED ONCE, IN THE WRONG FILE (measured on the box 2026-09-24, recovered box commit
+#: fe09b89b, ported 2026-09-30). `dist/` was added to a PRIVATE list inside
+#: `Adopt-And-Seal.ps1` and not here, so the script's pre-check passed and `seal()` refused on
+#: the next line: the same halt one stage later, `seal-failed` instead of `dirty-code-path`.
+#: The seal's own dirty check has since been scoped to RELEASE_CODE_PATHS (which `dist/` is not
+#: under), so this list no longer changes what `seal()` refuses; it exists so that the ONE
+#: classification below, `accepts()` and the gateway's mirror in `mt5desk/release_identity.py`
+#: give the same answer for a build artifact -- a mirror that can drift is not a mirror.
+BUILD_PREFIXES: tuple[str, ...] = ("dist/",)
+
+
+def is_build_artifact(rel: str) -> bool:
+    """Regenerated build output: not code to protect, not state to carry."""
+    p = str(rel).replace("\\", "/").lstrip("./")
+    return any(p.startswith(prefix) for prefix in BUILD_PREFIXES)
+
+
+def seal_blocking_paths(root: Path | None = None, *,
+                        dirty: list[str] | None = None) -> list[str]:
+    """THE ONE ANSWER TO "what stops a seal": tracked paths under the release code roots that
+    differ from HEAD and are neither desk state nor regenerated build output.
+
+    WHY ONE FUNCTION (measured on the trading box 2026-09-24). Three copies of this
+    classification were live at once -- `STATE_PREFIXES`/`STATE_FILES` here, a private list
+    inside `Adopt-And-Seal.ps1`, and a third in `mt5desk/release_identity.py` -- and a seal
+    needed all three to agree. They did not, every disagreeing path was rewritten by an organ on
+    a clock, so every disagreement was PERMANENT: the box refused every seal for the rest of that
+    day and the gateway's release interlock refused every placement from 10:00Z on.
+
+    THIS DOES NOT WIDEN WHAT THE SEAL PROTECTS. It starts from today's scoped reading
+    (`dirty_paths(code_only=True)`, a diff of RELEASE_CODE_PATHS only) and sets aside nothing
+    but paths an organ regenerates; a real code edit blocks the seal exactly as before. `dirty`
+    lets a caller that already paid for the reading reuse it, so the rule cannot drift between
+    two readings taken in one pass.
+    """
+    paths = dirty_paths(root, code_only=True) if dirty is None else dirty
+    return [p for p in paths if not is_state_path(p) and not is_build_artifact(p)]
+
+
 def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None = None
             ) -> tuple[bool, str, list[str]]:
     """Is `running_sha` the sealed code? (ok, why, the code paths that say otherwise).
@@ -551,7 +716,8 @@ def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None =
                        f"(git unavailable, or the sealed commit is not in this clone)"), []
     changed = sorted({ln.strip() for ln in out.splitlines() if ln.strip()})
     allow = set(rec.get("non_code") or NON_CODE)
-    code = [p for p in changed if p not in allow and not is_state_path(p)]
+    code = [p for p in changed
+            if p not in allow and not is_state_path(p) and not is_build_artifact(p)]
     if not code:
         n_state = len(changed)
         return True, (f"running {running_sha[:12]} differs from sealed {code_sha[:12]} only by "
@@ -559,6 +725,10 @@ def accepts(running_sha: str | None, rec: dict[str, Any], *, root: Path | None =
                       + (" ..." if n_state > 6 else "")), []
     return False, (f"running {running_sha[:12]} carries {len(code)} path(s) the sealed release "
                    f"{code_sha[:12]} never named: {code[:6]}"), code
+
+
+#: Record keys `verify()` REPORTS when they move but never fails on: the survivor canon digests.
+STATE_MOVED_KEYS: tuple[str, ...] = ("survivor_registry_hash", "canon_sha256")
 
 
 def verify(root: Path | None = None) -> dict[str, Any]:
@@ -577,6 +747,12 @@ def verify(root: Path | None = None) -> dict[str, Any]:
     keys += [k for k in ("canon_sha256", "dependency_hash") if k in rec]
     diffs: dict[str, tuple[Any, Any]] = {k: (rec.get(k), now[k]) for k in keys
                                          if rec.get(k) != now[k]}
+    # THE SURVIVOR CANON MOVES ON THE RESEARCH CLOCK, ON THIS BOX, BY DESIGN (2026-09-30). The
+    # promoter rewrites it between seals, so counting it as drift failed `verify()` within the
+    # hour of every seal, while the gateway's own fence (mt5desk/release_identity.py) already
+    # reports canon movement and does not refuse on it. Reported the same way here: moved state,
+    # not a failed release.
+    state_moved = {k: diffs.pop(k) for k in STATE_MOVED_KEYS if k in diffs}
     imm_rec = (rec.get("immutable_manifest") or {}).get("sha256_16")
     imm_now = (now.get("immutable_manifest") or {}).get("sha256_16")
     if "immutable_manifest" in rec and imm_rec != imm_now:
@@ -585,6 +761,8 @@ def verify(root: Path | None = None) -> dict[str, Any]:
     if not ok_sha:
         diffs["live_sha"] = (rec.get("code_sha") or rec.get("live_sha"), now["live_sha"])
     return {"ok": not diffs, "release_id": rec.get("release_id"), "diffs": diffs,
-            "identity": why_sha, "sealed": bool(rec.get("sealed")),
+            "state_moved": state_moved, "identity": why_sha, "sealed": bool(rec.get("sealed")),
             "why": ("tree matches the written release" if not diffs else
-                    f"{len(diffs)} component(s) differ from the written release")}
+                    f"{len(diffs)} component(s) differ from the written release")
+                   + (f"; {len(state_moved)} state digest(s) moved (reported only)"
+                      if state_moved else "")}

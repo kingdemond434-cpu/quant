@@ -18,7 +18,9 @@ import json
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
+import pandas as pd
 import pytest
 
 _DESK = Path(__file__).resolve().parents[1]
@@ -100,11 +102,27 @@ def test_the_deferral_ledger_publishes_ages(tmp_path: Path) -> None:
     assert "NOTHING IS DROPPED" in census["rule"]
     doc = json.loads(W.DEFERRALS.read_text("utf-8"))
     assert doc["rows"]["key0"]["n_failures"] == 2
+    assert census["top_build_failures"] == {"failed": 1}
 
 
 def test_an_empty_ledger_defers_nothing(tmp_path: Path) -> None:
     send, held, rows = W.split_deferred(_cells(6), {}, time.time())
     assert len(send) == 6 and held == [] and rows == {}
+
+
+def test_failed_warm_build_carries_the_judges_exact_refusal(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    frame = pd.DataFrame({"close": [1.0]}, index=pd.date_range("2026-10-01", periods=1, tz="UTC"))
+    judge = SimpleNamespace(
+        CACHE_DIR=tmp_path, LAST_BUILD_FAILURE="factor basket incomplete: no M5 bars for UST10Y",
+        _bars_for=lambda _sym, _tf: frame,
+        build_cell=lambda *_args: None,
+    )
+    monkeypatch.setitem(sys.modules, "external_gauntlet", judge)
+    key, outcome = W._warm_one({"ckey": "candidate", "sym": "EURUSD", "tf": "M5",
+                                "family": "cross_asset_residual", "params": {}})
+    assert key == "candidate"
+    assert outcome == "failed|factor basket incomplete: no M5 bars for UST10Y"
 
 
 def test_the_row_level_timeframe_is_folded_into_the_cell_identity() -> None:
@@ -135,10 +153,36 @@ def test_the_row_level_timeframe_is_folded_into_the_cell_identity() -> None:
     assert sorted(s["tf"] for s in out) == ["H1", "M15"]
 
 
-def test_workers_come_from_the_judges_own_count(monkeypatch: pytest.MonkeyPatch) -> None:
-    """ONE BUILDER for the worker arithmetic. The override still wins; an unreadable judge
-    falls back to the historic figure rather than to unlimited."""
-    monkeypatch.setenv("WARM_WORKERS", "7")
-    assert W._workers() == 7
-    monkeypatch.delenv("WARM_WORKERS")
-    assert W._workers() >= 1
+def test_workers_are_measured_and_warm_workers_is_only_a_floor(
+        monkeypatch: pytest.MonkeyPatch) -> None:
+    """2026-09-30: the pool is sized from psutil-measured free memory (never above cores - 1) and
+    the in-flight count from measured idle cores. `WARM_WORKERS` -- which `judging_throughput`
+    used to publish machine-wide as ONE -- can only RAISE it; `WARM_WORKERS_MAX` caps it."""
+    monkeypatch.delenv("WARM_WORKERS", raising=False)
+    monkeypatch.delenv("WARM_WORKERS_MAX", raising=False)
+    base = W._workers()
+    assert base >= W.HISTORIC_FLOOR
+    monkeypatch.setenv("WARM_WORKERS", "1")
+    assert W._workers() == base, "a stale ONE can no longer pin the warmer"
+    monkeypatch.setenv("WARM_WORKERS", str(base + 5))
+    assert W._workers() == base + 5
+    monkeypatch.setenv("WARM_WORKERS_MAX", "2")
+    assert W._workers() == 2
+
+
+def test_retarget_follows_idle_cores_inside_floor_and_pool() -> None:
+    assert W.retarget(running=4, pool=16, idle=10.0) == 13
+    assert W.retarget(running=4, pool=16, idle=0.0) == 3
+    assert W.retarget(running=1, pool=16, idle=0.0) == W.HISTORIC_FLOOR
+    assert W.retarget(running=4, pool=6, idle=12.0) == 6
+    assert W.retarget(running=5, pool=16, idle=None) == 5, "unmeasured idle holds, never jumps"
+
+
+def test_batches_partition_the_order_by_symbol_and_chart() -> None:
+    specs = [{"sym": s, "tf": "H1", "i": i} for i, s in enumerate("ABABABCC")]
+    out = W.batches(specs, size=2, window=256)
+    flat = [sp["i"] for b in out for sp in b]
+    assert sorted(flat) == list(range(8)), "every cell in exactly one batch"
+    assert all(len({(sp["sym"], sp["tf"]) for sp in b}) == 1 for b in out)
+    assert [len(b) for b in out] == [2, 1, 2, 1, 2]
+    assert W.batches(specs, size=8, window=2)[0] == [specs[0]], "the window bounds any move"

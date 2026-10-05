@@ -49,7 +49,11 @@
 #>
 param(
     [string] $RepoRoot,
-    [string] $Branch = "claude/llm-auto-upgrade-verify-gcjac3"
+    [string] $Branch = "claude/llm-auto-upgrade-verify-gcjac3",
+    # Adopt the branch tip even when no green release covers it -- the escape hatch for the day
+    # CI is down and a fix must land. The file desks\mt5\data\ADOPT_UNRELEASED and the variable
+    # QUANT_ADOPT_UNRELEASED=1 do the same for the scheduled task. Each is logged by name.
+    [switch] $AllowUnreleased
 )
 
 # NATIVE STDERR IS NOT AN ERROR. git reports a successful fetch on stderr; under `Stop` that
@@ -146,6 +150,7 @@ function Write-Heartbeat([hashtable] $fields) {
             pid         = $PID
             host        = $env:COMPUTERNAME
         }
+        if ($script:ReleaseGate) { $base["release_gate"] = $script:ReleaseGate }
         foreach ($k in $fields.Keys) { $base[$k] = $fields[$k] }
         ($base | ConvertTo-Json -Depth 4) | Set-Content -Path $script:Heartbeat -Encoding utf8 -ErrorAction Stop
     } catch { }
@@ -242,6 +247,61 @@ if (-not $gotLock) {
 }
 Write-GitWriterWitness -Script "Adopt-And-Seal.ps1" -Name $mutexHandle.Name
 
+# ------------------------------------------------ 0b. THE RELEASE GATE: ONLY GREEN CODE LANDS
+# 2026-09-30. Until today this box adopted the branch TIP, so a commit CI had not finished
+# judging -- or had judged red (7379cbf7 edited the sealed gauntlet and the law gate went red
+# while the tip sat there for the next hourly adoption) -- became live code within the hour.
+# `release_promotion.py gate` fetches the tip and the `production` pointer that ci.yml's promote
+# job fast-forwards after BOTH gates are green, and decides:
+#
+#   ADOPT_TIP      the tip is a green release plus seal/state commits (the usual case: the box's
+#                  own quarter-hourly pushes sit on top of the release) -> adopt the tip
+#   ADOPT_RELEASE  the tip carries code no green run has released -> adopt the release instead
+#   HOLD           ... and this box already runs that release -> nothing to adopt; wait for CI
+#   HOLD           no verifiable tested release exists -> keep the running code
+#   OVERRIDE_TIP   -AllowUnreleased / ADOPT_UNRELEASED / QUANT_ADOPT_UNRELEASED -> the tip
+#
+# FAIL CLOSED: a missing, failed, malformed or unrecognised gate never becomes permission
+# to adopt an untested branch tip. Retry through the scheduled path after the defect clears.
+$script:ReleaseGate = $null
+$gateTarget = $null
+$gateScript = Join-Path $RepoRoot "scripts\release_promotion.py"
+if (Test-Path $gateScript) {
+    $gateArgs = @($gateScript, "gate", "--branch", $Branch, "--root", $RepoRoot)
+    if ($AllowUnreleased) { $gateArgs += "--allow-unreleased" }
+    $gateOut = @(& $py @pyArgs @gateArgs 2>&1 | ForEach-Object { "$_" })
+    $gateExit = $LASTEXITCODE
+    $gate = $null
+    $gateJson = @($gateOut | Where-Object { $_ -match '^\s*\{' }) | Select-Object -Last 1
+    if ($gateJson) { try { $gate = $gateJson | ConvertFrom-Json } catch { $gate = $null } }
+    if ($gateExit -eq 0 -and $gate -and $gate.decision) {
+        $script:ReleaseGate = @{ decision = [string]$gate.decision; target = [string]$gate.target
+                                 reason = [string]$gate.reason; tip = [string]$gate.tip
+                                 release_ref = [string]$gate.release_ref }
+        Log ("release gate: {0} -- {1}" -f $gate.decision, $gate.reason)
+        if ($gate.decision -eq "HOLD") {
+            $n = @($gate.unreleased_code).Count
+            Log ("holding: {0} unreleased code path(s) on the tip, first: {1}" -f $n,
+                 ((@($gate.unreleased_code) | Select-Object -First 6) -join ', '))
+            Done 0 "held-awaiting-release"
+        }
+        if ($gate.decision -notin @("ADOPT_TIP", "ADOPT_RELEASE", "OVERRIDE_TIP") -or -not $gate.target) {
+            Log "release gate returned no recognised adoption authority; keeping the running release"
+            Done 8 "release-gate-invalid"
+        }
+        $gateTarget = [string]$gate.target
+    } else {
+        $why = if ($gate -and $gate.reason) { [string]$gate.reason } else { ($gateOut | Select-Object -Last 3) -join ' | ' }
+        $script:ReleaseGate = @{ decision = "ERROR"; reason = $why }
+        Log ("release gate could not decide (exit {0}): {1} -- keeping the running release" -f $gateExit, $why)
+        Done 8 "release-gate-error"
+    }
+} else {
+    $script:ReleaseGate = @{ decision = "ABSENT"; reason = "scripts\release_promotion.py not in this tree" }
+    Log "release gate absent in this tree (scripts\release_promotion.py); keeping the running release"
+    Done 8 "release-gate-absent"
+}
+
 # ---------------------------------------------------------------- 1. adopt the branch's tree
 # NEXT TO THIS SCRIPT FIRST, then the repository's copy. The two ship together and the mutex
 # helper is already dotted from $PSScriptRoot, so resolving one of the three from $RepoRoot and
@@ -268,15 +328,27 @@ try {
     Set-Content -Path $adoptConsole -Encoding utf8 -ErrorAction Stop `
         -Value ("{0} Adopt-Release start branch={1}" -f (Get-Date).ToUniversalTime().ToString('o'), $Branch)
 } catch { $adoptConsole = $null }
+# The verified gate choice is mandatory; it already fetched the immutable target.
+$adoptArgs = @("-RepoRoot", $RepoRoot, "-Branch", $Branch)
+$adoptArgs += @("-Target", $gateTarget, "-NoFetch")
 if ($adoptConsole) {
     $adoptOut = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $adoptScript `
-        -RepoRoot $RepoRoot -Branch $Branch 2>&1 |
+        @adoptArgs 2>&1 |
         ForEach-Object { "$_" } | Tee-Object -FilePath $adoptConsole -Append)
 } else {
     $adoptOut = @(& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $adoptScript `
-        -RepoRoot $RepoRoot -Branch $Branch 2>&1 | ForEach-Object { "$_" })
+        @adoptArgs 2>&1 | ForEach-Object { "$_" })
 }
 $adoptExit = $LASTEXITCODE
+# EXIT 7 IS A REFUSAL, NOT A PARTIAL ADOPTION: Adopt-Release found the fetched target's judge
+# unsealed and wrote nothing. The running release and its gateway stay as they are.
+if ($adoptExit -eq 7) {
+    foreach ($line in @($adoptOut | Where-Object { $_ -match 'target seal|REFUSING target|changed since signing|not in the signed|unreadable' } | Select-Object -First 16)) {
+        Log ("    " + $line.Trim())
+    }
+    Log "target judge is not sealed; nothing adopted, current release kept"
+    Done 7 "target-unsealed"
+}
 if ($adoptExit -ne 0) {
     Log "Adopt-Release exited $adoptExit -- partial adoption; NOT sealing a tree that only half-matches the branch"
     # THE PATHS, IN THIS LOG, NOW. `desks/mt5/reports/ADOPTION_STATE.json` carries the full list
@@ -318,6 +390,31 @@ foreach ($ensure in @(
     }
 }
 
+# ------------------------------------------------------------ 2a. the box's release signing key
+# EVERY RELEASE.json THIS BOX EVER WROTE WAS UNSIGNED (measured 2026-09-30): `release.seal` signs
+# only when data/secrets/release_signing.key exists, and nothing ever created it. `ensure_key`
+# creates it ONCE and never overwrites; only its file name is logged, never its bytes. The key is
+# gitignored and never leaves this box. Best-effort: a failure here is logged, the seal goes on
+# (unsigned, with the reason written into the record).
+$keyOut = @(& $py @pyArgs -c "from libs.ops import release_signing as rs; created, msg = rs.ensure_key(); print(msg)" 2>&1 |
+            ForEach-Object { "$_" })
+Log ("signing key: exit {0}: {1}" -f $LASTEXITCODE, ($keyOut -join ' | '))
+
+# SIGN THE RELEASE THE BOX IS ALREADY RUNNING. The two "nothing to seal" exits below are the ones
+# every hour takes, so a record sealed before the key existed would stay unsigned until the next
+# code change. `release.ensure_signed` signs it in place ONLY when HEAD is accepted and the money
+# path and judge core on disk match the record; it never commits and never raises, and nothing
+# here lets its answer change the exit code.
+function Ensure-Signed {
+    try {
+        $out = @(& $py @pyArgs -c "from libs.ops import release; d = release.ensure_signed(); print(d.get('state'), '-', d.get('why'))" 2>&1 |
+                 ForEach-Object { "$_" })
+        Log ("ensure-signed: {0}" -f ($out -join ' | '))
+    } catch {
+        Log ("ensure-signed: failed to run: {0}" -f $_.Exception.Message)
+    }
+}
+
 # ------------------------------------------------------ 2. seal, only if HEAD is not sealed
 $head = (git rev-parse HEAD 2>$null | Out-String).Trim()
 if (-not $head) { Log "cannot read HEAD"; Done 2 "head-unreadable" }
@@ -327,6 +424,7 @@ if (Test-Path $release) {
 }
 if ($sealed -eq $head) {
     Log "HEAD $($head.Substring(0,12)) is already the sealed code; nothing to do"
+    Ensure-Signed
     Done 0 "already-sealed"
 }
 # A SEAL COMMIT OR A STATE-SYNC COMMIT ON TOP OF THE SEALED CODE IS THE SAME RELEASE. After the
@@ -338,6 +436,7 @@ if ($sealed) {
     $acc = & $py @pyArgs -c "import sys; from libs.ops import release; ok, why, _ = release.accepts(sys.argv[1], release.load() or {}); print('OK' if ok else 'NO'); print(why)" $head 2>$null
     if ("$acc" -match '^OK') {
         Log "HEAD $($head.Substring(0,12)) is the sealed release $($sealed.Substring(0,12)) plus seal/state commits only; nothing to seal"
+        Ensure-Signed
         Done 0 "accepts-nothing-to-seal"
     }
 }

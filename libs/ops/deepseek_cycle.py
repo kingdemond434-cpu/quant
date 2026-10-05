@@ -364,8 +364,15 @@ def cold_context(state: dict[str, Any]) -> dict[str, Any]:
             removed.append(k)
             continue
         kept[k] = v
+    # TIER S LAYER 4: BLIND TO THE HELD-OUT ANSWER. Survivor metrics are facts and stay; the
+    # desk's own held-out / lockbox / forward / gate OUTCOMES are the answer to the question this
+    # cold phase is asked, and a generator that read them is not proposing blind. They are
+    # stripped at any depth and named, and run_role counts them in the runtime blinding ledger.
+    from libs.tiers.blinding import strip_outcomes
+    kept, blinded = strip_outcomes(kept)
     return {
         "cold_context": kept,
+        "blinded_fields": blinded,
         "removed_keys": sorted(removed),
         "cold_context_hash": _hash(kept),
         "law": "facts in, interpretations out. Agreement is not independent evidence if the "
@@ -653,6 +660,14 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
         return {"status": "BUDGET_EXHAUSTED", "role": role_name, "why": budget["why"]}
 
     cold = cold_context(state or {})
+    if cold.get("blinded_fields"):
+        from libs.tiers import blinding
+        blinding.record(base, {"at": _now(), "stage": "context", "rows": 1, "violations": 1,
+                               "fields_stripped": len(cold["blinded_fields"]),
+                               "seats": {"deepseek": {
+                                   "rows": 1, "rows_with_outcomes": 1,
+                                   "fields_stripped": len(cold["blinded_fields"]),
+                                   "keys": {}}}})
     system, user = _build_prompt(role_name, role_brief, cold)
 
     ls_seat = llm_seat.Seat(name=f"deepseek_{'deep' if deep else 'bulk'}",
@@ -747,6 +762,17 @@ def _donate(rows: list[dict[str, Any]], role_name: str, *, root: Path | None = N
     out = base / DONATE_DIR
     out.mkdir(parents=True, exist_ok=True)
     path = out / f"discoveries_{_now().replace(':', '').replace('-', '')[:15]}.json"
+    from libs.data.pit import stamp_or_refuse
+
+    discoveries, refused = stamp_or_refuse([{
+        "source": "deepseek", "title": r["title"], "symbols": r.get("symbols") or [],
+        "family": r.get("family"), "mechanism": r.get("mechanism"),
+        "testable_claim": r.get("testable_claim"),
+        "mechanism_tags": [t for t in [r.get("family")] if t], "kind": "hypothesis",
+        "url": f"deepseek://{role_name}/{r['ts']}",
+    } for r in rows], "deepseek")
+    if refused:
+        raise ValueError(f"DeepSeek refused {len(refused)} unstamped discoveries")
     path.write_text(json.dumps({
         "source": "deepseek",
         "role": role_name,
@@ -754,17 +780,7 @@ def _donate(rows: list[dict[str, Any]], role_name: str, *, root: Path | None = N
         # The compiler reads `discoveries`; each row carries what `compile_row` can actually use.
         # A row without symbols is not dropped -- it becomes a deepening task like any other
         # miner's, and is worked by research/deepening_worker.py rather than lost.
-        "discoveries": [{
-            "source": "deepseek",
-            "title": r["title"],
-            "symbols": r.get("symbols") or [],
-            "family": r.get("family"),
-            "mechanism": r.get("mechanism"),
-            "testable_claim": r.get("testable_claim"),
-            "mechanism_tags": [t for t in [r.get("family")] if t],
-            "kind": "hypothesis",
-            "url": f"deepseek://{role_name}/{r['ts']}",
-        } for r in rows],
+        "discoveries": discoveries,
     }, indent=1, default=str), encoding="utf-8")
     return path
 

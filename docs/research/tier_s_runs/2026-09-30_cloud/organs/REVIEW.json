@@ -1,0 +1,62 @@
+{
+ "n_candidates": 58,
+ "verdicts": {
+  "CLEAR": 0,
+  "CHALLENGED": 34,
+  "FAILED": 24
+ },
+ "challenges": {
+  "OPEN": 208,
+  "PASSED": 0,
+  "FAILED": 61
+ },
+ "resolved_share": 0.22676579925650558,
+ "shared_reward": {
+  "status": "MEASURED",
+  "n_flags": 0,
+  "n_self": 0,
+  "unattributed": 0,
+  "per_evaluator": {
+   "review_panel": {
+    "judged": 58,
+    "self": 0,
+    "shared": 0
+   },
+   "red_queen": {
+    "judged": 58,
+    "self": 0,
+    "shared": 0
+   },
+   "universal_gate": {
+    "judged": 58,
+    "self": 0,
+    "shared": 0
+   }
+  },
+  "reward_artifacts": [
+   "leg_prices",
+   "researcher_prices"
+  ],
+  "flags": [],
+  "static": {
+   "roles": {
+    "evaluator_reward": "An evaluator cannot read the reward artifact that pays the thing it judges."
+   },
+   "organs_checked": {
+    "evaluator_reward": 9
+   },
+   "violations": [],
+   "n_violations": 0
+  }
+ },
+ "metric": {
+  "resolved_share": 0.22676579925650558,
+  "challenged": 34,
+  "failed": 24,
+  "shared_reward_flags": 0,
+  "self_judged": 0,
+  "evaluator_reward_reads": 0
+ },
+ "generated_utc": "2026-09-30T11:47:29.089020+00:00",
+ "seconds": 3.708
+}

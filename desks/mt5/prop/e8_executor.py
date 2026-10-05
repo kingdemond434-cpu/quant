@@ -394,6 +394,29 @@ def twin_fade(symbol: str, family: str, *, now: datetime | None = None) -> tuple
     return 1.0, f"twin fade 1.00: MT5 twins n={n} wins={wins} exp={exp:+.2f}R"
 
 
+def _quote_ccy_from_symbol(symbol: str) -> str:
+    """The quote currency of a plain six-letter FX pair (EURCHF -> CHF); '' for anything else."""
+    core = "".join(ch for ch in str(symbol).upper() if ch.isalpha())
+    return core[3:6] if len(core) == 6 else ""
+
+
+def _usd_per_unit(venue: Any, ccy: str) -> float | None:
+    """USD value of one unit of `ccy` from the venue's own mid, or None when it cannot be read.
+
+    Tries CCYUSD (multiply) then USDCCY (invert). A rate the venue will not quote is never
+    guessed: None sends the caller to its under-sized fallback.
+    """
+    for pair, invert in ((f"{ccy}USD", False), (f"USD{ccy}", True)):
+        try:
+            bid, ask = venue.quote(pair)
+        except Exception:
+            continue
+        mid = (float(bid) + float(ask)) / 2.0
+        if mid > 0:
+            return 1.0 / mid if invert else mid
+    return None
+
+
 def lot_for_risk(venue: Any, symbol: str, stop_dist: float, risk_usd: float) -> tuple[float, str]:
     """Lot such that a stop-out costs about `risk_usd`, floored at the venue minimum.
 
@@ -419,17 +442,25 @@ def lot_for_risk(venue: Any, symbol: str, stop_dist: float, risk_usd: float) -> 
     if contract is None:
         return float(vmin), (f"venue states no contract size; sent at the venue minimum {vmin} "
                              "rather than at a size derived from a guessed one")
-    quote_ccy = str(d.get("currency") or d.get("quoteCurrency") or "").upper()
+    quote_ccy = str(d.get("currency") or d.get("quoteCurrency") or d.get("quotingCurrency")
+                    or _quote_ccy_from_symbol(symbol)).upper()
     loss_per_lot = contract * stop_dist
     basis = (f"contract {contract:g} x stop {stop_dist:.6g} = "
              f"{loss_per_lot:.2f} {quote_ccy or '?'}/lot")
     if quote_ccy and quote_ccy != "USD":
-        # NOT CONVERTED, AND NOT PRETENDED OTHERWISE. The account is USD; a JPY- or CHF-quoted
-        # loss per lot is not dollars. Rather than apply a rate this file has not measured, it
-        # takes the venue minimum and names the gap, which is smaller than the intended risk and
-        # never larger.
-        return float(vmin), (basis + f"; quote is {quote_ccy}, not USD, and no measured rate -- "
-                                     f"sent at the venue minimum {vmin} (UNDER-sized, never over)")
+        # CONVERTED AT THE VENUE'S OWN QUOTE, or not at all. The account is USD; a JPY-, CHF-,
+        # CAD- or NZD-quoted loss per lot is not dollars. MEASURED 2026-09-30 on E8: the venue's
+        # details carried no currency for FX, so every cross was sized as if USD-quoted -- CHF
+        # pairs ~25% OVER-sized (6.91 lots of EURCHF short on 2026-09-15), NZD pairs ~40% under,
+        # and JPY crosses 150x under at the 0.01 floor. Where no rate can be read, the venue
+        # minimum and a named gap, which is smaller than the intended risk and never larger.
+        usd_per_quote = _usd_per_unit(venue, quote_ccy)
+        if usd_per_quote is None:
+            return float(vmin), (basis + f"; quote is {quote_ccy}, not USD, and no measured rate "
+                                         f"-- sent at the venue minimum {vmin} (UNDER-sized, "
+                                         f"never over)")
+        loss_per_lot *= usd_per_quote
+        basis += f" x {usd_per_quote:.6g} USD/{quote_ccy} = {loss_per_lot:.2f} USD/lot"
     lot = risk_usd / loss_per_lot
     step = None
     for k in ("lotStep", "volumeStep", "step"):
@@ -678,7 +709,8 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
                 ok = bool(venue.modify_stop(int(pid), level))
                 row |= {"action": "MODIFY" if ok else "REJECTED", "ok": ok}
             except Exception as exc:                # broad: any venue/SDK failure, named below
-                row |= {"action": "ERROR", "why": f"{type(exc).__name__}"}
+                row |= {"action": "ERROR", "ok": False,
+                        "why": f"{type(exc).__name__}: {str(exc)[:160]}"}
         rows.append(row)
 
     # A closed position's basis is dead weight and its id can be reissued; the MT5 side's
@@ -695,8 +727,12 @@ def manage_breakeven(venue: Any, *, armed: bool = False,
 
 def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         entry_enabled: bool = False) -> dict[str, Any]:
+    from mt5desk import order_door
     from prop import e8_guard
 
+    # ONE DOOR FOR MONEY: every place / modify_stop / close / close_all this pass sends is
+    # logged to the order-door ledger, and a raise or an unacknowledged write is never silent.
+    venue = order_door.guard_venue(venue, caller="e8_executor")
     now = now or datetime.now(UTC)
     acct = venue.account()
     equity = float(acct["equity"])
@@ -728,14 +764,12 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             doc["flattened"] = venue.close_all()
         return doc
 
-    # The principal replaced this certificate-selected FX lane with the same three gold
-    # windows traded on Fusion (2026-09-16).  Keep this process alive for the account guard,
-    # flattening and protection of positions opened before that decision, but make new FX
-    # authority explicit.  A scheduler accidentally invoking the legacy executor must not
-    # silently repopulate the old book.
+    # The principal removed the gold-only restriction (2026-10-02). Entry authority
+    # remains explicit in the canonical task; an accidental/default invocation
+    # continues to manage positions only. Gold retains its single E8-Gold owner.
     if not entry_enabled:
         doc["status"] = "MANAGEMENT_ONLY"
-        doc["why"] = "new entries belong to E8-Gold; legacy certified FX book is retired"
+        doc["why"] = "certified non-gold entries are disabled for this invocation"
         doc["n_considered"] = 0
         doc["n_sent" if armed else "n_would_send"] = 0
         return doc
@@ -803,6 +837,11 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
         sym, fam = s["symbol"], s["family"]
         tag = f"{TAG}{fam[:6]}{sym}"[:31]
         row: dict[str, Any] = {"symbol": sym, "family": fam, "tag": tag}
+        if str(sym).upper() == "XAUUSD":
+            row["status"] = "OWNED_BY_GOLD_LANE"
+            row["why"] = "E8-Gold is the single authoritative gold entry and management writer"
+            doc["sleeves"].append(row)
+            continue
         # A BANNED FAMILY TRADES NOTHING HERE EITHER, AND WHAT IT STILL HOLDS LEAVES WITH IT
         # (2026-09-16, `discovered`; data/banned_families.json, the same file the MT5 roster
         # reads). The book builder no longer lists such a sleeve; this branch covers a book built
@@ -821,10 +860,16 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
                     continue
                 if armed:
                     try:
-                        venue.close(int(_pid))
-                        closed.append(int(_pid))
+                        # THE ANSWER IS READ. `close` returns the venue's acknowledgement, and
+                        # an unacknowledged close counted as closed was a banned sleeve's
+                        # position left open while the row said it was gone.
+                        if venue.close(int(_pid)):
+                            closed.append(int(_pid))
+                        else:
+                            row["why"] += f"; close of {_pid} NOT acknowledged by the venue"
                     except Exception as exc:
-                        row["why"] += f"; close of {_pid} failed ({type(exc).__name__})"
+                        row["why"] += (f"; close of {_pid} failed "
+                                       f"({type(exc).__name__}: {str(exc)[:120]})")
                 else:
                     row["why"] += f"; SHADOW would close position {_pid}"
             row["closed_positions"] = closed
@@ -889,6 +934,11 @@ def run(venue: Any, *, armed: bool = False, now: datetime | None = None,
             # index i and i-1, never i+1. Live, the fill that the backtest's bar i+1 stands for
             # is the market order this pass is about to send.
             signals = func(frame, **params) if params else func(frame)
+            # Keep the certified session selector out of the family's signature, but do not
+            # lose it: E8 must apply the same post-constructor window as the gauntlet and
+            # Fusion. Both flat and {condition, params} certificate envelopes occur here.
+            from mt5desk.family_call import certified_session_filter
+            signals = certified_session_filter(list(signals or []), s)
         except Exception as exc:
             row["status"] = "SIGNAL_ERROR"
             row["why"] = f"{type(exc).__name__}: {str(exc)[:140]}"
@@ -1067,14 +1117,17 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--armed", action="store_true",
                     help="actually send orders (default is shadow: everything but create_order)")
-    ap.add_argument("--manage-only", action="store_true",
-                    help="retained for explicit scheduler readability; management-only is now the default")
+    entry = ap.add_mutually_exclusive_group()
+    entry.add_argument("--manage-only", action="store_true",
+                       help="manage existing positions only (the default)")
+    entry.add_argument("--enable-certified-entries", action="store_true",
+                       help="evaluate the canonical certified non-gold book through venue guards")
     args = ap.parse_args(argv)
     from prop.tradelocker_venue import TradeLockerVenue
 
     armed = bool(args.armed or ARMED_MARKER.exists())
     venue = TradeLockerVenue().connect()
-    doc = run(venue, armed=armed, entry_enabled=False)
+    doc = run(venue, armed=armed, entry_enabled=args.enable_certified_entries)
     doc["armed_by"] = ("--armed" if args.armed else
                        f"{ARMED_MARKER.name} present" if ARMED_MARKER.exists() else "not armed")
     OUT.parent.mkdir(parents=True, exist_ok=True)

@@ -172,8 +172,13 @@ def test_the_docket_is_wide_enough_for_the_program_level_gates(adv, real) -> Non
     gate, _ = real
     pl = gate.docket["program_level"]
     assert pl["pbo"] < 1.0 and pl["spa_p"] < 1.0, pl
-    # And the multiplicity canary is caught by the multiplicity gate, not by everything at once.
-    assert gate.detail["survivor_biased"]["failed_gates"] == ["deflated_sharpe"]
+    # And the multiplicity canary is caught FIRST by the multiplicity gate. Since policy v3 the
+    # reserved lockbox (and the program-level SPA on the shorter development window) may catch
+    # it too -- a spurious winner failing its untouched holdout is the lockbox doing its job --
+    # but nothing BEFORE the multiplicity gate may be what stops it.
+    sb = gate.detail["survivor_biased"]
+    assert sb["failed_gates"][0] == "deflated_sharpe", sb["failed_gates"]
+    assert set(sb["failed_gates"]) <= {"deflated_sharpe", "reality_check_spa", "lockbox"}
 
 
 def _daily(adv, name, **kw):

@@ -149,12 +149,11 @@ def test_a_module_nothing_imports_has_no_external_importers() -> None:
 def test_a_SCHEDULED_script_is_reachable() -> None:
     """A script named in the crontab manifest is run by the desk, whether or not any code imports
     it -- and scheduling is the only reachability a top-level organ has."""
-    import subprocess
+    import re
     manifest = Path(D._ROOT / "ops/crontab.manifest")
     if not manifest.exists():
         pytest.skip("no crontab manifest on this host")
-    hit = subprocess.run(["grep", "-oE", r"scripts/[A-Za-z0-9_]+\.py", str(manifest)],
-                         capture_output=True, text=True, check=False).stdout.split()
+    hit = re.findall(r"scripts/[A-Za-z0-9_]+\.py", manifest.read_text(encoding="utf-8"))
     if not hit:
         pytest.skip("the manifest names no scripts on this host")
     assert D._scheduled(hit[0]) is True

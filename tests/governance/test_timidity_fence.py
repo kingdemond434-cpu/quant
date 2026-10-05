@@ -93,7 +93,7 @@ def test_the_live_constitution_has_no_unclassified_restraint():
 
 def test_delegated_instruction_docs_are_swept():
     """The docs the dig prompts delegate to are prompt surfaces, not background reading."""
-    swept = {str(p.relative_to(tl._ROOT)) for p in tl._prompt_surfaces()}
+    swept = {p.relative_to(tl._ROOT).as_posix() for p in tl._prompt_surfaces()}
     for rel in ("docs/DIGGING_CHARTER.md", "docs/research/PROSPECTOR_SPEC.md"):
         assert rel in swept, f"{rel} is ordered read by a dig prompt but is not swept"
 

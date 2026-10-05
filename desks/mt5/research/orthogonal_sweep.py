@@ -57,6 +57,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 from collections import OrderedDict
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -161,7 +162,7 @@ _BAR_CACHE: OrderedDict[tuple[str, str], object] = OrderedDict()
 
 def _cache_rows(frame) -> int:
     try:
-        return int(len(frame))
+        return len(frame)
     except TypeError:
         return 0
 
@@ -493,6 +494,10 @@ def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
 #: this organ's to resolve -- not that the family is dead. Anything NOT listed and not wired is a
 #: defect, and `test_every_family_needing_an_input_is_wired_to_one` fails on it.
 NOT_SOURCED_HERE = {
+    "regime_split": "the base family and the regime are named by regime_split_miner, which "
+                    "deflates over every family x regime cell it tried and kills with purged "
+                    "walk-forward; a sweep that enumerated the split here would be a second "
+                    "uncharged search over the same cells",
     "discovered": "the primitive is named by edge_search at search time; this sweep enumerates "
                   "families, it does not run the search that would name one",
     "ensemble": "its members are named on the candidate by weak_signal_compiler, which chooses "
@@ -505,6 +510,19 @@ NOT_SOURCED_HERE = {
     "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
                 "graph; a sweep that paired every symbol with every other would be an uncharged "
                 "search over pairs",
+    "world_macro_state": "the world series is named on the recipe by world_macro_proposer, which "
+                         "reads the world dataset hunter's per-symbol exposure and charges its own "
+                         "band x direction x hold grid; a sweep that paired every symbol with "
+                         "every ingested series would be an uncharged search over thousands",
+    "gnn_propagation": "the peer panel and the model configuration are named by "
+                       "research/learned_miners, which walk-forwards every configuration once "
+                       "per panel and charges configurations x symbols x thresholds as trials; "
+                       "enumerating it here would refit the same panel model per symbol and "
+                       "charge the same search twice",
+    "attention_ts": "the peer panel and the (heads, lookback) configuration are named by "
+                    "research/learned_miners, which trains each configuration once per panel "
+                    "and charges its whole grid; a per-symbol sweep here would be an uncharged "
+                    "second search and a full attention training per symbol",
     "style_premia": "style_premia_sweep supplies the instrument's own rollover (broker_swaps) and "
                     "the risk driver and charges the whole style x instrument grid itself",
     "event_reaction": "its events are DATED FACTS FROM OUTSIDE THE TAPE -- an insider cluster's "
@@ -534,6 +552,25 @@ NOT_SOURCED_HERE = {
                              "clock; a sweep enumerating them over bars would be inventing which "
                              "pack series conditions which instrument. Called blind it has no "
                              "source and returns [] on every symbol",
+    # The free-stack alt families (mt5desk/family_alt_series.py). Their series and column are
+    # named by research/free_stack_proposer from what the hunter published and the instruments it
+    # mapped, and that proposer charges its own grid through `tests_run`.
+    **dict.fromkeys(("alt_series_momentum", "alt_conditioned"),
+                    "the series, column and mapped instrument are named by "
+                    "research/free_stack_proposer from the hunter's published columns, and it "
+                    "charges its own grid; called blind here it has no source and returns [] on "
+                    "every symbol"),
+    # The within-class rank legs (mt5desk/families_cross_sectional.py). Each loads its own class
+    # panel from `symbol`, so nothing is unsuppliable -- but the grid is (class member x family x
+    # params) and research/cross_sectional_breadth enumerates it, measures every cell's firing
+    # against the gauntlet's 60-day floor and charges it. Sweeping it here too would charge the
+    # same trials twice.
+    **dict.fromkeys(("cross_sectional_class_momentum", "cross_sectional_class_reversal",
+                     "cross_sectional_class_value", "cross_sectional_class_low_vol",
+                     "crisis_only_class_defensive", "lead_lag_class_catchup"),
+                    "research/cross_sectional_breadth enumerates the class x family x params "
+                    "grid, measures each cell's firing against the gauntlet's 60-day floor and "
+                    "charges its own trials; sweeping it here would charge them twice"),
 }
 
 
@@ -661,7 +698,35 @@ def sweep_pairs(meta: dict) -> list[tuple[str, str]]:
         return pairs
 
 
-def sweep() -> dict:
+#: WHERE THE LAST CUT-OFF PASS STOPPED (noon CRO 2026-09-30: `sweep` timed out every hour and
+#: moved nothing new). The sweep checkpoints after every pair, but it always began at pair 0, so a
+#: pass the cycle cut short re-swept the SAME prefix every hour and the tail of the universe was
+#: never reached. The next pass starts where the last one stopped; the docket unions every pass's
+#: rows with what it already banked (merge_hypotheses), so a slice written earlier is not lost.
+CURSOR = BASE / "data" / "hypotheses" / "orthogonal_sweep_cursor.json"
+
+
+def _read_cursor(n_pairs: int) -> int:
+    doc = _read(CURSOR) or {}
+    try:
+        start = int(doc.get("next_pair", 0))
+    except (TypeError, ValueError):
+        return 0
+    return start % n_pairs if n_pairs else 0
+
+
+def _write_cursor(next_pair: int, n_pairs: int, complete: bool) -> None:
+    import os as _os
+    CURSOR.parent.mkdir(parents=True, exist_ok=True)
+    tmp = CURSOR.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps({"next_pair": int(next_pair), "n_pairs": int(n_pairs),
+                               "complete": bool(complete),
+                               "at": datetime.now(tz=UTC).isoformat(timespec="seconds")}),
+                   "utf-8")
+    _os.replace(tmp, CURSOR)
+
+
+def sweep(budget_s: float | None = None) -> dict:
     from mt5desk.engine import Costs, run_backtest
     from mt5desk.families_orthogonal import (
         FAMILY_INPUTS,
@@ -672,6 +737,12 @@ def sweep() -> dict:
 
     meta = _read(UNIVERSE / "universe.json") or {}
     pairs = sweep_pairs(meta)
+    # RESUME, THEN ROTATE: the whole universe is still swept, one full lap per however many
+    # passes it takes, instead of the first K pairs forever.
+    _start = _read_cursor(len(pairs))
+    pairs = pairs[_start:] + pairs[:_start]
+    _deadline = (time.monotonic() + float(budget_s)) if budget_s else None
+    _stopped_at: int | None = None
     symbols = sorted({sym for sym, _ in pairs})
     hypotheses: list[dict] = []
     gaps: dict[str, int] = {}
@@ -709,6 +780,12 @@ def sweep() -> dict:
         if _pair_i:
             _write_report(_build_report(pairs[:_pair_i], ran, gaps, errors, untestable,
                                         hypotheses, off_chart, charts), partial=True)
+            _write_cursor((_start + _pair_i) % len(pairs), len(pairs), complete=False)
+        # STOP BY OURSELVES, BEFORE THE CYCLE KILLS US: the cursor above is already written, so
+        # the next pass begins at exactly this pair.
+        if _deadline is not None and time.monotonic() >= _deadline:
+            _stopped_at = _pair_i
+            break
         df = _bars(sym, tf)
         # THE SCREEN IS A MARKET-TIME SCREEN, NOT A BAR COUNT. A flat 2,000 bars is four months
         # of H1 and eight YEARS of D1, so it would have silently emptied the daily lane -- the
@@ -927,7 +1004,16 @@ def sweep() -> dict:
                     f"already does for forward verdicts."),
         })
 
-    return _build_report(pairs, ran, gaps, errors, untestable, hypotheses, off_chart, charts)
+    if _stopped_at is None:
+        _write_cursor(0, len(pairs), complete=True)
+        report = _build_report(pairs, ran, gaps, errors, untestable, hypotheses, off_chart, charts)
+    else:
+        report = _build_report(pairs[:_stopped_at], ran, gaps, errors, untestable, hypotheses,
+                               off_chart, charts)
+    report["lap"] = {"started_at_pair": _start, "n_pairs": len(pairs),
+                     "swept_pairs": len(pairs) if _stopped_at is None else _stopped_at,
+                     "stopped_on_budget": _stopped_at is not None, "budget_s": budget_s}
+    return report
 
 
 def _build_report(pairs, ran, gaps, errors, untestable, hypotheses,
@@ -987,9 +1073,9 @@ def _write_report(report: dict[str, object], *, partial: bool) -> None:
     _os.replace(tmp, OUT)
 
 
-def main() -> int:
-    report = sweep()
-    _write_report(report, partial=False)
+def main(budget_s: float | None = None) -> int:
+    report = sweep(budget_s)
+    _write_report(report, partial=bool(report.get("lap", {}).get("stopped_on_budget")))
     hyp = report["hypotheses"]
     print(f"orthogonal sweep: {report['symbols']} symbol(s) x "
           f"{len(report['charts_swept'])} chart(s) = {report['symbol_chart_pairs']} pair(s), "
@@ -1030,8 +1116,13 @@ def _cli_main() -> int:
     # peak rather than below it. Standing down is cheap by this module's own argument -- hourly
     # trigger, per-cell cache resumes rather than restarts -- while admission that does not fit
     # costs the hour AND the terminal holding live positions.
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--budget-s", type=float, default=None,
+                    help="stop by itself after this many seconds and resume there next pass")
+    args = ap.parse_args()
     with exclusive_job("orthogonal_sweep", need_mb=1250) as acquired:
-        return main() if acquired else 75
+        return main(args.budget_s) if acquired else 75
 
 
 if __name__ == "__main__":

@@ -84,8 +84,10 @@ def test_the_lockbox_statistic_is_not_the_walk_forward_statistic() -> None:
 
 
 def test_a_profitable_held_out_window_passes_on_its_own_evidence() -> None:
-    rng = np.random.default_rng(12)
-    v = _verdict(rng.normal(0.15, 1.0, 400), rng.normal(0.20, 1.0, 120))
+    # A PERSISTENT edge: one 40-day block repeated, so every read of the v4 bar (held-out,
+    # recent tail, half-split) sees the same edge and the test pins the rule, not a lucky draw.
+    block = np.random.default_rng(12).normal(1.20, 1.0, 40)  # clears sr0 at var 0.25
+    v = _verdict(np.tile(block, 10), np.tile(block, 3))
     assert v["stages"]["lockbox"]["passed"] is True
     assert v["stages"]["lockbox"]["n_days"] == 120
 

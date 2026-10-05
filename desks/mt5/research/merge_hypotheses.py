@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,50 @@ from typing import Any
 BASE = Path(__file__).resolve().parent.parent
 HYP = BASE / "data" / "hypotheses"
 TARGET = HYP / "external_survivors.json"
+
+
+def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, Any]) -> None:
+    """Stream the large docket without a second, multi-gigabyte JSON string.
+
+    The previous ``json.dumps(rows)`` raised MemoryError on the live 1.6M-row
+    docket.  A failed write must also leave the previous judge input intact.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, pending = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            if isinstance(rows, dict):
+                # Preserve legacy envelopes and their metadata without allocating a
+                # second full-bank JSON string. The temporary file is still durable.
+                json.dump(rows, stream, default=str)
+            else:
+                # One serialization and buffered write per row avoids millions of
+                # small writes. Stable chart grouping conserves every row and the
+                # prior attention order while avoiding gate-zero frame-cache churn.
+                stream.write("[\n")
+                for i, row in enumerate(_chart_local_order(rows)):
+                    if i:
+                        stream.write(",\n")
+                    stream.write(json.dumps(row, separators=(",", ":"), default=str))
+                stream.write("\n]\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(pending, path)
+    finally:
+        if os.path.exists(pending):
+            os.unlink(pending)
+
+
+def _chart_local_order(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    def key(row: dict[str, Any]) -> tuple[str, str]:
+        params = row.get("params") or {}
+        chart = str(params.get("timeframe") or "H1").upper()
+        if row.get("family") == "lvc_asia_london":
+            chart = "M5"  # the canonical judge's fixed native chart
+        return str(row.get("sym") or row.get("symbol") or ""), chart
+
+    return sorted(rows, key=key)
+
 
 #: THE STUDY BANK. Rows of a family that is BANNED FROM LIVE CAPITAL keep existing here -- they
 #: are not deleted and the miners keep producing them -- but they are not put in front of the
@@ -236,6 +281,34 @@ SOURCES = (
     # (scripts/requeue_named_mechanisms.py). Merged when freshly rebuilt; hourly runs skip it
     # as stale once consumed -- a map extension re-opens gate 1, never any later gate.
     ("requeue_named.json", "hypotheses"),
+    # THE NOVEL-MECHANISM LANE, WHICH TERMINATED ONE CONNECTOR SHORT OF THIS TUPLE (2026-09-24).
+    #
+    # A mechanism with no registered family function cannot reach the judge through any other
+    # door. The compiler's deterministic vocabulary refuses it by name -- NEEDS_EXACT_RULE_
+    # EXTRACTION -- and `deepening_worker` then spends a model call recovering the rule from the
+    # row's own text, re-running the recovery through `compile_row` so no guard is bypassed. That
+    # is the ONLY path by which the Chinese, Japanese, Korean and Russian forests, the
+    # championship records, the world crawler and the arXiv feed can contribute a mechanism the
+    # desk did not already know.
+    #
+    # ITS OUTPUT WAS READ BY NOBODY. `deepened_candidates.json` was written every pass, consumed
+    # only by `portfolio_gap` for gap ANALYSIS and counted by `convert_swarm` for a log line.
+    # `libs/ops/capability_graph.py` asserted the edge in as many words -- "deepened_candidates
+    # -> external_gauntlet via compiler merge", and a comment calling it "a real path" -- but no
+    # merge implemented it, and this tuple is the merge. Measured on the trading box the day it
+    # was found: 83 mechanisms recovered in the worker's lifetime, 30 of them in the preceding
+    # 24 hours, every one of them bought with the scarcest budget the desk owns (one account,
+    # 1,000 model requests a day, exhausted by 01:42 UTC) -- and not one had ever reached the
+    # docket, so not one had ever been judged. Work earned and dropped one line short.
+    #
+    # NOTHING IS RELAXED BY ADMITTING THEM. These rows come out of `compile_row`, the same
+    # function that produces `miner_candidates.json`'s hypotheses, so they are contract-identical
+    # by construction; they face the identical ten gates, the same family routing, the same
+    # untradeable-symbol filter and the same family-less drop as every other row here. The
+    # `producer` stamp finally makes the lane attributable, so `certificate_provenance` can say
+    # whether a recovered mechanism has ever earned a certificate -- a question that could not
+    # previously be ASKED, because no certificate could descend from a row that never arrived.
+    ("deepened_candidates.json", "candidates"),
 )
 
 
@@ -286,6 +359,83 @@ def _identity(row: dict) -> str:
         "family": str(row.get("family") or ""),
         "params": {k: params[k] for k in sorted(params)},
     }, sort_keys=True, default=str)
+
+
+def stamp_fresh_intake(row: dict[str, Any], source: str, now: datetime) -> dict[str, Any]:
+    """Stamp a freshly produced row at this intake time, never at an older descriptive date.
+
+    This function is only called for artifacts that passed ``_fresh_for_run`` under an
+    orchestrated pipeline start.  A producer's old ``found_at`` may describe the source item,
+    but it cannot make the candidate available before this compiler actually received it.
+    Complete producer stamps are preserved; missing ones are added by the canonical PIT stamper
+    with availability floored to this merge.
+    """
+    import sys as _sys
+
+    root = str(BASE.parents[1])
+    if root not in _sys.path:
+        _sys.path.insert(0, root)
+    from libs.data.pit import is_stamped
+    from libs.data.pit import stamp as pit_stamp
+
+    if is_stamped(row):
+        return row
+    ts = now.isoformat(timespec="seconds")
+    body = dict(row)
+    body["available_time"] = ts
+    body["ingested_time"] = ts
+    body["intake_stamp"] = {
+        "at": ts,
+        "source_artifact": source,
+        "availability_policy": "fresh artifact availability floored to canonical merge time",
+    }
+    return pit_stamp(body, source, now=now)
+
+
+def recover_banked_provenance(row: dict[str, Any], *, now: datetime) -> dict[str, Any]:
+    """Give legacy rows a conservative backfill receipt, never an invented past vintage.
+
+    Complete original stamps remain authoritative. Missing/invalid receipt fields are filled
+    by the canonical PIT stamper; first_seen is research history, never availability evidence.
+    """
+    from libs.data.pit import is_stamped, stamp
+
+    if is_stamped(row):
+        return row
+    body = dict(row)
+    for key in ("available_time", "ingested_time", "source_version", "payload_hash"):
+        if not isinstance(body.get(key), str) or not body.get(key):
+            body.pop(key, None)
+    body["provenance_backfill"] = {
+        "at": now.isoformat(),
+        "source_artifact": "external_survivors.json",
+        "availability_policy": ("recorded producer availability or actual backfill receipt; "
+                                "never first_seen"),
+    }
+    return stamp(body, "canonical_docket_backfill", source_version="backfill", now=now)
+
+
+def admit_registry_row(merged: dict[str, dict], row: dict) -> str:
+    """A stamped registry re-emission supersedes an unstamped exact identity.
+
+    Never copy a stamp onto another payload. Keep the registry's entire emitted row and
+    recorded availability; an already stamped producer remains authoritative.
+    """
+    from libs.data.pit import is_stamped
+
+    ident = _identity(row)
+    prior = merged.get(ident)
+    if prior is not None and (is_stamped(prior) or not is_stamped(row)):
+        return "kept"
+    if not is_stamped(row):
+        return "refused"
+    emitted = {**row, "producer": "alpha_registry"}
+    if prior is not None:
+        for field in ("first_seen", "merged_at"):
+            if prior.get(field):
+                emitted.setdefault(field, prior[field])
+    merged[ident] = emitted
+    return "recovered" if prior is not None else "new"
 
 
 def tradeable_universe() -> dict[str, str]:
@@ -366,7 +516,7 @@ def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
         import sys as _sys
         if str(BASE) not in _sys.path:
             _sys.path.insert(0, str(BASE))
-        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane
+        from research.universe_policy import HYPOTHESIS, UNCLASSIFIED, lane, may_hypothesise
     except Exception as exc:
         return None, (f"universe_policy unavailable ({type(exc).__name__}: {exc}): NOTHING was "
                       f"routed by lane this run (UNMEASURED, not clean)")
@@ -376,12 +526,24 @@ def lane_router(tradeable: dict[str, str]) -> tuple[Any, str]:
                       f"lane -- it cannot see the registry from here, so NOTHING was routed by "
                       f"lane this run (UNMEASURED, not clean)")
 
-    def refusal(symbol: str) -> str:
+    def refusal(symbol: str, family: object = None) -> str:
+        # A share CFD in a cross-sectional class book reaches the judge (principal 2026-09-30);
+        # every other family on a share CFD stays in the event lane.
+        if may_hypothesise(symbol, family):
+            return ""
         verdict = lane(symbol)
         return "" if verdict == HYPOTHESIS else verdict
 
     return refusal, (f"universe_policy.lane, proved on {placed} of {len(tradeable)} tradeable "
                      f"symbol(s); only lane={HYPOTHESIS!r} reaches the judge")
+
+
+def _refuse(refusal: Any, symbol: str, family: object) -> str:
+    """Ask the door with the row's family when it takes one; a one-argument door still works."""
+    try:
+        return str(refusal(symbol, family) or "")
+    except TypeError:
+        return str(refusal(symbol) or "")
 
 
 def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
@@ -404,6 +566,10 @@ def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
     by_symbol: dict[str, int] = {}
     if refusal is None:
         return list(rows), off_lane, by_lane, by_symbol
+    # A million variants repeat the same few instrument/family classifications.
+    # Resolve each pair once for this batch instead of statting the broker registry
+    # per variant. The cache is local, so the next merge observes registry changes.
+    routing: dict[tuple[str, str], str] = {}
     for row in rows:
         symbol = str(row.get("symbol") or row.get("sym") or "")
         # ABSENCE IS NOT A VERDICT (L1.28a), and this is the SAME rule the donation door keeps
@@ -411,7 +577,10 @@ def split_by_lane(rows: list[dict[str, Any]], refusal: Any, stamp: str
         # be in the wrong lane, and refusing it would turn a missing field into a policy breach.
         # A row that DOES name one and whose class the desk has never seen is a different thing --
         # that is UNCLASSIFIED, and absence of a rule about a real instrument is not a permission.
-        verdict = refusal(symbol) if symbol else ""
+        key = (symbol, str(row.get("family") or ""))
+        if key not in routing:
+            routing[key] = _refuse(refusal, symbol, row.get("family")) if symbol else ""
+        verdict = routing[key]
         if not verdict:
             judged.append(row)
             continue
@@ -486,6 +655,7 @@ def main() -> int:
     untradeable_syms: dict[str, int] = {}
     per_source: dict[str, int] = {}
     source_state: dict[str, str] = {}
+    intake_stamped: dict[str, int] = {}
 
     for name, key in SOURCES:
         source_path = HYP / name
@@ -537,6 +707,17 @@ def main() -> int:
                 unrouted += 1
                 continue
             enriched["producer"] = name
+            if started_at is not None:
+                # The orchestrator proved this artifact was written during the current run. It
+                # is therefore safe to make the candidate available NOW. We never repair the
+                # old bank this way: historical unstamped rows remain refused until their
+                # originating producer emits a fresh, versioned candidate.
+                before = all(enriched.get(k) for k in
+                             ("available_time", "ingested_time", "source_version",
+                              "payload_hash"))
+                enriched = stamp_fresh_intake(enriched, name, now)
+                if not before:
+                    intake_stamped[name] = intake_stamped.get(name, 0) + 1
             merged[ident] = enriched
             kept += 1
         per_source[name] = kept
@@ -566,13 +747,13 @@ def main() -> int:
         _reg_rows, registry_census = _registry_feed(tradeable=tradeable or None,
                                                     banned=live_banned_families())
         kept = 0
+        recovered = 0
         for row in _reg_rows:
-            ident = _identity(row)
-            if ident in merged:
-                continue
-            merged[ident] = {**row, "producer": "alpha_registry"}
-            kept += 1
+            disposition = admit_registry_row(merged, row)
+            kept += disposition == "new"
+            recovered += disposition == "recovered"
         registry_census["merged_new"] = kept
+        registry_census["recovered_unstamped_identity"] = recovered
         per_source["alpha_registry.sqlite"] = kept
         source_state["alpha_registry.sqlite"] = str(registry_census.get("status") or "UNMEASURED")
         print(f"   registry feed: {registry_census.get('candidates', 0)} unjudged candidate(s), "
@@ -655,11 +836,59 @@ def main() -> int:
             row["banked"] = True
             merged[ident] = row
             readmitted += 1
-    for row in merged.values():
+    for ident, row in merged.items():
+        row = recover_banked_provenance(row, now=now)
         row.setdefault("first_seen", now.isoformat(timespec="seconds"))
+        merged[ident] = row
     if readmitted:
         print(f"   docket bank: {readmitted} previously-known candidate(s) re-admitted "
               f"(idempotent re-judging; freshness still governs provenance)")
+
+    # THE TRIANGLE LEGS, BACKFILLED ONTO EVERY ROW, FRESH OR BANKED (2026-09-30). All 1,796
+    # triangle rows in the docket were legless, so `family_triangle` returned [] and every one
+    # was UNKNOWN; the compiler now names legs for rows it mints, but the bank is re-admitted
+    # verbatim above, so the old rows would never have been reached. Filled HERE because this is
+    # the docket's only writer: same rule as the compiler, in place, nothing deleted, each row
+    # recording what was filled or why not. A fault costs the fill, never a row.
+    triangle_legs: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        for _p in (str(BASE), str(BASE.parents[1])):
+            if _p not in _sys.path:
+                _sys.path.insert(0, _p)
+        from research import triangle_leg_backfill as _tlb
+        _rows = list(merged.values())
+        triangle_legs = _tlb.backfill(_rows, identity=_identity, now=now)
+        if triangle_legs.get("filled"):
+            merged = {_identity(r): r for r in _rows}
+        _tlb.publish(triangle_legs, HYP / _tlb.OUT.name)
+        if triangle_legs.get("legless_before"):
+            print(f"   triangle legs: {triangle_legs['filled']} of "
+                  f"{triangle_legs['legless_before']} legless row(s) filled, "
+                  f"{triangle_legs['unfilled']} unfilled {triangle_legs['unfilled_by_reason']}")
+    except Exception as exc:
+        triangle_legs = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   triangle legs unavailable ({type(exc).__name__}: {exc}); rows unchanged")
+
+    # Historical peer/factor claims missing a second instrument are not executable. Keep each
+    # original and its verdict, but mint a fresh, point-in-time descendant using the compiler's
+    # existing deterministic input rule. Never rewrite a past claim after seeing its result.
+    input_descendants: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        from research import family_input_descendants as _fid
+        _children, input_descendants = _fid.derive(
+            list(merged.values()), identity=_identity, now=now)
+        for _child in _children:
+            merged[_identity(_child)] = _child
+        input_descendants["status"] = "APPLIED"
+        if input_descendants["targets"]:
+            print(f"   missing peer/factor inputs: {input_descendants['created']} fresh "
+                  f"descendant(s), {input_descendants['already_present']} already present, "
+                  f"{input_descendants['unresolved']} unresolved; originals retained")
+    except Exception as exc:
+        input_descendants = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   peer/factor input completion unavailable ({type(exc).__name__}: {exc}); "
+              "rows unchanged")
 
     if unrouted:
         print(f"   {unrouted} row(s) dropped as UNROUTABLE (no family named) -- never "
@@ -745,6 +974,63 @@ def main() -> int:
               f"least-judged-family order")
         if judged:
             rows_out = breadth_order(rows_out, judged)
+    # TIER S PRE-JUDGE SCREEN (layers 9 and 21): a row the adopted Red Queen defenders or the
+    # machine-ratified invented tests FLAGGED (run_external_backtest tags it) moves behind the
+    # clean rows of its OWN family, in that family's own slots. The family-balanced prefix the
+    # allocator just built is unchanged, no row leaves the docket, and nothing is billed because
+    # nothing is withheld. A screen fault costs the demotion, never a row.
+    prejudge: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.tiers import prejudge_screen as _pj
+        rows_out, prejudge = _pj.demote_flagged(
+            rows_out, _pj.load_verdicts(HYP / _pj.VERDICTS.name))
+        prejudge["status"] = "APPLIED"
+        if prejudge["flagged"]:
+            print(f"   prejudge screen: {prejudge['flagged']} flagged row(s) demoted within "
+                  f"their family ({prejudge['moved']} position(s) changed, 0 removed)")
+    except Exception as exc:
+        prejudge = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   prejudge screen unavailable ({type(exc).__name__}: {exc}); order unchanged")
+    # ONE SEARCHED CLAIM IS ONE BREADTH UNIT (libs/research/claim_selection.py, 2026-09-30).
+    # Every docket row -- fresh, carried over or already judged -- whose own words say its result
+    # was the best of N searched variations is stamped with its claim family, so the 25,520 cells
+    # one video's "best of ~200" was swept into count as ONE unit of breadth and the family is
+    # charged its 200 trials ONCE in the lifetime ledger. No row is removed, reordered or
+    # re-judged, and `family`/`params`/verdicts are untouched. A fault here costs the stamp and
+    # says so in the report; it never costs a row.
+    claim_selection: dict[str, Any] = {"status": "UNMEASURED"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        from libs.research import claim_selection as _cs
+        before = _cs.breadth(rows_out)
+        stamped = _cs.stamp_all(rows_out)
+        after = _cs.breadth(rows_out)
+        ledger = _cs.update_ledger(after)
+        claim_selection = {
+            "status": "MEASURED", "rows_stamped": stamped,
+            "cells": after["cells"],
+            "breadth_units_before": before["breadth_units"],
+            "breadth_units_after": after["breadth_units"],
+            "distinct_mechanisms_before": before["distinct_mechanisms"],
+            "distinct_mechanisms_after": after["distinct_mechanisms"],
+            "claim_families": {k: {kk: vv for kk, vv in v.items() if kk != "genome_ids"}
+                               for k, v in after["claim_families"].items()},
+            "lifetime_selection_trials": ledger.get("lifetime_selection_trials"),
+            "ledger": str(_cs.LEDGER)}
+        if stamped:
+            print(f"   claim selection: {after['cells_in_claim_families']} row(s) in "
+                  f"{len(after['claim_families'])} claim famil(ies); breadth units "
+                  f"{before['breadth_units']} -> {after['breadth_units']}")
+    except Exception as exc:
+        claim_selection = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   claim selection stamp unavailable ({type(exc).__name__}: {exc})")
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
     # on any run where producers have not written yet, and this merge then emitted an EMPTY file
@@ -758,17 +1044,58 @@ def main() -> int:
             print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
                   f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
             return 0
-    TARGET.write_text(json.dumps(rows_out, indent=1, default=str), "utf-8")
+    # PRE-REGISTRATION, BOTH HALVES, HERE (2026-09-30). This merge runs on the hour BEFORE the
+    # judge reads the docket, so it is the last point where a card can honestly precede a
+    # verdict. First the last sweep's verdicts are stamped and put on the hypothesis graph (the
+    # writer it never had -- its last fate was 2026-09-03), so the judged set is current; then
+    # every docket row is stamped with the card that fixes its exact spec, and every never-judged
+    # cell without one goes into this hour's batch card. A fault here costs the stamps, never a
+    # row: the docket is written either way.
+    prereg: dict[str, Any] = {"status": "UNAVAILABLE"}
+    try:
+        import sys as _sys
+        _root = str(BASE.parents[1])
+        if _root not in _sys.path:
+            _sys.path.insert(0, _root)
+        if str(BASE) not in _sys.path:
+            _sys.path.insert(0, str(BASE))
+        from libs.research import prereg_join as _pj_join
+        from libs.research.hypothesis_graph import Graph as _Graph
+        from research.frontier_identity import cell_id as _cell_id
+        # EVERY PATH HANGS OFF `HYP`, so a caller that points this merge at another directory
+        # (every test does) moves the card ledger and the graph with it and never writes the
+        # desk's own. The defaults resolve to exactly the desk's paths.
+        _data = HYP.parent
+        _g = _Graph(_data / "hypothesis_graph.jsonl")
+        _paths: dict[str, Any] = {"gate_ledger": HYP / "gate_verdict_ledger.jsonl",
+                                  "seen_cells": HYP / "gauntlet_seen_cells.json",
+                                  "prereg_path": _data / "preregistrations.jsonl"}
+        prereg = {"verdicts": _pj_join.record_gate_ledger(
+                      graph=_g, specs=rows_out, cursor=HYP / "prereg_join_cursor.json",
+                      **_paths),
+                  "docket": _pj_join.preregister_docket(rows_out, graph=_g, cell_id=_cell_id,
+                                                        **_paths),
+                  "status": "APPLIED"}
+        _d = prereg["docket"]
+        print(f"   preregistration: {_d['already']} carded, {_d['new_specs']} new spec(s) in "
+              f"batch {_d['batch_hash']}, {_d['retrospective']} judged before any card; "
+              f"verdicts -> graph: {prereg['verdicts'].get('recorded', 0)} recorded")
+    except Exception as exc:
+        prereg = {"status": f"FAILED: {type(exc).__name__}: {exc}"}
+        print(f"   preregistration unavailable ({type(exc).__name__}: {exc}); docket unstamped")
+    _write_docket_atomically(TARGET, rows_out)
     _lease(TARGET)
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
         "pipeline_started_at": started_at.isoformat(timespec="seconds") if started_at else None,
         "per_source": per_source, "source_state": source_state, "total": len(rows_out),
+        "fresh_intake_stamps": intake_stamped,
         # THE REGISTRY'S OWN LANE, MEASURED (libs/moat/docket_feed.py). Until 2026-09-24 the
         # sealed gauntlet had no path to `data/alpha_registry.sqlite` at all and the registry's
         # cells reached it only through a 276-row hourly lease; this census is how many of them
         # the docket actually carries, so the claim is checkable rather than asserted.
         "alpha_registry": registry_census,
+        "input_descendants": input_descendants,
         # ONE PASS, NOT ONE PASS PER FAMILY. This was a comprehension nested over the whole
         # docket for every distinct family -- invisible at 20,000 rows and 77 families, and
         # 34.5 MILLION comparisons once the registry's own cells reach the docket (448,391 rows
@@ -810,6 +1137,12 @@ def main() -> int:
                                       "families_starved", "unjudged_total",
                                       "capacity_measured")} if coverage else {},
                         "report": "desks/mt5/reports/JUDGE_COVERAGE.json"},
+        "prejudge": prejudge,
+        "preregistration": prereg,
+        "triangle_legs": {k: triangle_legs.get(k) for k in
+                          ("status", "legless_before", "filled", "unfilled",
+                           "unfilled_by_reason", "legless_after")},
+        "claim_selection": claim_selection,
         "note": ("no threshold applied here (L1.60) -- every candidate of a family that CAN "
                  "reach live capital reaches the ten-gate gauntlet, which is the only arbiter; "
                  "a live-banned family is routed to the study bank, never judged and never "

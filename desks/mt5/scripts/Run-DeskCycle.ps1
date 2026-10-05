@@ -82,6 +82,29 @@ function Write-Cycle([string] $Message) {
     Add-Content -LiteralPath $Log -Value $line
 }
 
+# Verify all three authoritative files are readable before claiming a controller
+# lease or starting an agent. The old check covered only the first two: a missing
+# reference made the CRO silently skip subsystem-specific duties.
+$Documents = @(
+    @{ Name = 'CRO_CYCLE.md'; Path = $Prompt },
+    @{ Name = 'QUANT_CONSTITUTION.md'; Path = $Constitution },
+    @{ Name = 'QUANT_REFERENCE.md'; Path = $Reference }
+)
+foreach ($document in $Documents) {
+    try {
+        if (-not (Test-Path -LiteralPath $document.Path -PathType Leaf)) {
+            throw "file absent"
+        }
+        $contents = Get-Content -LiteralPath $document.Path -Raw -Encoding UTF8 -ErrorAction Stop
+        if ([string]::IsNullOrWhiteSpace($contents)) { throw "file empty" }
+        $document.Hash = (Get-FileHash -LiteralPath $document.Path -Algorithm SHA256).Hash
+        $document.Length = $contents.Length
+    } catch {
+        Write-Cycle ("FATAL: CRO document {0} unreadable: {1}; refusing to run an agent with no brief" -f $document.Name, $_.Exception.Message)
+        exit 2
+    }
+}
+
 # ---- THE CHECKPOINT: A CUT-OFF PASS RESUMES, IT DOES NOT RESTART -----------------------------
 # These passes are long, and two things reliably interrupt them: the box being off at the trigger
 # time, and the execution time limit landing mid-sweep. Restarting from stage one on the next
@@ -166,13 +189,6 @@ if ($state -and $state.date -eq $Today) {
     }
 }
 
-if (-not (Test-Path -LiteralPath $Prompt) -or -not (Test-Path -LiteralPath $Constitution)) {
-    # The prompt IS the pass. Running an agent against this repository with no instructions is
-    # strictly worse than not running one, so this is fatal rather than a warning.
-    Write-Cycle "FATAL: CRO_CYCLE.md or QUANT_CONSTITUTION.md missing under docs\cro -- refusing to run an agent with no brief"
-    exit 2
-}
-
 if (-not $AgentCommand) {
     $AgentCommand = if ($Lane -eq "noon") { "claude" } else { "codex" }
 }
@@ -211,9 +227,34 @@ Write-Cycle "agent $($resolved.Source)"
 # history rewrites and the deadman rail refused by the CLI itself, not just by the brief.
 $agentName = [System.IO.Path]::GetFileNameWithoutExtension($resolved.Source).ToLowerInvariant()
 $agentArgs = @()
+
+# READ-ONLY WIDENING, FROM ONE LIST. In -p mode a tool outside --allowedTools is refused without a
+# prompt and the pass carries on, so a step that needed WebFetch or a plain `ls` silently never
+# ran. The WebFetch hosts come from ops\agent_webfetch_domains.json -- the one list, whose every
+# host is `confirmed` on the alt_proxies TERMS gate -- never from a copy here. A malformed host is
+# dropped and logged rather than handed to the CLI as a rule.
+$DomainsFile = Join-Path $RepoRoot "ops\agent_webfetch_domains.json"
+$webFetchRules = @()
+try {
+    foreach ($row in @((Get-Content -LiteralPath $DomainsFile -Raw | ConvertFrom-Json).domains)) {
+        $host_ = "$($row.domain)".Trim()
+        if ($host_ -cmatch '^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$') {
+            $webFetchRules += ("WebFetch(domain:{0})" -f $host_)
+        } else {
+            Write-Cycle "WARN: skipped malformed WebFetch host '$host_' in $DomainsFile"
+        }
+    }
+} catch {
+    Write-Cycle ("WARN: WebFetch domain list unreadable ({0}) -- WebFetch stays refused, and every refusal is recorded as MISSED" -f $_.Exception.Message)
+}
+
 if ($agentName -eq "claude") {
+    # stream-json, not text: it is the only output that says which tool calls were REFUSED
+    # (system/permission_denied events and the result's permission_denials). The stream is teed
+    # to disk and scripts\record_agent_denials.py turns each refusal into an UNMEASURED = MISSED
+    # ledger row after the pass. --verbose is required by the CLI for stream-json under -p.
     $agentArgs = @(
-        "-p", "--output-format", "text",
+        "-p", "--output-format", "stream-json", "--verbose",
         "--permission-mode", "acceptEdits",
         "--allowedTools",
         "Read", "Edit", "Write", "Glob", "Grep",
@@ -221,6 +262,9 @@ if ($agentName -eq "claude") {
         "Bash(git fetch:*)", "Bash(git worktree:*)", "Bash(git add:*)", "Bash(git commit:*)",
         "Bash(git rebase:*)", "Bash(git push origin:*)", "Bash(git rev-parse:*)",
         "Bash(python:*)", "Bash(py:*)", "Bash(pytest:*)",
+        # Read-only shell the steps use to look around; nothing here writes, pushes or reads secrets.
+        "Bash(ls:*)", "Bash(pwd)", "Bash(date)", "Bash(date -u:*)", "Bash(wc:*)"
+    ) + $webFetchRules + @(
         "--disallowedTools",
         "Bash(git push --force:*)", "Bash(git push -f:*)", "Bash(git reset --hard:*)",
         "Bash(git stash:*)", "Bash(git commit -a:*)", "Edit(scripts/run_deadman_switch.py)",
@@ -230,6 +274,9 @@ if ($agentName -eq "claude") {
     # --full-auto is Codex's sandboxed unattended mode (workspace-write, no approval prompts).
     $agentArgs = @("exec", "--full-auto", "-")
 }
+$streamJson = ($agentName -eq "claude")
+$Stream = Join-Path $LogDir ("cycle_{0}_stream.jsonl" -f $Lane)
+$Review = Join-Path $DeskRoot "reports\TIER1_BREADTH_REVIEW.json"
 
 $resumeNote = if ($resuming) {
 @"
@@ -300,6 +347,8 @@ LOAD ORDER (do not spend the pass re-summarizing these):
   on demand, as you would the reference.
 
 Repository root: $RepoRoot
+Verified CRO documents (readable before agent launch; SHA256 fixes exact content identity):
+$($Documents | ForEach-Object { "  $($_.Name): $($_.Path) SHA256=$($_.Hash) chars=$($_.Length)" } | Out-String)
 Dublin time now: $($DublinNow.ToString("yyyy-MM-dd HH:mm"))
 Controller lease: '$Controller' epoch $LeaseEpoch, claimed by the launcher (QUANT_CONTROLLER_*
   are set in your environment). After each material closure run
@@ -336,6 +385,9 @@ remaining_gap, reopen_trigger, next_action. Also set `binding_constraint` and `r
 eleven-line COMPACT REPORT). The launcher marks DONE only on a clean exit.
 
 THIS IS AN ACTION CYCLE, NOT A REPORTING CYCLE.
+STEP 4B (the daily tier-1 breadth review) runs every pass: answer from live data whether breadth, production and global ingestion are maxed out at tier-1 level and what tier the quant is today, rank the gaps, act on the biggest, and write desks/mt5/reports/TIER1_BREADTH_REVIEW.json.
+Duties D15-D26 (judging rate, UNKNOWN by cause, box state freshness, unfed datasets, paid substitutes, cross-culture orthogonality, live code drift, decay and markout, confident kills, credentials, pass-2 queue age, six-event trend) are checked every pass with their artifacts; an absent artifact is UNMEASURED, which is MISSED.
+REFUSED TOOLS ARE RECORDED. A tool call outside this lane's allowlist is refused, and the launcher records each refusal in the CRO ledger as UNMEASURED (counts_as MISSED) and marks the duty that step served MISSED in TIER1_BREADTH_REVIEW.json. Never score a duty MET when a step it needed was refused; name the refused step and its disposition instead. WebFetch is granted only for the hosts in ops/agent_webfetch_domains.json.
 "@
 
 if ($WhatIfOnly) {
@@ -377,10 +429,22 @@ try {
     $ErrorActionPreference = "Continue"
     Push-Location $RepoRoot
     try {
+        # The claude lane speaks stream-json: every line goes to $Stream (utf-8, one event per
+        # line) and only non-JSON lines (the CLI's stderr) reach the human log directly; the
+        # pass's final result text is written into the log by record_agent_denials.py below.
+        if ($streamJson) { Set-Content -LiteralPath $Stream -Value $null -Encoding UTF8 }
         $brief | & $resolved.Source @agentArgs 2>&1 | ForEach-Object {
             $text = "$_"
-            Write-Host $text
-            Add-Content -LiteralPath $Log -Value $text
+            if ($streamJson) {
+                Add-Content -LiteralPath $Stream -Value $text -Encoding UTF8
+                if (-not $text.StartsWith("{")) {
+                    Write-Host $text
+                    Add-Content -LiteralPath $Log -Value $text
+                }
+            } else {
+                Write-Host $text
+                Add-Content -LiteralPath $Log -Value $text
+            }
         }
         $code = $LASTEXITCODE
     } finally {
@@ -390,6 +454,29 @@ try {
 } catch {
     Write-Cycle ("FATAL: agent invocation raised: {0}" -f $_.Exception.Message)
     exit 4
+}
+
+# EVERY REFUSED STEP IS A MISSED STEP, AND IT LEAVES A ROW. The recorder reads the teed stream,
+# writes the pass's result text into the human log, appends one UNMEASURED / counts_as MISSED row
+# per refused tool call to the CRO ledger, and marks the duty each refused step served MISSED in
+# the TIER1_BREADTH_REVIEW.json this pass wrote. Its failure is logged, never the task's exit code.
+$deniedCount = $null
+if ($streamJson) {
+    $prevEap = $ErrorActionPreference; $ErrorActionPreference = "Continue"
+    Push-Location $RepoRoot
+    $recJson = (& $Python scripts\record_agent_denials.py --stream $Stream --ledger $Ledger `
+                    --log $Log --review $Review --started-at $started.ToUniversalTime().ToString("o") `
+                    --surface cro_cycle --lane $Lane --agent $agentName --date $Today 2>&1 | Out-String)
+    Pop-Location
+    $ErrorActionPreference = $prevEap
+    try { $rec = ($recJson.Trim() -split "`n")[-1] | ConvertFrom-Json } catch { $rec = $null }
+    if ($rec -and $rec.status -eq "RECORDED") {
+        $deniedCount = [int]$rec.denials
+        Write-Cycle ("permission denials: {0} (each recorded UNMEASURED, counts as MISSED); duties marked MISSED: {1}" -f
+                     $deniedCount, (@($rec.changed_duties) -join ","))
+    } else {
+        Write-Cycle ("permission denials UNMEASURED: recorder failed ({0})" -f $recJson.Trim())
+    }
 }
 
 $mins = [math]::Round(((Get-Date) - $started).TotalMinutes, 1)
@@ -442,6 +529,7 @@ Add-LedgerRow @{
     release_code_sha = $(if ($endIdentity.release) { $endIdentity.release.code_sha } else { $null })
     completed = $completed; work_items = $items; binding_constraint = $binding
     research_supervisor = $supState
+    permission_denials = $deniedCount
 }
 
 # Release the lease whatever the outcome, so the other lane is never locked out by a finished

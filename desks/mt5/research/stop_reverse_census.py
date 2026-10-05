@@ -15,7 +15,7 @@ tick. That is a real weakness and this module deliberately does NOT fix it.
 
 TWO SEPARATE THINGS, AND CONFLATING THEM WAS MY FIRST ERROR. A DISLOCATED ENTRY and a
 STOP-AND-REVERSE are different events that happened to coincide once. Measured over 30 days on
-account 495044:
+the live Fusion account:
 
     dislocated entries   3 of 30, net -17.00   (+37.66, +17.58, -72.24)  two made money
     stop-and-reverse     3,       net -30.20   (+42.08, -72.24, -0.04)   one made money

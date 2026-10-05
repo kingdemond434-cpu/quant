@@ -1,0 +1,86 @@
+{
+ "generated_utc": "2026-09-30T16:16:41+00:00",
+ "host": "vm",
+ "machine": {
+  "total_mb": 16095,
+  "available_mb_at_start": 12683,
+  "cpus": 4
+ },
+ "measured_with": "psutil: process-tree RSS sampled every 0.25 s; wall clock per organ",
+ "runs": [
+  {
+   "organ": "null_lab",
+   "script": "desks/mt5/research/null_lab.py",
+   "args": [
+    "--budget-s",
+    "300"
+   ],
+   "rc": 0,
+   "timed_out": false,
+   "timeout_s": 420,
+   "wall_s": 271.5,
+   "peak_rss_mb": 739.1,
+   "artifacts_written": {
+    "desks/mt5/reports/NULL_LAB.json": true
+   },
+   "stdout_tail": "null lab: MEASURED draws=312 (run 267) ledger=312 measured=36/62 exceeds_nominal=[]\n"
+  },
+  {
+   "organ": "known_by_date",
+   "script": "scripts/check_known_by_date.py",
+   "args": [],
+   "rc": 0,
+   "timed_out": false,
+   "timeout_s": 300,
+   "wall_s": 9.4,
+   "peak_rss_mb": 32.1,
+   "artifacts_written": {
+    "desks/mt5/reports/KNOWN_BY_DATE.json": true,
+    "desks/mt5/reports/PIT_LAG_CENSUS.json": true
+   },
+   "stdout_tail": "known-by-date: 59 reader(s) of 21 declared source(s); 12 routed through a lag, 0 offender(s) (floor 0), 0 healed; no-join: 36 routed in code, 11 declared, 0 undeclared; certificate inputs OK (7 provider(s))\n"
+  },
+  {
+   "organ": "occupancy_map",
+   "script": "desks/mt5/research/occupancy_map.py",
+   "args": [
+    "--once"
+   ],
+   "rc": 0,
+   "timed_out": false,
+   "timeout_s": 600,
+   "wall_s": 4.8,
+   "peak_rss_mb": 340.7,
+   "artifacts_written": {
+    "desks/mt5/reports/OCCUPANCY_MAP.json": true,
+    "desks/mt5/reports/CULTURE_ORTHOGONALITY.json": true
+   },
+   "stdout_tail": "urvivor(s), 24 with live/forward R; pairs 15 (DIVERGE 0, SAME_EDGE 0, UNMEASURED 15); k 210 -> 210 merged; cultures ['CN', 'DK', 'JP', 'UNMEASURED']\noccupancy map: 2255 cells (21 successful); tried 57591 judged 0 certified 52 forward 290 live 40\n  targets 134 (empty 95, under-tried 39); orthogonality MEASURED on 814/3175 candidates, par 0.9181\n-> /home/claude/quant/.claude/worktrees/agent-a9028d1d00af49808/desks/mt5/reports/OCCUPANCY_MAP.json; 60 proposal(s) -> /home/claude/quant/.claude/worktrees/agent-a9028d1d00af49808/desks/mt5/data/intelligence/occupancy_map/discoveries_20260930_1616.json\n"
+  },
+  {
+   "organ": "research_live_identity",
+   "script": "desks/mt5/research/research_live_identity.py",
+   "args": [],
+   "rc": 0,
+   "timed_out": false,
+   "timeout_s": 300,
+   "wall_s": 2.5,
+   "peak_rss_mb": 244.0,
+   "artifacts_written": {
+    "desks/mt5/reports/RESEARCH_LIVE_IDENTITY.json": true
+   },
+   "stdout_tail": "y trades a spec research did not certify (code)\n  DEFECT gbpmxn_overnight_gap_decay_asia_p_44136fa355b3678a: IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)\n  DEFECT gbpnok_overnight_gap_decay_asia_p_44136fa355b3678a: IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)\n  DEFECT gbpsek_overnight_gap_decay_asia_p_44136fa355b3678a: IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)\n  DEFECT gbpzar_overnight_gap_decay_asia_p_44136fa355b3678a: IDENTITY_MISMATCH: the gateway trades a spec research did not certify (code)\n"
+  }
+ ],
+ "about": "One bounded run of each Tier S measurement organ in a CLOUD CONTAINER, committed so the null lab, the lag lane and the occupancy map have an artifact on a branch. NOT BOX EVIDENCE: counts toward no layer's DONE. The trading box writes the same six files under desks/mt5/reports/ on its hourly legs and publishes them through desks/mt5/scripts/sync_shadow_to_git.ps1; only those copies are evidence. The cloud has a partial copy of the desk's state, so several fields read UNMEASURED here that the box will measure. null_lab ran at --budget-s 300 (the leg uses 600).",
+ "box_evidence": false,
+ "counts_toward_done": false,
+ "files": [
+  "NULL_LAB.json",
+  "KNOWN_BY_DATE.json",
+  "PIT_LAG_CENSUS.json",
+  "OCCUPANCY_MAP.json",
+  "CULTURE_ORTHOGONALITY.json",
+  "RESEARCH_LIVE_IDENTITY.json"
+ ]
+}

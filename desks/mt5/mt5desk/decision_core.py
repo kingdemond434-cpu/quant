@@ -161,6 +161,8 @@ GOLD_WINDOWS = [
 #: The bracket leg that would trade against an already directional gold book.  Shared by the
 #: Fusion and E8 venue adapters so one strategy cannot hedge itself on one account while the
 #: other correctly suppresses the redundant leg.
+#: The keys are the desk's side convention (+1 long, -1 short), derived from the sign the book's
+#: net direction is computed in, not a chosen quantity (4f69caef3, 2026-09-28).
 OPPOSING_LEG = {1: "sell_stop", -1: "buy_stop"}
 
 #: EUR put at risk by the venue's smallest tradeable position on gold. Below the equity where
@@ -255,16 +257,10 @@ MAX_TOTAL_REJECTIONS = 2
 #: this restarts from zero; two rejections inside a day still pause, exactly as before.
 REJECTION_STREAK_WINDOW_H = 24.0
 
-#: Minimum improvement, in R, before a stop modification is worth sending. A modify costs a
-#: round trip to the broker and a chance of rejection; nudging a stop by a fraction of a tick
-#: every pass spends both for nothing. Expressed in R rather than price so it means the same
-#: thing on gold and on EURUSD.
-#: Minimum improvement, in R, before a stop modification is worth sending. Derived from the
-#: round trip the modify costs: measured spread plus commission on this book is ~0.02-0.03R, so
-#: 0.05R is about twice the cost of acting -- the point where the move pays for itself even if
-#: the next tick takes it back. Expressed in R rather than price so it means the same thing on
-#: gold and on EURUSD.
-MIN_RATCHET_IMPROVEMENT_R = 0.05
+#: (MIN_RATCHET_IMPROVEMENT_R = 0.05 lived here until 2026-09-29. Both money paths now send any
+#: stop move that tightens by at least one venue stop step -- position_manager.
+#: tightens_by_min_step -- so the R floor had no reader and is gone rather than kept as a
+#: constant the gateway no longer re-exports.)
 
 #: Retcodes the venue answers a placed or done order with. The one success test on this desk.
 ACCEPTED_RETCODES = (10008, 10009)
@@ -539,7 +535,9 @@ def min_lot() -> float:
 #: to one end and realised risk misses target by a whole step. 0.02 halves that to 50%.
 #: Applies to the ONE book with forward evidence behind it; every other promoted sleeve
 #: stays at the 0.01 venue floor, which is what "these live sleeves only" means.
-GOLD_MIN_LOT = 0.02
+#: Principal 2026-10-02 supersedes the historical 0.02 exception above:
+#: 0.01 is the baseline; allocator sovereignty and broker volume rules still bind.
+GOLD_MIN_LOT = 0.01
 #: A box may raise the gold floor without a code push. Absent or unreadable -> GOLD_MIN_LOT.
 GOLD_MIN_LOT_FILE = _DESK / "data" / "GOLD_MIN_LOT.json"
 
@@ -561,6 +559,43 @@ def gold_min_lot() -> float:
     return float(max(val, GOLD_MIN_LOT))
 
 
+#: ALLOCATOR SOVEREIGNTY (principal, 2026-09-29, superseding the 2026-09-07 gold floor and the
+#: 2026-09-12 "every sleeve trades at least the venue minimum" orders): the optimiser is the final
+#: capital authority. A target of zero sends no order; a target below the symbol's own venue
+#: minimum is economically unimplementable at this equity and sends no order either -- it is
+#: never rounded UP to the minimum, because that makes the broker's minimum lot a positive prior
+#: on every live strategy. A positive target at or above the minimum is sent exactly as sized.
+#:
+#: REVERSIBLE WITHOUT A PUSH: `data/ALLOCATOR_SOVEREIGN.json` holding {"enabled": false} restores
+#: the pre-2026-09-29 floors on the next gateway pass. Absent or unreadable -> sovereign.
+ALLOCATOR_SOVEREIGN = True
+ALLOCATOR_SOVEREIGN_FILE = _DESK / "data" / "ALLOCATOR_SOVEREIGN.json"
+
+
+def allocator_sovereign() -> bool:
+    """Whether zero and below-minimum targets send no order (the default)."""
+    try:
+        raw = json.loads(ALLOCATOR_SOVEREIGN_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return bool(ALLOCATOR_SOVEREIGN)
+    if isinstance(raw, dict) and raw.get("enabled") is False:
+        return False
+    return bool(ALLOCATOR_SOVEREIGN)
+
+
+def implementable_lot(raw_lot: float, symbol: str = GOLD_SYMBOL,
+                      info: object | None = None, ceiling: float = 5.0) -> float:
+    """The lot the venue can take for a target of `raw_lot`, or 0.0 when it is below the minimum.
+
+    Snapped DOWN to the 0.01 grain first (never up), then refused -- not lifted -- when under the
+    symbol's own `volume_min`. `min` last, so nothing passes the per-order ceiling.
+    """
+    lot = _lot_steps(max(float(raw_lot), 0.0))
+    if not (lot > 0.0) or lot + 1e-9 < venue_min_lot(symbol, info):
+        return 0.0
+    return float(min(lot, ceiling))
+
+
 def gold_lot(equity: float, dist_usd: float | None = None,
              info: object | None = None) -> float:
     """The gold book's lot: fixed-fractional sizing, floored at `gold_min_lot()`.
@@ -574,6 +609,10 @@ def gold_lot(equity: float, dist_usd: float | None = None,
     would be a size CUT there, delivered as an increase, on the one book with forward evidence
     behind it.
     """
+    if allocator_sovereign():
+        d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
+        raw = Q_OPT * equity / (d * _eur_per_price_unit(GOLD_SYMBOL, info))
+        return implementable_lot(raw, GOLD_SYMBOL, info)
     return float(max(auto_lot(equity, dist_usd, GOLD_SYMBOL, info), gold_min_lot()))
 
 
@@ -591,15 +630,14 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
     the order quantity was decided somewhere else, which is exactly the source-to-money break the
     programme exists to remove.
 
-    WHY `max` AND NOT THE ALLOCATOR'S FRACTION ALONE. The principal's standing order, given three
-    times (2026-09-08), is that the desk never reduces its aggressiveness, only its dynamicness.
-    At today's equity the allocator's fraction for a gold window resolves BELOW what `gold_lot`
-    sends, so handing the venue h_i alone would be a size CUT on the desk's only forward-evidenced
-    book, delivered under the banner of better sizing. `max` closes the break in the direction
-    that can only ever help: when the optimiser wants MORE gold than fixed-fractional sizing asks
-    for -- the growth case, and the whole reason h_i exists -- gold gets more, and when it wants
-    less, gold is sized exactly as it is today. Routing gold at h_i ALONE remains refused and
-    remains the principal's to grant.
+    THE ALLOCATOR IS SOVEREIGN BY DEFAULT (P1 LANDED, #53, principal 2026-09-29). The 2026-09-08
+    refusal to route gold at h_i alone was lifted by the principal and merged as #53: with
+    `allocator_sovereign()` true (the default), zero sends no order and a positive fraction is
+    sized at that fraction alone, snapped down and refused -- never lifted -- below the venue
+    minimum. The `max(h_i lot, gold_lot)` path after that branch is the documented REVERT, live
+    only when `ALLOCATOR_SOVEREIGN.json` holds `{"enabled": false}`: there, when the optimiser
+    wants MORE gold than fixed-fractional sizing asks for, gold gets more, and when it wants
+    less, gold is sized by its policy lot.
 
     Returns `(lot, basis)`. The basis names which term won, so the log and the intent row can say
     whether the allocator or the floor set the size -- a lot with no stated basis is the thing
@@ -610,6 +648,19 @@ def gold_book_lot(equity: float, dist_usd: float | None, info: object | None,
         frac = float(h_i)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return floor_lot, "gold_lot: the allocator's fraction is not a number"
+    if allocator_sovereign():
+        # THE OPTIMISER IS SOVEREIGN (2026-09-29). Zero sends nothing; a positive fraction is
+        # sized at exactly that fraction and refused, not lifted, below the venue minimum.
+        if not (frac > 0.0):
+            return 0.0, "sovereign: the allocator gave this window no heat; no order"
+        q_eff = min(frac, MAX_RISK_FRAC) * decay_factor(decay_faded)
+        d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
+        lot = implementable_lot(q_eff * equity / (d * _eur_per_price_unit(GOLD_SYMBOL, info)),
+                                GOLD_SYMBOL, info)
+        if not (lot > 0.0):
+            return 0.0, (f"sovereign: allocator h_i={frac:.4f} (q_eff {q_eff:.4f}) is below "
+                         f"the venue minimum at this equity; no order")
+        return lot, f"sovereign: allocator_book h_i={frac:.4f} (q_eff {q_eff:.4f})"
     if not (frac > 0.0):
         # ZERO IS AN ANSWER EVERYWHERE ELSE AND MUST NOT BE ONE HERE. `allocator_book` carries a
         # zeroed sleeve at 0.0 so the gateway's skip path fires -- but for gold that skip would
@@ -686,8 +737,10 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
             h_i = float(risk_frac)  # type: ignore[arg-type]
         except (TypeError, ValueError):
             h_i = 0.0
+        if not (h_i > 0.0) and allocator_sovereign():
+            return 0.0              # the optimiser said "do not own this" (2026-09-29)
         if not (h_i > 0.0):
-            # THE PRINCIPAL'S ORDER, 2026-09-12: a live sleeve is never skipped for being
+            # THE PRINCIPAL'S ORDER, 2026-09-12 (superseded 2026-09-29 unless sovereignty is off): a live sleeve is never skipped for being
             # unsizeable. This returned 0.0 and three gateway sites then logged "allocator gave
             # this sleeve no heat; skipped". Gold has had this exemption since 2026-09-07; the
             # rest of the book gets it now. The venue minimum is the symbol's OWN minimum, so a
@@ -696,6 +749,12 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
         q_eff = min(h_i, MAX_RISK_FRAC) * decay_factor(decay_faded)
     else:
         q_eff = ramped_fraction(risk_frac, live_n, decay_faded)
+    if allocator_sovereign():
+        # BELOW THE MINIMUM IS UNIMPLEMENTABLE, NOT 0.01 (2026-09-29). `auto_lot` lifts to 0.01;
+        # the raw fraction is sized here instead and refused under the symbol's own minimum.
+        d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
+        return implementable_lot(q_eff * equity / (d * _eur_per_price_unit(symbol, info)),
+                                 symbol, info)
     lot = auto_lot(equity, dist_usd, symbol, info, q=q_eff)
     # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
     # exists to prevent, on exactly the sleeves with the least forward evidence.
@@ -1869,6 +1928,43 @@ def entry_is_legal(price: float, side: str, bid: float, ask: float,
     return True, ""
 
 
+def window_end_hour(window: str | None) -> float | None:
+    """The SERVER hour at which a gold window's session ends, or None for a window this table
+    does not know (a promoted family sleeve keeps its own rules).
+
+    Same derivation as `bracket_deadline` -- the next window's signal hour, or CLOSE_HOUR for the
+    last -- but in the one clock the windows are written in. `hour` everywhere a window is placed
+    is the broker's tick clock, so the comparison is exact with no UTC offset to get wrong.
+    """
+    sig = next((float(w[1]) for w in GOLD_WINDOWS if w[0] == window), None)
+    if sig is None:
+        return None
+    later = [float(w[1]) for w in GOLD_WINDOWS if float(w[1]) > sig]
+    return min(later) if later else float(CLOSE_HOUR)
+
+
+def window_session_ended(window: str | None, hour: float) -> bool:
+    """Has this gold window's own session already ended at server hour `hour`?
+
+    A LATE PASS PLACED A STALE BRACKET (measured 2026-09-30 on both accounts). Placement had a
+    lower bound (the signal hour) and only the day's cancel hour above it, so a pass that first
+    ran hours late -- after a restart, an adoption, an outage -- sent the window's bracket off a
+    range the session had already left behind:
+
+      * E8 2026-09-21: asia, london_am and afternoon all placed at 20:29 server in one pass;
+        2026-09-23 london_am at 19:42 and 2026-09-24 london_am at 16:07 (session ended 17:00),
+        whose sell stop sat 1.3 points from the afternoon's and both filled in the same second:
+        two full stops, -950 USD, on one move.
+      * Fusion 2026-09-25: the asia and london_am sells both filled after 17:00 server and both
+        stopped, then both reversed and stopped again: -122.90 EUR, the worst gold day.
+
+    The certified bracket is the one placed at its signal hour. After the session that formed
+    the range is over, the order is a different, uncertified trade, so it is not placed.
+    """
+    end = window_end_hour(window)
+    return end is not None and float(hour) >= end
+
+
 def bracket_deadline(sleeve: str, window: str | None = None,
                      now: datetime | None = None) -> datetime:
     """When this sleeve's bracket stops belonging to the session whose range formed it.
@@ -2130,6 +2226,10 @@ def family_entry(g: object, side: int, bid: float, ask: float) -> tuple[float, f
 #: stop distance, before the bracket is re-anchored to the actual entry. A quarter: the replay
 #: fills at the next OPEN, which differs from the close by the open-close gap, and a quarter of
 #: the stop is well past any such gap on the charts these families run on.
+#: Measured 2026-09-16 on the live account (072f030e2): nine forex closes with a stop under 10
+#: pips lost a mean -1.05R (-36 EUR) because the executor kept levels certified at 8.4 pips after
+#: the quote had moved, sizing 0.27 lots against a 1.3-pip stop. Re-anchoring past this fraction
+#: is the fix that commit landed.
 ENTRY_DRIFT_TOL_FRAC = 0.25
 
 

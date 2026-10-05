@@ -120,6 +120,23 @@ def get_family_func(name: str) -> Callable[..., Any] | None:
     return ofn
 
 
+def __getattr__(name: str) -> Callable[..., Any]:
+    """Expose existing hunt16 constructors to the canonical judge's named lookup.
+
+    The forward executor already resolves these exact functions. The judge asks
+    for ``family_<name>`` before falling back to orthogonal families, so missing
+    exports stranded hunt16 candidates despite their implementations existing.
+    Return the original callable, preserving its signature and signal rules.
+    """
+    if name.startswith("family_"):
+        from mt5desk.executables import hunt16_families
+
+        fn = hunt16_families().get(name.removeprefix("family_"))
+        if fn is not None:
+            return fn
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 def get_all_family_names() -> list[str]:
     return sorted(FAMILY_REGISTRY.keys())
 

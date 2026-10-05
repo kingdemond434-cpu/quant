@@ -7,6 +7,8 @@ import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 _DESK = Path(__file__).resolve().parents[1]
 _ROOT = _DESK.parent.parent
 for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
@@ -14,6 +16,14 @@ for _p in (str(_DESK), str(_DESK / "research"), str(_ROOT)):
         sys.path.insert(0, _p)
 
 from research import judging_throughput as jt  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def isolate_coverage_dependency(tmp_path, monkeypatch):
+    """A live coverage file must never replace a fixture's backlog during a rate test."""
+    monkeypatch.setattr(jt, "JUDGE_COVERAGE", tmp_path / "absent_coverage.json")
+    monkeypatch.setattr(jt, "task_time_limit_s", lambda *a, **k: None)
+
 
 UNMEASURED = jt.UNMEASURED
 COSTS = {"per_worker_mb": 768.0, "declared_need_mb": 1200.0}
@@ -67,9 +77,52 @@ def test_measure_cpu_is_psutil_or_unmeasured() -> None:
 
 # ------------------------------------------------------------------ the rate artifact
 def _ledger(path: Path, stamps: list[datetime]) -> Path:
-    path.write_text("".join(json.dumps({"cell": i, "at": t.isoformat(timespec="seconds")})
+    path.write_text("".join(json.dumps({"cell": i, "terminal_gate": "PASSED",
+                                       "at": t.isoformat(timespec="seconds")})
                             + "\n" for i, t in enumerate(stamps)) + '{"cell": "x"}\n', "utf-8")
     return path
+
+
+def test_retests_and_unknowns_do_not_count_as_backlog_cleared(tmp_path: Path) -> None:
+    path = tmp_path / "ledger.jsonl"
+    rows = [
+        {"cell": "old", "at": (NOW - timedelta(days=10)).isoformat(),
+         "terminal_gate": "in_sample_screen"},
+        {"cell": "old", "at": NOW.isoformat(), "terminal_gate": "stress_costs"},
+        {"cell": "blocked", "at": NOW.isoformat(), "terminal_gate": "UNKNOWN"},
+        {"cell": "new", "at": NOW.isoformat(), "terminal_gate": "PASSED"},
+    ]
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), "utf-8")
+    got = jt.measure_rate({"depth": 100}, {}, NOW, ledger=path,
+                          registry=_registry(tmp_path / "registry.sqlite", []))
+    assert got["verdicts"]["counts"]["24h"] == 3
+    assert got["verdicts"]["first_terminal_counts"]["24h"] == 1
+    assert got["verdicts"]["first_terminal_cells"] == 2
+    assert got["eta_to_drain"]["net_per_hour"] < got["verdicts_per_hour"]
+
+
+def test_stale_coverage_cannot_replace_current_queue_depth(tmp_path: Path, monkeypatch) -> None:
+    path = tmp_path / "coverage.json"
+    path.write_text(json.dumps({"at": (NOW - timedelta(days=3)).isoformat(),
+                                "totals": {"unjudged_total": 999999}}), "utf-8")
+    monkeypatch.setattr(jt, "JUDGE_COVERAGE", path)
+    got = jt.measure_rate({"depth": 8}, {}, NOW, ledger=tmp_path / "absent",
+                          registry=tmp_path / "absent.sqlite")
+    assert got["backlog"] == 8
+    assert got["coverage_backlog_fresh"] is False
+
+
+def test_verdict_windows_normalise_offsets_and_refuse_future_stamps(tmp_path: Path) -> None:
+    path = tmp_path / "ledger.jsonl"
+    rows = [
+        {"cell": "recent", "at": "2026-09-30T13:30:00+02:00", "terminal_gate": "PASSED"},
+        {"cell": "old", "at": "2026-09-30T11:30:00+02:00", "terminal_gate": "PASSED"},
+        {"cell": "future", "at": "2026-09-30T12:30:00Z", "terminal_gate": "PASSED"},
+    ]
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), "utf-8")
+    got = jt._verdict_counts(NOW, path)
+    assert got["counts"] == {"1h": 1, "24h": 2, "7d": 2}
+    assert got["rows_unstamped"] == 1
 
 
 def _registry(path: Path, stamps: list[datetime]) -> Path:
@@ -132,3 +185,135 @@ def test_run_publishes_the_rate_artifact(tmp_path: Path, monkeypatch) -> None:
     assert rate["verdicts"]["counts"]["1h"] == 1
     assert rate["backlog"] == UNMEASURED
     assert payload["rate"]["eta_to_drain"]["status"] == UNMEASURED
+
+
+# ------------------------------------------------ publish first, then a bounded best-effort apply
+def _isolate(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(jt, "OUT", tmp_path / "JUDGING_THROUGHPUT.json")
+    monkeypatch.setattr(jt, "RATE_OUT", tmp_path / "JUDGING_RATE.json")
+    monkeypatch.setattr(jt, "ENV_FILE", tmp_path / "env.json")
+    monkeypatch.setattr(jt, "BACKPRESSURE", tmp_path / "bp.json")
+    monkeypatch.setattr(jt, "BURNDOWN", tmp_path / "bd.json")
+    monkeypatch.setattr(jt, "GATE_LEDGER", _ledger(tmp_path / "l.jsonl", [NOW]))
+    monkeypatch.setattr(jt, "REGISTRY", tmp_path / "none.sqlite")
+    monkeypatch.setattr(jt, "measure_cpu", lambda *a, **k: {"cpu_source": UNMEASURED,
+                                                             "busy_other_cores": UNMEASURED})
+    monkeypatch.setattr(jt, "apply_env", lambda *a, **k: {})
+    monkeypatch.setattr(jt, "task_time_limit_s", lambda *a, **k: None)
+
+
+def test_every_artifact_is_on_disk_before_the_apply_runs(tmp_path: Path, monkeypatch) -> None:
+    """CRO 2026-09-30: `schtasks /Change` sat ahead of the writes and timed out at 60 s, so the
+    leg died past its budget and JUDGING_RATE.json went 4.4 h stale. Writes come first now."""
+    _isolate(tmp_path, monkeypatch)
+    seen: dict[str, bool] = {}
+
+    def _machine(decision, box):
+        seen["rate"] = (tmp_path / "JUDGING_RATE.json").exists()
+        seen["out"] = (tmp_path / "JUDGING_THROUGHPUT.json").exists()
+        seen["env"] = (tmp_path / "env.json").exists()
+        raise TimeoutError("setx hung")
+
+    monkeypatch.setattr(jt, "apply_machine_env", _machine)
+    monkeypatch.setattr(jt, "apply_cadence", lambda m, box: {"status": "APPLIED", "minutes": m})
+    payload = jt.run(write=True, now=NOW, apply=True)
+    assert seen == {"rate": True, "out": True, "env": True}
+    doc = json.loads((tmp_path / "JUDGING_THROUGHPUT.json").read_text("utf-8"))
+    assert doc["applied"]["machine_env"]["status"] == "FAILED"
+    assert "setx hung" in doc["applied"]["machine_env"]["why"]
+    assert doc["applied"]["cadence"]["status"] == "APPLIED", "one failed step skips no other"
+    assert payload["seconds"] >= payload["measure_seconds"] >= 0
+
+
+def test_the_apply_budget_bounds_every_subprocess() -> None:
+    import time
+    assert jt._sub_timeout() == jt.SUBPROCESS_TIMEOUT_S
+    jt._APPLY_DEADLINE[:] = [time.monotonic() + 5.0]
+    try:
+        assert 1.0 < jt._sub_timeout() <= 5.0
+        jt._APPLY_DEADLINE[:] = [time.monotonic()]
+        try:
+            jt._sub_timeout()
+            raise AssertionError("a spent budget must refuse the next call")
+        except TimeoutError:
+            pass
+    finally:
+        jt._APPLY_DEADLINE[:] = []
+    assert jt.SUBPROCESS_TIMEOUT_S * 2 + jt.APPLY_BUDGET_S < 300, "inside the 300 s leg budget"
+
+
+def test_a_growing_backlog_is_demand_on_the_judge(tmp_path: Path, monkeypatch) -> None:
+    """JUDGING_BURNDOWN.json is consumed here: GROWING raises cadence exactly as a deep queue."""
+    monkeypatch.setattr(jt, "BURNDOWN", tmp_path / "bd.json")
+    (tmp_path / "bd.json").write_text(json.dumps(
+        {"burn_down": {"status": "GROWING", "net_per_day": -3000.0}}), encoding="utf-8")
+    bd = jt._burndown()
+    assert bd["burndown_status"] == "GROWING"
+    shallow = {**QUEUE, "depth": 1, **bd}
+    d = jt.plan(BOX, shallow, COSTS)
+    assert d["limiting_resource"] == "backlog_growing"
+    assert d["cadence_minutes"] == jt.CADENCE_FAST_MIN
+    (tmp_path / "bd.json").unlink()
+    assert jt._burndown()["burndown_status"] == UNMEASURED
+
+
+def test_the_warmer_is_no_longer_pinned_through_the_env(tmp_path: Path) -> None:
+    d = jt.plan(BOX, QUEUE, COSTS)
+    assert "WARM_WORKERS" not in jt.env_for(d)
+    assert "WARM_WORKERS" not in jt.ENV_KEYS
+    assert "WARM_WORKERS" in jt.RETIRED_MACHINE_KEYS
+
+
+@pytest.mark.parametrize("age_hours,expected", [(48, 100), (0.25, 999), (-0.25, 100)])
+def test_stale_or_future_coverage_cannot_replace_backlog(
+        tmp_path, monkeypatch, age_hours, expected):
+    coverage = tmp_path / "coverage.json"
+    coverage.write_text(json.dumps({"at": (NOW-timedelta(hours=age_hours)).isoformat(),
+                                   "totals": {"unjudged_total": 999}}))
+    monkeypatch.setattr(jt, "JUDGE_COVERAGE", coverage)
+    got = jt.measure_rate({"depth":100}, {}, NOW,
+                          ledger=_ledger(tmp_path/"ledger.jsonl", [NOW]),
+                          registry=_registry(tmp_path/"registry.sqlite", []))
+    assert got["backlog"] == expected
+
+
+def test_recent_births_use_an_indexed_range_not_a_registry_table_scan(tmp_path: Path) -> None:
+    """A multi-GB unindexed created_at count timed out judging-rate production."""
+    from libs.moat import registry
+
+    path = tmp_path / "registry.sqlite"
+    conn = sqlite3.connect(path)
+    registry._evolve(conn)
+    conn.executemany(
+        "INSERT INTO research_candidates(id, created_at) VALUES (?, ?)",
+        [("old", "2026-09-20T00:00:00+00:00"),
+         ("week", "2026-09-28T00:00:00+00:00"),
+         ("day", "2026-09-30T11:00:00+00:00")],
+    )
+    conn.commit()
+    plan = conn.execute(
+        "EXPLAIN QUERY PLAN SELECT COUNT(*) FROM research_candidates WHERE created_at >= ?",
+        ("2026-09-23T00:00:00+00:00",),
+    ).fetchall()
+    assert any("ix_candidates_created_at" in str(row) for row in plan), plan
+    conn.close()
+    assert jt._creation_counts(NOW, path)["counts"] == {"24h": 1, "7d": 2}
+
+
+def test_sweep_remainder_cannot_masquerade_as_full_backlog(tmp_path):
+    got = jt.measure_rate({"depth": 59_834, "depth_scope": "sweep"}, {}, NOW,
+                          ledger=tmp_path / "absent.jsonl",
+                          registry=tmp_path / "absent.sqlite")
+    assert got["backlog"] == UNMEASURED
+    assert got["eta_to_drain"]["status"] == UNMEASURED
+
+
+def test_fresh_full_coverage_replaces_sweep_remainder(tmp_path, monkeypatch):
+    coverage = tmp_path / "coverage.json"
+    coverage.write_text(json.dumps({"at": NOW.isoformat(),
+                                   "totals": {"unjudged_total": 1_601_468}}), "utf-8")
+    monkeypatch.setattr(jt, "JUDGE_COVERAGE", coverage)
+    got = jt.measure_rate({"depth": 59_834, "depth_scope": "sweep"}, {}, NOW,
+                          ledger=tmp_path / "absent.jsonl",
+                          registry=tmp_path / "absent.sqlite")
+    assert got["backlog"] == 1_601_468

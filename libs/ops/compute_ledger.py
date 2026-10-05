@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import sys
 import time
 from collections.abc import Iterator
@@ -67,7 +68,16 @@ class Run:
 def _cpu_seconds() -> float:
     """CPU consumed by this process and its children. `os.times` is stdlib and never raises."""
     t = os.times()
-    return float(t.user + t.system + t.children_user + t.children_system)
+    own = float(t.user + t.system + t.children_user + t.children_system)
+    # On Windows `children_*` are always 0 (documented), so a subprocess leg read ~0 CPU however
+    # hard it worked. `proctree.run` reads each child's CPU from its handle before closing it.
+    if sys.platform == "win32":
+        try:
+            from libs.ops import proctree as _pt
+            own += _pt.children_cpu_seconds()
+        except Exception:
+            pass
+    return own
 
 
 def _append(row: dict[str, Any]) -> None:
@@ -166,6 +176,9 @@ def close_run(run: Run, *, outcome: str = "ok", inputs: list[Path] | None = None
         "started_at": datetime.fromtimestamp(started, tz=UTC).isoformat(timespec="seconds"),
         "finished_at": finished.isoformat(timespec="seconds"),
         "commit_sha": commit_sha(),
+        # The ledger is tracked and travels; the host says whose run this was (see
+        # runtime_attestation.run_index -- another machine's run is not this machine's).
+        "host": socket.gethostname(),
         "config_hash": _config_hash(run),
         "input_hash": _sha256_files(inputs),
         "output_hash": _sha256_files(outputs),

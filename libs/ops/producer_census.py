@@ -453,6 +453,8 @@ def retirements(root: Path | None = None) -> dict[str, dict[str, Any]]:
             continue
         if not isinstance(row, dict):
             continue
+        if str(row.get("status") or "").upper() == "PROPOSED":
+            continue       # a DP2 proposal (dormant_components) awaits a person; not retired
         rec = {"reason": str(row.get("reason") or "")[:400],
                "inheritor": (str(row.get("replacement")) if row.get("replacement") else None),
                "at": row.get("at") or row.get("date")}

@@ -47,19 +47,17 @@ def peaks(tmp_path, monkeypatch):
     against a stubbed box; this file pins the measured-need term alone, so the share is zero.
     """
     monkeypatch.setenv("GAUNTLET_HEADROOM_SHARE", "0")
-    locks = _ROOT / "desks" / "mt5" / "data" / ".job_locks"
+    monkeypatch.delenv("GAUNTLET_MEMORY_BUDGET_MB", raising=False)
+    from research import job_lock
+    locks = tmp_path / ".job_locks"
+    monkeypatch.setattr(job_lock, "LOCK_ROOT", locks)
     locks.mkdir(parents=True, exist_ok=True)
     path = locks / "external_gauntlet.peaks.json"
-    existing = path.read_text("utf-8") if path.exists() else None
 
     def write(history: list[int]):
         path.write_text(json.dumps(history), "utf-8")
         return _load()
     yield write
-    if existing is None:
-        path.unlink(missing_ok=True)
-    else:
-        path.write_text(existing, "utf-8")
 
 
 def test_the_budget_tracks_the_measured_working_set(peaks) -> None:

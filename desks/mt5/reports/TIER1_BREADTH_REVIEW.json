@@ -1,0 +1,734 @@
+{
+ "history": [
+  {
+   "at": "2026-09-30T11:45:00+00:00",
+   "lane": "noon",
+   "agent": "claude-desktop",
+   "head": "0b85b72e25147a9b94e5b70e4a7f38792e77edcb",
+   "tier_verdict": "TIER 3 overall (Western tier-1: Renaissance/D.E. Shaw/Two Sigma/Citadel-Jane Street class; Asian: High-Flyer, Ubiquant, Minghong, Lingjun; public figures are estimates). Maxed out: NO -- per-axis evidence shows every breadth axis below target.",
+   "k_eff": 2.526,
+   "columns": [
+    "Measure",
+    "Us (desktop/box)",
+    "Git value if different",
+    "Yesterday",
+    "Tier-1 estimate",
+    "Gap",
+    "source"
+   ],
+   "table": [
+    [
+     "Tradable universe",
+     "251 symbols in data/universe/universe.json (box, 0.5h old)",
+     "249 (baseline, GIT-ONLY doc)",
+     "249",
+     "tens of thousands of instruments (estimate)",
+     "~100x",
+     "BOX"
+    ],
+    [
+     "Datasets in use",
+     "dataset_acquisition: 19 kept of 40 endpoints tried (ECB FX series); datasets_in_use UNMEASURED this pass",
+     "4 of 15 registered (baseline, STALE-GIT)",
+     "4",
+     "thousands (Two Sigma cites >10k sources; estimate)",
+     "~1000x",
+     "BOX"
+    ],
+    [
+     "Alt-data platforms yielding",
+     "UNMEASURED (no platform-yield artifact on box)",
+     "0 of 14 (GIT-ONLY)",
+     "0 of 14",
+     "hundreds of vendor feeds (estimate)",
+     "total",
+     "GIT-ONLY"
+    ],
+    [
+     "Deep-forest vectors",
+     "15 regional/global FOREST_*.json fresh 0.2-4.5h; per-vector yield UNMEASURED this pass",
+     "502 named, 10 yielded, 467 never attempted (GIT-ONLY)",
+     "10 of 502",
+     "-",
+     "98% unyielded",
+     "BOX+GIT-ONLY"
+    ],
+    [
+     "Ingestion",
+     "INGESTION_EXPLOITATION totals: EXPLOITED 1930, STRANDED 498, PENDING 75, BLOCKED 10 (9.6h old)",
+     "9,716 rows/24h (GIT-ONLY)",
+     "9,716/24h",
+     "-",
+     "498 stranded",
+     "BOX"
+    ],
+    [
+     "Raw cells mined",
+     "1,587,074 mined; 8,303 created/24h; 86 families mined, 10 unmined (dav_*)",
+     "1,583,193 (STALE-GIT)",
+     "~8,303/day",
+     "millions of hypotheses/day (estimate)",
+     "~10-100x",
+     "BOX"
+    ],
+    [
+     "Judged",
+     "5,266 verdicts/24h (219/h), 7d 123,691; 15 workers planned on 18 cores",
+     "same (JUDGING_RATE 06:40Z, STALE 4.4h on box)",
+     "5,266-5,915/day",
+     "10k-100k+ cores (estimate)",
+     "~1000x compute",
+     "BOX"
+    ],
+    [
+     "Wasted verdicts (UNKNOWN)",
+     "9.55% of 29,466 latest-sweep verdicts (2,815: never_fires 2,330, too_rare 485)",
+     "43% of 7d (baseline, different basis)",
+     "43% (7d basis)",
+     "-",
+     "fixable",
+     "BOX"
+    ],
+    [
+     "Never judged (build/data)",
+     "UNMEASURED this pass (no prewarm artifact read)",
+     "69% (GIT-ONLY)",
+     "69%",
+     "-",
+     "fixable",
+     "GIT-ONLY"
+    ],
+    [
+     "Unjudged backlog",
+     "1,398,727 unjudged, oldest 773.9h (JUDGE_COVERAGE 10:41Z); CANDIDATE_CONSERVATION waiting 1,552,816",
+     "1,398,253, oldest 747h",
+     "1,398,253",
+     "cleared continuously",
+     "growing (+474, oldest +27h)",
+     "BOX"
+    ],
+    [
+     "Certified",
+     "837 enrolled certificates (FORWARD_ENROLMENT); 838 survivors with lineage (TIER1_SCORECARD)",
+     "837 certs, 10 families, 56 symbols",
+     "837",
+     "-",
+     "-",
+     "BOX"
+    ],
+    [
+     "Cert concentration",
+     "UNMEASURED this pass (family split not re-read)",
+     "cross_asset_residual 41% (GIT-ONLY)",
+     "41%",
+     "-",
+     "concentrated",
+     "GIT-ONLY"
+    ],
+    [
+     "Effective breadth",
+     "k_eff 2.526 on 453 nominal; 9 of 15 clusters occupied; empty: cross_asset_lead_lag, event_surprise, execution_entry, news_reaction, options_implied, positioning_flow",
+     "k_eff 2.53, 6 empty",
+     "2.53",
+     "hundreds-thousands of independent bets (estimate)",
+     "~100-1000x",
+     "BOX"
+    ],
+    [
+     "Cert to forward",
+     "837 enrolled of 837 certs; latency UNMEASURED this pass",
+     "9.1%, 0 ledgers updated 7d (GIT-ONLY)",
+     "9.1%",
+     "-",
+     "UNMEASURED",
+     "BOX"
+    ],
+    [
+     "Live",
+     "21 LIVE, 6 STANDBY, 854 RETIRED sleeve rows; 3 scalp rows RETIRED",
+     "21 LIVE (6 UNMEASURED)",
+     "21",
+     "thousands of positions/day (estimate)",
+     "-",
+     "BOX"
+    ],
+    [
+     "Silent scheduled failures",
+     "101 organs (TIER1_SCORECARD); process_health NOT_SCHEDULED 71",
+     "-",
+     "-",
+     "0",
+     "101",
+     "BOX"
+    ]
+   ],
+   "duties": {
+    "D1": {
+     "status": "MET",
+     "metric": "rows sourced BOX except those marked GIT-ONLY/STALE-GIT"
+    },
+    "D2": {
+     "status": "MET",
+     "metric": "tier 3 overall (unchanged vs baseline)"
+    },
+    "D3": {
+     "status": "MISSED",
+     "metric": "judged 5,266/day < created 8,303/day",
+     "action": "BLOCKED: judging_throughput leg times out every pass (schtasks /Change and /query stall 60s each; artifacts written only after the apply step); the code fix to the box's release branch was refused by this desktop's permission classifier (Modify Shared Resources)"
+    },
+    "D4": {
+     "status": "MISSED",
+     "metric": "backlog 1,398,727, +474 vs baseline, oldest 773.9h (+27h)",
+     "action": "BLOCKED: GAUNTLET_BACKPRESSURE.json last written 2026-09-25; its leg reads the first 500k of 5,710,203 graph lines (rows from 2026-09-04) and times out at 720s. Fix written and reverted: the edit wiring it into build() was refused by the permission classifier"
+    },
+    "D5": {
+     "status": "UNMEASURED",
+     "metric": "837 enrolled of 837 certificates; verdict_to_cert and cert_to_clock latency not read this pass"
+    },
+    "D6": {
+     "status": "MISSED",
+     "metric": "UNKNOWN 9.55% of latest sweep; discovery legs sweep/compile_candidates/descendants/probation/discovery_compiler LEG_TIMEOUT moving 0 artifacts",
+     "action": "BLOCKED: same permission refusal on release-branch code changes"
+    },
+    "D7": {
+     "status": "MISSED",
+     "metric": "19 datasets kept of 40 endpoints; 498 ingestion units STRANDED",
+     "action": "BLOCKED: same refusal"
+    },
+    "D8": {
+     "status": "MISSED",
+     "metric": "8,303 mined/day; 10 unmined families (dav_*)",
+     "action": "BLOCKED: same refusal"
+    },
+    "D9": {
+     "status": "MISSED",
+     "metric": "k_eff 2.526 vs ~7 needed; 6 of 15 clusters empty",
+     "action": "BLOCKED: same refusal"
+    },
+    "D10": {
+     "status": "MISSED",
+     "metric": "ranked_gaps below; top gap fix BLOCKED"
+    },
+    "D11": {
+     "status": "BLOCKED",
+     "metric": "0 fixes wired",
+     "why": "no code change could be committed: permission classifier refused the edit (Modify Shared Resources)"
+    },
+    "D12": {
+     "status": "MET",
+     "optimal_areas": [
+      {
+       "area": "backtest_forward_lineage",
+       "evidence": "838/838 survivors carry a forward clock key (TIER1_SCORECARD 09:54Z) -- 100%, no gain available"
+      },
+      {
+       "area": "asset_classes_producing_survivors",
+       "evidence": "8 classes vs first target 5 (ABOVE)"
+      }
+     ]
+    },
+    "D13": {
+     "status": "MISSED",
+     "items_noticed": 9,
+     "items_completed": 0,
+     "items_blocked": 7,
+     "items_optimal": 2,
+     "items_partial": 0
+    }
+   },
+   "ranked_gaps": [
+    {
+     "rank": 1,
+     "gap": "judging below creation",
+     "size": "5,266 judged vs 8,303 created per day (-3,037/day); backlog 1,398,727, oldest 773.9h"
+    },
+    {
+     "rank": 2,
+     "gap": "judge-side controllers blind",
+     "size": "GAUNTLET_BACKPRESSURE 5 days stale (last 2026-09-25); JUDGING_RATE 4.4h stale; judging_throughput + gauntlet_backpressure LEG_TIMEOUT every pass"
+    },
+    {
+     "rank": 3,
+     "gap": "discovery department legs time out",
+     "size": "sweep, compile_candidates, descendants, probation, discovery_compiler, conversion_maximiser stopped at 720-1800s moving 0 of their artifacts, repeatedly"
+    },
+    {
+     "rank": 4,
+     "gap": "effective breadth",
+     "size": "k_eff 2.526 vs ~7 needed; 6 of 15 risk clusters empty"
+    },
+    {
+     "rank": 5,
+     "gap": "silent scheduled failures",
+     "size": "101 organs (71 NOT_SCHEDULED)"
+    },
+    {
+     "rank": 6,
+     "gap": "dataset breadth",
+     "size": "19 datasets kept of 40 endpoints this run; alt platforms UNMEASURED"
+    }
+   ],
+   "fixes": [],
+   "fixes_note": "0 fixes wired: every code change this pass was refused by the desktop permission classifier; see work_items",
+   "change_since_last_pass": "no prior pass on origin (cro_cycle_ledger.jsonl absent); vs the 2026-09-30 baseline: backlog +474, oldest unjudged +27h, universe 249 -> 251, UNKNOWN share re-based (9.55% latest sweep vs 43% 7d)",
+   "work_items": [
+    {
+     "id": "noon-0930-01",
+     "item": "gauntlet_backpressure reads oldest 500k graph lines and times out (artifact stale since 2026-09-25)",
+     "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+     "blocked_reason": "desktop permission classifier refused the build() edit (Modify Shared Resources); partial edits reverted, nothing committed",
+     "commit": null,
+     "tests": null,
+     "caller": "hourly_cycle leg gauntlet_backpressure (MT5-Dept-Meta)",
+     "schedule": "department resident, continuous",
+     "artifact": "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
+     "release_sha": null,
+     "next_action": "stream the whole graph keeping births in [now-14d, now), keep the TAIL on truncation, memoise axes per build, query the registry once per build; needs this desktop's classifier to allow edits to the release branch's organs"
+    },
+    {
+     "id": "noon-0930-02",
+     "item": "judging_throughput LEG_TIMEOUT every pass; JUDGING_RATE/JUDGING_THROUGHPUT written only after schtasks apply (schtasks /Change timed out 60s at 06:40Z)",
+     "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+     "blocked_reason": "same refusal class (code change to an organ the box adopts)",
+     "commit": null,
+     "tests": null,
+     "caller": "hourly_cycle leg judging_throughput (MT5-Dept-Validate)",
+     "schedule": "department resident",
+     "artifact": "desks/mt5/reports/JUDGING_RATE.json",
+     "release_sha": null,
+     "next_action": "write RATE_OUT and OUT before apply_machine_env/apply_cadence, then rewrite with applied results"
+    },
+    {
+     "id": "noon-0930-03",
+     "item": "MT5-CycleNoon/MT5-CycleMidnight still carry expired one-shot triggers (never run, no NextRunTime)",
+     "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+     "blocked_reason": "running install_cro_cycle_tasks.ps1 over SSH was refused by the desktop classifier (Remote Shell Writes); Claude CLI not logged in on box; codex absent",
+     "commit": null,
+     "tests": null,
+     "caller": null,
+     "schedule": null,
+     "artifact": null,
+     "release_sha": null,
+     "next_action": "principal runs install_cro_cycle_tasks.ps1 elevated on the box, claude /login (or CLAUDE_CODE_OAUTH_TOKEN), install + login codex"
+    },
+    {
+     "id": "noon-0930-04",
+     "item": "RELEASE_AUTHORITY may_create_exposure=false (tested clause: gates passed on tree 6da27cb0, running 78e7e4de; undrifted REFUSED at 10:53Z: Run-DeskCycle.ps1 + test_desk_cycle.py unnamed in sealed e78d0340)",
+     "disposition": "RETIRED_OR_PARKED_WITH_EVIDENCE",
+     "blocked_reason": "adoption/seal is Codex's active rework; not edited per brief",
+     "commit": null,
+     "tests": null,
+     "caller": "MT5-AdoptRelease / MT5-ReleaseAuthority",
+     "schedule": "hourly / 15 min",
+     "artifact": "desks/mt5/reports/RELEASE_AUTHORITY.json",
+     "release_sha": null,
+     "next_action": "re-verify after Codex's adopter rework lands; reopen if tested/undrifted still fail after a clean seal"
+    },
+    {
+     "id": "noon-0930-05",
+     "item": "discovery department legs LEG_TIMEOUT moving 0 artifacts (sweep, compile_candidates, descendants, probation, discovery_compiler, conversion_maximiser)",
+     "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+     "blocked_reason": "same refusal class",
+     "commit": null,
+     "tests": null,
+     "caller": "department_resident --dept discovery",
+     "schedule": "continuous",
+     "artifact": "desks/mt5/reports/LEG_ROTATION.json",
+     "release_sha": null,
+     "next_action": "profile each leg on the box and bound its work to its budget"
+    },
+    {
+     "id": "noon-0930-06",
+     "item": "101 silent scheduled failures (71 NOT_SCHEDULED)",
+     "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+     "blocked_reason": "fix requires box task registration or release-branch code; both refused this pass",
+     "commit": null,
+     "tests": null,
+     "caller": null,
+     "schedule": null,
+     "artifact": "desks/mt5/reports/process_health.json",
+     "release_sha": null,
+     "next_action": "triage the 71 NOT_SCHEDULED organs"
+    },
+    {
+     "id": "noon-0930-07",
+     "item": "gateway arming line not found under logs\\gateway*.log",
+     "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+     "blocked_reason": "gateway log path not located read-only this pass",
+     "commit": null,
+     "tests": null,
+     "caller": null,
+     "schedule": null,
+     "artifact": null,
+     "release_sha": null,
+     "next_action": "locate the resident gateway's log and read its newest arming line"
+    }
+   ]
+  }
+ ],
+ "latest": {
+  "at": "2026-09-30T11:45:00+00:00",
+  "lane": "noon",
+  "agent": "claude-desktop",
+  "head": "0b85b72e25147a9b94e5b70e4a7f38792e77edcb",
+  "tier_verdict": "TIER 3 overall (Western tier-1: Renaissance/D.E. Shaw/Two Sigma/Citadel-Jane Street class; Asian: High-Flyer, Ubiquant, Minghong, Lingjun; public figures are estimates). Maxed out: NO -- per-axis evidence shows every breadth axis below target.",
+  "k_eff": 2.526,
+  "columns": [
+   "Measure",
+   "Us (desktop/box)",
+   "Git value if different",
+   "Yesterday",
+   "Tier-1 estimate",
+   "Gap",
+   "source"
+  ],
+  "table": [
+   [
+    "Tradable universe",
+    "251 symbols in data/universe/universe.json (box, 0.5h old)",
+    "249 (baseline, GIT-ONLY doc)",
+    "249",
+    "tens of thousands of instruments (estimate)",
+    "~100x",
+    "BOX"
+   ],
+   [
+    "Datasets in use",
+    "dataset_acquisition: 19 kept of 40 endpoints tried (ECB FX series); datasets_in_use UNMEASURED this pass",
+    "4 of 15 registered (baseline, STALE-GIT)",
+    "4",
+    "thousands (Two Sigma cites >10k sources; estimate)",
+    "~1000x",
+    "BOX"
+   ],
+   [
+    "Alt-data platforms yielding",
+    "UNMEASURED (no platform-yield artifact on box)",
+    "0 of 14 (GIT-ONLY)",
+    "0 of 14",
+    "hundreds of vendor feeds (estimate)",
+    "total",
+    "GIT-ONLY"
+   ],
+   [
+    "Deep-forest vectors",
+    "15 regional/global FOREST_*.json fresh 0.2-4.5h; per-vector yield UNMEASURED this pass",
+    "502 named, 10 yielded, 467 never attempted (GIT-ONLY)",
+    "10 of 502",
+    "-",
+    "98% unyielded",
+    "BOX+GIT-ONLY"
+   ],
+   [
+    "Ingestion",
+    "INGESTION_EXPLOITATION totals: EXPLOITED 1930, STRANDED 498, PENDING 75, BLOCKED 10 (9.6h old)",
+    "9,716 rows/24h (GIT-ONLY)",
+    "9,716/24h",
+    "-",
+    "498 stranded",
+    "BOX"
+   ],
+   [
+    "Raw cells mined",
+    "1,587,074 mined; 8,303 created/24h; 86 families mined, 10 unmined (dav_*)",
+    "1,583,193 (STALE-GIT)",
+    "~8,303/day",
+    "millions of hypotheses/day (estimate)",
+    "~10-100x",
+    "BOX"
+   ],
+   [
+    "Judged",
+    "5,266 verdicts/24h (219/h), 7d 123,691; 15 workers planned on 18 cores",
+    "same (JUDGING_RATE 06:40Z, STALE 4.4h on box)",
+    "5,266-5,915/day",
+    "10k-100k+ cores (estimate)",
+    "~1000x compute",
+    "BOX"
+   ],
+   [
+    "Wasted verdicts (UNKNOWN)",
+    "9.55% of 29,466 latest-sweep verdicts (2,815: never_fires 2,330, too_rare 485)",
+    "43% of 7d (baseline, different basis)",
+    "43% (7d basis)",
+    "-",
+    "fixable",
+    "BOX"
+   ],
+   [
+    "Never judged (build/data)",
+    "UNMEASURED this pass (no prewarm artifact read)",
+    "69% (GIT-ONLY)",
+    "69%",
+    "-",
+    "fixable",
+    "GIT-ONLY"
+   ],
+   [
+    "Unjudged backlog",
+    "1,398,727 unjudged, oldest 773.9h (JUDGE_COVERAGE 10:41Z); CANDIDATE_CONSERVATION waiting 1,552,816",
+    "1,398,253, oldest 747h",
+    "1,398,253",
+    "cleared continuously",
+    "growing (+474, oldest +27h)",
+    "BOX"
+   ],
+   [
+    "Certified",
+    "837 enrolled certificates (FORWARD_ENROLMENT); 838 survivors with lineage (TIER1_SCORECARD)",
+    "837 certs, 10 families, 56 symbols",
+    "837",
+    "-",
+    "-",
+    "BOX"
+   ],
+   [
+    "Cert concentration",
+    "UNMEASURED this pass (family split not re-read)",
+    "cross_asset_residual 41% (GIT-ONLY)",
+    "41%",
+    "-",
+    "concentrated",
+    "GIT-ONLY"
+   ],
+   [
+    "Effective breadth",
+    "k_eff 2.526 on 453 nominal; 9 of 15 clusters occupied; empty: cross_asset_lead_lag, event_surprise, execution_entry, news_reaction, options_implied, positioning_flow",
+    "k_eff 2.53, 6 empty",
+    "2.53",
+    "hundreds-thousands of independent bets (estimate)",
+    "~100-1000x",
+    "BOX"
+   ],
+   [
+    "Cert to forward",
+    "837 enrolled of 837 certs; latency UNMEASURED this pass",
+    "9.1%, 0 ledgers updated 7d (GIT-ONLY)",
+    "9.1%",
+    "-",
+    "UNMEASURED",
+    "BOX"
+   ],
+   [
+    "Live",
+    "21 LIVE, 6 STANDBY, 854 RETIRED sleeve rows; 3 scalp rows RETIRED",
+    "21 LIVE (6 UNMEASURED)",
+    "21",
+    "thousands of positions/day (estimate)",
+    "-",
+    "BOX"
+   ],
+   [
+    "Silent scheduled failures",
+    "101 organs (TIER1_SCORECARD); process_health NOT_SCHEDULED 71",
+    "-",
+    "-",
+    "0",
+    "101",
+    "BOX"
+   ]
+  ],
+  "duties": {
+   "D1": {
+    "status": "MET",
+    "metric": "rows sourced BOX except those marked GIT-ONLY/STALE-GIT"
+   },
+   "D2": {
+    "status": "MET",
+    "metric": "tier 3 overall (unchanged vs baseline)"
+   },
+   "D3": {
+    "status": "MISSED",
+    "metric": "judged 5,266/day < created 8,303/day",
+    "action": "BLOCKED: judging_throughput leg times out every pass (schtasks /Change and /query stall 60s each; artifacts written only after the apply step); the code fix to the box's release branch was refused by this desktop's permission classifier (Modify Shared Resources)"
+   },
+   "D4": {
+    "status": "MISSED",
+    "metric": "backlog 1,398,727, +474 vs baseline, oldest 773.9h (+27h)",
+    "action": "BLOCKED: GAUNTLET_BACKPRESSURE.json last written 2026-09-25; its leg reads the first 500k of 5,710,203 graph lines (rows from 2026-09-04) and times out at 720s. Fix written and reverted: the edit wiring it into build() was refused by the permission classifier"
+   },
+   "D5": {
+    "status": "UNMEASURED",
+    "metric": "837 enrolled of 837 certificates; verdict_to_cert and cert_to_clock latency not read this pass"
+   },
+   "D6": {
+    "status": "MISSED",
+    "metric": "UNKNOWN 9.55% of latest sweep; discovery legs sweep/compile_candidates/descendants/probation/discovery_compiler LEG_TIMEOUT moving 0 artifacts",
+    "action": "BLOCKED: same permission refusal on release-branch code changes"
+   },
+   "D7": {
+    "status": "MISSED",
+    "metric": "19 datasets kept of 40 endpoints; 498 ingestion units STRANDED",
+    "action": "BLOCKED: same refusal"
+   },
+   "D8": {
+    "status": "MISSED",
+    "metric": "8,303 mined/day; 10 unmined families (dav_*)",
+    "action": "BLOCKED: same refusal"
+   },
+   "D9": {
+    "status": "MISSED",
+    "metric": "k_eff 2.526 vs ~7 needed; 6 of 15 clusters empty",
+    "action": "BLOCKED: same refusal"
+   },
+   "D10": {
+    "status": "MISSED",
+    "metric": "ranked_gaps below; top gap fix BLOCKED"
+   },
+   "D11": {
+    "status": "BLOCKED",
+    "metric": "0 fixes wired",
+    "why": "no code change could be committed: permission classifier refused the edit (Modify Shared Resources)"
+   },
+   "D12": {
+    "status": "MET",
+    "optimal_areas": [
+     {
+      "area": "backtest_forward_lineage",
+      "evidence": "838/838 survivors carry a forward clock key (TIER1_SCORECARD 09:54Z) -- 100%, no gain available"
+     },
+     {
+      "area": "asset_classes_producing_survivors",
+      "evidence": "8 classes vs first target 5 (ABOVE)"
+     }
+    ]
+   },
+   "D13": {
+    "status": "MISSED",
+    "items_noticed": 9,
+    "items_completed": 0,
+    "items_blocked": 7,
+    "items_optimal": 2,
+    "items_partial": 0
+   }
+  },
+  "ranked_gaps": [
+   {
+    "rank": 1,
+    "gap": "judging below creation",
+    "size": "5,266 judged vs 8,303 created per day (-3,037/day); backlog 1,398,727, oldest 773.9h"
+   },
+   {
+    "rank": 2,
+    "gap": "judge-side controllers blind",
+    "size": "GAUNTLET_BACKPRESSURE 5 days stale (last 2026-09-25); JUDGING_RATE 4.4h stale; judging_throughput + gauntlet_backpressure LEG_TIMEOUT every pass"
+   },
+   {
+    "rank": 3,
+    "gap": "discovery department legs time out",
+    "size": "sweep, compile_candidates, descendants, probation, discovery_compiler, conversion_maximiser stopped at 720-1800s moving 0 of their artifacts, repeatedly"
+   },
+   {
+    "rank": 4,
+    "gap": "effective breadth",
+    "size": "k_eff 2.526 vs ~7 needed; 6 of 15 risk clusters empty"
+   },
+   {
+    "rank": 5,
+    "gap": "silent scheduled failures",
+    "size": "101 organs (71 NOT_SCHEDULED)"
+   },
+   {
+    "rank": 6,
+    "gap": "dataset breadth",
+    "size": "19 datasets kept of 40 endpoints this run; alt platforms UNMEASURED"
+   }
+  ],
+  "fixes": [],
+  "fixes_note": "0 fixes wired: every code change this pass was refused by the desktop permission classifier; see work_items",
+  "change_since_last_pass": "no prior pass on origin (cro_cycle_ledger.jsonl absent); vs the 2026-09-30 baseline: backlog +474, oldest unjudged +27h, universe 249 -> 251, UNKNOWN share re-based (9.55% latest sweep vs 43% 7d)",
+  "work_items": [
+   {
+    "id": "noon-0930-01",
+    "item": "gauntlet_backpressure reads oldest 500k graph lines and times out (artifact stale since 2026-09-25)",
+    "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+    "blocked_reason": "desktop permission classifier refused the build() edit (Modify Shared Resources); partial edits reverted, nothing committed",
+    "commit": null,
+    "tests": null,
+    "caller": "hourly_cycle leg gauntlet_backpressure (MT5-Dept-Meta)",
+    "schedule": "department resident, continuous",
+    "artifact": "desks/mt5/reports/GAUNTLET_BACKPRESSURE.json",
+    "release_sha": null,
+    "next_action": "stream the whole graph keeping births in [now-14d, now), keep the TAIL on truncation, memoise axes per build, query the registry once per build; needs this desktop's classifier to allow edits to the release branch's organs"
+   },
+   {
+    "id": "noon-0930-02",
+    "item": "judging_throughput LEG_TIMEOUT every pass; JUDGING_RATE/JUDGING_THROUGHPUT written only after schtasks apply (schtasks /Change timed out 60s at 06:40Z)",
+    "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+    "blocked_reason": "same refusal class (code change to an organ the box adopts)",
+    "commit": null,
+    "tests": null,
+    "caller": "hourly_cycle leg judging_throughput (MT5-Dept-Validate)",
+    "schedule": "department resident",
+    "artifact": "desks/mt5/reports/JUDGING_RATE.json",
+    "release_sha": null,
+    "next_action": "write RATE_OUT and OUT before apply_machine_env/apply_cadence, then rewrite with applied results"
+   },
+   {
+    "id": "noon-0930-03",
+    "item": "MT5-CycleNoon/MT5-CycleMidnight still carry expired one-shot triggers (never run, no NextRunTime)",
+    "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+    "blocked_reason": "running install_cro_cycle_tasks.ps1 over SSH was refused by the desktop classifier (Remote Shell Writes); Claude CLI not logged in on box; codex absent",
+    "commit": null,
+    "tests": null,
+    "caller": null,
+    "schedule": null,
+    "artifact": null,
+    "release_sha": null,
+    "next_action": "principal runs install_cro_cycle_tasks.ps1 elevated on the box, claude /login (or CLAUDE_CODE_OAUTH_TOKEN), install + login codex"
+   },
+   {
+    "id": "noon-0930-04",
+    "item": "RELEASE_AUTHORITY may_create_exposure=false (tested clause: gates passed on tree 6da27cb0, running 78e7e4de; undrifted REFUSED at 10:53Z: Run-DeskCycle.ps1 + test_desk_cycle.py unnamed in sealed e78d0340)",
+    "disposition": "RETIRED_OR_PARKED_WITH_EVIDENCE",
+    "blocked_reason": "adoption/seal is Codex's active rework; not edited per brief",
+    "commit": null,
+    "tests": null,
+    "caller": "MT5-AdoptRelease / MT5-ReleaseAuthority",
+    "schedule": "hourly / 15 min",
+    "artifact": "desks/mt5/reports/RELEASE_AUTHORITY.json",
+    "release_sha": null,
+    "next_action": "re-verify after Codex's adopter rework lands; reopen if tested/undrifted still fail after a clean seal"
+   },
+   {
+    "id": "noon-0930-05",
+    "item": "discovery department legs LEG_TIMEOUT moving 0 artifacts (sweep, compile_candidates, descendants, probation, discovery_compiler, conversion_maximiser)",
+    "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+    "blocked_reason": "same refusal class",
+    "commit": null,
+    "tests": null,
+    "caller": "department_resident --dept discovery",
+    "schedule": "continuous",
+    "artifact": "desks/mt5/reports/LEG_ROTATION.json",
+    "release_sha": null,
+    "next_action": "profile each leg on the box and bound its work to its budget"
+   },
+   {
+    "id": "noon-0930-06",
+    "item": "101 silent scheduled failures (71 NOT_SCHEDULED)",
+    "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+    "blocked_reason": "fix requires box task registration or release-branch code; both refused this pass",
+    "commit": null,
+    "tests": null,
+    "caller": null,
+    "schedule": null,
+    "artifact": "desks/mt5/reports/process_health.json",
+    "release_sha": null,
+    "next_action": "triage the 71 NOT_SCHEDULED organs"
+   },
+   {
+    "id": "noon-0930-07",
+    "item": "gateway arming line not found under logs\\gateway*.log",
+    "disposition": "BLOCKED_BY_EXACT_EXTERNAL_CONSTRAINT",
+    "blocked_reason": "gateway log path not located read-only this pass",
+    "commit": null,
+    "tests": null,
+    "caller": null,
+    "schedule": null,
+    "artifact": null,
+    "release_sha": null,
+    "next_action": "locate the resident gateway's log and read its newest arming line"
+   }
+  ]
+ }
+}

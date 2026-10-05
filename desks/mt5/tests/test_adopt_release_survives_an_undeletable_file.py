@@ -221,7 +221,7 @@ def _undeletable(f: Path):
         d = f.parent
         d.chmod(0o555)                   # entries may not be created or removed
         return lambda: d.chmod(0o755)
-    fh = open(f, "r+b")                  # Windows: an open handle denies DELETE sharing
+    fh = open(f, "r+b")  # noqa: SIM115  # returned closer deliberately holds the handle open
     return fh.close
 
 
@@ -502,7 +502,9 @@ def test_an_adoption_whose_only_change_is_untracking_is_still_committed(tmp_path
 
 def test_the_script_untracks_state_deletions_before_it_keeps_or_deletes() -> None:
     code = _executable_lines(SCRIPT.read_text("utf-8"))
-    untrack = code.index('if ($op.Kind -eq "D" -and (Test-StatePath $rel) -and -not $boxAdded.ContainsKey($rel))')
+    untrack = code.index(
+        'if ($op.Kind -eq "D" -and (Test-StatePath $rel) '
+        '-and -not $boxAdded.ContainsKey($rel))')
     assert untrack < code.index("if (Test-KeptByBox $rel)")
     assert untrack < code.index("[System.IO.File]::Delete($full)")
     branch = code[untrack:code.index("if (Test-KeptByBox $rel)")]
@@ -529,19 +531,44 @@ def test_partial_adoption_target_matches_do_not_become_permanent_false_conflicts
     fetched target is unknown local work. The comparison must cover every dirty path, including
     target deletions, and the ordinary refusal must remain after it."""
     code = _executable_lines(SCRIPT.read_text("utf-8"))
-    # BATCHED since f82c4727 (2026-09-29): one `git diff --name-only $target -- <100 paths>` per
-    # batch instead of one `git diff --quiet` per path, which took hours on the live index. Every
-    # dirty path is still classified: each batch covers a slice of the whole normalised list.
+    # NO `git diff` HERE AT ALL since 58ba1ce9 (2026-09-30): even a batched diff refreshed the
+    # live index for minutes, so each dirty path's working-tree blob (clean filter applied) is
+    # compared with the target's blob from `ls-tree`. tests/ops/test_adopt_release_batching.py
+    # pins the absence of the batch; this pins that every normalised dirty path is still judged.
     compare = code.index("$normalisedDirty = @($dirty")
     refuse = code.index("local code path(s) are dirty")
     assert compare < refuse
     block = code[compare:refuse]
-    assert "for ($start = 0; $start -lt $normalisedDirty.Count; $start += $batchSize)" in block
-    assert '@("diff", "--name-only", "--no-ext-diff", $target, "--") + $batch' in block
-    assert "foreach ($rel in $batch)" in block
+    assert "foreach ($rel in $normalisedDirty)" in block
+    assert '@("ls-tree", $target, "--", $rel)' in block
+    assert '@("hash-object", "--path=$rel", "--", $rel)' in block
+    assert "$worktreeBlob -eq $targetBlob" in block
+    assert "if (-not $targetExists)" in block                  # target deletions are covered
     assert "$stillDirty.Add($rel)" in block
     assert "$dirty = @($stillDirty)" in block
     assert "already equal the fetched target" in block
+
+
+def test_dirty_code_refusal_publishes_current_adoption_state_before_exit() -> None:
+    """The watchdog must receive the blocker that caused this scheduled run to fail.
+
+    Measured on the box 2026-10-03: the console refused 28 dirty code paths against target
+    4473f67ed, while ADOPTION_STATE.json still described one path and target 14be56cb from
+    2026-09-30.  The preflight exit sat above the script's only report writer.
+    """
+    code = _executable_lines(SCRIPT.read_text("utf-8"))
+    refusal = code.index('if ($dirtyCode.Count -gt 0)')
+    refusal_exit = code.index("exit 1", refusal)
+    block = code[refusal:refusal_exit + len("exit 1")]
+
+    assert '$preflightState = [ordered]@{' in block
+    assert 'stage       = "preflight-dirty-code"' in block
+    assert 'code_drift = $dirtyCode.Count' in block
+    assert 'code_drift  = @($dirtyCode)' in block
+    assert 'state_drift = @($dirtyState | Select-Object -First 200)' in block
+    assert '"ADOPTION_STATE.json"' in block
+    assert '[System.IO.File]::WriteAllText(' in block
+    assert block.index('[System.IO.File]::WriteAllText(') < block.index("exit 1")
 
 
 def test_a_write_the_acl_refuses_falls_back_to_unlink_without_ever_going_first() -> None:

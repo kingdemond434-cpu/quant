@@ -44,7 +44,10 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "desks" / "mt5" / "reports" / "RELEASE_AUTHORITY.json"
+#: Its own file. It wrote RELEASE_AUTHORITY.json until 2026-09-30 -- the same path as the B1 bit
+#: from desks/mt5/research/release_authority.py -- so a manual audit run replaced the bit that
+#: check_closed_loop reads with a document that has no `may_create_exposure` at all.
+OUT = ROOT / "desks" / "mt5" / "reports" / "RELEASE_AUTHORITY_AUDIT.json"
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -239,6 +242,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"release authority: {doc.get('status')}")
     tv = doc.get("tree_matches_release") or {}
     print(f"  tree vs release : {'OK' if tv.get('ok') else 'DRIFT'}  {str(tv.get('why'))[:90]}")
+    for k, pair in (tv.get("state_moved") or {}).items():
+        was, now = [*pair, None, None][:2]
+        print(f"  state moved     : {k} {str(was)[:16]} -> {str(now)[:16]} (reported, not drift)")
     sg = doc.get("signature") or {}
     print(f"  signature       : {sg.get('state')}  {str(sg.get('why'))[:90]}")
     ag = doc.get("adopt_guard") or {}

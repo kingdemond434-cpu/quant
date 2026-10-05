@@ -264,11 +264,12 @@ def test_where_the_floor_does_not_bind_the_old_charge_was_accidentally_right() -
 
 def test_the_exact_charge_also_stops_over_reserving_and_that_frees_book() -> None:
     """The other direction, and it is a GAIN, not a cost. At E=8,000 a 45 USD/oz bracket sizes
-    to the 0.02 floor and runs 0.98% -- while the house nominal reserved 1.23% for it. The old
+    to 0.02 lots and runs 0.98% -- while the house nominal reserved 1.23% for it. The old
     accounting held back budget the trade was never going to use, which could defer a validated
     leg. Nothing about the lot changes; only the number the cap reads."""
     old, new, _, exact_lot = _old_and_new(8_000.0, 45.0)
-    assert exact_lot == dc.gold_min_lot()
+    assert exact_lot == 0.02
+    assert exact_lot >= dc.gold_min_lot()
     assert new < old, (old, new)
 
 
@@ -437,8 +438,18 @@ def test_the_cancel_hour_is_part_of_the_resolution_not_of_the_send():
     pend = _resolve(45.0, hour=float(dc.CANCEL_HOUR) + 0.5)
     assert not pend["ok"] and pend["stage"] == "past_cancel_hour"
     assert "taken back by this same pass" in pend["why"]
-    # And it is still resolvable an hour before the backstop, or the guard has eaten the session.
-    assert _resolve(45.0, hour=float(dc.CANCEL_HOUR) - 1.0)["ok"]
+    # And it is still resolvable inside its own session, or the guard has eaten the session.
+    assert _resolve(45.0, hour=16.9)["ok"]
+
+
+def test_a_late_pass_does_not_resolve_a_bracket_whose_session_has_ended():
+    """2026-09-25 on Fusion: asia and london_am brackets went out after 17:00 server off stale
+    ranges and both whipsawed (-122.90 EUR). london_am's session ends when the afternoon opens, so
+    a pass at 17:00 or later no longer resolves it -- and the cap never prices it."""
+    pend = _resolve(45.0, hour=17.0)
+    assert not pend["ok"] and pend["stage"] == "session_ended"
+    assert "stale range" in pend["why"]
+    assert not _resolve(45.0, hour=float(dc.CANCEL_HOUR) - 1.0)["ok"]
 
 
 def test_a_sleeve_the_cap_did_not_price_cannot_be_placed_later_in_the_same_pass():
@@ -667,3 +678,13 @@ def test_the_scalp_executor_sends_the_slice_the_cap_admitted_and_sizes_nothing()
     assert 'plan = s.get("pending_order")' in sender
     assert "no pre-cap resolution this pass" in sender
     assert 'per, side, price = float(plan["per"])' in sender
+
+
+@pytest.fixture(autouse=True)
+def _legacy_floors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These pin the PRE-2026-09-29 floors, which remain the documented revert path
+    (data/ALLOCATOR_SOVEREIGN.json {"enabled": false}). Sovereign behaviour is pinned in
+    test_allocator_sovereignty.py."""
+    import mt5desk.decision_core as _dc
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN", False)
+    monkeypatch.setattr(_dc, "ALLOCATOR_SOVEREIGN_FILE", _dc._DESK / "data" / "__absent__.json")

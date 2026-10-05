@@ -98,6 +98,11 @@ def test_every_core_leg_has_a_call_site_the_rotation_can_see() -> None:
     assert not unseen, f"CORE_LEGS with no _costed call site the rotation can find: {unseen}"
 
 
+def test_judging_capacity_measurement_cannot_be_rotated_out() -> None:
+    assert "judging_throughput" in hourly_cycle.CORE_LEGS
+    assert "judging_throughput" in LR.ALWAYS_RUN
+
+
 def test_the_sixteen_that_were_dark_are_on_the_roster() -> None:
     """The legs this whole exercise was about must be rotatable, by name."""
     roster = set(LR.legs_in_order(DESK / "research" / "hourly_cycle.py"))
