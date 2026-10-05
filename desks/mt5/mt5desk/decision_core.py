@@ -535,7 +535,9 @@ def min_lot() -> float:
 #: to one end and realised risk misses target by a whole step. 0.02 halves that to 50%.
 #: Applies to the ONE book with forward evidence behind it; every other promoted sleeve
 #: stays at the 0.01 venue floor, which is what "these live sleeves only" means.
-GOLD_MIN_LOT = 0.02
+#: Principal 2026-10-02 supersedes the historical 0.02 exception above:
+#: 0.01 is the baseline; allocator sovereignty and broker volume rules still bind.
+GOLD_MIN_LOT = 0.01
 #: A box may raise the gold floor without a code push. Absent or unreadable -> GOLD_MIN_LOT.
 GOLD_MIN_LOT_FILE = _DESK / "data" / "GOLD_MIN_LOT.json"
 

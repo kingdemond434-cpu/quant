@@ -90,6 +90,20 @@ class Node:
 #: THE GRAPH. Every path is relative to ROOT. Adding a component means adding it here, and the
 #: UNDECLARED check is what forces that: a new writer of a new path shows up red until named.
 NODES: tuple[Node, ...] = (
+    # Miners publish through this store; the catch-up merger reads its candidate rows
+    # via libs.moat.docket_feed before publishing the canonical judge docket.
+    Node("alpha_registry", "libs/moat/registry.py",
+         writes=("data/alpha_registry.sqlite",),
+         # Price the storage through the compiler that consumes its candidate rows,
+         # as with intake_catchup; absent downstream evidence remains UNMEASURED.
+         billed_as=("miner_candidate_compiler",)),
+    Node("intake_catchup", "desks/mt5/research/hourly_cycle.py",
+         writes=("desks/mt5/data/hypotheses/miner_candidates.json",
+                 "desks/mt5/data/hypotheses/external_survivors.json",
+                 "desks/mt5/data/hypotheses/merge_report.json"),
+         reads=("desks/mt5/data/intelligence/", "data/alpha_registry.sqlite",
+                "desks/mt5/data/hypotheses/external_survivors.json"),
+         billed_as=("miner_candidate_compiler",)),
     Node("miner_candidate_compiler", "desks/mt5/research/miner_candidate_compiler.py",
          writes=("desks/mt5/data/hypotheses/miner_candidates.json",
                  "desks/mt5/data/hypotheses/miner_deepening_queue.json",
@@ -885,6 +899,9 @@ NODES: tuple[Node, ...] = (
 #: Artifacts a person is expected to read. Being the ONLY reader of a node's output makes that
 #: node advisory. Listed so the check has a definition rather than an opinion.
 HUMAN_READ = frozenset({
+    # merge_hypotheses writes a census receipt, not a decision input. Its executable
+    # output is external_survivors.json, whose certificate consumer is declared above.
+    "desks/mt5/data/hypotheses/merge_report.json",
     # The macro layer's report. Read by a person; the layer's one decision edge is the
     # interrupt above, declared in EXTERNAL_READERS with its reader named.
     "desks/mt5/reports/MACRO_INTEL.json",

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+import subprocess
 import time
 from pathlib import Path
 
@@ -78,6 +79,15 @@ def test_one_pass_runs_the_cycle_under_the_department_plan(monkeypatch, tmp_path
     monkeypatch.setattr(dr, "DESK", tmp_path)
     monkeypatch.setattr(dr, "PASS_BUDGET_FILL", 0.82)
     monkeypatch.delenv("HOURLY_BUDGET_S", raising=False)
+    def owned_child(args, **kwargs):
+        # Assert the resident requested its production priority; scheduling fairness on
+        # the busy VPS is outside this environment/plan contract. Execute the owned
+        # child at normal priority so production workers cannot starve the fixture.
+        assert args[-1] == str(fake)
+        if sys.platform == "win32":
+            assert kwargs.pop("creationflags") == dr.BELOW_NORMAL_PRIORITY_CLASS
+        return subprocess.run(args, **kwargs)
+    monkeypatch.setattr(dr, "_run_tree", owned_child)
     res = dr.run_pass("intel", timeout_s=60)
     assert res["status"] == "ok" and res["rc"] == 0
     res2 = dr.run_pass("macro", timeout_s=60)

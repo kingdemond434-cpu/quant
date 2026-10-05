@@ -35,7 +35,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 import scripts.check_mt5_coverage_floor as F
 
 ROOT = Path(__file__).resolve().parents[2]

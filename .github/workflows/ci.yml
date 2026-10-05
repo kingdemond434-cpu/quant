@@ -35,7 +35,9 @@ jobs:
     # a broken test that does not exist. 45 leaves the suite room to keep growing -- it is meant
     # to -- while still failing loudly if something genuinely hangs, which is what a timeout is
     # for. The full-repo suite with branch coverage is simply a bigger job than it was.
-    timeout-minutes: 45
+    # Two Oct 3 runs were cancelled at 45 minutes while tests were still executing.
+    # Keep each test's timeout; give the complete, growing suite room to finish.
+    timeout-minutes: 90
     # What `promote` writes into the release tag: the law gate's own verdict line and the
     # suite's counts, read from this job's artifacts rather than restated by hand.
     outputs:
@@ -90,8 +92,15 @@ jobs:
       # Two floors, not one: a repo-wide average lets ORDER-PATH coverage fall while a wave of
       # research tests keeps the aggregate up, which hides precisely the number worth watching.
       # Floors only ever rise.
-      - name: Coverage floors (ratcheted)
-        run: python scripts/check_coverage_floors.py --report coverage.json
+      # Shared libs are also exercised by the desk suite. Preserve raw branch data so the
+      # unchanged floor measures BOTH completed suites, not only root testpaths=[tests].
+      - name: Preserve root coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: root-coverage-${{ github.sha }}
+          path: .coverage
+          include-hidden-files: true
+          if-no-files-found: error
 
       - name: Release evidence (law gate verdict + suite counts)
         id: evidence
@@ -132,7 +141,7 @@ jobs:
       - name: MT5 desk suite (branch coverage on the money path)
         run: >-
           pytest desks/mt5/tests -q -p no:randomly --timeout=600 -n auto --dist loadfile
-          --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch
+          --cov=libs --cov=desks/mt5/mt5desk --cov=desks/mt5/research --cov-branch
           --cov-report=term:skip-covered --cov-report=json:mt5cov.json --junitxml=mt5-junit.xml
 
       - name: Diagnose decision-core uncovered branches
@@ -183,6 +192,40 @@ jobs:
         id: evidence
         run: python scripts/release_promotion.py counts --junit mt5-junit.xml >> "$GITHUB_OUTPUT"
 
+      - name: Preserve desk coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: desk-coverage-${{ github.sha }}
+          path: .coverage
+          include-hidden-files: true
+          if-no-files-found: error
+
+  coverage-floor:
+    needs: [quality, mt5-money-path]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - uses: actions/download-artifact@v4
+        with:
+          name: root-coverage-${{ github.sha }}
+          path: coverage-input/root
+      - uses: actions/download-artifact@v4
+        with:
+          name: desk-coverage-${{ github.sha }}
+          path: coverage-input/desk
+      # Same run, same code, unchanged libs population and branch denominator. Combine
+      # actual executed lines/branches; never average percentages or lower the ratchet.
+      - name: Combine both suites and enforce unchanged shared-library floors
+        run: |
+          coverage combine coverage-input/root/.coverage coverage-input/desk/.coverage
+          coverage json --include='libs/*' -o coverage.json
+          python scripts/check_coverage_floors.py --report coverage.json
+
   # THE SEAL IS ITS OWN COMMIT. Once both gates are green on a push to a branch the box pulls,
   # HEAD is sealed into desks/mt5/data/RELEASE.json as TESTED and that manifest is committed
   # ALONE ("seal release <sha>"): the commit's diff against its parent is exactly the manifest,
@@ -196,7 +239,7 @@ jobs:
       github.event_name == 'push' && (
         github.ref == 'refs/heads/desk-sync-clean' ||
         github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3')
-    needs: [quality, mt5-money-path]
+    needs: [quality, mt5-money-path, coverage-floor]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -282,7 +325,7 @@ jobs:
     if: >-
       github.event_name == 'push' &&
       github.ref == 'refs/heads/claude/llm-auto-upgrade-verify-gcjac3'
-    needs: [quality, mt5-money-path, seal]
+    needs: [quality, mt5-money-path, coverage-floor, seal]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

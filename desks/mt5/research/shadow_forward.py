@@ -423,6 +423,11 @@ def _family_fn(fam: str):
     So the two registries here are the correct set for THIS engine, and hunt16 is owned by
     qquant_shadow. A hunt16 family arriving here is a routing question, not a resolver gap.
     """
+    # The judge's named exports now include hunt16. They remain owned by the
+    # qquant forward engine; a shared constructor must not create a second clock.
+    from mt5desk.executables import hunt16_families
+    if fam in hunt16_families():
+        return None
     fn = getattr(families, f"family_{fam}", None)
     if fn is None:
         try:

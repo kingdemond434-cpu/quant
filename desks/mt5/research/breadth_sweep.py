@@ -519,7 +519,9 @@ def order_by_failure_memory(rows: list[dict], memory: dict | None = None) -> tup
 
 def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
     """One docket row: the executable spec and nothing claimed about it."""
-    return {
+    from libs.data.pit import stamp
+
+    return stamp({
         "symbol": sym, "family": fam, "params": p,
         "n": 0, "exp_r": None, "max_dd_r": None, "t_stat": None,
         "profit_factor": None, "win_rate": None,
@@ -529,31 +531,49 @@ def _cell(sym: str, fam: str, p: dict, spec: dict, now: str) -> dict:
         "first_seen": now, "pit_stamp": now,
         "why": (f"closing a NAMED breadth gap: {spec['why']}. No performance is "
                 f"claimed -- the gauntlet attaches the only numbers that attach."),
-    }
+    }, "breadth_sweep", now=datetime.fromisoformat(now))
 
 
 def apply(new: list[dict], max_new: int = MAX_NEW_PER_RUN) -> tuple[int, int]:
     """Merge, deduped on the executable spec, at most `max_new` per run (the input order is
     most-intraday-first), so a daily clock cannot grow the docket without bound and one run
     never hands the gauntlet a docket it has to load whole."""
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("merge_hypotheses", need_mb=14000) as owned:
+        if not owned:
+            raise RuntimeError("Canonical docket writer lane or memory admission refused")
+        return _apply_locked(new, max_new)
+
+
+def _apply_locked(new: list[dict], max_new: int) -> tuple[int, int]:
     try:
         docket = json.loads(DOCKET.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    except FileNotFoundError:
         docket = []
     if not isinstance(docket, list):
         raise SystemExit(f"{DOCKET} is not a list; refusing to overwrite a docket I cannot read")
 
     def key(r: dict) -> str:
-        return json.dumps([r.get("symbol"), r.get("family"), r.get("params") or {}],
+        return json.dumps([r.get("symbol") or r.get("sym"), r.get("family"), r.get("params") or {}],
                           sort_keys=True, default=str)
 
     seen = {key(r) for r in docket if isinstance(r, dict)}
-    add = [r for r in new if key(r) not in seen][:max(0, int(max_new))]
+    add = []
+    for row in new:
+        ident = key(row)
+        if ident not in seen and len(add) < max(0, int(max_new)):
+            add.append(row)
+            seen.add(ident)
     if add:
+        from libs.data.pit import stamp_or_refuse
+        from research.merge_hypotheses import _write_docket_atomically
+
+        add, refused = stamp_or_refuse(add, "breadth_sweep")
+        if refused:
+            raise ValueError(f"Breadth sweep refused {len(refused)} unstamped candidates")
         docket.extend(add)
-        tmp = DOCKET.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(docket), encoding="utf-8")
-        tmp.replace(DOCKET)
+        _write_docket_atomically(DOCKET, docket)
     return len(add), len(docket)
 
 

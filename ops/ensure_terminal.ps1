@@ -31,11 +31,8 @@ if ($local.Count -gt 1) {
     exit 2
 }
 if ($terminals.Count -gt 1) {
-    $keeper = $local[0]
-    foreach ($duplicate in ($terminals | Where-Object { $_.ProcessId -ne $keeper.ProcessId })) {
-        Stop-Process -Id $duplicate.ProcessId -Force -ErrorAction Stop
-    }
-    Add-Content -LiteralPath $log -Value "$stamp removed $($terminals.Count - 1) wrong-session duplicate(s); kept pid $($keeper.ProcessId)"
+    Add-Content -LiteralPath $log -Value "$stamp Fusion terminals span sessions; refusing automatic termination of an unverified owner"
+    exit 2
 }
 
 if ($local.Count -eq 0) {
@@ -43,7 +40,7 @@ if ($local.Count -eq 0) {
         Add-Content -LiteralPath $log -Value "$stamp Fusion terminal executable missing: $exe"
         exit 2
     }
-    Start-Process -FilePath $exe
+    Start-Process -FilePath $exe -WindowStyle Hidden
     Start-Sleep -Seconds 8
     $local = @(Get-CimInstance Win32_Process -Filter "Name='terminal64.exe'" |
         Where-Object { $_.ExecutablePath -eq $exe -and $_.SessionId -eq $session })

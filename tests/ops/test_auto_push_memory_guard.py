@@ -21,8 +21,11 @@ properties; the memory branch is exercised as behaviour, not merely grepped.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 from pathlib import Path
+
+import pytest
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "auto_push.sh"
 
@@ -161,20 +164,38 @@ def test_overlapping_ticks_cannot_stack_because_the_script_takes_a_lock() -> Non
         "`exec` replaces the shell, so the contention branch after it is unreachable and the "
         "deferral would never be logged -- the silent-skip defect this file exists for"
     )
-    # Behavioural arm: hold the lock, invoke the script, assert it declines instead of running.
+
+
+@pytest.mark.skipif(
+    shutil.which("flock") is None,
+    reason="Native contention requires util-linux flock; Linux CI executes the behavior",
+)
+def test_native_flock_contention_uses_the_distinct_conflict_code() -> None:
+    # Hold the real Linux lock and retain every behavioral assertion.
+    import shlex
     import tempfile
+    import time
 
     with tempfile.TemporaryDirectory() as td:
         lock = Path(td) / "held.lock"
         lock.touch()
-        holder = subprocess.Popen(["flock", "-n", str(lock), "sleep", "5"])
+        ready = Path(td) / "ready"
+        holder = subprocess.Popen(
+            ["flock", "-n", lock.as_posix(), "bash", "-c",
+             'printf ready > "$1"; read -r release', "fixture", ready.as_posix()],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         try:
+            deadline = time.monotonic() + 30
+            while not ready.exists():
+                assert holder.poll() is None, "the lock holder exited before acquiring its lock"
+                assert time.monotonic() < deadline, "the lock holder did not become ready"
+                time.sleep(0.02)
             probe = subprocess.run(
-                ["bash", "-c", f'flock -n -E 99 {lock} true; echo "rc=$?"'],
+                ["bash", "-c", f'flock -n -E 99 {shlex.quote(lock.as_posix())} true; echo "rc=$?"'],
                 capture_output=True, text=True, timeout=30,
             )
             assert "rc=99" in probe.stdout, (
                 f"contention did not surface as the distinct code 99: {probe.stdout}"
             )
         finally:
-            holder.wait(timeout=15)
+            holder.communicate("release\n", timeout=30)

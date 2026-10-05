@@ -40,18 +40,19 @@ DIG_RUNNERS = sorted({r for r, _ in C.ORGANS.values()})
 
 
 def _bash(script: str, *args: str, dry: bool = True, root: Path | None = None):
-    env = dict(os.environ, _BRAIN_ROOT=str(root or ROOT))
+    env = dict(os.environ, _BRAIN_ROOT=(root or ROOT).as_posix(), PYTHONUTF8="1")
     if dry:
         env["BRAIN_DRY_RUN"] = "1"
     return subprocess.run(["bash", script, *args], cwd=ROOT, env=env,
-                          capture_output=True, text=True, timeout=180, check=False)
+                          capture_output=True, text=True, encoding="utf-8",
+                          timeout=180, check=False)
 
 
 # ------------------------------------------------------------------ the wiring
 
 @pytest.mark.parametrize("runner", DIG_RUNNERS)
 def test_every_dig_runner_parses(runner: str) -> None:
-    assert subprocess.run(["bash", "-n", str(ROOT / runner)],
+    assert subprocess.run(["bash", "-n", (ROOT / runner).as_posix()],
                           capture_output=True, check=False).returncode == 0
 
 
@@ -88,8 +89,8 @@ def test_a_computed_but_unused_variable_does_not_come_back() -> None:
 def test_an_empty_doctrine_is_loud_not_silent(tmp_path: Path) -> None:
     """`_DOCTRINE` used a hardcoded path plus `2>/dev/null`, so a relocated checkout ran every
     organ with an empty system prompt and no trace anywhere. Emptiness must reach stderr."""
-    r = subprocess.run(["bash", "-c", f"source {ROOT}/ops/brain_env.sh; true"],
-                       cwd=ROOT, env=dict(os.environ, _BRAIN_ROOT=str(tmp_path)),
+    r = subprocess.run(["bash", "-c", f"source '{ROOT.as_posix()}/ops/brain_env.sh'; true"],
+                       cwd=ROOT, env=dict(os.environ, _BRAIN_ROOT=tmp_path.as_posix()),
                        capture_output=True, text=True, timeout=60, check=False)
     assert "DOCTRINE EMPTY" in r.stderr
 
@@ -97,8 +98,9 @@ def test_an_empty_doctrine_is_loud_not_silent(tmp_path: Path) -> None:
 def test_the_doctrine_loads_from_this_checkout() -> None:
     """And the positive case: pointed at a real root, it is found and non-trivial."""
     r = subprocess.run(
-        ["bash", "-c", f'source {ROOT}/ops/brain_env.sh; printf "%s" "${{#_DOCTRINE}}"'],
-        cwd=ROOT, env=dict(os.environ, _BRAIN_ROOT=str(ROOT)),
+        ["bash", "-c", f'source "{ROOT.as_posix()}/ops/brain_env.sh"; '
+         'printf "%s" "${#_DOCTRINE}"'],
+        cwd=ROOT, env=dict(os.environ, _BRAIN_ROOT=ROOT.as_posix()),
         capture_output=True, text=True, timeout=60, check=False)
     assert int(r.stdout.strip() or 0) > 10_000
 
@@ -130,8 +132,9 @@ def test_the_assembled_prompt_leads_with_the_conversion_duty() -> None:
     effort converting. A duty appended after a 10KB brief is a duty the organ reaches last."""
     r = subprocess.run(
         ["bash", "-c",
-         f'source {ROOT}/ops/brain_env.sh 2>/dev/null; dig_prompt ops/prospector_dig_prompt.txt'],
-        cwd=ROOT, env=dict(os.environ, _BRAIN_ROOT=str(ROOT)),
+         f'source "{ROOT.as_posix()}/ops/brain_env.sh" 2>/dev/null; '
+         'dig_prompt ops/prospector_dig_prompt.txt'],
+        cwd=ROOT, env=dict(os.environ, _BRAIN_ROOT=ROOT.as_posix()),
         capture_output=True, text=True, timeout=300, check=False)
     assert r.stdout.startswith("[§33]")
     assert len(r.stdout) > (ROOT / "ops/prospector_dig_prompt.txt").stat().st_size

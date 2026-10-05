@@ -33,6 +33,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -167,7 +168,7 @@ LEDGER_LOOKBACK_DAYS = 30
 #: for between 0.01 and 0.02 rounds to one end and realised heat misses target by a whole step.
 #: At 0.02 the same absolute step is 50% of the ticket. A FLOOR on the gold book only -- Q_OPT
 #: below decides the actual size and this never raises it.
-LOT = 0.02
+LOT = 0.01
 # RISK FRACTION OF EQUITY PER TRADE. Was 0.055, and that was not an arbitrary number: measured
 # full Kelly on the 3-leg gold book (E[ln(1+qR)] maximised over the daily portfolio series,
 # 5,728 trades, 2018-2026) is q* = 6.00%, so 5.5% was ~92% of Kelly, chosen deliberately.
@@ -701,8 +702,19 @@ def load_state() -> dict:
 
 
 def save_state(st: dict) -> None:
+    """Persist completely before replacing the last valid restart state."""
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps(st, indent=2, default=str), encoding="utf-8")
+    body = json.dumps(st, indent=2, default=str)
+    fd, temporary = tempfile.mkstemp(dir=STATE.parent, prefix=STATE.name + ".", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(body)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, STATE)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            os.unlink(temporary)
 
 
 def connect() -> bool:
@@ -3908,8 +3920,8 @@ def bracket_lane_lot(s: dict, equity: float, dist: float | None,
     (`ramped_fraction` charged before the stop was known, `promoted_lot` sized after it).
 
     `"auto"` is the gold book and nothing else -- `decision_core.roster` gives it to the three
-    GOLD_WINDOWS rows alone -- so the principal's 0.02 floor binds inside `gold_book_lot` as
-    `max(allocator, policy, floor)` and never as a replacement for the policy lot.
+    GOLD_WINDOWS rows alone. The principal removed the special 0.02 floor; the
+    allocator's target and the symbol's own venue minimum govern implementability.
     """
     mode = s.get("lot")
     if mode == "auto":

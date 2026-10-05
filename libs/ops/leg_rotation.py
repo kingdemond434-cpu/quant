@@ -120,6 +120,8 @@ ALWAYS_RUN: frozenset[str] = frozenset({
     # Without this, the core rotation can leave the judge's worker plan and measured
     # verdict rate stale while the five-minute gauntlet task continues to fire.
     "judging_throughput",
+    # Discovery must hand existing rules to the judge before generating more work.
+    "intake_catchup",
 })
 
 

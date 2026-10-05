@@ -157,6 +157,7 @@ def test_legacy_identity_is_parsed_from_the_key():
 
 
 def test_freeze_unfrozen_freezes_only_running_unfrozen_legacy_clocks(monkeypatch, tmp_path):
+    monkeypatch.setattr(healer, "execution_identity", lambda spec, fields: spec)
     monkeypatch.setattr(healer, "DESK", tmp_path)
     (tmp_path / "reports" / "shadow").mkdir(parents=True)
     shadow = {"XAUUSD.london_am": {"status": "ACTIVE", "forward_start": "2026-08-01"},

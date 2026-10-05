@@ -83,6 +83,52 @@ def test_a_not_run_deferral_is_not_a_verdict(tmp_path: Path) -> None:
     assert seen == set() and total == {} and window == {}
 
 
+def test_unknown_and_gate_less_failures_do_not_clear_backlog(tmp_path: Path) -> None:
+    """False on an unmeasured branch is not a rejection of the hypothesis."""
+    from research.judging_burndown import classify
+
+    ledger = tmp_path / "gate.jsonl"
+    rows = [
+        {"cell": "unknown", "passed": False, "terminal_gate": "UNKNOWN"},
+        {"cell": "no_gate", "passed": False, "terminal_gate": None},
+        {"cell": "reject", "passed": False, "terminal_gate": "in_sample_screen"},
+        {"cell": "pass", "passed": True, "terminal_gate": "PASSED"},
+        {"cell": "not_run", "passed": False, "terminal_gate": "in_sample_screen",
+         "downstream_status": "NOT_RUN_BUILD_FAILED"},
+    ]
+    for row in rows:
+        row.update(at=NOW.isoformat(), family="alpha")
+    ledger.write_text("".join(json.dumps(row) + "\n" for row in rows), "utf-8")
+    seen, total, window = jc.judged_index(ledger, now=NOW)
+    assert seen == {row["cell"] for row in rows if classify(row) == "ruled"}
+    assert seen == {"reject", "pass"}
+    assert total == window == {"alpha": 2}
+
+
+def test_unknown_receipt_stays_in_canonical_docket_backlog(tmp_path: Path) -> None:
+    rows = _rows({"alpha": 1})
+    cell = jc._cell_id(rows[0])
+    ledger = tmp_path / "gate.jsonl"
+    ledger.write_text(json.dumps({"at": NOW.isoformat(), "cell": cell,
+        "family": "alpha", "passed": False, "terminal_gate": "UNKNOWN"}) + "\n", "utf-8")
+    doc = jc.build(rows, ledger=ledger, ratchet=tmp_path / "absent.json", now=NOW)
+    assert doc["totals"]["unjudged_total"] == 1
+    assert doc["families"]["alpha"]["queued"] == 1
+
+
+def test_unknown_and_deferred_receipts_do_not_inflate_measured_capacity(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(jc, "CAPACITY_FLOOR", 1)
+    ledger = tmp_path / "gate.jsonl"
+    rows = ([{"passed": False, "terminal_gate": "UNKNOWN"}] * 100
+            + [{"passed": False, "terminal_gate": "in_sample_screen"}] * 3
+            + [{"passed": False, "terminal_gate": "in_sample_screen",
+                "downstream_status": "NOT_RUN_BUILD_FAILED"}] * 100)
+    ledger.write_text("".join(json.dumps({**row, "at": NOW.isoformat()}) + "\n"
+                              for row in rows), "utf-8")
+    assert jc.measured_capacity({"alpha": 3}, ledger, now=NOW) == 3
+
+
 def test_banned_family_gets_no_quota(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     """The scarce judge is never allocated to a family that cannot reach the book."""
     monkeypatch.setattr(jc, "banned_from_capital", lambda: frozenset({"discovered"}))

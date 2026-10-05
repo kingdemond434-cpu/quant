@@ -19,6 +19,7 @@ def test_missing_values_never_become_fake_zero() -> None:
 def test_dashboard_identity_and_research_fields(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(module, "ROOT", tmp_path)
     monkeypatch.setattr(module, "DESK", tmp_path / "desks" / "mt5")
+    monkeypatch.setattr(module, "_mt5_snapshot", lambda: {})
     payload = module.build()
     assert payload["identity"]["name"] == "QUANT DESK"
     assert payload["account"]["equity"] is None

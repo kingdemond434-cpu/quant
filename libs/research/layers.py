@@ -63,6 +63,7 @@ LEG_LAYER: dict[str, str] = {
     # "what did the desk NOT test this hour" silently omits it.
     "futures_lead_lag": "information", "tape_features": "information",
     # prediction: turning information into a claim about returns
+    "intake_catchup": "prediction",
     "compile_candidates": "prediction", "merge_docket": "prediction", "search": "prediction",
     "sweep": "prediction", "hunt12": "prediction",
     "backtest": "prediction", "external_gauntlet": "prediction",
