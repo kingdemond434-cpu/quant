@@ -51,13 +51,10 @@
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "command": [
-    "/home/quant/quant-platform/.venv/bin/python",
-    "scripts/heal_forward_lane.py"
-   ],
-   "passes_completed": 0,
-   "started_at": "2026-10-05T01:21:54.036849+00:00",
-   "status": "RUNNING"
+   "finished_at": "2026-10-05T01:56:32.943769+00:00",
+   "passes_completed": 1,
+   "returncode": 1,
+   "status": "FAILED"
   },
   "fusion_state_pull": {
    "finished_at": "2026-10-05T01:04:14.285418+00:00",
@@ -84,5 +81,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-05T01:21:54.036849+00:00"
+ "updated_at": "2026-10-05T01:56:32.943769+00:00"
 }
