@@ -39,33 +39,31 @@
    "status": "DONE"
   },
   "forward_clock_reconciliation": {
-   "finished_at": "2026-10-04T20:07:52.221516+00:00",
+   "finished_at": "2026-10-05T01:20:06.865618+00:00",
    "passes_completed": 1,
    "returncode": 1,
    "status": "FAILED"
   },
   "forward_identity_reconciliation": {
-   "finished_at": "2026-10-04T20:07:46.571786+00:00",
+   "finished_at": "2026-10-05T01:14:13.282124+00:00",
    "passes_completed": 1,
    "returncode": 0,
    "status": "DONE"
   },
   "forward_lane_heal": {
-   "finished_at": "2026-10-04T20:07:58.485195+00:00",
-   "passes_completed": 1,
-   "returncode": 1,
-   "status": "FAILED"
-  },
-  "fusion_state_pull": {
    "command": [
-    "systemctl",
-    "--user",
-    "start",
-    "quant-desk-pull.service"
+    "/home/quant/quant-platform/.venv/bin/python",
+    "scripts/heal_forward_lane.py"
    ],
    "passes_completed": 0,
-   "started_at": "2026-10-05T00:11:21.601505+00:00",
+   "started_at": "2026-10-05T01:21:54.036849+00:00",
    "status": "RUNNING"
+  },
+  "fusion_state_pull": {
+   "finished_at": "2026-10-05T01:04:14.285418+00:00",
+   "passes_completed": 1,
+   "returncode": 124,
+   "status": "FAILED"
   },
   "mechanism_independence": {
    "finished_at": "2026-10-04T20:08:15.359561+00:00",
@@ -86,5 +84,5 @@
    "status": "DONE"
   }
  },
- "updated_at": "2026-10-05T00:11:21.601505+00:00"
+ "updated_at": "2026-10-05T01:21:54.036849+00:00"
 }
