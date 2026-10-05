@@ -65,7 +65,11 @@ def _write_docket_atomically(path: Path, rows: list[dict[str, Any]] | dict[str, 
 def _chart_local_order(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     def key(row: dict[str, Any]) -> tuple[str, str]:
         params = row.get("params") or {}
-        chart = str(params.get("timeframe") or "H1").upper()
+        # The judge preserves a non-H1 chart carried on the row when params
+        # have no timeframe. Group the same native chart that it will load.
+        chart_value = (params.get("timeframe") if "timeframe" in params
+                       else row.get("timeframe"))
+        chart = str(chart_value or "H1").upper()
         if row.get("family") == "lvc_asia_london":
             chart = "M5"  # the canonical judge's fixed native chart
         return str(row.get("sym") or row.get("symbol") or ""), chart
